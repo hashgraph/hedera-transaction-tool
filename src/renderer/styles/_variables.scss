@@ -1,68 +1,95 @@
 // Colors
-$dark: #101011; //900
-$darker: #1c2230;
-$darkest: #272727;
-$black: #000000;
-$white: #ffffff;
+$white-50: #f2f2f2;
+$white-100: #e5ccff;
+$white-200: #e5ccff;
+$white-300: #e5ccff;
+$white-400: #e5ccff;
+$white-500: #ffffff;
+$white-600: #e5ccff;
+$white-700: #e5ccff;
+$white-800: #e5ccff;
+$white-900: #e5ccff;
+$white-950: #0d0d0d;
 
-$primary-900: #0b0349;
-$primary-800: #3520da;
-$primary-700: #1b0b9a;
-$primary-600: #2411c0;
-$primary-500: #2f18e5;
-$primary-400: #2b2ef8;
-$primary-300: #4d5fff;
-$primary-200: #7391ff;
-$primary-100: #99bcff;
+$purple-50: #f2e5ff;
+$purple-100: #e5ccff;
+$purple-200: #e5ccff;
+$purple-300: #e5ccff;
+$purple-400: #e5ccff;
+$purple-500: #ac59ff;
+$purple-600: #e5ccff;
+$purple-700: #e5ccff;
+$purple-800: #e5ccff;
+$purple-900: #e5ccff;
+$purple-950: #0d001a;
 
-$positive-100: #a6f3bb;
-$positive-300: #53d47f;
-$positive-400: #29bc63;
-$positive-600: #048b3a;
-$positive-800: #005720;
+$pink-50: #ffe5ff;
+$pink-100: #e5ccff;
+$pink-200: #e5ccff;
+$pink-300: #e5ccff;
+$pink-400: #e5ccff;
+$pink-500: #ff01ff;
+$pink-600: #e5ccff;
+$pink-700: #e5ccff;
+$pink-800: #e5ccff;
+$pink-900: #e5ccff;
+$pink-950: #1a0019;
 
-$error-100: #ffa6b1;
-$error-200: #ff7c92;
-$error-400: #fd2b5e;
-$error-500: #ea1548;
+$dark-blue-50: #ffe5ff;
+$dark-blue-100: #e5ccff;
+$dark-blue-200: #e5ccff;
+$dark-blue-300: #e5ccff;
+$dark-blue-400: #e5ccff;
+$dark-blue-500: #ff01ff;
+$dark-blue-600: #444788;
+$dark-blue-700: #e5ccff;
+$dark-blue-800: #e5ccff;
+$dark-blue-900: #e5ccff;
+$dark-blue-950: #1a0019;
 
-$neutral-900: #101011;
-$neutral-850: #1a1a1c95;
-$neutral-800: #1e1e21;
-$neutral-700: #29292d;
-$neutral-600: #313135;
-$neutral-500: #4b4b51;
-$neutral-400: #6f6f77;
-$neutral-300: #9d9daa;
-$neutral-100: #f9f9f9;
+$success-50: #ffe5ff;
+$success-100: #e5ccff;
+$success-200: #e5ccff;
+$success-300: #e5ccff;
+$success-400: #e5ccff;
+$success-500: #008035;
+$success-600: #e5ccff;
+$success-700: #e5ccff;
+$success-800: #e5ccff;
+$success-900: #e5ccff;
+$success-950: #1a0019;
 
-$blue-neutral-100: #fafaff;
-$blue-neutral-200: #7391ff;
-$blue-neutral-300: #9797c2;
-$blue-neutral-400: #7979a3;
-$blue-neutral-500: #3d3d58;
-$blue-neutral-600: #2a2a43;
-$blue-neutral-700: #1f1f3a;
-$blue-neutral-800: #19193f;
-$blue-neutral-850: #080c24;
-$blue-neutral-900: #030617;
-$blue-neutral-950: #01030f;
+$warning-50: #ffe5ff;
+$warning-100: #e5ccff;
+$warning-200: #e5ccff;
+$warning-300: #e5ccff;
+$warning-400: #e5ccff;
+$warning-500: #fa6c00;
+$warning-600: #e5ccff;
+$warning-700: #e5ccff;
+$warning-800: #e5ccff;
+$warning-900: #e5ccff;
+$warning-950: #1a0019;
 
-$secondary-300: #f35bfc;
-$secondary-800: #68106d;
+$error-50: #ffe5ff;
+$error-100: #e5ccff;
+$error-200: #e5ccff;
+$error-300: #e5ccff;
+$error-400: #e5ccff;
+$error-500: #cd0000;
+$error-600: #e5ccff;
+$error-700: #e5ccff;
+$error-800: #e5ccff;
+$error-900: #e5ccff;
+$error-950: #1a0019;
 
-$warning-300: #ffa053;
-
-$error-500: #ea1548;
-$error-400: #fd2b5e;
-
-$primary: #2f18e5;
-$secondary: $blue-neutral-400;
-$success: #0da048;
+$primary: $purple-500;
+$secondary: $pink-500;
+$success: $success-500;
 $danger: $error-500;
-$warning: $warning-300;
-$info: $primary-100;
-$gray: $blue-neutral-300;
+$warning: $warning-500;
+$info: $dark-blue-600;
+$gray: $white-200;
 
 // Add custom colors to theme-colors map
 $theme-colors: (
@@ -178,8 +205,8 @@ $container-max-widths: (
 );
 
 // Body
-$body-bg: $blue-neutral-850;
-$body-color: $blue-neutral-100;
+$body-bg: #151629;
+$body-color: $white-500;
 
 // Paragraphs
 $paragraph-margin-bottom: 0;
@@ -195,7 +222,7 @@ $border-radius-lg: 6px;
 $box-shadow-sm: 0px 5px 20px rgba(9, 10, 20, 0.45);
 
 // Typography
-$font-family-primary: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue',
+$font-family-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue',
   Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
 $font-family-numeric: 'Noto Sans Mono', monospace;
 
@@ -313,26 +340,26 @@ $btn-transition: color 0.15s linear, background-color 0.15s linear, border-color
   box-shadow 0.15s linear;
 $btn-disabled-opacity: 0.5;
 
-$btn-primary-color: $white;
+$btn-primary-color: $white-500;
 $btn-primary-disabled-background: #232342;
-$btn-primary-outline-color: $white;
-$btn-primary-outline-border-hover: $blue-neutral-200;
+$btn-primary-outline-color: $white-500;
+// $btn-primary-outline-border-hover: $blue-neutral-200;
 
 // Forms
-$input-color: $blue-neutral-100;
-$input-border-color: $blue-neutral-700;
-$input-focus-border-color: $blue-neutral-400;
+// $input-color: $blue-neutral-100;
+// $input-border-color: $blue-neutral-700;
+// $input-focus-border-color: $blue-neutral-400;
 $input-focus-box-shadow: none;
 $input-height: auto;
 $input-line-height: 1.71;
 $input-placeholder-color: $secondary;
 $form-group-margin-bottom: 0;
-$input-bg: $blue-neutral-700;
+// $input-bg: $blue-neutral-700;
 $input-padding-y: 15px;
 $input-padding-x: 12px;
 $input-font-size: 14px;
-$input-disabled-bg: $blue-neutral-800;
-$input-disabled-border-color: $blue-neutral-800;
+// $input-disabled-bg: $blue-neutral-800;
+// $input-disabled-border-color: $blue-neutral-800;
 
 $input-padding-y-sm: 7px;
 $input-padding-x-sm: 12px;
@@ -345,32 +372,32 @@ $custom-select-height: auto;
 $custom-select-focus-box-shadow: 0 0 0 1px $primary;
 
 // Range
-$form-range-track-bg: $neutral-500;
+// $form-range-track-bg: $neutral-500;
 $form-range-track-height: 0.25rem;
 $form-range-thumb-width: 1.5rem;
 $form-range-thumb-height: 1.5rem;
-$form-range-thumb-border: 4px solid $blue-neutral-300;
+// $form-range-thumb-border: 4px solid $blue-neutral-300;
 
 // Switch
-$form-check-input-bg: $blue-neutral-500;
-$form-switch-color: $primary-200;
+// $form-check-input-bg: $blue-neutral-500;
+// $form-switch-color: $primary-200;
 
 // Modals
-$modal-content-bg: $blue-neutral-900;
-$modal-header-border-color: $dark;
+// $modal-content-bg: $blue-neutral-900;
+$modal-header-border-color: $white-950;
 $modal-backdrop-opacity: 1;
-$form-range-thumb-bg: $blue-neutral-100;
+// $form-range-thumb-bg: $blue-neutral-100;
 $modal-backdrop-bg: rgba(25, 25, 63, 0.3);
 $modal-header-padding: 24px;
 $modal-inner-padding: 1.5rem;
 
-$btn-close-color: $white;
+$btn-close-color: $white-500;
 
 // Pagination
 $pagination-bg: transparent;
-$pagination-color: $blue-neutral-300;
-$pagination-active-color: $white;
-$pagination-active-bg: $blue-neutral-500;
+// $pagination-color: $blue-neutral-300;
+$pagination-active-color: $white-500;
+// $pagination-active-bg: $blue-neutral-500;
 $pagination-padding-y: 0.175rem;
 $pagination-border-width: 0;
 
@@ -382,5 +409,5 @@ $alert-color-scale: 60% !default;
 // Progress
 $progress-height: 8px;
 $progress-border-radius: 41px;
-$progress-bar-bg: $positive-300;
-$progress-bg: $error-200;
+// $progress-bar-bg: $positive-300;
+// $progress-bg: $error-200;
