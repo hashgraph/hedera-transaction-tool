@@ -12,7 +12,9 @@ const storeCount = useCounterStore();
   <h1>{{ msg }}</h1>
 
   <div class="card">
-    <button type="button" @click="storeCount.increment()">count is {{ storeCount.count }}</button>
+    <button class="btn btn-primary" type="button" @click="storeCount.increment()">
+      count is {{ storeCount.count }}
+    </button>
     <p>
       Edit
       <code>components/HelloWorld.vue</code> to test HMR

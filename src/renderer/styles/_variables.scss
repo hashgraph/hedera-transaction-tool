@@ -1,0 +1,386 @@
+// Colors
+$dark: #101011; //900
+$darker: #1c2230;
+$darkest: #272727;
+$black: #000000;
+$white: #ffffff;
+
+$primary-900: #0b0349;
+$primary-800: #3520da;
+$primary-700: #1b0b9a;
+$primary-600: #2411c0;
+$primary-500: #2f18e5;
+$primary-400: #2b2ef8;
+$primary-300: #4d5fff;
+$primary-200: #7391ff;
+$primary-100: #99bcff;
+
+$positive-100: #a6f3bb;
+$positive-300: #53d47f;
+$positive-400: #29bc63;
+$positive-600: #048b3a;
+$positive-800: #005720;
+
+$error-100: #ffa6b1;
+$error-200: #ff7c92;
+$error-400: #fd2b5e;
+$error-500: #ea1548;
+
+$neutral-900: #101011;
+$neutral-850: #1a1a1c95;
+$neutral-800: #1e1e21;
+$neutral-700: #29292d;
+$neutral-600: #313135;
+$neutral-500: #4b4b51;
+$neutral-400: #6f6f77;
+$neutral-300: #9d9daa;
+$neutral-100: #f9f9f9;
+
+$blue-neutral-100: #fafaff;
+$blue-neutral-200: #7391ff;
+$blue-neutral-300: #9797c2;
+$blue-neutral-400: #7979a3;
+$blue-neutral-500: #3d3d58;
+$blue-neutral-600: #2a2a43;
+$blue-neutral-700: #1f1f3a;
+$blue-neutral-800: #19193f;
+$blue-neutral-850: #080c24;
+$blue-neutral-900: #030617;
+$blue-neutral-950: #01030f;
+
+$secondary-300: #f35bfc;
+$secondary-800: #68106d;
+
+$warning-300: #ffa053;
+
+$error-500: #ea1548;
+$error-400: #fd2b5e;
+
+$primary: #2f18e5;
+$secondary: $blue-neutral-400;
+$success: #0da048;
+$danger: $error-500;
+$warning: $warning-300;
+$info: $primary-100;
+$gray: $blue-neutral-300;
+
+// Add custom colors to theme-colors map
+$theme-colors: (
+  'primary': $primary,
+  'secondary': $secondary,
+  'success': $success,
+  'info': $info,
+  'warning': $warning,
+  'danger': $danger,
+  'gray': $gray,
+);
+
+// Options
+$enable-validation-icons: false;
+$enable-negative-margins: true;
+
+// Spacers
+$spacer: 1rem;
+
+$spacers: (
+  0: 0,
+  1: (
+    $spacer * 0.125,
+  ),
+  // 2px
+  2:
+    (
+      $spacer * 0.25,
+    ),
+  // 4px
+  3:
+    (
+      $spacer * 0.5,
+    ),
+  // 8px
+  4: $spacer,
+  // 16px
+  5:
+    (
+      $spacer * 1.5,
+    ),
+  // 24px
+  6:
+    (
+      $spacer * 2,
+    ),
+  // 32px
+  7:
+    (
+      $spacer * 2.5,
+    ),
+  // 40px
+  8:
+    (
+      $spacer * 3,
+    ),
+  // 48px
+  9:
+    (
+      $spacer * 3.5,
+    ),
+  // 56px
+  10:
+    (
+      $spacer * 4,
+    ),
+  // 64px
+  11:
+    (
+      $spacer * 4.5,
+    ),
+  // 72px
+  12:
+    (
+      $spacer * 5,
+    ),
+  // 80px
+  13:
+    (
+      $spacer * 5.5,
+    ),
+  // 88px
+  14:
+    (
+      $spacer * 6,
+    ),
+  // 96px
+  15:
+    (
+      $spacer * 6.5,
+    ),
+  20: (
+    $spacer * 10,
+  ),
+);
+
+$grid-breakpoints: (
+  xs: 0,
+  sm: 576px,
+  md: 768px,
+  lg: 992px,
+  xl: 1200px,
+  xxl: 1400px,
+  xxxl: 1600px,
+);
+
+$container-max-widths: (
+  sm: 540px,
+  md: 720px,
+  lg: 960px,
+  xl: 1140px,
+  xxl: 1320px,
+);
+
+// Body
+$body-bg: $blue-neutral-850;
+$body-color: $blue-neutral-100;
+
+// Paragraphs
+$paragraph-margin-bottom: 0;
+
+// Grid columns
+$grid-gutter-width: 24px;
+
+// Border radius
+$border-radius: 4px;
+$border-radius-lg: 6px;
+
+// Box shadows
+$box-shadow-sm: 0px 5px 20px rgba(9, 10, 20, 0.45);
+
+// Typography
+$font-family-primary: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue',
+  Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+$font-family-numeric: 'Noto Sans Mono', monospace;
+
+$font-family-base: $font-family-primary;
+$font-size-base: 1rem;
+
+$font-weight-light: 300;
+$font-weight-normal: 400;
+$font-weight-semi-bold: 600;
+$font-weight-bold: 700;
+$font-weight-bolder: $font-weight-bold;
+
+$font-weight-base: $font-weight-normal;
+
+$line-height-base: 1.5;
+$line-height-small: 0.5;
+
+$headings-margin-bottom: 0;
+$headings-font-family: $font-family-primary;
+$headings-font-weight: $font-weight-normal;
+
+$texts: (
+  huge: (
+    default: (
+      font-size: 48px,
+      line-height: 48px,
+    ),
+    md: (
+      font-size: 48px,
+      line-height: 48px,
+    ),
+  ),
+  display: (
+    default: (
+      font-size: 40px,
+      line-height: 48px,
+    ),
+    md: (
+      font-size: 40px,
+      line-height: 48px,
+    ),
+  ),
+  headline: (
+    default: (
+      font-size: 32px,
+      line-height: 40px,
+    ),
+    md: (
+      font-size: 32px,
+      line-height: 40px,
+    ),
+  ),
+  title: (
+    default: (
+      font-size: 28px,
+      line-height: 42px,
+    ),
+    md: (
+      font-size: 28px,
+      line-height: 42px,
+    ),
+  ),
+  subheader: (
+    default: (
+      font-size: 24px,
+      line-height: 32px,
+    ),
+    md: (
+      font-size: 24px,
+      line-height: 32px,
+    ),
+  ),
+  main: (
+    default: (
+      font-size: 16px,
+      line-height: 22px,
+    ),
+    md: (
+      font-size: 16px,
+      line-height: 22px,
+    ),
+  ),
+  small: (
+    default: (
+      font-size: 14px,
+      line-height: 22px,
+    ),
+    md: (
+      font-size: 14px,
+      line-height: 22px,
+    ),
+  ),
+  micro: (
+    default: (
+      font-size: 12px,
+      line-height: 16px,
+    ),
+    md: (
+      font-size: 12px,
+      line-height: 16px,
+    ),
+  ),
+);
+
+// Buttons
+$btn-padding-y: 16px;
+$btn-padding-x: 48px;
+$btn-padding-y-sm: 8px;
+$btn-padding-x-sm: 20px;
+$btn-line-height: 22px;
+$btn-font-weight: $font-weight-semi-bold;
+$btn-font-size: 14px;
+$btn-border-radius: $border-radius;
+$btn-transition: color 0.15s linear, background-color 0.15s linear, border-color 0.15s linear,
+  box-shadow 0.15s linear;
+$btn-disabled-opacity: 0.5;
+
+$btn-primary-color: $white;
+$btn-primary-disabled-background: #232342;
+$btn-primary-outline-color: $white;
+$btn-primary-outline-border-hover: $blue-neutral-200;
+
+// Forms
+$input-color: $blue-neutral-100;
+$input-border-color: $blue-neutral-700;
+$input-focus-border-color: $blue-neutral-400;
+$input-focus-box-shadow: none;
+$input-height: auto;
+$input-line-height: 1.71;
+$input-placeholder-color: $secondary;
+$form-group-margin-bottom: 0;
+$input-bg: $blue-neutral-700;
+$input-padding-y: 15px;
+$input-padding-x: 12px;
+$input-font-size: 14px;
+$input-disabled-bg: $blue-neutral-800;
+$input-disabled-border-color: $blue-neutral-800;
+
+$input-padding-y-sm: 7px;
+$input-padding-x-sm: 12px;
+
+$form-select-indicator: none;
+
+// Custom selects
+$custom-select-line-height: 1.5;
+$custom-select-height: auto;
+$custom-select-focus-box-shadow: 0 0 0 1px $primary;
+
+// Range
+$form-range-track-bg: $neutral-500;
+$form-range-track-height: 0.25rem;
+$form-range-thumb-width: 1.5rem;
+$form-range-thumb-height: 1.5rem;
+$form-range-thumb-border: 4px solid $blue-neutral-300;
+
+// Switch
+$form-check-input-bg: $blue-neutral-500;
+$form-switch-color: $primary-200;
+
+// Modals
+$modal-content-bg: $blue-neutral-900;
+$modal-header-border-color: $dark;
+$modal-backdrop-opacity: 1;
+$form-range-thumb-bg: $blue-neutral-100;
+$modal-backdrop-bg: rgba(25, 25, 63, 0.3);
+$modal-header-padding: 24px;
+$modal-inner-padding: 1.5rem;
+
+$btn-close-color: $white;
+
+// Pagination
+$pagination-bg: transparent;
+$pagination-color: $blue-neutral-300;
+$pagination-active-color: $white;
+$pagination-active-bg: $blue-neutral-500;
+$pagination-padding-y: 0.175rem;
+$pagination-border-width: 0;
+
+// Alerts
+$alert-bg-scale: -70% !default;
+$alert-border-scale: 40% !default;
+$alert-color-scale: 60% !default;
+
+// Progress
+$progress-height: 8px;
+$progress-border-radius: 41px;
+$progress-bar-bg: $positive-300;
+$progress-bg: $error-200;

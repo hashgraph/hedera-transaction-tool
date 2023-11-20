@@ -1,0 +1,138 @@
+// Classes
+@each $size in map-keys($texts) {
+  .text-#{$size} {
+    @include text;
+    font-size: texts-deep-get($texts, $size, 'default', 'font-size');
+    line-height: texts-deep-get($texts, $size, 'default', 'line-height');
+
+    @include media-breakpoint-up(md) {
+      font-size: texts-deep-get($texts, $size, 'md', 'font-size');
+      line-height: texts-deep-get($texts, $size, 'md', 'line-height');
+    }
+  }
+}
+
+// Custom styles
+.text-label {
+  font-weight: $font-weight-normal;
+  margin-bottom: 4px;
+  font-size: 24px;
+}
+
+.text-numeric {
+  font-family: $font-family-numeric;
+}
+
+.text-light {
+  font-weight: $font-weight-light;
+}
+
+.text-normal {
+  font-weight: $font-weight-normal;
+}
+
+.text-bold {
+  font-weight: $font-weight-semi-bold;
+}
+
+.text-secondary-300 {
+  color: $secondary-300;
+}
+
+.text-positive-400 {
+  color: $positive-400;
+}
+
+.text-white {
+  color: $white;
+}
+
+// Links
+.link {
+  cursor: pointer;
+  color: $body-color;
+  text-decoration: none;
+  transition: color 0.15s linear;
+
+  &:hover {
+    color: $secondary;
+    text-decoration: none;
+  }
+}
+
+.link-primary {
+  cursor: pointer;
+  transition: color 0.15s linear;
+
+  color: $primary-200 !important;
+  text-decoration: none;
+
+  &:hover {
+    color: $primary !important;
+    text-decoration: none;
+  }
+}
+
+.link-white {
+  cursor: pointer;
+  transition: color 0.15s linear;
+
+  color: $white !important;
+  text-decoration: none;
+
+  &:hover {
+    color: $white !important;
+    text-decoration: underline;
+  }
+}
+
+.link-menu {
+  color: $blue-neutral-400;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  @include transition-color;
+
+  &.is-active {
+    color: $blue-neutral-100;
+
+    .icon-menu {
+      background-color: $blue-neutral-500;
+
+      .icon {
+        color: $blue-neutral-100;
+
+        path {
+          fill: $blue-neutral-100;
+        }
+      }
+    }
+  }
+
+  &:hover {
+    color: $blue-neutral-100;
+
+    .icon {
+      color: $blue-neutral-100;
+
+      path {
+        fill: $blue-neutral-100;
+      }
+    }
+  }
+}
+
+.link-tab {
+  cursor: pointer;
+  color: $blue-neutral-400;
+
+  transition: color 0.15s linear;
+
+  &.is-active {
+    color: $blue-neutral-100;
+  }
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
