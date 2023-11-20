@@ -9,6 +9,14 @@ if (isMainLogger(autoUpdater.logger)) {
   autoUpdater.logger.transports.file.level = 'info';
 }
 
+autoUpdater.setFeedURL({
+  provider: 'github',
+  repo: 'https://github.com/hashgraph/hedera-transaction-tool',
+  owner: 'hashgraph',
+  private: true,
+  token: process.env.GH_TOKEN,
+});
+
 autoUpdater.autoDownload = false;
 
 export default function () {
