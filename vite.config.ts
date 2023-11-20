@@ -12,7 +12,6 @@ export default defineConfig({
   server: {
     port: 8080,
   },
-  open: false,
   build: {
     outDir: Path.join(__dirname, 'build', 'renderer'),
     emptyOutDir: true,
