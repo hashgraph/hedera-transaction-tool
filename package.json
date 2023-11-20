@@ -1,0 +1,36 @@
+{
+  "name": "hedera-transaction-tool",
+  "version": "0.1.0",
+  "description": "Transaction tool application",
+  "main": "build/main/main.js",
+  "scripts": {
+    "dev": "node scripts/dev-server.js",
+    "devTools": "./node_modules/.bin/vue-devtools",
+    "build": "node scripts/build.js && electron-builder",
+    "build:win": "node scripts/build.js && electron-builder --win",
+    "build:mac": "node scripts/build.js && electron-builder --mac",
+    "build:linux": "node scripts/build.js && electron-builder --linux"
+  },
+  "repository": "https://github.com/hashgraph/hedera-transaction-tool",
+  "author": {
+    "name": "LimeChain",
+    "url": "https://github.com/LimeChain"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.5.0",
+    "@vue/devtools": "^6.5.1",
+    "chalk": "^4.1.2",
+    "chokidar": "^3.5.3",
+    "electron": "^27.1.0",
+    "electron-builder": "^24.6.4",
+    "typescript": "^5.2.2",
+    "vite": "^4.5.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "electron-log": "^5.0.0",
+    "electron-updater": "^6.1.4",
+    "pinia": "^2.1.7",
+    "vue": "^3.3.8"
+  }
+}
