@@ -9,14 +9,6 @@ if (isMainLogger(autoUpdater.logger)) {
   autoUpdater.logger.transports.file.level = 'info';
 }
 
-autoUpdater.setFeedURL({
-  provider: 'github',
-  repo: 'https://github.com/hashgraph/hedera-transaction-tool',
-  owner: 'hashgraph',
-  private: true,
-  token: process.env.GH_TOKEN,
-});
-
 autoUpdater.autoDownload = false;
 
 export default function () {
@@ -48,6 +40,15 @@ export default function () {
     if (result.response === 0) {
       autoUpdater.quitAndInstall(false, true);
     }
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    dialog.showMessageBox({
+      type: 'info',
+      title: 'Update not available',
+      message: 'Application is up to date',
+      buttons: ['Ok'],
+    });
   });
 }
 
