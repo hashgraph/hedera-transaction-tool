@@ -1,5 +1,6 @@
 import Path from 'path';
 import vuePlugin from '@vitejs/plugin-vue';
+import eslint from 'vite-plugin-eslint';
 
 import { defineConfig } from 'vite';
 
@@ -16,5 +17,5 @@ export default defineConfig({
     outDir: Path.join(__dirname, 'build', 'renderer'),
     emptyOutDir: true,
   },
-  plugins: [vuePlugin()],
+  plugins: [vuePlugin(), eslint()],
 });
