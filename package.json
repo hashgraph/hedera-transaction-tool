@@ -1,6 +1,6 @@
 {
   "name": "hedera-transaction-tool",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Transaction tool application",
   "main": "build/main/main.js",
   "scripts": {
@@ -11,7 +11,7 @@
     "build:win": "node scripts/build.js && electron-builder --win",
     "build:mac": "node scripts/build.js && electron-builder --mac",
     "build:linux": "node scripts/build.js && electron-builder --linux",
-    "publish": "electron-builder -m -p 'onTagOrDraft'"
+    "publish": "node scripts/build.js && electron-builder -m -p 'onTagOrDraft'"
   },
   "repository": "https://github.com/LimeChain/hedera-transaction-tool-release",
   "author": {
