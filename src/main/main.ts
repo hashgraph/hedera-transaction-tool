@@ -23,6 +23,7 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
     },
+    show: false,
   });
 
   if (process.env.NODE_ENV === 'development') {
@@ -33,14 +34,19 @@ function createWindow() {
     mainWindow.loadFile(join(app.getAppPath(), 'renderer', 'index.html'));
   }
 
+  /* window events */
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
 
+  /* window web contents' events */
   mainWindow.webContents.on('did-finish-load', () => {
     if (mainWindow) {
       sendUpdateThemeEventTo(mainWindow);
     }
+
+    mainWindow?.show();
   });
 }
 
