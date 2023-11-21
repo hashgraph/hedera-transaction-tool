@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import StyleGuide from './components/StyleGuide.vue';
+import AppMenu from './components/AppMenu.vue';
 
 onMounted(async () => {
   const isDark = await window.electronAPI.theme.isDark();
@@ -19,8 +20,9 @@ async function handleThemeChange() {
 
 <template>
   <div class="container my-10">
-    <button @click="handleThemeChange">Toggle Theme</button>
     <h1 class="mb-5">Hedera Transaction Tool</h1>
+    <button class="btn btn-primary btn-sm" @click="handleThemeChange">Toggle Theme</button>
+    <AppMenu />
     <StyleGuide />
   </div>
 </template>

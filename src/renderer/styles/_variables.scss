@@ -102,6 +102,11 @@ $theme-colors: (
   'gray': $gray,
 );
 
+$theme-colors-button: (
+  'primary': $primary,
+  'secondary': $secondary,
+);
+
 // Options
 $enable-validation-icons: false;
 $enable-negative-margins: true;
@@ -231,7 +236,7 @@ $font-size-base: 1rem;
 
 $font-weight-light: 300;
 $font-weight-normal: 400;
-$font-weight-semi-bold: 600;
+$font-weight-semi-bold: 500;
 $font-weight-bold: 700;
 $font-weight-bolder: $font-weight-bold;
 
@@ -242,7 +247,7 @@ $line-height-small: 0.5;
 
 $headings-margin-bottom: 0;
 $headings-font-family: $font-family-primary;
-$headings-font-weight: $font-weight-normal;
+$headings-font-weight: $font-weight-bold;
 
 $texts: (
   huge: (
@@ -328,10 +333,7 @@ $texts: (
 );
 
 // Buttons
-$btn-padding-y: 16px;
-$btn-padding-x: 48px;
-$btn-padding-y-sm: 8px;
-$btn-padding-x-sm: 20px;
+$btn-color: red;
 $btn-line-height: 22px;
 $btn-font-weight: $font-weight-semi-bold;
 $btn-font-size: 14px;
