@@ -2,14 +2,17 @@ import { app, BrowserWindow, session } from 'electron';
 import { join, resolve } from 'path';
 import dotenv from 'dotenv';
 
-import createMenu from './menu';
+import createMenu from './modules/menu';
+import addTheme from './modules/theme';
 
 dotenv.config({
   path: app.isPackaged ? join(process.resourcesPath, '.env') : resolve(process.cwd(), '.env'),
   override: true,
 });
 
-let mainWindow;
+const { sendUpdateThemeEventTo } = addTheme();
+
+let mainWindow: BrowserWindow | null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -32,6 +35,12 @@ function createWindow() {
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    if (mainWindow) {
+      sendUpdateThemeEventTo(mainWindow);
+    }
   });
 }
 
