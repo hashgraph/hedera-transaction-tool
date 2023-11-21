@@ -1,5 +1,6 @@
 @import 'variables.scss';
-@import '../../../node_modules/bootstrap/scss/bootstrap.scss';
+// @import '../../../node_modules/bootstrap/scss/bootstrap.scss';
+@import 'bootstrap-custom.scss';
 @import 'mixins';
 @import 'typography';
 @import 'layout.scss';
