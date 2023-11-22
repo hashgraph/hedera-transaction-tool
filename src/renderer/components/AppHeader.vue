@@ -4,6 +4,7 @@ import logoText from '../images/logo-text.svg';
 
 async function handleThemeChange() {
   const isDark = await window.electronAPI.theme.isDark();
+
   window.electronAPI.theme.toggle(isDark ? 'light' : 'dark');
 }
 </script>
@@ -15,7 +16,18 @@ async function handleThemeChange() {
       <img :src="logoText" alt="" />
     </div>
     <div>
-      <button class="btn btn-primary btn-sm" @click="handleThemeChange">Toggle Theme</button>
+      <!-- <button class="btn btn-primary btn-sm" @click="handleThemeChange">Toggle Theme</button> -->
+      <div class="form-check form-switch">
+        <input
+          @change="handleThemeChange"
+          class="form-check-input"
+          type="checkbox"
+          role="switch"
+          id="flexSwitchCheckDefault"
+          checked
+        />
+        <label class="text-main text-primary" for="flexSwitchCheckDefault">Dark mode</label>
+      </div>
     </div>
   </div>
 </template>

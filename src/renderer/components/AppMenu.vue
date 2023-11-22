@@ -29,7 +29,7 @@ const menuItems = [
 <template>
   <div class="container-menu">
     <template v-for="(item, index) in menuItems" :key="index">
-      <RouterLink class="link-menu" :to="item.link">
+      <RouterLink class="link-menu mt-2" :to="item.link">
         <AppIcon class="me-3" :title="item.icon" /><span>{{ item.title }}</span></RouterLink
       >
     </template>

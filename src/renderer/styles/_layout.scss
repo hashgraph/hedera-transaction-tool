@@ -51,12 +51,6 @@ strong {
   }
 }
 
-.main {
-  flex: 1 0 100%;
-  display: flex;
-  flex-direction: column;
-}
-
 .container {
   padding-left: 16px;
   padding-right: 16px;
@@ -68,7 +62,7 @@ strong {
 
 .container-header {
   padding: 18px 24px;
-  border-bottom: 1px solid #372f52;
+  border-bottom: 1px solid var(--#{$prefix}border-color);
   background-color: #151629;
   display: flex;
   justify-content: space-between;
@@ -82,7 +76,7 @@ strong {
 
 .container-main {
   display: flex;
-  margin-top: 73px;
+  padding-top: 73px;
   margin-left: 224px;
 }
 
@@ -92,5 +86,5 @@ strong {
   height: calc(100% - 73px);
   width: 224px;
   padding: 8px;
-  border-right: 1px solid #372f52;
+  border-right: 1px solid var(--#{$prefix}border-color);
 }

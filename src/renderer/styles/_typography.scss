@@ -63,6 +63,17 @@
     color: $white-500;
     background-color: #222444;
   }
+
+  &.active {
+    color: $white-500;
+    background-color: #222444;
+
+    .icon {
+      path {
+        fill: $primary;
+      }
+    }
+  }
 }
 
 .cursor-pointer {
