@@ -1,27 +1,26 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
-import AppIcon from './AppIcon.vue';
 
 const menuItems = [
   {
     link: '/',
     title: 'Style Guide',
-    icon: 'user',
+    icon: 'bi bi-feather',
   },
   {
     link: '/transactions',
     title: 'Transactions',
-    icon: 'arrowSwapHorizontal',
+    icon: 'bi bi-arrow-left-right',
   },
   {
     link: '/accounts',
     title: 'Accounts',
-    icon: 'user',
+    icon: 'bi bi-person',
   },
   {
     link: '/tokens',
     title: 'Tokens',
-    icon: 'token',
+    icon: 'bi bi-database',
   },
 ];
 </script>
@@ -30,7 +29,7 @@ const menuItems = [
   <div class="container-menu">
     <template v-for="(item, index) in menuItems" :key="index">
       <RouterLink class="link-menu mt-2" :to="item.link">
-        <AppIcon class="me-3" :title="item.icon" /><span>{{ item.title }}</span></RouterLink
+        <i :class="item.icon"></i><span>{{ item.title }}</span></RouterLink
       >
     </template>
   </div>

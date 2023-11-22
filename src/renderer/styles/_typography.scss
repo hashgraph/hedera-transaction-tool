@@ -59,9 +59,20 @@
   border-radius: $border-radius;
   transition: 0.15s linear;
 
+  .bi {
+    display: block;
+    margin-right: 12px;
+    transition: 0.15s linear;
+    font-size: 20px;
+  }
+
   &:hover {
     color: var(--#{$prefix}menu-link-color-hover);
     background-color: var(--#{$prefix}menu-link-bg-hover);
+
+    .bi {
+      color: $primary;
+    }
   }
 
   &.active {
@@ -73,6 +84,10 @@
         fill: $primary;
         stroke: $primary;
       }
+    }
+
+    .bi {
+      color: $primary;
     }
   }
 }
