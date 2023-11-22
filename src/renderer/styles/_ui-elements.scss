@@ -35,12 +35,14 @@
   &.is-danger {
     path {
       fill: $danger;
+      stroke: $danger;
     }
   }
 
   &.is-success {
     path {
       fill: $success;
+      stroke: $success;
     }
   }
 
