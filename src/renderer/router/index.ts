@@ -1,9 +1,9 @@
 import { RouteRecordRaw, createRouter, createWebHistory } from 'vue-router';
 
-import StyleGuide from '../pages/PageStyleguide.vue';
-import Transactions from '../pages/PageTransactions.vue';
-import Accounts from '../pages/PageAccounts.vue';
-import Tokens from '../pages/PageTokens.vue';
+import StyleGuide from '../pages/Styleguide.vue';
+import Transactions from '../pages/Transactions.vue';
+import Accounts from '../pages/Accounts.vue';
+import Tokens from '../pages/Tokens.vue';
 
 const routes: RouteRecordRaw[] = [
   { path: '/', component: StyleGuide },
