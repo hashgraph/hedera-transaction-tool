@@ -1,87 +1,99 @@
 // Colors
 $white-50: #f2f2f2;
-$white-100: #e5ccff;
-$white-200: #e5ccff;
-$white-300: #e5ccff;
-$white-400: #e5ccff;
+$white-100: #e6e6e6;
+$white-200: #cccccc;
+$white-300: #b3b3b3;
+$white-400: #999999;
 $white-500: #ffffff;
-$white-600: #e5ccff;
-$white-700: #e5ccff;
-$white-800: #e5ccff;
-$white-900: #e5ccff;
+$white-600: #666666;
+$white-700: #4d4d4d;
+$white-800: #333333;
+$white-900: #1a1a1a;
 $white-950: #0d0d0d;
 
 $purple-50: #f2e5ff;
 $purple-100: #e5ccff;
-$purple-200: #e5ccff;
-$purple-300: #e5ccff;
-$purple-400: #e5ccff;
+$purple-200: #cc99ff;
+$purple-300: #b266ff;
+$purple-400: #9933ff;
 $purple-500: #ac59ff;
-$purple-600: #e5ccff;
-$purple-700: #e5ccff;
-$purple-800: #e5ccff;
-$purple-900: #e5ccff;
+$purple-600: #6600cc;
+$purple-700: #4c0099;
+$purple-800: #330066;
+$purple-900: #190033;
 $purple-950: #0d001a;
 
 $pink-50: #ffe5ff;
-$pink-100: #e5ccff;
-$pink-200: #e5ccff;
-$pink-300: #e5ccff;
-$pink-400: #e5ccff;
+$pink-100: #ffccff;
+$pink-200: #ff99ff;
+$pink-300: #ff66ff;
+$pink-400: #ff66ff;
 $pink-500: #ff01ff;
-$pink-600: #e5ccff;
-$pink-700: #e5ccff;
-$pink-800: #e5ccff;
-$pink-900: #e5ccff;
+$pink-600: #cc00cc;
+$pink-700: #990099;
+$pink-800: #660066;
+$pink-900: #330033;
 $pink-950: #1a0019;
 
-$dark-blue-50: #ffe5ff;
-$dark-blue-100: #e5ccff;
-$dark-blue-200: #e5ccff;
-$dark-blue-300: #e5ccff;
-$dark-blue-400: #e5ccff;
-$dark-blue-500: #ff01ff;
+$dark-blue-50: #eeeef6;
+$dark-blue-100: #dddeee;
+$dark-blue-200: #bbbddd;
+$dark-blue-300: #999ccc;
+$dark-blue-400: #777abb;
+$dark-blue-500: #15162a;
 $dark-blue-600: #444788;
-$dark-blue-700: #e5ccff;
-$dark-blue-800: #e5ccff;
-$dark-blue-900: #e5ccff;
-$dark-blue-950: #1a0019;
+$dark-blue-700: #333666;
+$dark-blue-800: #222444;
+$dark-blue-900: #111222;
+$dark-blue-950: #090911;
 
-$success-50: #ffe5ff;
-$success-100: #e5ccff;
-$success-200: #e5ccff;
-$success-300: #e5ccff;
-$success-400: #e5ccff;
+$light-blue-50: #dcdfff;
+$light-blue-100: #f9faff;
+$light-blue-200: #f5f7ff;
+$light-blue-300: #edefff;
+$light-blue-400: #e5e8ff;
+$light-blue-500: #dcdfff;
+$light-blue-600: #ced2ff;
+$light-blue-700: #9fa6ff;
+$light-blue-800: #858dff;
+$light-blue-900: #6d76f0;
+$light-blue-950: #4c54c3;
+
+$success-50: #e5fff0;
+$success-100: #ccffe1;
+$success-200: #99ffc4;
+$success-300: #66ffa6;
+$success-400: #33ff88;
 $success-500: #008035;
-$success-600: #e5ccff;
-$success-700: #e5ccff;
-$success-800: #e5ccff;
-$success-900: #e5ccff;
-$success-950: #1a0019;
+$success-600: #00cc55;
+$success-700: #009940;
+$success-800: #00662b;
+$success-900: #003315;
+$success-950: #001a0b;
 
-$warning-50: #ffe5ff;
-$warning-100: #e5ccff;
-$warning-200: #e5ccff;
-$warning-300: #e5ccff;
-$warning-400: #e5ccff;
+$warning-50: #fff1e5;
+$warning-100: #ffe2cc;
+$warning-200: #ffc599;
+$warning-300: #ffa866;
+$warning-400: #ff8b33;
 $warning-500: #fa6c00;
-$warning-600: #e5ccff;
-$warning-700: #e5ccff;
-$warning-800: #e5ccff;
-$warning-900: #e5ccff;
-$warning-950: #1a0019;
+$warning-600: #cc5800;
+$warning-700: #994200;
+$warning-800: #662c00;
+$warning-900: #331600;
+$warning-950: #1a0b00;
 
-$error-50: #ffe5ff;
-$error-100: #e5ccff;
-$error-200: #e5ccff;
-$error-300: #e5ccff;
-$error-400: #e5ccff;
+$error-50: #ffe5e5;
+$error-100: #ffcccc;
+$error-200: #ff9999;
+$error-300: #ff6666;
+$error-400: #ff3333;
 $error-500: #cd0000;
-$error-600: #e5ccff;
-$error-700: #e5ccff;
-$error-800: #e5ccff;
-$error-900: #e5ccff;
-$error-950: #1a0019;
+$error-600: #cc0000;
+$error-700: #990000;
+$error-800: #660000;
+$error-900: #330000;
+$error-950: #1a0000;
 
 $primary: $purple-500;
 $secondary: $pink-500;
@@ -252,72 +264,72 @@ $headings-font-weight: $font-weight-bold;
 $texts: (
   huge: (
     default: (
-      font-size: 48px,
-      line-height: 48px,
+      font-size: 40px,
+      line-height: 56px,
     ),
     md: (
-      font-size: 48px,
-      line-height: 48px,
+      font-size: 40px,
+      line-height: 56px,
     ),
   ),
   display: (
     default: (
-      font-size: 40px,
+      font-size: 32px,
       line-height: 48px,
     ),
     md: (
-      font-size: 40px,
+      font-size: 32px,
       line-height: 48px,
     ),
   ),
   headline: (
     default: (
-      font-size: 32px,
-      line-height: 40px,
+      font-size: 24px,
+      line-height: 36px,
     ),
     md: (
-      font-size: 32px,
-      line-height: 40px,
+      font-size: 24px,
+      line-height: 36px,
     ),
   ),
   title: (
     default: (
-      font-size: 28px,
-      line-height: 42px,
+      font-size: 20px,
+      line-height: 30px,
     ),
     md: (
-      font-size: 28px,
-      line-height: 42px,
+      font-size: 20px,
+      line-height: 30px,
     ),
   ),
   subheader: (
     default: (
-      font-size: 24px,
-      line-height: 32px,
+      font-size: 18px,
+      line-height: 26px,
     ),
     md: (
-      font-size: 24px,
-      line-height: 32px,
+      font-size: 18px,
+      line-height: 26px,
     ),
   ),
   main: (
     default: (
       font-size: 16px,
-      line-height: 22px,
+      line-height: 24px,
     ),
     md: (
       font-size: 16px,
-      line-height: 22px,
+      line-height: 24px,
     ),
   ),
   small: (
     default: (
       font-size: 14px,
-      line-height: 22px,
+      line-height: 20px,
     ),
     md: (
       font-size: 14px,
-      line-height: 22px,
+      line-height: 20px,
     ),
   ),
   micro: (
@@ -328,6 +340,16 @@ $texts: (
     md: (
       font-size: 12px,
       line-height: 16px,
+    ),
+  ),
+  footnote: (
+    default: (
+      font-size: 10px,
+      line-height: 14px,
+    ),
+    md: (
+      font-size: 10px,
+      line-height: 14px,
     ),
   ),
 );
