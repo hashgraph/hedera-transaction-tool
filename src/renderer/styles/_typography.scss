@@ -4,10 +4,12 @@
     @include text;
     font-size: texts-deep-get($texts, $size, 'default', 'font-size');
     line-height: texts-deep-get($texts, $size, 'default', 'line-height');
+    letter-spacing: texts-deep-get($texts, $size, 'default', 'letter-spacing');
 
     @include media-breakpoint-up(md) {
       font-size: texts-deep-get($texts, $size, 'md', 'font-size');
       line-height: texts-deep-get($texts, $size, 'md', 'line-height');
+      letter-spacing: texts-deep-get($texts, $size, 'default', 'letter-spacing');
     }
   }
 }
@@ -26,7 +28,7 @@
 }
 
 .text-bold {
-  font-weight: $font-weight-semi-bold;
+  font-weight: $font-weight-bold;
 }
 
 .text-white {

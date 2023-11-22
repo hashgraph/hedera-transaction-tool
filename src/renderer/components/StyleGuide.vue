@@ -68,9 +68,24 @@
 
     <div class="mb-4">
       <div class="row">
-        <div class="col-md-5">
+        <div class="col-md-8">
+          <code>.text-huge</code>
+          <h3 class="text-huge mt-3">
+            <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
+          </h3>
+        </div>
+      </div>
+    </div>
+
+    <hr class="mt-6 mb-6" />
+
+    <div class="mb-4">
+      <div class="row">
+        <div class="col-md-8">
           <code>.text-display</code>
-          <h3 class="text-display mt-3">The quick brown fox jumps over the lazy dog</h3>
+          <h3 class="text-display mt-3">
+            <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
+          </h3>
         </div>
       </div>
     </div>
@@ -79,9 +94,11 @@
 
     <div class="mb-4">
       <div class="row">
-        <div class="col-md-4">
+        <div class="col-md-8">
           <code>.text-headline</code>
-          <h4 class="text-headline mt-3">The quick brown fox jumps over the lazy dog</h4>
+          <h4 class="text-headline mt-3">
+            <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
+          </h4>
         </div>
       </div>
     </div>
@@ -90,9 +107,11 @@
 
     <div class="mb-4">
       <div class="row">
-        <div class="col-md-3">
+        <div class="col-md-8">
           <code>.text-title</code>
-          <h5 class="text-title mt-3">The quick brown fox jumps over the lazy dog</h5>
+          <h5 class="text-title mt-3">
+            <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
+          </h5>
         </div>
       </div>
     </div>
@@ -101,9 +120,11 @@
 
     <div class="mb-4">
       <div class="row">
-        <div class="col-md-3">
+        <div class="col-md-8">
           <code>.text-subheader</code>
-          <h6 class="text-subheader mt-3">The quick brown fox jumps over the lazy dog</h6>
+          <h6 class="text-subheader mt-3">
+            <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
+          </h6>
         </div>
       </div>
     </div>
@@ -112,9 +133,11 @@
 
     <div class="mb-4">
       <div class="row">
-        <div class="col-md-3">
+        <div class="col-md-8">
           <code>.text-main</code>
-          <p class="text-main mt-3">The quick brown fox jumps over the lazy dog</p>
+          <p class="text-main mt-3">
+            <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
+          </p>
         </div>
       </div>
     </div>
@@ -123,9 +146,11 @@
 
     <div class="mb-4">
       <div class="row">
-        <div class="col-md-2">
+        <div class="col-md-8">
           <code>.text-small</code>
-          <p class="text-small mt-3">The quick brown fox jumps over the lazy dog</p>
+          <p class="text-small mt-3">
+            <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
+          </p>
         </div>
       </div>
     </div>
@@ -134,9 +159,24 @@
 
     <div class="mb-4">
       <div class="row">
-        <div class="col-md-2">
+        <div class="col-md-8">
           <code>.text-micro</code>
-          <p class="text-micro mt-3">The quick brown fox jumps over the lazy dog</p>
+          <p class="text-micro mt-3">
+            <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <hr class="mt-6 mb-6" />
+
+    <div class="mb-4">
+      <div class="row">
+        <div class="col-md-8">
+          <code>.text-footnote</code>
+          <p class="text-footnote mt-3">
+            <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
+          </p>
         </div>
       </div>
     </div>

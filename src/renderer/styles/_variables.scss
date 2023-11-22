@@ -259,37 +259,43 @@ $line-height-small: 0.5;
 
 $headings-margin-bottom: 0;
 $headings-font-family: $font-family-primary;
-$headings-font-weight: $font-weight-bold;
+$headings-font-weight: $font-weight-light;
 
 $texts: (
   huge: (
     default: (
       font-size: 40px,
       line-height: 56px,
+      letter-spacing: -1px,
     ),
     md: (
       font-size: 40px,
       line-height: 56px,
+      letter-spacing: -1px,
     ),
   ),
   display: (
     default: (
       font-size: 32px,
       line-height: 48px,
+      letter-spacing: -1px,
     ),
     md: (
       font-size: 32px,
       line-height: 48px,
+      letter-spacing: -1px,
     ),
   ),
   headline: (
     default: (
       font-size: 24px,
       line-height: 36px,
+      letter-spacing: -1px,
     ),
     md: (
       font-size: 24px,
       line-height: 36px,
+      letter-spacing: -1px,
     ),
   ),
   title: (
