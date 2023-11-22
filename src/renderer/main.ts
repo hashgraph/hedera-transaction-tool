@@ -13,8 +13,8 @@ app.use(router);
 
 app.mount('#app');
 
-if (window.electronAPI.getNodeEnv() === 'development') {
-  import('@vue/devtools').then(module => {
-    module.connect(`http://localhost`);
-  });
-}
+// if (window.electronAPI.getNodeEnv() === 'development') {
+//   import('@vue/devtools').then(module => {
+//     module.connect(`http://localhost`);
+//   });
+// }

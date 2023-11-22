@@ -1,12 +1,17 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router';
+import { RouterLink } from 'vue-router';
 import AppIcon from './AppIcon.vue';
 
 const menuItems = [
   {
+    link: '/',
+    title: 'Style Guide',
+    icon: 'user',
+  },
+  {
     link: '/transactions',
     title: 'Transactions',
-    icon: 'user',
+    icon: 'arrowSwapHorizontal',
   },
   {
     link: '/accounts',
@@ -29,5 +34,4 @@ const menuItems = [
       >
     </template>
   </div>
-  <RouterView />
 </template>

@@ -2,6 +2,7 @@
 import { DefineComponent } from 'vue';
 import IconUser from './icons/IconUser.vue';
 import IconToken from './icons/IconToken.vue';
+import IconArrowSwapHorizontal from './icons/IconArrowSwapHorizontal.vue';
 
 interface IconMapping {
   [key: string]: DefineComponent<{}, {}, any>;
@@ -14,6 +15,7 @@ interface ColorMapping {
 const iconMapping: IconMapping = {
   user: IconUser,
   token: IconToken,
+  arrowSwapHorizontal: IconArrowSwapHorizontal,
 };
 
 const colorMapping: ColorMapping = {

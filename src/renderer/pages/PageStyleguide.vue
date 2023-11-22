@@ -1,6 +1,6 @@
 <template>
-  <div class="ps-10">
-    <h1 class="text-mega">Styleguide</h1>
+  <div class="p-10">
+    <h1 class="text-huge text-bold">Style Guide</h1>
 
     <h2 class="text-display mt-10">Colors</h2>
     <hr class="mt-3 mb-6" />
