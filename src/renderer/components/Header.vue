@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import logo from '../images/logo.svg';
-import logoText from '../images/logo-text.svg';
+import Logo from './Logo.vue';
+import LogoText from './LogoText.vue';
 
 async function handleThemeChange() {
   const isDark = await window.electronAPI.theme.isDark();
@@ -11,9 +11,9 @@ async function handleThemeChange() {
 
 <template>
   <div class="container-header">
-    <div>
-      <img :src="logo" alt="" />
-      <img :src="logoText" alt="" />
+    <div class="container-logo">
+      <Logo />
+      <LogoText />
     </div>
     <div>
       <!-- <button class="btn btn-primary btn-sm" @click="handleThemeChange">Toggle Theme</button> -->
