@@ -54,19 +54,19 @@
   padding: 12px 16px;
   font-size: 14px;
   font-weight: $font-weight-semi-bold;
-  color: #babcdc;
+  color: var(--#{$prefix}menu-link-color);
   text-decoration: none;
   border-radius: $border-radius;
   transition: 0.15s linear;
 
   &:hover {
-    color: $white-500;
-    background-color: #222444;
+    color: var(--#{$prefix}menu-link-color-hover);
+    background-color: var(--#{$prefix}menu-link-bg-hover);
   }
 
   &.active {
-    color: $white-500;
-    background-color: #222444;
+    color: var(--#{$prefix}menu-link-color-hover);
+    background-color: var(--#{$prefix}menu-link-bg-hover);
 
     .icon {
       path {

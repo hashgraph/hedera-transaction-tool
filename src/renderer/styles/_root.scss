@@ -1,0 +1,16 @@
+:root,
+[data-bs-theme='light'] {
+  --#{$prefix}menu-link-color: #{$white-800};
+  --#{$prefix}menu-link-color-hover: #{$white-900};
+  --#{$prefix}menu-link-bg-hover: #{$light-blue-100};
+}
+
+@if $enable-dark-mode {
+  @include color-mode(dark, true) {
+    color-scheme: dark;
+
+    --#{$prefix}menu-link-color: #{$dark-blue-200};
+    --#{$prefix}menu-link-color-hover: #{$white-500};
+    --#{$prefix}menu-link-bg-hover: #{$dark-blue-800};
+  }
+}
