@@ -17,6 +17,10 @@ onMounted(async () => {
   <AppHeader />
   <div class="container-main">
     <AppMenu />
-    <RouterView class="flex-1" />
+    <RouterView v-slot="{ Component }" class="flex-1">
+      <Transition name="fade" mode="out-in">
+        <component :is="Component" />
+      </Transition>
+    </RouterView>
   </div>
 </template>
