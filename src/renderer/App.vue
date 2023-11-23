@@ -17,6 +17,6 @@ onMounted(async () => {
   <AppHeader />
   <div class="container-main">
     <AppMenu />
-    <RouterView />
+    <RouterView class="flex-1" />
   </div>
 </template>
