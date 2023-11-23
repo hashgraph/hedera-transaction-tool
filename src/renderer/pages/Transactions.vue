@@ -22,16 +22,22 @@ const transactions = reactive([
     id: 1,
     title: 'Update the keys for account 0.01234 because of new employee',
     account: '0.0.1234(Bobs Account)',
+    type: 'send',
+    approvers: ['alice@acme.com', 'joe@acme.com'],
   },
   {
     id: 2,
     title: 'Update the keys for account 0.01234 because of new employee',
     account: '0.0.1224(Bobs Account)',
+    type: 'receive',
+    approvers: ['alice@acme.com'],
   },
   {
     id: 3,
     title: 'Update the keys for account 0.01234 because of new employee',
     account: '0.0.12224(Bobs Account)',
+    type: 'send',
+    approvers: ['alice@acme.com', 'joe@acme.com'],
   },
 ]);
 </script>
@@ -52,7 +58,17 @@ const transactions = reactive([
             >
               <div class="d-flex justify-content-between align-items-start">
                 <div>
-                  <p class="text-main">{{ item.title }}</p>
+                  <p class="text-main d-flex align-items-center">
+                    <i
+                      v-if="item.type === 'send'"
+                      class="bi bi-arrow-up-right me-3 text-info text-title fw-bolder"
+                    ></i>
+                    <i
+                      v-else-if="item.type === 'receive'"
+                      class="bi bi-arrow-down-left me-3 text-success text-title fw-bold"
+                    ></i>
+                    {{ item.title }}
+                  </p>
                   <p class="text-micro mt-3">{{ item.account }}</p>
                 </div>
                 <div>
@@ -63,10 +79,16 @@ const transactions = reactive([
                 </div>
               </div>
 
-              <div class="mt-4">
+              <div class="mt-4 d-inline-flex align-items-center">
                 <span class="text-micro me-4">Approvers</span>
-                <span class="badge text-bg-primary me-2">alice@acme.com</span>
-                <span class="badge text-bg-primary">joe@acme.com</span>
+                <span
+                  v-for="(approver, index) in item.approvers"
+                  :key="index"
+                  class="badge bg-dark-blue-700 d-inline-flex align-items-center fw-normal"
+                  :class="{ 'me-2': index !== item.approvers.length }"
+                  ><i class="bi bi-check-lg text-success text-subheader lh-1 me-1"></i
+                  >{{ approver }}</span
+                >
               </div>
             </div>
           </div>

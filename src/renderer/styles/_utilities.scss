@@ -3,7 +3,16 @@
   background-color: $dark-blue-800;
 }
 
+.bg-dark-blue-700 {
+  background-color: $dark-blue-700;
+}
+
 /* Borders */
 .border-main-gradient {
   border-image: $main-gradient 1 !important;
+}
+
+/* Badges */
+.badge {
+  max-height: 24px;
 }
