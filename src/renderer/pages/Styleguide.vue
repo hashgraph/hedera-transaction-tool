@@ -214,12 +214,16 @@
 
     <div class="row mb-4">
       <div class="col-12 mb-4">
+        <button type="button" class="btn btn-sm btn-primary me-3">Primary small</button>
+        <button type="button" class="btn btn-sm btn-secondary me-3">Secondary small</button>
+      </div>
+      <div class="col-12 mb-4">
         <button type="button" class="btn btn-primary me-3">Primary</button>
         <button type="button" class="btn btn-secondary me-3">Secondary</button>
       </div>
       <div class="col-12 mb-4">
-        <button type="button" class="btn btn-sm btn-primary me-3">Primary small</button>
-        <button type="button" class="btn btn-sm btn-secondary me-3">Secondary small</button>
+        <button type="button" class="btn btn-lg btn-primary me-3">Primary Large</button>
+        <button type="button" class="btn btn-lg btn-secondary me-3">Secondary Large</button>
       </div>
       <div class="col-12 mb-4">
         <button type="button" class="btn btn-outline-primary me-3">Primary outline</button>

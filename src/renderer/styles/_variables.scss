@@ -367,9 +367,21 @@ $texts: (
 );
 
 // Buttons
-$btn-line-height: 22px;
-$btn-font-weight: $font-weight-bold;
 $btn-font-size: 14px;
+$btn-padding-y: 8px;
+$btn-padding-x: 12px;
+
+$btn-padding-y-sm: 6px;
+$btn-padding-x-sm: 6px;
+$btn-font-size-sm: 12px;
+
+$btn-padding-y-lg: 12px;
+$btn-padding-x-lg: 12px;
+$btn-font-size-lg: 14px;
+
+$btn-line-height: 24px;
+$btn-font-weight: $font-weight-bold;
+
 $btn-border-radius: $border-radius;
 $btn-transition: color 0.15s linear, background-color 0.15s linear, border-color 0.15s linear,
   box-shadow 0.15s linear;
