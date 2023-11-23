@@ -1,6 +1,6 @@
 /* Bacgrounds */
 .bg-dark-blue-800 {
-  background-color: $dark-blue-800;
+  background-color: var(--#{$prefix}menu-link-bg-hover);
 }
 
 .bg-dark-blue-700 {

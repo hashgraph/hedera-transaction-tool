@@ -396,13 +396,12 @@ $btn-primary-outline-color: $white-500;
 // $btn-primary-outline-border-hover: $blue-neutral-200;
 
 // Forms
-// $input-color: $blue-neutral-100;
+$input-color: var(--bs-body-color);
 // $input-border-color: $blue-neutral-700;
 // $input-focus-border-color: $blue-neutral-400;
 $input-focus-box-shadow: none;
 $input-height: auto;
 $input-line-height: 1.71;
-$input-placeholder-color: $secondary;
 $form-group-margin-bottom: 0;
 // $input-bg: $blue-neutral-700;
 $input-padding-y: 15px;

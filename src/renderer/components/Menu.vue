@@ -27,10 +27,21 @@ const menuItems = [
 
 <template>
   <div class="container-menu">
-    <template v-for="(item, index) in menuItems" :key="index">
-      <RouterLink class="link-menu mt-2" :to="item.link">
-        <i :class="item.icon"></i><span>{{ item.title }}</span></RouterLink
+    <div>
+      <template v-for="(item, index) in menuItems" :key="index">
+        <RouterLink class="link-menu mt-2" :to="item.link">
+          <i :class="item.icon"></i><span>{{ item.title }}</span></RouterLink
+        >
+      </template>
+    </div>
+
+    <div>
+      <RouterLink class="link-menu mt-2" to="/settings"
+        ><i class="bi bi-wrench"></i><span>Settings</span></RouterLink
       >
-    </template>
+      <RouterLink class="link-menu mt-2" to="/help"
+        ><i class="bi bi-question-circle"></i><span>Help</span></RouterLink
+      >
+    </div>
   </div>
 </template>
