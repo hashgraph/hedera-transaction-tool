@@ -70,7 +70,17 @@
   // }
 }
 
-// Utlilies
-.bg-dark-blue-800 {
-  background-color: $dark-blue-800;
+/* Tabs */
+.tabs {
+  .nav-link {
+    height: 52px;
+    padding: 16px 12px;
+    border-width: 0 0 2px 0;
+    transition: none;
+  }
+
+  .notification {
+    width: 20px;
+    height: 20px;
+  }
 }

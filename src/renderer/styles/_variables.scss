@@ -119,6 +119,9 @@ $theme-colors-button: (
   'secondary': $secondary,
 );
 
+// Gradients
+$main-gradient: linear-gradient(to left, #ff00ff, #774fed);
+
 // Options
 $enable-validation-icons: false;
 $enable-negative-margins: true;
