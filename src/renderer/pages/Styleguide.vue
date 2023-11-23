@@ -272,7 +272,7 @@
         <span class="text-small">HBAR</span>
         <Icon name="chevron-down" class="ms-2" />
       </div>
-    </div>
+    </div>-->
 
     <h3 class="text-headline mb-4">Forms</h3>
 
@@ -326,7 +326,7 @@
         </div>
       </div>
     </div>
-
+    <!--
     <h3 class="text-headline mb-4">Modals</h3>
       <div class="row mb-6">
         <div class="col-lg-6">
