@@ -6,12 +6,20 @@ import Accounts from '../pages/Accounts.vue';
 import Tokens from '../pages/Tokens.vue';
 import Help from '../pages/Help.vue';
 import Settings from '../pages/Settings.vue';
+import SmartContracts from '../pages/SmartContracts.vue';
+import ConsensusService from '../pages/ConsensusService.vue';
+import FileService from '../pages/FileService.vue';
+import ContactList from '../pages/ContactList.vue';
 
 const routes: RouteRecordRaw[] = [
   { path: '/', component: StyleGuide },
   { path: '/transactions', component: Transactions },
   { path: '/accounts', component: Accounts },
   { path: '/tokens', component: Tokens },
+  { path: '/smart-contracts', component: SmartContracts },
+  { path: '/consensus-service', component: ConsensusService },
+  { path: '/file-service', component: FileService },
+  { path: '/contact-list', component: ContactList },
   { path: '/help', component: Help },
   { path: '/settings', component: Settings },
 ];

@@ -22,6 +22,26 @@ const menuItems = [
     title: 'Tokens',
     icon: 'bi bi-database',
   },
+  {
+    link: '/smart-contracts',
+    title: 'Smart Contracts',
+    icon: 'bi bi-code-slash',
+  },
+  {
+    link: '/consensus-service',
+    title: 'Consensus Service',
+    icon: 'bi bi-house-door',
+  },
+  {
+    link: '/file-service',
+    title: 'File Service',
+    icon: 'bi bi-file-earmark',
+  },
+  {
+    link: '/contact-list',
+    title: 'Contact List',
+    icon: 'bi bi-book',
+  },
 ];
 </script>
 
