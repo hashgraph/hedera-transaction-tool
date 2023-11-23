@@ -14,11 +14,7 @@ defineEmits(['update:active-index']);
 <template>
   <div class="tabs">
     <ul class="nav nav-tabs">
-      <li
-        class="nav-item p-0 text-semi-bold text-primary-emphasis"
-        v-for="(item, i) in items"
-        :key="item.title"
-      >
+      <li class="nav-item p-0" v-for="(item, i) in items" :key="item.title">
         <button
           class="link-menu nav-link text-small gap-3"
           :class="{
