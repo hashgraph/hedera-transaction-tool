@@ -36,6 +36,7 @@
     "vue-tsc": "^1.8.22"
   },
   "dependencies": {
+    "@hashgraph/sdk": "^2.38.0",
     "bootstrap": "^5.3.2",
     "bootstrap-icons": "^1.11.2",
     "dotenv": "^16.3.1",
