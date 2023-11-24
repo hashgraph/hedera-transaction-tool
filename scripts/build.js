@@ -13,6 +13,8 @@ function buildRenderer() {
 }
 
 function buildMain() {
+  copyIconsSync();
+
   const mainPath = Path.join(__dirname, '..', 'src', 'main');
   return compileTs(mainPath);
 }
@@ -21,6 +23,17 @@ FileSystem.rmSync(Path.join(__dirname, '..', 'build'), {
   recursive: true,
   force: true,
 });
+
+function copyIconsSync() {
+  FileSystem.cpSync(
+    Path.join(__dirname, '..', 'src', 'icons'),
+    Path.join(__dirname, '..', 'build'),
+    { recursive: true },
+    err => {
+      console.log(err);
+    },
+  );
+}
 
 console.log(Chalk.blueBright('Transpiling renderer & main...'));
 
