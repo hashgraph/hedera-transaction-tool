@@ -20,7 +20,7 @@ export default function getStore() {
           type: 'string',
         },
         testnetLink: {
-          format: 'uri',
+          type: 'string',
         },
         previewnetLink: {
           type: 'string',

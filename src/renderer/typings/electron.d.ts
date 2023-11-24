@@ -12,13 +12,10 @@ export default interface ElectronApi {
     toggle: (theme: Theme) => Promise<boolean>;
     onThemeUpdate: (callback: (theme: boolean) => void) => void;
   };
-  configuration: {
+  config: {
     mirrorNodeLinks: {
-      setMirrorNodeLink: (
-        key: keyof SchemaProperties['mirrorNodeLinks'],
-        link: string,
-      ) => Promise<string>;
-      getMirrorNodeLinks: () => Promise<SchemaProperties['mirrorNodeLinks']>;
+      setLink: (key: keyof SchemaProperties['mirrorNodeLinks'], link: string) => Promise<string>;
+      getLinks: () => Promise<SchemaProperties['mirrorNodeLinks']>;
     };
   };
 }

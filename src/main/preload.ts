@@ -13,13 +13,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('theme:update', (e, isDark: boolean) => callback(isDark));
     },
   },
-  configuration: {
+  config: {
     mirrorNodeLinks: {
-      setMirrorNodeLink: (
-        key: keyof SchemaProperties['mirrorNodeLinks'],
-        link: string,
-      ): Promise<string> => ipcRenderer.invoke(`configuration:set:mirrorNodeLinks:${key}`, link),
-      getMirrorNodeLinks: (): Promise<SchemaProperties['mirrorNodeLinks']> =>
+      setLink: (key: keyof SchemaProperties['mirrorNodeLinks'], link: string): Promise<string> =>
+        ipcRenderer.invoke(`configuration:set:mirrorNodeLinks:${key}`, link),
+      getLinks: (): Promise<SchemaProperties['mirrorNodeLinks']> =>
         ipcRenderer.invoke('configuration:get:mirrorNodeLinks'),
     },
   },
