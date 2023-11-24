@@ -1,5 +1,5 @@
 import { Theme } from '../../main/modules/theme';
-import { SchemaProperties } from '../../main/modules/store';
+import { Organization, SchemaProperties } from '../../main/modules/store';
 
 /**
  * Should match main/preload.ts for typescript support in renderer
@@ -16,6 +16,11 @@ export default interface ElectronApi {
     mirrorNodeLinks: {
       setLink: (key: keyof SchemaProperties['mirrorNodeLinks'], link: string) => Promise<string>;
       getLinks: () => Promise<SchemaProperties['mirrorNodeLinks']>;
+    };
+    organizations: {
+      getAll: () => Promise<Organization[]>;
+      add: (organization: Organization) => Promise<void>;
+      removeByServerURL: (serverUrl: string) => Promise<void>;
     };
   };
 }

@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 import { Theme } from './modules/theme';
-import { SchemaProperties } from './modules/store';
+import { Organization, SchemaProperties } from './modules/store';
 
 contextBridge.exposeInMainWorld('electronAPI', {
   sendMessage: (message: string) => ipcRenderer.send('message', message),
@@ -19,6 +19,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.invoke(`configuration:set:mirrorNodeLinks:${key}`, link),
       getLinks: (): Promise<SchemaProperties['mirrorNodeLinks']> =>
         ipcRenderer.invoke('configuration:get:mirrorNodeLinks'),
+    },
+    organizations: {
+      getAll: (): Promise<Organization[]> => ipcRenderer.invoke('configuration:organizations:get'),
+      add: async (organization: Organization) => {
+        ipcRenderer.invoke('configuration:organizations:add', organization);
+      },
+      removeByServerURL: async (serverUrl: string) => {
+        ipcRenderer.invoke('configuration:organizations:remove', serverUrl);
+      },
     },
   },
 });
