@@ -6,34 +6,41 @@ const store = getStore();
 export const eventPrefix = 'configuration:';
 export const createConfigurationChannelName = (...props) => `${eventPrefix}${props.join(':')}`;
 
-export const setMirrorNodeSettings = (
-  key: keyof SchemaProperties['mirrorNodeSettings'],
+export const setMirrorNodeLinks = (
+  key: keyof SchemaProperties['mirrorNodeLinks'],
   link: string,
 ) => {
-  store.set(`mirrorNodeSettings.${key}`, link);
+  store.set(`mirrorNodeLinks.${key}`, link);
+  return store.get(`mirrorNodeLinks.${key}`);
 };
+
+export const getMirrorNodeLinks = () => store.get('mirrorNodeLinks');
 
 export default () => {
   ipcMain.handle(
-    createConfigurationChannelName('mirrorNodeSettings', 'mainnetLink'),
+    createConfigurationChannelName('set', 'mirrorNodeLinks', 'mainnetLink'),
     (e, link: string) => {
-      setMirrorNodeSettings('mainnetLink', link);
+      return setMirrorNodeLinks('mainnetLink', link);
     },
   );
 
   ipcMain.handle(
-    createConfigurationChannelName('mirrorNodeSettings', 'testnetLink'),
+    createConfigurationChannelName('set', 'mirrorNodeLinks', 'testnetLink'),
     (e, link: string) => {
-      setMirrorNodeSettings('testnetLink', link);
+      return setMirrorNodeLinks('testnetLink', link);
     },
   );
 
   ipcMain.handle(
-    createConfigurationChannelName('mirrorNodeSettings', 'previewnetLink'),
+    createConfigurationChannelName('set', 'mirrorNodeLinks', 'previewnetLink'),
     (e, link: string) => {
-      setMirrorNodeSettings('previewnetLink', link);
+      return setMirrorNodeLinks('previewnetLink', link);
     },
   );
 
-  return { setMirrorNodeSettings };
+  ipcMain.handle(createConfigurationChannelName('get', 'mirrorNodeLinks'), () =>
+    getMirrorNodeLinks(),
+  );
+
+  return { setMirrorNodeLinks };
 };

@@ -1,7 +1,7 @@
 import Store, { Schema } from 'electron-store';
 
 export type SchemaProperties = {
-  mirrorNodeSettings: {
+  mirrorNodeLinks: {
     mainnetLink: string;
     testnetLink: string;
     previewnetLink: string;
@@ -13,7 +13,7 @@ export default function getStore() {
   /* See more about JSON Schema here: https://json-schema.org/learn/getting-started-step-by-step */
 
   const schema: Schema<SchemaProperties> = {
-    mirrorNodeSettings: {
+    mirrorNodeLinks: {
       type: 'object',
       properties: {
         mainnetLink: {

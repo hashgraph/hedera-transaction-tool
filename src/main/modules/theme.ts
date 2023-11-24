@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain, nativeTheme } from 'electron';
 
-import { Theme } from '../shared/interfaces/theme';
+export type Theme = 'system' | 'light' | 'dark';
 
 export default () => {
   nativeTheme.themeSource = 'system';
