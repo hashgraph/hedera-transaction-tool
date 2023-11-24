@@ -1,4 +1,5 @@
-import { Theme } from '../../interfaces/theme';
+import { Theme } from '../../main/modules/theme';
+import { SchemaProperties } from '../../main/modules/store';
 
 /**
  * Should match main/preload.ts for typescript support in renderer
@@ -10,6 +11,15 @@ export default interface ElectronApi {
     isDark: () => Promise<boolean>;
     toggle: (theme: Theme) => Promise<boolean>;
     onThemeUpdate: (callback: (theme: boolean) => void) => void;
+  };
+  configuration: {
+    mirrorNodeLinks: {
+      setMirrorNodeLink: (
+        key: keyof SchemaProperties['mirrorNodeLinks'],
+        link: string,
+      ) => Promise<string>;
+      getMirrorNodeLinks: () => Promise<SchemaProperties['mirrorNodeLinks']>;
+    };
   };
 }
 

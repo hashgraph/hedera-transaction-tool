@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { defineProps } from 'vue';
-
 export interface TabItem {
   title: string;
   notifications?: number;
