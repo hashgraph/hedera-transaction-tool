@@ -35,6 +35,13 @@ onMounted(async () => {
 
 watch(mainnetMirrorNodeLink, link => setMirrorNodeLink('mainnetLink', link));
 
+// Temporary
+const handleClearConfig = () => {
+  window.electronAPI.config.clear();
+  mainnetMirrorNodeLink.value = '';
+  organizations.value = [];
+};
+
 const handleAddOrganization = async () => {
   await addOrganization({
     name: newOrganizationName.value,
@@ -51,6 +58,7 @@ const handleRemoveOrganization = async (serverUrl: string) => {
 <template>
   <div class="p-10">
     <h1 class="text-huge text-bold">Settings</h1>
+    <button class="btn btn-secondary" @click="handleClearConfig">Clear Config</button>
     <div class="mt-7">
       <Tabs :items="tabItems" v-model:active-index="activeTabIndex">
         <template #[general]>

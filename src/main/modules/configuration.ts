@@ -26,6 +26,9 @@ export const removeOrganization = (serverUrl: string) =>
   );
 
 export default () => {
+  /* Clear Config */
+  ipcMain.handle(createChannelName('configuration', 'clear'), () => store.clear());
+
   /* Mirror Node Links */
 
   // Get

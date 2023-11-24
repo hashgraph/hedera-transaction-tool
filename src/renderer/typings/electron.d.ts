@@ -13,6 +13,7 @@ export default interface ElectronApi {
     onThemeUpdate: (callback: (theme: boolean) => void) => void;
   };
   config: {
+    clear: () => Promise<void>;
     mirrorNodeLinks: {
       setLink: (key: keyof SchemaProperties['mirrorNodeLinks'], link: string) => Promise<string>;
       getLinks: () => Promise<SchemaProperties['mirrorNodeLinks']>;

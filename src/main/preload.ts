@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
   },
   config: {
+    clear: () => ipcRenderer.invoke('configuration:clear'),
     mirrorNodeLinks: {
       setLink: (key: keyof SchemaProperties['mirrorNodeLinks'], link: string): Promise<string> =>
         ipcRenderer.invoke(`configuration:set:mirrorNodeLinks:${key}`, link),
