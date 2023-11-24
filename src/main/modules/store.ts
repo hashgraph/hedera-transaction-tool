@@ -1,22 +1,16 @@
 import Store, { Schema } from 'electron-store';
 
+export type SchemaProperties = {
+  mirrorNodeSettings: {
+    mainnetLink: string;
+    testnetLink: string;
+    previewnetLink: string;
+  };
+};
+
 /* Module for persisting data in a JSON file */
 export default function getStore() {
   /* See more about JSON Schema here: https://json-schema.org/learn/getting-started-step-by-step */
-
-  interface SchemaProperties {
-    mirrorNodeSettings: {
-      mainnetLink: {
-        type: string;
-      };
-      testnetLink: {
-        type: string;
-      };
-      previewnetLink: {
-        type: string;
-      };
-    };
-  }
 
   const schema: Schema<SchemaProperties> = {
     mirrorNodeSettings: {
