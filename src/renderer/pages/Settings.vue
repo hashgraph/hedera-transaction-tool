@@ -1,13 +1,26 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 
 import Tabs, { TabItem } from '../components/ui/Tabs.vue';
+import { getMirrorNodeConfig, setMirrorNodeLink } from '../services/configurationService';
 
 const activeTabIndex = ref(0);
 
 const tabItems: TabItem[] = [{ title: 'General' }, { title: 'Work Groups' }, { title: 'Keys' }];
 
 const [general, workGroups, keys] = tabItems.map(t => t.title);
+
+const mainnetMirrorNodeLink = ref('');
+
+onMounted(async () => {
+  try {
+    mainnetMirrorNodeLink.value = (await getMirrorNodeConfig()).mainnetLink;
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+watch(mainnetMirrorNodeLink, link => setMirrorNodeLink('mainnetLink', link));
 </script>
 <template>
   <div class="p-10">
@@ -40,7 +53,7 @@ const [general, workGroups, keys] = tabItems.map(t => t.title);
                 <label class="text-secondary-emphasis text-footnote text-uppercase"
                   >Main NET MIRROR NODE LINK</label
                 >
-                <input type="text" class="form-control py-3" />
+                <input type="text" class="form-control py-3" v-model="mainnetMirrorNodeLink" />
               </div>
               <div class="mb-4">
                 <label class="text-secondary-emphasis text-footnote text-uppercase"
