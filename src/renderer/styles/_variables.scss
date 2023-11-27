@@ -469,3 +469,11 @@ $progress-height: 8px;
 $progress-border-radius: 41px;
 // $progress-bar-bg: $positive-300;
 // $progress-bg: $error-200;
+
+$toast-colors: (
+  'success': $success,
+  'info': $info,
+  'warning': $warning,
+  'error': $danger,
+  'default': $gray,
+);

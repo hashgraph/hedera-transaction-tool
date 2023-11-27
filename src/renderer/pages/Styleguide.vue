@@ -1,3 +1,31 @@
+<script setup lang="ts">
+import { useToast } from 'vue-toast-notification';
+import 'vue-toast-notification/dist/theme-sugar.css';
+
+const $toast = useToast();
+
+$toast.open({
+  message: 'This is a success toast',
+  position: 'top-right',
+  dismissible: false,
+  duration: 0,
+});
+
+$toast.open({
+  message: 'This is a error toast',
+  type: 'error',
+  position: 'top-right',
+  dismissible: false,
+  duration: 0,
+});
+
+// Force dismiss specific toast
+// instance.dismiss();
+
+// // Dismiss all opened toast immediately
+// $toast.clear();
+</script>
+
 <template>
   <div class="p-10">
     <h1 class="text-huge text-bold">Style Guide</h1>
