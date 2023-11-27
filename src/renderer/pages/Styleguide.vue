@@ -279,20 +279,20 @@
     <div class="row mb-4">
       <div class="col-lg-3">
         <div class="form-group mb-5">
-          <label>Default input</label>
+          <label class="form-label">Default input</label>
           <input type="email" class="form-control" placeholder="name@example.com" />
         </div>
       </div>
       <div class="col-lg-3">
         <div class="form-group mb-5">
-          <label>Default input invalid</label>
+          <label class="form-label">Default input invalid</label>
           <input type="email" class="form-control is-invalid" placeholder="name@example.com" />
           <div class="invalid-feedback">Invalid e-mail.</div>
         </div>
       </div>
       <div class="col-lg-3">
         <div class="form-group mb-5">
-          <label>Default input disabled</label>
+          <label class="form-label">Default input disabled</label>
           <input type="email" class="form-control" disabled placeholder="name@example.com" />
         </div>
       </div>
@@ -301,7 +301,38 @@
     <div class="row mb-4">
       <div class="col-lg-3">
         <div class="form-group mb-5">
-          <label>Custom select</label>
+          <label class="form-label">Default input</label>
+          <input type="email" class="form-control is-fill" placeholder="name@example.com" />
+        </div>
+      </div>
+      <div class="col-lg-3">
+        <div class="form-group mb-5">
+          <label class="form-label">Default input invalid</label>
+          <input
+            type="email"
+            class="form-control is-fill is-invalid"
+            placeholder="name@example.com"
+          />
+          <div class="invalid-feedback">Invalid e-mail.</div>
+        </div>
+      </div>
+      <div class="col-lg-3">
+        <div class="form-group mb-5">
+          <label class="form-label">Default input disabled</label>
+          <input
+            type="email"
+            class="form-control is-fill"
+            disabled
+            placeholder="name@example.com"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="row mb-4">
+      <div class="col-lg-3">
+        <div class="form-group mb-5">
+          <label class="form-label">Custom select</label>
           <div class="custom-select-wrapper">
             <select class="form-select">
               <option value="1">Option 1</option>
@@ -314,7 +345,7 @@
       </div>
       <div class="col-lg-3">
         <div class="form-group mb-5">
-          <label>Custom select invalid</label>
+          <label class="form-label">Custom select invalid</label>
           <div class="custom-select-wrapper">
             <select class="form-select is-invalid">
               <option value="1">Option 1</option>
