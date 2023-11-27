@@ -14,7 +14,7 @@ dotenv.config({
 
 const { sendUpdateThemeEventTo } = addTheme();
 listenForConfigurationEvents();
-listenForRecoveryPhraseEvents();
+listenForRecoveryPhraseEvents(app);
 
 let mainWindow: BrowserWindow | null;
 
