@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 import { Theme } from './modules/theme';
 import { Organization, SchemaProperties } from './modules/store';
+import { Mnemonic } from '@hashgraph/sdk';
 
 contextBridge.exposeInMainWorld('electronAPI', {
   sendMessage: (message: string) => ipcRenderer.send('message', message),
@@ -30,5 +31,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.invoke('configuration:organizations:remove', serverUrl);
       },
     },
+  },
+  recoveryPhrase: {
+    generate: (): Promise<Mnemonic> => ipcRenderer.invoke('recoveryPhrase:generate'),
   },
 });

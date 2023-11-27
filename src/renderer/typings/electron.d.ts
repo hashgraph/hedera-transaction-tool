@@ -1,5 +1,6 @@
 import { Theme } from '../../main/modules/theme';
 import { Organization, SchemaProperties } from '../../main/modules/store';
+import { Mnemonic } from '@hashgraph/sdk';
 
 /**
  * Should match main/preload.ts for typescript support in renderer
@@ -23,6 +24,9 @@ export default interface ElectronApi {
       add: (organization: Organization) => Promise<void>;
       removeByServerURL: (serverUrl: string) => Promise<void>;
     };
+  };
+  recoveryPhrase: {
+    generate: () => Promise<Mnemonic>;
   };
 }
 
