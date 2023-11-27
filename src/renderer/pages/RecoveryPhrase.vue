@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { generatePhrase } from '../services/recoveryPhraseService';
+import { generatePhrase, downloadFileUnencrypted } from '../services/recoveryPhraseService';
 import { Mnemonic } from '@hashgraph/sdk';
 
 const step = ref(1);
@@ -11,7 +11,7 @@ const handleGeneratePhrase = async () => {
 };
 
 const handleDownloadPhrase = async () => {
-  console.log('download');
+  downloadFileUnencrypted(recoveryPhrase.value?._mnemonic.words || []);
 };
 </script>
 <template>

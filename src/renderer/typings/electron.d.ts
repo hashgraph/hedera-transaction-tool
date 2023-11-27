@@ -27,6 +27,7 @@ export default interface ElectronApi {
   };
   recoveryPhrase: {
     generate: () => Promise<Mnemonic>;
+    downloadFileUnencrypted: (words: string) => void;
   };
 }
 
