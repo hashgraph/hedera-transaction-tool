@@ -95,3 +95,7 @@ strong {
   flex-direction: column;
   justify-content: space-between;
 }
+
+.container-page {
+  min-height: calc(100vh - 73px);
+}
