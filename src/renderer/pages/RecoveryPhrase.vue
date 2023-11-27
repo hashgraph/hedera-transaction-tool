@@ -55,8 +55,8 @@ const handleDownloadPhrase = async () => {
         </div>
         <div class="mt-6 d-flex align-items-center justify-content-around flex-wrap gap-4">
           <div
-            v-for="word in recoveryPhrase?._mnemonic.words"
-            :key="word"
+            v-for="(word, index) in recoveryPhrase?._mnemonic.words || []"
+            :key="index"
             class="col-3 px-5 py-4 bg-info border-main-gradient text-center"
           >
             {{ word }}
