@@ -1,28 +1,63 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { generatePhrase, downloadFileUnencrypted } from '../services/recoveryPhraseService';
+import {
+  generatePhrase,
+  downloadFileUnencrypted,
+  encryptPassphrase,
+} from '../services/recoveryPhraseService';
 import { Mnemonic } from '@hashgraph/sdk';
 
 const step = ref(1);
 const recoveryPhrase = ref<Mnemonic | null>();
 
+const passPhrase = ref('');
+const rePassPhrase = ref('');
+
 const handleGeneratePhrase = async () => {
   recoveryPhrase.value = await generatePhrase();
 };
 
-const handleDownloadPhrase = async () => {
+const handleDownloadRecoveryPhrase = async () => {
   downloadFileUnencrypted(recoveryPhrase.value?._mnemonic.words || []);
+};
+
+const handleEncryptPassphrase = async () => {
+  try {
+    await encryptPassphrase(recoveryPhrase.value?._mnemonic.words || [], passPhrase.value);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const isPassphraseStrong = () => {
+  //To be further validated
+
+  if (passPhrase.value && passPhrase.value === rePassPhrase.value) {
+    return true;
+  }
+
+  return false;
 };
 </script>
 <template>
   <div class="container-page p-10">
     <!-- Go back -->
-    <button
-      class="btn btn-outline-primary py-0 px-2 mb-4 text-title"
-      @click="step = step === 1 ? 1 : step - 1"
-    >
-      <i class="bi-arrow-left"></i>
-    </button>
+    <div class="d-flex justify-content-between">
+      <button
+        class="btn btn-outline-primary py-0 px-2 mb-4 text-title"
+        @click="step = step === 1 ? 1 : step - 1"
+      >
+        <i class="bi-arrow-left"></i>
+      </button>
+
+      <button
+        v-if="![1, 3].includes(step)"
+        class="btn btn-outline-primary py-0 px-2 mb-4 text-title"
+        @click="step++"
+      >
+        <i class="bi-arrow-right"></i>
+      </button>
+    </div>
     <Transition name="fade" mode="out-in">
       <!-- Step 1 -->
       <div v-if="step === 1" class="h-100">
@@ -49,7 +84,7 @@ const handleDownloadPhrase = async () => {
           <button type="button" class="btn btn-outline-primary" @click="handleGeneratePhrase">
             Regenerate Recovery Phrase
           </button>
-          <button type="button" class="btn btn-secondary" @click="handleDownloadPhrase">
+          <button type="button" class="btn btn-secondary" @click="handleDownloadRecoveryPhrase">
             Download file
           </button>
         </div>
@@ -61,6 +96,32 @@ const handleDownloadPhrase = async () => {
           >
             {{ word }}
           </div>
+        </div>
+      </div>
+      <!-- Step 3 -->
+      <div v-else-if="step === 3">
+        <h2 class="text-center">Recover phrase requires a passphrase</h2>
+        <p class="mt-5 mx-7 text-center text-muted">
+          This password cannot be recovered or reset if forgotten.
+        </p>
+        <div class="w-50 mt-6 mx-auto d-flex flex-column gap-4">
+          <div>
+            <label>Passphrase</label>
+            <input type="password" class="form-control py-3" v-model="passPhrase" />
+          </div>
+          <div>
+            <label>Confirm passphrase</label>
+            <input type="password" class="form-control py-3" v-model="rePassPhrase" />
+          </div>
+        </div>
+        <div class="mt-8 text-center">
+          <button
+            class="btn btn-primary text-subheader"
+            :disabled="!isPassphraseStrong()"
+            @click="handleEncryptPassphrase"
+          >
+            Finish
+          </button>
         </div>
       </div>
     </Transition>

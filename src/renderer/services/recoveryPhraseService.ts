@@ -8,3 +8,11 @@ export const generatePhrase = async () => {
 export const downloadFileUnencrypted = async (words: string[]) => {
   window.electronAPI.recoveryPhrase.downloadFileUnencrypted(JSON.stringify(words));
 };
+
+export const encryptPassphrase = async (recoveryPhrase: string[], passPhrase: string) =>
+  window.electronAPI.recoveryPhrase.encryptRecoveryPhrase(
+    JSON.stringify({
+      recoveryPhrase,
+      passPhrase,
+    }),
+  );

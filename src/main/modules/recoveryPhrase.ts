@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { encrypt } from '../utils/crypto';
+import { decrypt, encrypt } from '../utils/crypto';
 import { Mnemonic } from '@hashgraph/sdk';
 import { dialog, ipcMain } from 'electron';
 
@@ -14,9 +14,9 @@ export default (app: Electron.App) => {
     const words = await mnemonic._mnemonic.words;
     const wordsJSON = JSON.stringify(words);
 
-    const encryptedWords = encrypt(wordsJSON, '123');
+    const encryptedWords = encrypt(wordsJSON, process.env.RECOVERY_PHRASE_ENCRYPTION_KEY!);
 
-    const file = path.join(app.getPath('userData'), 'rphs.json');
+    const file = path.join(app.getPath('userData'), 'recoveryPhraseEnc.json');
 
     fs.writeFile(file, encryptedWords);
 
@@ -34,4 +34,24 @@ export default (app: Electron.App) => {
       fs.writeFile(file.filePath || '', words);
     }
   });
+
+  ipcMain.handle(
+    createChannelName('encryptRecoveryPhraseObject'),
+    async (e, recoveryPhraseObject: string) => {
+      // { recoveryPhrase: [...words], passPhrase: 'password' }
+      const encryptedRecoveryPhrase = encrypt(
+        recoveryPhraseObject,
+        process.env.RECOVERY_PHRASE_ENCRYPTION_KEY!,
+      );
+
+      const file = path.join(app.getPath('userData'), 'recoveryPhraseEncryption.json');
+
+      try {
+        await fs.writeFile(file, encryptedRecoveryPhrase);
+        return true;
+      } catch (error) {
+        return false;
+      }
+    },
+  );
 };
