@@ -8,6 +8,11 @@ const menuItems = [
     icon: 'bi bi-feather',
   },
   {
+    link: '/login',
+    title: 'Login',
+    icon: 'bi bi-file-lock',
+  },
+  {
     link: '/transactions',
     title: 'Transactions',
     icon: 'bi bi-arrow-left-right',
