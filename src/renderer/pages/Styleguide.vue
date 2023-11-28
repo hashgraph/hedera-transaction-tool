@@ -4,20 +4,20 @@ import 'vue-toast-notification/dist/theme-sugar.css';
 
 const $toast = useToast();
 
-$toast.open({
-  message: 'This is a success toast',
-  position: 'top-right',
-  dismissible: false,
-  duration: 0,
-});
+// $toast.open({
+//   message: 'This is a success toast',
+//   position: 'top-right',
+//   dismissible: false,
+//   duration: 0,
+// });
 
-$toast.open({
-  message: 'This is a error toast',
-  type: 'error',
-  position: 'top-right',
-  dismissible: false,
-  duration: 0,
-});
+// $toast.open({
+//   message: 'This is a error toast',
+//   type: 'error',
+//   position: 'top-right',
+//   dismissible: false,
+//   duration: 0,
+// });
 
 // Force dismiss specific toast
 // instance.dismiss();
