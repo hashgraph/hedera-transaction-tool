@@ -16,3 +16,6 @@ export const encryptPassphrase = async (recoveryPhrase: string[], passPhrase: st
       passPhrase,
     }),
   );
+
+export const decryptPassphrase = async () =>
+  JSON.parse(await window.electronAPI.recoveryPhrase.decryptRecoveryPhrase());

@@ -39,5 +39,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
     encryptRecoveryPhrase: (recoveryPhraseObjectJSON: string): Promise<boolean> =>
       ipcRenderer.invoke('recoveryPhrase:encryptRecoveryPhraseObject', recoveryPhraseObjectJSON),
+    decryptRecoveryPhrase: (): Promise<string> =>
+      ipcRenderer.invoke('recoveryPhrase:decryptRecoveryPhraseObject'),
   },
 });

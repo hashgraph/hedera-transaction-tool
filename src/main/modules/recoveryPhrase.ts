@@ -23,6 +23,7 @@ export default (app: Electron.App) => {
     return Mnemonic.generate();
   });
 
+  // Download recovery phrase object unencrypted
   ipcMain.handle(createChannelName('downloadFileUnencrypted'), async (e, words: string) => {
     const file = await dialog.showSaveDialog({
       defaultPath: './recoveryPhrase.json',
@@ -35,6 +36,7 @@ export default (app: Electron.App) => {
     }
   });
 
+  // Encrypt and save the recovery phrase object
   ipcMain.handle(
     createChannelName('encryptRecoveryPhraseObject'),
     async (e, recoveryPhraseObject: string) => {
@@ -54,4 +56,23 @@ export default (app: Electron.App) => {
       }
     },
   );
+
+  // Decrypt the recovery phrase object
+  ipcMain.handle(createChannelName('decryptRecoveryPhraseObject'), async () => {
+    const file = path.join(app.getPath('userData'), 'recoveryPhraseEncryption.json');
+
+    try {
+      const encryptedRecoveryPhraseObject = await fs.readFile(file);
+
+      // { recoveryPhrase: [...words], passPhrase: 'password' }
+      const decryptedRecoveryPhrase = decrypt(
+        encryptedRecoveryPhraseObject,
+        process.env.RECOVERY_PHRASE_ENCRYPTION_KEY!,
+      );
+      return decryptedRecoveryPhrase;
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
+  });
 };
