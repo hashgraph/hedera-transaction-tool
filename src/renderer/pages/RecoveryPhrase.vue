@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   generatePhrase,
@@ -11,10 +11,40 @@ import { Mnemonic } from '@hashgraph/sdk';
 const router = useRouter();
 
 const step = ref(1);
+const type = ref('');
+const ableToContinue = ref(false);
+
 const recoveryPhrase = ref<Mnemonic | null>();
 
 const passPhrase = ref('');
 const rePassPhrase = ref('');
+
+const importedPhrase = ref('');
+const wordsArray = computed(() =>
+  importedPhrase.value
+    .split(', ')
+    .filter(w => w)
+    .slice(0, 24),
+);
+
+watch(importedPhrase, async () => {
+  if (wordsArray.value.length === 24) {
+    try {
+      recoveryPhrase.value = await Mnemonic.fromWords(wordsArray.value);
+      ableToContinue.value = true;
+    } catch (error) {
+      ableToContinue.value = false;
+    }
+  } else {
+    ableToContinue.value = false;
+  }
+});
+
+watch(step, newStep => {
+  if (newStep === 3) {
+    ableToContinue.value = false;
+  }
+});
 
 const handleGeneratePhrase = async () => {
   recoveryPhrase.value = await generatePhrase();
@@ -54,9 +84,8 @@ const isPassphraseStrong = () => {
       >
         <i class="bi-arrow-left"></i>
       </button>
-
       <button
-        v-if="![1, 3].includes(step)"
+        v-if="ableToContinue"
         class="btn btn-outline-primary py-0 px-2 mb-4 text-title"
         @click="step++"
       >
@@ -73,33 +102,70 @@ const isPassphraseStrong = () => {
             class="btn btn-lg text-title btn-outline-primary me-4"
             @click="
               handleGeneratePhrase();
-              step++;
+              type = 'generate';
+              ableToContinue = true;
+              step = 2;
             "
           >
             Generate Recovery Phrase
           </button>
-          <button type="button" class="btn btn-lg text-title btn-outline-secondary">
+          <button
+            type="button"
+            class="btn btn-lg text-title btn-outline-secondary"
+            @click="
+              type = 'import';
+              recoveryPhrase = null;
+              step = 2;
+            "
+          >
             Import Existing Phrase
           </button>
         </div>
       </div>
       <!-- Step 2 -->
       <div v-else-if="step === 2">
-        <div class="d-flex justify-content-between">
-          <button type="button" class="btn btn-outline-primary" @click="handleGeneratePhrase">
-            Regenerate Recovery Phrase
-          </button>
-          <button type="button" class="btn btn-secondary" @click="handleDownloadRecoveryPhrase">
-            Download file
-          </button>
+        <div v-if="type === 'generate'">
+          <div class="d-flex justify-content-between">
+            <button type="button" class="btn btn-outline-primary" @click="handleGeneratePhrase">
+              Regenerate Recovery Phrase
+            </button>
+            <button type="button" class="btn btn-secondary" @click="handleDownloadRecoveryPhrase">
+              Download file
+            </button>
+          </div>
+          <div class="mt-6 d-flex align-items-center justify-content-around flex-wrap gap-4">
+            <div
+              v-for="(word, index) in recoveryPhrase?._mnemonic.words || []"
+              :key="index"
+              class="col-3 px-5 py-4 bg-info border-main-gradient text-center"
+            >
+              {{ word }}
+            </div>
+          </div>
         </div>
-        <div class="mt-6 d-flex align-items-center justify-content-around flex-wrap gap-4">
-          <div
-            v-for="(word, index) in recoveryPhrase?._mnemonic.words || []"
-            :key="index"
-            class="col-3 px-5 py-4 bg-info border-main-gradient text-center"
-          >
-            {{ word }}
+        <div v-if="type === 'import'">
+          <h2 class="text-center">Import Recovery Phrase manually</h2>
+          <p class="mt-3 text-muted text-center">
+            Enter your words comma separated ex. "bird, fly"
+          </p>
+          <textarea
+            class="mt-7 form-control text-main"
+            id=""
+            cols="5"
+            rows="5"
+            v-model="importedPhrase"
+          ></textarea>
+          <div class="mt-6 d-flex align-items-center justify-content-around flex-wrap gap-4">
+            <div
+              v-for="(word, index) in importedPhrase
+                .split(', ')
+                .filter(w => w)
+                .slice(0, 24) || []"
+              :key="index"
+              class="col-3 px-5 py-4 bg-info border-main-gradient text-center"
+            >
+              {{ word }}
+            </div>
           </div>
         </div>
       </div>
