@@ -23,7 +23,7 @@ const handleDownloadRecoveryPhrase = async () => {
 
 const handleEncryptPassphrase = async () => {
   try {
-    await encryptPassphrase(recoveryPhrase.value?._mnemonic.words || [], passPhrase.value);
+    await encryptPassphrase(recoveryPhrase.value?._mnemonic.words || []);
   } catch (error) {
     console.log(error);
   }

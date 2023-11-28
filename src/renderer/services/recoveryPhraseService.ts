@@ -9,13 +9,14 @@ export const downloadFileUnencrypted = async (words: string[]) => {
   window.electronAPI.recoveryPhrase.downloadFileUnencrypted(JSON.stringify(words));
 };
 
-export const encryptPassphrase = async (recoveryPhrase: string[], passPhrase: string) =>
-  window.electronAPI.recoveryPhrase.encryptRecoveryPhrase(
-    JSON.stringify({
-      recoveryPhrase,
-      passPhrase,
-    }),
-  );
+export const encryptPassphrase = async (recoveryPhrase: string[]) =>
+  window.electronAPI.recoveryPhrase.encryptRecoveryPhrase(JSON.stringify(recoveryPhrase));
 
-export const decryptPassphrase = async () =>
-  JSON.parse(await window.electronAPI.recoveryPhrase.decryptRecoveryPhrase());
+export const decryptPassphrase = async () => {
+  try {
+    const decryptedRecoveryPhrase = await window.electronAPI.recoveryPhrase.decryptRecoveryPhrase();
+    return JSON.parse(decryptedRecoveryPhrase);
+  } catch (error) {
+    return [];
+  }
+};

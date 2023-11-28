@@ -8,20 +8,7 @@ const createChannelName = (...props) => ['recoveryPhrase', props].join(':');
 
 export default (app: Electron.App) => {
   // Generate
-  ipcMain.handle(createChannelName('generate'), async () => {
-    const mnemonic = await Mnemonic.generate();
-
-    const words = await mnemonic._mnemonic.words;
-    const wordsJSON = JSON.stringify(words);
-
-    const encryptedWords = encrypt(wordsJSON, process.env.RECOVERY_PHRASE_ENCRYPTION_KEY!);
-
-    const file = path.join(app.getPath('userData'), 'recoveryPhraseEnc.json');
-
-    fs.writeFile(file, encryptedWords);
-
-    return Mnemonic.generate();
-  });
+  ipcMain.handle(createChannelName('generate'), async () => Mnemonic.generate());
 
   // Download recovery phrase object unencrypted
   ipcMain.handle(createChannelName('downloadFileUnencrypted'), async (e, words: string) => {
@@ -36,20 +23,20 @@ export default (app: Electron.App) => {
     }
   });
 
-  // Encrypt and save the recovery phrase object
+  const recoveryPhraseFile = path.join(app.getPath('userData'), 'recoveryPhraseEncryption.json');
+
+  // Encrypt and save the recovery phrase
   ipcMain.handle(
-    createChannelName('encryptRecoveryPhraseObject'),
-    async (e, recoveryPhraseObject: string) => {
-      // { recoveryPhrase: [...words], passPhrase: 'password' }
+    createChannelName('encryptRecoveryPhrase'),
+    async (e, recoveryPhraseJSON: string) => {
+      // [..words]
       const encryptedRecoveryPhrase = encrypt(
-        recoveryPhraseObject,
+        recoveryPhraseJSON,
         process.env.RECOVERY_PHRASE_ENCRYPTION_KEY!,
       );
 
-      const file = path.join(app.getPath('userData'), 'recoveryPhraseEncryption.json');
-
       try {
-        await fs.writeFile(file, encryptedRecoveryPhrase);
+        await fs.writeFile(recoveryPhraseFile, encryptedRecoveryPhrase);
         return true;
       } catch (error) {
         return false;
@@ -57,22 +44,21 @@ export default (app: Electron.App) => {
     },
   );
 
-  // Decrypt the recovery phrase object
-  ipcMain.handle(createChannelName('decryptRecoveryPhraseObject'), async () => {
-    const file = path.join(app.getPath('userData'), 'recoveryPhraseEncryption.json');
-
+  // Decrypt the recovery phrase
+  ipcMain.handle(createChannelName('decryptRecoveryPhrase'), async () => {
     try {
-      const encryptedRecoveryPhraseObject = await fs.readFile(file);
+      const encryptedRecoveryPhraseObject = await fs.readFile(recoveryPhraseFile);
 
-      // { recoveryPhrase: [...words], passPhrase: 'password' }
+      // [..words]
       const decryptedRecoveryPhrase = decrypt(
         encryptedRecoveryPhraseObject,
         process.env.RECOVERY_PHRASE_ENCRYPTION_KEY!,
       );
+
       return decryptedRecoveryPhrase;
     } catch (error) {
       console.log(error);
-      return null;
+      return [];
     }
   });
 };

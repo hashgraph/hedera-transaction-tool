@@ -37,9 +37,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     downloadFileUnencrypted: (words: string): void => {
       ipcRenderer.invoke('recoveryPhrase:downloadFileUnencrypted', words);
     },
-    encryptRecoveryPhrase: (recoveryPhraseObjectJSON: string): Promise<boolean> =>
-      ipcRenderer.invoke('recoveryPhrase:encryptRecoveryPhraseObject', recoveryPhraseObjectJSON),
+    encryptRecoveryPhrase: (recoveryPhraseJSON: string): Promise<boolean> =>
+      ipcRenderer.invoke('recoveryPhrase:encryptRecoveryPhrase', recoveryPhraseJSON),
     decryptRecoveryPhrase: (): Promise<string> =>
-      ipcRenderer.invoke('recoveryPhrase:decryptRecoveryPhraseObject'),
+      ipcRenderer.invoke('recoveryPhrase:decryptRecoveryPhrase'),
   },
 });
