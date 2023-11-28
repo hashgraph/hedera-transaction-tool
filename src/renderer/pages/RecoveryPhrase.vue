@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   generatePhrase,
   downloadFileUnencrypted,
   encryptPassphrase,
 } from '../services/recoveryPhraseService';
 import { Mnemonic } from '@hashgraph/sdk';
+
+const router = useRouter();
 
 const step = ref(1);
 const recoveryPhrase = ref<Mnemonic | null>();
@@ -24,6 +27,8 @@ const handleDownloadRecoveryPhrase = async () => {
 const handleEncryptPassphrase = async () => {
   try {
     await encryptPassphrase(recoveryPhrase.value?._mnemonic.words || []);
+
+    router.push({ path: '/settings/keys' });
   } catch (error) {
     console.log(error);
   }
