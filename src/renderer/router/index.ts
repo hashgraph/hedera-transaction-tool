@@ -23,7 +23,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/file-service', component: FileService },
   { path: '/contact-list', component: ContactList },
   { path: '/help', component: Help },
-  { path: '/settings', component: Settings },
+  { path: '/settings/:tab', component: Settings, props: true },
   { path: '/recovery-phrase', component: RecoveryPhrase },
   { path: '/reveal-recovery-phrase', component: RevealRecoveryPhrase },
 ];

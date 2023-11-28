@@ -11,9 +11,15 @@ import {
 } from '../services/configurationService';
 import { Organization } from '../../main/modules/store';
 
+/* Props */
+const props = defineProps<{ tab: string }>();
+
 /* Tabs */
-const activeTabIndex = ref(0);
 const tabItems: TabItem[] = [{ title: 'General' }, { title: 'Work Groups' }, { title: 'Keys' }];
+const propTabIndex = tabItems.findIndex(
+  t => t.title.toLocaleLowerCase().replaceAll(' ', '-') === props.tab,
+);
+const activeTabIndex = ref(propTabIndex >= 0 ? propTabIndex : 0);
 const [general, workGroups, keys] = tabItems.map(t => t.title);
 
 const mainnetMirrorNodeLink = ref('');
