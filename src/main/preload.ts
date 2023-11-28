@@ -42,4 +42,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     decryptRecoveryPhrase: (): Promise<string> =>
       ipcRenderer.invoke('recoveryPhrase:decryptRecoveryPhrase'),
   },
+  keyPairs: {
+    generate: (
+      passphrase: string,
+      index: number,
+    ): Promise<{ privateKey: string; publicKey: string }> =>
+      ipcRenderer.invoke('keyPair:generate', passphrase, index),
+    getStored: (): Promise<{ privateKey: string; publicKey: string }[]> =>
+      ipcRenderer.invoke('keyPair:getStored'),
+  },
 });
