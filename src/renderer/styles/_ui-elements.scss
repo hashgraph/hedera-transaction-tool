@@ -25,6 +25,21 @@
   }
 }
 
+/* Forms */
+.form-control {
+  &.is-fill {
+    background-color: var(--bs-input-fill-bg-color);
+    border-color: var(--bs-input-fill-bg-color);
+  }
+
+  &.is-fill {
+    &:focus {
+      background-color: var(--bs-input-fill-focus-bg-color);
+      border-color: var(--bs-input-fill-focus-bg-color);
+    }
+  }
+}
+
 /* Icons */
 .icon {
   display: inline-flex;

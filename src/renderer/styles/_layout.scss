@@ -82,6 +82,7 @@ strong {
   top: 73px;
   position: relative;
   margin-left: 224px;
+  min-height: calc(100vh - 73px);
 }
 
 .container-menu {

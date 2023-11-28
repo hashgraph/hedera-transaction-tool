@@ -3,6 +3,11 @@
   --#{$prefix}menu-link-color: #{$white-800};
   --#{$prefix}menu-link-color-hover: #{$white-900};
   --#{$prefix}menu-link-bg-hover: #{$light-blue-100};
+
+  --#{$prefix}input-border-color: #{$dark-blue-200};
+  --#{$prefix}input-focus-border-color: #{$dark-blue-400};
+  --#{$prefix}input-fill-bg-color: #{$light-blue-500};
+  --#{$prefix}input-fill-focus-bg-color: #{$light-blue-300};
 }
 
 @if $enable-dark-mode {
@@ -12,5 +17,10 @@
     --#{$prefix}menu-link-color: #{$dark-blue-200};
     --#{$prefix}menu-link-color-hover: #{$white-500};
     --#{$prefix}menu-link-bg-hover: #{$dark-blue-800};
+
+    --#{$prefix}input-border-color: #{$dark-blue-700};
+    --#{$prefix}input-focus-border-color: #{$dark-blue-400};
+    --#{$prefix}input-fill-bg-color: #{$dark-blue-700};
+    --#{$prefix}input-fill-focus-bg-color: #{$dark-blue-400};
   }
 }

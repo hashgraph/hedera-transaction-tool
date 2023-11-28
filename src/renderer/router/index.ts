@@ -12,6 +12,7 @@ import FileService from '../pages/FileService.vue';
 import ContactList from '../pages/ContactList.vue';
 import RecoveryPhrase from '../pages/RecoveryPhrase.vue';
 import RevealRecoveryPhrase from '../components/RevealRecoveryPhrase.vue';
+import Login from '../pages/Login.vue';
 
 const routes: RouteRecordRaw[] = [
   { path: '/', component: StyleGuide },
@@ -26,6 +27,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/settings/:tab', component: Settings, props: true },
   { path: '/recovery-phrase', component: RecoveryPhrase },
   { path: '/reveal-recovery-phrase', component: RevealRecoveryPhrase },
+  { path: '/login', component: Login },
 ];
 
 const router = createRouter({
