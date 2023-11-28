@@ -5,6 +5,8 @@ import dotenv from 'dotenv';
 import createMenu from './modules/menu';
 import addTheme from './modules/theme';
 import listenForConfigurationEvents from './modules/configuration';
+import listenForRecoveryPhraseEvents from './modules/recoveryPhrase';
+import listenForKeyPairEvents from './modules/keyPair';
 
 dotenv.config({
   path: app.isPackaged ? join(process.resourcesPath, '.env') : resolve(process.cwd(), '.env'),
@@ -13,6 +15,8 @@ dotenv.config({
 
 const { sendUpdateThemeEventTo } = addTheme();
 listenForConfigurationEvents();
+listenForRecoveryPhraseEvents(app);
+listenForKeyPairEvents(app);
 
 let mainWindow: BrowserWindow | null;
 

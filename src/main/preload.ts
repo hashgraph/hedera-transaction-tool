@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 import { Theme } from './modules/theme';
 import { Organization, SchemaProperties } from './modules/store';
+import { Mnemonic } from '@hashgraph/sdk';
 
 contextBridge.exposeInMainWorld('electronAPI', {
   sendMessage: (message: string) => ipcRenderer.send('message', message),
@@ -30,5 +31,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.invoke('configuration:organizations:remove', serverUrl);
       },
     },
+  },
+  recoveryPhrase: {
+    generate: (): Promise<Mnemonic> => ipcRenderer.invoke('recoveryPhrase:generate'),
+    downloadFileUnencrypted: (words: string[]): void => {
+      ipcRenderer.invoke('recoveryPhrase:downloadFileUnencrypted', words);
+    },
+    encryptRecoveryPhrase: (recoveryPhrase: string[]): Promise<boolean> =>
+      ipcRenderer.invoke('recoveryPhrase:encryptRecoveryPhrase', recoveryPhrase),
+    decryptRecoveryPhrase: (): Promise<string[]> =>
+      ipcRenderer.invoke('recoveryPhrase:decryptRecoveryPhrase'),
+  },
+  keyPairs: {
+    generate: (
+      passphrase: string,
+      index: number,
+    ): Promise<{ privateKey: string; publicKey: string }> =>
+      ipcRenderer.invoke('keyPair:generate', passphrase, index),
+    getStored: (): Promise<{ privateKey: string; publicKey: string }[]> =>
+      ipcRenderer.invoke('keyPair:getStored'),
   },
 });

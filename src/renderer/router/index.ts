@@ -10,6 +10,8 @@ import SmartContracts from '../pages/SmartContracts.vue';
 import ConsensusService from '../pages/ConsensusService.vue';
 import FileService from '../pages/FileService.vue';
 import ContactList from '../pages/ContactList.vue';
+import RecoveryPhrase from '../pages/RecoveryPhrase.vue';
+import RevealRecoveryPhrase from '../components/RevealRecoveryPhrase.vue';
 import Login from '../pages/Login.vue';
 
 const routes: RouteRecordRaw[] = [
@@ -22,7 +24,9 @@ const routes: RouteRecordRaw[] = [
   { path: '/file-service', component: FileService },
   { path: '/contact-list', component: ContactList },
   { path: '/help', component: Help },
-  { path: '/settings', component: Settings },
+  { path: '/settings/:tab', component: Settings, props: true },
+  { path: '/recovery-phrase', component: RecoveryPhrase },
+  { path: '/reveal-recovery-phrase', component: RevealRecoveryPhrase },
   { path: '/login', component: Login },
 ];
 

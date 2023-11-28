@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
 
+import { Organization } from '../../main/modules/store';
+
 import Tabs, { TabItem } from '../components/ui/Tabs.vue';
 import {
   getMirrorNodeConfig,
@@ -9,14 +11,27 @@ import {
   addOrganization,
   removeOrganization,
 } from '../services/configurationService';
-import { Organization } from '../../main/modules/store';
+import { getStoredKeyPairs, generateKeyPair } from '../services/keyPairService';
+
+/* Props */
+const props = defineProps<{ tab: string }>();
 
 /* Tabs */
-const activeTabIndex = ref(0);
 const tabItems: TabItem[] = [{ title: 'General' }, { title: 'Work Groups' }, { title: 'Keys' }];
+const propTabIndex = tabItems.findIndex(
+  t => t.title.toLocaleLowerCase().replaceAll(' ', '-') === props.tab,
+);
+const activeTabIndex = ref(propTabIndex >= 0 ? propTabIndex : 0);
 const [general, workGroups, keys] = tabItems.map(t => t.title);
 
 const mainnetMirrorNodeLink = ref('');
+
+/* General */
+onMounted(async () => {
+  mainnetMirrorNodeLink.value = (await getMirrorNodeConfig()).mainnetLink;
+});
+
+watch(mainnetMirrorNodeLink, link => setMirrorNodeLink('mainnetLink', link));
 
 /* Organizations */
 let organizations = ref<Organization[]>([]);
@@ -25,22 +40,8 @@ const newOrganizationName = ref('');
 const newOrganizationServerUrl = ref('');
 
 onMounted(async () => {
-  try {
-    mainnetMirrorNodeLink.value = (await getMirrorNodeConfig()).mainnetLink;
-    organizations.value = await getOrganizations();
-  } catch (error) {
-    console.log(error);
-  }
+  organizations.value = await getOrganizations();
 });
-
-watch(mainnetMirrorNodeLink, link => setMirrorNodeLink('mainnetLink', link));
-
-// Temporary
-const handleClearConfig = () => {
-  window.electronAPI.config.clear();
-  mainnetMirrorNodeLink.value = '';
-  organizations.value = [];
-};
 
 const handleAddOrganization = async () => {
   await addOrganization({
@@ -53,6 +54,32 @@ const handleAddOrganization = async () => {
 const handleRemoveOrganization = async (serverUrl: string) => {
   await removeOrganization(serverUrl);
   organizations.value = await getOrganizations();
+};
+
+/* Keys */
+const keyPairs = ref<{ privateKey: string; publicKey: string }[]>([]);
+
+onMounted(async () => {
+  keyPairs.value = await getStoredKeyPairs();
+});
+
+const index = ref(0);
+const handleGenerateKeyPair = async () => {
+  try {
+    const newKeyPair = await generateKeyPair('', index.value++);
+    if (newKeyPair) {
+      keyPairs.value.push(newKeyPair);
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+// Temporary
+const handleClearConfig = () => {
+  window.electronAPI.config.clear();
+  mainnetMirrorNodeLink.value = '';
+  organizations.value = [];
 };
 </script>
 <template>
@@ -159,7 +186,27 @@ const handleRemoveOrganization = async (serverUrl: string) => {
             </div>
           </div>
         </template>
-        <template #[keys]> Keys tab </template>
+        <template #[keys]>
+          <div>
+            <button class="btn btn-secondary" @click="handleGenerateKeyPair">
+              Generate new key pair
+            </button>
+            <div
+              v-for="keyPair in keyPairs"
+              :key="keyPair.publicKey"
+              class="mt-5 p-4 bg-dark-blue-800"
+            >
+              <div class="form-group">
+                <label>DER Encoded Private key</label>
+                <input type="text" readonly class="form-control py-3" :value="keyPair.privateKey" />
+              </div>
+              <div class="form-group mt-3">
+                <label>DER Encoded Public key</label>
+                <input type="text" readonly class="form-control py-3" :value="keyPair.publicKey" />
+              </div>
+            </div>
+          </div>
+        </template>
       </Tabs>
     </div>
   </div>

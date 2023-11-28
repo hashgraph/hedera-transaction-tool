@@ -61,7 +61,7 @@ const menuItems = [
     </div>
 
     <div>
-      <RouterLink class="link-menu mt-2" to="/settings"
+      <RouterLink class="link-menu mt-2" to="/settings/general"
         ><i class="bi bi-wrench"></i><span>Settings</span></RouterLink
       >
       <RouterLink class="link-menu mt-2" to="/help"

@@ -9,6 +9,7 @@
 
 /* Borders */
 .border-main-gradient {
+  border: 2px solid transparent;
   border-image: $main-gradient 1 !important;
 }
 
