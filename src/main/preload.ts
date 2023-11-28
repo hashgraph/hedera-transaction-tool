@@ -34,12 +34,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   recoveryPhrase: {
     generate: (): Promise<Mnemonic> => ipcRenderer.invoke('recoveryPhrase:generate'),
-    downloadFileUnencrypted: (words: string): void => {
+    downloadFileUnencrypted: (words: string[]): void => {
       ipcRenderer.invoke('recoveryPhrase:downloadFileUnencrypted', words);
     },
-    encryptRecoveryPhrase: (recoveryPhraseJSON: string): Promise<boolean> =>
-      ipcRenderer.invoke('recoveryPhrase:encryptRecoveryPhrase', recoveryPhraseJSON),
-    decryptRecoveryPhrase: (): Promise<string> =>
+    encryptRecoveryPhrase: (recoveryPhrase: string[]): Promise<boolean> =>
+      ipcRenderer.invoke('recoveryPhrase:encryptRecoveryPhrase', recoveryPhrase),
+    decryptRecoveryPhrase: (): Promise<string[]> =>
       ipcRenderer.invoke('recoveryPhrase:decryptRecoveryPhrase'),
   },
   keyPairs: {

@@ -29,7 +29,7 @@ export default (app: Electron.App) => {
 
   // Generate key pair
   ipcMain.handle(createChannelName('generate'), async (e, passphrase: string, index: number) => {
-    const phrase = JSON.parse(await getRecoveryPhrase(app));
+    const phrase = await getRecoveryPhrase(app);
 
     const recoveredMnemonic = await Mnemonic.fromWords(phrase);
     const recoveredKey = await recoveredMnemonic.toStandardEd25519PrivateKey(passphrase, index);

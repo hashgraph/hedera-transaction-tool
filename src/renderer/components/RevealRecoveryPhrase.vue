@@ -10,12 +10,10 @@ const userPassword = ref('');
 const handleUnlockRecoveryPhrase = async () => {
   // Logic for matching User password with the given one
 
-  //
   step.value++;
 
   try {
     recoveryPhrase.value = await decryptPassphrase();
-    console.log(recoveryPhrase.value);
   } catch (error) {
     console.log(error);
   }

@@ -1,22 +1,12 @@
 /* Recovery Phrase */
 
-export const generatePhrase = async () => {
-  const phrase = await window.electronAPI.recoveryPhrase.generate();
-  return phrase;
+export const generatePhrase = () => window.electronAPI.recoveryPhrase.generate();
+
+export const downloadFileUnencrypted = (words: string[]) => {
+  window.electronAPI.recoveryPhrase.downloadFileUnencrypted([...words]);
 };
 
-export const downloadFileUnencrypted = async (words: string[]) => {
-  window.electronAPI.recoveryPhrase.downloadFileUnencrypted(JSON.stringify(words));
-};
+export const encryptPassphrase = (recoveryPhrase: string[]) =>
+  window.electronAPI.recoveryPhrase.encryptRecoveryPhrase([...recoveryPhrase]);
 
-export const encryptPassphrase = async (recoveryPhrase: string[]) =>
-  window.electronAPI.recoveryPhrase.encryptRecoveryPhrase(JSON.stringify(recoveryPhrase));
-
-export const decryptPassphrase = async () => {
-  try {
-    const decryptedRecoveryPhrase = await window.electronAPI.recoveryPhrase.decryptRecoveryPhrase();
-    return JSON.parse(decryptedRecoveryPhrase);
-  } catch (error) {
-    return [];
-  }
-};
+export const decryptPassphrase = () => window.electronAPI.recoveryPhrase.decryptRecoveryPhrase();
