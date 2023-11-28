@@ -11,6 +11,7 @@ import ConsensusService from '../pages/ConsensusService.vue';
 import FileService from '../pages/FileService.vue';
 import ContactList from '../pages/ContactList.vue';
 import RecoveryPhrase from '../pages/RecoveryPhrase.vue';
+import RevealRecoveryPhrase from '../components/RevealRecoveryPhrase.vue';
 
 const routes: RouteRecordRaw[] = [
   { path: '/', component: StyleGuide },
@@ -24,6 +25,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/help', component: Help },
   { path: '/settings', component: Settings },
   { path: '/recovery-phrase', component: RecoveryPhrase },
+  { path: '/reveal-recovery-phrase', component: RevealRecoveryPhrase },
 ];
 
 const router = createRouter({
