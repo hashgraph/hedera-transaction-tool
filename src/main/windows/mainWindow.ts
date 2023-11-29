@@ -27,7 +27,6 @@ export default function createWindow(app: Electron.App) {
     }
 
     mainWindow?.show();
-
     mainWindow.setFullScreen(true);
   });
 
