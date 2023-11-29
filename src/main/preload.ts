@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-import { Theme } from './modules/theme';
+import { Theme } from './modules/ipcHandlers/theme';
 import { Organization, SchemaProperties } from './modules/store';
 import { Mnemonic } from '@hashgraph/sdk';
 
@@ -42,13 +42,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     decryptRecoveryPhrase: (): Promise<string[]> =>
       ipcRenderer.invoke('recoveryPhrase:decryptRecoveryPhrase'),
   },
-  keyPairs: {
-    generate: (
-      passphrase: string,
-      index: number,
-    ): Promise<{ privateKey: string; publicKey: string }> =>
-      ipcRenderer.invoke('keyPair:generate', passphrase, index),
-    getStored: (): Promise<{ privateKey: string; publicKey: string }[]> =>
-      ipcRenderer.invoke('keyPair:getStored'),
+  privateKey: {
+    generate: (passphrase: string, index: number): Promise<string> =>
+      ipcRenderer.invoke('privateKey:generate', passphrase, index),
+    getStored: (): Promise<string[]> => ipcRenderer.invoke('privateKey:getStored'),
   },
 });

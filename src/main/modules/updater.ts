@@ -1,7 +1,6 @@
+import { dialog } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import logger, { MainLogger } from 'electron-log';
-
-import { dialog } from 'electron';
 
 /* Enable logging */
 autoUpdater.logger = logger;
