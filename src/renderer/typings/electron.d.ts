@@ -31,20 +31,9 @@ export default interface ElectronApi {
     encryptRecoveryPhrase: (recoveryPhrase: string[]) => Promise<boolean>;
     decryptRecoveryPhrase: () => Promise<string[]>;
   };
-  keyPairs: {
-    generate: (
-      passphrase: string,
-      index: number,
-    ) => Promise<{
-      privateKey: string;
-      publicKey: string;
-    }>;
-    getStored: () => Promise<
-      {
-        privateKey: string;
-        publicKey: string;
-      }[]
-    >;
+  privateKey: {
+    generate: (passphrase: string, index: number) => Promise<string>;
+    getStored: () => Promise<string[]>;
   };
 }
 
