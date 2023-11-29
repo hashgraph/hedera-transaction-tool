@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@hashgraph/sdk": "^2.38.0",
+    "axios": "^1.6.2",
     "bootstrap": "^5.3.2",
     "bootstrap-icons": "^1.11.2",
     "dotenv": "^16.3.1",
