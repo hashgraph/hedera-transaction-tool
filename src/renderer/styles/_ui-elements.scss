@@ -108,3 +108,12 @@
   background-repeat: no-repeat;
   animation: 0.75s linear infinite spinner-border;
 }
+
+/* Modals */
+.modal-content {
+  box-shadow: $modal-content-box-shadow-xs;
+}
+
+.modal-backdrop {
+  backdrop-filter: blur(4px);
+}
