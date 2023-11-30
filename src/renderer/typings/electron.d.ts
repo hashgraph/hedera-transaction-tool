@@ -28,8 +28,13 @@ export default interface ElectronApi {
     downloadFileUnencrypted: (words: string[]) => void;
   };
   privateKey: {
-    generate: (passphrase: string, index: number) => Promise<string>;
-    getStored: () => Promise<string[]>;
+    getStored: () => Promise<
+      {
+        privateKey: string;
+        index: number;
+      }[]
+    >;
+    store: (privateKey: string, index: number) => Promise<void>;
   };
 }
 

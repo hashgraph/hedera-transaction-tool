@@ -1,32 +1,29 @@
 import { computed, onMounted, ref } from 'vue';
-import {
-  getInitialMirrorNodeLinks,
-  getMirrorNodeConfig,
-  setMirrorNodeLink,
-} from '../services/configurationService';
+import * as configService from '../services/configurationService';
 import { defineStore } from 'pinia';
 
 const useMirrorNodeLinksStore = defineStore('mirrorNodeLinks', () => {
-  const mirrorNodeLinks = ref(getInitialMirrorNodeLinks());
+  const mirrorNodeLinks = ref(configService.getInitialMirrorNodeLinks());
 
   const mainnet = computed(() => mirrorNodeLinks.value.mainnetLink);
   const testnet = computed(() => mirrorNodeLinks.value.testnetLink);
   const previewnet = computed(() => mirrorNodeLinks.value.previewnetLink);
 
   async function refetch() {
-    mirrorNodeLinks.value = await getMirrorNodeConfig();
+    mirrorNodeLinks.value = await configService.getMirrorNodeConfig();
   }
 
   async function setMirroNodeLink(
     node: 'mainnetLink' | 'testnetLink' | 'previewnetLink',
     link: string,
   ) {
-    await setMirrorNodeLink(node, link);
+    await configService.setMirrorNodeLink(node, link);
+
     mirrorNodeLinks.value[node] = link;
   }
 
   onMounted(async () => {
-    const links = await getMirrorNodeConfig();
+    const links = await configService.getMirrorNodeConfig();
     mirrorNodeLinks.value = links;
   });
 

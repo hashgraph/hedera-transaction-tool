@@ -14,17 +14,17 @@ const useOrganizationsStore = defineStore('organizations', () => {
   }
 
   onMounted(async () => {
-    organizations.value = await configService.getOrganizations();
+    refetch();
   });
 
   async function addOrganization(organization: Organization) {
     await configService.addOrganization(organization);
-    organizations.value = await configService.getOrganizations();
+    refetch();
   }
 
   async function removeOrganization(serverUrl: string) {
     await configService.removeOrganization(serverUrl);
-    organizations.value = await configService.getOrganizations();
+    refetch();
   }
 
   return { organizations, addOrganization, removeOrganization, refetch };

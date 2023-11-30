@@ -2,6 +2,8 @@
 import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
+import useKeyPairsStore from '../../stores/storeKeyPairs';
+
 import AppButton from '../../components/ui/AppButton.vue';
 
 import GenerateOrImport from './components/GenerateOrImport.vue';
@@ -9,6 +11,8 @@ import Generate from './components/Generate.vue';
 import Import from './components/Import.vue';
 
 const router = useRouter();
+
+const keyPairsStore = useKeyPairsStore();
 
 const recoveryPhrase = ref<string[] | null>(null);
 const step = ref(1);
@@ -28,7 +32,8 @@ watch(step, newStep => {
   }
 });
 
-const navigateToKeys = () => {
+const handleFinish = () => {
+  keyPairsStore.setRecoveryPhrase(recoveryPhrase.value || []);
   router.push({ path: '/settings/keys' });
 };
 </script>
@@ -62,15 +67,16 @@ const navigateToKeys = () => {
         <Generate
           v-if="type === 'generate'"
           v-model:recoveryPhrase="recoveryPhrase"
-          :handleFinish="navigateToKeys"
+          :handleFinish="handleFinish"
         />
         <Import
           v-else-if="type === 'import'"
           v-model:recoveryPhrase="recoveryPhrase"
           :ableToContinue="ableToContinue"
-          :handleFinish="navigateToKeys"
+          :handleFinish="handleFinish"
         />
       </template>
     </Transition>
   </div>
 </template>
+../../stores/storeKeyPairs

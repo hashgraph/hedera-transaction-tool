@@ -1,33 +1,32 @@
 import { ipcMain } from 'electron';
-import { Mnemonic } from '@hashgraph/sdk';
 import {
   addPrivateKeyEncrypted,
-  generateFromPhrase,
   getPrivateKeysFilePath,
   getStoredPrivateKeys,
 } from '../../services/privateKey';
-import { getRecoveryPhrase, getRecoveryPhraseFilePath } from '../../services/recoveryPhrase';
+import { PrivateKey } from '@hashgraph/sdk';
 
 const createChannelName = (...props) => ['privateKey', ...props].join(':');
 
 export default (app: Electron.App) => {
   // Generate key pair
-  ipcMain.handle(createChannelName('generate'), async (e, passphrase: string, index: number) => {
-    const phrase = await getRecoveryPhrase(getRecoveryPhraseFilePath(app));
+  ipcMain.handle(createChannelName('store'), async (e, privateKey: string, index: number) => {
+    await addPrivateKeyEncrypted(
+      getPrivateKeysFilePath(app),
+      PrivateKey.fromStringED25519(privateKey),
+      index,
+    );
 
-    const recoveredMnemonic = await Mnemonic.fromWords(phrase);
-
-    const newKeyPair = await generateFromPhrase(recoveredMnemonic, passphrase, index);
-
-    addPrivateKeyEncrypted(getPrivateKeysFilePath(app), newKeyPair);
-
-    return newKeyPair.toStringRaw();
+    return { privateKey: privateKey, index };
   });
 
   // Decrypt stored key pairs
   ipcMain.handle(createChannelName('getStored'), async () => {
     const storedPrivateKeys = await getStoredPrivateKeys(getPrivateKeysFilePath(app));
 
-    return storedPrivateKeys.map(pk => pk.toStringRaw());
+    return storedPrivateKeys.map(pk => ({
+      privateKey: pk.privateKey.toStringRaw(),
+      index: pk.index,
+    }));
   });
 };
