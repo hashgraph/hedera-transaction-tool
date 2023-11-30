@@ -60,13 +60,13 @@ export const addPrivateKeyEncrypted = async (
 
 // Remove Private Key from encrypted file
 export const removePrivateKeyEncrypted = async (filePath: string, privateKey: PrivateKey) => {
-  const storedKeyPairs = await getStoredPrivateKeys(filePath);
+  const storedPrivateKeys = await getStoredPrivateKeys(filePath);
 
-  const newKeyPairs = JSON.stringify(
-    storedKeyPairs.filter(pk => pk.privateKey.toStringRaw() !== privateKey.toStringRaw()),
+  const newPrivateKeys = JSON.stringify(
+    storedPrivateKeys.filter(pk => pk.privateKey.toStringRaw() !== privateKey.toStringRaw()),
   );
 
-  const encryptedKeyPairs = encrypt(newKeyPairs, process.env.KEY_PAIRS_ENCRYPTION_KEY!);
+  const encryptedPrivateKeys = encrypt(newPrivateKeys, process.env.KEY_PAIRS_ENCRYPTION_KEY!);
 
-  await fs.writeFile(filePath, encryptedKeyPairs);
+  await fs.writeFile(filePath, encryptedPrivateKeys);
 };
