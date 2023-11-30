@@ -32,6 +32,11 @@ export default function getStore() {
           type: 'string',
         },
       },
+      default: {
+        mainnetLink: '',
+        testnetLink: '',
+        previewnetLink: '',
+      },
     },
     organizations: {
       type: 'array',
