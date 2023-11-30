@@ -12,7 +12,6 @@ import FileService from '../pages/FileService';
 import ContactList from '../pages/ContactList';
 import RecoveryPhrase from '../pages/RecoveryPhrase';
 import Login from '../pages/Login';
-import RevealRecoveryPhrase from '../components/RevealRecoveryPhrase.vue';
 
 const routes: RouteRecordRaw[] = [
   { path: '/', component: StyleGuide },
@@ -26,7 +25,6 @@ const routes: RouteRecordRaw[] = [
   { path: '/help', component: Help },
   { path: '/settings/:tab', component: Settings, props: true },
   { path: '/recovery-phrase', component: RecoveryPhrase },
-  { path: '/reveal-recovery-phrase', component: RevealRecoveryPhrase },
   { path: '/login', component: Login },
 ];
 
