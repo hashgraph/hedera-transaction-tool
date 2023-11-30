@@ -1,0 +1,77 @@
+<script setup lang="ts">
+import useMirrorNodeLinksStore from '../../../stores/storeMirrorNodeLinks';
+
+const config = useMirrorNodeLinksStore();
+
+const handleMirrorNodeLinkChange = (
+  node: 'mainnetLink' | 'testnetLink' | 'previewnetLink',
+  e: Event,
+) => {
+  const input = e.currentTarget as HTMLInputElement;
+  config.setMirroNodeLink(node, input.value);
+};
+</script>
+<template>
+  <div>
+    <!-- Local Storage -->
+    <div class="p-4 border border-2 rounded-3">
+      <p>Local Storage</p>
+      <div class="mt-4 d-flex align-items-end">
+        <div class="flex-1 me-4">
+          <label class="text-secondary-emphasis text-footnote text-uppercase"
+            >app storage directory</label
+          >
+          <input type="text" class="form-control py-3" />
+        </div>
+        <div>
+          <button type="button" class="btn btn-primary py-3 px-6">
+            <i class="bi bi-search me-3"></i>Browse
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Mirror Node Settings -->
+    <div class="p-4 mt-7 border border-2 rounded-3">
+      <p>Mirror Node Settings</p>
+      <div class="mt-4">
+        <div class="mb-4">
+          <label class="text-secondary-emphasis text-footnote text-uppercase"
+            >Main NET MIRROR NODE LINK</label
+          >
+          <input
+            type="text"
+            class="form-control py-3"
+            :value="config.mirrorNodeLinks.mainnetLink"
+            @change="e => handleMirrorNodeLinkChange('mainnetLink', e)"
+          />
+        </div>
+        <div class="mb-4">
+          <label class="text-secondary-emphasis text-footnote text-uppercase"
+            >TEST NET MIRROR NODE LINK</label
+          >
+          <input type="text" class="form-control py-3" />
+        </div>
+        <div class="mb-4">
+          <label class="text-secondary-emphasis text-footnote text-uppercase"
+            >PREVIEW NET MIRROR NODE LINK</label
+          >
+          <input type="text" class="form-control py-3" />
+        </div>
+      </div>
+    </div>
+    <!-- Explorer Settings -->
+    <div class="p-4 mt-7 border border-2 rounded-3">
+      <p>Explorer Settings</p>
+      <div class="mt-4">
+        <div class="mb-4">
+          <label class="text-secondary-emphasis text-footnote text-uppercase">Explorer Link</label>
+          <input type="text" class="form-control py-3" />
+        </div>
+        <div class="mb-4">
+          <label class="text-secondary-emphasis text-footnote text-uppercase">Explorer Name</label>
+          <input type="text" class="form-control py-3" />
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

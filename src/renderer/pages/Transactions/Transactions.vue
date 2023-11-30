@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
-
-import Tabs, { TabItem } from '../components/ui/Tabs.vue';
+import Tabs from '../../components/ui/Tabs';
 
 const activeTabIndex = ref(1);
 
-const tabItems: TabItem[] = [
+const tabItems = [
   { title: 'Ready for Review' },
   { title: 'Ready to Sign', notifications: 3 },
   { title: 'In Progress' },
