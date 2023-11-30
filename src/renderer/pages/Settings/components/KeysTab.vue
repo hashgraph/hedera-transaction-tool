@@ -1,56 +1,49 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 
-import axios from 'axios';
-
-import { getStoredKeyPairs, generateKeyPair } from '../../../services/keyPairService';
-import useMirrorNodeLinksStore from '../../../stores/storeMirrorNodeLinks';
+import useKeyPairsStore from '../../../stores/storeKeyPairs';
 
 import AppButton from '../../../components/ui/AppButton.vue';
 
-const mirrorNodeLinksStore = useMirrorNodeLinksStore();
+const keyPairsStore = useKeyPairsStore();
 
-const keyPairs = ref<{ privateKey: string; publicKey: string; accountId?: string }[]>([]);
+const keyIndex = ref(0);
 
-onMounted(async () => {
-  keyPairs.value = await getStoredKeyPairs();
-});
-
-const index = ref(0);
 const handleGenerateKeyPair = async () => {
-  try {
-    const newKeyPair = await generateKeyPair('', index.value++);
-    if (newKeyPair) {
-      let accountId;
-      try {
-        const {
-          data: { accounts },
-        } = await axios.get(
-          `${mirrorNodeLinksStore.testnet}/accounts/?account.publickey=${newKeyPair.publicKey}`,
-        );
-        if (accounts.length > 0) {
-          accountId = accounts[0].account;
-        }
-      } catch (error) {
-        console.log('error', error);
-      }
-      keyPairs.value = [...keyPairs.value, { ...newKeyPair, accountId }];
-    }
-  } catch (error) {
-    console.log(error);
-  }
+  keyPairsStore.generatePrivateKey('', keyIndex.value);
 };
 </script>
 <template>
   <div>
-    <AppButton color="primary" @click="handleGenerateKeyPair">Generate new key pair</AppButton>
-    <div v-for="keyPair in keyPairs" :key="keyPair.publicKey" class="mt-5 p-4 bg-dark-blue-800">
+    <div class="d-flex">
+      <AppButton color="primary" @click="handleGenerateKeyPair" class="me-6"
+        >Generate new key pair</AppButton
+      >
+      <div>
+        <label class="form-label text-subheader">Index</label>
+        <input
+          v-model="keyIndex"
+          type="number"
+          min="0"
+          class="form-control py-2"
+          style="width: 75px"
+        />
+      </div>
+    </div>
+    <div
+      v-for="keyPair in keyPairsStore.keyPairs"
+      :key="keyPair.publicKey"
+      class="mt-5 p-4 bg-dark-blue-800"
+    >
+      <span class="text-muted text-small d-flex justify-content-end"
+        >Index: {{ keyPair.index }}</span
+      >
       <div class="form-group">
-        <label class="form-label">Encoded Private key</label>
+        <label class="form-label">ED25519 Private key</label>
         <input type="text" readonly class="form-control py-3" :value="keyPair.privateKey" />
       </div>
       <div class="form-group mt-3">
-        <label class="form-label">Encoded Public key</label>
+        <label class="form-label">ED25519 Public key</label>
         <input type="text" readonly class="form-control py-3" :value="keyPair.publicKey" />
       </div>
       <div v-show="keyPair.accountId" class="form-group mt-3">
