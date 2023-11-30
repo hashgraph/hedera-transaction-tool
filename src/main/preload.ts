@@ -37,8 +37,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
   },
   privateKey: {
-    generate: (passphrase: string, index: number): Promise<string> =>
-      ipcRenderer.invoke('privateKey:generate', passphrase, index),
-    getStored: (): Promise<string[]> => ipcRenderer.invoke('privateKey:getStored'),
+    getStored: (): Promise<{ privateKey: string; index: number }[]> =>
+      ipcRenderer.invoke('privateKey:getStored'),
+    store: (privateKey: string, index: number): Promise<void> =>
+      ipcRenderer.invoke('privateKey:store', privateKey, index),
   },
 });

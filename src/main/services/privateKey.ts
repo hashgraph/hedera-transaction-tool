@@ -3,7 +3,7 @@ import path from 'path';
 
 import { decrypt, encrypt } from '../utils/crypto';
 
-import { Mnemonic, PrivateKey } from '@hashgraph/sdk';
+import { PrivateKey } from '@hashgraph/sdk';
 
 // Private Keys Encrypted File Name
 export const keyFileName = 'keys.json';
@@ -12,31 +12,43 @@ export const keyFileName = 'keys.json';
 export const getPrivateKeysFilePath = (app: Electron.App) =>
   path.join(app.getPath('userData'), keyFileName);
 
-// Generate Private Key from Mnemonic, Passphrase and Index
-export const generateFromPhrase = async (mnemonic: Mnemonic, passphrase: string, index: number) =>
-  mnemonic.toStandardEd25519PrivateKey(passphrase, index);
-
 // Decrypt and get all stored Private Keys
-export const getStoredPrivateKeys = async (filePath: string): Promise<PrivateKey[]> => {
+export const getStoredPrivateKeys = async (
+  filePath: string,
+): Promise<{ privateKey: PrivateKey; index: number }[]> => {
   try {
     const encryptedKeys = await fs.readFile(filePath);
 
     const decryptedKeys = decrypt(encryptedKeys, process.env.KEYS_ENCRYPTION_KEY!);
 
-    const stringifiedPrivateKeys: string[] = JSON.parse(decryptedKeys);
+    const stringifiedPrivateKeys: { privateKey: string; index: number }[] =
+      JSON.parse(decryptedKeys);
 
-    return stringifiedPrivateKeys.map(pk => PrivateKey.fromStringED25519(pk));
+    return stringifiedPrivateKeys.map(pk => ({
+      privateKey: PrivateKey.fromStringED25519(pk.privateKey),
+      index: pk.index,
+    }));
   } catch {
     return [];
   }
 };
 
 // Add Private Key to encrypted file
-export const addPrivateKeyEncrypted = async (filePath: string, privateKey: PrivateKey) => {
+export const addPrivateKeyEncrypted = async (
+  filePath: string,
+  privateKey: PrivateKey,
+  index: number,
+) => {
   const storedPrivateKeys = await getStoredPrivateKeys(filePath);
-  const stringifiedPrivateKeys = storedPrivateKeys.map(pk => pk.toStringRaw());
+  const stringifiedPrivateKeys = storedPrivateKeys.map(pk => ({
+    privateKey: pk.privateKey.toStringRaw(),
+    index: pk.index,
+  }));
 
-  const newPrivateKeys = [...stringifiedPrivateKeys, privateKey.toStringRaw()];
+  const newPrivateKeys = [
+    ...stringifiedPrivateKeys,
+    { privateKey: privateKey.toStringRaw(), index },
+  ];
 
   const encryptedPrivateKeys = encrypt(
     JSON.stringify(newPrivateKeys),
@@ -51,7 +63,7 @@ export const removePrivateKeyEncrypted = async (filePath: string, privateKey: Pr
   const storedKeyPairs = await getStoredPrivateKeys(filePath);
 
   const newKeyPairs = JSON.stringify(
-    storedKeyPairs.filter(pk => pk.toStringRaw() !== privateKey.toStringRaw()),
+    storedKeyPairs.filter(pk => pk.privateKey.toStringRaw() !== privateKey.toStringRaw()),
   );
 
   const encryptedKeyPairs = encrypt(newKeyPairs, process.env.KEY_PAIRS_ENCRYPTION_KEY!);
