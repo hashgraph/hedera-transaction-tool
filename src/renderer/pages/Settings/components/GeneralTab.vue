@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import useMirrorNodeLinksStore from '../../../stores/storeMirrorNodeLinks';
 
+import AppButton from '../../../components/ui/AppButton.vue';
+
 const config = useMirrorNodeLinksStore();
 
 const handleMirrorNodeLinkChange = (
@@ -24,9 +26,9 @@ const handleMirrorNodeLinkChange = (
           <input type="text" class="form-control py-3" />
         </div>
         <div>
-          <button type="button" class="btn btn-primary py-3 px-6">
+          <AppButton color="primary" class="py-3 px-6">
             <i class="bi bi-search me-3"></i>Browse
-          </button>
+          </AppButton>
         </div>
       </div>
     </div>

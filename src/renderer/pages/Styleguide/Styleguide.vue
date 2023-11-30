@@ -2,6 +2,7 @@
 // import { useToast } from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-sugar.css';
 
+import AppButton from '../../components/ui/AppButton.vue';
 // const $toast = useToast();
 
 // $toast.open({
@@ -242,24 +243,24 @@ import 'vue-toast-notification/dist/theme-sugar.css';
 
     <div class="row mb-4">
       <div class="col-12 mb-4">
-        <button type="button" class="btn btn-sm btn-primary me-3">Primary small</button>
-        <button type="button" class="btn btn-sm btn-secondary me-3">Secondary small</button>
+        <AppButton color="primary" size="small" class="me-3">Primary small</AppButton>
+        <AppButton color="secondary" size="small" class="me-3">Secondary small</AppButton>
       </div>
       <div class="col-12 mb-4">
-        <button type="button" class="btn btn-primary me-3">Primary</button>
-        <button type="button" class="btn btn-secondary me-3">Secondary</button>
+        <AppButton color="primary" class="me-3">Primary</AppButton>
+        <AppButton color="secondary" class="me-3">Secondary</AppButton>
       </div>
       <div class="col-12 mb-4">
-        <button type="button" class="btn btn-lg btn-primary me-3">Primary Large</button>
-        <button type="button" class="btn btn-lg btn-secondary me-3">Secondary Large</button>
+        <AppButton color="primary" size="large" class="me-3">Primary Large</AppButton>
+        <AppButton color="secondary" size="large" class="me-3">Secondary Large</AppButton>
       </div>
       <div class="col-12 mb-4">
-        <button type="button" class="btn btn-outline-primary me-3">Primary outline</button>
-        <button type="button" class="btn btn-outline-secondary me-3">Secondary outline</button>
+        <AppButton color="primary" outline class="me-3">Primary outline</AppButton>
+        <AppButton color="secondary" outline class="me-3">Secondary outline</AppButton>
       </div>
       <div class="col-12 mb-4">
-        <button type="button" class="btn btn-primary me-3" disabled>Primary disabled</button>
-        <button type="button" class="btn btn-secondary me-3" disabled>Secondary disabled</button>
+        <AppButton color="primary" class="me-3" disabled>Primary disabled</AppButton>
+        <AppButton color="secondary" class="me-3" disabled>Secondary disabled</AppButton>
       </div>
     </div>
 
@@ -389,9 +390,9 @@ import 'vue-toast-notification/dist/theme-sugar.css';
     <h3 class="text-headline mb-4">Modals</h3>
       <div class="row mb-6">
         <div class="col-lg-6">
-          <button onClick={() => handleModalOpen()} class="btn btn-secondary">
+          <AppButton color="secondary" @click="handleModalOpen">
             Show modal
-          </button>
+          </AppButton>
 
           {showModal ? (
             <Modal show={showModal} closeModal={() => handleModalClose()}>

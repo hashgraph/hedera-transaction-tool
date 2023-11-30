@@ -3,6 +3,8 @@ import axios from 'axios';
 import { onBeforeMount, ref } from 'vue';
 import { getMirrorNodeConfig } from '../../services/configurationService';
 
+import AppButton from '../../components/ui/AppButton.vue';
+
 interface ITransaction {
   transaction_id: string;
   consensus_timestamp: string;
@@ -61,8 +63,8 @@ console.log('transactions.length', transactionsFetched.value);
           </div>
           <div>
             <div class="d-flex justify-content-end align-items-center">
-              <button class="btn btn-outline-primary me-3">Details</button>
-              <button class="btn btn-primary">Sign</button>
+              <AppButton color="primary" outline class="me-3">Details</AppButton>
+              <AppButton color="primary">Sign</AppButton>
             </div>
           </div>
         </div>

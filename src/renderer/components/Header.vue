@@ -16,7 +16,6 @@ async function handleThemeChange() {
       <LogoText />
     </div>
     <div>
-      <!-- <button class="btn btn-primary btn-sm" @click="handleThemeChange">Toggle Theme</button> -->
       <div class="form-check form-switch">
         <input
           @change="handleThemeChange"

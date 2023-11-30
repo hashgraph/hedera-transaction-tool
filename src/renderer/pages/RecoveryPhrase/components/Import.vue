@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 
+import AppButton from '../../../components/ui/AppButton.vue';
+
 defineProps<{
   recoveryPhrase: string[] | null;
   ableToContinue: boolean;
@@ -32,13 +34,14 @@ watch(importedPhrase, async () => {
   <div class="position-relative">
     <h2 class="text-center">Import Recovery Phrase manually</h2>
     <p class="mt-3 text-muted text-center">Enter your words comma separated ex. "bird, fly"</p>
-    <button
+    <AppButton
+      color="primary"
       v-if="ableToContinue"
-      class="position-absolute top-0 end-0 btn btn-primary text-subheader"
+      class="position-absolute top-0 end-0 text-subheader"
       @click="handleFinish"
     >
       Finish
-    </button>
+    </AppButton>
     <textarea
       class="mt-7 form-control text-main"
       id=""

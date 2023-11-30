@@ -3,6 +3,8 @@ import { ref } from 'vue';
 
 import useOrganizationsStore from '../../../stores/storeOrganizations';
 
+import AppButton from '../../../components/ui/AppButton.vue';
+
 const organizationsStore = useOrganizationsStore();
 
 const newOrganizationName = ref('');
@@ -30,7 +32,7 @@ const handleAddOrganization = async () => {
         >
         <input type="text" class="form-control py-3" v-model="newOrganizationServerUrl" />
       </div>
-      <button class="btn btn-primary" @click="handleAddOrganization">Add Organization</button>
+      <AppButton color="primary" @click="handleAddOrganization">Add Organization</AppButton>
     </div>
   </div>
   <div
@@ -46,9 +48,9 @@ const handleAddOrganization = async () => {
         >
         <input type="text" disabled class="form-control py-3" :value="org.serverUrl" />
       </div>
-      <button class="btn btn-primary" @click="organizationsStore.removeOrganization(org.serverUrl)">
+      <AppButton color="primary" @click="organizationsStore.removeOrganization(org.serverUrl)">
         Remove
-      </button>
+      </AppButton>
     </div>
   </div>
 </template>

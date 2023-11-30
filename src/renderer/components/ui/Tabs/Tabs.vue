@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { TabItem } from './interfaces/TabItem';
+import AppButton from '../AppButton.vue';
 
 defineProps<{ items: TabItem[]; activeIndex: number }>();
 defineEmits(['update:active-index']);
@@ -9,7 +10,7 @@ defineEmits(['update:active-index']);
   <div class="tabs">
     <ul class="nav nav-tabs">
       <li class="nav-item p-0" v-for="(item, i) in items" :key="item.title">
-        <button
+        <AppButton
           class="link-menu nav-link text-small gap-3"
           :class="{
             active: i === activeIndex,
@@ -23,7 +24,7 @@ defineEmits(['update:active-index']);
             class="notification d-inline-block rounded-circle bg-primary text-white"
             >{{ item.notifications.toFixed(0) }}</span
           >
-        </button>
+        </AppButton>
       </li>
     </ul>
     <div class="mt-6">

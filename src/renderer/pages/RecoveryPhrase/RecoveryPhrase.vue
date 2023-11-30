@@ -2,6 +2,8 @@
 import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
+import AppButton from '../../components/ui/AppButton.vue';
+
 import GenerateOrImport from './components/GenerateOrImport.vue';
 import Generate from './components/Generate.vue';
 import Import from './components/Import.vue';
@@ -34,13 +36,15 @@ const navigateToKeys = () => {
   <div class="container-page p-10">
     <!-- Go back -->
     <div class="d-flex justify-content-between">
-      <button
-        class="btn btn-outline-primary py-0 px-2 mb-4 text-title"
+      <AppButton
+        outline
+        color="primary"
+        class="py-0 px-2 mb-4 text-title"
         v-if="step != 1"
         @click="step--"
       >
         <i class="bi-arrow-left"></i>
-      </button>
+      </AppButton>
     </div>
     <Transition name="fade" mode="out-in">
       <!-- Step 1 -->

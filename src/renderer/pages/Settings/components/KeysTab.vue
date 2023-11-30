@@ -6,6 +6,8 @@ import axios from 'axios';
 import { getStoredKeyPairs, generateKeyPair } from '../../../services/keyPairService';
 import useMirrorNodeLinksStore from '../../../stores/storeMirrorNodeLinks';
 
+import AppButton from '../../../components/ui/AppButton.vue';
+
 const mirrorNodeLinksStore = useMirrorNodeLinksStore();
 
 const keyPairs = ref<{ privateKey: string; publicKey: string; accountId?: string }[]>([]);
@@ -41,7 +43,7 @@ const handleGenerateKeyPair = async () => {
 </script>
 <template>
   <div>
-    <button class="btn btn-secondary" @click="handleGenerateKeyPair">Generate new key pair</button>
+    <AppButton color="primary" @click="handleGenerateKeyPair">Generate new key pair</AppButton>
     <div v-for="keyPair in keyPairs" :key="keyPair.publicKey" class="mt-5 p-4 bg-dark-blue-800">
       <div class="form-group">
         <label class="form-label">Encoded Private key</label>

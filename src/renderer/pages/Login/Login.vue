@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+import AppButton from '../../components/ui/AppButton.vue';
+
 const inputEmail = ref('');
 const inputPassword = ref('');
 const inputEmailInvalid = ref(false);
@@ -45,7 +47,7 @@ const handleOnFormSubmit = (event: Event) => {
           <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
         </div>
         <div class="d-grid mt-4">
-          <button type="submit" class="btn btn-primary mt-2">Login</button>
+          <AppButton color="primary" type="submit" class="mt-2">Login</AppButton>
         </div>
       </form>
     </div>

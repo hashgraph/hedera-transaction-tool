@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
+
 import Tabs from '../../components/ui/Tabs';
+import AppButton from '../../components/ui/AppButton.vue';
 
 const activeTabIndex = ref(1);
 
@@ -72,8 +74,8 @@ const transactions = reactive([
                 </div>
                 <div>
                   <div class="d-flex justify-content-end align-items-center">
-                    <button class="btn btn-outline-primary me-3">Details</button>
-                    <button class="btn btn-primary">Sign</button>
+                    <AppButton color="primary" outline class="me-3">Details</AppButton>
+                    <AppButton color="secondary">Sign</AppButton>
                   </div>
                 </div>
               </div>
