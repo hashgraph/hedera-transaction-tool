@@ -1,18 +1,18 @@
 import { RouteRecordRaw, createRouter, createWebHistory } from 'vue-router';
 
-import StyleGuide from '../pages/Styleguide.vue';
-import Transactions from '../pages/Transactions.vue';
-import Accounts from '../pages/Accounts.vue';
-import Tokens from '../pages/Tokens.vue';
-import Help from '../pages/Help.vue';
-import Settings from '../pages/Settings.vue';
-import SmartContracts from '../pages/SmartContracts.vue';
-import ConsensusService from '../pages/ConsensusService.vue';
-import FileService from '../pages/FileService.vue';
-import ContactList from '../pages/ContactList.vue';
-import RecoveryPhrase from '../pages/RecoveryPhrase.vue';
+import StyleGuide from '../pages/Styleguide';
+import Transactions from '../pages/Transactions';
+import Accounts from '../pages/Accounts';
+import Tokens from '../pages/Tokens';
+import Help from '../pages/Help';
+import Settings from '../pages/Settings';
+import SmartContracts from '../pages/SmartContracts';
+import ConsensusService from '../pages/ConsensusService';
+import FileService from '../pages/FileService';
+import ContactList from '../pages/ContactList';
+import RecoveryPhrase from '../pages/RecoveryPhrase';
+import Login from '../pages/Login';
 import RevealRecoveryPhrase from '../components/RevealRecoveryPhrase.vue';
-import Login from '../pages/Login.vue';
 
 const routes: RouteRecordRaw[] = [
   { path: '/', component: StyleGuide },

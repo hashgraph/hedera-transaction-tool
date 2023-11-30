@@ -1,18 +1,16 @@
 <script setup lang="ts">
 import axios from 'axios';
 import { onMounted, ref, watch } from 'vue';
-
-import { Organization } from '../../main/modules/store';
-
-import Tabs, { TabItem } from '../components/ui/Tabs.vue';
+import { Organization } from '../../../main/modules/store';
+import Tabs, { TabItem } from '../../components/ui/Tabs';
 import {
   getMirrorNodeConfig,
   setMirrorNodeLink,
   getOrganizations,
   addOrganization,
   removeOrganization,
-} from '../services/configurationService';
-import { getStoredKeyPairs, generateKeyPair } from '../services/keyPairService';
+} from '../../services/configurationService';
+import { getStoredKeyPairs, generateKeyPair } from '../../services/keyPairService';
 
 /* Props */
 const props = defineProps<{ tab: string }>();

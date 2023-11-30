@@ -1,9 +1,5 @@
 <script setup lang="ts">
-export interface TabItem {
-  title: string;
-  notifications?: number;
-  content?: any;
-}
+import { TabItem } from './interfaces/TabItem';
 
 defineProps<{ items: TabItem[]; activeIndex: number }>();
 defineEmits(['update:active-index']);

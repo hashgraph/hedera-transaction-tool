@@ -1,4 +1,4 @@
-import { Theme } from '../../main/modules/theme';
+import { Theme } from '../../main/modules/ipcHandlers/theme';
 import { Organization, SchemaProperties } from '../../main/modules/store';
 import { Mnemonic } from '@hashgraph/sdk';
 
