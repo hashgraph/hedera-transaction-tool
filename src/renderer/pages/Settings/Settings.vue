@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+import useMirrorNodeLinksStore from '../../stores/storeMirrorNodeLinks';
+
 import Tabs, { TabItem } from '../../components/ui/Tabs';
 
 import GeneralTab from './components/GeneralTab.vue';
 import WorkGroupsTab from './components/WorkGroupsTab.vue';
 import KeysTab from './components/KeysTab.vue';
+import useOrganizationsStore from '../../stores/storeOrganizations';
 
 /* Props */
 const props = defineProps<{ tab: string }>();
@@ -18,9 +21,15 @@ const propTabIndex = tabItems.findIndex(
 const activeTabIndex = ref(propTabIndex >= 0 ? propTabIndex : 0);
 const [general, workGroups, keys] = tabItems.map(t => t.title);
 
-// Temporary
-const handleClearConfig = () => {
-  window.electronAPI.config.clear();
+/* Stores */
+const mirrorNodeLinks = useMirrorNodeLinksStore();
+const organizationsStore = useOrganizationsStore();
+
+const handleClearConfig = async () => {
+  await window.electronAPI.config.clear();
+
+  mirrorNodeLinks.refetch();
+  organizationsStore.refetch();
 };
 </script>
 <template>

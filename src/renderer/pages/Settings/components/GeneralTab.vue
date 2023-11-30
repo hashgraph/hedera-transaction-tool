@@ -1,36 +1,18 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import useMirrorNodeLinksStore from '../../../stores/storeMirrorNodeLinks';
 
-import { getMirrorNodeConfig, setMirrorNodeLink } from '../../../services/configurationService';
+const config = useMirrorNodeLinksStore();
 
-const initialMirrorNodeLinks = {
-  mainnetLink: '',
-  testnetLink: '',
-  previewnetLink: '',
-};
-
-const mirrorNodeLinks = ref(initialMirrorNodeLinks);
-
-onMounted(async () => {
-  const links = await getMirrorNodeConfig();
-
-  mirrorNodeLinks.value = links || initialMirrorNodeLinks;
-});
-
-watch(
-  () => mirrorNodeLinks.value.mainnetLink,
-  link => setMirrorNodeLink('mainnetLink', link),
-);
-
-// Temporary
-const handleClearConfig = () => {
-  mirrorNodeLinks.value = initialMirrorNodeLinks;
+const handleMirrorNodeLinkChange = (
+  node: 'mainnetLink' | 'testnetLink' | 'previewnetLink',
+  e: Event,
+) => {
+  const input = e.currentTarget as HTMLInputElement;
+  config.setMirroNodeLink(node, input.value);
 };
 </script>
 <template>
   <div>
-    <button class="btn btn-secondary mb-4" @click="handleClearConfig">Clear Config</button>
-
     <!-- Local Storage -->
     <div class="p-4 border border-2 rounded-3">
       <p>Local Storage</p>
@@ -56,19 +38,24 @@ const handleClearConfig = () => {
           <label class="text-secondary-emphasis text-footnote text-uppercase"
             >Main NET MIRROR NODE LINK</label
           >
-          <input type="text" class="form-control py-3" v-model="mirrorNodeLinks.mainnetLink" />
+          <input
+            type="text"
+            class="form-control py-3"
+            :value="config.mirrorNodeLinks.mainnetLink"
+            @change="e => handleMirrorNodeLinkChange('mainnetLink', e)"
+          />
         </div>
         <div class="mb-4">
           <label class="text-secondary-emphasis text-footnote text-uppercase"
             >TEST NET MIRROR NODE LINK</label
           >
-          <input type="text" class="form-control py-3" v-model="mirrorNodeLinks.testnetLink" />
+          <input type="text" class="form-control py-3" />
         </div>
         <div class="mb-4">
           <label class="text-secondary-emphasis text-footnote text-uppercase"
             >PREVIEW NET MIRROR NODE LINK</label
           >
-          <input type="text" class="form-control py-3" v-model="mirrorNodeLinks.previewnetLink" />
+          <input type="text" class="form-control py-3" />
         </div>
       </div>
     </div>

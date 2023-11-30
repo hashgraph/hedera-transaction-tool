@@ -3,8 +3,10 @@ import { ref, onMounted } from 'vue';
 
 import axios from 'axios';
 
-import { getMirrorNodeConfig } from '../../../services/configurationService';
 import { getStoredKeyPairs, generateKeyPair } from '../../../services/keyPairService';
+import useMirrorNodeLinksStore from '../../../stores/storeMirrorNodeLinks';
+
+const mirrorNodeLinksStore = useMirrorNodeLinksStore();
 
 const keyPairs = ref<{ privateKey: string; publicKey: string; accountId?: string }[]>([]);
 
@@ -17,13 +19,13 @@ const handleGenerateKeyPair = async () => {
   try {
     const newKeyPair = await generateKeyPair('', index.value++);
     if (newKeyPair) {
-      const mainnetLink = (await getMirrorNodeConfig()).mainnetLink;
       let accountId;
-
       try {
         const {
           data: { accounts },
-        } = await axios.get(`${mainnetLink}/accounts/?account.publickey=${newKeyPair.publicKey}`);
+        } = await axios.get(
+          `${mirrorNodeLinksStore.testnet}/accounts/?account.publickey=${newKeyPair.publicKey}`,
+        );
         if (accounts.length > 0) {
           accountId = accounts[0].account;
         }
