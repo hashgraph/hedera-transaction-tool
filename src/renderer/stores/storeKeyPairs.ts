@@ -7,19 +7,19 @@ import * as keyPairService from '../services/keyPairService';
 import useMirrorNodeLinksStore from './storeMirrorNodeLinks';
 
 const useKeyPairsStore = defineStore('keyPairs', () => {
+  /* Stores */
   const mirrorNodeLinksStore = useMirrorNodeLinksStore();
 
+  /* State */
   const recoveryPhraseWords = ref<string[]>([]);
   const keyPairs = ref<
     { privateKey: string; index: number; publicKey: string; accountId?: string }[]
   >([]);
 
+  /* Getters */
   const indexes = computed(() => keyPairs.value.map(kp => kp.index));
 
-  onMounted(() => {
-    refetch();
-  });
-
+  /* Actions */
   async function refetch() {
     keyPairs.value = await keyPairService.getStoredKeyPairs();
 
@@ -56,14 +56,15 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
     };
   }
 
-  async function checkIsAccount() {}
-
+  /* Lifecycle hooks */
+  onMounted(() => {
+    refetch();
+  });
   return {
     recoveryPhraseWords,
     keyPairs,
     setRecoveryPhrase,
     generatePrivateKey,
-    checkIsAccount,
     refetch,
   };
 });

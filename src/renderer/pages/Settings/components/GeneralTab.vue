@@ -3,14 +3,14 @@ import useMirrorNodeLinksStore from '../../../stores/storeMirrorNodeLinks';
 
 import AppButton from '../../../components/ui/AppButton.vue';
 
-const config = useMirrorNodeLinksStore();
+const mirrorNodeLinksStore = useMirrorNodeLinksStore();
 
 const handleMirrorNodeLinkChange = (
   node: 'mainnetLink' | 'testnetLink' | 'previewnetLink',
   e: Event,
 ) => {
   const input = e.currentTarget as HTMLInputElement;
-  config.setMirroNodeLink(node, input.value);
+  mirrorNodeLinksStore.setMirroNodeLink(node, input.value);
 };
 </script>
 <template>
@@ -43,7 +43,7 @@ const handleMirrorNodeLinkChange = (
           <input
             type="text"
             class="form-control py-3"
-            :value="config.mirrorNodeLinks.mainnetLink"
+            :value="mirrorNodeLinksStore.mirrorNodeLinks.mainnetLink"
             @change="e => handleMirrorNodeLinkChange('mainnetLink', e)"
           />
         </div>
