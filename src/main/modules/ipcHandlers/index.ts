@@ -6,6 +6,6 @@ import listenForPrivateKeyEvents from './privateKey';
 export default function (app: Electron.App) {
   listenForThemeEvents();
   listenForConfigurationEvents();
-  listenForRecoveryPhraseEvents(app);
+  listenForRecoveryPhraseEvents();
   listenForPrivateKeyEvents(app);
 }

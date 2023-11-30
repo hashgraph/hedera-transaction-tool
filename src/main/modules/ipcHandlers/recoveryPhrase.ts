@@ -2,19 +2,9 @@ import fs from 'fs/promises';
 
 import { dialog, ipcMain } from 'electron';
 
-import {
-  generateRecoveryPhrase,
-  encryptRecoveryPhrase,
-  getRecoveryPhraseFilePath,
-  getRecoveryPhrase,
-} from '../../services/recoveryPhrase';
-
 const createChannelName = (...props) => ['recoveryPhrase', ...props].join(':');
 
-export default (app: Electron.App) => {
-  // Generate
-  ipcMain.handle(createChannelName('generate'), () => generateRecoveryPhrase());
-
+export default () => {
   // Download recovery phrase object unencrypted
   ipcMain.handle(createChannelName('downloadFileUnencrypted'), async (e, words: string[]) => {
     const file = await dialog.showSaveDialog({
@@ -25,26 +15,6 @@ export default (app: Electron.App) => {
 
     if (!file.canceled) {
       fs.writeFile(file.filePath || '', JSON.stringify(words));
-    }
-  });
-
-  // Encrypt and save the recovery phrase
-  ipcMain.handle(
-    createChannelName('encryptRecoveryPhrase'),
-    async (e, recoveryPhrase: string[]) => {
-      await encryptRecoveryPhrase(getRecoveryPhraseFilePath(app), recoveryPhrase);
-      return true;
-    },
-  );
-
-  // Decrypt the recovery phrase
-  ipcMain.handle(createChannelName('decryptRecoveryPhrase'), async () => {
-    try {
-      const recoveryPhrase = await getRecoveryPhrase(getRecoveryPhraseFilePath(app));
-      return recoveryPhrase;
-    } catch (error) {
-      console.log(error);
-      return [];
     }
   });
 };
