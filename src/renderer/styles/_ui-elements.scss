@@ -132,3 +132,70 @@
 .modal-backdrop {
   backdrop-filter: blur(4px);
 }
+
+/* Input Token */
+.container-input-token {
+  background-color: $dark-blue-700; //TO CHANGE COLOR
+  border-radius: $border-radius;
+  padding: 12px;
+  border: 1px solid $dark-blue-700; //TO CHANGE COLOR
+  transition: border 0.15s linear;
+
+  @include media-breakpoint-up(md) {
+    &:not(.is-readonly) {
+      height: 108px;
+    }
+  }
+
+  &:focus-within:not(.is-readonly),
+  &:hover:not(.is-readonly) {
+    border-color: $dark-blue-500; //TO CHANGE COLOR
+  }
+
+  &.is-invalid {
+    border-color: $danger;
+  }
+
+  .input-token {
+    color: $dark-blue-100; //TO CHANGE COLOR
+    font-family: $font-family-numeric;
+    font-size: 20px;
+    line-height: 40px;
+    background-color: $dark-blue-700; //TO CHANGE COLOR
+    border: none;
+    max-width: 150px;
+    flex: 0 1 150px;
+    @include transition-color;
+
+    @include media-breakpoint-up(md) {
+      max-width: 230px;
+      flex: 0 1 230px;
+      font-size: 28px;
+    }
+
+    &.is-compact {
+      font-size: 16px;
+      max-width: 230px;
+      flex: 0 1 230px;
+
+      @include media-breakpoint-up(md) {
+        max-width: 270px;
+        flex: 0 1 270px;
+        font-size: 22px;
+      }
+    }
+
+    &::placeholder {
+      color: $dark-blue-100; //TO CHANGE COLOR
+    }
+
+    &:focus {
+      color: $dark-blue-100; //TO CHANGE COLOR
+    }
+
+    &:focus-visible {
+      border: none;
+      outline: none;
+    }
+  }
+}
