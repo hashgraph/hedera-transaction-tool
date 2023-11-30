@@ -1,6 +1,11 @@
 <script setup lang="ts">
-import { TabItem } from './interfaces/TabItem';
-import AppButton from '../AppButton.vue';
+import AppButton from './AppButton.vue';
+
+export interface TabItem {
+  title: string;
+  notifications?: number;
+  content?: any;
+}
 
 defineProps<{ items: TabItem[]; activeIndex: number }>();
 defineEmits(['update:active-index']);

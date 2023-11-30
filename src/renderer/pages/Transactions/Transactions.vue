@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
 
-import Tabs from '../../components/ui/Tabs';
+import AppTabs, { TabItem } from '../../components/ui/AppTabs.vue';
 import AppButton from '../../components/ui/AppButton.vue';
 
 const activeTabIndex = ref(1);
 
-const tabItems = [
+const tabItems: TabItem[] = [
   { title: 'Ready for Review' },
   { title: 'Ready to Sign', notifications: 3 },
   { title: 'In Progress' },
@@ -47,7 +47,7 @@ const transactions = reactive([
   <div class="p-10">
     <h1 class="text-huge text-bold">Transactions</h1>
     <div class="mt-7">
-      <Tabs :items="tabItems" v-model:active-index="activeTabIndex">
+      <AppTabs :items="tabItems" v-model:active-index="activeTabIndex">
         <template #[readyToReview]> First Tab </template>
         <template #[readyToSign]>
           <div>
@@ -101,7 +101,7 @@ const transactions = reactive([
         <template #[completed]> Fifth Tab </template>
 
         <template #[drafts]> Sixth Tab </template>
-      </Tabs>
+      </AppTabs>
     </div>
   </div>
 </template>
