@@ -25,6 +25,21 @@
   }
 }
 
+.btn-percentage {
+  cursor: pointer;
+  border: 1px solid $dark-blue-300; //TO CHANGE COLOR
+  border-radius: $border-radius;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--#{$prefix}body-color); //TO CHANGE COLOR
+  padding: 4px 12px;
+  transition: background-color 0.15s linear;
+
+  &.is-active {
+    background-color: $dark-blue-300; //TO CHANGE COLOR
+  }
+}
+
 /* Forms */
 .form-control {
   &.is-fill {
