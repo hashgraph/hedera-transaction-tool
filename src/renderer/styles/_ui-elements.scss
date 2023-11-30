@@ -25,6 +25,21 @@
   }
 }
 
+.btn-percentage {
+  cursor: pointer;
+  border: 1px solid $dark-blue-300; //TO CHANGE COLOR
+  border-radius: $border-radius;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--#{$prefix}body-color); //TO CHANGE COLOR
+  padding: 4px 12px;
+  transition: background-color 0.15s linear;
+
+  &.is-active {
+    background-color: $dark-blue-300; //TO CHANGE COLOR
+  }
+}
+
 /* Forms */
 .form-control {
   &.is-fill {
@@ -97,5 +112,90 @@
   .notification {
     width: 20px;
     height: 20px;
+  }
+}
+
+/* Loader */
+.container-loader {
+  width: 80px;
+  height: 80px;
+  background-image: url('../public/loader.svg');
+  background-repeat: no-repeat;
+  animation: 0.75s linear infinite spinner-border;
+}
+
+/* Modals */
+.modal-content {
+  box-shadow: $modal-content-box-shadow-xs;
+}
+
+.modal-backdrop {
+  backdrop-filter: blur(4px);
+}
+
+/* Input Token */
+.container-input-token {
+  background-color: $dark-blue-700; //TO CHANGE COLOR
+  border-radius: $border-radius;
+  padding: 12px;
+  border: 1px solid $dark-blue-700; //TO CHANGE COLOR
+  transition: border 0.15s linear;
+
+  @include media-breakpoint-up(md) {
+    &:not(.is-readonly) {
+      height: 108px;
+    }
+  }
+
+  &:focus-within:not(.is-readonly),
+  &:hover:not(.is-readonly) {
+    border-color: $dark-blue-500; //TO CHANGE COLOR
+  }
+
+  &.is-invalid {
+    border-color: $danger;
+  }
+
+  .input-token {
+    color: $dark-blue-100; //TO CHANGE COLOR
+    font-family: $font-family-numeric;
+    font-size: 20px;
+    line-height: 40px;
+    background-color: $dark-blue-700; //TO CHANGE COLOR
+    border: none;
+    max-width: 150px;
+    flex: 0 1 150px;
+    @include transition-color;
+
+    @include media-breakpoint-up(md) {
+      max-width: 230px;
+      flex: 0 1 230px;
+      font-size: 28px;
+    }
+
+    &.is-compact {
+      font-size: 16px;
+      max-width: 230px;
+      flex: 0 1 230px;
+
+      @include media-breakpoint-up(md) {
+        max-width: 270px;
+        flex: 0 1 270px;
+        font-size: 22px;
+      }
+    }
+
+    &::placeholder {
+      color: $dark-blue-100; //TO CHANGE COLOR
+    }
+
+    &:focus {
+      color: $dark-blue-100; //TO CHANGE COLOR
+    }
+
+    &:focus-visible {
+      border: none;
+      outline: none;
+    }
   }
 }

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Mnemonic } from '@hashgraph/sdk';
 
+import AppButton from '../../../components/ui/AppButton.vue';
+
 import { downloadFileUnencrypted } from '../../../services/recoveryPhraseService';
 
 const props = defineProps<{
@@ -22,14 +24,14 @@ const handleDownloadRecoveryPhrase = () => {
 <template>
   <div>
     <div class="d-flex justify-content-between">
-      <button type="button" class="btn btn-outline-primary" @click="handleGeneratePhrase">
+      <AppButton color="primary" @click="handleGeneratePhrase">
         Regenerate Recovery Phrase
-      </button>
+      </AppButton>
       <div>
-        <button type="button" class="btn btn-primary me-4" @click="handleDownloadRecoveryPhrase">
+        <AppButton color="primary" class="me-4" @click="handleDownloadRecoveryPhrase">
           Download file
-        </button>
-        <button type="button" class="btn btn-secondary" @click="handleFinish">Finish</button>
+        </AppButton>
+        <AppButton color="secondary" @click="handleFinish">Finish</AppButton>
       </div>
     </div>
     <div class="mt-6 d-flex align-items-center justify-content-around flex-wrap gap-4">

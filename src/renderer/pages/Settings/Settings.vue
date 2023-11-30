@@ -3,8 +3,8 @@ import { ref } from 'vue';
 
 import useMirrorNodeLinksStore from '../../stores/storeMirrorNodeLinks';
 
-import Tabs, { TabItem } from '../../components/ui/Tabs';
-
+import AppTabs, { TabItem } from '../../components/ui/AppTabs.vue';
+import AppButton from '../../components/ui/AppButton.vue';
 import GeneralTab from './components/GeneralTab.vue';
 import WorkGroupsTab from './components/WorkGroupsTab.vue';
 import KeysTab from './components/KeysTab.vue';
@@ -35,9 +35,9 @@ const handleClearConfig = async () => {
 <template>
   <div class="p-10">
     <h1 class="text-huge text-bold">Settings</h1>
-    <button class="btn btn-secondary" @click="handleClearConfig">Clear Config</button>
+    <AppButton color="secondary" @click="handleClearConfig">Clear Config</AppButton>
     <div class="mt-7">
-      <Tabs :items="tabItems" v-model:active-index="activeTabIndex">
+      <AppTabs :items="tabItems" v-model:active-index="activeTabIndex">
         <template #[general]>
           <GeneralTab />
         </template>
@@ -47,7 +47,7 @@ const handleClearConfig = async () => {
         <template #[keys]>
           <KeysTab />
         </template>
-      </Tabs>
+      </AppTabs>
     </div>
   </div>
 </template>

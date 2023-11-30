@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Mnemonic } from '@hashgraph/sdk';
 
+import AppButton from '../../../components/ui/AppButton.vue';
+
 defineProps<{
   step: number;
   recoveryPhrase: string[] | null;
@@ -25,20 +27,17 @@ const handleImportPhrase = () => {
   <div class="h-100">
     <h1 class="text-huge text-bold text-center">Recovery Phrase</h1>
     <div class="h-50 d-flex justify-content-center align-items-center flex-wrap">
-      <button
-        type="button"
-        class="btn btn-lg text-title btn-outline-primary me-4"
+      <AppButton
+        color="primary"
+        size="large"
+        class="text-title me-4"
         @click="handleGeneratePhrase()"
       >
         Generate Recovery Phrase
-      </button>
-      <button
-        type="button"
-        class="btn btn-lg text-title btn-outline-secondary"
-        @click="handleImportPhrase()"
-      >
+      </AppButton>
+      <AppButton color="secondary" size="large" class="text-title" @click="handleImportPhrase()">
         Import Existing Phrase
-      </button>
+      </AppButton>
     </div>
   </div>
 </template>
