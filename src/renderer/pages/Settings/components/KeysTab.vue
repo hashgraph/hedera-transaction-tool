@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
 
@@ -12,6 +12,10 @@ const keyIndex = ref(0);
 const handleGenerateKeyPair = async () => {
   keyPairsStore.generatePrivateKey('', keyIndex.value);
 };
+
+onMounted(() => {
+  keyPairsStore.refetch();
+});
 </script>
 <template>
   <div>
