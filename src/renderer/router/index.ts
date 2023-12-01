@@ -1,5 +1,6 @@
 import { RouteRecordRaw, createRouter, createWebHistory } from 'vue-router';
 
+import Welocome from '../pages/Welcome';
 import StyleGuide from '../pages/Styleguide';
 import Transactions from '../pages/Transactions';
 import Accounts from '../pages/Accounts';
@@ -14,7 +15,8 @@ import RecoveryPhrase from '../pages/RecoveryPhrase';
 import Login from '../pages/Login';
 
 const routes: RouteRecordRaw[] = [
-  { path: '/', component: StyleGuide },
+  { path: '/', component: Welocome },
+  { path: '/style-guide', component: StyleGuide },
   { path: '/transactions', component: Transactions },
   { path: '/accounts', component: Accounts },
   { path: '/tokens', component: Tokens },

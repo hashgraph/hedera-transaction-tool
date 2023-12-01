@@ -4,6 +4,11 @@ import { RouterLink } from 'vue-router';
 const menuItems = [
   {
     link: '/',
+    title: 'Start',
+    icon: 'bi bi-flag',
+  },
+  {
+    link: '/style-guide',
     title: 'Style Guide',
     icon: 'bi bi-feather',
   },
