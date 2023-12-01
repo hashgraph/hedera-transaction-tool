@@ -1,5 +1,33 @@
 <script setup lang="ts">
 import AppButton from '../../components/ui/AppButton.vue';
+
+import { useRouter } from 'vue-router';
+import useUserStateStore from '../../stores/storeUserState';
+import useOrganizationsStore from '../../stores/storeOrganizations';
+
+const router = useRouter();
+const userStateStore = useUserStateStore();
+const organizationsStore = useOrganizationsStore();
+
+const handleOptionClick = (option: 'personal' | 'organization') => {
+  userStateStore.setUserRole(option);
+
+  switch (option) {
+    case 'personal':
+      userStateStore.setServerUrl('local');
+      router.push({ name: 'login' });
+      break;
+    case 'organization':
+      if (organizationsStore.currentOrganization) {
+        router.push({ name: 'login' });
+      } else {
+        router.push({ name: 'setupOrganization' });
+      }
+      break;
+    default:
+      break;
+  }
+};
 </script>
 <template>
   <div
@@ -14,7 +42,11 @@ import AppButton from '../../components/ui/AppButton.vue';
         <p class="subtext text-main lh-base text-center">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit.
         </p>
-        <AppButton color="primary" size="large" class="mt-5 w-100 rounded-4"
+        <AppButton
+          color="primary"
+          size="large"
+          class="mt-5 w-100 rounded-4"
+          @click="handleOptionClick('personal')"
           >Login as Personal User</AppButton
         >
       </div>
@@ -27,7 +59,11 @@ import AppButton from '../../components/ui/AppButton.vue';
         <p class="subtext text-main lh-base text-center">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit.
         </p>
-        <AppButton color="primary" size="large" class="mt-5 w-100 rounded-4"
+        <AppButton
+          color="primary"
+          size="large"
+          class="mt-5 w-100 rounded-4"
+          @click="handleOptionClick('organization')"
           >Login as Organizaton</AppButton
         >
       </div>
