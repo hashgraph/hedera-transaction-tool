@@ -1,5 +1,7 @@
 import { RouteRecordRaw, createRouter, createWebHistory } from 'vue-router';
 
+import { attachMeta } from './meta';
+
 import Welocome from '../pages/Welcome';
 import StyleGuide from '../pages/Styleguide';
 import Transactions from '../pages/Transactions';
@@ -41,19 +43,24 @@ const routes: RouteRecordRaw[] = [
     children: [
       {
         path: 'general',
+        name: 'settingsGeneral',
         component: GeneralTab,
       },
       {
         path: 'work-groups',
+        name: 'settingsWorkGroups',
         component: WorkGroupsTab,
       },
       {
         path: 'keys',
+        name: 'settingsKeys',
         component: KeysTab,
       },
     ],
   },
 ];
+
+attachMeta(routes);
 
 const router = createRouter({
   history: createWebHistory(),
