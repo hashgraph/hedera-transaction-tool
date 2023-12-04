@@ -15,6 +15,8 @@ const useUserStateStore = defineStore('userState', () => {
   const userState = reactive<UserState>({
     isLoggedIn: false,
     isAdmin: false,
+    role: 'personal',
+    serverUrl: localServerUrl,
   });
 
   /* Getters */
@@ -30,6 +32,8 @@ const useUserStateStore = defineStore('userState', () => {
 
   function setServerUrl(url: string | 'local') {
     if (url === 'local') {
+      console.log(url);
+
       userState.serverUrl = localServerUrl;
     } else {
       userState.serverUrl = url;

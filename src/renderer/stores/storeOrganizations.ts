@@ -5,8 +5,11 @@ import { defineStore } from 'pinia';
 import { Organization } from '../../main/modules/store';
 
 import * as configService from '../services/configurationService';
+import useUserStateStore from './storeUserState';
 
 const useOrganizationsStore = defineStore('organizations', () => {
+  const userStateStore = useUserStateStore();
+
   /* State */
   const organizations = ref<Organization[]>([]);
   const currentOrganization = ref<Organization | null>(null);
@@ -29,7 +32,7 @@ const useOrganizationsStore = defineStore('organizations', () => {
   onMounted(async () => {
     await refetch();
 
-    if (organizations.value.length > 0) {
+    if (organizations.value.length > 0 && userStateStore.role === 'organization') {
       currentOrganization.value = organizations.value[0];
     }
   });
