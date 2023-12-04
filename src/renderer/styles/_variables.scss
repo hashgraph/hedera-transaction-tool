@@ -422,7 +422,8 @@ $input-border-radius: $border-radius-lg;
 $input-padding-y-sm: 7px;
 $input-padding-x-sm: 12px;
 
-$form-select-indicator: none;
+$form-select-border-radius: $border-radius-lg;
+$form-select-border-radius-sm: $border-radius-lg;
 
 // Custom selects
 $custom-select-line-height: 1.5;

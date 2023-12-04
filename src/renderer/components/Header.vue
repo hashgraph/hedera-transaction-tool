@@ -49,9 +49,14 @@ function handleOrganizationChange(e: Event) {
       <Logo />
       <LogoText />
     </div>
-    <div class="d-flex">
+    <div class="d-flex align-items-center">
       <div class="me-4">
-        <select name="serverURL" @change="handleOrganizationChange" ref="organizationsDropDownRef">
+        <select
+          class="form-select form-select-sm"
+          name="serverURL"
+          @change="handleOrganizationChange"
+          ref="organizationsDropDownRef"
+        >
           <option value="local" :selected="userStateStore.role === 'personal'" default>
             No organization selected
           </option>
