@@ -30,7 +30,7 @@ const handleContinue = async (e: Event) => {
     <h1 class="text-huge text-bold text-center">Setup Organization</h1>
     <form
       @submit="handleContinue"
-      class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-5"
+      class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
     >
       <div class="col-12 col-md-8 col-lg-6">
         <input
