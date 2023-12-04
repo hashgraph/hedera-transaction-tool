@@ -1,6 +1,10 @@
 :root,
 [data-bs-theme='light'] {
   --#{$prefix}text-secondary-color: #{$dark-blue-600};
+  --#{$prefix}link-primary-color: #{$purple-600};
+  --#{$prefix}link-primary-hover-color: #{$purple-700};
+  --#{$prefix}link-secondary-color: #{$purple-500};
+  --#{$prefix}link-secondary-hover-color: #{$purple-400};
 
   --#{$prefix}menu-link-color: #{$neutral-800};
   --#{$prefix}menu-link-color-hover: #{$neutral-900};
@@ -17,6 +21,10 @@
     color-scheme: dark;
 
     --#{$prefix}text-secondary-color: #{$dark-blue-200};
+    --#{$prefix}link-primary-color: #{$purple-500};
+    --#{$prefix}link-primary-hover-color: #{$dark-blue-400};
+    --#{$prefix}link-secondary-color: #{$purple-400};
+    --#{$prefix}link-secondary-hover-color: #{$dark-blue-300};
 
     --#{$prefix}menu-link-color: #{$dark-blue-200};
     --#{$prefix}menu-link-color-hover: #{$neutral-00};

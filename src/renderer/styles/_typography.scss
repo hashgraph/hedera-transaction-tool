@@ -56,6 +56,26 @@
   }
 }
 
+.link-primary {
+  text-decoration: none;
+  color: var(--#{$prefix}link-primary-color) !important;
+  transition: color 0.15s linear;
+
+  &:hover {
+    color: var(--#{$prefix}link-primary-hover-color) !important;
+  }
+}
+
+.link-secondary {
+  text-decoration: none;
+  color: var(--#{$prefix}link-secondary-color) !important;
+  transition: color 0.15s linear;
+
+  &:hover {
+    color: var(--#{$prefix}link-secondary-hover-color) !important;
+  }
+}
+
 .link-menu {
   display: flex;
   align-items: center;
