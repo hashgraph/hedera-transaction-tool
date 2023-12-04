@@ -23,7 +23,7 @@ const handleOnFormSubmit = (event: Event) => {
   inputPasswordInvalid.value = passwordValid;
 
   if (!inputEmailInvalid.value && !inputPasswordInvalid.value) {
-    //SEND LOGIN REQUST
+    //SEND LOGIN REQUEST
 
     //IF LOGGED IN
     userStateStore.logUser();
@@ -32,7 +32,7 @@ const handleOnFormSubmit = (event: Event) => {
     const isInitial = true; //TEMPORARY
 
     if (isInitial) {
-      router.push({});
+      router.push({ name: 'newPassword' });
     } else {
       //REDIRECT TO DEFAULT LOGGED ROUTE?
       router.push({ name: 'settingsGeneral' });
@@ -45,7 +45,7 @@ const handleOnFormSubmit = (event: Event) => {
   <div class="p-10 d-flex justify-content-center align-items-center">
     <div>
       <h1 class="text-huge text-bold text-center">Login</h1>
-      <p class="text-main mt-3">Please Enter Temporary email and password</p>
+      <p class="text-main mt-3 text-center">Please Enter Temporary email and password</p>
       <form @submit="handleOnFormSubmit" class="form-login">
         <div class="mt-4">
           <input

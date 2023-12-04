@@ -19,6 +19,7 @@ import GeneralTab from '../pages/Settings/components/GeneralTab.vue';
 import WorkGroupsTab from '../pages/Settings/components/WorkGroupsTab.vue';
 import KeysTab from '../pages/Settings/components/KeysTab.vue';
 import SetupOrganization from '../pages/SetupOrganization';
+import NewPassword from '../pages/NewPassword';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -37,6 +38,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/help', name: 'help', component: Help },
   { path: '/recovery-phrase', name: 'recoveryPhrase', component: RecoveryPhrase },
   { path: '/login', name: 'login', component: Login },
+  { path: '/new-password', name: 'newPassword', component: NewPassword },
+  { path: '/setup-organization', name: 'setupOrganization', component: SetupOrganization },
   {
     path: '/settings',
     name: 'settings',
@@ -59,7 +62,6 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
-  { path: '/setup-organization', name: 'setupOrganization', component: SetupOrganization },
 ];
 
 attachMeta(routes);
