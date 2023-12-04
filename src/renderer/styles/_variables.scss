@@ -1,15 +1,15 @@
 // Colors
-$white-50: #f2f2f2;
-$white-100: #e6e6e6;
-$white-200: #cccccc;
-$white-300: #b3b3b3;
-$white-400: #999999;
-$white-500: #ffffff;
-$white-600: #666666;
-$white-700: #4d4d4d;
-$white-800: #333333;
-$white-900: #1a1a1a;
-$white-950: #0d0d0d;
+$neutral-00: #ffffff;
+$neutral-50: #f2f2f2;
+$neutral-100: #e6e6e6;
+$neutral-200: #cccccc;
+$neutral-300: #b3b3b3;
+$neutral-400: #999999;
+$neutral-500: #666666;
+$neutral-600: #4d4d4d;
+$neutral-700: #333333;
+$neutral-800: #1a1a1a;
+$neutral-900: #0d0d0d;
 
 $purple-50: #f2e5ff;
 $purple-100: #e5ccff;
@@ -101,7 +101,7 @@ $success: $success-500;
 $danger: $error-500;
 $warning: $warning-500;
 $info: $dark-blue-600;
-$gray: $white-200;
+$gray: $neutral-200;
 
 // Add custom colors to theme-colors map
 $theme-colors: (
@@ -225,11 +225,11 @@ $container-max-widths: (
 );
 
 // Body
-$body-bg: $white-500;
+$body-bg: $neutral-00;
 $body-bg-dark: #151629;
 
-$body-color: $white-950;
-$body-color-dark: $white-500;
+$body-color: $neutral-900;
+$body-color-dark: $neutral-00;
 
 // Paragraphs
 $paragraph-margin-bottom: 0;
@@ -390,9 +390,9 @@ $btn-transition: color 0.15s linear, background-color 0.15s linear, border-color
   box-shadow 0.15s linear;
 $btn-disabled-opacity: 0.5;
 
-$btn-primary-color: $white-500;
+$btn-primary-color: $neutral-00;
 $btn-primary-disabled-background: #232342;
-$btn-primary-outline-color: $white-500;
+$btn-primary-outline-color: $neutral-00;
 // $btn-primary-outline-border-hover: $blue-neutral-200;
 
 // Forms
@@ -430,7 +430,7 @@ $custom-select-height: auto;
 $custom-select-focus-box-shadow: 0 0 0 1px $primary;
 
 // Range
-// $form-range-track-bg: $neutral-500;
+// $form-range-track-bg: $neutral-00;
 $form-range-track-height: 0.25rem;
 $form-range-thumb-width: 1.5rem;
 $form-range-thumb-height: 1.5rem;
@@ -442,19 +442,19 @@ $form-range-thumb-height: 1.5rem;
 
 // Modals
 // $modal-content-bg: $blue-neutral-900;
-$modal-header-border-color: $white-950;
+$modal-header-border-color: $neutral-900;
 $modal-backdrop-opacity: 1;
 // $form-range-thumb-bg: $blue-neutral-100;
 $modal-backdrop-bg: rgba(25, 25, 63, 0.3);
 $modal-header-padding: 24px;
 $modal-inner-padding: 1.5rem;
 
-$btn-close-color: $white-500;
+$btn-close-color: $neutral-00;
 
 // Pagination
 $pagination-bg: transparent;
 // $pagination-color: $blue-neutral-300;
-$pagination-active-color: $white-500;
+$pagination-active-color: $neutral-00;
 // $pagination-active-bg: $blue-neutral-500;
 $pagination-padding-y: 0.175rem;
 $pagination-border-width: 0;

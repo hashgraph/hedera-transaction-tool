@@ -1,7 +1,7 @@
 :root,
 [data-bs-theme='light'] {
-  --#{$prefix}menu-link-color: #{$white-800};
-  --#{$prefix}menu-link-color-hover: #{$white-900};
+  --#{$prefix}menu-link-color: #{$neutral-800};
+  --#{$prefix}menu-link-color-hover: #{$neutral-900};
   --#{$prefix}menu-link-bg-hover: #{$light-blue-100};
 
   --#{$prefix}input-border-color: #{$dark-blue-200};
@@ -15,7 +15,7 @@
     color-scheme: dark;
 
     --#{$prefix}menu-link-color: #{$dark-blue-200};
-    --#{$prefix}menu-link-color-hover: #{$white-500};
+    --#{$prefix}menu-link-color-hover: #{$neutral-00};
     --#{$prefix}menu-link-bg-hover: #{$dark-blue-800};
 
     --#{$prefix}input-border-color: #{$dark-blue-700};
