@@ -48,6 +48,7 @@ strong {
 }
 
 .container-header {
+  height: 80px;
   padding: 18px 24px;
   border-bottom: 1px solid var(--#{$prefix}border-color);
   background-color: var(--#{$prefix}body-bg);
@@ -79,16 +80,16 @@ strong {
 
 .container-main {
   display: flex;
-  top: 73px;
+  top: 80px;
   position: relative;
   margin-left: 224px;
-  min-height: calc(100vh - 73px);
+  min-height: calc(100vh - 80px);
 }
 
 .container-menu {
   position: fixed;
   left: 0;
-  height: calc(100% - 73px);
+  height: calc(100% - 80px);
   width: 224px;
   padding: 8px;
   border-right: 1px solid var(--#{$prefix}border-color);
@@ -98,5 +99,5 @@ strong {
 }
 
 .container-page {
-  min-height: calc(100vh - 73px);
+  min-height: calc(100vh - 80px);
 }
