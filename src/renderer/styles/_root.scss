@@ -1,5 +1,7 @@
 :root,
 [data-bs-theme='light'] {
+  --#{$prefix}text-secondary-color: #{$dark-blue-600};
+
   --#{$prefix}menu-link-color: #{$neutral-800};
   --#{$prefix}menu-link-color-hover: #{$neutral-900};
   --#{$prefix}menu-link-bg-hover: #{$light-blue-100};
@@ -13,6 +15,8 @@
 @if $enable-dark-mode {
   @include color-mode(dark, true) {
     color-scheme: dark;
+
+    --#{$prefix}text-secondary-color: #{$dark-blue-200};
 
     --#{$prefix}menu-link-color: #{$dark-blue-200};
     --#{$prefix}menu-link-color-hover: #{$neutral-00};

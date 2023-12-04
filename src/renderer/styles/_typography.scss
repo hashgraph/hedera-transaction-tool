@@ -39,6 +39,10 @@
   color: $white;
 }
 
+.text-secondary {
+  color: var(--#{$prefix}text-secondary-color) !important;
+}
+
 // Links
 .link {
   cursor: pointer;

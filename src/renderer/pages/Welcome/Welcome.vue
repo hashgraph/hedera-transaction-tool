@@ -37,7 +37,7 @@ const handleOptionClick = (option: 'personal' | 'organization') => {
     class="p-10 d-flex flex-column justify-content-center align-items-center flex-1 overflow-hidden"
   >
     <h1 class="text-huge text-bold">Welcome to TRX Tool</h1>
-    <h3 class="mt-4 text-main text-normal">Please Setup Organizaton to continue</h3>
+    <p class="mt-4 text-main text-normal">Please Setup Organizaton to continue</p>
     <div class="mt-8 d-flex gap-4">
       <div
         class="container-welcome-card container-modal-card p-5 border border-dark-subtle rounded-4"
