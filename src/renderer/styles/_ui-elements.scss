@@ -221,10 +221,10 @@
       left: 50%;
 
       &:nth-child(1) {
-        transform: translateX(-65%);
+        transform: translateX(-67%);
       }
       &:nth-child(2) {
-        transform: translateX(-35%);
+        transform: translate(-32%, -10px);
       }
     }
   }
