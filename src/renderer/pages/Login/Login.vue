@@ -2,6 +2,11 @@
 import { ref } from 'vue';
 
 import AppButton from '../../components/ui/AppButton.vue';
+import useUserStateStore from '../../stores/storeUserState';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+const userStateStore = useUserStateStore();
 
 const inputEmail = ref('');
 const inputPassword = ref('');
@@ -10,11 +15,29 @@ const inputPasswordInvalid = ref(false);
 
 const handleOnFormSubmit = (event: Event) => {
   event.preventDefault();
+
   const emailValid = inputEmail.value.trim() === '';
-  const passwordValid = inputEmail.value.trim() === '';
+  const passwordValid = inputPassword.value.trim() === '';
 
   inputEmailInvalid.value = emailValid;
   inputPasswordInvalid.value = passwordValid;
+
+  if (!inputEmailInvalid.value && !inputPasswordInvalid.value) {
+    //SEND LOGIN REQUST
+
+    //IF LOGGED IN
+    userStateStore.logUser();
+
+    //CHECK IF IS INITIAL LOGIN
+    const isInitial = true; //TEMPORARY
+
+    if (isInitial) {
+      router.push({});
+    } else {
+      //REDIRECT TO DEFAULT LOGGED ROUTE?
+      router.push({ name: 'settingsGeneral' });
+    }
+  }
 };
 </script>
 
