@@ -2,6 +2,11 @@
 import { ref } from 'vue';
 
 import AppButton from '../../components/ui/AppButton.vue';
+import useUserStateStore from '../../stores/storeUserState';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+const userStateStore = useUserStateStore();
 
 const inputEmail = ref('');
 const inputPassword = ref('');
@@ -10,46 +15,71 @@ const inputPasswordInvalid = ref(false);
 
 const handleOnFormSubmit = (event: Event) => {
   event.preventDefault();
+
   const emailValid = inputEmail.value.trim() === '';
-  const passwordValid = inputEmail.value.trim() === '';
+  const passwordValid = inputPassword.value.trim() === '';
 
   inputEmailInvalid.value = emailValid;
   inputPasswordInvalid.value = passwordValid;
+
+  if (!inputEmailInvalid.value && !inputPasswordInvalid.value) {
+    //SEND LOGIN REQUEST
+    const loginReq = { successful: true };
+
+    //IF LOGGED IN
+    if (!loginReq.successful) {
+      //NOTIFY USER
+      return;
+    }
+
+    userStateStore.logUser(inputEmail.value, inputPassword.value);
+
+    //CHECK IF IS INITIAL LOGIN
+    const isInitial = true; //TEMPORARY
+
+    if (isInitial) {
+      router.push({ name: 'newPassword' });
+    } else {
+      //REDIRECT TO DEFAULT LOGGED ROUTE?
+      router.push({ name: 'settingsGeneral' });
+    }
+  }
 };
 </script>
 
 <template>
-  <div class="p-10 d-flex justify-content-center align-items-center">
-    <div>
-      <h1 class="text-huge text-bold text-center">Login</h1>
-      <p class="text-main mt-3">Please Enter Temporary email and password</p>
-      <form @submit="handleOnFormSubmit" class="form-login">
-        <div class="mt-4">
-          <!-- <label for="" class="form-label">Email</label> -->
-          <input
-            v-model="inputEmail"
-            type="text"
-            class="form-control"
-            :class="{ 'is-invalid': inputEmailInvalid }"
-            placeholder="Email"
-          />
-          <div v-if="inputEmailInvalid" class="invalid-feedback">Invalid e-mail.</div>
-        </div>
-        <div class="mt-4">
-          <!-- <label for="" class="form-label">Password</label> -->
-          <input
-            v-model="inputPassword"
-            type="password"
-            class="form-control"
-            :class="{ 'is-invalid': inputPasswordInvalid }"
-            placeholder="Password"
-          />
-          <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
-        </div>
-        <div class="d-grid mt-4">
-          <AppButton color="primary" type="submit" class="mt-2">Login</AppButton>
-        </div>
-      </form>
-    </div>
+  <div class="p-10 d-flex flex-column justify-content-center align-items-center">
+    <h1 class="text-huge text-bold text-center">Login</h1>
+    <p class="text-main mt-5 text-center">Please Enter Temporary email and password</p>
+    <form
+      @submit="handleOnFormSubmit"
+      class="form-login mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
+    >
+      <div class="col-12 col-md-8 col-lg-6">
+        <input
+          v-model="inputEmail"
+          type="text"
+          class="form-control rounded-4"
+          :class="{ 'is-invalid': inputEmailInvalid }"
+          placeholder="Email"
+        />
+        <div v-if="inputEmailInvalid" class="invalid-feedback">Invalid e-mail.</div>
+      </div>
+      <div class="col-12 col-md-8 col-lg-6">
+        <input
+          v-model="inputPassword"
+          type="password"
+          class="form-control rounded-4"
+          :class="{ 'is-invalid': inputPasswordInvalid }"
+          placeholder="Password"
+        />
+        <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
+      </div>
+      <div class="col-12 col-md-8 col-lg-6">
+        <AppButton color="primary" size="large" type="submit" class="mt-2 w-100 rounded-4"
+          >Login</AppButton
+        >
+      </div>
+    </form>
   </div>
 </template>

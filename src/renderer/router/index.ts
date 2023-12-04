@@ -1,5 +1,8 @@
 import { RouteRecordRaw, createRouter, createWebHistory } from 'vue-router';
 
+import { attachMeta } from './meta';
+
+import Welocome from '../pages/Welcome';
 import StyleGuide from '../pages/Styleguide';
 import Transactions from '../pages/Transactions';
 import Accounts from '../pages/Accounts';
@@ -12,21 +15,56 @@ import FileService from '../pages/FileService';
 import ContactList from '../pages/ContactList';
 import RecoveryPhrase from '../pages/RecoveryPhrase';
 import Login from '../pages/Login';
+import GeneralTab from '../pages/Settings/components/GeneralTab.vue';
+import WorkGroupsTab from '../pages/Settings/components/WorkGroupsTab.vue';
+import KeysTab from '../pages/Settings/components/KeysTab.vue';
+import SetupOrganization from '../pages/SetupOrganization';
+import NewPassword from '../pages/NewPassword';
 
 const routes: RouteRecordRaw[] = [
-  { path: '/', component: StyleGuide },
-  { path: '/transactions', component: Transactions },
-  { path: '/accounts', component: Accounts },
-  { path: '/tokens', component: Tokens },
-  { path: '/smart-contracts', component: SmartContracts },
-  { path: '/consensus-service', component: ConsensusService },
-  { path: '/file-service', component: FileService },
-  { path: '/contact-list', component: ContactList },
-  { path: '/help', component: Help },
-  { path: '/settings/:tab', component: Settings, props: true },
-  { path: '/recovery-phrase', component: RecoveryPhrase },
-  { path: '/login', component: Login },
+  {
+    path: '/',
+    name: 'welcome',
+    component: Welocome,
+  },
+  { path: '/style-guide', name: 'styleGuide', component: StyleGuide },
+  { path: '/transactions', name: 'transactions', component: Transactions },
+  { path: '/accounts', name: 'accounts', component: Accounts },
+  { path: '/tokens', name: 'tokens', component: Tokens },
+  { path: '/smart-contracts', name: 'smartContracts', component: SmartContracts },
+  { path: '/consensus-service', name: 'consensusService', component: ConsensusService },
+  { path: '/file-service', name: 'fileService', component: FileService },
+  { path: '/contact-list', name: 'contactList', component: ContactList },
+  { path: '/help', name: 'help', component: Help },
+  { path: '/recovery-phrase', name: 'recoveryPhrase', component: RecoveryPhrase },
+  { path: '/login', name: 'login', component: Login },
+  { path: '/new-password', name: 'newPassword', component: NewPassword },
+  { path: '/setup-organization', name: 'setupOrganization', component: SetupOrganization },
+  {
+    path: '/settings',
+    name: 'settings',
+    component: Settings,
+    children: [
+      {
+        path: 'general',
+        name: 'settingsGeneral',
+        component: GeneralTab,
+      },
+      {
+        path: 'work-groups',
+        name: 'settingsWorkGroups',
+        component: WorkGroupsTab,
+      },
+      {
+        path: 'keys',
+        name: 'settingsKeys',
+        component: KeysTab,
+      },
+    ],
+  },
 ];
+
+attachMeta(routes);
 
 const router = createRouter({
   history: createWebHistory(),

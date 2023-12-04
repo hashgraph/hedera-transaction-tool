@@ -199,3 +199,42 @@
     }
   }
 }
+
+/* Misc Containers */
+.container-modal-card {
+  max-width: 356px;
+}
+
+.container-welcome-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  .subtext {
+    font-size: 14px;
+  }
+
+  .person-icon {
+    height: 94px;
+    .bi {
+      left: 50%;
+
+      &:nth-child(1) {
+        transform: translateX(-67%);
+      }
+      &:nth-child(2) {
+        transform: translate(-32%, -10px);
+      }
+    }
+  }
+}
+
+/* Icons */
+.extra-large-icon {
+  &.bi {
+    font-size: 94px;
+    line-height: 94px;
+    max-height: 94px;
+  }
+}
