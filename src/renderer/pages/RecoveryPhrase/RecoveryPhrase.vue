@@ -4,11 +4,12 @@ import { useRouter } from 'vue-router';
 
 import useKeyPairsStore from '../../stores/storeKeyPairs';
 
-import AppButton from '../../components/ui/AppButton.vue';
-
 import GenerateOrImport from './components/GenerateOrImport.vue';
 import Generate from './components/Generate.vue';
 import Import from './components/Import.vue';
+
+import AppModal from '../../components/ui/AppModal.vue';
+import AppButton from '../../components/ui/AppButton.vue';
 
 const router = useRouter();
 
@@ -18,6 +19,7 @@ const recoveryPhrase = ref<string[] | null>(null);
 const step = ref(1);
 const type = ref<'generate' | 'import' | ''>('');
 const ableToContinue = ref(false);
+const isSuccessModalShown = ref(false);
 
 watch(recoveryPhrase, newRecoveryPhrase => {
   if (!newRecoveryPhrase) {
@@ -26,31 +28,18 @@ watch(recoveryPhrase, newRecoveryPhrase => {
     ableToContinue.value = true;
   }
 });
-watch(step, newStep => {
-  if ([1, 3].includes(newStep)) {
-    ableToContinue.value = false;
-  }
-});
 
 const handleFinish = () => {
   keyPairsStore.setRecoveryPhrase(recoveryPhrase.value || []);
+  isSuccessModalShown.value = true;
+};
+
+const handleContinue = () => {
   router.push({ path: '/settings/keys' });
 };
 </script>
 <template>
-  <div class="container-page p-10">
-    <!-- Go back -->
-    <div class="d-flex justify-content-between">
-      <AppButton
-        outline
-        color="primary"
-        class="py-0 px-2 mb-4 text-title"
-        v-if="step != 1"
-        @click="step--"
-      >
-        <i class="bi-arrow-left"></i>
-      </AppButton>
-    </div>
+  <div class="recovery-phrase-page container-page p-8">
     <Transition name="fade" mode="out-in">
       <!-- Step 1 -->
       <template v-if="step === 1">
@@ -75,6 +64,30 @@ const handleFinish = () => {
         />
       </template>
     </Transition>
+    <AppModal v-model:show="isSuccessModalShown">
+      <div class="p-5 container-modal-card">
+        <i
+          class="bi bi-x-lg d-inline-block cursor-pointer"
+          style="line-height: 16px"
+          @click="isSuccessModalShown = false"
+        ></i>
+        <div class="mt-5 text-center">
+          <i
+            class="bi bi-check-circle-fill extra-large-icon cursor-pointer"
+            style="line-height: 16px"
+            @click="isSuccessModalShown = false"
+          ></i>
+        </div>
+
+        <h3 class="mt-5 text-main text-center text-bold">Recovery Phrase Created Successfully</h3>
+        <p class="text-center text-small">
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+        </p>
+        <AppButton color="primary" size="large" class="mt-5 w-100 rounded-4" @click="handleContinue"
+          >Continue</AppButton
+        >
+      </div>
+    </AppModal>
   </div>
 </template>
 ../../stores/storeKeyPairs

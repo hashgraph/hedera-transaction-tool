@@ -4,6 +4,7 @@ import { Mnemonic } from '@hashgraph/sdk';
 import AppButton from '../../../components/ui/AppButton.vue';
 
 import { downloadFileUnencrypted } from '../../../services/recoveryPhraseService';
+import AppRecoveryPhraseWord from '../../../components/ui/AppRecoveryPhraseWord.vue';
 
 const props = defineProps<{
   recoveryPhrase: string[] | null;
@@ -22,25 +23,35 @@ const handleDownloadRecoveryPhrase = () => {
 };
 </script>
 <template>
-  <div>
-    <div class="d-flex justify-content-between">
-      <AppButton color="primary" @click="handleGeneratePhrase">
-        Regenerate Recovery Phrase
-      </AppButton>
-      <div>
-        <AppButton color="primary" class="me-4" @click="handleDownloadRecoveryPhrase">
-          Download file
-        </AppButton>
-        <AppButton color="secondary" @click="handleFinish">Finish</AppButton>
-      </div>
+  <div class="d-flex flex-column justify-content-center align-items-center">
+    <h1 class="text-display text-bold text-center">Recovery Phrase Created</h1>
+    <p class="text-main mt-5 text-center">Copy/Download The Recovery Phrase</p>
+    <div class="mt-4 col-12 col-md-8 col-xxl-6 row g-4">
+      <template v-for="(word, index) in recoveryPhrase || []" :key="index">
+        <AppRecoveryPhraseWord class="col-3" :word="word" />
+      </template>
     </div>
-    <div class="mt-6 d-flex align-items-center justify-content-around flex-wrap gap-4">
-      <div
-        v-for="(word, index) in recoveryPhrase || []"
-        :key="index"
-        class="col-3 px-5 py-4 border-main-gradient text-center"
-      >
-        {{ word }}
+    <div class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center">
+      <div class="col-12 col-md-6 col-lg-4 col-xxl-2">
+        <AppButton
+          size="large"
+          color="primary"
+          class="w-100 rounded-4"
+          @click="handleGeneratePhrase"
+        >
+          Generate again
+        </AppButton>
+        <AppButton
+          size="large"
+          color="primary"
+          class="mt-4 w-100 rounded-4 d-flex justify-content-center align-items-center"
+          @click="handleDownloadRecoveryPhrase"
+        >
+          Download file <i class="bi bi-download ms-2 text-headline" style="line-height: 24px"></i>
+        </AppButton>
+        <AppButton size="large" color="secondary" class="mt-4 w-100 rounded-4" @click="handleFinish"
+          >Continue</AppButton
+        >
       </div>
     </div>
   </div>

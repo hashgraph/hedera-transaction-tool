@@ -115,15 +115,3 @@ const handleDone = () => {
     </AppModal>
   </div>
 </template>
-<style>
-.new-password-page {
-  .modal-dialog-centered {
-    justify-content: center;
-    width: unset;
-  }
-
-  .modal-content {
-    width: unset;
-  }
-}
-</style>
