@@ -238,3 +238,17 @@
     max-height: 94px;
   }
 }
+
+/* Recovery Phrase Word Readonly Input */
+.recovery-phrase-word-readonly {
+  input {
+    padding-right: 25% !important;
+  }
+  .bi {
+    cursor: pointer;
+    position: absolute;
+    right: 10%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
