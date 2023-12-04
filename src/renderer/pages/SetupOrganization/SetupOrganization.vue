@@ -32,7 +32,7 @@ const handleContinue = async (e: Event) => {
       @submit="handleContinue"
       class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
     >
-      <div class="col-12 col-md-8 col-lg-6">
+      <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
         <input
           v-model="organizationName"
           type="text"
@@ -40,7 +40,7 @@ const handleContinue = async (e: Event) => {
           placeholder="Enter name of Organization"
         />
       </div>
-      <div class="col-12 col-md-8 col-lg-6">
+      <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
         <input
           v-model="serverUrl"
           type="text"
@@ -48,7 +48,7 @@ const handleContinue = async (e: Event) => {
           placeholder="Enter Organization Server URL"
         />
       </div>
-      <div class="col-12 col-md-8 col-lg-6">
+      <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
         <AppButton type="submit" color="primary" size="large" class="w-100 rounded-4"
           >Continue</AppButton
         >

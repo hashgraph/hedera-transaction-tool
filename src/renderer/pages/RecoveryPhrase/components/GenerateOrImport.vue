@@ -24,20 +24,29 @@ const handleImportPhrase = () => {
 };
 </script>
 <template>
-  <div class="h-100">
-    <h1 class="text-huge text-bold text-center">Recovery Phrase</h1>
-    <div class="h-50 d-flex justify-content-center align-items-center flex-wrap">
-      <AppButton
-        color="primary"
-        size="large"
-        class="text-title me-4"
-        @click="handleGeneratePhrase()"
-      >
-        Generate Recovery Phrase
-      </AppButton>
-      <AppButton color="secondary" size="large" class="text-title" @click="handleImportPhrase()">
-        Import Existing Phrase
-      </AppButton>
+  <div class="h-100 d-flex flex-column justify-content-center align-items-center">
+    <h1 class="text-display text-bold text-center">Recovery Phrase</h1>
+    <div class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4">
+      <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
+        <AppButton
+          color="primary"
+          size="large"
+          class="w-100 text-title rounded-4"
+          @click="handleGeneratePhrase()"
+        >
+          Generate New Recovery Phrase
+        </AppButton>
+      </div>
+      <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
+        <AppButton
+          color="secondary"
+          size="large"
+          class="w-100 text-title rounded-4"
+          @click="handleImportPhrase()"
+        >
+          Import Existing Phrase
+        </AppButton>
+      </div>
     </div>
   </div>
 </template>

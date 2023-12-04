@@ -238,3 +238,30 @@
     max-height: 94px;
   }
 }
+
+/* Recovery Phrase Word Readonly Input */
+.recovery-phrase-word-readonly {
+  input {
+    padding-right: 30% !important;
+  }
+  .bi {
+    cursor: pointer;
+    position: absolute;
+    right: 10%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* Modal Page Overrides */
+.new-password-page,
+.recovery-phrase-page {
+  .modal-dialog-centered {
+    justify-content: center;
+    width: unset;
+  }
+
+  .modal-content {
+    width: unset;
+  }
+}
