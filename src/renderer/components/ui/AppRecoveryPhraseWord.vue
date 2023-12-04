@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 
-defineProps<{ word: string }>();
+const props = defineProps<{ word: string; visibleInitially?: boolean }>();
 
-const isVisible = ref(false);
+const isVisible = ref(props.visibleInitially);
 
 const inputType = computed(() => (isVisible.value ? 'text' : 'password'));
 

@@ -10,27 +10,40 @@ import Import from './components/Import.vue';
 
 import AppModal from '../../components/ui/AppModal.vue';
 import AppButton from '../../components/ui/AppButton.vue';
+import { Mnemonic } from '@hashgraph/sdk';
 
 const router = useRouter();
 
 const keyPairsStore = useKeyPairsStore();
 
 const recoveryPhrase = ref<string[] | null>(null);
+
 const step = ref(1);
 const type = ref<'generate' | 'import' | ''>('');
 const ableToContinue = ref(false);
-const isSuccessModalShown = ref(false);
 
-watch(recoveryPhrase, newRecoveryPhrase => {
+const isSuccessModalShown = ref(false);
+const modalText = ref('');
+
+watch(recoveryPhrase, async newRecoveryPhrase => {
   if (!newRecoveryPhrase) {
     ableToContinue.value = false;
   } else if (newRecoveryPhrase.length === 24) {
-    ableToContinue.value = true;
+    try {
+      await Mnemonic.fromWords(recoveryPhrase.value || []);
+      ableToContinue.value = true;
+    } catch {
+      ableToContinue.value = false;
+    }
   }
 });
 
 const handleFinish = () => {
   keyPairsStore.setRecoveryPhrase(recoveryPhrase.value || []);
+  modalText.value =
+    type.value === 'generate'
+      ? 'Recovery Phrase Created Successfully'
+      : 'Recovery Phrase Imported Successfully';
   isSuccessModalShown.value = true;
 };
 
@@ -79,7 +92,7 @@ const handleContinue = () => {
           ></i>
         </div>
 
-        <h3 class="mt-5 text-main text-center text-bold">Recovery Phrase Created Successfully</h3>
+        <h3 class="mt-5 text-main text-center text-bold">{{ modalText }}</h3>
         <p class="text-center text-small">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit.
         </p>
