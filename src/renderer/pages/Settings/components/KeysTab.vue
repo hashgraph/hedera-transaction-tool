@@ -19,20 +19,18 @@ onMounted(() => {
 </script>
 <template>
   <div>
-    <div class="d-flex">
+    <div class="d-flex align-items-center">
       <AppButton color="primary" @click="handleGenerateKeyPair" class="me-6"
         >Generate new key pair</AppButton
       >
-      <div>
-        <label class="form-label text-subheader">Index</label>
-        <input
-          v-model="keyIndex"
-          type="number"
-          min="0"
-          class="form-control py-2"
-          style="width: 75px"
-        />
-      </div>
+      <label class="form-label text-subheader me-3">Index</label>
+      <input
+        v-model="keyIndex"
+        type="number"
+        min="0"
+        class="form-control py-2"
+        style="width: 75px"
+      />
     </div>
     <div
       v-for="keyPair in keyPairsStore.keyPairs"
