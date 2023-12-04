@@ -29,7 +29,7 @@ const handleFormSubmit = (event: Event) => {
   inputConfirmPasswordInvalid.value = inputNewPassword.value !== inputConfrimPassword.value;
 
   if (!inputNewPasswordInvalid.value && !inputConfirmPasswordInvalid.value) {
-    //SEND PASSWOR RESET REQUEST
+    //SEND PASSWORD RESET REQUEST
 
     //CHECK IF IS SUCCESSFUL
     const isChanged = true; //TEMPORARY

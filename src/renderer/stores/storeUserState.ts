@@ -6,6 +6,8 @@ export interface UserState {
   isAdmin?: boolean;
   role?: 'personal' | 'organization';
   serverUrl?: string;
+  email?: string;
+  password?: string;
 }
 
 export const localServerUrl = '';
@@ -40,8 +42,13 @@ const useUserStateStore = defineStore('userState', () => {
     }
   }
 
-  function logUser() {
+  function logUser(email: string, password: string) {
     userState.isLoggedIn = true;
+
+    userState.email = email;
+
+    // HASH PASSWORD
+    userState.password = password;
   }
 
   return { userState, isLoggedIn, isAdmin, serverUrl, role, setUserRole, setServerUrl, logUser };

@@ -24,9 +24,15 @@ const handleOnFormSubmit = (event: Event) => {
 
   if (!inputEmailInvalid.value && !inputPasswordInvalid.value) {
     //SEND LOGIN REQUEST
+    const loginReq = { successful: true };
 
     //IF LOGGED IN
-    userStateStore.logUser();
+    if (!loginReq.successful) {
+      //NOTIFY USER
+      return;
+    }
+
+    userStateStore.logUser(inputEmail.value, inputPassword.value);
 
     //CHECK IF IS INITIAL LOGIN
     const isInitial = true; //TEMPORARY
