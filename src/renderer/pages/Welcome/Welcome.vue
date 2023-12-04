@@ -19,7 +19,9 @@ const handleOptionClick = (option: 'personal' | 'organization') => {
       router.push({ name: 'login' });
       break;
     case 'organization':
-      if (organizationsStore.currentOrganization) {
+      if (organizationsStore.organizations.length > 0) {
+        organizationsStore.setCurrentOrganization(organizationsStore.organizations[0].serverUrl);
+        userStateStore.setServerUrl(organizationsStore.organizations[0].serverUrl);
         router.push({ name: 'login' });
       } else {
         router.push({ name: 'setupOrganization' });

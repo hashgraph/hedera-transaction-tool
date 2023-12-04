@@ -30,12 +30,14 @@ const useUserStateStore = defineStore('userState', () => {
   /* Actions */
   function setUserRole(role: 'personal' | 'organization') {
     userState.role = role;
+
+    if (role === 'personal') {
+      setServerUrl('local');
+    }
   }
 
   function setServerUrl(url: string | 'local') {
     if (url === 'local') {
-      console.log(url);
-
       userState.serverUrl = localServerUrl;
     } else {
       userState.serverUrl = url;
@@ -44,14 +46,28 @@ const useUserStateStore = defineStore('userState', () => {
 
   function logUser(email: string, password: string) {
     userState.isLoggedIn = true;
-
     userState.email = email;
-
     // HASH PASSWORD
     userState.password = password;
   }
 
-  return { userState, isLoggedIn, isAdmin, serverUrl, role, setUserRole, setServerUrl, logUser };
+  function logoutUser() {
+    userState.isLoggedIn = false;
+    userState.email = '';
+    userState.password = '';
+  }
+
+  return {
+    userState,
+    isLoggedIn,
+    isAdmin,
+    serverUrl,
+    role,
+    setUserRole,
+    setServerUrl,
+    logUser,
+    logoutUser,
+  };
 });
 
 export default useUserStateStore;

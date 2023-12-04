@@ -19,8 +19,21 @@ const useOrganizationsStore = defineStore('organizations', () => {
     organizations.value = await configService.getOrganizations();
   }
 
+  function setCurrentOrganization(serverUrl: string) {
+    const organization = organizations.value.find(o => o.serverUrl === serverUrl);
+
+    if (organization) {
+      currentOrganization.value = organization;
+    } else {
+      throw Error('Organization not found');
+    }
+  }
+
   async function addOrganization(organization: Organization) {
     await configService.addOrganization(organization);
+
+    currentOrganization.value = organization;
+
     refetch();
   }
 
@@ -37,7 +50,14 @@ const useOrganizationsStore = defineStore('organizations', () => {
     }
   });
 
-  return { organizations, currentOrganization, addOrganization, removeOrganization, refetch };
+  return {
+    organizations,
+    currentOrganization,
+    setCurrentOrganization,
+    addOrganization,
+    removeOrganization,
+    refetch,
+  };
 });
 
 export default useOrganizationsStore;
