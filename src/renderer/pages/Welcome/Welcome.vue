@@ -37,14 +37,14 @@ const handleOptionClick = (option: 'personal' | 'organization') => {
     class="p-10 d-flex flex-column justify-content-center align-items-center flex-1 overflow-hidden"
   >
     <h1 class="text-huge text-bold">Welcome to TRX Tool</h1>
-    <h3 class="mt-4 text-main text-normal">Please Setup Organizaton to continue</h3>
+    <p class="mt-4 text-main text-normal">Please Setup Organizaton to continue</p>
     <div class="mt-8 d-flex gap-4">
       <div
         class="container-welcome-card container-modal-card p-5 border border-dark-subtle rounded-4"
       >
         <i class="bi bi-person mt-5 extra-large-icon d-block text-body-tertiary"></i>
         <h4 class="mt-4 text-main text-bold text-center">Login as Personal User</h4>
-        <p class="subtext text-main lh-base text-center">
+        <p class="text-secondary text-small lh-base text-center">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit.
         </p>
         <AppButton
@@ -63,7 +63,7 @@ const handleOptionClick = (option: 'personal' | 'organization') => {
           <i class="bi bi-person extra-large-icon position-absolute text-body-tertiary"></i>
         </div>
         <h4 class="mt-4 text-main text-bold text-center">Login as Organizaton</h4>
-        <p class="subtext text-main lh-base text-center">
+        <p class="text-small text-secondary lh-base text-center">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit.
         </p>
         <AppButton

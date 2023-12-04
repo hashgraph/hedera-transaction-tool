@@ -58,7 +58,7 @@ function handleOrganizationChange(e: Event) {
     <div class="d-flex align-items-center">
       <div class="me-4">
         <select
-          class="form-select py-3"
+          class="form-select form-select-sm"
           name="serverURL"
           @change="handleOrganizationChange"
           ref="organizationsDropDownRef"
