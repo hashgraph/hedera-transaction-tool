@@ -54,13 +54,11 @@ const handleFinish = () => {
     <Transition name="fade" mode="out-in">
       <!-- Step 1 -->
       <template v-if="step === 1">
-        <div class="h-100">
-          <GenerateOrImport
-            v-model:step="step"
-            v-model:recoveryPhrase="recoveryPhrase"
-            v-model:type="type"
-          />
-        </div>
+        <GenerateOrImport
+          v-model:step="step"
+          v-model:recoveryPhrase="recoveryPhrase"
+          v-model:type="type"
+        />
       </template>
       <!-- Step 2 -->
       <template v-else-if="step === 2">
