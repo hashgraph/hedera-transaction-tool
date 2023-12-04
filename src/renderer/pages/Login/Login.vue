@@ -25,29 +25,29 @@ const handleOnFormSubmit = (event: Event) => {
       <p class="text-main mt-3">Please Enter Temporary email and password</p>
       <form @submit="handleOnFormSubmit" class="form-login">
         <div class="mt-4">
-          <!-- <label for="" class="form-label">Email</label> -->
           <input
             v-model="inputEmail"
             type="text"
-            class="form-control"
+            class="form-control rounded-4"
             :class="{ 'is-invalid': inputEmailInvalid }"
             placeholder="Email"
           />
           <div v-if="inputEmailInvalid" class="invalid-feedback">Invalid e-mail.</div>
         </div>
         <div class="mt-4">
-          <!-- <label for="" class="form-label">Password</label> -->
           <input
             v-model="inputPassword"
             type="password"
-            class="form-control"
+            class="form-control rounded-4"
             :class="{ 'is-invalid': inputPasswordInvalid }"
             placeholder="Password"
           />
           <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
         </div>
         <div class="d-grid mt-4">
-          <AppButton color="primary" type="submit" class="mt-2">Login</AppButton>
+          <AppButton color="primary" size="large" type="submit" class="mt-2 rounded-4"
+            >Login</AppButton
+          >
         </div>
       </form>
     </div>
