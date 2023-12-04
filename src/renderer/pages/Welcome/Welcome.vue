@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router';
+
 import AppButton from '../../components/ui/AppButton.vue';
 
-import { useRouter } from 'vue-router';
 import useUserStateStore from '../../stores/storeUserState';
 import useOrganizationsStore from '../../stores/storeOrganizations';
 
@@ -70,4 +71,3 @@ const handleOptionClick = (option: 'personal' | 'organization') => {
     </div>
   </div>
 </template>
-<style></style>

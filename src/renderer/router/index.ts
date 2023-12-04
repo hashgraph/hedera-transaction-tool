@@ -18,6 +18,7 @@ import Login from '../pages/Login';
 import GeneralTab from '../pages/Settings/components/GeneralTab.vue';
 import WorkGroupsTab from '../pages/Settings/components/WorkGroupsTab.vue';
 import KeysTab from '../pages/Settings/components/KeysTab.vue';
+import SetupOrganization from '../pages/SetupOrganization';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -58,6 +59,7 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
+  { path: '/setup-organization', name: 'setupOrganization', component: SetupOrganization },
 ];
 
 attachMeta(routes);
