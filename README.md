@@ -10,6 +10,18 @@ If you use another version, please use [n](https://github.com/tj/n) to manage.
 npm install
 ```
 
+Before running the project please create `.env` or use the example one.
+
+```shell
+cp .env.example .env
+```
+
+```
+NODE_ENV=production
+RECOVERY_PHRASE_ENCRYPTION_KEY=
+KEYS_ENCRYPTION_KEY=
+```
+
 ### Run the following command to start Vue devtools
 
 ```bash
