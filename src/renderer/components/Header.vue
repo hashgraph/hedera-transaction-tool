@@ -27,12 +27,18 @@ function handleOrganizationChange(e: Event) {
   switch (selectedOption.value) {
     case 'local':
       userStateStore.setUserRole('personal');
+      organizationsStore.currentOrganization = null;
       break;
     case 'add-organization':
+      organizationsDropDownRef.value!.value =
+        userStateStore.role === 'personal'
+          ? 'local'
+          : organizationsStore.currentOrganization!.serverUrl;
       router.push({ name: 'setupOrganization' });
       return;
     default:
       userStateStore.setUserRole('organization');
+      organizationsStore.setCurrentOrganization(selectedOption.value);
       userStateStore.setServerUrl(selectedOption.value);
       break;
   }
