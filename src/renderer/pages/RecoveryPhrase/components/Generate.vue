@@ -38,7 +38,7 @@ const handleDownloadRecoveryPhrase = () => {
       <div
         v-for="(word, index) in recoveryPhrase || []"
         :key="index"
-        class="col-3 px-5 py-4 bg-info border-main-gradient text-center"
+        class="col-3 px-5 py-4 border-main-gradient text-center"
       >
         {{ word }}
       </div>
