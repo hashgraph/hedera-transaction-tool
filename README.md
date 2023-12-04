@@ -17,7 +17,7 @@ cp .env.example .env
 ```
 
 ```
-NODE_ENV=production
+NODE_ENV=development
 RECOVERY_PHRASE_ENCRYPTION_KEY=
 KEYS_ENCRYPTION_KEY=
 ```
