@@ -49,13 +49,13 @@ const handleOnFormSubmit = (event: Event) => {
 
 <template>
   <div class="p-10 d-flex flex-column justify-content-center align-items-center">
-    <h1 class="text-huge text-bold text-center">Login</h1>
+    <h1 class="text-display text-bold text-center">Login</h1>
     <p class="text-main mt-5 text-center">Please Enter Temporary email and password</p>
     <form
       @submit="handleOnFormSubmit"
       class="form-login mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
     >
-      <div class="col-12 col-md-8 col-lg-6">
+      <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
         <input
           v-model="inputEmail"
           type="text"
@@ -65,7 +65,7 @@ const handleOnFormSubmit = (event: Event) => {
         />
         <div v-if="inputEmailInvalid" class="invalid-feedback">Invalid e-mail.</div>
       </div>
-      <div class="col-12 col-md-8 col-lg-6">
+      <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
         <input
           v-model="inputPassword"
           type="password"
@@ -75,7 +75,7 @@ const handleOnFormSubmit = (event: Event) => {
         />
         <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
       </div>
-      <div class="col-12 col-md-8 col-lg-6">
+      <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
         <AppButton color="primary" size="large" type="submit" class="mt-2 w-100 rounded-4"
           >Login</AppButton
         >

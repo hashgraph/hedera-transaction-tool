@@ -56,7 +56,7 @@ const handleDone = () => {
       @submit="handleFormSubmit"
       class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
     >
-      <div class="col-12 col-md-8 col-lg-6">
+      <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
         <input
           v-model="inputNewPassword"
           type="password"
@@ -66,7 +66,7 @@ const handleDone = () => {
         />
         <div v-if="inputNewPasswordInvalid" class="invalid-feedback">Invalid password.</div>
       </div>
-      <div class="col-12 col-md-8 col-lg-6">
+      <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
         <input
           v-model="inputConfrimPassword"
           type="password"
@@ -78,7 +78,7 @@ const handleDone = () => {
           Passwords do not match.
         </div>
       </div>
-      <div class="col-12 col-md-8 col-lg-6">
+      <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
         <AppButton
           color="primary"
           size="large"
