@@ -24,7 +24,7 @@ onMounted(() => {
         >Generate new key pair</AppButton
       >
       <div>
-        <label class="form-label text-subheader">Index</label>
+        <label class="form-label">Index</label>
         <input
           v-model="keyIndex"
           type="number"

@@ -27,9 +27,7 @@ const handleAddOrganization = async () => {
     </div>
     <div class="mt-4 d-flex align-items-end">
       <div class="flex-1 me-4">
-        <label class="text-secondary-emphasis text-footnote text-uppercase"
-          >organization server url:</label
-        >
+        <label class="form-label">organization server url:</label>
         <input type="text" class="form-control py-3" v-model="newOrganizationServerUrl" />
       </div>
       <AppButton color="primary" @click="handleAddOrganization">Add Organization</AppButton>
@@ -43,9 +41,7 @@ const handleAddOrganization = async () => {
     <p>{{ org.name }}</p>
     <div class="mt-4 d-flex align-items-end">
       <div class="flex-1 me-4">
-        <label class="text-secondary-emphasis text-footnote text-uppercase"
-          >organization server url:</label
-        >
+        <label class="form-label">organization server url:</label>
         <input type="text" disabled class="form-control py-3" :value="org.serverUrl" />
       </div>
       <AppButton color="primary" @click="organizationsStore.removeOrganization(org.serverUrl)">

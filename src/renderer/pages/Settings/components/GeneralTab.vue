@@ -20,9 +20,7 @@ const handleMirrorNodeLinkChange = (
       <p>Local Storage</p>
       <div class="mt-4 d-flex align-items-end">
         <div class="flex-1 me-4">
-          <label class="text-secondary-emphasis text-footnote text-uppercase"
-            >app storage directory</label
-          >
+          <label class="form-label">App storage directory</label>
           <input type="text" class="form-control py-3" />
         </div>
         <div>
@@ -37,9 +35,7 @@ const handleMirrorNodeLinkChange = (
       <p>Mirror Node Settings</p>
       <div class="mt-4">
         <div class="mb-4">
-          <label class="text-secondary-emphasis text-footnote text-uppercase"
-            >Main NET MIRROR NODE LINK</label
-          >
+          <label class="form-label">Main NET MIRROR NODE LINK</label>
           <input
             type="text"
             class="form-control py-3"
@@ -48,15 +44,11 @@ const handleMirrorNodeLinkChange = (
           />
         </div>
         <div class="mb-4">
-          <label class="text-secondary-emphasis text-footnote text-uppercase"
-            >TEST NET MIRROR NODE LINK</label
-          >
+          <label class="form-label">TEST NET MIRROR NODE LINK</label>
           <input type="text" class="form-control py-3" />
         </div>
         <div class="mb-4">
-          <label class="text-secondary-emphasis text-footnote text-uppercase"
-            >PREVIEW NET MIRROR NODE LINK</label
-          >
+          <label class="form-label">PREVIEW NET MIRROR NODE LINK</label>
           <input type="text" class="form-control py-3" />
         </div>
       </div>
@@ -66,11 +58,11 @@ const handleMirrorNodeLinkChange = (
       <p>Explorer Settings</p>
       <div class="mt-4">
         <div class="mb-4">
-          <label class="text-secondary-emphasis text-footnote text-uppercase">Explorer Link</label>
+          <label class="form-label">Explorer Link</label>
           <input type="text" class="form-control py-3" />
         </div>
         <div class="mb-4">
-          <label class="text-secondary-emphasis text-footnote text-uppercase">Explorer Name</label>
+          <label class="form-label">Explorer Name</label>
           <input type="text" class="form-control py-3" />
         </div>
       </div>

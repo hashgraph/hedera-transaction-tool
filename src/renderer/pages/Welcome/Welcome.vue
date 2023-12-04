@@ -44,7 +44,7 @@ const handleOptionClick = (option: 'personal' | 'organization') => {
       >
         <i class="bi bi-person mt-5 extra-large-icon d-block text-body-tertiary"></i>
         <h4 class="mt-4 text-main text-bold text-center">Login as Personal User</h4>
-        <p class="subtext text-main lh-base text-center">
+        <p class="text-secondary text-small lh-base text-center">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit.
         </p>
         <AppButton
@@ -63,7 +63,7 @@ const handleOptionClick = (option: 'personal' | 'organization') => {
           <i class="bi bi-person extra-large-icon position-absolute text-body-tertiary"></i>
         </div>
         <h4 class="mt-4 text-main text-bold text-center">Login as Organizaton</h4>
-        <p class="subtext text-main lh-base text-center">
+        <p class="text-small text-secondary lh-base text-center">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit.
         </p>
         <AppButton
