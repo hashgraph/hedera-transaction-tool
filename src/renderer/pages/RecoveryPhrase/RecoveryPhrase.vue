@@ -93,9 +93,9 @@ const handleContinue = () => {
         </div>
 
         <h3 class="mt-5 text-main text-center text-bold">{{ modalText }}</h3>
-        <p class="text-center text-small">
+        <!-- <p class="text-center text-small">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-        </p>
+        </p> -->
         <AppButton color="primary" size="large" class="mt-5 w-100 rounded-4" @click="handleContinue"
           >Continue</AppButton
         >

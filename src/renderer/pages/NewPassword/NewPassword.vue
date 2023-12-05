@@ -105,9 +105,9 @@ const handleDone = () => {
         </div>
 
         <h3 class="mt-5 text-main text-center text-bold">Password Created Successfully</h3>
-        <p class="text-center text-small">
+        <!-- <p class="text-center text-small">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-        </p>
+        </p> -->
         <AppButton color="primary" size="large" class="mt-5 w-100 rounded-4" @click="handleDone"
           >Done</AppButton
         >
