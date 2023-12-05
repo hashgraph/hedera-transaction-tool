@@ -38,6 +38,7 @@ watch(recoveryPhrase, async newRecoveryPhrase => {
 
 const handleFinish = () => {
   keyPairsStore.setRecoveryPhrase(recoveryPhrase.value || []);
+  step.value++;
 };
 
 const handleCreateKey = () => {
