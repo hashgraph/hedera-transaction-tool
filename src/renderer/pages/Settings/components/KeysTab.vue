@@ -1,17 +1,9 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted } from 'vue';
 
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
 
-import AppButton from '../../../components/ui/AppButton.vue';
-
 const keyPairsStore = useKeyPairsStore();
-
-const keyIndex = ref(0);
-
-const handleGenerateKeyPair = async () => {
-  keyPairsStore.generatePrivateKey('', keyIndex.value);
-};
 
 onMounted(() => {
   keyPairsStore.refetch();
@@ -19,19 +11,8 @@ onMounted(() => {
 </script>
 <template>
   <div>
-    <div class="d-flex align-items-center">
-      <AppButton color="primary" @click="handleGenerateKeyPair" class="me-6"
-        >Generate new key pair</AppButton
-      >
-      <label class="form-label text-subheader me-3">Index</label>
-      <input
-        v-model="keyIndex"
-        type="number"
-        min="0"
-        class="form-control py-2"
-        style="width: 75px"
-      />
-    </div>
+    <RouterLink :to="{ name: 'restoreKey' }">Restore key</RouterLink>
+
     <div
       v-for="keyPair in keyPairsStore.keyPairs"
       :key="keyPair.publicKey"

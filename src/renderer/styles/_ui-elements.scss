@@ -255,7 +255,8 @@
 
 /* Modal Page Overrides */
 .new-password-page,
-.recovery-phrase-page {
+.recovery-phrase-page,
+.common-modal {
   .modal-dialog-centered {
     justify-content: center;
     width: unset;
