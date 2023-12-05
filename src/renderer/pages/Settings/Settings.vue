@@ -45,8 +45,10 @@ watch(activeTabIndex, newIndex => {
 </script>
 <template>
   <div class="p-10">
-    <h1 class="text-huge text-bold">Settings</h1>
-    <AppButton color="secondary" @click="handleClearConfig">Clear Config</AppButton>
+    <div class="d-flex justify-content-between align-items-center">
+      <h1 class="text-huge text-bold">Settings</h1>
+      <AppButton size="small" color="secondary" @click="handleClearConfig">Clear Config</AppButton>
+    </div>
     <div class="mt-7">
       <AppTabs :items="tabItems" v-model:active-index="activeTabIndex">
         <template #[activeTabTitle]>

@@ -11,7 +11,7 @@ onMounted(() => {
 </script>
 <template>
   <div>
-    <RouterLink :to="{ name: 'restoreKey' }">Restore key</RouterLink>
+    <RouterLink class="btn btn-primary" :to="{ name: 'restoreKey' }">Restore key</RouterLink>
 
     <div
       v-for="keyPair in keyPairsStore.keyPairs"
