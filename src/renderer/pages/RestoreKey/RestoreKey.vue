@@ -41,8 +41,12 @@ const handleFinish = () => {
   step.value++;
 };
 
-const handleCreateKey = () => {
+const handleCreateKey = async () => {
+  await keyPairsStore.generatePrivateKey('', index.value);
+
   isSuccessModalShown.value = true;
+
+  await keyPairsStore.setRecoveryPhrase([]);
 };
 </script>
 <template>
@@ -161,8 +165,20 @@ const handleCreateKey = () => {
           <p class="text-center text-small">
             Lorem ipsum dolor sit amet, consectetur adipiscing elit.
           </p>
-          <AppButton color="primary" size="large" class="mt-5 w-100 rounded-4">Share</AppButton>
-          <AppButton color="primary" size="large" class="mt-4 w-100 rounded-4">Close</AppButton>
+          <AppButton
+            color="primary"
+            size="large"
+            class="mt-5 w-100 rounded-4"
+            @click="router.push({ name: 'settingsKeys' })"
+            >Share</AppButton
+          >
+          <AppButton
+            color="primary"
+            size="large"
+            class="mt-4 w-100 rounded-4"
+            @click="router.push({ name: 'settingsKeys' })"
+            >Close</AppButton
+          >
         </div>
       </AppModal>
     </div>
