@@ -7,7 +7,7 @@ export function addGuards(router: Router) {
   router.beforeEach(to => {
     if (!to.meta.withoutAuth && !userStateStore.isLoggedIn) {
       return {
-        name: 'login',
+        name: 'welcome',
       };
     }
   });
