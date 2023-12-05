@@ -4,21 +4,33 @@ import { useRouter } from 'vue-router';
 
 import AppButton from '../../components/ui/AppButton.vue';
 import useOrganizationsStore from '../../stores/storeOrganizations';
+import useUserStateStore from '../../stores/storeUserState';
 
 const router = useRouter();
 const organizationsStore = useOrganizationsStore();
+const userStateStore = useUserStateStore();
 
 const organizationName = ref('');
 const serverUrl = ref('');
+const serverPublicKey = ref('');
 
 const handleContinue = async (e: Event) => {
   e.preventDefault();
 
   //ADD FORM VALIDATION
-  await organizationsStore.addOrganization({
-    name: organizationName.value,
-    serverUrl: serverUrl.value,
-  });
+
+  try {
+    await organizationsStore.addOrganization({
+      name: organizationName.value,
+      serverUrl: serverUrl.value,
+      serverPublicKey: serverPublicKey.value,
+    });
+
+    userStateStore.setUserRole('organization');
+  } catch (error) {
+    console.log(error);
+    // Open toast
+  }
 
   router.push({ name: 'login' });
 };
@@ -39,13 +51,17 @@ const handleContinue = async (e: Event) => {
           class="form-control rounded-4"
           placeholder="Enter name of Organization"
         />
-      </div>
-      <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
         <input
           v-model="serverUrl"
           type="text"
-          class="form-control rounded-4"
+          class="mt-4 form-control rounded-4"
           placeholder="Enter Organization Server URL"
+        />
+        <input
+          v-model="serverPublicKey"
+          type="text"
+          class="mt-4 form-control rounded-4"
+          placeholder="Enter Organization Server Public key"
         />
       </div>
       <div class="col-12 col-md-8 col-lg-6 col-xxl-4">

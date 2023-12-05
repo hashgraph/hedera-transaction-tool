@@ -3,6 +3,7 @@ import Store, { Schema } from 'electron-store';
 export type Organization = {
   name: string;
   serverUrl: string;
+  serverPublicKey: string;
 };
 
 export type SchemaProperties = {
@@ -49,8 +50,11 @@ export default function getStore() {
           serverUrl: {
             type: 'string',
           },
+          serverPublicKey: {
+            type: 'string',
+          },
         },
-        required: ['name', 'serverUrl'],
+        required: ['name', 'serverUrl', 'serverPublicKey'],
       },
       default: [],
       uniqueItems: true,
