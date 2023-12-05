@@ -39,7 +39,6 @@ watch(importedPhrase, async () => {
       <div class="col-12 col-lg-10 col-xxl-8">
         <textarea
           class="mt-5 form-control text-main"
-          id=""
           cols="5"
           rows="5"
           v-model="importedPhrase"

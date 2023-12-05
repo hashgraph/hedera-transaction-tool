@@ -20,6 +20,7 @@ import WorkGroupsTab from '../pages/Settings/components/WorkGroupsTab.vue';
 import KeysTab from '../pages/Settings/components/KeysTab.vue';
 import SetupOrganization from '../pages/SetupOrganization';
 import NewPassword from '../pages/NewPassword';
+import RestoreKey from '../pages/RestoreKey';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -40,6 +41,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/login', name: 'login', component: Login },
   { path: '/new-password', name: 'newPassword', component: NewPassword },
   { path: '/setup-organization', name: 'setupOrganization', component: SetupOrganization },
+  { path: '/restore-key', name: 'restoreKey', component: RestoreKey },
   {
     path: '/settings',
     name: 'settings',
