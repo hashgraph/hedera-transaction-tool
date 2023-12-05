@@ -35,6 +35,7 @@ export default interface ElectronApi {
       }[]
     >;
     store: (privateKey: string, index: number) => Promise<void>;
+    clear: () => Promise<boolean>;
   };
 }
 

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-
-import useMirrorNodeLinksStore from '../../stores/storeMirrorNodeLinks';
+import { useRouter, RouterView } from 'vue-router';
 
 import AppTabs, { TabItem } from '../../components/ui/AppTabs.vue';
 import AppButton from '../../components/ui/AppButton.vue';
+
 import useOrganizationsStore from '../../stores/storeOrganizations';
-import { useRouter, RouterView } from 'vue-router';
+import useKeyPairsStore from '../../stores/storeKeyPairs';
+import useMirrorNodeLinksStore from '../../stores/storeMirrorNodeLinks';
 
 /* Route */
 const router = useRouter();
@@ -30,12 +31,15 @@ const activeTabTitle = computed(() => tabItems[activeTabIndex.value].title);
 /* Stores */
 const mirrorNodeLinks = useMirrorNodeLinksStore();
 const organizationsStore = useOrganizationsStore();
+const keyPairsStore = useKeyPairsStore();
 
 const handleClearConfig = async () => {
   await window.electronAPI.config.clear();
+  await window.electronAPI.privateKey.clear();
 
   mirrorNodeLinks.refetch();
   organizationsStore.refetch();
+  keyPairsStore.refetch();
 };
 
 /* Watchers */

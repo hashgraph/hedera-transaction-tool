@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron';
 import {
   addPrivateKeyEncrypted,
+  clearKeys,
   getPrivateKeysFilePath,
   getStoredPrivateKeys,
 } from '../../services/privateKey';
@@ -28,5 +29,15 @@ export default (app: Electron.App) => {
       privateKey: pk.privateKey.toStringRaw(),
       index: pk.index,
     }));
+  });
+
+  // Decrypt stored key pairs
+  ipcMain.handle(createChannelName('clear'), async () => {
+    try {
+      await clearKeys(getPrivateKeysFilePath(app));
+      return true;
+    } catch {
+      console.log('no such folder');
+    }
   });
 };

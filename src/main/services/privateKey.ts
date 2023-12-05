@@ -70,3 +70,5 @@ export const removePrivateKeyEncrypted = async (filePath: string, privateKey: Pr
 
   await fs.writeFile(filePath, encryptedPrivateKeys);
 };
+
+export const clearKeys = (filePath: string) => fs.unlink(filePath);
