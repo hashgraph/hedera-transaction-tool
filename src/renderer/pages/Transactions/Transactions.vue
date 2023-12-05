@@ -54,7 +54,7 @@ const transactions = reactive([
             <div
               v-for="(item, index) in transactions"
               :key="index"
-              class="rounded bg-dark-blue-800 p-4 overflow-hidden"
+              class="rounded bg-dark-blue-700 p-4 overflow-hidden"
               :class="{ 'mt-4': index !== 0 }"
             >
               <div class="d-flex justify-content-between align-items-start">

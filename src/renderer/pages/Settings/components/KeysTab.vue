@@ -11,16 +11,14 @@ onMounted(() => {
 </script>
 <template>
   <div>
-    <RouterLink class="btn btn-primary" :to="{ name: 'restoreKey' }">Restore key</RouterLink>
+    <RouterLink class="btn btn-primary mb-4" :to="{ name: 'restoreKey' }">Restore key</RouterLink>
 
     <div
       v-for="keyPair in keyPairsStore.keyPairs"
       :key="keyPair.publicKey"
-      class="mt-5 p-4 bg-dark-blue-800"
+      class="rounded bg-dark-blue-700 p-4 mt-4"
     >
-      <span class="text-muted text-small d-flex justify-content-end"
-        >Index: {{ keyPair.index }}</span
-      >
+      <p class="text-secondary text-bold text-main mb-3">Index: {{ keyPair.index }}</p>
       <div class="form-group">
         <label class="form-label">ED25519 Private key</label>
         <input type="text" readonly class="form-control py-3" :value="keyPair.privateKey" />
