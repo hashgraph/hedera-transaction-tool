@@ -35,7 +35,7 @@ const handleOnFormSubmit = (event: Event) => {
     userStateStore.logUser(inputEmail.value, inputPassword.value);
 
     //CHECK IF IS INITIAL LOGIN
-    const isInitial = false; //TEMPORARY
+    const isInitial = true; //TEMPORARY
 
     if (isInitial) {
       router.push({ name: 'newPassword' });

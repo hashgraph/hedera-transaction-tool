@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import useMirrorNodeLinksStore from '../../../stores/storeMirrorNodeLinks';
 
-import AppButton from '../../../components/ui/AppButton.vue';
-
 const mirrorNodeLinksStore = useMirrorNodeLinksStore();
 
 const handleMirrorNodeLinkChange = (
