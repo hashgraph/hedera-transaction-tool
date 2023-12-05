@@ -16,7 +16,7 @@ const handleMirrorNodeLinkChange = (
 <template>
   <div>
     <!-- Local Storage -->
-    <div class="p-4 border border-2 rounded-3">
+    <!-- <div class="p-4 border border-2 rounded-3">
       <p>Local Storage</p>
       <div class="mt-4 d-flex align-items-end">
         <div class="flex-1 me-4">
@@ -29,7 +29,7 @@ const handleMirrorNodeLinkChange = (
           </AppButton>
         </div>
       </div>
-    </div>
+    </div> -->
     <!-- Mirror Node Settings -->
     <div class="p-4 mt-7 border border-2 rounded-3">
       <p>Mirror Node Settings</p>
