@@ -58,10 +58,7 @@ const handleOptionClick = (option: 'personal' | 'organization') => {
       <div
         class="container-welcome-card container-modal-card p-5 border border-dark-subtle rounded-4"
       >
-        <div class="person-icon mt-5 w-100 position-relative">
-          <i class="bi bi-person extra-large-icon position-absolute top-0 text-body-tertiary"></i>
-          <i class="bi bi-person extra-large-icon position-absolute text-body-tertiary"></i>
-        </div>
+        <i class="bi bi-briefcase mt-5 extra-large-icon text-body-tertiary"></i>
         <h4 class="mt-4 text-main text-bold text-center">Login as Organizaton</h4>
         <p class="text-small text-secondary lh-base text-center">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit.
