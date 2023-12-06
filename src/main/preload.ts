@@ -4,8 +4,7 @@ import { Theme } from './modules/ipcHandlers/theme';
 import { Organization, SchemaProperties } from './modules/store';
 import { IKeyPair } from './shared/interfaces/IKeyPair';
 
-contextBridge.exposeInMainWorld('electronAPI', {
-  sendMessage: (message: string) => ipcRenderer.send('message', message),
+export const electronAPI = {
   getNodeEnv: () => process.env.NODE_ENV,
   theme: {
     isDark: (): Promise<boolean> => ipcRenderer.invoke('theme:isDark'),
@@ -37,11 +36,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('recoveryPhrase:downloadFileUnencrypted', words);
     },
   },
-  privateKey: {
-    getStored: (): Promise<{ privateKey: string; index: number }[]> =>
-      ipcRenderer.invoke('privateKey:getStored'),
-    store: (password: string, keyPair: IKeyPair): Promise<void> =>
-      ipcRenderer.invoke('privateKey:store', password, keyPair),
-    clear: (): Promise<boolean> => ipcRenderer.invoke('privateKey:clear'),
+  keyPairs: {
+    getStored: (userId: string): Promise<IKeyPair[]> =>
+      ipcRenderer.invoke('keyPairs:getStored', userId),
+    store: (userId: string, password: string, keyPair: IKeyPair): Promise<void> =>
+      ipcRenderer.invoke('keyPairs:store', userId, password, keyPair),
+    decryptPrivateKey: (userId: string, password: string, publicKey: string): Promise<string> =>
+      ipcRenderer.invoke('keyPairs:decryptPrivateKey', userId, password, publicKey),
+    clear: (userId: string): Promise<boolean> => ipcRenderer.invoke('keyPairs:clear', userId),
   },
-});
+};
+typeof electronAPI;
+contextBridge.exposeInMainWorld('electronAPI', electronAPI);

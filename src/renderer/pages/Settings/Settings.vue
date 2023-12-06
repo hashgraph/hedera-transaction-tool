@@ -8,6 +8,7 @@ import AppButton from '../../components/ui/AppButton.vue';
 import useOrganizationsStore from '../../stores/storeOrganizations';
 import useKeyPairsStore from '../../stores/storeKeyPairs';
 import useMirrorNodeLinksStore from '../../stores/storeMirrorNodeLinks';
+import useUserStateStore from '../../stores/storeUserState';
 
 /* Route */
 const router = useRouter();
@@ -31,14 +32,18 @@ const activeTabTitle = computed(() => tabItems[activeTabIndex.value].title);
 /* Stores */
 const mirrorNodeLinks = useMirrorNodeLinksStore();
 const organizationsStore = useOrganizationsStore();
-const keyPairsStore = useKeyPairsStore();
+const userStateStore = useUserStateStore();
 
 const handleClearConfig = async () => {
   await window.electronAPI.config.clear();
-  await window.electronAPI.privateKey.clear();
+  if (userStateStore.userData?.userId) {
+    await window.electronAPI.privateKey.clear(userStateStore.userData?.userId);
+  }
 
   mirrorNodeLinks.refetch();
   organizationsStore.refetch();
+  const keyPairsStore = useKeyPairsStore();
+
   keyPairsStore.refetch();
 };
 

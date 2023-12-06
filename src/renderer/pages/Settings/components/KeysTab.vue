@@ -1,12 +1,48 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, ref, watch } from 'vue';
+
+import { decryptPrivateKey } from '../../../services/keyPairService';
 
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
+import AppButton from '../../../components/ui/AppButton.vue';
+import AppModal from '../../../components/ui/AppModal.vue';
+import useUserStateStore from '../../../stores/storeUserState';
 
 const keyPairsStore = useKeyPairsStore();
+const userStateStore = useUserStateStore();
 
 onMounted(() => {
   keyPairsStore.refetch();
+});
+
+const isDecryptedModalShown = ref(false);
+const decryptedKey = ref<string | null>(null);
+const publicKeysPrivateKeyToDecrypt = ref('');
+const userPassword = ref('');
+
+const handleShowDecryptModal = (publicKey: string) => {
+  publicKeysPrivateKeyToDecrypt.value = publicKey;
+  isDecryptedModalShown.value = true;
+};
+
+const handleDecrypt = async () => {
+  if (!userStateStore.userData?.userId) {
+    throw Error('No user selected');
+  }
+
+  decryptedKey.value = await decryptPrivateKey(
+    userStateStore.userData?.userId,
+    userPassword.value,
+    publicKeysPrivateKeyToDecrypt.value,
+  );
+};
+
+watch(isDecryptedModalShown, newVal => {
+  if (!newVal) {
+    decryptedKey.value = null;
+    publicKeysPrivateKeyToDecrypt.value = '';
+    userPassword.value = '';
+  }
 });
 </script>
 <template>
@@ -18,9 +54,19 @@ onMounted(() => {
       :key="keyPair.publicKey"
       class="rounded bg-dark-blue-700 p-4 mt-4"
     >
-      <p class="text-secondary text-bold text-main mb-3">Index: {{ keyPair.index }}</p>
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="mb-3 d-flex">
+          <p class="me-3 text-secondary text-bold text-main">Index: {{ keyPair.index }}</p>
+          <p v-if="keyPair.nickname" class="text-secondary text-bold text-main">
+            Nickname: {{ keyPair.nickname }}
+          </p>
+        </div>
+        <AppButton size="small" color="primary" @click="handleShowDecryptModal(keyPair.publicKey)"
+          >Decrypt Private Key</AppButton
+        >
+      </div>
       <div class="form-group">
-        <label class="form-label">ED25519 Private key</label>
+        <label class="form-label">Encrypted Private key</label>
         <input type="text" readonly class="form-control py-3" :value="keyPair.privateKey" />
       </div>
       <div class="form-group mt-3">
@@ -32,5 +78,50 @@ onMounted(() => {
         <input type="text" readonly class="form-control py-3" :value="keyPair.accountId" />
       </div>
     </div>
+    <AppModal v-model:show="isDecryptedModalShown" class="common-modal">
+      <div class="p-5 container-modal-card" style="width: 356px">
+        <i
+          class="bi bi-x-lg d-inline-block cursor-pointer"
+          style="line-height: 16px"
+          @click="isDecryptedModalShown = false"
+        ></i>
+        <div class="mt-5 text-center">
+          <Transition name="fade" mode="out-in">
+            <i
+              v-if="!decryptedKey"
+              class="bi bi-lock extra-large-icon cursor-pointer"
+              style="line-height: 16px"
+              @click="isDecryptedModalShown = false"
+            ></i>
+            <i
+              v-else
+              class="bi bi-unlock extra-large-icon cursor-pointer"
+              style="line-height: 16px"
+              @click="isDecryptedModalShown = false"
+            ></i>
+          </Transition>
+        </div>
+
+        <h3 class="mt-5 text-main text-center text-bold">Enter your password</h3>
+        <input
+          v-model="userPassword"
+          type="password"
+          class="mt-5 form-control rounded-4"
+          placeholder="Type your password"
+        />
+        <div class="mt-4 form-group">
+          <label class="form-label">Decrypted Private key</label>
+          <input v-model="decryptedKey" type="text" class="form-control rounded-4" readonly />
+        </div>
+        <AppButton
+          color="primary"
+          size="large"
+          class="mt-5 w-100 rounded-4"
+          :disabled="userPassword.length === 0"
+          @click="handleDecrypt"
+          >Decrypt</AppButton
+        >
+      </div>
+    </AppModal>
   </div>
 </template>

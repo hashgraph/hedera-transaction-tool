@@ -6,10 +6,12 @@ import { IKeyPair, IKeyPairWithAccountId } from '../../main/shared/interfaces/IK
 import * as keyPairService from '../services/keyPairService';
 
 import useMirrorNodeLinksStore from './storeMirrorNodeLinks';
+import useUserStateStore from './storeUserState';
 
 const useKeyPairsStore = defineStore('keyPairs', () => {
   /* Stores */
   const mirrorNodeLinksStore = useMirrorNodeLinksStore();
+  const userStateStore = useUserStateStore();
 
   /* State */
   const recoveryPhraseWords = ref<string[]>([]);
@@ -17,7 +19,11 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
 
   /* Actions */
   async function refetch() {
-    keyPairs.value = await keyPairService.getStoredKeyPairs();
+    if (!userStateStore.userData?.userId) {
+      throw Error('Please login to get stored keys!');
+    }
+
+    keyPairs.value = await keyPairService.getStoredKeyPairs(userStateStore.userData.userId);
 
     keyPairs.value.forEach(async kp => {
       kp.accountId = await keyPairService.getAccountId(mirrorNodeLinksStore.mainnet, kp.publicKey);
@@ -31,7 +37,11 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
   }
 
   async function storeKeyPair(password: string, keyPair: IKeyPair) {
-    await keyPairService.storeKeyPair(password, keyPair);
+    if (!userStateStore.isLoggedIn || !userStateStore.userData || !userStateStore.userData.userId) {
+      throw Error('User is not logged in!');
+    }
+
+    await keyPairService.storeKeyPair(userStateStore.userData.userId, password, keyPair);
     await refetch();
   }
 

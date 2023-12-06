@@ -1,13 +1,15 @@
 import { computed, reactive } from 'vue';
 import { defineStore } from 'pinia';
 
+import { IUserData } from '../../main/shared/interfaces/IUserData';
+
 export interface UserState {
   isLoggedIn: boolean;
   isAdmin?: boolean;
   role?: 'personal' | 'organization';
   serverUrl?: string;
-  email?: string;
-  password?: string;
+  accessToken?: string;
+  userData?: IUserData;
 }
 
 export const localServerUrl = '';
@@ -26,6 +28,8 @@ const useUserStateStore = defineStore('userState', () => {
   const isAdmin = computed(() => userState.isAdmin);
   const role = computed(() => userState.role);
   const serverUrl = computed(() => userState.serverUrl);
+  const accessToken = computed(() => userState.accessToken);
+  const userData = computed(() => userState.userData);
 
   /* Actions */
   function setUserRole(role: 'personal' | 'organization') {
@@ -44,17 +48,16 @@ const useUserStateStore = defineStore('userState', () => {
     }
   }
 
-  function logUser(email: string, password: string) {
+  function logUser(accessToken: string, userData: IUserData) {
     userState.isLoggedIn = true;
-    userState.email = email;
-    // HASH PASSWORD
-    userState.password = password;
+    userState.accessToken = accessToken;
+    userState.userData = userData;
   }
 
   function logoutUser() {
     userState.isLoggedIn = false;
-    userState.email = '';
-    userState.password = '';
+    userState.accessToken = undefined;
+    userState.userData = undefined;
   }
 
   return {
@@ -63,6 +66,8 @@ const useUserStateStore = defineStore('userState', () => {
     isAdmin,
     serverUrl,
     role,
+    accessToken,
+    userData,
     setUserRole,
     setServerUrl,
     logUser,
