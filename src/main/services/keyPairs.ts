@@ -2,7 +2,7 @@ import fsp from 'fs/promises';
 import fs from 'fs';
 import path from 'path';
 
-import { encrypt } from '../utils/crypto';
+import { decrypt, encrypt } from '../utils/crypto';
 
 import { IKeyPair } from '../shared/interfaces/IKeyPair';
 
@@ -36,4 +36,16 @@ export const storeKeyPair = async (filePath: string, password: string, keyPair: 
   fs.writeFileSync(filePath, JSON.stringify(keyPairs), 'utf8');
 };
 
+// Decrypt user's private key
+export const decryptPrivateKey = async (filePath: string, password: string, publicKey: string) => {
+  const userKeyPairs = await getStoredKeyPairs(filePath);
+
+  const searchedKeyPair = userKeyPairs.find(kp => kp.publicKey === publicKey);
+
+  const decryptedPrivateKey = decrypt(searchedKeyPair?.privateKey, password);
+
+  return decryptedPrivateKey;
+};
+
+// Clear user's keys
 export const clearKeys = (filePath: string) => fsp.unlink(filePath);

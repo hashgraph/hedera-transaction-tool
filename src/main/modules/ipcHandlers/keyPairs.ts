@@ -4,6 +4,7 @@ import {
   clearKeys,
   getKeyPairsFilePath,
   getStoredKeyPairs,
+  decryptPrivateKey,
 } from '../../services/keyPairs';
 import { IKeyPair } from '../../shared/interfaces/IKeyPair';
 
@@ -16,6 +17,13 @@ export default (app: Electron.App) => {
     async (e, userId: string, password: string, keyPair: IKeyPair) => {
       await storeKeyPair(getKeyPairsFilePath(app, userId), password, keyPair);
     },
+  );
+
+  // Decrypted private key
+  ipcMain.handle(
+    createChannelName('decryptPrivateKey'),
+    async (e, userId: string, password: string, publicKey: string) =>
+      decryptPrivateKey(getKeyPairsFilePath(app, userId), password, publicKey),
   );
 
   // Decrypt stored key pairs

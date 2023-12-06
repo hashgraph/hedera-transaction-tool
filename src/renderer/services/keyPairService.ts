@@ -30,6 +30,9 @@ export const restorePrivateKey = async (
 export const storeKeyPair = (userId: string, password: string, keyPair: IKeyPair) =>
   window.electronAPI.privateKey.store(userId, password, keyPair);
 
+export const decryptPrivateKey = (userId: string, password: string, publicKey: string) =>
+  window.electronAPI.privateKey.decryptPrivateKey(userId, password, publicKey);
+
 export const getAccountId = async (mirrorNodeURL: string, publicKey: string) => {
   try {
     const { data } = await axios.get(`${mirrorNodeURL}/accounts/?account.publickey=${publicKey}`);
