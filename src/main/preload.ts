@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 import { Theme } from './modules/ipcHandlers/theme';
 import { Organization, SchemaProperties } from './modules/store';
+import { IKeyPair } from './shared/interfaces/IKeyPair';
 
 contextBridge.exposeInMainWorld('electronAPI', {
   sendMessage: (message: string) => ipcRenderer.send('message', message),
@@ -39,8 +40,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   privateKey: {
     getStored: (): Promise<{ privateKey: string; index: number }[]> =>
       ipcRenderer.invoke('privateKey:getStored'),
-    store: (privateKey: string, index: number): Promise<void> =>
-      ipcRenderer.invoke('privateKey:store', privateKey, index),
+    store: (password: string, keyPair: IKeyPair): Promise<void> =>
+      ipcRenderer.invoke('privateKey:store', password, keyPair),
     clear: (): Promise<boolean> => ipcRenderer.invoke('privateKey:clear'),
   },
 });
