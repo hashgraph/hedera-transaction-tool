@@ -29,9 +29,9 @@ export default interface ElectronApi {
     downloadFileUnencrypted: (words: string[]) => void;
   };
   privateKey: {
-    getStored: () => Promise<IKeyPair[]>;
-    store: (password: string, keyPair: IKeyPair) => Promise<void>;
-    clear: () => Promise<boolean>;
+    getStored: (userId: string) => Promise<IKeyPair[]>;
+    store: (userId: string, password: string, keyPair: IKeyPair) => Promise<void>;
+    clear: (userId: string) => Promise<boolean>;
   };
 }
 

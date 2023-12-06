@@ -4,7 +4,8 @@ import { Mnemonic } from '@hashgraph/sdk';
 
 import { IKeyPair } from '../../main/shared/interfaces/IKeyPair';
 
-export const getStoredKeyPairs = () => window.electronAPI.privateKey.getStored();
+export const getStoredKeyPairs = (userId: string) =>
+  window.electronAPI.privateKey.getStored(userId);
 
 export const restorePrivateKey = async (
   words: string[],
@@ -26,8 +27,8 @@ export const restorePrivateKey = async (
   return privateKey;
 };
 
-export const storeKeyPair = (password: string, keyPair: IKeyPair) =>
-  window.electronAPI.privateKey.store(password, keyPair);
+export const storeKeyPair = (userId: string, password: string, keyPair: IKeyPair) =>
+  window.electronAPI.privateKey.store(userId, password, keyPair);
 
 export const getAccountId = async (mirrorNodeURL: string, publicKey: string) => {
   try {

@@ -6,12 +6,9 @@ import { encrypt } from '../utils/crypto';
 
 import { IKeyPair } from '../shared/interfaces/IKeyPair';
 
-// Key pairs Encrypted File Name
-export const keyPairsFileName = 'keys.json';
-
 // Get key pairs Encrypted File Path
-export const getKeyPairsFilePath = (app: Electron.App) =>
-  path.join(app.getPath('userData'), keyPairsFileName);
+export const getKeyPairsFilePath = (app: Electron.App, userId: string) =>
+  path.join(app.getPath('userData'), `${userId}.json`);
 
 // Decrypt and get all stored key pairs
 export const getStoredKeyPairs = async (filePath: string): Promise<IKeyPair[]> => {
