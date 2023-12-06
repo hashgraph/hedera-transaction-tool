@@ -8,7 +8,7 @@ import {
 } from '../../services/keyPairs';
 import { IKeyPair } from '../../shared/interfaces/IKeyPair';
 
-const createChannelName = (...props) => ['privateKey', ...props].join(':');
+const createChannelName = (...props) => ['keyPairs', ...props].join(':');
 
 export default (app: Electron.App) => {
   // Generate key pair

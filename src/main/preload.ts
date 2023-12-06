@@ -36,14 +36,14 @@ export const electronAPI = {
       ipcRenderer.invoke('recoveryPhrase:downloadFileUnencrypted', words);
     },
   },
-  privateKey: {
+  keyPairs: {
     getStored: (userId: string): Promise<IKeyPair[]> =>
-      ipcRenderer.invoke('privateKey:getStored', userId),
+      ipcRenderer.invoke('keyPairs:getStored', userId),
     store: (userId: string, password: string, keyPair: IKeyPair): Promise<void> =>
-      ipcRenderer.invoke('privateKey:store', userId, password, keyPair),
+      ipcRenderer.invoke('keyPairs:store', userId, password, keyPair),
     decryptPrivateKey: (userId: string, password: string, publicKey: string): Promise<string> =>
-      ipcRenderer.invoke('privateKey:decryptPrivateKey', userId, password, publicKey),
-    clear: (userId: string): Promise<boolean> => ipcRenderer.invoke('privateKey:clear', userId),
+      ipcRenderer.invoke('keyPairs:decryptPrivateKey', userId, password, publicKey),
+    clear: (userId: string): Promise<boolean> => ipcRenderer.invoke('keyPairs:clear', userId),
   },
 };
 typeof electronAPI;
