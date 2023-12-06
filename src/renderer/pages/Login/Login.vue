@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+
+import { jwtDecode } from 'jwt-decode';
 
 import AppButton from '../../components/ui/AppButton.vue';
 import useUserStateStore from '../../stores/storeUserState';
-import { useRouter } from 'vue-router';
+import { IUserData } from '../../../main/shared/interfaces/IUserData';
 
 const router = useRouter();
 const userStateStore = useUserStateStore();
@@ -24,20 +27,21 @@ const handleOnFormSubmit = (event: Event) => {
 
   if (!inputEmailInvalid.value && !inputPasswordInvalid.value) {
     //SEND LOGIN REQUEST
-    const loginReq = { successful: true };
+    const loginRes = {
+      successful: true,
+      accessToken:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InBpcEBnbWFpbC5jb20iLCJ1c2VybmFtZSI6IkhlZGVyYVVzZXIiLCJ1c2VySWQiOiIxMjM0NTY3ODkifQ.iPZBw37mI7iBgOOPzDQYilx_y4h-DLE2h8EqEg6ZgbU',
+      isInitial: false,
+    };
 
-    //IF LOGGED IN
-    if (!loginReq.successful) {
-      //NOTIFY USER
-      return;
+    try {
+      const decodedUserData: IUserData = jwtDecode(loginRes.accessToken);
+      userStateStore.logUser(loginRes.accessToken, decodedUserData);
+    } catch (error) {
+      console.log(error);
     }
 
-    userStateStore.logUser(inputEmail.value, inputPassword.value);
-
-    //CHECK IF IS INITIAL LOGIN
-    const isInitial = true; //TEMPORARY
-
-    if (isInitial) {
+    if (loginRes.isInitial) {
       router.push({ name: 'newPassword' });
     } else {
       //REDIRECT TO DEFAULT LOGGED ROUTE?
