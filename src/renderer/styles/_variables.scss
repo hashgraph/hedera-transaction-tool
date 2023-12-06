@@ -95,8 +95,8 @@ $error-800: #660000;
 $error-900: #330000;
 $error-950: #1a0000;
 
-$primary: $purple-500;
-$secondary: $pink-500;
+$primary: $purple-600;
+$secondary: $dark-blue-600;
 $success: $success-500;
 $danger: $error-500;
 $warning: $warning-500;
@@ -384,6 +384,7 @@ $btn-font-size-lg: 14px;
 
 $btn-line-height: 24px;
 $btn-font-weight: $font-weight-bold;
+$btn-color: $neutral-00;
 
 $btn-border-radius: $border-radius;
 $btn-transition: color 0.15s linear, background-color 0.15s linear, border-color 0.15s linear,

@@ -4,6 +4,7 @@ import { sendUpdateThemeEventTo } from '../modules/ipcHandlers/theme';
 
 export default function createWindow(app: Electron.App) {
   const mainWindow = new BrowserWindow({
+    fullscreen: true,
     webPreferences: {
       preload: join(__dirname, '../preload.js'),
       nodeIntegration: false,
