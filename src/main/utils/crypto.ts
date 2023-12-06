@@ -33,7 +33,7 @@ export function decrypt(data, password: string) {
 
   const decipher = crypto.createDecipheriv('aes-192-cbc', key, iv);
 
-  const hex = Buffer.concat([decipher.update(data), decipher.final()]).toString('utf-8');
+  const hex = decipher.update(data, 'hex', 'utf8') + decipher.final('utf8');
 
   return Buffer.from(hex, 'hex').toString('utf-8');
 }
