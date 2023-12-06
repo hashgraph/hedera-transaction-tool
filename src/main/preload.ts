@@ -4,8 +4,7 @@ import { Theme } from './modules/ipcHandlers/theme';
 import { Organization, SchemaProperties } from './modules/store';
 import { IKeyPair } from './shared/interfaces/IKeyPair';
 
-contextBridge.exposeInMainWorld('electronAPI', {
-  sendMessage: (message: string) => ipcRenderer.send('message', message),
+export const electronAPI = {
   getNodeEnv: () => process.env.NODE_ENV,
   theme: {
     isDark: (): Promise<boolean> => ipcRenderer.invoke('theme:isDark'),
@@ -44,4 +43,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('privateKey:store', userId, password, keyPair),
     clear: (userId: string): Promise<boolean> => ipcRenderer.invoke('privateKey:clear', userId),
   },
-});
+};
+typeof electronAPI;
+contextBridge.exposeInMainWorld('electronAPI', electronAPI);
