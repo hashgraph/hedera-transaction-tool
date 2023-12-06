@@ -18,7 +18,12 @@ onMounted(() => {
       :key="keyPair.publicKey"
       class="rounded bg-dark-blue-700 p-4 mt-4"
     >
-      <p class="text-secondary text-bold text-main mb-3">Index: {{ keyPair.index }}</p>
+      <div class="d-flex gap-5">
+        <p class="text-secondary text-bold text-main mb-3">Index: {{ keyPair.index }}</p>
+        <p v-if="keyPair.nickname" class="text-secondary text-bold text-main mb-3">
+          Nickname: {{ keyPair.nickname }}
+        </p>
+      </div>
       <div class="form-group">
         <label class="form-label">ED25519 Private key</label>
         <input type="text" readonly class="form-control py-3" :value="keyPair.privateKey" />
