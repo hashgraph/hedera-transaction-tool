@@ -23,7 +23,9 @@ export function encrypt(data, password: string) {
 
   const cipher = crypto.createCipheriv('aes-192-cbc', key, iv);
 
-  return Buffer.concat([cipher.update(data), cipher.final()]);
+  const encrypted = cipher.update(data, 'utf8', 'hex') + cipher.final('hex');
+
+  return encrypted;
 }
 
 export function decrypt(data, password: string) {
