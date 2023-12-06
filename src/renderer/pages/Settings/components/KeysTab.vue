@@ -38,8 +38,10 @@ const handleDecrypt = async () => {
 };
 
 watch(isDecryptedModalShown, newVal => {
-  if (newVal) {
+  if (!newVal) {
     decryptedKey.value = null;
+    publicKeysPrivateKeyToDecrypt.value = '';
+    userPassword.value = '';
   }
 });
 </script>
@@ -64,7 +66,7 @@ watch(isDecryptedModalShown, newVal => {
         >
       </div>
       <div class="form-group">
-        <label class="form-label">ED25519 Private key</label>
+        <label class="form-label">Encrypted Private key</label>
         <input type="text" readonly class="form-control py-3" :value="keyPair.privateKey" />
       </div>
       <div class="form-group mt-3">
@@ -107,7 +109,10 @@ watch(isDecryptedModalShown, newVal => {
           class="mt-5 form-control rounded-4"
           placeholder="Type your password"
         />
-        <input v-model="decryptedKey" type="text" class="mt-4 form-control rounded-4" readonly />
+        <div class="mt-4 form-group">
+          <label class="form-label">Decrypted Private key</label>
+          <input v-model="decryptedKey" type="text" class="form-control rounded-4" readonly />
+        </div>
         <AppButton
           color="primary"
           size="large"
