@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { Mnemonic } from '@hashgraph/sdk';
 
 import AppButton from '../../../components/ui/AppButton.vue';
 import AppRecoveryPhraseWord from '../../../components/ui/AppRecoveryPhraseWord.vue';
 
 defineProps<{
   recoveryPhrase: string[] | null;
-  ableToContinue: boolean;
   handleFinish: () => void;
 }>();
 const emit = defineEmits(['update:recoveryPhrase']);
 
 const importedPhrase = ref('');
+const ableToContinue = ref(false);
+
 const wordsArray = computed(() =>
   importedPhrase.value
     .split(/[\s,]+|,\s*|\n/)
@@ -19,15 +21,18 @@ const wordsArray = computed(() =>
     .slice(0, 24),
 );
 
-watch(importedPhrase, async () => {
-  if (wordsArray.value.length === 24) {
+watch(wordsArray, async newWordsArray => {
+  if (newWordsArray.length === 24) {
     try {
-      emit('update:recoveryPhrase', wordsArray.value);
-    } catch (error) {
-      emit('update:recoveryPhrase', null);
+      await Mnemonic.fromWords(newWordsArray);
+      emit('update:recoveryPhrase', newWordsArray);
+      ableToContinue.value = true;
+    } catch {
+      ableToContinue.value = false;
     }
   } else {
-    emit('update:recoveryPhrase', null);
+    emit('update:recoveryPhrase', []);
+    ableToContinue.value = false;
   }
 });
 </script>

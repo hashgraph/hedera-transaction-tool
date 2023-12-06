@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import useKeyPairsStore from '../../stores/storeKeyPairs';
@@ -10,7 +10,6 @@ import Import from './components/Import.vue';
 
 import AppModal from '../../components/ui/AppModal.vue';
 import AppButton from '../../components/ui/AppButton.vue';
-import { Mnemonic } from '@hashgraph/sdk';
 
 const router = useRouter();
 
@@ -20,23 +19,9 @@ const recoveryPhrase = ref<string[] | null>(null);
 
 const step = ref(1);
 const type = ref<'generate' | 'import' | ''>('');
-const ableToContinue = ref(false);
 
 const isSuccessModalShown = ref(false);
 const modalText = ref('');
-
-watch(recoveryPhrase, async newRecoveryPhrase => {
-  if (!newRecoveryPhrase) {
-    ableToContinue.value = false;
-  } else if (newRecoveryPhrase.length === 24) {
-    try {
-      await Mnemonic.fromWords(recoveryPhrase.value || []);
-      ableToContinue.value = true;
-    } catch {
-      ableToContinue.value = false;
-    }
-  }
-});
 
 const handleFinish = () => {
   keyPairsStore.setRecoveryPhrase(recoveryPhrase.value || []);
@@ -72,7 +57,6 @@ const handleContinue = () => {
         <Import
           v-else-if="type === 'import'"
           v-model:recoveryPhrase="recoveryPhrase"
-          :ableToContinue="ableToContinue"
           :handleFinish="handleFinish"
         />
       </template>
