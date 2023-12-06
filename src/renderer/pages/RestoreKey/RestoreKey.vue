@@ -6,9 +6,12 @@ import { Mnemonic } from '@hashgraph/sdk';
 
 import useKeyPairsStore from '../../stores/storeKeyPairs';
 
+import * as keyPairService from '../../services/keyPairService';
+
 import AppButton from '../../components/ui/AppButton.vue';
 import AppModal from '../../components/ui/AppModal.vue';
 import Import from '../RecoveryPhrase/components/Import.vue';
+import { IKeyPair } from '../../../main/shared/interfaces/IKeyPair';
 
 const router = useRouter();
 const keyPairsStore = useKeyPairsStore();
@@ -19,6 +22,10 @@ const password = ref('');
 const recoveryPhrase = ref([]);
 const index = ref(0);
 const nickname = ref('');
+
+const inputIndexInvalid = ref(false);
+
+const restoredKey = ref<{ privateKey: string; publicKey: string } | null>(null);
 
 const ableToContinue = ref(false);
 const isSuccessModalShown = ref(false);
@@ -36,17 +43,54 @@ watch(recoveryPhrase, async newRecoveryPhrase => {
   }
 });
 
+watch(index, () => {
+  inputIndexInvalid.value = false;
+});
+
 const handleFinish = () => {
   keyPairsStore.setRecoveryPhrase(recoveryPhrase.value || []);
   step.value++;
 };
 
-const handleCreateKey = async () => {
-  await keyPairsStore.generatePrivateKey('', index.value);
+const handleRestoreKey = async () => {
+  const privateKey = await keyPairService.restorePrivateKey(
+    keyPairsStore.recoveryPhraseWords,
+    '',
+    index.value,
+    'ED25519',
+  );
 
-  isSuccessModalShown.value = true;
+  if (keyPairsStore.keyPairs.some(kp => kp.publicKey === privateKey.publicKey.toStringRaw())) {
+    inputIndexInvalid.value = true;
+    return;
+  }
+  inputIndexInvalid.value = false;
 
   await keyPairsStore.setRecoveryPhrase([]);
+
+  restoredKey.value = {
+    privateKey: privateKey.toStringRaw(),
+    publicKey: privateKey.publicKey.toStringRaw(),
+  };
+
+  step.value++;
+};
+
+const handleSaveKey = async () => {
+  if (restoredKey.value) {
+    const keyPair: IKeyPair = {
+      index: index.value,
+      privateKey: restoredKey.value.privateKey,
+      publicKey: restoredKey.value.publicKey,
+    };
+
+    if (nickname.value) {
+      keyPair.nickname = nickname.value;
+    }
+
+    await keyPairsStore.storeKeyPair(password.value, keyPair);
+    isSuccessModalShown.value = true;
+  }
 };
 </script>
 <template>
@@ -114,14 +158,18 @@ const handleCreateKey = async () => {
             v-model="index"
             type="number"
             class="form-control rounded-4"
+            :class="{ 'is-invalid': inputIndexInvalid }"
             placeholder="Enter key index"
           />
+          <div v-if="inputIndexInvalid" class="invalid-feedback">
+            Key at index {{ index }} is already restored.
+          </div>
           <AppButton
             size="large"
             color="primary"
             class="mt-5 d-block w-100 rounded-4"
             :disabled="index < 0"
-            @click="step++"
+            @click="handleRestoreKey"
             >Continue</AppButton
           >
         </div>
@@ -145,7 +193,7 @@ const handleCreateKey = async () => {
             size="large"
             color="primary"
             class="mt-5 d-block w-100 rounded-4"
-            @click="handleCreateKey"
+            @click="handleSaveKey"
             >Continue</AppButton
           >
         </div>

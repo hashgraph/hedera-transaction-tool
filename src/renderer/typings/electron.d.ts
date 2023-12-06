@@ -1,5 +1,6 @@
 import { Theme } from '../../main/modules/ipcHandlers/theme';
 import { Organization, SchemaProperties } from '../../main/modules/store';
+import { IKeyPair } from '../../main/shared/interfaces/IKeyPair';
 
 /**
  * Should match main/preload.ts for typescript support in renderer
@@ -28,13 +29,8 @@ export default interface ElectronApi {
     downloadFileUnencrypted: (words: string[]) => void;
   };
   privateKey: {
-    getStored: () => Promise<
-      {
-        privateKey: string;
-        index: number;
-      }[]
-    >;
-    store: (privateKey: string, index: number) => Promise<void>;
+    getStored: () => Promise<IKeyPair[]>;
+    store: (password: string, keyPair: IKeyPair) => Promise<void>;
     clear: () => Promise<boolean>;
   };
 }

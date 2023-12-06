@@ -1,42 +1,33 @@
-import { Mnemonic, PrivateKey } from '@hashgraph/sdk';
-
 import axios from 'axios';
 
-const getStoredPrivateKeys = () => window.electronAPI.privateKey.getStored();
+import { Mnemonic } from '@hashgraph/sdk';
 
-export const generatePrivateKey = async (words: string[], passphrase: string, keyIndex: number) => {
+import { IKeyPair } from '../../main/shared/interfaces/IKeyPair';
+
+export const getStoredKeyPairs = () => window.electronAPI.privateKey.getStored();
+
+export const restorePrivateKey = async (
+  words: string[],
+  passphrase: string,
+  keyIndex: number,
+  type: 'ECDSA' | 'ED25519',
+) => {
   if (words.length !== 24) {
-    throw Error('Invalod Recovery Phrase');
+    throw Error('Invalid Recovery Phrase');
   }
 
   const mnemonic = await Mnemonic.fromWords(words);
 
-  const privateKey = await mnemonic.toStandardEd25519PrivateKey(passphrase, keyIndex);
+  const privateKey =
+    type === 'ED25519'
+      ? mnemonic.toStandardEd25519PrivateKey(passphrase, keyIndex)
+      : mnemonic.toStandardECDSAsecp256k1PrivateKey(passphrase, keyIndex);
 
   return privateKey;
 };
 
-export const storePrivateKey = (privateKey: string, index: number) =>
-  window.electronAPI.privateKey.store(privateKey, index);
-
-export const getStoredKeyPairs = async () => {
-  try {
-    const privateKeys = await getStoredPrivateKeys();
-
-    return privateKeys
-      .map(pk => ({
-        privateKey: PrivateKey.fromStringED25519(pk.privateKey),
-        index: pk.index,
-      }))
-      .map(pk => ({
-        privateKey: pk.privateKey.toStringRaw(),
-        index: pk.index,
-        publicKey: pk.privateKey.publicKey.toStringRaw(),
-      }));
-  } catch (error) {
-    return [];
-  }
-};
+export const storeKeyPair = (password: string, keyPair: IKeyPair) =>
+  window.electronAPI.privateKey.store(password, keyPair);
 
 export const getAccountId = async (mirrorNodeURL: string, publicKey: string) => {
   try {

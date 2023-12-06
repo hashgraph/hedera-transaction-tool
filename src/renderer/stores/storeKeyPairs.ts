@@ -1,6 +1,7 @@
-import { computed, onMounted, ref } from 'vue';
-
+import { onMounted, ref } from 'vue';
 import { defineStore } from 'pinia';
+
+import { IKeyPair, IKeyPairWithAccountId } from '../../main/shared/interfaces/IKeyPair';
 
 import * as keyPairService from '../services/keyPairService';
 
@@ -12,12 +13,7 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
 
   /* State */
   const recoveryPhraseWords = ref<string[]>([]);
-  const keyPairs = ref<
-    { privateKey: string; index: number; publicKey: string; accountId?: string }[]
-  >([]);
-
-  /* Getters */
-  const indexes = computed(() => keyPairs.value.map(kp => kp.index));
+  const keyPairs = ref<IKeyPairWithAccountId[]>([]);
 
   /* Actions */
   async function refetch() {
@@ -34,26 +30,9 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
     }
   }
 
-  async function generatePrivateKey(passphrase: string, index: number) {
-    if (indexes.value.includes(index)) {
-      return; //ALERT THAT THIS KEY IS ALREADY ADDED
-    }
-
-    const privateKey = await keyPairService.generatePrivateKey(
-      recoveryPhraseWords.value,
-      passphrase,
-      index,
-    );
-
-    await keyPairService.storePrivateKey(privateKey.toStringRaw(), index);
-
+  async function storeKeyPair(password: string, keyPair: IKeyPair) {
+    await keyPairService.storeKeyPair(password, keyPair);
     await refetch();
-
-    return {
-      privateKey: privateKey.toStringRaw(),
-      index: index,
-      publicKey: privateKey._key.publicKey.toStringRaw(),
-    };
   }
 
   /* Lifecycle hooks */
@@ -64,7 +43,7 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
     recoveryPhraseWords,
     keyPairs,
     setRecoveryPhrase,
-    generatePrivateKey,
+    storeKeyPair,
     refetch,
   };
 });
