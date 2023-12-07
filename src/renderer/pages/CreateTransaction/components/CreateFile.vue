@@ -1,11 +1,34 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import AppButton from '../../../components/ui/AppButton.vue';
+import { computed, ref } from 'vue';
 
-const ownerKey = ref('');
+import AppButton from '../../../components/ui/AppButton.vue';
+import { PublicKey } from '@hashgraph/sdk';
+
+const ownerKeyText = ref('');
 const memo = ref('');
 const expirationTimestamp = ref();
 const importedFile = ref('');
+const ownerKeys = ref<string[]>([]);
+
+const ownerPublicKeys = computed(() => ownerKeys.value.map(key => PublicKey.fromString(key)));
+
+const handleOwnerKeyTextKeyPress = (e: KeyboardEvent) => {
+  if (e.code === 'Enter') handleAdd();
+};
+
+const handleAdd = () => {
+  ownerKeys.value.push(ownerKeyText.value);
+  ownerKeys.value = ownerKeys.value.filter(key => {
+    try {
+      return PublicKey.fromString(key);
+    } catch (error) {
+      return false;
+    }
+  });
+  ownerKeyText.value = '';
+
+  console.log(ownerPublicKeys.value);
+};
 
 const handleFileImport = (e: Event) => {
   const fileImportEl = e.target as HTMLInputElement;
@@ -17,6 +40,10 @@ const handleFileImport = (e: Event) => {
     reader.readAsText(files[0]);
   }
 };
+
+const handleSign = () => {
+  //Collect siganture
+};
 </script>
 <template>
   <div class="p-4 border rounded-4">
@@ -27,18 +54,43 @@ const handleFileImport = (e: Event) => {
       </div>
       <div>
         <AppButton size="small" color="secondary" class="me-3 px-4 rounded-4">Save Draft</AppButton>
-        <AppButton size="small" color="primary" class="px-4 rounded-4">Sign</AppButton>
+        <AppButton size="small" color="primary" class="px-4 rounded-4" @click="handleSign"
+          >Sign</AppButton
+        >
       </div>
     </div>
     <div class="mt-4">
-      <div class="form-group w-50">
+      <div class="form-group w-75">
         <label class="form-label">Set Keys</label>
-        <input
-          v-model="ownerKey"
-          type="text"
-          class="form-control py-3"
-          placeholder="Enter file owner public key"
-        />
+        <div class="d-flex gap-3">
+          <input
+            v-model="ownerKeyText"
+            type="text"
+            class="form-control py-3"
+            placeholder="Enter owner public key"
+            style="max-width: 555px"
+            @keypress="handleOwnerKeyTextKeyPress"
+          />
+          <AppButton color="secondary" class="rounded-4" @click="handleAdd">Add</AppButton>
+        </div>
+      </div>
+      <div class="mt-4 w-75">
+        <template v-for="key in ownerKeys" :key="key">
+          <div class="d-flex align-items-center gap-3">
+            <input
+              type="text"
+              readonly
+              class="form-control py-3"
+              :value="key"
+              style="max-width: 555px"
+            />
+            <i
+              class="bi bi-x-lg d-inline-block cursor-pointer"
+              style="line-height: 16px"
+              @click="ownerKeys = ownerKeys.filter(k => k !== key)"
+            ></i>
+          </div>
+        </template>
       </div>
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set File Memo (Optional)</label>
@@ -47,7 +99,7 @@ const handleFileImport = (e: Event) => {
           type="text"
           class="form-control py-3"
           maxlength="100"
-          placeholder="Enter file memo"
+          placeholder="Enter memo"
         />
       </div>
       <div class="mt-4 form-group w-25">
