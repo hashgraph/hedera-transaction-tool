@@ -387,6 +387,18 @@ import AppButton from '../../components/ui/AppButton.vue';
         </div>
       </div>
     </div>
+
+    <div class="row mb-4">
+      <div class="col-lg-3">
+        <div class="form-group mb-5">
+          <label for="fileUpload" class="form-label">
+            <span for="fileUpload" class="btn btn-primary">File upload</span>
+          </label>
+          <input type="file" id="fileUpload" />
+        </div>
+      </div>
+    </div>
+
     <!--
     <h3 class="text-headline mb-4">Modals</h3>
       <div class="row mb-6">

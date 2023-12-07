@@ -20,6 +20,10 @@ strong {
   font-weight: 700;
 }
 
+input[type='file'] {
+  display: none;
+}
+
 // Helpers
 .text-overflow {
   @include text-overflow;
