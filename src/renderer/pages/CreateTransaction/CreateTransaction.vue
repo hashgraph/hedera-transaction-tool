@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
 import { useRoute } from 'vue-router';
+
+import txTypeComponentMapping from './txTypeComponentMapping';
 
 import AppButton from '../../components/ui/AppButton.vue';
 
 const route = useRoute();
-console.log(route);
 
 const handleCreateTransaction = () => {};
 </script>
@@ -22,6 +22,12 @@ const handleCreateTransaction = () => {};
         <span>Create</span> <i class="bi bi-plus text-subheader"></i
       ></AppButton>
     </div>
-    <div class="mt-4"></div>
+    <div class="mt-4">
+      <template v-if="Object.keys(txTypeComponentMapping).includes(route.params.type.toString())">
+        <Component
+          :is="txTypeComponentMapping[route.params.type.toString() as keyof typeof txTypeComponentMapping]"
+        />
+      </template>
+    </div>
   </div>
 </template>
