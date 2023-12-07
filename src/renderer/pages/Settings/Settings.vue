@@ -37,7 +37,7 @@ const userStateStore = useUserStateStore();
 const handleClearConfig = async () => {
   await window.electronAPI.config.clear();
   if (userStateStore.userData?.userId) {
-    await window.electronAPI.privateKey.clear(userStateStore.userData?.userId);
+    await window.electronAPI.keyPairs.clear(userStateStore.userData?.userId);
   }
 
   mirrorNodeLinks.refetch();
