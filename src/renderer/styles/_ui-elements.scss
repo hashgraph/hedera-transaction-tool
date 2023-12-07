@@ -201,9 +201,6 @@
 }
 
 /* Misc Containers */
-.container-modal-card {
-  max-width: 356px;
-}
 
 .container-welcome-card {
   display: flex;
@@ -253,16 +250,7 @@
   }
 }
 
-/* Modal Page Overrides */
-.new-password-page,
-.recovery-phrase-page,
+/* Modal Overrides */
 .common-modal {
-  .modal-dialog-centered {
-    justify-content: center;
-    width: unset;
-  }
-
-  .modal-content {
-    width: unset;
-  }
+  --bs-modal-width: 356px;
 }

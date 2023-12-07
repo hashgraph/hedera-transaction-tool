@@ -199,7 +199,7 @@ const handleSaveKey = async () => {
         </div>
       </div>
       <AppModal v-model:show="isSuccessModalShown" class="common-modal">
-        <div class="p-5 container-modal-card">
+        <div class="p-5">
           <i
             class="bi bi-x-lg d-inline-block cursor-pointer"
             style="line-height: 16px"

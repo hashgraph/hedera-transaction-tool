@@ -79,7 +79,7 @@ watch(isDecryptedModalShown, newVal => {
       </div>
     </div>
     <AppModal v-model:show="isDecryptedModalShown" class="common-modal">
-      <div class="p-5 container-modal-card" style="width: 356px">
+      <div class="p-5">
         <i
           class="bi bi-x-lg d-inline-block cursor-pointer"
           style="line-height: 16px"

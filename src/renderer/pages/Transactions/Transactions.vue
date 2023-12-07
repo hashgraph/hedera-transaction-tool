@@ -3,7 +3,9 @@ import { reactive, ref } from 'vue';
 
 import AppTabs, { TabItem } from '../../components/ui/AppTabs.vue';
 import AppButton from '../../components/ui/AppButton.vue';
+import AppModal from '../../components/ui/AppModal.vue';
 
+/* Tabs */
 const activeTabIndex = ref(1);
 
 const tabItems: TabItem[] = [
@@ -41,12 +43,24 @@ const transactions = reactive([
     approvers: ['alice@acme.com', 'joe@acme.com'],
   },
 ]);
+
+/* Create Transaction */
+const isTransactionTypeModalShown = ref(false);
 </script>
 
 <template>
   <div class="p-10">
     <h1 class="text-huge text-bold">Transactions</h1>
-    <div class="mt-7">
+    <div class="mt-7 d-flex justify-content-end">
+      <AppButton
+        color="secondary"
+        class="rounded-4 d-flex align-items-center"
+        @click="isTransactionTypeModalShown = true"
+      >
+        <span>Create</span> <i class="bi bi-plus text-subheader"></i
+      ></AppButton>
+    </div>
+    <div class="mt-4">
       <AppTabs :items="tabItems" v-model:active-index="activeTabIndex">
         <template #[readyToReview]> First Tab </template>
         <template #[readyToSign]>
@@ -103,5 +117,57 @@ const transactions = reactive([
         <template #[drafts]> Sixth Tab </template>
       </AppTabs>
     </div>
+    <AppModal v-model:show="isTransactionTypeModalShown">
+      <div class="p-5">
+        <i
+          class="bi bi-x-lg d-inline-block cursor-pointer"
+          style="line-height: 16px"
+          @click="isTransactionTypeModalShown = false"
+        ></i>
+        <div class="mt-5 text-center">
+          <i
+            class="bi bi-arrow-left-right extra-large-icon cursor-pointer"
+            style="line-height: 16px"
+            @click="isTransactionTypeModalShown = false"
+          ></i>
+        </div>
+        <h3 class="mt-5 text-main text-center text-bold">Select type of Transaction</h3>
+        <p class="text-center text-small">
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+        </p>
+        <div class="mt-5 row flex-wrap gap-4">
+          <div class="col-3">
+            <h3 class="text-main text-bold">Group</h3>
+            <div class="mt-4">Item</div>
+            <div class="mt-4">Item</div>
+            <div class="mt-4">Item</div>
+          </div>
+          <div class="col-3">
+            <h3 class="text-main text-bold">Group</h3>
+            <div class="mt-4">Item</div>
+            <div class="mt-4">Item</div>
+            <div class="mt-4">Item</div>
+          </div>
+          <div class="col-3">
+            <h3 class="text-main text-bold">Group</h3>
+            <div class="mt-4">Item</div>
+            <div class="mt-4">Item</div>
+            <div class="mt-4">Item</div>
+          </div>
+          <div class="col-3">
+            <h3 class="text-main text-bold">Group</h3>
+            <div class="mt-4">Item</div>
+            <div class="mt-4">Item</div>
+            <div class="mt-4">Item</div>
+          </div>
+          <div class="col-3">
+            <h3 class="text-main text-bold">Group</h3>
+            <div class="mt-4">Item</div>
+            <div class="mt-4">Item</div>
+            <div class="mt-4">Item</div>
+          </div>
+        </div>
+      </div>
+    </AppModal>
   </div>
 </template>
