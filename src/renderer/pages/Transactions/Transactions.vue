@@ -46,6 +46,25 @@ const transactions = reactive([
 
 /* Create Transaction */
 const isTransactionTypeModalShown = ref(false);
+
+const transactionGroups = [
+  {
+    groupTitle: 'Group',
+    items: ['Item', 'Item', 'Item'],
+  },
+  {
+    groupTitle: 'Group',
+    items: ['Item', 'Item', 'Item'],
+  },
+  {
+    groupTitle: 'Group',
+    items: ['Item', 'Item', 'Item'],
+  },
+  {
+    groupTitle: 'File management',
+    items: ['Create File', 'Update File', 'Delete File'],
+  },
+];
 </script>
 
 <template>
@@ -117,7 +136,7 @@ const isTransactionTypeModalShown = ref(false);
         <template #[drafts]> Sixth Tab </template>
       </AppTabs>
     </div>
-    <AppModal v-model:show="isTransactionTypeModalShown">
+    <AppModal v-model:show="isTransactionTypeModalShown" class="transaction-type-selection-modal">
       <div class="p-5">
         <i
           class="bi bi-x-lg d-inline-block cursor-pointer"
@@ -126,46 +145,27 @@ const isTransactionTypeModalShown = ref(false);
         ></i>
         <div class="mt-5 text-center">
           <i
-            class="bi bi-arrow-left-right extra-large-icon cursor-pointer"
+            class="bi bi-arrow-left-right extra-large-icon text-light-emphasis"
             style="line-height: 16px"
-            @click="isTransactionTypeModalShown = false"
           ></i>
         </div>
         <h3 class="mt-5 text-main text-center text-bold">Select type of Transaction</h3>
-        <p class="text-center text-small">
+        <p class="text-center text-light-emphasis text-small">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit.
         </p>
-        <div class="mt-5 row flex-wrap gap-4">
-          <div class="col-3">
-            <h3 class="text-main text-bold">Group</h3>
-            <div class="mt-4">Item</div>
-            <div class="mt-4">Item</div>
-            <div class="mt-4">Item</div>
-          </div>
-          <div class="col-3">
-            <h3 class="text-main text-bold">Group</h3>
-            <div class="mt-4">Item</div>
-            <div class="mt-4">Item</div>
-            <div class="mt-4">Item</div>
-          </div>
-          <div class="col-3">
-            <h3 class="text-main text-bold">Group</h3>
-            <div class="mt-4">Item</div>
-            <div class="mt-4">Item</div>
-            <div class="mt-4">Item</div>
-          </div>
-          <div class="col-3">
-            <h3 class="text-main text-bold">Group</h3>
-            <div class="mt-4">Item</div>
-            <div class="mt-4">Item</div>
-            <div class="mt-4">Item</div>
-          </div>
-          <div class="col-3">
-            <h3 class="text-main text-bold">Group</h3>
-            <div class="mt-4">Item</div>
-            <div class="mt-4">Item</div>
-            <div class="mt-4">Item</div>
-          </div>
+        <div class="row flex-wrap">
+          <template v-for="group in transactionGroups" :key="group.groupTitle">
+            <div class="mt-5 col-4">
+              <h3 class="text-main text-bold">{{ group.groupTitle }}</h3>
+              <div
+                v-for="(item, index) in group.items"
+                :key="index"
+                class="mt-3 text-light-emphasis text-small"
+              >
+                {{ item }}
+              </div>
+            </div>
+          </template>
         </div>
       </div>
     </AppModal>
