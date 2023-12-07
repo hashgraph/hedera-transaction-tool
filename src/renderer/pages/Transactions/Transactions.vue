@@ -50,19 +50,35 @@ const isTransactionTypeModalShown = ref(false);
 const transactionGroups = [
   {
     groupTitle: 'Group',
-    items: ['Item', 'Item', 'Item'],
+    items: [
+      { label: 'Item', name: 'Item' },
+      { label: 'Item', name: 'Item' },
+      { label: 'Item', name: 'Item' },
+    ],
   },
   {
     groupTitle: 'Group',
-    items: ['Item', 'Item', 'Item'],
+    items: [
+      { label: 'Item', name: 'Item' },
+      { label: 'Item', name: 'Item' },
+      { label: 'Item', name: 'Item' },
+    ],
   },
   {
     groupTitle: 'Group',
-    items: ['Item', 'Item', 'Item'],
+    items: [
+      { label: 'Item', name: 'Item' },
+      { label: 'Item', name: 'Item' },
+      { label: 'Item', name: 'Item' },
+    ],
   },
   {
     groupTitle: 'File management',
-    items: ['Create File', 'Update File', 'Delete File'],
+    items: [
+      { label: 'Create File', name: 'createFile' },
+      { label: 'Update File', name: 'updateFile' },
+      { label: 'Delete File', name: 'deleteFile' },
+    ],
   },
 ];
 </script>
@@ -154,16 +170,17 @@ const transactionGroups = [
           Lorem ipsum dolor sit amet, consectetur adipiscing elit.
         </p>
         <div class="row flex-wrap">
-          <template v-for="group in transactionGroups" :key="group.groupTitle">
+          <template v-for="(group, groupIndex) in transactionGroups" :key="groupIndex">
             <div class="mt-5 col-4">
               <h3 class="text-main text-bold">{{ group.groupTitle }}</h3>
-              <div
+              <RouterLink
+                :to="{ name: 'createTransaction', params: { type: item.name } }"
                 v-for="(item, index) in group.items"
                 :key="index"
-                class="mt-3 text-light-emphasis text-small"
+                class="mt-3 text-decoration-none d-block text-light-emphasis text-small"
               >
-                {{ item }}
-              </div>
+                {{ item.label }}
+              </RouterLink>
             </div>
           </template>
         </div>
