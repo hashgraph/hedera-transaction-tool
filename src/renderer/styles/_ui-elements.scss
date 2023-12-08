@@ -201,9 +201,6 @@
 }
 
 /* Misc Containers */
-.container-modal-card {
-  max-width: 356px;
-}
 
 .container-welcome-card {
   display: flex;
@@ -253,16 +250,21 @@
   }
 }
 
-/* Modal Page Overrides */
-.new-password-page,
-.recovery-phrase-page,
+/* Modal Overrides */
 .common-modal {
-  .modal-dialog-centered {
-    justify-content: center;
-    width: unset;
+  --bs-modal-width: 356px;
+}
+.transaction-success-modal {
+  --bs-modal-width: 430px;
+}
+.transaction-type-selection-modal {
+  --bs-modal-width: 75vw;
+
+  @include media-breakpoint-up(xl) {
+    --bs-modal-width: 50vw;
   }
 
-  .modal-content {
-    width: unset;
+  @include media-breakpoint-up(xxl) {
+    --bs-modal-width: 35vw;
   }
 }

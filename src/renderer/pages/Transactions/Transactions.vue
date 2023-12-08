@@ -3,7 +3,9 @@ import { reactive, ref } from 'vue';
 
 import AppTabs, { TabItem } from '../../components/ui/AppTabs.vue';
 import AppButton from '../../components/ui/AppButton.vue';
+import AppModal from '../../components/ui/AppModal.vue';
 
+/* Tabs */
 const activeTabIndex = ref(1);
 
 const tabItems: TabItem[] = [
@@ -41,12 +43,59 @@ const transactions = reactive([
     approvers: ['alice@acme.com', 'joe@acme.com'],
   },
 ]);
+
+/* Create Transaction */
+const isTransactionTypeModalShown = ref(false);
+
+const transactionGroups = [
+  {
+    groupTitle: 'Group',
+    items: [
+      { label: 'Item', name: 'Item' },
+      { label: 'Item', name: 'Item' },
+      { label: 'Item', name: 'Item' },
+    ],
+  },
+  {
+    groupTitle: 'Group',
+    items: [
+      { label: 'Item', name: 'Item' },
+      { label: 'Item', name: 'Item' },
+      { label: 'Item', name: 'Item' },
+    ],
+  },
+  {
+    groupTitle: 'Group',
+    items: [
+      { label: 'Item', name: 'Item' },
+      { label: 'Item', name: 'Item' },
+      { label: 'Item', name: 'Item' },
+    ],
+  },
+  {
+    groupTitle: 'File management',
+    items: [
+      { label: 'Create File', name: 'createFile' },
+      { label: 'Update File', name: 'updateFile' },
+      { label: 'Delete File', name: 'deleteFile' },
+    ],
+  },
+];
 </script>
 
 <template>
   <div class="p-10">
     <h1 class="text-huge text-bold">Transactions</h1>
-    <div class="mt-7">
+    <div class="mt-7 d-flex justify-content-end">
+      <AppButton
+        color="secondary"
+        class="rounded-4 d-flex align-items-center"
+        @click="isTransactionTypeModalShown = true"
+      >
+        <span>Create</span> <i class="bi bi-plus text-subheader"></i
+      ></AppButton>
+    </div>
+    <div class="mt-4">
       <AppTabs :items="tabItems" v-model:active-index="activeTabIndex">
         <template #[readyToReview]> First Tab </template>
         <template #[readyToSign]>
@@ -103,5 +152,39 @@ const transactions = reactive([
         <template #[drafts]> Sixth Tab </template>
       </AppTabs>
     </div>
+    <AppModal v-model:show="isTransactionTypeModalShown" class="transaction-type-selection-modal">
+      <div class="p-5">
+        <i
+          class="bi bi-x-lg d-inline-block cursor-pointer"
+          style="line-height: 16px"
+          @click="isTransactionTypeModalShown = false"
+        ></i>
+        <div class="mt-5 text-center">
+          <i
+            class="bi bi-arrow-left-right extra-large-icon text-light-emphasis"
+            style="line-height: 16px"
+          ></i>
+        </div>
+        <h3 class="mt-5 text-main text-center text-bold">Select type of Transaction</h3>
+        <p class="text-center text-light-emphasis text-small">
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+        </p>
+        <div class="row flex-wrap">
+          <template v-for="(group, groupIndex) in transactionGroups" :key="groupIndex">
+            <div class="mt-5 col-4">
+              <h3 class="text-main text-bold">{{ group.groupTitle }}</h3>
+              <RouterLink
+                :to="{ name: 'createTransaction', params: { type: item.name } }"
+                v-for="(item, index) in group.items"
+                :key="index"
+                class="mt-3 text-decoration-none d-block text-light-emphasis text-small"
+              >
+                {{ item.label }}
+              </RouterLink>
+            </div>
+          </template>
+        </div>
+      </div>
+    </AppModal>
   </div>
 </template>
