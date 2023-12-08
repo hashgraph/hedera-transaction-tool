@@ -54,14 +54,13 @@ export default function getStore() {
             type: 'string',
           },
         },
-        required: ['name', 'serverUrl', 'serverPublicKey'],
       },
       default: [],
       uniqueItems: true,
     },
   };
 
-  const store = new Store({ schema });
+  const store = new Store({ schema, clearInvalidConfig: true });
 
   return store;
 }
