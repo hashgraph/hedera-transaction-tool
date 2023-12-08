@@ -76,6 +76,7 @@ const transactionGroups = [
     groupTitle: 'File management',
     items: [
       { label: 'Create File', name: 'createFile' },
+      { label: 'Read File', name: 'readFile' },
       { label: 'Update File', name: 'updateFile' },
       { label: 'Delete File', name: 'deleteFile' },
     ],
