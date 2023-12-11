@@ -48,3 +48,5 @@ export const getAccountId = async (mirrorNodeURL: string, publicKey: string) => 
     console.log(error);
   }
 };
+
+export const clearKeys = (userId: string) => window.electronAPI.keyPairs.clear(userId);
