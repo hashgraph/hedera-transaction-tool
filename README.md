@@ -18,8 +18,6 @@ cp .env.example .env
 
 ```
 NODE_ENV=development
-RECOVERY_PHRASE_ENCRYPTION_KEY=
-KEYS_ENCRYPTION_KEY=
 ```
 
 ### Run the following command to start Vue devtools
