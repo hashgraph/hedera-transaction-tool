@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
+
+import { clearKeys } from '../../services/keyPairService';
+
+import useUserStateStore from '../../stores/storeUserState';
 
 import AppButton from '../../components/ui/AppButton.vue';
-import { useRouter } from 'vue-router';
 import AppModal from '../../components/ui/AppModal.vue';
 
 const router = useRouter();
+
+const userStateStore = useUserStateStore();
 
 const inputNewPassword = ref('');
 const inputConfrimPassword = ref('');
@@ -36,6 +42,7 @@ const handleFormSubmit = (event: Event) => {
 
     if (isChanged) {
       // OPEN MODAL
+      userStateStore.userData && clearKeys(userStateStore.userData?.userId);
       isSuccessModalShown.value = true;
     } else {
       //NOTIFY USER
