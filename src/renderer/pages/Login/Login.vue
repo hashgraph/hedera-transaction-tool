@@ -68,19 +68,20 @@ const handleOnFormSubmit = (event: Event) => {
           placeholder="Email"
         />
         <div v-if="inputEmailInvalid" class="invalid-feedback">Invalid e-mail.</div>
-      </div>
-      <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
         <input
           v-model="inputPassword"
           type="password"
-          class="form-control rounded-4"
+          class="mt-4 form-control rounded-4"
           :class="{ 'is-invalid': inputPasswordInvalid }"
           placeholder="Password"
         />
         <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
-      </div>
-      <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
-        <AppButton color="primary" size="large" type="submit" class="mt-2 w-100 rounded-4"
+        <RouterLink
+          :to="{ name: 'forgotPassword' }"
+          class="d-inline-block ms-3 mt-3 text-muted text-small cursor-pointer text-decoration-none"
+          >Forgot password</RouterLink
+        >
+        <AppButton color="primary" size="large" type="submit" class="mt-4 w-100 rounded-4"
           >Login</AppButton
         >
       </div>

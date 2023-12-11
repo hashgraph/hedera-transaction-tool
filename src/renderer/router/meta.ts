@@ -8,6 +8,7 @@ const withoutAuthRoutes = [
   'settingsWorkGroups',
   'help',
   'setupOrganization',
+  'forgotPassword',
 ];
 
 export function attachMeta(routes: RouteRecordRaw[]) {
