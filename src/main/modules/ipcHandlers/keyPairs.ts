@@ -2,6 +2,7 @@ import { ipcMain } from 'electron';
 import {
   storeKeyPair,
   clearKeys,
+  changeDecryptionPassword,
   getKeyPairsFilePath,
   getStoredKeyPairs,
   decryptPrivateKey,
@@ -17,6 +18,13 @@ export default (app: Electron.App) => {
     async (e, userId: string, password: string, keyPair: IKeyPair) => {
       await storeKeyPair(getKeyPairsFilePath(app, userId), password, keyPair);
     },
+  );
+
+  // Change Decryption Password
+  ipcMain.handle(
+    createChannelName('changeDecryptionPassword'),
+    (e, userId: string, oldPassword: string, newPassword: string) =>
+      changeDecryptionPassword(getKeyPairsFilePath(app, userId), oldPassword, newPassword),
   );
 
   // Decrypted private key
