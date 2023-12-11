@@ -22,6 +22,7 @@ import SetupOrganization from '../pages/SetupOrganization';
 import NewPassword from '../pages/NewPassword';
 import RestoreKey from '../pages/RestoreKey';
 import CreateTransaction from '../pages/CreateTransaction';
+import AccountTab from '../pages/Settings/components/AccountTab.vue';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -63,6 +64,11 @@ const routes: RouteRecordRaw[] = [
         path: 'keys',
         name: 'settingsKeys',
         component: KeysTab,
+      },
+      {
+        path: 'account',
+        name: 'settingsAccount',
+        component: AccountTab,
       },
     ],
   },
