@@ -41,6 +41,12 @@ export const electronAPI = {
       ipcRenderer.invoke('keyPairs:getStored', userId),
     store: (userId: string, password: string, keyPair: IKeyPair): Promise<void> =>
       ipcRenderer.invoke('keyPairs:store', userId, password, keyPair),
+    changeDecryptionPassword: (
+      userId: string,
+      oldPassword: string,
+      newPassword: string,
+    ): Promise<IKeyPair[]> =>
+      ipcRenderer.invoke('keyPairs:changeDecryptionPassword', userId, oldPassword, newPassword),
     decryptPrivateKey: (userId: string, password: string, publicKey: string): Promise<string> =>
       ipcRenderer.invoke('keyPairs:decryptPrivateKey', userId, password, publicKey),
     clear: (userId: string): Promise<boolean> => ipcRenderer.invoke('keyPairs:clear', userId),

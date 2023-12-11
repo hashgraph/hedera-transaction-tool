@@ -29,6 +29,12 @@ export const restorePrivateKey = async (
 export const storeKeyPair = (userId: string, password: string, keyPair: IKeyPair) =>
   window.electronAPI.keyPairs.store(userId, password, keyPair);
 
+export const changeDecryptionPassword = (
+  userId: string,
+  oldPassword: string,
+  newPassword: string,
+) => window.electronAPI.keyPairs.changeDecryptionPassword(userId, oldPassword, newPassword);
+
 export const decryptPrivateKey = (userId: string, password: string, publicKey: string) =>
   window.electronAPI.keyPairs.decryptPrivateKey(userId, password, publicKey);
 
@@ -42,3 +48,5 @@ export const getAccountId = async (mirrorNodeURL: string, publicKey: string) => 
     console.log(error);
   }
 };
+
+export const clearKeys = (userId: string) => window.electronAPI.keyPairs.clear(userId);

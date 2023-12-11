@@ -14,7 +14,12 @@ import useUserStateStore from '../../stores/storeUserState';
 const router = useRouter();
 
 /* Tabs */
-const tabItems: TabItem[] = [{ title: 'General' }, { title: 'Work Groups' }, { title: 'Keys' }];
+const tabItems: TabItem[] = [
+  { title: 'General' },
+  { title: 'Work Groups' },
+  { title: 'Keys' },
+  { title: 'Account' },
+];
 const tabTitles = tabItems.map(t => t.title.toLocaleLowerCase().replaceAll(' ', '-'));
 
 const propTabIndex = tabTitles.findIndex(
