@@ -119,7 +119,7 @@
 .container-loader {
   width: 80px;
   height: 80px;
-  background-image: url('../public/loader.svg');
+  background-image: url('../public/images/loader.svg');
   background-repeat: no-repeat;
   animation: 0.75s linear infinite spinner-border;
 }
@@ -227,6 +227,11 @@
       }
     }
   }
+}
+
+.container-example-words {
+  background-image: url('../public/loader.svg');
+  background-repeat: no-repeat;
 }
 
 /* Icons */
