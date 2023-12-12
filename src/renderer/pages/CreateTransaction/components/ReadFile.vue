@@ -57,16 +57,6 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
         <i class="bi bi-arrow-up me-2"></i>
         <span class="text-small text-bold">Read File Query</span>
       </div>
-      <div>
-        <AppButton
-          size="small"
-          color="primary"
-          class="px-4 rounded-4"
-          :disabled="!fileId || !payerId"
-          @click="isUserPasswordModalShown = true"
-          >Read</AppButton
-        >
-      </div>
     </div>
     <div class="mt-4">
       <div class="mt-4 form-group w-50">
@@ -91,8 +81,17 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
         />
       </div>
       <div class="mt-4 form-group w-75">
-        <label class="form-label">Set File Contents</label>
+        <label class="form-label">File Content</label>
         <textarea v-model="content" class="form-control py-3" rows="10" readonly></textarea>
+      </div>
+      <div class="mt-4">
+        <AppButton
+          size="large"
+          color="primary"
+          :disabled="!fileId || !payerId"
+          @click="isUserPasswordModalShown = true"
+          >Read</AppButton
+        >
       </div>
     </div>
     <AppModal v-model:show="isUserPasswordModalShown" class="common-modal">

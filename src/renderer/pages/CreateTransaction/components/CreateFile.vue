@@ -36,6 +36,7 @@ const ownerKeyText = ref('');
 const memo = ref('');
 const expirationTimestamp = ref();
 const content = ref('');
+const isLoading = ref(false);
 
 const ownerKeys = ref<string[]>([]);
 
@@ -71,83 +72,98 @@ const handleFileImport = (e: Event) => {
 };
 
 const handleGetUserSignature = async () => {
-  if (!userStateStore.userData?.userId) {
-    throw Error('No user selected');
+  isLoading.value = true;
+  try {
+    if (!userStateStore.userData?.userId) {
+      throw Error('No user selected');
+    }
+
+    if (!transaction.value) return;
+
+    const signatures: { publicKey: PublicKey; signature: Uint8Array }[] = [];
+
+    await Promise.all(
+      keyPairsStore.keyPairs
+        .filter(kp => ownerKeys.value.includes(kp.publicKey))
+        .map(async keyPair => {
+          const privateKeyString = await decryptPrivateKey(
+            userStateStore.userData!.userId,
+            userPassword.value,
+            keyPair.publicKey,
+          );
+
+          if (transaction.value) {
+            const privateKey = PrivateKey.fromStringED25519(privateKeyString);
+            const signature = privateKey.signTransaction(transaction.value as any);
+            signatures.push({ publicKey: PublicKey.fromString(keyPair.publicKey), signature });
+          }
+        }),
+    );
+
+    signatures.forEach(s =>
+      transaction.value
+        ? (transaction.value = transaction.value.addSignature(s.publicKey, s.signature))
+        : '',
+    );
+
+    const client = Client.forTestnet();
+
+    const submitTx = await transaction.value?.execute(client);
+
+    const receipt = await submitTx.getReceipt(client);
+
+    isSignModalShown.value = false;
+
+    transactionId.value = submitTx.transactionId.toString();
+    fileId.value = receipt.fileId?.toString() || '';
+
+    isFileCreatedModalShown.value = true;
+
+    // Send to Transaction w/ user signatures to Back End
+  } catch (error) {
+    console.log(error);
+  } finally {
+    isLoading.value = false;
   }
-
-  if (!transaction.value) return;
-
-  const signatures: { publicKey: PublicKey; signature: Uint8Array }[] = [];
-
-  await Promise.all(
-    keyPairsStore.keyPairs
-      .filter(kp => ownerKeys.value.includes(kp.publicKey))
-      .map(async keyPair => {
-        const privateKeyString = await decryptPrivateKey(
-          userStateStore.userData!.userId,
-          userPassword.value,
-          keyPair.publicKey,
-        );
-
-        if (transaction.value) {
-          const privateKey = PrivateKey.fromStringED25519(privateKeyString);
-          const signature = privateKey.signTransaction(transaction.value as any);
-          signatures.push({ publicKey: PublicKey.fromString(keyPair.publicKey), signature });
-        }
-      }),
-  );
-
-  signatures.forEach(s =>
-    transaction.value
-      ? (transaction.value = transaction.value.addSignature(s.publicKey, s.signature))
-      : '',
-  );
-
-  const client = Client.forTestnet();
-
-  const submitTx = await transaction.value?.execute(client);
-
-  const receipt = await submitTx.getReceipt(client);
-
-  isSignModalShown.value = false;
-
-  transactionId.value = submitTx.transactionId.toString();
-  fileId.value = receipt.fileId?.toString() || '';
-
-  isFileCreatedModalShown.value = true;
-
-  // Send to Transaction w/ user signatures to Back End
 };
 
 const handleSign = async () => {
-  const transactionId = TransactionId.withValidStart(
-    AccountId.fromString(payerId.value),
-    Timestamp.fromDate(validStart.value),
-  );
+  isLoading.value = true;
 
-  let fileCreateTransaction = new FileCreateTransaction()
-    .setTransactionId(transactionId)
-    .setTransactionValidDuration(180)
-    .setNodeAccountIds([new AccountId(3)])
-    .setKeys(keyList.value);
-
-  if (content.value) fileCreateTransaction = fileCreateTransaction.setContents(content.value);
-  if (memo.value) fileCreateTransaction = fileCreateTransaction.setFileMemo(memo.value);
-  if (expirationTimestamp.value)
-    fileCreateTransaction = fileCreateTransaction.setExpirationTime(
-      Timestamp.fromDate(expirationTimestamp.value),
+  try {
+    const transactionId = TransactionId.withValidStart(
+      AccountId.fromString(payerId.value),
+      Timestamp.fromDate(validStart.value),
     );
 
-  transaction.value = fileCreateTransaction.freezeWith(Client.forTestnet());
+    let fileCreateTransaction = new FileCreateTransaction()
+      .setTransactionId(transactionId)
+      .setTransactionValidDuration(180)
+      .setNodeAccountIds([new AccountId(3)])
+      .setKeys(keyList.value);
 
-  const userIncludedPublicKeys = keyPairsStore.keyPairs.filter(kp =>
-    ownerKeys.value.includes(kp.publicKey),
-  );
+    if (content.value) fileCreateTransaction = fileCreateTransaction.setContents(content.value);
+    if (memo.value) fileCreateTransaction = fileCreateTransaction.setFileMemo(memo.value);
+    if (expirationTimestamp.value)
+      fileCreateTransaction = fileCreateTransaction.setExpirationTime(
+        Timestamp.fromDate(expirationTimestamp.value),
+      );
 
-  if (userIncludedPublicKeys.length > 0) {
-    isSignModalShown.value = true;
-  } else {
-    // Send to Back End
+    transaction.value = fileCreateTransaction.freezeWith(Client.forTestnet());
+
+    const userIncludedPublicKeys = keyPairsStore.keyPairs.filter(kp =>
+      ownerKeys.value.includes(kp.publicKey),
+    );
+
+    if (userIncludedPublicKeys.length > 0) {
+      isSignModalShown.value = true;
+    } else {
+      // Send to Back End
+    }
+  } catch (error) {
+    console.log(error);
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -158,41 +174,25 @@ watch(isSignModalShown, () => (userPassword.value = ''));
     <div class="d-flex justify-content-between">
       <div class="d-flex align-items-start">
         <i class="bi bi-arrow-up me-2"></i>
-        <span class="text-small text-bold">Create File Transaction</span>
-      </div>
-      <div>
-        <AppButton size="small" color="secondary" class="me-3 px-4 rounded-4">Save Draft</AppButton>
-        <AppButton
-          size="small"
-          color="primary"
-          class="px-4 rounded-4"
-          :disabled="keyList._keys.length === 0 || !payerId || !validStart"
-          @click="handleSign"
-          >Sign</AppButton
-        >
+        <span class="text-title text-bold">Create File Transaction</span>
       </div>
     </div>
     <div class="mt-4">
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Payer ID (Required)</label>
-        <input
-          v-model="payerId"
-          type="text"
-          class="form-control py-3"
-          placeholder="Enter Payer ID"
-        />
+        <input v-model="payerId" type="text" class="form-control" placeholder="Enter Payer ID" />
       </div>
       <div class="mt-4 form-group w-25">
         <label class="form-label">Set Valid Start Time (Required)</label>
-        <input v-model="validStart" type="datetime-local" class="form-control py-3" />
+        <input v-model="validStart" type="datetime-local" class="form-control" />
       </div>
-      <div class="form-group w-75">
+      <div class="mt-4 form-group w-75">
         <label class="form-label">Set Keys (Required)</label>
         <div class="d-flex gap-3">
           <input
             v-model="ownerKeyText"
             type="text"
-            class="form-control py-3"
+            class="form-control"
             placeholder="Enter owner public key"
             style="max-width: 555px"
             @keypress="handleOwnerKeyTextKeyPress"
@@ -206,7 +206,7 @@ watch(isSignModalShown, () => (userPassword.value = ''));
             <input
               type="text"
               readonly
-              class="form-control py-3"
+              class="form-control"
               :value="key"
               style="max-width: 555px"
             />
@@ -218,38 +218,51 @@ watch(isSignModalShown, () => (userPassword.value = ''));
           </div>
         </template>
       </div>
-      <div class="mt-4 form-group w-50">
+      <!-- <div class="mt-4 form-group w-50">
         <label class="form-label">Set File Memo (Optional)</label>
         <input
           v-model="memo"
           type="text"
-          class="form-control py-3"
+          class="form-control"
           maxlength="100"
           placeholder="Enter memo"
         />
-      </div>
-      <div class="mt-4 form-group w-25">
+      </div> -->
+      <!-- <div class="mt-4 form-group w-25">
         <label class="form-label">Set Expiration Time (Optional)</label>
         <input
           v-model="expirationTimestamp"
           type="datetime-local"
-          class="form-control py-3"
+          class="form-control"
           placeholder="Enter timestamp"
         />
-      </div>
-      <div class="mt-4 form-group w-25">
-        <label class="form-label" for="forFile">Upload File (.json, .txt)</label>
+      </div> -->
+      <!-- <div class="mt-4 form-group w-25">
+        <label for="fileUpload" class="form-label">
+          <span for="fileUpload" class="btn btn-primary">Upload File (.json, .txt)</span>
+        </label>
         <input
           class="form-control form-control-sm"
-          name="forFile"
+          id="fileUpload"
+          name="fileUpload"
           type="file"
           accept=".json,.txt"
           @change="handleFileImport"
         />
-      </div>
+      </div> -->
       <div class="mt-4 form-group w-75">
         <label class="form-label">Set File Contents</label>
-        <textarea v-model="content" class="form-control py-3" rows="10"></textarea>
+        <textarea v-model="content" class="form-control" rows="10"></textarea>
+      </div>
+      <div class="mt-4">
+        <!-- <AppButton size="small" color="secondary" class="me-3 px-4 rounded-4">Save Draft</AppButton> -->
+        <AppButton
+          color="primary"
+          size="large"
+          :disabled="keyList._keys.length === 0 || !payerId || !validStart"
+          @click="handleSign"
+          >Sign</AppButton
+        >
       </div>
     </div>
     <AppModal v-model:show="isSignModalShown" class="common-modal">
@@ -269,6 +282,7 @@ watch(isSignModalShown, () => (userPassword.value = ''));
         <AppButton
           color="primary"
           size="large"
+          :loading="isLoading"
           class="mt-5 w-100 rounded-4"
           @click="handleGetUserSignature"
           >Sign</AppButton
@@ -286,14 +300,19 @@ watch(isSignModalShown, () => (userPassword.value = ''));
           <i class="bi bi-check-lg extra-large-icon" style="line-height: 16px"></i>
         </div>
         <h3 class="mt-5 text-main text-center text-bold">File created successfully</h3>
-        <p class="mt-4 text-small text-muted">Transaction ID: {{ transactionId }}</p>
-        <p class="mt-2 text-small text-muted">File ID: {{ fileId }}</p>
+        <p class="mt-4 text-small d-flex justify-content-between align-items">
+          <span class="text-bold text-secondary">Transaction ID:</span>
+          <span>{{ transactionId }}</span>
+        </p>
+        <p class="mt-2 text-small d-flex justify-content-between align-items">
+          <span class="text-bold text-secondary">File ID:</span> <span>{{ fileId }}</span>
+        </p>
         <AppButton
           color="primary"
           size="large"
           class="mt-5 w-100 rounded-4"
           @click="
-            isSignModalShown = false;
+            isFileCreatedModalShown = false;
             transactionId = '';
             fileId = '';
           "

@@ -249,6 +249,7 @@ import AppButton from '../../components/ui/AppButton.vue';
       <div class="col-12 mb-4">
         <AppButton color="primary" class="me-3">Primary</AppButton>
         <AppButton color="secondary" class="me-3">Secondary</AppButton>
+        <AppButton color="primary" :loading="true" class="me-3">Primary</AppButton>
       </div>
       <div class="col-12 mb-4">
         <AppButton color="primary" size="large" class="me-3">Primary Large</AppButton>

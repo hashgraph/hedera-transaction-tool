@@ -49,36 +49,12 @@ const isTransactionTypeModalShown = ref(false);
 
 const transactionGroups = [
   {
-    groupTitle: 'Group',
-    items: [
-      { label: 'Item', name: 'Item' },
-      { label: 'Item', name: 'Item' },
-      { label: 'Item', name: 'Item' },
-    ],
-  },
-  {
-    groupTitle: 'Group',
-    items: [
-      { label: 'Item', name: 'Item' },
-      { label: 'Item', name: 'Item' },
-      { label: 'Item', name: 'Item' },
-    ],
-  },
-  {
-    groupTitle: 'Group',
-    items: [
-      { label: 'Item', name: 'Item' },
-      { label: 'Item', name: 'Item' },
-      { label: 'Item', name: 'Item' },
-    ],
-  },
-  {
     groupTitle: 'File management',
     items: [
       { label: 'Create File', name: 'createFile' },
-      { label: 'Read File', name: 'readFile' },
       { label: 'Update File', name: 'updateFile' },
-      { label: 'Delete File', name: 'deleteFile' },
+      { label: 'Read File', name: 'readFile' },
+      // { label: 'Delete File', name: 'deleteFile' },
     ],
   },
 ];
@@ -87,10 +63,10 @@ const transactionGroups = [
 <template>
   <div class="p-10">
     <h1 class="text-huge text-bold">Transactions</h1>
-    <div class="mt-7 d-flex justify-content-end">
+    <div class="mt-7 d-flex">
       <AppButton
-        color="secondary"
-        class="rounded-4 d-flex align-items-center"
+        color="primary"
+        class="d-flex align-items-center"
         @click="isTransactionTypeModalShown = true"
       >
         <span>Create</span> <i class="bi bi-plus text-subheader"></i
@@ -161,24 +137,24 @@ const transactionGroups = [
           @click="isTransactionTypeModalShown = false"
         ></i>
         <div class="mt-5 text-center">
+          <h3 class="mt-5 text-display text-center text-bold mb-3">Select type of Transaction</h3>
           <i
-            class="bi bi-arrow-left-right extra-large-icon text-light-emphasis"
+            class="bi bi-arrow-left-right large-icon text-light-emphasis"
             style="line-height: 16px"
           ></i>
         </div>
-        <h3 class="mt-5 text-main text-center text-bold">Select type of Transaction</h3>
-        <p class="text-center text-light-emphasis text-small">
+        <!-- <p class="text-center text-light-emphasis text-small">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-        </p>
+        </p> -->
         <div class="row flex-wrap">
           <template v-for="(group, groupIndex) in transactionGroups" :key="groupIndex">
             <div class="mt-5 col-4">
-              <h3 class="text-main text-bold">{{ group.groupTitle }}</h3>
+              <h3 class="text-title text-bold">{{ group.groupTitle }}</h3>
               <RouterLink
                 :to="{ name: 'createTransaction', params: { type: item.name } }"
                 v-for="(item, index) in group.items"
                 :key="index"
-                class="mt-3 text-decoration-none d-block text-light-emphasis text-small"
+                class="link-primary text-main d-block mt-3"
               >
                 {{ item.label }}
               </RouterLink>
