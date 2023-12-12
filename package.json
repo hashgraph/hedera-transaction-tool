@@ -1,6 +1,6 @@
 {
   "name": "hedera-transaction-tool",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "Transaction tool application",
   "main": "build/main/main.js",
   "scripts": {
