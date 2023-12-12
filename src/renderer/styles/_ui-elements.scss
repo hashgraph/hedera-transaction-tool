@@ -236,6 +236,14 @@
   }
 }
 
+.large-icon {
+  &.bi {
+    font-size: 64px;
+    line-height: 64px;
+    max-height: 64px;
+  }
+}
+
 /* Recovery Phrase Word Readonly Input */
 .recovery-phrase-word-readonly {
   input {

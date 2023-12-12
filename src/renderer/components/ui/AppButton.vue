@@ -20,13 +20,15 @@ const colorMapping = {
 };
 </script>
 <template>
-  <button :class="['btn', color ? colorMapping[color] : '', sizeMapping[size || 'default']]">
+  <button
+    :disabled="loading"
+    :class="['btn', color ? colorMapping[color] : '', sizeMapping[size || 'default']]"
+  >
     <template v-if="loading">
-      <span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"
-        >{{ ' ' }}
-        <span v-if="loadingText">{{ loadingText }}</span>
-        <span v-else>Loading...</span>
-      </span>
+      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span
+      >{{ ' ' }}
+      <span v-if="loadingText">{{ loadingText }}</span>
+      <span v-else>Loading...</span>
     </template>
     <template v-else>
       <slot></slot>

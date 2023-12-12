@@ -172,17 +172,6 @@ watch(isFileUpdatedModalShown, () => (userPassword.value = ''));
         <i class="bi bi-arrow-up me-2"></i>
         <span class="text-small text-bold">Update File Transaction</span>
       </div>
-      <div>
-        <AppButton size="small" color="secondary" class="me-3 px-4 rounded-4">Save Draft</AppButton>
-        <AppButton
-          size="small"
-          color="primary"
-          class="px-4 rounded-4"
-          :disabled="!fileId || !payerId || !validStart || signatureKeys.length === 0"
-          @click="handleSign"
-          >Sign</AppButton
-        >
-      </div>
     </div>
     <div class="mt-4">
       <div class="mt-4 form-group w-50">
@@ -198,11 +187,11 @@ watch(isFileUpdatedModalShown, () => (userPassword.value = ''));
         <label class="form-label">Set Valid Start Time (Required)</label>
         <input v-model="validStart" type="datetime-local" class="form-control py-3" />
       </div>
-      <div class="form-group w-50">
+      <div class="mt-4 form-group w-50">
         <label class="form-label">Set File ID</label>
         <input v-model="fileId" type="text" class="form-control py-3" placeholder="Enter File ID" />
       </div>
-      <div class="form-group w-75">
+      <div class="mt-4 form-group w-75">
         <label class="form-label">Set Signature Keys (Required)</label>
         <div class="d-flex gap-3">
           <input
@@ -268,7 +257,7 @@ watch(isFileUpdatedModalShown, () => (userPassword.value = ''));
           </div>
         </template>
       </div>
-      <div class="mt-4 form-group w-50">
+      <!-- <div class="mt-4 form-group w-50">
         <label class="form-label">Set File Memo (Optional)</label>
         <input
           v-model="memo"
@@ -286,20 +275,34 @@ watch(isFileUpdatedModalShown, () => (userPassword.value = ''));
           class="form-control py-3"
           placeholder="Enter timestamp"
         />
-      </div>
-      <div class="mt-4 form-group w-25">
-        <label class="form-label" for="forFile">Upload File (.json, .txt)</label>
+      </div> -->
+      <!-- <div class="mt-4 form-group w-25">
+        <label for="fileUpload" class="form-label">
+          <span for="fileUpload" class="btn btn-primary">Upload File (.json, .txt)</span>
+        </label>
         <input
           class="form-control form-control-sm"
-          name="forFile"
+          id="fileUpload"
+          name="fileUpload"
           type="file"
           accept=".json,.txt"
           @change="handleFileImport"
         />
-      </div>
+      </div> -->
       <div class="mt-4 form-group w-75">
         <label class="form-label">Set File Contents</label>
         <textarea v-model="content" class="form-control py-3" rows="10"></textarea>
+      </div>
+
+      <div class="mt-4">
+        <!-- <AppButton size="small" color="secondary" class="me-3 px-4 rounded-4">Save Draft</AppButton> -->
+        <AppButton
+          size="large"
+          color="primary"
+          :disabled="!fileId || !payerId || !validStart || signatureKeys.length === 0"
+          @click="handleSign"
+          >Sign</AppButton
+        >
       </div>
     </div>
     <AppModal v-model:show="isSignModalShown" class="common-modal">
