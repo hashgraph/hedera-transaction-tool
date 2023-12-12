@@ -65,7 +65,14 @@ const handleContinue = async (e: Event) => {
         />
       </div>
       <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
-        <AppButton type="submit" color="primary" size="large" class="w-100 rounded-4"
+        <AppButton
+          type="submit"
+          :disabled="
+            organizationName.length === 0 || serverUrl.length === 0 || serverPublicKey.length === 0
+          "
+          color="primary"
+          size="large"
+          class="w-100 rounded-4"
           >Continue</AppButton
         >
       </div>
