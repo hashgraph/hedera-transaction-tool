@@ -10,7 +10,7 @@ import * as keyPairService from '../../services/keyPairService';
 
 import AppButton from '../../components/ui/AppButton.vue';
 import AppModal from '../../components/ui/AppModal.vue';
-import Import from '../RecoveryPhrase/components/Import.vue';
+import Import from '../AccountSetup/components/Import.vue';
 import { IKeyPair } from '../../../main/shared/interfaces/IKeyPair';
 
 const router = useRouter();

@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 
 import useKeyPairsStore from '../../stores/storeKeyPairs';
 
+import BeforeSetup from './components/BeforeSetup.vue';
 import GenerateOrImport from './components/GenerateOrImport.vue';
 import Generate from './components/Generate.vue';
 import Import from './components/Import.vue';
@@ -17,7 +18,7 @@ const keyPairsStore = useKeyPairsStore();
 
 const recoveryPhrase = ref<string[] | null>(null);
 
-const step = ref(1);
+const step = ref(0);
 const type = ref<'generate' | 'import' | ''>('');
 
 const isSuccessModalShown = ref(false);
@@ -39,8 +40,12 @@ const handleContinue = () => {
 <template>
   <div class="recovery-phrase-page container-page p-8">
     <Transition name="fade" mode="out-in">
+      <!-- Step 0 -->
+      <template v-if="step === 0">
+        <BeforeSetup v-model:step="step" />
+      </template>
       <!-- Step 1 -->
-      <template v-if="step === 1">
+      <template v-else-if="step === 1">
         <GenerateOrImport
           v-model:step="step"
           v-model:recoveryPhrase="recoveryPhrase"
