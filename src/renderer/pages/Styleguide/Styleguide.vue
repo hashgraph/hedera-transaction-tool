@@ -309,7 +309,7 @@ import AppButton from '../../components/ui/AppButton.vue';
       <div class="col-lg-3">
         <div class="form-group mb-5">
           <label class="form-label">Default input</label>
-          <p class="text-small text-secondary">Text secondary</p>
+          <p class="text-small text-secondary mb-3">Text secondary</p>
           <input type="email" class="form-control" placeholder="name@example.com" />
         </div>
       </div>
