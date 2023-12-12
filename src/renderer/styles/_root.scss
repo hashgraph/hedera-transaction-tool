@@ -14,6 +14,8 @@
   --#{$prefix}input-focus-border-color: #{$dark-blue-400};
   --#{$prefix}input-fill-bg-color: #{$light-blue-500};
   --#{$prefix}input-fill-focus-bg-color: #{$light-blue-300};
+
+  --#{$prefix}card-primary-bg-color: #{$light-blue-200};
 }
 
 @if $enable-dark-mode {
@@ -34,5 +36,7 @@
     --#{$prefix}input-focus-border-color: #{$dark-blue-400};
     --#{$prefix}input-fill-bg-color: #{$dark-blue-700};
     --#{$prefix}input-fill-focus-bg-color: #{$dark-blue-400};
+
+    --#{$prefix}card-primary-bg-color: #{$dark-blue-700};
   }
 }

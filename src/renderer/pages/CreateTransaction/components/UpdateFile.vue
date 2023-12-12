@@ -37,6 +37,7 @@ const ownerKeyText = ref('');
 const memo = ref('');
 const expirationTimestamp = ref();
 const content = ref('');
+const isLoading = ref(false);
 
 const signatureKeys = ref<string[]>([]);
 const ownerKeys = ref<string[]>([]);
@@ -79,16 +80,16 @@ const handleAddSignatureKey = () => {
   signatureKeyText.value = '';
 };
 
-const handleFileImport = (e: Event) => {
-  const fileImportEl = e.target as HTMLInputElement;
-  const files = fileImportEl.files;
+// const handleFileImport = (e: Event) => {
+//   const fileImportEl = e.target as HTMLInputElement;
+//   const files = fileImportEl.files;
 
-  if (files && files.length > 0) {
-    const reader = new FileReader();
-    reader.onload = () => (content.value = reader.result?.toString() || '');
-    reader.readAsText(files[0]);
-  }
-};
+//   if (files && files.length > 0) {
+//     const reader = new FileReader();
+//     reader.onload = () => (content.value = reader.result?.toString() || '');
+//     reader.readAsText(files[0]);
+//   }
+// };
 
 const handleGetUserSignature = async () => {
   if (!userStateStore.userData?.userId) {
@@ -97,43 +98,51 @@ const handleGetUserSignature = async () => {
 
   if (!transaction.value) return;
 
-  const signatures: { publicKey: PublicKey; signature: Uint8Array }[] = [];
+  try {
+    isLoading.value = true;
 
-  await Promise.all(
-    keyPairsStore.keyPairs
-      .filter(kp => signatureKeys.value.includes(kp.publicKey))
-      .map(async keyPair => {
-        const privateKeyString = await decryptPrivateKey(
-          userStateStore.userData!.userId,
-          userPassword.value,
-          keyPair.publicKey,
-        );
+    const signatures: { publicKey: PublicKey; signature: Uint8Array }[] = [];
 
-        if (transaction.value) {
-          const privateKey = PrivateKey.fromStringED25519(privateKeyString);
-          const signature = privateKey.signTransaction(transaction.value as any);
-          signatures.push({ publicKey: PublicKey.fromString(keyPair.publicKey), signature });
-        }
-      }),
-  );
+    await Promise.all(
+      keyPairsStore.keyPairs
+        .filter(kp => signatureKeys.value.includes(kp.publicKey))
+        .map(async keyPair => {
+          const privateKeyString = await decryptPrivateKey(
+            userStateStore.userData!.userId,
+            userPassword.value,
+            keyPair.publicKey,
+          );
 
-  signatures.forEach(s =>
-    transaction.value
-      ? (transaction.value = transaction.value.addSignature(s.publicKey, s.signature))
-      : '',
-  );
+          if (transaction.value) {
+            const privateKey = PrivateKey.fromStringED25519(privateKeyString);
+            const signature = privateKey.signTransaction(transaction.value as any);
+            signatures.push({ publicKey: PublicKey.fromString(keyPair.publicKey), signature });
+          }
+        }),
+    );
 
-  const client = Client.forTestnet();
+    signatures.forEach(s =>
+      transaction.value
+        ? (transaction.value = transaction.value.addSignature(s.publicKey, s.signature))
+        : '',
+    );
 
-  const submitTx = await transaction.value?.execute(client);
+    const client = Client.forTestnet();
 
-  isSignModalShown.value = false;
+    const submitTx = await transaction.value?.execute(client);
 
-  transactionId.value = submitTx.transactionId.toString();
+    isSignModalShown.value = false;
 
-  isFileUpdatedModalShown.value = true;
+    transactionId.value = submitTx.transactionId.toString();
 
-  // Send to Transaction w/ user signatures to Back End
+    isFileUpdatedModalShown.value = true;
+
+    // Send to Transaction w/ user signatures to Back End
+  } catch (error) {
+    console.error(error);
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 const handleSign = async () => {
@@ -322,6 +331,7 @@ watch(isFileUpdatedModalShown, () => (userPassword.value = ''));
         <AppButton
           color="primary"
           size="large"
+          :loading="isLoading"
           class="mt-5 w-100 rounded-4"
           @click="handleGetUserSignature"
           >Sign</AppButton
@@ -339,8 +349,18 @@ watch(isFileUpdatedModalShown, () => (userPassword.value = ''));
           <i class="bi bi-check-lg extra-large-icon" style="line-height: 16px"></i>
         </div>
         <h3 class="mt-5 text-main text-center text-bold">File updated successfully</h3>
-        <p class="mt-4 text-small text-muted">Transaction ID: {{ transactionId }}</p>
-        <p class="mt-2 text-small text-muted">File ID: {{ fileId }}</p>
+        <p class="mt-4 text-small d-flex justify-content-between align-items">
+          <span class="text-bold text-secondary">Transaction ID:</span>
+          <a
+            class="link-primary"
+            :href="`https://hashscan.io/testnet/transaction/${transactionId}`"
+            target="_blank"
+            >{{ transactionId }}</a
+          >
+        </p>
+        <p class="mt-2 text-small d-flex justify-content-between align-items">
+          <span class="text-bold text-secondary">File ID:</span> <span>{{ fileId }}</span>
+        </p>
         <AppButton
           color="primary"
           size="large"

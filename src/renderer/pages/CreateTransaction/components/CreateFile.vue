@@ -60,16 +60,16 @@ const handleAdd = () => {
   ownerKeyText.value = '';
 };
 
-const handleFileImport = (e: Event) => {
-  const fileImportEl = e.target as HTMLInputElement;
-  const files = fileImportEl.files;
+// const handleFileImport = (e: Event) => {
+//   const fileImportEl = e.target as HTMLInputElement;
+//   const files = fileImportEl.files;
 
-  if (files && files.length > 0) {
-    const reader = new FileReader();
-    reader.onload = () => (content.value = reader.result?.toString() || '');
-    reader.readAsText(files[0]);
-  }
-};
+//   if (files && files.length > 0) {
+//     const reader = new FileReader();
+//     reader.onload = () => (content.value = reader.result?.toString() || '');
+//     reader.readAsText(files[0]);
+//   }
+// };
 
 const handleGetUserSignature = async () => {
   isLoading.value = true;
@@ -302,7 +302,12 @@ watch(isSignModalShown, () => (userPassword.value = ''));
         <h3 class="mt-5 text-main text-center text-bold">File created successfully</h3>
         <p class="mt-4 text-small d-flex justify-content-between align-items">
           <span class="text-bold text-secondary">Transaction ID:</span>
-          <span>{{ transactionId }}</span>
+          <a
+            class="link-primary"
+            :href="`https://hashscan.io/testnet/transaction/${transactionId}`"
+            target="_blank"
+            >{{ transactionId }}</a
+          >
         </p>
         <p class="mt-2 text-small d-flex justify-content-between align-items">
           <span class="text-bold text-secondary">File ID:</span> <span>{{ fileId }}</span>
