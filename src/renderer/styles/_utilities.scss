@@ -4,7 +4,7 @@
 }
 
 .bg-dark-blue-700 {
-  background-color: $dark-blue-700;
+  background-color: var(--#{$prefix}card-primary-bg-color);
 }
 
 /* Borders */

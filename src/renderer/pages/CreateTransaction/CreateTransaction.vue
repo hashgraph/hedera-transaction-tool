@@ -15,7 +15,7 @@ const handleBackButton = () => {
 
 <template>
   <div class="p-10">
-    <h1 class="text-huge text-bold">Create Transaction</h1>
+    <h1 class="text-huge text-bold">File Transaction</h1>
     <div class="mt-7 d-flex">
       <AppButton color="secondary" class="d-flex align-items-center" @click="handleBackButton">
         <span>Back</span></AppButton

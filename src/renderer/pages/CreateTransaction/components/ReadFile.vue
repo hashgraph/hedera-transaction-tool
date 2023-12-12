@@ -21,31 +21,39 @@ const payerId = ref('');
 const fileId = ref('');
 
 const content = ref('');
+const isLoading = ref(false);
 
 const handleRead = async () => {
   if (!userStateStore.userData?.userId) return;
 
-  const publicKey = keyPairsStore.keyPairs.find(kp => kp.accountId === payerId.value)?.publicKey;
+  try {
+    isLoading.value = true;
+    const publicKey = keyPairsStore.keyPairs.find(kp => kp.accountId === payerId.value)?.publicKey;
 
-  const privateKey = await decryptPrivateKey(
-    userStateStore.userData?.userId,
-    userPassword.value,
-    publicKey || '',
-  );
+    const privateKey = await decryptPrivateKey(
+      userStateStore.userData?.userId,
+      userPassword.value,
+      publicKey || '',
+    );
 
-  const client = Client.forTestnet();
-  client.setOperator(payerId.value, privateKey);
+    const client = Client.forTestnet();
+    client.setOperator(payerId.value, privateKey);
 
-  const query = new FileContentsQuery().setFileId(fileId.value);
+    const query = new FileContentsQuery().setFileId(fileId.value);
 
-  const contents = await query.execute(client);
+    const contents = await query.execute(client);
 
-  isUserPasswordModalShown.value = false;
+    isUserPasswordModalShown.value = false;
 
-  const decoder = new TextDecoder('utf-8');
-  const text = decoder.decode(contents);
+    const decoder = new TextDecoder('utf-8');
+    const text = decoder.decode(contents);
 
-  content.value = text;
+    content.value = text;
+  } catch (error) {
+    console.error(error);
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 watch(isUserPasswordModalShown, () => (userPassword.value = ''));
@@ -61,7 +69,8 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
     <div class="mt-4">
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Payer ID</label>
-        <select v-model="payerId" class="form-control py-3" placeholder="Enter Payer ID">
+        <select v-model="payerId" class="form-select py-3" placeholder="Enter Payer ID">
+          <option value="">Select Payer ID</option>
           <option
             v-for="kp in keyPairsStore.keyPairs.filter(kp => kp.accountId)"
             :key="kp.accountId"
@@ -71,7 +80,7 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
           </option>
         </select>
       </div>
-      <div class="form-group w-50">
+      <div class="mt-4 form-group w-50">
         <label class="form-label">Set File ID</label>
         <input
           v-model="fileId"
@@ -108,7 +117,12 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
         <div class="mt-4 form-group">
           <input v-model="userPassword" type="password" class="form-control rounded-4" />
         </div>
-        <AppButton color="primary" size="large" class="mt-5 w-100 rounded-4" @click="handleRead"
+        <AppButton
+          :loading="isLoading"
+          color="primary"
+          size="large"
+          class="mt-5 w-100 rounded-4"
+          @click="handleRead"
           >Sign Query</AppButton
         >
       </div>

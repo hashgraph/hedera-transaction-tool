@@ -69,7 +69,7 @@ const transactionGroups = [
         class="d-flex align-items-center"
         @click="isTransactionTypeModalShown = true"
       >
-        <span>Create</span> <i class="bi bi-plus text-subheader"></i
+        <span>Create</span> <i class="bi bi-plus text-subheader ms-2"></i
       ></AppButton>
     </div>
     <div class="mt-4">
@@ -148,7 +148,7 @@ const transactionGroups = [
         </p> -->
         <div class="row flex-wrap">
           <template v-for="(group, groupIndex) in transactionGroups" :key="groupIndex">
-            <div class="mt-5 col-4">
+            <div class="mt-5">
               <h3 class="text-title text-bold">{{ group.groupTitle }}</h3>
               <RouterLink
                 :to="{ name: 'createTransaction', params: { type: item.name } }"
