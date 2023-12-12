@@ -32,7 +32,7 @@ const handleContinue = async (e: Event) => {
     // Open toast
   }
 
-  router.push({ name: 'login' });
+  router.push({ name: 'welcome' });
 };
 </script>
 <template>

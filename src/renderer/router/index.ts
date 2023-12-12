@@ -14,7 +14,6 @@ import ConsensusService from '../pages/ConsensusService';
 import FileService from '../pages/FileService';
 import ContactList from '../pages/ContactList';
 import RecoveryPhrase from '../pages/RecoveryPhrase';
-import Login from '../pages/Login';
 import GeneralTab from '../pages/Settings/components/GeneralTab.vue';
 import WorkGroupsTab from '../pages/Settings/components/WorkGroupsTab.vue';
 import KeysTab from '../pages/Settings/components/KeysTab.vue';
@@ -41,7 +40,6 @@ const routes: RouteRecordRaw[] = [
   { path: '/contact-list', name: 'contactList', component: ContactList },
   { path: '/help', name: 'help', component: Help },
   { path: '/recovery-phrase', name: 'recoveryPhrase', component: RecoveryPhrase },
-  { path: '/login', name: 'login', component: Login },
   { path: '/new-password', name: 'newPassword', component: NewPassword },
   { path: '/setup-organization', name: 'setupOrganization', component: SetupOrganization },
   { path: '/restore-key', name: 'restoreKey', component: RestoreKey },

@@ -45,7 +45,7 @@ function handleOrganizationChange(e: Event) {
 
   userStateStore.logoutUser();
 
-  router.push({ name: 'login' });
+  router.push({ name: 'welcome' });
 }
 </script>
 
