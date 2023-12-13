@@ -24,9 +24,9 @@ const colorMapping = {
     <template v-if="loading">
       <span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"
         >{{ ' ' }}
-        <span v-if="loadingText">{{ loadingText }}</span>
-        <span v-else>Loading...</span>
       </span>
+      <span v-if="loadingText">{{ loadingText }}</span>
+      <span v-else>Loading...</span>
     </template>
     <template v-else>
       <slot></slot>

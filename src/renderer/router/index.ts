@@ -18,7 +18,6 @@ import GeneralTab from '../pages/Settings/components/GeneralTab.vue';
 import WorkGroupsTab from '../pages/Settings/components/WorkGroupsTab.vue';
 import KeysTab from '../pages/Settings/components/KeysTab.vue';
 import SetupOrganization from '../pages/SetupOrganization';
-import NewPassword from '../pages/NewPassword';
 import RestoreKey from '../pages/RestoreKey';
 import CreateTransaction from '../pages/CreateTransaction';
 import AccountTab from '../pages/Settings/components/AccountTab.vue';
@@ -40,7 +39,6 @@ const routes: RouteRecordRaw[] = [
   { path: '/contact-list', name: 'contactList', component: ContactList },
   { path: '/help', name: 'help', component: Help },
   { path: '/account-setup', name: 'accountSetup', component: AccountSetup },
-  { path: '/new-password', name: 'newPassword', component: NewPassword },
   { path: '/setup-organization', name: 'setupOrganization', component: SetupOrganization },
   { path: '/restore-key', name: 'restoreKey', component: RestoreKey },
   { path: '/create-transaction/:type', name: 'createTransaction', component: CreateTransaction },
