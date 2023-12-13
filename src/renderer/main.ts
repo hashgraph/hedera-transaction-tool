@@ -20,9 +20,9 @@ app.use(router);
 /* App mount */
 app.mount('#app');
 
-/* Vue Dev Tools */
-if (window.electronAPI.getNodeEnv() === 'development') {
-  import('@vue/devtools').then(module => {
-    module.connect(`http://localhost`);
-  });
-}
+// /* Vue Dev Tools */
+// if (window.electronAPI.getNodeEnv() === 'development') {
+//   import('@vue/devtools').then(module => {
+//     module.connect(`http://localhost`);
+//   });
+// }

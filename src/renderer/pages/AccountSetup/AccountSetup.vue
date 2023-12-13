@@ -7,6 +7,7 @@ import AppButton from '../../components/ui/AppButton.vue';
 import AppStepper from '../../components/ui/AppStepper.vue';
 
 import NewPassword from './components/NewPassword.vue';
+import GenerateOrImport from './components/GenerateOrImport.vue';
 
 const step = ref(-1);
 
@@ -43,19 +44,21 @@ const stepperItems = [
     </template>
 
     <Transition name="fade" mode="out-in">
-      <!-- Step -1 -->
+      <!-- Step 0 -->
       <template v-if="step === -1">
         <BeforeSetup v-model:step="step" />
       </template>
-      <!-- Step -1 -->
+
+      <!-- Step 1 -->
       <template v-else-if="step === 0">
         <NewPassword v-model:step="step" :handle-continue="() => step++" />
       </template>
-      <!--
+
+      <!-- Step 2 -->
       <template v-else-if="step === 1">
-        <GenerateOrImport v-model:step="step" />
+        <GenerateOrImport v-model:step="step" :handle-continue="() => step++" />
       </template>
-      Step 2
+      <!--Step 2
       <template v-else-if="step === 2">
         <Generate
           v-if="type === 'generate'"
