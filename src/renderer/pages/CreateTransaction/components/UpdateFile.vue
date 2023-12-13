@@ -13,6 +13,7 @@ import {
 } from '@hashgraph/sdk';
 
 import { decryptPrivateKey } from '../../../services/keyPairService';
+import { openExternal } from '../../../services/electronUtilsService';
 
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
 
@@ -194,7 +195,7 @@ watch(isFileUpdatedModalShown, () => (userPassword.value = ''));
       </div>
       <div class="mt-4 form-group w-25">
         <label class="form-label">Set Valid Start Time (Required)</label>
-        <input v-model="validStart" type="datetime-local" class="form-control py-3" />
+        <input v-model="validStart" type="datetime-local" step="1" class="form-control py-3" />
       </div>
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set File ID</label>
@@ -353,9 +354,8 @@ watch(isFileUpdatedModalShown, () => (userPassword.value = ''));
         <p class="mt-4 text-small d-flex justify-content-between align-items">
           <span class="text-bold text-secondary">Transaction ID:</span>
           <a
-            class="link-primary"
-            :href="`https://hashscan.io/testnet/transaction/${transactionId}`"
-            target="_blank"
+            class="link-primary cursor-pointer"
+            @click="openExternal(`https://hashscan.io/testnet/transaction/${transactionId}`)"
             >{{ transactionId }}</a
           >
         </p>
