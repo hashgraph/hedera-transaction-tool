@@ -290,3 +290,38 @@
     --bs-modal-width: 35vw;
   }
 }
+
+/* Stepper */
+.stepper {
+  .stepper-head {
+    .stepper-nav {
+      transform: translateY(-50%);
+
+      .stepper-nav-item {
+        padding: 0 10px;
+        background-color: var(--#{$prefix}body-bg);
+
+        .stepper-nav-item-bubble {
+          width: 28px;
+          height: 28px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .stepper-nav-item-title {
+          text-wrap: nowrap;
+          left: 50%;
+          transform: translateX(-50%);
+        }
+
+        &.stepper-active {
+          .stepper-nav-item-bubble {
+            background-color: var(--#{$prefix}body-color);
+            color: var(--#{$prefix}body-bg);
+          }
+        }
+      }
+    }
+  }
+}
