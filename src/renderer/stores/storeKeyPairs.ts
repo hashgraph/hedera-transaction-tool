@@ -30,10 +30,14 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
     });
   }
 
-  async function setRecoveryPhrase(words: string[]) {
+  function setRecoveryPhrase(words: string[]) {
     if (words.length === 24) {
       recoveryPhraseWords.value = words;
     }
+  }
+
+  function clearRecoveryPhrase() {
+    recoveryPhraseWords.value = [];
   }
 
   async function storeKeyPair(password: string, keyPair: IKeyPair) {
@@ -53,6 +57,7 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
     recoveryPhraseWords,
     keyPairs,
     setRecoveryPhrase,
+    clearRecoveryPhrase,
     storeKeyPair,
     refetch,
   };
