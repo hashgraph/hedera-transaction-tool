@@ -51,6 +51,9 @@ export const electronAPI = {
       ipcRenderer.invoke('keyPairs:decryptPrivateKey', userId, password, publicKey),
     clear: (userId: string): Promise<boolean> => ipcRenderer.invoke('keyPairs:clear', userId),
   },
+  utils: {
+    openExternal: (url: string) => ipcRenderer.send('utils:openExternal', url),
+  },
 };
 typeof electronAPI;
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);
