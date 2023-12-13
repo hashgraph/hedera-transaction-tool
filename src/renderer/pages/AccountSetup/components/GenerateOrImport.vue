@@ -8,6 +8,7 @@ import { validateMnemonic } from '../../../services/keyPairService';
 import AppTabs, { TabItem } from '../../../components/ui/AppTabs.vue';
 
 import Generate from './Generate.vue';
+import Import from './Import.vue';
 
 const props = defineProps<{
   handleContinue: () => void;
@@ -43,7 +44,9 @@ const handleSaveWords = async (words: string[]) => {
       <template v-if="activeTabIndex === 0">
         <Generate :handle-continue="handleSaveWords" />
       </template>
-      <template v-else-if="activeTabIndex === 1"> Import New</template>
+      <template v-else-if="activeTabIndex === 1">
+        <Import :handle-continue="handleSaveWords"
+      /></template>
     </div>
   </div>
 </template>

@@ -1,66 +1,98 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { Mnemonic } from '@hashgraph/sdk';
+import { ref, watch } from 'vue';
 
-import AppButton from '../../../components/ui/AppButton.vue';
+import { validateMnemonic } from '../../../services/keyPairService';
+
 import AppRecoveryPhraseWord from '../../../components/ui/AppRecoveryPhraseWord.vue';
+import AppButton from '../../../components/ui/AppButton.vue';
+import AppModal from '../../../components/ui/AppModal.vue';
 
 defineProps<{
-  recoveryPhrase: string[] | null;
-  handleFinish: () => void;
+  handleContinue: (words: string[]) => void;
 }>();
-const emit = defineEmits(['update:recoveryPhrase']);
 
-const importedPhrase = ref('');
-const ableToContinue = ref(false);
+const words = ref(Array(24).fill(''));
 
-const wordsArray = computed(() =>
-  importedPhrase.value
+const isMnenmonicValid = ref(false);
+const isSuccessModalShown = ref(false);
+
+const handlePaste = async (e: Event, index: number) => {
+  e.preventDefault();
+
+  const items = await navigator.clipboard.readText();
+
+  const mnenmonic = items
     .split(/[\s,]+|,\s*|\n/)
     .filter(w => w)
-    .slice(0, 24),
-);
+    .slice(0, 24);
 
-watch(wordsArray, async newWordsArray => {
-  if (newWordsArray.length === 24) {
-    try {
-      await Mnemonic.fromWords(newWordsArray);
-      emit('update:recoveryPhrase', newWordsArray);
-      ableToContinue.value = true;
-    } catch {
-      ableToContinue.value = false;
-    }
-  } else {
-    emit('update:recoveryPhrase', []);
-    ableToContinue.value = false;
+  const isValid = await validateMnemonic(mnenmonic);
+
+  if (isValid && Array.isArray(mnenmonic)) {
+    words.value = mnenmonic;
+  } else if (mnenmonic.length === 1) {
+    words.value[index] = mnenmonic[0];
   }
+};
+
+const handleFinishImport = async () => {
+  const isValid = await validateMnemonic(words.value);
+
+  if (isValid) {
+    isSuccessModalShown.value = true;
+  }
+};
+
+watch(words, async newWords => {
+  isMnenmonicValid.value = await validateMnemonic(newWords);
 });
 </script>
 <template>
-  <div class="d-flex flex-column justify-content-center align-items-center">
-    <h1 class="text-display text-bold text-center">Import Recovery Phrase</h1>
-    <p class="text-main mt-5 text-center">Enter your words comma separated ex. "bird, fly"</p>
-    <div class="mt-5 w-100 row justify-content-center">
-      <div class="col-12 col-lg-10 col-xxl-8">
-        <textarea
-          class="mt-5 form-control text-main"
-          cols="5"
-          rows="5"
-          v-model="importedPhrase"
-        ></textarea>
-        <div class="mt-4 row g-4 justify-content-center">
-          <template v-for="(word, index) in wordsArray" :key="index">
-            <AppRecoveryPhraseWord class="col-3" :word="word" :visible-initially="true" />
-          </template>
-        </div>
-      </div>
-    </div>
-    <div v-if="ableToContinue" class="mt-5 w-100 row justify-content-center">
-      <div class="col-12 col-md-6 col-lg-4">
-        <AppButton size="large" color="secondary" class="mt-4 w-100 rounded-4" @click="handleFinish"
-          >Continue</AppButton
-        >
+  <div class="d-flex justify-content-center row">
+    <div class="col-12 col-md-10 col-xl-8">
+      <div class="d-flex flex-wrap row g-3">
+        <template v-for="(word, index) in words || []" :key="index">
+          <AppRecoveryPhraseWord
+            class="col-3"
+            :word="word"
+            :index="index + 1"
+            :handle-word-change="
+              newWord => {
+                words[index] = newWord;
+                words = [...words];
+              }
+            "
+            visible-initially
+            @paste="handlePaste($event, index)"
+          />
+        </template>
       </div>
     </div>
   </div>
+  <div class="w-100 d-flex justify-content-center gap-4 mt-8">
+    <AppButton
+      :disabled="!isMnenmonicValid"
+      size="large"
+      color="secondary"
+      class="rounded-4 min-w-50"
+      @click="handleFinishImport"
+      >Continue</AppButton
+    >
+  </div>
+  <AppModal v-model:show="isSuccessModalShown" class="common-modal">
+    <div class="p-5">
+      <i class="bi bi-x-lg d-inline-block cursor-pointer" @click="isSuccessModalShown = false"></i>
+      <div class="mt-5 text-center">
+        <i class="bi bi-check-circle-fill extra-large-icon"></i>
+      </div>
+      <h3 class="mt-5 text-main text-center text-bold">Recovery Phrase Imported successfully</h3>
+      <AppButton
+        color="primary"
+        size="large"
+        class="mt-5 w-100 rounded-4"
+        @click="handleContinue(words)"
+        >Done</AppButton
+      >
+    </div>
+  </AppModal>
 </template>
