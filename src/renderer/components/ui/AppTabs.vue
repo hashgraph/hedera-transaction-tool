@@ -4,23 +4,25 @@ import AppButton from './AppButton.vue';
 export interface TabItem {
   title: string;
   notifications?: number;
-  content?: any;
 }
 
-defineProps<{ items: TabItem[]; activeIndex: number }>();
+defineProps<{
+  items: TabItem[];
+  activeIndex: number;
+  navClass?: string;
+  navItemClass?: string;
+  navItemButtonClass?: string;
+}>();
 defineEmits(['update:active-index']);
 </script>
 
 <template>
   <div class="tabs">
-    <ul class="nav nav-tabs">
-      <li class="nav-item p-0" v-for="(item, i) in items" :key="item.title">
+    <ul class="nav nav-tabs" :class="[navClass]">
+      <li class="nav-item p-0" :class="[navItemClass]" v-for="(item, i) in items" :key="item.title">
         <AppButton
-          class="link-menu nav-link text-small gap-3"
-          :class="{
-            active: i === activeIndex,
-            'border-main-gradient': i === activeIndex,
-          }"
+          class="link-menu nav-link text-small gap-3 w-100"
+          :class="[i === activeIndex ? 'active border-main-gradient' : '', navItemButtonClass]"
           @click="$emit('update:active-index', i)"
         >
           {{ item.title }}
