@@ -13,6 +13,7 @@ import {
 } from '@hashgraph/sdk';
 
 import { decryptPrivateKey } from '../../../services/keyPairService';
+import { openExternal } from '../../../services/electronUtilsService';
 
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
 
@@ -305,8 +306,7 @@ watch(isSignModalShown, () => (userPassword.value = ''));
           <span class="text-bold text-secondary">Transaction ID:</span>
           <a
             class="link-primary"
-            :href="`https://hashscan.io/testnet/transaction/${transactionId}`"
-            target="_blank"
+            @click="openExternal(`https://hashscan.io/testnet/transaction/${transactionId}`)"
             >{{ transactionId }}</a
           >
         </p>
