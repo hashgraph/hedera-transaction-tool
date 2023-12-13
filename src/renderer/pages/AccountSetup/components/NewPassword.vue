@@ -7,7 +7,7 @@ import useUserStateStore from '../../../stores/storeUserState';
 import AppButton from '../../../components/ui/AppButton.vue';
 
 const props = defineProps<{
-  handleContinue: () => void;
+  handleContinue: (password: string) => void;
 }>();
 
 const userStateStore = useUserStateStore();
@@ -46,7 +46,7 @@ const handleFormSubmit = (event: Event) => {
       if (isChanged) {
         // OPEN MODAL
         userStateStore.userData && clearKeys(userStateStore.userData?.userId);
-        props.handleContinue();
+        props.handleContinue(inputNewPassword.value);
       } else {
         //NOTIFY USER
       }

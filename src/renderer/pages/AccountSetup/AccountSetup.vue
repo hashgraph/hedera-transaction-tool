@@ -8,8 +8,10 @@ import AppStepper from '../../components/ui/AppStepper.vue';
 
 import NewPassword from './components/NewPassword.vue';
 import GenerateOrImport from './components/GenerateOrImport.vue';
+import KeyPairs from './components/KeyPairs.vue';
 
 const step = ref(-1);
+const password = ref('');
 
 const stepperItems = [
   { title: 'New Password', name: 'newPassword' },
@@ -51,26 +53,29 @@ const stepperItems = [
 
       <!-- Step 1 -->
       <template v-else-if="step === 0">
-        <NewPassword v-model:step="step" :handle-continue="() => step++" />
+        <NewPassword
+          :handle-continue="
+            newPassword => {
+              password = newPassword;
+              step++;
+            }
+          "
+        />
       </template>
 
       <!-- Step 2 -->
       <template v-else-if="step === 1">
-        <GenerateOrImport v-model:step="step" :handle-continue="() => step++" />
+        <GenerateOrImport :handle-continue="() => step++" />
       </template>
-      <!--Step 2
+
+      <!--Step 3 -->
       <template v-else-if="step === 2">
-        <Generate
-          v-if="type === 'generate'"
-          v-model:recoveryPhrase="recoveryPhrase"
-          :handleFinish="handleFinish"
+        <KeyPairs
+          v-model:step="step"
+          :encrypt-password="password"
+          :handle-continue="() => step++"
         />
-        <Import
-          v-else-if="type === 'import'"
-          v-model:recoveryPhrase="recoveryPhrase"
-          :handleFinish="handleFinish"
-        />
-      </template> -->
+      </template>
     </Transition>
     <!-- <AppModal v-model:show="isSuccessModalShown" class="common-modal">
       <div class="p-5">
