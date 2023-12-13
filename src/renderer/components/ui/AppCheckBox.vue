@@ -12,7 +12,7 @@ defineEmits(['update:checked']);
     <input
       class="form-check-input"
       type="checkbox"
-      :value="checked"
+      :checked="checked"
       @input="$emit('update:checked', !checked)"
       :name="name"
     />
