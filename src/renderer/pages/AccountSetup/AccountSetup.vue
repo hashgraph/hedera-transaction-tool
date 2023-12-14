@@ -9,6 +9,7 @@ import AppStepper from '../../components/ui/AppStepper.vue';
 import NewPassword from './components/NewPassword.vue';
 import GenerateOrImport from './components/GenerateOrImport.vue';
 import KeyPairs from './components/KeyPairs.vue';
+import FinishSetup from './components/FinishSetup.vue';
 
 const step = ref(-1);
 const password = ref('');
@@ -75,6 +76,11 @@ const stepperItems = [
           :encrypt-password="password"
           :handle-continue="() => step++"
         />
+      </template>
+
+      <!--Step 4 -->
+      <template v-else-if="step === 3">
+        <FinishSetup v-model:step="step" />
       </template>
     </Transition>
     <!-- <AppModal v-model:show="isSuccessModalShown" class="common-modal">
