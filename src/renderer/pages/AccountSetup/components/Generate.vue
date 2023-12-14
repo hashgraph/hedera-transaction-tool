@@ -100,7 +100,7 @@ const handleDownloadRecoveryPhrase = () => {
           :label="
             words.filter(w => w).length > 0
               ? 'I have backed up my phrase somewhere safe.'
-              : 'I understand that if i lose my recovery phrase, I will not be able to access my account.'
+              : 'I understand that if I lose my recovery phrase, I will not be able to create new keys or recover lost keys.'
           "
           name="recoveryPhraseAgreement"
         />
