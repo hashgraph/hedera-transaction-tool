@@ -1,7 +1,6 @@
 import { RouteRecordRaw } from 'vue-router';
 
 const withoutAuthRoutes = [
-  'createTransaction', // to be removed
   'transactions', // to be removed
   'welcome',
   'login',
