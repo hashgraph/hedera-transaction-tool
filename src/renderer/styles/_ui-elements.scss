@@ -262,6 +262,11 @@
 .common-modal {
   --bs-modal-width: 356px;
 }
+
+.modal-fit-content {
+  --bs-modal-width: fit-content;
+}
+
 .transaction-success-modal {
   --bs-modal-width: 430px;
 }
