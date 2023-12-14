@@ -276,3 +276,73 @@
     --bs-modal-width: 35vw;
   }
 }
+
+/* Switch */
+
+.form-switch {
+  .form-check-input,
+  .form-check-label {
+    margin-top: 0 !important;
+    line-height: 16px !important;
+  }
+
+  &.form-switch-sm {
+    margin-bottom: 0.5rem;
+
+    .form-check-input {
+      height: 1rem;
+      width: calc(1rem + 0.75rem);
+      border-radius: 2rem;
+    }
+
+    .form-check-input,
+    .form-check-label {
+      line-height: 16px !important;
+    }
+  }
+
+  &.form-switch-md {
+    margin-bottom: 1rem;
+
+    .form-check-input {
+      height: 1.5rem;
+      width: calc(2rem + 0.75rem);
+      border-radius: 3rem;
+    }
+
+    .form-check-input,
+    .form-check-label {
+      line-height: 24px !important;
+    }
+  }
+
+  &.form-switch-lg {
+    margin-bottom: 1.5rem;
+
+    .form-check-input {
+      height: 2rem;
+      width: calc(3rem + 0.75rem);
+      border-radius: 4rem;
+    }
+
+    .form-check-input,
+    .form-check-label {
+      line-height: 32px !important;
+    }
+  }
+
+  &.form-switch-xl {
+    margin-bottom: 2rem;
+
+    .form-check-input {
+      height: 2.5rem;
+      width: calc(4rem + 0.75rem);
+      border-radius: 5rem;
+    }
+
+    .form-check-input,
+    .form-check-label {
+      line-height: 40px !important;
+    }
+  }
+}
