@@ -10,6 +10,7 @@ import {
   PublicKey,
   Timestamp,
   TransactionId,
+  Hbar,
 } from '@hashgraph/sdk';
 
 import { decryptPrivateKey } from '../../../services/keyPairService';
@@ -34,6 +35,7 @@ const accountId = ref('');
 
 const payerId = ref('');
 const validStart = ref('');
+const maxTransactionfee = ref(2);
 const ownerKeyText = ref('');
 const initialBalance = ref(0);
 const receiverSignatureRequired = ref(false);
@@ -121,6 +123,7 @@ const handleCreate = async () => {
     let accountCreateTransaction = new AccountCreateTransaction()
       .setTransactionId(transactionId)
       .setTransactionValidDuration(180)
+      .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
       .setNodeAccountIds([new AccountId(3)])
       .setKey(keyList.value)
       .setReceiverSignatureRequired(receiverSignatureRequired.value)
@@ -161,6 +164,25 @@ const handleCreate = async () => {
 };
 
 watch(isSignModalShown, () => (userPassword.value = ''));
+watch(isAccountCreateModalShown, shown => {
+  if (!shown) {
+    payerId.value = '';
+    validStart.value = '';
+    maxTransactionfee.value = 2;
+    ownerKeyText.value = '';
+    initialBalance.value = 0;
+    receiverSignatureRequired.value = false;
+    maxAutomaticTokenAssociations.value = 0;
+    stakedAccountId.value = '';
+    stakedNodeId.value = '';
+    declineStakingReward.value = false;
+    memo.value = '';
+    accountId.value = '';
+    transactionId.value = '';
+    transaction.value = null;
+    ownerKeys.value = [];
+  }
+});
 </script>
 <template>
   <div class="p-4 border rounded-4">
@@ -171,14 +193,18 @@ watch(isSignModalShown, () => (userPassword.value = ''));
       </div>
     </div>
     <div class="mt-4">
-      <div class="d-flex flex-wrap gap-5">
-        <div class="mt-4 form-group w-50">
+      <div class="mt-4 d-flex flex-wrap gap-5">
+        <div class="form-group col-4">
           <label class="form-label">Set Payer ID (Required)</label>
           <input v-model="payerId" type="text" class="form-control" placeholder="Enter Payer ID" />
         </div>
-        <div class="mt-4 form-group">
+        <div class="form-group">
           <label class="form-label">Set Valid Start Time (Required)</label>
           <input v-model="validStart" type="datetime-local" step="1" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Set Max Transaction Fee (Optional)</label>
+          <input v-model="maxTransactionfee" type="number" min="0" class="form-control" />
         </div>
       </div>
 
