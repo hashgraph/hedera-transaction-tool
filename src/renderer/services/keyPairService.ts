@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-import { KeyList, Mnemonic, PublicKey } from '@hashgraph/sdk';
+import { Key, KeyList, Mnemonic, PublicKey } from '@hashgraph/sdk';
+import { proto } from '@hashgraph/proto';
 
 import { IKeyPair } from '../../main/shared/interfaces/IKeyPair';
 
@@ -77,26 +78,35 @@ export const updateKeyList = (
   return new KeyList(keys, resultThreshold);
 };
 
-// export const updateKeyList = (
-//   keyList: KeyList,
-//   path: number[],
-//   publicKey?: string,
-//   threshold?: number,
-// ): KeyList => {
-//   console.log(path);
+export const flattenKeyList = (keyList: Key): PublicKey[] => {
+  const protobufKey = keyList._toProtobufKey();
 
-//   const newKeyList = new KeyList([], threshold);
+  let keys: PublicKey[] = [];
 
-//   let tempKey: any = keyList.toArray();
-//   let currentKey;
-//   path.forEach(i => {
-//     if (tempKey instanceof KeyList) {
-//       tempKey = tempKey._keys[i];
-//     } else {
-//       tempKey = tempKey[i];
-//     }
-//     console.log(tempKey);
-//   });
+  formatKey(protobufKey);
 
-//   return newKeyList || keyList;
-// };
+  function getPublicKeyFromIKey(ikey: proto.Key) {
+    if (ikey.ed25519) {
+      return PublicKey.fromBytesED25519(ikey.ed25519);
+    }
+    if (ikey.ECDSASecp256k1) {
+      return PublicKey.fromBytesECDSA(ikey.ECDSASecp256k1);
+    }
+  }
+
+  function formatKey(key: any) {
+    if (key.thresholdKey) {
+      key.thresholdKey.keys?.keys.forEach((key: proto.Key) => {
+        formatKey(key);
+      });
+    } else if (key.keyList) {
+      keys = key.keyList.keys.map((k: proto.Key) => getPublicKeyFromIKey(k));
+    } else {
+      const pk = getPublicKeyFromIKey(key);
+      if (pk) {
+        keys.push(pk);
+      }
+    }
+  }
+  return keys;
+};
