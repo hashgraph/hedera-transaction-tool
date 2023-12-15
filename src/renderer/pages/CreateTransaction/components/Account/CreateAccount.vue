@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 
 import {
   AccountId,
@@ -31,24 +31,27 @@ const userPassword = ref('');
 
 const isAccountCreateModalShown = ref(false);
 const transactionId = ref('');
-const accountId = ref('');
 
 const payerId = ref('');
 const validStart = ref('');
 const maxTransactionfee = ref(2);
-const ownerKeyText = ref('');
-const initialBalance = ref(0);
-const receiverSignatureRequired = ref(false);
-const maxAutomaticTokenAssociations = ref(0);
-const stakedAccountId = ref('');
-const stakedNodeId = ref('');
-const declineStakingReward = ref(false);
-const memo = ref('');
+
+const accountData = reactive({
+  accountId: '',
+  receiverSignatureRequired: false,
+  maxAutomaticTokenAssociations: 0,
+  initialBalance: 0,
+  stakedAccountId: '',
+  stakedNodeId: '',
+  declineStakingReward: false,
+  memo: '',
+});
 
 const transaction = ref<AccountCreateTransaction | null>(null);
 const isLoading = ref(false);
-const ownerKeys = ref<string[]>([]);
 
+const ownerKeyText = ref('');
+const ownerKeys = ref<string[]>([]);
 const keyList = computed(() => new KeyList(ownerKeys.value.map(key => PublicKey.fromString(key))));
 
 const handleOwnerKeyTextKeyPress = (e: KeyboardEvent) => {
@@ -99,7 +102,7 @@ const handleGetUserSignature = async () => {
     isSignModalShown.value = false;
 
     transactionId.value = submitTx.transactionId.toString();
-    accountId.value = receipt.accountId?.toString() || '';
+    accountData.accountId = receipt.accountId?.toString() || '';
 
     isAccountCreateModalShown.value = true;
 
@@ -126,22 +129,23 @@ const handleCreate = async () => {
       .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
       .setNodeAccountIds([new AccountId(3)])
       .setKey(keyList.value)
-      .setReceiverSignatureRequired(receiverSignatureRequired.value)
-      .setDeclineStakingReward(declineStakingReward.value);
+      .setReceiverSignatureRequired(accountData.receiverSignatureRequired)
+      .setDeclineStakingReward(accountData.declineStakingReward);
 
-    if (initialBalance.value > 0) accountCreateTransaction.setInitialBalance(initialBalance.value);
-    if (maxAutomaticTokenAssociations.value > 0)
+    if (accountData.initialBalance > 0)
+      accountCreateTransaction.setInitialBalance(accountData.initialBalance);
+    if (accountData.maxAutomaticTokenAssociations > 0)
       accountCreateTransaction.setMaxAutomaticTokenAssociations(
-        maxAutomaticTokenAssociations.value,
+        accountData.maxAutomaticTokenAssociations,
       );
-    if (stakedAccountId.value.length > 0 && stakedNodeId.value.length === 0) {
-      accountCreateTransaction.setStakedAccountId(stakedAccountId.value);
+    if (accountData.stakedAccountId.length > 0 && accountData.stakedNodeId.length === 0) {
+      accountCreateTransaction.setStakedAccountId(accountData.stakedAccountId);
     }
-    if (stakedNodeId.value.length > 0 && stakedAccountId.value.length === 0) {
-      accountCreateTransaction.setStakedNodeId(stakedNodeId.value);
+    if (accountData.stakedNodeId.length > 0 && accountData.stakedAccountId.length === 0) {
+      accountCreateTransaction.setStakedNodeId(accountData.stakedNodeId);
     }
-    if (memo.value.length > 0) {
-      accountCreateTransaction.setAccountMemo(memo.value);
+    if (accountData.memo.length > 0) {
+      accountCreateTransaction.setAccountMemo(accountData.memo);
     }
 
     transaction.value = accountCreateTransaction.freezeWith(Client.forTestnet());
@@ -169,17 +173,19 @@ watch(isAccountCreateModalShown, shown => {
     payerId.value = '';
     validStart.value = '';
     maxTransactionfee.value = 2;
-    ownerKeyText.value = '';
-    initialBalance.value = 0;
-    receiverSignatureRequired.value = false;
-    maxAutomaticTokenAssociations.value = 0;
-    stakedAccountId.value = '';
-    stakedNodeId.value = '';
-    declineStakingReward.value = false;
-    memo.value = '';
-    accountId.value = '';
+
+    accountData.initialBalance = 0;
+    accountData.receiverSignatureRequired = false;
+    accountData.maxAutomaticTokenAssociations = 0;
+    accountData.stakedAccountId = '';
+    accountData.stakedNodeId = '';
+    accountData.declineStakingReward = false;
+    accountData.memo = '';
+    accountData.accountId = '';
+
     transactionId.value = '';
     transaction.value = null;
+    ownerKeyText.value = '';
     ownerKeys.value = [];
   }
 });
@@ -243,7 +249,7 @@ watch(isAccountCreateModalShown, shown => {
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Initial Balance in HBar (Optional)</label>
         <input
-          v-model="initialBalance"
+          v-model="accountData.initialBalance"
           type="number"
           min="0"
           class="form-control"
@@ -252,7 +258,7 @@ watch(isAccountCreateModalShown, shown => {
       </div>
       <div class="mt-4 form-group w-50">
         <AppSwitch
-          v-model:checked="receiverSignatureRequired"
+          v-model:checked="accountData.receiverSignatureRequired"
           size="md"
           name="receiver-signature"
           label="Receiver Signature Required"
@@ -261,7 +267,7 @@ watch(isAccountCreateModalShown, shown => {
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Max Automatic Token Associations (Optional)</label>
         <input
-          v-model="maxAutomaticTokenAssociations"
+          v-model="accountData.maxAutomaticTokenAssociations"
           type="number"
           :min="0"
           :max="5000"
@@ -272,8 +278,8 @@ watch(isAccountCreateModalShown, shown => {
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Staked Account Id (Optional)</label>
         <input
-          v-model="stakedAccountId"
-          :disabled="stakedNodeId.length > 0"
+          v-model="accountData.stakedAccountId"
+          :disabled="accountData.stakedNodeId.length > 0"
           type="text"
           class="form-control"
           placeholder="Enter Account Id"
@@ -282,8 +288,8 @@ watch(isAccountCreateModalShown, shown => {
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Staked Node Id (Optional)</label>
         <input
-          v-model="stakedNodeId"
-          :disabled="stakedAccountId.length > 0"
+          v-model="accountData.stakedNodeId"
+          :disabled="accountData.stakedAccountId.length > 0"
           type="text"
           class="form-control"
           placeholder="Enter Node Id"
@@ -291,7 +297,7 @@ watch(isAccountCreateModalShown, shown => {
       </div>
       <div class="mt-4 form-group w-50">
         <AppSwitch
-          v-model:checked="declineStakingReward"
+          v-model:checked="accountData.declineStakingReward"
           size="md"
           name="decline-signature"
           label="Decline Staking Reward"
@@ -300,7 +306,7 @@ watch(isAccountCreateModalShown, shown => {
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Account Memo (Optional)</label>
         <input
-          v-model="memo"
+          v-model="accountData.memo"
           type="text"
           maxlength="100"
           class="form-control"
@@ -362,18 +368,14 @@ watch(isAccountCreateModalShown, shown => {
           >
         </p>
         <p class="mt-2 text-small d-flex justify-content-between align-items">
-          <span class="text-bold text-secondary">Account ID:</span> <span>{{ accountId }}</span>
+          <span class="text-bold text-secondary">Account ID:</span>
+          <span>{{ accountData.accountId }}</span>
         </p>
         <AppButton
           color="primary"
           size="large"
           class="mt-5 w-100 rounded-4"
-          @click="
-            isAccountCreateModalShown = false;
-            transaction = null;
-            transactionId = '';
-            accountId = '';
-          "
+          @click="isAccountCreateModalShown = false"
           >Close</AppButton
         >
       </div>
