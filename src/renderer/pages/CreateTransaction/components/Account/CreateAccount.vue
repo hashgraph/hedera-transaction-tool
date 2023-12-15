@@ -13,15 +13,15 @@ import {
   Hbar,
 } from '@hashgraph/sdk';
 
-import { decryptPrivateKey } from '../../../services/keyPairService';
-import { openExternal } from '../../../services/electronUtilsService';
+import { decryptPrivateKey } from '../../../../services/keyPairService';
+import { openExternal } from '../../../../services/electronUtilsService';
 
-import useKeyPairsStore from '../../../stores/storeKeyPairs';
-import useUserStateStore from '../../../stores/storeUserState';
+import useKeyPairsStore from '../../../../stores/storeKeyPairs';
+import useUserStateStore from '../../../../stores/storeUserState';
 
-import AppButton from '../../../components/ui/AppButton.vue';
-import AppModal from '../../../components/ui/AppModal.vue';
-import AppSwitch from '../../../components/ui/AppSwitch.vue';
+import AppButton from '../../../../components/ui/AppButton.vue';
+import AppModal from '../../../../components/ui/AppModal.vue';
+import AppSwitch from '../../../../components/ui/AppSwitch.vue';
 
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();

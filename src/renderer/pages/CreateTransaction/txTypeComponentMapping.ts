@@ -1,13 +1,15 @@
-import CreateAccountVue from './components/CreateAccount.vue';
-import CreateFile from './components/CreateFile.vue';
-import ReadFileVue from './components/ReadFile.vue';
-import UpdateFileVue from './components/UpdateFile.vue';
+import CreateAccount from './components/Account/CreateAccount.vue';
+import UpdateAccount from './components/Account/UpdateAccount.vue';
+import CreateFile from './components/File/CreateFile.vue';
+import ReadFile from './components/File/ReadFile.vue';
+import UpdateFile from './components/File/UpdateFile.vue';
 
 const txTypeComponentMapping = {
   createFile: CreateFile,
-  readFile: ReadFileVue,
-  updateFile: UpdateFileVue,
-  createAccount: CreateAccountVue,
+  readFile: ReadFile,
+  updateFile: UpdateFile,
+  createAccount: CreateAccount,
+  updateAccount: UpdateAccount,
 };
 
 export default txTypeComponentMapping;

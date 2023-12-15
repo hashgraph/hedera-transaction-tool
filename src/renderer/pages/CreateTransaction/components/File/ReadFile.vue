@@ -3,13 +3,13 @@ import { ref, watch } from 'vue';
 
 import { Client, FileContentsQuery } from '@hashgraph/sdk';
 
-import { decryptPrivateKey } from '../../../services/keyPairService';
+import { decryptPrivateKey } from '../../../../services/keyPairService';
 
-import useKeyPairsStore from '../../../stores/storeKeyPairs';
+import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 
-import AppButton from '../../../components/ui/AppButton.vue';
-import AppModal from '../../../components/ui/AppModal.vue';
-import useUserStateStore from '../../../stores/storeUserState';
+import AppButton from '../../../../components/ui/AppButton.vue';
+import AppModal from '../../../../components/ui/AppModal.vue';
+import useUserStateStore from '../../../../stores/storeUserState';
 
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
