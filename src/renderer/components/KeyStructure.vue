@@ -1,30 +1,63 @@
 <script setup lang="ts">
 import { KeyList, Key, PublicKey } from '@hashgraph/sdk';
-defineProps<{
-  keyList: KeyList;
-  readonly?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    keyList: KeyList;
+    readonly?: boolean;
+    level?: number;
+    path?: any;
+    handleClick?: (path: number[], publicKey: string) => void;
+  }>(),
+  {
+    readonly: false,
+    level: 0,
+    path: [],
+  },
+);
 defineEmits(['update:keyList']);
+
+const normalizePublicKey = (key: Key) => {
+  const protoBuffKey = key._toProtobufKey();
+
+  if (protoBuffKey.ed25519) {
+    return PublicKey.fromBytesED25519(protoBuffKey.ed25519).toStringRaw();
+  } else if (protoBuffKey.ECDSASecp256k1) {
+    return PublicKey.fromBytesECDSA(protoBuffKey.ECDSASecp256k1).toStringRaw();
+  }
+  return '';
+};
+
+const handleKeyClick = (index: number, path: number[], publicKey: string) => {
+  const clickedPath = [...path, index];
+  props.handleClick && props.handleClick(clickedPath, publicKey);
+};
 </script>
 <template>
-  <template v-for="(item, index) in keyList.toArray()" :key="index">
-    <div class="mt-2">
+  <div>
+    <p>
+      List ({{
+        !keyList.threshold || keyList.threshold === keyList.toArray().length
+          ? 'all'
+          : keyList.threshold
+      }}
+      of {{ keyList.toArray().length }})
+    </p>
+    <template v-for="(item, index) in keyList.toArray()" :key="index">
       <template v-if="item instanceof KeyList && true">
-        <p>
-          List ({{
-            !item.threshold || item.threshold === item.toArray().length ? 'all' : item.threshold
-          }}
-          of {{ item.toArray().length }})
-        </p>
         <div class="ms-5">
-          <KeyStructure :key-list="item" />
+          <KeyStructure
+            :key-list="item"
+            :level="level + 1"
+            :path="[...path, index]"
+            :handleClick="handleClick"
+          />
         </div>
       </template>
       <template v-else-if="item instanceof Key && true">
-        <p class="my-3">
-          {{ PublicKey.fromBytesED25519(item._toProtobufKey().ed25519!).toStringRaw() }}
+        <p class="ms-5 my-3" @click="handleKeyClick(index, path, normalizePublicKey(item))">
+          {{ normalizePublicKey(item) }}
         </p>
       </template>
-    </div>
-  </template>
+    </template>
+  </div>
 </template>
