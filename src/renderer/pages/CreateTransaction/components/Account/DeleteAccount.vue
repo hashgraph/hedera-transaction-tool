@@ -166,11 +166,9 @@ watch(
       AccountId.fromString(newAccountId);
 
       const accountInfo = await getAccountInfo(newAccountId, mirrorLinksStore.mainnet);
-      if (accountInfo) {
-        accountData.accountId = accountInfo.accountId.toString();
-        accountData.deleted = accountInfo.deleted;
-        accountData.key = accountInfo.key;
-      }
+      accountData.accountId = accountInfo.accountId.toString();
+      accountData.deleted = accountInfo.deleted;
+      accountData.key = accountInfo.key;
     } catch (e) {
       handleResetAccoundData();
     }

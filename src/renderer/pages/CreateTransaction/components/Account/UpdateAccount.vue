@@ -270,24 +270,21 @@ watch(
       AccountId.fromString(newAccountId);
 
       const accountInfo = await getAccountInfo(newAccountId, mirrorLinksStore.mainnet);
-      if (accountInfo) {
-        accountData.accountId = accountInfo.accountId.toString();
-        accountData.receiverSignatureRequired = accountInfo.receiverSignatureRequired;
-        accountData.maxAutomaticTokenAssociations = accountInfo.maxAutomaticTokenAssociations;
-        accountData.stakedAccountId = accountInfo.stakedAccountId?.toString() || '';
-        accountData.stakedNodeId = accountInfo.stakedNodeId || null;
-        accountData.declineStakingReward = accountInfo.declineReward;
-        accountData.memo = accountInfo.memo;
-        accountData.key = accountInfo.key;
+      accountData.accountId = accountInfo.accountId.toString();
+      accountData.receiverSignatureRequired = accountInfo.receiverSignatureRequired;
+      accountData.maxAutomaticTokenAssociations = accountInfo.maxAutomaticTokenAssociations;
+      accountData.stakedAccountId = accountInfo.stakedAccountId?.toString() || '';
+      accountData.stakedNodeId = accountInfo.stakedNodeId || null;
+      accountData.declineStakingReward = accountInfo.declineReward;
+      accountData.memo = accountInfo.memo;
+      accountData.key = accountInfo.key;
 
-        initialAccountData.receiverSignatureRequired = accountInfo.receiverSignatureRequired;
-        initialAccountData.maxAutomaticTokenAssociations =
-          accountInfo.maxAutomaticTokenAssociations;
-        initialAccountData.stakedAccountId = accountInfo.stakedAccountId?.toString() || '';
-        initialAccountData.stakedNodeId = accountInfo.stakedNodeId || null;
-        initialAccountData.declineStakingReward = accountInfo.declineReward;
-        initialAccountData.memo = accountInfo.memo;
-      }
+      initialAccountData.receiverSignatureRequired = accountInfo.receiverSignatureRequired;
+      initialAccountData.maxAutomaticTokenAssociations = accountInfo.maxAutomaticTokenAssociations;
+      initialAccountData.stakedAccountId = accountInfo.stakedAccountId?.toString() || '';
+      initialAccountData.stakedNodeId = accountInfo.stakedNodeId || null;
+      initialAccountData.declineStakingReward = accountInfo.declineReward;
+      initialAccountData.memo = accountInfo.memo;
     } catch (e) {
       handleResetAccoundData();
     }
