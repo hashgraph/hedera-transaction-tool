@@ -24,10 +24,13 @@ const content = ref('');
 const isLoading = ref(false);
 
 const handleRead = async () => {
-  if (!userStateStore.userData?.userId) return;
+  if (!userStateStore.userData?.userId) {
+    throw Error('No user selected');
+  }
 
   try {
     isLoading.value = true;
+
     const publicKey = keyPairsStore.keyPairs.find(kp => kp.accountId === payerId.value)?.publicKey;
 
     const privateKey = await decryptPrivateKey(

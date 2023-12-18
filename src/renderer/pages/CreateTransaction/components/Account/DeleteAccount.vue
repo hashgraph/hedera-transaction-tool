@@ -5,17 +5,19 @@ import {
   AccountId,
   Client,
   KeyList,
-  PrivateKey,
   PublicKey,
   Hbar,
   Key,
   AccountDeleteTransaction,
 } from '@hashgraph/sdk';
 
-import { decryptPrivateKey, flattenKeyList } from '../../../../services/keyPairService';
+import { flattenKeyList } from '../../../../services/keyPairService';
 import { openExternal } from '../../../../services/electronUtilsService';
 import { getAccountInfo } from '../../../../services/mirrorNodeDataService';
-import { createTransactionId } from '../../../../services/transactionService';
+import {
+  createTransactionId,
+  getTransactionSignatures,
+} from '../../../../services/transactionService';
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useMirrorNodeLinksStore from '../../../../stores/storeMirrorNodeLinks';
@@ -69,37 +71,22 @@ const handleGetUserSignature = async () => {
   try {
     isLoading.value = true;
 
-    const signatures: { publicKey: PublicKey; signature: Uint8Array }[] = [];
+    let accountKeys = accountData.key
+      ? flattenKeyList(accountData.key).map(pk => pk.toStringRaw())
+      : [];
 
-    let accountKeysFlattened: string[] = [];
-    if (accountData.key) {
-      accountKeysFlattened = flattenKeyList(accountData.key).map(pk => pk.toStringRaw());
-    }
-
-    await Promise.all(
-      keyPairsStore.keyPairs
-        .filter(kp => payerId.value === kp.accountId || accountKeysFlattened.includes(kp.publicKey))
-        .map(async keyPair => {
-          const privateKeyString = await decryptPrivateKey(
-            userStateStore.userData!.userId,
-            userPassword.value,
-            keyPair.publicKey,
-          );
-
-          if (transaction.value) {
-            const privateKey = PrivateKey.fromStringED25519(privateKeyString);
-            const signature = privateKey.signTransaction(transaction.value as any);
-            signatures.push({ publicKey: PublicKey.fromString(keyPair.publicKey), signature });
-          }
-        }),
+    await getTransactionSignatures(
+      keyPairsStore.keyPairs.filter(
+        kp => payerId.value === kp.accountId || accountKeys.includes(kp.publicKey),
+      ),
+      transaction.value as any,
+      true,
+      userStateStore.userData.userId,
+      userPassword.value,
     );
 
-    signatures.forEach(s => transaction.value?.addSignature(s.publicKey, s.signature));
-
     const client = Client.forTestnet();
-
     const submitTx = await transaction.value?.execute(client);
-
     await submitTx.getReceipt(client);
 
     isSignModalShown.value = false;

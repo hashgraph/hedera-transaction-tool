@@ -6,16 +6,18 @@ import {
   Client,
   AccountUpdateTransaction,
   KeyList,
-  PrivateKey,
   PublicKey,
   Hbar,
   Key,
 } from '@hashgraph/sdk';
 
-import { decryptPrivateKey, flattenKeyList } from '../../../../services/keyPairService';
+import { flattenKeyList } from '../../../../services/keyPairService';
 import { openExternal } from '../../../../services/electronUtilsService';
 import { getAccountInfo } from '../../../../services/mirrorNodeDataService';
-import { createTransactionId } from '../../../../services/transactionService';
+import {
+  createTransactionId,
+  getTransactionSignatures,
+} from '../../../../services/transactionService';
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useMirrorNodeLinksStore from '../../../../stores/storeMirrorNodeLinks';
@@ -119,42 +121,25 @@ const handleGetUserSignature = async () => {
   try {
     isLoading.value = true;
 
-    const signatures: { publicKey: PublicKey; signature: Uint8Array }[] = [];
+    let accountKeys = accountData.key
+      ? flattenKeyList(accountData.key).map(pk => pk.toStringRaw())
+      : [];
 
-    let oldKeys: string[] = [];
-    if (accountData.key) {
-      oldKeys = flattenKeyList(accountData.key).map(pk => pk.toStringRaw());
-    }
-
-    await Promise.all(
-      keyPairsStore.keyPairs
-        .filter(
-          kp =>
-            newOwnerKeys.value.includes(kp.publicKey) ||
-            payerId.value === kp.accountId ||
-            oldKeys.includes(kp.publicKey),
-        )
-        .map(async keyPair => {
-          const privateKeyString = await decryptPrivateKey(
-            userStateStore.userData!.userId,
-            userPassword.value,
-            keyPair.publicKey,
-          );
-
-          if (transaction.value) {
-            const privateKey = PrivateKey.fromStringED25519(privateKeyString);
-            const signature = privateKey.signTransaction(transaction.value as any);
-            signatures.push({ publicKey: PublicKey.fromString(keyPair.publicKey), signature });
-          }
-        }),
+    await getTransactionSignatures(
+      keyPairsStore.keyPairs.filter(
+        kp =>
+          newOwnerKeys.value.includes(kp.publicKey) ||
+          payerId.value === kp.accountId ||
+          accountKeys.includes(kp.publicKey),
+      ),
+      transaction.value as any,
+      true,
+      userStateStore.userData.userId,
+      userPassword.value,
     );
 
-    signatures.forEach(s => transaction.value?.addSignature(s.publicKey, s.signature));
-
     const client = Client.forTestnet();
-
     const submitTx = await transaction.value?.execute(client);
-
     await submitTx.getReceipt(client);
 
     isSignModalShown.value = false;
@@ -218,16 +203,15 @@ const handleCreate = async () => {
 
     transaction.value.freezeWith(Client.forTestnet());
 
-    let oldKeys: string[] = [];
-    if (accountData.key) {
-      oldKeys = flattenKeyList(accountData.key).map(pk => pk.toStringRaw());
-    }
+    let accountKeys = accountData.key
+      ? flattenKeyList(accountData.key).map(pk => pk.toStringRaw())
+      : [];
 
     const someUserAccountIsPayer = keyPairsStore.keyPairs.some(
       kp =>
         payerId.value === kp.accountId ||
         newOwnerKeys.value.includes(kp.publicKey) ||
-        oldKeys.includes(kp.publicKey),
+        accountKeys.includes(kp.publicKey),
     );
 
     if (someUserAccountIsPayer) {

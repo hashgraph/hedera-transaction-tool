@@ -6,14 +6,15 @@ import {
   Client,
   FileCreateTransaction,
   KeyList,
-  PrivateKey,
   PublicKey,
   Timestamp,
 } from '@hashgraph/sdk';
 
-import { decryptPrivateKey } from '../../../../services/keyPairService';
 import { openExternal } from '../../../../services/electronUtilsService';
-import { createTransactionId } from '../../../../services/transactionService';
+import {
+  createTransactionId,
+  getTransactionSignatures,
+} from '../../../../services/transactionService';
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 
@@ -75,44 +76,27 @@ const handleAdd = () => {
 // };
 
 const handleGetUserSignature = async () => {
-  isLoading.value = true;
+  if (!userStateStore.userData?.userId) {
+    throw Error('No user selected');
+  }
+
+  if (!transaction.value || !payerId.value) {
+    return console.log('Transaction or payer missing');
+  }
+
   try {
-    if (!userStateStore.userData?.userId) {
-      throw Error('No user selected');
-    }
+    isLoading.value = true;
 
-    if (!transaction.value) return;
-
-    const signatures: { publicKey: PublicKey; signature: Uint8Array }[] = [];
-
-    await Promise.all(
-      keyPairsStore.keyPairs
-        .filter(kp => ownerKeys.value.includes(kp.publicKey))
-        .map(async keyPair => {
-          const privateKeyString = await decryptPrivateKey(
-            userStateStore.userData!.userId,
-            userPassword.value,
-            keyPair.publicKey,
-          );
-
-          if (transaction.value) {
-            const privateKey = PrivateKey.fromStringED25519(privateKeyString);
-            const signature = privateKey.signTransaction(transaction.value as any);
-            signatures.push({ publicKey: PublicKey.fromString(keyPair.publicKey), signature });
-          }
-        }),
-    );
-
-    signatures.forEach(s =>
-      transaction.value
-        ? (transaction.value = transaction.value.addSignature(s.publicKey, s.signature))
-        : '',
+    await getTransactionSignatures(
+      keyPairsStore.keyPairs.filter(kp => ownerKeys.value.includes(kp.publicKey)),
+      transaction.value as any,
+      true,
+      userStateStore.userData.userId,
+      userPassword.value,
     );
 
     const client = Client.forTestnet();
-
     const submitTx = await transaction.value?.execute(client);
-
     const receipt = await submitTx.getReceipt(client);
 
     isSignModalShown.value = false;

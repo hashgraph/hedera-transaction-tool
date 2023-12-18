@@ -6,14 +6,15 @@ import {
   Client,
   AccountCreateTransaction,
   KeyList,
-  PrivateKey,
   PublicKey,
   Hbar,
 } from '@hashgraph/sdk';
 
-import { decryptPrivateKey } from '../../../../services/keyPairService';
 import { openExternal } from '../../../../services/electronUtilsService';
-import { createTransactionId } from '../../../../services/transactionService';
+import {
+  createTransactionId,
+  getTransactionSignatures,
+} from '../../../../services/transactionService';
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useUserStateStore from '../../../../stores/storeUserState';
@@ -70,8 +71,9 @@ const handleAdd = () => {
 };
 
 const handleGetUserSignature = async () => {
-  isLoading.value = true;
   try {
+    isLoading.value = true;
+
     if (!userStateStore.userData?.userId) {
       throw Error('No user selected');
     }
@@ -82,20 +84,16 @@ const handleGetUserSignature = async () => {
       return console.log('Transaction or payer missing');
     }
 
-    const privateKeyString = await decryptPrivateKey(
-      userStateStore.userData!.userId,
+    await getTransactionSignatures(
+      [payerKeyPair],
+      transaction.value as any,
+      true,
+      userStateStore.userData.userId,
       userPassword.value,
-      payerKeyPair.publicKey,
     );
 
-    const privateKey = PrivateKey.fromStringED25519(privateKeyString);
-
-    transaction.value.sign(privateKey);
-
     const client = Client.forTestnet();
-
     const submitTx = await transaction.value?.execute(client);
-
     const receipt = await submitTx.getReceipt(client);
 
     isSignModalShown.value = false;
