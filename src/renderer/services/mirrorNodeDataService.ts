@@ -2,6 +2,17 @@ import { AccountId, EvmAddress, Hbar, HbarUnit, Key, PublicKey, Timestamp } from
 import axios from 'axios';
 import { decodeProtobuffKey } from './electronUtilsService';
 
+export interface MirrorNodeAllowance {
+  amount: number;
+  amount_granted: number;
+  owner: string;
+  spender: string;
+  timestamp: {
+    from: string;
+    to: string | null;
+  };
+}
+
 export const getAccountInfo = async (accountId: string, mirrorNodeLink: string) => {
   const { data } = await axios.get(`${mirrorNodeLink}/accounts/${accountId}`);
 
@@ -63,4 +74,12 @@ export const getAccountInfo = async (accountId: string, mirrorNodeLink: string) 
   };
 
   return accountInfo;
+};
+
+export const getAccountAllowances = async (accountId: string, mirrorNodeLink: string) => {
+  const { data } = await axios.get(`${mirrorNodeLink}/accounts/${accountId}/allowances/crypto`);
+
+  const allowances: MirrorNodeAllowance[] = data.allowances;
+
+  return allowances;
 };
