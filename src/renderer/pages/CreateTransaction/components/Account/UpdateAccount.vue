@@ -150,11 +150,7 @@ const handleGetUserSignature = async () => {
         }),
     );
 
-    signatures.forEach(s =>
-      transaction.value
-        ? (transaction.value = transaction.value.addSignature(s.publicKey, s.signature))
-        : '',
-    );
+    signatures.forEach(s => transaction.value?.addSignature(s.publicKey, s.signature));
 
     const client = Client.forTestnet();
 
