@@ -63,7 +63,7 @@ const handleGetUserSignature = async () => {
     throw Error('No user selected');
   }
 
-  if (!transaction.value) {
+  if (!transaction.value || !payerId.value) {
     return console.log('Transaction or payer missing');
   }
 
