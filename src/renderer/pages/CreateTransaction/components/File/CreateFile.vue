@@ -33,6 +33,8 @@ const fileId = ref('');
 
 const payerId = ref('');
 const validStart = ref('');
+const maxTransactionFee = ref(2);
+
 const ownerKeyText = ref('');
 const memo = ref('');
 const expirationTimestamp = ref();
@@ -132,20 +134,19 @@ const handleSign = async () => {
   isLoading.value = true;
 
   try {
-    let fileCreateTransaction = new FileCreateTransaction()
+    transaction.value = new FileCreateTransaction()
       .setTransactionId(createTransactionId(payerId.value, validStart.value))
       .setTransactionValidDuration(180)
+      .setMaxTransactionFee(maxTransactionFee.value)
       .setNodeAccountIds([new AccountId(3)])
-      .setKeys(keyList.value);
+      .setKeys(keyList.value)
+      .setContents(content.value)
+      .setFileMemo(memo.value);
 
-    if (content.value) fileCreateTransaction = fileCreateTransaction.setContents(content.value);
-    if (memo.value) fileCreateTransaction = fileCreateTransaction.setFileMemo(memo.value);
     if (expirationTimestamp.value)
-      fileCreateTransaction = fileCreateTransaction.setExpirationTime(
-        Timestamp.fromDate(expirationTimestamp.value),
-      );
+      transaction.value.setExpirationTime(Timestamp.fromDate(expirationTimestamp.value));
 
-    transaction.value = fileCreateTransaction.freezeWith(Client.forTestnet());
+    transaction.value.freezeWith(Client.forTestnet());
 
     const userIncludedPublicKeys = keyPairsStore.keyPairs.filter(kp =>
       ownerKeys.value.includes(kp.publicKey),
@@ -174,13 +175,19 @@ watch(isSignModalShown, () => (userPassword.value = ''));
       </div>
     </div>
     <div class="mt-4">
-      <div class="mt-4 form-group w-50">
-        <label class="form-label">Set Payer ID (Required)</label>
-        <input v-model="payerId" type="text" class="form-control" placeholder="Enter Payer ID" />
-      </div>
-      <div class="mt-4 form-group w-25">
-        <label class="form-label">Set Valid Start Time (Required)</label>
-        <input v-model="validStart" type="datetime-local" class="form-control" />
+      <div class="mt-4 d-flex flex-wrap gap-5">
+        <div class="form-group col-4">
+          <label class="form-label">Set Payer ID (Required)</label>
+          <input v-model="payerId" type="text" class="form-control" placeholder="Enter Payer ID" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Set Valid Start Time (Required)</label>
+          <input v-model="validStart" type="datetime-local" step="1" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Set Max Transaction Fee (Optional)</label>
+          <input v-model="maxTransactionFee" type="number" min="0" class="form-control" />
+        </div>
       </div>
       <div class="mt-4 form-group w-75">
         <label class="form-label">Set Keys (Required)</label>
@@ -255,7 +262,7 @@ watch(isSignModalShown, () => (userPassword.value = ''));
         <AppButton
           color="primary"
           size="large"
-          :disabled="keyList._keys.length === 0 || !payerId || !validStart"
+          :disabled="keyList._keys.length === 0 || !payerId"
           @click="handleSign"
           >Sign</AppButton
         >
