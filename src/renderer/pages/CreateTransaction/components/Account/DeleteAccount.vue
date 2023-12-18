@@ -160,7 +160,7 @@ watch(isAccountDeleteModalShown, shown => {
 watch(
   () => accountData.accountId,
   async newAccountId => {
-    if (!newAccountId) return;
+    if (!newAccountId) return handleResetAccoundData();
 
     try {
       AccountId.fromString(newAccountId);
