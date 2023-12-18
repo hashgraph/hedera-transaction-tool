@@ -9,11 +9,11 @@ import {
   PrivateKey,
   PublicKey,
   Timestamp,
-  TransactionId,
 } from '@hashgraph/sdk';
 
 import { decryptPrivateKey } from '../../../../services/keyPairService';
 import { openExternal } from '../../../../services/electronUtilsService';
+import { createTransactionId } from '../../../../services/transactionService';
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 
@@ -132,13 +132,8 @@ const handleSign = async () => {
   isLoading.value = true;
 
   try {
-    const transactionId = TransactionId.withValidStart(
-      AccountId.fromString(payerId.value),
-      Timestamp.fromDate(validStart.value),
-    );
-
     let fileCreateTransaction = new FileCreateTransaction()
-      .setTransactionId(transactionId)
+      .setTransactionId(createTransactionId(payerId.value, validStart.value))
       .setTransactionValidDuration(180)
       .setNodeAccountIds([new AccountId(3)])
       .setKeys(keyList.value);

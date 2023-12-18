@@ -8,13 +8,12 @@ import {
   KeyList,
   PrivateKey,
   PublicKey,
-  Timestamp,
-  TransactionId,
   Hbar,
 } from '@hashgraph/sdk';
 
 import { decryptPrivateKey } from '../../../../services/keyPairService';
 import { openExternal } from '../../../../services/electronUtilsService';
+import { createTransactionId } from '../../../../services/transactionService';
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useUserStateStore from '../../../../stores/storeUserState';
@@ -118,13 +117,8 @@ const handleCreate = async () => {
   isLoading.value = true;
 
   try {
-    const transactionId = TransactionId.withValidStart(
-      AccountId.fromString(payerId.value),
-      Timestamp.fromDate(validStart.value.length > 0 ? validStart.value : new Date()),
-    );
-
     let accountCreateTransaction = new AccountCreateTransaction()
-      .setTransactionId(transactionId)
+      .setTransactionId(createTransactionId(payerId.value, validStart.value))
       .setTransactionValidDuration(180)
       .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
       .setNodeAccountIds([new AccountId(3)])

@@ -8,8 +8,6 @@ import {
   KeyList,
   PrivateKey,
   PublicKey,
-  Timestamp,
-  TransactionId,
   Hbar,
   Key,
 } from '@hashgraph/sdk';
@@ -17,6 +15,7 @@ import {
 import { decryptPrivateKey, flattenKeyList } from '../../../../services/keyPairService';
 import { openExternal } from '../../../../services/electronUtilsService';
 import { getAccountInfo } from '../../../../services/mirrorNodeDataService';
+import { createTransactionId } from '../../../../services/transactionService';
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useMirrorNodeLinksStore from '../../../../stores/storeMirrorNodeLinks';
@@ -176,13 +175,8 @@ const handleCreate = async () => {
   isLoading.value = true;
 
   try {
-    const transactionId = TransactionId.withValidStart(
-      AccountId.fromString(payerId.value),
-      Timestamp.fromDate(validStart.value.length > 0 ? validStart.value : new Date()),
-    );
-
     let accountUpdateTransaction = new AccountUpdateTransaction()
-      .setTransactionId(transactionId)
+      .setTransactionId(createTransactionId(payerId.value, validStart.value))
       .setTransactionValidDuration(180)
       .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
       .setNodeAccountIds([new AccountId(3)])

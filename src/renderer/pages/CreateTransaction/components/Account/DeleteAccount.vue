@@ -7,8 +7,6 @@ import {
   KeyList,
   PrivateKey,
   PublicKey,
-  Timestamp,
-  TransactionId,
   Hbar,
   Key,
   AccountDeleteTransaction,
@@ -17,6 +15,7 @@ import {
 import { decryptPrivateKey, flattenKeyList } from '../../../../services/keyPairService';
 import { openExternal } from '../../../../services/electronUtilsService';
 import { getAccountInfo } from '../../../../services/mirrorNodeDataService';
+import { createTransactionId } from '../../../../services/transactionService';
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useMirrorNodeLinksStore from '../../../../stores/storeMirrorNodeLinks';
@@ -118,16 +117,11 @@ const handleGetUserSignature = async () => {
 };
 
 const handleCreate = async () => {
-  isLoading.value = true;
-
   try {
-    const transactionId = TransactionId.withValidStart(
-      AccountId.fromString(payerId.value),
-      Timestamp.fromDate(validStart.value.length > 0 ? validStart.value : new Date()),
-    );
+    isLoading.value = true;
 
     let accountDeleteTransaction = new AccountDeleteTransaction()
-      .setTransactionId(transactionId)
+      .setTransactionId(createTransactionId(payerId.value, validStart.value))
       .setTransactionValidDuration(180)
       .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
       .setNodeAccountIds([new AccountId(3)])
@@ -136,13 +130,10 @@ const handleCreate = async () => {
 
     transaction.value = accountDeleteTransaction.freezeWith(Client.forTestnet());
 
-    let oldKeys: string[] = [];
-    if (accountData.key) {
-      oldKeys = flattenKeyList(accountData.key).map(pk => pk.toStringRaw());
-    }
+    let keys = accountData.key ? flattenKeyList(accountData.key).map(pk => pk.toStringRaw()) : [];
 
     const someUserAccountIsPayer = keyPairsStore.keyPairs.some(
-      kp => payerId.value === kp.accountId || oldKeys.includes(kp.publicKey),
+      kp => payerId.value === kp.accountId || keys.includes(kp.publicKey),
     );
 
     if (someUserAccountIsPayer) {
