@@ -3,11 +3,7 @@ import axios from 'axios';
 import { decodeProtobuffKey } from './electronUtilsService';
 
 export const getAccountInfo = async (accountId: string, mirrorNodeLink: string) => {
-  const { data, status } = await axios.get(`${mirrorNodeLink}/accounts/${accountId}`);
-
-  if (status != axios.HttpStatusCode.Ok) {
-    return null;
-  }
+  const { data } = await axios.get(`${mirrorNodeLink}/accounts/${accountId}`);
 
   let key: Key | undefined;
 
