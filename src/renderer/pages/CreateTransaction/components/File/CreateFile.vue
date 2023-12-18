@@ -15,15 +15,19 @@ import {
   createTransactionId,
   getTransactionSignatures,
 } from '../../../../services/transactionService';
+import { getAccountInfo } from '../../../../services/mirrorNodeDataService';
+import { flattenKeyList } from '../../../../services/keyPairService';
 
+import useUserStateStore from '../../../../stores/storeUserState';
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
+import useMirrorNodeLinksStore from '../../../../stores/storeMirrorNodeLinks';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
-import useUserStateStore from '../../../../stores/storeUserState';
 
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
+const mirrorLinksStore = useMirrorNodeLinksStore();
 
 const isSignModalShown = ref(false);
 const userPassword = ref('');
@@ -33,6 +37,7 @@ const transactionId = ref('');
 const fileId = ref('');
 
 const payerId = ref('');
+const payerKeys = ref<string[]>([]);
 const validStart = ref('');
 const maxTransactionFee = ref(2);
 
@@ -88,7 +93,9 @@ const handleGetUserSignature = async () => {
     isLoading.value = true;
 
     await getTransactionSignatures(
-      keyPairsStore.keyPairs.filter(kp => ownerKeys.value.includes(kp.publicKey)),
+      keyPairsStore.keyPairs.filter(kp =>
+        ownerKeys.value.concat(payerKeys.value).includes(kp.publicKey),
+      ),
       transaction.value as any,
       true,
       userStateStore.userData.userId,
@@ -115,9 +122,9 @@ const handleGetUserSignature = async () => {
 };
 
 const handleSign = async () => {
-  isLoading.value = true;
-
   try {
+    isLoading.value = true;
+
     transaction.value = new FileCreateTransaction()
       .setTransactionId(createTransactionId(payerId.value, validStart.value))
       .setTransactionValidDuration(180)
@@ -132,8 +139,11 @@ const handleSign = async () => {
 
     transaction.value.freezeWith(Client.forTestnet());
 
+    const payerInfo = await getAccountInfo(payerId.value, mirrorLinksStore.mainnet);
+    payerKeys.value = flattenKeyList(payerInfo.key).map(pk => pk.toStringRaw());
+
     const userIncludedPublicKeys = keyPairsStore.keyPairs.filter(kp =>
-      ownerKeys.value.includes(kp.publicKey),
+      ownerKeys.value.concat(payerKeys.value).includes(kp.publicKey),
     );
 
     if (userIncludedPublicKeys.length > 0) {

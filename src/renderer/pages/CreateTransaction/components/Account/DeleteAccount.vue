@@ -41,6 +41,7 @@ const isAccountDeleteModalShown = ref(false);
 const transactionId = ref('');
 
 const payerId = ref('');
+const payerKeys = ref<string[]>([]);
 const validStart = ref('');
 const maxTransactionfee = ref(2);
 
@@ -76,8 +77,8 @@ const handleGetUserSignature = async () => {
       : [];
 
     await getTransactionSignatures(
-      keyPairsStore.keyPairs.filter(
-        kp => payerId.value === kp.accountId || accountKeys.includes(kp.publicKey),
+      keyPairsStore.keyPairs.filter(kp =>
+        payerKeys.value.concat(accountKeys).includes(kp.publicKey),
       ),
       transaction.value as any,
       true,
@@ -119,8 +120,11 @@ const handleCreate = async () => {
 
     let keys = accountData.key ? flattenKeyList(accountData.key).map(pk => pk.toStringRaw()) : [];
 
-    const someUserAccountIsPayer = keyPairsStore.keyPairs.some(
-      kp => payerId.value === kp.accountId || keys.includes(kp.publicKey),
+    const payerInfo = await getAccountInfo(payerId.value, mirrorLinksStore.mainnet);
+    payerKeys.value = flattenKeyList(payerInfo.key).map(pk => pk.toStringRaw());
+
+    const someUserAccountIsPayer = keyPairsStore.keyPairs.some(kp =>
+      payerKeys.value.concat(keys).includes(kp.publicKey),
     );
 
     if (someUserAccountIsPayer) {

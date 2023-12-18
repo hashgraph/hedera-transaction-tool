@@ -15,9 +15,12 @@ import {
   createTransactionId,
   getTransactionSignatures,
 } from '../../../../services/transactionService';
+import { getAccountInfo } from '../../../../services/mirrorNodeDataService';
+import { flattenKeyList } from '../../../../services/keyPairService';
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useUserStateStore from '../../../../stores/storeUserState';
+import useMirrorNodeLinksStore from '../../../../stores/storeMirrorNodeLinks';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
@@ -25,6 +28,7 @@ import AppSwitch from '../../../../components/ui/AppSwitch.vue';
 
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
+const mirrorLinksStore = useMirrorNodeLinksStore();
 
 const isSignModalShown = ref(false);
 const userPassword = ref('');
@@ -33,6 +37,7 @@ const isAccountCreateModalShown = ref(false);
 const transactionId = ref('');
 
 const payerId = ref('');
+const payerKeys = ref<string[]>([]);
 const validStart = ref('');
 const maxTransactionfee = ref(2);
 
@@ -78,14 +83,12 @@ const handleGetUserSignature = async () => {
       throw Error('No user selected');
     }
 
-    const payerKeyPair = keyPairsStore.keyPairs.find(kp => payerId.value === kp.accountId);
-
-    if (!transaction.value || !payerKeyPair) {
+    if (!transaction.value) {
       return console.log('Transaction or payer missing');
     }
 
     await getTransactionSignatures(
-      [payerKeyPair],
+      keyPairsStore.keyPairs.filter(kp => payerKeys.value.includes(kp.publicKey)),
       transaction.value as any,
       true,
       userStateStore.userData.userId,
@@ -134,7 +137,10 @@ const handleCreate = async () => {
     Number(accountData.stakedNodeId) > 0 &&
       transaction.value.setStakedNodeId(accountData.stakedNodeId);
 
-    if (keyPairsStore.keyPairs.some(kp => payerId.value === kp.accountId)) {
+    const payerInfo = await getAccountInfo(payerId.value, mirrorLinksStore.mainnet);
+    payerKeys.value = flattenKeyList(payerInfo.key).map(pk => pk.toStringRaw());
+
+    if (keyPairsStore.keyPairs.some(kp => payerKeys.value.includes(kp.publicKey))) {
       isSignModalShown.value = true;
     } else {
       // Send to Back End

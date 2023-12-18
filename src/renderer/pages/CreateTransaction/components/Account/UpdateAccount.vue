@@ -42,6 +42,7 @@ const isAccountUpdatedModalShown = ref(false);
 const transactionId = ref('');
 
 const payerId = ref('');
+const payerKeys = ref<string[]>([]);
 const validStart = ref('');
 const maxTransactionfee = ref(2);
 
@@ -126,11 +127,8 @@ const handleGetUserSignature = async () => {
       : [];
 
     await getTransactionSignatures(
-      keyPairsStore.keyPairs.filter(
-        kp =>
-          newOwnerKeys.value.includes(kp.publicKey) ||
-          payerId.value === kp.accountId ||
-          accountKeys.includes(kp.publicKey),
+      keyPairsStore.keyPairs.filter(kp =>
+        newOwnerKeys.value.concat(accountKeys).concat(payerKeys.value).includes(kp.publicKey),
       ),
       transaction.value as any,
       true,
@@ -203,15 +201,15 @@ const handleCreate = async () => {
 
     transaction.value.freezeWith(Client.forTestnet());
 
+    const payerInfo = await getAccountInfo(payerId.value, mirrorLinksStore.mainnet);
+    payerKeys.value = flattenKeyList(payerInfo.key).map(pk => pk.toStringRaw());
+
     let accountKeys = accountData.key
       ? flattenKeyList(accountData.key).map(pk => pk.toStringRaw())
       : [];
 
-    const someUserAccountIsPayer = keyPairsStore.keyPairs.some(
-      kp =>
-        payerId.value === kp.accountId ||
-        newOwnerKeys.value.includes(kp.publicKey) ||
-        accountKeys.includes(kp.publicKey),
+    const someUserAccountIsPayer = keyPairsStore.keyPairs.some(kp =>
+      newOwnerKeys.value.concat(accountKeys).concat(payerKeys.value).includes(kp.publicKey),
     );
 
     if (someUserAccountIsPayer) {
