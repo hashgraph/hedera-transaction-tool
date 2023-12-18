@@ -175,40 +175,33 @@ const handleCreate = async () => {
   isLoading.value = true;
 
   try {
-    let accountUpdateTransaction = new AccountUpdateTransaction()
+    transaction.value = new AccountUpdateTransaction()
       .setTransactionId(createTransactionId(payerId.value, validStart.value))
       .setTransactionValidDuration(180)
       .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
       .setNodeAccountIds([new AccountId(3)])
       .setAccountId(accountData.accountId)
       .setReceiverSignatureRequired(accountData.receiverSignatureRequired)
-      .setDeclineStakingReward(accountData.declineStakingReward);
+      .setDeclineStakingReward(accountData.declineStakingReward)
+      .setMaxAutomaticTokenAssociations(accountData.maxAutomaticTokenAssociations)
+      .setAccountMemo(accountData.memo);
 
-    if (newOwnerKeys.value.length > 0) {
-      accountUpdateTransaction.setKey(newOwnerKeyList.value);
-    }
+    newOwnerKeys.value.length > 0 && transaction.value.setKey(newOwnerKeyList.value);
 
-    if (
-      accountData.maxAutomaticTokenAssociations > 0 &&
-      initialAccountData.maxAutomaticTokenAssociations !== accountData.maxAutomaticTokenAssociations
-    )
-      accountUpdateTransaction.setMaxAutomaticTokenAssociations(
-        accountData.maxAutomaticTokenAssociations,
-      );
     if (
       accountData.stakedAccountId &&
       accountData.stakedAccountId.length > 0 &&
       !accountData.stakedNodeId &&
       initialAccountData.stakedAccountId !== accountData.stakedAccountId
     ) {
-      accountUpdateTransaction.setStakedAccountId(accountData.stakedAccountId);
+      transaction.value.setStakedAccountId(accountData.stakedAccountId);
     }
 
     if (
       accountData.stakedAccountId !== initialAccountData.stakedAccountId &&
       accountData.stakedAccountId?.length === 0
     ) {
-      accountUpdateTransaction.clearStakedAccountId();
+      transaction.value.clearStakedAccountId();
     }
 
     if (
@@ -216,18 +209,14 @@ const handleCreate = async () => {
       !accountData.stakedAccountId &&
       initialAccountData.stakedNodeId !== accountData.stakedNodeId
     ) {
-      accountUpdateTransaction.setStakedNodeId(accountData.stakedNodeId);
+      transaction.value.setStakedNodeId(accountData.stakedNodeId);
     }
 
     if (accountData.stakedNodeId !== initialAccountData.stakedNodeId && !accountData.stakedNodeId) {
-      accountUpdateTransaction.clearStakedNodeId();
+      transaction.value.clearStakedNodeId();
     }
 
-    if (accountData.memo.length > 0 && initialAccountData.memo !== accountData.memo) {
-      accountUpdateTransaction.setAccountMemo(accountData.memo);
-    }
-
-    transaction.value = accountUpdateTransaction.freezeWith(Client.forTestnet());
+    transaction.value.freezeWith(Client.forTestnet());
 
     let oldKeys: string[] = [];
     if (accountData.key) {
