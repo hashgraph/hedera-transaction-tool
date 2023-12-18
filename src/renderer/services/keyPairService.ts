@@ -82,6 +82,7 @@ export const flattenKeyList = (keyList: Key): PublicKey[] => {
   const protobufKey = keyList._toProtobufKey();
 
   let keys: PublicKey[] = [];
+  const keysString: string[] = [];
 
   formatKey(protobufKey);
 
@@ -103,8 +104,9 @@ export const flattenKeyList = (keyList: Key): PublicKey[] => {
       keys = key.keyList.keys.map((k: proto.Key) => getPublicKeyFromIKey(k));
     } else {
       const pk = getPublicKeyFromIKey(key);
-      if (pk) {
+      if (pk && !keysString.includes(pk.toStringRaw())) {
         keys.push(pk);
+        keysString.push(pk.toStringRaw());
       }
     }
   }
