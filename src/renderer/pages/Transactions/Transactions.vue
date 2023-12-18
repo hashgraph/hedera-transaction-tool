@@ -57,6 +57,10 @@ const transactionGroups = [
     ],
   },
   {
+    groupTitle: 'Transfer Cryptocurrency',
+    items: [{ label: 'Transfer Hbar', name: 'transferHbar' }],
+  },
+  {
     groupTitle: 'File management',
     items: [
       { label: 'Create File', name: 'createFile' },
