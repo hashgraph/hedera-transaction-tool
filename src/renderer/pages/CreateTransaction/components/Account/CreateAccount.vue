@@ -114,41 +114,29 @@ const handleGetUserSignature = async () => {
 };
 
 const handleCreate = async () => {
-  isLoading.value = true;
-
   try {
-    let accountCreateTransaction = new AccountCreateTransaction()
+    isLoading.value = true;
+
+    transaction.value = new AccountCreateTransaction()
       .setTransactionId(createTransactionId(payerId.value, validStart.value))
       .setTransactionValidDuration(180)
       .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
       .setNodeAccountIds([new AccountId(3)])
       .setKey(keyList.value)
       .setReceiverSignatureRequired(accountData.receiverSignatureRequired)
-      .setDeclineStakingReward(accountData.declineStakingReward);
+      .setDeclineStakingReward(accountData.declineStakingReward)
+      .setInitialBalance(accountData.initialBalance)
+      .setMaxAutomaticTokenAssociations(accountData.maxAutomaticTokenAssociations)
+      .setAccountMemo(accountData.memo)
+      .freezeWith(Client.forTestnet());
 
-    if (accountData.initialBalance > 0)
-      accountCreateTransaction.setInitialBalance(accountData.initialBalance);
-    if (accountData.maxAutomaticTokenAssociations > 0)
-      accountCreateTransaction.setMaxAutomaticTokenAssociations(
-        accountData.maxAutomaticTokenAssociations,
-      );
-    if (accountData.stakedAccountId.length > 0 && accountData.stakedNodeId.length === 0) {
-      accountCreateTransaction.setStakedAccountId(accountData.stakedAccountId);
-    }
-    if (accountData.stakedNodeId.length > 0 && accountData.stakedAccountId.length === 0) {
-      accountCreateTransaction.setStakedNodeId(accountData.stakedNodeId);
-    }
-    if (accountData.memo.length > 0) {
-      accountCreateTransaction.setAccountMemo(accountData.memo);
-    }
+    accountData.stakedAccountId &&
+      transaction.value.setStakedAccountId(accountData.stakedAccountId);
 
-    transaction.value = accountCreateTransaction.freezeWith(Client.forTestnet());
+    Number(accountData.stakedNodeId) > 0 &&
+      transaction.value.setStakedNodeId(accountData.stakedNodeId);
 
-    const someUserAccountIsPayer = keyPairsStore.keyPairs.some(
-      kp => payerId.value === kp.accountId,
-    );
-
-    if (someUserAccountIsPayer) {
+    if (keyPairsStore.keyPairs.some(kp => payerId.value === kp.accountId)) {
       isSignModalShown.value = true;
     } else {
       // Send to Back End
@@ -273,7 +261,7 @@ watch(isAccountCreateModalShown, shown => {
         <label class="form-label">Set Staked Account Id (Optional)</label>
         <input
           v-model="accountData.stakedAccountId"
-          :disabled="accountData.stakedNodeId.length > 0"
+          :disabled="Number(accountData.stakedNodeId) > 0"
           type="text"
           class="form-control"
           placeholder="Enter Account Id"
@@ -284,7 +272,8 @@ watch(isAccountCreateModalShown, shown => {
         <input
           v-model="accountData.stakedNodeId"
           :disabled="accountData.stakedAccountId.length > 0"
-          type="text"
+          type="number"
+          min="0"
           class="form-control"
           placeholder="Enter Node Id"
         />
