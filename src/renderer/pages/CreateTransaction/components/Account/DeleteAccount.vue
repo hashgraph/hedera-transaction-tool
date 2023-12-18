@@ -120,7 +120,7 @@ const handleCreate = async () => {
   try {
     isLoading.value = true;
 
-    let accountDeleteTransaction = new AccountDeleteTransaction()
+    transaction.value = new AccountDeleteTransaction()
       .setTransactionId(createTransactionId(payerId.value, validStart.value))
       .setTransactionValidDuration(180)
       .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
@@ -128,7 +128,7 @@ const handleCreate = async () => {
       .setAccountId(accountData.accountId)
       .setTransferAccountId(accountData.transferAccountId);
 
-    transaction.value = accountDeleteTransaction.freezeWith(Client.forTestnet());
+    transaction.value.freezeWith(Client.forTestnet());
 
     let keys = accountData.key ? flattenKeyList(accountData.key).map(pk => pk.toStringRaw()) : [];
 
