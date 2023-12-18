@@ -1,4 +1,5 @@
 import CreateAccount from './components/Account/CreateAccount.vue';
+import DeleteAccount from './components/Account/DeleteAccount.vue';
 import UpdateAccount from './components/Account/UpdateAccount.vue';
 import CreateFile from './components/File/CreateFile.vue';
 import ReadFile from './components/File/ReadFile.vue';
@@ -10,6 +11,7 @@ const txTypeComponentMapping = {
   updateFile: UpdateFile,
   createAccount: CreateAccount,
   updateAccount: UpdateAccount,
+  deleteAccount: DeleteAccount,
 };
 
 export default txTypeComponentMapping;

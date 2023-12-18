@@ -53,7 +53,7 @@ const transactionGroups = [
     items: [
       { label: 'Create Account', name: 'createAccount' },
       { label: 'Update Account', name: 'updateAccount' },
-      // { label: 'Delete Account', name: 'deleteAccount' },
+      { label: 'Delete Account', name: 'deleteAccount' },
     ],
   },
   {
