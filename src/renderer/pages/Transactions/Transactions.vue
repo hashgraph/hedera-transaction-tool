@@ -57,8 +57,11 @@ const transactionGroups = [
     ],
   },
   {
-    groupTitle: 'Transfer Crypto',
-    items: [{ label: 'Transfer Hbar', name: 'transferHbar' }],
+    groupTitle: 'Hbar',
+    items: [
+      { label: 'Approve Allowance', name: 'approveHbarAllowance' },
+      { label: 'Transfer', name: 'transferHbar' },
+    ],
   },
   {
     groupTitle: 'File management',
