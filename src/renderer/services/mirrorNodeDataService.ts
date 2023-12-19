@@ -24,7 +24,6 @@ export const getAccountInfo = async (accountId: string, mirrorNodeLink: string) 
   if (!key) {
     throw Error('No key available');
   }
-  console.log(data);
 
   const accountInfo: MirrorNodeAccountInfo = {
     accountId: AccountId.fromString(data.account),
