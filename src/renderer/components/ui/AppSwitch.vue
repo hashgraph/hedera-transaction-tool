@@ -1,10 +1,10 @@
 <script setup lang="ts">
 defineProps<{
-  checked: boolean;
   name: string;
+  checked?: boolean;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   label?: string;
-  disabled?: boolean;
+  labelClass?: string;
 }>();
 defineEmits(['update:checked']);
 </script>
@@ -20,8 +20,9 @@ defineEmits(['update:checked']);
       :checked="checked"
       @input="$emit('update:checked', !checked)"
       :name="name"
+      v-bind="$attrs"
     />
-    <label v-if="label" class="form-check-label text-small" :for="name">
+    <label v-if="label" class="form-check-label" :class="labelClass" :for="name">
       {{ label }}
     </label>
   </div>
