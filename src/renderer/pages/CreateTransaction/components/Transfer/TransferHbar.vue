@@ -111,8 +111,6 @@ const handleGetUserSignature = async () => {
       keys = keys.concat(keyPairsStore.keyPairs.filter(kp => receiverKeys.includes(kp.publicKey)));
     }
 
-    keys = [...new Set(keys)];
-
     await getTransactionSignatures(
       keys,
       transaction.value as any,
