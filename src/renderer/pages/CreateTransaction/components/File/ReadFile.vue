@@ -3,13 +3,13 @@ import { ref, watch } from 'vue';
 
 import { Client, FileContentsQuery } from '@hashgraph/sdk';
 
-import { decryptPrivateKey } from '../../../services/keyPairService';
+import { decryptPrivateKey } from '../../../../services/keyPairService';
 
-import useKeyPairsStore from '../../../stores/storeKeyPairs';
+import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 
-import AppButton from '../../../components/ui/AppButton.vue';
-import AppModal from '../../../components/ui/AppModal.vue';
-import useUserStateStore from '../../../stores/storeUserState';
+import AppButton from '../../../../components/ui/AppButton.vue';
+import AppModal from '../../../../components/ui/AppModal.vue';
+import useUserStateStore from '../../../../stores/storeUserState';
 
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
@@ -24,10 +24,13 @@ const content = ref('');
 const isLoading = ref(false);
 
 const handleRead = async () => {
-  if (!userStateStore.userData?.userId) return;
+  if (!userStateStore.userData?.userId) {
+    throw Error('No user selected');
+  }
 
   try {
     isLoading.value = true;
+
     const publicKey = keyPairsStore.keyPairs.find(kp => kp.accountId === payerId.value)?.publicKey;
 
     const privateKey = await decryptPrivateKey(
@@ -119,7 +122,7 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
         </div>
         <AppButton
           :loading="isLoading"
-          :disabled="userPassword.length === 0"
+          :disabled="userPassword.length === 0 || isLoading"
           color="primary"
           size="large"
           class="mt-5 w-100 rounded-4"

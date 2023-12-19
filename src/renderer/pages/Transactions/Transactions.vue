@@ -49,6 +49,22 @@ const isTransactionTypeModalShown = ref(false);
 
 const transactionGroups = [
   {
+    groupTitle: 'Account',
+    items: [
+      { label: 'Create Account', name: 'createAccount' },
+      { label: 'Update Account', name: 'updateAccount' },
+      { label: 'Delete Account', name: 'deleteAccount' },
+      { label: 'Account Info', name: 'accountInfo' },
+    ],
+  },
+  {
+    groupTitle: 'Hbar',
+    items: [
+      { label: 'Approve Allowance', name: 'approveHbarAllowance' },
+      { label: 'Transfer', name: 'transferHbar' },
+    ],
+  },
+  {
     groupTitle: 'File management',
     items: [
       { label: 'Create File', name: 'createFile' },
@@ -146,9 +162,9 @@ const transactionGroups = [
         <!-- <p class="text-center text-light-emphasis text-small">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit.
         </p> -->
-        <div class="row flex-wrap">
+        <div class="mt-5 row flex-wrap">
           <template v-for="(group, groupIndex) in transactionGroups" :key="groupIndex">
-            <div class="mt-5">
+            <div class="mt-5 col-4">
               <h3 class="text-title text-bold">{{ group.groupTitle }}</h3>
               <RouterLink
                 :to="{ name: 'createTransaction', params: { type: item.name } }"

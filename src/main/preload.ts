@@ -1,8 +1,11 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
+import { proto } from '@hashgraph/proto';
+
+import { IKeyPair } from './shared/interfaces/IKeyPair';
+
 import { Theme } from './modules/ipcHandlers/theme';
 import { Organization, SchemaProperties } from './modules/store';
-import { IKeyPair } from './shared/interfaces/IKeyPair';
 
 export const electronAPI = {
   getNodeEnv: () => process.env.NODE_ENV,
@@ -53,6 +56,8 @@ export const electronAPI = {
   },
   utils: {
     openExternal: (url: string) => ipcRenderer.send('utils:openExternal', url),
+    decodeProtobuffKey: (protobuffEncodedKey: string): Promise<proto.Key> =>
+      ipcRenderer.invoke('utils:decodeProtobuffKey', protobuffEncodedKey),
   },
 };
 typeof electronAPI;
