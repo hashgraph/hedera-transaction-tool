@@ -36,6 +36,7 @@ export const getTransactionSignatures = async (
   password: string,
 ) => {
   const signatures: { publicKey: PublicKey; signature: Uint8Array }[] = [];
+  const publicKeys: string[] = [];
 
   await Promise.all(
     keyPairs.map(async keyPair => {
@@ -43,7 +44,11 @@ export const getTransactionSignatures = async (
 
       const privateKey = PrivateKey.fromStringED25519(privateKeyString);
       const signature = privateKey.signTransaction(transaction);
-      signatures.push({ publicKey: PublicKey.fromString(keyPair.publicKey), signature });
+
+      if (!publicKeys.includes(keyPair.publicKey)) {
+        signatures.push({ publicKey: PublicKey.fromString(keyPair.publicKey), signature });
+        publicKeys.push(keyPair.publicKey);
+      }
     }),
   );
 
