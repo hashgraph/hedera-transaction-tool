@@ -1,17 +1,11 @@
-import { AccountId, EvmAddress, Hbar, HbarUnit, Key, PublicKey, Timestamp } from '@hashgraph/sdk';
 import axios from 'axios';
+
+import { AccountId, EvmAddress, Hbar, HbarUnit, Key, PublicKey, Timestamp } from '@hashgraph/sdk';
+
 import { decodeProtobuffKey } from './electronUtilsService';
 
-export interface MirrorNodeAllowance {
-  amount: number;
-  amount_granted: number;
-  owner: string;
-  spender: string;
-  timestamp: {
-    from: string;
-    to: string | null;
-  };
-}
+import { MirrorNodeAllowance } from '../interfaces/MirrorNodeAllowance';
+import { MirrorNodeAccountInfo } from '../interfaces/MirrorNodeAccountInfo';
 
 export const getAccountInfo = async (accountId: string, mirrorNodeLink: string) => {
   const { data } = await axios.get(`${mirrorNodeLink}/accounts/${accountId}`);
@@ -30,27 +24,11 @@ export const getAccountInfo = async (accountId: string, mirrorNodeLink: string) 
   if (!key) {
     throw Error('No key available');
   }
+  console.log(data);
 
-  const accountInfo: {
-    accountId: AccountId;
-    alias: string | null;
-    balance: Hbar;
-    declineReward: boolean;
-    deleted: boolean;
-    ethereumNonce: number;
-    evmAddress: EvmAddress;
-    createdTimestamp: Timestamp;
-    expiryTimestamp: Timestamp;
-    key: Key;
-    maxAutomaticTokenAssociations: number;
-    memo: string;
-    pendingRewards: number;
-    receiverSignatureRequired: boolean;
-    stakedAccountId: AccountId | null;
-    stakedNodeId: number | null;
-  } = {
+  const accountInfo: MirrorNodeAccountInfo = {
     accountId: AccountId.fromString(data.account),
-    alias: data.alias,
+    alias: data.alias as string,
     balance: Hbar.from(data.balance.balance, HbarUnit.Tinybar),
     declineReward: Boolean(data.decline_reward),
     deleted: data.deleted,
@@ -67,10 +45,11 @@ export const getAccountInfo = async (accountId: string, mirrorNodeLink: string) 
     key: key,
     maxAutomaticTokenAssociations: data.max_automatic_token_associations,
     memo: data.memo,
-    pendingRewards: data.pending_reward,
+    pendingRewards: Hbar.from(data.pending_reward, HbarUnit.Tinybar),
     receiverSignatureRequired: Boolean(data.receiver_sig_required),
     stakedAccountId: data.staked_account_id ? AccountId.fromString(data.staked_account_id) : null,
     stakedNodeId: Number(data.staked_node_id),
+    autoRenewPeriod: data.auto_renew_period,
   };
 
   return accountInfo;

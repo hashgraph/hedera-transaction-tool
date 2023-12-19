@@ -13,11 +13,7 @@ import {
 
 import { flattenKeyList } from '../../../../services/keyPairService';
 import { openExternal } from '../../../../services/electronUtilsService';
-import {
-  MirrorNodeAllowance,
-  getAccountAllowances,
-  getAccountInfo,
-} from '../../../../services/mirrorNodeDataService';
+import { getAccountAllowances, getAccountInfo } from '../../../../services/mirrorNodeDataService';
 import {
   createTransactionId,
   getTransactionSignatures,
@@ -26,6 +22,8 @@ import {
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useMirrorNodeLinksStore from '../../../../stores/storeMirrorNodeLinks';
 import useUserStateStore from '../../../../stores/storeUserState';
+
+import { MirrorNodeAllowance } from '../../../../interfaces/MirrorNodeAllowance';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
