@@ -1,15 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue';
 
-import {
-  AccountId,
-  Client,
-  KeyList,
-  PublicKey,
-  Hbar,
-  Key,
-  TransferTransaction,
-} from '@hashgraph/sdk';
+import { AccountId, KeyList, PublicKey, Hbar, Key, TransferTransaction } from '@hashgraph/sdk';
 
 import { flattenKeyList } from '../../../../services/keyPairService';
 import { openExternal } from '../../../../services/electronUtilsService';
@@ -20,7 +12,7 @@ import {
 } from '../../../../services/transactionService';
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
-import useMirrorNodeLinksStore from '../../../../stores/storeMirrorNodeLinks';
+import useNetworkStore from '../../../../stores/storeNetwork';
 import useUserStateStore from '../../../../stores/storeUserState';
 
 import { MirrorNodeAllowance } from '../../../../interfaces/MirrorNodeAllowance';
@@ -32,7 +24,7 @@ import KeyStructure from '../../../../components/KeyStructure.vue';
 
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
-const mirrorLinksStore = useMirrorNodeLinksStore();
+const networkStore = useNetworkStore();
 
 /* State */
 const isKeyStructureModalShown = ref(false);
@@ -117,9 +109,8 @@ const handleGetUserSignature = async () => {
       userPassword.value,
     );
 
-    const client = Client.forTestnet();
-    const submitTx = await transaction.value?.execute(client);
-    await submitTx.getReceipt(client);
+    const submitTx = await transaction.value?.execute(networkStore.client);
+    await submitTx.getReceipt(networkStore.client);
 
     isSignModalShown.value = false;
 
@@ -155,9 +146,9 @@ const handleCreate = async () => {
       transaction.value.addHbarTransfer(senderData.accountId, new Hbar(amount.value).negated());
     }
 
-    transaction.value.freezeWith(Client.forTestnet());
+    transaction.value.freezeWith(networkStore.client);
 
-    const payerInfo = await getAccountInfo(payerId.value, mirrorLinksStore.mainnet);
+    const payerInfo = await getAccountInfo(payerId.value, networkStore.mirrorNodeBaseURL);
     payerKeys.value = flattenKeyList(payerInfo.key).map(pk => pk.toStringRaw());
 
     let someUserAccountIsPayer = keyPairsStore.keyPairs.some(kp =>
@@ -229,13 +220,13 @@ watch(
     try {
       AccountId.fromString(newAccountId);
 
-      const accountInfo = await getAccountInfo(newAccountId, mirrorLinksStore.mainnet);
+      const accountInfo = await getAccountInfo(newAccountId, networkStore.mirrorNodeBaseURL);
       senderData.accountId = accountInfo.accountId.toString();
       senderData.balance = accountInfo.balance;
       senderData.key = accountInfo.key;
       senderData.valid = true;
 
-      const allowances = await getAccountAllowances(newAccountId, mirrorLinksStore.mainnet);
+      const allowances = await getAccountAllowances(newAccountId, networkStore.mirrorNodeBaseURL);
 
       spenderAllowances.value = allowances;
     } catch (e) {
@@ -251,7 +242,7 @@ watch(
     try {
       AccountId.fromString(newAccountId);
 
-      const accountInfo = await getAccountInfo(newAccountId, mirrorLinksStore.mainnet);
+      const accountInfo = await getAccountInfo(newAccountId, networkStore.mirrorNodeBaseURL);
       receiverData.accountId = accountInfo.accountId.toString();
       receiverData.balance = accountInfo.balance;
       receiverData.key = accountInfo.key;

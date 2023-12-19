@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
-import { Client, FileContentsQuery } from '@hashgraph/sdk';
+import { FileContentsQuery } from '@hashgraph/sdk';
 
 import { decryptPrivateKey } from '../../../../services/keyPairService';
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
+import useUserStateStore from '../../../../stores/storeUserState';
+import useNetworkStore from '../../../../stores/storeNetwork';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
-import useUserStateStore from '../../../../stores/storeUserState';
 
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
+const networkStore = useNetworkStore();
 
 const isUserPasswordModalShown = ref(false);
 const userPassword = ref('');
@@ -39,12 +41,11 @@ const handleRead = async () => {
       publicKey || '',
     );
 
-    const client = Client.forTestnet();
-    client.setOperator(payerId.value, privateKey);
+    networkStore.client.setOperator(payerId.value, privateKey);
 
     const query = new FileContentsQuery().setFileId(fileId.value);
 
-    const contents = await query.execute(client);
+    const contents = await query.execute(networkStore.client);
 
     isUserPasswordModalShown.value = false;
 
@@ -55,6 +56,7 @@ const handleRead = async () => {
   } catch (error) {
     console.error(error);
   } finally {
+    networkStore.client._operator = null;
     isLoading.value = false;
   }
 };

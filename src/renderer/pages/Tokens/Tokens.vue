@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import axios from 'axios';
 import { onBeforeMount, ref } from 'vue';
-import { getMirrorNodeConfig } from '../../services/configurationService';
+
+import useNetworkStore from '../../stores/storeNetwork';
 
 import AppButton from '../../components/ui/AppButton.vue';
 
@@ -14,16 +15,17 @@ interface ITransaction {
   entity_id: string;
 }
 
+const networkStore = useNetworkStore();
+
 const transactionsFetched = ref<ITransaction[]>([]);
 const isLoading = ref(false);
 
 onBeforeMount(async () => {
   isLoading.value = true;
-  const mainnetLink = (await getMirrorNodeConfig()).mainnetLink;
   try {
     const {
       data: { transactions },
-    } = await axios.get(`${mainnetLink}/transactions`);
+    } = await axios.get(`${networkStore.mirrorNodeBaseURL}/transactions`);
     transactionsFetched.value = transactions;
   } catch (error) {
     console.log('error', error);

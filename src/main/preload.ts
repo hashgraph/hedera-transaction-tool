@@ -5,7 +5,7 @@ import { proto } from '@hashgraph/proto';
 import { IKeyPair } from './shared/interfaces/IKeyPair';
 
 import { Theme } from './modules/ipcHandlers/theme';
-import { Organization, SchemaProperties } from './modules/store';
+import { Organization } from './modules/store';
 
 export const electronAPI = {
   getNodeEnv: () => process.env.NODE_ENV,
@@ -18,12 +18,6 @@ export const electronAPI = {
   },
   config: {
     clear: () => ipcRenderer.invoke('configuration:clear'),
-    mirrorNodeLinks: {
-      setLink: (key: keyof SchemaProperties['mirrorNodeLinks'], link: string): Promise<string> =>
-        ipcRenderer.invoke(`configuration:set:mirrorNodeLinks:${key}`, link),
-      getLinks: (): Promise<SchemaProperties['mirrorNodeLinks']> =>
-        ipcRenderer.invoke('configuration:get:mirrorNodeLinks'),
-    },
     organizations: {
       getAll: (): Promise<Organization[]> => ipcRenderer.invoke('configuration:organizations:get'),
       add: async (organization: Organization) => {

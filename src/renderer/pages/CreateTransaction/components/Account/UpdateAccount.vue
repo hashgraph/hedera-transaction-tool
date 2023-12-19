@@ -1,15 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, reactive, watch } from 'vue';
 
-import {
-  AccountId,
-  Client,
-  AccountUpdateTransaction,
-  KeyList,
-  PublicKey,
-  Hbar,
-  Key,
-} from '@hashgraph/sdk';
+import { AccountId, AccountUpdateTransaction, KeyList, PublicKey, Hbar, Key } from '@hashgraph/sdk';
 
 import { flattenKeyList } from '../../../../services/keyPairService';
 import { openExternal } from '../../../../services/electronUtilsService';
@@ -20,7 +12,7 @@ import {
 } from '../../../../services/transactionService';
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
-import useMirrorNodeLinksStore from '../../../../stores/storeMirrorNodeLinks';
+import useNetworkStore from '../../../../stores/storeNetwork';
 import useUserStateStore from '../../../../stores/storeUserState';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
@@ -30,7 +22,7 @@ import KeyStructure from '../../../../components/KeyStructure.vue';
 
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
-const mirrorLinksStore = useMirrorNodeLinksStore();
+const networkStore = useNetworkStore();
 
 /* State */
 const isKeyStructureModalShown = ref(false);
@@ -136,9 +128,8 @@ const handleGetUserSignature = async () => {
       userPassword.value,
     );
 
-    const client = Client.forTestnet();
-    const submitTx = await transaction.value?.execute(client);
-    await submitTx.getReceipt(client);
+    const submitTx = await transaction.value?.execute(networkStore.client);
+    await submitTx.getReceipt(networkStore.client);
 
     isSignModalShown.value = false;
 
@@ -199,9 +190,9 @@ const handleCreate = async () => {
       transaction.value.clearStakedNodeId();
     }
 
-    transaction.value.freezeWith(Client.forTestnet());
+    transaction.value.freezeWith(networkStore.client);
 
-    const payerInfo = await getAccountInfo(payerId.value, mirrorLinksStore.mainnet);
+    const payerInfo = await getAccountInfo(payerId.value, networkStore.mirrorNodeBaseURL);
     payerKeys.value = flattenKeyList(payerInfo.key).map(pk => pk.toStringRaw());
 
     let accountKeys = accountData.key
@@ -267,7 +258,7 @@ watch(
     try {
       AccountId.fromString(newAccountId);
 
-      const accountInfo = await getAccountInfo(newAccountId, mirrorLinksStore.mainnet);
+      const accountInfo = await getAccountInfo(newAccountId, networkStore.mirrorNodeBaseURL);
       accountData.accountId = accountInfo.accountId.toString();
       accountData.receiverSignatureRequired = accountInfo.receiverSignatureRequired;
       accountData.maxAutomaticTokenAssociations = accountInfo.maxAutomaticTokenAssociations;

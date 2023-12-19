@@ -7,11 +7,6 @@ export type Organization = {
 };
 
 export type SchemaProperties = {
-  mirrorNodeLinks: {
-    mainnetLink: string;
-    testnetLink: string;
-    previewnetLink: string;
-  };
   organizations: Organization[];
 };
 
@@ -20,25 +15,6 @@ export default function getStore() {
   /* See more about JSON Schema here: https://json-schema.org/learn/getting-started-step-by-step */
 
   const schema: Schema<SchemaProperties> = {
-    mirrorNodeLinks: {
-      type: 'object',
-      properties: {
-        mainnetLink: {
-          type: 'string',
-        },
-        testnetLink: {
-          type: 'string',
-        },
-        previewnetLink: {
-          type: 'string',
-        },
-      },
-      default: {
-        mainnetLink: '',
-        testnetLink: '',
-        previewnetLink: '',
-      },
-    },
     organizations: {
       type: 'array',
       items: {

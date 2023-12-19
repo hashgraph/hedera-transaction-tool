@@ -5,12 +5,12 @@ import { IKeyPair, IKeyPairWithAccountId } from '../../main/shared/interfaces/IK
 
 import * as keyPairService from '../services/keyPairService';
 
-import useMirrorNodeLinksStore from './storeMirrorNodeLinks';
+import useNetworkStore from './storeNetwork';
 import useUserStateStore from './storeUserState';
 
 const useKeyPairsStore = defineStore('keyPairs', () => {
   /* Stores */
-  const mirrorNodeLinksStore = useMirrorNodeLinksStore();
+  const networkStore = useNetworkStore();
   const userStateStore = useUserStateStore();
 
   /* State */
@@ -26,7 +26,10 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
     keyPairs.value = await keyPairService.getStoredKeyPairs(userStateStore.userData.userId);
 
     keyPairs.value.forEach(async kp => {
-      kp.accountId = await keyPairService.getAccountId(mirrorNodeLinksStore.mainnet, kp.publicKey);
+      kp.accountId = await keyPairService.getAccountId(
+        networkStore.mirrorNodeBaseURL,
+        kp.publicKey,
+      );
     });
   }
 

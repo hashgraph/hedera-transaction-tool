@@ -3,7 +3,6 @@ import { ref, reactive, watch } from 'vue';
 
 import {
   AccountId,
-  Client,
   KeyList,
   PublicKey,
   Hbar,
@@ -20,7 +19,7 @@ import {
 } from '../../../../services/transactionService';
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
-import useMirrorNodeLinksStore from '../../../../stores/storeMirrorNodeLinks';
+import useNetworkStore from '../../../../stores/storeNetwork';
 import useUserStateStore from '../../../../stores/storeUserState';
 
 import { MirrorNodeAllowance } from '../../../../interfaces/MirrorNodeAllowance';
@@ -31,7 +30,7 @@ import KeyStructure from '../../../../components/KeyStructure.vue';
 
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
-const mirrorLinksStore = useMirrorNodeLinksStore();
+const networkStore = useNetworkStore();
 
 /* State */
 const isKeyStructureModalShown = ref(false);
@@ -107,9 +106,8 @@ const handleGetUserSignature = async () => {
       userPassword.value,
     );
 
-    const client = Client.forTestnet();
-    const submitTx = await transaction.value?.execute(client);
-    await submitTx.getReceipt(client);
+    const submitTx = await transaction.value?.execute(networkStore.client);
+    await submitTx.getReceipt(networkStore.client);
 
     isSignModalShown.value = false;
 
@@ -139,9 +137,9 @@ const handleCreate = async () => {
       .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
       .setNodeAccountIds([new AccountId(3)])
       .approveHbarAllowance(ownerData.accountId, spenderData.accountId, new Hbar(amount.value))
-      .freezeWith(Client.forTestnet());
+      .freezeWith(networkStore.client);
 
-    const payerInfo = await getAccountInfo(payerId.value, mirrorLinksStore.mainnet);
+    const payerInfo = await getAccountInfo(payerId.value, networkStore.mirrorNodeBaseURL);
     payerKeys.value = flattenKeyList(payerInfo.key).map(pk => pk.toStringRaw());
 
     let ownerKeys = ownerData.key ? flattenKeyList(ownerData.key).map(pk => pk.toStringRaw()) : [];
@@ -200,13 +198,13 @@ watch(
     try {
       AccountId.fromString(newAccountId);
 
-      const accountInfo = await getAccountInfo(newAccountId, mirrorLinksStore.mainnet);
+      const accountInfo = await getAccountInfo(newAccountId, networkStore.mirrorNodeBaseURL);
       ownerData.accountId = accountInfo.accountId.toString();
       ownerData.balance = accountInfo.balance;
       ownerData.key = accountInfo.key;
       ownerData.valid = true;
 
-      const allowances = await getAccountAllowances(newAccountId, mirrorLinksStore.mainnet);
+      const allowances = await getAccountAllowances(newAccountId, networkStore.mirrorNodeBaseURL);
 
       ownerAllowances.value = allowances;
     } catch (e) {
@@ -222,7 +220,7 @@ watch(
     try {
       AccountId.fromString(newAccountId);
 
-      const accountInfo = await getAccountInfo(newAccountId, mirrorLinksStore.mainnet);
+      const accountInfo = await getAccountInfo(newAccountId, networkStore.mirrorNodeBaseURL);
       spenderData.accountId = accountInfo.accountId.toString();
       spenderData.balance = accountInfo.balance;
       spenderData.key = accountInfo.key;

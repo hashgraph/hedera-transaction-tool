@@ -7,13 +7,13 @@ import { MirrorNodeAccountInfo } from '../../../../interfaces/MirrorNodeAccountI
 
 import { getAccountInfo } from '../../../../services/mirrorNodeDataService';
 
-import useMirrorNodeLinksStore from '../../../../stores/storeMirrorNodeLinks';
+import useNetworkStore from '../../../../stores/storeNetwork';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
 import KeyStructure from '../../../../components/KeyStructure.vue';
 
-const mirrorLinksStore = useMirrorNodeLinksStore();
+const network = useNetworkStore();
 
 /* State */
 const isKeyStructureModalShown = ref(false);
@@ -28,7 +28,7 @@ watch(accountId, async newAccountId => {
   try {
     accountId.value = AccountId.fromString(newAccountId).toString();
 
-    accountData.value = await getAccountInfo(newAccountId, mirrorLinksStore.mainnet);
+    accountData.value = await getAccountInfo(newAccountId, network.mirrorNodeBaseURL);
   } catch (e) {
     accountData.value = null;
   }

@@ -1,16 +1,4 @@
-import { Organization, SchemaProperties } from '../../main/modules/store';
-
-/* Mirror Node Links */
-export const getInitialMirrorNodeLinks = () => ({
-  mainnetLink: '',
-  testnetLink: '',
-  previewnetLink: '',
-});
-
-export const getMirrorNodeConfig = () => window.electronAPI.config.mirrorNodeLinks.getLinks();
-
-export const setMirrorNodeLink = (key: keyof SchemaProperties['mirrorNodeLinks'], link: string) =>
-  window.electronAPI.config.mirrorNodeLinks.setLink(key, link);
+import { Organization } from '../../main/modules/store';
 
 /* Organizations*/
 

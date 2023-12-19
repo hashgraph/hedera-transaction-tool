@@ -1,14 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
 
-import {
-  AccountId,
-  Client,
-  AccountCreateTransaction,
-  KeyList,
-  PublicKey,
-  Hbar,
-} from '@hashgraph/sdk';
+import { AccountId, AccountCreateTransaction, KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
 
 import { openExternal } from '../../../../services/electronUtilsService';
 import {
@@ -20,7 +13,7 @@ import { flattenKeyList } from '../../../../services/keyPairService';
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useUserStateStore from '../../../../stores/storeUserState';
-import useMirrorNodeLinksStore from '../../../../stores/storeMirrorNodeLinks';
+import useNetworkStore from '../../../../stores/storeNetwork';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
@@ -28,7 +21,7 @@ import AppSwitch from '../../../../components/ui/AppSwitch.vue';
 
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
-const mirrorLinksStore = useMirrorNodeLinksStore();
+const networkStore = useNetworkStore();
 
 const isSignModalShown = ref(false);
 const userPassword = ref('');
@@ -95,9 +88,8 @@ const handleGetUserSignature = async () => {
       userPassword.value,
     );
 
-    const client = Client.forTestnet();
-    const submitTx = await transaction.value?.execute(client);
-    const receipt = await submitTx.getReceipt(client);
+    const submitTx = await transaction.value?.execute(networkStore.client);
+    const receipt = await submitTx.getReceipt(networkStore.client);
 
     isSignModalShown.value = false;
 
@@ -136,9 +128,9 @@ const handleCreate = async () => {
     Number(accountData.stakedNodeId) > 0 &&
       transaction.value.setStakedNodeId(accountData.stakedNodeId);
 
-    transaction.value.freezeWith(Client.forTestnet());
+    transaction.value.freezeWith(networkStore.client);
 
-    const payerInfo = await getAccountInfo(payerId.value, mirrorLinksStore.mainnet);
+    const payerInfo = await getAccountInfo(payerId.value, networkStore.mirrorNodeBaseURL);
     payerKeys.value = flattenKeyList(payerInfo.key).map(pk => pk.toStringRaw());
 
     if (keyPairsStore.keyPairs.some(kp => payerKeys.value.includes(kp.publicKey))) {

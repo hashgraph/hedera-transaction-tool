@@ -1,20 +1,9 @@
-import getStore, { Organization, SchemaProperties } from '../modules/store';
+import getStore, { Organization } from '../modules/store';
 
 const store = getStore();
 
 /* Clear Store */
 export const clearStore = () => store.clear();
-
-/* Mirror Node Links */
-export const getMirrorNodeLinks = () => store.get('mirrorNodeLinks');
-
-export const setMirrorNodeLinks = (
-  key: keyof SchemaProperties['mirrorNodeLinks'],
-  link: string,
-): string => {
-  store.set(`mirrorNodeLinks.${key}`, link);
-  return store.get(`mirrorNodeLinks.${key}`);
-};
 
 /* Organizations */
 export const getOrganizations = () => store.get('organizations');
