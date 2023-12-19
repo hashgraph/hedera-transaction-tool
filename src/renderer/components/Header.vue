@@ -6,6 +6,7 @@ import useUserStateStore from '../stores/storeUserState';
 
 import Logo from './Logo.vue';
 import LogoText from './LogoText.vue';
+import AppSwitch from './ui/AppSwitch.vue';
 
 const router = useRouter();
 const organizationsStore = useOrganizationsStore();
@@ -84,15 +85,12 @@ function handleOrganizationChange(e: Event) {
         </select>
       </div>
       <div class="form-check form-switch">
-        <input
+        <AppSwitch
+          name="theme-switch"
           @change="handleThemeChange"
-          class="form-check-input"
-          type="checkbox"
-          role="switch"
-          id="flexSwitchCheckDefault"
-          checked
+          label="Dark Mode"
+          label-class="text-primary"
         />
-        <label class="text-main text-primary" for="flexSwitchCheckDefault">Dark mode</label>
       </div>
     </div>
   </div>
