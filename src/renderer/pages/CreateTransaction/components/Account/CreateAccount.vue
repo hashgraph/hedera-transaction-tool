@@ -328,7 +328,7 @@ watch(isAccountCreateModalShown, shown => {
           color="primary"
           size="large"
           :loading="isLoading"
-          :disabled="userPassword.length === 0"
+          :disabled="userPassword.length === 0 || isLoading"
           class="mt-5 w-100 rounded-4"
           @click="handleGetUserSignature"
           >Sign</AppButton

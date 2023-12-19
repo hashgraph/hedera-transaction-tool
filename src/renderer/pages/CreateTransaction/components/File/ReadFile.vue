@@ -122,7 +122,7 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
         </div>
         <AppButton
           :loading="isLoading"
-          :disabled="userPassword.length === 0"
+          :disabled="userPassword.length === 0 || isLoading"
           color="primary"
           size="large"
           class="mt-5 w-100 rounded-4"
