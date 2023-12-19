@@ -165,6 +165,8 @@ const handleResetOwnerData = () => {
   ownerData.balance = new Hbar(0);
   ownerData.key = null;
   ownerData.valid = false;
+
+  ownerAllowances.value = [];
 };
 
 const handleResetSpenderData = () => {
