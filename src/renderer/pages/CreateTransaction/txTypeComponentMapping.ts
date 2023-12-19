@@ -1,3 +1,4 @@
+import AccountInfoVue from './components/Account/AccountInfo.vue';
 import ApproveHbarAllowanceVue from './components/Account/ApproveHbarAllowance.vue';
 import CreateAccount from './components/Account/CreateAccount.vue';
 import DeleteAccount from './components/Account/DeleteAccount.vue';
@@ -14,6 +15,7 @@ const txTypeComponentMapping = {
   createAccount: CreateAccount,
   updateAccount: UpdateAccount,
   deleteAccount: DeleteAccount,
+  accountInfo: AccountInfoVue,
   transferHbar: TransferHbar,
   approveHbarAllowance: ApproveHbarAllowanceVue,
 };
