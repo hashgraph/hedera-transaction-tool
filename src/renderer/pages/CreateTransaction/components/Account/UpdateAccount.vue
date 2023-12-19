@@ -177,7 +177,7 @@ const handleCreate = async () => {
       !accountData.stakedNodeId &&
       initialAccountData.stakedAccountId !== accountData.stakedAccountId
     ) {
-      transaction.value.setStakedAccountId(accountData.stakedAccountId);
+      transaction.value.setStakedAccountId(AccountId.fromString(accountData.stakedAccountId));
     }
 
     if (

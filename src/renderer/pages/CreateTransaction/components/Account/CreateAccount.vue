@@ -128,14 +128,15 @@ const handleCreate = async () => {
       .setDeclineStakingReward(accountData.declineStakingReward)
       .setInitialBalance(accountData.initialBalance)
       .setMaxAutomaticTokenAssociations(accountData.maxAutomaticTokenAssociations)
-      .setAccountMemo(accountData.memo)
-      .freezeWith(Client.forTestnet());
+      .setAccountMemo(accountData.memo);
 
     accountData.stakedAccountId &&
-      transaction.value.setStakedAccountId(accountData.stakedAccountId);
+      transaction.value.setStakedAccountId(AccountId.fromString(accountData.stakedAccountId));
 
     Number(accountData.stakedNodeId) > 0 &&
       transaction.value.setStakedNodeId(accountData.stakedNodeId);
+
+    transaction.value.freezeWith(Client.forTestnet());
 
     const payerInfo = await getAccountInfo(payerId.value, mirrorLinksStore.mainnet);
     payerKeys.value = flattenKeyList(payerInfo.key).map(pk => pk.toStringRaw());
