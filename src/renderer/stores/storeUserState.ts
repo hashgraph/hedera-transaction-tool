@@ -10,6 +10,7 @@ export interface UserState {
   serverUrl?: string;
   accessToken?: string;
   userData?: IUserData;
+  secretHash?: string;
 }
 
 export const localServerUrl = '';
@@ -30,6 +31,7 @@ const useUserStateStore = defineStore('userState', () => {
   const serverUrl = computed(() => userState.serverUrl);
   const accessToken = computed(() => userState.accessToken);
   const userData = computed(() => userState.userData);
+  const secretHash = computed(() => userState.secretHash);
 
   /* Actions */
   function setUserRole(role: 'personal' | 'organization') {
@@ -46,6 +48,10 @@ const useUserStateStore = defineStore('userState', () => {
     } else {
       userState.serverUrl = url;
     }
+  }
+
+  function setSecretHash(hash?: string) {
+    userState.secretHash = hash;
   }
 
   function logUser(accessToken: string, userData: IUserData) {
@@ -68,7 +74,9 @@ const useUserStateStore = defineStore('userState', () => {
     role,
     accessToken,
     userData,
+    secretHash,
     setUserRole,
+    setSecretHash,
     setServerUrl,
     logUser,
     logoutUser,
