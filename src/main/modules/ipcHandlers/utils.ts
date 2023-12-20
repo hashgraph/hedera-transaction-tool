@@ -2,6 +2,7 @@ import { ipcMain, shell } from 'electron';
 
 import { Key, KeyList } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
+import { hash } from '../../utils/crypto';
 
 const createChannelName = (...props) => ['utils', ...props].join(':');
 
@@ -17,4 +18,13 @@ export default () => {
       return key;
     },
   );
+
+  ipcMain.handle(createChannelName('hash'), (e, data: any): string => {
+    const hashBuffer = hash(Buffer.from(data));
+
+    const str = hashBuffer.toString('hex');
+    console.log(str);
+
+    return str;
+  });
 };

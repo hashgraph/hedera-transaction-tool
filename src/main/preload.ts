@@ -29,10 +29,18 @@ export const electronAPI = {
     },
   },
   keyPairs: {
-    getStored: (userId: string): Promise<IKeyPair[]> =>
-      ipcRenderer.invoke('keyPairs:getStored', userId),
-    store: (userId: string, password: string, keyPair: IKeyPair): Promise<void> =>
-      ipcRenderer.invoke('keyPairs:store', userId, password, keyPair),
+    getStored: (
+      userId: string,
+      secretHash?: string,
+      secretHashName?: string,
+    ): Promise<IKeyPair[]> =>
+      ipcRenderer.invoke('keyPairs:getStored', userId, secretHash, secretHashName),
+    store: (
+      userId: string,
+      password: string,
+      secretHash: string,
+      keyPair: IKeyPair,
+    ): Promise<void> => ipcRenderer.invoke('keyPairs:store', userId, password, secretHash, keyPair),
     changeDecryptionPassword: (
       userId: string,
       oldPassword: string,
@@ -47,6 +55,7 @@ export const electronAPI = {
     openExternal: (url: string) => ipcRenderer.send('utils:openExternal', url),
     decodeProtobuffKey: (protobuffEncodedKey: string): Promise<proto.Key> =>
       ipcRenderer.invoke('utils:decodeProtobuffKey', protobuffEncodedKey),
+    hash: (data: any): Promise<string> => ipcRenderer.invoke('utils:hash', data),
   },
 };
 typeof electronAPI;
