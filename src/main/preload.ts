@@ -28,11 +28,6 @@ export const electronAPI = {
       },
     },
   },
-  recoveryPhrase: {
-    downloadFileUnencrypted: (words: string[]): void => {
-      ipcRenderer.invoke('recoveryPhrase:downloadFileUnencrypted', words);
-    },
-  },
   keyPairs: {
     getStored: (userId: string): Promise<IKeyPair[]> =>
       ipcRenderer.invoke('keyPairs:getStored', userId),

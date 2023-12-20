@@ -66,7 +66,7 @@ const handleRestoreKey = async () => {
   }
   inputIndexInvalid.value = false;
 
-  keyPairsStore.recoveryPhraseWords = [];
+  keyPairsStore.clearRecoveryPhrase();
 
   restoredKey.value = {
     privateKey: privateKey.toStringRaw(),
