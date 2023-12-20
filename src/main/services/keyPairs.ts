@@ -72,7 +72,13 @@ export const storeKeyPair = async (
   const storedSecretHash = storedSecretHashes.find(sh => sh.secretHash === secretHash);
 
   if (storedSecretHash) {
-    storedSecretHash.keyPairs.push(keyPair);
+    const s_keyPair = storedSecretHash.keyPairs.find(kp => kp.publicKey === keyPair.publicKey);
+
+    if (s_keyPair) {
+      s_keyPair.privateKey = keyPair.privateKey;
+    } else {
+      storedSecretHash.keyPairs.push(keyPair);
+    }
   } else {
     storedSecretHashes.push({ secretHash, keyPairs: [keyPair] });
   }
