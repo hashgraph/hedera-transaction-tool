@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, onUpdated, ref } from 'vue';
+
+import Tooltip from 'bootstrap/js/dist/tooltip';
 
 import { IKeyPair } from '../../../../main/shared/interfaces/IKeyPair';
 
@@ -30,6 +32,7 @@ const publicKey = ref('');
 const keyExists = ref(false);
 const isSuccessModalShown = ref(false);
 
+/* Handlers */
 const handleRestoreKey = async () => {
   const restoredPrivateKey = await restorePrivateKey(
     keyPairsStore.recoveryPhraseWords,
@@ -67,6 +70,16 @@ const handleSaveKey = async () => {
     isSuccessModalShown.value = true;
   }
 };
+
+/* Hooks */
+onMounted(() => {
+  handleRestoreKey();
+});
+
+onUpdated(() => {
+  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+  Array.from(tooltipTriggerList).map(tooltipTriggerEl => new Tooltip(tooltipTriggerEl));
+});
 </script>
 <template>
   <div class="mt-8 d-flex flex-column justify-content-center align-items-center gap-4">
@@ -84,54 +97,53 @@ const handleSaveKey = async () => {
         label="Advanced Option to Restore Key "
         class="mt-5"
       />
-      <div v-if="advancedMode" class="d-flex row">
-        <div class="col-2">
-          <select
-            v-model="index"
-            class="form-control form-select rounded-4 py-3 h-100"
-            placeholder="Select key index"
-          >
-            <option v-for="index in [...Array(11).keys()]" :key="index" :value="index">
-              {{ index }}
-            </option>
-          </select>
+      <div v-if="advancedMode" class="mt-5">
+        <div class="d-flex row">
+          <div class="col-3 col-lg-2">
+            <select
+              v-model="index"
+              class="form-control form-select rounded-4 py-3 h-100"
+              placeholder="Select key index"
+            >
+              <option v-for="index in [...Array(11).keys()]" :key="index" :value="index">
+                {{ index }}
+              </option>
+            </select>
+          </div>
+          <div class="col-9 col-lg-6 position-relative d-flex align-items-center">
+            <input
+              v-model="passPhrase"
+              type="passPhrase"
+              class="form-control rounded-4"
+              placeholder="Enter Pass Phrase (optional)"
+            />
+            <i
+              class="bi bi-info-circle position-absolute"
+              style="right: 30px"
+              data-bs-toggle="tooltip"
+              data-bs-title="This is the passphrase for the key itself."
+              data-bs-placement="right"
+              data-bs-container="body"
+            ></i>
+          </div>
         </div>
-        <div class="col-10">
-          <input
-            v-model="passPhrase"
-            type="passPhrase"
-            class="form-control rounded-4"
-            placeholder="Enter Pass Phrase (optional)"
-          />
+        <div class="mt-5 d-flex row justify-content-center">
+          <AppButton color="primary" class="rounded-4 col-12 col-lg-6" @click="handleRestoreKey"
+            >Restore Key
+          </AppButton>
         </div>
       </div>
+
       <div class="form-group mt-5">
         <label class="form-label">ED25519 Private Key</label>
-        <textarea
-          :value="privateKey"
-          rows="2"
-          type="text"
-          class="form-control"
-          readonly
-          placeholder="Private Key"
-        ></textarea>
+        <p>{{ privateKey }}</p>
       </div>
       <div class="form-group mt-4">
         <label class="form-label">ED25519 Public Key</label>
-        <textarea
-          :value="publicKey"
-          rows="2"
-          type="text"
-          class="form-control"
-          readonly
-          placeholder="Public Key"
-        ></textarea>
+        <p>{{ publicKey }}</p>
       </div>
       <p v-if="keyExists" class="mt-3 text-danger">This key is already restored.</p>
       <div class="w-100 d-flex justify-content-center gap-4 mt-7">
-        <AppButton color="primary" class="rounded-4 min-w-50" @click="handleRestoreKey"
-          >Restore Key
-        </AppButton>
         <AppButton
           :disabled="!privateKey || keyExists"
           color="secondary"
