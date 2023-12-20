@@ -60,7 +60,11 @@ const handleRestoreKey = async () => {
     'ED25519',
   );
 
-  if (keyPairsStore.keyPairs.some(kp => kp.publicKey === privateKey.publicKey.toStringRaw())) {
+  if (
+    keyPairsStore.keyPairs.some(
+      kp => kp.publicKey === privateKey.publicKey.toStringRaw() && kp.privateKey !== '',
+    )
+  ) {
     inputIndexInvalid.value = true;
     return;
   }

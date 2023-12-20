@@ -5,9 +5,14 @@ import Tooltip from 'bootstrap/js/dist/tooltip';
 
 import { IKeyPair } from '../../../../main/shared/interfaces/IKeyPair';
 
-import { restorePrivateKey, hashRecoveryPhrase } from '../../../services/keyPairService';
+import {
+  restorePrivateKey,
+  hashRecoveryPhrase,
+  getStoredKeyPairs,
+} from '../../../services/keyPairService';
 
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
+import useUserStateStore from '../../../stores/storeUserState';
 
 import AppButton from '../../../components/ui/AppButton.vue';
 import AppModal from '../../../components/ui/AppModal.vue';
@@ -19,6 +24,7 @@ const props = defineProps<{
 }>();
 
 const keyPairsStore = useKeyPairsStore();
+const useStateStore = useUserStateStore();
 
 const nickname = ref('');
 
@@ -42,7 +48,9 @@ const handleRestoreKey = async () => {
   );
 
   if (
-    keyPairsStore.keyPairs.some(kp => kp.publicKey === restoredPrivateKey.publicKey.toStringRaw())
+    keyPairsStore.keyPairs.some(
+      kp => kp.publicKey === restoredPrivateKey.publicKey.toStringRaw() && kp.privateKey !== '',
+    )
   ) {
     keyExists.value = true;
   } else {
@@ -72,6 +80,35 @@ const handleSaveKey = async () => {
   }
 };
 
+const handleRestoreExisting = async () => {
+  if (!useStateStore.userData) {
+    throw Error('User not logged in!');
+  }
+
+  const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
+  const keyPairsToRestore = (
+    await getStoredKeyPairs(useStateStore.userData?.userId, secretHash)
+  ).filter(kp => kp.privateKey === '');
+
+  await Promise.all(
+    keyPairsToRestore.map(async kp => {
+      const restoredPrivateKey = await restorePrivateKey(
+        keyPairsStore.recoveryPhraseWords,
+        '',
+        kp.index,
+        'ED25519',
+      );
+
+      if (kp.publicKey === restoredPrivateKey.publicKey.toStringRaw()) {
+        kp.privateKey = restoredPrivateKey.toStringRaw();
+        await keyPairsStore.storeKeyPair(props.encryptPassword, secretHash, kp);
+      }
+    }),
+  );
+
+  //Notification: Successfully recovered key pairs with empty passphrase
+};
+
 /* Hooks */
 onMounted(() => {
   handleRestoreKey();
@@ -92,6 +129,21 @@ watch(isSuccessModalShown, shown => {
 <template>
   <div class="mt-8 d-flex flex-column justify-content-center align-items-center gap-4">
     <div class="col-12 col-md-10 col-xxl-8">
+      <div
+        class="mb-5 position-relative"
+        v-if="keyPairsStore.keyPairs.some(kp => kp.privateKey === '')"
+      >
+        <AppButton color="primary" size="small" @click="handleRestoreExisting"
+          >Restore existing key pairs</AppButton
+        >
+        <i
+          class="bi bi-info-circle ms-3"
+          data-bs-toggle="tooltip"
+          data-bs-title="Restore previously saved key pairs with empty passphrase"
+          data-bs-placement="right"
+          data-bs-container="body"
+        ></i>
+      </div>
       <input
         v-model="nickname"
         type="text"
