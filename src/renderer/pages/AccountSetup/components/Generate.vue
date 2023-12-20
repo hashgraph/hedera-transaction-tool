@@ -3,8 +3,6 @@ import { ref } from 'vue';
 
 import { Mnemonic } from '@hashgraph/sdk';
 
-import { downloadFileUnencrypted } from '../../../services/recoveryPhraseService';
-
 import AppRecoveryPhraseWord from '../../../components/ui/AppRecoveryPhraseWord.vue';
 import AppCheckBox from '../../../components/ui/AppCheckBox.vue';
 import AppButton from '../../../components/ui/AppButton.vue';
@@ -33,10 +31,6 @@ const handleGeneratePhrase = async () => {
   words.value = mnemonic._mnemonic.words;
 };
 
-const handleCopyWords = () => {
-  navigator.clipboard.writeText(words.value.toString());
-};
-
 const handleProceedToVerification = () => {
   toVerify.value = true;
 
@@ -59,10 +53,6 @@ const handleVerify = () => {
   if (words.value.toString() === correctWords.value.toString()) {
     isSuccessModalShown.value = true;
   }
-};
-
-const handleDownloadRecoveryPhrase = () => {
-  downloadFileUnencrypted(correctWords.value);
 };
 </script>
 <template>
@@ -89,11 +79,6 @@ const handleDownloadRecoveryPhrase = () => {
           />
         </template>
       </div>
-      <div v-if="words.filter(w => w).length > 0 && !toVerify" class="mt-5 text-center">
-        <AppButton color="secondary" @click="handleCopyWords"
-          ><i class="bi bi-copy me-2"></i> Copy</AppButton
-        >
-      </div>
       <div v-if="!toVerify" class="mt-5">
         <AppCheckBox
           v-model:checked="checkboxChecked"
@@ -107,7 +92,7 @@ const handleDownloadRecoveryPhrase = () => {
       </div>
     </div>
   </div>
-  <div class="w-100 d-flex justify-content-center gap-4 mt-8">
+  <div class="d-flex flex-column justify-content-center align-items-center gap-4 mt-8">
     <AppButton
       v-if="!wordsConfirmed && !toVerify"
       :disabled="!checkboxChecked && words.filter(w => w).length === 0"
@@ -151,13 +136,6 @@ const handleDownloadRecoveryPhrase = () => {
         class="mt-5 w-100 rounded-4"
         @click="handleContinue(correctWords)"
         >Continue</AppButton
-      >
-      <AppButton
-        color="secondary"
-        size="large"
-        class="mt-4 w-100 rounded-4"
-        @click="handleDownloadRecoveryPhrase"
-        >Download File</AppButton
       >
     </div>
   </AppModal>
