@@ -29,6 +29,7 @@ const restoredKey = ref<{ privateKey: string; publicKey: string } | null>(null);
 
 const ableToContinue = ref(false);
 const isSuccessModalShown = ref(false);
+console.log(userStateStore.secretHashes);
 
 watch(recoveryPhrase, async newRecoveryPhrase => {
   if (!newRecoveryPhrase) {
@@ -66,8 +67,6 @@ const handleRestoreKey = async () => {
   }
   inputIndexInvalid.value = false;
 
-  keyPairsStore.clearRecoveryPhrase();
-
   restoredKey.value = {
     privateKey: privateKey.toStringRaw(),
     publicKey: privateKey.publicKey.toStringRaw(),
@@ -88,7 +87,11 @@ const handleSaveKey = async () => {
       keyPair.nickname = nickname.value;
     }
 
-    await keyPairsStore.storeKeyPair(password.value, keyPair);
+    const secretHash = await keyPairService.hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
+    await keyPairsStore.storeKeyPair(password.value, secretHash, keyPair);
+
+    keyPairsStore.clearRecoveryPhrase();
+
     isSuccessModalShown.value = true;
   }
 };
@@ -149,7 +152,7 @@ onUnmounted(() => {
       <div v-else-if="step === 2">
         <h1 class="text-center">Enter your recovery phrase</h1>
         <div class="mt-8">
-          <Import :handle-continue="handleFinish" :secret-hash="userStateStore.secretHash" />
+          <Import :handle-continue="handleFinish" :secret-hashes="userStateStore.secretHashes" />
         </div>
       </div>
 

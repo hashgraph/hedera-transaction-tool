@@ -9,6 +9,7 @@ import { IUserData } from '../../../../main/shared/interfaces/IUserData';
 import useUserStateStore from '../../../stores/storeUserState';
 
 import AppButton from '../../../components/ui/AppButton.vue';
+import { getStoredKeysSecretHashes } from '../../../services/keyPairService';
 
 const router = useRouter();
 const userStateStore = useUserStateStore();
@@ -21,7 +22,7 @@ const inputPasswordInvalid = ref(false);
 
 const handleRegister = () => {};
 
-const handleOnFormSubmit = (event: Event) => {
+const handleOnFormSubmit = async (event: Event) => {
   event.preventDefault();
 
   const emailValid = inputEmail.value.trim() === '';
@@ -43,7 +44,12 @@ const handleOnFormSubmit = (event: Event) => {
     try {
       const decodedUserData: IUserData = jwtDecode(loginRes.accessToken);
       userStateStore.logUser(loginRes.accessToken, decodedUserData);
-      userStateStore.setSecretHash(loginRes.secretHash);
+
+      // Compare with saved keys' secret hash
+      // userStateStore.setSecretHashes([loginRes.secretHash]);
+      const secretHashes = await getStoredKeysSecretHashes(decodedUserData.userId);
+
+      secretHashes.length > 0 && userStateStore.setSecretHashes(secretHashes);
     } catch (error) {
       console.log(error);
     }

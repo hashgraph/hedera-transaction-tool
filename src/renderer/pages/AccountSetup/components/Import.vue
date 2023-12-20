@@ -9,22 +9,22 @@ import AppModal from '../../../components/ui/AppModal.vue';
 
 const props = defineProps<{
   handleContinue: (words: string[]) => void;
-  secretHash?: string;
+  secretHashes?: string[];
 }>();
 
 const words = ref(Array(24).fill(''));
 
 const isMnenmonicValid = ref(false);
-const isSecretHashSame = ref(true);
+const isSecretHashValid = ref(true);
 const isSuccessModalShown = ref(false);
 
 const validateMatchingSecretHash = async () => {
   const secretHash = await hashRecoveryPhrase(words.value);
-  if (props.secretHash && secretHash != props.secretHash) {
-    return (isSecretHashSame.value = false);
+  if (props.secretHashes && !props.secretHashes.includes(secretHash)) {
+    return (isSecretHashValid.value = false);
   }
 
-  isSecretHashSame.value = true;
+  isSecretHashValid.value = true;
 };
 
 const handlePaste = async (e: Event, index: number) => {
@@ -88,13 +88,13 @@ watch(isSuccessModalShown, shown => {
           />
         </template>
       </div>
-      <p v-if="!isSecretHashSame" class="mt-3 text-danger">Recovery phrase not match yours</p>
+      <p v-if="!isSecretHashValid" class="mt-3 text-danger">Recovery phrase not match yours</p>
     </div>
   </div>
 
   <div class="w-100 d-flex justify-content-center gap-4 mt-8">
     <AppButton
-      :disabled="!isMnenmonicValid || !isSecretHashSame"
+      :disabled="!isMnenmonicValid || !isSecretHashValid"
       size="large"
       color="secondary"
       class="rounded-4 min-w-50"

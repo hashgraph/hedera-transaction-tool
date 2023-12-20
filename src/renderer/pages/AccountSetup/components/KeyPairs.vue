@@ -5,7 +5,7 @@ import Tooltip from 'bootstrap/js/dist/tooltip';
 
 import { IKeyPair } from '../../../../main/shared/interfaces/IKeyPair';
 
-import { restorePrivateKey } from '../../../services/keyPairService';
+import { restorePrivateKey, hashRecoveryPhrase } from '../../../services/keyPairService';
 
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
 
@@ -65,7 +65,8 @@ const handleSaveKey = async () => {
       keyPair.nickname = nickname.value;
     }
 
-    await keyPairsStore.storeKeyPair(props.encryptPassword, keyPair);
+    const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
+    await keyPairsStore.storeKeyPair(props.encryptPassword, secretHash, keyPair);
 
     isSuccessModalShown.value = true;
   }

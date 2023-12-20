@@ -8,6 +8,9 @@ import { IKeyPair } from '../../main/shared/interfaces/IKeyPair';
 export const getStoredKeyPairs = (userId: string, secretHash?: string, secretHashName?: string) =>
   window.electronAPI.keyPairs.getStored(userId, secretHash, secretHashName);
 
+export const getStoredKeysSecretHashes = (userId: string) =>
+  window.electronAPI.keyPairs.getStoredKeysSecretHashes(userId);
+
 export const restorePrivateKey = async (
   words: string[],
   passphrase: string,

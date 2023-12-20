@@ -30,7 +30,10 @@ const handleSaveWords = async (words: string[]) => {
     console.log('Invalid Recovery Phrase!');
   } else {
     keyPairsStore.setRecoveryPhrase(words);
-    userStateStore.setSecretHash(await hashRecoveryPhrase(words));
+    userStateStore.setSecretHashes([
+      ...(userStateStore.secretHashes || []),
+      await hashRecoveryPhrase(words),
+    ]);
     // SEND SECRET HASH TO BACKED?
 
     props.handleContinue();
@@ -38,7 +41,7 @@ const handleSaveWords = async (words: string[]) => {
 };
 
 onBeforeMount(() => {
-  userStateStore.secretHash && tabItems.value.shift();
+  userStateStore.secretHashes && tabItems.value.shift();
 });
 </script>
 <template>
@@ -55,7 +58,7 @@ onBeforeMount(() => {
         <Generate :handle-continue="handleSaveWords" />
       </template>
       <template v-else-if="activeTabTitle === 'Import Existing'">
-        <Import :handle-continue="handleSaveWords" :secret-hash="userStateStore.secretHash"
+        <Import :handle-continue="handleSaveWords" :secret-hashes="userStateStore.secretHashes"
       /></template>
     </div>
   </div>
