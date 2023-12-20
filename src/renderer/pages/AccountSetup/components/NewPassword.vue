@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
-import { deleteEncryptedPrivateKeys } from '../../../services/keyPairService';
 import useUserStateStore from '../../../stores/storeUserState';
+import useKeyPairsStore from '../../../stores/storeKeyPairs';
+
+import { deleteEncryptedPrivateKeys } from '../../../services/keyPairService';
 
 import AppButton from '../../../components/ui/AppButton.vue';
 
@@ -11,6 +13,7 @@ const props = defineProps<{
 }>();
 
 const userStateStore = useUserStateStore();
+const keyPairsStore = useKeyPairsStore();
 
 const inputNewPassword = ref('');
 const inputConfrimPassword = ref('');
@@ -47,9 +50,11 @@ const handleFormSubmit = async (event: Event) => {
         // OPEN MODAL
         userStateStore.userData &&
           (await deleteEncryptedPrivateKeys(userStateStore.userData?.userId));
+        await keyPairsStore.refetch();
+
         props.handleContinue(inputNewPassword.value);
       } else {
-        //NOTIFY USER
+        //NOTIFICATION: Password not changed
       }
     }
   } catch (error) {

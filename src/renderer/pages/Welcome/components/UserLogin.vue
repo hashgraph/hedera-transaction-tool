@@ -48,7 +48,6 @@ const handleOnFormSubmit = async (event: Event) => {
       // Compare with saved keys' secret hash
       // userStateStore.setSecretHashes([loginRes.secretHash]);
       const secretHashes = await getStoredKeysSecretHashes(decodedUserData.userId);
-
       secretHashes.length > 0 && userStateStore.setSecretHashes(secretHashes);
     } catch (error) {
       console.log(error);

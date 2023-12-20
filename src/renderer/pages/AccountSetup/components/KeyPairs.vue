@@ -38,6 +38,14 @@ const publicKey = ref('');
 const keyExists = ref(false);
 const isSuccessModalShown = ref(false);
 
+const validateExistingKey = () => {
+  if (keyPairsStore.keyPairs.some(kp => kp.publicKey === publicKey.value && kp.privateKey !== '')) {
+    keyExists.value = true;
+  } else {
+    keyExists.value = false;
+  }
+};
+
 /* Handlers */
 const handleRestoreKey = async () => {
   const restoredPrivateKey = await restorePrivateKey(
@@ -47,18 +55,10 @@ const handleRestoreKey = async () => {
     'ED25519',
   );
 
-  if (
-    keyPairsStore.keyPairs.some(
-      kp => kp.publicKey === restoredPrivateKey.publicKey.toStringRaw() && kp.privateKey !== '',
-    )
-  ) {
-    keyExists.value = true;
-  } else {
-    keyExists.value = false;
-  }
-
   privateKey.value = restoredPrivateKey.toStringRaw();
   publicKey.value = restoredPrivateKey.publicKey.toStringRaw();
+
+  validateExistingKey();
 };
 
 const handleSaveKey = async () => {
@@ -107,6 +107,7 @@ const handleRestoreExisting = async () => {
   );
 
   //Notification: Successfully recovered key pairs with empty passphrase
+  validateExistingKey();
 };
 
 /* Hooks */
@@ -122,7 +123,7 @@ onUpdated(() => {
 /* Watchers */
 watch(isSuccessModalShown, shown => {
   if (!shown) {
-    keyExists.value = true;
+    validateExistingKey();
   }
 });
 </script>
@@ -139,7 +140,7 @@ watch(isSuccessModalShown, shown => {
         <i
           class="bi bi-info-circle ms-3"
           data-bs-toggle="tooltip"
-          data-bs-title="Restore previously saved key pairs with empty passphrase"
+          data-bs-title="Restore previously saved key pairs with empty passphrase (If you see it after click, you have keys with a passphrase)"
           data-bs-placement="right"
           data-bs-container="body"
         ></i>
@@ -196,21 +197,29 @@ watch(isSuccessModalShown, shown => {
 
       <div class="form-group mt-5">
         <label class="form-label">ED25519 Private Key</label>
-        <p>{{ privateKey }}</p>
+        <p class="text-break">{{ privateKey }}</p>
       </div>
       <div class="form-group mt-4">
         <label class="form-label">ED25519 Public Key</label>
-        <p>{{ publicKey }}</p>
+        <p class="text-break">{{ publicKey }}</p>
       </div>
       <p v-if="keyExists" class="mt-3 text-danger">This key is already restored.</p>
-      <div class="w-100 d-flex justify-content-center gap-4 mt-7">
+      <div class="d-flex flex-column align-items-center gap-4 mt-8">
         <AppButton
           :disabled="!privateKey || keyExists"
           color="secondary"
           size="large"
-          class="rounded-4 min-w-50"
+          class="rounded-4 col-12 col-lg-6"
           @click="handleSaveKey"
           >Save Key</AppButton
+        >
+        <AppButton
+          :disabled="keyPairsStore.keyPairs.filter(kp => kp.privateKey.length !== 0).length === 0"
+          color="secondary"
+          size="large"
+          class="rounded-4 col-12 col-lg-6"
+          @click="handleContinue()"
+          >Continue</AppButton
         >
       </div>
     </div>
