@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import BeforeSetup from './components/BeforeSetup.vue';
-
 import AppButton from '../../components/ui/AppButton.vue';
 import AppStepper from '../../components/ui/AppStepper.vue';
 
@@ -11,7 +9,7 @@ import GenerateOrImport from './components/GenerateOrImport.vue';
 import KeyPairs from './components/KeyPairs.vue';
 import FinishSetup from './components/FinishSetup.vue';
 
-const step = ref(-1);
+const step = ref(0);
 const password = ref('');
 
 const stepperItems = [
@@ -37,7 +35,8 @@ const stepperItems = [
         <div class="col-12 col-md-10 col-xxl-8">
           <h1 class="mt-3 text-huge text-bold text-center">Account Setup</h1>
           <p class="mt-5 text-center">
-            Durring this two steps you are going to set up your recovery phrase and key pairs
+            During this setup you are going to set up your recovery phrase and key pairs.
+            <span class="link link-primary text-decoration-underline">See more</span>
           </p>
           <div class="mt-8">
             <AppStepper :items="stepperItems" :active-index="step"> </AppStepper>
@@ -47,13 +46,8 @@ const stepperItems = [
     </template>
 
     <Transition name="fade" mode="out-in">
-      <!-- Step 0 -->
-      <template v-if="step === -1">
-        <BeforeSetup v-model:step="step" />
-      </template>
-
       <!-- Step 1 -->
-      <template v-else-if="step === 0">
+      <template v-if="step === 0">
         <NewPassword
           :handle-continue="
             newPassword => {
