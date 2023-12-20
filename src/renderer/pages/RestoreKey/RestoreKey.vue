@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { onUnmounted, ref, watch } from 'vue';
 
 import { Mnemonic } from '@hashgraph/sdk';
 
 import useKeyPairsStore from '../../stores/storeKeyPairs';
+import useUserStateStore from '../../stores/storeUserState';
 
 import * as keyPairService from '../../services/keyPairService';
 
@@ -13,8 +13,8 @@ import AppModal from '../../components/ui/AppModal.vue';
 import Import from '../AccountSetup/components/Import.vue';
 import { IKeyPair } from '../../../main/shared/interfaces/IKeyPair';
 
-const router = useRouter();
 const keyPairsStore = useKeyPairsStore();
+const userStateStore = useUserStateStore();
 
 const step = ref(0);
 
@@ -92,6 +92,10 @@ const handleSaveKey = async () => {
     isSuccessModalShown.value = true;
   }
 };
+
+onUnmounted(() => {
+  keyPairsStore.clearRecoveryPhrase();
+});
 </script>
 <template>
   <div class="p-10 d-flex flex-column justify-content-center align-items-center">
@@ -108,7 +112,7 @@ const handleSaveKey = async () => {
               size="large"
               color="secondary"
               class="mt-4 d-block w-100 rounded-4"
-              @click="router.back()"
+              @click="$router.back()"
               >Cancel</AppButton
             >
           </div>
@@ -145,7 +149,7 @@ const handleSaveKey = async () => {
       <div v-else-if="step === 2">
         <h1 class="text-center">Enter your recovery phrase</h1>
         <div class="mt-8">
-          <Import :handle-continue="handleFinish" />
+          <Import :handle-continue="handleFinish" :secret-hash="userStateStore.secretHash" />
         </div>
       </div>
 
@@ -223,7 +227,7 @@ const handleSaveKey = async () => {
           color="primary"
           size="large"
           class="mt-4 w-100 rounded-4"
-          @click="router.push({ name: 'settingsKeys' })"
+          @click="$router.push({ name: 'settingsKeys' })"
           >Close</AppButton
         >
       </div>

@@ -37,11 +37,13 @@ const handleOnFormSubmit = (event: Event) => {
       accessToken:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InBpcEBnbWFpbC5jb20iLCJ1c2VybmFtZSI6IkhlZGVyYVVzZXIiLCJ1c2VySWQiOiIxMjM0NTY3ODkifQ.iPZBw37mI7iBgOOPzDQYilx_y4h-DLE2h8EqEg6ZgbU',
       isInitial: true,
+      secretHash: 'hash',
     };
 
     try {
       const decodedUserData: IUserData = jwtDecode(loginRes.accessToken);
       userStateStore.logUser(loginRes.accessToken, decodedUserData);
+      userStateStore.setSecretHash(loginRes.secretHash);
     } catch (error) {
       console.log(error);
     }

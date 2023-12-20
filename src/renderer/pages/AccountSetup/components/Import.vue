@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
-import { validateMnemonic } from '../../../services/keyPairService';
+import { hashRecoveryPhrase, validateMnemonic } from '../../../services/keyPairService';
 
 import AppRecoveryPhraseWord from '../../../components/ui/AppRecoveryPhraseWord.vue';
 import AppButton from '../../../components/ui/AppButton.vue';
@@ -9,12 +9,23 @@ import AppModal from '../../../components/ui/AppModal.vue';
 
 const props = defineProps<{
   handleContinue: (words: string[]) => void;
+  secretHash?: string;
 }>();
 
 const words = ref(Array(24).fill(''));
 
 const isMnenmonicValid = ref(false);
+const isSecretHashSame = ref(true);
 const isSuccessModalShown = ref(false);
+
+const validateMatchingSecretHash = async () => {
+  const secretHash = await hashRecoveryPhrase(words.value);
+  if (props.secretHash && secretHash != props.secretHash) {
+    return (isSecretHashSame.value = false);
+  }
+
+  isSecretHashSame.value = true;
+};
 
 const handlePaste = async (e: Event, index: number) => {
   e.preventDefault();
@@ -30,6 +41,8 @@ const handlePaste = async (e: Event, index: number) => {
 
   if (isValid && Array.isArray(mnenmonic)) {
     words.value = mnenmonic;
+
+    await validateMatchingSecretHash();
   } else if (mnenmonic.length === 1) {
     words.value[index] = mnenmonic[0];
   }
@@ -37,6 +50,8 @@ const handlePaste = async (e: Event, index: number) => {
 
 const handleFinishImport = async () => {
   const isValid = await validateMnemonic(words.value);
+
+  await validateMatchingSecretHash();
 
   if (isValid) {
     isSuccessModalShown.value = true;
@@ -73,11 +88,13 @@ watch(isSuccessModalShown, shown => {
           />
         </template>
       </div>
+      <p v-if="!isSecretHashSame" class="mt-3 text-danger">Recovery phrase not match yours</p>
     </div>
   </div>
+
   <div class="w-100 d-flex justify-content-center gap-4 mt-8">
     <AppButton
-      :disabled="!isMnenmonicValid"
+      :disabled="!isMnenmonicValid || !isSecretHashSame"
       size="large"
       color="secondary"
       class="rounded-4 min-w-50"

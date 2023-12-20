@@ -31,13 +31,13 @@ const handleSaveWords = async (words: string[]) => {
   } else {
     keyPairsStore.setRecoveryPhrase(words);
     userStateStore.setSecretHash(await hashRecoveryPhrase(words));
+    // SEND SECRET HASH TO BACKED?
 
     props.handleContinue();
   }
 };
 
 onBeforeMount(() => {
-  userStateStore.setSecretHash('hash'); // REMOVE THIS
   userStateStore.secretHash && tabItems.value.shift();
 });
 </script>
@@ -55,7 +55,7 @@ onBeforeMount(() => {
         <Generate :handle-continue="handleSaveWords" />
       </template>
       <template v-else-if="activeTabTitle === 'Import Existing'">
-        <Import :handle-continue="handleSaveWords"
+        <Import :handle-continue="handleSaveWords" :secret-hash="userStateStore.secretHash"
       /></template>
     </div>
   </div>
