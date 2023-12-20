@@ -43,7 +43,7 @@ const handleOnFormSubmit = async (event: Event) => {
 
     try {
       const decodedUserData: IUserData = jwtDecode(loginRes.accessToken);
-      userStateStore.logUser(loginRes.accessToken, decodedUserData);
+      userStateStore.logUser(loginRes.accessToken, decodedUserData, loginRes.isInitial);
 
       // Compare with saved keys' secret hash
       // userStateStore.setSecretHashes([loginRes.secretHash]);
