@@ -41,7 +41,7 @@ export default (app: Electron.App) => {
       getStoredKeyPairs(getKeyPairsFilePath(app, userId), secretHash, secretHashName),
   );
 
-  // Decrypt stored key pairs
+  // Clear keys file
   ipcMain.handle(createChannelName('clear'), async (e, userId: string) => {
     try {
       await clearKeys(getKeyPairsFilePath(app, userId));
