@@ -44,6 +44,27 @@ export const getStoredKeyPairs = async (
   return storedSecretHashes.map(sh => sh.keyPairs).flat();
 };
 
+// Get secret hashes of currently saved keys
+export const getStoredKeysSecretHashes = async (filePath: string): Promise<string[]> => {
+  let storedSecretHashes: IStoredSecretHash[] = [];
+
+  if (fs.existsSync(filePath)) {
+    const data = fs.readFileSync(filePath, 'utf8');
+    storedSecretHashes = JSON.parse(data);
+  }
+
+  if (
+    storedSecretHashes.length > 0 &&
+    !Object.prototype.hasOwnProperty.call(storedSecretHashes[0], 'secretHash') &&
+    !Object.prototype.hasOwnProperty.call(storedSecretHashes[0], 'keyPairs')
+  ) {
+    await clearKeys(filePath);
+    storedSecretHashes = [];
+  }
+
+  return storedSecretHashes.map(sh => sh.secretHash);
+};
+
 // Store key pair
 export const storeKeyPair = async (
   filePath: string,

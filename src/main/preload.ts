@@ -35,6 +35,8 @@ export const electronAPI = {
       secretHashName?: string,
     ): Promise<IKeyPair[]> =>
       ipcRenderer.invoke('keyPairs:getStored', userId, secretHash, secretHashName),
+    getStoredKeysSecretHashes: (userId: string): Promise<string[]> =>
+      ipcRenderer.invoke('keyPairs:getStoredKeysSecretHashes', userId),
     store: (
       userId: string,
       password: string,
