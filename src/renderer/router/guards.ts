@@ -12,9 +12,9 @@ export function addGuards(router: Router) {
     }
 
     if (!to.meta.withoutAuth && !userStateStore.isLoggedIn) {
-      return {
-        name: 'welcome',
-      };
+      // @ts-ignore
+      router.previousPath = to.path;
+      router.push({ name: 'welcome' });
     }
   });
 }

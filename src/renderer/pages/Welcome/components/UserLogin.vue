@@ -37,7 +37,7 @@ const handleOnFormSubmit = async (event: Event) => {
       successful: true,
       accessToken:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InBpcEBnbWFpbC5jb20iLCJ1c2VybmFtZSI6IkhlZGVyYVVzZXIiLCJ1c2VySWQiOiIxMjM0NTY3ODkifQ.iPZBw37mI7iBgOOPzDQYilx_y4h-DLE2h8EqEg6ZgbU',
-      isInitial: true,
+      isInitial: false,
       secretHash: 'hash',
     };
 
@@ -56,8 +56,8 @@ const handleOnFormSubmit = async (event: Event) => {
     if (loginRes.isInitial) {
       router.push({ name: 'accountSetup' });
     } else {
-      //REDIRECT TO DEFAULT LOGGED ROUTE?
-      router.push({ name: 'settingsGeneral' });
+      // @ts-ignore
+      router.push(router.previousPath ? { path: router.previousPath } : { name: 'settingsKeys' });
     }
   }
 };
