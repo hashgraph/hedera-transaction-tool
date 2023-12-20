@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 
+import 'bootstrap/dist/js/bootstrap.bundle.min';
+
 import AppMenu from './components/Menu.vue';
 import AppHeader from './components/Header.vue';
 
