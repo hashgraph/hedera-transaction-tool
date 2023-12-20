@@ -51,6 +51,8 @@ export const electronAPI = {
       ipcRenderer.invoke('keyPairs:changeDecryptionPassword', userId, oldPassword, newPassword),
     decryptPrivateKey: (userId: string, password: string, publicKey: string): Promise<string> =>
       ipcRenderer.invoke('keyPairs:decryptPrivateKey', userId, password, publicKey),
+    deleteEncryptedPrivateKeys: (userId: string): Promise<void> =>
+      ipcRenderer.invoke('keyPairs:deleteEncryptedPrivateKeys', userId),
     clear: (userId: string): Promise<boolean> => ipcRenderer.invoke('keyPairs:clear', userId),
   },
   utils: {

@@ -29,7 +29,6 @@ const restoredKey = ref<{ privateKey: string; publicKey: string } | null>(null);
 
 const ableToContinue = ref(false);
 const isSuccessModalShown = ref(false);
-console.log(userStateStore.secretHashes);
 
 watch(recoveryPhrase, async newRecoveryPhrase => {
   if (!newRecoveryPhrase) {

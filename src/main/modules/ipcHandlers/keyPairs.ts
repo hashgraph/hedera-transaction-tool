@@ -1,12 +1,13 @@
 import { ipcMain } from 'electron';
 import {
   storeKeyPair,
-  clearKeys,
+  deleteSecretHashesFile,
   changeDecryptionPassword,
   getKeyPairsFilePath,
   getStoredKeyPairs,
   getStoredKeysSecretHashes,
   decryptPrivateKey,
+  deleteEncryptedPrivateKeys,
 } from '../../services/keyPairs';
 import { IKeyPair } from '../../shared/interfaces/IKeyPair';
 
@@ -47,10 +48,15 @@ export default (app: Electron.App) => {
     getStoredKeysSecretHashes(getKeyPairsFilePath(app, userId)),
   );
 
+  // Delete encrypted private keys
+  ipcMain.handle(createChannelName('deleteEncryptedPrivateKeys'), async (e, userId: string) =>
+    deleteEncryptedPrivateKeys(getKeyPairsFilePath(app, userId)),
+  );
+
   // Clear keys file
   ipcMain.handle(createChannelName('clear'), async (e, userId: string) => {
     try {
-      await clearKeys(getKeyPairsFilePath(app, userId));
+      await deleteSecretHashesFile(getKeyPairsFilePath(app, userId));
       return true;
     } catch {
       console.log('no such folder');

@@ -11,12 +11,8 @@ import { IStoredSecretHash } from '../shared/interfaces/IStoredSecretHash';
 export const getKeyPairsFilePath = (app: Electron.App, userId: string) =>
   path.join(app.getPath('userData'), `${userId}.json`);
 
-// Decrypt and get all stored key pairs
-export const getStoredKeyPairs = async (
-  filePath: string,
-  secretHash?: string,
-  secretHashName?: string,
-): Promise<IKeyPair[]> => {
+//Get all stored secret hash objects
+export const getStoredSecretHashes = async (filePath: string) => {
   let storedSecretHashes: IStoredSecretHash[] = [];
 
   if (fs.existsSync(filePath)) {
@@ -29,9 +25,20 @@ export const getStoredKeyPairs = async (
     !Object.prototype.hasOwnProperty.call(storedSecretHashes[0], 'secretHash') &&
     !Object.prototype.hasOwnProperty.call(storedSecretHashes[0], 'keyPairs')
   ) {
-    await clearKeys(filePath);
+    await deleteSecretHashesFile(filePath);
     storedSecretHashes = [];
   }
+
+  return storedSecretHashes;
+};
+
+//Get all stored key pairs
+export const getStoredKeyPairs = async (
+  filePath: string,
+  secretHash?: string,
+  secretHashName?: string,
+): Promise<IKeyPair[]> => {
+  const storedSecretHashes = await getStoredSecretHashes(filePath);
 
   if (secretHashName) {
     return storedSecretHashes.find(sh => sh.name === secretHashName)?.keyPairs || [];
@@ -46,21 +53,7 @@ export const getStoredKeyPairs = async (
 
 // Get secret hashes of currently saved keys
 export const getStoredKeysSecretHashes = async (filePath: string): Promise<string[]> => {
-  let storedSecretHashes: IStoredSecretHash[] = [];
-
-  if (fs.existsSync(filePath)) {
-    const data = fs.readFileSync(filePath, 'utf8');
-    storedSecretHashes = JSON.parse(data);
-  }
-
-  if (
-    storedSecretHashes.length > 0 &&
-    !Object.prototype.hasOwnProperty.call(storedSecretHashes[0], 'secretHash') &&
-    !Object.prototype.hasOwnProperty.call(storedSecretHashes[0], 'keyPairs')
-  ) {
-    await clearKeys(filePath);
-    storedSecretHashes = [];
-  }
+  const storedSecretHashes = await getStoredSecretHashes(filePath);
 
   return storedSecretHashes.map(sh => sh.secretHash);
 };
@@ -74,21 +67,7 @@ export const storeKeyPair = async (
 ) => {
   keyPair.privateKey = await encrypt(keyPair.privateKey, password);
 
-  let storedSecretHashes: IStoredSecretHash[] = [];
-
-  if (fs.existsSync(filePath)) {
-    const data = fs.readFileSync(filePath, 'utf8');
-    storedSecretHashes = JSON.parse(data);
-  }
-
-  if (
-    storedSecretHashes.length > 0 &&
-    !Object.prototype.hasOwnProperty.call(storedSecretHashes[0], 'secretHash') &&
-    !Object.prototype.hasOwnProperty.call(storedSecretHashes[0], 'keyPairs')
-  ) {
-    await clearKeys(filePath);
-    storedSecretHashes = [];
-  }
+  const storedSecretHashes = await getStoredSecretHashes(filePath);
 
   const storedSecretHash = storedSecretHashes.find(sh => sh.secretHash === secretHash);
 
@@ -138,5 +117,18 @@ export const decryptPrivateKey = async (filePath: string, password: string, publ
   return decryptedPrivateKey;
 };
 
+// Delete encrypted private keys
+export const deleteEncryptedPrivateKeys = async (filePath: string) => {
+  const storedSecretHashes = await getStoredSecretHashes(filePath);
+
+  storedSecretHashes.forEach(sh => {
+    sh.keyPairs.forEach(kp => {
+      kp.privateKey = '';
+    });
+  });
+
+  fs.writeFileSync(filePath, JSON.stringify(storedSecretHashes), 'utf8');
+};
+
 // Clear user's keys
-export const clearKeys = (filePath: string) => fsp.unlink(filePath);
+export const deleteSecretHashesFile = (filePath: string) => fsp.unlink(filePath);

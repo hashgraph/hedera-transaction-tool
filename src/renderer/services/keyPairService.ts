@@ -63,6 +63,9 @@ export const getAccountId = async (mirrorNodeURL: string, publicKey: string) => 
 
 export const clearKeys = (userId: string) => window.electronAPI.keyPairs.clear(userId);
 
+export const deleteEncryptedPrivateKeys = (userId: string) =>
+  window.electronAPI.keyPairs.deleteEncryptedPrivateKeys(userId);
+
 export const validateMnemonic = async (words: string[]) => {
   try {
     await Mnemonic.fromWords(words);
