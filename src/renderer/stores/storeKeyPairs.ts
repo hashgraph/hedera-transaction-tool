@@ -48,7 +48,16 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
       throw Error('User is not logged in!');
     }
 
-    await keyPairService.storeKeyPair(userStateStore.userData.userId, password, keyPair);
+    if (!userStateStore.secretHash) {
+      throw Error('Key Pair not matched to a recovery phrase');
+    }
+
+    await keyPairService.storeKeyPair(
+      userStateStore.userData.userId,
+      password,
+      userStateStore.secretHash,
+      keyPair,
+    );
     await refetch();
   }
 

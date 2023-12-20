@@ -4,7 +4,7 @@ import { computed, onBeforeMount, ref } from 'vue';
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
 import useUserStateStore from '../../../stores/storeUserState';
 
-import { validateMnemonic } from '../../../services/keyPairService';
+import { validateMnemonic, hashRecoveryPhrase } from '../../../services/keyPairService';
 
 import AppTabs, { TabItem } from '../../../components/ui/AppTabs.vue';
 
@@ -30,6 +30,8 @@ const handleSaveWords = async (words: string[]) => {
     console.log('Invalid Recovery Phrase!');
   } else {
     keyPairsStore.setRecoveryPhrase(words);
+    userStateStore.setSecretHash(await hashRecoveryPhrase(words));
+
     props.handleContinue();
   }
 };

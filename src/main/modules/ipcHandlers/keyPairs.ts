@@ -15,8 +15,8 @@ export default (app: Electron.App) => {
   // Generate key pair
   ipcMain.handle(
     createChannelName('store'),
-    async (e, userId: string, password: string, keyPair: IKeyPair) => {
-      await storeKeyPair(getKeyPairsFilePath(app, userId), password, keyPair);
+    async (e, userId: string, password: string, secretHash: string, keyPair: IKeyPair) => {
+      await storeKeyPair(getKeyPairsFilePath(app, userId), password, secretHash, keyPair);
     },
   );
 
@@ -35,8 +35,10 @@ export default (app: Electron.App) => {
   );
 
   // Decrypt stored key pairs
-  ipcMain.handle(createChannelName('getStored'), async (e, userId: string) =>
-    getStoredKeyPairs(getKeyPairsFilePath(app, userId)),
+  ipcMain.handle(
+    createChannelName('getStored'),
+    async (e, userId: string, secretHash?: string, secretHashName?: string) =>
+      getStoredKeyPairs(getKeyPairsFilePath(app, userId), secretHash, secretHashName),
   );
 
   // Decrypt stored key pairs

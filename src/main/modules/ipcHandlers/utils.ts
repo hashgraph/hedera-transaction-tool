@@ -23,7 +23,6 @@ export default () => {
     const hashBuffer = hash(Buffer.from(data));
 
     const str = hashBuffer.toString('hex');
-    console.log(str);
 
     return str;
   });

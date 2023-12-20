@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUpdated, ref } from 'vue';
+import { onMounted, onUpdated, ref, watch } from 'vue';
 
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
@@ -80,6 +80,13 @@ onUpdated(() => {
   const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
   Array.from(tooltipTriggerList).map(tooltipTriggerEl => new Tooltip(tooltipTriggerEl));
 });
+
+/* Watchers */
+watch(isSuccessModalShown, shown => {
+  if (!shown) {
+    keyExists.value = true;
+  }
+});
 </script>
 <template>
   <div class="mt-8 d-flex flex-column justify-content-center align-items-center gap-4">
@@ -147,6 +154,7 @@ onUpdated(() => {
         <AppButton
           :disabled="!privateKey || keyExists"
           color="secondary"
+          size="large"
           class="rounded-4 min-w-50"
           @click="handleSaveKey"
           >Save Key</AppButton
