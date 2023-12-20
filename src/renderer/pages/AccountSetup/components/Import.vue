@@ -7,7 +7,7 @@ import AppRecoveryPhraseWord from '../../../components/ui/AppRecoveryPhraseWord.
 import AppButton from '../../../components/ui/AppButton.vue';
 import AppModal from '../../../components/ui/AppModal.vue';
 
-defineProps<{
+const props = defineProps<{
   handleContinue: (words: string[]) => void;
 }>();
 
@@ -45,6 +45,12 @@ const handleFinishImport = async () => {
 
 watch(words, async newWords => {
   isMnenmonicValid.value = await validateMnemonic(newWords);
+});
+
+watch(isSuccessModalShown, shown => {
+  if (!shown) {
+    props.handleContinue(words.value);
+  }
 });
 </script>
 <template>
