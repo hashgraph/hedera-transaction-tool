@@ -61,7 +61,10 @@ const menuItems = [
     </div>
 
     <div>
-      <RouterLink class="link-menu mt-2" to="/settings/general"
+      <RouterLink
+        class="link-menu mt-2"
+        to="/settings/general"
+        :class="{ active: $route.path.startsWith('/settings') }"
         ><i class="bi bi-wrench"></i><span>Settings</span></RouterLink
       >
       <RouterLink class="link-menu mt-2" to="/help"
