@@ -60,6 +60,10 @@ watch(router.currentRoute, newRoute => {
     .filter(p => p)
     .reverse()[0];
 
+  if (!newRoute.name?.toString().includes('settings')) {
+    return;
+  }
+
   if (title) {
     const routeTabIndex = tabTitles.findIndex(t => title.toLocaleLowerCase() === t);
     routeTabIndex != activeTabIndex.value ? (activeTabIndex.value = routeTabIndex) : {};
