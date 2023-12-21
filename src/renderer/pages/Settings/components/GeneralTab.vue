@@ -1,8 +1,28 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+
+import useNetworkStore, { CustomNetworkSettings } from '../../../stores/storeNetwork';
+
 import AppButton from '../../../components/ui/AppButton.vue';
-import useNetworkStore from '../../../stores/storeNetwork';
+import { AccountId } from '@hashgraph/sdk';
 
 const networkStore = useNetworkStore();
+
+const isCustomSettingsVisible = ref(false);
+
+const customNetworkSettings = ref<CustomNetworkSettings>({
+  consensusNodeEndpoint: 'http://localhost:50211',
+  mirrorNodeGRPCEndpoint: 'http://localhost:5600',
+  mirrorNodeRESTAPIEndpoint: 'http://localhost:5551',
+  nodeAccountId: new AccountId(3),
+});
+
+const handleSetCustomNetwork = () => {
+  customNetworkSettings.value.nodeAccountId = AccountId.fromString(
+    customNetworkSettings.value.nodeAccountId.toString(),
+  );
+  networkStore.setNetwork('custom', customNetworkSettings.value as any);
+};
 </script>
 <template>
   <div>
@@ -30,7 +50,50 @@ const networkStore = useNetworkStore();
           @click="networkStore.setNetwork('previewnet')"
           >Previewnet</AppButton
         >
+        <AppButton
+          color="primary"
+          :class="{ active: networkStore.network === 'custom' }"
+          @click="isCustomSettingsVisible = true"
+          >Custom</AppButton
+        >
       </div>
+      <Transition name="fade" mode="out-in">
+        <div v-if="isCustomSettingsVisible" class="mt-4">
+          <div>
+            <label class="form-label">Consensus Node Endpoint</label>
+            <input
+              type="text"
+              class="form-control form-control-sm"
+              v-model="customNetworkSettings.consensusNodeEndpoint"
+            />
+          </div>
+          <div class="mt-4">
+            <label class="form-label">Mirror Node GRPC Endpoint</label>
+            <input
+              type="text"
+              class="form-control form-control-sm"
+              v-model="customNetworkSettings.mirrorNodeGRPCEndpoint"
+            />
+          </div>
+          <div class="mt-4">
+            <label class="form-label">Mirror Node REST API Endpoint</label>
+            <input
+              type="text"
+              class="form-control form-control-sm"
+              v-model="customNetworkSettings.mirrorNodeRESTAPIEndpoint"
+            />
+          </div>
+          <div class="mt-4">
+            <label class="form-label">Node Account Id</label>
+            <input
+              type="text"
+              class="form-control form-control-sm"
+              v-model="customNetworkSettings.nodeAccountId"
+            />
+          </div>
+          <AppButton color="primary" class="mt-4" @click="handleSetCustomNetwork">Set</AppButton>
+        </div>
+      </Transition>
     </div>
     <!-- Mirror Node Settings -->
     <div class="p-4 mt-7 border border-2 rounded-3">
