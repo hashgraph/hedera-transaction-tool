@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 import { proto } from '@hashgraph/proto';
 
-import { IKeyPair } from './shared/interfaces/IKeyPair';
+import { IKeyPair } from './shared/interfaces';
 
 import { Theme } from './modules/ipcHandlers/theme';
 import { Organization } from './modules/store';

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onUnmounted, ref, watch } from 'vue';
 
+import { IKeyPair } from '../../../main/shared/interfaces';
+
 import { Mnemonic } from '@hashgraph/sdk';
 
 import useKeyPairsStore from '../../stores/storeKeyPairs';
@@ -11,7 +13,6 @@ import * as keyPairService from '../../services/keyPairService';
 import AppButton from '../../components/ui/AppButton.vue';
 import AppModal from '../../components/ui/AppModal.vue';
 import Import from '../AccountSetup/components/Import.vue';
-import { IKeyPair } from '../../../main/shared/interfaces/IKeyPair';
 
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();

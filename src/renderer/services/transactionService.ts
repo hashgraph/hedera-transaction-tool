@@ -6,7 +6,7 @@ import {
   Transaction,
   TransactionId,
 } from '@hashgraph/sdk';
-import { IKeyPairWithAccountId } from '../../main/shared/interfaces/IKeyPair';
+import { IKeyPairWithAccountId } from '../../main/shared/interfaces';
 import { decryptPrivateKey } from './keyPairService';
 
 export const createTransactionId = (

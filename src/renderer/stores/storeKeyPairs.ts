@@ -1,7 +1,7 @@
 import { onMounted, ref } from 'vue';
 import { defineStore } from 'pinia';
 
-import { IKeyPair, IKeyPairWithAccountId } from '../../main/shared/interfaces/IKeyPair';
+import { IKeyPair, IKeyPairWithAccountId } from '../../main/shared/interfaces';
 
 import * as keyPairService from '../services/keyPairService';
 

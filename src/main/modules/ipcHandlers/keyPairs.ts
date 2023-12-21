@@ -9,7 +9,7 @@ import {
   decryptPrivateKey,
   deleteEncryptedPrivateKeys,
 } from '../../services/keyPairs';
-import { IKeyPair } from '../../shared/interfaces/IKeyPair';
+import { IKeyPair } from '../../shared/interfaces';
 
 const createChannelName = (...props) => ['keyPairs', ...props].join(':');
 

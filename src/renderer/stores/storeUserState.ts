@@ -1,7 +1,7 @@
 import { computed, reactive } from 'vue';
 import { defineStore } from 'pinia';
 
-import { IUserData } from '../../main/shared/interfaces/IUserData';
+import { IUserData } from '../../main/shared/interfaces';
 
 export interface UserState {
   isLoggedIn: boolean;

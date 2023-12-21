@@ -4,8 +4,7 @@ import path from 'path';
 
 import { decrypt, encrypt } from '../utils/crypto';
 
-import { IKeyPair } from '../shared/interfaces/IKeyPair';
-import { IStoredSecretHash } from '../shared/interfaces/IStoredSecretHash';
+import { IKeyPair, IStoredSecretHash } from '../shared/interfaces';
 
 // Get key pairs Encrypted File Path
 export const getKeyPairsFilePath = (app: Electron.App, userId: string) =>

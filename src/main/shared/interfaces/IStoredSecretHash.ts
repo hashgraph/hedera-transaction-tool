@@ -1,4 +1,4 @@
-import { IKeyPair } from './IKeyPair';
+import { IKeyPair } from './';
 
 export interface IStoredSecretHash {
   name?: string;
