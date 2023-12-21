@@ -64,12 +64,6 @@ watch(router.currentRoute, newRoute => {
     const routeTabIndex = tabTitles.findIndex(t => title.toLocaleLowerCase() === t);
     routeTabIndex != activeTabIndex.value ? (activeTabIndex.value = routeTabIndex) : {};
   }
-
-  //   const routeTabIndex = tabTitles.findIndex(
-  //   t =>
-  //     [0]
-  //       .toLocaleLowerCase() === t,
-  // );
 });
 </script>
 <template>
