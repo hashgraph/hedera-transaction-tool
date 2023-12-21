@@ -1,6 +1,6 @@
 import { AccountId, EvmAddress, Hbar, Key, Timestamp } from '@hashgraph/sdk';
 
-export interface MirrorNodeAccountInfo {
+export interface IMirrorNodeAccountInfo {
   accountId: AccountId;
   alias: string | null;
   balance: Hbar;

@@ -4,8 +4,7 @@ import { AccountId, EvmAddress, Hbar, HbarUnit, Key, PublicKey, Timestamp } from
 
 import { decodeProtobuffKey } from './electronUtilsService';
 
-import { MirrorNodeAllowance } from '../interfaces/MirrorNodeAllowance';
-import { MirrorNodeAccountInfo } from '../interfaces/MirrorNodeAccountInfo';
+import { IMirrorNodeAccountInfo, IMirrorNodeAllowance } from '../../main/shared/interfaces';
 
 export const getAccountInfo = async (
   accountId: string,
@@ -31,7 +30,7 @@ export const getAccountInfo = async (
     throw Error('No key available');
   }
 
-  const accountInfo: MirrorNodeAccountInfo = {
+  const accountInfo: IMirrorNodeAccountInfo = {
     accountId: AccountId.fromString(data.account),
     alias: data.alias as string,
     balance: Hbar.from(data.balance.balance, HbarUnit.Tinybar),
@@ -69,7 +68,7 @@ export const getAccountAllowances = async (
     signal: controller?.signal,
   });
 
-  const allowances: MirrorNodeAllowance[] = data.allowances;
+  const allowances: IMirrorNodeAllowance[] = data.allowances;
 
   return allowances;
 };
