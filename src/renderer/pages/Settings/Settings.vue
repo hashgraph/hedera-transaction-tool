@@ -53,6 +53,24 @@ const handleClearConfig = async () => {
 watch(activeTabIndex, newIndex => {
   router.push(tabTitles[newIndex]);
 });
+
+watch(router.currentRoute, newRoute => {
+  const title = newRoute.path
+    .split('/')
+    .filter(p => p)
+    .reverse()[0];
+
+  if (title) {
+    const routeTabIndex = tabTitles.findIndex(t => title.toLocaleLowerCase() === t);
+    routeTabIndex != activeTabIndex.value ? (activeTabIndex.value = routeTabIndex) : {};
+  }
+
+  //   const routeTabIndex = tabTitles.findIndex(
+  //   t =>
+  //     [0]
+  //       .toLocaleLowerCase() === t,
+  // );
+});
 </script>
 <template>
   <div class="p-10">

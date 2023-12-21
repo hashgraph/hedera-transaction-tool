@@ -9,6 +9,7 @@ import { IUserData } from '../../../../main/shared/interfaces/IUserData';
 import useUserStateStore from '../../../stores/storeUserState';
 
 import AppButton from '../../../components/ui/AppButton.vue';
+import { getStoredKeysSecretHashes } from '../../../services/keyPairService';
 
 const router = useRouter();
 const userStateStore = useUserStateStore();
@@ -21,7 +22,7 @@ const inputPasswordInvalid = ref(false);
 
 const handleRegister = () => {};
 
-const handleOnFormSubmit = (event: Event) => {
+const handleOnFormSubmit = async (event: Event) => {
   event.preventDefault();
 
   const emailValid = inputEmail.value.trim() === '';
@@ -36,12 +37,18 @@ const handleOnFormSubmit = (event: Event) => {
       successful: true,
       accessToken:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InBpcEBnbWFpbC5jb20iLCJ1c2VybmFtZSI6IkhlZGVyYVVzZXIiLCJ1c2VySWQiOiIxMjM0NTY3ODkifQ.iPZBw37mI7iBgOOPzDQYilx_y4h-DLE2h8EqEg6ZgbU',
-      isInitial: true,
+      isInitial: false,
+      secretHash: 'hash',
     };
 
     try {
       const decodedUserData: IUserData = jwtDecode(loginRes.accessToken);
-      userStateStore.logUser(loginRes.accessToken, decodedUserData);
+      userStateStore.logUser(loginRes.accessToken, decodedUserData, loginRes.isInitial);
+
+      // Compare with saved keys' secret hash
+      // userStateStore.setSecretHashes([loginRes.secretHash]);
+      const secretHashes = await getStoredKeysSecretHashes(decodedUserData.userId);
+      secretHashes.length > 0 && userStateStore.setSecretHashes(secretHashes);
     } catch (error) {
       console.log(error);
     }
@@ -49,8 +56,8 @@ const handleOnFormSubmit = (event: Event) => {
     if (loginRes.isInitial) {
       router.push({ name: 'accountSetup' });
     } else {
-      //REDIRECT TO DEFAULT LOGGED ROUTE?
-      router.push({ name: 'settingsGeneral' });
+      // @ts-ignore
+      router.push(router.previousPath ? { path: router.previousPath } : { name: 'settingsKeys' });
     }
   }
 };

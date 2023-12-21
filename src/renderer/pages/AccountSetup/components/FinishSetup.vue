@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+
+import useUserStateStore from '../../../stores/storeUserState';
+
 import AppButton from '../../../components/ui/AppButton.vue';
 import AppModal from '../../../components/ui/AppModal.vue';
+
+const userStateStore = useUserStateStore();
 
 const isSuccessModalShown = ref(false);
 </script>
@@ -35,7 +40,10 @@ const isSuccessModalShown = ref(false);
           color="primary"
           size="large"
           class="mt-5 w-100 rounded-4"
-          @click="$router.push({ name: 'settingsKeys' })"
+          @click="
+            $router.push({ name: 'settingsKeys' });
+            userStateStore.setIsInitialLogin(false);
+          "
           >Continue</AppButton
         >
       </div>

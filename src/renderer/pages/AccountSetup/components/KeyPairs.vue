@@ -1,13 +1,18 @@
 <script setup lang="ts">
-import { onMounted, onUpdated, ref } from 'vue';
+import { onMounted, onUpdated, ref, watch } from 'vue';
 
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
 import { IKeyPair } from '../../../../main/shared/interfaces/IKeyPair';
 
-import { restorePrivateKey } from '../../../services/keyPairService';
+import {
+  restorePrivateKey,
+  hashRecoveryPhrase,
+  getStoredKeyPairs,
+} from '../../../services/keyPairService';
 
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
+import useUserStateStore from '../../../stores/storeUserState';
 
 import AppButton from '../../../components/ui/AppButton.vue';
 import AppModal from '../../../components/ui/AppModal.vue';
@@ -19,6 +24,7 @@ const props = defineProps<{
 }>();
 
 const keyPairsStore = useKeyPairsStore();
+const useStateStore = useUserStateStore();
 
 const nickname = ref('');
 
@@ -32,6 +38,14 @@ const publicKey = ref('');
 const keyExists = ref(false);
 const isSuccessModalShown = ref(false);
 
+const validateExistingKey = () => {
+  if (keyPairsStore.keyPairs.some(kp => kp.publicKey === publicKey.value && kp.privateKey !== '')) {
+    keyExists.value = true;
+  } else {
+    keyExists.value = false;
+  }
+};
+
 /* Handlers */
 const handleRestoreKey = async () => {
   const restoredPrivateKey = await restorePrivateKey(
@@ -41,16 +55,10 @@ const handleRestoreKey = async () => {
     'ED25519',
   );
 
-  if (
-    keyPairsStore.keyPairs.some(kp => kp.publicKey === restoredPrivateKey.publicKey.toStringRaw())
-  ) {
-    keyExists.value = true;
-  } else {
-    keyExists.value = false;
-  }
-
   privateKey.value = restoredPrivateKey.toStringRaw();
   publicKey.value = restoredPrivateKey.publicKey.toStringRaw();
+
+  validateExistingKey();
 };
 
 const handleSaveKey = async () => {
@@ -65,10 +73,41 @@ const handleSaveKey = async () => {
       keyPair.nickname = nickname.value;
     }
 
-    await keyPairsStore.storeKeyPair(props.encryptPassword, keyPair);
+    const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
+    await keyPairsStore.storeKeyPair(props.encryptPassword, secretHash, keyPair);
 
     isSuccessModalShown.value = true;
   }
+};
+
+const handleRestoreExisting = async () => {
+  if (!useStateStore.userData) {
+    throw Error('User not logged in!');
+  }
+
+  const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
+  const keyPairsToRestore = (
+    await getStoredKeyPairs(useStateStore.userData?.userId, secretHash)
+  ).filter(kp => kp.privateKey === '');
+
+  await Promise.all(
+    keyPairsToRestore.map(async kp => {
+      const restoredPrivateKey = await restorePrivateKey(
+        keyPairsStore.recoveryPhraseWords,
+        '',
+        kp.index,
+        'ED25519',
+      );
+
+      if (kp.publicKey === restoredPrivateKey.publicKey.toStringRaw()) {
+        kp.privateKey = restoredPrivateKey.toStringRaw();
+        await keyPairsStore.storeKeyPair(props.encryptPassword, secretHash, kp);
+      }
+    }),
+  );
+
+  //Notification: Successfully recovered key pairs with empty passphrase
+  validateExistingKey();
 };
 
 /* Hooks */
@@ -80,10 +119,32 @@ onUpdated(() => {
   const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
   Array.from(tooltipTriggerList).map(tooltipTriggerEl => new Tooltip(tooltipTriggerEl));
 });
+
+/* Watchers */
+watch(isSuccessModalShown, shown => {
+  if (!shown) {
+    validateExistingKey();
+  }
+});
 </script>
 <template>
   <div class="mt-8 d-flex flex-column justify-content-center align-items-center gap-4">
     <div class="col-12 col-md-10 col-xxl-8">
+      <div
+        class="mb-5 position-relative"
+        v-if="keyPairsStore.keyPairs.some(kp => kp.privateKey === '')"
+      >
+        <AppButton color="primary" size="small" @click="handleRestoreExisting"
+          >Restore existing key pairs</AppButton
+        >
+        <i
+          class="bi bi-info-circle ms-3"
+          data-bs-toggle="tooltip"
+          data-bs-title="Restore previously saved key pairs with empty passphrase (If you see it after click, you have keys with a passphrase)"
+          data-bs-placement="right"
+          data-bs-container="body"
+        ></i>
+      </div>
       <input
         v-model="nickname"
         type="text"
@@ -136,20 +197,29 @@ onUpdated(() => {
 
       <div class="form-group mt-5">
         <label class="form-label">ED25519 Private Key</label>
-        <p>{{ privateKey }}</p>
+        <p class="text-break">{{ privateKey }}</p>
       </div>
       <div class="form-group mt-4">
         <label class="form-label">ED25519 Public Key</label>
-        <p>{{ publicKey }}</p>
+        <p class="text-break">{{ publicKey }}</p>
       </div>
       <p v-if="keyExists" class="mt-3 text-danger">This key is already restored.</p>
-      <div class="w-100 d-flex justify-content-center gap-4 mt-7">
+      <div class="d-flex flex-column align-items-center gap-4 mt-8">
         <AppButton
           :disabled="!privateKey || keyExists"
           color="secondary"
-          class="rounded-4 min-w-50"
+          size="large"
+          class="rounded-4 col-12 col-lg-6"
           @click="handleSaveKey"
           >Save Key</AppButton
+        >
+        <AppButton
+          :disabled="keyPairsStore.keyPairs.filter(kp => kp.privateKey.length !== 0).length === 0"
+          color="secondary"
+          size="large"
+          class="rounded-4 col-12 col-lg-6"
+          @click="handleContinue()"
+          >Continue</AppButton
         >
       </div>
     </div>

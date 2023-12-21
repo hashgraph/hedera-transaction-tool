@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
+import useUserStateStore from '../../../stores/storeUserState';
 
-import { validateMnemonic } from '../../../services/keyPairService';
+import { validateMnemonic, hashRecoveryPhrase } from '../../../services/keyPairService';
 
 import AppTabs, { TabItem } from '../../../components/ui/AppTabs.vue';
 
@@ -15,10 +16,12 @@ const props = defineProps<{
 }>();
 
 const keyPairsStore = useKeyPairsStore();
+const userStateStore = useUserStateStore();
 
-const tabItems: TabItem[] = [{ title: 'Create New' }, { title: 'Import Existing' }];
-
+const tabItems = ref<TabItem[]>([{ title: 'Create New' }, { title: 'Import Existing' }]);
 const activeTabIndex = ref(0);
+
+const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title);
 
 const handleSaveWords = async (words: string[]) => {
   const isValid = await validateMnemonic(words);
@@ -27,9 +30,19 @@ const handleSaveWords = async (words: string[]) => {
     console.log('Invalid Recovery Phrase!');
   } else {
     keyPairsStore.setRecoveryPhrase(words);
+    userStateStore.setSecretHashes([
+      ...(userStateStore.secretHashes || []),
+      await hashRecoveryPhrase(words),
+    ]);
+    // SEND SECRET HASH TO BACKED?
+
     props.handleContinue();
   }
 };
+
+onBeforeMount(() => {
+  userStateStore.secretHashes && tabItems.value.shift();
+});
 </script>
 <template>
   <div class="d-flex flex-column justify-content-center align-items-center">
@@ -38,14 +51,14 @@ const handleSaveWords = async (words: string[]) => {
         :items="tabItems"
         v-model:activeIndex="activeTabIndex"
         class="mt-8 w-100"
-        nav-item-class="col-6"
+        nav-item-class="flex-1"
         nav-item-button-class="justify-content-center"
       ></AppTabs>
-      <template v-if="activeTabIndex === 0">
+      <template v-if="activeTabTitle === 'Create New'">
         <Generate :handle-continue="handleSaveWords" />
       </template>
-      <template v-else-if="activeTabIndex === 1">
-        <Import :handle-continue="handleSaveWords"
+      <template v-else-if="activeTabTitle === 'Import Existing'">
+        <Import :handle-continue="handleSaveWords" :secret-hashes="userStateStore.secretHashes"
       /></template>
     </div>
   </div>

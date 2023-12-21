@@ -43,12 +43,23 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
     recoveryPhraseWords.value = [];
   }
 
-  async function storeKeyPair(password: string, keyPair: IKeyPair) {
+  async function storeKeyPair(password: string, secretHash: string, keyPair: IKeyPair) {
     if (!userStateStore.isLoggedIn || !userStateStore.userData || !userStateStore.userData.userId) {
       throw Error('User is not logged in!');
     }
 
-    await keyPairService.storeKeyPair(userStateStore.userData.userId, password, keyPair);
+    if (!userStateStore.secretHashes) {
+      throw Error('Key Pair not matched to a recovery phrase');
+    } else if (!userStateStore.secretHashes.includes(secretHash)) {
+      throw Error('Different recovery phrase is used!');
+    }
+
+    await keyPairService.storeKeyPair(
+      userStateStore.userData.userId,
+      password,
+      secretHash,
+      keyPair,
+    );
     await refetch();
   }
 

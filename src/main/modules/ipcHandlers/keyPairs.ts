@@ -1,11 +1,13 @@
 import { ipcMain } from 'electron';
 import {
   storeKeyPair,
-  clearKeys,
+  deleteSecretHashesFile,
   changeDecryptionPassword,
   getKeyPairsFilePath,
   getStoredKeyPairs,
+  getStoredKeysSecretHashes,
   decryptPrivateKey,
+  deleteEncryptedPrivateKeys,
 } from '../../services/keyPairs';
 import { IKeyPair } from '../../shared/interfaces/IKeyPair';
 
@@ -15,8 +17,8 @@ export default (app: Electron.App) => {
   // Generate key pair
   ipcMain.handle(
     createChannelName('store'),
-    async (e, userId: string, password: string, keyPair: IKeyPair) => {
-      await storeKeyPair(getKeyPairsFilePath(app, userId), password, keyPair);
+    async (e, userId: string, password: string, secretHash: string, keyPair: IKeyPair) => {
+      await storeKeyPair(getKeyPairsFilePath(app, userId), password, secretHash, keyPair);
     },
   );
 
@@ -35,14 +37,26 @@ export default (app: Electron.App) => {
   );
 
   // Decrypt stored key pairs
-  ipcMain.handle(createChannelName('getStored'), async (e, userId: string) =>
-    getStoredKeyPairs(getKeyPairsFilePath(app, userId)),
+  ipcMain.handle(
+    createChannelName('getStored'),
+    async (e, userId: string, secretHash?: string, secretHashName?: string) =>
+      getStoredKeyPairs(getKeyPairsFilePath(app, userId), secretHash, secretHashName),
   );
 
   // Decrypt stored key pairs
+  ipcMain.handle(createChannelName('getStoredKeysSecretHashes'), async (e, userId: string) =>
+    getStoredKeysSecretHashes(getKeyPairsFilePath(app, userId)),
+  );
+
+  // Delete encrypted private keys
+  ipcMain.handle(createChannelName('deleteEncryptedPrivateKeys'), async (e, userId: string) =>
+    deleteEncryptedPrivateKeys(getKeyPairsFilePath(app, userId)),
+  );
+
+  // Clear keys file
   ipcMain.handle(createChannelName('clear'), async (e, userId: string) => {
     try {
-      await clearKeys(getKeyPairsFilePath(app, userId));
+      await deleteSecretHashesFile(getKeyPairsFilePath(app, userId));
       return true;
     } catch {
       console.log('no such folder');

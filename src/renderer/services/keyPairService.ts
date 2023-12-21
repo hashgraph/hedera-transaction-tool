@@ -5,7 +5,11 @@ import { proto } from '@hashgraph/proto';
 
 import { IKeyPair } from '../../main/shared/interfaces/IKeyPair';
 
-export const getStoredKeyPairs = (userId: string) => window.electronAPI.keyPairs.getStored(userId);
+export const getStoredKeyPairs = (userId: string, secretHash?: string, secretHashName?: string) =>
+  window.electronAPI.keyPairs.getStored(userId, secretHash, secretHashName);
+
+export const getStoredKeysSecretHashes = (userId: string) =>
+  window.electronAPI.keyPairs.getStoredKeysSecretHashes(userId);
 
 export const restorePrivateKey = async (
   words: string[],
@@ -27,8 +31,12 @@ export const restorePrivateKey = async (
   return privateKey;
 };
 
-export const storeKeyPair = (userId: string, password: string, keyPair: IKeyPair) =>
-  window.electronAPI.keyPairs.store(userId, password, keyPair);
+export const storeKeyPair = (
+  userId: string,
+  password: string,
+  secretHash: string,
+  keyPair: IKeyPair,
+) => window.electronAPI.keyPairs.store(userId, password, secretHash, keyPair);
 
 export const changeDecryptionPassword = (
   userId: string,
@@ -38,6 +46,9 @@ export const changeDecryptionPassword = (
 
 export const decryptPrivateKey = (userId: string, password: string, publicKey: string) =>
   window.electronAPI.keyPairs.decryptPrivateKey(userId, password, publicKey);
+
+export const hashRecoveryPhrase = (words: string[]) =>
+  window.electronAPI.utils.hash(words.toString());
 
 export const getAccountId = async (mirrorNodeURL: string, publicKey: string) => {
   try {
@@ -51,6 +62,9 @@ export const getAccountId = async (mirrorNodeURL: string, publicKey: string) => 
 };
 
 export const clearKeys = (userId: string) => window.electronAPI.keyPairs.clear(userId);
+
+export const deleteEncryptedPrivateKeys = (userId: string) =>
+  window.electronAPI.keyPairs.deleteEncryptedPrivateKeys(userId);
 
 export const validateMnemonic = async (words: string[]) => {
   try {

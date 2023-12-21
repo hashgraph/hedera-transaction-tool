@@ -28,16 +28,21 @@ export const electronAPI = {
       },
     },
   },
-  recoveryPhrase: {
-    downloadFileUnencrypted: (words: string[]): void => {
-      ipcRenderer.invoke('recoveryPhrase:downloadFileUnencrypted', words);
-    },
-  },
   keyPairs: {
-    getStored: (userId: string): Promise<IKeyPair[]> =>
-      ipcRenderer.invoke('keyPairs:getStored', userId),
-    store: (userId: string, password: string, keyPair: IKeyPair): Promise<void> =>
-      ipcRenderer.invoke('keyPairs:store', userId, password, keyPair),
+    getStored: (
+      userId: string,
+      secretHash?: string,
+      secretHashName?: string,
+    ): Promise<IKeyPair[]> =>
+      ipcRenderer.invoke('keyPairs:getStored', userId, secretHash, secretHashName),
+    getStoredKeysSecretHashes: (userId: string): Promise<string[]> =>
+      ipcRenderer.invoke('keyPairs:getStoredKeysSecretHashes', userId),
+    store: (
+      userId: string,
+      password: string,
+      secretHash: string,
+      keyPair: IKeyPair,
+    ): Promise<void> => ipcRenderer.invoke('keyPairs:store', userId, password, secretHash, keyPair),
     changeDecryptionPassword: (
       userId: string,
       oldPassword: string,
@@ -46,12 +51,15 @@ export const electronAPI = {
       ipcRenderer.invoke('keyPairs:changeDecryptionPassword', userId, oldPassword, newPassword),
     decryptPrivateKey: (userId: string, password: string, publicKey: string): Promise<string> =>
       ipcRenderer.invoke('keyPairs:decryptPrivateKey', userId, password, publicKey),
+    deleteEncryptedPrivateKeys: (userId: string): Promise<void> =>
+      ipcRenderer.invoke('keyPairs:deleteEncryptedPrivateKeys', userId),
     clear: (userId: string): Promise<boolean> => ipcRenderer.invoke('keyPairs:clear', userId),
   },
   utils: {
     openExternal: (url: string) => ipcRenderer.send('utils:openExternal', url),
     decodeProtobuffKey: (protobuffEncodedKey: string): Promise<proto.Key> =>
       ipcRenderer.invoke('utils:decodeProtobuffKey', protobuffEncodedKey),
+    hash: (data: any): Promise<string> => ipcRenderer.invoke('utils:hash', data),
   },
 };
 typeof electronAPI;
