@@ -70,6 +70,7 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
+  { path: '/:catchAll(.*)', redirect: '/' },
 ];
 
 attachMeta(routes);
