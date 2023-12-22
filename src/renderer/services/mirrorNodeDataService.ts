@@ -7,8 +7,14 @@ import { decodeProtobuffKey } from './electronUtilsService';
 import { MirrorNodeAllowance } from '../interfaces/MirrorNodeAllowance';
 import { MirrorNodeAccountInfo } from '../interfaces/MirrorNodeAccountInfo';
 
-export const getAccountInfo = async (accountId: string, mirrorNodeLink: string) => {
-  const { data } = await axios.get(`${mirrorNodeLink}/accounts/${accountId}`);
+export const getAccountInfo = async (
+  accountId: string,
+  mirrorNodeLink: string,
+  controller?: AbortController,
+) => {
+  const { data } = await axios.get(`${mirrorNodeLink}/accounts/${accountId}`, {
+    signal: controller?.signal,
+  });
 
   let key: Key | undefined;
 
@@ -54,8 +60,14 @@ export const getAccountInfo = async (accountId: string, mirrorNodeLink: string) 
   return accountInfo;
 };
 
-export const getAccountAllowances = async (accountId: string, mirrorNodeLink: string) => {
-  const { data } = await axios.get(`${mirrorNodeLink}/accounts/${accountId}/allowances/crypto`);
+export const getAccountAllowances = async (
+  accountId: string,
+  mirrorNodeLink: string,
+  controller?: AbortController,
+) => {
+  const { data } = await axios.get(`${mirrorNodeLink}/accounts/${accountId}/allowances/crypto`, {
+    signal: controller?.signal,
+  });
 
   const allowances: MirrorNodeAllowance[] = data.allowances;
 

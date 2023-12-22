@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue';
+import { ref, watch } from 'vue';
 
 import {
   AccountId,
@@ -10,9 +10,7 @@ import {
   AccountAllowanceApproveTransaction,
 } from '@hashgraph/sdk';
 
-import { flattenKeyList } from '../../../../services/keyPairService';
 import { openExternal } from '../../../../services/electronUtilsService';
-import { getAccountAllowances, getAccountInfo } from '../../../../services/mirrorNodeDataService';
 import {
   createTransactionId,
   getTransactionSignatures,
@@ -22,7 +20,7 @@ import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useNetworkStore from '../../../../stores/storeNetwork';
 import useUserStateStore from '../../../../stores/storeUserState';
 
-import { MirrorNodeAllowance } from '../../../../interfaces/MirrorNodeAllowance';
+import useAccountId from '../../../../composables/useAccountId';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
@@ -41,40 +39,16 @@ const userPassword = ref('');
 const isAllowanceApprovedModalShown = ref(false);
 const transactionId = ref('');
 
-const payerId = ref('');
-const payerKeys = ref<string[]>([]);
 const validStart = ref('');
 const maxTransactionfee = ref(2);
 
-const ownerAllowances = ref<MirrorNodeAllowance[]>([]);
-
-const ownerData = reactive<{
-  accountId: string;
-  key: Key | null;
-  balance: Hbar;
-  valid: boolean;
-}>({
-  accountId: '',
-  balance: new Hbar(0),
-  key: null,
-  valid: false,
-});
-
-const spenderData = reactive<{
-  accountId: string;
-  key: Key | null;
-  balance: Hbar;
-  valid: boolean;
-}>({
-  accountId: '',
-  balance: new Hbar(0),
-  key: null,
-  valid: false,
-});
+const payerData = useAccountId();
+const ownerData = useAccountId();
+const spenderData = useAccountId();
 
 const amount = ref(0);
 
-const keyStructureComponentKey = ref(ownerData.key);
+const keyStructureComponentKey = ref<Key | null>(null);
 
 const transaction = ref<AccountAllowanceApproveTransaction | null>(null);
 const isLoading = ref(false);
@@ -84,19 +58,20 @@ const handleGetUserSignature = async () => {
     throw Error('No user selected');
   }
 
-  if (!transaction.value || !payerId.value) {
+  if (!transaction.value || !payerData.isValid.value) {
     return console.log('Transaction or payer missing');
   }
 
   try {
     isLoading.value = true;
 
-    let keys = keyPairsStore.keyPairs.filter(kp => payerKeys.value.includes(kp.publicKey));
+    let keys = keyPairsStore.keyPairs.filter(kp =>
+      payerData.keysFlattened.value.includes(kp.publicKey),
+    );
 
-    if (ownerData.key) {
-      let ownerKeys = flattenKeyList(ownerData.key).map(pk => pk.toStringRaw());
-      keys = keys.concat(keyPairsStore.keyPairs.filter(kp => ownerKeys.includes(kp.publicKey)));
-    }
+    keys = keys.concat(
+      keyPairsStore.keyPairs.filter(kp => ownerData.keysFlattened.value.includes(kp.publicKey)),
+    );
 
     await getTransactionSignatures(
       keys,
@@ -125,27 +100,26 @@ const handleGetUserSignature = async () => {
 
 const handleCreate = async () => {
   try {
-    if (!ownerData.accountId || !ownerData.valid) {
+    if (!ownerData.accountId.value || !ownerData.isValid.value) {
       throw Error('Invalid owner');
     }
 
     isLoading.value = true;
 
     transaction.value = new AccountAllowanceApproveTransaction()
-      .setTransactionId(createTransactionId(payerId.value, validStart.value))
+      .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
       .setTransactionValidDuration(180)
       .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
       .setNodeAccountIds([new AccountId(3)])
-      .approveHbarAllowance(ownerData.accountId, spenderData.accountId, new Hbar(amount.value))
+      .approveHbarAllowance(
+        ownerData.accountId.value,
+        spenderData.accountId.value,
+        new Hbar(amount.value),
+      )
       .freezeWith(networkStore.client);
 
-    const payerInfo = await getAccountInfo(payerId.value, networkStore.mirrorNodeBaseURL);
-    payerKeys.value = flattenKeyList(payerInfo.key).map(pk => pk.toStringRaw());
-
-    let ownerKeys = ownerData.key ? flattenKeyList(ownerData.key).map(pk => pk.toStringRaw()) : [];
-
     let someUserAccountIsPayer = keyPairsStore.keyPairs.some(kp =>
-      payerKeys.value.concat(ownerKeys).includes(kp.publicKey),
+      payerData.keysFlattened.value.concat(ownerData.keysFlattened.value).includes(kp.publicKey),
     );
 
     if (someUserAccountIsPayer) {
@@ -161,77 +135,21 @@ const handleCreate = async () => {
   }
 };
 
-const handleResetOwnerData = () => {
-  ownerData.balance = new Hbar(0);
-  ownerData.key = null;
-  ownerData.valid = false;
-
-  ownerAllowances.value = [];
-};
-
-const handleResetSpenderData = () => {
-  spenderData.balance = new Hbar(0);
-  spenderData.key = null;
-  spenderData.valid = false;
-};
-
 /* Watchers */
 watch(isSignModalShown, () => (userPassword.value = ''));
 watch(isAllowanceApprovedModalShown, shown => {
   if (!shown) {
-    payerId.value = '';
+    payerData.accountId.value = '';
     validStart.value = '';
     maxTransactionfee.value = 2;
 
-    ownerData.accountId = '';
-    spenderData.accountId = '';
-    handleResetOwnerData();
-    handleResetSpenderData();
+    ownerData.accountId.value = '';
+    spenderData.accountId.value = '';
 
     transactionId.value = '';
     transaction.value = null;
   }
 });
-watch(
-  () => ownerData.accountId,
-  async newAccountId => {
-    if (!newAccountId) return handleResetOwnerData();
-
-    try {
-      AccountId.fromString(newAccountId);
-
-      const accountInfo = await getAccountInfo(newAccountId, networkStore.mirrorNodeBaseURL);
-      ownerData.accountId = accountInfo.accountId.toString();
-      ownerData.balance = accountInfo.balance;
-      ownerData.key = accountInfo.key;
-      ownerData.valid = true;
-
-      const allowances = await getAccountAllowances(newAccountId, networkStore.mirrorNodeBaseURL);
-
-      ownerAllowances.value = allowances;
-    } catch (e) {
-      handleResetOwnerData();
-    }
-  },
-);
-watch(
-  () => spenderData.accountId,
-  async newAccountId => {
-    if (!newAccountId) return handleResetSpenderData();
-
-    try {
-      AccountId.fromString(newAccountId);
-
-      const accountInfo = await getAccountInfo(newAccountId, networkStore.mirrorNodeBaseURL);
-      spenderData.accountId = accountInfo.accountId.toString();
-      spenderData.balance = accountInfo.balance;
-      spenderData.key = accountInfo.key;
-      spenderData.valid = true;
-    } catch (e) {
-      handleResetSpenderData();
-    }
-  },
-);
 </script>
 <template>
   <div class="p-4 border rounded-4">
@@ -245,7 +163,16 @@ watch(
       <div class="mt-4 d-flex flex-wrap gap-5">
         <div class="form-group col-4">
           <label class="form-label">Set Payer ID (Required)</label>
-          <input v-model="payerId" type="text" class="form-control" placeholder="Enter Payer ID" />
+          <label v-if="payerData.isValid.value" class="form-label text-secondary"
+            >Balance: {{ payerData.accountInfo.value?.balance }}</label
+          >
+          <input
+            :value="payerData.accountIdFormatted.value"
+            @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
+            type="text"
+            class="form-control"
+            placeholder="Enter Payer ID"
+          />
         </div>
         <div class="form-group">
           <label class="form-label">Set Valid Start Time (Required)</label>
@@ -259,24 +186,25 @@ watch(
       <div class="mt-4 form-group">
         <label class="form-label">Set Owner ID</label>
         <label
-          v-if="ownerData.valid"
+          v-if="ownerData.isValid.value"
           class="form-label text-secondary border-start border-1 ms-2 ps-2"
-          >Balance: {{ ownerData.balance }}</label
+          >Balance: {{ ownerData.accountInfo.value?.balance }}</label
         >
         <input
-          v-model="ownerData.accountId"
+          :value="ownerData.accountIdFormatted.value"
+          @input="ownerData.accountId.value = ($event.target as HTMLInputElement).value"
           type="text"
           class="form-control"
           placeholder="Enter Owner ID"
         />
       </div>
-      <div class="mt-4" v-if="ownerData.key">
+      <div class="mt-4" v-if="ownerData.key.value">
         <AppButton
           color="secondary"
           size="small"
           @click="
             isKeyStructureModalShown = true;
-            keyStructureComponentKey = ownerData.key;
+            keyStructureComponentKey = ownerData.key.value;
           "
           >View Key Structure</AppButton
         >
@@ -284,25 +212,25 @@ watch(
       <div class="mt-4 form-group">
         <label class="form-label">Set Spender ID</label>
         <label
-          v-if="spenderData.valid"
+          v-if="spenderData.isValid.value"
           class="form-label text-secondary border-start border-1 ms-2 ps-2"
-          >Allowance:
-          {{ Hbar.fromTinybars(ownerAllowances.find(a => a.spender)?.amount || 0) }}</label
+          >Allowance: {{ ownerData.getSpenderAllowance(spenderData.accountId.value) }}</label
         >
         <input
-          v-model="spenderData.accountId"
+          :value="spenderData.accountIdFormatted.value"
+          @input="spenderData.accountId.value = ($event.target as HTMLInputElement).value"
           type="text"
           class="form-control"
           placeholder="Enter Spender ID"
         />
       </div>
-      <div class="mt-4" v-if="spenderData.key">
+      <div class="mt-4" v-if="spenderData.key.value">
         <AppButton
           color="secondary"
           size="small"
           @click="
             isKeyStructureModalShown = true;
-            keyStructureComponentKey = spenderData.key;
+            keyStructureComponentKey = spenderData.key.value;
           "
           >View Key Structure</AppButton
         >
@@ -315,7 +243,12 @@ watch(
         <AppButton
           color="primary"
           size="large"
-          :disabled="!payerId || !ownerData.valid || !spenderData.valid || amount < 0"
+          :disabled="
+            !payerData.isValid.value ||
+            !ownerData.isValid.value ||
+            !spenderData.isValid.value ||
+            amount < 0
+          "
           @click="handleCreate"
           >Create</AppButton
         >
@@ -367,11 +300,11 @@ watch(
         </p>
         <p class="mt-2 text-small d-flex justify-content-between align-items">
           <span class="text-bold text-secondary">Owner Account ID:</span>
-          <span>{{ ownerData.accountId }}</span>
+          <span>{{ ownerData.accountId.value }}</span>
         </p>
         <p class="mt-2 text-small d-flex justify-content-between align-items">
           <span class="text-bold text-secondary">Spender Account ID:</span>
-          <span>{{ spenderData.accountId }}</span>
+          <span>{{ spenderData.accountId.value }}</span>
         </p>
         <AppButton
           color="primary"

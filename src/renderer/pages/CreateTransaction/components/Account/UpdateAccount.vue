@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, reactive, watch } from 'vue';
 
-import { AccountId, AccountUpdateTransaction, KeyList, PublicKey, Hbar, Key } from '@hashgraph/sdk';
+import { AccountId, AccountUpdateTransaction, KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
 
-import { flattenKeyList } from '../../../../services/keyPairService';
 import { openExternal } from '../../../../services/electronUtilsService';
-import { getAccountInfo } from '../../../../services/mirrorNodeDataService';
 import {
   createTransactionId,
   getTransactionSignatures,
@@ -14,6 +12,8 @@ import {
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useNetworkStore from '../../../../stores/storeNetwork';
 import useUserStateStore from '../../../../stores/storeUserState';
+
+import useAccountId from '../../../../composables/useAccountId';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
@@ -24,6 +24,9 @@ const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
 const networkStore = useNetworkStore();
 
+const payerData = useAccountId();
+const accountData = useAccountId();
+
 /* State */
 const isKeyStructureModalShown = ref(false);
 
@@ -33,32 +36,10 @@ const userPassword = ref('');
 const isAccountUpdatedModalShown = ref(false);
 const transactionId = ref('');
 
-const payerId = ref('');
-const payerKeys = ref<string[]>([]);
 const validStart = ref('');
 const maxTransactionfee = ref(2);
 
-const accountData = reactive<{
-  accountId: string;
-  receiverSignatureRequired: boolean;
-  maxAutomaticTokenAssociations: number;
-  stakedAccountId: string | null;
-  stakedNodeId: number | null;
-  declineStakingReward: boolean;
-  memo: string;
-  key: Key | null;
-}>({
-  accountId: '',
-  receiverSignatureRequired: false,
-  maxAutomaticTokenAssociations: 0,
-  stakedAccountId: '',
-  stakedNodeId: null,
-  declineStakingReward: false,
-  memo: '',
-  key: null,
-});
-
-const initialAccountData = reactive<{
+const newAccountData = reactive<{
   receiverSignatureRequired: boolean;
   maxAutomaticTokenAssociations: number;
   stakedAccountId: string | null;
@@ -73,12 +54,12 @@ const initialAccountData = reactive<{
   declineStakingReward: false,
   memo: '',
 });
-
-const transaction = ref<AccountUpdateTransaction | null>(null);
-const isLoading = ref(false);
 
 const newOwnerKeyText = ref('');
 const newOwnerKeys = ref<string[]>([]);
+
+const transaction = ref<AccountUpdateTransaction | null>(null);
+const isLoading = ref(false);
 
 /* Computed */
 const newOwnerKeyList = computed(
@@ -114,13 +95,11 @@ const handleGetUserSignature = async () => {
   try {
     isLoading.value = true;
 
-    let accountKeys = accountData.key
-      ? flattenKeyList(accountData.key).map(pk => pk.toStringRaw())
-      : [];
-
     await getTransactionSignatures(
       keyPairsStore.keyPairs.filter(kp =>
-        newOwnerKeys.value.concat(accountKeys).concat(payerKeys.value).includes(kp.publicKey),
+        newOwnerKeys.value
+          .concat(accountData.keysFlattened.value, payerData.keysFlattened.value)
+          .includes(kp.publicKey),
       ),
       transaction.value as any,
       true,
@@ -149,58 +128,63 @@ const handleCreate = async () => {
   isLoading.value = true;
 
   try {
+    if (!accountData.accountInfo.value) {
+      throw Error('Invalid Account');
+    }
+
     transaction.value = new AccountUpdateTransaction()
-      .setTransactionId(createTransactionId(payerId.value, validStart.value))
+      .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
       .setTransactionValidDuration(180)
       .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
       .setNodeAccountIds([new AccountId(3)])
-      .setAccountId(accountData.accountId)
-      .setReceiverSignatureRequired(accountData.receiverSignatureRequired)
-      .setDeclineStakingReward(accountData.declineStakingReward)
-      .setMaxAutomaticTokenAssociations(accountData.maxAutomaticTokenAssociations)
-      .setAccountMemo(accountData.memo);
+      .setAccountId(accountData.accountId.value)
+      .setReceiverSignatureRequired(newAccountData.receiverSignatureRequired)
+      .setDeclineStakingReward(newAccountData.declineStakingReward)
+      .setMaxAutomaticTokenAssociations(newAccountData.maxAutomaticTokenAssociations)
+      .setAccountMemo(newAccountData.memo);
 
     newOwnerKeys.value.length > 0 && transaction.value.setKey(newOwnerKeyList.value);
 
     if (
-      accountData.stakedAccountId &&
-      accountData.stakedAccountId.length > 0 &&
-      !accountData.stakedNodeId &&
-      initialAccountData.stakedAccountId !== accountData.stakedAccountId
+      newAccountData.stakedAccountId &&
+      newAccountData.stakedAccountId.length > 0 &&
+      !newAccountData.stakedNodeId &&
+      accountData.accountInfo.value.stakedAccountId?.toString() !== newAccountData.stakedAccountId
     ) {
-      transaction.value.setStakedAccountId(AccountId.fromString(accountData.stakedAccountId));
+      transaction.value.setStakedAccountId(AccountId.fromString(newAccountData.stakedAccountId));
     }
 
     if (
-      accountData.stakedAccountId !== initialAccountData.stakedAccountId &&
-      accountData.stakedAccountId?.length === 0
+      newAccountData.stakedAccountId !==
+        accountData.accountInfo.value.stakedAccountId?.toString() &&
+      newAccountData.stakedAccountId?.length === 0
     ) {
       transaction.value.clearStakedAccountId();
     }
 
     if (
-      accountData.stakedNodeId &&
-      !accountData.stakedAccountId &&
-      initialAccountData.stakedNodeId !== accountData.stakedNodeId
+      newAccountData.stakedNodeId &&
+      !newAccountData.stakedAccountId &&
+      accountData.accountInfo.value.stakedNodeId?.toString() !==
+        newAccountData.stakedNodeId.toString()
     ) {
-      transaction.value.setStakedNodeId(accountData.stakedNodeId);
+      transaction.value.setStakedNodeId(newAccountData.stakedNodeId);
     }
 
-    if (accountData.stakedNodeId !== initialAccountData.stakedNodeId && !accountData.stakedNodeId) {
+    if (
+      newAccountData.stakedNodeId?.toString() !==
+        accountData.accountInfo.value.stakedNodeId?.toString() &&
+      !newAccountData.stakedNodeId
+    ) {
       transaction.value.clearStakedNodeId();
     }
 
     transaction.value.freezeWith(networkStore.client);
 
-    const payerInfo = await getAccountInfo(payerId.value, networkStore.mirrorNodeBaseURL);
-    payerKeys.value = flattenKeyList(payerInfo.key).map(pk => pk.toStringRaw());
-
-    let accountKeys = accountData.key
-      ? flattenKeyList(accountData.key).map(pk => pk.toStringRaw())
-      : [];
-
     const someUserAccountIsPayer = keyPairsStore.keyPairs.some(kp =>
-      newOwnerKeys.value.concat(accountKeys).concat(payerKeys.value).includes(kp.publicKey),
+      newOwnerKeys.value
+        .concat(accountData.keysFlattened.value, payerData.keysFlattened.value)
+        .includes(kp.publicKey),
     );
 
     if (someUserAccountIsPayer) {
@@ -216,69 +200,39 @@ const handleCreate = async () => {
   }
 };
 
-const handleResetAccoundData = () => {
-  accountData.receiverSignatureRequired = false;
-  accountData.maxAutomaticTokenAssociations = 0;
-  accountData.stakedAccountId = '';
-  accountData.stakedNodeId = null;
-  accountData.declineStakingReward = false;
-  accountData.memo = '';
-  accountData.key = null;
-
-  initialAccountData.receiverSignatureRequired = false;
-  initialAccountData.maxAutomaticTokenAssociations = 0;
-  initialAccountData.stakedAccountId = '';
-  initialAccountData.stakedNodeId = null;
-  initialAccountData.declineStakingReward = false;
-  initialAccountData.memo = '';
-};
-
 /* Watchers */
 watch(isSignModalShown, () => (userPassword.value = ''));
 watch(isAccountUpdatedModalShown, shown => {
   if (!shown) {
-    payerId.value = '';
+    payerData.accountId.value = '';
     validStart.value = '';
     maxTransactionfee.value = 2;
     newOwnerKeyText.value = '';
 
-    accountData.accountId = '';
-    handleResetAccoundData();
+    accountData.accountId.value = '';
 
     transactionId.value = '';
     transaction.value = null;
     newOwnerKeys.value = [];
   }
 });
-watch(
-  () => accountData.accountId,
-  async newAccountId => {
-    if (!newAccountId) return;
-
-    try {
-      AccountId.fromString(newAccountId);
-
-      const accountInfo = await getAccountInfo(newAccountId, networkStore.mirrorNodeBaseURL);
-      accountData.accountId = accountInfo.accountId.toString();
-      accountData.receiverSignatureRequired = accountInfo.receiverSignatureRequired;
-      accountData.maxAutomaticTokenAssociations = accountInfo.maxAutomaticTokenAssociations;
-      accountData.stakedAccountId = accountInfo.stakedAccountId?.toString() || '';
-      accountData.stakedNodeId = accountInfo.stakedNodeId || null;
-      accountData.declineStakingReward = accountInfo.declineReward;
-      accountData.memo = accountInfo.memo;
-      accountData.key = accountInfo.key;
-
-      initialAccountData.receiverSignatureRequired = accountInfo.receiverSignatureRequired;
-      initialAccountData.maxAutomaticTokenAssociations = accountInfo.maxAutomaticTokenAssociations;
-      initialAccountData.stakedAccountId = accountInfo.stakedAccountId?.toString() || '';
-      initialAccountData.stakedNodeId = accountInfo.stakedNodeId || null;
-      initialAccountData.declineStakingReward = accountInfo.declineReward;
-      initialAccountData.memo = accountInfo.memo;
-    } catch (e) {
-      handleResetAccoundData();
-    }
-  },
-);
+watch(accountData.accountInfo, accountInfo => {
+  if (!accountInfo) {
+    newAccountData.receiverSignatureRequired = false;
+    newAccountData.maxAutomaticTokenAssociations = 0;
+    newAccountData.stakedAccountId = '';
+    newAccountData.stakedNodeId = null;
+    newAccountData.declineStakingReward = false;
+    newAccountData.memo = '';
+  } else {
+    newAccountData.receiverSignatureRequired = accountInfo.receiverSignatureRequired;
+    newAccountData.maxAutomaticTokenAssociations = accountInfo.maxAutomaticTokenAssociations;
+    newAccountData.stakedAccountId = accountInfo.stakedAccountId?.toString() || '';
+    newAccountData.stakedNodeId = accountInfo.stakedNodeId;
+    newAccountData.declineStakingReward = accountInfo.declineReward;
+    newAccountData.memo = accountInfo.memo;
+  }
+});
 </script>
 <template>
   <div class="p-4 border rounded-4">
@@ -292,7 +246,16 @@ watch(
       <div class="mt-4 d-flex flex-wrap gap-5">
         <div class="form-group col-4">
           <label class="form-label">Set Payer ID (Required)</label>
-          <input v-model="payerId" type="text" class="form-control" placeholder="Enter Payer ID" />
+          <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
+            >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
+          >
+          <input
+            :value="payerData.accountIdFormatted.value"
+            @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
+            type="text"
+            class="form-control"
+            placeholder="Enter Payer ID"
+          />
         </div>
         <div class="form-group">
           <label class="form-label">Set Valid Start Time (Required)</label>
@@ -306,13 +269,14 @@ watch(
       <div class="mt-4 form-group">
         <label class="form-label">Set Account ID (Required)</label>
         <input
-          v-model="accountData.accountId"
+          :value="accountData.accountIdFormatted.value"
+          @input="accountData.accountId.value = ($event.target as HTMLInputElement).value"
           type="text"
           class="form-control"
           placeholder="Enter Account ID"
         />
       </div>
-      <div class="mt-4" v-if="accountData.key">
+      <div class="mt-4" v-if="accountData.key.value">
         <AppButton color="secondary" size="small" @click="isKeyStructureModalShown = true"
           >View Key Structure</AppButton
         >
@@ -351,7 +315,7 @@ watch(
       </div>
       <div class="mt-4 form-group w-50">
         <AppSwitch
-          v-model:checked="accountData.receiverSignatureRequired"
+          v-model:checked="newAccountData.receiverSignatureRequired"
           size="md"
           name="receiver-signature"
           label="Receiver Signature Required"
@@ -360,7 +324,7 @@ watch(
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Max Automatic Token Associations (Optional)</label>
         <input
-          v-model="accountData.maxAutomaticTokenAssociations"
+          v-model="newAccountData.maxAutomaticTokenAssociations"
           type="number"
           :min="0"
           :max="5000"
@@ -371,8 +335,8 @@ watch(
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Staked Account Id (Optional)</label>
         <input
-          v-model="accountData.stakedAccountId"
-          :disabled="Boolean(accountData.stakedNodeId)"
+          v-model="newAccountData.stakedAccountId"
+          :disabled="Boolean(newAccountData.stakedNodeId)"
           type="text"
           class="form-control"
           placeholder="Enter Account Id"
@@ -381,8 +345,10 @@ watch(
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Staked Node Id (Optional)</label>
         <input
-          v-model="accountData.stakedNodeId"
-          :disabled="Boolean(accountData.stakedAccountId && accountData.stakedAccountId.length > 0)"
+          v-model="newAccountData.stakedNodeId"
+          :disabled="
+            Boolean(newAccountData.stakedAccountId && newAccountData.stakedAccountId.length > 0)
+          "
           type="text"
           class="form-control"
           placeholder="Enter Node Id"
@@ -390,7 +356,7 @@ watch(
       </div>
       <div class="mt-4 form-group w-50">
         <AppSwitch
-          v-model:checked="accountData.declineStakingReward"
+          v-model:checked="newAccountData.declineStakingReward"
           size="md"
           name="decline-signature"
           label="Decline Staking Reward"
@@ -399,7 +365,7 @@ watch(
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Account Memo (Optional)</label>
         <input
-          v-model="accountData.memo"
+          v-model="newAccountData.memo"
           type="text"
           maxlength="100"
           class="form-control"
@@ -410,7 +376,7 @@ watch(
         <AppButton
           color="primary"
           size="large"
-          :disabled="!accountData.accountId || !payerId"
+          :disabled="!accountData.accountId.value || !payerData.isValid.value"
           @click="handleCreate"
           >Create</AppButton
         >
@@ -462,7 +428,7 @@ watch(
         </p>
         <p class="mt-2 text-small d-flex justify-content-between align-items">
           <span class="text-bold text-secondary">Account ID:</span>
-          <span>{{ accountData.accountId }}</span>
+          <span>{{ accountData.accountId.value }}</span>
         </p>
         <AppButton
           color="primary"
@@ -476,11 +442,11 @@ watch(
     <AppModal v-model:show="isKeyStructureModalShown" class="modal-fit-content">
       <div class="p-5">
         <KeyStructure
-          v-if="accountData.key instanceof KeyList && true"
-          :key-list="accountData.key"
+          v-if="accountData.key.value instanceof KeyList && true"
+          :key-list="accountData.key.value"
         />
-        <div v-else-if="accountData.key instanceof PublicKey && true">
-          {{ accountData.key.toStringRaw() }}
+        <div v-else-if="accountData.key.value instanceof PublicKey && true">
+          {{ accountData.key.value.toStringRaw() }}
         </div>
       </div>
     </AppModal>

@@ -8,12 +8,12 @@ import {
   createTransactionId,
   getTransactionSignatures,
 } from '../../../../services/transactionService';
-import { getAccountInfo } from '../../../../services/mirrorNodeDataService';
-import { flattenKeyList } from '../../../../services/keyPairService';
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useUserStateStore from '../../../../stores/storeUserState';
 import useNetworkStore from '../../../../stores/storeNetwork';
+
+import useAccountId from '../../../../composables/useAccountId';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
@@ -23,14 +23,14 @@ const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
 const networkStore = useNetworkStore();
 
+const payerData = useAccountId();
+
 const isSignModalShown = ref(false);
 const userPassword = ref('');
 
 const isAccountCreateModalShown = ref(false);
 const transactionId = ref('');
 
-const payerId = ref('');
-const payerKeys = ref<string[]>([]);
 const validStart = ref('');
 const maxTransactionfee = ref(2);
 
@@ -81,7 +81,7 @@ const handleGetUserSignature = async () => {
     }
 
     await getTransactionSignatures(
-      keyPairsStore.keyPairs.filter(kp => payerKeys.value.includes(kp.publicKey)),
+      keyPairsStore.keyPairs.filter(kp => payerData.keysFlattened.value.includes(kp.publicKey)),
       transaction.value as any,
       true,
       userStateStore.userData.userId,
@@ -111,7 +111,7 @@ const handleCreate = async () => {
     isLoading.value = true;
 
     transaction.value = new AccountCreateTransaction()
-      .setTransactionId(createTransactionId(payerId.value, validStart.value))
+      .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
       .setTransactionValidDuration(180)
       .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
       .setNodeAccountIds([new AccountId(3)])
@@ -130,10 +130,7 @@ const handleCreate = async () => {
 
     transaction.value.freezeWith(networkStore.client);
 
-    const payerInfo = await getAccountInfo(payerId.value, networkStore.mirrorNodeBaseURL);
-    payerKeys.value = flattenKeyList(payerInfo.key).map(pk => pk.toStringRaw());
-
-    if (keyPairsStore.keyPairs.some(kp => payerKeys.value.includes(kp.publicKey))) {
+    if (keyPairsStore.keyPairs.some(kp => payerData.keysFlattened.value.includes(kp.publicKey))) {
       isSignModalShown.value = true;
     } else {
       // Send to Back End
@@ -149,7 +146,7 @@ const handleCreate = async () => {
 watch(isSignModalShown, () => (userPassword.value = ''));
 watch(isAccountCreateModalShown, shown => {
   if (!shown) {
-    payerId.value = '';
+    payerData.accountId.value = '';
     validStart.value = '';
     maxTransactionfee.value = 2;
 
@@ -181,7 +178,16 @@ watch(isAccountCreateModalShown, shown => {
       <div class="mt-4 d-flex flex-wrap gap-5">
         <div class="form-group col-4">
           <label class="form-label">Set Payer ID (Required)</label>
-          <input v-model="payerId" type="text" class="form-control" placeholder="Enter Payer ID" />
+          <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
+            >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
+          >
+          <input
+            :value="payerData.accountIdFormatted.value"
+            @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
+            type="text"
+            class="form-control"
+            placeholder="Enter Payer ID"
+          />
         </div>
         <div class="form-group">
           <label class="form-label">Set Valid Start Time (Required)</label>
@@ -297,7 +303,7 @@ watch(isAccountCreateModalShown, shown => {
         <AppButton
           color="primary"
           size="large"
-          :disabled="keyList._keys.length === 0 || !payerId"
+          :disabled="keyList._keys.length === 0 || !payerData.isValid.value"
           @click="handleCreate"
           >Create</AppButton
         >
