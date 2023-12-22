@@ -8,8 +8,10 @@ import { IUserData } from '../../../../main/shared/interfaces/IUserData';
 
 import useUserStateStore from '../../../stores/storeUserState';
 
-import AppButton from '../../../components/ui/AppButton.vue';
 import { getStoredKeysSecretHashes } from '../../../services/keyPairService';
+
+import AppSwitch from '../../../components/ui/AppSwitch.vue';
+import AppButton from '../../../components/ui/AppButton.vue';
 
 const router = useRouter();
 const userStateStore = useUserStateStore();
@@ -19,6 +21,8 @@ const inputPassword = ref('');
 
 const inputEmailInvalid = ref(false);
 const inputPasswordInvalid = ref(false);
+
+const isInitialLogin = ref(false); // Temporary
 
 const handleRegister = () => {};
 
@@ -43,7 +47,7 @@ const handleOnFormSubmit = async (event: Event) => {
 
     try {
       const decodedUserData: IUserData = jwtDecode(loginRes.accessToken);
-      userStateStore.logUser(loginRes.accessToken, decodedUserData, loginRes.isInitial);
+      userStateStore.logUser(loginRes.accessToken, decodedUserData, isInitialLogin.value);
 
       // Compare with saved keys' secret hash
       // userStateStore.setSecretHashes([loginRes.secretHash]);
@@ -53,7 +57,7 @@ const handleOnFormSubmit = async (event: Event) => {
       console.log(error);
     }
 
-    if (loginRes.isInitial) {
+    if (isInitialLogin.value) {
       router.push({ name: 'accountSetup' });
     } else {
       // @ts-ignore
@@ -77,10 +81,19 @@ const handleOnFormSubmit = async (event: Event) => {
     <p class="text-secondary text-small lh-base text-center">
       In order to continue enter your email & password
     </p>
+
     <form
       @submit="handleOnFormSubmit"
       class="form-login mt-5 w-100 d-flex flex-column justify-content-center align-items-center"
     >
+      <!-- Temporary -->
+      <div class="w-100 d-flex justify-content-start">
+        <AppSwitch
+          v-model:checked="isInitialLogin"
+          name="is-initial-login"
+          label="Is Initial Login"
+        ></AppSwitch>
+      </div>
       <input
         v-model="inputEmail"
         type="text"
