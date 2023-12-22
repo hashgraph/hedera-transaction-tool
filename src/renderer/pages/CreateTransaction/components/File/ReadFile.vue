@@ -9,6 +9,8 @@ import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useUserStateStore from '../../../../stores/storeUserState';
 import useNetworkStore from '../../../../stores/storeNetwork';
 
+import useAccountId from '../../../../composables/useAccountId';
+
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
 
@@ -16,10 +18,11 @@ const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
 const networkStore = useNetworkStore();
 
+const payerData = useAccountId();
+
 const isUserPasswordModalShown = ref(false);
 const userPassword = ref('');
 
-const payerId = ref('');
 const fileId = ref('');
 
 const content = ref('');
@@ -33,7 +36,9 @@ const handleRead = async () => {
   try {
     isLoading.value = true;
 
-    const publicKey = keyPairsStore.keyPairs.find(kp => kp.accountId === payerId.value)?.publicKey;
+    const publicKey = keyPairsStore.keyPairs.find(
+      kp => kp.accountId === payerData.accountId.value,
+    )?.publicKey;
 
     const privateKey = await decryptPrivateKey(
       userStateStore.userData?.userId,
@@ -41,7 +46,7 @@ const handleRead = async () => {
       publicKey || '',
     );
 
-    networkStore.client.setOperator(payerId.value, privateKey);
+    networkStore.client.setOperator(payerData.accountId.value, privateKey);
 
     const query = new FileContentsQuery().setFileId(fileId.value);
 
@@ -74,7 +79,15 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
     <div class="mt-4">
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Payer ID</label>
-        <select v-model="payerId" class="form-select py-3" placeholder="Enter Payer ID">
+        <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
+          >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
+        >
+        <select
+          :value="payerData.accountIdFormatted.value"
+          @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
+          class="form-select py-3"
+          placeholder="Enter Payer ID"
+        >
           <option value="">Select Payer ID</option>
           <option
             v-for="kp in keyPairsStore.keyPairs.filter(kp => kp.accountId)"
@@ -102,7 +115,7 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
         <AppButton
           size="large"
           color="primary"
-          :disabled="!fileId || !payerId"
+          :disabled="!fileId || !payerData.isValid.value"
           @click="isUserPasswordModalShown = true"
           >Read</AppButton
         >
