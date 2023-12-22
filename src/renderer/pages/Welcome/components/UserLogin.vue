@@ -24,8 +24,6 @@ const inputPasswordInvalid = ref(false);
 
 const isInitialLogin = ref(false); // Temporary
 
-const handleRegister = () => {};
-
 const handleOnFormSubmit = async (event: Event) => {
   event.preventDefault();
 
@@ -82,18 +80,7 @@ const handleOnFormSubmit = async (event: Event) => {
       In order to continue enter your email & password
     </p>
 
-    <form
-      @submit="handleOnFormSubmit"
-      class="form-login mt-5 w-100 d-flex flex-column justify-content-center align-items-center"
-    >
-      <!-- Temporary -->
-      <div class="w-100 d-flex justify-content-start">
-        <AppSwitch
-          v-model:checked="isInitialLogin"
-          name="is-initial-login"
-          label="Is Initial Login"
-        ></AppSwitch>
-      </div>
+    <form @submit="handleOnFormSubmit" class="form-login mt-5 w-100">
       <input
         v-model="inputEmail"
         type="text"
@@ -110,24 +97,29 @@ const handleOnFormSubmit = async (event: Event) => {
         placeholder="Enter password"
       />
       <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
-      <RouterLink
-        :to="{ name: 'forgotPassword' }"
-        class="align-self-start d-inline-block ms-3 mt-3 text-muted text-small cursor-pointer text-decoration-none"
-        >Forgot password</RouterLink
-      >
+      <div class="mt-3">
+        <RouterLink :to="{ name: 'forgotPassword' }" class="text-small link-primary"
+          >Forgot password</RouterLink
+        >
+      </div>
+      <!-- Temporary -->
+      <div class="w-100 mt-4 d-flex justify-content-start">
+        <AppSwitch
+          v-model:checked="isInitialLogin"
+          name="is-initial-login"
+          label="Initial Login"
+        ></AppSwitch>
+      </div>
       <AppButton color="primary" size="large" type="submit" class="mt-5 w-100 rounded-4"
         >Login</AppButton
       >
-      <p class="mt-5">or</p>
-      <template v-if="userStateStore.role === 'personal'">
-        <p class="mt-5 text-bold cursor-pointer" @click="handleRegister">Register</p>
-      </template>
+
       <template v-if="userStateStore.role === 'organization'">
-        <RouterLink
-          :to="{ name: 'setupOrganization' }"
-          class="mt-5 text-body text-bold text-decoration-none"
-          >Add Organization</RouterLink
-        >
+        <div class="mt-5 text-center">
+          <RouterLink :to="{ name: 'setupOrganization' }" class="link-primary"
+            >Add Organization</RouterLink
+          >
+        </div>
       </template>
     </form>
   </div>
