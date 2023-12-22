@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue';
+import { ref, watch } from 'vue';
 
 import { AccountId, KeyList, PublicKey, Hbar, Key, TransferTransaction } from '@hashgraph/sdk';
 
-import { flattenKeyList } from '../../../../services/keyPairService';
 import { openExternal } from '../../../../services/electronUtilsService';
-import { getAccountAllowances, getAccountInfo } from '../../../../services/mirrorNodeDataService';
 import {
   createTransactionId,
   getTransactionSignatures,
@@ -15,7 +13,7 @@ import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useNetworkStore from '../../../../stores/storeNetwork';
 import useUserStateStore from '../../../../stores/storeUserState';
 
-import { MirrorNodeAllowance } from '../../../../interfaces/MirrorNodeAllowance';
+import useAccountId from '../../../../composables/useAccountId';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
@@ -26,6 +24,10 @@ const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
 const networkStore = useNetworkStore();
 
+const payerData = useAccountId();
+const senderData = useAccountId();
+const receiverData = useAccountId();
+
 /* State */
 const isKeyStructureModalShown = ref(false);
 
@@ -35,44 +37,14 @@ const userPassword = ref('');
 const isTransferSuccessfulModalShown = ref(false);
 const transactionId = ref('');
 
-const payerId = ref('');
-const payerKeys = ref<string[]>([]);
 const validStart = ref('');
 const maxTransactionfee = ref(2);
 
 const isApprovedTransfer = ref(false);
 
-const spenderAllowances = ref<MirrorNodeAllowance[]>([]);
-
-const senderData = reactive<{
-  accountId: string;
-  key: Key | null;
-  balance: Hbar;
-  valid: boolean;
-}>({
-  accountId: '',
-  balance: new Hbar(0),
-  key: null,
-  valid: false,
-});
-
-const receiverData = reactive<{
-  accountId: string;
-  key: Key | null;
-  balance: Hbar;
-  receiveSignatureRequired: boolean;
-  valid: boolean;
-}>({
-  accountId: '',
-  balance: new Hbar(0),
-  key: null,
-  receiveSignatureRequired: false,
-  valid: false,
-});
-
 const amount = ref(0);
 
-const keyStructureComponentKey = ref(senderData.key);
+const keyStructureComponentKey = ref<Key | null>(null);
 
 const transaction = ref<TransferTransaction | null>(null);
 const isLoading = ref(false);
@@ -82,23 +54,29 @@ const handleGetUserSignature = async () => {
     throw Error('No user selected');
   }
 
-  if (!transaction.value || !payerId.value) {
+  if (!transaction.value || !payerData.accountInfo.value?.accountId) {
     return console.log('Transaction or payer missing');
   }
 
   try {
     isLoading.value = true;
 
-    let keys = keyPairsStore.keyPairs.filter(kp => payerKeys.value.includes(kp.publicKey));
+    let keys = keyPairsStore.keyPairs.filter(kp =>
+      payerData.keysFlattened.value.includes(kp.publicKey),
+    );
 
-    if (!isApprovedTransfer.value && senderData.key) {
-      let senderKeys = flattenKeyList(senderData.key).map(pk => pk.toStringRaw());
-      keys = keys.concat(keyPairsStore.keyPairs.filter(kp => senderKeys.includes(kp.publicKey)));
+    if (!isApprovedTransfer.value && senderData.key.value) {
+      keys = keys.concat(
+        keyPairsStore.keyPairs.filter(kp => senderData.keysFlattened.value.includes(kp.publicKey)),
+      );
     }
 
-    if (receiverData.receiveSignatureRequired && receiverData.key) {
-      let receiverKeys = flattenKeyList(receiverData.key).map(pk => pk.toStringRaw());
-      keys = keys.concat(keyPairsStore.keyPairs.filter(kp => receiverKeys.includes(kp.publicKey)));
+    if (receiverData.accountInfo.value?.receiverSignatureRequired && receiverData.key.value) {
+      keys = keys.concat(
+        keyPairsStore.keyPairs.filter(kp =>
+          receiverData.keysFlattened.value.includes(kp.publicKey),
+        ),
+      );
     }
 
     await getTransactionSignatures(
@@ -131,42 +109,40 @@ const handleCreate = async () => {
     isLoading.value = true;
 
     transaction.value = new TransferTransaction()
-      .setTransactionId(createTransactionId(payerId.value, validStart.value))
+      .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
       .setTransactionValidDuration(180)
       .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
       .setNodeAccountIds([new AccountId(3)])
-      .addHbarTransfer(receiverData.accountId, new Hbar(amount.value));
+      .addHbarTransfer(receiverData.accountId.value, new Hbar(amount.value));
 
     if (isApprovedTransfer.value) {
       transaction.value.addApprovedHbarTransfer(
-        senderData.accountId,
+        senderData.accountId.value,
         new Hbar(amount.value).negated(),
       );
     } else {
-      transaction.value.addHbarTransfer(senderData.accountId, new Hbar(amount.value).negated());
+      transaction.value.addHbarTransfer(
+        senderData.accountId.value,
+        new Hbar(amount.value).negated(),
+      );
     }
 
     transaction.value.freezeWith(networkStore.client);
 
-    const payerInfo = await getAccountInfo(payerId.value, networkStore.mirrorNodeBaseURL);
-    payerKeys.value = flattenKeyList(payerInfo.key).map(pk => pk.toStringRaw());
-
     let someUserAccountIsPayer = keyPairsStore.keyPairs.some(kp =>
-      payerKeys.value.includes(kp.publicKey),
+      payerData.keysFlattened.value.includes(kp.publicKey),
     );
 
     if (!isApprovedTransfer.value) {
-      let keys = senderData.key ? flattenKeyList(senderData.key).map(pk => pk.toStringRaw()) : [];
       someUserAccountIsPayer =
-        someUserAccountIsPayer || keyPairsStore.keyPairs.some(kp => keys.includes(kp.publicKey));
+        someUserAccountIsPayer ||
+        keyPairsStore.keyPairs.some(kp => senderData.keysFlattened.value.includes(kp.publicKey));
     }
 
-    if (receiverData.receiveSignatureRequired) {
-      let keys = receiverData.key
-        ? flattenKeyList(receiverData.key).map(pk => pk.toStringRaw())
-        : [];
+    if (receiverData.accountInfo.value?.receiverSignatureRequired) {
       someUserAccountIsPayer =
-        someUserAccountIsPayer || keyPairsStore.keyPairs.some(kp => keys.includes(kp.publicKey));
+        someUserAccountIsPayer ||
+        keyPairsStore.keyPairs.some(kp => receiverData.keysFlattened.value.includes(kp.publicKey));
     }
 
     if (someUserAccountIsPayer) {
@@ -182,77 +158,21 @@ const handleCreate = async () => {
   }
 };
 
-const handleResetSenderData = () => {
-  senderData.balance = new Hbar(0);
-  senderData.key = null;
-  senderData.valid = false;
-};
-
-const handleResetReceiverData = () => {
-  receiverData.balance = new Hbar(0);
-  receiverData.key = null;
-  receiverData.receiveSignatureRequired = false;
-  receiverData.valid = false;
-};
-
 /* Watchers */
 watch(isSignModalShown, () => (userPassword.value = ''));
 watch(isTransferSuccessfulModalShown, shown => {
   if (!shown) {
-    payerId.value = '';
+    payerData.accountId.value = '';
     validStart.value = '';
     maxTransactionfee.value = 2;
 
-    senderData.accountId = '';
-    receiverData.accountId = '';
-    handleResetSenderData();
-    handleResetReceiverData();
+    senderData.accountId.value = '';
+    receiverData.accountId.value = '';
 
     transactionId.value = '';
     transaction.value = null;
   }
 });
-watch(
-  () => senderData.accountId,
-  async newAccountId => {
-    if (!newAccountId) return handleResetSenderData();
-
-    try {
-      AccountId.fromString(newAccountId);
-
-      const accountInfo = await getAccountInfo(newAccountId, networkStore.mirrorNodeBaseURL);
-      senderData.accountId = accountInfo.accountId.toString();
-      senderData.balance = accountInfo.balance;
-      senderData.key = accountInfo.key;
-      senderData.valid = true;
-
-      const allowances = await getAccountAllowances(newAccountId, networkStore.mirrorNodeBaseURL);
-
-      spenderAllowances.value = allowances;
-    } catch (e) {
-      handleResetSenderData();
-    }
-  },
-);
-watch(
-  () => receiverData.accountId,
-  async newAccountId => {
-    if (!newAccountId) return handleResetReceiverData();
-
-    try {
-      AccountId.fromString(newAccountId);
-
-      const accountInfo = await getAccountInfo(newAccountId, networkStore.mirrorNodeBaseURL);
-      receiverData.accountId = accountInfo.accountId.toString();
-      receiverData.balance = accountInfo.balance;
-      receiverData.key = accountInfo.key;
-      receiverData.receiveSignatureRequired = accountInfo.receiverSignatureRequired;
-      receiverData.valid = true;
-    } catch (e) {
-      handleResetReceiverData();
-    }
-  },
-);
 </script>
 <template>
   <div class="p-4 border rounded-4">
@@ -268,16 +188,18 @@ watch(
           <label class="form-label"
             >Set {{ isApprovedTransfer ? 'Spender' : 'Payer' }} ID (Required)</label
           >
-          <label
-            v-if="isApprovedTransfer && spenderAllowances.some(al => al.spender === payerId)"
-            class="d-block form-label text-secondary"
+          <label v-if="isApprovedTransfer" class="d-block form-label text-secondary"
             >Allowance:
             {{
-              Hbar.fromTinybars(spenderAllowances.find(sp => sp.spender === payerId)?.amount)
+              Hbar.fromTinybars(
+                senderData.allowances.value.find(al => al.spender === payerData.accountId.value)
+                  ?.amount || 0,
+              )
             }}</label
           >
           <input
-            v-model="payerId"
+            :value="payerData.accountInfo.value?.accountId || payerData.accountId.value"
+            @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
             type="text"
             class="form-control"
             :placeholder="`Enter ${isApprovedTransfer ? 'Spender' : 'Payer'} ID`"
@@ -295,24 +217,25 @@ watch(
       <div class="mt-4 form-group">
         <label class="form-label">Set Sender ID</label>
         <label
-          v-if="senderData.valid"
+          v-if="senderData.isValid.value"
           class="form-label text-secondary border-start border-1 ms-2 ps-2"
-          >Balance: {{ senderData.balance }}</label
+          >Balance: {{ senderData.accountInfo.value?.balance || 0 }}</label
         >
         <input
-          v-model="senderData.accountId"
+          :value="senderData.accountInfo.value?.accountId || senderData.accountId.value"
+          @input="senderData.accountId.value = ($event.target as HTMLInputElement).value"
           type="text"
           class="form-control"
           placeholder="Enter Sender ID"
         />
       </div>
-      <div class="mt-4" v-if="senderData.key">
+      <div class="mt-4" v-if="senderData.key.value">
         <AppButton
           color="secondary"
           size="small"
           @click="
             isKeyStructureModalShown = true;
-            keyStructureComponentKey = senderData.key;
+            keyStructureComponentKey = senderData.key.value;
           "
           >View Key Structure</AppButton
         >
@@ -320,24 +243,28 @@ watch(
       <div class="mt-4 form-group">
         <label class="form-label">Set Receiver ID</label>
         <label
-          v-if="receiverData.valid"
+          v-if="receiverData.isValid.value"
           class="form-label text-secondary border-start border-1 ms-2 ps-2"
-          >Balance: {{ receiverData.balance }}</label
+          >Balance: {{ receiverData.accountInfo.value?.balance || 0 }}</label
         >
         <input
-          v-model="receiverData.accountId"
+          :value="receiverData.accountInfo.value?.accountId || receiverData.accountId.value"
+          @input="receiverData.accountId.value = ($event.target as HTMLInputElement).value"
           type="text"
           class="form-control"
           placeholder="Enter Receiver ID"
         />
       </div>
-      <div class="mt-4" v-if="receiverData.receiveSignatureRequired && receiverData.key">
+      <div
+        class="mt-4"
+        v-if="receiverData.accountInfo.value?.receiverSignatureRequired && receiverData.key.value"
+      >
         <AppButton
           color="secondary"
           size="small"
           @click="
             isKeyStructureModalShown = true;
-            keyStructureComponentKey = receiverData.key;
+            keyStructureComponentKey = receiverData.key.value;
           "
           >View Key Structure</AppButton
         >
@@ -358,7 +285,12 @@ watch(
         <AppButton
           color="primary"
           size="large"
-          :disabled="!payerId || !senderData.accountId || !receiverData.accountId || amount < 0"
+          :disabled="
+            !payerData.accountId.value ||
+            !senderData.accountId.value ||
+            !receiverData.accountId.value ||
+            amount < 0
+          "
           @click="handleCreate"
           >Create</AppButton
         >
@@ -410,11 +342,11 @@ watch(
         </p>
         <p class="mt-2 text-small d-flex justify-content-between align-items">
           <span class="text-bold text-secondary">Sender Account ID:</span>
-          <span>{{ senderData.accountId }}</span>
+          <span>{{ senderData.accountId.value }}</span>
         </p>
         <p class="mt-2 text-small d-flex justify-content-between align-items">
           <span class="text-bold text-secondary">Receiver Account ID:</span>
-          <span>{{ receiverData.accountId }}</span>
+          <span>{{ receiverData.accountId.value }}</span>
         </p>
         <AppButton
           color="primary"
