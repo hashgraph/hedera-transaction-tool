@@ -53,8 +53,8 @@ export default function useAccountId() {
         allowancesController.value,
       );
 
-      accountInfo.value = accountInfoRes.data;
-      allowances.value = accountAllowancesRes.data;
+      accountInfo.value = accountInfoRes;
+      allowances.value = accountAllowancesRes;
     } catch (e) {
       resetData();
     }
