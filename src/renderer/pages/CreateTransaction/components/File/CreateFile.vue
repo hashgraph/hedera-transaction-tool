@@ -8,8 +8,6 @@ import {
   createTransactionId,
   getTransactionSignatures,
 } from '../../../../services/transactionService';
-import { getAccountInfo } from '../../../../services/mirrorNodeDataService';
-import { flattenKeyList } from '../../../../services/keyPairService';
 
 import useUserStateStore from '../../../../stores/storeUserState';
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
@@ -17,6 +15,9 @@ import useNetworkStore from '../../../../stores/storeNetwork';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
+import useAccountId from '../../../../composables/useAccountId';
+
+const payerData = useAccountId();
 
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
@@ -29,8 +30,6 @@ const isFileCreatedModalShown = ref(false);
 const transactionId = ref('');
 const fileId = ref('');
 
-const payerId = ref('');
-const payerKeys = ref<string[]>([]);
 const validStart = ref('');
 const maxTransactionFee = ref(2);
 
@@ -78,7 +77,7 @@ const handleGetUserSignature = async () => {
     throw Error('No user selected');
   }
 
-  if (!transaction.value || !payerId.value) {
+  if (!transaction.value || !payerData.isValid.value) {
     return console.log('Transaction or payer missing');
   }
 
@@ -87,7 +86,7 @@ const handleGetUserSignature = async () => {
 
     await getTransactionSignatures(
       keyPairsStore.keyPairs.filter(kp =>
-        ownerKeys.value.concat(payerKeys.value).includes(kp.publicKey),
+        ownerKeys.value.concat(payerData.keysFlattened.value).includes(kp.publicKey),
       ),
       transaction.value as any,
       true,
@@ -118,7 +117,7 @@ const handleSign = async () => {
     isLoading.value = true;
 
     transaction.value = new FileCreateTransaction()
-      .setTransactionId(createTransactionId(payerId.value, validStart.value))
+      .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
       .setTransactionValidDuration(180)
       .setMaxTransactionFee(maxTransactionFee.value)
       .setNodeAccountIds([new AccountId(3)])
@@ -131,11 +130,8 @@ const handleSign = async () => {
 
     transaction.value.freezeWith(networkStore.client);
 
-    const payerInfo = await getAccountInfo(payerId.value, networkStore.mirrorNodeBaseURL);
-    payerKeys.value = flattenKeyList(payerInfo.key).map(pk => pk.toStringRaw());
-
     const userIncludedPublicKeys = keyPairsStore.keyPairs.filter(kp =>
-      ownerKeys.value.concat(payerKeys.value).includes(kp.publicKey),
+      ownerKeys.value.concat(payerData.keysFlattened.value).includes(kp.publicKey),
     );
 
     if (userIncludedPublicKeys.length > 0) {
@@ -164,7 +160,16 @@ watch(isSignModalShown, () => (userPassword.value = ''));
       <div class="mt-4 d-flex flex-wrap gap-5">
         <div class="form-group col-4">
           <label class="form-label">Set Payer ID (Required)</label>
-          <input v-model="payerId" type="text" class="form-control" placeholder="Enter Payer ID" />
+          <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
+            >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
+          >
+          <input
+            :value="payerData.accountIdFormatted.value"
+            @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
+            type="text"
+            class="form-control"
+            placeholder="Enter Payer ID"
+          />
         </div>
         <div class="form-group">
           <label class="form-label">Set Valid Start Time (Required)</label>
@@ -248,7 +253,7 @@ watch(isSignModalShown, () => (userPassword.value = ''));
         <AppButton
           color="primary"
           size="large"
-          :disabled="keyList._keys.length === 0 || !payerId"
+          :disabled="keyList._keys.length === 0 || !payerData.isValid.value"
           @click="handleSign"
           >Sign</AppButton
         >
