@@ -9,11 +9,11 @@ import {
   getTransactionSignatures,
 } from '../../../../services/transactionService';
 
-import useAccountId from '../../../../composables/useAccountId';
-
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useUserStateStore from '../../../../stores/storeUserState';
 import useNetworkStore from '../../../../stores/storeNetwork';
+
+import useAccountId from '../../../../composables/useAccountId';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';

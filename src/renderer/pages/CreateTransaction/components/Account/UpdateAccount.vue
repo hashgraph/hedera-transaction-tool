@@ -13,11 +13,12 @@ import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useNetworkStore from '../../../../stores/storeNetwork';
 import useUserStateStore from '../../../../stores/storeUserState';
 
+import useAccountId from '../../../../composables/useAccountId';
+
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
 import AppSwitch from '../../../../components/ui/AppSwitch.vue';
 import KeyStructure from '../../../../components/KeyStructure.vue';
-import useAccountId from '../../../../composables/useAccountId';
 
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();

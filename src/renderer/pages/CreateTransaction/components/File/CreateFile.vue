@@ -13,9 +13,10 @@ import useUserStateStore from '../../../../stores/storeUserState';
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useNetworkStore from '../../../../stores/storeNetwork';
 
+import useAccountId from '../../../../composables/useAccountId';
+
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
-import useAccountId from '../../../../composables/useAccountId';
 
 const payerData = useAccountId();
 
