@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue';
+import { ref, watch } from 'vue';
 
-import { AccountId, KeyList, PublicKey, Hbar, Key, AccountDeleteTransaction } from '@hashgraph/sdk';
+import { AccountId, KeyList, PublicKey, Hbar, AccountDeleteTransaction } from '@hashgraph/sdk';
 
-import { flattenKeyList } from '../../../../services/keyPairService';
 import { openExternal } from '../../../../services/electronUtilsService';
-import { getAccountInfo } from '../../../../services/mirrorNodeDataService';
 import {
   createTransactionId,
   getTransactionSignatures,
 } from '../../../../services/transactionService';
+
+import useAccountId from '../../../../composables/useAccountId';
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useNetworkStore from '../../../../stores/storeNetwork';
@@ -23,6 +23,10 @@ const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
 const networkStore = useNetworkStore();
 
+const payerData = useAccountId();
+const accountData = useAccountId();
+const transferAccountData = useAccountId();
+
 /* State */
 const isKeyStructureModalShown = ref(false);
 
@@ -32,22 +36,8 @@ const userPassword = ref('');
 const isAccountDeleteModalShown = ref(false);
 const transactionId = ref('');
 
-const payerId = ref('');
-const payerKeys = ref<string[]>([]);
 const validStart = ref('');
 const maxTransactionfee = ref(2);
-
-const accountData = reactive<{
-  accountId: string;
-  key: Key | null;
-  transferAccountId: string;
-  deleted: boolean;
-}>({
-  accountId: '',
-  transferAccountId: '',
-  deleted: false,
-  key: null,
-});
 
 const transaction = ref<AccountDeleteTransaction | null>(null);
 const isLoading = ref(false);
@@ -57,20 +47,23 @@ const handleGetUserSignature = async () => {
     throw Error('No user selected');
   }
 
-  if (!transaction.value || !payerId.value) {
+  if (!transaction.value || !payerData.accountId.value) {
     return console.log('Transaction or payer missing');
   }
 
   try {
     isLoading.value = true;
 
-    let accountKeys = accountData.key
-      ? flattenKeyList(accountData.key).map(pk => pk.toStringRaw())
-      : [];
-
     await getTransactionSignatures(
       keyPairsStore.keyPairs.filter(kp =>
-        payerKeys.value.concat(accountKeys).includes(kp.publicKey),
+        payerData.keysFlattened.value
+          .concat(
+            accountData.keysFlattened.value,
+            transferAccountData.accountInfo.value?.receiverSignatureRequired
+              ? transferAccountData.keysFlattened.value
+              : [],
+          )
+          .includes(kp.publicKey),
       ),
       transaction.value as any,
       true,
@@ -100,22 +93,24 @@ const handleCreate = async () => {
     isLoading.value = true;
 
     transaction.value = new AccountDeleteTransaction()
-      .setTransactionId(createTransactionId(payerId.value, validStart.value))
+      .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
       .setTransactionValidDuration(180)
       .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
       .setNodeAccountIds([new AccountId(3)])
-      .setAccountId(accountData.accountId)
-      .setTransferAccountId(accountData.transferAccountId);
+      .setAccountId(accountData.accountId.value)
+      .setTransferAccountId(transferAccountData.accountId.value);
 
     transaction.value.freezeWith(networkStore.client);
 
-    let keys = accountData.key ? flattenKeyList(accountData.key).map(pk => pk.toStringRaw()) : [];
-
-    const payerInfo = await getAccountInfo(payerId.value, networkStore.mirrorNodeBaseURL);
-    payerKeys.value = flattenKeyList(payerInfo.key).map(pk => pk.toStringRaw());
-
     const someUserAccountIsPayer = keyPairsStore.keyPairs.some(kp =>
-      payerKeys.value.concat(keys).includes(kp.publicKey),
+      payerData.keysFlattened.value
+        .concat(
+          accountData.keysFlattened.value,
+          transferAccountData.accountInfo.value?.receiverSignatureRequired
+            ? transferAccountData.keysFlattened.value
+            : [],
+        )
+        .includes(kp.publicKey),
     );
 
     if (someUserAccountIsPayer) {
@@ -131,44 +126,21 @@ const handleCreate = async () => {
   }
 };
 
-const handleResetAccoundData = () => {
-  accountData.transferAccountId = '';
-  accountData.deleted = false;
-  accountData.key = null;
-};
-
 /* Watchers */
 watch(isSignModalShown, () => (userPassword.value = ''));
 watch(isAccountDeleteModalShown, shown => {
   if (!shown) {
-    payerId.value = '';
+    payerData.accountId.value = '';
     validStart.value = '';
     maxTransactionfee.value = 2;
 
-    accountData.accountId = '';
-    handleResetAccoundData();
+    accountData.accountId.value = '';
+    transferAccountData.accountId.value = '';
 
     transactionId.value = '';
     transaction.value = null;
   }
 });
-watch(
-  () => accountData.accountId,
-  async newAccountId => {
-    if (!newAccountId) return handleResetAccoundData();
-
-    try {
-      AccountId.fromString(newAccountId);
-
-      const accountInfo = await getAccountInfo(newAccountId, networkStore.mirrorNodeBaseURL);
-      accountData.accountId = accountInfo.accountId.toString();
-      accountData.deleted = accountInfo.deleted;
-      accountData.key = accountInfo.key;
-    } catch (e) {
-      handleResetAccoundData();
-    }
-  },
-);
 </script>
 <template>
   <div class="p-4 border rounded-4">
@@ -182,7 +154,16 @@ watch(
       <div class="mt-4 d-flex flex-wrap gap-5">
         <div class="form-group col-4">
           <label class="form-label">Set Payer ID (Required)</label>
-          <input v-model="payerId" type="text" class="form-control" placeholder="Enter Payer ID" />
+          <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
+            >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
+          >
+          <input
+            :value="payerData.accountIdFormatted.value"
+            @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
+            type="text"
+            class="form-control"
+            placeholder="Enter Payer ID"
+          />
         </div>
         <div class="form-group">
           <label class="form-label">Set Valid Start Time (Required)</label>
@@ -195,35 +176,51 @@ watch(
       </div>
       <div class="mt-4 form-group">
         <label class="form-label">Set Account ID (Required)</label>
+        <label v-if="accountData.isValid.value" class="d-block form-label text-secondary"
+          >Balance: {{ accountData.accountInfo.value?.balance || 0 }}</label
+        >
         <input
-          v-model="accountData.accountId"
+          :value="accountData.accountIdFormatted.value"
+          @input="accountData.accountId.value = ($event.target as HTMLInputElement).value"
           type="text"
           class="form-control"
           placeholder="Enter Account ID"
         />
       </div>
-      <div class="mt-4" v-if="accountData.key">
+      <div class="mt-4" v-if="accountData.key.value">
         <AppButton color="secondary" size="small" @click="isKeyStructureModalShown = true"
           >View Key Structure</AppButton
         >
       </div>
       <div class="mt-4 form-group">
         <label class="form-label">Set Transfer Account ID (Required)</label>
+        <label v-if="transferAccountData.isValid.value" class="d-block form-label text-secondary"
+          >Receive Signature Required:
+          {{ transferAccountData.accountInfo.value?.receiverSignatureRequired || false }}</label
+        >
         <input
-          v-model="accountData.transferAccountId"
-          :disabled="accountData.deleted"
+          :value="transferAccountData.accountIdFormatted.value"
+          @input="transferAccountData.accountId.value = ($event.target as HTMLInputElement).value"
+          :disabled="accountData.accountInfo.value?.deleted"
           type="text"
           class="form-control"
           placeholder="Enter Account ID"
         />
       </div>
-      <p v-if="accountData.deleted" class="text-danger mt-4">Account is already deleted!</p>
+      <p
+        v-if="accountData.accountInfo.value && accountData.accountInfo.value.deleted"
+        class="text-danger mt-4"
+      >
+        Account is already deleted!
+      </p>
       <div class="mt-4">
         <AppButton
           color="primary"
           size="large"
           :disabled="
-            !accountData.accountId || !accountData.transferAccountId || accountData.deleted
+            !accountData.isValid.value ||
+            !transferAccountData.isValid.value ||
+            accountData.accountInfo.value?.deleted
           "
           @click="handleCreate"
           >Create</AppButton
@@ -276,7 +273,7 @@ watch(
         </p>
         <p class="mt-2 text-small d-flex justify-content-between align-items">
           <span class="text-bold text-secondary">Account ID:</span>
-          <span>{{ accountData.accountId }}</span>
+          <span>{{ accountData.accountId.value }}</span>
         </p>
         <AppButton
           color="primary"
@@ -290,11 +287,11 @@ watch(
     <AppModal v-model:show="isKeyStructureModalShown" class="modal-fit-content">
       <div class="p-5">
         <KeyStructure
-          v-if="accountData.key instanceof KeyList && true"
-          :key-list="accountData.key"
+          v-if="accountData.key.value instanceof KeyList && true"
+          :key-list="accountData.key.value"
         />
-        <div v-else-if="accountData.key instanceof PublicKey && true">
-          {{ accountData.key.toStringRaw() }}
+        <div v-else-if="accountData.key.value instanceof PublicKey && true">
+          {{ accountData.key.value.toStringRaw() }}
         </div>
       </div>
     </AppModal>
