@@ -188,7 +188,9 @@ watch(isTransferSuccessfulModalShown, shown => {
           <label class="form-label"
             >Set {{ isApprovedTransfer ? 'Spender' : 'Payer' }} ID (Required)</label
           >
-          <label v-if="isApprovedTransfer" class="d-block form-label text-secondary"
+          <label
+            v-if="isApprovedTransfer && payerData.isValid.value"
+            class="d-block form-label text-secondary"
             >Allowance:
             {{
               Hbar.fromTinybars(
@@ -197,8 +199,13 @@ watch(isTransferSuccessfulModalShown, shown => {
               )
             }}</label
           >
+          <label
+            v-if="!isApprovedTransfer && payerData.isValid.value"
+            class="d-block form-label text-secondary"
+            >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
+          >
           <input
-            :value="payerData.accountInfo.value?.accountId || payerData.accountId.value"
+            :value="payerData.accountIdFormatted.value"
             @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
             type="text"
             class="form-control"
@@ -222,7 +229,7 @@ watch(isTransferSuccessfulModalShown, shown => {
           >Balance: {{ senderData.accountInfo.value?.balance || 0 }}</label
         >
         <input
-          :value="senderData.accountInfo.value?.accountId || senderData.accountId.value"
+          :value="senderData.accountIdFormatted.value"
           @input="senderData.accountId.value = ($event.target as HTMLInputElement).value"
           type="text"
           class="form-control"
@@ -248,7 +255,7 @@ watch(isTransferSuccessfulModalShown, shown => {
           >Balance: {{ receiverData.accountInfo.value?.balance || 0 }}</label
         >
         <input
-          :value="receiverData.accountInfo.value?.accountId || receiverData.accountId.value"
+          :value="receiverData.accountIdFormatted.value"
           @input="receiverData.accountId.value = ($event.target as HTMLInputElement).value"
           type="text"
           class="form-control"
