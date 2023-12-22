@@ -191,13 +191,7 @@ watch(isTransferSuccessfulModalShown, shown => {
           <label
             v-if="isApprovedTransfer && payerData.isValid.value"
             class="d-block form-label text-secondary"
-            >Allowance:
-            {{
-              Hbar.fromTinybars(
-                senderData.allowances.value.find(al => al.spender === payerData.accountId.value)
-                  ?.amount || 0,
-              )
-            }}</label
+            >Allowance: {{ senderData.getSpenderAllowance(payerData.accountId.value) }}</label
           >
           <label
             v-if="!isApprovedTransfer && payerData.isValid.value"
