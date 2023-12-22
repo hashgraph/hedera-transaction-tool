@@ -26,7 +26,7 @@ const accountData = useAccountId();
       <div class="mt-4 w-50 form-group">
         <label class="form-label">Set Account ID (Required)</label>
         <input
-          :value="accountData.accountInfo.value?.accountId || accountData.accountId.value"
+          :value="accountData.accountIdFormatted.value"
           @input="accountData.accountId.value = ($event.target as HTMLInputElement).value"
           type="text"
           class="form-control"
