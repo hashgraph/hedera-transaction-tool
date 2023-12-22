@@ -217,7 +217,8 @@ watch(isAllowanceApprovedModalShown, shown => {
           >Allowance: {{ ownerData.getSpenderAllowance(spenderData.accountId.value) }}</label
         >
         <input
-          v-model="spenderData.accountId.value"
+          :value="spenderData.accountIdFormatted.value"
+          @input="spenderData.accountId.value = ($event.target as HTMLInputElement).value"
           type="text"
           class="form-control"
           placeholder="Enter Spender ID"
