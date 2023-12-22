@@ -127,7 +127,7 @@ const transactionGroups = [
                 <span
                   v-for="(approver, index) in item.approvers"
                   :key="index"
-                  class="badge bg-dark-blue-700 d-inline-flex align-items-center fw-normal"
+                  class="badge bg-dark-blue-700 text-body d-inline-flex align-items-center fw-normal"
                   :class="{ 'me-2': index !== item.approvers.length }"
                   ><i class="bi bi-check-lg text-success text-subheader lh-1 me-1"></i
                   >{{ approver }}</span
