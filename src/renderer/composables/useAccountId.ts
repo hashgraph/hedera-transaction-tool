@@ -23,6 +23,9 @@ export default function useAccountId() {
 
   /* Computed */
   const isValid = computed(() => Boolean(accountInfo.value));
+  const accountIdFormatted = computed(() =>
+    isValid.value ? AccountId.fromString(accountId.value).toString() : accountId.value,
+  );
   const key = computed(() => accountInfo.value?.key);
   const keysFlattened = computed(() =>
     accountInfo.value?.key
@@ -74,5 +77,5 @@ export default function useAccountId() {
     allowancesController.value = null;
   }
 
-  return { accountId, accountInfo, key, keysFlattened, allowances, isValid };
+  return { accountId, accountInfo, accountIdFormatted, key, keysFlattened, allowances, isValid };
 }
