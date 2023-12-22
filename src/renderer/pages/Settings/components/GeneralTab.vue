@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
+
+import { AccountId } from '@hashgraph/sdk';
 
 import useNetworkStore, { CustomNetworkSettings } from '../../../stores/storeNetwork';
 
 import AppButton from '../../../components/ui/AppButton.vue';
-import { AccountId } from '@hashgraph/sdk';
 
 const networkStore = useNetworkStore();
 
@@ -17,12 +18,17 @@ const customNetworkSettings = ref<CustomNetworkSettings>({
   nodeAccountId: new AccountId(3),
 });
 
-const handleSetCustomNetwork = () => {
-  customNetworkSettings.value.nodeAccountId = AccountId.fromString(
-    customNetworkSettings.value.nodeAccountId.toString(),
-  );
-  networkStore.setNetwork('custom', customNetworkSettings.value as any);
+const handleSetCustomNetwork = async () => {
+  customNetworkSettings.value.nodeAccountId = customNetworkSettings.value.nodeAccountId.toString();
+
+  await networkStore.setNetwork('custom', customNetworkSettings.value as any);
 };
+
+onMounted(() => {
+  if (networkStore.customNetworkSettings) {
+    customNetworkSettings.value = networkStore.customNetworkSettings;
+  }
+});
 </script>
 <template>
   <div>
@@ -52,6 +58,7 @@ const handleSetCustomNetwork = () => {
         >
         <AppButton
           color="primary"
+          disabled
           :class="{ active: networkStore.network === 'custom' }"
           @click="isCustomSettingsVisible = true"
           >Custom</AppButton

@@ -44,12 +44,10 @@ const useNetworkStore = defineStore('network', () => {
   /* Actions */
   async function setNetwork(newNetwork: Network, _customNetworkSettings?: CustomNetworkSettings) {
     if (newNetwork === 'custom') {
-      if (_customNetworkSettings) {
-        network.value = newNetwork;
-        customNetworkSettings.value = _customNetworkSettings;
-        return;
+      if (!_customNetworkSettings) {
+        throw Error('Settings for custom network are required');
       }
-      throw Error('Settings for custom network are required');
+      customNetworkSettings.value = _customNetworkSettings;
     }
 
     network.value = newNetwork;
@@ -73,7 +71,14 @@ const useNetworkStore = defineStore('network', () => {
     }
   }
 
-  return { network, mirrorNodeBaseURL, client, setNetwork, getMirrorNodeLinkByNetwork };
+  return {
+    network,
+    customNetworkSettings,
+    mirrorNodeBaseURL,
+    client,
+    setNetwork,
+    getMirrorNodeLinkByNetwork,
+  };
 });
 
 export default useNetworkStore;
