@@ -1,6 +1,6 @@
 import { computed, ref, watch } from 'vue';
 
-import { AccountId } from '@hashgraph/sdk';
+import { AccountId, Hbar } from '@hashgraph/sdk';
 
 import { MirrorNodeAccountInfo } from '../interfaces/MirrorNodeAccountInfo';
 import { MirrorNodeAllowance } from '../interfaces/MirrorNodeAllowance';
@@ -32,6 +32,12 @@ export default function useAccountId() {
       ? flattenKeyList(accountInfo.value?.key).map(pk => pk.toStringRaw())
       : [],
   );
+
+  /* Getters */
+  const getSpenderAllowance = (spenderId: string | AccountId) =>
+    Hbar.fromTinybars(
+      allowances.value.find(al => al.spender === spenderId.toString())?.amount || 0,
+    );
 
   /* Watchers */
   watch(accountId, async newAccountId => {
@@ -77,5 +83,14 @@ export default function useAccountId() {
     allowancesController.value = null;
   }
 
-  return { accountId, accountInfo, accountIdFormatted, key, keysFlattened, allowances, isValid };
+  return {
+    accountId,
+    accountInfo,
+    accountIdFormatted,
+    key,
+    keysFlattened,
+    allowances,
+    isValid,
+    getSpenderAllowance,
+  };
 }
