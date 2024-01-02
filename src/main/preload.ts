@@ -60,6 +60,8 @@ export const electronAPI = {
     decodeProtobuffKey: (protobuffEncodedKey: string): Promise<proto.Key> =>
       ipcRenderer.invoke('utils:decodeProtobuffKey', protobuffEncodedKey),
     hash: (data: any): Promise<string> => ipcRenderer.invoke('utils:hash', data),
+    executeTransaction: (transactionData: string) =>
+      ipcRenderer.invoke('utils:executeTransaction', transactionData),
   },
 };
 typeof electronAPI;
