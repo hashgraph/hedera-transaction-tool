@@ -7,7 +7,7 @@ export type CustomNetworkSettings = {
   consensusNodeEndpoint: string;
   mirrorNodeGRPCEndpoint: string;
   mirrorNodeRESTAPIEndpoint: string;
-  nodeAccountId: string | string;
+  nodeAccountId: string;
 };
 
 const useNetworkStore = defineStore('network', () => {
@@ -67,7 +67,6 @@ const useNetworkStore = defineStore('network', () => {
         throw Error('Settings for custom network are required');
       default:
         throw Error('Invalid network');
-        break;
     }
   }
 
