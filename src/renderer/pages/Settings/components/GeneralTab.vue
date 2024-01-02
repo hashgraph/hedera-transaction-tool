@@ -40,25 +40,33 @@ onMounted(() => {
           color="primary"
           disabled
           :class="{ active: networkStore.network === 'mainnet' }"
-          @click="networkStore.setNetwork('mainnet')"
+          @click="
+            networkStore.setNetwork('mainnet');
+            isCustomSettingsVisible = false;
+          "
           >Mainnet</AppButton
         >
         <AppButton
           color="primary"
           :class="{ active: networkStore.network === 'testnet' }"
-          @click="networkStore.setNetwork('testnet')"
+          @click="
+            networkStore.setNetwork('testnet');
+            isCustomSettingsVisible = false;
+          "
           >Testnet</AppButton
         >
         <AppButton
           color="primary"
           disabled
           :class="{ active: networkStore.network === 'previewnet' }"
-          @click="networkStore.setNetwork('previewnet')"
+          @click="
+            networkStore.setNetwork('previewnet');
+            isCustomSettingsVisible = false;
+          "
           >Previewnet</AppButton
         >
         <AppButton
           color="primary"
-          disabled
           :class="{ active: networkStore.network === 'custom' }"
           @click="isCustomSettingsVisible = true"
           >Custom</AppButton
