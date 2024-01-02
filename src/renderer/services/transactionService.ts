@@ -6,7 +6,11 @@ import {
   Transaction,
   TransactionId,
 } from '@hashgraph/sdk';
+
 import { IKeyPairWithAccountId } from '../../main/shared/interfaces';
+
+import { CustomNetworkSettings, Network } from '../stores/storeNetwork';
+
 import { decryptPrivateKey } from './keyPairService';
 
 export const createTransactionId = (
@@ -56,3 +60,12 @@ export const getTransactionSignatures = async (
 
   return signatures;
 };
+
+export const execute = (
+  transactionBytes: string,
+  network: Network,
+  customNetworkSettings: CustomNetworkSettings | null,
+) =>
+  window.electronAPI.utils.executeTransaction(
+    JSON.stringify({ transactionBytes, network, customNetworkSettings }),
+  );

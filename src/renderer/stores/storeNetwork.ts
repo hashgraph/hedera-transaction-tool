@@ -1,13 +1,13 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
-import { AccountId, Client } from '@hashgraph/sdk';
+import { Client } from '@hashgraph/sdk';
 
 export type Network = 'mainnet' | 'testnet' | 'previewnet' | 'custom';
 export type CustomNetworkSettings = {
   consensusNodeEndpoint: string;
   mirrorNodeGRPCEndpoint: string;
   mirrorNodeRESTAPIEndpoint: string;
-  nodeAccountId: AccountId | string;
+  nodeAccountId: string | string;
 };
 
 const useNetworkStore = defineStore('network', () => {
