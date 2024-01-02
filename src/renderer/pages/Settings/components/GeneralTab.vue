@@ -14,7 +14,7 @@ const isCustomSettingsVisible = ref(false);
 const customNetworkSettings = ref<CustomNetworkSettings>({
   consensusNodeEndpoint: 'http://localhost:50211',
   mirrorNodeGRPCEndpoint: 'http://localhost:5600',
-  mirrorNodeRESTAPIEndpoint: 'http://localhost:5551',
+  mirrorNodeRESTAPIEndpoint: 'http://localhost:5551/api/v1',
   nodeAccountId: new AccountId(3),
 });
 
