@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 
-import { AccountId } from '@hashgraph/sdk';
-
 import useNetworkStore, { CustomNetworkSettings } from '../../../stores/storeNetwork';
 
 import AppButton from '../../../components/ui/AppButton.vue';
@@ -12,10 +10,10 @@ const networkStore = useNetworkStore();
 const isCustomSettingsVisible = ref(false);
 
 const customNetworkSettings = ref<CustomNetworkSettings>({
-  consensusNodeEndpoint: 'http://localhost:50211',
-  mirrorNodeGRPCEndpoint: 'http://localhost:5600',
+  consensusNodeEndpoint: '127.0.0.1:50211',
+  mirrorNodeGRPCEndpoint: '127.0.0.1:5600',
   mirrorNodeRESTAPIEndpoint: 'http://localhost:5551/api/v1',
-  nodeAccountId: new AccountId(3),
+  nodeAccountId: '0.0.3',
 });
 
 const handleSetCustomNetwork = async () => {
