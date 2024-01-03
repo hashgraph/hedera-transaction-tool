@@ -1,0 +1,48 @@
+/* Backgrounds */
+.bg-dark-blue-800 {
+  background-color: var(--#{$prefix}menu-link-bg-hover);
+}
+
+.bg-dark-blue-700 {
+  background-color: var(--#{$prefix}card-primary-bg-color);
+}
+
+/* Borders */
+.border-main-gradient {
+  border: 2px solid transparent;
+  border-image: $main-gradient 1 !important;
+}
+
+/* Badges */
+.badge {
+  max-height: 24px;
+}
+
+.min-w-25 {
+  min-width: 25%;
+}
+
+.min-w-50 {
+  min-width: 50%;
+}
+
+.min-w-75 {
+  min-width: 75%;
+}
+
+.min-w-100 {
+  min-width: 100%;
+}
+
+// $utilities: map-merge(
+//   $utilities,
+//   (
+//     'background-color':
+//       map-merge(
+//         map-get($utilities, 'background-color'),
+//         (
+//           values: map-merge(map-get(map-get($utilities, 'background-color'), 'values'), $dark-blues),
+//         )
+//       ),
+//   )
+// );
