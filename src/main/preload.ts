@@ -62,6 +62,7 @@ export const electronAPI = {
     hash: (data: any): Promise<string> => ipcRenderer.invoke('utils:hash', data),
     executeTransaction: (transactionData: string) =>
       ipcRenderer.invoke('utils:executeTransaction', transactionData),
+    executeQuery: (queryData: string) => ipcRenderer.invoke('utils:executeQuery', queryData),
   },
 };
 typeof electronAPI;

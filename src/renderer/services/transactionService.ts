@@ -69,3 +69,14 @@ export const execute = (
   window.electronAPI.utils.executeTransaction(
     JSON.stringify({ transactionBytes, network, customNetworkSettings }),
   );
+
+export const executeQuery = (
+  queryBytes: string,
+  network: Network,
+  customNetworkSettings: CustomNetworkSettings | null,
+  accountId: string,
+  privateKey: string,
+) =>
+  window.electronAPI.utils.executeQuery(
+    JSON.stringify({ queryBytes, network, customNetworkSettings, accountId, privateKey }),
+  );
