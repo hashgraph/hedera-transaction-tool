@@ -1,4 +1,4 @@
-export interface MirrorNodeAllowance {
+export interface IMirrorNodeAllowance {
   amount: number;
   amount_granted: number;
   owner: string;

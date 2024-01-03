@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Key, KeyList, Mnemonic, PublicKey } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
-import { IKeyPair } from '../../main/shared/interfaces/IKeyPair';
+import { IKeyPair } from '../../main/shared/interfaces';
 
 export const getStoredKeyPairs = (userId: string, secretHash?: string, secretHashName?: string) =>
   window.electronAPI.keyPairs.getStored(userId, secretHash, secretHashName);

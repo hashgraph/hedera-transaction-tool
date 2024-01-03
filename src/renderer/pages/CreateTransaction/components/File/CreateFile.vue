@@ -6,6 +6,7 @@ import { AccountId, FileCreateTransaction, KeyList, PublicKey, Timestamp } from 
 import { openExternal } from '../../../../services/electronUtilsService';
 import {
   createTransactionId,
+  execute,
   getTransactionSignatures,
 } from '../../../../services/transactionService';
 
@@ -95,17 +96,19 @@ const handleGetUserSignature = async () => {
       userPassword.value,
     );
 
-    const submitTx = await transaction.value?.execute(networkStore.client);
-    const receipt = await submitTx.getReceipt(networkStore.client);
+    // Send to Transaction w/ user signatures to Back End
+    const { transactionId: txId, receipt } = await execute(
+      transaction.value.toBytes().toString(),
+      networkStore.network,
+      networkStore.customNetworkSettings,
+    );
+    transactionId.value = txId;
+    console.log(receipt.fileId);
+
+    fileId.value = new AccountId(receipt.fileId).toString() || '';
 
     isSignModalShown.value = false;
-
-    transactionId.value = submitTx.transactionId.toString();
-    fileId.value = receipt.fileId?.toString() || '';
-
     isFileCreatedModalShown.value = true;
-
-    // Send to Transaction w/ user signatures to Back End
   } catch (error) {
     console.log(error);
   } finally {
@@ -300,7 +303,11 @@ watch(isSignModalShown, () => (userPassword.value = ''));
           <span class="text-bold text-secondary">Transaction ID:</span>
           <a
             class="link-primary"
-            @click="openExternal(`https://hashscan.io/testnet/transaction/${transactionId}`)"
+            @click="
+              networkStore.network !== 'custom' &&
+                openExternal(`
+            https://hashscan.io/${networkStore.network}/transaction/${transactionId}`)
+            "
             >{{ transactionId }}</a
           >
         </p>

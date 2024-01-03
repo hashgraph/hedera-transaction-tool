@@ -3,7 +3,7 @@ import { onMounted, onUpdated, ref, watch } from 'vue';
 
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
-import { IKeyPair } from '../../../../main/shared/interfaces/IKeyPair';
+import { IKeyPair } from '../../../../main/shared/interfaces';
 
 import {
   restorePrivateKey,

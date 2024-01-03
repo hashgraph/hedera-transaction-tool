@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 import { proto } from '@hashgraph/proto';
 
-import { IKeyPair } from './shared/interfaces/IKeyPair';
+import { IKeyPair } from './shared/interfaces';
 
 import { Theme } from './modules/ipcHandlers/theme';
 import { Organization } from './modules/store';
@@ -60,6 +60,9 @@ export const electronAPI = {
     decodeProtobuffKey: (protobuffEncodedKey: string): Promise<proto.Key> =>
       ipcRenderer.invoke('utils:decodeProtobuffKey', protobuffEncodedKey),
     hash: (data: any): Promise<string> => ipcRenderer.invoke('utils:hash', data),
+    executeTransaction: (transactionData: string) =>
+      ipcRenderer.invoke('utils:executeTransaction', transactionData),
+    executeQuery: (queryData: string) => ipcRenderer.invoke('utils:executeQuery', queryData),
   },
 };
 typeof electronAPI;

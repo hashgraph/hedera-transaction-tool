@@ -6,6 +6,7 @@ import { AccountId, AccountUpdateTransaction, KeyList, PublicKey, Hbar } from '@
 import { openExternal } from '../../../../services/electronUtilsService';
 import {
   createTransactionId,
+  execute,
   getTransactionSignatures,
 } from '../../../../services/transactionService';
 
@@ -107,16 +108,16 @@ const handleGetUserSignature = async () => {
       userPassword.value,
     );
 
-    const submitTx = await transaction.value?.execute(networkStore.client);
-    await submitTx.getReceipt(networkStore.client);
+    // Send to Transaction w/ user signatures to Back End
+    const { transactionId: txId } = await execute(
+      transaction.value.toBytes().toString(),
+      networkStore.network,
+      networkStore.customNetworkSettings,
+    );
+    transactionId.value = txId;
 
     isSignModalShown.value = false;
-
-    transactionId.value = submitTx.transactionId.toString();
-
     isAccountUpdatedModalShown.value = true;
-
-    // Send to Transaction w/ user signatures to Back End
   } catch (error) {
     console.error(error);
   } finally {
@@ -422,7 +423,11 @@ watch(accountData.accountInfo, accountInfo => {
           <span class="text-bold text-secondary">Transaction ID:</span>
           <a
             class="link-primary cursor-pointer"
-            @click="openExternal(`https://hashscan.io/testnet/transaction/${transactionId}`)"
+            @click="
+              networkStore.network !== 'custom' &&
+                openExternal(`
+            https://hashscan.io/${networkStore.network}/transaction/${transactionId}`)
+            "
             >{{ transactionId }}</a
           >
         </p>

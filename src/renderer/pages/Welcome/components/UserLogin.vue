@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 
 import { jwtDecode } from 'jwt-decode';
 
-import { IUserData } from '../../../../main/shared/interfaces/IUserData';
+import { IUserData } from '../../../../main/shared/interfaces';
 
 import useUserStateStore from '../../../stores/storeUserState';
 

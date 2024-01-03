@@ -4,8 +4,9 @@ import { defineStore } from 'pinia';
 
 import { Organization } from '../../main/modules/store';
 
-import * as configService from '../services/configurationService';
 import useUserStateStore from './storeUserState';
+
+import * as configService from '../services/configurationService';
 
 const useOrganizationsStore = defineStore('organizations', () => {
   const userStateStore = useUserStateStore();
