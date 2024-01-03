@@ -92,8 +92,6 @@ const handleGetUserSignature = async () => {
 
     isSignModalShown.value = false;
     isAllowanceApprovedModalShown.value = true;
-
-    // Send to Transaction w/ user signatures to Back End
   } catch (error) {
     console.error(error);
   } finally {
