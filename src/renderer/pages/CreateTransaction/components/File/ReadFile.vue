@@ -4,6 +4,7 @@ import { ref, watch } from 'vue';
 import { FileContentsQuery } from '@hashgraph/sdk';
 
 import { decryptPrivateKey } from '../../../../services/keyPairService';
+import { executeQuery } from '../../../../services/transactionService';
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useUserStateStore from '../../../../stores/storeUserState';
@@ -46,16 +47,20 @@ const handleRead = async () => {
       publicKey || '',
     );
 
-    networkStore.client.setOperator(payerData.accountId.value, privateKey);
-
     const query = new FileContentsQuery().setFileId(fileId.value);
 
-    const contents = await query.execute(networkStore.client);
-
+    // Send to Transaction w/ user signatures to Back End
+    const { response } = await executeQuery(
+      query.toBytes().toString(),
+      networkStore.network,
+      networkStore.customNetworkSettings,
+      payerData.accountId.value,
+      privateKey,
+    );
     isUserPasswordModalShown.value = false;
 
     const decoder = new TextDecoder('utf-8');
-    const text = decoder.decode(contents);
+    const text = decoder.decode(response);
 
     content.value = text;
   } catch (error) {
