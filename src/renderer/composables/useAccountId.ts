@@ -2,8 +2,7 @@ import { computed, ref, watch } from 'vue';
 
 import { AccountId, Hbar } from '@hashgraph/sdk';
 
-import { MirrorNodeAccountInfo } from '../interfaces/MirrorNodeAccountInfo';
-import { MirrorNodeAllowance } from '../interfaces/MirrorNodeAllowance';
+import { IMirrorNodeAccountInfo, IMirrorNodeAllowance } from '../../main/shared/interfaces';
 
 import useNetworkStore from '../stores/storeNetwork';
 
@@ -15,8 +14,8 @@ export default function useAccountId() {
 
   /* State */
   const accountId = ref<string>('');
-  const accountInfo = ref<MirrorNodeAccountInfo | null>(null);
-  const allowances = ref<MirrorNodeAllowance[]>([]);
+  const accountInfo = ref<IMirrorNodeAccountInfo | null>(null);
+  const allowances = ref<IMirrorNodeAllowance[]>([]);
 
   const accountInfoController = ref<AbortController | null>(null);
   const allowancesController = ref<AbortController | null>(null);
