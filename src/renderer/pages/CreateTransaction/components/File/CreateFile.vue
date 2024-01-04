@@ -103,7 +103,6 @@ const handleGetUserSignature = async () => {
       networkStore.customNetworkSettings,
     );
     transactionId.value = txId;
-    console.log(receipt.fileId);
 
     fileId.value = new AccountId(receipt.fileId).toString() || '';
 
