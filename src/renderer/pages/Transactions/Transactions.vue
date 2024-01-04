@@ -70,6 +70,7 @@ const transactionGroups = [
       { label: 'Create File', name: 'createFile' },
       { label: 'Update File', name: 'updateFile' },
       { label: 'Read File', name: 'readFile' },
+      { label: 'Append to File', name: 'appendToFile' },
       // { label: 'Delete File', name: 'deleteFile' },
     ],
   },
