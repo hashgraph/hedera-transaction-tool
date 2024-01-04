@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 
-import { AccountId, FileUpdateTransaction, KeyList, PublicKey, Timestamp } from '@hashgraph/sdk';
+import {
+  AccountId,
+  FileAppendTransaction,
+  FileUpdateTransaction,
+  KeyList,
+  PublicKey,
+  Timestamp,
+} from '@hashgraph/sdk';
 
 import { openExternal } from '../../../../services/electronUtilsService';
 import {
@@ -29,7 +36,7 @@ const isSignModalShown = ref(false);
 const userPassword = ref('');
 
 const isFileUpdatedModalShown = ref(false);
-const transactionId = ref('');
+const transactionIds = ref<string[]>([]);
 const fileId = ref('');
 
 const validStart = ref('');
@@ -39,17 +46,34 @@ const signatureKeyText = ref('');
 const ownerKeyText = ref('');
 const memo = ref('');
 const expirationTimestamp = ref();
-const content = ref('');
+const chunkSizeRaw = ref(2048);
+const chunkData = ref<{ processed: number; total: number } | null>(null);
 const isLoading = ref(false);
 
 const signatureKeys = ref<string[]>([]);
 const ownerKeys = ref<string[]>([]);
+
+const fileMeta = ref<File | null>(null);
+const fileReader = ref<FileReader | null>(null);
+const fileBuffer = ref<Uint8Array | null>(null);
+const loadPercentage = ref(0);
+const content = ref('');
 
 const transaction = ref<FileUpdateTransaction | null>(null);
 
 const ownerKeyList = computed(
   () => new KeyList(ownerKeys.value.map(key => PublicKey.fromString(key))),
 );
+
+const chunkSize = computed(() => {
+  if (chunkSizeRaw.value > 4096) {
+    return 4096;
+  } else if (chunkSizeRaw.value < 1024) {
+    return 1024;
+  } else {
+    return chunkSizeRaw.value;
+  }
+});
 
 const handleOwnerKeyTextKeyPress = (e: KeyboardEvent) => {
   if (e.code === 'Enter') handleAddOwnerKey();
@@ -83,16 +107,38 @@ const handleAddSignatureKey = () => {
   signatureKeyText.value = '';
 };
 
-// const handleFileImport = (e: Event) => {
-//   const fileImportEl = e.target as HTMLInputElement;
-//   const files = fileImportEl.files;
+const handleRemoveFile = async () => {
+  fileReader.value?.abort();
+  fileMeta.value = null;
+  fileReader.value = null;
+  fileBuffer.value = null;
+  content.value = '';
+};
 
-//   if (files && files.length > 0) {
-//     const reader = new FileReader();
-//     reader.onload = () => (content.value = reader.result?.toString() || '');
-//     reader.readAsText(files[0]);
-//   }
-// };
+const handleFileImport = async (e: Event) => {
+  const fileImportEl = e.target as HTMLInputElement;
+  const file = fileImportEl.files && fileImportEl.files[0];
+
+  if (file) {
+    fileMeta.value = file;
+
+    fileReader.value = new FileReader();
+
+    fileReader.value.readAsArrayBuffer(file);
+    fileReader.value.addEventListener('loadend', async () => {
+      const data = fileReader.value?.result;
+      if (data && data instanceof ArrayBuffer) {
+        fileBuffer.value = new Uint8Array(data);
+      }
+    });
+    fileReader.value.addEventListener(
+      'progress',
+      e => (loadPercentage.value = (100 * e.loaded) / e.total),
+    );
+    fileReader.value.addEventListener('error', () => console.log('Error'));
+    fileReader.value.addEventListener('abort', () => console.log('Aborted'));
+  }
+};
 
 const handleGetUserSignature = async () => {
   if (!userStateStore.userData?.userId) {
@@ -106,9 +152,23 @@ const handleGetUserSignature = async () => {
   try {
     isLoading.value = true;
 
+    const { updateTransaction, restChunks } = createTransaction(true);
+
+    const originalTransactionSize = transaction.value.toBytes().length;
+    if (originalTransactionSize >= 6144) {
+      transaction.value = updateTransaction;
+      chunkData.value = {
+        processed: 0,
+        total: restChunks.length,
+      };
+    }
+
     await getTransactionSignatures(
       keyPairsStore.keyPairs.filter(kp =>
-        signatureKeys.value.concat(payerData.keysFlattened.value).includes(kp.publicKey),
+        signatureKeys.value
+          .concat(payerData.keysFlattened.value)
+          .concat(ownerKeys.value)
+          .includes(kp.publicKey),
       ),
       transaction.value as any,
       true,
@@ -122,7 +182,40 @@ const handleGetUserSignature = async () => {
       networkStore.network,
       networkStore.customNetworkSettings,
     );
-    transactionId.value = txId;
+    transactionIds.value.push(txId);
+
+    if (originalTransactionSize >= 6144) {
+      for (const i in restChunks) {
+        const appendTx = await new FileAppendTransaction()
+          .setTransactionId(createTransactionId(payerData.accountId.value, new Date()))
+          .setTransactionValidDuration(180)
+          .setNodeAccountIds([new AccountId(3)])
+          .setFileId(fileId.value)
+          .setContents(restChunks[i])
+          .setMaxChunks(1)
+          .freezeWith(networkStore.client);
+
+        await getTransactionSignatures(
+          keyPairsStore.keyPairs.filter(kp =>
+            signatureKeys.value.concat(payerData.keysFlattened.value).includes(kp.publicKey),
+          ),
+          appendTx as any,
+          true,
+          userStateStore.userData.userId,
+          userPassword.value,
+        );
+
+        const { transactionId: txId } = await execute(
+          appendTx.toBytes().toString(),
+          networkStore.network,
+          networkStore.customNetworkSettings,
+        );
+        if (chunkData.value) {
+          chunkData.value.processed = chunkData.value?.processed + 1;
+        }
+        transactionIds.value.push(txId);
+      }
+    }
 
     isSignModalShown.value = false;
     isFileUpdatedModalShown.value = true;
@@ -133,24 +226,11 @@ const handleGetUserSignature = async () => {
   }
 };
 
-const handleSign = async () => {
+const handleCreate = async () => {
   try {
     isLoading.value = true;
 
-    transaction.value = new FileUpdateTransaction()
-      .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
-      .setTransactionValidDuration(180)
-      .setNodeAccountIds([new AccountId(3)])
-      .setFileId(fileId.value)
-      .setContents(content.value)
-      .setFileMemo(memo.value);
-
-    ownerKeyList.value._keys.length > 0 && transaction.value.setKeys(ownerKeyList.value);
-
-    expirationTimestamp.value &&
-      transaction.value.setExpirationTime(Timestamp.fromDate(expirationTimestamp.value));
-
-    transaction.value.freezeWith(networkStore.client);
+    transaction.value = createTransaction().updateTransaction;
 
     isSignModalShown.value = true;
   } catch (error) {
@@ -160,8 +240,52 @@ const handleSign = async () => {
   }
 };
 
+const createTransaction = (isLarge?: boolean) => {
+  let updateTransaction = new FileUpdateTransaction()
+    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
+    .setTransactionValidDuration(180)
+    .setNodeAccountIds([new AccountId(3)])
+    .setFileId(fileId.value)
+    .setFileMemo(memo.value);
+
+  ownerKeyList.value._keys.length > 0 && updateTransaction.setKeys(ownerKeyList.value);
+
+  expirationTimestamp.value &&
+    updateTransaction.setExpirationTime(Timestamp.fromDate(expirationTimestamp.value));
+
+  if (content.value) {
+    updateTransaction.setContents(content.value);
+  }
+  if (fileBuffer.value) {
+    updateTransaction.setContents(fileBuffer.value);
+  }
+
+  let chunks: Uint8Array[] = [];
+  if (isLarge) {
+    chunks = chunkBuffer(
+      fileBuffer.value ? fileBuffer.value : new TextEncoder().encode(content.value),
+      chunkSize.value,
+    );
+
+    updateTransaction.setContents(chunks[0]);
+  }
+
+  updateTransaction.freezeWith(networkStore.client);
+
+  return { updateTransaction, restChunks: chunks.slice(1) };
+};
+
+function chunkBuffer(buffer: Uint8Array, chunkSize: number): Uint8Array[] {
+  const chunks = [];
+  for (let i = 0; i < buffer.length; i += chunkSize) {
+    chunks.push(buffer.slice(i, i + chunkSize));
+  }
+  return chunks;
+}
+
 watch(isSignModalShown, () => (userPassword.value = ''));
 watch(isFileUpdatedModalShown, () => (userPassword.value = ''));
+watch(fileMeta, () => (content.value = ''));
 </script>
 <template>
   <div class="p-4 border rounded-4">
@@ -265,7 +389,7 @@ watch(isFileUpdatedModalShown, () => (userPassword.value = ''));
           </div>
         </template>
       </div>
-      <!-- <div class="mt-4 form-group w-50">
+      <div class="mt-4 form-group w-50">
         <label class="form-label">Set File Memo (Optional)</label>
         <input
           v-model="memo"
@@ -283,23 +407,47 @@ watch(isFileUpdatedModalShown, () => (userPassword.value = ''));
           class="form-control py-3"
           placeholder="Enter timestamp"
         />
-      </div> -->
-      <!-- <div class="mt-4 form-group w-25">
+      </div>
+      <div class="mt-4 form-group w-25">
+        <label class="form-label">Set Chunk Size (If File is large)</label>
+        <input
+          v-model="chunkSizeRaw"
+          type="number"
+          min="1024"
+          max="4096"
+          class="form-control py-3"
+        />
+      </div>
+      <div class="mt-4 form-group">
         <label for="fileUpload" class="form-label">
-          <span for="fileUpload" class="btn btn-primary">Upload File (.json, .txt)</span>
+          <span for="fileUpload" class="btn btn-primary" :class="{ disabled: content.length > 0 }"
+            >Upload File</span
+          >
         </label>
         <input
           class="form-control form-control-sm"
           id="fileUpload"
           name="fileUpload"
           type="file"
-          accept=".json,.txt"
+          :disabled="content.length > 0"
           @change="handleFileImport"
         />
-      </div> -->
+        <template v-if="fileMeta">
+          <span v-if="fileMeta" class="ms-3">{{ fileMeta.name }}</span>
+          <span v-if="loadPercentage < 100" class="ms-3">{{ loadPercentage.toFixed(2) }}%</span>
+          <span v-if="fileMeta" class="ms-3 cursor-pointer" @click="handleRemoveFile"
+            ><i class="bi bi-x-lg"></i
+          ></span>
+        </template>
+      </div>
       <div class="mt-4 form-group w-75">
         <label class="form-label">Set File Contents</label>
-        <textarea v-model="content" class="form-control py-3" rows="10"></textarea>
+        <textarea
+          v-model="content"
+          :disabled="Boolean(fileBuffer)"
+          class="form-control py-3"
+          rows="10"
+        ></textarea>
       </div>
 
       <div class="mt-4">
@@ -307,9 +455,14 @@ watch(isFileUpdatedModalShown, () => (userPassword.value = ''));
         <AppButton
           size="large"
           color="primary"
-          :disabled="!fileId || !payerData.isValid.value || signatureKeys.length === 0"
-          @click="handleSign"
-          >Sign</AppButton
+          :disabled="
+            !fileId ||
+            !payerData.isValid.value ||
+            signatureKeys.length === 0 ||
+            (!content && !fileBuffer)
+          "
+          @click="handleCreate"
+          >Create</AppButton
         >
       </div>
     </div>
@@ -324,18 +477,24 @@ watch(isFileUpdatedModalShown, () => (userPassword.value = ''));
           <i class="bi bi-shield-lock extra-large-icon" style="line-height: 16px"></i>
         </div>
         <h3 class="mt-5 text-main text-center text-bold">Enter your password</h3>
+
         <div class="mt-4 form-group">
           <input v-model="userPassword" type="password" class="form-control rounded-4" />
         </div>
-        <AppButton
-          color="primary"
-          size="large"
-          :loading="isLoading"
-          :disabled="userPassword.length === 0 || isLoading"
-          class="mt-5 w-100 rounded-4"
-          @click="handleGetUserSignature"
-          >Sign</AppButton
-        >
+        <div class="mt-4">
+          <div class="ms-2" v-if="chunkData">
+            {{ chunkData.processed }} appends out of {{ chunkData.total }}
+          </div>
+          <AppButton
+            color="primary"
+            size="large"
+            :loading="isLoading"
+            :disabled="userPassword.length === 0 || isLoading"
+            class="mt-2 w-100 rounded-4"
+            @click="handleGetUserSignature"
+            >Sign</AppButton
+          >
+        </div>
       </div>
     </AppModal>
     <AppModal v-model:show="isFileUpdatedModalShown" class="transaction-success-modal">
@@ -356,10 +515,14 @@ watch(isFileUpdatedModalShown, () => (userPassword.value = ''));
             @click="
               networkStore.network !== 'custom' &&
                 openExternal(`
-            https://hashscan.io/${networkStore.network}/transaction/${transactionId}`)
+            https://hashscan.io/${networkStore.network}/transaction/${transactionIds[0]}`)
             "
-            >{{ transactionId }}</a
+            >{{ transactionIds[0] }}</a
           >
+        </p>
+        <p class="mt-2 text-small d-flex justify-content-between align-items">
+          <span class="text-bold text-secondary">Number of Appends</span>
+          <span>{{ chunkData?.total }}</span>
         </p>
         <p class="mt-2 text-small d-flex justify-content-between align-items">
           <span class="text-bold text-secondary">File ID:</span> <span>{{ fileId }}</span>
