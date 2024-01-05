@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
 
+import { useToast } from 'vue-toast-notification';
+
 import { FileContentsQuery } from '@hashgraph/sdk';
 
 import { decryptPrivateKey } from '../../../../services/keyPairService';
@@ -14,6 +16,8 @@ import useAccountId from '../../../../composables/useAccountId';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
+
+const toast = useToast();
 
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
@@ -63,8 +67,12 @@ const handleRead = async () => {
     const text = decoder.decode(response);
 
     content.value = text;
-  } catch (error) {
-    console.error(error);
+  } catch (err: any) {
+    let message = 'Failed to execute query';
+    if (err.message && typeof err.message === 'string') {
+      message = err.message;
+    }
+    toast.error(message, { position: 'top-right' });
   } finally {
     networkStore.client._operator = null;
     isLoading.value = false;
