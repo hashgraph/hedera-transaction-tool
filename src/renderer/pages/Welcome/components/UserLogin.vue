@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toast-notification';
 
 import { jwtDecode } from 'jwt-decode';
 
@@ -12,6 +13,8 @@ import { getStoredKeysSecretHashes } from '../../../services/keyPairService';
 
 import AppSwitch from '../../../components/ui/AppSwitch.vue';
 import AppButton from '../../../components/ui/AppButton.vue';
+
+const toast = useToast();
 
 const router = useRouter();
 const userStateStore = useUserStateStore();
@@ -35,15 +38,16 @@ const handleOnFormSubmit = async (event: Event) => {
 
   if (!inputEmailInvalid.value && !inputPasswordInvalid.value) {
     //SEND LOGIN REQUEST
-    const loginRes = {
-      successful: true,
-      accessToken:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InBpcEBnbWFpbC5jb20iLCJ1c2VybmFtZSI6IkhlZGVyYVVzZXIiLCJ1c2VySWQiOiIxMjM0NTY3ODkifQ.iPZBw37mI7iBgOOPzDQYilx_y4h-DLE2h8EqEg6ZgbU',
-      isInitial: false,
-      secretHash: 'hash',
-    };
 
     try {
+      const loginRes = {
+        successful: true,
+        accessToken:
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InBpcEBnbWFpbC5jb20iLCJ1c2VybmFtZSI6IkhlZGVyYVVzZXIiLCJ1c2VySWQiOiIxMjM0NTY3ODkifQ.iPZBw37mI7iBgOOPzDQYilx_y4h-DLE2h8EqEg6ZgbU',
+        isInitial: false,
+        secretHash: 'hash',
+      };
+
       const decodedUserData: IUserData = jwtDecode(loginRes.accessToken);
       userStateStore.logUser(loginRes.accessToken, decodedUserData, isInitialLogin.value);
 
@@ -51,15 +55,20 @@ const handleOnFormSubmit = async (event: Event) => {
       // userStateStore.setSecretHashes([loginRes.secretHash]);
       const secretHashes = await getStoredKeysSecretHashes(decodedUserData.userId);
       secretHashes.length > 0 && userStateStore.setSecretHashes(secretHashes);
-    } catch (error) {
-      console.log(error);
-    }
 
-    if (isInitialLogin.value) {
-      router.push({ name: 'accountSetup' });
-    } else {
-      // @ts-ignore
-      router.push(router.previousPath ? { path: router.previousPath } : { name: 'settingsKeys' });
+      if (isInitialLogin.value) {
+        router.push({ name: 'accountSetup' });
+      } else {
+        router.push(router.previousPath ? { path: router.previousPath } : { name: 'settingsKeys' });
+      }
+
+      toast.success('Successfully logged in', { position: 'top-right' });
+    } catch (err: any) {
+      let message = 'Login failed';
+      if (err.message && typeof err.message === 'string') {
+        message = err.message;
+      }
+      toast.error(message, { position: 'top-right' });
     }
   }
 };
