@@ -123,6 +123,10 @@ const handleGetUserSignature = async () => {
     }
 
     for (const i in chunks.value) {
+      if (!isSignModalShown.value) {
+        return;
+      }
+
       const appendTransaction = new FileAppendTransaction()
         .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
         .setTransactionValidDuration(180)
@@ -204,7 +208,16 @@ function chunkBuffer(buffer: Uint8Array, chunkSize: number): Uint8Array[] {
   return chunks;
 }
 
-watch(isSignModalShown, () => (userPassword.value = ''));
+watch(isSignModalShown, shown => {
+  userPassword.value = '';
+
+  if (!shown) {
+    fileMeta.value = null;
+    fileBuffer.value = null;
+    chunkData.value = null;
+    content.value = '';
+  }
+});
 watch(isFileUpdatedModalShown, () => (userPassword.value = ''));
 watch(fileMeta, () => (content.value = ''));
 </script>
