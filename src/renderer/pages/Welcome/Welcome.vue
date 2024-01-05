@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
 
+import { useToast } from 'vue-toast-notification';
+
 import useUserStateStore from '../../stores/storeUserState';
 import useOrganizationsStore from '../../stores/storeOrganizations';
 
 import UserLogin from './components/UserLogin.vue';
 
+const toast = useToast();
+
 const router = useRouter();
+
 const userStateStore = useUserStateStore();
 const organizationsStore = useOrganizationsStore();
 
@@ -21,8 +26,16 @@ const handleOptionClick = (option: 'personal' | 'organization') => {
     case 'organization':
       userStateStore.setUserRole('organization');
       if (organizationsStore.organizations.length > 0) {
-        organizationsStore.setCurrentOrganization(organizationsStore.organizations[0].serverUrl);
-        userStateStore.setServerUrl(organizationsStore.organizations[0].serverUrl);
+        try {
+          organizationsStore.setCurrentOrganization(organizationsStore.organizations[0].serverUrl);
+          userStateStore.setServerUrl(organizationsStore.organizations[0].serverUrl);
+        } catch (err: any) {
+          let message = 'Failed to set organization';
+          if (err.message && typeof err.message === 'string') {
+            message = err.message;
+          }
+          toast.error(message, { position: 'top-right' });
+        }
       } else {
         router.push({ name: 'setupOrganization' });
       }
