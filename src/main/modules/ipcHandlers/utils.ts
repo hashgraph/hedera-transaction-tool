@@ -103,9 +103,13 @@ export default () => {
 
     const transaction = Query.fromBytes(Uint8Array.from(bytesArray));
 
-    const response = await transaction.execute(client);
-
-    return { response };
+    try {
+      const response = await transaction.execute(client);
+      return { response };
+    } catch (error: any) {
+      console.log(error);
+      throw new Error(error.message);
+    }
 
     function getClient() {
       switch (tx.network) {

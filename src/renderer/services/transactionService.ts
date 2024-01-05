@@ -80,13 +80,19 @@ export const execute = async (
   }
 };
 
-export const executeQuery = (
+export const executeQuery = async (
   queryBytes: string,
   network: Network,
   customNetworkSettings: CustomNetworkSettings | null,
   accountId: string,
   privateKey: string,
-) =>
-  window.electronAPI.utils.executeQuery(
-    JSON.stringify({ queryBytes, network, customNetworkSettings, accountId, privateKey }),
-  );
+) => {
+  try {
+    return await window.electronAPI.utils.executeQuery(
+      JSON.stringify({ queryBytes, network, customNetworkSettings, accountId, privateKey }),
+    );
+  } catch (err: any) {
+    const message = err.message?.split(': Error: ')[1] || 'Query Execution Failed';
+    throw Error(message);
+  }
+};
