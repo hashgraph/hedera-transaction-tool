@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
+import { useToast } from 'vue-toast-notification';
+
 import { AccountId, KeyList, PublicKey, Hbar, AccountDeleteTransaction } from '@hashgraph/sdk';
 
 import { openExternal } from '../../../../services/electronUtilsService';
@@ -19,6 +21,8 @@ import useUserStateStore from '../../../../stores/storeUserState';
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
 import KeyStructure from '../../../../components/KeyStructure.vue';
+
+const toast = useToast();
 
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
@@ -44,15 +48,15 @@ const transaction = ref<AccountDeleteTransaction | null>(null);
 const isLoading = ref(false);
 
 const handleGetUserSignature = async () => {
-  if (!userStateStore.userData?.userId) {
-    throw Error('No user selected');
-  }
-
-  if (!transaction.value || !payerData.accountId.value) {
-    return console.log('Transaction or payer missing');
-  }
-
   try {
+    if (!userStateStore.userData?.userId) {
+      throw new Error('No user selected');
+    }
+
+    if (!transaction.value || !payerData.accountId.value) {
+      return new Error('Transaction or payer missing');
+    }
+
     isLoading.value = true;
 
     await getTransactionSignatures(
@@ -82,8 +86,12 @@ const handleGetUserSignature = async () => {
 
     isSignModalShown.value = false;
     isAccountDeleteModalShown.value = true;
-  } catch (error) {
-    console.error(error);
+  } catch (err: any) {
+    let message = 'Transaction failed';
+    if (err.message && typeof err.message === 'string') {
+      message = err.message;
+    }
+    toast.error(message, { position: 'top-right' });
   } finally {
     isLoading.value = false;
   }
@@ -120,8 +128,12 @@ const handleCreate = async () => {
       // Send to Back End (Payer, old key, new key should sign!)
       console.log('Account create sent to Back End for payer signature');
     }
-  } catch (error) {
-    console.log(error);
+  } catch (err: any) {
+    let message = 'Failed to create transaction';
+    if (err.message && typeof err.message === 'string') {
+      message = err.message;
+    }
+    toast.error(message, { position: 'top-right' });
   } finally {
     isLoading.value = false;
   }
