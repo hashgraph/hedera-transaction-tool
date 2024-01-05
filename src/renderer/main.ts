@@ -6,7 +6,7 @@ import { createPinia } from 'pinia';
 import router from './router';
 import { addGuards } from './router/guards';
 
-import ToastPlugin from 'vue-toast-notification';
+import ToastPlugin, { useToast } from 'vue-toast-notification';
 
 import App from './App.vue';
 
@@ -20,10 +20,23 @@ app.use(ToastPlugin);
 addGuards(router);
 app.use(router);
 
+/* App config */
+const toast = useToast();
+
+app.config.errorHandler = (err: any) => {
+  let message = 'An error occured';
+
+  if (err.message) {
+    message = err.message;
+  }
+
+  toast.error(message, { position: 'top-right' });
+};
+
 /* App mount */
 app.mount('#app');
 
-// /* Vue Dev Tools */
+/* Vue Dev Tools */
 // if (window.electronAPI.getNodeEnv() === 'development') {
 //   import('@vue/devtools').then(module => {
 //     module.connect(`http://localhost`);
