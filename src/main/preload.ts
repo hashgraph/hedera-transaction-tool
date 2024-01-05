@@ -12,8 +12,8 @@ export const electronAPI = {
   theme: {
     isDark: (): Promise<boolean> => ipcRenderer.invoke('theme:isDark'),
     toggle: (theme: Theme): Promise<boolean> => ipcRenderer.invoke('theme:toggle', theme),
-    onThemeUpdate: (callback: (theme: boolean) => void) => {
-      ipcRenderer.on('theme:update', (e, isDark: boolean) => callback(isDark));
+    onThemeUpdate: async (callback: (theme: boolean) => void) => {
+      await ipcRenderer.on('theme:update', (e, isDark: boolean) => callback(isDark));
     },
   },
   config: {
@@ -21,10 +21,10 @@ export const electronAPI = {
     organizations: {
       getAll: (): Promise<Organization[]> => ipcRenderer.invoke('configuration:organizations:get'),
       add: async (organization: Organization) => {
-        ipcRenderer.invoke('configuration:organizations:add', organization);
+        await ipcRenderer.invoke('configuration:organizations:add', organization);
       },
       removeByServerURL: async (serverUrl: string) => {
-        ipcRenderer.invoke('configuration:organizations:remove', serverUrl);
+        await ipcRenderer.invoke('configuration:organizations:remove', serverUrl);
       },
     },
   },

@@ -18,7 +18,7 @@ const newOrganizationServerPublicKey = ref('');
 const handleAddOrganization = async () => {
   if (newOrganizationName.value !== '' && newOrganizationServerUrl.value !== '') {
     try {
-      organizationsStore.addOrganization({
+      await organizationsStore.addOrganization({
         name: newOrganizationName.value,
         serverUrl: newOrganizationServerUrl.value,
         serverPublicKey: newOrganizationServerPublicKey.value,
