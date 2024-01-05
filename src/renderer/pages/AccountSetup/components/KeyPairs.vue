@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUpdated, ref, watch } from 'vue';
 
+import { useToast } from 'vue-toast-notification';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
 import { IKeyPair } from '../../../../main/shared/interfaces';
@@ -22,6 +23,8 @@ const props = defineProps<{
   encryptPassword: string;
   handleContinue: () => void;
 }>();
+
+const toast = useToast();
 
 const keyPairsStore = useKeyPairsStore();
 const useStateStore = useUserStateStore();
@@ -48,17 +51,21 @@ const validateExistingKey = () => {
 
 /* Handlers */
 const handleRestoreKey = async () => {
-  const restoredPrivateKey = await restorePrivateKey(
-    keyPairsStore.recoveryPhraseWords,
-    passPhrase.value,
-    index.value,
-    'ED25519',
-  );
+  try {
+    const restoredPrivateKey = await restorePrivateKey(
+      keyPairsStore.recoveryPhraseWords,
+      passPhrase.value,
+      index.value,
+      'ED25519',
+    );
 
-  privateKey.value = restoredPrivateKey.toStringRaw();
-  publicKey.value = restoredPrivateKey.publicKey.toStringRaw();
+    privateKey.value = restoredPrivateKey.toStringRaw();
+    publicKey.value = restoredPrivateKey.publicKey.toStringRaw();
 
-  validateExistingKey();
+    validateExistingKey();
+  } catch {
+    toast.error('Invalid recovery phrase', { position: 'top-right' });
+  }
 };
 
 const handleSaveKey = async () => {
@@ -73,41 +80,60 @@ const handleSaveKey = async () => {
       keyPair.nickname = nickname.value;
     }
 
-    const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
-    await keyPairsStore.storeKeyPair(props.encryptPassword, secretHash, keyPair);
+    try {
+      const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
+      await keyPairsStore.storeKeyPair(props.encryptPassword, secretHash, keyPair);
 
-    isSuccessModalShown.value = true;
+      isSuccessModalShown.value = true;
+    } catch (err: any) {
+      let message = 'Failed to store key pair';
+      if (err.message && typeof err.message === 'string') {
+        message = err.message;
+      }
+      toast.error(message, { position: 'top-right' });
+    }
   }
 };
 
 const handleRestoreExisting = async () => {
-  if (!useStateStore.userData) {
-    throw Error('User not logged in!');
+  try {
+    if (!useStateStore.userData) {
+      throw Error('User not logged in!');
+    }
+
+    const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
+    const keyPairsToRestore = (
+      await getStoredKeyPairs(useStateStore.userData?.userId, secretHash)
+    ).filter(kp => kp.privateKey === '');
+
+    await Promise.all(
+      keyPairsToRestore.map(async kp => {
+        const restoredPrivateKey = await restorePrivateKey(
+          keyPairsStore.recoveryPhraseWords,
+          '',
+          kp.index,
+          'ED25519',
+        );
+
+        if (kp.publicKey === restoredPrivateKey.publicKey.toStringRaw()) {
+          kp.privateKey = restoredPrivateKey.toStringRaw();
+          await keyPairsStore.storeKeyPair(props.encryptPassword, secretHash, kp);
+        }
+      }),
+    );
+
+    toast.success('Successfully recovered private key/s without passphrase', {
+      position: 'top-right',
+    });
+
+    validateExistingKey();
+  } catch (err: any) {
+    let message = 'Failed to recover private key/s';
+    if (err.message && typeof err.message === 'string') {
+      message = err.message;
+    }
+    toast.error(message, { position: 'top-right' });
   }
-
-  const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
-  const keyPairsToRestore = (
-    await getStoredKeyPairs(useStateStore.userData?.userId, secretHash)
-  ).filter(kp => kp.privateKey === '');
-
-  await Promise.all(
-    keyPairsToRestore.map(async kp => {
-      const restoredPrivateKey = await restorePrivateKey(
-        keyPairsStore.recoveryPhraseWords,
-        '',
-        kp.index,
-        'ED25519',
-      );
-
-      if (kp.publicKey === restoredPrivateKey.publicKey.toStringRaw()) {
-        kp.privateKey = restoredPrivateKey.toStringRaw();
-        await keyPairsStore.storeKeyPair(props.encryptPassword, secretHash, kp);
-      }
-    }),
-  );
-
-  //Notification: Successfully recovered key pairs with empty passphrase
-  validateExistingKey();
 };
 
 /* Hooks */
