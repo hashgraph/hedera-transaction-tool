@@ -44,8 +44,13 @@ export const changeDecryptionPassword = (
   newPassword: string,
 ) => window.electronAPI.keyPairs.changeDecryptionPassword(userId, oldPassword, newPassword);
 
-export const decryptPrivateKey = (userId: string, password: string, publicKey: string) =>
-  window.electronAPI.keyPairs.decryptPrivateKey(userId, password, publicKey);
+export const decryptPrivateKey = async (userId: string, password: string, publicKey: string) => {
+  try {
+    return await window.electronAPI.keyPairs.decryptPrivateKey(userId, password, publicKey);
+  } catch (error) {
+    throw new Error('Failed to decrypt private key/s');
+  }
+};
 
 export const hashRecoveryPhrase = (words: string[]) =>
   window.electronAPI.utils.hash(words.toString());
