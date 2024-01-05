@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 
 import { FileContentsQuery } from '@hashgraph/sdk';
 
@@ -70,6 +70,10 @@ const handleRead = async () => {
     isLoading.value = false;
   }
 };
+
+onMounted(async () => {
+  await keyPairsStore.refetch();
+});
 
 watch(isUserPasswordModalShown, () => (userPassword.value = ''));
 </script>

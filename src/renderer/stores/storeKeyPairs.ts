@@ -64,8 +64,8 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
   }
 
   /* Lifecycle hooks */
-  onMounted(() => {
-    refetch();
+  onMounted(async () => {
+    await refetch();
   });
   return {
     recoveryPhraseWords,

@@ -3,6 +3,7 @@ import ApproveHbarAllowanceVue from './components/Account/ApproveHbarAllowance.v
 import CreateAccount from './components/Account/CreateAccount.vue';
 import DeleteAccount from './components/Account/DeleteAccount.vue';
 import UpdateAccount from './components/Account/UpdateAccount.vue';
+import AppendToFileVue from './components/File/AppendToFile.vue';
 import CreateFile from './components/File/CreateFile.vue';
 import ReadFile from './components/File/ReadFile.vue';
 import UpdateFile from './components/File/UpdateFile.vue';
@@ -12,6 +13,7 @@ const txTypeComponentMapping = {
   createFile: CreateFile,
   readFile: ReadFile,
   updateFile: UpdateFile,
+  appendToFile: AppendToFileVue,
   createAccount: CreateAccount,
   updateAccount: UpdateAccount,
   deleteAccount: DeleteAccount,
