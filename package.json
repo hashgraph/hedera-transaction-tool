@@ -47,7 +47,7 @@
     "electron-updater": "^6.1.7",
     "jwt-decode": "^4.0.0",
     "pinia": "^2.1.7",
-    "vue": "^3.3.10",
+    "vue": "^3.4.5",
     "vue-router": "^4.2.5",
     "vue-toast-notification": "^3.1.2"
   }
