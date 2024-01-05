@@ -45,11 +45,16 @@ export default () => {
 
     const transaction = Transaction.fromBytes(Uint8Array.from(bytesArray));
 
-    const response = await transaction.execute(client);
+    try {
+      const response = await transaction.execute(client);
 
-    const receipt = await response.getReceipt(client);
+      const receipt = await response.getReceipt(client);
 
-    return { response, receipt, transactionId: response.transactionId.toString() };
+      return { response, receipt, transactionId: response.transactionId.toString() };
+    } catch (error: any) {
+      console.log(error);
+      throw new Error(error.message);
+    }
 
     function getClient() {
       switch (tx.network) {
@@ -98,9 +103,13 @@ export default () => {
 
     const transaction = Query.fromBytes(Uint8Array.from(bytesArray));
 
-    const response = await transaction.execute(client);
-
-    return { response };
+    try {
+      const response = await transaction.execute(client);
+      return { response };
+    } catch (error: any) {
+      console.log(error);
+      throw new Error(error.message);
+    }
 
     function getClient() {
       switch (tx.network) {

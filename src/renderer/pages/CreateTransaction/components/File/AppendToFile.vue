@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 
+import { useToast } from 'vue-toast-notification';
+
 import { AccountId, FileAppendTransaction, PublicKey } from '@hashgraph/sdk';
 
 import {
@@ -17,6 +19,8 @@ import useAccountId from '../../../../composables/useAccountId';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
+
+const toast = useToast();
 
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
@@ -48,8 +52,8 @@ const loadPercentage = ref(0);
 const content = ref('');
 
 const chunkSize = computed(() => {
-  if (chunkSizeRaw.value > 4096) {
-    return 4096;
+  if (chunkSizeRaw.value > 6144) {
+    return 6144;
   } else if (chunkSizeRaw.value < 1024) {
     return 1024;
   } else {
@@ -101,24 +105,28 @@ const handleFileImport = async (e: Event) => {
       'progress',
       e => (loadPercentage.value = (100 * e.loaded) / e.total),
     );
-    fileReader.value.addEventListener('error', () => console.log('Error'));
-    fileReader.value.addEventListener('abort', () => console.log('Aborted'));
+    fileReader.value.addEventListener('error', () => toast.error('Failed to upload file'));
+    fileReader.value.addEventListener('abort', () => toast.error('File upload aborted'));
   }
 };
 
 const handleGetUserSignature = async () => {
-  if (!userStateStore.userData?.userId) {
-    throw Error('No user selected');
-  }
-
-  if (!payerData.isValid.value) {
-    return console.log('Payer missing');
-  }
-
   try {
     isLoading.value = true;
 
+    if (!userStateStore.userData?.userId) {
+      throw Error('No user selected');
+    }
+
+    if (!payerData.isValid.value) {
+      return console.log('Payer missing');
+    }
+
     for (const i in chunks.value) {
+      if (!isSignModalShown.value) {
+        return;
+      }
+
       const appendTransaction = new FileAppendTransaction()
         .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
         .setTransactionValidDuration(180)
@@ -154,8 +162,12 @@ const handleGetUserSignature = async () => {
 
     isSignModalShown.value = false;
     isFileUpdatedModalShown.value = true;
-  } catch (error) {
-    console.error(error);
+  } catch (err: any) {
+    let message = 'Transaction failed';
+    if (err.message && typeof err.message === 'string') {
+      message = err.message;
+    }
+    toast.error(message, { position: 'top-right' });
   } finally {
     isLoading.value = false;
   }
@@ -177,8 +189,12 @@ const handleCreate = async () => {
     //Check owner
 
     isSignModalShown.value = true;
-  } catch (error) {
-    console.log(error);
+  } catch (err: any) {
+    let message = 'Failed to create transaction';
+    if (err.message && typeof err.message === 'string') {
+      message = err.message;
+    }
+    toast.error(message, { position: 'top-right' });
   } finally {
     isLoading.value = false;
   }
@@ -192,7 +208,16 @@ function chunkBuffer(buffer: Uint8Array, chunkSize: number): Uint8Array[] {
   return chunks;
 }
 
-watch(isSignModalShown, () => (userPassword.value = ''));
+watch(isSignModalShown, shown => {
+  userPassword.value = '';
+
+  if (!shown) {
+    fileMeta.value = null;
+    fileBuffer.value = null;
+    chunkData.value = null;
+    content.value = '';
+  }
+});
 watch(isFileUpdatedModalShown, () => (userPassword.value = ''));
 watch(fileMeta, () => (content.value = ''));
 </script>

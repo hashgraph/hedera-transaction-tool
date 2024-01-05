@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 
+import { useToast } from 'vue-toast-notification';
+
 import useNetworkStore, { CustomNetworkSettings } from '../../../stores/storeNetwork';
 
 import AppButton from '../../../components/ui/AppButton.vue';
+
+const toast = useToast();
 
 const networkStore = useNetworkStore();
 
@@ -17,9 +21,18 @@ const customNetworkSettings = ref<CustomNetworkSettings>({
 });
 
 const handleSetCustomNetwork = async () => {
-  customNetworkSettings.value.nodeAccountId = customNetworkSettings.value.nodeAccountId.toString();
+  try {
+    customNetworkSettings.value.nodeAccountId =
+      customNetworkSettings.value.nodeAccountId.toString();
 
-  await networkStore.setNetwork('custom', customNetworkSettings.value as any);
+    await networkStore.setNetwork('custom', customNetworkSettings.value as any);
+  } catch (err: any) {
+    let message = 'Failed to set custom network';
+    if (err.message && typeof err.message === 'string') {
+      message = err.message;
+    }
+    toast.error(message, { position: 'top-right' });
+  }
 };
 
 onMounted(() => {

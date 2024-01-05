@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
 
+import { useToast } from 'vue-toast-notification';
+
 import { decryptPrivateKey } from '../../../services/keyPairService';
 
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
 import AppButton from '../../../components/ui/AppButton.vue';
 import AppModal from '../../../components/ui/AppModal.vue';
 import useUserStateStore from '../../../stores/storeUserState';
+
+const toast = useToast();
 
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
@@ -26,15 +30,19 @@ const handleShowDecryptModal = (publicKey: string) => {
 };
 
 const handleDecrypt = async () => {
-  if (!userStateStore.userData?.userId) {
-    throw Error('No user selected');
-  }
+  try {
+    if (!userStateStore.userData?.userId) {
+      throw Error('No user selected');
+    }
 
-  decryptedKey.value = await decryptPrivateKey(
-    userStateStore.userData?.userId,
-    userPassword.value,
-    publicKeysPrivateKeyToDecrypt.value,
-  );
+    decryptedKey.value = await decryptPrivateKey(
+      userStateStore.userData?.userId,
+      userPassword.value,
+      publicKeysPrivateKeyToDecrypt.value,
+    );
+  } catch (err: any) {
+    toast.error('Failed to decrypt private key', { position: 'top-right' });
+  }
 };
 
 watch(isDecryptedModalShown, newVal => {

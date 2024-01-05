@@ -2,6 +2,8 @@
 import { computed, ref, watch } from 'vue';
 import { useRouter, RouterView } from 'vue-router';
 
+import { useToast } from 'vue-toast-notification';
+
 import AppTabs, { TabItem } from '../../components/ui/AppTabs.vue';
 import AppButton from '../../components/ui/AppButton.vue';
 
@@ -9,7 +11,10 @@ import useOrganizationsStore from '../../stores/storeOrganizations';
 import useKeyPairsStore from '../../stores/storeKeyPairs';
 import useUserStateStore from '../../stores/storeUserState';
 
-/* Route */
+/* Toast */
+const toast = useToast();
+
+/* Router */
 const router = useRouter();
 
 /* Tabs */
@@ -38,15 +43,23 @@ const organizationsStore = useOrganizationsStore();
 const userStateStore = useUserStateStore();
 
 const handleClearConfig = async () => {
-  await window.electronAPI.config.clear();
-  if (userStateStore.userData?.userId) {
-    await window.electronAPI.keyPairs.clear(userStateStore.userData?.userId);
+  try {
+    await window.electronAPI.config.clear();
+    if (userStateStore.userData?.userId) {
+      await window.electronAPI.keyPairs.clear(userStateStore.userData?.userId);
+    }
+
+    organizationsStore.refetch();
+    const keyPairsStore = useKeyPairsStore();
+
+    keyPairsStore.refetch();
+  } catch (err: any) {
+    let message = 'Failed to clear config';
+    if (err.message && typeof err.message === 'string') {
+      message = err.message;
+    }
+    toast.error(message, { position: 'top-right' });
   }
-
-  organizationsStore.refetch();
-  const keyPairsStore = useKeyPairsStore();
-
-  keyPairsStore.refetch();
 };
 
 /* Watchers */

@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+import { useToast } from 'vue-toast-notification';
+
 import useOrganizationsStore from '../../stores/storeOrganizations';
 import useUserStateStore from '../../stores/storeUserState';
 
 import AppButton from '../../components/ui/AppButton.vue';
 import AppModal from '../../components/ui/AppModal.vue';
+
+const toast = useToast();
 
 const organizationsStore = useOrganizationsStore();
 const userStateStore = useUserStateStore();
@@ -22,18 +26,22 @@ const handleContinue = async (e: Event) => {
   //ADD FORM VALIDATION
 
   try {
-    await organizationsStore.addOrganization({
+    const a = await organizationsStore.addOrganization({
       name: organizationName.value,
       serverUrl: serverUrl.value,
       serverPublicKey: serverPublicKey.value,
     });
+    console.log(a);
 
     userStateStore.setUserRole('organization');
 
     isSuccessModalShown.value = true;
-  } catch (error) {
-    console.log(error);
-    // Open toast
+  } catch (err: any) {
+    let message = 'Failed to add organization';
+    if (err.message && typeof err.message === 'string') {
+      message = err.message;
+    }
+    toast.error(message, { position: 'top-right' });
   }
 };
 </script>
@@ -95,9 +103,6 @@ const handleContinue = async (e: Event) => {
         </div>
 
         <h3 class="mt-5 text-main text-center text-bold">Organizations Added</h3>
-        <p class="text-center text-small">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-        </p>
         <AppButton
           color="primary"
           size="large"

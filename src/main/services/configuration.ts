@@ -14,7 +14,7 @@ export const addOrganization = (organization: Organization) => {
       org => org.name === organization.name || org.serverUrl === organization.serverUrl,
     )
   ) {
-    throw new Error('Organization with that name or serverUrl exists!');
+    throw new Error('Organization with that Name or Server URL exists!');
   }
 
   store.set('organizations', [organization, ...store.store.organizations]);

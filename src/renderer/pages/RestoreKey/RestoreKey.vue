@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onUnmounted, ref, watch } from 'vue';
 
+import { useToast } from 'vue-toast-notification';
+
 import { IKeyPair } from '../../../main/shared/interfaces';
 
 import { Mnemonic } from '@hashgraph/sdk';
@@ -13,6 +15,8 @@ import * as keyPairService from '../../services/keyPairService';
 import AppButton from '../../components/ui/AppButton.vue';
 import AppModal from '../../components/ui/AppModal.vue';
 import Import from '../AccountSetup/components/Import.vue';
+
+const toast = useToast();
 
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
@@ -54,29 +58,37 @@ const handleFinish = (words: string[]) => {
 };
 
 const handleRestoreKey = async () => {
-  const privateKey = await keyPairService.restorePrivateKey(
-    keyPairsStore.recoveryPhraseWords,
-    '',
-    index.value,
-    'ED25519',
-  );
+  try {
+    const privateKey = await keyPairService.restorePrivateKey(
+      keyPairsStore.recoveryPhraseWords,
+      '',
+      index.value,
+      'ED25519',
+    );
 
-  if (
-    keyPairsStore.keyPairs.some(
-      kp => kp.publicKey === privateKey.publicKey.toStringRaw() && kp.privateKey !== '',
-    )
-  ) {
-    inputIndexInvalid.value = true;
-    return;
+    if (
+      keyPairsStore.keyPairs.some(
+        kp => kp.publicKey === privateKey.publicKey.toStringRaw() && kp.privateKey !== '',
+      )
+    ) {
+      inputIndexInvalid.value = true;
+      return;
+    }
+    inputIndexInvalid.value = false;
+
+    restoredKey.value = {
+      privateKey: privateKey.toStringRaw(),
+      publicKey: privateKey.publicKey.toStringRaw(),
+    };
+
+    step.value++;
+  } catch (err: any) {
+    let message = 'Failed to restore privatek key';
+    if (err.message && typeof err.message === 'string') {
+      message = err.message;
+    }
+    toast.error(message, { position: 'top-right' });
   }
-  inputIndexInvalid.value = false;
-
-  restoredKey.value = {
-    privateKey: privateKey.toStringRaw(),
-    publicKey: privateKey.publicKey.toStringRaw(),
-  };
-
-  step.value++;
 };
 
 const handleSaveKey = async () => {
@@ -91,12 +103,20 @@ const handleSaveKey = async () => {
       keyPair.nickname = nickname.value;
     }
 
-    const secretHash = await keyPairService.hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
-    await keyPairsStore.storeKeyPair(password.value, secretHash, keyPair);
+    try {
+      const secretHash = await keyPairService.hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
+      await keyPairsStore.storeKeyPair(password.value, secretHash, keyPair);
 
-    keyPairsStore.clearRecoveryPhrase();
+      keyPairsStore.clearRecoveryPhrase();
 
-    isSuccessModalShown.value = true;
+      isSuccessModalShown.value = true;
+    } catch (err: any) {
+      let message = 'Failed to store key pair';
+      if (err.message && typeof err.message === 'string') {
+        message = err.message;
+      }
+      toast.error(message, { position: 'top-right' });
+    }
   }
 };
 

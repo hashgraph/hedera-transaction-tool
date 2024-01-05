@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 import { KeyList, PublicKey } from '@hashgraph/sdk';
+
+import { useToast } from 'vue-toast-notification';
 
 import useAccountId from '../../../../composables/useAccountId';
 
@@ -9,10 +11,20 @@ import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
 import KeyStructure from '../../../../components/KeyStructure.vue';
 
+const toast = useToast();
+
 /* State */
 const isKeyStructureModalShown = ref(false);
 
 const accountData = useAccountId();
+
+watch(accountData.isValid, isValid => {
+  if (isValid) {
+    toast.clear();
+  } else {
+    toast.error('Account not found', { position: 'top-right' });
+  }
+});
 </script>
 <template>
   <div class="p-4 border rounded-4">

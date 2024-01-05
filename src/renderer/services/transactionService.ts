@@ -42,41 +42,57 @@ export const getTransactionSignatures = async (
   const signatures: { publicKey: PublicKey; signature: Uint8Array }[] = [];
   const publicKeys: string[] = [];
 
-  await Promise.all(
-    keyPairs.map(async keyPair => {
-      const privateKeyString = await decryptPrivateKey(userId, password, keyPair.publicKey);
+  try {
+    await Promise.all(
+      keyPairs.map(async keyPair => {
+        const privateKeyString = await decryptPrivateKey(userId, password, keyPair.publicKey);
 
-      const privateKey = PrivateKey.fromStringED25519(privateKeyString);
-      const signature = privateKey.signTransaction(transaction);
+        const privateKey = PrivateKey.fromStringED25519(privateKeyString);
+        const signature = privateKey.signTransaction(transaction);
 
-      if (!publicKeys.includes(keyPair.publicKey)) {
-        signatures.push({ publicKey: PublicKey.fromString(keyPair.publicKey), signature });
-        publicKeys.push(keyPair.publicKey);
-      }
-    }),
-  );
+        if (!publicKeys.includes(keyPair.publicKey)) {
+          signatures.push({ publicKey: PublicKey.fromString(keyPair.publicKey), signature });
+          publicKeys.push(keyPair.publicKey);
+        }
+      }),
+    );
 
-  addToTransaction && signatures.forEach(s => transaction.addSignature(s.publicKey, s.signature));
+    addToTransaction && signatures.forEach(s => transaction.addSignature(s.publicKey, s.signature));
 
-  return signatures;
+    return signatures;
+  } catch (err: any) {
+    throw Error(err.message || 'Failed to collect transaction signatures');
+  }
 };
 
-export const execute = (
+export const execute = async (
   transactionBytes: string,
   network: Network,
   customNetworkSettings: CustomNetworkSettings | null,
-) =>
-  window.electronAPI.utils.executeTransaction(
-    JSON.stringify({ transactionBytes, network, customNetworkSettings }),
-  );
+) => {
+  try {
+    return await window.electronAPI.utils.executeTransaction(
+      JSON.stringify({ transactionBytes, network, customNetworkSettings }),
+    );
+  } catch (err: any) {
+    const message = err.message?.split(': Error: ')[1] || 'Transaction Failed';
+    throw Error(message);
+  }
+};
 
-export const executeQuery = (
+export const executeQuery = async (
   queryBytes: string,
   network: Network,
   customNetworkSettings: CustomNetworkSettings | null,
   accountId: string,
   privateKey: string,
-) =>
-  window.electronAPI.utils.executeQuery(
-    JSON.stringify({ queryBytes, network, customNetworkSettings, accountId, privateKey }),
-  );
+) => {
+  try {
+    return await window.electronAPI.utils.executeQuery(
+      JSON.stringify({ queryBytes, network, customNetworkSettings, accountId, privateKey }),
+    );
+  } catch (err: any) {
+    const message = err.message?.split(': Error: ')[1] || 'Query Execution Failed';
+    throw Error(message);
+  }
+};

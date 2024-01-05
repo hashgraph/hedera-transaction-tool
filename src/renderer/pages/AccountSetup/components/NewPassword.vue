@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { useToast } from 'vue-toast-notification';
 
 import useUserStateStore from '../../../stores/storeUserState';
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
@@ -11,6 +12,8 @@ import AppButton from '../../../components/ui/AppButton.vue';
 const props = defineProps<{
   handleContinue: (password: string) => void;
 }>();
+
+const toast = useToast();
 
 const userStateStore = useUserStateStore();
 const keyPairsStore = useKeyPairsStore();
@@ -32,35 +35,31 @@ watch(inputConfrimPassword, val => {
 const handleFormSubmit = async (event: Event) => {
   event.preventDefault();
 
-  try {
-    isLoading.value = true;
+  const newPasswordValid = inputNewPassword.value.trim() === '';
 
-    const newPasswordValid = inputNewPassword.value.trim() === '';
+  inputNewPasswordInvalid.value = newPasswordValid;
+  inputConfirmPasswordInvalid.value = inputNewPassword.value !== inputConfrimPassword.value;
 
-    inputNewPasswordInvalid.value = newPasswordValid;
-    inputConfirmPasswordInvalid.value = inputNewPassword.value !== inputConfrimPassword.value;
+  if (!inputNewPasswordInvalid.value && !inputConfirmPasswordInvalid.value) {
+    try {
+      isLoading.value = true;
 
-    if (!inputNewPasswordInvalid.value && !inputConfirmPasswordInvalid.value) {
       //SEND PASSWORD RESET REQUEST
+      userStateStore.userData &&
+        (await deleteEncryptedPrivateKeys(userStateStore.userData?.userId));
+      await keyPairsStore.refetch();
+      props.handleContinue(inputNewPassword.value);
 
-      //CHECK IF IS SUCCESSFUL
-      const isChanged = true; //TEMPORARY
-
-      if (isChanged) {
-        // OPEN MODAL
-        userStateStore.userData &&
-          (await deleteEncryptedPrivateKeys(userStateStore.userData?.userId));
-        await keyPairsStore.refetch();
-
-        props.handleContinue(inputNewPassword.value);
-      } else {
-        //NOTIFICATION: Password not changed
+      toast.success('Password changed successfully', { position: 'top-right' });
+    } catch (err: any) {
+      let message = 'Failed to change password';
+      if (err.message && typeof err.message === 'string') {
+        message = err.message;
       }
+      toast.error(message, { position: 'top-right' });
+    } finally {
+      isLoading.value = false;
     }
-  } catch (error) {
-    console.log(error);
-  } finally {
-    isLoading.value = false;
   }
 };
 </script>

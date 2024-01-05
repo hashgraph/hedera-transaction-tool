@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 
+import { useToast } from 'vue-toast-notification';
+
 import {
   AccountId,
   FileAppendTransaction,
@@ -25,6 +27,8 @@ import useAccountId from '../../../../composables/useAccountId';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
+
+const toast = useToast();
 
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
@@ -66,8 +70,8 @@ const ownerKeyList = computed(
 );
 
 const chunkSize = computed(() => {
-  if (chunkSizeRaw.value > 4096) {
-    return 4096;
+  if (chunkSizeRaw.value > 6144) {
+    return 6144;
   } else if (chunkSizeRaw.value < 1024) {
     return 1024;
   } else {
@@ -141,20 +145,21 @@ const handleFileImport = async (e: Event) => {
 };
 
 const handleGetUserSignature = async () => {
-  if (!userStateStore.userData?.userId) {
-    throw Error('No user selected');
-  }
-
-  if (!transaction.value || !payerData.isValid.value) {
-    return console.log('Transaction or payer missing');
-  }
-
   try {
     isLoading.value = true;
+
+    if (!userStateStore.userData?.userId) {
+      throw Error('No user selected');
+    }
+
+    if (!transaction.value || !payerData.isValid.value) {
+      return console.log('Transaction or payer missing');
+    }
 
     const { updateTransaction, restChunks } = createTransaction(true);
 
     const originalTransactionSize = transaction.value.toBytes().length;
+
     if (originalTransactionSize >= 6144) {
       transaction.value = updateTransaction;
       chunkData.value = {
@@ -186,6 +191,10 @@ const handleGetUserSignature = async () => {
 
     if (originalTransactionSize >= 6144) {
       for (const i in restChunks) {
+        if (!isSignModalShown.value) {
+          return;
+        }
+
         const appendTx = await new FileAppendTransaction()
           .setTransactionId(createTransactionId(payerData.accountId.value, new Date()))
           .setTransactionValidDuration(180)
@@ -193,6 +202,7 @@ const handleGetUserSignature = async () => {
           .setFileId(fileId.value)
           .setContents(restChunks[i])
           .setMaxChunks(1)
+          .setChunkSize(chunkSize.value)
           .freezeWith(networkStore.client);
 
         await getTransactionSignatures(
@@ -219,8 +229,12 @@ const handleGetUserSignature = async () => {
 
     isSignModalShown.value = false;
     isFileUpdatedModalShown.value = true;
-  } catch (error) {
-    console.error(error);
+  } catch (err: any) {
+    let message = 'Transaction failed';
+    if (err.message && typeof err.message === 'string') {
+      message = err.message;
+    }
+    toast.error(message, { position: 'top-right' });
   } finally {
     isLoading.value = false;
   }
@@ -233,8 +247,12 @@ const handleCreate = async () => {
     transaction.value = createTransaction().updateTransaction;
 
     isSignModalShown.value = true;
-  } catch (error) {
-    console.log(error);
+  } catch (err: any) {
+    let message = 'Failed to create transaction';
+    if (err.message && typeof err.message === 'string') {
+      message = err.message;
+    }
+    toast.error(message, { position: 'top-right' });
   } finally {
     isLoading.value = false;
   }
@@ -253,7 +271,9 @@ const createTransaction = (isLarge?: boolean) => {
   expirationTimestamp.value &&
     updateTransaction.setExpirationTime(Timestamp.fromDate(expirationTimestamp.value));
 
-  if (content.value) {
+  if (content.value.length > 0) {
+    console.log('s');
+
     updateTransaction.setContents(content.value);
   }
   if (fileBuffer.value) {
@@ -283,7 +303,16 @@ function chunkBuffer(buffer: Uint8Array, chunkSize: number): Uint8Array[] {
   return chunks;
 }
 
-watch(isSignModalShown, () => (userPassword.value = ''));
+watch(isSignModalShown, shown => {
+  userPassword.value = '';
+
+  if (!shown) {
+    fileMeta.value = null;
+    fileBuffer.value = null;
+    chunkData.value = null;
+    content.value = '';
+  }
+});
 watch(isFileUpdatedModalShown, () => (userPassword.value = ''));
 watch(fileMeta, () => (content.value = ''));
 </script>
@@ -459,7 +488,7 @@ watch(fileMeta, () => (content.value = ''));
             !fileId ||
             !payerData.isValid.value ||
             signatureKeys.length === 0 ||
-            (!content && !fileBuffer)
+            (content.length > 0 && fileBuffer)
           "
           @click="handleCreate"
           >Create</AppButton
@@ -520,7 +549,7 @@ watch(fileMeta, () => (content.value = ''));
             >{{ transactionIds[0] }}</a
           >
         </p>
-        <p class="mt-2 text-small d-flex justify-content-between align-items">
+        <p v-if="chunkData" class="mt-2 text-small d-flex justify-content-between align-items">
           <span class="text-bold text-secondary">Number of Appends</span>
           <span>{{ chunkData?.total }}</span>
         </p>

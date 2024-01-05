@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, reactive, watch } from 'vue';
 
+import { useToast } from 'vue-toast-notification';
+
 import { AccountId, AccountUpdateTransaction, KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
 
 import { openExternal } from '../../../../services/electronUtilsService';
@@ -20,6 +22,8 @@ import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
 import AppSwitch from '../../../../components/ui/AppSwitch.vue';
 import KeyStructure from '../../../../components/KeyStructure.vue';
+
+const toast = useToast();
 
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
@@ -85,16 +89,16 @@ const handleAdd = () => {
 };
 
 const handleGetUserSignature = async () => {
-  if (!userStateStore.userData?.userId) {
-    throw Error('No user selected');
-  }
-
-  if (!transaction.value) {
-    return console.log('Transaction or payer missing');
-  }
-
   try {
     isLoading.value = true;
+
+    if (!userStateStore.userData?.userId) {
+      throw new Error('No user selected');
+    }
+
+    if (!transaction.value) {
+      return new Error('Transaction is missing');
+    }
 
     await getTransactionSignatures(
       keyPairsStore.keyPairs.filter(kp =>
@@ -102,6 +106,7 @@ const handleGetUserSignature = async () => {
           .concat(accountData.keysFlattened.value, payerData.keysFlattened.value)
           .includes(kp.publicKey),
       ),
+
       transaction.value as any,
       true,
       userStateStore.userData.userId,
@@ -118,8 +123,12 @@ const handleGetUserSignature = async () => {
 
     isSignModalShown.value = false;
     isAccountUpdatedModalShown.value = true;
-  } catch (error) {
-    console.error(error);
+  } catch (err: any) {
+    let message = 'Transaction failed';
+    if (err.message && typeof err.message === 'string') {
+      message = err.message;
+    }
+    toast.error(message, { position: 'top-right' });
   } finally {
     isLoading.value = false;
   }
@@ -194,8 +203,12 @@ const handleCreate = async () => {
       // Send to Back End (Payer, old key, new key should sign!)
       console.log('Account create sent to Back End for payer signature');
     }
-  } catch (error) {
-    console.log(error);
+  } catch (err: any) {
+    let message = 'Failed to create transaction';
+    if (err.message && typeof err.message === 'string') {
+      message = err.message;
+    }
+    toast.error(message, { position: 'top-right' });
   } finally {
     isLoading.value = false;
   }

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+import { useToast } from 'vue-toast-notification';
+
 import { changeDecryptionPassword } from '../../../services/keyPairService';
 
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
@@ -8,6 +10,8 @@ import useUserStateStore from '../../../stores/storeUserState';
 
 import AppButton from '../../../components/ui/AppButton.vue';
 import AppModal from '../../../components/ui/AppModal.vue';
+
+const toast = useToast();
 
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
@@ -18,17 +22,14 @@ const newPassword = ref('');
 const isSuccessModalShown = ref(false);
 
 const handleChangePassword = async () => {
-  if (!userStateStore.userData) {
-    throw new Error('User is not logged in');
-  }
+  try {
+    if (!userStateStore.userData) {
+      throw new Error('User is not logged in');
+    }
 
-  if (currentPassword.value.length > 0 && newPassword.value.length > 0) {
-    //SEND PASSWORD CHANGE REQUEST
+    if (currentPassword.value.length > 0 && newPassword.value.length > 0) {
+      //SEND PASSWORD CHANGE REQUEST
 
-    //CHECK IF IS SUCCESSFUL
-    const isChanged = true; //TEMPORARY
-
-    if (isChanged) {
       await changeDecryptionPassword(
         userStateStore.userData?.userId,
         currentPassword.value,
@@ -38,9 +39,13 @@ const handleChangePassword = async () => {
       await keyPairsStore.refetch();
 
       isSuccessModalShown.value = true;
-    } else {
-      //NOTIFY USER
     }
+  } catch (err: any) {
+    let message = 'Failed to change password';
+    if (err.message && typeof err.message === 'string') {
+      message = err.message;
+    }
+    toast.error(message, { position: 'top-right' });
   }
 };
 </script>

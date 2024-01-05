@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 
+import { useToast } from 'vue-toast-notification';
+
 import { AccountId, FileCreateTransaction, KeyList, PublicKey, Timestamp } from '@hashgraph/sdk';
 
 import { openExternal } from '../../../../services/electronUtilsService';
@@ -18,6 +20,8 @@ import useAccountId from '../../../../composables/useAccountId';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
+
+const toast = useToast();
 
 const payerData = useAccountId();
 
@@ -108,14 +112,18 @@ const handleGetUserSignature = async () => {
 
     isSignModalShown.value = false;
     isFileCreatedModalShown.value = true;
-  } catch (error) {
-    console.log(error);
+  } catch (err: any) {
+    let message = 'Transaction failed';
+    if (err.message && typeof err.message === 'string') {
+      message = err.message;
+    }
+    toast.error(message, { position: 'top-right' });
   } finally {
     isLoading.value = false;
   }
 };
 
-const handleSign = async () => {
+const handleCreate = async () => {
   try {
     isLoading.value = true;
 
@@ -142,8 +150,12 @@ const handleSign = async () => {
     } else {
       // Send to Back End
     }
-  } catch (error) {
-    console.log(error);
+  } catch (err: any) {
+    let message = 'Failed to create transaction';
+    if (err.message && typeof err.message === 'string') {
+      message = err.message;
+    }
+    toast.error(message, { position: 'top-right' });
   } finally {
     isLoading.value = false;
   }
@@ -257,7 +269,7 @@ watch(isSignModalShown, () => (userPassword.value = ''));
           color="primary"
           size="large"
           :disabled="keyList._keys.length === 0 || !payerData.isValid.value"
-          @click="handleSign"
+          @click="handleCreate"
           >Sign</AppButton
         >
       </div>

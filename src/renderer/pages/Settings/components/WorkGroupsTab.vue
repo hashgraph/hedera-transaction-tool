@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+import { useToast } from 'vue-toast-notification';
+
 import useOrganizationsStore from '../../../stores/storeOrganizations';
 
 import AppButton from '../../../components/ui/AppButton.vue';
+
+const toast = useToast();
 
 const organizationsStore = useOrganizationsStore();
 
@@ -13,11 +17,35 @@ const newOrganizationServerPublicKey = ref('');
 
 const handleAddOrganization = async () => {
   if (newOrganizationName.value !== '' && newOrganizationServerUrl.value !== '') {
-    organizationsStore.addOrganization({
-      name: newOrganizationName.value,
-      serverUrl: newOrganizationServerUrl.value,
-      serverPublicKey: newOrganizationServerPublicKey.value,
-    });
+    try {
+      await organizationsStore.addOrganization({
+        name: newOrganizationName.value,
+        serverUrl: newOrganizationServerUrl.value,
+        serverPublicKey: newOrganizationServerPublicKey.value,
+      });
+
+      toast.success('Organization added successfully', { position: 'top-right' });
+    } catch (err: any) {
+      let message = 'Failed to add organization';
+      if (err.message && typeof err.message === 'string') {
+        message = err.message;
+      }
+      toast.error(message, { position: 'top-right' });
+    }
+  }
+};
+
+const handleRemoveOrganization = async (serverUrl: string) => {
+  try {
+    await organizationsStore.removeOrganization(serverUrl);
+
+    toast.success('Organization removed successfully', { position: 'top-right' });
+  } catch (err: any) {
+    let message = 'Failed to remove organization';
+    if (err.message && typeof err.message === 'string') {
+      message = err.message;
+    }
+    toast.error(message, { position: 'top-right' });
   }
 };
 </script>
@@ -50,7 +78,7 @@ const handleAddOrganization = async () => {
         <label class="form-label">organization server url:</label>
         <input type="text" disabled class="form-control py-3" :value="org.serverUrl" />
       </div>
-      <AppButton color="primary" @click="organizationsStore.removeOrganization(org.serverUrl)">
+      <AppButton color="primary" @click="handleRemoveOrganization(org.serverUrl)">
         Remove
       </AppButton>
     </div>
