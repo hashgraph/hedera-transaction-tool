@@ -17,6 +17,8 @@ export const decodeProtobuffKey = async (
   if (key.ed25519 || key.ECDSASecp256k1) {
     return Key._fromProtobufKey(key);
   }
+
+  return undefined;
 };
 
 export const decodeProtobuffKeyNormalized = async (protobuffKey: string) => {
@@ -55,6 +57,8 @@ export const decodeProtobuffKeyNormalized = async (protobuffKey: string) => {
     if (ikey.ECDSASecp256k1) {
       return PublicKey.fromBytesECDSA(ikey.ECDSASecp256k1);
     }
+
+    return undefined;
   }
 
   return formatKey(key);

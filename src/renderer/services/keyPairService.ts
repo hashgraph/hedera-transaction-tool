@@ -121,6 +121,8 @@ export const flattenKeyList = (keyList: Key): PublicKey[] => {
     if (ikey.ECDSASecp256k1) {
       return PublicKey.fromBytesECDSA(ikey.ECDSASecp256k1);
     }
+
+    return undefined;
   }
 
   function formatKey(key: any) {

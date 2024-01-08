@@ -13,7 +13,7 @@ export default () => {
 
   ipcMain.handle('theme:isDark', () => nativeTheme.shouldUseDarkColors);
 
-  ipcMain.handle('theme:toggle', (e, theme: Theme) => {
+  ipcMain.handle('theme:toggle', (_e, theme: Theme) => {
     nativeTheme.themeSource = theme;
     return nativeTheme.shouldUseDarkColors;
   });

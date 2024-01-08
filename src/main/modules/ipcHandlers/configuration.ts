@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron';
-import { Organization } from '../store';
+import { IOrganization } from '../../shared/interfaces';
+
 import {
   clearStore,
   addOrganization,
@@ -18,12 +19,12 @@ export default () => {
   ipcMain.handle(createChannelName('organizations', 'get'), () => getOrganizations());
 
   // Add
-  ipcMain.handle(createChannelName('organizations', 'add'), (e, organization: Organization) => {
+  ipcMain.handle(createChannelName('organizations', 'add'), (_e, organization: IOrganization) => {
     addOrganization(organization);
   });
 
   // Remove
-  ipcMain.handle(createChannelName('organizations', 'remove'), (e, serverUrl: string) => {
+  ipcMain.handle(createChannelName('organizations', 'remove'), (_e, serverUrl: string) => {
     removeOrganization(serverUrl);
   });
 };

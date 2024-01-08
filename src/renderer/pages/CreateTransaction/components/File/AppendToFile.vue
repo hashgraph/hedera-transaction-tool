@@ -201,7 +201,7 @@ const handleCreate = async () => {
 };
 
 function chunkBuffer(buffer: Uint8Array, chunkSize: number): Uint8Array[] {
-  const chunks = [];
+  const chunks: Uint8Array[] = [];
   for (let i = 0; i < buffer.length; i += chunkSize) {
     chunks.push(buffer.slice(i, i + chunkSize));
   }

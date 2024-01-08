@@ -164,7 +164,7 @@ const transactionGroups = [
           Lorem ipsum dolor sit amet, consectetur adipiscing elit.
         </p> -->
         <div class="mt-5 row flex-wrap">
-          <template v-for="(group, groupIndex) in transactionGroups" :key="groupIndex">
+          <template v-for="(group, _groupIndex) in transactionGroups" :key="_groupIndex">
             <div class="mt-5 col-4">
               <h3 class="text-title text-bold">{{ group.groupTitle }}</h3>
               <RouterLink

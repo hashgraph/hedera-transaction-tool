@@ -1,13 +1,8 @@
 import Store, { Schema } from 'electron-store';
-
-export type Organization = {
-  name: string;
-  serverUrl: string;
-  serverPublicKey: string;
-};
+import { IOrganization } from '../shared/interfaces';
 
 export type SchemaProperties = {
-  organizations: Organization[];
+  organizations: IOrganization[];
 };
 
 /* Module for persisting data in a JSON file */

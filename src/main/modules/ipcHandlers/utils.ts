@@ -5,14 +5,14 @@ import { proto } from '@hashgraph/proto';
 
 import { hash } from '../../utils/crypto';
 
-const createChannelName = (...props) => ['utils', ...props].join(':');
+const createChannelName = (...props: string[]) => ['utils', ...props].join(':');
 
 export default () => {
-  ipcMain.on(createChannelName('openExternal'), (e, url: string) => shell.openExternal(url));
+  ipcMain.on(createChannelName('openExternal'), (_e, url: string) => shell.openExternal(url));
 
   ipcMain.handle(
     createChannelName('decodeProtobuffKey'),
-    (e, protobuffEncodedKey: string): Key | KeyList | proto.Key => {
+    (_e, protobuffEncodedKey: string): Key | KeyList | proto.Key => {
       const buffer = Buffer.from(protobuffEncodedKey, 'hex');
       const key = proto.Key.decode(buffer);
 
@@ -20,7 +20,7 @@ export default () => {
     },
   );
 
-  ipcMain.handle(createChannelName('hash'), (e, data: any): string => {
+  ipcMain.handle(createChannelName('hash'), (_e, data): string => {
     const hashBuffer = hash(Buffer.from(data));
 
     const str = hashBuffer.toString('hex');
@@ -28,7 +28,7 @@ export default () => {
     return str;
   });
 
-  ipcMain.handle(createChannelName('executeTransaction'), async (e, transactionData: string) => {
+  ipcMain.handle(createChannelName('executeTransaction'), async (_e, transactionData: string) => {
     const tx: {
       transactionBytes: string;
       network: 'mainnet' | 'testnet' | 'previewnet' | 'custom';
@@ -53,7 +53,7 @@ export default () => {
       return { response, receipt, transactionId: response.transactionId.toString() };
     } catch (error: any) {
       console.log(error);
-      throw new Error(error.message);
+      throw new Error(error.message || error);
     }
 
     function getClient() {
@@ -82,7 +82,7 @@ export default () => {
     }
   });
 
-  ipcMain.handle(createChannelName('executeQuery'), async (e, queryData: string) => {
+  ipcMain.handle(createChannelName('executeQuery'), async (_e, queryData: string) => {
     const tx: {
       queryBytes: string;
       network: 'mainnet' | 'testnet' | 'previewnet' | 'custom';

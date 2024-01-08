@@ -1,4 +1,4 @@
-import { Menu } from 'electron';
+import { Menu, shell } from 'electron';
 
 import updater from './updater';
 
@@ -35,7 +35,6 @@ export default function () {
         {
           label: 'Learn More',
           click: async () => {
-            const { shell } = require('electron');
             await shell.openExternal('https://electronjs.org');
           },
         },
@@ -43,7 +42,7 @@ export default function () {
     },
   ];
 
-  // @ts-ignore
+  // @ts-ignore Incorrect arg type of the buildFromTemplate function
   const menu = Menu.buildFromTemplate(template);
 
   Menu.setApplicationMenu(menu);

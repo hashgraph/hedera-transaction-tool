@@ -53,7 +53,7 @@ const menuItems = [
 <template>
   <div class="container-menu">
     <div>
-      <template v-for="(item, index) in menuItems" :key="index">
+      <template v-for="(item, _index) in menuItems" :key="_index">
         <RouterLink class="link-menu mt-2" :to="item.link">
           <i :class="item.icon"></i><span>{{ item.title }}</span></RouterLink
         >

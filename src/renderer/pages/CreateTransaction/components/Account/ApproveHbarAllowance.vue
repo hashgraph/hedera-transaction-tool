@@ -127,7 +127,7 @@ const handleCreate = async () => {
       )
       .freezeWith(networkStore.client);
 
-    let someUserAccountIsPayer = keyPairsStore.keyPairs.some(kp =>
+    const someUserAccountIsPayer = keyPairsStore.keyPairs.some(kp =>
       payerData.keysFlattened.value.concat(ownerData.keysFlattened.value).includes(kp.publicKey),
     );
 

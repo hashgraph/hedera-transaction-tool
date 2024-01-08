@@ -54,7 +54,7 @@ const handleGetUserSignature = async () => {
     }
 
     if (!transaction.value || !payerData.accountId.value) {
-      return new Error('Transaction or payer missing');
+      throw new Error('Transaction or payer missing');
     }
 
     isLoading.value = true;

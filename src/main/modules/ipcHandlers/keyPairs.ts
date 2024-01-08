@@ -17,7 +17,7 @@ export default (app: Electron.App) => {
   // Generate key pair
   ipcMain.handle(
     createChannelName('store'),
-    async (e, userId: string, password: string, secretHash: string, keyPair: IKeyPair) => {
+    async (_e, userId: string, password: string, secretHash: string, keyPair: IKeyPair) => {
       await storeKeyPair(getKeyPairsFilePath(app, userId), password, secretHash, keyPair);
     },
   );
@@ -25,41 +25,42 @@ export default (app: Electron.App) => {
   // Change Decryption Password
   ipcMain.handle(
     createChannelName('changeDecryptionPassword'),
-    (e, userId: string, oldPassword: string, newPassword: string) =>
+    (_e, userId: string, oldPassword: string, newPassword: string) =>
       changeDecryptionPassword(getKeyPairsFilePath(app, userId), oldPassword, newPassword),
   );
 
   // Decrypted private key
   ipcMain.handle(
     createChannelName('decryptPrivateKey'),
-    async (e, userId: string, password: string, publicKey: string) =>
+    async (_e, userId: string, password: string, publicKey: string) =>
       decryptPrivateKey(getKeyPairsFilePath(app, userId), password, publicKey),
   );
 
   // Decrypt stored key pairs
   ipcMain.handle(
     createChannelName('getStored'),
-    async (e, userId: string, secretHash?: string, secretHashName?: string) =>
+    async (_e, userId: string, secretHash?: string, secretHashName?: string) =>
       getStoredKeyPairs(getKeyPairsFilePath(app, userId), secretHash, secretHashName),
   );
 
   // Decrypt stored key pairs
-  ipcMain.handle(createChannelName('getStoredKeysSecretHashes'), async (e, userId: string) =>
+  ipcMain.handle(createChannelName('getStoredKeysSecretHashes'), async (_e, userId: string) =>
     getStoredKeysSecretHashes(getKeyPairsFilePath(app, userId)),
   );
 
   // Delete encrypted private keys
-  ipcMain.handle(createChannelName('deleteEncryptedPrivateKeys'), async (e, userId: string) =>
+  ipcMain.handle(createChannelName('deleteEncryptedPrivateKeys'), async (_e, userId: string) =>
     deleteEncryptedPrivateKeys(getKeyPairsFilePath(app, userId)),
   );
 
   // Clear keys file
-  ipcMain.handle(createChannelName('clear'), async (e, userId: string) => {
+  ipcMain.handle(createChannelName('clear'), async (_e, userId: string) => {
     try {
       await deleteSecretHashesFile(getKeyPairsFilePath(app, userId));
       return true;
     } catch {
       console.log('no such folder');
+      return false;
     }
   });
 };

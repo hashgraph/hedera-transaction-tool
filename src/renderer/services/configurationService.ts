@@ -1,10 +1,10 @@
-import { Organization } from '../../main/modules/store';
+import { IOrganization } from 'src/main/shared/interfaces';
 
 /* Organizations*/
 
 export const getOrganizations = () => window.electronAPI.config.organizations.getAll();
 
-export const addOrganization = async (organization: Organization) => {
+export const addOrganization = async (organization: IOrganization) => {
   try {
     await window.electronAPI.config.organizations.add(organization);
   } catch (err: any) {

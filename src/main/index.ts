@@ -1,16 +1,10 @@
 import { app, BrowserWindow, session } from 'electron';
-import { join, resolve } from 'path';
-import dotenv from 'dotenv';
+import { optimizer, is } from '@electron-toolkit/utils';
 
 import createMenu from './modules/menu';
 import registerIpcListeners from './modules/ipcHandlers';
 
 import createWindow from './windows/mainWindow';
-
-dotenv.config({
-  path: app.isPackaged ? join(process.resourcesPath, '.env') : resolve(process.cwd(), '.env'),
-  override: true,
-});
 
 registerIpcListeners(app);
 
@@ -22,14 +16,14 @@ function attachAppEvents() {
   app.on('ready', () => {
     createMenu();
 
-    mainWindow = createWindow(app);
+    mainWindow = createWindow();
 
     /* main window events */
     mainWindow?.on('closed', () => {
       mainWindow = null;
     });
 
-    if (process.env.NODE_ENV === 'production') {
+    if (!is.dev) {
       session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
         callback({
           responseHeaders: {
@@ -42,9 +36,13 @@ function attachAppEvents() {
 
     app.on('activate', function () {
       if (mainWindow === null) {
-        createWindow(app);
+        createWindow();
       }
     });
+  });
+
+  app.on('browser-window-created', (_, window) => {
+    optimizer.watchWindowShortcuts(window);
   });
 
   app.on('window-all-closed', function () {
