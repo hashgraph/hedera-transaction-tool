@@ -2,7 +2,7 @@ import { onMounted, ref } from 'vue';
 
 import { defineStore } from 'pinia';
 
-import { Organization } from '../../main/modules/store';
+import { IOrganization } from '../../main/shared/interfaces';
 
 import useUserStateStore from './storeUserState';
 
@@ -12,8 +12,8 @@ const useOrganizationsStore = defineStore('organizations', () => {
   const userStateStore = useUserStateStore();
 
   /* State */
-  const organizations = ref<Organization[]>([]);
-  const currentOrganization = ref<Organization | null>(null);
+  const organizations = ref<IOrganization[]>([]);
+  const currentOrganization = ref<IOrganization | null>(null);
 
   /* Actions */
   async function refetch() {
@@ -30,7 +30,7 @@ const useOrganizationsStore = defineStore('organizations', () => {
     }
   }
 
-  async function addOrganization(organization: Organization) {
+  async function addOrganization(organization: IOrganization) {
     await configService.addOrganization(organization);
 
     currentOrganization.value = organization;

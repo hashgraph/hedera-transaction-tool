@@ -1,10 +1,7 @@
-import { electronAPI } from '../../main/preload';
+import { electronAPI } from './';
 
 type ElectronAPI = typeof electronAPI;
 
-/**
- * Should match main/preload.ts for typescript support in renderer
- */
 export default ElectronAPI;
 
 declare global {

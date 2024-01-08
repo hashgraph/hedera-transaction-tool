@@ -37,8 +37,8 @@ app.config.errorHandler = (err: any) => {
 app.mount('#app');
 
 /* Vue Dev Tools */
-// if (window.electronAPI.getNodeEnv() === 'development') {
+// if (import.meta.env.DEV) {
 //   import('@vue/devtools').then(module => {
-//     module.connect(`http://localhost`);
+//     module.connect('http://localhost');
 //   });
 // }

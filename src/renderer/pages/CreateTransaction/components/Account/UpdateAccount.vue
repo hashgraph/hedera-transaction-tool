@@ -97,7 +97,7 @@ const handleGetUserSignature = async () => {
     }
 
     if (!transaction.value) {
-      return new Error('Transaction is missing');
+      throw new Error('Transaction is missing');
     }
 
     await getTransactionSignatures(

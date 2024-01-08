@@ -2,25 +2,23 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 import { proto } from '@hashgraph/proto';
 
-import { IKeyPair } from './shared/interfaces';
+import { IKeyPair, IOrganization } from '../main/shared/interfaces';
 
-import { Theme } from './modules/ipcHandlers/theme';
-import { Organization } from './modules/store';
+import { Theme } from '../main/modules/ipcHandlers/theme';
 
 export const electronAPI = {
-  getNodeEnv: () => process.env.NODE_ENV,
   theme: {
     isDark: (): Promise<boolean> => ipcRenderer.invoke('theme:isDark'),
     toggle: (theme: Theme): Promise<boolean> => ipcRenderer.invoke('theme:toggle', theme),
     onThemeUpdate: async (callback: (theme: boolean) => void) => {
-      await ipcRenderer.on('theme:update', (e, isDark: boolean) => callback(isDark));
+      await ipcRenderer.on('theme:update', (_e, isDark: boolean) => callback(isDark));
     },
   },
   config: {
     clear: () => ipcRenderer.invoke('configuration:clear'),
     organizations: {
-      getAll: (): Promise<Organization[]> => ipcRenderer.invoke('configuration:organizations:get'),
-      add: async (organization: Organization) => {
+      getAll: (): Promise<IOrganization[]> => ipcRenderer.invoke('configuration:organizations:get'),
+      add: async (organization: IOrganization) => {
         await ipcRenderer.invoke('configuration:organizations:add', organization);
       },
       removeByServerURL: async (serverUrl: string) => {

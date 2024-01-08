@@ -1,4 +1,5 @@
-import getStore, { Organization } from '../modules/store';
+import { IOrganization } from '../shared/interfaces';
+import getStore from '../modules/store';
 
 const store = getStore();
 
@@ -8,7 +9,7 @@ export const clearStore = () => store.clear();
 /* Organizations */
 export const getOrganizations = () => store.get('organizations');
 
-export const addOrganization = (organization: Organization) => {
+export const addOrganization = (organization: IOrganization) => {
   if (
     store.store.organizations.some(
       org => org.name === organization.name || org.serverUrl === organization.serverUrl,

@@ -41,9 +41,8 @@ const handleRead = async () => {
   try {
     isLoading.value = true;
 
-    const publicKey = keyPairsStore.keyPairs.find(
-      kp => kp.accountId === payerData.accountId.value,
-    )?.publicKey;
+    const publicKey = keyPairsStore.keyPairs.find(kp => kp.accountId === payerData.accountId.value)
+      ?.publicKey;
 
     const privateKey = await decryptPrivateKey(
       userStateStore.userData?.userId,
