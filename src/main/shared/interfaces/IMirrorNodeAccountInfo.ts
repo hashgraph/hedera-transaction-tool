@@ -8,8 +8,8 @@ export interface IMirrorNodeAccountInfo {
   deleted: boolean;
   ethereumNonce: number;
   evmAddress: EvmAddress;
-  createdTimestamp: Timestamp;
-  expiryTimestamp: Timestamp;
+  createdTimestamp: Timestamp | null;
+  expiryTimestamp: Timestamp | null;
   key: Key;
   maxAutomaticTokenAssociations: number;
   memo: string;
