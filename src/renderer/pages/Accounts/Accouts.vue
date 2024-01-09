@@ -16,6 +16,14 @@ import AppButton from '../../components/ui/AppButton.vue';
 import AppModal from '../../components/ui/AppModal.vue';
 import KeyStructure from '../../components/KeyStructure.vue';
 
+/* Enums */
+enum Sorting {
+  AccountIdAsc = 'accountIdAsc',
+  AccountIdDesc = 'accountIdDesc',
+  NicknameAsc = 'nicknameAsc',
+  NicknameDesc = 'nicknameDesc',
+}
+
 /* Stores */
 const userStore = useUserStateStore();
 const networkStore = useNetworkStore();
@@ -64,6 +72,29 @@ const handleUnlinkAccount = async () => {
 
   isUnlinkAccountModalShown.value = false;
 };
+
+const handleSortAccounts = (sorting: Sorting) => {
+  switch (sorting) {
+    case Sorting.AccountIdAsc:
+      accounts.value = accounts.value.sort(
+        (a, b) => Number(a.accountId.split('.')[2]) - Number(b.accountId.split('.')[2]),
+      );
+      break;
+    case Sorting.AccountIdDesc:
+      accounts.value = accounts.value.sort(
+        (a, b) => Number(b.accountId.split('.')[2]) - Number(a.accountId.split('.')[2]),
+      );
+      break;
+    case Sorting.NicknameAsc:
+      accounts.value = accounts.value.sort((a, b) => a.nickname.localeCompare(b.nickname));
+      break;
+    case Sorting.NicknameDesc:
+      accounts.value = accounts.value.sort((a, b) => b.nickname.localeCompare(a.nickname));
+      break;
+    default:
+      break;
+  }
+};
 </script>
 <template>
   <div class="p-10">
@@ -100,10 +131,18 @@ const handleUnlinkAccount = async () => {
               ><i class="bi bi-filter text-headline me-2"></i> Sort by</AppButton
             >
             <ul class="dropdown-menu text-small">
-              <li class="dropdown-item">Account ID A-Z</li>
-              <li class="dropdown-item">Account ID Z-A</li>
-              <li class="dropdown-item">Nickname A-Z</li>
-              <li class="dropdown-item">Nickname Z-A</li>
+              <li class="dropdown-item" @click="handleSortAccounts(Sorting.AccountIdAsc)">
+                Account ID A-Z
+              </li>
+              <li class="dropdown-item" @click="handleSortAccounts(Sorting.AccountIdDesc)">
+                Account ID Z-A
+              </li>
+              <li class="dropdown-item" @click="handleSortAccounts(Sorting.NicknameAsc)">
+                Nickname A-Z
+              </li>
+              <li class="dropdown-item" @click="handleSortAccounts(Sorting.NicknameDesc)">
+                Nickname Z-A
+              </li>
             </ul>
           </div>
         </div>
