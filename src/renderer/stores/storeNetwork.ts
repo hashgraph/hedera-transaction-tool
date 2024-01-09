@@ -1,6 +1,11 @@
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { defineStore } from 'pinia';
-import { Client } from '@hashgraph/sdk';
+
+import { Client, Timestamp } from '@hashgraph/sdk';
+
+import { NetworkExchangeRateSetResponse } from '../../main/shared/interfaces';
+
+import { getExchangeRateSet } from '../services/mirrorNodeDataService';
 
 export type Network = 'mainnet' | 'testnet' | 'previewnet' | 'custom';
 export type CustomNetworkSettings = {
@@ -14,6 +19,7 @@ const useNetworkStore = defineStore('network', () => {
   /* State */
   const network = ref<Network>('testnet');
   const customNetworkSettings = ref<CustomNetworkSettings | null>(null);
+  const exchangeRateSet = ref<NetworkExchangeRateSetResponse | null>(null);
 
   /* Getters */
   const mirrorNodeBaseURL = computed(() => getMirrorNodeLinkByNetwork(network.value));
@@ -40,6 +46,30 @@ const useNetworkStore = defineStore('network', () => {
         throw Error('Network not supported');
     }
   });
+  const currentRate = computed(async () => {
+    if (!exchangeRateSet.value) {
+      exchangeRateSet.value = await getExchangeRateSet(mirrorNodeBaseURL.value);
+    }
+
+    const timestamp = Timestamp.generate().seconds.low;
+
+    let networkCurrRate = exchangeRateSet.value.current_rate;
+    let rate = networkCurrRate.cent_equivalent / networkCurrRate.hbar_equivalent / 100;
+
+    const networkNextRate = exchangeRateSet.value.next_rate;
+
+    if (timestamp > networkCurrRate.expiration_time) {
+      rate = networkNextRate.cent_equivalent / networkNextRate.hbar_equivalent / 100;
+    }
+
+    if (timestamp > networkNextRate.expiration_time) {
+      exchangeRateSet.value = await getExchangeRateSet(mirrorNodeBaseURL.value);
+      networkCurrRate = exchangeRateSet.value.current_rate;
+      rate = networkCurrRate.cent_equivalent / networkCurrRate.hbar_equivalent / 100;
+    }
+
+    return rate;
+  });
 
   /* Actions */
   async function setNetwork(newNetwork: Network, _customNetworkSettings?: CustomNetworkSettings) {
@@ -51,7 +81,14 @@ const useNetworkStore = defineStore('network', () => {
     }
 
     network.value = newNetwork;
+
+    exchangeRateSet.value = await getExchangeRateSet(mirrorNodeBaseURL.value);
   }
+
+  /* Hooks */
+  onMounted(async () => {
+    exchangeRateSet.value = await getExchangeRateSet(mirrorNodeBaseURL.value);
+  });
 
   /* Helpers */
   function getMirrorNodeLinkByNetwork(network: Network) {
@@ -73,8 +110,10 @@ const useNetworkStore = defineStore('network', () => {
   return {
     network,
     customNetworkSettings,
+    exchangeRateSet,
     mirrorNodeBaseURL,
     client,
+    currentRate,
     setNetwork,
     getMirrorNodeLinkByNetwork,
   };
