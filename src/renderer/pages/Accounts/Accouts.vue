@@ -10,6 +10,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 
 import { getAll } from '../../services/accountsService';
 import { openExternal } from '../../services/electronUtilsService';
+import { getKeyListLevels } from '../../services/keyPairService';
 
 import AppButton from '../../components/ui/AppButton.vue';
 import AppModal from '../../components/ui/AppModal.vue';
@@ -105,7 +106,7 @@ onMounted(async () => {
             >
               <div class="d-flex row">
                 <p class="col-6">Nickname</p>
-                <p class="col-6">
+                <p class="col-6 px-0">
                   {{
                     accounts.find(acc => acc.accountId === accountData.accountIdFormatted.value)
                       ?.nickname
@@ -116,7 +117,7 @@ onMounted(async () => {
             </template>
             <div class="d-flex row">
               <p class="col-6">Account ID</p>
-              <p class="col-6">
+              <p class="col-6 px-0">
                 {{
                   accountData.accountInfo.value?.accountId.toStringWithChecksum(networkStore.client)
                 }}
@@ -132,20 +133,20 @@ onMounted(async () => {
             </div>
             <div class="mt-4 d-flex row">
               <p class="col-6">EVM Address</p>
-              <p class="col-6 text-break">
+              <p class="col-6 text-break px-0">
                 {{ accountData.accountInfo.value?.evmAddress || 'None' }}
               </p>
             </div>
             <div class="mt-4 d-flex row">
               <p class="col-6">Balance</p>
-              <p class="col-6">{{ accountData.accountInfo.value?.balance || 'None' }}</p>
+              <p class="col-6 px-0">{{ accountData.accountInfo.value?.balance || 'None' }}</p>
             </div>
             <div class="mt-4 d-flex row">
               <p class="col-6">Admin Key</p>
-              <p class="text-break col-6">
+              <p class="col-6 text-break px-0">
                 <template v-if="accountData.key.value instanceof KeyList && true">
-                  Complex Key (levels)
-                  <span class="ms-3 link-primary" @click="isKeyStructureModalShown = true"
+                  Complex Key ({{ getKeyListLevels(accountData.key.value) }} levels)
+                  <span class="link-primary cursor-pointer" @click="isKeyStructureModalShown = true"
                     >See details</span
                   >
                 </template>
@@ -160,30 +161,30 @@ onMounted(async () => {
             </div>
             <div class="mt-4 d-flex row">
               <p class="col-6">Receiver Sig. Required</p>
-              <p class="col-6">
+              <p class="col-6 px-0">
                 {{ accountData.accountInfo.value?.receiverSignatureRequired ? 'Yes' : 'No' }}
               </p>
             </div>
             <div class="mt-4 d-flex row">
               <p class="col-6">Memo</p>
-              <p class="col-6">{{ accountData.accountInfo.value?.memo || 'None' }}</p>
+              <p class="col-6 px-0">{{ accountData.accountInfo.value?.memo || 'None' }}</p>
             </div>
             <div class="mt-4 d-flex row">
               <p class="col-6">Max. Auto. Association</p>
-              <p class="col-6">
+              <p class="col-6 px-0">
                 {{ accountData.accountInfo.value?.maxAutomaticTokenAssociations }}
               </p>
             </div>
             <div class="mt-4 d-flex row">
               <p class="col-6">Ethereum Nonce</p>
-              <p class="col-6">
+              <p class="col-6 px-0">
                 {{ accountData.accountInfo.value?.ethereumNonce }}
               </p>
             </div>
             <hr class="my-4" />
             <div class="d-flex row">
               <p class="col-6">Created At</p>
-              <p class="col-6">
+              <p class="col-6 px-0">
                 {{
                   accountData.accountInfo.value?.createdTimestamp
                     ? new Date(
@@ -195,7 +196,7 @@ onMounted(async () => {
             </div>
             <div class="mt-4 d-flex row">
               <p class="col-6">Expires At</p>
-              <p class="col-6">
+              <p class="col-6 px-0">
                 {{
                   accountData.accountInfo.value?.expiryTimestamp
                     ? new Date(
@@ -207,7 +208,7 @@ onMounted(async () => {
             </div>
             <div class="mt-4 d-flex row" v-if="accountData.accountInfo.value?.autoRenewPeriod">
               <p class="col-6">Auto Renew Period</p>
-              <p class="col-6">
+              <p class="col-6 px-0">
                 <span>{{ accountData.accountInfo.value?.autoRenewPeriod }}s</span>
                 <span class="ms-4"
                   >{{
@@ -220,7 +221,7 @@ onMounted(async () => {
             <hr class="my-4" />
             <div class="d-flex row">
               <p class="col-6">Staked to</p>
-              <p class="col-6">
+              <p class="col-6 px-0">
                 {{
                   accountData.accountInfo.value?.stakedNodeId
                     ? `Node ${accountData.accountInfo.value?.stakedNodeId}`
@@ -230,7 +231,7 @@ onMounted(async () => {
             </div>
             <div class="mt-4 d-flex row">
               <p class="col-6">Pending Reward</p>
-              <p class="col-6">
+              <p class="col-6 px-0">
                 <span>
                   {{
                     (
@@ -243,7 +244,7 @@ onMounted(async () => {
             </div>
             <div class="mt-4 d-flex row">
               <p class="col-6">Rewards</p>
-              <p class="col-6">
+              <p class="col-6 px-0">
                 {{ accountData.accountInfo.value?.declineReward ? 'Declined' : 'Accepted' }}
               </p>
             </div>
