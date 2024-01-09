@@ -84,3 +84,30 @@ export const getExchangeRateSet = async (mirrorNodeLink: string, controller?: Ab
 
   return exchangeRateSet;
 };
+
+export const getDollarAmount = (hbarPrice: number, hbarAmount: number) => {
+  const fractionDigits = 5;
+
+  const dollarFormatting = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  });
+
+  let result: string;
+
+  if (hbarPrice !== null) {
+    const resolution = Math.pow(10, -fractionDigits);
+    let usdAmount = hbarAmount * hbarPrice;
+    if (0 < usdAmount && usdAmount < +resolution) {
+      usdAmount = resolution;
+    } else if (-resolution < usdAmount && usdAmount < 0) {
+      usdAmount = -resolution;
+    }
+    result = dollarFormatting.format(usdAmount);
+  } else {
+    result = '';
+  }
+  return result;
+};
