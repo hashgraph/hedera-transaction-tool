@@ -62,6 +62,13 @@ export const electronAPI = {
       ipcRenderer.invoke('utils:executeTransaction', transactionData),
     executeQuery: (queryData: string) => ipcRenderer.invoke('utils:executeQuery', queryData),
   },
+  accounts: {
+    getAll: (userId: string): Promise<string[]> => ipcRenderer.invoke('accounts:getAll', userId),
+    add: (userId: string, accountId: string, nickname: string): Promise<string[]> =>
+      ipcRenderer.invoke('accounts:add', userId, accountId, nickname),
+    remove: (userId: string, accountId: string, nickname: string): Promise<string[]> =>
+      ipcRenderer.invoke('accounts:remove', userId, accountId, nickname),
+  },
 };
 typeof electronAPI;
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);
