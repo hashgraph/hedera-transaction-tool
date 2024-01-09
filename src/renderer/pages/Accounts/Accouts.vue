@@ -323,7 +323,10 @@ const handleSortAccounts = (sorting: Sorting) => {
               <p class="text-danger">Account is deleted</p>
             </template>
             <div class="w-100 ms-0 mt-5 p-4 bg-dark-blue-700 position-relative bottom-0 d-flex row">
-              <div class="px-0 col-4 border-end d-flex align-items-center justify-content-center">
+              <div
+                v-if="!accountData.accountInfo.value?.deleted"
+                class="px-0 col-4 d-flex align-items-center justify-content-center"
+              >
                 <AppButton
                   class="fw-light text-dark-emphasis"
                   @click="
@@ -336,14 +339,20 @@ const handleSortAccounts = (sorting: Sorting) => {
                   >Update Account</AppButton
                 >
               </div>
-              <div class="px-0 col-4 border-end d-flex align-items-center justify-content-center">
+              <div
+                class="px-0 col-4 d-flex align-items-center justify-content-center"
+                :class="{
+                  'col-12': accountData.accountInfo.value?.deleted,
+                  'border-start border-end': !accountData.accountInfo.value?.deleted,
+                }"
+              >
                 <AppButton
                   class="fw-light text-dark-emphasis"
                   @click="isUnlinkAccountModalShown = true"
                   >Unlink Account</AppButton
                 >
               </div>
-              <div class="px-0 col-4 text-center">
+              <div v-if="!accountData.accountInfo.value?.deleted" class="px-0 col-4 text-center">
                 <AppButton
                   class="fw-light text-dark-emphasis d-flex align-items-center justify-content-center"
                   @click="
