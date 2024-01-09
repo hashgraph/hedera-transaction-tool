@@ -22,6 +22,7 @@ import RestoreKey from '../pages/RestoreKey';
 import CreateTransaction from '../pages/CreateTransaction';
 import AccountTab from '../pages/Settings/components/AccountTab.vue';
 import ForgotPassword from '../pages/ForgotPassword';
+import LinkExisting from '@renderer/pages/Accounts/LinkExisting/LinkExisting.vue';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -31,6 +32,7 @@ const routes: RouteRecordRaw[] = [
   },
   { path: '/style-guide', name: 'styleGuide', component: StyleGuide },
   { path: '/transactions', name: 'transactions', component: Transactions },
+  { path: '/accounts/link-existing', name: 'linkExistingAccount', component: LinkExisting },
   { path: '/accounts', name: 'accounts', component: Accounts },
   { path: '/tokens', name: 'tokens', component: Tokens },
   { path: '/smart-contracts', name: 'smartContracts', component: SmartContracts },
