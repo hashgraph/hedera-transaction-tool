@@ -38,14 +38,12 @@ export const getAccountInfo = async (
     deleted: data.deleted,
     ethereumNonce: Number(data.ethereum_nonce),
     evmAddress: EvmAddress.fromString(data.evm_address),
-    createdTimestamp: new Timestamp(
-      data.created_timestamp.split('.')[0],
-      data.created_timestamp.split('.')[1],
-    ),
-    expiryTimestamp: new Timestamp(
-      data.expiry_timestamp.split('.')[0],
-      data.expiry_timestamp.split('.')[1],
-    ),
+    createdTimestamp: data.created_timestamp
+      ? new Timestamp(data.created_timestamp.split('.')[0], data.created_timestamp.split('.')[1])
+      : null,
+    expiryTimestamp: data.expiry_timestamp
+      ? new Timestamp(data.expiry_timestamp.split('.')[0], data.expiry_timestamp.split('.')[1])
+      : null,
     key: key,
     maxAutomaticTokenAssociations: data.max_automatic_token_associations,
     memo: data.memo,
