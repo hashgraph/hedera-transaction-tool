@@ -4,19 +4,34 @@ import { onUpdated, ref } from 'vue';
 import { useToast } from 'vue-toast-notification';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
-import AppButton from '../../../components/ui/AppButton.vue';
-
 import useAccountId from '../../../composables/useAccountId';
 
+import useUserStateStore from '../../../stores/storeUserState';
+
+import { add } from '../../../services/accountsService';
+
+import AppButton from '../../../components/ui/AppButton.vue';
+
+const userStore = useUserStateStore();
 const toast = useToast();
 
 /* State */
 const accountData = useAccountId();
 const nickname = ref('');
 
-const handleLinkAccount = () => {
+const handleLinkAccount = async () => {
   if (accountData.isValid.value) {
-    toast.success('Account linked successfully!', { position: 'top-right' });
+    try {
+      if (!userStore.userData?.userId) {
+        throw new Error('User not logged in');
+      }
+
+      await add(userStore.userData?.userId, accountData.accountIdFormatted.value, nickname.value);
+
+      toast.success('Account linked successfully!', { position: 'top-right' });
+    } catch (error: any) {
+      toast.error(error.message || 'Account link failed', { position: 'top-right' });
+    }
   }
 };
 
