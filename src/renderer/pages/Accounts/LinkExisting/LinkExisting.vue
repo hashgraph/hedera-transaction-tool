@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onUpdated, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 
 import { useToast } from 'vue-toast-notification';
 import Tooltip from 'bootstrap/js/dist/tooltip';
@@ -35,7 +35,7 @@ const handleLinkAccount = async () => {
   }
 };
 
-onUpdated(() => {
+onMounted(() => {
   const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
   Array.from(tooltipTriggerList).map(tooltipTriggerEl => new Tooltip(tooltipTriggerEl));
 });
