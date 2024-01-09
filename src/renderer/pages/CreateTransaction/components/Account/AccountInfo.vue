@@ -85,9 +85,11 @@ watch(accountData.isValid, isValid => {
               <p class="col-4 text-secondary">Created At:</p>
               <p class="col-8">
                 {{
-                  new Date(
-                    accountData.accountInfo.value?.createdTimestamp.seconds * 1000,
-                  ).toDateString()
+                  accountData.accountInfo.value?.createdTimestamp
+                    ? new Date(
+                        accountData.accountInfo.value?.createdTimestamp.seconds * 1000,
+                      ).toDateString()
+                    : 'None'
                 }}
               </p>
             </div>
@@ -95,9 +97,11 @@ watch(accountData.isValid, isValid => {
               <p class="col-4 text-secondary">Expires At:</p>
               <p class="col-8">
                 {{
-                  new Date(
-                    accountData.accountInfo.value?.expiryTimestamp.seconds * 1000,
-                  ).toDateString()
+                  accountData.accountInfo.value?.expiryTimestamp
+                    ? new Date(
+                        accountData.accountInfo.value?.expiryTimestamp.seconds * 1000,
+                      ).toDateString()
+                    : 'None'
                 }}
               </p>
             </div>
