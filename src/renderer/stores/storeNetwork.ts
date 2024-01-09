@@ -46,14 +46,14 @@ const useNetworkStore = defineStore('network', () => {
         throw Error('Network not supported');
     }
   });
-  const currentRate = computed(async () => {
+  const currentRate = computed(() => {
     if (!exchangeRateSet.value) {
-      exchangeRateSet.value = await getExchangeRateSet(mirrorNodeBaseURL.value);
+      throw new Error('Exchange rate set not found');
     }
 
     const timestamp = Timestamp.generate().seconds.low;
 
-    let networkCurrRate = exchangeRateSet.value.current_rate;
+    const networkCurrRate = exchangeRateSet.value.current_rate;
     let rate = networkCurrRate.cent_equivalent / networkCurrRate.hbar_equivalent / 100;
 
     const networkNextRate = exchangeRateSet.value.next_rate;
@@ -63,9 +63,7 @@ const useNetworkStore = defineStore('network', () => {
     }
 
     if (timestamp > networkNextRate.expiration_time) {
-      exchangeRateSet.value = await getExchangeRateSet(mirrorNodeBaseURL.value);
-      networkCurrRate = exchangeRateSet.value.current_rate;
-      rate = networkCurrRate.cent_equivalent / networkCurrRate.hbar_equivalent / 100;
+      throw new Error('Exchange rate expired');
     }
 
     return rate;
