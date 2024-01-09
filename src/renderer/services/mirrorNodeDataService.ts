@@ -4,7 +4,11 @@ import { AccountId, EvmAddress, Hbar, HbarUnit, Key, PublicKey, Timestamp } from
 
 import { decodeProtobuffKey } from './electronUtilsService';
 
-import { IMirrorNodeAccountInfo, IMirrorNodeAllowance } from '../../main/shared/interfaces';
+import {
+  IMirrorNodeAccountInfo,
+  IMirrorNodeAllowance,
+  NetworkExchangeRateSetResponse,
+} from '../../main/shared/interfaces';
 
 export const getAccountInfo = async (
   accountId: string,
@@ -69,4 +73,14 @@ export const getAccountAllowances = async (
   const allowances: IMirrorNodeAllowance[] = data.allowances;
 
   return allowances;
+};
+
+export const getExchangeRateSet = async (mirrorNodeLink: string, controller?: AbortController) => {
+  const { data } = await axios.get(`${mirrorNodeLink}/network/exchangerate`, {
+    signal: controller?.signal,
+  });
+
+  const exchangeRateSet: NetworkExchangeRateSetResponse = data;
+
+  return exchangeRateSet;
 };
