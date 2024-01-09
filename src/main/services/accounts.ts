@@ -68,11 +68,9 @@ export const removeAccount = (userId: string, accountId: string, nickname?: stri
 
   store.set(
     'accounts',
-    store.store.accounts.filter(acc => acc.accountId !== accountId),
-  );
-  store.set(
-    'accounts',
-    store.store.accounts.filter(acc => acc.nickname !== nickname),
+    store.store.accounts.filter(
+      acc => acc.accountId !== accountId || (nickname && acc.nickname !== nickname),
+    ),
   );
 
   return store.get('accounts');
