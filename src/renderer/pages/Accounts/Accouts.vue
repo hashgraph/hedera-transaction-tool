@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 import { Hbar, HbarUnit, KeyList, PublicKey } from '@hashgraph/sdk';
 
 import useUserStateStore from '../../stores/storeUserState';
 import useNetworkStore from '../../stores/storeNetwork';
 
-import useAccountId from '@renderer/composables/useAccountId';
+import useAccountId from '../../composables/useAccountId';
 
 import { getAll } from '../../services/accountsService';
 import { openExternal } from '../../services/electronUtilsService';
 import { getKeyListLevels } from '../../services/keyPairService';
+import { getDollarAmount } from '../../services/mirrorNodeDataService';
 
 import AppButton from '../../components/ui/AppButton.vue';
 import AppModal from '../../components/ui/AppModal.vue';
@@ -27,6 +28,16 @@ const accounts = ref<
     nickname: string;
   }[]
 >([]);
+const hbarDollarAmount = computed(() => {
+  if (!accountData.accountInfo.value) {
+    return 0;
+  }
+
+  return getDollarAmount(
+    networkStore.currentRate,
+    accountData.accountInfo.value.balance.toBigNumber().toNumber(),
+  );
+});
 const isKeyStructureModalShown = ref(false);
 
 onMounted(async () => {
@@ -139,7 +150,9 @@ onMounted(async () => {
             </div>
             <div class="mt-4 d-flex row">
               <p class="col-6">Balance</p>
-              <p class="col-6 px-0">{{ accountData.accountInfo.value?.balance || 'None' }}</p>
+              <p class="col-6 px-0">
+                {{ accountData.accountInfo.value?.balance || 'None' }} ({{ hbarDollarAmount }})
+              </p>
             </div>
             <div class="mt-4 d-flex row">
               <p class="col-6">Admin Key</p>
