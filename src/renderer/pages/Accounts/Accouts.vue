@@ -247,6 +247,10 @@ onMounted(async () => {
                 {{ accountData.accountInfo.value?.declineReward ? 'Declined' : 'Accepted' }}
               </p>
             </div>
+            <template v-if="accountData.accountInfo.value?.deleted">
+              <hr class="my-4" />
+              <p class="text-danger">Account is deleted</p>
+            </template>
           </div>
         </Transition>
 
