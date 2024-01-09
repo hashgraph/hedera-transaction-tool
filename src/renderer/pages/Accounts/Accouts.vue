@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-
 import { Hbar, HbarUnit, KeyList, PublicKey } from '@hashgraph/sdk';
 
 import useUserStateStore from '../../stores/storeUserState';
@@ -8,7 +7,7 @@ import useNetworkStore from '../../stores/storeNetwork';
 
 import useAccountId from '../../composables/useAccountId';
 
-import { getAll } from '../../services/accountsService';
+import { getAll, remove } from '../../services/accountsService';
 import { openExternal } from '../../services/electronUtilsService';
 import { getKeyListLevels } from '../../services/keyPairService';
 import { getDollarAmount } from '../../services/mirrorNodeDataService';
@@ -17,11 +16,14 @@ import AppButton from '../../components/ui/AppButton.vue';
 import AppModal from '../../components/ui/AppModal.vue';
 import KeyStructure from '../../components/KeyStructure.vue';
 
+/* Stores */
 const userStore = useUserStateStore();
 const networkStore = useNetworkStore();
 
+/* Composables */
 const accountData = useAccountId();
 
+/* State */
 const accounts = ref<
   {
     accountId: string;
@@ -39,13 +41,29 @@ const hbarDollarAmount = computed(() => {
   );
 });
 const isKeyStructureModalShown = ref(false);
+const isUnlinkAccountModalShown = ref(false);
 
+/* Hooks */
 onMounted(async () => {
   if (userStore.userData?.userId) {
     accounts.value = await getAll(userStore.userData?.userId);
     accountData.accountId.value = accounts.value[0]?.accountId || '';
   }
 });
+
+/* Handlers */
+const handleUnlinkAccount = async () => {
+  if (!userStore.userData) {
+    throw new Error('Please login');
+  }
+
+  await remove(userStore.userData?.userId, accountData.accountIdFormatted.value);
+
+  accounts.value = await getAll(userStore.userData.userId);
+  accountData.accountId.value = accounts.value[0]?.accountId || '';
+
+  isUnlinkAccountModalShown.value = false;
+};
 </script>
 <template>
   <div class="p-10">
@@ -108,7 +126,7 @@ onMounted(async () => {
       </div>
       <div class="col-8 col-xxl-9 ps-4 pt-0">
         <Transition name="fade" mode="out-in">
-          <div v-if="accountData.isValid.value" class="d-flex flex-column">
+          <div v-if="accountData.isValid.value" class="h-100 d-flex flex-column position-relative">
             <template
               v-if="
                 accounts.find(acc => acc.accountId === accountData.accountIdFormatted.value)
@@ -265,6 +283,41 @@ onMounted(async () => {
               <hr class="my-4" />
               <p class="text-danger">Account is deleted</p>
             </template>
+            <div class="w-100 ms-0 mt-5 p-4 bg-dark-blue-700 position-relative bottom-0 d-flex row">
+              <div class="px-0 col-4 border-end d-flex align-items-center justify-content-center">
+                <AppButton
+                  class="fw-light text-dark-emphasis"
+                  @click="
+                    $router.push({
+                      name: 'createTransaction',
+                      params: { type: 'updateAccount' },
+                      query: { accountId: accountData.accountIdFormatted.value },
+                    })
+                  "
+                  >Update Account</AppButton
+                >
+              </div>
+              <div class="px-0 col-4 border-end d-flex align-items-center justify-content-center">
+                <AppButton
+                  class="fw-light text-dark-emphasis"
+                  @click="isUnlinkAccountModalShown = true"
+                  >Unlink Account</AppButton
+                >
+              </div>
+              <div class="px-0 col-4 text-center">
+                <AppButton
+                  class="fw-light text-dark-emphasis d-flex align-items-center justify-content-center"
+                  @click="
+                    $router.push({
+                      name: 'createTransaction',
+                      params: { type: 'deleteAccount' },
+                      query: { accountId: accountData.accountIdFormatted.value },
+                    })
+                  "
+                  >Delete from network</AppButton
+                >
+              </div>
+            </div>
           </div>
         </Transition>
 
@@ -281,6 +334,33 @@ onMounted(async () => {
             <div v-else-if="accountData.key.value instanceof PublicKey && true">
               {{ accountData.key.value.toStringRaw() }}
             </div>
+          </div>
+        </AppModal>
+        <AppModal v-model:show="isUnlinkAccountModalShown" class="common-modal">
+          <div class="p-5">
+            <i
+              class="bi bi-x-lg d-inline-block cursor-pointer"
+              style="line-height: 16px"
+              @click="isUnlinkAccountModalShown = false"
+            ></i>
+            <div class="mt-5 text-center">
+              <i class="bi bi-trash extra-large-icon" style="line-height: 16px"></i>
+            </div>
+            <p class="mt-5 text-center">Are you sure you want to remove account?</p>
+            <AppButton
+              color="primary"
+              size="large"
+              class="mt-5 w-100 rounded-4"
+              @click="handleUnlinkAccount"
+              >Confirm</AppButton
+            >
+            <AppButton
+              color="primary"
+              size="large"
+              class="mt-4 w-100 rounded-4"
+              @click="isUnlinkAccountModalShown = false"
+              >Cancel</AppButton
+            >
           </div>
         </AppModal>
       </div>
