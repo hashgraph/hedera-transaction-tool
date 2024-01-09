@@ -86,10 +86,16 @@ const handleSortAccounts = (sorting: Sorting) => {
       );
       break;
     case Sorting.NicknameAsc:
-      accounts.value = accounts.value.sort((a, b) => a.nickname.localeCompare(b.nickname));
+      accounts.value = accounts.value
+        .filter(acc => acc.nickname)
+        .sort((a, b) => a.nickname.localeCompare(b.nickname))
+        .concat(accounts.value.filter(acc => !acc.nickname));
       break;
     case Sorting.NicknameDesc:
-      accounts.value = accounts.value.sort((a, b) => b.nickname.localeCompare(a.nickname));
+      accounts.value = accounts.value = accounts.value
+        .filter(acc => acc.nickname)
+        .sort((a, b) => b.nickname.localeCompare(a.nickname))
+        .concat(accounts.value.filter(acc => !acc.nickname));
       break;
     default:
       break;
