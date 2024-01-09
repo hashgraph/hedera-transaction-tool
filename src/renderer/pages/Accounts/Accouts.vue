@@ -352,9 +352,12 @@ const handleSortAccounts = (sorting: Sorting) => {
                   >Unlink Account</AppButton
                 >
               </div>
-              <div v-if="!accountData.accountInfo.value?.deleted" class="px-0 col-4 text-center">
+              <div
+                v-if="!accountData.accountInfo.value?.deleted"
+                class="px-0 col-4 text-center d-flex align-items-center justify-content-center"
+              >
                 <AppButton
-                  class="fw-light text-dark-emphasis d-flex align-items-center justify-content-center"
+                  class="fw-light text-dark-emphasis"
                   @click="
                     $router.push({
                       name: 'createTransaction',
