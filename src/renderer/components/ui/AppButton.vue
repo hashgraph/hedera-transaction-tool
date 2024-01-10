@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/* Props */
 const props = defineProps<{
   color?: 'primary' | 'secondary';
   loading?: boolean;
