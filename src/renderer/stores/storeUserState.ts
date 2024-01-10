@@ -37,6 +37,7 @@ const useUserStateStore = defineStore('userState', () => {
   const secretHashes = computed(() => userState.secretHashes);
 
   /* Actions */
+
   function setUserRole(role: 'personal' | 'organization') {
     userState.role = role;
 

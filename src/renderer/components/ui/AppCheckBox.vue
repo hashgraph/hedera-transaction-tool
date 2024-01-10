@@ -1,13 +1,10 @@
 <script setup lang="ts">
-/* Props */
 defineProps<{
   checked: boolean;
   name: string;
   label?: string;
   disabled?: boolean;
 }>();
-
-/* Emits */
 defineEmits(['update:checked']);
 </script>
 <template>

@@ -1,18 +1,17 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+
 import { Mnemonic } from '@hashgraph/sdk';
 
-import AppButton from '../../../components/ui/AppButton.vue';
-import AppCheckBox from '../../../components/ui/AppCheckBox.vue';
-import AppModal from '../../../components/ui/AppModal.vue';
 import AppRecoveryPhraseWord from '../../../components/ui/AppRecoveryPhraseWord.vue';
+import AppCheckBox from '../../../components/ui/AppCheckBox.vue';
+import AppButton from '../../../components/ui/AppButton.vue';
+import AppModal from '../../../components/ui/AppModal.vue';
 
-/* Props */
 defineProps<{
   handleContinue: (words: string[]) => void;
 }>();
 
-/* State */
 const words = ref(Array(24).fill(''));
 const correctWords = ref(Array(24).fill(''));
 const indexesToVerify = ref<number[]>([]);
@@ -22,7 +21,6 @@ const wordsConfirmed = ref(false);
 const toVerify = ref(false);
 const isSuccessModalShown = ref(false);
 
-/* Handlers */
 const handleGeneratePhrase = async () => {
   if (words.value.filter(w => w).length === 0) {
     checkboxChecked.value = false;

@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { AccountId, FileCreateTransaction, KeyList, PublicKey, Timestamp } from '@hashgraph/sdk';
-
-import useUserStateStore from '../../../../stores/storeUserState';
-import useKeyPairsStore from '../../../../stores/storeKeyPairs';
-import useNetworkStore from '../../../../stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
-import useAccountId from '../../../../composables/useAccountId';
+
+import { AccountId, FileCreateTransaction, KeyList, PublicKey, Timestamp } from '@hashgraph/sdk';
 
 import { openExternal } from '../../../../services/electronUtilsService';
 import {
@@ -16,40 +12,45 @@ import {
   getTransactionSignatures,
 } from '../../../../services/transactionService';
 
+import useUserStateStore from '../../../../stores/storeUserState';
+import useKeyPairsStore from '../../../../stores/storeKeyPairs';
+import useNetworkStore from '../../../../stores/storeNetwork';
+
+import useAccountId from '../../../../composables/useAccountId';
+
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
 
-/* Stores */
+const toast = useToast();
+
+const payerData = useAccountId();
+
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
 const networkStore = useNetworkStore();
 
-/* Composables */
-const toast = useToast();
-const payerData = useAccountId();
+const isSignModalShown = ref(false);
+const userPassword = ref('');
 
-/* State */
-const transaction = ref<FileCreateTransaction | null>(null);
+const isFileCreatedModalShown = ref(false);
 const transactionId = ref('');
+const fileId = ref('');
+
 const validStart = ref('');
 const maxTransactionFee = ref(2);
 
-const fileId = ref('');
 const ownerKeyText = ref('');
 const memo = ref('');
 const expirationTimestamp = ref();
 const content = ref('');
-const ownerKeys = ref<string[]>([]);
-const userPassword = ref('');
-
 const isLoading = ref(false);
-const isSignModalShown = ref(false);
-const isFileCreatedModalShown = ref(false);
 
-/* Getters */
+const ownerKeys = ref<string[]>([]);
+
+const transaction = ref<FileCreateTransaction | null>(null);
+
 const keyList = computed(() => new KeyList(ownerKeys.value.map(key => PublicKey.fromString(key))));
 
-/* Handlers */
 const handleOwnerKeyTextKeyPress = (e: KeyboardEvent) => {
   if (e.code === 'Enter') handleAdd();
 };
@@ -160,7 +161,6 @@ const handleCreate = async () => {
   }
 };
 
-/* Watchers */
 watch(isSignModalShown, () => (userPassword.value = ''));
 </script>
 <template>

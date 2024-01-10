@@ -1,12 +1,9 @@
 import { IOrganization } from 'src/main/shared/interfaces';
 
-/* Configuration service */
+/* Organizations*/
 
-/* Organizations */
-/* Get Organizations */
 export const getOrganizations = () => window.electronAPI.config.organizations.getAll();
 
-/* Add Organization */
 export const addOrganization = async (organization: IOrganization) => {
   try {
     await window.electronAPI.config.organizations.add(organization);
@@ -16,7 +13,6 @@ export const addOrganization = async (organization: IOrganization) => {
   }
 };
 
-/* Remove Organization */
 export const removeOrganization = async (severUrl: string) => {
   try {
     await window.electronAPI.config.organizations.removeByServerURL(severUrl);

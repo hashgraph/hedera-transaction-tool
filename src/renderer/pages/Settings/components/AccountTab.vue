@@ -1,30 +1,26 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import useKeyPairsStore from '../../../stores/storeKeyPairs';
-import useUserStateStore from '../../../stores/storeUserState';
-
 import { useToast } from 'vue-toast-notification';
 
 import { changeDecryptionPassword } from '../../../services/keyPairService';
 
+import useKeyPairsStore from '../../../stores/storeKeyPairs';
+import useUserStateStore from '../../../stores/storeUserState';
+
 import AppButton from '../../../components/ui/AppButton.vue';
 import AppModal from '../../../components/ui/AppModal.vue';
 
-/* Stores */
+const toast = useToast();
+
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
 
-/* Composables */
-const toast = useToast();
-
-/* State */
 const currentPassword = ref('');
 const newPassword = ref('');
 
 const isSuccessModalShown = ref(false);
 
-/* Handlers */
 const handleChangePassword = async () => {
   try {
     if (!userStateStore.userData) {

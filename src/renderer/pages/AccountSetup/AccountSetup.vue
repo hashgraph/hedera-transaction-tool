@@ -5,18 +5,16 @@ import AppButton from '../../components/ui/AppButton.vue';
 import AppStepper from '../../components/ui/AppStepper.vue';
 
 import Faq from './components/Faq.vue';
-import FinishSetup from './components/FinishSetup.vue';
+import NewPassword from './components/NewPassword.vue';
 import GenerateOrImport from './components/GenerateOrImport.vue';
 import KeyPairs from './components/KeyPairs.vue';
-import NewPassword from './components/NewPassword.vue';
+import FinishSetup from './components/FinishSetup.vue';
 
-/* State */
 const step = ref(0);
 const password = ref('');
 
 const isFaqShown = ref(false);
 
-/* Misc */
 const stepperItems = [
   { title: 'New Password', name: 'newPassword' },
   { title: 'Recovery Phrase', name: 'recoveryPhrase' },

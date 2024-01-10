@@ -10,7 +10,6 @@ import { getAccountAllowances, getAccountInfo } from '../services/mirrorNodeData
 import { flattenKeyList } from '../services/keyPairService';
 
 export default function useAccountId() {
-  /* Stores */
   const networkStore = useNetworkStore();
 
   /* State */
@@ -21,7 +20,7 @@ export default function useAccountId() {
   const accountInfoController = ref<AbortController | null>(null);
   const allowancesController = ref<AbortController | null>(null);
 
-  /* Getters */
+  /* Computed */
   const isValid = computed(() => Boolean(accountInfo.value));
   const accountIdFormatted = computed(() =>
     isValid.value ? AccountId.fromString(accountId.value).toString() : accountId.value,
@@ -32,6 +31,12 @@ export default function useAccountId() {
       ? flattenKeyList(accountInfo.value?.key).map(pk => pk.toStringRaw())
       : [],
   );
+
+  /* Getters */
+  const getSpenderAllowance = (spenderId: string | AccountId) =>
+    Hbar.fromTinybars(
+      allowances.value.find(al => al.spender === spenderId.toString())?.amount || 0,
+    );
 
   /* Watchers */
   watch(accountId, async newAccountId => {
@@ -63,7 +68,7 @@ export default function useAccountId() {
     }
   });
 
-  /* Misc */
+  /* Functions */
   function resetData() {
     accountInfo.value = null;
     allowances.value = [];
@@ -75,12 +80,6 @@ export default function useAccountId() {
 
     accountInfoController.value = null;
     allowancesController.value = null;
-  }
-
-  function getSpenderAllowance(spenderId: string | AccountId) {
-    return Hbar.fromTinybars(
-      allowances.value.find(al => al.spender === spenderId.toString())?.amount || 0,
-    );
   }
 
   return {
