@@ -1,8 +1,5 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-
-import { useToast } from 'vue-toast-notification';
-
 import {
   AccountId,
   FileAppendTransaction,
@@ -12,6 +9,13 @@ import {
   Timestamp,
 } from '@hashgraph/sdk';
 
+import useKeyPairsStore from '../../../../stores/storeKeyPairs';
+import useNetworkStore from '../../../../stores/storeNetwork';
+import useUserStateStore from '../../../../stores/storeUserState';
+
+import { useToast } from 'vue-toast-notification';
+import useAccountId from '../../../../composables/useAccountId';
+
 import { openExternal } from '../../../../services/electronUtilsService';
 import {
   createTransactionId,
@@ -19,33 +23,25 @@ import {
   getTransactionSignatures,
 } from '../../../../services/transactionService';
 
-import useKeyPairsStore from '../../../../stores/storeKeyPairs';
-import useUserStateStore from '../../../../stores/storeUserState';
-import useNetworkStore from '../../../../stores/storeNetwork';
-
-import useAccountId from '../../../../composables/useAccountId';
-
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
 
-const toast = useToast();
-
+/* Stores */
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
 const networkStore = useNetworkStore();
 
+/* Composables */
+const toast = useToast();
 const payerData = useAccountId();
 
-const isSignModalShown = ref(false);
-const userPassword = ref('');
-
-const isFileUpdatedModalShown = ref(false);
+/* State */
+const transaction = ref<FileUpdateTransaction | null>(null);
 const transactionIds = ref<string[]>([]);
-const fileId = ref('');
-
 const validStart = ref('');
 const maxTransactionFee = ref(2);
 
+const fileId = ref('');
 const signatureKeyText = ref('');
 const ownerKeyText = ref('');
 const memo = ref('');
@@ -53,9 +49,9 @@ const expirationTimestamp = ref();
 const chunkSizeRaw = ref(2048);
 const chunkData = ref<{ processed: number; total: number } | null>(null);
 const isLoading = ref(false);
-
 const signatureKeys = ref<string[]>([]);
 const ownerKeys = ref<string[]>([]);
+const userPassword = ref('');
 
 const fileMeta = ref<File | null>(null);
 const fileReader = ref<FileReader | null>(null);
@@ -63,8 +59,10 @@ const fileBuffer = ref<Uint8Array | null>(null);
 const loadPercentage = ref(0);
 const content = ref('');
 
-const transaction = ref<FileUpdateTransaction | null>(null);
+const isSignModalShown = ref(false);
+const isFileUpdatedModalShown = ref(false);
 
+/* Getters */
 const ownerKeyList = computed(
   () => new KeyList(ownerKeys.value.map(key => PublicKey.fromString(key))),
 );
@@ -79,6 +77,53 @@ const chunkSize = computed(() => {
   }
 });
 
+/* Misc Functions */
+const createTransaction = (isLarge?: boolean) => {
+  const updateTransaction = new FileUpdateTransaction()
+    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
+    .setTransactionValidDuration(180)
+    .setNodeAccountIds([new AccountId(3)])
+    .setFileId(fileId.value)
+    .setFileMemo(memo.value);
+
+  ownerKeyList.value._keys.length > 0 && updateTransaction.setKeys(ownerKeyList.value);
+
+  expirationTimestamp.value &&
+    updateTransaction.setExpirationTime(Timestamp.fromDate(expirationTimestamp.value));
+
+  if (content.value.length > 0) {
+    console.log('s');
+
+    updateTransaction.setContents(content.value);
+  }
+  if (fileBuffer.value) {
+    updateTransaction.setContents(fileBuffer.value);
+  }
+
+  let chunks: Uint8Array[] = [];
+  if (isLarge) {
+    chunks = chunkBuffer(
+      fileBuffer.value ? fileBuffer.value : new TextEncoder().encode(content.value),
+      chunkSize.value,
+    );
+
+    updateTransaction.setContents(chunks[0]);
+  }
+
+  updateTransaction.freezeWith(networkStore.client);
+
+  return { updateTransaction, restChunks: chunks.slice(1) };
+};
+
+function chunkBuffer(buffer: Uint8Array, chunkSize: number): Uint8Array[] {
+  const chunks: Uint8Array[] = [];
+  for (let i = 0; i < buffer.length; i += chunkSize) {
+    chunks.push(buffer.slice(i, i + chunkSize));
+  }
+  return chunks;
+}
+
+/* Handlers */
 const handleOwnerKeyTextKeyPress = (e: KeyboardEvent) => {
   if (e.code === 'Enter') handleAddOwnerKey();
 };
@@ -258,51 +303,7 @@ const handleCreate = async () => {
   }
 };
 
-const createTransaction = (isLarge?: boolean) => {
-  const updateTransaction = new FileUpdateTransaction()
-    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
-    .setTransactionValidDuration(180)
-    .setNodeAccountIds([new AccountId(3)])
-    .setFileId(fileId.value)
-    .setFileMemo(memo.value);
-
-  ownerKeyList.value._keys.length > 0 && updateTransaction.setKeys(ownerKeyList.value);
-
-  expirationTimestamp.value &&
-    updateTransaction.setExpirationTime(Timestamp.fromDate(expirationTimestamp.value));
-
-  if (content.value.length > 0) {
-    console.log('s');
-
-    updateTransaction.setContents(content.value);
-  }
-  if (fileBuffer.value) {
-    updateTransaction.setContents(fileBuffer.value);
-  }
-
-  let chunks: Uint8Array[] = [];
-  if (isLarge) {
-    chunks = chunkBuffer(
-      fileBuffer.value ? fileBuffer.value : new TextEncoder().encode(content.value),
-      chunkSize.value,
-    );
-
-    updateTransaction.setContents(chunks[0]);
-  }
-
-  updateTransaction.freezeWith(networkStore.client);
-
-  return { updateTransaction, restChunks: chunks.slice(1) };
-};
-
-function chunkBuffer(buffer: Uint8Array, chunkSize: number): Uint8Array[] {
-  const chunks: Uint8Array[] = [];
-  for (let i = 0; i < buffer.length; i += chunkSize) {
-    chunks.push(buffer.slice(i, i + chunkSize));
-  }
-  return chunks;
-}
-
+/* Watchers */
 watch(isSignModalShown, shown => {
   userPassword.value = '';
 
