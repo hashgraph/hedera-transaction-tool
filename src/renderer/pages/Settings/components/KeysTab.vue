@@ -1,29 +1,30 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
 
+import useUserStateStore from '../../../stores/storeUserState';
+import useKeyPairsStore from '../../../stores/storeKeyPairs';
+
 import { useToast } from 'vue-toast-notification';
 
 import { decryptPrivateKey } from '../../../services/keyPairService';
 
-import useKeyPairsStore from '../../../stores/storeKeyPairs';
 import AppButton from '../../../components/ui/AppButton.vue';
 import AppModal from '../../../components/ui/AppModal.vue';
-import useUserStateStore from '../../../stores/storeUserState';
 
-const toast = useToast();
-
+/* Stores */
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
 
-onMounted(() => {
-  keyPairsStore.refetch();
-});
+/* Composables */
+const toast = useToast();
 
+/* State */
 const isDecryptedModalShown = ref(false);
 const decryptedKey = ref<string | null>(null);
 const publicKeysPrivateKeyToDecrypt = ref('');
 const userPassword = ref('');
 
+/* Handlers */
 const handleShowDecryptModal = (publicKey: string) => {
   publicKeysPrivateKeyToDecrypt.value = publicKey;
   isDecryptedModalShown.value = true;
@@ -45,6 +46,12 @@ const handleDecrypt = async () => {
   }
 };
 
+/* Hooks */
+onMounted(() => {
+  keyPairsStore.refetch();
+});
+
+/* Watchers */
 watch(isDecryptedModalShown, newVal => {
   if (!newVal) {
     decryptedKey.value = null;
