@@ -7,22 +7,26 @@ import useUserStateStore from '../../../stores/storeUserState';
 import { validateMnemonic, hashRecoveryPhrase } from '../../../services/keyPairService';
 
 import AppTabs, { TabItem } from '../../../components/ui/AppTabs.vue';
-
 import Generate from './Generate.vue';
 import Import from './Import.vue';
 
+/* Props */
 const props = defineProps<{
   handleContinue: () => void;
 }>();
 
+/* Stores */
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
 
+/* State */
 const tabItems = ref<TabItem[]>([{ title: 'Create New' }, { title: 'Import Existing' }]);
 const activeTabIndex = ref(0);
 
+/* Getters */
 const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title);
 
+/* Handlers */
 const handleSaveWords = async (words: string[]) => {
   const isValid = await validateMnemonic(words);
 
@@ -40,6 +44,7 @@ const handleSaveWords = async (words: string[]) => {
   }
 };
 
+/* Hooks */
 onBeforeMount(() => {
   userStateStore.secretHashes && tabItems.value.shift();
 });
