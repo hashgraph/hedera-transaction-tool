@@ -1,38 +1,37 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
-
-import { useToast } from 'vue-toast-notification';
-
 import { FileContentsQuery } from '@hashgraph/sdk';
-
-import { decryptPrivateKey } from '../../../../services/keyPairService';
-import { executeQuery } from '../../../../services/transactionService';
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useUserStateStore from '../../../../stores/storeUserState';
 import useNetworkStore from '../../../../stores/storeNetwork';
 
+import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
+
+import { decryptPrivateKey } from '../../../../services/keyPairService';
+import { executeQuery } from '../../../../services/transactionService';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
 
-const toast = useToast();
-
+/* Stores */
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
 const networkStore = useNetworkStore();
 
+/* Composables */
+const toast = useToast();
 const payerData = useAccountId();
 
-const isUserPasswordModalShown = ref(false);
-const userPassword = ref('');
-
+/* State */
 const fileId = ref('');
-
 const content = ref('');
+const userPassword = ref('');
 const isLoading = ref(false);
+const isUserPasswordModalShown = ref(false);
 
+/* Handlers */
 const handleRead = async () => {
   if (!userStateStore.userData?.userId) {
     throw Error('No user selected');
@@ -78,10 +77,12 @@ const handleRead = async () => {
   }
 };
 
+/* Hooks */
 onMounted(async () => {
   await keyPairsStore.refetch();
 });
 
+/* Watchers */
 watch(isUserPasswordModalShown, () => (userPassword.value = ''));
 </script>
 <template>
