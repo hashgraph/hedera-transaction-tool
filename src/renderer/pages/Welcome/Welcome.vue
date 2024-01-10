@@ -1,20 +1,21 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router';
-
-import { useToast } from 'vue-toast-notification';
-
 import useUserStateStore from '../../stores/storeUserState';
 import useOrganizationsStore from '../../stores/storeOrganizations';
 
+import { useToast } from 'vue-toast-notification';
+import { useRouter } from 'vue-router';
+
 import UserLogin from './components/UserLogin.vue';
 
-const toast = useToast();
-
-const router = useRouter();
-
+/* Stores */
 const userStateStore = useUserStateStore();
 const organizationsStore = useOrganizationsStore();
 
+/* Composables */
+const toast = useToast();
+const router = useRouter();
+
+/* Handlers */
 const handleOptionClick = (option: 'personal' | 'organization') => {
   userStateStore.setUserRole(option);
 
