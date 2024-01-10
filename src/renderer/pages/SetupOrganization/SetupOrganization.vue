@@ -1,28 +1,25 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+import { useToast } from 'vue-toast-notification';
+
 import useOrganizationsStore from '../../stores/storeOrganizations';
 import useUserStateStore from '../../stores/storeUserState';
-
-import { useToast } from 'vue-toast-notification';
 
 import AppButton from '../../components/ui/AppButton.vue';
 import AppModal from '../../components/ui/AppModal.vue';
 
-/* Stores */
+const toast = useToast();
+
 const organizationsStore = useOrganizationsStore();
 const userStateStore = useUserStateStore();
 
-/* Composables */
-const toast = useToast();
+const isSuccessModalShown = ref(false);
 
-/* State */
 const organizationName = ref('');
 const serverUrl = ref('');
 const serverPublicKey = ref('');
-const isSuccessModalShown = ref(false);
 
-/* Handlers */
 const handleContinue = async (e: Event) => {
   e.preventDefault();
 

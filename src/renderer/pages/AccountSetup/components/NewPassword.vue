@@ -1,28 +1,23 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { useToast } from 'vue-toast-notification';
 
 import useUserStateStore from '../../../stores/storeUserState';
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
-
-import { useToast } from 'vue-toast-notification';
 
 import { deleteEncryptedPrivateKeys } from '../../../services/keyPairService';
 
 import AppButton from '../../../components/ui/AppButton.vue';
 
-/* Props */
 const props = defineProps<{
   handleContinue: (password: string) => void;
 }>();
 
-/* Stores */
+const toast = useToast();
+
 const userStateStore = useUserStateStore();
 const keyPairsStore = useKeyPairsStore();
 
-/* Composables */
-const toast = useToast();
-
-/* State */
 const inputNewPassword = ref('');
 const inputConfrimPassword = ref('');
 
@@ -31,7 +26,12 @@ const inputConfirmPasswordInvalid = ref(false);
 
 const isLoading = ref(false);
 
-/* Handlers */
+watch(inputConfrimPassword, val => {
+  if (val.length === 0 || inputNewPassword.value === val) {
+    inputConfirmPasswordInvalid.value = false;
+  }
+});
+
 const handleFormSubmit = async (event: Event) => {
   event.preventDefault();
 
@@ -62,13 +62,6 @@ const handleFormSubmit = async (event: Event) => {
     }
   }
 };
-
-/* Watchers */
-watch(inputConfrimPassword, val => {
-  if (val.length === 0 || inputNewPassword.value === val) {
-    inputConfirmPasswordInvalid.value = false;
-  }
-});
 </script>
 
 <template>

@@ -6,10 +6,8 @@ import useUserStateStore from '../../../stores/storeUserState';
 import AppButton from '../../../components/ui/AppButton.vue';
 import AppModal from '../../../components/ui/AppModal.vue';
 
-/* Stores */
 const userStateStore = useUserStateStore();
 
-/* State */
 const isSuccessModalShown = ref(false);
 </script>
 <template>

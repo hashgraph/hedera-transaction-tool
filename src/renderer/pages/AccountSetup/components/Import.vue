@@ -3,24 +3,21 @@ import { ref, watch } from 'vue';
 
 import { hashRecoveryPhrase, validateMnemonic } from '../../../services/keyPairService';
 
+import AppRecoveryPhraseWord from '../../../components/ui/AppRecoveryPhraseWord.vue';
 import AppButton from '../../../components/ui/AppButton.vue';
 import AppModal from '../../../components/ui/AppModal.vue';
-import AppRecoveryPhraseWord from '../../../components/ui/AppRecoveryPhraseWord.vue';
 
-/* Props */
 const props = defineProps<{
   handleContinue: (words: string[]) => void;
   secretHashes?: string[];
 }>();
 
-/* State */
 const words = ref(Array(24).fill(''));
 
 const isMnenmonicValid = ref(false);
 const isSecretHashValid = ref(true);
 const isSuccessModalShown = ref(false);
 
-/* Misc Functions */
 const validateMatchingSecretHash = async () => {
   const secretHash = await hashRecoveryPhrase(words.value);
   if (props.secretHashes && !props.secretHashes.includes(secretHash)) {
@@ -31,7 +28,6 @@ const validateMatchingSecretHash = async () => {
   isSecretHashValid.value = true;
 };
 
-/* Handlers */
 const handlePaste = async (e: Event, index: number) => {
   e.preventDefault();
 
@@ -63,7 +59,6 @@ const handleFinishImport = async () => {
   }
 };
 
-/* Watchers */
 watch(words, async newWords => {
   isMnenmonicValid.value = await validateMnemonic(newWords);
 });

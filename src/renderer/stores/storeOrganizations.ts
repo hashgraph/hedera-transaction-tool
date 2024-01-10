@@ -1,4 +1,5 @@
 import { onMounted, ref } from 'vue';
+
 import { defineStore } from 'pinia';
 
 import { IOrganization } from '../../main/shared/interfaces';
@@ -8,7 +9,6 @@ import useUserStateStore from './storeUserState';
 import * as configService from '../services/configurationService';
 
 const useOrganizationsStore = defineStore('organizations', () => {
-  /* Stores */
   const userStateStore = useUserStateStore();
 
   /* State */
@@ -43,7 +43,6 @@ const useOrganizationsStore = defineStore('organizations', () => {
     refetch();
   }
 
-  /* Hooks */
   onMounted(async () => {
     await refetch();
 

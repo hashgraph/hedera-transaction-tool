@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+
 import {
   AccountId,
   KeyList,
@@ -9,12 +10,7 @@ import {
   AccountAllowanceApproveTransaction,
 } from '@hashgraph/sdk';
 
-import useKeyPairsStore from '../../../../stores/storeKeyPairs';
-import useNetworkStore from '../../../../stores/storeNetwork';
-import useUserStateStore from '../../../../stores/storeUserState';
-
 import { useToast } from 'vue-toast-notification';
-import useAccountId from '../../../../composables/useAccountId';
 
 import { openExternal } from '../../../../services/electronUtilsService';
 import {
@@ -23,37 +19,45 @@ import {
   getTransactionSignatures,
 } from '../../../../services/transactionService';
 
+import useKeyPairsStore from '../../../../stores/storeKeyPairs';
+import useNetworkStore from '../../../../stores/storeNetwork';
+import useUserStateStore from '../../../../stores/storeUserState';
+
+import useAccountId from '../../../../composables/useAccountId';
+
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
 import KeyStructure from '../../../../components/KeyStructure.vue';
 
-/* Stores */
+const toast = useToast();
+
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
 const networkStore = useNetworkStore();
 
-/* Composables */
-const toast = useToast();
+/* State */
+const isKeyStructureModalShown = ref(false);
+
+const isSignModalShown = ref(false);
+const userPassword = ref('');
+
+const isAllowanceApprovedModalShown = ref(false);
+const transactionId = ref('');
+
+const validStart = ref('');
+const maxTransactionfee = ref(2);
+
 const payerData = useAccountId();
 const ownerData = useAccountId();
 const spenderData = useAccountId();
 
-/* State */
-const transaction = ref<AccountAllowanceApproveTransaction | null>(null);
-const transactionId = ref('');
-const validStart = ref('');
-const maxTransactionfee = ref(2);
-
-const userPassword = ref('');
 const amount = ref(0);
+
 const keyStructureComponentKey = ref<Key | null>(null);
 
-const isKeyStructureModalShown = ref(false);
-const isSignModalShown = ref(false);
-const isAllowanceApprovedModalShown = ref(false);
+const transaction = ref<AccountAllowanceApproveTransaction | null>(null);
 const isLoading = ref(false);
 
-/* Handlers */
 const handleGetUserSignature = async () => {
   if (!userStateStore.userData?.userId) {
     throw Error('No user selected');

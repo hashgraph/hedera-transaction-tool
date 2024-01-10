@@ -1,22 +1,23 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+
 import { KeyList, PublicKey } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
+
 import useAccountId from '../../../../composables/useAccountId';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
 import KeyStructure from '../../../../components/KeyStructure.vue';
 
-/* Composables */
 const toast = useToast();
-const accountData = useAccountId();
 
 /* State */
 const isKeyStructureModalShown = ref(false);
 
-/* Watchers */
+const accountData = useAccountId();
+
 watch(accountData.isValid, isValid => {
   if (isValid) {
     toast.clear();

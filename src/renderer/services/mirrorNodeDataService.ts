@@ -6,9 +6,6 @@ import { decodeProtobuffKey } from './electronUtilsService';
 
 import { IMirrorNodeAccountInfo, IMirrorNodeAllowance } from '../../main/shared/interfaces';
 
-/* Mirror node data service */
-
-/* Gets the account information by account id */
 export const getAccountInfo = async (
   accountId: string,
   mirrorNodeLink: string,
@@ -62,7 +59,6 @@ export const getAccountInfo = async (
   return accountInfo;
 };
 
-/* Gets the account allowances by account id */
 export const getAccountAllowances = async (
   accountId: string,
   mirrorNodeLink: string,

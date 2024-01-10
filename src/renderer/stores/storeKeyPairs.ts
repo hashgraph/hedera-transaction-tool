@@ -3,10 +3,10 @@ import { defineStore } from 'pinia';
 
 import { IKeyPair, IKeyPairWithAccountId } from '../../main/shared/interfaces';
 
+import * as keyPairService from '../services/keyPairService';
+
 import useNetworkStore from './storeNetwork';
 import useUserStateStore from './storeUserState';
-
-import * as keyPairService from '../services/keyPairService';
 
 const useKeyPairsStore = defineStore('keyPairs', () => {
   /* Stores */
@@ -67,7 +67,6 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
   onMounted(async () => {
     await refetch();
   });
-
   return {
     recoveryPhraseWords,
     keyPairs,

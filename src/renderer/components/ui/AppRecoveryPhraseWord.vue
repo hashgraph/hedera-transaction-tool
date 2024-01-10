@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 
-/* Props */
 const props = defineProps<{
   word: string;
   handleWordChange?: (newWord: string) => void;
@@ -10,17 +9,12 @@ const props = defineProps<{
   index?: number;
   visibleInitially?: boolean;
 }>();
-
-/* Emits */
 const emit = defineEmits(['update:word']);
 
-/* State */
 const isVisible = ref(props.visibleInitially);
 
-/* Getters */
 const inputType = computed(() => (isVisible.value ? 'text' : 'password'));
 
-/* Handlers */
 const handleVisibiltyChange = () => {
   isVisible.value = !isVisible.value;
 };

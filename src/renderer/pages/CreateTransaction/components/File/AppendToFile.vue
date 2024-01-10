@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { AccountId, FileAppendTransaction, PublicKey } from '@hashgraph/sdk';
-
-import useKeyPairsStore from '../../../../stores/storeKeyPairs';
-import useUserStateStore from '../../../../stores/storeUserState';
-import useNetworkStore from '../../../../stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
-import useAccountId from '../../../../composables/useAccountId';
+
+import { AccountId, FileAppendTransaction, PublicKey } from '@hashgraph/sdk';
 
 import {
   createTransactionId,
@@ -15,24 +11,38 @@ import {
   getTransactionSignatures,
 } from '../../../../services/transactionService';
 
+import useKeyPairsStore from '../../../../stores/storeKeyPairs';
+import useUserStateStore from '../../../../stores/storeUserState';
+import useNetworkStore from '../../../../stores/storeNetwork';
+
+import useAccountId from '../../../../composables/useAccountId';
+
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
 
-/* Stores */
+const toast = useToast();
+
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
 const networkStore = useNetworkStore();
 
-/* Composables */
-const toast = useToast();
 const payerData = useAccountId();
 
-/* State */
+const isSignModalShown = ref(false);
+const userPassword = ref('');
+
+const isFileUpdatedModalShown = ref(false);
 const fileId = ref('');
+
 const validStart = ref('');
 const maxTransactionFee = ref(2);
 
 const signatureKeyText = ref('');
+const chunks = ref<Uint8Array[]>([]);
+const chunkSizeRaw = ref(2048);
+const chunkData = ref<{ processed: number; total: number } | null>(null);
+const isLoading = ref(false);
+
 const signatureKeys = ref<string[]>([]);
 
 const fileMeta = ref<File | null>(null);
@@ -40,17 +50,7 @@ const fileReader = ref<FileReader | null>(null);
 const fileBuffer = ref<Uint8Array | null>(null);
 const loadPercentage = ref(0);
 const content = ref('');
-const userPassword = ref('');
 
-const chunks = ref<Uint8Array[]>([]);
-const chunkSizeRaw = ref(2048);
-const chunkData = ref<{ processed: number; total: number } | null>(null);
-
-const isLoading = ref(false);
-const isFileUpdatedModalShown = ref(false);
-const isSignModalShown = ref(false);
-
-/* Getters */
 const chunkSize = computed(() => {
   if (chunkSizeRaw.value > 6144) {
     return 6144;
@@ -61,7 +61,6 @@ const chunkSize = computed(() => {
   }
 });
 
-/* Handlers */
 const handleSignatureKeyTextKeyPress = (e: KeyboardEvent) => {
   if (e.code === 'Enter') handleAddSignatureKey();
 };
@@ -201,7 +200,6 @@ const handleCreate = async () => {
   }
 };
 
-/* Misc Functions */
 function chunkBuffer(buffer: Uint8Array, chunkSize: number): Uint8Array[] {
   const chunks: Uint8Array[] = [];
   for (let i = 0; i < buffer.length; i += chunkSize) {
@@ -210,7 +208,6 @@ function chunkBuffer(buffer: Uint8Array, chunkSize: number): Uint8Array[] {
   return chunks;
 }
 
-/* Watchers */
 watch(isSignModalShown, shown => {
   userPassword.value = '';
 

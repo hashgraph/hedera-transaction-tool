@@ -5,8 +5,21 @@ import AppTabs, { TabItem } from '../../components/ui/AppTabs.vue';
 import AppButton from '../../components/ui/AppButton.vue';
 import AppModal from '../../components/ui/AppModal.vue';
 
-/* State */
+/* Tabs */
 const activeTabIndex = ref(1);
+
+const tabItems: TabItem[] = [
+  { title: 'Ready for Review' },
+  { title: 'Ready to Sign', notifications: 3 },
+  { title: 'In Progress' },
+  { title: 'Ready for Submission' },
+  { title: 'Completed' },
+  { title: 'Drafts' },
+];
+
+const [readyToReview, readyToSign, inProgress, readyForSubmission, completed, drafts] =
+  tabItems.map(t => t.title);
+
 const transactions = reactive([
   {
     id: 1,
@@ -30,20 +43,9 @@ const transactions = reactive([
     approvers: ['alice@acme.com', 'joe@acme.com'],
   },
 ]);
+
+/* Create Transaction */
 const isTransactionTypeModalShown = ref(false);
-
-/* Misc */
-const tabItems: TabItem[] = [
-  { title: 'Ready for Review' },
-  { title: 'Ready to Sign', notifications: 3 },
-  { title: 'In Progress' },
-  { title: 'Ready for Submission' },
-  { title: 'Completed' },
-  { title: 'Drafts' },
-];
-
-const [readyToReview, readyToSign, inProgress, readyForSubmission, completed, drafts] =
-  tabItems.map(t => t.title);
 
 const transactionGroups = [
   {
