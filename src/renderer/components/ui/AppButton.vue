@@ -8,6 +8,7 @@ const props = defineProps<{
   outline?: boolean;
 }>();
 
+/* Misc */
 const sizeMapping = {
   small: 'btn-sm',
   large: 'btn-lg',

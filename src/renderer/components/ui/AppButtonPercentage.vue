@@ -6,6 +6,7 @@ const props = defineProps<{
   className?: string;
 }>();
 
+/* Misc */
 const buttonLabel = props.percentageAmount === '100' ? 'MAX' : `${props.percentageAmount}%`;
 </script>
 <template>

@@ -16,6 +16,7 @@ withDefaults(
 /* Emits */
 defineEmits(['update:sliderValue']);
 
+/* Misc */
 const buttonValues = ['25', '50', '75', '100'];
 </script>
 <template>
