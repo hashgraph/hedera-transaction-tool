@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/* Props */
 defineProps<{
   name: string;
   checked?: boolean;
@@ -6,6 +7,8 @@ defineProps<{
   label?: string;
   labelClass?: string;
 }>();
+
+/* Emits */
 defineEmits(['update:checked']);
 </script>
 <template>

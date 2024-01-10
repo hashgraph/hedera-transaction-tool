@@ -17,7 +17,7 @@ const props = withDefaults(
 /* Emits */
 const emit = defineEmits(['update:show']);
 
-/* Refs */
+/* State */
 const modalRef = ref<HTMLDivElement | null>(null);
 
 /* Handlers */
@@ -33,7 +33,7 @@ const handleClickOutside = (event: Event) => {
   }
 };
 
-/* Lifecycle hooks */
+/* Hooks */
 onMounted(() => {
   document.addEventListener('keydown', handleKeyDown);
   document.addEventListener('mousedown', handleClickOutside);

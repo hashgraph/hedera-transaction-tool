@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/* Props */
 defineProps<{
   isInvalid?: boolean;
   readonly?: boolean;
