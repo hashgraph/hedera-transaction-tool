@@ -5,12 +5,17 @@ import { proto } from '@hashgraph/proto';
 
 import { IKeyPair } from '../../main/shared/interfaces';
 
+/* Key Pairs Service */
+
+/* Get stored key pairs */
 export const getStoredKeyPairs = (userId: string, secretHash?: string, secretHashName?: string) =>
   window.electronAPI.keyPairs.getStored(userId, secretHash, secretHashName);
 
+/* Get stored secret hashes */
 export const getStoredKeysSecretHashes = (userId: string) =>
   window.electronAPI.keyPairs.getStoredKeysSecretHashes(userId);
 
+/* Restore private key from recovery phrase */
 export const restorePrivateKey = async (
   words: string[],
   passphrase: string,
@@ -31,6 +36,7 @@ export const restorePrivateKey = async (
   return privateKey;
 };
 
+/* Store key pair along with its recovery phrase hash */
 export const storeKeyPair = (
   userId: string,
   password: string,
@@ -38,12 +44,14 @@ export const storeKeyPair = (
   keyPair: IKeyPair,
 ) => window.electronAPI.keyPairs.store(userId, password, secretHash, keyPair);
 
+/* Change the decryption password of a stored private key */
 export const changeDecryptionPassword = (
   userId: string,
   oldPassword: string,
   newPassword: string,
 ) => window.electronAPI.keyPairs.changeDecryptionPassword(userId, oldPassword, newPassword);
 
+/* Decrypt private key with user's password */
 export const decryptPrivateKey = async (userId: string, password: string, publicKey: string) => {
   try {
     return await window.electronAPI.keyPairs.decryptPrivateKey(userId, password, publicKey);
@@ -52,9 +60,11 @@ export const decryptPrivateKey = async (userId: string, password: string, public
   }
 };
 
+/* Hash recovery phrase */
 export const hashRecoveryPhrase = (words: string[]) =>
   window.electronAPI.utils.hash(words.toString());
 
+/* Get users account id by a public key */
 export const getAccountId = async (mirrorNodeURL: string, publicKey: string) => {
   try {
     const { data } = await axios.get(`${mirrorNodeURL}/accounts/?account.publickey=${publicKey}`);
@@ -66,11 +76,14 @@ export const getAccountId = async (mirrorNodeURL: string, publicKey: string) => 
   }
 };
 
+/* Delete all stored key pairs */
 export const clearKeys = (userId: string) => window.electronAPI.keyPairs.clear(userId);
 
+/* Delete the encrypted private keys from user's key pairs */
 export const deleteEncryptedPrivateKeys = (userId: string) =>
   window.electronAPI.keyPairs.deleteEncryptedPrivateKeys(userId);
 
+/* Validates if the provided recovery phrase is valid according to BIP-39 */
 export const validateMnemonic = async (words: string[]) => {
   try {
     await Mnemonic.fromWords(words);
@@ -80,6 +93,7 @@ export const validateMnemonic = async (words: string[]) => {
   }
 };
 
+/* TLD Updates a key list */
 export const updateKeyList = (
   keyList: KeyList,
   path: number[],
@@ -106,6 +120,7 @@ export const updateKeyList = (
   return new KeyList(keys, resultThreshold);
 };
 
+/* Flattens a key list to public keys*/
 export const flattenKeyList = (keyList: Key): PublicKey[] => {
   const protobufKey = keyList._toProtobufKey();
 

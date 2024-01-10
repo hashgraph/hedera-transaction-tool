@@ -1,8 +1,12 @@
 import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 import * as HashgraphProto from '@hashgraph/proto';
 
+/* Electron Utilities Service */
+
+/* Open external URL */
 export const openExternal = (url: string) => window.electronAPI.utils.openExternal(url);
 
+/* Decode Protobuff encoded key */
 export const decodeProtobuffKey = async (
   protobuffKey: string,
 ): Promise<KeyList | Key | undefined> => {
@@ -21,6 +25,7 @@ export const decodeProtobuffKey = async (
   return undefined;
 };
 
+/* Decode Protobuff encoded key to KeyList or Public key */
 export const decodeProtobuffKeyNormalized = async (protobuffKey: string) => {
   const key = await window.electronAPI.utils.decodeProtobuffKey(protobuffKey);
 

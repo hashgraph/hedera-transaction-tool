@@ -13,6 +13,9 @@ import { CustomNetworkSettings, Network } from '../stores/storeNetwork';
 
 import { decryptPrivateKey } from './keyPairService';
 
+/* Transaction service */
+
+/* Crafts transaction id by account id and valid start */
 export const createTransactionId = (
   accountId: AccountId | string,
   validStart: Timestamp | string | Date | null,
@@ -32,6 +35,7 @@ export const createTransactionId = (
   return TransactionId.withValidStart(accountId, validStart);
 };
 
+/* Collects and adds the signatures for the provided key pairs */
 export const getTransactionSignatures = async (
   keyPairs: IKeyPairWithAccountId[],
   transaction: Transaction,
@@ -65,6 +69,7 @@ export const getTransactionSignatures = async (
   }
 };
 
+/* Executes the transaction in the main process */
 export const execute = async (
   transactionBytes: string,
   network: Network,
@@ -80,6 +85,7 @@ export const execute = async (
   }
 };
 
+/* Executes the query in the main process */
 export const executeQuery = async (
   queryBytes: string,
   network: Network,
