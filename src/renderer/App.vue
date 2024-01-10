@@ -6,6 +6,7 @@ import 'bootstrap/dist/js/bootstrap.bundle.min';
 import AppMenu from './components/Menu.vue';
 import AppHeader from './components/Header.vue';
 
+/* Hooks */
 onMounted(async () => {
   const isDark = await window.electronAPI.theme.isDark();
   document.body.setAttribute('data-bs-theme', isDark ? 'dark' : 'light');

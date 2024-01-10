@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { onUnmounted, ref, watch } from 'vue';
-
-import { useToast } from 'vue-toast-notification';
+import { Mnemonic } from '@hashgraph/sdk';
 
 import { IKeyPair } from '../../../main/shared/interfaces';
 
-import { Mnemonic } from '@hashgraph/sdk';
-
 import useKeyPairsStore from '../../stores/storeKeyPairs';
 import useUserStateStore from '../../stores/storeUserState';
+
+import { useToast } from 'vue-toast-notification';
 
 import * as keyPairService from '../../services/keyPairService';
 
@@ -16,12 +15,16 @@ import AppButton from '../../components/ui/AppButton.vue';
 import AppModal from '../../components/ui/AppModal.vue';
 import Import from '../AccountSetup/components/Import.vue';
 
-const toast = useToast();
-
+/* Stores */
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
 
+/* Composables */
+const toast = useToast();
+
+/* State */
 const step = ref(0);
+const ableToContinue = ref(false);
 
 const password = ref('');
 const recoveryPhrase = ref([]);
@@ -32,9 +35,9 @@ const inputIndexInvalid = ref(false);
 
 const restoredKey = ref<{ privateKey: string; publicKey: string } | null>(null);
 
-const ableToContinue = ref(false);
 const isSuccessModalShown = ref(false);
 
+/* Watchers */
 watch(recoveryPhrase, async newRecoveryPhrase => {
   if (!newRecoveryPhrase) {
     ableToContinue.value = false;

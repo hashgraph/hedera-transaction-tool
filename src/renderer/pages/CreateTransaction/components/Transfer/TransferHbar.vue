@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-
 import { AccountId, KeyList, PublicKey, Hbar, Key, TransferTransaction } from '@hashgraph/sdk';
 
+import useKeyPairsStore from '../../../../stores/storeKeyPairs';
+import useNetworkStore from '../../../../stores/storeNetwork';
+import useUserStateStore from '../../../../stores/storeUserState';
+
 import { useToast } from 'vue-toast-notification';
+import useAccountId from '../../../../composables/useAccountId';
 
 import { openExternal } from '../../../../services/electronUtilsService';
 import {
@@ -12,48 +16,39 @@ import {
   execute,
 } from '../../../../services/transactionService';
 
-import useKeyPairsStore from '../../../../stores/storeKeyPairs';
-import useNetworkStore from '../../../../stores/storeNetwork';
-import useUserStateStore from '../../../../stores/storeUserState';
-
-import useAccountId from '../../../../composables/useAccountId';
-
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
-import AppSwitch from '../../../../components/ui/AppSwitch.vue';
 import KeyStructure from '../../../../components/KeyStructure.vue';
+import AppSwitch from '../../../../components/ui/AppSwitch.vue';
 
-const toast = useToast();
-
+/* Stores */
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
 const networkStore = useNetworkStore();
 
+/* Composables */
+const toast = useToast();
 const payerData = useAccountId();
 const senderData = useAccountId();
 const receiverData = useAccountId();
 
 /* State */
-const isKeyStructureModalShown = ref(false);
-
-const isSignModalShown = ref(false);
-const userPassword = ref('');
-
-const isTransferSuccessfulModalShown = ref(false);
+const transaction = ref<TransferTransaction | null>(null);
 const transactionId = ref('');
-
 const validStart = ref('');
 const maxTransactionfee = ref(2);
 
-const isApprovedTransfer = ref(false);
-
+const userPassword = ref('');
 const amount = ref(0);
-
+const isApprovedTransfer = ref(false);
 const keyStructureComponentKey = ref<Key | null>(null);
-
-const transaction = ref<TransferTransaction | null>(null);
 const isLoading = ref(false);
 
+const isKeyStructureModalShown = ref(false);
+const isSignModalShown = ref(false);
+const isTransferSuccessfulModalShown = ref(false);
+
+/* Handlers */
 const handleGetUserSignature = async () => {
   try {
     isLoading.value = true;

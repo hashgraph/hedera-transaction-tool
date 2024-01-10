@@ -1,24 +1,27 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
-
 import { jwtDecode } from 'jwt-decode';
 
 import { IUserData } from '../../../../main/shared/interfaces';
 
 import useUserStateStore from '../../../stores/storeUserState';
 
+import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toast-notification';
+
 import { getStoredKeysSecretHashes } from '../../../services/keyPairService';
 
 import AppSwitch from '../../../components/ui/AppSwitch.vue';
 import AppButton from '../../../components/ui/AppButton.vue';
 
-const toast = useToast();
-
-const router = useRouter();
+/* Stores */
 const userStateStore = useUserStateStore();
 
+/* Composables */
+const toast = useToast();
+const router = useRouter();
+
+/* State */
 const inputEmail = ref('');
 const inputPassword = ref('');
 
@@ -27,6 +30,7 @@ const inputPasswordInvalid = ref(false);
 
 const isInitialLogin = ref(false); // Temporary
 
+/* Handlers */
 const handleOnFormSubmit = async (event: Event) => {
   event.preventDefault();
 

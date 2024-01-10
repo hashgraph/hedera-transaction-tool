@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
+import { AccountId, AccountCreateTransaction, KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
+import useAccountId from '../../../../composables/useAccountId';
 
-import { AccountId, AccountCreateTransaction, KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
+import useKeyPairsStore from '../../../../stores/storeKeyPairs';
+import useUserStateStore from '../../../../stores/storeUserState';
+import useNetworkStore from '../../../../stores/storeNetwork';
 
 import { openExternal } from '../../../../services/electronUtilsService';
 import {
@@ -12,30 +16,22 @@ import {
   getTransactionSignatures,
 } from '../../../../services/transactionService';
 
-import useKeyPairsStore from '../../../../stores/storeKeyPairs';
-import useUserStateStore from '../../../../stores/storeUserState';
-import useNetworkStore from '../../../../stores/storeNetwork';
-
-import useAccountId from '../../../../composables/useAccountId';
-
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
 import AppSwitch from '../../../../components/ui/AppSwitch.vue';
 
-const toast = useToast();
-
+/* Stores */
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
 const networkStore = useNetworkStore();
 
+/* Composables */
+const toast = useToast();
 const payerData = useAccountId();
 
-const isSignModalShown = ref(false);
-const userPassword = ref('');
-
-const isAccountCreateModalShown = ref(false);
+/* State */
+const transaction = ref<AccountCreateTransaction | null>(null);
 const transactionId = ref('');
-
 const validStart = ref('');
 const maxTransactionfee = ref(2);
 
@@ -49,14 +45,18 @@ const accountData = reactive({
   declineStakingReward: false,
   memo: '',
 });
-
-const transaction = ref<AccountCreateTransaction | null>(null);
-const isLoading = ref(false);
-
 const ownerKeyText = ref('');
 const ownerKeys = ref<string[]>([]);
+const userPassword = ref('');
+
+const isSignModalShown = ref(false);
+const isAccountCreateModalShown = ref(false);
+const isLoading = ref(false);
+
+/* Getters */
 const keyList = computed(() => new KeyList(ownerKeys.value.map(key => PublicKey.fromString(key))));
 
+/* Handlers */
 const handleOwnerKeyTextKeyPress = (e: KeyboardEvent) => {
   if (e.code === 'Enter') handleAdd();
 };
@@ -156,6 +156,7 @@ const handleCreate = async () => {
   }
 };
 
+/* Watchers */
 watch(isSignModalShown, () => (userPassword.value = ''));
 watch(isAccountCreateModalShown, shown => {
   if (!shown) {

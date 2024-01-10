@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { KeyList, Key, PublicKey } from '@hashgraph/sdk';
+
+/* Props */
 const props = withDefaults(
   defineProps<{
     keyList: KeyList;
@@ -14,8 +16,17 @@ const props = withDefaults(
     path: [],
   },
 );
+
+/* Emits */
 defineEmits(['update:keyList']);
 
+/* Handlers */
+const handleKeyClick = (index: number, path: number[], publicKey: string) => {
+  const clickedPath = [...path, index];
+  props.handleClick && props.handleClick(clickedPath, publicKey);
+};
+
+/* Misc */
 const normalizePublicKey = (key: Key) => {
   const protoBuffKey = key._toProtobufKey();
 
@@ -25,11 +36,6 @@ const normalizePublicKey = (key: Key) => {
     return PublicKey.fromBytesECDSA(protoBuffKey.ECDSASecp256k1).toStringRaw();
   }
   return '';
-};
-
-const handleKeyClick = (index: number, path: number[], publicKey: string) => {
-  const clickedPath = [...path, index];
-  props.handleClick && props.handleClick(clickedPath, publicKey);
 };
 </script>
 <template>

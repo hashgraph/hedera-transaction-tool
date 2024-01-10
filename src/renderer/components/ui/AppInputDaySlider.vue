@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/* Props */
 withDefaults(
   defineProps<{
     sliderValue: number;
@@ -10,6 +11,8 @@ withDefaults(
     updateValueOn: 'input',
   },
 );
+
+/* Emits */
 defineEmits(['update:sliderValue']);
 </script>
 <template>

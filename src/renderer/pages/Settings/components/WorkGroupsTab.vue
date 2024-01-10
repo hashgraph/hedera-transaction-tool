@@ -1,20 +1,24 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import { useToast } from 'vue-toast-notification';
-
 import useOrganizationsStore from '../../../stores/storeOrganizations';
+
+import { useToast } from 'vue-toast-notification';
 
 import AppButton from '../../../components/ui/AppButton.vue';
 
-const toast = useToast();
-
+/* Stores */
 const organizationsStore = useOrganizationsStore();
 
+/* Composables */
+const toast = useToast();
+
+/* State */
 const newOrganizationName = ref('');
 const newOrganizationServerUrl = ref('');
 const newOrganizationServerPublicKey = ref('');
 
+/* Handlers */
 const handleAddOrganization = async () => {
   if (newOrganizationName.value !== '' && newOrganizationServerUrl.value !== '') {
     try {

@@ -1,28 +1,33 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+
 import useOrganizationsStore from '../stores/storeOrganizations';
 import useUserStateStore from '../stores/storeUserState';
 
+import { useRouter } from 'vue-router';
+
+import AppSwitch from './ui/AppSwitch.vue';
 import Logo from './Logo.vue';
 import LogoText from './LogoText.vue';
-import AppSwitch from './ui/AppSwitch.vue';
 
-const router = useRouter();
+/* Stores */
 const organizationsStore = useOrganizationsStore();
 const userStateStore = useUserStateStore();
 
+/* Composables */
+const router = useRouter();
+
+/* State */
 const organizationsDropDownRef = ref<HTMLSelectElement | null>(null);
 
+/* Handlers */
 async function handleThemeChange() {
   const isDark = await window.electronAPI.theme.isDark();
-
   window.electronAPI.theme.toggle(isDark ? 'light' : 'dark');
 }
 
 function handleOrganizationChange(e: Event) {
   const selectElement = e.target as HTMLSelectElement;
-
   const selectedOption = selectElement.selectedOptions[0];
 
   switch (selectedOption.value) {
@@ -31,11 +36,13 @@ function handleOrganizationChange(e: Event) {
       organizationsStore.currentOrganization = null;
       break;
     case 'add-organization':
-      organizationsDropDownRef.value!.value =
-        userStateStore.role === 'personal'
-          ? 'local'
-          : organizationsStore.currentOrganization!.serverUrl;
-      router.push({ name: 'setupOrganization' });
+      if (organizationsDropDownRef.value) {
+        organizationsDropDownRef.value.value =
+          userStateStore.role === 'personal'
+            ? 'local'
+            : organizationsStore.currentOrganization?.serverUrl || '';
+        router.push({ name: 'setupOrganization' });
+      }
       return;
     default:
       userStateStore.setUserRole('organization');

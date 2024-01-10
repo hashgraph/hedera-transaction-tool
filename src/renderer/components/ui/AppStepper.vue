@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/* Props */
 defineProps<{
   items: { title: string; name: string }[];
   activeIndex: number;
