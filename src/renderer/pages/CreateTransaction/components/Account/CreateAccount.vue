@@ -5,6 +5,7 @@ import { useToast } from 'vue-toast-notification';
 
 import { AccountId, AccountCreateTransaction, KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
 
+import { add } from '../../../../services/accountsService';
 import { openExternal } from '../../../../services/electronUtilsService';
 import {
   createTransactionId,
@@ -101,6 +102,9 @@ const handleGetUserSignature = async () => {
     );
     transactionId.value = txId;
     accountData.accountId = new AccountId(receipt.accountId).toString() || '';
+
+    await add(userStateStore.userData.userId, accountData.accountId);
+    toast.success(`Account ${accountData.accountId} linked`, { position: 'top-right' });
 
     isSignModalShown.value = false;
     isAccountCreateModalShown.value = true;
@@ -378,7 +382,7 @@ watch(isAccountCreateModalShown, shown => {
           color="primary"
           size="large"
           class="mt-5 w-100 rounded-4"
-          @click="isAccountCreateModalShown = false"
+          @click="$router.push({ name: 'accounts' })"
           >Close</AppButton
         >
       </div>

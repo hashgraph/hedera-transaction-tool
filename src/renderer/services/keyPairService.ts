@@ -142,3 +142,54 @@ export const flattenKeyList = (keyList: Key): PublicKey[] => {
   }
   return keys;
 };
+
+export const getKeyListLevels = (keyList: KeyList) => {
+  const result: { key: proto.Key; level: number }[] = [];
+
+  flattenComplexKey(keyList._toProtobufKey(), 0, result);
+
+  let maxLevel = 1;
+  for (const level of result.map(r => r.level)) {
+    maxLevel = Math.max(maxLevel, level);
+  }
+  return maxLevel + 1;
+};
+
+function flattenComplexKey(
+  key: proto.Key,
+  level: number,
+  result: { key: proto.Key; level: number }[],
+): void {
+  let newLine: { key: proto.Key; level: number } | null;
+  let childKeys: proto.Key[];
+  if (key.keyList) {
+    if (key.keyList.keys && key.keyList.keys.length == 1) {
+      newLine = null;
+      childKeys = [key.keyList.keys[0]];
+    } else {
+      newLine = { key, level };
+      childKeys = key.keyList?.keys ?? [];
+    }
+  } else if (key.thresholdKey) {
+    if (key.thresholdKey.keys?.keys && key.thresholdKey.keys?.keys.length == 1) {
+      newLine = null;
+      childKeys = [key.thresholdKey.keys?.keys[0]];
+    } else {
+      newLine = { key, level };
+
+      childKeys = key.thresholdKey?.keys?.keys ?? [];
+    }
+  } else {
+    newLine = { key, level };
+
+    childKeys = [];
+  }
+  if (newLine !== null) {
+    result.push(newLine);
+  }
+
+  const nextLevel = newLine !== null ? level + 1 : level;
+  for (const childKey of childKeys) {
+    flattenComplexKey(childKey, nextLevel, result);
+  }
+}

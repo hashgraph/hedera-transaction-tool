@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, reactive, watch } from 'vue';
+import { computed, ref, reactive, watch, onMounted } from 'vue';
 
 import { useToast } from 'vue-toast-notification';
+
+import { useRoute } from 'vue-router';
 
 import { AccountId, AccountUpdateTransaction, KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
 
@@ -23,6 +25,7 @@ import AppModal from '../../../../components/ui/AppModal.vue';
 import AppSwitch from '../../../../components/ui/AppSwitch.vue';
 import KeyStructure from '../../../../components/KeyStructure.vue';
 
+const route = useRoute();
 const toast = useToast();
 
 const keyPairsStore = useKeyPairsStore();
@@ -213,6 +216,14 @@ const handleCreate = async () => {
     isLoading.value = false;
   }
 };
+
+/* Hooks */
+
+onMounted(() => {
+  if (route.query.accountId) {
+    accountData.accountId.value = route.query.accountId.toString();
+  }
+});
 
 /* Watchers */
 watch(isSignModalShown, () => (userPassword.value = ''));

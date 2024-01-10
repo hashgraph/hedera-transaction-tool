@@ -4,7 +4,11 @@ import { AccountId, EvmAddress, Hbar, HbarUnit, Key, PublicKey, Timestamp } from
 
 import { decodeProtobuffKey } from './electronUtilsService';
 
-import { IMirrorNodeAccountInfo, IMirrorNodeAllowance } from '../../main/shared/interfaces';
+import {
+  IMirrorNodeAccountInfo,
+  IMirrorNodeAllowance,
+  NetworkExchangeRateSetResponse,
+} from '../../main/shared/interfaces';
 
 export const getAccountInfo = async (
   accountId: string,
@@ -38,14 +42,12 @@ export const getAccountInfo = async (
     deleted: data.deleted,
     ethereumNonce: Number(data.ethereum_nonce),
     evmAddress: EvmAddress.fromString(data.evm_address),
-    createdTimestamp: new Timestamp(
-      data.created_timestamp.split('.')[0],
-      data.created_timestamp.split('.')[1],
-    ),
-    expiryTimestamp: new Timestamp(
-      data.expiry_timestamp.split('.')[0],
-      data.expiry_timestamp.split('.')[1],
-    ),
+    createdTimestamp: data.created_timestamp
+      ? new Timestamp(data.created_timestamp.split('.')[0], data.created_timestamp.split('.')[1])
+      : null,
+    expiryTimestamp: data.expiry_timestamp
+      ? new Timestamp(data.expiry_timestamp.split('.')[0], data.expiry_timestamp.split('.')[1])
+      : null,
     key: key,
     maxAutomaticTokenAssociations: data.max_automatic_token_associations,
     memo: data.memo,
@@ -71,4 +73,41 @@ export const getAccountAllowances = async (
   const allowances: IMirrorNodeAllowance[] = data.allowances;
 
   return allowances;
+};
+
+export const getExchangeRateSet = async (mirrorNodeLink: string, controller?: AbortController) => {
+  const { data } = await axios.get(`${mirrorNodeLink}/network/exchangerate`, {
+    signal: controller?.signal,
+  });
+
+  const exchangeRateSet: NetworkExchangeRateSetResponse = data;
+
+  return exchangeRateSet;
+};
+
+export const getDollarAmount = (hbarPrice: number, hbarAmount: number) => {
+  const fractionDigits = 5;
+
+  const dollarFormatting = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  });
+
+  let result: string;
+
+  if (hbarPrice !== null) {
+    const resolution = Math.pow(10, -fractionDigits);
+    let usdAmount = hbarAmount * hbarPrice;
+    if (0 < usdAmount && usdAmount < +resolution) {
+      usdAmount = resolution;
+    } else if (-resolution < usdAmount && usdAmount < 0) {
+      usdAmount = -resolution;
+    }
+    result = dollarFormatting.format(usdAmount);
+  } else {
+    result = '';
+  }
+  return result;
 };

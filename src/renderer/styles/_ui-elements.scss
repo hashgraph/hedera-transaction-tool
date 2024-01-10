@@ -407,3 +407,8 @@
     }
   }
 }
+
+/* Tooltip */
+.wide-tooltip {
+  --bs-tooltip-max-width: 280px;
+}

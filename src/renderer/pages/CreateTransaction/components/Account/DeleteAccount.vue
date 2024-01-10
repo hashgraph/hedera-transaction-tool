@@ -1,9 +1,14 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-
-import { useToast } from 'vue-toast-notification';
-
+import { onMounted, ref, watch } from 'vue';
 import { AccountId, KeyList, PublicKey, Hbar, AccountDeleteTransaction } from '@hashgraph/sdk';
+
+import useKeyPairsStore from '../../../../stores/storeKeyPairs';
+import useNetworkStore from '../../../../stores/storeNetwork';
+import useUserStateStore from '../../../../stores/storeUserState';
+
+import { useRoute } from 'vue-router';
+import { useToast } from 'vue-toast-notification';
+import useAccountId from '../../../../composables/useAccountId';
 
 import { openExternal } from '../../../../services/electronUtilsService';
 import {
@@ -12,21 +17,18 @@ import {
   getTransactionSignatures,
 } from '../../../../services/transactionService';
 
-import useAccountId from '../../../../composables/useAccountId';
-
-import useKeyPairsStore from '../../../../stores/storeKeyPairs';
-import useNetworkStore from '../../../../stores/storeNetwork';
-import useUserStateStore from '../../../../stores/storeUserState';
-
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
 import KeyStructure from '../../../../components/KeyStructure.vue';
 
-const toast = useToast();
-
+/* Stores */
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
 const networkStore = useNetworkStore();
+
+/* Composables */
+const route = useRoute();
+const toast = useToast();
 
 const payerData = useAccountId();
 const accountData = useAccountId();
@@ -47,6 +49,15 @@ const maxTransactionfee = ref(2);
 const transaction = ref<AccountDeleteTransaction | null>(null);
 const isLoading = ref(false);
 
+/* Hooks */
+
+onMounted(() => {
+  if (route.query.accountId) {
+    accountData.accountId.value = route.query.accountId.toString();
+  }
+});
+
+/* Handlers */
 const handleGetUserSignature = async () => {
   try {
     if (!userStateStore.userData?.userId) {
