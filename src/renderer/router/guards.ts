@@ -1,4 +1,5 @@
 import { Router } from 'vue-router';
+
 import useUserStateStore from '../stores/storeUserState';
 
 export function addGuards(router: Router) {
