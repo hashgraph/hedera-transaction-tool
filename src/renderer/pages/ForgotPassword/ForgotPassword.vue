@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+
 import { useRouter } from 'vue-router';
 
 import AppButton from '../../components/ui/AppButton.vue';
 
+/* Composables */
 const router = useRouter();
 
+/* State */
 const inputEmail = ref('');
 
+/* Handlers */
 const handleFormSubmit = (event: Event) => {
   event.preventDefault();
 
