@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { onMounted, onUpdated, ref, watch } from 'vue';
-
-import { useToast } from 'vue-toast-notification';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
 import { IKeyPair } from '../../../../main/shared/interfaces';
+
+import useKeyPairsStore from '../../../stores/storeKeyPairs';
+import useUserStateStore from '../../../stores/storeUserState';
+
+import { useToast } from 'vue-toast-notification';
 
 import {
   restorePrivateKey,
@@ -12,23 +15,24 @@ import {
   getStoredKeyPairs,
 } from '../../../services/keyPairService';
 
-import useKeyPairsStore from '../../../stores/storeKeyPairs';
-import useUserStateStore from '../../../stores/storeUserState';
-
 import AppButton from '../../../components/ui/AppButton.vue';
 import AppModal from '../../../components/ui/AppModal.vue';
 import AppSwitch from '../../../components/ui/AppSwitch.vue';
 
+/* Props */
 const props = defineProps<{
   encryptPassword: string;
   handleContinue: () => void;
 }>();
 
-const toast = useToast();
-
+/* Stores */
 const keyPairsStore = useKeyPairsStore();
 const useStateStore = useUserStateStore();
 
+/* Composables */
+const toast = useToast();
+
+/* State */
 const nickname = ref('');
 
 const advancedMode = ref(false);
@@ -41,6 +45,7 @@ const publicKey = ref('');
 const keyExists = ref(false);
 const isSuccessModalShown = ref(false);
 
+/* Misc Functions */
 const validateExistingKey = () => {
   if (keyPairsStore.keyPairs.some(kp => kp.publicKey === publicKey.value && kp.privateKey !== '')) {
     keyExists.value = true;
