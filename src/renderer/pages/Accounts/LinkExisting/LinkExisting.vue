@@ -1,18 +1,22 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 
-import { useToast } from 'vue-toast-notification';
-import Tooltip from 'bootstrap/js/dist/tooltip';
-
-import useAccountId from '../../../composables/useAccountId';
-
 import useUserStateStore from '../../../stores/storeUserState';
+
+import Tooltip from 'bootstrap/js/dist/tooltip';
+import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toast-notification';
+import useAccountId from '../../../composables/useAccountId';
 
 import { add } from '../../../services/accountsService';
 
 import AppButton from '../../../components/ui/AppButton.vue';
 
+/* Stores */
 const userStore = useUserStateStore();
+
+/* Composables */
+const router = useRouter();
 const toast = useToast();
 
 /* State */
@@ -28,6 +32,7 @@ const handleLinkAccount = async () => {
 
       await add(userStore.userData?.userId, accountData.accountIdFormatted.value, nickname.value);
 
+      router.push({ name: 'accounts' });
       toast.success('Account linked successfully!', { position: 'top-right' });
     } catch (error: any) {
       toast.error(error.message || 'Account link failed', { position: 'top-right' });
