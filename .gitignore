@@ -21,3 +21,5 @@ lerna-debug.log*
 # Build
 dist
 out
+
+.DS_Store
