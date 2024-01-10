@@ -1,0 +1,18 @@
+<template>
+  <svg width="43" height="36" viewBox="0 0 43 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g id="Frame 2333">
+      <path
+        id="Union"
+        fill-rule="evenodd"
+        clip-rule="evenodd"
+        d="M34.3267 6.05615L42.4034 11.77L34.3267 17.4783V13.785H26.25V36H22.2089V9.74945H34.3267V6.05615ZM10.0967 9.74943H14.1323V13.785H10.0967V9.74943Z"
+        fill="white"
+      />
+      <path
+        id="Vector"
+        d="M8.07669 3.6933V0L0 5.71385L8.07669 11.4222V7.72887H16.1534V36H20.189V7.72887H32.3068V3.6933H8.07669Z"
+        fill="white"
+      />
+    </g>
+  </svg>
+</template>
