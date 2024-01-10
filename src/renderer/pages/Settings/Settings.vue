@@ -1,23 +1,25 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { useRouter, RouterView } from 'vue-router';
-
-import { useToast } from 'vue-toast-notification';
-
-import AppTabs, { TabItem } from '../../components/ui/AppTabs.vue';
-import AppButton from '../../components/ui/AppButton.vue';
 
 import useOrganizationsStore from '../../stores/storeOrganizations';
 import useKeyPairsStore from '../../stores/storeKeyPairs';
 import useUserStateStore from '../../stores/storeUserState';
 
-/* Toast */
+import { useToast } from 'vue-toast-notification';
+import { useRouter, RouterView } from 'vue-router';
+
+import AppTabs, { TabItem } from '../../components/ui/AppTabs.vue';
+import AppButton from '../../components/ui/AppButton.vue';
+
+/* Stores */
+const organizationsStore = useOrganizationsStore();
+const userStateStore = useUserStateStore();
+
+/* Composables */
+const router = useRouter();
 const toast = useToast();
 
-/* Router */
-const router = useRouter();
-
-/* Tabs */
+/* Misc */
 const tabItems: TabItem[] = [
   { title: 'General' },
   { title: 'Work Groups' },
@@ -35,13 +37,13 @@ const propTabIndex = tabTitles.findIndex(
       .toLocaleLowerCase() === t,
 );
 
+/* State */
 const activeTabIndex = ref(propTabIndex >= 0 ? propTabIndex : 0);
+
+/* Getters */
 const activeTabTitle = computed(() => tabItems[activeTabIndex.value].title);
 
-/* Stores */
-const organizationsStore = useOrganizationsStore();
-const userStateStore = useUserStateStore();
-
+/* Handlers */
 const handleClearConfig = async () => {
   try {
     await window.electronAPI.config.clear();

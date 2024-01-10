@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import AppButton from './AppButton.vue';
 
+/* Interfaces */
 export interface TabItem {
   title: string;
   notifications?: number;
 }
 
+/* Props */
 defineProps<{
   items: TabItem[];
   activeIndex: number;
@@ -13,6 +15,8 @@ defineProps<{
   navItemClass?: string;
   navItemButtonClass?: string;
 }>();
+
+/* Emits */
 defineEmits(['update:active-index']);
 </script>
 

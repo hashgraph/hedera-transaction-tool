@@ -35,27 +35,16 @@ const accountData = useAccountId();
 const transferAccountData = useAccountId();
 
 /* State */
-const isKeyStructureModalShown = ref(false);
-
-const isSignModalShown = ref(false);
-const userPassword = ref('');
-
-const isAccountDeleteModalShown = ref(false);
+const transaction = ref<AccountDeleteTransaction | null>(null);
 const transactionId = ref('');
-
 const validStart = ref('');
 const maxTransactionfee = ref(2);
+const userPassword = ref('');
 
-const transaction = ref<AccountDeleteTransaction | null>(null);
+const isKeyStructureModalShown = ref(false);
+const isSignModalShown = ref(false);
+const isAccountDeleteModalShown = ref(false);
 const isLoading = ref(false);
-
-/* Hooks */
-
-onMounted(() => {
-  if (route.query.accountId) {
-    accountData.accountId.value = route.query.accountId.toString();
-  }
-});
 
 /* Handlers */
 const handleGetUserSignature = async () => {
@@ -149,6 +138,13 @@ const handleCreate = async () => {
     isLoading.value = false;
   }
 };
+
+/* Hooks */
+onMounted(() => {
+  if (route.query.accountId) {
+    accountData.accountId.value = route.query.accountId.toString();
+  }
+});
 
 /* Watchers */
 watch(isSignModalShown, () => (userPassword.value = ''));

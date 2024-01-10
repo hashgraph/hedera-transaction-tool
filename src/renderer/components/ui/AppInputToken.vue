@@ -1,10 +1,9 @@
 <script setup lang="ts">
-type Props = {
+/* Props */
+defineProps<{
   isCompact?: boolean;
   placeholder?: string;
-};
-
-defineProps<Props>();
+}>();
 </script>
 <template>
   <input

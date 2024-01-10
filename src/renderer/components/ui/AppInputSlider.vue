@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppButtonPercentage from './AppButtonPercentage.vue';
 
+/* Props */
 withDefaults(
   defineProps<{
     sliderValue: string;
@@ -11,8 +12,11 @@ withDefaults(
     updateValueOn: 'input',
   },
 );
+
+/* Emits */
 defineEmits(['update:sliderValue']);
 
+/* Misc */
 const buttonValues = ['25', '50', '75', '100'];
 </script>
 <template>

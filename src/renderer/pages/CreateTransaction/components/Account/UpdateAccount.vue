@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, reactive, watch, onMounted } from 'vue';
+import { AccountId, AccountUpdateTransaction, KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
+
+import useKeyPairsStore from '../../../../stores/storeKeyPairs';
+import useNetworkStore from '../../../../stores/storeNetwork';
+import useUserStateStore from '../../../../stores/storeUserState';
 
 import { useToast } from 'vue-toast-notification';
-
 import { useRoute } from 'vue-router';
-
-import { AccountId, AccountUpdateTransaction, KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
+import useAccountId from '../../../../composables/useAccountId';
 
 import { openExternal } from '../../../../services/electronUtilsService';
 import {
@@ -14,36 +17,25 @@ import {
   getTransactionSignatures,
 } from '../../../../services/transactionService';
 
-import useKeyPairsStore from '../../../../stores/storeKeyPairs';
-import useNetworkStore from '../../../../stores/storeNetwork';
-import useUserStateStore from '../../../../stores/storeUserState';
-
-import useAccountId from '../../../../composables/useAccountId';
-
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
 import AppSwitch from '../../../../components/ui/AppSwitch.vue';
 import KeyStructure from '../../../../components/KeyStructure.vue';
 
-const route = useRoute();
-const toast = useToast();
-
+/* Stores */
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
 const networkStore = useNetworkStore();
-
 const payerData = useAccountId();
 const accountData = useAccountId();
 
+/* Composables */
+const route = useRoute();
+const toast = useToast();
+
 /* State */
-const isKeyStructureModalShown = ref(false);
-
-const isSignModalShown = ref(false);
-const userPassword = ref('');
-
-const isAccountUpdatedModalShown = ref(false);
+const transaction = ref<AccountUpdateTransaction | null>(null);
 const transactionId = ref('');
-
 const validStart = ref('');
 const maxTransactionfee = ref(2);
 
@@ -65,8 +57,11 @@ const newAccountData = reactive<{
 
 const newOwnerKeyText = ref('');
 const newOwnerKeys = ref<string[]>([]);
+const userPassword = ref('');
 
-const transaction = ref<AccountUpdateTransaction | null>(null);
+const isKeyStructureModalShown = ref(false);
+const isSignModalShown = ref(false);
+const isAccountUpdatedModalShown = ref(false);
 const isLoading = ref(false);
 
 /* Computed */
@@ -218,7 +213,6 @@ const handleCreate = async () => {
 };
 
 /* Hooks */
-
 onMounted(() => {
   if (route.query.accountId) {
     accountData.accountId.value = route.query.accountId.toString();

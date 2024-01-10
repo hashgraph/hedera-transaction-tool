@@ -7,12 +7,14 @@ import useNetworkStore, { CustomNetworkSettings } from '../../../stores/storeNet
 
 import AppButton from '../../../components/ui/AppButton.vue';
 
-const toast = useToast();
-
+/* Stores */
 const networkStore = useNetworkStore();
 
-const isCustomSettingsVisible = ref(false);
+/* Composables */
+const toast = useToast();
 
+/* State */
+const isCustomSettingsVisible = ref(false);
 const customNetworkSettings = ref<CustomNetworkSettings>({
   consensusNodeEndpoint: '127.0.0.1:50211',
   mirrorNodeGRPCEndpoint: '127.0.0.1:5600',
@@ -20,6 +22,7 @@ const customNetworkSettings = ref<CustomNetworkSettings>({
   nodeAccountId: '0.0.3',
 });
 
+/* Handlers */
 const handleSetCustomNetwork = async () => {
   try {
     customNetworkSettings.value.nodeAccountId =
@@ -35,6 +38,7 @@ const handleSetCustomNetwork = async () => {
   }
 };
 
+/* Hooks */
 onMounted(() => {
   if (networkStore.customNetworkSettings) {
     customNetworkSettings.value = networkStore.customNetworkSettings;
