@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onMounted, onUpdated, ref, watch } from 'vue';
-import Tooltip from 'bootstrap/js/dist/tooltip';
 
 import { IKeyPair } from '../../../../main/shared/interfaces';
 
@@ -8,6 +7,7 @@ import useKeyPairsStore from '../../../stores/storeKeyPairs';
 import useUserStore from '../../../stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
+import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import {
   restorePrivateKey,
@@ -31,6 +31,7 @@ const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
+const createTooltips = useCreateTooltips();
 
 /* State */
 const nickname = ref('');
@@ -151,8 +152,7 @@ onMounted(() => {
 });
 
 onUpdated(() => {
-  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-  Array.from(tooltipTriggerList).map(tooltipTriggerEl => new Tooltip(tooltipTriggerEl));
+  createTooltips();
 });
 
 /* Watchers */
