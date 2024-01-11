@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, ref } from 'vue';
 
+import useLocalUserStateStore from '../../../stores/storeLocalUserState';
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
 import useUserStateStore from '../../../stores/storeUserState';
 
@@ -16,6 +17,7 @@ const props = defineProps<{
 }>();
 
 /* Stores */
+const localUserStateStore = useLocalUserStateStore();
 const keyPairsStore = useKeyPairsStore();
 const userStateStore = useUserStateStore();
 
@@ -34,10 +36,19 @@ const handleSaveWords = async (words: string[]) => {
     console.log('Invalid Recovery Phrase!');
   } else {
     keyPairsStore.setRecoveryPhrase(words);
-    userStateStore.setSecretHashes([
-      ...(userStateStore.secretHashes || []),
-      await hashRecoveryPhrase(words),
-    ]);
+
+    if (userStateStore.isLoggedIn) {
+      userStateStore.setSecretHashes([
+        ...(userStateStore.secretHashes || []),
+        await hashRecoveryPhrase(words),
+      ]);
+    } else {
+      localUserStateStore.setSecretHashes([
+        ...(userStateStore.secretHashes || []),
+        await hashRecoveryPhrase(words),
+      ]);
+    }
+
     // SEND SECRET HASH TO BACKED?
 
     props.handleContinue();
