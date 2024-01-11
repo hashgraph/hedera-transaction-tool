@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 
 import useUserStore from '../../../stores/storeUser';
 
-import Tooltip from 'bootstrap/js/dist/tooltip';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../composables/useAccountId';
+import useCreateTooltips from '../../../composables/useCreateTooltips';
 
 import { add } from '../../../services/accountsService';
 
@@ -18,6 +18,7 @@ const user = useUserStore();
 /* Composables */
 const router = useRouter();
 const toast = useToast();
+useCreateTooltips();
 
 /* State */
 const accountData = useAccountId();
@@ -39,11 +40,6 @@ const handleLinkAccount = async () => {
     }
   }
 };
-
-onMounted(() => {
-  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-  Array.from(tooltipTriggerList).map(tooltipTriggerEl => new Tooltip(tooltipTriggerEl));
-});
 </script>
 <template>
   <div class="p-10">
