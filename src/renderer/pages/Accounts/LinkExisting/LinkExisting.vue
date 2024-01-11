@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 
-import useUserStateStore from '../../../stores/storeUserState';
+import useLocalUserStateStore from '../../../stores/storeLocalUserState';
 
 import Tooltip from 'bootstrap/js/dist/tooltip';
 import { useRouter } from 'vue-router';
@@ -13,7 +13,7 @@ import { add } from '../../../services/accountsService';
 import AppButton from '../../../components/ui/AppButton.vue';
 
 /* Stores */
-const userStore = useUserStateStore();
+const localUserStateStore = useLocalUserStateStore();
 
 /* Composables */
 const router = useRouter();
@@ -26,11 +26,11 @@ const nickname = ref('');
 const handleLinkAccount = async () => {
   if (accountData.isValid.value) {
     try {
-      if (!userStore.userData?.userId) {
+      if (!localUserStateStore.email) {
         throw new Error('User not logged in');
       }
 
-      await add(userStore.userData?.userId, accountData.accountIdFormatted.value, nickname.value);
+      await add(localUserStateStore.email, accountData.accountIdFormatted.value, nickname.value);
 
       router.push({ name: 'accounts' });
       toast.success('Account linked successfully!', { position: 'top-right' });

@@ -5,7 +5,7 @@ export type SchemaProperties = {
 };
 
 /* persisting accounts data in a JSON file */
-export default function getAccountsStore(userId: string) {
+export default function getAccountsStore(email: string) {
   const schema: Schema<SchemaProperties> = {
     accounts: {
       type: 'array',
@@ -25,22 +25,27 @@ export default function getAccountsStore(userId: string) {
     },
   };
 
-  const store = new Store({ schema, name: `${userId}-accounts`, clearInvalidConfig: true });
+  const store = new Store({
+    schema,
+    cwd: `${email}`,
+    name: `${email}-auth`,
+    clearInvalidConfig: true,
+  });
 
   return store;
 }
 
-export const getAccounts = (userId: string) => {
+export const getAccounts = (email: string) => {
   try {
-    const store = getAccountsStore(userId);
+    const store = getAccountsStore(email);
     return store.get('accounts');
   } catch (error) {
     return [];
   }
 };
 
-export const addAccount = (userId: string, accountId: string, nickname: string = '') => {
-  const store = getAccountsStore(userId);
+export const addAccount = (email: string, accountId: string, nickname: string = '') => {
+  const store = getAccountsStore(email);
 
   if (
     store.store.accounts.some(
@@ -55,8 +60,8 @@ export const addAccount = (userId: string, accountId: string, nickname: string =
   return store.get('accounts');
 };
 
-export const removeAccount = (userId: string, accountId: string, nickname?: string) => {
-  const store = getAccountsStore(userId);
+export const removeAccount = (email: string, accountId: string, nickname?: string) => {
+  const store = getAccountsStore(email);
 
   if (
     !store.store.accounts.some(

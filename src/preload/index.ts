@@ -81,20 +81,20 @@ export const electronAPI = {
     executeQuery: (queryData: string) => ipcRenderer.invoke('utils:executeQuery', queryData),
   },
   accounts: {
-    getAll: (userId: string): Promise<{ accountId: string; nickname: string }[]> =>
-      ipcRenderer.invoke('accounts:getAll', userId),
+    getAll: (email: string): Promise<{ accountId: string; nickname: string }[]> =>
+      ipcRenderer.invoke('accounts:getAll', email),
     add: (
-      userId: string,
+      email: string,
       accountId: string,
       nickname: string,
     ): Promise<{ accountId: string; nickname: string }[]> =>
-      ipcRenderer.invoke('accounts:add', userId, accountId, nickname),
+      ipcRenderer.invoke('accounts:add', email, accountId, nickname),
     remove: (
-      userId: string,
+      email: string,
       accountId: string,
       nickname: string,
     ): Promise<{ accountId: string; nickname: string }[]> =>
-      ipcRenderer.invoke('accounts:remove', userId, accountId, nickname),
+      ipcRenderer.invoke('accounts:remove', email, accountId, nickname),
   },
   localUser: {
     login: (email: string, password: string, autoRegister?: boolean): Promise<ILocalUserData> =>
