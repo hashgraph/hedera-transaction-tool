@@ -4,6 +4,7 @@ import Tooltip from 'bootstrap/js/dist/tooltip';
 
 import { IKeyPair } from '../../../../main/shared/interfaces';
 
+import useLocalUserStateStore from '../../../stores/storeLocalUserState';
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
 import useUserStateStore from '../../../stores/storeUserState';
 
@@ -26,8 +27,9 @@ const props = defineProps<{
 }>();
 
 /* Stores */
+const localUserStateStore = useLocalUserStateStore();
 const keyPairsStore = useKeyPairsStore();
-const useStateStore = useUserStateStore();
+const userStateStore = useUserStateStore();
 
 /* Composables */
 const toast = useToast();
@@ -102,13 +104,17 @@ const handleSaveKey = async () => {
 
 const handleRestoreExisting = async () => {
   try {
-    if (!useStateStore.userData) {
+    if (!localUserStateStore.isLoggedIn || !localUserStateStore.email) {
       throw Error('User not logged in!');
     }
 
     const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
     const keyPairsToRestore = (
-      await getStoredKeyPairs(useStateStore.userData?.userId, secretHash)
+      await getStoredKeyPairs(
+        localUserStateStore.email,
+        userStateStore.serverUrl,
+        userStateStore.userId,
+      )
     ).filter(kp => kp.privateKey === '');
 
     await Promise.all(

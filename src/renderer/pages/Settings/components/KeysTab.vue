@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
 
-import useUserStateStore from '../../../stores/storeUserState';
+import useLocalUserStateStore from '../../../stores/storeLocalUserState';
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
 
 import { useToast } from 'vue-toast-notification';
@@ -13,7 +13,7 @@ import AppModal from '../../../components/ui/AppModal.vue';
 
 /* Stores */
 const keyPairsStore = useKeyPairsStore();
-const userStateStore = useUserStateStore();
+const localUserStateStore = useLocalUserStateStore();
 
 /* Composables */
 const toast = useToast();
@@ -32,12 +32,12 @@ const handleShowDecryptModal = (publicKey: string) => {
 
 const handleDecrypt = async () => {
   try {
-    if (!userStateStore.userData?.userId) {
+    if (!localUserStateStore.email) {
       throw Error('No user selected');
     }
 
     decryptedKey.value = await decryptPrivateKey(
-      userStateStore.userData?.userId,
+      localUserStateStore.email,
       userPassword.value,
       publicKeysPrivateKeyToDecrypt.value,
     );

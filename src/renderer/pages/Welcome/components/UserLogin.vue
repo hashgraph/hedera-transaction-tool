@@ -12,6 +12,7 @@ import * as localUserService from '../../../services/localUserService';
 import { isEmail } from '../../../utils/validator';
 
 import AppButton from '../../../components/ui/AppButton.vue';
+import { getStoredKeysSecretHashes } from '@renderer/services/keyPairService';
 
 /* Stores */
 const localUserStateStore = useLocalUserStateStore();
@@ -51,10 +52,11 @@ const handleOnFormSubmit = async (event: Event) => {
   if (!inputEmailInvalid.value && !inputPasswordInvalid.value) {
     try {
       const userData = await localUserService.login(inputEmail.value, inputPassword.value, true);
+      const secretHashes = await getStoredKeysSecretHashes(inputEmail.value);
 
       localUserStateStore.logUser(userData);
 
-      if (userData.isInitial) {
+      if (secretHashes.length === 0) {
         router.push({ name: 'accountSetup' });
       } else {
         router.push(router.previousPath ? { path: router.previousPath } : { name: 'settingsKeys' });

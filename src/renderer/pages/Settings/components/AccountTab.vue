@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+import useLocalUserStateStore from '../../../stores/storeLocalUserState';
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
-import useUserStateStore from '../../../stores/storeUserState';
 
 import { useToast } from 'vue-toast-notification';
 
@@ -12,8 +12,8 @@ import AppButton from '../../../components/ui/AppButton.vue';
 import AppModal from '../../../components/ui/AppModal.vue';
 
 /* Stores */
+const localUserStateStore = useLocalUserStateStore();
 const keyPairsStore = useKeyPairsStore();
-const userStateStore = useUserStateStore();
 
 /* Composables */
 const toast = useToast();
@@ -27,7 +27,7 @@ const isSuccessModalShown = ref(false);
 /* Handlers */
 const handleChangePassword = async () => {
   try {
-    if (!userStateStore.userData) {
+    if (!localUserStateStore.email) {
       throw new Error('User is not logged in');
     }
 
@@ -35,7 +35,7 @@ const handleChangePassword = async () => {
       //SEND PASSWORD CHANGE REQUEST
 
       await changeDecryptionPassword(
-        userStateStore.userData?.userId,
+        localUserStateStore.email,
         currentPassword.value,
         newPassword.value,
       );

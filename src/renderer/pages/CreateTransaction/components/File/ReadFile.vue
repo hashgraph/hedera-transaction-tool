@@ -2,8 +2,8 @@
 import { onMounted, ref, watch } from 'vue';
 import { FileContentsQuery } from '@hashgraph/sdk';
 
+import useLocalUserStateStore from '../../../../stores/storeLocalUserState';
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
-import useUserStateStore from '../../../../stores/storeUserState';
 import useNetworkStore from '../../../../stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
@@ -16,8 +16,8 @@ import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
 
 /* Stores */
+const localUserStateStore = useLocalUserStateStore();
 const keyPairsStore = useKeyPairsStore();
-const userStateStore = useUserStateStore();
 const networkStore = useNetworkStore();
 
 /* Composables */
@@ -33,7 +33,7 @@ const isUserPasswordModalShown = ref(false);
 
 /* Handlers */
 const handleRead = async () => {
-  if (!userStateStore.userData?.userId) {
+  if (!localUserStateStore.email) {
     throw Error('No user selected');
   }
 
@@ -44,7 +44,7 @@ const handleRead = async () => {
       ?.publicKey;
 
     const privateKey = await decryptPrivateKey(
-      userStateStore.userData?.userId,
+      localUserStateStore.email,
       userPassword.value,
       publicKey || '',
     );
