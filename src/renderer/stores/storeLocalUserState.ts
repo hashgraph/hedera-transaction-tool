@@ -4,7 +4,7 @@ import { ILocalUserData } from 'src/main/shared/interfaces/ILocalUserData';
 
 export interface UserState {
   isLoggedIn: boolean;
-  secretHashes?: string[];
+  secretHashes: string[];
   userData: ILocalUserData | null;
 }
 

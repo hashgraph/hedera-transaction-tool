@@ -55,7 +55,10 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
     }
 
     if (userStateStore.isLoggedIn) {
-      if (!userStateStore.secretHashes?.includes(secretHash)) {
+      if (
+        userStateStore.secretHashes.length > 0 &&
+        !userStateStore.secretHashes.includes(secretHash)
+      ) {
         throw Error('Different recovery phrase is used!');
       }
 
@@ -68,7 +71,10 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
         userStateStore.userId,
       );
     } else {
-      if (!localUserStateStore.secretHashes?.includes(secretHash)) {
+      if (
+        localUserStateStore.secretHashes.length > 0 &&
+        !localUserStateStore.secretHashes.includes(secretHash)
+      ) {
         throw Error('Different recovery phrase is used!');
       }
 

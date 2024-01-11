@@ -11,7 +11,7 @@ export interface UserState {
   serverUrl?: string;
   accessToken?: string;
   userData?: IUserData;
-  secretHashes?: string[];
+  secretHashes: string[];
 }
 
 export const localServerUrl = '';
@@ -24,6 +24,7 @@ const useUserStateStore = defineStore('userState', () => {
     isAdmin: false,
     role: 'personal',
     serverUrl: localServerUrl,
+    secretHashes: [],
   });
 
   /* Getters */
@@ -55,7 +56,7 @@ const useUserStateStore = defineStore('userState', () => {
     }
   }
 
-  function setSecretHashes(hashes?: string[]) {
+  function setSecretHashes(hashes: string[]) {
     userState.secretHashes = hashes;
   }
 
