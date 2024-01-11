@@ -35,6 +35,10 @@ const useLocalUserStateStore = defineStore('localUserState', () => {
     userState.userData = null;
   }
 
+  function setSecretHashes(hashes: string[]) {
+    userState.secretHashes = hashes;
+  }
+
   return {
     userState,
     isLoggedIn,
@@ -43,6 +47,7 @@ const useLocalUserStateStore = defineStore('localUserState', () => {
     secretHashes,
     logUser,
     logoutUser,
+    setSecretHashes,
   };
 });
 
