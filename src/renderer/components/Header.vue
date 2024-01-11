@@ -33,7 +33,7 @@ function handleOrganizationChange(e: Event) {
   switch (selectedOption.value) {
     case 'local':
       user.data.mode = 'personal';
-      user.data.activeServerURL = null;
+      user.data.activeServerURL = undefined;
       break;
     case 'add-organization':
       if (organizationsDropDownRef.value) {
