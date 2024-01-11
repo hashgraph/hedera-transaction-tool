@@ -4,8 +4,7 @@ import Tooltip from 'bootstrap/js/dist/tooltip';
 
 export default function useCreateTooltips() {
   onMounted(() => {
-    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    Array.from(tooltipTriggerList).map(tooltipTriggerEl => new Tooltip(tooltipTriggerEl));
+    create();
   });
 
   onBeforeUnmount(() => {
@@ -14,4 +13,11 @@ export default function useCreateTooltips() {
       tooltipTriggerEl => Tooltip.getInstance(tooltipTriggerEl)?.dispose(),
     );
   });
+
+  function create() {
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    Array.from(tooltipTriggerList).map(tooltipTriggerEl => new Tooltip(tooltipTriggerEl));
+  }
+
+  return create;
 }
