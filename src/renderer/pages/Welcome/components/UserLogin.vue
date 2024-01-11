@@ -6,6 +6,7 @@ import useUserStore from '../../../stores/storeUser';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
+import useCreateTooltips from '../../../composables/useCreateTooltips';
 
 import { loginLocal, resetDataLocal } from '../../../services/userService';
 
@@ -20,6 +21,7 @@ const user = useUserStore();
 /* Composables */
 const toast = useToast();
 const router = useRouter();
+useCreateTooltips();
 
 /* State */
 const inputEmail = ref('');
@@ -75,9 +77,6 @@ const handleResetData = async () => {
 
 /* Hooks */
 onMounted(() => {
-  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-  Array.from(tooltipTriggerList).map(tooltipTriggerEl => new Tooltip(tooltipTriggerEl));
-
   isPasswordStrong(inputPassword.value);
   setTooltipContent();
 });
