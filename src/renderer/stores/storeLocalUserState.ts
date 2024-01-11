@@ -4,6 +4,7 @@ import { ILocalUserData } from 'src/main/shared/interfaces/ILocalUserData';
 
 export interface UserState {
   isLoggedIn: boolean;
+  secretHashes?: string[];
   userData: ILocalUserData | null;
 }
 
@@ -14,12 +15,14 @@ const useLocalUserStateStore = defineStore('localUserState', () => {
   const userState = reactive<UserState>({
     isLoggedIn: false,
     userData: null,
+    secretHashes: [],
   });
 
   /* Getters */
   const isLoggedIn = computed(() => userState.isLoggedIn);
   const userData = computed(() => userState.userData);
   const email = computed(() => userState.userData?.email);
+  const secretHashes = computed(() => userState.secretHashes);
 
   /* Actions */
   function logUser(userData: ILocalUserData) {
@@ -37,6 +40,7 @@ const useLocalUserStateStore = defineStore('localUserState', () => {
     isLoggedIn,
     userData,
     email,
+    secretHashes,
     logUser,
     logoutUser,
   };

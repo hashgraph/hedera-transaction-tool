@@ -34,6 +34,8 @@ const useUserStateStore = defineStore('userState', () => {
   const serverUrl = computed(() => userState.serverUrl);
   const accessToken = computed(() => userState.accessToken);
   const userData = computed(() => userState.userData);
+  const email = computed(() => userState.userData?.email);
+  const userId = computed(() => userState.userData?.userId);
   const secretHashes = computed(() => userState.secretHashes);
 
   /* Actions */
@@ -84,6 +86,8 @@ const useUserStateStore = defineStore('userState', () => {
     role,
     accessToken,
     userData,
+    email,
+    userId,
     secretHashes,
     setUserRole,
     setSecretHashes,

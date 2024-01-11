@@ -4,6 +4,7 @@ import { defineStore } from 'pinia';
 import { IKeyPair, IKeyPairWithAccountId } from '../../main/shared/interfaces';
 
 import useNetworkStore from './storeNetwork';
+import useLocalUserStateStore from './storeLocalUserState';
 import useUserStateStore from './storeUserState';
 
 import * as keyPairService from '../services/keyPairService';
@@ -11,6 +12,7 @@ import * as keyPairService from '../services/keyPairService';
 const useKeyPairsStore = defineStore('keyPairs', () => {
   /* Stores */
   const networkStore = useNetworkStore();
+  const localUserStateStore = useLocalUserStateStore();
   const userStateStore = useUserStateStore();
 
   /* State */
@@ -19,11 +21,15 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
 
   /* Actions */
   async function refetch() {
-    if (!userStateStore.userData?.userId) {
+    if (!localUserStateStore.email) {
       throw Error('Please login to get stored keys!');
     }
 
-    keyPairs.value = await keyPairService.getStoredKeyPairs(userStateStore.userData.userId);
+    keyPairs.value = await keyPairService.getStoredKeyPairs(
+      localUserStateStore.email,
+      userStateStore.serverUrl,
+      userStateStore.userId,
+    );
 
     keyPairs.value.forEach(async kp => {
       kp.accountId = await keyPairService.getAccountId(
@@ -44,22 +50,31 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
   }
 
   async function storeKeyPair(password: string, secretHash: string, keyPair: IKeyPair) {
-    if (!userStateStore.isLoggedIn || !userStateStore.userData || !userStateStore.userData.userId) {
-      throw Error('User is not logged in!');
+    if (!localUserStateStore.isLoggedIn || !localUserStateStore.email) {
+      throw Error('Personal user is not logged in!');
     }
 
-    if (!userStateStore.secretHashes) {
-      throw Error('Key Pair not matched to a recovery phrase');
-    } else if (!userStateStore.secretHashes.includes(secretHash)) {
-      throw Error('Different recovery phrase is used!');
+    if (userStateStore.isLoggedIn) {
+      if (!userStateStore.secretHashes?.includes(secretHash)) {
+        throw Error('Different recovery phrase is used!');
+      }
+
+      await keyPairService.storeKeyPair(
+        localUserStateStore.email,
+        password,
+        secretHash,
+        keyPair,
+        userStateStore.serverUrl,
+        userStateStore.userId,
+      );
+    } else {
+      if (!localUserStateStore.secretHashes?.includes(secretHash)) {
+        throw Error('Different recovery phrase is used!');
+      }
+
+      await keyPairService.storeKeyPair(localUserStateStore.email, password, secretHash, keyPair);
     }
 
-    await keyPairService.storeKeyPair(
-      userStateStore.userData.userId,
-      password,
-      secretHash,
-      keyPair,
-    );
     await refetch();
   }
 
