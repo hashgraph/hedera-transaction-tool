@@ -55,6 +55,7 @@ const handleOnFormSubmit = async (event: Event) => {
       const secretHashes = await getStoredKeysSecretHashes(inputEmail.value);
 
       localUserStateStore.logUser(userData);
+      localUserStateStore.setSecretHashes(secretHashes);
 
       if (secretHashes.length === 0) {
         router.push({ name: 'accountSetup' });

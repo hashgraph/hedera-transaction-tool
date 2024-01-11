@@ -23,6 +23,7 @@ const isSuccessModalShown = ref(false);
 /* Misc Functions */
 const validateMatchingSecretHash = async () => {
   const secretHash = await hashRecoveryPhrase(words.value);
+
   if (props.secretHashes.length > 0 && !props.secretHashes.includes(secretHash)) {
     isSecretHashValid.value = false;
     return;
