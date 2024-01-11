@@ -29,30 +29,47 @@ export const electronAPI = {
   },
   keyPairs: {
     getStored: (
-      userId: string,
+      email: string,
+      serverUrl?: string,
+      userId?: string,
       secretHash?: string,
       secretHashName?: string,
     ): Promise<IKeyPair[]> =>
-      ipcRenderer.invoke('keyPairs:getStored', userId, secretHash, secretHashName),
-    getStoredKeysSecretHashes: (userId: string): Promise<string[]> =>
-      ipcRenderer.invoke('keyPairs:getStoredKeysSecretHashes', userId),
+      ipcRenderer.invoke(
+        'keyPairs:getStored',
+        email,
+        serverUrl,
+        userId,
+        secretHash,
+        secretHashName,
+      ),
+    getStoredKeysSecretHashes: (
+      email: string,
+      serverUrl?: string,
+      userId?: string,
+    ): Promise<string[]> =>
+      ipcRenderer.invoke('keyPairs:getStoredKeysSecretHashes', email, serverUrl, userId),
     store: (
-      userId: string,
+      email: string,
       password: string,
       secretHash: string,
       keyPair: IKeyPair,
-    ): Promise<void> => ipcRenderer.invoke('keyPairs:store', userId, password, secretHash, keyPair),
+      serverUrl?: string,
+      userId?: string,
+    ): Promise<void> =>
+      ipcRenderer.invoke('keyPairs:store', email, password, secretHash, keyPair, serverUrl, userId),
     changeDecryptionPassword: (
-      userId: string,
+      email: string,
       oldPassword: string,
       newPassword: string,
     ): Promise<IKeyPair[]> =>
-      ipcRenderer.invoke('keyPairs:changeDecryptionPassword', userId, oldPassword, newPassword),
-    decryptPrivateKey: (userId: string, password: string, publicKey: string): Promise<string> =>
-      ipcRenderer.invoke('keyPairs:decryptPrivateKey', userId, password, publicKey),
-    deleteEncryptedPrivateKeys: (userId: string): Promise<void> =>
-      ipcRenderer.invoke('keyPairs:deleteEncryptedPrivateKeys', userId),
-    clear: (userId: string): Promise<boolean> => ipcRenderer.invoke('keyPairs:clear', userId),
+      ipcRenderer.invoke('keyPairs:changeDecryptionPassword', email, oldPassword, newPassword),
+    decryptPrivateKey: (email: string, password: string, publicKey: string): Promise<string> =>
+      ipcRenderer.invoke('keyPairs:decryptPrivateKey', email, password, publicKey),
+    deleteEncryptedPrivateKeys: (email: string, serverUrl: string, userId: string): Promise<void> =>
+      ipcRenderer.invoke('keyPairs:deleteEncryptedPrivateKeys', email, serverUrl, userId),
+    clear: (email: string, serverUrl?: string, userId?: string): Promise<boolean> =>
+      ipcRenderer.invoke('keyPairs:clear', email, serverUrl, userId),
   },
   utils: {
     openExternal: (url: string) => ipcRenderer.send('utils:openExternal', url),

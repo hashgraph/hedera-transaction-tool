@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron';
 
-import { login, register, resetData } from '../../services/localUser';
-import { ILocalUserData } from '../../shared/interfaces/ILocalUserData';
+import { login, register, resetData } from '../../../services/localUser';
+import { ILocalUserData } from '../../../shared/interfaces/ILocalUserData';
 
 const createChannelName = (...props) => ['localUser', ...props].join(':');
 

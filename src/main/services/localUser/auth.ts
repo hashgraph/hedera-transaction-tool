@@ -4,7 +4,7 @@ import Store, { Schema } from 'electron-store';
 
 import { hash } from '../../utils/crypto';
 
-export type SchemaProperties = {
+type SchemaProperties = {
   email: string;
   passwordHash: string;
   organizationCredentials: { serverUrl: string; email: string; encryptedPassword: string }[];
