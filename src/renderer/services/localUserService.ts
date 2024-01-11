@@ -17,3 +17,20 @@ export const register = async (email: string, password: string) => {
     throw Error(message);
   }
 };
+
+export const resetData = async (
+  email: string,
+  options: {
+    authData?: boolean;
+    keys?: boolean;
+    transactions?: boolean;
+    organizations?: boolean;
+  },
+) => {
+  try {
+    return await window.electronAPI.localUser.resetData(email, options);
+  } catch (err: any) {
+    const message = err.message?.split(': Error: ')[1] || 'Failed to reset user data';
+    throw Error(message);
+  }
+};

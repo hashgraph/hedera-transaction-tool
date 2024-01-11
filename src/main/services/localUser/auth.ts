@@ -57,7 +57,6 @@ export const login = async (email: string, password: string, autoRegister?: bool
   const store = getLocalUserAuthStore(email);
 
   const isRegistered = Boolean(store.get('email')) && Boolean(store.get('passwordHash'));
-  console.log(autoRegister);
 
   if (!isRegistered) {
     if (autoRegister) {
@@ -78,4 +77,9 @@ export const login = async (email: string, password: string, autoRegister?: bool
     email,
     isInitial,
   };
+};
+
+export const clear = async (email: string) => {
+  const store = getLocalUserAuthStore(email);
+  await fs.unlink(store.path);
 };
