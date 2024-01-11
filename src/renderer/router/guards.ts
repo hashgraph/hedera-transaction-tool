@@ -1,18 +1,18 @@
 import { Router } from 'vue-router';
 
-import useLocalUserStateStore from '../stores/storeLocalUserState';
+import useUserStore from '../stores/storeUser';
 
 export function addGuards(router: Router) {
-  const localUserStore = useLocalUserStateStore();
+  const user = useUserStore();
 
   router.beforeEach(to => {
-    if (localUserStore.userData?.isInitial && to.name !== 'accountSetup') {
+    if (user.data.isLoggedIn && user.data.secretHashes.length === 0 && to.name !== 'accountSetup') {
       return {
         name: 'accountSetup',
       };
     }
 
-    if (!to.meta.withoutAuth && !localUserStore.isLoggedIn) {
+    if (!to.meta.withoutAuth && !user.data.isLoggedIn) {
       router.previousPath = to.path;
       router.push({ name: 'welcome' });
     }
