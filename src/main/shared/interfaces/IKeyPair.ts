@@ -1,3 +1,5 @@
+import { JSONSchema } from 'json-schema-typed';
+
 export interface IKeyPair {
   nickname?: string;
   publicKey: string;
@@ -9,7 +11,7 @@ export interface IKeyPairWithAccountId extends IKeyPair {
   accountId?: string;
 }
 
-export const keyPairJSONSchema = {
+export const keyPairJSONSchema: JSONSchema = {
   type: 'object',
   properties: {
     nickname: {

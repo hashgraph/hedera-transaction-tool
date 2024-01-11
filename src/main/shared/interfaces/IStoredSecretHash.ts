@@ -1,3 +1,4 @@
+import { JSONSchema } from 'json-schema-typed';
 import { IKeyPair, keyPairJSONSchema } from './';
 
 export interface IStoredSecretHash {
@@ -6,7 +7,7 @@ export interface IStoredSecretHash {
   keyPairs: IKeyPair[];
 }
 
-export const storedSecretHashJSONSchema = {
+export const storedSecretHashJSONSchema: JSONSchema = {
   type: 'object',
   properties: {
     name: {
