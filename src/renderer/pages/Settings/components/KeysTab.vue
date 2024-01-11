@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
 
-import useLocalUserStateStore from '../../../stores/storeLocalUserState';
+import useUserStore from '../../../stores/storeUser';
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
 
 import { useToast } from 'vue-toast-notification';
@@ -13,7 +13,7 @@ import AppModal from '../../../components/ui/AppModal.vue';
 
 /* Stores */
 const keyPairsStore = useKeyPairsStore();
-const localUserStateStore = useLocalUserStateStore();
+const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
@@ -30,14 +30,16 @@ const handleShowDecryptModal = (publicKey: string) => {
   isDecryptedModalShown.value = true;
 };
 
-const handleDecrypt = async () => {
+const handleDecrypt = async e => {
+  e.preventDefault();
+
   try {
-    if (!localUserStateStore.email) {
+    if (!user.data.isLoggedIn) {
       throw Error('No user selected');
     }
 
     decryptedKey.value = await decryptPrivateKey(
-      localUserStateStore.email,
+      user.data.email,
       userPassword.value,
       publicKeysPrivateKeyToDecrypt.value,
     );
@@ -116,26 +118,27 @@ watch(isDecryptedModalShown, newVal => {
             ></i>
           </Transition>
         </div>
-
-        <h3 class="mt-5 text-main text-center text-bold">Enter your password</h3>
-        <input
-          v-model="userPassword"
-          type="password"
-          class="mt-5 form-control rounded-4"
-          placeholder="Type your password"
-        />
-        <div class="mt-4 form-group">
-          <label class="form-label">Decrypted Private key</label>
-          <input v-model="decryptedKey" type="text" class="form-control rounded-4" readonly />
-        </div>
-        <AppButton
-          color="primary"
-          size="large"
-          class="mt-5 w-100 rounded-4"
-          :disabled="userPassword.length === 0"
-          @click="handleDecrypt"
-          >Decrypt</AppButton
-        >
+        <form @submit="handleDecrypt">
+          <h3 class="mt-5 text-main text-center text-bold">Enter your password</h3>
+          <input
+            v-model="userPassword"
+            type="password"
+            class="mt-5 form-control rounded-4"
+            placeholder="Type your password"
+          />
+          <div class="mt-4 form-group">
+            <label class="form-label">Decrypted Private key</label>
+            <input v-model="decryptedKey" type="text" class="form-control rounded-4" readonly />
+          </div>
+          <AppButton
+            type="submit"
+            color="primary"
+            size="large"
+            class="mt-5 w-100 rounded-4"
+            :disabled="userPassword.length === 0"
+            >Decrypt</AppButton
+          >
+        </form>
       </div>
     </AppModal>
   </div>

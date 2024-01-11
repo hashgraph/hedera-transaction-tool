@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 
 import useOrganizationsStore from '../../stores/storeOrganizations';
 import useKeyPairsStore from '../../stores/storeKeyPairs';
-import useUserStateStore from '../../stores/storeUserState';
+import useUserStore from '../../stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 import { useRouter, RouterView } from 'vue-router';
@@ -13,7 +13,7 @@ import AppButton from '../../components/ui/AppButton.vue';
 
 /* Stores */
 const organizationsStore = useOrganizationsStore();
-const userStateStore = useUserStateStore();
+const user = useUserStore();
 
 /* Composables */
 const router = useRouter();
@@ -47,8 +47,8 @@ const activeTabTitle = computed(() => tabItems[activeTabIndex.value].title);
 const handleClearConfig = async () => {
   try {
     await window.electronAPI.config.clear();
-    if (userStateStore.userData?.userId) {
-      await window.electronAPI.keyPairs.clear(userStateStore.userData?.userId);
+    if (user.data.activeUserId) {
+      await window.electronAPI.keyPairs.clear(user.data.activeUserId);
     }
 
     organizationsStore.refetch();

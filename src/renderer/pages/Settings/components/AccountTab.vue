@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import useLocalUserStateStore from '../../../stores/storeLocalUserState';
+import useUserStore from '../../../stores/storeUser';
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
 
 import { useToast } from 'vue-toast-notification';
@@ -12,7 +12,7 @@ import AppButton from '../../../components/ui/AppButton.vue';
 import AppModal from '../../../components/ui/AppModal.vue';
 
 /* Stores */
-const localUserStateStore = useLocalUserStateStore();
+const user = useUserStore();
 const keyPairsStore = useKeyPairsStore();
 
 /* Composables */
@@ -27,29 +27,19 @@ const isSuccessModalShown = ref(false);
 /* Handlers */
 const handleChangePassword = async () => {
   try {
-    if (!localUserStateStore.email) {
+    if (!user.data.isLoggedIn) {
       throw new Error('User is not logged in');
     }
 
     if (currentPassword.value.length > 0 && newPassword.value.length > 0) {
-      //SEND PASSWORD CHANGE REQUEST
-
-      await changeDecryptionPassword(
-        localUserStateStore.email,
-        currentPassword.value,
-        newPassword.value,
-      );
+      await changeDecryptionPassword(user.data.email, currentPassword.value, newPassword.value);
 
       await keyPairsStore.refetch();
 
       isSuccessModalShown.value = true;
     }
   } catch (err: any) {
-    let message = 'Failed to change password';
-    if (err.message && typeof err.message === 'string') {
-      message = err.message;
-    }
-    toast.error(message, { position: 'top-right' });
+    toast.error('Failed to change password', { position: 'top-right' });
   }
 };
 </script>
