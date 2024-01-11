@@ -46,7 +46,7 @@ const handleSaveWords = async (words: string[]) => {
 
 /* Hooks */
 onBeforeMount(() => {
-  userStateStore.secretHashes && tabItems.value.shift();
+  userStateStore.secretHashes.length > 0 && tabItems.value.shift();
 });
 </script>
 <template>
