@@ -4,9 +4,8 @@ import { Mnemonic } from '@hashgraph/sdk';
 
 import { IKeyPair } from '../../../main/shared/interfaces';
 
-import useLocalUserStateStore from '../../stores/storeLocalUserState';
 import useKeyPairsStore from '../../stores/storeKeyPairs';
-import useUserStateStore from '../../stores/storeUserState';
+import useUserStore from '../../stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 
@@ -17,9 +16,8 @@ import AppModal from '../../components/ui/AppModal.vue';
 import Import from '../AccountSetup/components/Import.vue';
 
 /* Stores */
-const localUserStateStore = useLocalUserStateStore();
 const keyPairsStore = useKeyPairsStore();
-const userStateStore = useUserStateStore();
+const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
@@ -181,14 +179,7 @@ onUnmounted(() => {
       <div v-else-if="step === 2">
         <h1 class="text-center">Enter your recovery phrase</h1>
         <div class="mt-8">
-          <Import
-            :handle-continue="handleFinish"
-            :secret-hashes="
-              userStateStore.isLoggedIn
-                ? userStateStore.secretHashes
-                : localUserStateStore.secretHashes
-            "
-          />
+          <Import :handle-continue="handleFinish" :secret-hashes="user.data.secretHashes" />
         </div>
       </div>
 
