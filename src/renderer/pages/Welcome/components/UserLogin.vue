@@ -1,22 +1,20 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch } from 'vue';
-import { jwtDecode } from 'jwt-decode';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
-import { IUserData } from '../../../../main/shared/interfaces';
-
-import useUserStateStore from '../../../stores/storeUserState';
+import useLocalUserStateStore from '../../../stores/storeLocalUserState';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
-import { getStoredKeysSecretHashes } from '../../../services/keyPairService';
+import * as localUserService from '../../../services/localUserService';
+
 import { isEmail } from '../../../utils/validator';
 
 import AppButton from '../../../components/ui/AppButton.vue';
 
 /* Stores */
-const userStateStore = useUserStateStore();
+const localUserStateStore = useLocalUserStateStore();
 
 /* Composables */
 const toast = useToast();
@@ -25,7 +23,6 @@ const router = useRouter();
 /* State */
 const inputEmail = ref('');
 const inputPassword = ref('');
-const isInitialLogin = ref(false); // Temporary
 
 const inputEmailInvalid = ref(false);
 const inputPasswordInvalid = ref(false);
@@ -53,23 +50,11 @@ const handleOnFormSubmit = async (event: Event) => {
 
   if (!inputEmailInvalid.value && !inputPasswordInvalid.value) {
     try {
-      const loginRes = {
-        successful: true,
-        accessToken:
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InBpcEBnbWFpbC5jb20iLCJ1c2VybmFtZSI6IkhlZGVyYVVzZXIiLCJ1c2VySWQiOiIxMjM0NTY3ODkifQ.iPZBw37mI7iBgOOPzDQYilx_y4h-DLE2h8EqEg6ZgbU',
-        isInitial: false,
-        secretHash: 'hash',
-      };
+      const userData = await localUserService.login(inputEmail.value, inputPassword.value, true);
 
-      const decodedUserData: IUserData = jwtDecode(loginRes.accessToken);
-      userStateStore.logUser(loginRes.accessToken, decodedUserData, isInitialLogin.value);
+      localUserStateStore.logUser(userData);
 
-      // Compare with saved keys' secret hash
-      // userStateStore.setSecretHashes([loginRes.secretHash]);
-      const secretHashes = await getStoredKeysSecretHashes(decodedUserData.userId);
-      secretHashes.length > 0 && userStateStore.setSecretHashes(secretHashes);
-
-      if (isInitialLogin.value) {
+      if (userData.isInitial) {
         router.push({ name: 'accountSetup' });
       } else {
         router.push(router.previousPath ? { path: router.previousPath } : { name: 'settingsKeys' });
@@ -170,16 +155,8 @@ watch(inputEmail, pass => {
 </script>
 <template>
   <div class="container-welcome-card container-modal-card p-5 border border-dark-subtle rounded-4">
-    <template v-if="userStateStore.role === 'personal'">
-      <i class="bi bi-person mt-5 extra-large-icon d-block"></i>
-    </template>
-    <template v-if="userStateStore.role === 'organization'">
-      <i class="bi bi-briefcase mt-5 extra-large-icon"></i>
-    </template>
-
-    <h4 class="mt-4 text-main text-bold text-center">
-      Login as {{ userStateStore.role === 'personal' ? 'Personal' : 'Organization' }} User
-    </h4>
+    <i class="bi bi-person mt-5 extra-large-icon d-block"></i>
+    <h4 class="mt-4 text-main text-bold text-center">Login as Personal user</h4>
     <p class="text-secondary text-small lh-base text-center">
       In order to continue enter your email & password
     </p>
@@ -218,15 +195,6 @@ watch(inputEmail, pass => {
         :disabled="inputEmail.length === 0 || inputPassword.length === 0"
         >Login</AppButton
       >
-
-      <template v-if="userStateStore.role === 'organization'">
-        <div class="mt-5 text-center">
-          <RouterLink :to="{ name: 'setupOrganization' }" class="link-primary"
-            >Add Organization</RouterLink
-          >
-        </div>
-      </template>
     </form>
   </div>
 </template>
-../../../utils/validator
