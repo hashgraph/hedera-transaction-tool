@@ -12,6 +12,6 @@ export const resetData = async (
     await authService.clear(email);
   }
   if (options.keys) {
-    await keyPairsService.deleteSecretHashesFile(email);
+    await keyPairsService.deleteSecretHashes(email);
   }
 };
