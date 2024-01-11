@@ -8,10 +8,8 @@ type SchemaProperties = {
   localKeys: IStoredSecretHash[];
   organizationKeys: {
     organizationServerUrl: string;
-    users: {
-      userId: string;
-      secretHashes: IStoredSecretHash[];
-    }[];
+    userId: string;
+    secretHashes: IStoredSecretHash[];
   }[];
 };
 
@@ -31,21 +29,13 @@ export default function getLocalUserKeysStore(email: string) {
           organizationServerUrl: {
             type: 'string',
           },
-          users: {
+          userId: {
+            type: 'string',
+          },
+          secretHashes: {
             type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                userId: {
-                  type: 'string',
-                },
-                secretHashes: {
-                  type: 'array',
-                  items: storedSecretHashJSONSchema,
-                  default: [],
-                },
-              },
-            },
+            items: storedSecretHashJSONSchema,
+            default: [],
           },
         },
       },
@@ -75,23 +65,19 @@ export const getStoredSecretHashes = async (
     const organizationKeys = store.get('organizationKeys');
 
     if (serverUrl) {
-      const organizationData = organizationKeys.find(
+      const organizationUsers = organizationKeys.filter(
         org => org.organizationServerUrl === serverUrl,
       );
 
-      if (!organizationData) {
-        return [];
-      }
-
       if (userId) {
-        return organizationData?.users.find(u => u.userId === userId)?.secretHashes || [];
+        return organizationUsers.find(u => u.userId === userId)?.secretHashes || [];
       }
 
-      return organizationData?.users.map(u => u.secretHashes).flat() || [];
+      return organizationUsers.map(u => u.secretHashes).flat() || [];
     } else {
       return store
         .get('localKeys')
-        .concat(organizationKeys.map(org => org.users.map(u => u.secretHashes).flat()).flat());
+        .concat(organizationKeys.map(org => org.secretHashes.flat()).flat());
     }
   } catch (error: any) {
     store.clear();
@@ -154,47 +140,48 @@ export const storeKeyPair = async (
     const store = getLocalUserKeysStore(email);
     keyPair.privateKey = await encrypt(keyPair.privateKey, password);
 
-    console.log(email);
-
     if (serverUrl) {
       if (!userId) {
         throw new Error('User id not provided');
       }
 
-      const organizationData = store.store.organizationKeys.find(
+      const organizationsKeys = store.get('organizationKeys');
+
+      const organizationUsers = organizationsKeys.filter(
         orgSh => orgSh.organizationServerUrl === serverUrl,
       );
 
-      console.log(organizationData);
-
-      if (!organizationData) {
-        store.store.organizationKeys.push({
-          organizationServerUrl: serverUrl,
-          users: [
-            {
-              userId,
-              secretHashes: [
-                {
-                  secretHash: secretHash,
-                  keyPairs: [keyPair],
-                },
-              ],
-            },
-          ],
-        });
-
+      if (organizationUsers.length === 0) {
+        store.set('organizationKeys', [
+          ...organizationsKeys,
+          {
+            organizationServerUrl: serverUrl,
+            users: [
+              {
+                userId,
+                secretHashes: [
+                  {
+                    secretHash: secretHash,
+                    keyPairs: [keyPair],
+                  },
+                ],
+              },
+            ],
+          },
+        ]);
         return;
       }
 
-      const storedUser = organizationData.users.find(u => u.userId === userId);
+      const storedUser = organizationUsers.find(u => u.userId === userId);
 
       if (!storedUser) {
-        organizationData.users.push({
+        organizationUsers.push({
+          organizationServerUrl: serverUrl,
           userId,
           secretHashes: [{ secretHash, keyPairs: [keyPair] }],
         });
       } else {
-        const storedSecretHash = storedUser?.secretHashes.find(sh => sh.secretHash === secretHash);
+        const storedSecretHash = storedUser.secretHashes.find(sh => sh.secretHash === secretHash);
 
         if (storedSecretHash) {
           const s_keyPair = storedSecretHash.keyPairs.find(
@@ -210,9 +197,14 @@ export const storeKeyPair = async (
           storedUser.secretHashes.push({ secretHash, keyPairs: [keyPair] });
         }
       }
+
+      store.set('organizationKeys', [
+        ...organizationsKeys.filter(orgSh => orgSh.organizationServerUrl !== serverUrl),
+        ...organizationUsers,
+      ]);
     } else {
-      const localSecretHash = store.store.localKeys.find(sh => sh.secretHash === secretHash);
-      console.log(localSecretHash);
+      const localKeys = store.get('localKeys');
+      const localSecretHash = localKeys.find(sh => sh.secretHash === secretHash);
 
       if (localSecretHash) {
         const s_keyPair = localSecretHash.keyPairs.find(kp => kp.publicKey === keyPair.publicKey);
@@ -222,6 +214,8 @@ export const storeKeyPair = async (
         } else {
           localSecretHash.keyPairs.push(keyPair);
         }
+
+        store.set('localKeys', localKeys);
       } else {
         store.set('localKeys', [
           ...store.store.localKeys,
@@ -243,18 +237,22 @@ export const changeDecryptionPassword = async (
 ) => {
   const store = getLocalUserKeysStore(email);
 
-  store.store.localKeys.forEach(sh => {
-    sh.keyPairs = sh.keyPairs.map(kp => {
-      const decryptedPrivateKey = decrypt(kp.privateKey, oldPassword);
-      const encryptedPrivateKey = encrypt(decryptedPrivateKey, newPassword);
+  store.set(
+    'localKeys',
+    store.store.localKeys.map(sh => {
+      sh.keyPairs = sh.keyPairs.map(kp => {
+        const decryptedPrivateKey = decrypt(kp.privateKey, oldPassword);
+        const encryptedPrivateKey = encrypt(decryptedPrivateKey, newPassword);
 
-      return { ...kp, privateKey: encryptedPrivateKey };
-    });
-  });
+        return { ...kp, privateKey: encryptedPrivateKey };
+      });
+    }),
+  );
 
-  store.store.organizationKeys.forEach(org => {
-    org.users.forEach(u => {
-      u.secretHashes.forEach(sh => {
+  store.set(
+    'organizationKeys',
+    store.store.organizationKeys.map(user => {
+      user.secretHashes.forEach(sh => {
         sh.keyPairs = sh.keyPairs.map(kp => {
           const decryptedPrivateKey = decrypt(kp.privateKey, oldPassword);
           const encryptedPrivateKey = encrypt(decryptedPrivateKey, newPassword);
@@ -262,8 +260,8 @@ export const changeDecryptionPassword = async (
           return { ...kp, privateKey: encryptedPrivateKey };
         });
       });
-    });
-  });
+    }),
+  );
 
   return getStoredSecretHashes(email);
 };
@@ -287,20 +285,24 @@ export const deleteEncryptedPrivateKeys = async (
 ) => {
   const store = getLocalUserKeysStore(email);
 
-  store.store.localKeys.forEach(sh => {
+  const newLocalKeys = store.get('localKeys').map(sh => {
     sh.keyPairs.forEach(kp => {
       kp.privateKey = '';
     });
   });
+  store.set('localKeys', newLocalKeys);
 
-  store.store.organizationKeys
-    .find(org => org.organizationServerUrl === serverUrl)
-    ?.users.find(u => u.userId === userId)
-    ?.secretHashes?.forEach(sh => {
-      sh.keyPairs.forEach(kp => {
-        kp.privateKey = '';
+  const newOrganizationKeys = store.get('organizationKeys').map(user => {
+    if (user.organizationServerUrl === serverUrl && user.userId === userId) {
+      user.secretHashes?.forEach(sh => {
+        sh.keyPairs.forEach(kp => {
+          kp.privateKey = '';
+        });
       });
-    });
+    }
+  });
+
+  store.set('organizationKeys', newOrganizationKeys);
 };
 
 // Clear user's keys
@@ -308,19 +310,21 @@ export const deleteSecretHashes = (email: string, serverUrl?: string, userId?: s
   const store = getLocalUserKeysStore(email);
 
   if (serverUrl) {
-    const organization = store.store.organizationKeys.find(
-      org => org.organizationServerUrl === serverUrl,
-    );
+    let organizationKeys = store.get('organizationKeys');
+
+    const organization = organizationKeys.filter(org => org.organizationServerUrl === serverUrl);
 
     if (organization) {
-      const user = organization?.users.find(u => u.userId === userId);
+      const user = organization.find(u => u.userId === userId);
 
       if (userId && user) {
         user.secretHashes = [];
       } else {
-        organization.users = [];
+        organizationKeys = organizationKeys.filter(u => u.organizationServerUrl !== serverUrl);
       }
     }
+
+    store.set('organizationKeys', organizationKeys);
   } else {
     store.clear();
   }
