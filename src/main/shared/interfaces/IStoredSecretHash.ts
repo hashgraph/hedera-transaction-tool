@@ -19,6 +19,7 @@ export const storedSecretHashJSONSchema: JSONSchema = {
     keyPairs: {
       type: 'array',
       items: keyPairJSONSchema,
+      default: [],
     },
   },
 };
