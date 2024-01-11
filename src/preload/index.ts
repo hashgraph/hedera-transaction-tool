@@ -5,6 +5,7 @@ import { proto } from '@hashgraph/proto';
 import { IKeyPair, IOrganization } from '../main/shared/interfaces';
 
 import { Theme } from '../main/modules/ipcHandlers/theme';
+import { ILocalUserData } from '../main/shared/interfaces/ILocalUserData';
 
 export const electronAPI = {
   theme: {
@@ -77,6 +78,12 @@ export const electronAPI = {
       nickname: string,
     ): Promise<{ accountId: string; nickname: string }[]> =>
       ipcRenderer.invoke('accounts:remove', userId, accountId, nickname),
+  },
+  localUser: {
+    login: (email: string, password: string, autoRegister?: boolean): Promise<ILocalUserData> =>
+      ipcRenderer.invoke('localUser:login', email, password, autoRegister),
+    register: (email: string, password: string) =>
+      ipcRenderer.invoke('localUser:register', email, password),
   },
 };
 typeof electronAPI;
