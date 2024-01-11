@@ -2,12 +2,12 @@
 import { onMounted, reactive, ref, watch } from 'vue';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
-import useLocalUserStateStore from '../../../stores/storeLocalUserState';
+import useUserStore from '../../../stores/storeUser';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
-import * as localUserService from '../../../services/localUserService';
+import { loginLocal, resetDataLocal } from '../../../services/userService';
 
 import { isEmail } from '../../../utils/validator';
 
@@ -15,7 +15,7 @@ import AppButton from '../../../components/ui/AppButton.vue';
 import { getStoredKeysSecretHashes } from '@renderer/services/keyPairService';
 
 /* Stores */
-const localUserStateStore = useLocalUserStateStore();
+const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
@@ -50,33 +50,25 @@ const handleOnFormSubmit = async (event: Event) => {
   }
 
   if (!inputEmailInvalid.value && !inputPasswordInvalid.value) {
-    try {
-      const userData = await localUserService.login(inputEmail.value, inputPassword.value, true);
-      const secretHashes = await getStoredKeysSecretHashes(inputEmail.value);
+    await loginLocal(inputEmail.value, inputPassword.value, true);
+    const secretHashes = await getStoredKeysSecretHashes(inputEmail.value);
 
-      localUserStateStore.logUser(userData);
-      localUserStateStore.setSecretHashes(secretHashes);
+    user.login(inputEmail.value, secretHashes);
 
-      if (secretHashes.length === 0) {
-        localUserStateStore.userState.password = inputPassword.value;
-        router.push({ name: 'accountSetup' });
-      } else {
-        router.push(router.previousPath ? { path: router.previousPath } : { name: 'settingsKeys' });
-      }
-
-      toast.success('Successfully logged in', { position: 'top-right' });
-    } catch (err: any) {
-      let message = 'Login failed';
-      if (err.message && typeof err.message === 'string') {
-        message = err.message;
-      }
-      toast.error(message, { position: 'top-right' });
+    if (secretHashes.length === 0) {
+      user.data.password = inputPassword.value;
+      router.push({ name: 'accountSetup' });
+    } else {
+      router.push(router.previousPath ? { path: router.previousPath } : { name: 'settingsKeys' });
     }
+
+    toast.success('Successfully logged in', { position: 'top-right' });
   }
 };
+
 const handleResetData = async () => {
   if (isEmail(inputEmail.value)) {
-    await localUserService.resetData(inputEmail.value, { authData: true });
+    await resetDataLocal(inputEmail.value, { authData: true });
     toast.success('User data has been reset', { position: 'top-right' });
   }
 };
@@ -210,3 +202,4 @@ watch(inputEmail, pass => {
     </form>
   </div>
 </template>
+../../../services/userService

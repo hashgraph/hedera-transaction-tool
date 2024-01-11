@@ -1,6 +1,6 @@
-/* Local User Service */
+/* User Service */
 
-export const login = async (email: string, password: string, autoRegister = false) => {
+export const loginLocal = async (email: string, password: string, autoRegister = false) => {
   try {
     return await window.electronAPI.localUser.login(email, password, autoRegister);
   } catch (err: any) {
@@ -9,7 +9,7 @@ export const login = async (email: string, password: string, autoRegister = fals
   }
 };
 
-export const register = async (email: string, password: string) => {
+export const registerLocal = async (email: string, password: string) => {
   try {
     return await window.electronAPI.localUser.register(email, password);
   } catch (err: any) {
@@ -18,7 +18,7 @@ export const register = async (email: string, password: string) => {
   }
 };
 
-export const resetData = async (
+export const resetDataLocal = async (
   email: string,
   options: {
     authData?: boolean;
