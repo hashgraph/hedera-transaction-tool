@@ -33,14 +33,17 @@ export default function getLocalUserKeysStore(email: string) {
           },
           users: {
             type: 'array',
-            properties: {
-              userId: {
-                type: 'string',
-              },
-              secretHashes: {
-                type: 'array',
-                items: storedSecretHashJSONSchema,
-                default: [],
+            items: {
+              type: 'object',
+              properties: {
+                userId: {
+                  type: 'string',
+                },
+                secretHashes: {
+                  type: 'array',
+                  items: storedSecretHashJSONSchema,
+                  default: [],
+                },
               },
             },
           },
@@ -151,6 +154,8 @@ export const storeKeyPair = async (
     const store = getLocalUserKeysStore(email);
     keyPair.privateKey = await encrypt(keyPair.privateKey, password);
 
+    console.log(email);
+
     if (serverUrl) {
       if (!userId) {
         throw new Error('User id not provided');
@@ -159,6 +164,8 @@ export const storeKeyPair = async (
       const organizationData = store.store.organizationKeys.find(
         orgSh => orgSh.organizationServerUrl === serverUrl,
       );
+
+      console.log(organizationData);
 
       if (!organizationData) {
         store.store.organizationKeys.push({
@@ -205,6 +212,7 @@ export const storeKeyPair = async (
       }
     } else {
       const localSecretHash = store.store.localKeys.find(sh => sh.secretHash === secretHash);
+      console.log(localSecretHash);
 
       if (localSecretHash) {
         const s_keyPair = localSecretHash.keyPairs.find(kp => kp.publicKey === keyPair.publicKey);
@@ -215,7 +223,10 @@ export const storeKeyPair = async (
           localSecretHash.keyPairs.push(keyPair);
         }
       } else {
-        store.store.localKeys.push({ secretHash: secretHash, keyPairs: [keyPair] });
+        store.set('localKeys', [
+          ...store.store.localKeys,
+          { secretHash: secretHash, keyPairs: [keyPair] },
+        ]);
       }
     }
   } catch (error: any) {
