@@ -9,9 +9,7 @@ export default function useCreateTooltips() {
 
   onBeforeUnmount(() => {
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    tooltipTriggerList.forEach(
-      tooltipTriggerEl => Tooltip.getInstance(tooltipTriggerEl)?.dispose(),
-    );
+    tooltipTriggerList.forEach(tooltipTriggerEl => Tooltip.getInstance(tooltipTriggerEl)?.hide());
   });
 
   function create() {
