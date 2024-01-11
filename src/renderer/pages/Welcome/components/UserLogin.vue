@@ -58,6 +58,7 @@ const handleOnFormSubmit = async (event: Event) => {
       localUserStateStore.setSecretHashes(secretHashes);
 
       if (secretHashes.length === 0) {
+        localUserStateStore.userState.password = inputPassword.value;
         router.push({ name: 'accountSetup' });
       } else {
         router.push(router.previousPath ? { path: router.previousPath } : { name: 'settingsKeys' });

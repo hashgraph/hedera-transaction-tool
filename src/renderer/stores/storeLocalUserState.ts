@@ -6,6 +6,7 @@ export interface UserState {
   isLoggedIn: boolean;
   secretHashes: string[];
   userData: ILocalUserData | null;
+  password: string | null;
 }
 
 export const localServerUrl = '';
@@ -16,6 +17,7 @@ const useLocalUserStateStore = defineStore('localUserState', () => {
     isLoggedIn: false,
     userData: null,
     secretHashes: [],
+    password: null,
   });
 
   /* Getters */

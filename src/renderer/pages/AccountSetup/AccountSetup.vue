@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { onBeforeMount, ref } from 'vue';
 
-import useUserStateStore from '@renderer/stores/storeUserState';
+import useLocalUserStateStore from '../../stores/storeLocalUserState';
+import useUserStateStore from '../../stores/storeUserState';
 
 import AppButton from '../../components/ui/AppButton.vue';
 import AppStepper from '../../components/ui/AppStepper.vue';
@@ -13,6 +14,7 @@ import KeyPairs from './components/KeyPairs.vue';
 import NewPassword from './components/NewPassword.vue';
 
 /* Stores */
+const localUserStore = useLocalUserStateStore();
 const userStore = useUserStateStore();
 
 /* State */
@@ -103,7 +105,9 @@ onBeforeMount(() => {
             <template v-else-if="step.current === 'keyPairs'">
               <KeyPairs
                 v-model:step="step"
-                :encrypt-password="password"
+                :encrypt-password="
+                  userStore.isLoggedIn ? password : localUserStore.userState.password || ''
+                "
                 :handle-continue="
                   () => {
                     step.previous = step.current;

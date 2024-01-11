@@ -138,7 +138,7 @@ export const storeKeyPair = async (
 ) => {
   try {
     const store = getLocalUserKeysStore(email);
-    keyPair.privateKey = await encrypt(keyPair.privateKey, password);
+    keyPair.privateKey = encrypt(keyPair.privateKey, password);
 
     if (serverUrl) {
       if (!userId) {
