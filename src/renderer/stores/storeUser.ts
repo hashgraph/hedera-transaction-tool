@@ -8,8 +8,8 @@ export interface User {
   secretHashes: string[];
   mode: 'personal' | 'organization';
   accessTokens: string[];
-  activeServerURL: string | null;
-  activeUserId: string | null;
+  activeServerURL?: string;
+  activeUserId?: string;
 }
 
 export const localServerUrl = '';
@@ -23,8 +23,6 @@ const useUserStore = defineStore('user', () => {
     secretHashes: [],
     mode: 'personal',
     accessTokens: [],
-    activeServerURL: null,
-    activeUserId: null,
   });
 
   /* Actions */
@@ -32,7 +30,7 @@ const useUserStore = defineStore('user', () => {
     data.mode = mode;
 
     if (mode === 'personal') {
-      data.activeServerURL = null;
+      data.activeServerURL = undefined;
     }
   }
 

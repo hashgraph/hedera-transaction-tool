@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import useLocalUserStateStore from '../../../stores/storeLocalUserState';
-import useUserStateStore from '../../../stores/storeUserState';
+import useUserStore from '../../../stores/storeUser';
 
 import AppButton from '../../../components/ui/AppButton.vue';
 import AppModal from '../../../components/ui/AppModal.vue';
 
 /* Stores */
-const localUserStateStore = useLocalUserStateStore();
-const userStateStore = useUserStateStore();
+const user = useUserStore();
 
 /* State */
 const isSuccessModalShown = ref(false);
@@ -46,8 +44,7 @@ const isSuccessModalShown = ref(false);
           class="mt-5 w-100 rounded-4"
           @click="
             $router.push({ name: 'settingsKeys' });
-            userStateStore.setIsInitialLogin(false);
-            localUserStateStore.userState.password = null;
+            user.data.password = '';
           "
           >Continue</AppButton
         >

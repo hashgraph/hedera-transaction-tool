@@ -4,9 +4,8 @@ import Tooltip from 'bootstrap/js/dist/tooltip';
 
 import { IKeyPair } from '../../../../main/shared/interfaces';
 
-import useLocalUserStateStore from '../../../stores/storeLocalUserState';
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
-import useUserStateStore from '../../../stores/storeUserState';
+import useUserStore from '../../../stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 
@@ -27,9 +26,8 @@ const props = defineProps<{
 }>();
 
 /* Stores */
-const localUserStateStore = useLocalUserStateStore();
 const keyPairsStore = useKeyPairsStore();
-const userStateStore = useUserStateStore();
+const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
@@ -104,16 +102,16 @@ const handleSaveKey = async () => {
 
 const handleRestoreExisting = async () => {
   try {
-    if (!localUserStateStore.isLoggedIn || !localUserStateStore.email) {
+    if (!user.data.isLoggedIn) {
       throw Error('User not logged in!');
     }
 
     const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
     const keyPairsToRestore = (
       await getStoredKeyPairs(
-        localUserStateStore.email,
-        userStateStore.serverUrl,
-        userStateStore.userId,
+        user.data.email,
+        user.data.activeServerURL || '',
+        user.data.activeUserId || '',
       )
     ).filter(kp => kp.privateKey === '');
 

@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
-import useLocalUserStateStore from '../../../stores/storeLocalUserState';
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
-import useUserStateStore from '../../../stores/storeUserState';
+import useUserStore from '../../../stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 
@@ -17,9 +16,8 @@ const props = defineProps<{
 }>();
 
 /* Stores */
-const localUserStateStore = useLocalUserStateStore();
 const keyPairsStore = useKeyPairsStore();
-const userStateStore = useUserStateStore();
+const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
@@ -44,24 +42,18 @@ const handleFormSubmit = async (event: Event) => {
 
   if (!inputNewPasswordInvalid.value && !inputConfirmPasswordInvalid.value) {
     try {
-      if (
-        !localUserStateStore.isLoggedIn ||
-        !localUserStateStore.email ||
-        !userStateStore.serverUrl ||
-        !userStateStore.userId
-      ) {
+      if (!user.data.isLoggedIn || !user.data.activeServerURL || !user.data.activeUserId) {
         throw new Error('User is not logged in');
       }
 
       isLoading.value = true;
 
       //SEND PASSWORD RESET REQUEST
-      userStateStore.userData &&
-        (await deleteEncryptedPrivateKeys(
-          localUserStateStore.email,
-          userStateStore.serverUrl,
-          userStateStore.userId,
-        ));
+      await deleteEncryptedPrivateKeys(
+        user.data.email,
+        user.data.activeServerURL,
+        user.data.activeUserId,
+      );
       await keyPairsStore.refetch();
       props.handleContinue(inputNewPassword.value);
 

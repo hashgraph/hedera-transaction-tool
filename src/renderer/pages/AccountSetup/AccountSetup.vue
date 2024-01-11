@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { onBeforeMount, ref } from 'vue';
 
-import useLocalUserStateStore from '../../stores/storeLocalUserState';
-import useUserStateStore from '../../stores/storeUserState';
+import useUserStore from '../../stores/storeUser';
 
 import AppButton from '../../components/ui/AppButton.vue';
 import AppStepper from '../../components/ui/AppStepper.vue';
@@ -14,8 +13,7 @@ import KeyPairs from './components/KeyPairs.vue';
 import NewPassword from './components/NewPassword.vue';
 
 /* Stores */
-const localUserStore = useLocalUserStateStore();
-const userStore = useUserStateStore();
+const user = useUserStore();
 
 /* State */
 const step = ref({ previous: 'newPassword', current: 'newPassword' });
@@ -25,12 +23,11 @@ const stepperItems = ref([
   { title: 'Key Pairs', name: 'keyPairs' },
   { title: 'Finish Account Setup', name: 'finishAccountSetup' },
 ]);
-
 const password = ref('');
 const isFaqShown = ref(false);
 
 onBeforeMount(() => {
-  if (!userStore.isLoggedIn) {
+  if (user.data.mode === 'personal') {
     step.value.previous = 'recoveryPhrase';
     step.value.current = 'recoveryPhrase';
     stepperItems.value.shift();
@@ -106,7 +103,7 @@ onBeforeMount(() => {
               <KeyPairs
                 v-model:step="step"
                 :encrypt-password="
-                  userStore.isLoggedIn ? password : localUserStore.userState.password || ''
+                  user.data.mode === 'organization' ? password : user.data.password
                 "
                 :handle-continue="
                   () => {
