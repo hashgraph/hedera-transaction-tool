@@ -70,7 +70,12 @@ const handleOnFormSubmit = async (event: Event) => {
     }
   }
 };
-const handleResetData = () => {};
+const handleResetData = async () => {
+  if (isEmail(inputEmail.value)) {
+    await localUserService.resetData(inputEmail.value, { authData: true });
+    toast.success('User data has been reset', { position: 'top-right' });
+  }
+};
 
 /* Hooks */
 onMounted(() => {
@@ -140,6 +145,7 @@ function setTooltipContent() {
     tooltip?.setContent({ '.tooltip-inner': tooltipContent.value });
   });
 }
+
 /* Watchers */
 watch(inputPassword, pass => {
   if (isPasswordStrong(pass) || pass.length === 0) {
@@ -185,7 +191,9 @@ watch(inputEmail, pass => {
       />
       <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
       <div class="mt-3">
-        <span @click="handleResetData" class="text-small link-primary">Reset data</span>
+        <span @click="handleResetData" class="text-small link-primary cursor-pointer"
+          >Reset data</span
+        >
       </div>
       <AppButton
         color="primary"
