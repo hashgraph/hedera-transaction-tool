@@ -52,7 +52,12 @@ const handleOnFormSubmit = async (event: Event) => {
   }
 
   if (!inputEmailInvalid.value && !inputPasswordInvalid.value) {
-    await loginLocal(inputEmail.value, inputPassword.value, true);
+    const success = await loginLocal(inputEmail.value, inputPassword.value, true);
+
+    if (!success) {
+      throw new Error('Failed to login');
+    }
+
     const secretHashes = await getStoredKeysSecretHashes(inputEmail.value);
 
     user.login(inputEmail.value, secretHashes);

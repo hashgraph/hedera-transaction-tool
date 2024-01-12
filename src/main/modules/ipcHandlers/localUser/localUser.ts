@@ -1,7 +1,6 @@
 import { ipcMain } from 'electron';
 
 import { login, register, resetData } from '../../../services/localUser';
-import { ILocalUserData } from '../../../shared/interfaces/ILocalUserData';
 
 const createChannelName = (...props) => ['localUser', ...props].join(':');
 
@@ -12,14 +11,12 @@ export default () => {
   ipcMain.handle(
     createChannelName('login'),
     async (_e, email: string, password: string, autoRegister?: boolean) => {
-      const { isInitial } = await login(email, password, autoRegister);
-
-      const userData: ILocalUserData = {
-        email,
-        isInitial,
-      };
-
-      return userData;
+      try {
+        await login(email, password, autoRegister);
+        return true;
+      } catch (error) {
+        return false;
+      }
     },
   );
 
