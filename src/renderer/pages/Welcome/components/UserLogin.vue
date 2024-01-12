@@ -44,6 +44,7 @@ const passwordRequirements = reactive({
   special: false,
 });
 const tooltipContent = ref('');
+const loginError = ref<string | null>(null);
 const shouldRegister = ref(true);
 
 /* Handlers */
@@ -68,17 +69,21 @@ const handleOnFormSubmit = async (event: Event) => {
       user.data.password = inputPassword.value;
       router.push({ name: 'accountSetup' });
     } else if (!shouldRegister.value) {
-      await loginLocal(inputEmail.value, inputPassword.value, true);
+      try {
+        await loginLocal(inputEmail.value, inputPassword.value, true);
+        const secretHashes = await getStoredKeysSecretHashes(inputEmail.value);
+        user.login(inputEmail.value, secretHashes);
 
-      const secretHashes = await getStoredKeysSecretHashes(inputEmail.value);
-
-      user.login(inputEmail.value, secretHashes);
-
-      if (secretHashes.length === 0) {
-        user.data.password = inputPassword.value;
-        router.push({ name: 'accountSetup' });
-      } else {
-        router.push(router.previousPath ? { path: router.previousPath } : { name: 'settingsKeys' });
+        if (secretHashes.length === 0) {
+          user.data.password = inputPassword.value;
+          router.push({ name: 'accountSetup' });
+        } else {
+          router.push(
+            router.previousPath ? { path: router.previousPath } : { name: 'settingsKeys' },
+          );
+        }
+      } catch (error: any) {
+        loginError.value = error.message || 'Failed to login';
       }
     }
   }
@@ -215,6 +220,7 @@ watch(inputEmail, pass => {
         data-bs-title="_"
       />
       <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
+      <p v-if="loginError" class="text-danger">{{ loginError }}</p>
       <template v-if="shouldRegister">
         <input
           v-model="inputConfirmPassword"
