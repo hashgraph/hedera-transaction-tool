@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 import { Key, KeyList, Mnemonic, PublicKey } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
@@ -69,18 +67,6 @@ export const decryptPrivateKey = async (email: string, password: string, publicK
 /* Hash recovery phrase */
 export const hashRecoveryPhrase = (words: string[]) =>
   window.electronAPI.utils.hash(words.toString());
-
-/* Get users account id by a public key */
-export const getAccountId = async (mirrorNodeURL: string, publicKey: string) => {
-  try {
-    const { data } = await axios.get(`${mirrorNodeURL}/accounts/?account.publickey=${publicKey}`);
-    if (data.accounts.length > 0) {
-      return data.accounts[0].account;
-    }
-  } catch (error) {
-    console.log(error);
-  }
-};
 
 /* Delete all stored key pairs */
 export const clearKeys = (email: string, serverUrl?: string, userId?: string) =>

@@ -3,6 +3,7 @@ import { ref } from 'vue';
 
 import useOrganizationsStore from '../stores/storeOrganizations';
 import useUserStore from '../stores/storeUser';
+import useKeyPairsStore from '../stores/storeKeyPairs';
 
 import { useRouter } from 'vue-router';
 
@@ -13,6 +14,7 @@ import LogoText from './LogoText.vue';
 /* Stores */
 const organizationsStore = useOrganizationsStore();
 const user = useUserStore();
+const keyPairsStore = useKeyPairsStore();
 
 /* Composables */
 const router = useRouter();
@@ -46,6 +48,8 @@ function handleOrganizationChange(e: Event) {
       user.data.activeServerURL = selectedOption.value;
       break;
   }
+
+  keyPairsStore.refetch();
 }
 </script>
 
