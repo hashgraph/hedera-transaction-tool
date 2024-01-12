@@ -1,3 +1,5 @@
+import { getUserStorageFolderPath } from '.';
+
 import Store, { Schema } from 'electron-store';
 
 export type SchemaProperties = {
@@ -27,7 +29,7 @@ export default function getAccountsStore(email: string) {
 
   const store = new Store({
     schema,
-    cwd: `${email}`,
+    cwd: getUserStorageFolderPath(email),
     name: `${email}-auth`,
     clearInvalidConfig: true,
   });

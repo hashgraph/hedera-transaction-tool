@@ -1,3 +1,5 @@
+import { getUserStorageFolderPath } from '.';
+
 import Store, { Schema } from 'electron-store';
 
 import { encrypt, decrypt } from '../../utils/crypto';
@@ -45,7 +47,7 @@ export default function getLocalUserKeysStore(email: string) {
 
   const store = new Store({
     schema,
-    cwd: `${email}`,
+    cwd: getUserStorageFolderPath(email),
     name: `${email}-keys`,
     clearInvalidConfig: true,
   });

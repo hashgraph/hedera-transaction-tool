@@ -1,3 +1,5 @@
+import { getUserStorageFolderPath } from '.';
+
 import fs from 'fs/promises';
 
 import Store, { Schema } from 'electron-store';
@@ -37,7 +39,7 @@ export default function getLocalUserAuthStore(email: string) {
 
   const store = new Store({
     schema,
-    cwd: `${email}`,
+    cwd: getUserStorageFolderPath(email),
     name: `${email}-auth`,
     clearInvalidConfig: true,
   });
