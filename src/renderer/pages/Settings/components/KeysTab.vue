@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, reactive, ref, watch } from 'vue';
 
 import useUserStore from '../../../stores/storeUser';
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
@@ -27,6 +27,9 @@ const isImportECDSAKeyModalShown = ref(false);
 const decryptedKey = ref<string | null>(null);
 const publicKeysPrivateKeyToDecrypt = ref('');
 const userPassword = ref('');
+const ecdsaKey = reactive<{ privateKey: string; nickname?: string }>({
+  privateKey: '',
+});
 
 /* Handlers */
 const handleShowDecryptModal = (publicKey: string) => {
@@ -52,24 +55,20 @@ const handleDecrypt = async e => {
   }
 };
 
-const handleImportExternalKey = e => {
+const handleImportExternalKey = async e => {
   e.preventDefault();
 
   try {
-    const formData = new FormData(e.currentTarget);
-    const privateKey = formData.get('private-key');
-    const nickname = formData.get('nickname');
-
-    keyPairsStore.storeKeyPair(
+    await keyPairsStore.storeKeyPair(
       userPassword.value,
-      generateECDSAKeyPairFromString(privateKey?.toString() || '', nickname?.toString() || ''),
+      generateECDSAKeyPairFromString(ecdsaKey.privateKey || '', ecdsaKey.nickname || ''),
     );
 
     isImportECDSAKeyModalShown.value = false;
 
     userPassword.value = '';
-    formData.delete('private-key');
-    formData.delete('nickname');
+    ecdsaKey.nickname = '';
+    ecdsaKey.privateKey = '';
   } catch (err: any) {
     toast.error(err.message || 'Failed to import ECDSA private key', { position: 'top-right' });
   }
@@ -196,11 +195,17 @@ watch(isDecryptedModalShown, newVal => {
           </div>
           <div class="mt-4 form-group">
             <label class="form-label">Enter nickname (optional)</label>
-            <input class="form-control rounded-4" name="nickname" placeholder="Type nickname" />
+            <input
+              v-model="ecdsaKey.nickname"
+              class="form-control rounded-4"
+              name="nickname"
+              placeholder="Type nickname"
+            />
           </div>
           <div class="mt-4 form-group">
             <label class="form-label">Enter ECDSA Private key</label>
             <input
+              v-model="ecdsaKey.privateKey"
               class="form-control rounded-4"
               name="private-key"
               placeholder="Type ECDSA Private key"
