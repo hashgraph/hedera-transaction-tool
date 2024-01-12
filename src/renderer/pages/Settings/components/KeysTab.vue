@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch } from 'vue';
+import { PublicKey } from '@hashgraph/sdk';
 
 import useUserStore from '../../../stores/storeUser';
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
@@ -106,6 +107,9 @@ watch(isDecryptedModalShown, newVal => {
           <p v-if="keyPair.index >= 0" class="me-3 text-secondary text-bold text-main">
             Index: {{ keyPair.index }}
           </p>
+          <p v-else-if="!keyPair.nickname" class="me-3 text-secondary text-bold text-main">
+            ECDSA Imported Key Pair
+          </p>
           <p v-if="keyPair.nickname" class="text-secondary text-bold text-main">
             Nickname: {{ keyPair.nickname }}
           </p>
@@ -119,7 +123,12 @@ watch(isDecryptedModalShown, newVal => {
         <input type="text" readonly class="form-control py-3" :value="keyPair.privateKey" />
       </div>
       <div class="form-group mt-3">
-        <label class="form-label">ED25519 Public key</label>
+        <label class="form-label"
+          >{{
+            PublicKey.fromString(keyPair.publicKey)._key._type === 'secp256k1' ? 'ECDSA' : 'ED25519'
+          }}
+          Public key</label
+        >
         <input type="text" readonly class="form-control py-3" :value="keyPair.publicKey" />
       </div>
       <div v-show="keyPair.accountId" class="form-group mt-3">
