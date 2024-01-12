@@ -6,7 +6,7 @@ import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
-import useUserStateStore from '../../../../stores/storeUserState';
+import useUserStore from '../../../../stores/storeUser';
 import useNetworkStore from '../../../../stores/storeNetwork';
 
 import { add } from '../../../../services/accountsService';
@@ -23,7 +23,7 @@ import AppSwitch from '../../../../components/ui/AppSwitch.vue';
 
 /* Stores */
 const keyPairsStore = useKeyPairsStore();
-const userStateStore = useUserStateStore();
+const user = useUserStore();
 const networkStore = useNetworkStore();
 
 /* Composables */
@@ -78,8 +78,8 @@ const handleGetUserSignature = async () => {
   try {
     isLoading.value = true;
 
-    if (!userStateStore.userData?.userId) {
-      throw Error('No user selected');
+    if (!user.data.isLoggedIn) {
+      throw Error('User is not logged');
     }
 
     if (!transaction.value) {
@@ -90,7 +90,7 @@ const handleGetUserSignature = async () => {
       keyPairsStore.keyPairs.filter(kp => payerData.keysFlattened.value.includes(kp.publicKey)),
       transaction.value as any,
       true,
-      userStateStore.userData.userId,
+      user.data.email,
       userPassword.value,
     );
 
@@ -103,7 +103,7 @@ const handleGetUserSignature = async () => {
     transactionId.value = txId;
     accountData.accountId = new AccountId(receipt.accountId).toString() || '';
 
-    await add(userStateStore.userData.userId, accountData.accountId);
+    await add(user.data.email, accountData.accountId);
     toast.success(`Account ${accountData.accountId} linked`, { position: 'top-right' });
 
     isSignModalShown.value = false;
