@@ -12,6 +12,18 @@ import {
 
 /* Mirror node data service */
 
+/* Get users account id by a public key */
+export const getAccountId = async (mirrorNodeURL: string, publicKey: string) => {
+  try {
+    const { data } = await axios.get(`${mirrorNodeURL}/accounts/?account.publickey=${publicKey}`);
+    if (data.accounts.length > 0) {
+      return data.accounts[0].account;
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 /* Gets the account information by account id */
 export const getAccountInfo = async (
   accountId: string,

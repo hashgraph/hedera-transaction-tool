@@ -7,6 +7,7 @@ import useNetworkStore from './storeNetwork';
 import useUserStore from './storeUser';
 
 import * as keyPairService from '../services/keyPairService';
+import * as mirrorNodeDataService from '../services/mirrorNodeDataService';
 
 const useKeyPairsStore = defineStore('keyPairs', () => {
   /* Stores */
@@ -30,7 +31,7 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
     );
 
     keyPairs.value.forEach(async kp => {
-      kp.accountId = await keyPairService.getAccountId(
+      kp.accountId = await mirrorNodeDataService.getAccountId(
         networkStore.mirrorNodeBaseURL,
         kp.publicKey,
       );
@@ -70,7 +71,9 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
 
   /* Lifecycle hooks */
   onMounted(async () => {
-    await refetch();
+    if (user.data.isLoggedIn) {
+      await refetch();
+    }
   });
 
   return {
