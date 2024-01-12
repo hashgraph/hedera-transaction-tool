@@ -25,14 +25,14 @@ export default (app: Electron.App) => {
     createChannelName('resetData'),
     (
       _e,
-      email: string,
-      options: {
+      options?: {
+        email: string;
         authData?: boolean;
         keys?: boolean;
         transactions?: boolean;
         organizations?: boolean;
       },
-    ) => resetData(email, options),
+    ) => resetData(app.getPath('userData'), options),
   );
 
   // Check if user has been registered

@@ -100,15 +100,13 @@ export const electronAPI = {
       ipcRenderer.invoke('localUser:login', email, password, autoRegister),
     register: (email: string, password: string) =>
       ipcRenderer.invoke('localUser:register', email, password),
-    resetData: (
-      email: string,
-      options: {
-        authData?: boolean;
-        keys?: boolean;
-        transactions?: boolean;
-        organizations?: boolean;
-      },
-    ) => ipcRenderer.invoke('localUser:resetData', email, options),
+    resetData: (options?: {
+      email: string;
+      authData?: boolean;
+      keys?: boolean;
+      transactions?: boolean;
+      organizations?: boolean;
+    }) => ipcRenderer.invoke('localUser:resetData', options),
     hasRegisteredUsers: () => ipcRenderer.invoke('localUser:hasRegisteredUsers'),
   },
 };

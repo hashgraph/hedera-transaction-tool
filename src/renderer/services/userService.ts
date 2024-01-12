@@ -18,17 +18,9 @@ export const registerLocal = async (email: string, password: string) => {
   }
 };
 
-export const resetDataLocal = async (
-  email: string,
-  options: {
-    authData?: boolean;
-    keys?: boolean;
-    transactions?: boolean;
-    organizations?: boolean;
-  },
-) => {
+export const resetDataLocal = async () => {
   try {
-    return await window.electronAPI.localUser.resetData(email, options);
+    return await window.electronAPI.localUser.resetData();
   } catch (err: any) {
     const message = err.message?.split(': Error: ')[1] || 'Failed to reset user data';
     throw Error(message);

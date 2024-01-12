@@ -90,10 +90,9 @@ const handleOnFormSubmit = async (event: Event) => {
 };
 
 const handleResetData = async () => {
-  if (isEmail(inputEmail.value)) {
-    await resetDataLocal(inputEmail.value, { authData: true });
-    toast.success('User data has been reset', { position: 'top-right' });
-  }
+  await resetDataLocal();
+  toast.success('User data has been reset', { position: 'top-right' });
+  await checkShouldRegister();
 };
 
 /* Hooks */
@@ -101,11 +100,7 @@ onMounted(async () => {
   isPasswordStrong(inputPassword.value);
   setTooltipContent();
 
-  try {
-    shouldRegister.value = !(await hasRegisteredUsers());
-  } catch (error) {
-    shouldRegister.value = true;
-  }
+  await checkShouldRegister();
 });
 
 /* Misc */
@@ -166,6 +161,14 @@ function setTooltipContent() {
     const tooltip = Tooltip.getInstance(tooltipEl);
     tooltip?.setContent({ '.tooltip-inner': tooltipContent.value });
   });
+}
+
+async function checkShouldRegister() {
+  try {
+    shouldRegister.value = !(await hasRegisteredUsers());
+  } catch (error) {
+    shouldRegister.value = true;
+  }
 }
 
 /* Watchers */
