@@ -11,12 +11,7 @@ export default (app: Electron.App) => {
   ipcMain.handle(
     createChannelName('login'),
     async (_e, email: string, password: string, autoRegister?: boolean) => {
-      try {
-        await login(email, password, autoRegister);
-        return true;
-      } catch (error) {
-        return false;
-      }
+      await login(email, password, autoRegister);
     },
   );
 

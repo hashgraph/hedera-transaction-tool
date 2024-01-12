@@ -8,7 +8,12 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useCreateTooltips from '../../../composables/useCreateTooltips';
 
-import { loginLocal, resetDataLocal, hasRegisteredUsers } from '../../../services/userService';
+import {
+  loginLocal,
+  registerLocal,
+  resetDataLocal,
+  hasRegisteredUsers,
+} from '../../../services/userService';
 
 import { isEmail } from '../../../utils/validator';
 
@@ -26,9 +31,11 @@ useCreateTooltips();
 /* State */
 const inputEmail = ref('');
 const inputPassword = ref('');
+const inputConfirmPassword = ref('');
 
 const inputEmailInvalid = ref(false);
 const inputPasswordInvalid = ref(false);
+const inputConfirmPasswordInvalid = ref(false);
 const passwordRequirements = reactive({
   length: false,
   lowercase: false,
@@ -37,6 +44,7 @@ const passwordRequirements = reactive({
   special: false,
 });
 const tooltipContent = ref('');
+const shouldRegister = ref(true);
 
 /* Handlers */
 const handleOnFormSubmit = async (event: Event) => {
@@ -45,6 +53,8 @@ const handleOnFormSubmit = async (event: Event) => {
   inputEmailInvalid.value = inputEmail.value.trim() === '' || !isEmail(inputEmail.value);
   inputPasswordInvalid.value =
     inputPassword.value.trim() === '' || !isPasswordStrong(inputPassword.value);
+  inputConfirmPasswordInvalid.value =
+    inputPassword.value.trim() !== inputConfirmPassword.value.trim();
 
   if (inputPasswordInvalid.value) {
     toast.error('Password too weak', { position: 'top-right' });
@@ -52,24 +62,24 @@ const handleOnFormSubmit = async (event: Event) => {
   }
 
   if (!inputEmailInvalid.value && !inputPasswordInvalid.value) {
-    const success = await loginLocal(inputEmail.value, inputPassword.value, true);
-
-    if (!success) {
-      throw new Error('Failed to login');
-    }
-
-    const secretHashes = await getStoredKeysSecretHashes(inputEmail.value);
-
-    user.login(inputEmail.value, secretHashes);
-
-    if (secretHashes.length === 0) {
-      user.data.password = inputPassword.value;
+    if (shouldRegister.value && !inputConfirmPasswordInvalid.value) {
+      await registerLocal(inputEmail.value, inputPassword.value);
+      user.login(inputEmail.value, []);
       router.push({ name: 'accountSetup' });
-    } else {
-      router.push(router.previousPath ? { path: router.previousPath } : { name: 'settingsKeys' });
-    }
+    } else if (!shouldRegister.value) {
+      await loginLocal(inputEmail.value, inputPassword.value, true);
 
-    toast.success('Successfully logged in', { position: 'top-right' });
+      const secretHashes = await getStoredKeysSecretHashes(inputEmail.value);
+
+      user.login(inputEmail.value, secretHashes);
+
+      if (secretHashes.length === 0) {
+        user.data.password = inputPassword.value;
+        router.push({ name: 'accountSetup' });
+      } else {
+        router.push(router.previousPath ? { path: router.previousPath } : { name: 'settingsKeys' });
+      }
+    }
   }
 };
 
@@ -85,7 +95,11 @@ onMounted(async () => {
   isPasswordStrong(inputPassword.value);
   setTooltipContent();
 
-  console.log(await hasRegisteredUsers());
+  try {
+    shouldRegister.value = !(await hasRegisteredUsers());
+  } catch (error) {
+    shouldRegister.value = true;
+  }
 });
 
 /* Misc */
@@ -150,10 +164,16 @@ function setTooltipContent() {
 
 /* Watchers */
 watch(inputPassword, pass => {
+  inputConfirmPasswordInvalid.value = false;
   if (isPasswordStrong(pass) || pass.length === 0) {
     inputPasswordInvalid.value = false;
   }
   setTooltipContent();
+});
+watch(inputConfirmPassword, pass => {
+  if (pass.length === 0) {
+    inputPasswordInvalid.value = false;
+  }
 });
 watch(inputEmail, pass => {
   if (isEmail(pass) || pass.length === 0) {
@@ -164,7 +184,9 @@ watch(inputEmail, pass => {
 <template>
   <div class="container-welcome-card container-modal-card p-5 border border-dark-subtle rounded-4">
     <i class="bi bi-person mt-5 extra-large-icon d-block"></i>
-    <h4 class="mt-4 text-main text-bold text-center">Login as Personal user</h4>
+    <h4 class="mt-4 text-main text-bold text-center">
+      {{ shouldRegister ? 'Register as Personal User' : 'Login as Personal user' }}
+    </h4>
     <p class="text-secondary text-small lh-base text-center">
       In order to continue enter your email & password
     </p>
@@ -192,6 +214,19 @@ watch(inputEmail, pass => {
         data-bs-title="_"
       />
       <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
+      <template v-if="shouldRegister">
+        <input
+          v-model="inputConfirmPassword"
+          type="password"
+          class="mt-4 form-control rounded-4"
+          :class="{ 'is-invalid': inputConfirmPasswordInvalid }"
+          placeholder="Confirm password"
+        />
+        <div v-if="inputConfirmPasswordInvalid" class="invalid-feedback">
+          Password do not match.
+        </div>
+      </template>
+
       <div class="mt-3">
         <span @click="handleResetData" class="text-small link-primary cursor-pointer"
           >Reset data</span
@@ -208,4 +243,3 @@ watch(inputEmail, pass => {
     </form>
   </div>
 </template>
-../../../services/userService
