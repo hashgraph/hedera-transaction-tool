@@ -8,7 +8,7 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useCreateTooltips from '../../../composables/useCreateTooltips';
 
-import { loginLocal, resetDataLocal } from '../../../services/userService';
+import { loginLocal, resetDataLocal, hasRegisteredUsers } from '../../../services/userService';
 
 import { isEmail } from '../../../utils/validator';
 
@@ -81,9 +81,11 @@ const handleResetData = async () => {
 };
 
 /* Hooks */
-onMounted(() => {
+onMounted(async () => {
   isPasswordStrong(inputPassword.value);
   setTooltipContent();
+
+  console.log(await hasRegisteredUsers());
 });
 
 /* Misc */

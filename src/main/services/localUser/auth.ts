@@ -1,6 +1,7 @@
-import { getUserStorageFolderPath } from '.';
+import { getUserStorageFolderPath, userStorageFolderName } from '.';
 
 import fs from 'fs/promises';
+import path from 'path';
 
 import Store, { Schema } from 'electron-store';
 
@@ -84,4 +85,18 @@ export const login = async (email: string, password: string, autoRegister?: bool
 export const clear = async (email: string) => {
   const store = getLocalUserAuthStore(email);
   await fs.unlink(store.path);
+};
+
+export const hasRegisteredUsers = async (appPath: string) => {
+  try {
+    const userStoragePath = path.join(appPath, userStorageFolderName);
+
+    const directories = (await fs.readdir(userStoragePath, { withFileTypes: true }))
+      .filter(dirent => dirent.isDirectory())
+      .map(dir => dir.name);
+
+    return directories.length > 0;
+  } catch {
+    return false;
+  }
 };

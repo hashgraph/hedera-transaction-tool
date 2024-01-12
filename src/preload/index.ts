@@ -109,6 +109,7 @@ export const electronAPI = {
         organizations?: boolean;
       },
     ) => ipcRenderer.invoke('localUser:resetData', email, options),
+    hasRegisteredUsers: () => ipcRenderer.invoke('localUser:hasRegisteredUsers'),
   },
 };
 typeof electronAPI;

@@ -2,8 +2,8 @@ import listenForKeyPairEvents from './keyPairs';
 import listenForLocalUserEvents from './localUser';
 import listenForAccountsEvents from './accounts';
 
-export default () => {
+export default (app: Electron.App) => {
   listenForKeyPairEvents();
-  listenForLocalUserEvents();
+  listenForLocalUserEvents(app);
   listenForAccountsEvents();
 };

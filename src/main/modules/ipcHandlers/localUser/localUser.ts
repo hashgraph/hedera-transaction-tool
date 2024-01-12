@@ -1,10 +1,10 @@
 import { ipcMain } from 'electron';
 
-import { login, register, resetData } from '../../../services/localUser';
+import { login, register, resetData, hasRegisteredUsers } from '../../../services/localUser';
 
 const createChannelName = (...props) => ['localUser', ...props].join(':');
 
-export default () => {
+export default (app: Electron.App) => {
   /* Local User */
 
   // Login
@@ -38,5 +38,10 @@ export default () => {
         organizations?: boolean;
       },
     ) => resetData(email, options),
+  );
+
+  // Check if user has been registered
+  ipcMain.handle(createChannelName('hasRegisteredUsers'), () =>
+    hasRegisteredUsers(app.getPath('userData')),
   );
 };

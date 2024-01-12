@@ -34,3 +34,12 @@ export const resetDataLocal = async (
     throw Error(message);
   }
 };
+
+export const hasRegisteredUsers = async () => {
+  try {
+    return await window.electronAPI.localUser.hasRegisteredUsers();
+  } catch (err: any) {
+    const message = err.message?.split(': Error: ')[1] || 'Failed to check for registered users';
+    throw Error(message);
+  }
+};

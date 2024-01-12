@@ -6,7 +6,7 @@ import registerIpcListeners from './modules/ipcHandlers';
 
 import createWindow from './windows/mainWindow';
 
-registerIpcListeners();
+registerIpcListeners(app);
 
 let mainWindow: BrowserWindow | null;
 
