@@ -41,11 +41,11 @@ const maxTransactionfee = ref(2);
 
 const newAccountData = reactive<{
   receiverSignatureRequired: boolean;
-  maxAutomaticTokenAssociations: number;
+  maxAutomaticTokenAssociations: number | null;
   stakedAccountId: string | null;
   stakedNodeId: number | null;
   declineStakingReward: boolean;
-  memo: string;
+  memo: string | null;
 }>({
   receiverSignatureRequired: false,
   maxAutomaticTokenAssociations: 0,
@@ -149,7 +149,7 @@ const handleCreate = async () => {
       .setReceiverSignatureRequired(newAccountData.receiverSignatureRequired)
       .setDeclineStakingReward(newAccountData.declineStakingReward)
       .setMaxAutomaticTokenAssociations(newAccountData.maxAutomaticTokenAssociations)
-      .setAccountMemo(newAccountData.memo);
+      .setAccountMemo(newAccountData.memo || '');
 
     newOwnerKeys.value.length > 0 && transaction.value.setKey(newOwnerKeyList.value);
 
@@ -245,11 +245,11 @@ watch(accountData.accountInfo, accountInfo => {
     newAccountData.memo = '';
   } else {
     newAccountData.receiverSignatureRequired = accountInfo.receiverSignatureRequired;
-    newAccountData.maxAutomaticTokenAssociations = accountInfo.maxAutomaticTokenAssociations;
+    newAccountData.maxAutomaticTokenAssociations = accountInfo.maxAutomaticTokenAssociations || 0;
     newAccountData.stakedAccountId = accountInfo.stakedAccountId?.toString() || '';
     newAccountData.stakedNodeId = accountInfo.stakedNodeId;
     newAccountData.declineStakingReward = accountInfo.declineReward;
-    newAccountData.memo = accountInfo.memo;
+    newAccountData.memo = accountInfo.memo || '';
   }
 });
 </script>
