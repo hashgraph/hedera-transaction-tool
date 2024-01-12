@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 
 import useOrganizationsStore from '../../stores/storeOrganizations';
-import useUserStateStore from '../../stores/storeUserState';
+import useUserStore from '../../stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 
@@ -11,7 +11,7 @@ import AppModal from '../../components/ui/AppModal.vue';
 
 /* Stores */
 const organizationsStore = useOrganizationsStore();
-const userStateStore = useUserStateStore();
+const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
@@ -26,17 +26,15 @@ const isSuccessModalShown = ref(false);
 const handleContinue = async (e: Event) => {
   e.preventDefault();
 
-  //ADD FORM VALIDATION
-
   try {
-    const a = await organizationsStore.addOrganization({
+    await organizationsStore.addOrganization({
       name: organizationName.value,
       serverUrl: serverUrl.value,
       serverPublicKey: serverPublicKey.value,
     });
-    console.log(a);
 
-    userStateStore.setUserRole('organization');
+    user.data.mode = 'organization';
+    user.data.activeServerURL = serverUrl.value;
 
     isSuccessModalShown.value = true;
   } catch (err: any) {

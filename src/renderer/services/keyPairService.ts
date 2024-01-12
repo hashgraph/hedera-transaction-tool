@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-import { Key, KeyList, Mnemonic, PublicKey } from '@hashgraph/sdk';
+import { Key, KeyList, Mnemonic, PrivateKey, PublicKey } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
 import { IKeyPair } from '../../main/shared/interfaces';
@@ -8,12 +6,17 @@ import { IKeyPair } from '../../main/shared/interfaces';
 /* Key Pairs Service */
 
 /* Get stored key pairs */
-export const getStoredKeyPairs = (userId: string, secretHash?: string, secretHashName?: string) =>
-  window.electronAPI.keyPairs.getStored(userId, secretHash, secretHashName);
+export const getStoredKeyPairs = (
+  email: string,
+  serverUrl?: string,
+  userId?: string,
+  secretHash?: string,
+  secretHashName?: string,
+) => window.electronAPI.keyPairs.getStored(email, serverUrl, userId, secretHash, secretHashName);
 
 /* Get stored secret hashes */
-export const getStoredKeysSecretHashes = (userId: string) =>
-  window.electronAPI.keyPairs.getStoredKeysSecretHashes(userId);
+export const getStoredKeysSecretHashes = (email: string, serverUrl?: string, userId?: string) =>
+  window.electronAPI.keyPairs.getStoredKeysSecretHashes(email, serverUrl, userId);
 
 /* Restore private key from recovery phrase */
 export const restorePrivateKey = async (
@@ -28,33 +31,34 @@ export const restorePrivateKey = async (
 
   const mnemonic = await Mnemonic.fromWords(words);
 
-  const privateKey =
-    type === 'ED25519'
-      ? mnemonic.toStandardEd25519PrivateKey(passphrase, keyIndex)
-      : mnemonic.toStandardECDSAsecp256k1PrivateKey(passphrase, keyIndex);
-
-  return privateKey;
+  switch (type) {
+    case 'ED25519':
+      return mnemonic.toStandardEd25519PrivateKey(passphrase, keyIndex);
+    case 'ECDSA':
+      return mnemonic.toStandardECDSAsecp256k1PrivateKey(passphrase, keyIndex);
+    default:
+      throw new Error('Key type not supported');
+  }
 };
 
 /* Store key pair along with its recovery phrase hash */
 export const storeKeyPair = (
-  userId: string,
+  email: string,
   password: string,
-  secretHash: string,
   keyPair: IKeyPair,
-) => window.electronAPI.keyPairs.store(userId, password, secretHash, keyPair);
+  secretHash?: string,
+  serverUrl?: string,
+  userId?: string,
+) => window.electronAPI.keyPairs.store(email, password, keyPair, secretHash, serverUrl, userId);
 
 /* Change the decryption password of a stored private key */
-export const changeDecryptionPassword = (
-  userId: string,
-  oldPassword: string,
-  newPassword: string,
-) => window.electronAPI.keyPairs.changeDecryptionPassword(userId, oldPassword, newPassword);
+export const changeDecryptionPassword = (email: string, oldPassword: string, newPassword: string) =>
+  window.electronAPI.keyPairs.changeDecryptionPassword(email, oldPassword, newPassword);
 
 /* Decrypt private key with user's password */
-export const decryptPrivateKey = async (userId: string, password: string, publicKey: string) => {
+export const decryptPrivateKey = async (email: string, password: string, publicKey: string) => {
   try {
-    return await window.electronAPI.keyPairs.decryptPrivateKey(userId, password, publicKey);
+    return await window.electronAPI.keyPairs.decryptPrivateKey(email, password, publicKey);
   } catch (error) {
     throw new Error('Failed to decrypt private key/s');
   }
@@ -64,24 +68,13 @@ export const decryptPrivateKey = async (userId: string, password: string, public
 export const hashRecoveryPhrase = (words: string[]) =>
   window.electronAPI.utils.hash(words.toString());
 
-/* Get users account id by a public key */
-export const getAccountId = async (mirrorNodeURL: string, publicKey: string) => {
-  try {
-    const { data } = await axios.get(`${mirrorNodeURL}/accounts/?account.publickey=${publicKey}`);
-    if (data.accounts.length > 0) {
-      return data.accounts[0].account;
-    }
-  } catch (error) {
-    console.log(error);
-  }
-};
-
 /* Delete all stored key pairs */
-export const clearKeys = (userId: string) => window.electronAPI.keyPairs.clear(userId);
+export const clearKeys = (email: string, serverUrl?: string, userId?: string) =>
+  window.electronAPI.keyPairs.clear(email, serverUrl, userId);
 
 /* Delete the encrypted private keys from user's key pairs */
-export const deleteEncryptedPrivateKeys = (userId: string) =>
-  window.electronAPI.keyPairs.deleteEncryptedPrivateKeys(userId);
+export const deleteEncryptedPrivateKeys = (email: string, serverUrl: string, userId: string) =>
+  window.electronAPI.keyPairs.deleteEncryptedPrivateKeys(email, serverUrl, userId);
 
 /* Validates if the provided recovery phrase is valid according to BIP-39 */
 export const validateMnemonic = async (words: string[]) => {
@@ -109,7 +102,7 @@ export const updateKeyList = (
       if (key instanceof KeyList) {
         keys[i] = updateKeyList(key, path.slice(1), publicKey, threshold);
       } else {
-        publicKey ? (keys[i] = PublicKey.fromStringED25519(publicKey)) : '';
+        publicKey ? (keys[i] = PublicKey.fromString(publicKey)) : '';
       }
     } else {
       keys[i] = key;
@@ -168,6 +161,25 @@ export const getKeyListLevels = (keyList: KeyList) => {
     maxLevel = Math.max(maxLevel, level);
   }
   return maxLevel + 1;
+};
+
+export const generateECDSAKeyPairFromString = (
+  ecdsaPrivateKey: string,
+  nickname: string,
+  index?: number,
+): IKeyPair => {
+  try {
+    const privateKey = PrivateKey.fromStringECDSA(ecdsaPrivateKey);
+
+    return {
+      nickname,
+      privateKey: privateKey.toStringRaw(),
+      publicKey: privateKey.publicKey.toStringRaw(),
+      index: index || -1,
+    };
+  } catch (error) {
+    throw new Error('Invalid ECDSA Private key');
+  }
 };
 
 function flattenComplexKey(

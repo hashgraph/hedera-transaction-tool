@@ -10,7 +10,7 @@ import AppRecoveryPhraseWord from '../../../components/ui/AppRecoveryPhraseWord.
 /* Props */
 const props = defineProps<{
   handleContinue: (words: string[]) => void;
-  secretHashes?: string[];
+  secretHashes: string[];
 }>();
 
 /* State */
@@ -23,7 +23,8 @@ const isSuccessModalShown = ref(false);
 /* Misc Functions */
 const validateMatchingSecretHash = async () => {
   const secretHash = await hashRecoveryPhrase(words.value);
-  if (props.secretHashes && !props.secretHashes.includes(secretHash)) {
+
+  if (props.secretHashes.length > 0 && !props.secretHashes.includes(secretHash)) {
     isSecretHashValid.value = false;
     return;
   }

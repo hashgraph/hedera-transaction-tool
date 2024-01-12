@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { AccountId, FileCreateTransaction, KeyList, PublicKey, Timestamp } from '@hashgraph/sdk';
 
-import useUserStateStore from '../../../../stores/storeUserState';
+import useUserStore from '../../../../stores/storeUser';
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useNetworkStore from '../../../../stores/storeNetwork';
 
@@ -21,7 +21,7 @@ import AppModal from '../../../../components/ui/AppModal.vue';
 
 /* Stores */
 const keyPairsStore = useKeyPairsStore();
-const userStateStore = useUserStateStore();
+const user = useUserStore();
 const networkStore = useNetworkStore();
 
 /* Composables */
@@ -78,7 +78,7 @@ const handleAdd = () => {
 // };
 
 const handleGetUserSignature = async () => {
-  if (!userStateStore.userData?.userId) {
+  if (!user.data.isLoggedIn) {
     throw Error('No user selected');
   }
 
@@ -95,7 +95,7 @@ const handleGetUserSignature = async () => {
       ),
       transaction.value as any,
       true,
-      userStateStore.userData.userId,
+      user.data.email,
       userPassword.value,
     );
 

@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { Hbar, HbarUnit, KeyList, PublicKey } from '@hashgraph/sdk';
 
-import useUserStateStore from '../../stores/storeUserState';
+import useUserStore from '../../stores/storeUser';
 import useNetworkStore from '../../stores/storeNetwork';
 
 import useAccountId from '../../composables/useAccountId';
@@ -25,7 +25,7 @@ enum Sorting {
 }
 
 /* Stores */
-const userStore = useUserStateStore();
+const user = useUserStore();
 const networkStore = useNetworkStore();
 
 /* Composables */
@@ -53,21 +53,23 @@ const isUnlinkAccountModalShown = ref(false);
 
 /* Hooks */
 onMounted(async () => {
-  if (userStore.userData?.userId) {
-    accounts.value = await getAll(userStore.userData?.userId);
-    accountData.accountId.value = accounts.value[0]?.accountId || '';
+  if (!user.data.isLoggedIn) {
+    throw new Error('Please login');
   }
+
+  accounts.value = await getAll(user.data.email);
+  accountData.accountId.value = accounts.value[0]?.accountId || '';
 });
 
 /* Handlers */
 const handleUnlinkAccount = async () => {
-  if (!userStore.userData) {
+  if (!user.data.isLoggedIn) {
     throw new Error('Please login');
   }
 
-  await remove(userStore.userData?.userId, accountData.accountIdFormatted.value);
+  await remove(user.data.email, accountData.accountIdFormatted.value);
 
-  accounts.value = await getAll(userStore.userData.userId);
+  accounts.value = await getAll(user.data.email);
   accountData.accountId.value = accounts.value[0]?.accountId || '';
 
   isUnlinkAccountModalShown.value = false;

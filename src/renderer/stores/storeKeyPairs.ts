@@ -4,14 +4,15 @@ import { defineStore } from 'pinia';
 import { IKeyPair, IKeyPairWithAccountId } from '../../main/shared/interfaces';
 
 import useNetworkStore from './storeNetwork';
-import useUserStateStore from './storeUserState';
+import useUserStore from './storeUser';
 
 import * as keyPairService from '../services/keyPairService';
+import * as mirrorNodeDataService from '../services/mirrorNodeDataService';
 
 const useKeyPairsStore = defineStore('keyPairs', () => {
   /* Stores */
   const networkStore = useNetworkStore();
-  const userStateStore = useUserStateStore();
+  const user = useUserStore();
 
   /* State */
   const recoveryPhraseWords = ref<string[]>([]);
@@ -19,14 +20,18 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
 
   /* Actions */
   async function refetch() {
-    if (!userStateStore.userData?.userId) {
+    if (!user.data.isLoggedIn) {
       throw Error('Please login to get stored keys!');
     }
 
-    keyPairs.value = await keyPairService.getStoredKeyPairs(userStateStore.userData.userId);
+    keyPairs.value = await keyPairService.getStoredKeyPairs(
+      user.data.email,
+      user.data.activeServerURL,
+      user.data.activeUserId,
+    );
 
     keyPairs.value.forEach(async kp => {
-      kp.accountId = await keyPairService.getAccountId(
+      kp.accountId = await mirrorNodeDataService.getAccountId(
         networkStore.mirrorNodeBaseURL,
         kp.publicKey,
       );
@@ -43,29 +48,36 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
     recoveryPhraseWords.value = [];
   }
 
-  async function storeKeyPair(password: string, secretHash: string, keyPair: IKeyPair) {
-    if (!userStateStore.isLoggedIn || !userStateStore.userData || !userStateStore.userData.userId) {
-      throw Error('User is not logged in!');
+  async function storeKeyPair(password: string, keyPair: IKeyPair, secretHash?: string) {
+    if (!user.data.isLoggedIn) {
+      throw Error('Personal user is not logged in!');
     }
 
-    if (!userStateStore.secretHashes) {
-      throw Error('Key Pair not matched to a recovery phrase');
-    } else if (!userStateStore.secretHashes.includes(secretHash)) {
+    if (
+      user.data.secretHashes.length > 0 &&
+      secretHash &&
+      !user.data.secretHashes.includes(secretHash)
+    ) {
       throw Error('Different recovery phrase is used!');
     }
 
     await keyPairService.storeKeyPair(
-      userStateStore.userData.userId,
+      user.data.email,
       password,
-      secretHash,
       keyPair,
+      secretHash,
+      user.data.activeServerURL,
+      user.data.activeUserId,
     );
+
     await refetch();
   }
 
   /* Lifecycle hooks */
   onMounted(async () => {
-    await refetch();
+    if (user.data.isLoggedIn) {
+      await refetch();
+    }
   });
 
   return {

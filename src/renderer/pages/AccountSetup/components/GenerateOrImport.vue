@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, ref } from 'vue';
 
+import useUserStore from '../../../stores/storeUser';
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
-import useUserStateStore from '../../../stores/storeUserState';
 
 import { validateMnemonic, hashRecoveryPhrase } from '../../../services/keyPairService';
 
@@ -17,11 +17,11 @@ const props = defineProps<{
 
 /* Stores */
 const keyPairsStore = useKeyPairsStore();
-const userStateStore = useUserStateStore();
+const user = useUserStore();
 
 /* State */
 const tabItems = ref<TabItem[]>([{ title: 'Create New' }, { title: 'Import Existing' }]);
-const activeTabIndex = ref(0);
+const activeTabIndex = ref(1);
 
 /* Getters */
 const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title);
@@ -31,14 +31,11 @@ const handleSaveWords = async (words: string[]) => {
   const isValid = await validateMnemonic(words);
 
   if (!isValid) {
-    console.log('Invalid Recovery Phrase!');
+    throw new Error('Invalid Recovery Phrase!');
   } else {
     keyPairsStore.setRecoveryPhrase(words);
-    userStateStore.setSecretHashes([
-      ...(userStateStore.secretHashes || []),
-      await hashRecoveryPhrase(words),
-    ]);
-    // SEND SECRET HASH TO BACKED?
+
+    user.data.secretHashes = [...user.data.secretHashes, await hashRecoveryPhrase(words)];
 
     props.handleContinue();
   }
@@ -46,7 +43,7 @@ const handleSaveWords = async (words: string[]) => {
 
 /* Hooks */
 onBeforeMount(() => {
-  userStateStore.secretHashes && tabItems.value.shift();
+  user.data.secretHashes.length > 0 && tabItems.value.shift();
 });
 </script>
 <template>
@@ -63,7 +60,7 @@ onBeforeMount(() => {
         <Generate :handle-continue="handleSaveWords" />
       </template>
       <template v-else-if="activeTabTitle === 'Import Existing'">
-        <Import :handle-continue="handleSaveWords" :secret-hashes="userStateStore.secretHashes"
+        <Import :handle-continue="handleSaveWords" :secret-hashes="user.data.secretHashes"
       /></template>
     </div>
   </div>

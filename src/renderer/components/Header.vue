@@ -2,7 +2,8 @@
 import { ref } from 'vue';
 
 import useOrganizationsStore from '../stores/storeOrganizations';
-import useUserStateStore from '../stores/storeUserState';
+import useUserStore from '../stores/storeUser';
+import useKeyPairsStore from '../stores/storeKeyPairs';
 
 import { useRouter } from 'vue-router';
 
@@ -12,7 +13,8 @@ import LogoText from './LogoText.vue';
 
 /* Stores */
 const organizationsStore = useOrganizationsStore();
-const userStateStore = useUserStateStore();
+const user = useUserStore();
+const keyPairsStore = useKeyPairsStore();
 
 /* Composables */
 const router = useRouter();
@@ -32,28 +34,22 @@ function handleOrganizationChange(e: Event) {
 
   switch (selectedOption.value) {
     case 'local':
-      userStateStore.setUserRole('personal');
-      organizationsStore.currentOrganization = null;
+      user.data.mode = 'personal';
+      user.data.activeServerURL = undefined;
       break;
     case 'add-organization':
       if (organizationsDropDownRef.value) {
-        organizationsDropDownRef.value.value =
-          userStateStore.role === 'personal'
-            ? 'local'
-            : organizationsStore.currentOrganization?.serverUrl || '';
+        organizationsDropDownRef.value.value = user.data.activeServerURL || 'local';
         router.push({ name: 'setupOrganization' });
       }
       return;
     default:
-      userStateStore.setUserRole('organization');
-      organizationsStore.setCurrentOrganization(selectedOption.value);
-      userStateStore.setServerUrl(selectedOption.value);
+      user.data.mode = 'organization';
+      user.data.activeServerURL = selectedOption.value;
       break;
   }
 
-  userStateStore.logoutUser();
-
-  router.push({ name: 'welcome' });
+  keyPairsStore.refetch();
 }
 </script>
 
@@ -71,7 +67,7 @@ function handleOrganizationChange(e: Event) {
           @change="handleOrganizationChange"
           ref="organizationsDropDownRef"
         >
-          <option value="local" :selected="userStateStore.role === 'personal'" default>
+          <option value="local" :selected="user.data.mode === 'personal'" default>
             No organization selected
           </option>
           <template
@@ -81,8 +77,8 @@ function handleOrganizationChange(e: Event) {
             <option
               :value="organization.serverUrl"
               :selected="
-                userStateStore.role === 'organization' &&
-                organizationsStore.currentOrganization?.serverUrl === organization.serverUrl
+                user.data.mode === 'organization' &&
+                user.data.activeServerURL === organization.serverUrl
               "
             >
               {{ organization.name }}

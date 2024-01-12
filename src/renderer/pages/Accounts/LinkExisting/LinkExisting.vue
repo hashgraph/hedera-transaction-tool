@@ -1,23 +1,24 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 
-import useUserStateStore from '../../../stores/storeUserState';
+import useUserStore from '../../../stores/storeUser';
 
-import Tooltip from 'bootstrap/js/dist/tooltip';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../composables/useAccountId';
+import useCreateTooltips from '../../../composables/useCreateTooltips';
 
 import { add } from '../../../services/accountsService';
 
 import AppButton from '../../../components/ui/AppButton.vue';
 
 /* Stores */
-const userStore = useUserStateStore();
+const user = useUserStore();
 
 /* Composables */
 const router = useRouter();
 const toast = useToast();
+useCreateTooltips();
 
 /* State */
 const accountData = useAccountId();
@@ -26,11 +27,11 @@ const nickname = ref('');
 const handleLinkAccount = async () => {
   if (accountData.isValid.value) {
     try {
-      if (!userStore.userData?.userId) {
+      if (!user.data.isLoggedIn) {
         throw new Error('User not logged in');
       }
 
-      await add(userStore.userData?.userId, accountData.accountIdFormatted.value, nickname.value);
+      await add(user.data.email, accountData.accountIdFormatted.value, nickname.value);
 
       router.push({ name: 'accounts' });
       toast.success('Account linked successfully!', { position: 'top-right' });
@@ -39,11 +40,6 @@ const handleLinkAccount = async () => {
     }
   }
 };
-
-onMounted(() => {
-  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-  Array.from(tooltipTriggerList).map(tooltipTriggerEl => new Tooltip(tooltipTriggerEl));
-});
 </script>
 <template>
   <div class="p-10">

@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { AccountId, FileAppendTransaction, PublicKey } from '@hashgraph/sdk';
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
-import useUserStateStore from '../../../../stores/storeUserState';
+import useUserStore from '../../../../stores/storeUser';
 import useNetworkStore from '../../../../stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
@@ -20,7 +20,7 @@ import AppModal from '../../../../components/ui/AppModal.vue';
 
 /* Stores */
 const keyPairsStore = useKeyPairsStore();
-const userStateStore = useUserStateStore();
+const user = useUserStore();
 const networkStore = useNetworkStore();
 
 /* Composables */
@@ -115,8 +115,8 @@ const handleGetUserSignature = async () => {
   try {
     isLoading.value = true;
 
-    if (!userStateStore.userData?.userId) {
-      throw Error('No user selected');
+    if (!user.data.isLoggedIn) {
+      throw Error('User is not logged in');
     }
 
     if (!payerData.isValid.value) {
@@ -145,7 +145,7 @@ const handleGetUserSignature = async () => {
         ),
         appendTransaction as any,
         true,
-        userStateStore.userData.userId,
+        user.data.email,
         userPassword.value,
       );
 

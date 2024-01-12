@@ -4,7 +4,7 @@ import { AccountId, AccountUpdateTransaction, KeyList, PublicKey, Hbar } from '@
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useNetworkStore from '../../../../stores/storeNetwork';
-import useUserStateStore from '../../../../stores/storeUserState';
+import useUserStore from '../../../../stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
@@ -23,11 +23,11 @@ import AppSwitch from '../../../../components/ui/AppSwitch.vue';
 import KeyStructure from '../../../../components/KeyStructure.vue';
 
 /* Stores */
-const keyPairsStore = useKeyPairsStore();
-const userStateStore = useUserStateStore();
-const networkStore = useNetworkStore();
 const payerData = useAccountId();
 const accountData = useAccountId();
+const keyPairsStore = useKeyPairsStore();
+const user = useUserStore();
+const networkStore = useNetworkStore();
 
 /* Composables */
 const route = useRoute();
@@ -41,11 +41,11 @@ const maxTransactionfee = ref(2);
 
 const newAccountData = reactive<{
   receiverSignatureRequired: boolean;
-  maxAutomaticTokenAssociations: number;
+  maxAutomaticTokenAssociations: number | null;
   stakedAccountId: string | null;
   stakedNodeId: number | null;
   declineStakingReward: boolean;
-  memo: string;
+  memo: string | null;
 }>({
   receiverSignatureRequired: false,
   maxAutomaticTokenAssociations: 0,
@@ -90,7 +90,7 @@ const handleGetUserSignature = async () => {
   try {
     isLoading.value = true;
 
-    if (!userStateStore.userData?.userId) {
+    if (!user.data.isLoggedIn) {
       throw new Error('No user selected');
     }
 
@@ -107,7 +107,7 @@ const handleGetUserSignature = async () => {
 
       transaction.value as any,
       true,
-      userStateStore.userData.userId,
+      user.data.email,
       userPassword.value,
     );
 
@@ -149,7 +149,7 @@ const handleCreate = async () => {
       .setReceiverSignatureRequired(newAccountData.receiverSignatureRequired)
       .setDeclineStakingReward(newAccountData.declineStakingReward)
       .setMaxAutomaticTokenAssociations(newAccountData.maxAutomaticTokenAssociations)
-      .setAccountMemo(newAccountData.memo);
+      .setAccountMemo(newAccountData.memo || '');
 
     newOwnerKeys.value.length > 0 && transaction.value.setKey(newOwnerKeyList.value);
 
@@ -245,11 +245,11 @@ watch(accountData.accountInfo, accountInfo => {
     newAccountData.memo = '';
   } else {
     newAccountData.receiverSignatureRequired = accountInfo.receiverSignatureRequired;
-    newAccountData.maxAutomaticTokenAssociations = accountInfo.maxAutomaticTokenAssociations;
+    newAccountData.maxAutomaticTokenAssociations = accountInfo.maxAutomaticTokenAssociations || 0;
     newAccountData.stakedAccountId = accountInfo.stakedAccountId?.toString() || '';
     newAccountData.stakedNodeId = accountInfo.stakedNodeId;
     newAccountData.declineStakingReward = accountInfo.declineReward;
-    newAccountData.memo = accountInfo.memo;
+    newAccountData.memo = accountInfo.memo || '';
   }
 });
 </script>

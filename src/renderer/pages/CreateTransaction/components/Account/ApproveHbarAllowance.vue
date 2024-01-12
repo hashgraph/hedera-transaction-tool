@@ -11,7 +11,7 @@ import {
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useNetworkStore from '../../../../stores/storeNetwork';
-import useUserStateStore from '../../../../stores/storeUserState';
+import useUserStore from '../../../../stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
@@ -29,7 +29,7 @@ import KeyStructure from '../../../../components/KeyStructure.vue';
 
 /* Stores */
 const keyPairsStore = useKeyPairsStore();
-const userStateStore = useUserStateStore();
+const user = useUserStore();
 const networkStore = useNetworkStore();
 
 /* Composables */
@@ -55,8 +55,8 @@ const isLoading = ref(false);
 
 /* Handlers */
 const handleGetUserSignature = async () => {
-  if (!userStateStore.userData?.userId) {
-    throw Error('No user selected');
+  if (!user.data.isLoggedIn) {
+    throw Error('User is not logged in');
   }
 
   if (!transaction.value || !payerData.isValid.value) {
@@ -78,7 +78,7 @@ const handleGetUserSignature = async () => {
       keys,
       transaction.value as any,
       true,
-      userStateStore.userData.userId,
+      user.data.email,
       userPassword.value,
     );
 

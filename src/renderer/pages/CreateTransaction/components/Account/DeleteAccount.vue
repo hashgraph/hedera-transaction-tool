@@ -4,7 +4,7 @@ import { AccountId, KeyList, PublicKey, Hbar, AccountDeleteTransaction } from '@
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useNetworkStore from '../../../../stores/storeNetwork';
-import useUserStateStore from '../../../../stores/storeUserState';
+import useUserStore from '../../../../stores/storeUser';
 
 import { useRoute } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
@@ -23,7 +23,7 @@ import KeyStructure from '../../../../components/KeyStructure.vue';
 
 /* Stores */
 const keyPairsStore = useKeyPairsStore();
-const userStateStore = useUserStateStore();
+const user = useUserStore();
 const networkStore = useNetworkStore();
 
 /* Composables */
@@ -49,8 +49,8 @@ const isLoading = ref(false);
 /* Handlers */
 const handleGetUserSignature = async () => {
   try {
-    if (!userStateStore.userData?.userId) {
-      throw new Error('No user selected');
+    if (!user.data.isLoggedIn) {
+      throw new Error('User is not logged in');
     }
 
     if (!transaction.value || !payerData.accountId.value) {
@@ -72,7 +72,7 @@ const handleGetUserSignature = async () => {
       ),
       transaction.value as any,
       true,
-      userStateStore.userData.userId,
+      user.data.email,
       userPassword.value,
     );
 

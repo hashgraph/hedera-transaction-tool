@@ -7,9 +7,7 @@ import * as HashgraphProto from '@hashgraph/proto';
 export const openExternal = (url: string) => window.electronAPI.utils.openExternal(url);
 
 /* Decode Protobuff encoded key */
-export const decodeProtobuffKey = async (
-  protobuffKey: string,
-): Promise<KeyList | Key | undefined> => {
+export const decodeProtobuffKey = async (protobuffKey: string): Promise<Key | undefined> => {
   const key = await window.electronAPI.utils.decodeProtobuffKey(protobuffKey);
 
   if (key.thresholdKey) {

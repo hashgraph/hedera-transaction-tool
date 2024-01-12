@@ -5,12 +5,25 @@ import { AccountId, EvmAddress, Hbar, HbarUnit, Key, PublicKey, Timestamp } from
 import { decodeProtobuffKey } from './electronUtilsService';
 
 import {
-  IMirrorNodeAccountInfo,
-  IMirrorNodeAllowance,
+  AccountInfo,
+  IAccountInfoParsed,
+  CryptoAllowance,
   NetworkExchangeRateSetResponse,
 } from '../../main/shared/interfaces';
 
 /* Mirror node data service */
+
+/* Get users account id by a public key */
+export const getAccountId = async (mirrorNodeURL: string, publicKey: string) => {
+  try {
+    const { data } = await axios.get(`${mirrorNodeURL}/accounts/?account.publickey=${publicKey}`);
+    if (data.accounts.length > 0) {
+      return data.accounts[0].account;
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
 
 /* Gets the account information by account id */
 export const getAccountInfo = async (
@@ -22,43 +35,57 @@ export const getAccountInfo = async (
     signal: controller?.signal,
   });
 
-  let key: Key | undefined;
+  const rawAccountInfo: AccountInfo = data;
 
-  switch (data.key._type) {
-    case 'ProtobufEncoded':
-      key = await decodeProtobuffKey(data.key.key);
-      break;
-    case 'ED25519':
-    case 'ECDSA_SECP256K1':
-      key = PublicKey.fromString(data.key.key);
+  let key: Key | null;
+
+  if (!rawAccountInfo.key) {
+    key = null;
+  } else {
+    switch (rawAccountInfo.key._type) {
+      case 'ProtobufEncoded':
+        key = (await decodeProtobuffKey(rawAccountInfo.key.key || '')) || null;
+        break;
+      case 'ED25519':
+      case 'ECDSA_SECP256K1':
+        key = PublicKey.fromString(rawAccountInfo.key.key || '');
+        break;
+      default:
+        key = null;
+        break;
+    }
   }
 
-  if (!key) {
-    throw Error('No key available');
-  }
-
-  const accountInfo: IMirrorNodeAccountInfo = {
-    accountId: AccountId.fromString(data.account),
-    alias: data.alias as string,
-    balance: Hbar.from(data.balance.balance, HbarUnit.Tinybar),
-    declineReward: Boolean(data.decline_reward),
-    deleted: data.deleted,
-    ethereumNonce: Number(data.ethereum_nonce),
-    evmAddress: EvmAddress.fromString(data.evm_address),
-    createdTimestamp: data.created_timestamp
-      ? new Timestamp(data.created_timestamp.split('.')[0], data.created_timestamp.split('.')[1])
+  const accountInfo: IAccountInfoParsed = {
+    accountId: AccountId.fromString(rawAccountInfo.account || ''),
+    alias: rawAccountInfo.alias as string,
+    balance: Hbar.from(rawAccountInfo.balance?.balance, HbarUnit.Tinybar),
+    declineReward: Boolean(rawAccountInfo.decline_reward),
+    deleted: Boolean(rawAccountInfo.deleted),
+    ethereumNonce: Number(rawAccountInfo.ethereum_nonce),
+    evmAddress: EvmAddress.fromString(rawAccountInfo.evm_address || ''),
+    createdTimestamp: rawAccountInfo.created_timestamp
+      ? new Timestamp(
+          rawAccountInfo.created_timestamp.split('.')[0],
+          rawAccountInfo.created_timestamp.split('.')[1],
+        )
       : null,
-    expiryTimestamp: data.expiry_timestamp
-      ? new Timestamp(data.expiry_timestamp.split('.')[0], data.expiry_timestamp.split('.')[1])
+    expiryTimestamp: rawAccountInfo.expiry_timestamp
+      ? new Timestamp(
+          rawAccountInfo.expiry_timestamp.split('.')[0],
+          rawAccountInfo.expiry_timestamp.split('.')[1],
+        )
       : null,
     key: key,
-    maxAutomaticTokenAssociations: data.max_automatic_token_associations,
-    memo: data.memo,
-    pendingRewards: Hbar.from(data.pending_reward, HbarUnit.Tinybar),
-    receiverSignatureRequired: Boolean(data.receiver_sig_required),
-    stakedAccountId: data.staked_account_id ? AccountId.fromString(data.staked_account_id) : null,
-    stakedNodeId: Number(data.staked_node_id),
-    autoRenewPeriod: data.auto_renew_period,
+    maxAutomaticTokenAssociations: rawAccountInfo.max_automatic_token_associations,
+    memo: rawAccountInfo.memo,
+    pendingRewards: Hbar.from(rawAccountInfo.pending_reward, HbarUnit.Tinybar),
+    receiverSignatureRequired: Boolean(rawAccountInfo.receiver_sig_required),
+    stakedAccountId: rawAccountInfo.staked_account_id
+      ? AccountId.fromString(rawAccountInfo.staked_account_id)
+      : null,
+    stakedNodeId: Number(rawAccountInfo.staked_node_id),
+    autoRenewPeriod: rawAccountInfo.auto_renew_period,
   };
 
   return accountInfo;
@@ -74,7 +101,7 @@ export const getAccountAllowances = async (
     signal: controller?.signal,
   });
 
-  const allowances: IMirrorNodeAllowance[] = data.allowances;
+  const allowances: CryptoAllowance[] = data.allowances;
 
   return allowances;
 };

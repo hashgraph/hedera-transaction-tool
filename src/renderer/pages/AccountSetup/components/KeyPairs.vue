@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { onMounted, onUpdated, ref, watch } from 'vue';
-import Tooltip from 'bootstrap/js/dist/tooltip';
 
 import { IKeyPair } from '../../../../main/shared/interfaces';
 
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
-import useUserStateStore from '../../../stores/storeUserState';
+import useUserStore from '../../../stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
+import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import {
   restorePrivateKey,
@@ -17,7 +17,7 @@ import {
 
 import AppButton from '../../../components/ui/AppButton.vue';
 import AppModal from '../../../components/ui/AppModal.vue';
-import AppSwitch from '../../../components/ui/AppSwitch.vue';
+// import AppSwitch from '../../../components/ui/AppSwitch.vue';
 
 /* Props */
 const props = defineProps<{
@@ -27,15 +27,16 @@ const props = defineProps<{
 
 /* Stores */
 const keyPairsStore = useKeyPairsStore();
-const useStateStore = useUserStateStore();
+const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
+const createTooltips = useCreateTooltips();
 
 /* State */
 const nickname = ref('');
 
-const advancedMode = ref(false);
+// const advancedMode = ref(false);
 const index = ref(0);
 const passPhrase = ref('');
 
@@ -87,9 +88,9 @@ const handleSaveKey = async () => {
 
     try {
       const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
-      await keyPairsStore.storeKeyPair(props.encryptPassword, secretHash, keyPair);
+      await keyPairsStore.storeKeyPair(props.encryptPassword, keyPair, secretHash);
 
-      isSuccessModalShown.value = true;
+      // isSuccessModalShown.value = true;
     } catch (err: any) {
       let message = 'Failed to store key pair';
       if (err.message && typeof err.message === 'string') {
@@ -102,13 +103,17 @@ const handleSaveKey = async () => {
 
 const handleRestoreExisting = async () => {
   try {
-    if (!useStateStore.userData) {
+    if (!user.data.isLoggedIn) {
       throw Error('User not logged in!');
     }
 
     const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
     const keyPairsToRestore = (
-      await getStoredKeyPairs(useStateStore.userData?.userId, secretHash)
+      await getStoredKeyPairs(
+        user.data.email,
+        user.data.activeServerURL || '',
+        user.data.activeUserId || '',
+      )
     ).filter(kp => kp.privateKey === '');
 
     await Promise.all(
@@ -122,7 +127,7 @@ const handleRestoreExisting = async () => {
 
         if (kp.publicKey === restoredPrivateKey.publicKey.toStringRaw()) {
           kp.privateKey = restoredPrivateKey.toStringRaw();
-          await keyPairsStore.storeKeyPair(props.encryptPassword, secretHash, kp);
+          await keyPairsStore.storeKeyPair(props.encryptPassword, kp, secretHash);
         }
       }),
     );
@@ -142,13 +147,12 @@ const handleRestoreExisting = async () => {
 };
 
 /* Hooks */
-onMounted(() => {
-  handleRestoreKey();
+onMounted(async () => {
+  await handleRestoreKey();
 });
 
 onUpdated(() => {
-  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-  Array.from(tooltipTriggerList).map(tooltipTriggerEl => new Tooltip(tooltipTriggerEl));
+  createTooltips();
 });
 
 /* Watchers */
@@ -182,7 +186,7 @@ watch(isSuccessModalShown, shown => {
         class="form-control rounded-4"
         placeholder="Enter Nickname (optional)"
       />
-      <AppSwitch
+      <!-- <AppSwitch
         v-model:checked="advancedMode"
         size="md"
         name="advanced-mode"
@@ -224,7 +228,7 @@ watch(isSuccessModalShown, shown => {
             >Restore Key
           </AppButton>
         </div>
-      </div>
+      </div> -->
 
       <div class="form-group mt-5">
         <label class="form-label">ED25519 Private Key</label>
@@ -234,22 +238,26 @@ watch(isSuccessModalShown, shown => {
         <label class="form-label">ED25519 Public Key</label>
         <p class="text-break">{{ publicKey }}</p>
       </div>
-      <p v-if="keyExists" class="mt-3 text-danger">This key is already restored.</p>
+      <!-- <p v-if="keyExists" class="mt-3 text-danger">This key is already restored.</p> -->
       <div class="d-flex flex-column align-items-center gap-4 mt-8">
-        <AppButton
+        <!-- <AppButton
           :disabled="!privateKey || keyExists"
           color="secondary"
           size="large"
           class="rounded-4 col-12 col-lg-6"
           @click="handleSaveKey"
           >Save Key</AppButton
-        >
+        > -->
         <AppButton
-          :disabled="keyPairsStore.keyPairs.filter(kp => kp.privateKey.length !== 0).length === 0"
           color="secondary"
           size="large"
-          class="rounded-4 col-12 col-lg-6"
-          @click="handleContinue()"
+          class="col-12 col-lg-6"
+          @click="
+            async () => {
+              await handleSaveKey();
+              handleContinue();
+            }
+          "
           >Continue</AppButton
         >
       </div>

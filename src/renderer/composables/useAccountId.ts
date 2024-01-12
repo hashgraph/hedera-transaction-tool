@@ -2,7 +2,7 @@ import { computed, ref, watch } from 'vue';
 
 import { AccountId, Hbar } from '@hashgraph/sdk';
 
-import { IMirrorNodeAccountInfo, IMirrorNodeAllowance } from '../../main/shared/interfaces';
+import { IAccountInfoParsed, CryptoAllowance } from '../../main/shared/interfaces';
 
 import useNetworkStore from '../stores/storeNetwork';
 
@@ -15,8 +15,8 @@ export default function useAccountId() {
 
   /* State */
   const accountId = ref<string>('');
-  const accountInfo = ref<IMirrorNodeAccountInfo | null>(null);
-  const allowances = ref<IMirrorNodeAllowance[]>([]);
+  const accountInfo = ref<IAccountInfoParsed | null>(null);
+  const allowances = ref<CryptoAllowance[]>([]);
 
   const accountInfoController = ref<AbortController | null>(null);
   const allowancesController = ref<AbortController | null>(null);
@@ -79,7 +79,7 @@ export default function useAccountId() {
 
   function getSpenderAllowance(spenderId: string | AccountId) {
     return Hbar.fromTinybars(
-      allowances.value.find(al => al.spender === spenderId.toString())?.amount || 0,
+      allowances.value.find(al => al.spender === spenderId.toString())?.amount_granted || 0,
     );
   }
 
