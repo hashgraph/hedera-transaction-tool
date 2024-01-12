@@ -20,12 +20,12 @@ export default () => {
       _e,
       email: string,
       password: string,
-      secretHash: string,
       keyPair: IKeyPair,
+      secretHash?: string,
       serverUrl?: string,
       userId?: string,
     ) => {
-      await storeKeyPair(email, password, secretHash, keyPair, serverUrl, userId);
+      await storeKeyPair(email, password, keyPair, secretHash, serverUrl, userId);
     },
   );
 

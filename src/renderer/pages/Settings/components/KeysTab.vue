@@ -6,7 +6,10 @@ import useKeyPairsStore from '../../../stores/storeKeyPairs';
 
 import { useToast } from 'vue-toast-notification';
 
-import { decryptPrivateKey } from '../../../services/keyPairService';
+import {
+  decryptPrivateKey,
+  generateECDSAKeyPairFromString,
+} from '../../../services/keyPairService';
 
 import AppButton from '../../../components/ui/AppButton.vue';
 import AppModal from '../../../components/ui/AppModal.vue';
@@ -20,6 +23,7 @@ const toast = useToast();
 
 /* State */
 const isDecryptedModalShown = ref(false);
+const isImportECDSAKeyModalShown = ref(false);
 const decryptedKey = ref<string | null>(null);
 const publicKeysPrivateKeyToDecrypt = ref('');
 const userPassword = ref('');
@@ -48,6 +52,29 @@ const handleDecrypt = async e => {
   }
 };
 
+const handleImportExternalKey = e => {
+  e.preventDefault();
+
+  try {
+    const formData = new FormData(e.currentTarget);
+    const privateKey = formData.get('private-key');
+    const nickname = formData.get('nickname');
+
+    keyPairsStore.storeKeyPair(
+      userPassword.value,
+      generateECDSAKeyPairFromString(privateKey?.toString() || '', nickname?.toString() || ''),
+    );
+
+    isImportECDSAKeyModalShown.value = false;
+
+    userPassword.value = '';
+    formData.delete('private-key');
+    formData.delete('nickname');
+  } catch (err: any) {
+    toast.error(err.message || 'Failed to import ECDSA private key', { position: 'top-right' });
+  }
+};
+
 /* Hooks */
 onMounted(() => {
   keyPairsStore.refetch();
@@ -64,8 +91,12 @@ watch(isDecryptedModalShown, newVal => {
 </script>
 <template>
   <div>
-    <RouterLink class="btn btn-primary mb-4" :to="{ name: 'restoreKey' }">Restore key</RouterLink>
-
+    <div class="d-flex gap-4">
+      <RouterLink class="btn btn-primary mb-4" :to="{ name: 'restoreKey' }">Restore key</RouterLink>
+      <AppButton class="btn btn-primary mb-4" @click="isImportECDSAKeyModalShown = true"
+        >Import ECDSA Key</AppButton
+      >
+    </div>
     <div
       v-for="keyPair in keyPairsStore.keyPairs"
       :key="keyPair.publicKey"
@@ -73,7 +104,9 @@ watch(isDecryptedModalShown, newVal => {
     >
       <div class="d-flex justify-content-between align-items-center">
         <div class="mb-3 d-flex">
-          <p class="me-3 text-secondary text-bold text-main">Index: {{ keyPair.index }}</p>
+          <p v-if="keyPair.index >= 0" class="me-3 text-secondary text-bold text-main">
+            Index: {{ keyPair.index }}
+          </p>
           <p v-if="keyPair.nickname" class="text-secondary text-bold text-main">
             Nickname: {{ keyPair.nickname }}
           </p>
@@ -137,6 +170,44 @@ watch(isDecryptedModalShown, newVal => {
             class="mt-5 w-100 rounded-4"
             :disabled="userPassword.length === 0"
             >Decrypt</AppButton
+          >
+        </form>
+      </div>
+    </AppModal>
+    <AppModal v-model:show="isImportECDSAKeyModalShown" class="common-modal">
+      <div class="p-5">
+        <i
+          class="bi bi-x-lg d-inline-block cursor-pointer"
+          style="line-height: 16px"
+          @click="isDecryptedModalShown = false"
+        ></i>
+        <div class="mt-5 text-center">
+          <i class="bi bi-key extra-large-icon" style="line-height: 16px"></i>
+        </div>
+        <form @submit="handleImportExternalKey">
+          <div class="mt-4 form-group">
+            <label class="form-label">Enter your password</label>
+            <input
+              v-model="userPassword"
+              type="password"
+              class="form-control rounded-4"
+              placeholder="Type your password"
+            />
+          </div>
+          <div class="mt-4 form-group">
+            <label class="form-label">Enter nickname (optional)</label>
+            <input class="form-control rounded-4" name="nickname" placeholder="Type nickname" />
+          </div>
+          <div class="mt-4 form-group">
+            <label class="form-label">Enter ECDSA Private key</label>
+            <input
+              class="form-control rounded-4"
+              name="private-key"
+              placeholder="Type ECDSA Private key"
+            />
+          </div>
+          <AppButton type="submit" color="primary" size="large" class="mt-5 w-100 rounded-4"
+            >Import</AppButton
           >
         </form>
       </div>

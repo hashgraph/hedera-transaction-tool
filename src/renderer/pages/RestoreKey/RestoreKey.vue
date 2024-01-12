@@ -108,7 +108,7 @@ const handleSaveKey = async () => {
 
     try {
       const secretHash = await keyPairService.hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
-      await keyPairsStore.storeKeyPair(password.value, secretHash, keyPair);
+      await keyPairsStore.storeKeyPair(password.value, keyPair, secretHash);
 
       keyPairsStore.clearRecoveryPhrase();
 

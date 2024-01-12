@@ -1,4 +1,4 @@
-import { Key, KeyList, Mnemonic, PublicKey } from '@hashgraph/sdk';
+import { Key, KeyList, Mnemonic, PrivateKey, PublicKey } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
 import { IKeyPair } from '../../main/shared/interfaces';
@@ -45,11 +45,11 @@ export const restorePrivateKey = async (
 export const storeKeyPair = (
   email: string,
   password: string,
-  secretHash: string,
   keyPair: IKeyPair,
+  secretHash?: string,
   serverUrl?: string,
   userId?: string,
-) => window.electronAPI.keyPairs.store(email, password, secretHash, keyPair, serverUrl, userId);
+) => window.electronAPI.keyPairs.store(email, password, keyPair, secretHash, serverUrl, userId);
 
 /* Change the decryption password of a stored private key */
 export const changeDecryptionPassword = (email: string, oldPassword: string, newPassword: string) =>
@@ -161,6 +161,25 @@ export const getKeyListLevels = (keyList: KeyList) => {
     maxLevel = Math.max(maxLevel, level);
   }
   return maxLevel + 1;
+};
+
+export const generateECDSAKeyPairFromString = (
+  ecdsaPrivateKey: string,
+  nickname: string,
+  index?: number,
+): IKeyPair => {
+  try {
+    const privateKey = PrivateKey.fromStringECDSA(ecdsaPrivateKey);
+
+    return {
+      nickname,
+      privateKey: privateKey.toStringRaw(),
+      publicKey: privateKey.publicKey.toStringRaw(),
+      index: index || -1,
+    };
+  } catch (error) {
+    throw new Error('Invalid ECDSA Private key');
+  }
 };
 
 function flattenComplexKey(

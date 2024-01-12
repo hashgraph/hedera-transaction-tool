@@ -51,12 +51,12 @@ export const electronAPI = {
     store: (
       email: string,
       password: string,
-      secretHash: string,
       keyPair: IKeyPair,
+      secretHash?: string,
       serverUrl?: string,
       userId?: string,
     ): Promise<void> =>
-      ipcRenderer.invoke('keyPairs:store', email, password, secretHash, keyPair, serverUrl, userId),
+      ipcRenderer.invoke('keyPairs:store', email, password, keyPair, secretHash, serverUrl, userId),
     changeDecryptionPassword: (
       email: string,
       oldPassword: string,

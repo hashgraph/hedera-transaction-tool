@@ -88,7 +88,7 @@ const handleSaveKey = async () => {
 
     try {
       const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
-      await keyPairsStore.storeKeyPair(props.encryptPassword, secretHash, keyPair);
+      await keyPairsStore.storeKeyPair(props.encryptPassword, keyPair, secretHash);
 
       // isSuccessModalShown.value = true;
     } catch (err: any) {
@@ -127,7 +127,7 @@ const handleRestoreExisting = async () => {
 
         if (kp.publicKey === restoredPrivateKey.publicKey.toStringRaw()) {
           kp.privateKey = restoredPrivateKey.toStringRaw();
-          await keyPairsStore.storeKeyPair(props.encryptPassword, secretHash, kp);
+          await keyPairsStore.storeKeyPair(props.encryptPassword, kp, secretHash);
         }
       }),
     );
@@ -149,8 +149,6 @@ const handleRestoreExisting = async () => {
 /* Hooks */
 onMounted(async () => {
   await handleRestoreKey();
-  await handleSaveKey();
-  keyPairsStore.refetch();
 });
 
 onUpdated(() => {
@@ -251,11 +249,15 @@ watch(isSuccessModalShown, shown => {
           >Save Key</AppButton
         > -->
         <AppButton
-          :disabled="keyPairsStore.keyPairs.filter(kp => kp.privateKey.length !== 0).length === 0"
           color="secondary"
           size="large"
           class="col-12 col-lg-6"
-          @click="handleContinue()"
+          @click="
+            async () => {
+              await handleSaveKey();
+              handleContinue();
+            }
+          "
           >Continue</AppButton
         >
       </div>

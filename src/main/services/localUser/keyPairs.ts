@@ -4,14 +4,21 @@ import Store, { Schema } from 'electron-store';
 
 import { encrypt, decrypt } from '../../utils/crypto';
 
-import { IKeyPair, IStoredSecretHash, storedSecretHashJSONSchema } from '../../shared/interfaces';
+import {
+  IKeyPair,
+  IStoredSecretHash,
+  keyPairJSONSchema,
+  storedSecretHashJSONSchema,
+} from '../../shared/interfaces';
 
 type SchemaProperties = {
   localKeys: IStoredSecretHash[];
+  localExternalKeys: IKeyPair[];
   organizationKeys: {
     organizationServerUrl: string;
     userId: string;
     secretHashes: IStoredSecretHash[];
+    externalKeys: IKeyPair[];
   }[];
 };
 
@@ -21,6 +28,11 @@ export default function getLocalUserKeysStore(email: string) {
     localKeys: {
       type: 'array',
       items: storedSecretHashJSONSchema,
+      default: [],
+    },
+    localExternalKeys: {
+      type: 'array',
+      items: keyPairJSONSchema,
       default: [],
     },
     organizationKeys: {
@@ -37,6 +49,11 @@ export default function getLocalUserKeysStore(email: string) {
           secretHashes: {
             type: 'array',
             items: storedSecretHashJSONSchema,
+            default: [],
+          },
+          externalKeys: {
+            type: 'array',
+            items: keyPairJSONSchema,
             default: [],
           },
         },
@@ -115,6 +132,31 @@ export const getStoredKeyPairs = async (
     keyPairs = storedSecretHashes.map(orgSh => orgSh.keyPairs).flat();
   }
 
+  const store = getLocalUserKeysStore(email);
+
+  try {
+    const organizationKeys = store.get('organizationKeys');
+
+    if (serverUrl) {
+      const organizationUsers = organizationKeys.filter(
+        org => org.organizationServerUrl === serverUrl,
+      );
+
+      if (userId) {
+        keyPairs = keyPairs.concat(
+          organizationUsers.find(u => u.userId === userId)?.externalKeys || [],
+        );
+      }
+
+      keyPairs = keyPairs.concat(organizationUsers.map(u => u.externalKeys).flat() || []);
+    } else {
+      keyPairs = keyPairs.concat(store.get('localExternalKeys'));
+    }
+  } catch (error: any) {
+    store.clear();
+    return [];
+  }
+
   return keyPairs;
 };
 
@@ -133,8 +175,8 @@ export const getStoredKeysSecretHashes = async (
 export const storeKeyPair = async (
   email: string,
   password: string,
-  secretHash: string,
   keyPair: IKeyPair,
+  secretHash?: string,
   serverUrl?: string,
   userId?: string,
 ) => {
@@ -154,49 +196,87 @@ export const storeKeyPair = async (
       );
 
       if (organizationUsers.length === 0) {
-        store.set('organizationKeys', [
-          ...organizationsKeys,
-          {
-            organizationServerUrl: serverUrl,
-            users: [
-              {
-                userId,
-                secretHashes: [
-                  {
-                    secretHash: secretHash,
-                    keyPairs: [keyPair],
-                  },
-                ],
-              },
-            ],
-          },
-        ]);
+        if (secretHash) {
+          store.set('organizationKeys', [
+            ...organizationsKeys,
+            {
+              organizationServerUrl: serverUrl,
+              users: [
+                {
+                  userId,
+                  secretHashes: [
+                    {
+                      secretHash: secretHash,
+                      keyPairs: [keyPair],
+                    },
+                  ],
+                  externalKeys: [],
+                },
+              ],
+            },
+          ]);
+        } else {
+          store.set('organizationKeys', [
+            ...organizationsKeys,
+            {
+              organizationServerUrl: serverUrl,
+              users: [
+                {
+                  userId,
+                  externalKeys: [keyPair],
+                  secretHashes: [],
+                },
+              ],
+            },
+          ]);
+        }
+
         return;
       }
 
       const storedUser = organizationUsers.find(u => u.userId === userId);
 
       if (!storedUser) {
-        organizationUsers.push({
-          organizationServerUrl: serverUrl,
-          userId,
-          secretHashes: [{ secretHash, keyPairs: [keyPair] }],
-        });
+        if (secretHash) {
+          organizationUsers.push({
+            organizationServerUrl: serverUrl,
+            userId,
+            secretHashes: [{ secretHash, keyPairs: [keyPair] }],
+            externalKeys: [],
+          });
+        } else {
+          organizationUsers.push({
+            organizationServerUrl: serverUrl,
+            userId,
+            externalKeys: [keyPair],
+            secretHashes: [],
+          });
+        }
       } else {
-        const storedSecretHash = storedUser.secretHashes.find(sh => sh.secretHash === secretHash);
+        if (secretHash) {
+          const storedSecretHash = storedUser.secretHashes.find(sh => sh.secretHash === secretHash);
 
-        if (storedSecretHash) {
-          const s_keyPair = storedSecretHash.keyPairs.find(
-            kp => kp.publicKey === keyPair.publicKey,
-          );
+          if (storedSecretHash) {
+            const s_keyPair = storedSecretHash.keyPairs.find(
+              kp => kp.publicKey === keyPair.publicKey,
+            );
+
+            if (s_keyPair) {
+              s_keyPair.privateKey = keyPair.privateKey;
+            } else {
+              storedSecretHash.keyPairs.push(keyPair);
+            }
+          } else {
+            storedUser.secretHashes.push({ secretHash, keyPairs: [keyPair] });
+          }
+        } else {
+          const s_keyPair = storedUser.externalKeys.find(kp => kp.publicKey === keyPair.publicKey);
 
           if (s_keyPair) {
             s_keyPair.privateKey = keyPair.privateKey;
           } else {
-            storedSecretHash.keyPairs.push(keyPair);
+            storedUser.externalKeys.push(keyPair);
           }
-        } else {
-          storedUser.secretHashes.push({ secretHash, keyPairs: [keyPair] });
         }
       }
 
@@ -205,24 +285,39 @@ export const storeKeyPair = async (
         ...organizationUsers,
       ]);
     } else {
-      const localKeys = store.get('localKeys');
-      const localSecretHash = localKeys.find(sh => sh.secretHash === secretHash);
+      if (secretHash) {
+        const localKeys = store.get('localKeys');
 
-      if (localSecretHash) {
-        const s_keyPair = localSecretHash.keyPairs.find(kp => kp.publicKey === keyPair.publicKey);
+        const localSecretHash = localKeys.find(sh => sh.secretHash === secretHash);
+
+        if (localSecretHash) {
+          const s_keyPair = localSecretHash.keyPairs.find(kp => kp.publicKey === keyPair.publicKey);
+
+          if (s_keyPair) {
+            s_keyPair.privateKey = keyPair.privateKey;
+          } else {
+            localSecretHash.keyPairs.push(keyPair);
+          }
+
+          store.set('localKeys', localKeys);
+        } else {
+          store.set('localKeys', [
+            ...store.store.localKeys,
+            { secretHash: secretHash, keyPairs: [keyPair] },
+          ]);
+        }
+      } else {
+        const localExternalKeys = store.get('localExternalKeys');
+
+        const s_keyPair = localExternalKeys.find(kp => kp.publicKey === keyPair.publicKey);
 
         if (s_keyPair) {
           s_keyPair.privateKey = keyPair.privateKey;
         } else {
-          localSecretHash.keyPairs.push(keyPair);
+          localExternalKeys.push(keyPair);
         }
 
-        store.set('localKeys', localKeys);
-      } else {
-        store.set('localKeys', [
-          ...store.store.localKeys,
-          { secretHash: secretHash, keyPairs: [keyPair] },
-        ]);
+        store.set('localExternalKeys', localExternalKeys);
       }
     }
   } catch (error: any) {
@@ -252,6 +347,16 @@ export const changeDecryptionPassword = async (
   );
 
   store.set(
+    'localExternalKeys',
+    store.store.localExternalKeys.map(kp => {
+      const decryptedPrivateKey = decrypt(kp.privateKey, oldPassword);
+      const encryptedPrivateKey = encrypt(decryptedPrivateKey, newPassword);
+
+      return { ...kp, privateKey: encryptedPrivateKey };
+    }),
+  );
+
+  store.set(
     'organizationKeys',
     store.store.organizationKeys.map(user => {
       user.secretHashes.forEach(sh => {
@@ -262,6 +367,15 @@ export const changeDecryptionPassword = async (
           return { ...kp, privateKey: encryptedPrivateKey };
         });
       });
+
+      user.externalKeys.forEach(kp => {
+        const decryptedPrivateKey = decrypt(kp.privateKey, oldPassword);
+        const encryptedPrivateKey = encrypt(decryptedPrivateKey, newPassword);
+
+        return { ...kp, privateKey: encryptedPrivateKey };
+      });
+
+      return user;
     }),
   );
 
@@ -294,6 +408,11 @@ export const deleteEncryptedPrivateKeys = async (
   });
   store.set('localKeys', newLocalKeys);
 
+  const newExternalLocalKeys = store.get('localExternalKeys').map(kp => {
+    return { ...kp, privateKey: '' };
+  });
+  store.set('localKeys', newExternalLocalKeys);
+
   const newOrganizationKeys = store.get('organizationKeys').map(user => {
     if (user.organizationServerUrl === serverUrl && user.userId === userId) {
       user.secretHashes?.forEach(sh => {
@@ -301,7 +420,13 @@ export const deleteEncryptedPrivateKeys = async (
           kp.privateKey = '';
         });
       });
+
+      user.externalKeys?.forEach(kp => {
+        kp.privateKey = '';
+      });
     }
+
+    return user;
   });
 
   store.set('organizationKeys', newOrganizationKeys);
