@@ -2,7 +2,7 @@
 import { onMounted, ref, watch } from 'vue';
 import { FileContentsQuery } from '@hashgraph/sdk';
 
-import useLocalUserStateStore from '../../../../stores/storeLocalUserState';
+import useUserStore from '../../../../stores/storeUser';
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useNetworkStore from '../../../../stores/storeNetwork';
 
@@ -16,7 +16,7 @@ import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
 
 /* Stores */
-const localUserStateStore = useLocalUserStateStore();
+const user = useUserStore();
 const keyPairsStore = useKeyPairsStore();
 const networkStore = useNetworkStore();
 
@@ -33,8 +33,8 @@ const isUserPasswordModalShown = ref(false);
 
 /* Handlers */
 const handleRead = async () => {
-  if (!localUserStateStore.email) {
-    throw Error('No user selected');
+  if (!user.data.isLoggedIn) {
+    throw Error('User is not logged in');
   }
 
   try {
@@ -44,7 +44,7 @@ const handleRead = async () => {
       ?.publicKey;
 
     const privateKey = await decryptPrivateKey(
-      localUserStateStore.email,
+      user.data.email,
       userPassword.value,
       publicKey || '',
     );
