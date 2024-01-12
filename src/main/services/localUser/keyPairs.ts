@@ -48,7 +48,7 @@ export default function getLocalUserKeysStore(email: string) {
   const store = new Store({
     schema,
     cwd: getUserStorageFolderPath(email),
-    name: `${email}-keys`,
+    name: `keys`,
     clearInvalidConfig: true,
   });
 

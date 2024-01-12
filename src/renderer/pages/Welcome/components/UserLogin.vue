@@ -65,6 +65,7 @@ const handleOnFormSubmit = async (event: Event) => {
     if (shouldRegister.value && !inputConfirmPasswordInvalid.value) {
       await registerLocal(inputEmail.value, inputPassword.value);
       user.login(inputEmail.value, []);
+      user.data.password = inputPassword.value;
       router.push({ name: 'accountSetup' });
     } else if (!shouldRegister.value) {
       await loginLocal(inputEmail.value, inputPassword.value, true);

@@ -41,7 +41,7 @@ export default function getLocalUserAuthStore(email: string) {
   const store = new Store({
     schema,
     cwd: getUserStorageFolderPath(email),
-    name: `${email}-auth`,
+    name: `auth`,
     clearInvalidConfig: true,
   });
 

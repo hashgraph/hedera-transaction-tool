@@ -30,7 +30,7 @@ export default function getAccountsStore(email: string) {
   const store = new Store({
     schema,
     cwd: getUserStorageFolderPath(email),
-    name: `${email}-auth`,
+    name: `accounts`,
     clearInvalidConfig: true,
   });
 
