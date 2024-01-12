@@ -26,7 +26,7 @@ const user = useUserStore();
 /* Composables */
 const toast = useToast();
 const router = useRouter();
-useCreateTooltips();
+const createTooltips = useCreateTooltips();
 
 /* State */
 const inputEmail = ref('');
@@ -45,7 +45,7 @@ const passwordRequirements = reactive({
 });
 const tooltipContent = ref('');
 const loginError = ref<string | null>(null);
-const shouldRegister = ref(true);
+const shouldRegister = ref(false);
 
 /* Handlers */
 const handleOnFormSubmit = async (event: Event) => {
@@ -57,13 +57,12 @@ const handleOnFormSubmit = async (event: Event) => {
   inputConfirmPasswordInvalid.value =
     inputPassword.value.trim() !== inputConfirmPassword.value.trim();
 
-  if (inputPasswordInvalid.value) {
-    toast.error('Password too weak', { position: 'top-right' });
-    return;
-  }
-
   if (!inputEmailInvalid.value && !inputPasswordInvalid.value) {
     if (shouldRegister.value && !inputConfirmPasswordInvalid.value) {
+      if (inputPasswordInvalid.value) {
+        toast.error('Password too weak', { position: 'top-right' });
+        return;
+      }
       await registerLocal(inputEmail.value, inputPassword.value);
       user.login(inputEmail.value, []);
       user.data.password = inputPassword.value;
@@ -98,9 +97,12 @@ const handleResetData = async () => {
 /* Hooks */
 onMounted(async () => {
   isPasswordStrong(inputPassword.value);
-  setTooltipContent();
-
   await checkShouldRegister();
+
+  if (shouldRegister.value) {
+    createTooltips();
+    setTooltipContent();
+  }
 });
 
 /* Misc */
@@ -215,7 +217,7 @@ watch(inputEmail, pass => {
         class="mt-4 form-control rounded-4"
         :class="{ 'is-invalid': inputPasswordInvalid }"
         placeholder="Enter password"
-        data-bs-toggle="tooltip"
+        :data-bs-toggle="shouldRegister ? 'tooltip' : ''"
         data-bs-animation="false"
         data-bs-placement="right"
         data-bs-custom-class="wide-xl-tooltip text-start"
