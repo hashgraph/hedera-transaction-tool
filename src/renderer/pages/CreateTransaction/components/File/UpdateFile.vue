@@ -11,7 +11,7 @@ import {
 
 import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useNetworkStore from '../../../../stores/storeNetwork';
-import useUserStateStore from '../../../../stores/storeUserState';
+import useUserStore from '../../../../stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
@@ -28,7 +28,7 @@ import AppModal from '../../../../components/ui/AppModal.vue';
 
 /* Stores */
 const keyPairsStore = useKeyPairsStore();
-const userStateStore = useUserStateStore();
+const user = useUserStore();
 const networkStore = useNetworkStore();
 
 /* Composables */
@@ -92,8 +92,6 @@ const createTransaction = (isLarge?: boolean) => {
     updateTransaction.setExpirationTime(Timestamp.fromDate(expirationTimestamp.value));
 
   if (content.value.length > 0) {
-    console.log('s');
-
     updateTransaction.setContents(content.value);
   }
   if (fileBuffer.value) {
@@ -193,8 +191,8 @@ const handleGetUserSignature = async () => {
   try {
     isLoading.value = true;
 
-    if (!userStateStore.userData?.userId) {
-      throw Error('No user selected');
+    if (!user.data.isLoggedIn) {
+      throw Error('User is not logged in');
     }
 
     if (!transaction.value || !payerData.isValid.value) {
@@ -222,7 +220,7 @@ const handleGetUserSignature = async () => {
       ),
       transaction.value as any,
       true,
-      userStateStore.userData.userId,
+      user.data.email,
       userPassword.value,
     );
 
@@ -256,7 +254,7 @@ const handleGetUserSignature = async () => {
           ),
           appendTx as any,
           true,
-          userStateStore.userData.userId,
+          user.data.email,
           userPassword.value,
         );
 
