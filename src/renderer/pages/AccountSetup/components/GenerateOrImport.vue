@@ -21,7 +21,7 @@ const user = useUserStore();
 
 /* State */
 const tabItems = ref<TabItem[]>([{ title: 'Create New' }, { title: 'Import Existing' }]);
-const activeTabIndex = ref(0);
+const activeTabIndex = ref(1);
 
 /* Getters */
 const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title);
