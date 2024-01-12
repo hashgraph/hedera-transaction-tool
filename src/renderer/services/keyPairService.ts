@@ -102,7 +102,7 @@ export const updateKeyList = (
       if (key instanceof KeyList) {
         keys[i] = updateKeyList(key, path.slice(1), publicKey, threshold);
       } else {
-        publicKey ? (keys[i] = PublicKey.fromStringED25519(publicKey)) : '';
+        publicKey ? (keys[i] = PublicKey.fromString(publicKey)) : '';
       }
     } else {
       keys[i] = key;

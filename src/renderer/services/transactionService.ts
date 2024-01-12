@@ -51,7 +51,12 @@ export const getTransactionSignatures = async (
       keyPairs.map(async keyPair => {
         const privateKeyString = await decryptPrivateKey(email, password, keyPair.publicKey);
 
-        const privateKey = PrivateKey.fromStringED25519(privateKeyString);
+        const keyType = PublicKey.fromString(keyPair.publicKey);
+
+        const privateKey =
+          keyType._key._type === 'secp256k1'
+            ? PrivateKey.fromStringECDSA(privateKeyString)
+            : PrivateKey.fromStringED25519(privateKeyString);
         const signature = privateKey.signTransaction(transaction);
 
         if (!publicKeys.includes(keyPair.publicKey)) {
