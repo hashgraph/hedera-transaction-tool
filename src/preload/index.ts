@@ -5,6 +5,7 @@ import { proto } from '@hashgraph/proto';
 import { IKeyPair, IOrganization } from '../main/shared/interfaces';
 
 import { Theme } from '../main/modules/ipcHandlers/theme';
+import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
 
 export const electronAPI = {
   theme: {
@@ -75,8 +76,13 @@ export const electronAPI = {
     decodeProtobuffKey: (protobuffEncodedKey: string): Promise<proto.Key> =>
       ipcRenderer.invoke('utils:decodeProtobuffKey', protobuffEncodedKey),
     hash: (data: any): Promise<string> => ipcRenderer.invoke('utils:hash', data),
-    executeTransaction: (transactionData: string) =>
-      ipcRenderer.invoke('utils:executeTransaction', transactionData),
+    executeTransaction: (
+      transactionData: string,
+    ): Promise<{
+      response: TransactionResponse;
+      receipt: TransactionReceipt;
+      transactionId: string;
+    }> => ipcRenderer.invoke('utils:executeTransaction', transactionData),
     executeQuery: (queryData: string) => ipcRenderer.invoke('utils:executeQuery', queryData),
   },
   accounts: {
