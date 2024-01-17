@@ -5,6 +5,10 @@ import 'bootstrap/dist/js/bootstrap.bundle.min';
 
 import AppMenu from './components/Menu.vue';
 import AppHeader from './components/Header.vue';
+import useUserStore from './stores/storeUser';
+
+/* Stores */
+const user = useUserStore();
 
 /* Hooks */
 onMounted(async () => {
@@ -19,8 +23,8 @@ onMounted(async () => {
 
 <template>
   <AppHeader />
-  <div class="container-main">
-    <AppMenu />
+  <div class="container-main" :class="{ 'logged-in': user.data.isLoggedIn }">
+    <AppMenu v-if="user.data.isLoggedIn" />
     <RouterView v-slot="{ Component }" class="flex-1 overflow-hidden">
       <Transition name="fade" mode="out-in">
         <component :is="Component" />

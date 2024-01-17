@@ -86,8 +86,11 @@ input[type='file'] {
   display: flex;
   top: 80px;
   position: relative;
-  margin-left: 224px;
   min-height: calc(100vh - 80px);
+
+  &.logged-in {
+    margin-left: 224px;
+  }
 }
 
 .container-menu {
