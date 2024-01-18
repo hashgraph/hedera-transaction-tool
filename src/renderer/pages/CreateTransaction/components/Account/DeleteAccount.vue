@@ -1,29 +1,21 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, ref } from 'vue';
 import { AccountId, KeyList, PublicKey, Hbar, AccountDeleteTransaction } from '@hashgraph/sdk';
 
-import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useNetworkStore from '../../../../stores/storeNetwork';
-import useUserStore from '../../../../stores/storeUser';
 
 import { useRoute } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
 
-import { openExternal } from '../../../../services/electronUtilsService';
-import {
-  createTransactionId,
-  execute,
-  getTransactionSignatures,
-} from '../../../../services/transactionService';
+import { createTransactionId } from '../../../../services/transactionService';
 
+import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
 import KeyStructure from '../../../../components/KeyStructure.vue';
 
 /* Stores */
-const keyPairsStore = useKeyPairsStore();
-const user = useUserStore();
 const networkStore = useNetworkStore();
 
 /* Composables */
@@ -35,72 +27,17 @@ const accountData = useAccountId();
 const transferAccountData = useAccountId();
 
 /* State */
+const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
+
 const transaction = ref<AccountDeleteTransaction | null>(null);
-const transactionId = ref('');
 const validStart = ref('');
 const maxTransactionfee = ref(2);
-const userPassword = ref('');
 
 const isKeyStructureModalShown = ref(false);
-const isSignModalShown = ref(false);
-const isAccountDeleteModalShown = ref(false);
-const isLoading = ref(false);
 
 /* Handlers */
-const handleGetUserSignature = async () => {
-  try {
-    if (!user.data.isLoggedIn) {
-      throw new Error('User is not logged in');
-    }
-
-    if (!transaction.value || !payerData.accountId.value) {
-      throw new Error('Transaction or payer missing');
-    }
-
-    isLoading.value = true;
-
-    await getTransactionSignatures(
-      keyPairsStore.keyPairs.filter(kp =>
-        payerData.keysFlattened.value
-          .concat(
-            accountData.keysFlattened.value,
-            transferAccountData.accountInfo.value?.receiverSignatureRequired
-              ? transferAccountData.keysFlattened.value
-              : [],
-          )
-          .includes(kp.publicKey),
-      ),
-      transaction.value as any,
-      true,
-      user.data.email,
-      userPassword.value,
-    );
-
-    // Send to Transaction w/ user signatures to Back End
-    const { transactionId: txId } = await execute(
-      transaction.value.toBytes().toString(),
-      networkStore.network,
-      networkStore.customNetworkSettings,
-    );
-    transactionId.value = txId;
-
-    isSignModalShown.value = false;
-    isAccountDeleteModalShown.value = true;
-  } catch (err: any) {
-    let message = 'Transaction failed';
-    if (err.message && typeof err.message === 'string') {
-      message = err.message;
-    }
-    toast.error(message, { position: 'top-right' });
-  } finally {
-    isLoading.value = false;
-  }
-};
-
 const handleCreate = async () => {
   try {
-    isLoading.value = true;
-
     transaction.value = new AccountDeleteTransaction()
       .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
       .setTransactionValidDuration(180)
@@ -111,31 +48,15 @@ const handleCreate = async () => {
 
     transaction.value.freezeWith(networkStore.client);
 
-    const someUserAccountIsPayer = keyPairsStore.keyPairs.some(kp =>
-      payerData.keysFlattened.value
-        .concat(
-          accountData.keysFlattened.value,
-          transferAccountData.accountInfo.value?.receiverSignatureRequired
-            ? transferAccountData.keysFlattened.value
-            : [],
-        )
-        .includes(kp.publicKey),
+    const requiredSignatures = payerData.keysFlattened.value.concat(
+      accountData.keysFlattened.value,
+      transferAccountData.accountInfo.value?.receiverSignatureRequired
+        ? transferAccountData.keysFlattened.value
+        : [],
     );
-
-    if (someUserAccountIsPayer) {
-      isSignModalShown.value = true;
-    } else {
-      // Send to Back End (Payer, old key, new key should sign!)
-      console.log('Account create sent to Back End for payer signature');
-    }
+    await transactionProcessor.value?.process(requiredSignatures);
   } catch (err: any) {
-    let message = 'Failed to create transaction';
-    if (err.message && typeof err.message === 'string') {
-      message = err.message;
-    }
-    toast.error(message, { position: 'top-right' });
-  } finally {
-    isLoading.value = false;
+    toast.error(err.message || 'Failed to create transaction', { position: 'top-right' });
   }
 };
 
@@ -143,22 +64,6 @@ const handleCreate = async () => {
 onMounted(() => {
   if (route.query.accountId) {
     accountData.accountId.value = route.query.accountId.toString();
-  }
-});
-
-/* Watchers */
-watch(isSignModalShown, () => (userPassword.value = ''));
-watch(isAccountDeleteModalShown, shown => {
-  if (!shown) {
-    payerData.accountId.value = '';
-    validStart.value = '';
-    maxTransactionfee.value = 2;
-
-    accountData.accountId.value = '';
-    transferAccountData.accountId.value = '';
-
-    transactionId.value = '';
-    transaction.value = null;
   }
 });
 </script>
@@ -247,67 +152,22 @@ watch(isAccountDeleteModalShown, shown => {
         >
       </div>
     </div>
-    <AppModal v-model:show="isSignModalShown" class="common-modal">
-      <div class="p-5">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isSignModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
-          <i class="bi bi-shield-lock extra-large-icon" style="line-height: 16px"></i>
-        </div>
-        <h3 class="mt-5 text-main text-center text-bold">Enter your password</h3>
-        <div class="mt-4 form-group">
-          <input v-model="userPassword" type="password" class="form-control rounded-4" />
-        </div>
-        <AppButton
-          color="primary"
-          size="large"
-          :loading="isLoading"
-          :disabled="userPassword.length === 0 || isLoading"
-          class="mt-5 w-100 rounded-4"
-          @click="handleGetUserSignature"
-          >Sign</AppButton
+    <TransactionProcessor
+      ref="transactionProcessor"
+      :transaction-bytes="transaction?.toBytes() || null"
+      :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
+    >
+      <template #successHeading>Account deleted successfully</template>
+      <template #successContent>
+        <p
+          v-if="transactionProcessor?.transactionResult"
+          class="mt-2 text-small d-flex justify-content-between align-items"
         >
-      </div>
-    </AppModal>
-    <AppModal v-model:show="isAccountDeleteModalShown" class="transaction-success-modal">
-      <div class="p-5">
-        <i
-          class="bi bi-success d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isAccountDeleteModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
-          <i class="bi bi-check-lg extra-large-icon" style="line-height: 16px"></i>
-        </div>
-        <h3 class="mt-5 text-main text-center text-bold">Account deleted successfully</h3>
-        <p class="mt-4 text-small d-flex justify-content-between align-items">
-          <span class="text-bold text-secondary">Transaction ID:</span>
-          <a
-            class="link-primary cursor-pointer"
-            @click="
-              networkStore.network !== 'custom' &&
-                openExternal(`
-            https://hashscan.io/${networkStore.network}/transaction/${transactionId}`)
-            "
-            >{{ transactionId }}</a
-          >
-        </p>
-        <p class="mt-2 text-small d-flex justify-content-between align-items">
           <span class="text-bold text-secondary">Account ID:</span>
           <span>{{ accountData.accountId.value }}</span>
         </p>
-        <AppButton
-          color="primary"
-          size="large"
-          class="mt-5 w-100 rounded-4"
-          @click="isAccountDeleteModalShown = false"
-          >Close</AppButton
-        >
-      </div>
-    </AppModal>
+      </template>
+    </TransactionProcessor>
     <AppModal v-model:show="isKeyStructureModalShown" class="modal-fit-content">
       <div class="p-5">
         <KeyStructure
