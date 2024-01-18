@@ -119,13 +119,13 @@ async function process(_requiredSignatures: string[]) {
   validateProcess();
 
   // Personal user:
-  // with all local keys -> Execute
-  // with local and external -> FAIL
-  // without local keys but external -> FAIL
+  //  with all local keys -> Execute
+  //  with local and external -> FAIL
+  //  without local keys but external -> FAIL
   // Organization user:
-  // with all local -> Execute
-  // with local and external -> SIGN AND SEND
-  // without local but external -> SEND
+  //  with all local -> Execute
+  //  with local and external -> SIGN AND SEND
+  //  without local but external -> SEND
 
   if (localPublicKeysReq.value.length > 0) {
     isSignModalShown.value = true;
