@@ -19,7 +19,7 @@ import AppLoader from './ui/AppLoader.vue';
 /* Props */
 const props = defineProps<{
   transactionBytes: Uint8Array | null;
-  onExecuted: (result: {
+  onExecuted?: (result: {
     response: TransactionResponse;
     receipt: TransactionReceipt;
     transactionId: string;
@@ -170,7 +170,7 @@ async function executeTransaction() {
     // To store transaction result locally
 
     isExecutedModalShown.value = true;
-    props.onExecuted(transactionResult.value);
+    props.onExecuted && props.onExecuted(transactionResult.value);
 
     if (unmounted.value) {
       toast.success('Transaction executed', { position: 'top-right' });
