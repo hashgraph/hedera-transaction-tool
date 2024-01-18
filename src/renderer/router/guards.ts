@@ -12,6 +12,10 @@ export function addGuards(router: Router) {
       };
     }
 
+    if (user.data.isLoggedIn && to.name === 'welcome') {
+      return { name: 'settingsKeys' };
+    }
+
     if (!to.meta.withoutAuth && !user.data.isLoggedIn) {
       router.previousPath = to.path;
       router.push({ name: 'welcome' });
