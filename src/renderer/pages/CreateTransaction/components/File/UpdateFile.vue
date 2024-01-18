@@ -122,35 +122,23 @@ function chunkBuffer(buffer: Uint8Array, chunkSize: number): Uint8Array[] {
 }
 
 /* Handlers */
-const handleOwnerKeyTextKeyPress = (e: KeyboardEvent) => {
-  if (e.code === 'Enter') handleAddOwnerKey();
+const isPublicKey = key => {
+  try {
+    return PublicKey.fromString(key);
+  } catch (error) {
+    return false;
+  }
 };
 
 const handleAddOwnerKey = () => {
   ownerKeys.value.push(ownerKeyText.value);
-  ownerKeys.value = ownerKeys.value.filter(key => {
-    try {
-      return PublicKey.fromString(key);
-    } catch (error) {
-      return false;
-    }
-  });
+  ownerKeys.value = ownerKeys.value.filter(isPublicKey);
   ownerKeyText.value = '';
-};
-
-const handleSignatureKeyTextKeyPress = (e: KeyboardEvent) => {
-  if (e.code === 'Enter') handleAddSignatureKey();
 };
 
 const handleAddSignatureKey = () => {
   signatureKeys.value.push(signatureKeyText.value);
-  signatureKeys.value = signatureKeys.value.filter(key => {
-    try {
-      return PublicKey.fromString(key);
-    } catch (error) {
-      return false;
-    }
-  });
+  signatureKeys.value = signatureKeys.value.filter(isPublicKey);
   signatureKeyText.value = '';
 };
 
@@ -285,19 +273,10 @@ const handleGetUserSignature = async () => {
 
 const handleCreate = async () => {
   try {
-    isLoading.value = true;
-
     transaction.value = createTransaction().updateTransaction;
-
     isSignModalShown.value = true;
   } catch (err: any) {
-    let message = 'Failed to create transaction';
-    if (err.message && typeof err.message === 'string') {
-      message = err.message;
-    }
-    toast.error(message, { position: 'top-right' });
-  } finally {
-    isLoading.value = false;
+    toast.error(err.message || 'Failed to create transaction', { position: 'top-right' });
   }
 };
 
@@ -360,7 +339,7 @@ watch(fileMeta, () => (content.value = ''));
             class="form-control py-3"
             placeholder="Enter signer public key"
             style="max-width: 555px"
-            @keypress="handleSignatureKeyTextKeyPress"
+            @keypress="e => e.code && handleAddSignatureKey()"
           />
           <AppButton color="secondary" class="rounded-4" @click="handleAddSignatureKey"
             >Add</AppButton
@@ -394,7 +373,7 @@ watch(fileMeta, () => (content.value = ''));
             class="form-control py-3"
             placeholder="Enter owner public key"
             style="max-width: 555px"
-            @keypress="handleOwnerKeyTextKeyPress"
+            @keypress="e => e.code === 'Enter' && handleAddOwnerKey()"
           />
           <AppButton color="secondary" class="rounded-4" @click="handleAddOwnerKey">Add</AppButton>
         </div>
