@@ -1,29 +1,21 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 import { AccountId, KeyList, PublicKey, Hbar, Key, TransferTransaction } from '@hashgraph/sdk';
 
-import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useNetworkStore from '../../../../stores/storeNetwork';
-import useUserStore from '../../../../stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
 
-import { openExternal } from '../../../../services/electronUtilsService';
-import {
-  createTransactionId,
-  getTransactionSignatures,
-  execute,
-} from '../../../../services/transactionService';
+import { createTransactionId } from '../../../../services/transactionService';
 
+import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
 import KeyStructure from '../../../../components/KeyStructure.vue';
 import AppSwitch from '../../../../components/ui/AppSwitch.vue';
 
 /* Stores */
-const keyPairsStore = useKeyPairsStore();
-const user = useUserStore();
 const networkStore = useNetworkStore();
 
 /* Composables */
@@ -33,85 +25,21 @@ const senderData = useAccountId();
 const receiverData = useAccountId();
 
 /* State */
+const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
+
 const transaction = ref<TransferTransaction | null>(null);
-const transactionId = ref('');
 const validStart = ref('');
 const maxTransactionfee = ref(2);
 
-const userPassword = ref('');
 const amount = ref(0);
 const isApprovedTransfer = ref(false);
 const keyStructureComponentKey = ref<Key | null>(null);
-const isLoading = ref(false);
 
 const isKeyStructureModalShown = ref(false);
-const isSignModalShown = ref(false);
-const isTransferSuccessfulModalShown = ref(false);
 
 /* Handlers */
-const handleGetUserSignature = async () => {
-  try {
-    isLoading.value = true;
-
-    if (!user.data.isLoggedIn) {
-      throw Error('User is not logged in');
-    }
-
-    if (!transaction.value || !payerData.accountInfo.value?.accountId) {
-      return console.log('Transaction or payer missing');
-    }
-
-    let keys = keyPairsStore.keyPairs.filter(kp =>
-      payerData.keysFlattened.value.includes(kp.publicKey),
-    );
-
-    if (!isApprovedTransfer.value && senderData.key.value) {
-      keys = keys.concat(
-        keyPairsStore.keyPairs.filter(kp => senderData.keysFlattened.value.includes(kp.publicKey)),
-      );
-    }
-
-    if (receiverData.accountInfo.value?.receiverSignatureRequired && receiverData.key.value) {
-      keys = keys.concat(
-        keyPairsStore.keyPairs.filter(kp =>
-          receiverData.keysFlattened.value.includes(kp.publicKey),
-        ),
-      );
-    }
-
-    await getTransactionSignatures(
-      keys,
-      transaction.value as any,
-      true,
-      user.data.email,
-      userPassword.value,
-    );
-
-    // Send to Transaction w/ user signatures to Back End
-    const { transactionId: txId } = await execute(
-      transaction.value.toBytes().toString(),
-      networkStore.network,
-      networkStore.customNetworkSettings,
-    );
-    transactionId.value = txId;
-
-    isSignModalShown.value = false;
-    isTransferSuccessfulModalShown.value = true;
-  } catch (err: any) {
-    let message = 'Transaction failed';
-    if (err.message && typeof err.message === 'string') {
-      message = err.message;
-    }
-    toast.error(message, { position: 'top-right' });
-  } finally {
-    isLoading.value = false;
-  }
-};
-
 const handleCreate = async () => {
   try {
-    isLoading.value = true;
-
     transaction.value = new TransferTransaction()
       .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
       .setTransactionValidDuration(180)
@@ -133,54 +61,20 @@ const handleCreate = async () => {
 
     transaction.value.freezeWith(networkStore.client);
 
-    let someUserAccountIsPayer = keyPairsStore.keyPairs.some(kp =>
-      payerData.keysFlattened.value.includes(kp.publicKey),
-    );
+    let requiredSignatures = payerData.keysFlattened.value;
 
     if (!isApprovedTransfer.value) {
-      someUserAccountIsPayer =
-        someUserAccountIsPayer ||
-        keyPairsStore.keyPairs.some(kp => senderData.keysFlattened.value.includes(kp.publicKey));
+      requiredSignatures = requiredSignatures.concat(senderData.keysFlattened.value);
     }
-
     if (receiverData.accountInfo.value?.receiverSignatureRequired) {
-      someUserAccountIsPayer =
-        someUserAccountIsPayer ||
-        keyPairsStore.keyPairs.some(kp => receiverData.keysFlattened.value.includes(kp.publicKey));
+      requiredSignatures = requiredSignatures.concat(receiverData.keysFlattened.value);
     }
 
-    if (someUserAccountIsPayer) {
-      isSignModalShown.value = true;
-    } else {
-      // Send to Back End (Payer, old key, new key should sign!)
-      console.log('Account create sent to Back End for payer signature');
-    }
+    await transactionProcessor.value?.process(requiredSignatures);
   } catch (err: any) {
-    let message = 'Failed to create transaction';
-    if (err.message && typeof err.message === 'string') {
-      message = err.message;
-    }
-    toast.error(message, { position: 'top-right' });
-  } finally {
-    isLoading.value = false;
+    toast.error(err.message || 'Failed to create transaction', { position: 'top-right' });
   }
 };
-
-/* Watchers */
-watch(isSignModalShown, () => (userPassword.value = ''));
-watch(isTransferSuccessfulModalShown, shown => {
-  if (!shown) {
-    payerData.accountId.value = '';
-    validStart.value = '';
-    maxTransactionfee.value = 2;
-
-    senderData.accountId.value = '';
-    receiverData.accountId.value = '';
-
-    transactionId.value = '';
-    transaction.value = null;
-  }
-});
 </script>
 <template>
   <div class="p-4 border rounded-4">
@@ -305,54 +199,23 @@ watch(isTransferSuccessfulModalShown, shown => {
         >
       </div>
     </div>
-    <AppModal v-model:show="isSignModalShown" class="common-modal">
-      <div class="p-5">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isSignModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
-          <i class="bi bi-shield-lock extra-large-icon" style="line-height: 16px"></i>
-        </div>
-        <h3 class="mt-5 text-main text-center text-bold">Enter your password</h3>
-        <div class="mt-4 form-group">
-          <input v-model="userPassword" type="password" class="form-control rounded-4" />
-        </div>
-        <AppButton
-          color="primary"
-          size="large"
-          :loading="isLoading"
-          :disabled="userPassword.length === 0 || isLoading"
-          class="mt-5 w-100 rounded-4"
-          @click="handleGetUserSignature"
-          >Sign</AppButton
-        >
-      </div>
-    </AppModal>
-    <AppModal v-model:show="isTransferSuccessfulModalShown" class="transaction-success-modal">
-      <div class="p-5">
-        <i
-          class="bi bi-success d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isTransferSuccessfulModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
-          <i class="bi bi-check-lg extra-large-icon" style="line-height: 16px"></i>
-        </div>
-        <h3 class="mt-5 text-main text-center text-bold">Successful transfer</h3>
-        <p class="mt-4 text-small d-flex justify-content-between align-items">
-          <span class="text-bold text-secondary">Transaction ID:</span>
-          <a
-            class="link-primary cursor-pointer"
-            @click="
-              networkStore.network !== 'custom' &&
-                openExternal(`
-            https://hashscan.io/${networkStore.network}/transaction/${transactionId}`)
-            "
-            >{{ transactionId }}</a
-          >
-        </p>
+    <TransactionProcessor
+      ref="transactionProcessor"
+      :transaction-bytes="transaction?.toBytes() || null"
+      :on-close-success-modal-click="
+        () => {
+          payerData.accountId.value = '';
+          validStart = '';
+          maxTransactionfee = 2;
+          senderData.accountId.value = '';
+          receiverData.accountId.value = '';
+          amount = 0;
+          transaction = null;
+        }
+      "
+    >
+      <template #successHeading>Hbar transferred successfully</template>
+      <template #successContent>
         <p class="mt-2 text-small d-flex justify-content-between align-items">
           <span class="text-bold text-secondary">Sender Account ID:</span>
           <span>{{ senderData.accountId.value }}</span>
@@ -361,15 +224,8 @@ watch(isTransferSuccessfulModalShown, shown => {
           <span class="text-bold text-secondary">Receiver Account ID:</span>
           <span>{{ receiverData.accountId.value }}</span>
         </p>
-        <AppButton
-          color="primary"
-          size="large"
-          class="mt-5 w-100 rounded-4"
-          @click="isTransferSuccessfulModalShown = false"
-          >Close</AppButton
-        >
-      </div>
-    </AppModal>
+      </template>
+    </TransactionProcessor>
     <AppModal v-model:show="isKeyStructureModalShown" class="modal-fit-content">
       <div class="p-5">
         <KeyStructure
