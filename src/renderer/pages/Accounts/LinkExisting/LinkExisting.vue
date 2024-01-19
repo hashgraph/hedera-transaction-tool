@@ -64,7 +64,7 @@ const handleLinkAccount = async () => {
           data-bs-toggle="tooltip"
           data-bs-placement="right"
           data-bs-custom-class="wide-tooltip"
-          data-bs-title="The Hedera Account ID is the ID of the account entity on the Hedera network. This ID is used to specify the account in all Hedera transactions and queries."
+          data-bs-title="The Account ID of the account you would like to link on the Hedera network."
           placeholder="0.0.4124"
         />
       </div>
