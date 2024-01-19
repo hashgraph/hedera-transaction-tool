@@ -44,12 +44,20 @@
 .form-control {
   &.is-fill {
     background-color: var(--bs-input-fill-bg-color);
+  }
+
+  &.is-fill:not(.is-invalid) {
     border-color: var(--bs-input-fill-bg-color);
   }
 
   &.is-fill {
     &:focus {
       background-color: var(--bs-input-fill-focus-bg-color);
+    }
+  }
+
+  &.is-fill:not(.is-invalid) {
+    &:focus {
       border-color: var(--bs-input-fill-focus-bg-color);
     }
   }
