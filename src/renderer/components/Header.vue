@@ -7,9 +7,9 @@ import useKeyPairsStore from '../stores/storeKeyPairs';
 
 import { useRouter } from 'vue-router';
 
-import AppSwitch from './ui/AppSwitch.vue';
 import Logo from './Logo.vue';
 import LogoText from './LogoText.vue';
+import AppButton from './ui/AppButton.vue';
 
 /* Stores */
 const organizationsStore = useOrganizationsStore();
@@ -88,12 +88,9 @@ function handleOrganizationChange(e: Event) {
         </select>
       </div>
       <div class="form-check form-switch">
-        <AppSwitch
-          name="theme-switch"
-          @change="handleThemeChange"
-          label="Dark Mode"
-          label-class="text-primary"
-        />
+        <AppButton color="secondary" @click="handleThemeChange">
+          <i class="bi bi-sun"></i
+        ></AppButton>
       </div>
     </div>
   </div>
