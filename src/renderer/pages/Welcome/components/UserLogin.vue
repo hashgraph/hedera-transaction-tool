@@ -225,7 +225,7 @@ watch(inputEmail, pass => {
         data-bs-title="_"
       />
       <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
-      <p v-if="loginError" class="text-danger">{{ loginError }}</p>
+      <p v-if="loginError" class="invalid-feedback">{{ loginError }}</p>
       <template v-if="shouldRegister">
         <input
           v-model="inputConfirmPassword"
