@@ -1,34 +1,18 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import {
-  AccountId,
-  FileAppendTransaction,
-  FileUpdateTransaction,
-  KeyList,
-  PublicKey,
-  Timestamp,
-} from '@hashgraph/sdk';
+import { AccountId, FileUpdateTransaction, KeyList, PublicKey, Timestamp } from '@hashgraph/sdk';
 
-import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useNetworkStore from '../../../../stores/storeNetwork';
-import useUserStore from '../../../../stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
 
-import { openExternal } from '../../../../services/electronUtilsService';
-import {
-  createTransactionId,
-  execute,
-  getTransactionSignatures,
-} from '../../../../services/transactionService';
+import { createTransactionId } from '../../../../services/transactionService';
 
+import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
 import AppButton from '../../../../components/ui/AppButton.vue';
-import AppModal from '../../../../components/ui/AppModal.vue';
 
 /* Stores */
-const keyPairsStore = useKeyPairsStore();
-const user = useUserStore();
 const networkStore = useNetworkStore();
 
 /* Composables */
@@ -36,8 +20,9 @@ const toast = useToast();
 const payerData = useAccountId();
 
 /* State */
+const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
+
 const transaction = ref<FileUpdateTransaction | null>(null);
-const transactionIds = ref<string[]>([]);
 const validStart = ref('');
 const maxTransactionFee = ref(2);
 
@@ -46,42 +31,28 @@ const signatureKeyText = ref('');
 const ownerKeyText = ref('');
 const memo = ref('');
 const expirationTimestamp = ref();
-const chunkSizeRaw = ref(2048);
-const chunkData = ref<{ processed: number; total: number } | null>(null);
-const isLoading = ref(false);
+const chunkSize = ref(2048);
 const signatureKeys = ref<string[]>([]);
 const ownerKeys = ref<string[]>([]);
-const userPassword = ref('');
 
 const fileMeta = ref<File | null>(null);
 const fileReader = ref<FileReader | null>(null);
 const fileBuffer = ref<Uint8Array | null>(null);
 const loadPercentage = ref(0);
 const content = ref('');
-
-const isSignModalShown = ref(false);
-const isFileUpdatedModalShown = ref(false);
+const chunksAmount = ref<number | null>(null);
 
 /* Getters */
 const ownerKeyList = computed(
   () => new KeyList(ownerKeys.value.map(key => PublicKey.fromString(key))),
 );
 
-const chunkSize = computed(() => {
-  if (chunkSizeRaw.value > 6144) {
-    return 6144;
-  } else if (chunkSizeRaw.value < 1024) {
-    return 1024;
-  } else {
-    return chunkSizeRaw.value;
-  }
-});
-
 /* Misc Functions */
-const createTransaction = (isLarge?: boolean) => {
+const createTransaction = () => {
   const updateTransaction = new FileUpdateTransaction()
     .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
     .setTransactionValidDuration(180)
+    .setMaxTransactionFee(maxTransactionFee.value)
     .setNodeAccountIds([new AccountId(3)])
     .setFileId(fileId.value)
     .setFileMemo(memo.value);
@@ -98,28 +69,10 @@ const createTransaction = (isLarge?: boolean) => {
     updateTransaction.setContents(fileBuffer.value);
   }
 
-  let chunks: Uint8Array[] = [];
-  if (isLarge) {
-    chunks = chunkBuffer(
-      fileBuffer.value ? fileBuffer.value : new TextEncoder().encode(content.value),
-      chunkSize.value,
-    );
-
-    updateTransaction.setContents(chunks[0]);
-  }
-
   updateTransaction.freezeWith(networkStore.client);
 
-  return { updateTransaction, restChunks: chunks.slice(1) };
+  return updateTransaction;
 };
-
-function chunkBuffer(buffer: Uint8Array, chunkSize: number): Uint8Array[] {
-  const chunks: Uint8Array[] = [];
-  for (let i = 0; i < buffer.length; i += chunkSize) {
-    chunks.push(buffer.slice(i, i + chunkSize));
-  }
-  return chunks;
-}
 
 /* Handlers */
 const isPublicKey = key => {
@@ -175,123 +128,20 @@ const handleFileImport = async (e: Event) => {
   }
 };
 
-const handleGetUserSignature = async () => {
-  try {
-    isLoading.value = true;
-
-    if (!user.data.isLoggedIn) {
-      throw Error('User is not logged in');
-    }
-
-    if (!transaction.value || !payerData.isValid.value) {
-      return console.log('Transaction or payer missing');
-    }
-
-    const { updateTransaction, restChunks } = createTransaction(true);
-
-    const originalTransactionSize = transaction.value.toBytes().length;
-
-    if (originalTransactionSize >= 6144) {
-      transaction.value = updateTransaction;
-      chunkData.value = {
-        processed: 0,
-        total: restChunks.length,
-      };
-    }
-
-    await getTransactionSignatures(
-      keyPairsStore.keyPairs.filter(kp =>
-        signatureKeys.value
-          .concat(payerData.keysFlattened.value)
-          .concat(ownerKeys.value)
-          .includes(kp.publicKey),
-      ),
-      transaction.value as any,
-      true,
-      user.data.email,
-      userPassword.value,
-    );
-
-    // Send to Transaction w/ user signatures to Back End
-    const { transactionId: txId } = await execute(
-      transaction.value.toBytes().toString(),
-      networkStore.network,
-      networkStore.customNetworkSettings,
-    );
-    transactionIds.value.push(txId);
-
-    if (originalTransactionSize >= 6144) {
-      for (const i in restChunks) {
-        if (!isSignModalShown.value) {
-          return;
-        }
-
-        const appendTx = await new FileAppendTransaction()
-          .setTransactionId(createTransactionId(payerData.accountId.value, new Date()))
-          .setTransactionValidDuration(180)
-          .setNodeAccountIds([new AccountId(3)])
-          .setFileId(fileId.value)
-          .setContents(restChunks[i])
-          .setMaxChunks(1)
-          .setChunkSize(chunkSize.value)
-          .freezeWith(networkStore.client);
-
-        await getTransactionSignatures(
-          keyPairsStore.keyPairs.filter(kp =>
-            signatureKeys.value.concat(payerData.keysFlattened.value).includes(kp.publicKey),
-          ),
-          appendTx as any,
-          true,
-          user.data.email,
-          userPassword.value,
-        );
-
-        const { transactionId: txId } = await execute(
-          appendTx.toBytes().toString(),
-          networkStore.network,
-          networkStore.customNetworkSettings,
-        );
-        if (chunkData.value) {
-          chunkData.value.processed = chunkData.value?.processed + 1;
-        }
-        transactionIds.value.push(txId);
-      }
-    }
-
-    isSignModalShown.value = false;
-    isFileUpdatedModalShown.value = true;
-  } catch (err: any) {
-    let message = 'Transaction failed';
-    if (err.message && typeof err.message === 'string') {
-      message = err.message;
-    }
-    toast.error(message, { position: 'top-right' });
-  } finally {
-    isLoading.value = false;
-  }
-};
-
 const handleCreate = async () => {
   try {
-    transaction.value = createTransaction().updateTransaction;
-    isSignModalShown.value = true;
+    transaction.value = createTransaction();
+    await transactionProcessor.value?.process(
+      payerData.keysFlattened.value.concat(signatureKeys.value, ownerKeys.value),
+      chunkSize.value,
+      0,
+    );
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'top-right' });
   }
 };
 
 /* Watchers */
-watch(isSignModalShown, shown => {
-  userPassword.value = '';
-
-  if (!shown) {
-    fileMeta.value = null;
-    fileBuffer.value = null;
-    chunkData.value = null;
-    content.value = '';
-  }
-});
-watch(isFileUpdatedModalShown, () => (userPassword.value = ''));
 watch(fileMeta, () => (content.value = ''));
 </script>
 <template>
@@ -339,7 +189,7 @@ watch(fileMeta, () => (content.value = ''));
             class="form-control py-3"
             placeholder="Enter signer public key"
             style="max-width: 555px"
-            @keypress="e => e.code && handleAddSignatureKey()"
+            @keypress="e => e.code === 'Enter' && handleAddSignatureKey()"
           />
           <AppButton color="secondary" class="rounded-4" @click="handleAddSignatureKey"
             >Add</AppButton
@@ -417,13 +267,7 @@ watch(fileMeta, () => (content.value = ''));
       </div>
       <div class="mt-4 form-group w-25">
         <label class="form-label">Set Chunk Size (If File is large)</label>
-        <input
-          v-model="chunkSizeRaw"
-          type="number"
-          min="1024"
-          max="4096"
-          class="form-control py-3"
-        />
+        <input v-model="chunkSize" type="number" min="1024" max="6144" class="form-control py-3" />
       </div>
       <div class="mt-4 form-group">
         <label for="fileUpload" class="form-label">
@@ -473,75 +317,40 @@ watch(fileMeta, () => (content.value = ''));
         >
       </div>
     </div>
-    <AppModal v-model:show="isSignModalShown" class="common-modal">
-      <div class="p-5">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isSignModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
-          <i class="bi bi-shield-lock extra-large-icon" style="line-height: 16px"></i>
-        </div>
-        <h3 class="mt-5 text-main text-center text-bold">Enter your password</h3>
-
-        <div class="mt-4 form-group">
-          <input v-model="userPassword" type="password" class="form-control rounded-4" />
-        </div>
-        <div class="mt-4">
-          <div class="ms-2" v-if="chunkData">
-            {{ chunkData.processed }} appends out of {{ chunkData.total }}
-          </div>
-          <AppButton
-            color="primary"
-            size="large"
-            :loading="isLoading"
-            :disabled="userPassword.length === 0 || isLoading"
-            class="mt-2 w-100 rounded-4"
-            @click="handleGetUserSignature"
-            >Sign</AppButton
-          >
-        </div>
-      </div>
-    </AppModal>
-    <AppModal v-model:show="isFileUpdatedModalShown" class="transaction-success-modal">
-      <div class="p-5">
-        <i
-          class="bi bi-success d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isFileUpdatedModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
-          <i class="bi bi-check-lg extra-large-icon" style="line-height: 16px"></i>
-        </div>
-        <h3 class="mt-5 text-main text-center text-bold">File updated successfully</h3>
-        <p class="mt-4 text-small d-flex justify-content-between align-items">
-          <span class="text-bold text-secondary">Transaction ID:</span>
-          <a
-            class="link-primary cursor-pointer"
-            @click="
-              networkStore.network !== 'custom' &&
-                openExternal(`
-            https://hashscan.io/${networkStore.network}/transaction/${transactionIds[0]}`)
-            "
-            >{{ transactionIds[0] }}</a
-          >
-        </p>
-        <p v-if="chunkData" class="mt-2 text-small d-flex justify-content-between align-items">
-          <span class="text-bold text-secondary">Number of Appends</span>
-          <span>{{ chunkData?.total }}</span>
-        </p>
+    <TransactionProcessor
+      ref="transactionProcessor"
+      :transaction-bytes="transaction?.toBytes() || null"
+      :on-executed="(_result, _chunkAmount) => (chunksAmount = _chunkAmount || null)"
+      :on-close-success-modal-click="
+        () => {
+          payerData.accountId.value = '';
+          validStart = '';
+          maxTransactionFee = 2;
+          fileId = '';
+          signatureKeys = [];
+          ownerKeys = [];
+          memo = '';
+          expirationTimestamp = undefined;
+          fileMeta = null;
+          fileBuffer = null;
+          chunkSize = 2048;
+          content = '';
+          chunksAmount = null;
+          transaction = null;
+        }
+      "
+    >
+      <template #successHeading>File updated successfully</template>
+      <template #successContent>
         <p class="mt-2 text-small d-flex justify-content-between align-items">
-          <span class="text-bold text-secondary">File ID:</span> <span>{{ fileId }}</span>
+          <span class="text-bold text-secondary">File ID:</span>
+          <span>{{ fileId }}</span>
         </p>
-        <AppButton
-          color="primary"
-          size="large"
-          class="mt-5 w-100 rounded-4"
-          @click="isFileUpdatedModalShown = false"
-          >Close</AppButton
-        >
-      </div>
-    </AppModal>
+        <p v-if="chunksAmount" class="mt-2 text-small d-flex justify-content-between align-items">
+          <span class="text-bold text-secondary">Number of Chunks</span>
+          <span>{{ chunksAmount }}</span>
+        </p>
+      </template>
+    </TransactionProcessor>
   </div>
 </template>
