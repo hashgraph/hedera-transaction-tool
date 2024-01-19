@@ -32,7 +32,9 @@ const isLoading = ref(false);
 const isUserPasswordModalShown = ref(false);
 
 /* Handlers */
-const handleRead = async () => {
+const handleRead = async e => {
+  e.preventDefault();
+
   if (!user.data.isLoggedIn) {
     throw Error('User is not logged in');
   }
@@ -148,19 +150,21 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
         <div class="mt-5 text-center">
           <i class="bi bi-shield-lock extra-large-icon" style="line-height: 16px"></i>
         </div>
-        <h3 class="mt-5 text-main text-center text-bold">Enter your password</h3>
-        <div class="mt-4 form-group">
-          <input v-model="userPassword" type="password" class="form-control rounded-4" />
-        </div>
-        <AppButton
-          :loading="isLoading"
-          :disabled="userPassword.length === 0 || isLoading"
-          color="primary"
-          size="large"
-          class="mt-5 w-100 rounded-4"
-          @click="handleRead"
-          >Sign Query</AppButton
-        >
+        <form @submit="handleRead">
+          <h3 class="mt-5 text-main text-center text-bold">Enter your password</h3>
+          <div class="mt-4 form-group">
+            <input v-model="userPassword" type="password" class="form-control rounded-4" />
+          </div>
+          <AppButton
+            :loading="isLoading"
+            :disabled="userPassword.length === 0 || isLoading"
+            color="primary"
+            size="large"
+            class="mt-5 w-100 rounded-4"
+            type="submit"
+            >Sign Query</AppButton
+          >
+        </form>
       </div>
     </AppModal>
   </div>

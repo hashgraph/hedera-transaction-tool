@@ -1,27 +1,18 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { AccountId, FileCreateTransaction, KeyList, PublicKey, Timestamp } from '@hashgraph/sdk';
 
-import useUserStore from '../../../../stores/storeUser';
-import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useNetworkStore from '../../../../stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
 
-import { openExternal } from '../../../../services/electronUtilsService';
-import {
-  createTransactionId,
-  execute,
-  getTransactionSignatures,
-} from '../../../../services/transactionService';
+import { createTransactionId } from '../../../../services/transactionService';
 
+import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
 import AppButton from '../../../../components/ui/AppButton.vue';
-import AppModal from '../../../../components/ui/AppModal.vue';
 
 /* Stores */
-const keyPairsStore = useKeyPairsStore();
-const user = useUserStore();
 const networkStore = useNetworkStore();
 
 /* Composables */
@@ -29,31 +20,22 @@ const toast = useToast();
 const payerData = useAccountId();
 
 /* State */
+const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
+
 const transaction = ref<FileCreateTransaction | null>(null);
-const transactionId = ref('');
 const validStart = ref('');
 const maxTransactionFee = ref(2);
 
-const fileId = ref('');
 const ownerKeyText = ref('');
 const memo = ref('');
 const expirationTimestamp = ref();
 const content = ref('');
 const ownerKeys = ref<string[]>([]);
-const userPassword = ref('');
-
-const isLoading = ref(false);
-const isSignModalShown = ref(false);
-const isFileCreatedModalShown = ref(false);
 
 /* Getters */
 const keyList = computed(() => new KeyList(ownerKeys.value.map(key => PublicKey.fromString(key))));
 
 /* Handlers */
-const handleOwnerKeyTextKeyPress = (e: KeyboardEvent) => {
-  if (e.code === 'Enter') handleAdd();
-};
-
 const handleAdd = () => {
   ownerKeys.value.push(ownerKeyText.value);
   ownerKeys.value = ownerKeys.value.filter(key => {
@@ -77,55 +59,8 @@ const handleAdd = () => {
 //   }
 // };
 
-const handleGetUserSignature = async () => {
-  if (!user.data.isLoggedIn) {
-    throw Error('No user selected');
-  }
-
-  if (!transaction.value || !payerData.isValid.value) {
-    return console.log('Transaction or payer missing');
-  }
-
-  try {
-    isLoading.value = true;
-
-    await getTransactionSignatures(
-      keyPairsStore.keyPairs.filter(kp =>
-        ownerKeys.value.concat(payerData.keysFlattened.value).includes(kp.publicKey),
-      ),
-      transaction.value as any,
-      true,
-      user.data.email,
-      userPassword.value,
-    );
-
-    // Send to Transaction w/ user signatures to Back End
-    const { transactionId: txId, receipt } = await execute(
-      transaction.value.toBytes().toString(),
-      networkStore.network,
-      networkStore.customNetworkSettings,
-    );
-    transactionId.value = txId;
-
-    fileId.value = new AccountId(receipt.fileId).toString() || '';
-
-    isSignModalShown.value = false;
-    isFileCreatedModalShown.value = true;
-  } catch (err: any) {
-    let message = 'Transaction failed';
-    if (err.message && typeof err.message === 'string') {
-      message = err.message;
-    }
-    toast.error(message, { position: 'top-right' });
-  } finally {
-    isLoading.value = false;
-  }
-};
-
 const handleCreate = async () => {
   try {
-    isLoading.value = true;
-
     transaction.value = new FileCreateTransaction()
       .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
       .setTransactionValidDuration(180)
@@ -140,28 +75,12 @@ const handleCreate = async () => {
 
     transaction.value.freezeWith(networkStore.client);
 
-    const userIncludedPublicKeys = keyPairsStore.keyPairs.filter(kp =>
-      ownerKeys.value.concat(payerData.keysFlattened.value).includes(kp.publicKey),
-    );
-
-    if (userIncludedPublicKeys.length > 0) {
-      isSignModalShown.value = true;
-    } else {
-      // Send to Back End
-    }
+    const requiredSignatures = payerData.keysFlattened.value.concat(ownerKeys.value);
+    await transactionProcessor.value?.process(requiredSignatures);
   } catch (err: any) {
-    let message = 'Failed to create transaction';
-    if (err.message && typeof err.message === 'string') {
-      message = err.message;
-    }
-    toast.error(message, { position: 'top-right' });
-  } finally {
-    isLoading.value = false;
+    toast.error(err.message || 'Failed to create transaction', { position: 'top-right' });
   }
 };
-
-/* Watchers */
-watch(isSignModalShown, () => (userPassword.value = ''));
 </script>
 <template>
   <div class="p-4 border rounded-4">
@@ -204,7 +123,7 @@ watch(isSignModalShown, () => (userPassword.value = ''));
             class="form-control"
             placeholder="Enter owner public key"
             style="max-width: 555px"
-            @keypress="handleOwnerKeyTextKeyPress"
+            @keypress="e => e.code === 'Enter' && handleAdd()"
           />
           <AppButton color="secondary" class="rounded-4" @click="handleAdd">Add</AppButton>
         </div>
@@ -270,73 +189,38 @@ watch(isSignModalShown, () => (userPassword.value = ''));
           size="large"
           :disabled="keyList._keys.length === 0 || !payerData.isValid.value"
           @click="handleCreate"
-          >Sign</AppButton
+          >Create</AppButton
         >
       </div>
     </div>
-    <AppModal v-model:show="isSignModalShown" class="common-modal">
-      <div class="p-5">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isSignModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
-          <i class="bi bi-shield-lock extra-large-icon" style="line-height: 16px"></i>
-        </div>
-        <h3 class="mt-5 text-main text-center text-bold">Enter your password</h3>
-        <div class="mt-4 form-group">
-          <input v-model="userPassword" type="password" class="form-control rounded-4" />
-        </div>
-        <AppButton
-          color="primary"
-          size="large"
-          :loading="isLoading"
-          :disabled="userPassword.length === 0 || isLoading"
-          class="mt-5 w-100 rounded-4"
-          @click="handleGetUserSignature"
-          >Sign</AppButton
+    <TransactionProcessor
+      ref="transactionProcessor"
+      :transaction-bytes="transaction?.toBytes() || null"
+      :on-close-success-modal-click="
+        () => {
+          payerData.accountId.value = '';
+          validStart = '';
+          maxTransactionFee = 2;
+          ownerKeys = [];
+          memo = '';
+          expirationTimestamp = undefined;
+
+          transaction = null;
+        }
+      "
+    >
+      <template #successHeading>File created successfully</template>
+      <template #successContent>
+        <p
+          v-if="transactionProcessor?.transactionResult"
+          class="mt-2 text-small d-flex justify-content-between align-items"
         >
-      </div>
-    </AppModal>
-    <AppModal v-model:show="isFileCreatedModalShown" class="transaction-success-modal">
-      <div class="p-5">
-        <i
-          class="bi bi-success d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isFileCreatedModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
-          <i class="bi bi-check-lg extra-large-icon" style="line-height: 16px"></i>
-        </div>
-        <h3 class="mt-5 text-main text-center text-bold">File created successfully</h3>
-        <p class="mt-4 text-small d-flex justify-content-between align-items">
-          <span class="text-bold text-secondary">Transaction ID:</span>
-          <a
-            class="link-primary"
-            @click="
-              networkStore.network !== 'custom' &&
-                openExternal(`
-            https://hashscan.io/${networkStore.network}/transaction/${transactionId}`)
-            "
-            >{{ transactionId }}</a
-          >
+          <span class="text-bold text-secondary">File ID:</span>
+          <span>{{
+            new AccountId(transactionProcessor.transactionResult.receipt.fileId).toString() || ''
+          }}</span>
         </p>
-        <p class="mt-2 text-small d-flex justify-content-between align-items">
-          <span class="text-bold text-secondary">File ID:</span> <span>{{ fileId }}</span>
-        </p>
-        <AppButton
-          color="primary"
-          size="large"
-          class="mt-5 w-100 rounded-4"
-          @click="
-            isFileCreatedModalShown = false;
-            transactionId = '';
-            fileId = '';
-          "
-          >Close</AppButton
-        >
-      </div>
-    </AppModal>
+      </template>
+    </TransactionProcessor>
   </div>
 </template>

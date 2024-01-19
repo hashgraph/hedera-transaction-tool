@@ -60,7 +60,7 @@ function handleOrganizationChange(e: Event) {
       <LogoText />
     </div>
     <div class="d-flex align-items-center">
-      <div class="me-4">
+      <div v-if="user.data.isLoggedIn" class="me-4">
         <select
           class="form-select form-select-sm"
           name="serverURL"

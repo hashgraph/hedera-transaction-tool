@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 import {
   AccountId,
   KeyList,
@@ -9,27 +9,19 @@ import {
   AccountAllowanceApproveTransaction,
 } from '@hashgraph/sdk';
 
-import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useNetworkStore from '../../../../stores/storeNetwork';
-import useUserStore from '../../../../stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
 
-import { openExternal } from '../../../../services/electronUtilsService';
-import {
-  createTransactionId,
-  execute,
-  getTransactionSignatures,
-} from '../../../../services/transactionService';
+import { createTransactionId } from '../../../../services/transactionService';
 
+import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
 import KeyStructure from '../../../../components/KeyStructure.vue';
 
 /* Stores */
-const keyPairsStore = useKeyPairsStore();
-const user = useUserStore();
 const networkStore = useNetworkStore();
 
 /* Composables */
@@ -39,77 +31,23 @@ const ownerData = useAccountId();
 const spenderData = useAccountId();
 
 /* State */
+const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
+
 const transaction = ref<AccountAllowanceApproveTransaction | null>(null);
-const transactionId = ref('');
 const validStart = ref('');
 const maxTransactionfee = ref(2);
 
-const userPassword = ref('');
 const amount = ref(0);
 const keyStructureComponentKey = ref<Key | null>(null);
 
 const isKeyStructureModalShown = ref(false);
-const isSignModalShown = ref(false);
-const isAllowanceApprovedModalShown = ref(false);
-const isLoading = ref(false);
 
 /* Handlers */
-const handleGetUserSignature = async () => {
-  if (!user.data.isLoggedIn) {
-    throw Error('User is not logged in');
-  }
-
-  if (!transaction.value || !payerData.isValid.value) {
-    return console.log('Transaction or payer missing');
-  }
-
-  try {
-    isLoading.value = true;
-
-    let keys = keyPairsStore.keyPairs.filter(kp =>
-      payerData.keysFlattened.value.includes(kp.publicKey),
-    );
-
-    keys = keys.concat(
-      keyPairsStore.keyPairs.filter(kp => ownerData.keysFlattened.value.includes(kp.publicKey)),
-    );
-
-    await getTransactionSignatures(
-      keys,
-      transaction.value as any,
-      true,
-      user.data.email,
-      userPassword.value,
-    );
-
-    // Send to Transaction w/ user signatures to Back End
-    const { transactionId: txId } = await execute(
-      transaction.value.toBytes().toString(),
-      networkStore.network,
-      networkStore.customNetworkSettings,
-    );
-    transactionId.value = txId;
-
-    isSignModalShown.value = false;
-    isAllowanceApprovedModalShown.value = true;
-  } catch (err: any) {
-    let message = 'Transaction failed';
-    if (err.message && typeof err.message === 'string') {
-      message = err.message;
-    }
-    toast.error(message, { position: 'top-right' });
-  } finally {
-    isLoading.value = false;
-  }
-};
-
 const handleCreate = async () => {
   try {
     if (!ownerData.accountId.value || !ownerData.isValid.value) {
       throw Error('Invalid owner');
     }
-
-    isLoading.value = true;
 
     transaction.value = new AccountAllowanceApproveTransaction()
       .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
@@ -123,42 +61,12 @@ const handleCreate = async () => {
       )
       .freezeWith(networkStore.client);
 
-    const someUserAccountIsPayer = keyPairsStore.keyPairs.some(kp =>
-      payerData.keysFlattened.value.concat(ownerData.keysFlattened.value).includes(kp.publicKey),
-    );
-
-    if (someUserAccountIsPayer) {
-      isSignModalShown.value = true;
-    } else {
-      // Send to Back End (Payer, old key, new key should sign!)
-      console.log('Account create sent to Back End for payer signature');
-    }
+    const requiredSignatures = payerData.keysFlattened.value.concat(ownerData.keysFlattened.value);
+    await transactionProcessor.value?.process(requiredSignatures);
   } catch (err: any) {
-    let message = 'Failed to create transaction';
-    if (err.message && typeof err.message === 'string') {
-      message = err.message;
-    }
-    toast.error(message, { position: 'top-right' });
-  } finally {
-    isLoading.value = false;
+    toast.error(err.message || 'Failed to create transaction', { position: 'top-right' });
   }
 };
-
-/* Watchers */
-watch(isSignModalShown, () => (userPassword.value = ''));
-watch(isAllowanceApprovedModalShown, shown => {
-  if (!shown) {
-    payerData.accountId.value = '';
-    validStart.value = '';
-    maxTransactionfee.value = 2;
-
-    ownerData.accountId.value = '';
-    spenderData.accountId.value = '';
-
-    transactionId.value = '';
-    transaction.value = null;
-  }
-});
 </script>
 <template>
   <div class="p-4 border rounded-4">
@@ -263,54 +171,23 @@ watch(isAllowanceApprovedModalShown, shown => {
         >
       </div>
     </div>
-    <AppModal v-model:show="isSignModalShown" class="common-modal">
-      <div class="p-5">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isSignModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
-          <i class="bi bi-shield-lock extra-large-icon" style="line-height: 16px"></i>
-        </div>
-        <h3 class="mt-5 text-main text-center text-bold">Enter your password</h3>
-        <div class="mt-4 form-group">
-          <input v-model="userPassword" type="password" class="form-control rounded-4" />
-        </div>
-        <AppButton
-          color="primary"
-          size="large"
-          :loading="isLoading"
-          :disabled="userPassword.length === 0 || isLoading"
-          class="mt-5 w-100 rounded-4"
-          @click="handleGetUserSignature"
-          >Sign</AppButton
-        >
-      </div>
-    </AppModal>
-    <AppModal v-model:show="isAllowanceApprovedModalShown" class="transaction-success-modal">
-      <div class="p-5">
-        <i
-          class="bi bi-success d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isAllowanceApprovedModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
-          <i class="bi bi-check-lg extra-large-icon" style="line-height: 16px"></i>
-        </div>
-        <h3 class="mt-5 text-main text-center text-bold">Allowance Approved Successfully</h3>
-        <p class="mt-4 text-small d-flex justify-content-between align-items">
-          <span class="text-bold text-secondary">Transaction ID:</span>
-          <a
-            class="link-primary cursor-pointer"
-            @click="
-              networkStore.network !== 'custom' &&
-                openExternal(`
-            https://hashscan.io/${networkStore.network}/transaction/${transactionId}`)
-            "
-            >{{ transactionId }}</a
-          >
-        </p>
+    <TransactionProcessor
+      ref="transactionProcessor"
+      :transaction-bytes="transaction?.toBytes() || null"
+      :on-close-success-modal-click="
+        () => {
+          payerData.accountId.value = '';
+          validStart = '';
+          maxTransactionfee = 2;
+          ownerData.accountId.value = '';
+          spenderData.accountId.value = '';
+          amount = 0;
+          transaction = null;
+        }
+      "
+    >
+      <template #successHeading>Allowance Approved Successfully</template>
+      <template #successContent>
         <p class="mt-2 text-small d-flex justify-content-between align-items">
           <span class="text-bold text-secondary">Owner Account ID:</span>
           <span>{{ ownerData.accountId.value }}</span>
@@ -319,15 +196,8 @@ watch(isAllowanceApprovedModalShown, shown => {
           <span class="text-bold text-secondary">Spender Account ID:</span>
           <span>{{ spenderData.accountId.value }}</span>
         </p>
-        <AppButton
-          color="primary"
-          size="large"
-          class="mt-5 w-100 rounded-4"
-          @click="isAllowanceApprovedModalShown = false"
-          >Close</AppButton
-        >
-      </div>
-    </AppModal>
+      </template>
+    </TransactionProcessor>
     <AppModal v-model:show="isKeyStructureModalShown" class="modal-fit-content">
       <div class="p-5">
         <KeyStructure

@@ -1,28 +1,28 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue';
-import { AccountId, AccountCreateTransaction, KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
+import { computed, reactive, ref } from 'vue';
+import {
+  AccountId,
+  AccountCreateTransaction,
+  KeyList,
+  PublicKey,
+  Hbar,
+  TransactionReceipt,
+} from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
 
-import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useUserStore from '../../../../stores/storeUser';
 import useNetworkStore from '../../../../stores/storeNetwork';
 
 import { add } from '../../../../services/accountsService';
-import { openExternal } from '../../../../services/electronUtilsService';
-import {
-  createTransactionId,
-  execute,
-  getTransactionSignatures,
-} from '../../../../services/transactionService';
+import { createTransactionId } from '../../../../services/transactionService';
 
+import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
 import AppButton from '../../../../components/ui/AppButton.vue';
-import AppModal from '../../../../components/ui/AppModal.vue';
 import AppSwitch from '../../../../components/ui/AppSwitch.vue';
 
 /* Stores */
-const keyPairsStore = useKeyPairsStore();
 const user = useUserStore();
 const networkStore = useNetworkStore();
 
@@ -31,9 +31,10 @@ const toast = useToast();
 const payerData = useAccountId();
 
 /* State */
+const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
+
 const transaction = ref<AccountCreateTransaction | null>(null);
-const transactionId = ref('');
-const validStart = ref('');
+const validStart = ref();
 const maxTransactionfee = ref(2);
 
 const accountData = reactive({
@@ -48,20 +49,11 @@ const accountData = reactive({
 });
 const ownerKeyText = ref('');
 const ownerKeys = ref<string[]>([]);
-const userPassword = ref('');
-
-const isSignModalShown = ref(false);
-const isAccountCreateModalShown = ref(false);
-const isLoading = ref(false);
 
 /* Getters */
 const keyList = computed(() => new KeyList(ownerKeys.value.map(key => PublicKey.fromString(key))));
 
 /* Handlers */
-const handleOwnerKeyTextKeyPress = (e: KeyboardEvent) => {
-  if (e.code === 'Enter') handleAdd();
-};
-
 const handleAdd = () => {
   ownerKeys.value.push(ownerKeyText.value);
   ownerKeys.value = ownerKeys.value.filter(key => {
@@ -74,55 +66,8 @@ const handleAdd = () => {
   ownerKeyText.value = '';
 };
 
-const handleGetUserSignature = async () => {
-  try {
-    isLoading.value = true;
-
-    if (!user.data.isLoggedIn) {
-      throw Error('User is not logged');
-    }
-
-    if (!transaction.value) {
-      return console.log('Transaction or payer missing');
-    }
-
-    await getTransactionSignatures(
-      keyPairsStore.keyPairs.filter(kp => payerData.keysFlattened.value.includes(kp.publicKey)),
-      transaction.value as any,
-      true,
-      user.data.email,
-      userPassword.value,
-    );
-
-    // Send to Transaction w/ user signatures to Back End
-    const { transactionId: txId, receipt } = await execute(
-      transaction.value.toBytes().toString(),
-      networkStore.network,
-      networkStore.customNetworkSettings,
-    );
-    transactionId.value = txId;
-    accountData.accountId = new AccountId(receipt.accountId).toString() || '';
-
-    await add(user.data.email, accountData.accountId);
-    toast.success(`Account ${accountData.accountId} linked`, { position: 'top-right' });
-
-    isSignModalShown.value = false;
-    isAccountCreateModalShown.value = true;
-  } catch (err: any) {
-    let message = 'Transaction failed';
-    if (err.message && typeof err.message === 'string') {
-      message = err.message;
-    }
-    toast.error(message, { position: 'top-right' });
-  } finally {
-    isLoading.value = false;
-  }
-};
-
 const handleCreate = async () => {
   try {
-    isLoading.value = true;
-
     transaction.value = new AccountCreateTransaction()
       .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
       .setTransactionValidDuration(180)
@@ -137,52 +82,23 @@ const handleCreate = async () => {
 
     accountData.stakedAccountId &&
       transaction.value.setStakedAccountId(AccountId.fromString(accountData.stakedAccountId));
-
     Number(accountData.stakedNodeId) > 0 &&
       transaction.value.setStakedNodeId(accountData.stakedNodeId);
 
     transaction.value.freezeWith(networkStore.client);
 
-    if (keyPairsStore.keyPairs.some(kp => payerData.keysFlattened.value.includes(kp.publicKey))) {
-      isSignModalShown.value = true;
-    } else {
-      // Send to Back End
-      console.log('Account create sent to Back End for payer signature');
-    }
+    const requiredSignatures = payerData.keysFlattened.value.concat(ownerKeys.value);
+    await transactionProcessor.value?.process(requiredSignatures);
   } catch (err: any) {
-    let message = 'Failed to create transaction';
-    if (err.message && typeof err.message === 'string') {
-      message = err.message;
-    }
-    toast.error(message, { position: 'top-right' });
-  } finally {
-    isLoading.value = false;
+    toast.error(err.message || 'Failed to create transaction', { position: 'top-right' });
   }
 };
 
-/* Watchers */
-watch(isSignModalShown, () => (userPassword.value = ''));
-watch(isAccountCreateModalShown, shown => {
-  if (!shown) {
-    payerData.accountId.value = '';
-    validStart.value = '';
-    maxTransactionfee.value = 2;
-
-    accountData.initialBalance = 0;
-    accountData.receiverSignatureRequired = false;
-    accountData.maxAutomaticTokenAssociations = 0;
-    accountData.stakedAccountId = '';
-    accountData.stakedNodeId = '';
-    accountData.declineStakingReward = false;
-    accountData.memo = '';
-    accountData.accountId = '';
-
-    transactionId.value = '';
-    transaction.value = null;
-    ownerKeyText.value = '';
-    ownerKeys.value = [];
-  }
-});
+const handleExecuted = async ({ receipt }: { receipt: TransactionReceipt }) => {
+  const accountId = new AccountId(receipt.accountId).toString() || '';
+  await add(user.data.email, accountId);
+  toast.success(`Account ${accountId} linked`, { position: 'top-right' });
+};
 </script>
 <template>
   <div class="p-4 border rounded-4">
@@ -226,7 +142,7 @@ watch(isAccountCreateModalShown, shown => {
             class="form-control"
             placeholder="Enter owner public key"
             style="max-width: 555px"
-            @keypress="handleOwnerKeyTextKeyPress"
+            @keypress="e => e.code === 'Enter' && handleAdd()"
           />
           <AppButton color="secondary" class="rounded-4" @click="handleAdd">Add</AppButton>
         </div>
@@ -327,66 +243,25 @@ watch(isAccountCreateModalShown, shown => {
         >
       </div>
     </div>
-    <AppModal v-model:show="isSignModalShown" class="common-modal">
-      <div class="p-5">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isSignModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
-          <i class="bi bi-shield-lock extra-large-icon" style="line-height: 16px"></i>
-        </div>
-        <h3 class="mt-5 text-main text-center text-bold">Enter your password</h3>
-        <div class="mt-4 form-group">
-          <input v-model="userPassword" type="password" class="form-control rounded-4" />
-        </div>
-        <AppButton
-          color="primary"
-          size="large"
-          :loading="isLoading"
-          :disabled="userPassword.length === 0 || isLoading"
-          class="mt-5 w-100 rounded-4"
-          @click="handleGetUserSignature"
-          >Sign</AppButton
+    <TransactionProcessor
+      ref="transactionProcessor"
+      :transaction-bytes="transaction?.toBytes() || null"
+      :on-executed="handleExecuted"
+      :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
+    >
+      <template #successHeading>Account created successfully</template>
+      <template #successContent>
+        <p
+          v-if="transactionProcessor?.transactionResult"
+          class="mt-2 text-small d-flex justify-content-between align-items"
         >
-      </div>
-    </AppModal>
-    <AppModal v-model:show="isAccountCreateModalShown" class="transaction-success-modal">
-      <div class="p-5">
-        <i
-          class="bi bi-success d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isAccountCreateModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
-          <i class="bi bi-check-lg extra-large-icon" style="line-height: 16px"></i>
-        </div>
-        <h3 class="mt-5 text-main text-center text-bold">Account created successfully</h3>
-        <p class="mt-4 text-small d-flex justify-content-between align-items">
-          <span class="text-bold text-secondary">Transaction ID:</span>
-          <a
-            class="link-primary cursor-pointer"
-            @click="
-              networkStore.network !== 'custom' &&
-                openExternal(`
-            https://hashscan.io/${networkStore.network}/transaction/${transactionId}`)
-            "
-            >{{ transactionId }}</a
-          >
-        </p>
-        <p class="mt-2 text-small d-flex justify-content-between align-items">
           <span class="text-bold text-secondary">Account ID:</span>
-          <span>{{ accountData.accountId }}</span>
+          <span>{{
+            new AccountId(transactionProcessor?.transactionResult.receipt.accountId).toString() ||
+            ''
+          }}</span>
         </p>
-        <AppButton
-          color="primary"
-          size="large"
-          class="mt-5 w-100 rounded-4"
-          @click="$router.push({ name: 'accounts' })"
-          >Close</AppButton
-        >
-      </div>
-    </AppModal>
+      </template>
+    </TransactionProcessor>
   </div>
 </template>

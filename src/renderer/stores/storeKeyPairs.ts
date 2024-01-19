@@ -1,4 +1,4 @@
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { defineStore } from 'pinia';
 
 import { IKeyPair, IKeyPairWithAccountId } from '../../main/shared/interfaces';
@@ -17,6 +17,9 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
   /* State */
   const recoveryPhraseWords = ref<string[]>([]);
   const keyPairs = ref<IKeyPairWithAccountId[]>([]);
+
+  /* Getters */
+  const publicKeys = computed(() => keyPairs.value.map(kp => kp.publicKey));
 
   /* Actions */
   async function refetch() {
@@ -83,6 +86,7 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
   return {
     recoveryPhraseWords,
     keyPairs,
+    publicKeys,
     setRecoveryPhrase,
     clearRecoveryPhrase,
     storeKeyPair,
