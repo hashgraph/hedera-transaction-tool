@@ -51,39 +51,42 @@ const shouldRegister = ref(false);
 const handleOnFormSubmit = async (event: Event) => {
   event.preventDefault();
 
-  inputEmailInvalid.value = inputEmail.value.trim() === '' || !isEmail(inputEmail.value);
-  inputPasswordInvalid.value =
-    inputPassword.value.trim() === '' || !isPasswordStrong(inputPassword.value);
-  inputConfirmPasswordInvalid.value =
-    inputPassword.value.trim() !== inputConfirmPassword.value.trim();
+  if (shouldRegister.value) {
+    inputEmailInvalid.value = inputEmail.value.trim() === '' || !isEmail(inputEmail.value);
+    inputPasswordInvalid.value =
+      inputPassword.value.trim() === '' || !isPasswordStrong(inputPassword.value);
+    inputConfirmPasswordInvalid.value =
+      inputPassword.value.trim() !== inputConfirmPassword.value.trim();
+  }
 
-  if (!inputEmailInvalid.value && !inputPasswordInvalid.value) {
-    if (shouldRegister.value && !inputConfirmPasswordInvalid.value) {
-      if (inputPasswordInvalid.value) {
-        toast.error('Password too weak', { position: 'top-right' });
-        return;
-      }
-      await registerLocal(inputEmail.value, inputPassword.value);
-      user.login(inputEmail.value, []);
-      user.data.password = inputPassword.value;
-      router.push({ name: 'accountSetup' });
-    } else if (!shouldRegister.value) {
-      try {
-        await loginLocal(inputEmail.value, inputPassword.value, true);
-        const secretHashes = await getStoredKeysSecretHashes(inputEmail.value);
-        user.login(inputEmail.value, secretHashes);
+  if (
+    shouldRegister.value &&
+    !inputConfirmPasswordInvalid.value &&
+    !inputEmailInvalid.value &&
+    !inputPasswordInvalid.value
+  ) {
+    if (inputPasswordInvalid.value) {
+      toast.error('Password too weak', { position: 'top-right' });
+      return;
+    }
+    await registerLocal(inputEmail.value, inputPassword.value);
+    user.login(inputEmail.value, []);
+    user.data.password = inputPassword.value;
+    router.push({ name: 'accountSetup' });
+  } else if (!shouldRegister.value) {
+    try {
+      await loginLocal(inputEmail.value, inputPassword.value, false);
+      const secretHashes = await getStoredKeysSecretHashes(inputEmail.value);
+      user.login(inputEmail.value, secretHashes);
 
-        if (secretHashes.length === 0) {
-          user.data.password = inputPassword.value;
-          router.push({ name: 'accountSetup' });
-        } else {
-          router.push(
-            router.previousPath ? { path: router.previousPath } : { name: 'settingsKeys' },
-          );
-        }
-      } catch (error: any) {
-        loginError.value = error.message || 'Failed to login';
+      if (secretHashes.length === 0) {
+        user.data.password = inputPassword.value;
+        router.push({ name: 'accountSetup' });
+      } else {
+        router.push(router.previousPath ? { path: router.previousPath } : { name: 'settingsKeys' });
       }
+    } catch (error: any) {
+      loginError.value = error.message || 'Failed to login';
     }
   }
 };
@@ -91,6 +94,10 @@ const handleOnFormSubmit = async (event: Event) => {
 const handleResetData = async () => {
   await resetDataLocal();
   toast.success('User data has been reset', { position: 'top-right' });
+  inputEmailInvalid.value = false;
+  inputPasswordInvalid.value = false;
+  inputConfirmPasswordInvalid.value = false;
+  loginError.value = null;
   await checkShouldRegister();
 };
 

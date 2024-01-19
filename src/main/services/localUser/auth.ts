@@ -56,35 +56,51 @@ export const register = (email: string, password: string) => {
   store.set('passwordHash', passwordHash);
 };
 
-export const login = async (email: string, password: string, autoRegister?: boolean) => {
-  const store = getLocalUserAuthStore(email);
+export const login = async (
+  appPath: string,
+  email: string,
+  password: string,
+  autoRegister?: boolean,
+) => {
+  const registeredUsers = await getRegisteredUsers(appPath);
 
-  const isRegistered = Boolean(store.get('email')) && Boolean(store.get('passwordHash'));
+  if (registeredUsers.length > 0) {
+    const store = getLocalUserAuthStore(registeredUsers[0]);
 
-  if (!isRegistered) {
     if (autoRegister) {
       register(email, password);
-    } else {
+    } else if (email != registeredUsers[0]) {
       await fs.unlink(store.path);
-      throw new Error('User does not exists');
+      throw new Error('Incorrect email');
     }
-  }
 
-  const isInitial = false;
-
-  if (hash(password).toString('hex') !== store.get('passwordHash')) {
-    throw new Error('Incorrect password');
+    if (hash(password).toString('hex') !== store.get('passwordHash')) {
+      throw new Error('Incorrect password');
+    }
   }
 
   return {
     email,
-    isInitial,
   };
 };
 
 export const clear = async (email: string) => {
   const store = getLocalUserAuthStore(email);
   await fs.unlink(store.path);
+};
+
+export const getRegisteredUsers = async (appPath: string) => {
+  try {
+    const userStoragePath = path.join(appPath, userStorageFolderName);
+
+    const directories = (await fs.readdir(userStoragePath, { withFileTypes: true }))
+      .filter(dirent => dirent.isDirectory())
+      .map(dir => dir.name);
+
+    return directories;
+  } catch {
+    return [];
+  }
 };
 
 export const hasRegisteredUsers = async (appPath: string) => {
