@@ -70,7 +70,6 @@ export const login = async (
     if (autoRegister) {
       register(email, password);
     } else if (email != registeredUsers[0]) {
-      await fs.unlink(store.path);
       throw new Error('Incorrect email');
     }
 

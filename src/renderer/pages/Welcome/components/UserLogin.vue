@@ -44,7 +44,6 @@ const passwordRequirements = reactive({
   special: false,
 });
 const tooltipContent = ref('');
-const loginError = ref<string | null>(null);
 const shouldRegister = ref(false);
 
 /* Handlers */
@@ -86,7 +85,15 @@ const handleOnFormSubmit = async (event: Event) => {
         router.push(router.previousPath ? { path: router.previousPath } : { name: 'settingsKeys' });
       }
     } catch (error: any) {
-      loginError.value = error.message || 'Failed to login';
+      inputEmailInvalid.value = false;
+      inputPasswordInvalid.value = false;
+
+      if (error.message.includes('email')) {
+        inputEmailInvalid.value = true;
+      }
+      if (error.message.includes('password')) {
+        inputPasswordInvalid.value = true;
+      }
     }
   }
 };
@@ -97,7 +104,6 @@ const handleResetData = async () => {
   inputEmailInvalid.value = false;
   inputPasswordInvalid.value = false;
   inputConfirmPasswordInvalid.value = false;
-  loginError.value = null;
   await checkShouldRegister();
 };
 
@@ -194,7 +200,7 @@ watch(inputConfirmPassword, pass => {
   }
 });
 watch(inputEmail, pass => {
-  if (isEmail(pass) || pass.length === 0) {
+  if (shouldRegister.value && (isEmail(pass) || pass.length === 0)) {
     inputEmailInvalid.value = false;
   }
 });
@@ -231,7 +237,6 @@ watch(inputEmail, pass => {
         data-bs-title="_"
       />
       <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
-      <p v-if="loginError" class="invalid-feedback">{{ loginError }}</p>
       <template v-if="shouldRegister">
         <input
           v-model="inputConfirmPassword"
