@@ -16,6 +16,8 @@
   --#{$prefix}input-fill-focus-bg-color: #{$light-blue-300};
 
   --#{$prefix}card-primary-bg-color: #{$light-blue-200};
+  --#{$prefix}toast-bg-color: #{$dark-blue-700};
+  --#{$prefix}toast-color: #{$light-blue-200};
 }
 
 @if $enable-dark-mode {
@@ -38,5 +40,7 @@
     --#{$prefix}input-fill-focus-bg-color: #{$dark-blue-400};
 
     --#{$prefix}card-primary-bg-color: #{$dark-blue-700};
+    --#{$prefix}toast-bg-color: #{$light-blue-200};
+    --#{$prefix}toast-color: #{$dark-blue-700};
   }
 }

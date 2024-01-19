@@ -1,30 +1,24 @@
 <script setup lang="ts">
-// import { useToast } from 'vue-toast-notification';
-import 'vue-toast-notification/dist/theme-sugar.css';
+import { useToast } from 'vue-toast-notification';
+// import 'vue-toast-notification/dist/theme-sugar.css';
 
 import AppButton from '../../components/ui/AppButton.vue';
-// const $toast = useToast();
+const $toast = useToast();
 
-// $toast.open({
-//   message: 'This is a success toast',
-//   position: 'top-right',
-//   dismissible: false,
-//   duration: 0,
-// });
+$toast.open({
+  message: 'This is a success toast',
+  position: 'bottom-right',
+  dismissible: true,
+  duration: 0,
+});
 
-// $toast.open({
-//   message: 'This is a error toast',
-//   type: 'error',
-//   position: 'top-right',
-//   dismissible: false,
-//   duration: 0,
-// });
-
-// Force dismiss specific toast
-// instance.dismiss();
-
-// // Dismiss all opened toast immediately
-// $toast.clear();
+$toast.open({
+  message: 'This is a error toast',
+  type: 'error',
+  position: 'bottom-right',
+  dismissible: true,
+  duration: 0,
+});
 </script>
 
 <template>
