@@ -208,25 +208,25 @@ watch(inputEmail, pass => {
 <template>
   <div class="container-welcome-card container-modal-card p-5 border border-dark-subtle rounded-4">
     <h4 class="text-title text-bold text-center">
-      {{ shouldRegister ? 'Register' : 'Login' }}
+      {{ shouldRegister ? 'Register' : 'Sign In' }}
     </h4>
-    <p class="text-secondary text-small lh-base text-center">
-      In order to continue enter your email & password
-    </p>
+    <p class="text-secondary text-small lh-base text-center">Enter your username and password</p>
 
     <form @submit="handleOnFormSubmit" class="form-login mt-5 w-100">
+      <label class="form-label">Email</label>
       <input
         v-model="inputEmail"
         type="text"
-        class="form-control rounded-4"
+        class="form-control is-fill"
         :class="{ 'is-invalid': inputEmailInvalid }"
         placeholder="Enter email"
       />
       <div v-if="inputEmailInvalid" class="invalid-feedback">Invalid e-mail.</div>
+      <label class="form-label mt-4">Password</label>
       <input
         v-model="inputPassword"
         type="password"
-        class="mt-4 form-control rounded-4"
+        class="form-control is-fill"
         :class="{ 'is-invalid': inputPasswordInvalid }"
         placeholder="Enter password"
         :data-bs-toggle="shouldRegister ? 'tooltip' : ''"
@@ -238,10 +238,11 @@ watch(inputEmail, pass => {
       />
       <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
       <template v-if="shouldRegister">
+        <label class="form-label mt-4">Confirm password</label>
         <input
           v-model="inputConfirmPassword"
           type="password"
-          class="mt-4 form-control rounded-4"
+          class="form-control is-fill"
           :class="{ 'is-invalid': inputConfirmPasswordInvalid }"
           placeholder="Confirm password"
         />
@@ -250,9 +251,9 @@ watch(inputEmail, pass => {
         </div>
       </template>
 
-      <div class="mt-3">
+      <div class="mt-3 text-end">
         <span @click="handleResetData" class="text-small link-primary cursor-pointer"
-          >Reset data</span
+          >Reset account</span
         >
       </div>
       <AppButton
