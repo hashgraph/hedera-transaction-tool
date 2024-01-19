@@ -66,7 +66,7 @@ const handleOnFormSubmit = async (event: Event) => {
     !inputPasswordInvalid.value
   ) {
     if (inputPasswordInvalid.value) {
-      toast.error('Password too weak', { position: 'top-right' });
+      toast.error('Password too weak', { position: 'bottom-right' });
       return;
     }
     await registerLocal(inputEmail.value, inputPassword.value);
@@ -93,7 +93,7 @@ const handleOnFormSubmit = async (event: Event) => {
 
 const handleResetData = async () => {
   await resetDataLocal();
-  toast.success('User data has been reset', { position: 'top-right' });
+  toast.success('User data has been reset', { position: 'bottom-right' });
   inputEmailInvalid.value = false;
   inputPasswordInvalid.value = false;
   inputConfirmPasswordInvalid.value = false;
@@ -201,9 +201,8 @@ watch(inputEmail, pass => {
 </script>
 <template>
   <div class="container-welcome-card container-modal-card p-5 border border-dark-subtle rounded-4">
-    <i class="bi bi-person mt-5 extra-large-icon d-block"></i>
-    <h4 class="mt-4 text-main text-bold text-center">
-      {{ shouldRegister ? 'Register as Personal User' : 'Login as Personal user' }}
+    <h4 class="text-title text-bold text-center">
+      {{ shouldRegister ? 'Register' : 'Login' }}
     </h4>
     <p class="text-secondary text-small lh-base text-center">
       In order to continue enter your email & password

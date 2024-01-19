@@ -52,7 +52,7 @@ const handleDecrypt = async e => {
       publicKeysPrivateKeyToDecrypt.value,
     );
   } catch (err: any) {
-    toast.error('Failed to decrypt private key', { position: 'top-right' });
+    toast.error('Failed to decrypt private key', { position: 'bottom-right' });
   }
 };
 
@@ -71,7 +71,7 @@ const handleImportExternalKey = async e => {
     ecdsaKey.nickname = '';
     ecdsaKey.privateKey = '';
   } catch (err: any) {
-    toast.error(err.message || 'Failed to import ECDSA private key', { position: 'top-right' });
+    toast.error(err.message || 'Failed to import ECDSA private key', { position: 'bottom-right' });
   }
 };
 

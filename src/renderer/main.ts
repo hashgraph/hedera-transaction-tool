@@ -30,7 +30,7 @@ app.config.errorHandler = (err: any) => {
     message = err.message;
   }
 
-  toast.error(message, { position: 'top-right' });
+  toast.error(message, { position: 'bottom-right' });
 };
 
 /* App mount */

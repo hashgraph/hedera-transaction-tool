@@ -57,13 +57,13 @@ const handleFormSubmit = async (event: Event) => {
       await keyPairsStore.refetch();
       props.handleContinue(inputNewPassword.value);
 
-      toast.success('Password changed successfully', { position: 'top-right' });
+      toast.success('Password changed successfully', { position: 'bottom-right' });
     } catch (err: any) {
       let message = 'Failed to change password';
       if (err.message && typeof err.message === 'string') {
         message = err.message;
       }
-      toast.error(message, { position: 'top-right' });
+      toast.error(message, { position: 'bottom-right' });
     } finally {
       isLoading.value = false;
     }

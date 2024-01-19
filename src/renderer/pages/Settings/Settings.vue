@@ -60,7 +60,7 @@ const handleClearConfig = async () => {
     if (err.message && typeof err.message === 'string') {
       message = err.message;
     }
-    toast.error(message, { position: 'top-right' });
+    toast.error(message, { position: 'bottom-right' });
   }
 };
 

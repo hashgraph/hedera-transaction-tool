@@ -28,13 +28,13 @@ const handleAddOrganization = async () => {
         serverPublicKey: newOrganizationServerPublicKey.value,
       });
 
-      toast.success('Organization added successfully', { position: 'top-right' });
+      toast.success('Organization added successfully', { position: 'bottom-right' });
     } catch (err: any) {
       let message = 'Failed to add organization';
       if (err.message && typeof err.message === 'string') {
         message = err.message;
       }
-      toast.error(message, { position: 'top-right' });
+      toast.error(message, { position: 'bottom-right' });
     }
   }
 };
@@ -43,13 +43,13 @@ const handleRemoveOrganization = async (serverUrl: string) => {
   try {
     await organizationsStore.removeOrganization(serverUrl);
 
-    toast.success('Organization removed successfully', { position: 'top-right' });
+    toast.success('Organization removed successfully', { position: 'bottom-right' });
   } catch (err: any) {
     let message = 'Failed to remove organization';
     if (err.message && typeof err.message === 'string') {
       message = err.message;
     }
-    toast.error(message, { position: 'top-right' });
+    toast.error(message, { position: 'bottom-right' });
   }
 };
 </script>

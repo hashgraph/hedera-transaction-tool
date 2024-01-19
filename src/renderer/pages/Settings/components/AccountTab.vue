@@ -39,7 +39,7 @@ const handleChangePassword = async () => {
       isSuccessModalShown.value = true;
     }
   } catch (err: any) {
-    toast.error('Failed to change password', { position: 'top-right' });
+    toast.error('Failed to change password', { position: 'bottom-right' });
   }
 };
 </script>

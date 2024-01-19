@@ -146,7 +146,7 @@ function handleError(error: any, message: string) {
   if (error.message && typeof error.message === 'string') {
     message = error.message;
   }
-  toast.error(message, { position: 'top-right' });
+  toast.error(message, { position: 'bottom-right' });
 }
 
 /* Functions */
@@ -248,7 +248,7 @@ async function executeTransaction() {
     props.onExecuted && props.onExecuted(transactionResult.value);
 
     if (unmounted.value) {
-      toast.success('Transaction executed', { position: 'top-right' });
+      toast.success('Transaction executed', { position: 'bottom-right' });
     }
   } catch (err: any) {
     handleError(err, 'Transaction execution failed');
@@ -357,7 +357,7 @@ async function executeFileTransactions(transactions: Transaction[]) {
     }
 
     if (unmounted.value) {
-      toast.success('Transaction executed', { position: 'top-right' });
+      toast.success('Transaction executed', { position: 'bottom-right' });
     }
   } catch (error: any) {
     handleError(error, `Execution failed at chunk ${processedChunks.value + 1}`);

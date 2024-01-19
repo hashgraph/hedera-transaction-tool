@@ -72,7 +72,7 @@ const handleCreate = async () => {
 
     await transactionProcessor.value?.process(requiredSignatures);
   } catch (err: any) {
-    toast.error(err.message || 'Failed to create transaction', { position: 'top-right' });
+    toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
 </script>

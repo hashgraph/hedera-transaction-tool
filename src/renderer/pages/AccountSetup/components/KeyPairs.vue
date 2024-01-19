@@ -70,7 +70,7 @@ const handleRestoreKey = async () => {
 
     validateExistingKey();
   } catch {
-    toast.error('Invalid recovery phrase', { position: 'top-right' });
+    toast.error('Invalid recovery phrase', { position: 'bottom-right' });
   }
 };
 
@@ -96,7 +96,7 @@ const handleSaveKey = async () => {
       if (err.message && typeof err.message === 'string') {
         message = err.message;
       }
-      toast.error(message, { position: 'top-right' });
+      toast.error(message, { position: 'bottom-right' });
     }
   }
 };
@@ -133,7 +133,7 @@ const handleRestoreExisting = async () => {
     );
 
     toast.success('Successfully recovered private key/s without passphrase', {
-      position: 'top-right',
+      position: 'bottom-right',
     });
 
     validateExistingKey();
@@ -142,7 +142,7 @@ const handleRestoreExisting = async () => {
     if (err.message && typeof err.message === 'string') {
       message = err.message;
     }
-    toast.error(message, { position: 'top-right' });
+    toast.error(message, { position: 'bottom-right' });
   }
 };
 

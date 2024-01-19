@@ -78,7 +78,7 @@ const handleCreate = async () => {
     const requiredSignatures = payerData.keysFlattened.value.concat(ownerKeys.value);
     await transactionProcessor.value?.process(requiredSignatures);
   } catch (err: any) {
-    toast.error(err.message || 'Failed to create transaction', { position: 'top-right' });
+    toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
 </script>

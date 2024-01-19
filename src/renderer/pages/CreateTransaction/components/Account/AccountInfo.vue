@@ -21,7 +21,7 @@ watch(accountData.isValid, isValid => {
   if (isValid) {
     toast.clear();
   } else {
-    toast.error('Account not found', { position: 'top-right' });
+    toast.error('Account not found', { position: 'bottom-right' });
   }
 });
 </script>

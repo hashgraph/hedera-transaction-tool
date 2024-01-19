@@ -34,9 +34,9 @@ const handleLinkAccount = async () => {
       await add(user.data.email, accountData.accountIdFormatted.value, nickname.value);
 
       router.push({ name: 'accounts' });
-      toast.success('Account linked successfully!', { position: 'top-right' });
+      toast.success('Account linked successfully!', { position: 'bottom-right' });
     } catch (error: any) {
-      toast.error(error.message || 'Account link failed', { position: 'top-right' });
+      toast.error(error.message || 'Account link failed', { position: 'bottom-right' });
     }
   }
 };

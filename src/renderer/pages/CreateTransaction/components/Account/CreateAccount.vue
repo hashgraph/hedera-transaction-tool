@@ -90,14 +90,14 @@ const handleCreate = async () => {
     const requiredSignatures = payerData.keysFlattened.value.concat(ownerKeys.value);
     await transactionProcessor.value?.process(requiredSignatures);
   } catch (err: any) {
-    toast.error(err.message || 'Failed to create transaction', { position: 'top-right' });
+    toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
 
 const handleExecuted = async ({ receipt }: { receipt: TransactionReceipt }) => {
   const accountId = new AccountId(receipt.accountId).toString() || '';
   await add(user.data.email, accountId);
-  toast.success(`Account ${accountId} linked`, { position: 'top-right' });
+  toast.success(`Account ${accountId} linked`, { position: 'bottom-right' });
 };
 </script>
 <template>

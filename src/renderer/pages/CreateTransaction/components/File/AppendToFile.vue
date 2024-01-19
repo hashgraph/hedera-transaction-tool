@@ -108,7 +108,7 @@ const handleCreate = async () => {
       0,
     );
   } catch (err: any) {
-    toast.error(err.message || 'Failed to create transaction', { position: 'top-right' });
+    toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
 
