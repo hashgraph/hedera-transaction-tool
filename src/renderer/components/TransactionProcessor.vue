@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
 
-import { Transaction, TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
+import {
+  FileAppendTransaction,
+  FileUpdateTransaction,
+  Transaction,
+  TransactionReceipt,
+  TransactionResponse,
+} from '@hashgraph/sdk';
 
 import useUserStore from '../stores/storeUser';
 import useKeyPairsStore from '../stores/storeKeyPairs';
@@ -9,7 +15,16 @@ import useNetworkStore from '../stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
 
-import { getTransactionSignatures, execute } from '../services/transactionService';
+import {
+  TRANSACTION_MAX_SIZE,
+  TRANSACTION_SIGNATURE_ESTIMATED_MAX_SIZE,
+} from '../../main/shared/constants';
+
+import {
+  getTransactionSignatures,
+  execute,
+  createTransactionId,
+} from '../services/transactionService';
 import { openExternal } from '../services/electronUtilsService';
 
 import AppButton from './ui/AppButton.vue';
@@ -19,11 +34,14 @@ import AppLoader from './ui/AppLoader.vue';
 /* Props */
 const props = defineProps<{
   transactionBytes: Uint8Array | null;
-  onExecuted?: (result: {
-    response: TransactionResponse;
-    receipt: TransactionReceipt;
-    transactionId: string;
-  }) => void;
+  onExecuted?: (
+    result: {
+      response: TransactionResponse;
+      receipt: TransactionReceipt;
+      transactionId: string;
+    },
+    chunksAmount?: number,
+  ) => void;
   onCloseSuccessModalClick?: () => void;
   watchExecutedModalShown?: (shown: boolean) => void;
 }>();
@@ -42,10 +60,15 @@ const transactionResult = ref<{
   receipt: TransactionReceipt;
   transactionId: string;
 } | null>();
+const chunksAmount = ref<number | null>(null);
+const chunkSize = ref(1024);
+const chunkInterval = ref(0.1);
 const userPassword = ref('');
 const requiredSignatures = ref<string[]>([]);
 const isSigning = ref(false);
 const isSignModalShown = ref(false);
+const isChunkingModalShown = ref(false);
+const processedChunks = ref(0);
 const isExecuting = ref(false);
 const isExecutedModalShown = ref(false);
 const unmounted = ref(false);
@@ -60,29 +83,30 @@ const externalPublicKeysReq = computed(() =>
 const localPublicKeysReq = computed(() =>
   requiredSignatures.value.filter(pk => keyPairs.publicKeys.includes(pk)),
 );
+const requiredLocalKeyPairs = computed(() =>
+  keyPairs.keyPairs.filter(kp => localPublicKeysReq.value.includes(kp.publicKey)),
+);
 const type = computed(() => transaction.value?.constructor.name);
 
 /* Handlers */
 async function handleSignTransaction(e: Event) {
   e.preventDefault();
 
+  if (!transaction.value) throw new Error('Transaction not provided');
+
   let isSigned = false;
   try {
     isSigning.value = true;
 
-    const requiredKeyPairs = keyPairs.keyPairs.filter(kp =>
-      localPublicKeysReq.value.includes(kp.publicKey),
-    );
-
     const signatures = await getTransactionSignatures(
-      requiredKeyPairs,
+      requiredLocalKeyPairs.value,
       transaction.value as any,
       true,
       user.data.email,
       userPassword.value,
     );
 
-    if (requiredKeyPairs.length === signatures.length) {
+    if (requiredLocalKeyPairs.value.length === signatures.length) {
       isSigned = true;
     }
   } catch (err: any) {
@@ -94,9 +118,26 @@ async function handleSignTransaction(e: Event) {
   if (!isSigned) return;
   isSignModalShown.value = false;
 
-  if (user.data.mode === 'personal') {
+  if (
+    (transaction.value.toBytes().length > TRANSACTION_MAX_SIZE &&
+      transaction.value instanceof FileUpdateTransaction) ||
+    transaction.value instanceof FileAppendTransaction
+  ) {
+    let chunkedTransactions: Transaction[] = [];
+
+    isChunkingModalShown.value = true;
+    chunkedTransactions = await chunkFileTransaction(transaction.value);
+    isChunkingModalShown.value = false;
+
+    if (user.data.mode === 'personal') {
+      await executeFileTransactions(chunkedTransactions);
+    } else {
+      await sendSignedChunksToOrganization(chunkedTransactions);
+    }
+  } else if (user.data.mode === 'personal') {
     await executeTransaction();
-  } else {
+  } else if (user.data.mode === 'organization') {
+    await sendSignedTransactionToOrganization();
     console.log('Send to back end signed along with required', externalPublicKeysReq.value);
   }
 }
@@ -109,14 +150,33 @@ function handleError(error: any, message: string) {
 }
 
 /* Functions */
-async function process(_requiredSignatures: string[]) {
+async function process(
+  _requiredSignatures: string[],
+  _chunkSize?: number,
+  _chunkInterval?: number,
+) {
   await nextTick();
   await keyPairs.refetch();
+  validateProcess();
   resetData();
+
+  const estimatedSignaturesSize =
+    _requiredSignatures.length * TRANSACTION_SIGNATURE_ESTIMATED_MAX_SIZE;
+
+  if (_chunkSize) {
+    if (_chunkSize < 1024) chunkSize.value = 1024;
+    else if (_chunkSize + estimatedSignaturesSize > TRANSACTION_MAX_SIZE)
+      throw new Error('Chunk too large, transaction max size could be exceeded');
+    else chunkSize.value = _chunkSize;
+  }
+  if (_chunkInterval) {
+    if (_chunkInterval <= 0) chunkInterval.value = 0.1;
+    else chunkInterval.value = _chunkInterval;
+  }
 
   requiredSignatures.value = [...new Set(_requiredSignatures)];
 
-  validateProcess();
+  checkIfFileTransaction();
 
   // Personal user:
   //  with all local keys -> Execute
@@ -151,6 +211,21 @@ async function process(_requiredSignatures: string[]) {
       );
     }
   }
+
+  function checkIfFileTransaction() {
+    if (
+      transaction.value! instanceof FileUpdateTransaction ||
+      transaction.value! instanceof FileAppendTransaction
+    ) {
+      const sizeWithoutSignatures = transaction.value!.toBytes().length;
+      const estimatedTransactionSize = sizeWithoutSignatures + estimatedSignaturesSize;
+
+      chunksAmount.value =
+        estimatedTransactionSize >= TRANSACTION_MAX_SIZE
+          ? Math.ceil(estimatedTransactionSize / chunkSize.value)
+          : null;
+    }
+  }
 }
 
 async function executeTransaction() {
@@ -182,13 +257,154 @@ async function executeTransaction() {
   }
 }
 
+async function sendSignedTransactionToOrganization() {
+  console.log('Send to back end signed along with required', externalPublicKeysReq.value);
+}
+
+async function chunkFileTransaction(transaction: FileUpdateTransaction | FileAppendTransaction) {
+  if (!transaction.contents) return [transaction];
+  validateTransaction();
+
+  const transactions: Transaction[] = [];
+  const chunks = chunkBuffer(transaction.contents, chunkSize.value);
+  const isUpdateTransaction = transaction instanceof FileUpdateTransaction;
+
+  if (isUpdateTransaction) {
+    const updateTransaction = new FileUpdateTransaction()
+      .setTransactionId(transaction.transactionId!)
+      .setTransactionValidDuration(transaction.transactionValidDuration)
+      .setMaxTransactionFee(transaction.maxTransactionFee)
+      .setNodeAccountIds(transaction.nodeAccountIds!)
+      .setFileId(transaction.fileId!)
+      .setContents(chunks[0]);
+    transaction.fileMemo && updateTransaction.setFileMemo(transaction.fileMemo);
+    transaction.keys && transaction.keys.length > 0 && updateTransaction.setKeys(transaction.keys);
+    transaction.expirationTime && updateTransaction.setExpirationTime(transaction.expirationTime);
+    updateTransaction.freezeWith(network.client);
+
+    transactions[0] = Transaction.fromBytes(updateTransaction.toBytes());
+  }
+
+  for (let i = isUpdateTransaction ? 1 : 0; i < chunks.length; i++) {
+    if (!transaction.transactionId) throw new Error('Transaction ID is missing');
+    if (!transaction.transactionId.accountId)
+      throw new Error('Account ID in Transaction ID is missing');
+
+    const transactionId = createTransactionId(
+      transaction.transactionId.accountId,
+      transaction.transactionId.validStart?.plusNanos(i * chunkInterval.value * 1000000000) ||
+        new Date(),
+    );
+
+    const appendTransaction = new FileAppendTransaction()
+      .setTransactionId(transactionId)
+      .setTransactionValidDuration(180)
+      .setMaxTransactionFee(transaction.maxTransactionFee)
+      .setNodeAccountIds(transaction.nodeAccountIds!)
+      .setFileId(transaction.fileId!)
+      .setContents(chunks[i])
+      .setMaxChunks(1)
+      .setChunkSize(chunkSize.value)
+      .freezeWith(network.client);
+
+    transactions.push(appendTransaction);
+  }
+
+  return transactions;
+
+  function validateTransaction() {
+    if (!transaction.transactionId) throw new Error('Transaction ID is missing');
+    if (!transaction.nodeAccountIds) throw new Error('Transaction node accounts are missing');
+    if (!transaction.fileId) throw new Error('Transaction file ID is missing');
+  }
+}
+
+async function executeFileTransactions(transactions: Transaction[]) {
+  isExecuting.value = true;
+  let firstTransactionResult: {
+    response: TransactionResponse;
+    receipt: TransactionReceipt;
+    transactionId: string;
+  } | null = null;
+  processedChunks.value = 0;
+
+  try {
+    for (let i = 0; i < transactions.length; i++) {
+      await getTransactionSignatures(
+        requiredLocalKeyPairs.value,
+        transactions[i],
+        true,
+        user.data.email,
+        userPassword.value,
+      );
+
+      const result = await execute(
+        transactions[i].toBytes().toString(),
+        network.network,
+        network.customNetworkSettings,
+      );
+
+      if (i === 0) firstTransactionResult = result;
+
+      processedChunks.value++;
+    }
+
+    if (firstTransactionResult) {
+      transactionResult.value = firstTransactionResult;
+      props.onExecuted &&
+        props.onExecuted(transactionResult.value, chunksAmount.value || undefined);
+      isExecutedModalShown.value = true;
+    }
+
+    if (unmounted.value) {
+      toast.success('Transaction executed', { position: 'top-right' });
+    }
+  } catch (error: any) {
+    handleError(error, `Execution failed at chunk ${processedChunks.value + 1}`);
+  } finally {
+    isExecuting.value = false;
+  }
+}
+
+async function sendSignedChunksToOrganization(transactions: Transaction[]) {
+  isChunkingModalShown.value = true;
+  processedChunks.value = 0;
+  for (let i = 0; i < transactions.length; i++) {
+    await getTransactionSignatures(
+      requiredLocalKeyPairs.value,
+      transactions[i],
+      true,
+      user.data.email,
+      userPassword.value,
+    );
+    processedChunks.value++;
+  }
+
+  isChunkingModalShown.value = false;
+  console.log('Send to back end signed along with required', externalPublicKeysReq.value);
+}
+
+function chunkBuffer(buffer: Uint8Array, chunkSize: number): Uint8Array[] {
+  const chunks: Uint8Array[] = [];
+  for (let i = 0; i < buffer.length; i += chunkSize) {
+    chunks.push(buffer.slice(i, i + chunkSize));
+  }
+  return chunks;
+}
+
 function resetData() {
   userPassword.value = '';
   transactionResult.value = null;
   isSigning.value = false;
+  isExecuting.value = false;
   isExecutedModalShown.value = false;
+  isChunkingModalShown.value = false;
   isSignModalShown.value = false;
   requiredSignatures.value = [];
+  chunksAmount.value = null;
+  chunkSize.value = 1024;
+  chunkInterval.value = 0.1;
+  processedChunks.value = 0;
 }
 
 /* Hooks */
@@ -197,6 +413,7 @@ onBeforeUnmount(() => (unmounted.value = true));
 /* Expose */
 defineExpose({
   transactionResult,
+  chunksAmount,
   process,
 });
 </script>
@@ -222,16 +439,48 @@ defineExpose({
           <div class="mt-4 form-group">
             <input v-model="userPassword" type="password" class="form-control" />
           </div>
-          <AppButton
-            color="primary"
-            size="large"
-            :loading="isSigning"
-            :disabled="userPassword.length === 0 || isSigning"
-            class="mt-5 w-100"
-            type="submit"
-            >Sign</AppButton
-          >
+          <div class="mt-4">
+            <div v-if="chunksAmount">Estimated chunks: {{ chunksAmount }}</div>
+            <AppButton
+              color="primary"
+              size="large"
+              :loading="isSigning"
+              :disabled="userPassword.length === 0 || isSigning"
+              class="mt-1 w-100"
+              type="submit"
+              >Sign</AppButton
+            >
+          </div>
         </form>
+      </div>
+    </AppModal>
+    <AppModal
+      class="common-modal"
+      v-model:show="isChunkingModalShown"
+      :close-on-click-outside="false"
+      :close-on-escape="false"
+    >
+      <div class="p-5">
+        <i
+          class="bi bi-x-lg d-inline-block cursor-pointer"
+          style="line-height: 16px"
+          @click="isChunkingModalShown = false"
+        ></i>
+        <div class="mt-5 text-center">
+          <AppLoader />
+        </div>
+        <h3 class="mt-5 text-main text-center text-bold">
+          Chunking
+          {{
+            type
+              ?.slice(1)
+              .split(/(?=[A-Z])/)
+              .join(' ')
+          }}
+        </h3>
+        <p class="mt-3 text-center" v-if="chunksAmount">
+          {{ processedChunks }} out of {{ chunksAmount }}
+        </p>
       </div>
     </AppModal>
     <AppModal
@@ -242,7 +491,7 @@ defineExpose({
     >
       <div class="p-5">
         <i
-          class="bi bi-success d-inline-block cursor-pointer"
+          class="bi bi-x-lg d-inline-block cursor-pointer"
           style="line-height: 16px"
           @click="isExecuting = false"
         ></i>
@@ -258,9 +507,12 @@ defineExpose({
               .join(' ')
           }}
         </h3>
-        <AppButton color="primary" size="large" class="mt-5 w-100" @click="isExecuting = false"
-          >Close</AppButton
-        >
+        <div class="mt-4">
+          <p v-if="chunksAmount">{{ processedChunks }} out of {{ chunksAmount }}</p>
+          <AppButton color="primary" size="large" class="mt-1 w-100" @click="isExecuting = false"
+            >Close</AppButton
+          >
+        </div>
       </div>
     </AppModal>
     <AppModal
