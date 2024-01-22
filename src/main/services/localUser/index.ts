@@ -9,6 +9,8 @@ export * from './keyPairs';
 
 export * from './accounts';
 
+export * from './transactions';
+
 export const userStorageFolderName = 'User Storage';
 export const getUserStorageFolderPath = (email: string) => `User Storage/${email}`;
 

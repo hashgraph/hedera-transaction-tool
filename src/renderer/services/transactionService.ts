@@ -81,7 +81,7 @@ export const execute = async (
   customNetworkSettings: CustomNetworkSettings | null,
 ) => {
   try {
-    return await window.electronAPI.utils.executeTransaction(
+    return await window.electronAPI.transactions.executeTransaction(
       JSON.stringify({ transactionBytes, network, customNetworkSettings }),
     );
   } catch (err: any) {
@@ -99,7 +99,7 @@ export const executeQuery = async (
   privateKey: string,
 ) => {
   try {
-    return await window.electronAPI.utils.executeQuery(
+    return await window.electronAPI.transactions.executeQuery(
       JSON.stringify({ queryBytes, network, customNetworkSettings, accountId, privateKey }),
     );
   } catch (err: any) {

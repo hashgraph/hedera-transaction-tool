@@ -76,14 +76,6 @@ export const electronAPI = {
     decodeProtobuffKey: (protobuffEncodedKey: string): Promise<proto.Key> =>
       ipcRenderer.invoke('utils:decodeProtobuffKey', protobuffEncodedKey),
     hash: (data: any): Promise<string> => ipcRenderer.invoke('utils:hash', data),
-    executeTransaction: (
-      transactionData: string,
-    ): Promise<{
-      response: TransactionResponse;
-      receipt: TransactionReceipt;
-      transactionId: string;
-    }> => ipcRenderer.invoke('utils:executeTransaction', transactionData),
-    executeQuery: (queryData: string) => ipcRenderer.invoke('utils:executeQuery', queryData),
   },
   accounts: {
     getAll: (email: string): Promise<{ accountId: string; nickname: string }[]> =>
@@ -114,6 +106,16 @@ export const electronAPI = {
       organizations?: boolean;
     }) => ipcRenderer.invoke('localUser:resetData', options),
     hasRegisteredUsers: () => ipcRenderer.invoke('localUser:hasRegisteredUsers'),
+  },
+  transactions: {
+    executeTransaction: (
+      transactionData: string,
+    ): Promise<{
+      response: TransactionResponse;
+      receipt: TransactionReceipt;
+      transactionId: string;
+    }> => ipcRenderer.invoke('transactions:executeTransaction', transactionData),
+    executeQuery: (queryData: string) => ipcRenderer.invoke('transactions:executeQuery', queryData),
   },
 };
 typeof electronAPI;
