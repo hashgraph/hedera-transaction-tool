@@ -2,15 +2,19 @@
 import { ref } from 'vue';
 import { Mnemonic } from '@hashgraph/sdk';
 
+import { useToast } from 'vue-toast-notification';
+
 import AppButton from '../../../components/ui/AppButton.vue';
 import AppCheckBox from '../../../components/ui/AppCheckBox.vue';
-import AppModal from '../../../components/ui/AppModal.vue';
 import AppRecoveryPhraseWord from '../../../components/ui/AppRecoveryPhraseWord.vue';
 
 /* Props */
-defineProps<{
+const props = defineProps<{
   handleContinue: (words: string[]) => void;
 }>();
+
+/* Composables */
+const toast = useToast();
 
 /* State */
 const words = ref(Array(24).fill(''));
@@ -20,7 +24,6 @@ const indexesToVerify = ref<number[]>([]);
 const checkboxChecked = ref(false);
 const wordsConfirmed = ref(false);
 const toVerify = ref(false);
-const isSuccessModalShown = ref(false);
 
 /* Handlers */
 const handleGeneratePhrase = async () => {
@@ -53,7 +56,8 @@ const handleProceedToVerification = () => {
 
 const handleVerify = () => {
   if (words.value.toString() === correctWords.value.toString()) {
-    isSuccessModalShown.value = true;
+    toast.success('Recovery Phrase Created successfully', { position: 'bottom-right' });
+    props.handleContinue(correctWords.value);
   }
 };
 </script>
@@ -125,20 +129,4 @@ const handleVerify = () => {
       >Verify</AppButton
     >
   </div>
-  <AppModal v-model:show="isSuccessModalShown" class="common-modal">
-    <div class="p-5">
-      <i class="bi bi-x-lg d-inline-block cursor-pointer" @click="isSuccessModalShown = false"></i>
-      <div class="mt-5 text-center">
-        <i class="bi bi-check-circle-fill extra-large-icon"></i>
-      </div>
-      <h3 class="mt-5 text-main text-center text-bold">Recovery Phrase Created successfully</h3>
-      <AppButton
-        color="primary"
-        size="large"
-        class="mt-5 w-100 rounded-4"
-        @click="handleContinue(correctWords)"
-        >Continue</AppButton
-      >
-    </div>
-  </AppModal>
 </template>
