@@ -5,9 +5,9 @@ import useOrganizationsStore from '../../stores/storeOrganizations';
 import useUserStore from '../../stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
+import { useRouter } from 'vue-router';
 
 import AppButton from '../../components/ui/AppButton.vue';
-import AppModal from '../../components/ui/AppModal.vue';
 
 /* Stores */
 const organizationsStore = useOrganizationsStore();
@@ -15,12 +15,12 @@ const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
+const router = useRouter();
 
 /* State */
 const organizationName = ref('');
 const serverUrl = ref('');
 const serverPublicKey = ref('');
-const isSuccessModalShown = ref(false);
 
 /* Handlers */
 const handleContinue = async (e: Event) => {
@@ -36,7 +36,8 @@ const handleContinue = async (e: Event) => {
     user.data.mode = 'organization';
     user.data.activeServerURL = serverUrl.value;
 
-    isSuccessModalShown.value = true;
+    toast.error('Organizations Added', { position: 'bottom-right' });
+    router.push({ name: 'welcome' });
   } catch (err: any) {
     let message = 'Failed to add organization';
     if (err.message && typeof err.message === 'string') {
@@ -89,29 +90,5 @@ const handleContinue = async (e: Event) => {
         >
       </div>
     </form>
-    <AppModal v-model:show="isSuccessModalShown" class="common-modal">
-      <div class="p-5">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isSuccessModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
-          <i
-            class="bi bi-check-circle-fill extra-large-icon cursor-pointer"
-            style="line-height: 16px"
-          ></i>
-        </div>
-
-        <h3 class="mt-5 text-main text-center text-bold">Organizations Added</h3>
-        <AppButton
-          color="primary"
-          size="large"
-          class="mt-5 w-100 rounded-4"
-          @click="$router.push({ name: 'welcome' })"
-          >Done</AppButton
-        >
-      </div>
-    </AppModal>
   </div>
 </template>
