@@ -5,8 +5,10 @@ import { getUserStorageFolderPath } from '.';
 
 import { Client, Query, Transaction } from '@hashgraph/sdk';
 
+import { IStoredTransaction, storedTransactionJSONSchema } from '../../shared/interfaces';
+
 type SchemaProperties = {
-  transactions: any[];
+  transactions: IStoredTransaction[];
 };
 
 /* persisting accounts data in a JSON file */
@@ -14,6 +16,7 @@ export default function getTransactionsStore(email: string) {
   const schema: Schema<SchemaProperties> = {
     transactions: {
       type: 'array',
+      items: storedTransactionJSONSchema,
     },
   };
 
@@ -138,4 +141,20 @@ export const executeQuery = async (queryData: string) => {
         throw Error('Network not supported');
     }
   }
+};
+
+export const saveTransaction = (email: string, transaction: IStoredTransaction) => {
+  const store = getTransactionsStore(email);
+
+  store.set('transactions', [...store.get('transactions'), transaction]);
+};
+
+export const getTransactions = (email: string, serverUrl?: string) => {
+  const store = getTransactionsStore(email);
+
+  if (serverUrl) {
+    return store.get('transactions').filter(t => t.serverUrl === serverUrl);
+  }
+
+  return store.get('transactions');
 };

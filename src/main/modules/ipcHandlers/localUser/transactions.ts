@@ -1,6 +1,13 @@
 import { ipcMain } from 'electron';
 
-import { executeQuery, executeTransaction } from '../../../services/localUser';
+import { IStoredTransaction } from '../../../shared/interfaces';
+
+import {
+  executeQuery,
+  executeTransaction,
+  getTransactions,
+  saveTransaction,
+} from '../../../services/localUser';
 
 const createChannelName = (...props) => ['transactions', ...props].join(':');
 
@@ -13,5 +20,16 @@ export default () => {
   // Execute query
   ipcMain.handle(createChannelName('executeQuery'), (_e, queryData: string) =>
     executeQuery(queryData),
+  );
+
+  // Stores a transaction
+  ipcMain.handle(
+    createChannelName('saveTransaction'),
+    (_e, email: string, transaction: IStoredTransaction) => saveTransaction(email, transaction),
+  );
+
+  // Get stored transactions
+  ipcMain.handle(createChannelName('getTransactions'), (_e, email: string, serverUrl?: string) =>
+    getTransactions(email, serverUrl),
   );
 };

@@ -7,7 +7,7 @@ import {
   TransactionId,
 } from '@hashgraph/sdk';
 
-import { IKeyPairWithAccountId } from '../../main/shared/interfaces';
+import { IKeyPairWithAccountId, IStoredTransaction } from '../../main/shared/interfaces';
 
 import { CustomNetworkSettings, Network } from '../stores/storeNetwork';
 
@@ -104,6 +104,24 @@ export const executeQuery = async (
     );
   } catch (err: any) {
     const message = err.message?.split(': Error: ')[1] || 'Query Execution Failed';
+    throw Error(message);
+  }
+};
+
+export const saveTransaction = async (email: string, transaction: IStoredTransaction) => {
+  try {
+    await window.electronAPI.transactions.saveTransaction(email, transaction);
+  } catch (err: any) {
+    const message = err.message?.split(': Error: ')[1] || 'Saving transaction Failed';
+    throw Error(message);
+  }
+};
+
+export const getTransactions = async (email: string, serverUrl?: string) => {
+  try {
+    await window.electronAPI.transactions.getTransactions(email, serverUrl);
+  } catch (err: any) {
+    const message = err.message?.split(': Error: ')[1] || 'Getting transactions Failed';
     throw Error(message);
   }
 };
