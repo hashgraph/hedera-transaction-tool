@@ -42,7 +42,7 @@ const handldeWordInput = (e: Event) => {
   >
     <span v-if="index" class="word-index text-small">{{ index }}.</span>
     <input
-      class="form-control rounded-4 border"
+      class="form-control is-fill"
       :type="inputType"
       :readonly="readonly"
       :value="word"

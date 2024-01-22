@@ -52,14 +52,9 @@ onBeforeMount(() => {
           <template v-if="stepperItems.map(s => s.name).includes(step.current)">
             <div class="w-100 d-flex flex-column justify-content-center align-items-center gap-4">
               <div class="col-12 col-md-10 col-xxl-8">
-                <h1 class="mt-3 text-huge text-bold text-center">Account Setup</h1>
-                <p class="mt-5 text-center">
-                  During this setup you are going to set up your recovery phrase and key pairs.
-                  <span
-                    class="link link-primary text-decoration-underline"
-                    @click="isFaqShown = true"
-                    >See more</span
-                  >
+                <h1 class="mt-3 text-title text-bold text-center">Account Setup</h1>
+                <p class="mt-3 text-main text-secondary text-center">
+                  Set your Recovery Phrase and Key Pairs
                 </p>
                 <div class="mt-8">
                   <AppStepper

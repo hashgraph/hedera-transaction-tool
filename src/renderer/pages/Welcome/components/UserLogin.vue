@@ -264,7 +264,7 @@ watch(inputEmail, pass => {
         type="submit"
         class="mt-5 w-100"
         :disabled="inputEmail.length === 0 || inputPassword.length === 0"
-        >Login</AppButton
+        >{{ shouldRegister ? 'Register' : 'Sign In' }}</AppButton
       >
     </form>
   </div>
