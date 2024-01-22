@@ -155,10 +155,13 @@ async function process(
   _chunkSize?: number,
   _chunkInterval?: number,
 ) {
+  resetData();
+  requiredSignatures.value = [...new Set(_requiredSignatures)];
+
   await nextTick();
   await keyPairs.refetch();
+
   validateProcess();
-  resetData();
 
   const estimatedSignaturesSize =
     _requiredSignatures.length * TRANSACTION_SIGNATURE_ESTIMATED_MAX_SIZE;
@@ -173,8 +176,7 @@ async function process(
     if (_chunkInterval <= 0) chunkInterval.value = 0.1;
     else chunkInterval.value = _chunkInterval;
   }
-
-  requiredSignatures.value = [...new Set(_requiredSignatures)];
+  await nextTick();
 
   checkIfFileTransaction();
 
