@@ -44,6 +44,7 @@ const handleSaveWords = async (words: string[]) => {
 /* Hooks */
 onBeforeMount(() => {
   user.data.secretHashes.length > 0 && tabItems.value.shift();
+  activeTabIndex.value = tabItems.value.findIndex(i => i.title === 'Import Existing');
 });
 </script>
 <template>

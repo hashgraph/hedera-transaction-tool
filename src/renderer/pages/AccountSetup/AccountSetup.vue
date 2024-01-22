@@ -24,6 +24,21 @@ const stepperItems = ref([
 const password = ref('');
 const isFaqShown = ref(false);
 
+/* Handlers */
+const handleBack = () => {
+  if (isFaqShown.value) {
+    isFaqShown.value = false;
+  } else {
+    step.value.current = step.value.previous;
+    const currentPrevIndex = stepperItems.value.findIndex(i => i.name === step.value.previous);
+    step.value.previous =
+      currentPrevIndex > 0
+        ? (step.value.previous = stepperItems.value[currentPrevIndex - 1].name)
+        : stepperItems.value[0].name;
+  }
+};
+
+/* Hooks */
 onBeforeMount(() => {
   if (user.data.mode === 'personal') {
     step.value.previous = 'recoveryPhrase';
@@ -38,7 +53,7 @@ onBeforeMount(() => {
       <AppButton
         color="secondary"
         class="px-5 position-absolute d-flex align-items-center rounded-4"
-        @click="isFaqShown ? (isFaqShown = false) : (step.current = step.previous)"
+        @click="handleBack"
       >
         <i class="bi bi-arrow-left-short text-headline lh-1"></i> Back</AppButton
       >
