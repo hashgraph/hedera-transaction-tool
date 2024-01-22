@@ -253,7 +253,7 @@ watch(inputEmail, pass => {
         </div>
       </template>
 
-      <div class="mt-3 text-end">
+      <div v-if="!shouldRegister" class="mt-3 text-end">
         <span @click="handleResetData" class="text-small link-primary cursor-pointer"
           >Reset account</span
         >
