@@ -52,8 +52,17 @@ function handleOrganizationChange(e: Event) {
       <Logo />
       <LogoText />
     </div>
-    <div class="d-flex align-items-center">
-      <div v-if="user.data.isLoggedIn" class="me-4">
+    <div v-if="user.data.isLoggedIn" class="d-flex justify-content-end align-items-center">
+      <span class="container-icon">
+        <i class="text-icon-main bi bi-search"></i>
+      </span>
+      <span class="container-icon">
+        <i class="text-icon-main bi bi-bell"></i>
+      </span>
+      <span class="container-icon">
+        <i class="text-icon-main bi bi-three-dots-vertical"></i>
+      </span>
+      <div class="d-none me-4">
         <select
           class="form-select form-select-sm"
           name="serverURL"

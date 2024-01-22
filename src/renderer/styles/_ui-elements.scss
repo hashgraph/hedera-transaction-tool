@@ -235,6 +235,14 @@
   background-repeat: no-repeat;
 }
 
+.container-icon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px;
+  cursor: pointer;
+}
+
 /* Icons */
 .extra-large-icon {
   &.bi {
