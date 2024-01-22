@@ -64,7 +64,7 @@ input[type='file'] {
   left: 0;
   z-index: 1;
 
-  &.logged-in {
+  &.logged-in:not(&.should-setup-account) {
     background-color: var(--#{$prefix}body-bg);
   }
 }
@@ -91,7 +91,7 @@ input[type='file'] {
   position: relative;
   min-height: calc(100vh - 80px);
 
-  &.logged-in {
+  &.logged-in:not(&.should-setup-account) {
     margin-left: 260px;
   }
 }
@@ -110,7 +110,7 @@ input[type='file'] {
 .container-main-content {
   background-color: var(--#{$prefix}contrainer-main-bg-color);
 
-  .logged-in & {
+  .logged-in:not(.should-setup-account) & {
     border-top-left-radius: 16px;
   }
 }
