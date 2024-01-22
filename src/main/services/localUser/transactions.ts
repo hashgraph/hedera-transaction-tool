@@ -56,8 +56,7 @@ export const executeTransaction = async (transactionData: string) => {
 
     return { response, receipt, transactionId: response.transactionId.toString() };
   } catch (error: any) {
-    console.log(error);
-    throw new Error(error.message || error);
+    throw new Error(JSON.stringify({ status: error.status._code, message: error.message }));
   }
 
   function getClient() {
