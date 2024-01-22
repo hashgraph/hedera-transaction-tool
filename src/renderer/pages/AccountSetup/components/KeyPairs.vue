@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUpdated, ref, watch } from 'vue';
+import { onMounted, onUpdated, ref } from 'vue';
 
 import { IKeyPair } from '../../../../main/shared/interfaces';
 
@@ -16,7 +16,6 @@ import {
 } from '../../../services/keyPairService';
 
 import AppButton from '../../../components/ui/AppButton.vue';
-import AppModal from '../../../components/ui/AppModal.vue';
 // import AppSwitch from '../../../components/ui/AppSwitch.vue';
 
 /* Props */
@@ -44,7 +43,6 @@ const privateKey = ref('');
 const publicKey = ref('');
 
 const keyExists = ref(false);
-const isSuccessModalShown = ref(false);
 
 /* Misc Functions */
 const validateExistingKey = () => {
@@ -92,7 +90,11 @@ const handleSaveKey = async () => {
       await keyPairsStore.storeKeyPair(props.encryptPassword, keyPair, secretHash);
       user.data.secretHashes = [...user.data.secretHashes, secretHash];
 
-      // isSuccessModalShown.value = true;
+      toast.success('Key Pair saved successfully', {
+        position: 'bottom-right',
+      });
+
+      props.handleContinue();
     } catch (err: any) {
       let message = 'Failed to store key pair';
       if (err.message && typeof err.message === 'string') {
@@ -155,13 +157,6 @@ onMounted(async () => {
 
 onUpdated(() => {
   createTooltips();
-});
-
-/* Watchers */
-watch(isSuccessModalShown, shown => {
-  if (!shown) {
-    validateExistingKey();
-  }
 });
 </script>
 <template>
@@ -264,24 +259,5 @@ watch(isSuccessModalShown, shown => {
         >
       </div>
     </div>
-    <AppModal v-model:show="isSuccessModalShown" class="common-modal">
-      <div class="p-5">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          @click="isSuccessModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
-          <i class="bi bi-check-circle-fill extra-large-icon"></i>
-        </div>
-        <h3 class="mt-5 text-main text-center text-bold">Key Pair saved successfully</h3>
-        <AppButton
-          color="primary"
-          size="large"
-          class="mt-5 w-100 rounded-4"
-          @click="handleContinue()"
-          >Continue</AppButton
-        >
-      </div>
-    </AppModal>
   </div>
 </template>
