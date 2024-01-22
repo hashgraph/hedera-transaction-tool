@@ -3,16 +3,6 @@ import { RouterLink } from 'vue-router';
 
 const menuItems = [
   {
-    link: '/',
-    title: 'Start',
-    icon: 'bi bi-flag',
-  },
-  {
-    link: '/style-guide',
-    title: 'Style Guide',
-    icon: 'bi bi-feather',
-  },
-  {
     link: '/transactions',
     title: 'Transactions',
     icon: 'bi bi-arrow-left-right',
@@ -22,6 +12,37 @@ const menuItems = [
     title: 'Accounts',
     icon: 'bi bi-person',
   },
+  {
+    link: '/tokens',
+    title: 'Tokens',
+    icon: 'bi bi-coin',
+  },
+  {
+    link: '/contracts',
+    title: 'Smart Contracts',
+    icon: 'bi bi-arrows-angle-contract',
+  },
+  {
+    link: '/consensus-service',
+    title: 'Consensus Service',
+    icon: 'bi bi-shield-check',
+  },
+  {
+    link: '/file-service',
+    title: 'File Service',
+    icon: 'bi bi-file-text',
+  },
+  {
+    link: '/contact-list',
+    title: 'Contact List',
+    icon: 'bi bi-book',
+  },
+  {
+    link: '/style-guide',
+    title: 'Style Guide',
+    icon: 'bi bi-feather',
+  },
+
   // {
   //   link: '/tokens',
   //   title: 'Tokens',

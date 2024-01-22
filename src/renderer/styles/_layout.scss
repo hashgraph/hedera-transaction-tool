@@ -92,7 +92,7 @@ input[type='file'] {
   min-height: calc(100vh - 80px);
 
   &.logged-in {
-    margin-left: 224px;
+    margin-left: 260px;
   }
 }
 
@@ -100,7 +100,7 @@ input[type='file'] {
   position: fixed;
   left: 0;
   height: calc(100% - 80px);
-  width: 224px;
+  width: 260px;
   padding: 8px 24px;
   display: flex;
   flex-direction: column;
