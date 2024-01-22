@@ -9,7 +9,6 @@ import { useRouter } from 'vue-router';
 
 import Logo from './Logo.vue';
 import LogoText from './LogoText.vue';
-import AppButton from './ui/AppButton.vue';
 
 /* Stores */
 const organizationsStore = useOrganizationsStore();
@@ -21,12 +20,6 @@ const router = useRouter();
 
 /* State */
 const organizationsDropDownRef = ref<HTMLSelectElement | null>(null);
-
-/* Handlers */
-async function handleThemeChange() {
-  const isDark = await window.electronAPI.theme.isDark();
-  window.electronAPI.theme.toggle(isDark ? 'light' : 'dark');
-}
 
 function handleOrganizationChange(e: Event) {
   const selectElement = e.target as HTMLSelectElement;
@@ -86,11 +79,6 @@ function handleOrganizationChange(e: Event) {
           </template>
           <option value="add-organization">Add Organization</option>
         </select>
-      </div>
-      <div class="form-check form-switch">
-        <AppButton color="secondary" @click="handleThemeChange">
-          <i class="bi bi-sun"></i
-        ></AppButton>
       </div>
     </div>
   </div>

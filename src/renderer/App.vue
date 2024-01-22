@@ -5,10 +5,17 @@ import 'bootstrap/dist/js/bootstrap.bundle.min';
 
 import AppMenu from './components/Menu.vue';
 import AppHeader from './components/Header.vue';
+import AppButton from './components/ui/AppButton.vue';
 import useUserStore from './stores/storeUser';
 
 /* Stores */
 const user = useUserStore();
+
+/* Handlers */
+async function handleThemeChange() {
+  const isDark = await window.electronAPI.theme.isDark();
+  window.electronAPI.theme.toggle(isDark ? 'light' : 'dark');
+}
 
 /* Hooks */
 onMounted(async () => {
@@ -30,5 +37,8 @@ onMounted(async () => {
         <component :is="Component" />
       </Transition>
     </RouterView>
+    <AppButton class="btn-theme-changer" color="secondary" @click="handleThemeChange">
+      <i class="bi bi-sun"></i
+    ></AppButton>
   </div>
 </template>
