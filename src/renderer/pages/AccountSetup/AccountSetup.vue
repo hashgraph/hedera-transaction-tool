@@ -7,7 +7,6 @@ import AppButton from '../../components/ui/AppButton.vue';
 import AppStepper from '../../components/ui/AppStepper.vue';
 
 import Faq from './components/Faq.vue';
-import FinishSetup from './components/FinishSetup.vue';
 import GenerateOrImport from './components/GenerateOrImport.vue';
 import KeyPairs from './components/KeyPairs.vue';
 import NewPassword from './components/NewPassword.vue';
@@ -21,7 +20,6 @@ const stepperItems = ref([
   { title: 'New Password', name: 'newPassword' },
   { title: 'Recovery Phrase', name: 'recoveryPhrase' },
   { title: 'Key Pairs', name: 'keyPairs' },
-  { title: 'Finish Account Setup', name: 'finishAccountSetup' },
 ]);
 const password = ref('');
 const isFaqShown = ref(false);
@@ -102,16 +100,11 @@ onBeforeMount(() => {
                 "
                 :handle-continue="
                   () => {
-                    step.previous = step.current;
-                    step.current = 'finishAccountSetup';
+                    $router.push({ name: 'settingsKeys' });
+                    user.data.password = '';
                   }
                 "
               />
-            </template>
-
-            <!--Step 4 -->
-            <template v-else-if="step.current === 'finishAccountSetup'">
-              <FinishSetup v-model:step="step" />
             </template>
           </Transition>
         </div>
