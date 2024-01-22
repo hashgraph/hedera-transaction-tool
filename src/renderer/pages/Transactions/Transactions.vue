@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 
+import History from './components/History.vue';
 import AppTabs, { TabItem } from '../../components/ui/AppTabs.vue';
 import AppButton from '../../components/ui/AppButton.vue';
 import AppModal from '../../components/ui/AppModal.vue';
 
 /* State */
-const activeTabIndex = ref(1);
 const transactions = reactive([
   {
     id: 1,
@@ -30,21 +30,22 @@ const transactions = reactive([
     approvers: ['alice@acme.com', 'joe@acme.com'],
   },
 ]);
-const isTransactionTypeModalShown = ref(false);
-
-/* Misc */
-const tabItems: TabItem[] = [
+const tabItems = ref<TabItem[]>([
   { title: 'Ready for Review' },
   { title: 'Ready to Sign', notifications: 3 },
   { title: 'In Progress' },
   { title: 'Ready for Submission' },
-  { title: 'Completed' },
+  { title: 'History' },
   { title: 'Drafts' },
-];
+]);
+const activeTabIndex = ref(1);
 
-const [readyToReview, readyToSign, inProgress, readyForSubmission, completed, drafts] =
-  tabItems.map(t => t.title);
+const isTransactionTypeModalShown = ref(false);
 
+/* Computed */
+const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title);
+
+/* Misc */
 const transactionGroups = [
   {
     groupTitle: 'Account',
@@ -88,49 +89,60 @@ const transactionGroups = [
       ></AppButton>
     </div>
     <div class="mt-4">
-      <AppTabs :items="tabItems" v-model:active-index="activeTabIndex">
-        <template #[readyToReview]> First Tab </template>
-        <template #[readyToSign]>
-          <div>
-            <div
-              v-for="(item, index) in transactions"
-              :key="index"
-              class="rounded bg-dark-blue-700 p-4 overflow-hidden"
-              :class="{ 'mt-4': index !== 0 }"
-            >
-              <div class="d-flex justify-content-between align-items-center">
-                <p class="text-small text-bold">
+      <AppTabs :items="tabItems" v-model:active-index="activeTabIndex"></AppTabs>
+      <template v-if="activeTabTitle === 'Ready for Review'"> First Tab </template>
+      <template v-if="activeTabTitle === 'Ready to Sign'">
+        <div>
+          <div
+            v-for="(item, index) in transactions"
+            :key="index"
+            class="rounded bg-dark-blue-700 p-4 overflow-hidden"
+            :class="{ 'mt-4': index !== 0 }"
+          >
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <p class="text-main d-flex align-items-center">
+                  <i
+                    v-if="item.type === 'send'"
+                    class="bi bi-arrow-up-right me-3 text-info text-title fw-bolder"
+                  ></i>
+                  <i
+                    v-else-if="item.type === 'receive'"
+                    class="bi bi-arrow-down-left me-3 text-success text-title fw-bold"
+                  ></i>
                   {{ item.title }}
                 </p>
-                <!-- <p class="text-micro mt-3">{{ item.account }}</p> -->
+                <p class="text-micro mt-3">{{ item.account }}</p>
+              </div>
+              <div>
                 <div class="d-flex justify-content-end align-items-center">
                   <AppButton color="primary" outline class="me-3">Details</AppButton>
                   <AppButton color="secondary">Sign</AppButton>
                 </div>
               </div>
+            </div>
 
-              <!-- <div class="mt-4 d-inline-flex align-items-center">
-                <span class="text-micro me-4">Approvers</span>
-                <span
-                  v-for="(approver, index) in item.approvers"
-                  :key="index"
-                  class="badge bg-dark-blue-700 text-body d-inline-flex align-items-center fw-normal"
-                  :class="{ 'me-2': index !== item.approvers.length }"
-                  ><i class="bi bi-check-lg text-success text-subheader lh-1 me-1"></i
-                  >{{ approver }}</span
-                >
-              </div> -->
+            <div class="mt-4 d-inline-flex align-items-center">
+              <span class="text-micro me-4">Approvers</span>
+              <span
+                v-for="(approver, index) in item.approvers"
+                :key="index"
+                class="badge bg-dark-blue-700 text-body d-inline-flex align-items-center fw-normal"
+                :class="{ 'me-2': index !== item.approvers.length }"
+                ><i class="bi bi-check-lg text-success text-subheader lh-1 me-1"></i
+                >{{ approver }}</span
+              >
             </div>
           </div>
-        </template>
-        <template #[inProgress]> Third Tab </template>
+        </div>
+      </template>
+      <template v-if="activeTabTitle === 'In Progress'"> Third Tab </template>
 
-        <template #[readyForSubmission]> Fourth Tab </template>
+      <template v-if="activeTabTitle === 'Ready for Submission'"> Fourth Tab </template>
 
-        <template #[completed]> Fifth Tab </template>
+      <template v-if="activeTabTitle === 'History'"><History /></template>
 
-        <template #[drafts]> Sixth Tab </template>
-      </AppTabs>
+      <template v-if="activeTabTitle === 'Drafts'"> Sixth Tab </template>
     </div>
     <AppModal v-model:show="isTransactionTypeModalShown" class="transaction-type-selection-modal">
       <div class="p-5">
@@ -146,9 +158,6 @@ const transactionGroups = [
             style="line-height: 16px"
           ></i>
         </div>
-        <!-- <p class="text-center text-light-emphasis text-small">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-        </p> -->
         <div class="mt-5 row flex-wrap">
           <template v-for="(group, _groupIndex) in transactionGroups" :key="_groupIndex">
             <div class="mt-5 col-4">
