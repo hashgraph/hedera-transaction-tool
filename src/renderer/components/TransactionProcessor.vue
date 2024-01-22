@@ -24,6 +24,7 @@ import {
   getTransactionSignatures,
   execute,
   createTransactionId,
+  saveTransaction,
 } from '../services/transactionService';
 import { openExternal } from '../services/electronUtilsService';
 
@@ -86,7 +87,13 @@ const localPublicKeysReq = computed(() =>
 const requiredLocalKeyPairs = computed(() =>
   keyPairs.keyPairs.filter(kp => localPublicKeysReq.value.includes(kp.publicKey)),
 );
-const type = computed(() => transaction.value?.constructor.name);
+const type = computed(
+  () =>
+    transaction.value?.constructor.name
+      .slice(1)
+      .split(/(?=[A-Z])/)
+      .join(' '),
+);
 
 /* Handlers */
 async function handleSignTransaction(e: Event) {
@@ -110,7 +117,7 @@ async function handleSignTransaction(e: Event) {
       isSigned = true;
     }
   } catch (err: any) {
-    handleError(err, 'Transaction signing failed');
+    toast.error(err.message || 'Transaction signing failed', { position: 'bottom-right' });
   } finally {
     isSigning.value = false;
   }
@@ -119,19 +126,22 @@ async function handleSignTransaction(e: Event) {
   isSignModalShown.value = false;
 
   if (
-    (transaction.value.toBytes().length > TRANSACTION_MAX_SIZE &&
-      transaction.value instanceof FileUpdateTransaction) ||
-    transaction.value instanceof FileAppendTransaction
+    transaction.value.toBytes().length > TRANSACTION_MAX_SIZE &&
+    (transaction.value instanceof FileUpdateTransaction ||
+      transaction.value instanceof FileAppendTransaction) &&
+    transaction.value.contents !== null
   ) {
-    let chunkedTransactions: Transaction[] = [];
-
     isChunkingModalShown.value = true;
-    chunkedTransactions = await chunkFileTransaction(transaction.value);
+    const chunks = chunkBuffer(transaction.value.contents, chunkSize.value);
     isChunkingModalShown.value = false;
 
     if (user.data.mode === 'personal') {
-      await executeFileTransactions(chunkedTransactions);
+      await executeFileTransactions(transaction.value, chunks);
     } else {
+      const chunkedTransactions = await chunkFileTransactionForOrganization(
+        transaction.value,
+        chunks,
+      );
       await sendSignedChunksToOrganization(chunkedTransactions);
     }
   } else if (user.data.mode === 'personal') {
@@ -140,13 +150,6 @@ async function handleSignTransaction(e: Event) {
     await sendSignedTransactionToOrganization();
     console.log('Send to back end signed along with required', externalPublicKeysReq.value);
   }
-}
-
-function handleError(error: any, message: string) {
-  if (error.message && typeof error.message === 'string') {
-    message = error.message;
-  }
-  toast.error(message, { position: 'bottom-right' });
 }
 
 /* Functions */
@@ -236,6 +239,8 @@ async function executeTransaction() {
     throw new Error('Transaction is not provided');
   }
 
+  let status = 0;
+
   try {
     isExecuting.value = true;
 
@@ -246,6 +251,8 @@ async function executeTransaction() {
     );
     // To store transaction result locally
 
+    status = transactionResult.value.receipt.status._code;
+
     isExecutedModalShown.value = true;
     props.onExecuted && props.onExecuted(transactionResult.value);
 
@@ -253,28 +260,43 @@ async function executeTransaction() {
       toast.success('Transaction executed', { position: 'bottom-right' });
     }
   } catch (err: any) {
-    handleError(err, 'Transaction execution failed');
+    const data = JSON.parse(err.message);
+    status = data.status;
+    toast.error(data.message, { position: 'bottom-right' });
   } finally {
     isExecuting.value = false;
   }
+
+  if (!type.value || !transaction.value.transactionId) throw new Error('Cannot save transaction');
+
+  await saveTransaction(user.data.email, {
+    mode: user.data.mode,
+    timestamp: new Date().getTime(),
+    status: status,
+    type: type.value,
+    transactionId: transaction.value.transactionId.toString(),
+    serverUrl: user.data.activeServerURL,
+  });
 }
 
 async function sendSignedTransactionToOrganization() {
   console.log('Send to back end signed along with required', externalPublicKeysReq.value);
 }
 
-async function chunkFileTransaction(transaction: FileUpdateTransaction | FileAppendTransaction) {
+async function chunkFileTransactionForOrganization(
+  transaction: FileUpdateTransaction | FileAppendTransaction,
+  chunks: Uint8Array[],
+) {
   if (!transaction.contents) return [transaction];
-  validateTransaction();
+  validateTransaction(transaction);
 
   const transactions: Transaction[] = [];
-  const chunks = chunkBuffer(transaction.contents, chunkSize.value);
   const isUpdateTransaction = transaction instanceof FileUpdateTransaction;
 
   if (isUpdateTransaction) {
     const updateTransaction = new FileUpdateTransaction()
       .setTransactionId(transaction.transactionId!)
-      .setTransactionValidDuration(transaction.transactionValidDuration)
+      .setTransactionValidDuration(180)
       .setMaxTransactionFee(transaction.maxTransactionFee)
       .setNodeAccountIds(transaction.nodeAccountIds!)
       .setFileId(transaction.fileId!)
@@ -313,15 +335,12 @@ async function chunkFileTransaction(transaction: FileUpdateTransaction | FileApp
   }
 
   return transactions;
-
-  function validateTransaction() {
-    if (!transaction.transactionId) throw new Error('Transaction ID is missing');
-    if (!transaction.nodeAccountIds) throw new Error('Transaction node accounts are missing');
-    if (!transaction.fileId) throw new Error('Transaction file ID is missing');
-  }
 }
 
-async function executeFileTransactions(transactions: Transaction[]) {
+async function executeFileTransactions(
+  transaction: FileUpdateTransaction | FileAppendTransaction,
+  chunks: Uint8Array[],
+) {
   isExecuting.value = true;
   let firstTransactionResult: {
     response: TransactionResponse;
@@ -329,42 +348,98 @@ async function executeFileTransactions(transactions: Transaction[]) {
     transactionId: string;
   } | null = null;
   processedChunks.value = 0;
+  let hasFailed = false;
+  const group = transaction.transactionId?.validStart?.seconds.toString() || '';
 
-  try {
-    for (let i = 0; i < transactions.length; i++) {
+  validateTransaction(transaction);
+
+  for (let i = 0; i < chunks.length; i++) {
+    if (hasFailed) {
+      isExecuting.value = false;
+      return;
+    }
+
+    let status = 0;
+    let tx;
+
+    try {
+      if (transaction instanceof FileUpdateTransaction && i === 0) {
+        tx = new FileUpdateTransaction()
+          .setTransactionId(createTransactionId(transaction.transactionId!.accountId!, new Date()))
+          .setTransactionValidDuration(180)
+          .setMaxTransactionFee(transaction.maxTransactionFee)
+          .setNodeAccountIds(transaction.nodeAccountIds!)
+          .setFileId(transaction.fileId!)
+          .setContents(chunks[0]);
+        transaction.fileMemo && tx.setFileMemo(transaction.fileMemo);
+        transaction.keys && transaction.keys.length > 0 && tx.setKeys(transaction.keys);
+        transaction.expirationTime && tx.setExpirationTime(transaction.expirationTime);
+        tx.freezeWith(network.client);
+      } else {
+        tx = new FileAppendTransaction()
+          .setTransactionId(createTransactionId(transaction.transactionId!.accountId!, new Date()))
+          .setTransactionValidDuration(180)
+          .setMaxTransactionFee(transaction.maxTransactionFee)
+          .setNodeAccountIds(transaction.nodeAccountIds!)
+          .setFileId(transaction.fileId!)
+          .setContents(chunks[i])
+          .setMaxChunks(1)
+          .setChunkSize(chunkSize.value)
+          .freezeWith(network.client);
+      }
+
       await getTransactionSignatures(
         requiredLocalKeyPairs.value,
-        transactions[i],
+        tx,
         true,
         user.data.email,
         userPassword.value,
       );
 
       const result = await execute(
-        transactions[i].toBytes().toString(),
+        tx.toBytes().toString(),
         network.network,
         network.customNetworkSettings,
       );
 
       if (i === 0) firstTransactionResult = result;
 
+      status = result.receipt.status._code;
+
       processedChunks.value++;
-    }
+    } catch (error: any) {
+      console.log(error);
 
-    if (firstTransactionResult) {
-      transactionResult.value = firstTransactionResult;
-      props.onExecuted &&
-        props.onExecuted(transactionResult.value, chunksAmount.value || undefined);
-      isExecutedModalShown.value = true;
+      const data = JSON.parse(error.message);
+      status = data.status;
+      hasFailed = true;
+      toast.error(data.message, { position: 'bottom-right' });
+    } finally {
+      await saveTransaction(user.data.email, {
+        mode: user.data.mode,
+        timestamp: new Date().getTime(),
+        status: status,
+        type: tx.constructor.name
+          .slice(1)
+          .split(/(?=[A-Z])/)
+          .join(' '),
+        transactionId: tx.transactionId?.toString() || '',
+        serverUrl: user.data.activeServerURL,
+        group: group,
+      });
     }
+  }
 
-    if (unmounted.value) {
-      toast.success('Transaction executed', { position: 'bottom-right' });
-    }
-  } catch (error: any) {
-    handleError(error, `Execution failed at chunk ${processedChunks.value + 1}`);
-  } finally {
-    isExecuting.value = false;
+  isExecuting.value = false;
+
+  if (firstTransactionResult) {
+    transactionResult.value = firstTransactionResult;
+    props.onExecuted && props.onExecuted(transactionResult.value, chunksAmount.value || undefined);
+    isExecutedModalShown.value = true;
+  }
+
+  if (unmounted.value) {
+    toast.success('Transaction executed', { position: 'bottom-right' });
   }
 }
 
@@ -384,6 +459,12 @@ async function sendSignedChunksToOrganization(transactions: Transaction[]) {
 
   isChunkingModalShown.value = false;
   console.log('Send to back end signed along with required', externalPublicKeysReq.value);
+}
+
+function validateTransaction(transaction: FileUpdateTransaction | FileAppendTransaction) {
+  if (!transaction.transactionId) throw new Error('Transaction ID is missing');
+  if (!transaction.nodeAccountIds) throw new Error('Transaction node accounts are missing');
+  if (!transaction.fileId) throw new Error('Transaction file ID is missing');
 }
 
 function chunkBuffer(buffer: Uint8Array, chunkSize: number): Uint8Array[] {
@@ -473,12 +554,7 @@ defineExpose({
         </div>
         <h3 class="mt-5 text-main text-center text-bold">
           Chunking
-          {{
-            type
-              ?.slice(1)
-              .split(/(?=[A-Z])/)
-              .join(' ')
-          }}
+          {{ type }}
         </h3>
         <p class="mt-3 text-center" v-if="chunksAmount">
           {{ processedChunks }} out of {{ chunksAmount }}
@@ -502,12 +578,7 @@ defineExpose({
         </div>
         <h3 class="mt-5 text-main text-center text-bold">
           Executing
-          {{
-            type
-              ?.slice(1)
-              .split(/(?=[A-Z])/)
-              .join(' ')
-          }}
+          {{ type }}
         </h3>
         <div class="mt-4">
           <p v-if="chunksAmount">{{ processedChunks }} out of {{ chunksAmount }}</p>
