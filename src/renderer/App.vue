@@ -29,9 +29,20 @@ onMounted(async () => {
 </script>
 
 <template>
-  <AppHeader :class="{ 'logged-in': user.data.isLoggedIn }" />
-  <div class="container-main" :class="{ 'logged-in': user.data.isLoggedIn }">
-    <AppMenu v-if="user.data.isLoggedIn" />
+  <AppHeader
+    :class="{
+      'logged-in': user.data.isLoggedIn,
+      'should-setup-account': user.data.secretHashes.length === 0,
+    }"
+  />
+  <div
+    class="container-main"
+    :class="{
+      'logged-in': user.data.isLoggedIn,
+      'should-setup-account': user.data.secretHashes.length === 0,
+    }"
+  >
+    <AppMenu v-if="user.data.isLoggedIn && user.data.secretHashes.length > 0" />
     <RouterView v-slot="{ Component }" class="flex-1 overflow-hidden container-main-content">
       <Transition name="fade" mode="out-in">
         <component :is="Component" />
