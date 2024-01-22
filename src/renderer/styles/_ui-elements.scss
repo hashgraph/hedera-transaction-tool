@@ -313,14 +313,18 @@
 
       .stepper-nav-item {
         padding: 0 10px;
-        background-color: var(--#{$prefix}body-bg);
 
         .stepper-nav-item-bubble {
-          width: 28px;
-          height: 28px;
+          background-color: $light-blue-50;
+          width: 32px;
+          height: 32px;
           display: flex;
           align-items: center;
           justify-content: center;
+
+          @media (prefers-color-scheme: dark) {
+            background-color: $dark-blue-600;
+          }
         }
 
         .stepper-nav-item-title {
@@ -331,8 +335,8 @@
 
         &.stepper-active {
           .stepper-nav-item-bubble {
-            background-color: var(--#{$prefix}body-color);
-            color: var(--#{$prefix}body-bg);
+            background-color: $purple-400;
+            color: $body-bg;
           }
         }
       }

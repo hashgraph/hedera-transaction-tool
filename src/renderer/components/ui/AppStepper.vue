@@ -10,15 +10,15 @@ defineProps<{
 <template>
   <div class="stepper">
     <div class="stepper-head position-relative">
-      <hr class="position-relative m-0" />
-      <div class="stepper-nav position-relative d-flex justify-content-around">
+      <div class="stepper-nav position-relative d-flex justify-content-around align-items-center">
+        <hr class="flex-1 m-0" />
         <template v-for="(item, index) in items" :key="index">
           <div
             class="stepper-nav-item position-relative"
             :class="{ 'stepper-active': activeIndex === index, 'cursor-pointer': itemClickable }"
             @click="handleItemClick && handleItemClick(item, index)"
           >
-            <div class="stepper-nav-item-bubble p-2 text-small rounded-circle border border-dark">
+            <div class="stepper-nav-item-bubble text-small rounded-circle border border-dark p-2">
               <template v-if="activeIndex <= index">
                 {{ index + 1 }}
               </template>
@@ -26,10 +26,11 @@ defineProps<{
                 <i class="bi bi-check-lg"></i>
               </template>
             </div>
-            <span class="stepper-nav-item-title text-small position-absolute mt-2">{{
+            <span class="stepper-nav-item-title text-small position-absolute mt-3">{{
               item.title
             }}</span>
           </div>
+          <hr class="flex-1 m-0" />
         </template>
       </div>
     </div>
