@@ -88,7 +88,9 @@ const handleSaveKey = async () => {
 
     try {
       const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
+
       await keyPairsStore.storeKeyPair(props.encryptPassword, keyPair, secretHash);
+      user.data.secretHashes = [...user.data.secretHashes, secretHash];
 
       // isSuccessModalShown.value = true;
     } catch (err: any) {
