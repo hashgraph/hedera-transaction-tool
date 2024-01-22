@@ -206,11 +206,13 @@ watch(inputEmail, pass => {
 });
 </script>
 <template>
-  <div class="container-welcome-card container-modal-card p-5 border border-dark-subtle rounded-4">
+  <div class="container-dark-border p-5">
     <h4 class="text-title text-bold text-center">
       {{ shouldRegister ? 'Register' : 'Sign In' }}
     </h4>
-    <p class="text-secondary text-small lh-base text-center">Enter your username and password</p>
+    <p class="text-secondary text-small lh-base text-center mt-3">
+      Enter your username and password
+    </p>
 
     <form @submit="handleOnFormSubmit" class="form-login mt-5 w-100">
       <label class="form-label">Email</label>
@@ -260,7 +262,7 @@ watch(inputEmail, pass => {
         color="primary"
         size="large"
         type="submit"
-        class="rounded-4 mt-5 w-100"
+        class="mt-5 w-100"
         :disabled="inputEmail.length === 0 || inputPassword.length === 0"
         >Login</AppButton
       >

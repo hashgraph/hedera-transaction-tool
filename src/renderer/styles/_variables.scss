@@ -225,8 +225,8 @@ $container-max-widths: (
 );
 
 // Body
-$body-bg: $neutral-00;
-$body-bg-dark: #151629;
+$body-bg: #f9fafe;
+$body-bg-dark: $dark-blue-900;
 
 $body-color: $neutral-800;
 $body-color-dark: $neutral-00;
@@ -432,13 +432,13 @@ $input-padding-x: 12px;
 $input-font-size: 14px;
 // $input-disabled-bg: $blue-neutral-800;
 // $input-disabled-border-color: $blue-neutral-800;
-$input-border-radius: $border-radius-lg;
+$input-border-radius: $border-radius;
 
 $input-padding-y-sm: 7px;
 $input-padding-x-sm: 12px;
 
-$form-select-border-radius: $border-radius-lg;
-$form-select-border-radius-sm: $border-radius-lg;
+$form-select-border-radius: $border-radius;
+$form-select-border-radius-sm: $border-radius;
 
 // Custom selects
 $custom-select-line-height: 1.5;

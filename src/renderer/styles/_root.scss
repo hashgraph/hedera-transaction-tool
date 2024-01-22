@@ -18,6 +18,9 @@
   --#{$prefix}card-primary-bg-color: #{$light-blue-200};
   --#{$prefix}toast-bg-color: #{$dark-blue-700};
   --#{$prefix}toast-color: #{$light-blue-200};
+
+  --#{$prefix}contrainer-dark-bg-color: #{$neutral-00};
+  --#{$prefix}contrainer-dark-border-color: #{$neutral-100};
 }
 
 @if $enable-dark-mode {
@@ -42,5 +45,8 @@
     --#{$prefix}card-primary-bg-color: #{$dark-blue-700};
     --#{$prefix}toast-bg-color: #{$light-blue-200};
     --#{$prefix}toast-color: #{$dark-blue-700};
+
+    --#{$prefix}contrainer-dark-bg-color: #{$dark-blue-950};
+    --#{$prefix}contrainer-dark-border-color: #{$dark-blue-950};
   }
 }

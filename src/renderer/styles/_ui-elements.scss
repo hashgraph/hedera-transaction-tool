@@ -210,31 +210,12 @@
 
 /* Misc Containers */
 
-.container-welcome-card {
+.container-dark-border {
   min-width: 430px;
+  border-radius: 12px;
 
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-
-  .subtext {
-    font-size: 14px;
-  }
-
-  .person-icon {
-    height: 94px;
-    .bi {
-      left: 50%;
-
-      &:nth-child(1) {
-        transform: translateX(-67%);
-      }
-      &:nth-child(2) {
-        transform: translate(-32%, -10px);
-      }
-    }
-  }
+  background-color: var(--#{$prefix}contrainer-dark-bg-color);
+  border: 1px solid var(--#{$prefix}contrainer-dark-border-color);
 }
 
 .container-example-words {
