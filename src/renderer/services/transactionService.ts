@@ -108,6 +108,7 @@ export const executeQuery = async (
   }
 };
 
+/* Saves transaction info */
 export const saveTransaction = async (email: string, transaction: IStoredTransaction) => {
   try {
     await window.electronAPI.transactions.saveTransaction(email, transaction);
@@ -117,6 +118,7 @@ export const saveTransaction = async (email: string, transaction: IStoredTransac
   }
 };
 
+/* Returns saved transactions */
 export const getTransactions = async (email: string, serverUrl?: string) => {
   try {
     await window.electronAPI.transactions.getTransactions(email, serverUrl);

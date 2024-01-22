@@ -17,24 +17,27 @@ export default function getTransactionsStore(email: string) {
     transactions: {
       type: 'array',
       items: storedTransactionJSONSchema,
+      default: [],
     },
   };
 
   const store = new Store({
     schema,
     cwd: getUserStorageFolderPath(email),
-    name: `transactions`,
+    name: 'transactions',
     clearInvalidConfig: true,
   });
 
   return store;
 }
 
+// Deletes the file with stored transactions
 export const clearTransactions = async (email: string) => {
   const store = getTransactionsStore(email);
   await fs.unlink(store.path);
 };
 
+// Executes a transaction
 export const executeTransaction = async (transactionData: string) => {
   const tx: {
     transactionBytes: string;
@@ -88,6 +91,7 @@ export const executeTransaction = async (transactionData: string) => {
   }
 };
 
+// Executes a query
 export const executeQuery = async (queryData: string) => {
   const tx: {
     queryBytes: string;
@@ -143,12 +147,14 @@ export const executeQuery = async (queryData: string) => {
   }
 };
 
+// Stores a transaction
 export const saveTransaction = (email: string, transaction: IStoredTransaction) => {
   const store = getTransactionsStore(email);
 
   store.set('transactions', [...store.get('transactions'), transaction]);
 };
 
+// Get stored transactions
 export const getTransactions = (email: string, serverUrl?: string) => {
   const store = getTransactionsStore(email);
 

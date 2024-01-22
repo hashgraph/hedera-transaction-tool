@@ -12,6 +12,8 @@ import {
 const createChannelName = (...props) => ['transactions', ...props].join(':');
 
 export default () => {
+  /* Transactions */
+
   // Execute transaction
   ipcMain.handle(createChannelName('executeTransaction'), (_e, transactionData: string) =>
     executeTransaction(transactionData),
