@@ -98,30 +98,18 @@ const transactionGroups = [
               class="rounded bg-dark-blue-700 p-4 overflow-hidden"
               :class="{ 'mt-4': index !== 0 }"
             >
-              <div class="d-flex justify-content-between align-items-start">
-                <div>
-                  <p class="text-main d-flex align-items-center">
-                    <i
-                      v-if="item.type === 'send'"
-                      class="bi bi-arrow-up-right me-3 text-info text-title fw-bolder"
-                    ></i>
-                    <i
-                      v-else-if="item.type === 'receive'"
-                      class="bi bi-arrow-down-left me-3 text-success text-title fw-bold"
-                    ></i>
-                    {{ item.title }}
-                  </p>
-                  <p class="text-micro mt-3">{{ item.account }}</p>
-                </div>
-                <div>
-                  <div class="d-flex justify-content-end align-items-center">
-                    <AppButton color="primary" outline class="me-3">Details</AppButton>
-                    <AppButton color="secondary">Sign</AppButton>
-                  </div>
+              <div class="d-flex justify-content-between align-items-center">
+                <p class="text-small text-bold">
+                  {{ item.title }}
+                </p>
+                <!-- <p class="text-micro mt-3">{{ item.account }}</p> -->
+                <div class="d-flex justify-content-end align-items-center">
+                  <AppButton color="primary" outline class="me-3">Details</AppButton>
+                  <AppButton color="secondary">Sign</AppButton>
                 </div>
               </div>
 
-              <div class="mt-4 d-inline-flex align-items-center">
+              <!-- <div class="mt-4 d-inline-flex align-items-center">
                 <span class="text-micro me-4">Approvers</span>
                 <span
                   v-for="(approver, index) in item.approvers"
@@ -131,7 +119,7 @@ const transactionGroups = [
                   ><i class="bi bi-check-lg text-success text-subheader lh-1 me-1"></i
                   >{{ approver }}</span
                 >
-              </div>
+              </div> -->
             </div>
           </div>
         </template>
