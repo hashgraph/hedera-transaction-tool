@@ -23,7 +23,7 @@ $toast.open({
 
 <template>
   <div class="p-5">
-    <h1 class="text-huge text-bold">Style Guide</h1>
+    <h1 class="text-title text-bold">Style Guide</h1>
 
     <h2 class="text-display mt-10">Colors</h2>
     <hr class="mt-3 mb-6" />

@@ -18,7 +18,7 @@ const menuItems = [
     icon: 'bi bi-coin',
   },
   {
-    link: '/contracts',
+    link: '/smart-contracts',
     title: 'Smart Contracts',
     icon: 'bi bi-arrows-angle-contract',
   },
