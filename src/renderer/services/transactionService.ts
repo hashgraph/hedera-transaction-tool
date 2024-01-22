@@ -121,7 +121,7 @@ export const saveTransaction = async (email: string, transaction: IStoredTransac
 /* Returns saved transactions */
 export const getTransactions = async (email: string, serverUrl?: string) => {
   try {
-    await window.electronAPI.transactions.getTransactions(email, serverUrl);
+    return await window.electronAPI.transactions.getTransactions(email, serverUrl);
   } catch (err: any) {
     const message = err.message?.split(': Error: ')[1] || 'Getting transactions Failed';
     throw Error(message);
