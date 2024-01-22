@@ -105,7 +105,7 @@ const handleSortAccounts = (sorting: Sorting) => {
 };
 </script>
 <template>
-  <div class="p-10">
+  <div class="p-5">
     <div class="h-100 d-flex row">
       <div class="col-4 col-xxl-3 border-end pe-4 ps-0">
         <div class="dropdown">

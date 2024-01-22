@@ -38,7 +38,7 @@ console.log('transactions.length', transactionsFetched.value);
 </script>
 
 <template>
-  <div class="p-10">
+  <div class="p-5">
     <h1 class="text-huge text-bold">Tokens</h1>
     <p v-show="isLoading">Loading...</p>
     <div v-if="transactionsFetched.length > 0">

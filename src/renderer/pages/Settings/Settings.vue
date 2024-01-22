@@ -86,7 +86,7 @@ watch(router.currentRoute, newRoute => {
 });
 </script>
 <template>
-  <div class="p-10">
+  <div class="p-5">
     <div class="d-flex justify-content-between align-items-center">
       <h1 class="text-huge text-bold">Settings</h1>
       <AppButton size="small" color="secondary" @click="handleClearConfig">Clear Config</AppButton>

@@ -225,8 +225,10 @@ $container-max-widths: (
 );
 
 // Body
-$body-bg: #f9fafe;
-$body-bg-dark: $dark-blue-900;
+// $body-bg: #f9fafe;
+// $body-bg-dark: $dark-blue-900;
+$body-bg: $light-blue-300;
+$body-bg-dark: $dark-blue-950;
 
 $body-color: $neutral-800;
 $body-color-dark: $neutral-00;

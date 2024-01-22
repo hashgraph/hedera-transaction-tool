@@ -29,10 +29,10 @@ onMounted(async () => {
 </script>
 
 <template>
-  <AppHeader />
+  <AppHeader :class="{ 'logged-in': user.data.isLoggedIn }" />
   <div class="container-main" :class="{ 'logged-in': user.data.isLoggedIn }">
     <AppMenu v-if="user.data.isLoggedIn" />
-    <RouterView v-slot="{ Component }" class="flex-1 overflow-hidden">
+    <RouterView v-slot="{ Component }" class="flex-1 overflow-hidden container-main-content">
       <Transition name="fade" mode="out-in">
         <component :is="Component" />
       </Transition>

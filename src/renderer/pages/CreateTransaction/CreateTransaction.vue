@@ -5,7 +5,7 @@ import AppButton from '../../components/ui/AppButton.vue';
 </script>
 
 <template>
-  <div class="p-10">
+  <div class="p-5">
     <h1 class="text-huge text-bold">Create Transaction</h1>
     <div class="mt-7 d-flex">
       <AppButton color="secondary" class="d-flex align-items-center" @click="$router.back()">

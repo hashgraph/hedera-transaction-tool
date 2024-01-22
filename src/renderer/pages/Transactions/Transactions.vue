@@ -76,7 +76,7 @@ const transactionGroups = [
 </script>
 
 <template>
-  <div class="p-10">
+  <div class="p-5">
     <h1 class="text-huge text-bold">Transactions</h1>
     <div class="mt-7 d-flex">
       <AppButton

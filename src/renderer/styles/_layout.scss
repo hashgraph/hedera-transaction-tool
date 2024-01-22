@@ -54,7 +54,7 @@ input[type='file'] {
 .container-header {
   height: 80px;
   padding: 18px 24px;
-  background-color: var(--#{$prefix}body-bg);
+  background-color: var(--#{$prefix}contrainer-main-bg-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -63,6 +63,10 @@ input[type='file'] {
   top: 0;
   left: 0;
   z-index: 1;
+
+  &.logged-in {
+    background-color: var(--#{$prefix}body-bg);
+  }
 }
 
 @include color-mode(light) {
@@ -97,10 +101,18 @@ input[type='file'] {
   left: 0;
   height: calc(100% - 80px);
   width: 224px;
-  padding: 8px;
+  padding: 8px 24px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+}
+
+.container-main-content {
+  background-color: var(--#{$prefix}contrainer-main-bg-color);
+
+  .logged-in & {
+    border-top-left-radius: 16px;
+  }
 }
 
 .container-page {
