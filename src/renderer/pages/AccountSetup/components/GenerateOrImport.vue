@@ -4,7 +4,7 @@ import { computed, onBeforeMount, ref } from 'vue';
 import useUserStore from '../../../stores/storeUser';
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
 
-import { validateMnemonic, hashRecoveryPhrase } from '../../../services/keyPairService';
+import { validateMnemonic } from '../../../services/keyPairService';
 
 import AppTabs, { TabItem } from '../../../components/ui/AppTabs.vue';
 import Generate from './Generate.vue';
@@ -35,8 +35,6 @@ const handleSaveWords = async (words: string[]) => {
   } else {
     keyPairsStore.setRecoveryPhrase(words);
 
-    user.data.secretHashes = [...user.data.secretHashes, await hashRecoveryPhrase(words)];
-
     props.handleContinue();
   }
 };
@@ -44,6 +42,7 @@ const handleSaveWords = async (words: string[]) => {
 /* Hooks */
 onBeforeMount(() => {
   user.data.secretHashes.length > 0 && tabItems.value.shift();
+  activeTabIndex.value = tabItems.value.findIndex(i => i.title === 'Import Existing');
 });
 </script>
 <template>

@@ -7,7 +7,6 @@ import AppButton from '../../components/ui/AppButton.vue';
 import AppStepper from '../../components/ui/AppStepper.vue';
 
 import Faq from './components/Faq.vue';
-import FinishSetup from './components/FinishSetup.vue';
 import GenerateOrImport from './components/GenerateOrImport.vue';
 import KeyPairs from './components/KeyPairs.vue';
 import NewPassword from './components/NewPassword.vue';
@@ -21,11 +20,25 @@ const stepperItems = ref([
   { title: 'New Password', name: 'newPassword' },
   { title: 'Recovery Phrase', name: 'recoveryPhrase' },
   { title: 'Key Pairs', name: 'keyPairs' },
-  { title: 'Finish Account Setup', name: 'finishAccountSetup' },
 ]);
 const password = ref('');
 const isFaqShown = ref(false);
 
+/* Handlers */
+const handleBack = () => {
+  if (isFaqShown.value) {
+    isFaqShown.value = false;
+  } else {
+    step.value.current = step.value.previous;
+    const currentPrevIndex = stepperItems.value.findIndex(i => i.name === step.value.previous);
+    step.value.previous =
+      currentPrevIndex > 0
+        ? (step.value.previous = stepperItems.value[currentPrevIndex - 1].name)
+        : stepperItems.value[0].name;
+  }
+};
+
+/* Hooks */
 onBeforeMount(() => {
   if (user.data.mode === 'personal') {
     step.value.previous = 'recoveryPhrase';
@@ -40,7 +53,7 @@ onBeforeMount(() => {
       <AppButton
         color="secondary"
         class="px-5 position-absolute d-flex align-items-center rounded-4"
-        @click="isFaqShown ? (isFaqShown = false) : (step.current = step.previous)"
+        @click="handleBack"
       >
         <i class="bi bi-arrow-left-short text-headline lh-1"></i> Back</AppButton
       >
@@ -102,16 +115,11 @@ onBeforeMount(() => {
                 "
                 :handle-continue="
                   () => {
-                    step.previous = step.current;
-                    step.current = 'finishAccountSetup';
+                    $router.push({ name: 'settingsKeys' });
+                    user.data.password = '';
                   }
                 "
               />
-            </template>
-
-            <!--Step 4 -->
-            <template v-else-if="step.current === 'finishAccountSetup'">
-              <FinishSetup v-model:step="step" />
             </template>
           </Transition>
         </div>

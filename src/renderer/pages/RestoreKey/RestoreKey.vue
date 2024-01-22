@@ -7,12 +7,12 @@ import { IKeyPair } from '../../../main/shared/interfaces';
 import useKeyPairsStore from '../../stores/storeKeyPairs';
 import useUserStore from '../../stores/storeUser';
 
+import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
 import * as keyPairService from '../../services/keyPairService';
 
 import AppButton from '../../components/ui/AppButton.vue';
-import AppModal from '../../components/ui/AppModal.vue';
 import Import from '../AccountSetup/components/Import.vue';
 
 /* Stores */
@@ -21,6 +21,7 @@ const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
+const router = useRouter();
 
 /* State */
 const step = ref(0);
@@ -34,8 +35,6 @@ const nickname = ref('');
 const inputIndexInvalid = ref(false);
 
 const restoredKey = ref<{ privateKey: string; publicKey: string } | null>(null);
-
-const isSuccessModalShown = ref(false);
 
 /* Watchers */
 watch(recoveryPhrase, async newRecoveryPhrase => {
@@ -112,7 +111,8 @@ const handleSaveKey = async () => {
 
       keyPairsStore.clearRecoveryPhrase();
 
-      isSuccessModalShown.value = true;
+      toast.success('Key Pair saved', { position: 'bottom-right' });
+      router.push({ name: 'settingsKeys' });
     } catch (err: any) {
       let message = 'Failed to store key pair';
       if (err.message && typeof err.message === 'string') {
@@ -234,33 +234,5 @@ onUnmounted(() => {
         </div>
       </div>
     </Transition>
-    <AppModal v-model:show="isSuccessModalShown" class="common-modal">
-      <div class="p-5">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isSuccessModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
-          <i class="bi bi-plus extra-large-icon cursor-pointer" style="line-height: 16px"></i>
-        </div>
-
-        <h3 class="mt-5 text-main text-center text-bold">Key Pair saved</h3>
-        <!-- <AppButton
-          color="primary"
-          size="large"
-          class="mt-5 w-100 rounded-4"
-          @click="router.push({ name: 'settingsKeys' })"
-          >Share</AppButton
-        > -->
-        <AppButton
-          color="primary"
-          size="large"
-          class="mt-4 w-100 rounded-4"
-          @click="$router.push({ name: 'settingsKeys' })"
-          >Close</AppButton
-        >
-      </div>
-    </AppModal>
   </div>
 </template>
