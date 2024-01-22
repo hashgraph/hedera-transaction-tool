@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
 
-import { addAccount, getAccounts, removeAccount } from '../../../services/localUser/accounts';
+import { addAccount, getAccounts, removeAccount } from '../../../services/localUser';
 
 const createChannelName = (...props) => ['accounts', ...props].join(':');
 
