@@ -275,6 +275,12 @@
 
 /* Recovery Phrase Word Readonly Input */
 .recovery-phrase-word {
+  color: $dark-blue-500;
+
+  @media (prefers-color-scheme: dark) {
+    color: $dark-blue-200 !important;
+  }
+
   &[withtoggler='true'] {
     input {
       padding-right: 30% !important;
@@ -298,6 +304,13 @@
       left: 20%;
       top: 50%;
       transform: translate(-50%, -50%);
+    }
+  }
+
+  input {
+    color: $dark-blue-500;
+    @media (prefers-color-scheme: dark) {
+      color: $dark-blue-200 !important;
     }
   }
 }
