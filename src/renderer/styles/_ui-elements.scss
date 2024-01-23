@@ -331,11 +331,11 @@
   --bs-modal-width: 75vw;
 
   @include media-breakpoint-up(xl) {
-    --bs-modal-width: 50vw;
+    --bs-modal-width: 60vw;
   }
 
   @include media-breakpoint-up(xxl) {
-    --bs-modal-width: 35vw;
+    --bs-modal-width: 50vw;
   }
 }
 
