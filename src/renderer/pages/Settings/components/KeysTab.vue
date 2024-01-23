@@ -187,7 +187,7 @@ watch(isDecryptedModalShown, newVal => {
         <i
           class="bi bi-x-lg d-inline-block cursor-pointer"
           style="line-height: 16px"
-          @click="isDecryptedModalShown = false"
+          @click="isImportECDSAKeyModalShown = false"
         ></i>
         <div class="mt-5 text-center">
           <i class="bi bi-key extra-large-icon" style="line-height: 16px"></i>

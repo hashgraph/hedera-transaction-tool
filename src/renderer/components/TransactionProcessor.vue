@@ -90,7 +90,7 @@ const requiredLocalKeyPairs = computed(() =>
 const type = computed(
   () =>
     transaction.value?.constructor.name
-      .slice(1)
+      .slice(transaction.value?.constructor.name.startsWith('_') ? 1 : 0)
       .split(/(?=[A-Z])/)
       .join(' '),
 );
