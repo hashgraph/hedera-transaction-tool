@@ -23,6 +23,7 @@
   --#{$prefix}contrainer-dark-border-color: #{$neutral-100};
 
   --#{$prefix}contrainer-main-bg-color: #f9fafe; // to check in tokens
+  --#{$prefix}table-header-bg-color: #{$light-blue-300};
 }
 
 @if $enable-dark-mode {
@@ -52,5 +53,6 @@
     --#{$prefix}contrainer-dark-border-color: #{$dark-blue-950};
 
     --#{$prefix}contrainer-main-bg-color: #{$dark-blue-900};
+    --#{$prefix}table-header-bg-color: #{$dark-blue-600};
   }
 }

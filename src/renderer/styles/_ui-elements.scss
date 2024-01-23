@@ -446,3 +446,10 @@
     color: var(--#{$prefix}toast-color) !important;
   }
 }
+
+/* Tables */
+.table-header-container {
+  border-radius: 8px;
+  background-color: var(--#{$prefix}table-header-bg-color);
+  padding: 8px 0;
+}

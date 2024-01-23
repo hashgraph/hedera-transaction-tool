@@ -87,12 +87,10 @@ onBeforeMount(async () => {
   <div class="transactions-history-container">
     <table class="user-select-none w-100">
       <thead>
-        <tr
-          class="d-flex align-items-center row text-center text-small bg-body-secondary rounded-4 py-4"
-        >
-          <th class="col-1">#</th>
+        <tr class="d-flex align-items-center row table-header-container text-normal text-small">
+          <th class="col-1 text-start">#</th>
           <th
-            class="col-4 col-xl-3 d-flex justify-content-center align-items-center"
+            class="col-4 col-xl-3 d-flex justify-content-start align-items-center"
             @click="handleSort('type', sort.field === 'type' ? getOpositeDirection() : 'asc')"
           >
             <span>Transaction Type</span>
@@ -106,7 +104,7 @@ onBeforeMount(async () => {
             ></i>
           </th>
           <th
-            class="col-3 col-xl-2 d-flex justify-content-center align-items-center"
+            class="col-3 col-xl-2 d-flex justify-content-start align-items-center"
             @click="handleSort('status', sort.field === 'status' ? getOpositeDirection() : 'asc')"
           >
             <span>Status</span>
@@ -120,7 +118,7 @@ onBeforeMount(async () => {
             ></i>
           </th>
           <th
-            class="col-2 d-flex justify-content-center align-items-center"
+            class="col-2 d-flex justify-content-start align-items-center"
             @click="handleSort('payerId', sort.field === 'payerId' ? getOpositeDirection() : 'asc')"
           >
             <span>Payer ID</span>
@@ -134,7 +132,7 @@ onBeforeMount(async () => {
             ></i>
           </th>
           <th
-            class="d-none d-xl-flex col-xl-2 justify-content-center align-items-center"
+            class="d-none d-xl-flex col-xl-2 justify-content-start align-items-center"
             @click="
               handleSort('timestamp', sort.field === 'timestamp' ? getOpositeDirection() : 'asc')
             "
@@ -149,17 +147,17 @@ onBeforeMount(async () => {
               }"
             ></i>
           </th>
-          <th class="col-2">Actions</th>
+          <th class="col-2 text-center">Actions</th>
         </tr>
       </thead>
       <tbody>
         <template v-for="(transaction, i) in transactions" :key="i">
           <tr
-            class="d-flex align-items-center row text-center text-small bg-secondary-subtle rounded-4 py-4 my-3"
+            class="d-flex align-items-center row text-center text-small bg-dark-blue-700 rounded-4 py-4 my-3"
           >
-            <td class="col-1 overflow-hidden">{{ i + 1 }}</td>
-            <td class="col-4 col-xl-3 overflow-hidden">{{ transaction.type }}</td>
-            <td class="col-3 col-xl-2 overflow-hidden">
+            <td class="col-1 overflow-hidden text-start">{{ i + 1 }}</td>
+            <td class="col-4 col-xl-3 overflow-hidden text-start">{{ transaction.type }}</td>
+            <td class="col-3 col-xl-2 overflow-hidden text-start">
               <span
                 class="badge bg-success text-break d-inline-block"
                 :class="{ 'bg-danger': ![0, 22].includes(transaction.status) }"
@@ -167,8 +165,10 @@ onBeforeMount(async () => {
                 >{{ Status._fromCode(transaction.status).toString().split('_').join(' ') }}</span
               >
             </td>
-            <td class="col-2 overflow-hidden">{{ transaction.transactionId.split('@')[0] }}</td>
-            <td class="d-none d-xl-block col-xl-2 overflow-hidden">
+            <td class="col-2 overflow-hidden text-start">
+              {{ transaction.transactionId.split('@')[0] }}
+            </td>
+            <td class="d-none d-xl-block col-xl-2 overflow-hidden text-start">
               {{
                 new Timestamp(
                   transaction.transactionId.split('@')[1].split('.')[0],
@@ -178,7 +178,9 @@ onBeforeMount(async () => {
                   .toDateString()
               }}
             </td>
-            <td class="col-2 overflow-hidden"><AppButton color="primary">Details</AppButton></td>
+            <td class="col-2 overflow-hidden text-center">
+              <AppButton color="primary">Details</AppButton>
+            </td>
           </tr>
         </template>
       </tbody>
