@@ -128,7 +128,9 @@ const handleFileImport = async (e: Event) => {
   }
 };
 
-const handleCreate = async () => {
+const handleCreate = async e => {
+  e.preventDefault();
+
   try {
     transaction.value = createTransaction();
     await transactionProcessor.value?.process(
@@ -152,7 +154,7 @@ watch(fileMeta, () => (content.value = ''));
         <span class="text-small text-bold">Update File Transaction</span>
       </div>
     </div>
-    <div class="mt-4">
+    <form class="mt-4" @submit="handleCreate">
       <div class="mt-4 d-flex flex-wrap gap-5">
         <div class="form-group col-4">
           <label class="form-label">Set Payer ID (Required)</label>
@@ -163,22 +165,27 @@ watch(fileMeta, () => (content.value = ''));
             :value="payerData.accountIdFormatted.value"
             @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
             type="text"
-            class="form-control"
+            class="form-control is-fill"
             placeholder="Enter Payer ID"
           />
         </div>
         <div class="form-group">
           <label class="form-label">Set Valid Start Time (Required)</label>
-          <input v-model="validStart" type="datetime-local" step="1" class="form-control" />
+          <input v-model="validStart" type="datetime-local" step="1" class="form-control is-fill" />
         </div>
         <div class="form-group">
           <label class="form-label">Set Max Transaction Fee (Optional)</label>
-          <input v-model="maxTransactionFee" type="number" min="0" class="form-control" />
+          <input v-model="maxTransactionFee" type="number" min="0" class="form-control is-fill" />
         </div>
       </div>
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set File ID</label>
-        <input v-model="fileId" type="text" class="form-control py-3" placeholder="Enter File ID" />
+        <input
+          v-model="fileId"
+          type="text"
+          class="form-control is-fill py-3"
+          placeholder="Enter File ID"
+        />
       </div>
       <div class="mt-4 form-group w-75">
         <label class="form-label">Set Signature Keys (Required)</label>
@@ -186,12 +193,16 @@ watch(fileMeta, () => (content.value = ''));
           <input
             v-model="signatureKeyText"
             type="text"
-            class="form-control py-3"
+            class="form-control is-fill py-3"
             placeholder="Enter signer public key"
             style="max-width: 555px"
             @keypress="e => e.code === 'Enter' && handleAddSignatureKey()"
           />
-          <AppButton color="secondary" class="rounded-4" @click="handleAddSignatureKey"
+          <AppButton
+            color="secondary"
+            type="button"
+            class="rounded-4"
+            @click="handleAddSignatureKey"
             >Add</AppButton
           >
         </div>
@@ -202,7 +213,7 @@ watch(fileMeta, () => (content.value = ''));
             <input
               type="text"
               readonly
-              class="form-control py-3"
+              class="form-control is-fill py-3"
               :value="key"
               style="max-width: 555px"
             />
@@ -220,12 +231,14 @@ watch(fileMeta, () => (content.value = ''));
           <input
             v-model="ownerKeyText"
             type="text"
-            class="form-control py-3"
+            class="form-control is-fill py-3"
             placeholder="Enter owner public key"
             style="max-width: 555px"
             @keypress="e => e.code === 'Enter' && handleAddOwnerKey()"
           />
-          <AppButton color="secondary" class="rounded-4" @click="handleAddOwnerKey">Add</AppButton>
+          <AppButton color="secondary" type="button" class="rounded-4" @click="handleAddOwnerKey"
+            >Add</AppButton
+          >
         </div>
       </div>
       <div class="mt-4 w-75">
@@ -234,7 +247,7 @@ watch(fileMeta, () => (content.value = ''));
             <input
               type="text"
               readonly
-              class="form-control py-3"
+              class="form-control is-fill py-3"
               :value="key"
               style="max-width: 555px"
             />
@@ -251,7 +264,7 @@ watch(fileMeta, () => (content.value = ''));
         <input
           v-model="memo"
           type="text"
-          class="form-control py-3"
+          class="form-control is-fill py-3"
           maxlength="100"
           placeholder="Enter memo"
         />
@@ -261,13 +274,19 @@ watch(fileMeta, () => (content.value = ''));
         <input
           v-model="expirationTimestamp"
           type="datetime-local"
-          class="form-control py-3"
+          class="form-control is-fill py-3"
           placeholder="Enter timestamp"
         />
       </div>
       <div class="mt-4 form-group w-25">
         <label class="form-label">Set Chunk Size (If File is large)</label>
-        <input v-model="chunkSize" type="number" min="1024" max="6144" class="form-control py-3" />
+        <input
+          v-model="chunkSize"
+          type="number"
+          min="1024"
+          max="6144"
+          class="form-control is-fill py-3"
+        />
       </div>
       <div class="mt-4 form-group">
         <label for="fileUpload" class="form-label">
@@ -276,7 +295,7 @@ watch(fileMeta, () => (content.value = ''));
           >
         </label>
         <input
-          class="form-control form-control-sm"
+          class="form-control form-control-sm is-fill"
           id="fileUpload"
           name="fileUpload"
           type="file"
@@ -296,7 +315,7 @@ watch(fileMeta, () => (content.value = ''));
         <textarea
           v-model="content"
           :disabled="Boolean(fileBuffer)"
-          class="form-control py-3"
+          class="form-control is-fill py-3"
           rows="10"
         ></textarea>
       </div>
@@ -305,6 +324,7 @@ watch(fileMeta, () => (content.value = ''));
         <!-- <AppButton size="small" color="secondary" class="me-3 px-4 rounded-4">Save Draft</AppButton> -->
         <AppButton
           size="large"
+          type="submit"
           color="primary"
           :disabled="
             !fileId ||
@@ -312,11 +332,10 @@ watch(fileMeta, () => (content.value = ''));
             signatureKeys.length === 0 ||
             (content.length > 0 && fileBuffer)
           "
-          @click="handleCreate"
           >Create</AppButton
         >
       </div>
-    </div>
+    </form>
     <TransactionProcessor
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"

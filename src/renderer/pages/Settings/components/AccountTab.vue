@@ -25,7 +25,9 @@ const newPassword = ref('');
 const isSuccessModalShown = ref(false);
 
 /* Handlers */
-const handleChangePassword = async () => {
+const handleChangePassword = async e => {
+  e.preventDefault();
+
   try {
     if (!user.data.isLoggedIn) {
       throw new Error('User is not logged in');
@@ -45,31 +47,37 @@ const handleChangePassword = async () => {
 </script>
 <template>
   <div>
-    <div class="w-50 py-4 px-5 border rounded-4">
+    <form class="w-50 py-4 px-5 border" @submit="handleChangePassword">
       <div class="form-group">
         <label class="form-label">Current Password</label>
         <input
           v-model="currentPassword"
-          type="text"
+          type="password"
           placeholder="Enter your current password"
-          class="form-control rounded-4 py-3"
+          class="form-control is-fill py-3"
         />
       </div>
       <div class="mt-4 form-group">
         <label class="form-label" placeholder="Enter new password">New Password</label>
         <input
           v-model="newPassword"
-          type="text"
+          type="password"
           placeholder="Enter new password"
-          class="form-control rounded-4 py-3"
+          class="form-control is-fill py-3"
         />
       </div>
-      <AppButton color="secondary" class="mt-4 rounded-4" @click="handleChangePassword"
-        >Change Password</AppButton
-      >
-    </div>
+      <AppButton color="secondary" type="submit" class="mt-4">Change Password</AppButton>
+    </form>
     <AppModal v-model:show="isSuccessModalShown" class="common-modal">
-      <div class="p-5">
+      <form
+        class="p-5"
+        @submit="
+          e => {
+            e.preventDefault();
+            isSuccessModalShown = false;
+          }
+        "
+      >
         <i
           class="bi bi-x-lg d-inline-block cursor-pointer"
           style="line-height: 16px"
@@ -80,14 +88,8 @@ const handleChangePassword = async () => {
         </div>
 
         <h3 class="mt-5 text-main text-center text-bold">Password Changed Successfully</h3>
-        <AppButton
-          color="primary"
-          size="large"
-          class="mt-5 w-100 rounded-4"
-          @click="isSuccessModalShown = false"
-          >Close</AppButton
-        >
-      </div>
+        <AppButton color="primary" type="submit" size="large" class="mt-5 w-100">Close</AppButton>
+      </form>
     </AppModal>
   </div>
 </template>

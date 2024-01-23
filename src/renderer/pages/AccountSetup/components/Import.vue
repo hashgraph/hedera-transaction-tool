@@ -9,7 +9,6 @@ import AppRecoveryPhraseWord from '../../../components/ui/AppRecoveryPhraseWord.
 
 /* Props */
 const props = defineProps<{
-  handleContinue: (words: string[]) => void;
   secretHashes: string[];
 }>();
 

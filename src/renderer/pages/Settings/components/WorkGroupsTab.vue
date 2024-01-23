@@ -19,7 +19,9 @@ const newOrganizationServerUrl = ref('');
 const newOrganizationServerPublicKey = ref('');
 
 /* Handlers */
-const handleAddOrganization = async () => {
+const handleAddOrganization = async e => {
+  e.preventDefault();
+
   if (newOrganizationName.value !== '' && newOrganizationServerUrl.value !== '') {
     try {
       await organizationsStore.addOrganization({
@@ -54,23 +56,27 @@ const handleRemoveOrganization = async (serverUrl: string) => {
 };
 </script>
 <template>
-  <div class="p-4 border border-2 rounded-3">
+  <form class="p-4 border border-2 rounded-3" @submit="handleAddOrganization">
     <div class="d-flex align-items-center">
       <p class="me-4">Organization name:</p>
-      <input type="text" class="form-control w-25 py-3" v-model="newOrganizationName" />
+      <input type="text" class="form-control is-fill w-25 py-3" v-model="newOrganizationName" />
     </div>
     <div class="mt-4">
       <label class="form-label">organization server public key:</label>
-      <input type="text" class="form-control py-3" v-model="newOrganizationServerPublicKey" />
+      <input
+        type="text"
+        class="form-control is-fill py-3"
+        v-model="newOrganizationServerPublicKey"
+      />
     </div>
     <div class="mt-4 d-flex align-items-end">
       <div class="flex-1 me-4">
         <label class="form-label">organization server url:</label>
-        <input type="text" class="form-control py-3" v-model="newOrganizationServerUrl" />
+        <input type="text" class="form-control is-fill py-3" v-model="newOrganizationServerUrl" />
       </div>
-      <AppButton color="primary" @click="handleAddOrganization">Add Organization</AppButton>
+      <AppButton color="primary" type="submit">Add Organization</AppButton>
     </div>
-  </div>
+  </form>
   <div
     v-for="org in organizationsStore.organizations"
     :key="org.serverUrl"
@@ -80,7 +86,7 @@ const handleRemoveOrganization = async (serverUrl: string) => {
     <div class="mt-4 d-flex align-items-end">
       <div class="flex-1 me-4">
         <label class="form-label">organization server url:</label>
-        <input type="text" disabled class="form-control py-3" :value="org.serverUrl" />
+        <input type="text" disabled class="form-control is-fill py-3" :value="org.serverUrl" />
       </div>
       <AppButton color="primary" @click="handleRemoveOrganization(org.serverUrl)">
         Remove

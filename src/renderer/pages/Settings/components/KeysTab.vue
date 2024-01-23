@@ -164,18 +164,18 @@ watch(isDecryptedModalShown, newVal => {
           <input
             v-model="userPassword"
             type="password"
-            class="mt-5 form-control rounded-4"
+            class="mt-5 form-control is-fill"
             placeholder="Type your password"
           />
           <div class="mt-4 form-group">
             <label class="form-label">Decrypted Private key</label>
-            <input v-model="decryptedKey" type="text" class="form-control rounded-4" readonly />
+            <input v-model="decryptedKey" type="text" class="form-control is-fill" readonly />
           </div>
           <AppButton
             type="submit"
             color="primary"
             size="large"
-            class="mt-5 w-100 rounded-4"
+            class="mt-5 w-100"
             :disabled="userPassword.length === 0"
             >Decrypt</AppButton
           >
@@ -198,7 +198,7 @@ watch(isDecryptedModalShown, newVal => {
             <input
               v-model="userPassword"
               type="password"
-              class="form-control rounded-4"
+              class="form-control is-fill"
               placeholder="Type your password"
             />
           </div>
@@ -206,7 +206,7 @@ watch(isDecryptedModalShown, newVal => {
             <label class="form-label">Enter nickname (optional)</label>
             <input
               v-model="ecdsaKey.nickname"
-              class="form-control rounded-4"
+              class="form-control is-fill"
               name="nickname"
               placeholder="Type nickname"
             />
@@ -215,12 +215,12 @@ watch(isDecryptedModalShown, newVal => {
             <label class="form-label">Enter ECDSA Private key</label>
             <input
               v-model="ecdsaKey.privateKey"
-              class="form-control rounded-4"
+              class="form-control is-fill"
               name="private-key"
               placeholder="Type ECDSA Private key"
             />
           </div>
-          <AppButton type="submit" color="primary" size="large" class="mt-5 w-100 rounded-4"
+          <AppButton type="submit" color="primary" size="large" class="mt-5 w-100"
             >Import</AppButton
           >
         </form>

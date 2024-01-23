@@ -59,7 +59,9 @@ const handleAdd = () => {
 //   }
 // };
 
-const handleCreate = async () => {
+const handleCreate = async e => {
+  e.preventDefault();
+
   try {
     transaction.value = new FileCreateTransaction()
       .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
@@ -90,7 +92,7 @@ const handleCreate = async () => {
         <span class="text-title text-bold">Create File Transaction</span>
       </div>
     </div>
-    <div class="mt-4">
+    <form class="mt-4" @submit="handleCreate">
       <div class="mt-4 d-flex flex-wrap gap-5">
         <div class="form-group col-4">
           <label class="form-label">Set Payer ID (Required)</label>
@@ -101,17 +103,17 @@ const handleCreate = async () => {
             :value="payerData.accountIdFormatted.value"
             @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
             type="text"
-            class="form-control"
+            class="form-control is-fill"
             placeholder="Enter Payer ID"
           />
         </div>
         <div class="form-group">
           <label class="form-label">Set Valid Start Time (Required)</label>
-          <input v-model="validStart" type="datetime-local" step="1" class="form-control" />
+          <input v-model="validStart" type="datetime-local" step="1" class="form-control is-fill" />
         </div>
         <div class="form-group">
           <label class="form-label">Set Max Transaction Fee (Optional)</label>
-          <input v-model="maxTransactionFee" type="number" min="0" class="form-control" />
+          <input v-model="maxTransactionFee" type="number" min="0" class="form-control is-fill" />
         </div>
       </div>
       <div class="mt-4 form-group w-75">
@@ -120,12 +122,14 @@ const handleCreate = async () => {
           <input
             v-model="ownerKeyText"
             type="text"
-            class="form-control"
+            class="form-control is-fill"
             placeholder="Enter owner public key"
             style="max-width: 555px"
             @keypress="e => e.code === 'Enter' && handleAdd()"
           />
-          <AppButton color="secondary" class="rounded-4" @click="handleAdd">Add</AppButton>
+          <AppButton color="secondary" type="button" class="rounded-4" @click="handleAdd"
+            >Add</AppButton
+          >
         </div>
       </div>
       <div class="mt-4 w-75">
@@ -134,7 +138,7 @@ const handleCreate = async () => {
             <input
               type="text"
               readonly
-              class="form-control"
+              class="form-control is-fill"
               :value="key"
               style="max-width: 555px"
             />
@@ -151,7 +155,7 @@ const handleCreate = async () => {
         <input
           v-model="memo"
           type="text"
-          class="form-control"
+          class="form-control is-fill"
           maxlength="100"
           placeholder="Enter memo"
         />
@@ -161,7 +165,7 @@ const handleCreate = async () => {
         <input
           v-model="expirationTimestamp"
           type="datetime-local"
-          class="form-control"
+          class="form-control is-fill"
           placeholder="Enter timestamp"
         />
       </div> -->
@@ -170,7 +174,7 @@ const handleCreate = async () => {
           <span for="fileUpload" class="btn btn-primary">Upload File (.json, .txt)</span>
         </label>
         <input
-          class="form-control form-control-sm"
+          class="form-control form-control-sm is-fill"
           id="fileUpload"
           name="fileUpload"
           type="file"
@@ -180,19 +184,19 @@ const handleCreate = async () => {
       </div> -->
       <div class="mt-4 form-group w-75">
         <label class="form-label">Set File Contents</label>
-        <textarea v-model="content" class="form-control" rows="10"></textarea>
+        <textarea v-model="content" class="form-control is-fill" rows="10"></textarea>
       </div>
       <div class="mt-4">
         <!-- <AppButton size="small" color="secondary" class="me-3 px-4 rounded-4">Save Draft</AppButton> -->
         <AppButton
           color="primary"
+          type="submit"
           size="large"
           :disabled="keyList._keys.length === 0 || !payerData.isValid.value"
-          @click="handleCreate"
           >Create</AppButton
         >
       </div>
-    </div>
+    </form>
     <TransactionProcessor
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"

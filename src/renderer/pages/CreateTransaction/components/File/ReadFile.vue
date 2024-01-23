@@ -79,6 +79,10 @@ const handleRead = async e => {
   }
 };
 
+const handleSubmit = e => {
+  e.preventDefault();
+  isUserPasswordModalShown.value = true;
+};
 /* Hooks */
 onMounted(async () => {
   await keyPairsStore.refetch();
@@ -95,7 +99,7 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
         <span class="text-small text-bold">Read File Query</span>
       </div>
     </div>
-    <div class="mt-4">
+    <form class="mt-4" @submit="handleSubmit">
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Payer ID</label>
         <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
@@ -122,24 +126,24 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
         <input
           v-model="fileId"
           type="text"
-          class="form-control py-3"
+          class="form-control is-fill py-3"
           placeholder="Enter owner public key"
         />
       </div>
       <div class="mt-4 form-group w-75">
         <label class="form-label">File Content</label>
-        <textarea v-model="content" class="form-control py-3" rows="10" readonly></textarea>
+        <textarea v-model="content" class="form-control is-fill py-3" rows="10" readonly></textarea>
       </div>
       <div class="mt-4">
         <AppButton
           size="large"
+          type="submit"
           color="primary"
           :disabled="!fileId || !payerData.isValid.value"
-          @click="isUserPasswordModalShown = true"
           >Read</AppButton
         >
       </div>
-    </div>
+    </form>
     <AppModal v-model:show="isUserPasswordModalShown" class="common-modal">
       <div class="p-5">
         <i
@@ -153,7 +157,7 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
         <form @submit="handleRead">
           <h3 class="mt-5 text-main text-center text-bold">Enter your password</h3>
           <div class="mt-4 form-group">
-            <input v-model="userPassword" type="password" class="form-control rounded-4" />
+            <input v-model="userPassword" type="password" class="form-control is-fill" />
           </div>
           <AppButton
             :loading="isLoading"

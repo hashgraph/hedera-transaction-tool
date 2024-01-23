@@ -343,6 +343,8 @@ export const changeDecryptionPassword = async (
 
         return { ...kp, privateKey: encryptedPrivateKey };
       });
+
+      return sh;
     }),
   );
 
@@ -359,16 +361,18 @@ export const changeDecryptionPassword = async (
   store.set(
     'organizationKeys',
     store.store.organizationKeys.map(user => {
-      user.secretHashes.forEach(sh => {
+      user.secretHashes = user.secretHashes.map(sh => {
         sh.keyPairs = sh.keyPairs.map(kp => {
           const decryptedPrivateKey = decrypt(kp.privateKey, oldPassword);
           const encryptedPrivateKey = encrypt(decryptedPrivateKey, newPassword);
 
           return { ...kp, privateKey: encryptedPrivateKey };
         });
+
+        return sh;
       });
 
-      user.externalKeys.forEach(kp => {
+      user.externalKeys = user.externalKeys.map(kp => {
         const decryptedPrivateKey = decrypt(kp.privateKey, oldPassword);
         const encryptedPrivateKey = encrypt(decryptedPrivateKey, newPassword);
 
