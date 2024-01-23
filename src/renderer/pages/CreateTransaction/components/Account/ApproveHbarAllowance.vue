@@ -43,7 +43,9 @@ const keyStructureComponentKey = ref<Key | null>(null);
 const isKeyStructureModalShown = ref(false);
 
 /* Handlers */
-const handleCreate = async () => {
+const handleCreate = async e => {
+  e.preventDefault();
+
   try {
     if (!ownerData.accountId.value || !ownerData.isValid.value) {
       throw Error('Invalid owner');
@@ -76,11 +78,11 @@ const handleCreate = async () => {
         <span class="text-title text-bold">Approve Hbar Allowance Transaction</span>
       </div>
     </div>
-    <div class="mt-4">
+    <form class="mt-4" @submit="handleCreate">
       <div class="mt-4 d-flex flex-wrap gap-5">
         <div class="form-group col-4">
           <label class="form-label">Set Payer ID (Required)</label>
-          <label v-if="payerData.isValid.value" class="form-label text-secondary"
+          <label v-if="payerData.isValid.value" class="form-label text-secondary ms-3"
             >Balance: {{ payerData.accountInfo.value?.balance }}</label
           >
           <input
@@ -118,6 +120,7 @@ const handleCreate = async () => {
       <div class="mt-4" v-if="ownerData.key.value">
         <AppButton
           color="secondary"
+          type="button"
           size="small"
           @click="
             isKeyStructureModalShown = true;
@@ -144,6 +147,7 @@ const handleCreate = async () => {
       <div class="mt-4" v-if="spenderData.key.value">
         <AppButton
           color="secondary"
+          type="button"
           size="small"
           @click="
             isKeyStructureModalShown = true;
@@ -164,6 +168,7 @@ const handleCreate = async () => {
       <div class="mt-4">
         <AppButton
           color="primary"
+          type="submit"
           size="large"
           :disabled="
             !payerData.isValid.value ||
@@ -171,11 +176,10 @@ const handleCreate = async () => {
             !spenderData.isValid.value ||
             amount < 0
           "
-          @click="handleCreate"
           >Create</AppButton
         >
       </div>
-    </div>
+    </form>
     <TransactionProcessor
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"

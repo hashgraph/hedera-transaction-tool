@@ -59,7 +59,9 @@ const handleAdd = () => {
 //   }
 // };
 
-const handleCreate = async () => {
+const handleCreate = async e => {
+  e.preventDefault();
+
   try {
     transaction.value = new FileCreateTransaction()
       .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
@@ -90,7 +92,7 @@ const handleCreate = async () => {
         <span class="text-title text-bold">Create File Transaction</span>
       </div>
     </div>
-    <div class="mt-4">
+    <form class="mt-4" @submit="handleCreate">
       <div class="mt-4 d-flex flex-wrap gap-5">
         <div class="form-group col-4">
           <label class="form-label">Set Payer ID (Required)</label>
@@ -125,7 +127,9 @@ const handleCreate = async () => {
             style="max-width: 555px"
             @keypress="e => e.code === 'Enter' && handleAdd()"
           />
-          <AppButton color="secondary" class="rounded-4" @click="handleAdd">Add</AppButton>
+          <AppButton color="secondary" type="button" class="rounded-4" @click="handleAdd"
+            >Add</AppButton
+          >
         </div>
       </div>
       <div class="mt-4 w-75">
@@ -186,13 +190,13 @@ const handleCreate = async () => {
         <!-- <AppButton size="small" color="secondary" class="me-3 px-4 rounded-4">Save Draft</AppButton> -->
         <AppButton
           color="primary"
+          type="submit"
           size="large"
           :disabled="keyList._keys.length === 0 || !payerData.isValid.value"
-          @click="handleCreate"
           >Create</AppButton
         >
       </div>
-    </div>
+    </form>
     <TransactionProcessor
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"

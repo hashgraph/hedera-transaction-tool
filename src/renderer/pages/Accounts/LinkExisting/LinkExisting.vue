@@ -24,7 +24,9 @@ useCreateTooltips();
 const accountData = useAccountId();
 const nickname = ref('');
 
-const handleLinkAccount = async () => {
+const handleLinkAccount = async e => {
+  e.preventDefault();
+
   if (accountData.isValid.value) {
     try {
       if (!user.data.isLoggedIn) {
@@ -49,7 +51,7 @@ const handleLinkAccount = async () => {
       @click="$router.back()"
       ><i class="bi bi-arrow-left text-subheader me-2"></i> Back</AppButton
     >
-    <div class="mt-5 col-12 col-md-8 col-xl-6 col-xxl-4">
+    <form class="mt-5 col-12 col-md-8 col-xl-6 col-xxl-4" @submit="handleLinkAccount">
       <div class="form-group">
         <label class="form-label">Set Hedera Account ID*</label>
 
@@ -74,11 +76,11 @@ const handleLinkAccount = async () => {
       </div>
       <AppButton
         color="primary"
+        type="submit"
         class="mt-5 w-100"
         :disabled="!accountData.isValid.value"
-        @click="handleLinkAccount"
         >Link Account</AppButton
       >
-    </div>
+    </form>
   </div>
 </template>

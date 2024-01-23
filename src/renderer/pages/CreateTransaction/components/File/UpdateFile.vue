@@ -128,7 +128,9 @@ const handleFileImport = async (e: Event) => {
   }
 };
 
-const handleCreate = async () => {
+const handleCreate = async e => {
+  e.preventDefault();
+
   try {
     transaction.value = createTransaction();
     await transactionProcessor.value?.process(
@@ -152,7 +154,7 @@ watch(fileMeta, () => (content.value = ''));
         <span class="text-small text-bold">Update File Transaction</span>
       </div>
     </div>
-    <div class="mt-4">
+    <form class="mt-4" @submit="handleCreate">
       <div class="mt-4 d-flex flex-wrap gap-5">
         <div class="form-group col-4">
           <label class="form-label">Set Payer ID (Required)</label>
@@ -196,7 +198,11 @@ watch(fileMeta, () => (content.value = ''));
             style="max-width: 555px"
             @keypress="e => e.code === 'Enter' && handleAddSignatureKey()"
           />
-          <AppButton color="secondary" class="rounded-4" @click="handleAddSignatureKey"
+          <AppButton
+            color="secondary"
+            type="button"
+            class="rounded-4"
+            @click="handleAddSignatureKey"
             >Add</AppButton
           >
         </div>
@@ -230,7 +236,9 @@ watch(fileMeta, () => (content.value = ''));
             style="max-width: 555px"
             @keypress="e => e.code === 'Enter' && handleAddOwnerKey()"
           />
-          <AppButton color="secondary" class="rounded-4" @click="handleAddOwnerKey">Add</AppButton>
+          <AppButton color="secondary" type="button" class="rounded-4" @click="handleAddOwnerKey"
+            >Add</AppButton
+          >
         </div>
       </div>
       <div class="mt-4 w-75">
@@ -316,6 +324,7 @@ watch(fileMeta, () => (content.value = ''));
         <!-- <AppButton size="small" color="secondary" class="me-3 px-4 rounded-4">Save Draft</AppButton> -->
         <AppButton
           size="large"
+          type="submit"
           color="primary"
           :disabled="
             !fileId ||
@@ -323,11 +332,10 @@ watch(fileMeta, () => (content.value = ''));
             signatureKeys.length === 0 ||
             (content.length > 0 && fileBuffer)
           "
-          @click="handleCreate"
           >Create</AppButton
         >
       </div>
-    </div>
+    </form>
     <TransactionProcessor
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"

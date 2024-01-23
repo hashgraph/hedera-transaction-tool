@@ -79,6 +79,10 @@ const handleRead = async e => {
   }
 };
 
+const handleSubmit = e => {
+  e.preventDefault();
+  isUserPasswordModalShown.value = true;
+};
 /* Hooks */
 onMounted(async () => {
   await keyPairsStore.refetch();
@@ -95,7 +99,7 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
         <span class="text-small text-bold">Read File Query</span>
       </div>
     </div>
-    <div class="mt-4">
+    <form class="mt-4" @submit="handleSubmit">
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Payer ID</label>
         <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
@@ -133,13 +137,13 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
       <div class="mt-4">
         <AppButton
           size="large"
+          type="submit"
           color="primary"
           :disabled="!fileId || !payerData.isValid.value"
-          @click="isUserPasswordModalShown = true"
           >Read</AppButton
         >
       </div>
-    </div>
+    </form>
     <AppModal v-model:show="isUserPasswordModalShown" class="common-modal">
       <div class="p-5">
         <i

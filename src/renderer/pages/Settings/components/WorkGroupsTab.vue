@@ -19,7 +19,9 @@ const newOrganizationServerUrl = ref('');
 const newOrganizationServerPublicKey = ref('');
 
 /* Handlers */
-const handleAddOrganization = async () => {
+const handleAddOrganization = async e => {
+  e.preventDefault();
+
   if (newOrganizationName.value !== '' && newOrganizationServerUrl.value !== '') {
     try {
       await organizationsStore.addOrganization({
@@ -54,7 +56,7 @@ const handleRemoveOrganization = async (serverUrl: string) => {
 };
 </script>
 <template>
-  <div class="p-4 border border-2 rounded-3">
+  <form class="p-4 border border-2 rounded-3" @submit="handleAddOrganization">
     <div class="d-flex align-items-center">
       <p class="me-4">Organization name:</p>
       <input type="text" class="form-control is-fill w-25 py-3" v-model="newOrganizationName" />
@@ -72,9 +74,9 @@ const handleRemoveOrganization = async (serverUrl: string) => {
         <label class="form-label">organization server url:</label>
         <input type="text" class="form-control is-fill py-3" v-model="newOrganizationServerUrl" />
       </div>
-      <AppButton color="primary" @click="handleAddOrganization">Add Organization</AppButton>
+      <AppButton color="primary" type="submit">Add Organization</AppButton>
     </div>
-  </div>
+  </form>
   <div
     v-for="org in organizationsStore.organizations"
     :key="org.serverUrl"

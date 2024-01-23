@@ -70,7 +70,9 @@ const handleAdd = () => {
   newOwnerKeyText.value = '';
 };
 
-const handleCreate = async () => {
+const handleCreate = async e => {
+  e.preventDefault();
+
   try {
     if (!accountData.accountInfo.value) {
       throw Error('Invalid Account');
@@ -169,7 +171,7 @@ watch(accountData.accountInfo, accountInfo => {
         <span class="text-title text-bold">Update Account Transaction</span>
       </div>
     </div>
-    <div class="mt-4">
+    <form class="mt-4" @submit="handleCreate">
       <div class="mt-4 d-flex flex-wrap gap-5">
         <div class="form-group col-4">
           <label class="form-label">Set Payer ID (Required)</label>
@@ -204,7 +206,11 @@ watch(accountData.accountInfo, accountInfo => {
         />
       </div>
       <div class="mt-4" v-if="accountData.key.value">
-        <AppButton color="secondary" size="small" @click="isKeyStructureModalShown = true"
+        <AppButton
+          color="secondary"
+          type="button"
+          size="small"
+          @click="isKeyStructureModalShown = true"
           >View Key Structure</AppButton
         >
       </div>
@@ -219,7 +225,9 @@ watch(accountData.accountInfo, accountInfo => {
             style="max-width: 555px"
             @keypress="e => e.code === 'Enter' && handleAdd()"
           />
-          <AppButton color="secondary" class="rounded-4" @click="handleAdd">Add</AppButton>
+          <AppButton color="secondary" type="button" class="rounded-4" @click="handleAdd"
+            >Add</AppButton
+          >
         </div>
       </div>
       <div class="mt-4 w-75">
@@ -302,13 +310,13 @@ watch(accountData.accountInfo, accountInfo => {
       <div class="mt-4">
         <AppButton
           color="primary"
+          type="submit"
           size="large"
           :disabled="!accountData.accountId.value || !payerData.isValid.value"
-          @click="handleCreate"
           >Create</AppButton
         >
       </div>
-    </div>
+    </form>
     <TransactionProcessor
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"

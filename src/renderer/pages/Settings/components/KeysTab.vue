@@ -120,7 +120,7 @@ watch(isDecryptedModalShown, newVal => {
       </div>
       <div class="form-group">
         <label class="form-label">Encrypted Private key</label>
-        <input type="text" readonly class="form-control is-fill py-3" :value="keyPair.privateKey" />
+        <input type="text" readonly class="form-control py-3" :value="keyPair.privateKey" />
       </div>
       <div class="form-group mt-3">
         <label class="form-label"
@@ -129,11 +129,11 @@ watch(isDecryptedModalShown, newVal => {
           }}
           Public key</label
         >
-        <input type="text" readonly class="form-control is-fill py-3" :value="keyPair.publicKey" />
+        <input type="text" readonly class="form-control py-3" :value="keyPair.publicKey" />
       </div>
       <div v-show="keyPair.accountId" class="form-group mt-3">
         <label class="form-label">Account ID</label>
-        <input type="text" readonly class="form-control is-fill py-3" :value="keyPair.accountId" />
+        <input type="text" readonly class="form-control py-3" :value="keyPair.accountId" />
       </div>
     </div>
     <AppModal v-model:show="isDecryptedModalShown" class="common-modal">

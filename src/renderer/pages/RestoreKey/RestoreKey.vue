@@ -54,12 +54,14 @@ watch(index, () => {
   inputIndexInvalid.value = false;
 });
 
-const handleFinish = (words: string[]) => {
-  keyPairsStore.setRecoveryPhrase(words || []);
+const handleFinish = e => {
+  e.preventDefault();
   step.value++;
 };
 
-const handleRestoreKey = async () => {
+const handleRestoreKey = async e => {
+  e.preventDefault();
+
   try {
     const privateKey = await keyPairService.restorePrivateKey(
       keyPairsStore.recoveryPhraseWords,
@@ -93,7 +95,9 @@ const handleRestoreKey = async () => {
   }
 };
 
-const handleSaveKey = async () => {
+const handleSaveKey = async e => {
+  e.preventDefault();
+
   if (restoredKey.value) {
     const keyPair: IKeyPair = {
       index: index.value,
@@ -150,7 +154,16 @@ onUnmounted(() => {
       </div>
 
       <!-- Step 2 -->
-      <div v-else-if="step === 1" class="w-100">
+      <form
+        v-else-if="step === 1"
+        class="w-100"
+        @submit="
+          e => {
+            e.preventDefault();
+            keyPairsStore.recoveryPhraseWords.length === 24 ? (step += 2) : step++;
+          }
+        "
+      >
         <h1 class="text-display text-bold text-center">Enter password</h1>
         <p class="text-main mt-5 text-center">Please enter new password</p>
         <div class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4">
@@ -163,28 +176,34 @@ onUnmounted(() => {
             />
             <AppButton
               size="large"
+              type="submit"
               color="primary"
               class="mt-5 d-block w-100"
               :disabled="password.length === 0"
-              @click="
-                () => (keyPairsStore.recoveryPhraseWords.length === 24 ? (step += 2) : step++)
-              "
               >Continue</AppButton
             >
           </div>
         </div>
-      </div>
+      </form>
 
       <!-- Step 3 -->
-      <div v-else-if="step === 2">
+      <form v-else-if="step === 2" @submit="handleFinish">
         <h1 class="text-center">Enter your recovery phrase</h1>
         <div class="mt-8">
           <Import :handle-continue="handleFinish" :secret-hashes="user.data.secretHashes" />
+          <AppButton
+            size="large"
+            type="submit"
+            color="primary"
+            class="mt-5 mx-auto col-6 col-xxl-4 d-block"
+            :disabled="keyPairsStore.recoveryPhraseWords.length === 0"
+            >Continue</AppButton
+          >
         </div>
-      </div>
+      </form>
 
       <!-- Step 4 -->
-      <div v-else-if="step === 3" class="w-100">
+      <form v-else-if="step === 3" class="w-100" @submit="handleRestoreKey">
         <h1 class="text-display text-bold text-center">Provide Index of Key</h1>
         <p class="text-main mt-5 text-center">Please enter the index of the key</p>
         <div class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4">
@@ -201,18 +220,18 @@ onUnmounted(() => {
             </div>
             <AppButton
               size="large"
+              type="submit"
               color="primary"
               class="mt-5 d-block w-100"
               :disabled="index < 0"
-              @click="handleRestoreKey"
               >Continue</AppButton
             >
           </div>
         </div>
-      </div>
+      </form>
 
       <!-- Step 5 -->
-      <div v-else-if="step === 4" class="w-100">
+      <form v-else-if="step === 4" class="w-100" @submit="handleSaveKey">
         <h1 class="text-display text-bold text-center">Enter nickname</h1>
         <p class="text-main mt-5 text-center">Please enter your nickname (optional)</p>
         <div class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4">
@@ -223,16 +242,12 @@ onUnmounted(() => {
               class="form-control is-fill"
               placeholder="Enter nickname"
             />
-            <AppButton
-              size="large"
-              color="primary"
-              class="mt-5 d-block w-100"
-              @click="handleSaveKey"
+            <AppButton size="large" type="submit" color="primary" class="mt-5 d-block w-100"
               >Continue</AppButton
             >
           </div>
         </div>
-      </div>
+      </form>
     </Transition>
   </div>
 </template>

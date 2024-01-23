@@ -66,7 +66,9 @@ const handleAdd = () => {
   ownerKeyText.value = '';
 };
 
-const handleCreate = async () => {
+const handleCreate = async e => {
+  e.preventDefault();
+
   try {
     transaction.value = new AccountCreateTransaction()
       .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
@@ -108,7 +110,7 @@ const handleExecuted = async ({ receipt }: { receipt: TransactionReceipt }) => {
         <span class="text-title text-bold">Create Account Transaction</span>
       </div>
     </div>
-    <div class="mt-4">
+    <form class="mt-4" @submit="handleCreate">
       <div class="mt-4 d-flex flex-wrap gap-5">
         <div class="form-group col-4">
           <label class="form-label">Set Payer ID (Required)</label>
@@ -144,7 +146,9 @@ const handleExecuted = async ({ receipt }: { receipt: TransactionReceipt }) => {
             style="max-width: 555px"
             @keypress="e => e.code === 'Enter' && handleAdd()"
           />
-          <AppButton color="secondary" class="rounded-4" @click="handleAdd">Add</AppButton>
+          <AppButton type="button" color="secondary" class="rounded-4" @click="handleAdd"
+            >Add</AppButton
+          >
         </div>
       </div>
       <div class="mt-4 w-75">
@@ -236,13 +240,13 @@ const handleExecuted = async ({ receipt }: { receipt: TransactionReceipt }) => {
       <div class="mt-4">
         <AppButton
           color="primary"
+          type="submit"
           size="large"
           :disabled="keyList._keys.length === 0 || !payerData.isValid.value"
-          @click="handleCreate"
           >Create</AppButton
         >
       </div>
-    </div>
+    </form>
     <TransactionProcessor
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"

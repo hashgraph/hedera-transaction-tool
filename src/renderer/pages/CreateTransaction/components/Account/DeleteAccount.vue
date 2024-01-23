@@ -36,7 +36,9 @@ const maxTransactionfee = ref(2);
 const isKeyStructureModalShown = ref(false);
 
 /* Handlers */
-const handleCreate = async () => {
+const handleCreate = async e => {
+  e.preventDefault();
+
   try {
     transaction.value = new AccountDeleteTransaction()
       .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
@@ -75,7 +77,7 @@ onMounted(() => {
         <span class="text-title text-bold">Delete Account Transaction</span>
       </div>
     </div>
-    <div class="mt-4">
+    <form class="mt-4" @submit="handleCreate">
       <div class="mt-4 d-flex flex-wrap gap-5">
         <div class="form-group col-4">
           <label class="form-label">Set Payer ID (Required)</label>
@@ -113,7 +115,11 @@ onMounted(() => {
         />
       </div>
       <div class="mt-4" v-if="accountData.key.value">
-        <AppButton color="secondary" size="small" @click="isKeyStructureModalShown = true"
+        <AppButton
+          color="secondary"
+          type="button"
+          size="small"
+          @click="isKeyStructureModalShown = true"
           >View Key Structure</AppButton
         >
       </div>
@@ -141,17 +147,17 @@ onMounted(() => {
       <div class="mt-4">
         <AppButton
           color="primary"
+          type="submit"
           size="large"
           :disabled="
             !accountData.isValid.value ||
             !transferAccountData.isValid.value ||
             accountData.accountInfo.value?.deleted
           "
-          @click="handleCreate"
           >Create</AppButton
         >
       </div>
-    </div>
+    </form>
     <TransactionProcessor
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"
