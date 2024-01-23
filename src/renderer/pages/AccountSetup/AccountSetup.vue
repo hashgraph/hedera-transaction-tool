@@ -48,7 +48,7 @@ onBeforeMount(() => {
 });
 </script>
 <template>
-  <div class="recovery-phrase-page container-page p-8">
+  <div class="my-0 mx-auto p-7">
     <template v-if="stepperItems[0].name != step.current || isFaqShown">
       <AppButton
         color="secondary"
@@ -61,7 +61,7 @@ onBeforeMount(() => {
 
     <Transition name="fade" mode="out-in">
       <template v-if="!isFaqShown">
-        <div>
+        <div class="col-12 col-lg-10 col-xl-8 col-xxl-6 bg-modal-surface rounded-4 p-5 mx-auto">
           <template v-if="stepperItems.map(s => s.name).includes(step.current)">
             <div class="w-100 d-flex flex-column justify-content-center align-items-center gap-4">
               <div class="col-12 col-md-10 col-xxl-8">
