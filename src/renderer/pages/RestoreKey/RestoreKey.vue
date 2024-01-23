@@ -135,13 +135,13 @@ onUnmounted(() => {
         <h1 class="text-display text-bold text-center">Restore Key Pair</h1>
         <div class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4">
           <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
-            <AppButton size="large" color="primary" class="d-block w-100 rounded-4" @click="step++"
+            <AppButton size="large" color="primary" class="d-block w-100" @click="step++"
               >Continue</AppButton
             >
             <AppButton
               size="large"
               color="secondary"
-              class="mt-4 d-block w-100 rounded-4"
+              class="mt-4 d-block w-100"
               @click="$router.back()"
               >Cancel</AppButton
             >
@@ -158,13 +158,13 @@ onUnmounted(() => {
             <input
               v-model="password"
               type="password"
-              class="form-control rounded-4"
+              class="form-control is-fill"
               placeholder="Enter password"
             />
             <AppButton
               size="large"
               color="primary"
-              class="mt-5 d-block w-100 rounded-4"
+              class="mt-5 d-block w-100"
               :disabled="password.length === 0"
               @click="
                 () => (keyPairsStore.recoveryPhraseWords.length === 24 ? (step += 2) : step++)
@@ -192,7 +192,7 @@ onUnmounted(() => {
             <input
               v-model="index"
               type="number"
-              class="form-control rounded-4"
+              class="form-control is-fill"
               :class="{ 'is-invalid': inputIndexInvalid }"
               placeholder="Enter key index"
             />
@@ -202,7 +202,7 @@ onUnmounted(() => {
             <AppButton
               size="large"
               color="primary"
-              class="mt-5 d-block w-100 rounded-4"
+              class="mt-5 d-block w-100"
               :disabled="index < 0"
               @click="handleRestoreKey"
               >Continue</AppButton
@@ -220,13 +220,13 @@ onUnmounted(() => {
             <input
               v-model="nickname"
               type="text"
-              class="form-control rounded-4"
+              class="form-control is-fill"
               placeholder="Enter nickname"
             />
             <AppButton
               size="large"
               color="primary"
-              class="mt-5 d-block w-100 rounded-4"
+              class="mt-5 d-block w-100"
               @click="handleSaveKey"
               >Continue</AppButton
             >

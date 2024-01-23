@@ -45,14 +45,14 @@ const handleChangePassword = async () => {
 </script>
 <template>
   <div>
-    <div class="w-50 py-4 px-5 border rounded-4">
+    <div class="w-50 py-4 px-5 border">
       <div class="form-group">
         <label class="form-label">Current Password</label>
         <input
           v-model="currentPassword"
           type="text"
           placeholder="Enter your current password"
-          class="form-control rounded-4 py-3"
+          class="form-control is-fill py-3"
         />
       </div>
       <div class="mt-4 form-group">
@@ -61,10 +61,10 @@ const handleChangePassword = async () => {
           v-model="newPassword"
           type="text"
           placeholder="Enter new password"
-          class="form-control rounded-4 py-3"
+          class="form-control is-fill py-3"
         />
       </div>
-      <AppButton color="secondary" class="mt-4 rounded-4" @click="handleChangePassword"
+      <AppButton color="secondary" class="mt-4" @click="handleChangePassword"
         >Change Password</AppButton
       >
     </div>
@@ -83,7 +83,7 @@ const handleChangePassword = async () => {
         <AppButton
           color="primary"
           size="large"
-          class="mt-5 w-100 rounded-4"
+          class="mt-5 w-100"
           @click="isSuccessModalShown = false"
           >Close</AppButton
         >

@@ -61,19 +61,19 @@ const handleContinue = async (e: Event) => {
         <input
           v-model="organizationName"
           type="text"
-          class="form-control rounded-4"
+          class="form-control is-fill"
           placeholder="Enter name of Organization"
         />
         <input
           v-model="serverUrl"
           type="text"
-          class="mt-4 form-control rounded-4"
+          class="mt-4 form-control is-fill"
           placeholder="Enter Organization Server URL"
         />
         <input
           v-model="serverPublicKey"
           type="text"
-          class="mt-4 form-control rounded-4"
+          class="mt-4 form-control is-fill"
           placeholder="Enter Organization Server Public key"
         />
       </div>
@@ -85,7 +85,7 @@ const handleContinue = async (e: Event) => {
           "
           color="primary"
           size="large"
-          class="w-100 rounded-4"
+          class="w-100"
           >Continue</AppButton
         >
       </div>

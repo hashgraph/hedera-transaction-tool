@@ -201,7 +201,7 @@ defineExpose({
           <div class="col-3 col-lg-2">
             <select
               v-model="index"
-              class="form-control form-select rounded-4 py-3 h-100"
+              class="form-control is-fill form-select rounded-4 py-3 h-100"
               placeholder="Select key index"
             >
               <option v-for="index in [...Array(11).keys()]" :key="index" :value="index">
@@ -213,7 +213,7 @@ defineExpose({
             <input
               v-model="passPhrase"
               type="passPhrase"
-              class="form-control rounded-4"
+              class="form-control is-fill"
               placeholder="Enter Pass Phrase (optional)"
             />
             <i

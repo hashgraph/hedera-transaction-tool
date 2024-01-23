@@ -119,17 +119,17 @@ const handleExecuted = async ({ receipt }: { receipt: TransactionReceipt }) => {
             :value="payerData.accountIdFormatted.value"
             @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
             type="text"
-            class="form-control"
+            class="form-control is-fill"
             placeholder="Enter Payer ID"
           />
         </div>
         <div class="form-group">
           <label class="form-label">Set Valid Start Time (Required)</label>
-          <input v-model="validStart" type="datetime-local" step="1" class="form-control" />
+          <input v-model="validStart" type="datetime-local" step="1" class="form-control is-fill" />
         </div>
         <div class="form-group">
           <label class="form-label">Set Max Transaction Fee (Optional)</label>
-          <input v-model="maxTransactionfee" type="number" min="0" class="form-control" />
+          <input v-model="maxTransactionfee" type="number" min="0" class="form-control is-fill" />
         </div>
       </div>
 
@@ -139,7 +139,7 @@ const handleExecuted = async ({ receipt }: { receipt: TransactionReceipt }) => {
           <input
             v-model="ownerKeyText"
             type="text"
-            class="form-control"
+            class="form-control is-fill"
             placeholder="Enter owner public key"
             style="max-width: 555px"
             @keypress="e => e.code === 'Enter' && handleAdd()"
@@ -153,7 +153,7 @@ const handleExecuted = async ({ receipt }: { receipt: TransactionReceipt }) => {
             <input
               type="text"
               readonly
-              class="form-control"
+              class="form-control is-fill"
               :value="key"
               style="max-width: 555px"
             />
@@ -171,7 +171,7 @@ const handleExecuted = async ({ receipt }: { receipt: TransactionReceipt }) => {
           v-model="accountData.initialBalance"
           type="number"
           min="0"
-          class="form-control"
+          class="form-control is-fill"
           placeholder="Enter HBar amount"
         />
       </div>
@@ -190,7 +190,7 @@ const handleExecuted = async ({ receipt }: { receipt: TransactionReceipt }) => {
           type="number"
           :min="0"
           :max="5000"
-          class="form-control"
+          class="form-control is-fill"
           placeholder="Enter timestamp"
         />
       </div>
@@ -200,7 +200,7 @@ const handleExecuted = async ({ receipt }: { receipt: TransactionReceipt }) => {
           v-model="accountData.stakedAccountId"
           :disabled="Number(accountData.stakedNodeId) > 0"
           type="text"
-          class="form-control"
+          class="form-control is-fill"
           placeholder="Enter Account Id"
         />
       </div>
@@ -211,7 +211,7 @@ const handleExecuted = async ({ receipt }: { receipt: TransactionReceipt }) => {
           :disabled="accountData.stakedAccountId.length > 0"
           type="number"
           min="0"
-          class="form-control"
+          class="form-control is-fill"
           placeholder="Enter Node Id"
         />
       </div>
@@ -229,7 +229,7 @@ const handleExecuted = async ({ receipt }: { receipt: TransactionReceipt }) => {
           v-model="accountData.memo"
           type="text"
           maxlength="100"
-          class="form-control"
+          class="form-control is-fill"
           placeholder="Enter Account Memo"
         />
       </div>

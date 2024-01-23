@@ -40,7 +40,7 @@ watch(accountData.isValid, isValid => {
           :value="accountData.accountIdFormatted.value"
           @input="accountData.accountId.value = ($event.target as HTMLInputElement).value"
           type="text"
-          class="form-control"
+          class="form-control is-fill"
           placeholder="Enter Account ID"
         />
       </div>

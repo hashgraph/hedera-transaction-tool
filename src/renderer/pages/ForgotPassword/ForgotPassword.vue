@@ -33,7 +33,7 @@ const handleFormSubmit = (event: Event) => {
         <input
           v-model="inputEmail"
           type="text"
-          class="form-control rounded-4"
+          class="form-control is-fill"
           placeholder="Enter your email"
         />
       </div>
@@ -42,7 +42,7 @@ const handleFormSubmit = (event: Event) => {
           color="primary"
           size="large"
           type="submit"
-          class="w-100 rounded-4"
+          class="w-100"
           :disabled="inputEmail.length === 0"
           >Continue</AppButton
         >

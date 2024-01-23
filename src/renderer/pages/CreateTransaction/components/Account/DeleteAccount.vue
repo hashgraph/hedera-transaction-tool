@@ -86,17 +86,17 @@ onMounted(() => {
             :value="payerData.accountIdFormatted.value"
             @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
             type="text"
-            class="form-control"
+            class="form-control is-fill"
             placeholder="Enter Payer ID"
           />
         </div>
         <div class="form-group">
           <label class="form-label">Set Valid Start Time (Required)</label>
-          <input v-model="validStart" type="datetime-local" step="1" class="form-control" />
+          <input v-model="validStart" type="datetime-local" step="1" class="form-control is-fill" />
         </div>
         <div class="form-group">
           <label class="form-label">Set Max Transaction Fee (Optional)</label>
-          <input v-model="maxTransactionfee" type="number" min="0" class="form-control" />
+          <input v-model="maxTransactionfee" type="number" min="0" class="form-control is-fill" />
         </div>
       </div>
       <div class="mt-4 form-group">
@@ -108,7 +108,7 @@ onMounted(() => {
           :value="accountData.accountIdFormatted.value"
           @input="accountData.accountId.value = ($event.target as HTMLInputElement).value"
           type="text"
-          class="form-control"
+          class="form-control is-fill"
           placeholder="Enter Account ID"
         />
       </div>
@@ -128,7 +128,7 @@ onMounted(() => {
           @input="transferAccountData.accountId.value = ($event.target as HTMLInputElement).value"
           :disabled="accountData.accountInfo.value?.deleted"
           type="text"
-          class="form-control"
+          class="form-control is-fill"
           placeholder="Enter Account ID"
         />
       </div>

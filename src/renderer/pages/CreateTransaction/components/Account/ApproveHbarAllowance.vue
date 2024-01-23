@@ -87,17 +87,17 @@ const handleCreate = async () => {
             :value="payerData.accountIdFormatted.value"
             @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
             type="text"
-            class="form-control"
+            class="form-control is-fill"
             placeholder="Enter Payer ID"
           />
         </div>
         <div class="form-group">
           <label class="form-label">Set Valid Start Time (Required)</label>
-          <input v-model="validStart" type="datetime-local" step="1" class="form-control" />
+          <input v-model="validStart" type="datetime-local" step="1" class="form-control is-fill" />
         </div>
         <div class="form-group">
           <label class="form-label">Set Max Transaction Fee (Optional)</label>
-          <input v-model="maxTransactionfee" type="number" min="0" class="form-control" />
+          <input v-model="maxTransactionfee" type="number" min="0" class="form-control is-fill" />
         </div>
       </div>
       <div class="mt-4 form-group">
@@ -111,7 +111,7 @@ const handleCreate = async () => {
           :value="ownerData.accountIdFormatted.value"
           @input="ownerData.accountId.value = ($event.target as HTMLInputElement).value"
           type="text"
-          class="form-control"
+          class="form-control is-fill"
           placeholder="Enter Owner ID"
         />
       </div>
@@ -137,7 +137,7 @@ const handleCreate = async () => {
           :value="spenderData.accountIdFormatted.value"
           @input="spenderData.accountId.value = ($event.target as HTMLInputElement).value"
           type="text"
-          class="form-control"
+          class="form-control is-fill"
           placeholder="Enter Spender ID"
         />
       </div>
@@ -154,7 +154,12 @@ const handleCreate = async () => {
       </div>
       <div class="mt-4 form-group">
         <label class="form-label">Amount</label>
-        <input v-model="amount" type="number" class="form-control" placeholder="Enter Amount" />
+        <input
+          v-model="amount"
+          type="number"
+          class="form-control is-fill"
+          placeholder="Enter Amount"
+        />
       </div>
       <div class="mt-4">
         <AppButton

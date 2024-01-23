@@ -520,7 +520,7 @@ defineExpose({
         <form @submit="handleSignTransaction">
           <h3 class="mt-5 text-main text-center text-bold">Enter your password</h3>
           <div class="mt-4 form-group">
-            <input v-model="userPassword" type="password" class="form-control" />
+            <input v-model="userPassword" type="password" class="form-control is-fill" />
           </div>
           <div class="mt-4">
             <div v-if="chunksAmount">Estimated chunks: {{ chunksAmount }}</div>

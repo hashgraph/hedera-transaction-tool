@@ -180,17 +180,17 @@ watch(accountData.accountInfo, accountInfo => {
             :value="payerData.accountIdFormatted.value"
             @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
             type="text"
-            class="form-control"
+            class="form-control is-fill"
             placeholder="Enter Payer ID"
           />
         </div>
         <div class="form-group">
           <label class="form-label">Set Valid Start Time (Required)</label>
-          <input v-model="validStart" type="datetime-local" step="1" class="form-control" />
+          <input v-model="validStart" type="datetime-local" step="1" class="form-control is-fill" />
         </div>
         <div class="form-group">
           <label class="form-label">Set Max Transaction Fee (Optional)</label>
-          <input v-model="maxTransactionfee" type="number" min="0" class="form-control" />
+          <input v-model="maxTransactionfee" type="number" min="0" class="form-control is-fill" />
         </div>
       </div>
       <div class="mt-4 form-group">
@@ -199,7 +199,7 @@ watch(accountData.accountInfo, accountInfo => {
           :value="accountData.accountIdFormatted.value"
           @input="accountData.accountId.value = ($event.target as HTMLInputElement).value"
           type="text"
-          class="form-control"
+          class="form-control is-fill"
           placeholder="Enter Account ID"
         />
       </div>
@@ -214,7 +214,7 @@ watch(accountData.accountInfo, accountInfo => {
           <input
             v-model="newOwnerKeyText"
             type="text"
-            class="form-control"
+            class="form-control is-fill"
             placeholder="Enter new owner public key"
             style="max-width: 555px"
             @keypress="e => e.code === 'Enter' && handleAdd()"
@@ -228,7 +228,7 @@ watch(accountData.accountInfo, accountInfo => {
             <input
               type="text"
               readonly
-              class="form-control"
+              class="form-control is-fill"
               :value="key"
               style="max-width: 555px"
             />
@@ -255,7 +255,7 @@ watch(accountData.accountInfo, accountInfo => {
           type="number"
           :min="0"
           :max="5000"
-          class="form-control"
+          class="form-control is-fill"
           placeholder="Enter timestamp"
         />
       </div>
@@ -265,7 +265,7 @@ watch(accountData.accountInfo, accountInfo => {
           v-model="newAccountData.stakedAccountId"
           :disabled="Boolean(newAccountData.stakedNodeId)"
           type="text"
-          class="form-control"
+          class="form-control is-fill"
           placeholder="Enter Account Id"
         />
       </div>
@@ -277,7 +277,7 @@ watch(accountData.accountInfo, accountInfo => {
             Boolean(newAccountData.stakedAccountId && newAccountData.stakedAccountId.length > 0)
           "
           type="text"
-          class="form-control"
+          class="form-control is-fill"
           placeholder="Enter Node Id"
         />
       </div>
@@ -295,7 +295,7 @@ watch(accountData.accountInfo, accountInfo => {
           v-model="newAccountData.memo"
           type="text"
           maxlength="100"
-          class="form-control"
+          class="form-control is-fill"
           placeholder="Enter Account Memo"
         />
       </div>

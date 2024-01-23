@@ -60,7 +60,7 @@ const handleLinkAccount = async () => {
           :value="accountData.accountIdFormatted.value"
           @input="accountData.accountId.value = ($event.target as HTMLInputElement).value"
           type="text"
-          class="form-control"
+          class="form-control is-fill"
           data-bs-toggle="tooltip"
           data-bs-placement="right"
           data-bs-custom-class="wide-tooltip"
@@ -70,7 +70,7 @@ const handleLinkAccount = async () => {
       </div>
       <div class="form-group mt-5">
         <label class="form-label">Set Nickname (optional)</label>
-        <input v-model="nickname" class="form-control" />
+        <input v-model="nickname" class="form-control is-fill" />
       </div>
       <AppButton
         color="primary"

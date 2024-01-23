@@ -90,7 +90,7 @@ watch(inputConfrimPassword, val => {
         <input
           v-model="inputNewPassword"
           type="password"
-          class="form-control rounded-4"
+          class="form-control is-fill"
           :class="{ 'is-invalid': inputNewPasswordInvalid }"
           placeholder="New Password"
         />
@@ -98,7 +98,7 @@ watch(inputConfrimPassword, val => {
         <input
           v-model="inputConfrimPassword"
           type="password"
-          class="form-control rounded-4 mt-4"
+          class="form-control is-fill mt-4"
           :class="{ 'is-invalid': inputConfirmPasswordInvalid }"
           placeholder="Confirm new Password"
         />
@@ -109,7 +109,7 @@ watch(inputConfrimPassword, val => {
           color="primary"
           size="large"
           type="submit"
-          class="w-100 rounded-4 mt-5"
+          class="w-100 mt-5"
           :loading="isLoading"
           :disabled="inputNewPassword.length === 0 || inputConfrimPassword.length === 0"
           >Continue</AppButton

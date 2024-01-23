@@ -93,7 +93,7 @@ onMounted(() => {
             <label class="form-label">Consensus Node Endpoint</label>
             <input
               type="text"
-              class="form-control form-control-sm"
+              class="form-control form-control-sm is-fill"
               v-model="customNetworkSettings.consensusNodeEndpoint"
             />
           </div>
@@ -101,7 +101,7 @@ onMounted(() => {
             <label class="form-label">Mirror Node GRPC Endpoint</label>
             <input
               type="text"
-              class="form-control form-control-sm"
+              class="form-control form-control-sm is-fill"
               v-model="customNetworkSettings.mirrorNodeGRPCEndpoint"
             />
           </div>
@@ -109,7 +109,7 @@ onMounted(() => {
             <label class="form-label">Mirror Node REST API Endpoint</label>
             <input
               type="text"
-              class="form-control form-control-sm"
+              class="form-control form-control-sm is-fill"
               v-model="customNetworkSettings.mirrorNodeRESTAPIEndpoint"
             />
           </div>
@@ -117,7 +117,7 @@ onMounted(() => {
             <label class="form-label">Node Account Id</label>
             <input
               type="text"
-              class="form-control form-control-sm"
+              class="form-control form-control-sm is-fill"
               v-model="customNetworkSettings.nodeAccountId"
             />
           </div>
@@ -133,7 +133,7 @@ onMounted(() => {
           <label class="form-label">Main NET MIRROR NODE LINK</label>
           <input
             type="text"
-            class="form-control py-3"
+            class="form-control is-fill py-3"
             :value="networkStore.getMirrorNodeLinkByNetwork('mainnet')"
             readonly
           />
@@ -142,7 +142,7 @@ onMounted(() => {
           <label class="form-label">TEST NET MIRROR NODE LINK</label>
           <input
             type="text"
-            class="form-control py-3"
+            class="form-control is-fill py-3"
             :value="networkStore.getMirrorNodeLinkByNetwork('testnet')"
             readonly
           />
@@ -151,7 +151,7 @@ onMounted(() => {
           <label class="form-label">PREVIEW NET MIRROR NODE LINK</label>
           <input
             type="text"
-            class="form-control py-3"
+            class="form-control is-fill py-3"
             :value="networkStore.getMirrorNodeLinkByNetwork('previewnet')"
             readonly
           />
@@ -164,11 +164,11 @@ onMounted(() => {
       <div class="mt-4">
         <div class="mb-4">
           <label class="form-label">Explorer Link</label>
-          <input type="text" class="form-control py-3" />
+          <input type="text" class="form-control is-fill py-3" />
         </div>
         <div class="mb-4">
           <label class="form-label">Explorer Name</label>
-          <input type="text" class="form-control py-3" />
+          <input type="text" class="form-control is-fill py-3" />
         </div>
       </div>
     </div>

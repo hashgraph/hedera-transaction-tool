@@ -122,13 +122,13 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
         <input
           v-model="fileId"
           type="text"
-          class="form-control py-3"
+          class="form-control is-fill py-3"
           placeholder="Enter owner public key"
         />
       </div>
       <div class="mt-4 form-group w-75">
         <label class="form-label">File Content</label>
-        <textarea v-model="content" class="form-control py-3" rows="10" readonly></textarea>
+        <textarea v-model="content" class="form-control is-fill py-3" rows="10" readonly></textarea>
       </div>
       <div class="mt-4">
         <AppButton
@@ -153,7 +153,7 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
         <form @submit="handleRead">
           <h3 class="mt-5 text-main text-center text-bold">Enter your password</h3>
           <div class="mt-4 form-group">
-            <input v-model="userPassword" type="password" class="form-control rounded-4" />
+            <input v-model="userPassword" type="password" class="form-control is-fill" />
           </div>
           <AppButton
             :loading="isLoading"
