@@ -134,7 +134,7 @@ const handleCreate = async () => {
     await transactionProcessor.value?.process(
       payerData.keysFlattened.value.concat(signatureKeys.value, ownerKeys.value),
       chunkSize.value,
-      0,
+      1,
     );
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });

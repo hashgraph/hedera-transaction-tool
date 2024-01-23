@@ -7,6 +7,10 @@ export * from './auth';
 import * as keyPairsService from './keyPairs';
 export * from './keyPairs';
 
+export * from './accounts';
+
+export * from './transactions';
+
 export const userStorageFolderName = 'User Storage';
 export const getUserStorageFolderPath = (email: string) => `User Storage/${email}`;
 
@@ -16,6 +20,7 @@ export const resetData = async (
     email: string;
     authData?: boolean;
     keys?: boolean;
+    accounts?: boolean;
     transactions?: boolean;
     organizations?: boolean;
   },

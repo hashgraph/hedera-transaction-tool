@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 import { proto } from '@hashgraph/proto';
 
-import { IKeyPair, IOrganization } from '../main/shared/interfaces';
+import { IKeyPair, IOrganization, IStoredTransaction } from '../main/shared/interfaces';
 
 import { Theme } from '../main/modules/ipcHandlers/theme';
 import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
@@ -76,14 +76,6 @@ export const electronAPI = {
     decodeProtobuffKey: (protobuffEncodedKey: string): Promise<proto.Key> =>
       ipcRenderer.invoke('utils:decodeProtobuffKey', protobuffEncodedKey),
     hash: (data: any): Promise<string> => ipcRenderer.invoke('utils:hash', data),
-    executeTransaction: (
-      transactionData: string,
-    ): Promise<{
-      response: TransactionResponse;
-      receipt: TransactionReceipt;
-      transactionId: string;
-    }> => ipcRenderer.invoke('utils:executeTransaction', transactionData),
-    executeQuery: (queryData: string) => ipcRenderer.invoke('utils:executeQuery', queryData),
   },
   accounts: {
     getAll: (email: string): Promise<{ accountId: string; nickname: string }[]> =>
@@ -114,6 +106,20 @@ export const electronAPI = {
       organizations?: boolean;
     }) => ipcRenderer.invoke('localUser:resetData', options),
     hasRegisteredUsers: () => ipcRenderer.invoke('localUser:hasRegisteredUsers'),
+  },
+  transactions: {
+    executeTransaction: (
+      transactionData: string,
+    ): Promise<{
+      response: TransactionResponse;
+      receipt: TransactionReceipt;
+      transactionId: string;
+    }> => ipcRenderer.invoke('transactions:executeTransaction', transactionData),
+    executeQuery: (queryData: string) => ipcRenderer.invoke('transactions:executeQuery', queryData),
+    saveTransaction: (email: string, transaction: IStoredTransaction) =>
+      ipcRenderer.invoke('transactions:saveTransaction', email, transaction),
+    getTransactions: (email: string, serverUrl?: string) =>
+      ipcRenderer.invoke('transactions:getTransactions', email, serverUrl),
   },
 };
 typeof electronAPI;

@@ -7,7 +7,7 @@ import {
   TransactionId,
 } from '@hashgraph/sdk';
 
-import { IKeyPairWithAccountId } from '../../main/shared/interfaces';
+import { IKeyPairWithAccountId, IStoredTransaction } from '../../main/shared/interfaces';
 
 import { CustomNetworkSettings, Network } from '../stores/storeNetwork';
 
@@ -81,7 +81,7 @@ export const execute = async (
   customNetworkSettings: CustomNetworkSettings | null,
 ) => {
   try {
-    return await window.electronAPI.utils.executeTransaction(
+    return await window.electronAPI.transactions.executeTransaction(
       JSON.stringify({ transactionBytes, network, customNetworkSettings }),
     );
   } catch (err: any) {
@@ -99,11 +99,31 @@ export const executeQuery = async (
   privateKey: string,
 ) => {
   try {
-    return await window.electronAPI.utils.executeQuery(
+    return await window.electronAPI.transactions.executeQuery(
       JSON.stringify({ queryBytes, network, customNetworkSettings, accountId, privateKey }),
     );
   } catch (err: any) {
     const message = err.message?.split(': Error: ')[1] || 'Query Execution Failed';
+    throw Error(message);
+  }
+};
+
+/* Saves transaction info */
+export const saveTransaction = async (email: string, transaction: IStoredTransaction) => {
+  try {
+    await window.electronAPI.transactions.saveTransaction(email, transaction);
+  } catch (err: any) {
+    const message = err.message?.split(': Error: ')[1] || 'Saving transaction Failed';
+    throw Error(message);
+  }
+};
+
+/* Returns saved transactions */
+export const getTransactions = async (email: string, serverUrl?: string) => {
+  try {
+    return await window.electronAPI.transactions.getTransactions(email, serverUrl);
+  } catch (err: any) {
+    const message = err.message?.split(': Error: ')[1] || 'Getting transactions Failed';
     throw Error(message);
   }
 };
