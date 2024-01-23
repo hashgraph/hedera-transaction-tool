@@ -122,11 +122,24 @@
 
 /* Tabs */
 .tabs {
-  .nav-link {
+  .tab-button {
     height: 52px;
     padding: 16px 12px;
     border-width: 0 0 2px 0;
     transition: none;
+    color: $dark-blue-500;
+
+    &.active {
+      color: $neutral-800;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $dark-blue-200;
+
+      &.active {
+        color: $white;
+      }
+    }
   }
 
   .notification {
@@ -262,6 +275,12 @@
 
 /* Recovery Phrase Word Readonly Input */
 .recovery-phrase-word {
+  color: $dark-blue-500;
+
+  @media (prefers-color-scheme: dark) {
+    color: $dark-blue-200 !important;
+  }
+
   &[withtoggler='true'] {
     input {
       padding-right: 30% !important;
@@ -287,6 +306,13 @@
       transform: translate(-50%, -50%);
     }
   }
+
+  input {
+    color: $dark-blue-500;
+    @media (prefers-color-scheme: dark) {
+      color: $dark-blue-200 !important;
+    }
+  }
 }
 
 /* Modal Overrides */
@@ -305,11 +331,11 @@
   --bs-modal-width: 75vw;
 
   @include media-breakpoint-up(xl) {
-    --bs-modal-width: 50vw;
+    --bs-modal-width: 60vw;
   }
 
   @include media-breakpoint-up(xxl) {
-    --bs-modal-width: 35vw;
+    --bs-modal-width: 50vw;
   }
 }
 

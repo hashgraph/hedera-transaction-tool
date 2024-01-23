@@ -2,6 +2,9 @@
 import { onBeforeMount, ref } from 'vue';
 
 import useUserStore from '../../stores/storeUser';
+import useKeyPairsStore from '../../stores/storeKeyPairs';
+
+import { useRouter } from 'vue-router';
 
 import AppButton from '../../components/ui/AppButton.vue';
 import AppStepper from '../../components/ui/AppStepper.vue';
@@ -13,8 +16,13 @@ import NewPassword from './components/NewPassword.vue';
 
 /* Stores */
 const user = useUserStore();
+const keyPairs = useKeyPairsStore();
+
+/* Composables */
+const router = useRouter();
 
 /* State */
+const keyPairsComponent = ref<typeof KeyPairs | null>(null);
 const step = ref({ previous: 'newPassword', current: 'newPassword' });
 const stepperItems = ref([
   { title: 'New Password', name: 'newPassword' },
@@ -38,6 +46,27 @@ const handleBack = () => {
   }
 };
 
+const handleNext = async () => {
+  if (isFaqShown.value) {
+    isFaqShown.value = false;
+  } else {
+    step.value.previous = step.value.current;
+    const currentIndex = stepperItems.value.findIndex(i => i.name === step.value.current);
+
+    if (currentIndex + 1 === stepperItems.value.length) {
+      await keyPairsComponent.value?.handleSaveKey();
+      user.data.password = '';
+
+      router.push({ name: 'settingsKeys' });
+    } else {
+      step.value.current =
+        currentIndex >= 0
+          ? (step.value.current = stepperItems.value[currentIndex + 1].name)
+          : stepperItems.value[0].name;
+    }
+  }
+};
+
 /* Hooks */
 onBeforeMount(() => {
   if (user.data.mode === 'personal') {
@@ -48,20 +77,12 @@ onBeforeMount(() => {
 });
 </script>
 <template>
-  <div class="recovery-phrase-page container-page p-8">
-    <template v-if="stepperItems[0].name != step.current || isFaqShown">
-      <AppButton
-        color="secondary"
-        class="px-5 position-absolute d-flex align-items-center rounded-4"
-        @click="handleBack"
-      >
-        <i class="bi bi-arrow-left-short text-headline lh-1"></i> Back</AppButton
-      >
-    </template>
-
+  <div class="my-0 mx-auto p-7">
     <Transition name="fade" mode="out-in">
       <template v-if="!isFaqShown">
-        <div>
+        <div
+          class="col-12 col-lg-10 col-xl-8 col-xxl-6 bg-modal-surface rounded-4 position-relative p-5 mx-auto"
+        >
           <template v-if="stepperItems.map(s => s.name).includes(step.current)">
             <div class="w-100 d-flex flex-column justify-content-center align-items-center gap-4">
               <div class="col-12 col-md-10 col-xxl-8">
@@ -96,32 +117,43 @@ onBeforeMount(() => {
 
             <!-- Step 2 -->
             <template v-else-if="step.current === 'recoveryPhrase'">
-              <GenerateOrImport
-                :handle-continue="
-                  () => {
-                    step.previous = step.current;
-                    step.current = 'keyPairs';
-                  }
-                "
-              />
+              <GenerateOrImport />
             </template>
 
             <!--Step 3 -->
             <template v-else-if="step.current === 'keyPairs'">
               <KeyPairs
+                ref="keyPairsComponent"
                 v-model:step="step"
                 :encrypt-password="
                   user.data.mode === 'organization' ? password : user.data.password
                 "
-                :handle-continue="
-                  () => {
-                    $router.push({ name: 'settingsKeys' });
-                    user.data.password = '';
-                  }
-                "
               />
             </template>
           </Transition>
+
+          <div class="mt-6 d-flex justify-content-between">
+            <div class="d-flex">
+              <AppButton
+                v-if="
+                  stepperItems[0].name != step.current ||
+                  (user.data.mode === 'organization' && stepperItems[1].name != step.current) ||
+                  isFaqShown
+                "
+                color="secondary"
+                class="d-flex align-items-center"
+                @click="handleBack"
+              >
+                <i class="bi bi-arrow-left-short text-headline lh-1"></i> Back</AppButton
+              >
+            </div>
+            <AppButton
+              v-if="keyPairs.recoveryPhraseWords.length > 0"
+              color="primary"
+              @click="handleNext"
+              >Next</AppButton
+            >
+          </div>
         </div>
       </template>
       <template v-else>

@@ -10,11 +10,6 @@ import AppTabs, { TabItem } from '../../../components/ui/AppTabs.vue';
 import Generate from './Generate.vue';
 import Import from './Import.vue';
 
-/* Props */
-const props = defineProps<{
-  handleContinue: () => void;
-}>();
-
 /* Stores */
 const keyPairsStore = useKeyPairsStore();
 const user = useUserStore();
@@ -34,8 +29,6 @@ const handleSaveWords = async (words: string[]) => {
     throw new Error('Invalid Recovery Phrase!');
   } else {
     keyPairsStore.setRecoveryPhrase(words);
-
-    props.handleContinue();
   }
 };
 
@@ -46,21 +39,19 @@ onBeforeMount(() => {
 });
 </script>
 <template>
-  <div class="d-flex flex-column justify-content-center align-items-center">
-    <div class="col-12 col-lg-10 col-xxl-8">
-      <AppTabs
-        :items="tabItems"
-        v-model:activeIndex="activeTabIndex"
-        class="mt-8 w-100"
-        nav-item-class="flex-1"
-        nav-item-button-class="justify-content-center"
-      ></AppTabs>
-      <template v-if="activeTabTitle === 'Create New'">
-        <Generate :handle-continue="handleSaveWords" />
-      </template>
-      <template v-else-if="activeTabTitle === 'Import Existing'">
-        <Import :handle-continue="handleSaveWords" :secret-hashes="user.data.secretHashes"
-      /></template>
-    </div>
+  <div>
+    <AppTabs
+      :items="tabItems"
+      v-model:activeIndex="activeTabIndex"
+      class="mt-8 w-100"
+      nav-item-class="flex-1"
+      nav-item-button-class="justify-content-center"
+    ></AppTabs>
+    <template v-if="activeTabTitle === 'Create New'">
+      <Generate :handle-continue="handleSaveWords" />
+    </template>
+    <template v-else-if="activeTabTitle === 'Import Existing'">
+      <Import :handle-continue="handleSaveWords" :secret-hashes="user.data.secretHashes"
+    /></template>
   </div>
 </template>

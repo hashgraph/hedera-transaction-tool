@@ -7,6 +7,14 @@
   background-color: var(--#{$prefix}card-primary-bg-color);
 }
 
+.bg-modal-surface {
+  background-color: #fff;
+
+  @media (prefers-color-scheme: dark) {
+    background-color: $dark-blue-950;
+  }
+}
+
 /* Borders */
 .border-main-gradient {
   border: 2px solid transparent;

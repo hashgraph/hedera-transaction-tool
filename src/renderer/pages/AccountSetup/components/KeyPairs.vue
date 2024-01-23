@@ -12,17 +12,14 @@ import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import {
   restorePrivateKey,
   hashRecoveryPhrase,
-  getStoredKeyPairs,
+  // getStoredKeyPairs,
 } from '../../../services/keyPairService';
 
-import AppButton from '../../../components/ui/AppButton.vue';
+// import AppButton from '../../../components/ui/AppButton.vue';
 // import AppSwitch from '../../../components/ui/AppSwitch.vue';
 
 /* Props */
-const props = defineProps<{
-  encryptPassword: string;
-  handleContinue: () => void;
-}>();
+const props = defineProps<{ encryptPassword: string }>();
 
 /* Stores */
 const keyPairsStore = useKeyPairsStore();
@@ -93,8 +90,6 @@ const handleSaveKey = async () => {
       toast.success('Key Pair saved successfully', {
         position: 'bottom-right',
       });
-
-      props.handleContinue();
     } catch (err: any) {
       let message = 'Failed to store key pair';
       if (err.message && typeof err.message === 'string') {
@@ -105,50 +100,50 @@ const handleSaveKey = async () => {
   }
 };
 
-const handleRestoreExisting = async () => {
-  try {
-    if (!user.data.isLoggedIn) {
-      throw Error('User not logged in!');
-    }
+// const handleRestoreExisting = async () => {
+//   try {
+//     if (!user.data.isLoggedIn) {
+//       throw Error('User not logged in!');
+//     }
 
-    const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
-    const keyPairsToRestore = (
-      await getStoredKeyPairs(
-        user.data.email,
-        user.data.activeServerURL || '',
-        user.data.activeUserId || '',
-      )
-    ).filter(kp => kp.privateKey === '');
+//     const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
+//     const keyPairsToRestore = (
+//       await getStoredKeyPairs(
+//         user.data.email,
+//         user.data.activeServerURL || '',
+//         user.data.activeUserId || '',
+//       )
+//     ).filter(kp => kp.privateKey === '');
 
-    await Promise.all(
-      keyPairsToRestore.map(async kp => {
-        const restoredPrivateKey = await restorePrivateKey(
-          keyPairsStore.recoveryPhraseWords,
-          '',
-          kp.index,
-          'ED25519',
-        );
+//     await Promise.all(
+//       keyPairsToRestore.map(async kp => {
+//         const restoredPrivateKey = await restorePrivateKey(
+//           keyPairsStore.recoveryPhraseWords,
+//           '',
+//           kp.index,
+//           'ED25519',
+//         );
 
-        if (kp.publicKey === restoredPrivateKey.publicKey.toStringRaw()) {
-          kp.privateKey = restoredPrivateKey.toStringRaw();
-          await keyPairsStore.storeKeyPair(props.encryptPassword, kp, secretHash);
-        }
-      }),
-    );
+//         if (kp.publicKey === restoredPrivateKey.publicKey.toStringRaw()) {
+//           kp.privateKey = restoredPrivateKey.toStringRaw();
+//           await keyPairsStore.storeKeyPair(props.encryptPassword, kp, secretHash);
+//         }
+//       }),
+//     );
 
-    toast.success('Successfully recovered private key/s without passphrase', {
-      position: 'bottom-right',
-    });
+//     toast.success('Successfully recovered private key/s without passphrase', {
+//       position: 'bottom-right',
+//     });
 
-    validateExistingKey();
-  } catch (err: any) {
-    let message = 'Failed to recover private key/s';
-    if (err.message && typeof err.message === 'string') {
-      message = err.message;
-    }
-    toast.error(message, { position: 'bottom-right' });
-  }
-};
+//     validateExistingKey();
+//   } catch (err: any) {
+//     let message = 'Failed to recover private key/s';
+//     if (err.message && typeof err.message === 'string') {
+//       message = err.message;
+//     }
+//     toast.error(message, { position: 'bottom-right' });
+//   }
+// };
 
 /* Hooks */
 onMounted(async () => {
@@ -158,32 +153,43 @@ onMounted(async () => {
 onUpdated(() => {
   createTooltips();
 });
+
+/* Expose */
+defineExpose({
+  handleSaveKey,
+});
 </script>
 <template>
-  <div class="mt-8 d-flex flex-column justify-content-center align-items-center gap-4">
-    <div class="col-12 col-md-10 col-xxl-8">
-      <div
-        class="mb-5 position-relative"
-        v-if="keyPairsStore.keyPairs.some(kp => kp.privateKey === '')"
+  <div class="mt-7">
+    <!-- <div
+      class="mb-5 position-relative"
+      v-if="keyPairsStore.keyPairs.some(kp => kp.privateKey === '')"
+    >
+      <AppButton color="primary" size="small" @click="handleRestoreExisting"
+        >Restore existing key pairs</AppButton
       >
-        <AppButton color="primary" size="small" @click="handleRestoreExisting"
-          >Restore existing key pairs</AppButton
-        >
-        <i
-          class="bi bi-info-circle ms-3"
-          data-bs-toggle="tooltip"
-          data-bs-title="Restore previously saved key pairs with empty passphrase (If you see it after click, you have keys with a passphrase)"
-          data-bs-placement="right"
-          data-bs-container="body"
-        ></i>
-      </div>
+      <i
+        class="bi bi-info-circle ms-3"
+        data-bs-toggle="tooltip"
+        data-bs-title="Restore previously saved key pairs with empty passphrase (If you see it after click, you have keys with a passphrase)"
+        data-bs-placement="right"
+        data-bs-container="body"
+      ></i>
+    </div> -->
+    <div class="form-group mt-5">
+      <label class="form-label">Nickname <span class="fw-normal">- Optional</span></label>
       <input
         v-model="nickname"
         type="text"
-        class="form-control rounded-4"
-        placeholder="Enter Nickname (optional)"
+        class="form-control is-fill"
+        placeholder="Enter Nickname"
       />
-      <!-- <AppSwitch
+    </div>
+    <div class="form-group w-25 mt-5">
+      <label class="form-label">Key Type</label>
+      <input type="text" class="form-control is-fill" value="ED25519" readonly />
+    </div>
+    <!-- <AppSwitch
         v-model:checked="advancedMode"
         size="md"
         name="advanced-mode"
@@ -227,37 +233,34 @@ onUpdated(() => {
         </div>
       </div> -->
 
-      <div class="form-group mt-5">
-        <label class="form-label">ED25519 Private Key</label>
-        <p class="text-break">{{ privateKey }}</p>
+    <div class="form-group mt-5">
+      <label class="form-label">ED25519 Private Key</label>
+      <p class="text-break text-secondary">{{ privateKey }}</p>
+    </div>
+    <div class="form-group mt-4">
+      <label class="form-label">ED25519 Public Key</label>
+      <p class="text-break text-secondary">{{ publicKey }}</p>
+    </div>
+    <hr class="my-6" />
+    <div class="alert alert-secondary d-flex align-items-start mb-0" role="alert">
+      <i class="bi bi-exclamation-triangle text-warning me-3"></i>
+
+      <div>
+        <p class="fw-semibold">Sharing Key Pair</p>
+        <p>Share this Key Pair from Settings > List of Keys.</p>
       </div>
-      <div class="form-group mt-4">
-        <label class="form-label">ED25519 Public Key</label>
-        <p class="text-break">{{ publicKey }}</p>
-      </div>
-      <!-- <p v-if="keyExists" class="mt-3 text-danger">This key is already restored.</p> -->
-      <div class="d-flex flex-column align-items-center gap-4 mt-8">
-        <!-- <AppButton
+    </div>
+
+    <!-- <p v-if="keyExists" class="mt-3 text-danger">This key is already restored.</p> -->
+    <!-- <div class="d-flex flex-column align-items-center gap-4 mt-8">
+      <AppButton
           :disabled="!privateKey || keyExists"
           color="secondary"
           size="large"
           class="rounded-4 col-12 col-lg-6"
           @click="handleSaveKey"
           >Save Key</AppButton
-        > -->
-        <AppButton
-          color="secondary"
-          size="large"
-          class="col-12 col-lg-6"
-          @click="
-            async () => {
-              await handleSaveKey();
-              handleContinue();
-            }
-          "
-          >Continue</AppButton
         >
-      </div>
-    </div>
+    </div> -->
   </div>
 </template>

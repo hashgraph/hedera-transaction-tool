@@ -4,7 +4,7 @@ import { computed, ref } from 'vue';
 import History from './components/History.vue';
 import AppTabs, { TabItem } from '../../components/ui/AppTabs.vue';
 import AppButton from '../../components/ui/AppButton.vue';
-import AppModal from '../../components/ui/AppModal.vue';
+import TransactionSelectionModal from './components/TransactionSelectionModal.vue';
 
 /* State */
 const tabItems = ref<TabItem[]>([
@@ -16,41 +16,10 @@ const tabItems = ref<TabItem[]>([
   { title: 'Drafts' },
 ]);
 const activeTabIndex = ref(4);
-
-const isTransactionTypeModalShown = ref(false);
+const isTransactionSelectionModalShown = ref(false);
 
 /* Computed */
 const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title);
-
-/* Misc */
-const transactionGroups = [
-  {
-    groupTitle: 'Account',
-    items: [
-      { label: 'Create Account', name: 'createAccount' },
-      { label: 'Update Account', name: 'updateAccount' },
-      { label: 'Delete Account', name: 'deleteAccount' },
-      { label: 'Account Info', name: 'accountInfo' },
-    ],
-  },
-  {
-    groupTitle: 'Hbar',
-    items: [
-      { label: 'Approve Allowance', name: 'approveHbarAllowance' },
-      { label: 'Transfer', name: 'transferHbar' },
-    ],
-  },
-  {
-    groupTitle: 'File management',
-    items: [
-      { label: 'Create File', name: 'createFile' },
-      { label: 'Update File', name: 'updateFile' },
-      { label: 'Read File', name: 'readFile' },
-      { label: 'Append to File', name: 'appendToFile' },
-      // { label: 'Delete File', name: 'deleteFile' },
-    ],
-  },
-];
 </script>
 
 <template>
@@ -60,7 +29,7 @@ const transactionGroups = [
       <AppButton
         color="primary"
         class="d-flex align-items-center"
-        @click="isTransactionTypeModalShown = true"
+        @click="isTransactionSelectionModalShown = true"
       >
         <span>Create</span> <i class="bi bi-plus text-subheader ms-2"></i
       ></AppButton>
@@ -75,36 +44,6 @@ const transactionGroups = [
       <template v-if="activeTabTitle === 'Drafts'"></template>
     </div>
 
-    <AppModal v-model:show="isTransactionTypeModalShown" class="transaction-type-selection-modal">
-      <div class="p-5">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isTransactionTypeModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
-          <h3 class="mt-5 text-display text-center text-bold mb-3">Select type of Transaction</h3>
-          <i
-            class="bi bi-arrow-left-right large-icon text-light-emphasis"
-            style="line-height: 16px"
-          ></i>
-        </div>
-        <div class="mt-5 row flex-wrap">
-          <template v-for="(group, _groupIndex) in transactionGroups" :key="_groupIndex">
-            <div class="mt-5 col-4">
-              <h3 class="text-title text-bold">{{ group.groupTitle }}</h3>
-              <RouterLink
-                :to="{ name: 'createTransaction', params: { type: item.name } }"
-                v-for="(item, index) in group.items"
-                :key="index"
-                class="link-primary text-main d-block mt-3"
-              >
-                {{ item.label }}
-              </RouterLink>
-            </div>
-          </template>
-        </div>
-      </div>
-    </AppModal>
+    <TransactionSelectionModal v-model:show="isTransactionSelectionModalShown" />
   </div>
 </template>
