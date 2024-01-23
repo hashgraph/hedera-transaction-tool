@@ -2,7 +2,7 @@
 import { onBeforeMount, reactive, ref } from 'vue';
 import { Status, Timestamp } from '@hashgraph/sdk';
 
-import { IStoredTransaction } from 'src/main/shared/interfaces';
+import { IStoredTransaction } from '../../../../main/shared/interfaces';
 
 import useUserStore from '../../../stores/storeUser';
 

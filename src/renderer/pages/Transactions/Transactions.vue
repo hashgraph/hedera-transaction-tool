@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue';
+import { computed, ref } from 'vue';
 
 import History from './components/History.vue';
 import AppTabs, { TabItem } from '../../components/ui/AppTabs.vue';
@@ -7,38 +7,15 @@ import AppButton from '../../components/ui/AppButton.vue';
 import AppModal from '../../components/ui/AppModal.vue';
 
 /* State */
-const transactions = reactive([
-  {
-    id: 1,
-    title: 'Update the keys for account 0.01234 because of new employee',
-    account: '0.0.1234(Bobs Account)',
-    type: 'send',
-    approvers: ['alice@acme.com', 'joe@acme.com'],
-  },
-  {
-    id: 2,
-    title: 'Update the keys for account 0.01234 because of new employee',
-    account: '0.0.1224(Bobs Account)',
-    type: 'receive',
-    approvers: ['alice@acme.com'],
-  },
-  {
-    id: 3,
-    title: 'Update the keys for account 0.01234 because of new employee',
-    account: '0.0.12224(Bobs Account)',
-    type: 'send',
-    approvers: ['alice@acme.com', 'joe@acme.com'],
-  },
-]);
 const tabItems = ref<TabItem[]>([
   { title: 'Ready for Review' },
-  { title: 'Ready to Sign', notifications: 3 },
+  { title: 'Ready to Sign' },
   { title: 'In Progress' },
   { title: 'Ready for Submission' },
   { title: 'History' },
   { title: 'Drafts' },
 ]);
-const activeTabIndex = ref(1);
+const activeTabIndex = ref(4);
 
 const isTransactionTypeModalShown = ref(false);
 
@@ -90,60 +67,14 @@ const transactionGroups = [
     </div>
     <div class="mt-4">
       <AppTabs :items="tabItems" v-model:active-index="activeTabIndex"></AppTabs>
-      <template v-if="activeTabTitle === 'Ready for Review'"> First Tab </template>
-      <template v-if="activeTabTitle === 'Ready to Sign'">
-        <div>
-          <div
-            v-for="(item, index) in transactions"
-            :key="index"
-            class="rounded bg-dark-blue-700 p-4 overflow-hidden"
-            :class="{ 'mt-4': index !== 0 }"
-          >
-            <div class="d-flex justify-content-between align-items-start">
-              <div>
-                <p class="text-main d-flex align-items-center">
-                  <i
-                    v-if="item.type === 'send'"
-                    class="bi bi-arrow-up-right me-3 text-info text-title fw-bolder"
-                  ></i>
-                  <i
-                    v-else-if="item.type === 'receive'"
-                    class="bi bi-arrow-down-left me-3 text-success text-title fw-bold"
-                  ></i>
-                  {{ item.title }}
-                </p>
-                <p class="text-micro mt-3">{{ item.account }}</p>
-              </div>
-              <div>
-                <div class="d-flex justify-content-end align-items-center">
-                  <AppButton color="primary" outline class="me-3">Details</AppButton>
-                  <AppButton color="secondary">Sign</AppButton>
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-4 d-inline-flex align-items-center">
-              <span class="text-micro me-4">Approvers</span>
-              <span
-                v-for="(approver, index) in item.approvers"
-                :key="index"
-                class="badge bg-dark-blue-700 text-body d-inline-flex align-items-center fw-normal"
-                :class="{ 'me-2': index !== item.approvers.length }"
-                ><i class="bi bi-check-lg text-success text-subheader lh-1 me-1"></i
-                >{{ approver }}</span
-              >
-            </div>
-          </div>
-        </div>
-      </template>
-      <template v-if="activeTabTitle === 'In Progress'"> Third Tab </template>
-
-      <template v-if="activeTabTitle === 'Ready for Submission'"> Fourth Tab </template>
-
+      <template v-if="activeTabTitle === 'Ready for Review'"></template>
+      <template v-if="activeTabTitle === 'Ready to Sign'"> </template>
+      <template v-if="activeTabTitle === 'In Progress'"></template>
+      <template v-if="activeTabTitle === 'Ready for Submission'"></template>
       <template v-if="activeTabTitle === 'History'"><History /></template>
-
-      <template v-if="activeTabTitle === 'Drafts'"> Sixth Tab </template>
+      <template v-if="activeTabTitle === 'Drafts'"></template>
     </div>
+
     <AppModal v-model:show="isTransactionTypeModalShown" class="transaction-type-selection-modal">
       <div class="p-5">
         <i
