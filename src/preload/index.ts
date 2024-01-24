@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 import { proto } from '@hashgraph/proto';
 
-import { IKeyPair, IOrganization, IStoredTransaction } from '../main/shared/interfaces';
+import { IKeyPair, IOrganization, ITransaction } from '../main/shared/interfaces';
 
 import { Theme } from '../main/modules/ipcHandlers/theme';
 import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
@@ -116,9 +116,9 @@ export const electronAPI = {
       transactionId: string;
     }> => ipcRenderer.invoke('transactions:executeTransaction', transactionData),
     executeQuery: (queryData: string) => ipcRenderer.invoke('transactions:executeQuery', queryData),
-    saveTransaction: (email: string, transaction: IStoredTransaction) =>
+    saveTransaction: (email: string, transaction: ITransaction) =>
       ipcRenderer.invoke('transactions:saveTransaction', email, transaction),
-    getTransactions: (email: string, serverUrl?: string) =>
+    getTransactions: (email: string, serverUrl?: string): Promise<ITransaction[]> =>
       ipcRenderer.invoke('transactions:getTransactions', email, serverUrl),
   },
 };
