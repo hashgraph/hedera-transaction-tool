@@ -2,7 +2,7 @@
 import { onBeforeMount, reactive, ref } from 'vue';
 import { Status } from '@hashgraph/sdk';
 
-import { IStoredTransaction } from '../../../../main/shared/interfaces';
+// import { IStoredTransaction } from '../../../../main/shared/interfaces';
 
 import useUserStore from '../../../stores/storeUser';
 
@@ -20,7 +20,7 @@ import AppButton from '../../../components/ui/AppButton.vue';
 const user = useUserStore();
 
 /* State */
-const transactions = ref<IStoredTransaction[]>([]);
+const transactions = ref<any[]>([]);
 const sort = reactive<{ field: string; direction: 'asc' | 'desc' }>({
   field: 'timestamp',
   direction: 'desc',
