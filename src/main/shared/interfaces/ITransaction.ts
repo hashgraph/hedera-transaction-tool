@@ -9,14 +9,14 @@ export interface ITransaction {
   transaction_hash: string;
   body: string;
   status: string;
-  status_code: string;
+  status_code: number;
   user_id: string;
   key_id: string;
   signature: string;
   valid_start: string;
-  executed_at: string;
-  created_at: string;
-  updated_at: string;
+  executed_at: number;
+  created_at: number;
+  updated_at: number;
   group_id?: string;
 }
 
