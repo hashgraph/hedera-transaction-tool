@@ -58,11 +58,15 @@
     "eslint-plugin-vue": "^9.20.1",
     "less": "^4.2.0",
     "prettier": "3.1.1",
+    "prisma": "^5.8.1",
     "sass": "^1.70.0",
     "typescript": "^5.3.3",
     "vite": "^5.0.11",
     "vite-plugin-eslint": "^1.8.1",
     "vue": "^3.4.15",
     "vue-tsc": "^1.8.27"
+  },
+  "prisma": {
+    "schema": "src/main/db/schema.prisma"
   }
 }
