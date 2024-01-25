@@ -9,6 +9,7 @@ import useUserStore from '../../../stores/storeUser';
 import { getTransactions } from '../../../services/transactionService';
 
 import AppButton from '../../../components/ui/AppButton.vue';
+import AppTable from '../../../components/ui/AppTable.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -185,5 +186,7 @@ onBeforeMount(async () => {
         </template>
       </tbody>
     </table>
+
+    <AppTable />
   </div>
 </template>

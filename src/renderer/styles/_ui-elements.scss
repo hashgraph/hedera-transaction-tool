@@ -474,6 +474,60 @@
 }
 
 /* Tables */
+// .table-custom {
+//   border: 0;
+//   width: 100%;
+
+//   tr {
+//     background-color: red;
+//     border-radius: 12px !important;
+//     margin: 8px 0;
+//   }
+
+//   td,
+//   th {
+//     padding: 12px;
+//   }
+// }
+
+.table-custom {
+  border-collapse: separate;
+  border-spacing: 0 10px;
+  width: 100%;
+
+  td,
+  th {
+    background: red;
+    padding: 12px 16px;
+
+    &:first-of-type {
+      border-top-left-radius: 10px;
+      border-bottom-left-radius: 10px;
+    }
+
+    &:last-of-type {
+      border-top-right-radius: 10px;
+      border-bottom-right-radius: 10px;
+    }
+
+    &.w-10 {
+      width: 10px;
+    }
+  }
+
+  th {
+    background-color: var(--#{$prefix}table-header-bg-color);
+    font-size: 12px;
+    font-weight: 400;
+  }
+
+  td {
+    background-color: var(--#{$prefix}card-primary-bg-color);
+    font-size: 14px;
+    padding: 16px;
+  }
+}
+
 .table-header-container {
   border-radius: 8px;
   background-color: var(--#{$prefix}table-header-bg-color);
