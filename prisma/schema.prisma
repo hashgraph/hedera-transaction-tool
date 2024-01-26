@@ -1,0 +1,34 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:"
+}
+
+model Migration {
+  id Int @id @default(autoincrement())
+  name String
+  created_at Int
+}
+
+model Transaction {
+  id          String    @id
+  name        String
+  type        String
+  description String
+  transaction_id String
+  transaction_hash String
+  body        String
+  status      String
+  status_code Int
+  user_id     String
+  key_id      String
+  signature   String
+  valid_start String
+  executed_at Int
+  created_at  Int
+  updated_at  Int
+  group_id    String?
+}
