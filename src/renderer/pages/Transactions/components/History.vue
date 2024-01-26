@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import { onBeforeMount, reactive, ref } from 'vue';
-import { Status, Timestamp } from '@hashgraph/sdk';
+import { Status } from '@hashgraph/sdk';
 
 import { IStoredTransaction } from '../../../../main/shared/interfaces';
 
 import useUserStore from '../../../stores/storeUser';
 
 import { getTransactions } from '../../../services/transactionService';
+
+import {
+  getTransactionDate,
+  getTransactionStatus,
+  getTransactionId,
+} from '../../../utils/transactions';
 
 import AppButton from '../../../components/ui/AppButton.vue';
 
@@ -169,22 +175,15 @@ onBeforeMount(async () => {
             <span
               class="badge bg-success text-break"
               :class="{ 'bg-danger': ![0, 22].includes(transaction.status) }"
-              >{{ Status._fromCode(transaction.status).toString().split('_').join(' ') }}</span
+              >{{ getTransactionStatus(transaction) }}</span
             >
           </td>
           <td>
-            <span class="text-secondary">{{ transaction.transactionId.split('@')[0] }}</span>
+            <span class="text-secondary">{{ getTransactionId(transaction) }}</span>
           </td>
           <td>
             <span class="text-secondary">
-              {{
-                new Timestamp(
-                  transaction.transactionId.split('@')[1].split('.')[0],
-                  transaction.transactionId.split('@')[1].split('.')[1],
-                )
-                  .toDate()
-                  .toDateString()
-              }}
+              {{ getTransactionDate(transaction) }}
             </span>
           </td>
           <td>
