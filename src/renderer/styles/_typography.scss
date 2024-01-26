@@ -44,6 +44,10 @@
   color: $white;
 }
 
+.text-pink {
+  color: $pink-400;
+}
+
 .text-secondary {
   color: var(--#{$prefix}text-secondary-color) !important;
 }
