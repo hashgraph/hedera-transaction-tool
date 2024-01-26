@@ -18,7 +18,7 @@ import {
 import { isEmail } from '../../../utils/validator';
 
 import AppButton from '../../../components/ui/AppButton.vue';
-import { getStoredKeysSecretHashes } from '@renderer/services/keyPairService';
+import { getSecretHashes } from '@renderer/services/keyPairService';
 
 /* Stores */
 const user = useUserStore();
@@ -68,15 +68,15 @@ const handleOnFormSubmit = async (event: Event) => {
       toast.error('Password too weak', { position: 'bottom-right' });
       return;
     }
-    await registerLocal(inputEmail.value, inputPassword.value);
-    user.login(inputEmail.value, []);
+    const userData = await registerLocal(inputEmail.value, inputPassword.value);
+    user.login(userData, []);
     user.data.password = inputPassword.value;
     router.push({ name: 'accountSetup' });
   } else if (!shouldRegister.value) {
     try {
-      await loginLocal(inputEmail.value, inputPassword.value, false);
-      const secretHashes = await getStoredKeysSecretHashes(inputEmail.value);
-      user.login(inputEmail.value, secretHashes);
+      const userData = await loginLocal(inputEmail.value, inputPassword.value, false);
+      const secretHashes = await getSecretHashes(userData.id);
+      user.login(userData, secretHashes);
 
       if (secretHashes.length === 0) {
         user.data.password = inputPassword.value;
