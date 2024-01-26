@@ -9,7 +9,6 @@ import useUserStore from '../../../stores/storeUser';
 import { getTransactions } from '../../../services/transactionService';
 
 import AppButton from '../../../components/ui/AppButton.vue';
-import AppTable from '../../../components/ui/AppTable.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -84,56 +83,63 @@ onBeforeMount(async () => {
   transactions.value = transactions.value.sort((t1, t2) => t2.timestamp - t1.timestamp);
 });
 </script>
+
 <template>
-  <div class="transactions-history-container">
-    <table class="user-select-none w-100">
-      <thead>
-        <tr class="d-flex align-items-center row table-header-container text-normal text-small">
-          <th class="col-1 text-start">#</th>
-          <th
-            class="col-4 col-xl-3 d-flex justify-content-start align-items-center"
+  <table class="table-custom">
+    <thead>
+      <tr>
+        <th class="w-10 text-end">#</th>
+        <th>
+          <div
+            class="table-sort-link"
             @click="handleSort('type', sort.field === 'type' ? getOpositeDirection() : 'asc')"
           >
             <span>Transaction Type</span>
             <i
               v-if="sort.field === 'type'"
-              class="bi text-title lh-1"
+              class="bi text-title"
               :class="{
                 'bi-arrow-down-short': sort.direction === 'desc',
                 'bi-arrow-up-short': sort.direction === 'asc',
               }"
             ></i>
-          </th>
-          <th
-            class="col-3 col-xl-2 d-flex justify-content-start align-items-center"
+          </div>
+        </th>
+        <th>
+          <div
+            class="table-sort-link"
             @click="handleSort('status', sort.field === 'status' ? getOpositeDirection() : 'asc')"
           >
             <span>Status</span>
             <i
               v-if="sort.field === 'status'"
-              class="bi text-title lh-1"
+              class="bi text-title"
               :class="{
                 'bi-arrow-down-short': sort.direction === 'desc',
                 'bi-arrow-up-short': sort.direction === 'asc',
               }"
             ></i>
-          </th>
-          <th
-            class="col-2 d-flex justify-content-start align-items-center"
+          </div>
+        </th>
+        <th>
+          <div
+            class="table-sort-link"
             @click="handleSort('payerId', sort.field === 'payerId' ? getOpositeDirection() : 'asc')"
           >
             <span>Payer ID</span>
             <i
               v-if="sort.field === 'payerId'"
-              class="bi text-title lh-1"
+              class="bi text-title"
               :class="{
                 'bi-arrow-down-short': sort.direction === 'desc',
                 'bi-arrow-up-short': sort.direction === 'asc',
               }"
             ></i>
-          </th>
-          <th
-            class="d-none d-xl-flex col-xl-2 justify-content-start align-items-center"
+          </div>
+        </th>
+        <th>
+          <div
+            class="table-sort-link"
             @click="
               handleSort('timestamp', sort.field === 'timestamp' ? getOpositeDirection() : 'asc')
             "
@@ -141,35 +147,36 @@ onBeforeMount(async () => {
             <span>Timestamp</span>
             <i
               v-if="sort.field === 'timestamp'"
-              class="bi text-title lh-1"
+              class="bi text-title"
               :class="{
                 'bi-arrow-down-short': sort.direction === 'desc',
                 'bi-arrow-up-short': sort.direction === 'asc',
               }"
             ></i>
-          </th>
-          <th class="col-2 text-center">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <template v-for="(transaction, i) in transactions" :key="i">
-          <tr
-            class="d-flex align-items-center row text-center text-small bg-dark-blue-700 rounded-4 py-4 my-3"
-          >
-            <td class="col-1 overflow-hidden text-start">{{ i + 1 }}</td>
-            <td class="col-4 col-xl-3 overflow-hidden text-start">{{ transaction.type }}</td>
-            <td class="col-3 col-xl-2 overflow-hidden text-start">
-              <span
-                class="badge bg-success text-break d-inline-block"
-                :class="{ 'bg-danger': ![0, 22].includes(transaction.status) }"
-                :style="{ whiteSpace: 'normal', maxHeight: 'none' }"
-                >{{ Status._fromCode(transaction.status).toString().split('_').join(' ') }}</span
-              >
-            </td>
-            <td class="col-2 overflow-hidden text-start">
-              {{ transaction.transactionId.split('@')[0] }}
-            </td>
-            <td class="d-none d-xl-block col-xl-2 overflow-hidden text-start">
+          </div>
+        </th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <template v-for="(transaction, i) in transactions" :key="i">
+        <tr>
+          <td>{{ i + 1 }}</td>
+          <td>
+            <span class="text-bold">{{ transaction.type }}</span>
+          </td>
+          <td>
+            <span
+              class="badge bg-success text-break"
+              :class="{ 'bg-danger': ![0, 22].includes(transaction.status) }"
+              >{{ Status._fromCode(transaction.status).toString().split('_').join(' ') }}</span
+            >
+          </td>
+          <td>
+            <span class="text-secondary">{{ transaction.transactionId.split('@')[0] }}</span>
+          </td>
+          <td>
+            <span class="text-secondary">
               {{
                 new Timestamp(
                   transaction.transactionId.split('@')[1].split('.')[0],
@@ -178,15 +185,13 @@ onBeforeMount(async () => {
                   .toDate()
                   .toDateString()
               }}
-            </td>
-            <td class="col-2 overflow-hidden text-center">
-              <AppButton color="primary">Details</AppButton>
-            </td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
-
-    <AppTable />
-  </div>
+            </span>
+          </td>
+          <td>
+            <AppButton color="primary">Details</AppButton>
+          </td>
+        </tr>
+      </template>
+    </tbody>
+  </table>
 </template>
