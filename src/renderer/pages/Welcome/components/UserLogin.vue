@@ -12,7 +12,7 @@ import {
   loginLocal,
   registerLocal,
   resetDataLocal,
-  hasRegisteredUsers,
+  getUsersCount,
 } from '../../../services/userService';
 
 import { isEmail } from '../../../utils/validator';
@@ -180,7 +180,8 @@ function setTooltipContent() {
 
 async function checkShouldRegister() {
   try {
-    shouldRegister.value = !(await hasRegisteredUsers());
+    const usersCount = await getUsersCount();
+    shouldRegister.value = usersCount === 0;
   } catch (error) {
     shouldRegister.value = true;
   }

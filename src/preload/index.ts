@@ -6,6 +6,7 @@ import { IKeyPair, IOrganization, ITransaction } from '../main/shared/interfaces
 
 import { Theme } from '../main/modules/ipcHandlers/theme';
 import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
+import { User } from '@prisma/client';
 
 export const electronAPI = {
   theme: {
@@ -94,18 +95,12 @@ export const electronAPI = {
       ipcRenderer.invoke('accounts:remove', email, accountId, nickname),
   },
   localUser: {
-    login: (email: string, password: string, autoRegister?: boolean): Promise<boolean> =>
+    login: (email: string, password: string, autoRegister?: boolean): Promise<User> =>
       ipcRenderer.invoke('localUser:login', email, password, autoRegister),
-    register: (email: string, password: string) =>
+    register: (email: string, password: string): Promise<User> =>
       ipcRenderer.invoke('localUser:register', email, password),
-    resetData: (options?: {
-      email: string;
-      authData?: boolean;
-      keys?: boolean;
-      transactions?: boolean;
-      organizations?: boolean;
-    }) => ipcRenderer.invoke('localUser:resetData', options),
-    hasRegisteredUsers: () => ipcRenderer.invoke('localUser:hasRegisteredUsers'),
+    resetData: () => ipcRenderer.invoke('localUser:resetData'),
+    usersCount: (): Promise<number> => ipcRenderer.invoke('localUser:usersCount'),
   },
   transactions: {
     executeTransaction: (
