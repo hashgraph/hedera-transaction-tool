@@ -38,6 +38,7 @@ const accounts = ref<
     nickname: string;
   }[]
 >([]);
+
 const hbarDollarAmount = computed(() => {
   if (!accountData.accountInfo.value) {
     return 0;
@@ -48,6 +49,7 @@ const hbarDollarAmount = computed(() => {
     accountData.accountInfo.value.balance.toBigNumber().toNumber(),
   );
 });
+
 const isKeyStructureModalShown = ref(false);
 const isUnlinkAccountModalShown = ref(false);
 
@@ -106,7 +108,43 @@ const handleUnlinkAccount = async () => {
 </script>
 <template>
   <div class="p-5">
-    <h1 class="text-title text-bold">Accounts</h1>
+    <div class="d-flex justify-content-between align-items-center">
+      <h1 class="text-title text-bold">Accounts</h1>
+      <div class="d-flex justify-content-end align-items-center">
+        <AppButton
+          v-if="!accountData.accountInfo.value?.deleted"
+          class="me-3"
+          color="secondary"
+          @click="isUnlinkAccountModalShown = true"
+          >Remove</AppButton
+        >
+        <AppButton
+          v-if="!accountData.accountInfo.value?.deleted"
+          class="me-3"
+          color="secondary"
+          @click="
+            $router.push({
+              name: 'createTransaction',
+              params: { type: 'deleteAccount' },
+              query: { accountId: accountData.accountIdFormatted.value },
+            })
+          "
+          >Delete</AppButton
+        >
+        <AppButton
+          v-if="!accountData.accountInfo.value?.deleted"
+          color="secondary"
+          @click="
+            $router.push({
+              name: 'createTransaction',
+              params: { type: 'updateAccount' },
+              query: { accountId: accountData.accountIdFormatted.value },
+            })
+          "
+          >Update</AppButton
+        >
+      </div>
+    </div>
     <div class="mt-7 h-100 row">
       <div class="col-4 col-xxl-3 border-end pe-4 ps-0">
         <div class="dropdown">
@@ -378,53 +416,6 @@ const handleUnlinkAccount = async () => {
               <hr class="my-4" />
               <p class="text-danger">Account is deleted</p>
             </template>
-            <div class="w-100 ms-0 mt-5 p-4 bg-dark-blue-700 position-relative bottom-0 row">
-              <div
-                v-if="!accountData.accountInfo.value?.deleted"
-                class="px-0 col-4 d-flex align-items-center justify-content-center"
-              >
-                <AppButton
-                  class="fw-light text-dark-emphasis"
-                  @click="
-                    $router.push({
-                      name: 'createTransaction',
-                      params: { type: 'updateAccount' },
-                      query: { accountId: accountData.accountIdFormatted.value },
-                    })
-                  "
-                  >Update Account</AppButton
-                >
-              </div>
-              <div
-                class="px-0 col-4 d-flex align-items-center justify-content-center"
-                :class="{
-                  'col-12': accountData.accountInfo.value?.deleted,
-                  'border-start border-end': !accountData.accountInfo.value?.deleted,
-                }"
-              >
-                <AppButton
-                  class="fw-light text-dark-emphasis"
-                  @click="isUnlinkAccountModalShown = true"
-                  >Unlink Account</AppButton
-                >
-              </div>
-              <div
-                v-if="!accountData.accountInfo.value?.deleted"
-                class="px-0 col-4 text-center d-flex align-items-center justify-content-center"
-              >
-                <AppButton
-                  class="fw-light text-dark-emphasis"
-                  @click="
-                    $router.push({
-                      name: 'createTransaction',
-                      params: { type: 'deleteAccount' },
-                      query: { accountId: accountData.accountIdFormatted.value },
-                    })
-                  "
-                  >Delete from network</AppButton
-                >
-              </div>
-            </div>
           </div>
         </Transition>
 
