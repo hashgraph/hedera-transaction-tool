@@ -128,9 +128,11 @@
     border-width: 0 0 2px 0;
     transition: none;
     color: $dark-blue-500;
+    border-radius: 0;
 
     &.active {
       color: $neutral-800;
+      border-radius: 0 !important;
     }
 
     @media (prefers-color-scheme: dark) {
