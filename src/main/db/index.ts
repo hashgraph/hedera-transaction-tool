@@ -61,6 +61,18 @@ export default async function initDatabase() {
   if (db.inTransaction) {
     await COMMIT.run();
   }
+
+  console.log('Database ready for usage');
+}
+
+export function getPrismaClient() {
+  return new PrismaClient({
+    datasources: {
+      db: {
+        url: `file:${dbPath}`,
+      },
+    },
+  });
 }
 
 async function getAvailableMigrations() {
@@ -112,16 +124,6 @@ async function getCurrentMigration() {
 
     return null;
   }
-}
-
-function getPrismaClient() {
-  return new PrismaClient({
-    datasources: {
-      db: {
-        url: `file:${dbPath}`,
-      },
-    },
-  });
 }
 
 function getTimestamp(migrationName: string) {
