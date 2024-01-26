@@ -9,27 +9,51 @@ datasource db {
 
 // DO NOT CHANGE MIGRATION MODULE!
 model Migration {
-  id Int @id @default(autoincrement())
-  name String
+  id         Int    @id @default(autoincrement())
+  name       String
   created_at Int
 }
 
-model Transaction {
-  id          String    @id
-  name        String
-  type        String
-  description String
-  transaction_id String
-  transaction_hash String
-  body        String
-  status      String
-  status_code Int
+model User {
+  id           String        @id
+  email        String        @unique
+  password     String
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+  user_keys    UserKey[]
+  transactions Transaction[]
+}
+
+model UserKey {
+  id          String        @id
   user_id     String
-  key_id      String
-  signature   String
-  valid_start String
-  executed_at Int
-  created_at  Int
-  updated_at  Int
-  group_id    String?
+  secret_hash String
+  index       Int
+  public_key  String
+  user        User          @relation(fields: [user_id], references: [id])
+  Transaction Transaction[]
+
+  @@index([user_id, secret_hash], name: "unique_user_key")
+}
+
+model Transaction {
+  id               String  @id
+  name             String
+  type             String
+  description      String
+  transaction_id   String
+  transaction_hash String
+  body             String
+  status           String
+  status_code      Int
+  user_id          String
+  key_id           String
+  signature        String
+  valid_start      String
+  executed_at      Int
+  created_at       Int
+  updated_at       Int
+  group_id         String?
+  user             User    @relation(fields: [user_id], references: [id])
+  key              UserKey @relation(fields: [key_id], references: [id])
 }
