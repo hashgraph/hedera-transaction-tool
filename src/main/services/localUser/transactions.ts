@@ -1,6 +1,8 @@
 import { Client, Query, Transaction } from '@hashgraph/sdk';
+import { Transaction as Tx } from '@prisma/client';
+import { getPrismaClient } from '../../db';
 
-// Deletes the file with stored transactions
+const prisma = getPrismaClient();
 
 // Executes a transaction
 export const executeTransaction = async (transactionData: string) => {
@@ -113,5 +115,30 @@ export const executeQuery = async (queryData: string) => {
 };
 
 // Stores a transaction
+export const storeTransaction = async (transaction: Tx) => {
+  try {
+    return await prisma.transaction.create({
+      data: {
+        ...transaction,
+        id: undefined,
+      },
+    });
+  } catch (error: any) {
+    console.log(error);
+    throw new Error(error.message || 'Failed to store transaction');
+  }
+};
 
 // Get stored transactions
+export const getTransactions = async (user_id: string) => {
+  try {
+    return await prisma.transaction.findMany({
+      where: {
+        user_id: user_id,
+      },
+    });
+  } catch (error: any) {
+    console.log(error);
+    throw new Error(error.message || 'Failed to fetch transactions');
+  }
+};

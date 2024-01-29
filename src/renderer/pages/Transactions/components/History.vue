@@ -84,7 +84,7 @@ const getOpositeDirection = () => (sort.direction === 'asc' ? 'desc' : 'asc');
 
 /* Hooks */
 onBeforeMount(async () => {
-  transactions.value = await getTransactions(user.data.email, user.data.activeServerURL);
+  transactions.value = await getTransactions(user.data.id);
   handleSort('timestamp', 'desc');
   transactions.value = transactions.value.sort((t1, t2) => t2.timestamp - t1.timestamp);
 });

@@ -7,7 +7,7 @@ import {
   TransactionId,
 } from '@hashgraph/sdk';
 
-import { KeyPair } from '@prisma/client';
+import { KeyPair, Transaction as Tx } from '@prisma/client';
 
 import { CustomNetworkSettings, Network } from '../stores/storeNetwork';
 
@@ -109,10 +109,9 @@ export const executeQuery = async (
 };
 
 /* Saves transaction info */
-export const saveTransaction = async (email: string, transaction: any) => {
+export const storeTransaction = async (transaction: Tx) => {
   try {
-    return;
-    await window.electronAPI.transactions.saveTransaction(email, transaction);
+    return await window.electronAPI.transactions.storeTransaction(transaction);
   } catch (err: any) {
     const message = err.message?.split(': Error: ')[1] || 'Saving transaction Failed';
     throw Error(message);
@@ -120,10 +119,9 @@ export const saveTransaction = async (email: string, transaction: any) => {
 };
 
 /* Returns saved transactions */
-export const getTransactions = async (email: string, serverUrl?: string) => {
+export const getTransactions = async (user_id: string) => {
   try {
-    return [];
-    return await window.electronAPI.transactions.getTransactions(email, serverUrl);
+    return await window.electronAPI.transactions.getTransactions(user_id);
   } catch (err: any) {
     const message = err.message?.split(': Error: ')[1] || 'Getting transactions Failed';
     throw Error(message);

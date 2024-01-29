@@ -1,12 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import { KeyPair, Transaction, User } from '@prisma/client';
 
 import { proto } from '@hashgraph/proto';
 
-import { IOrganization, ITransaction } from '../main/shared/interfaces';
+import { IOrganization } from '../main/shared/interfaces';
 
 import { Theme } from '../main/modules/ipcHandlers/theme';
 import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
-import { KeyPair, User } from '@prisma/client';
 
 export const electronAPI = {
   theme: {
@@ -87,10 +87,10 @@ export const electronAPI = {
       transactionId: string;
     }> => ipcRenderer.invoke('transactions:executeTransaction', transactionData),
     executeQuery: (queryData: string) => ipcRenderer.invoke('transactions:executeQuery', queryData),
-    saveTransaction: (email: string, transaction: ITransaction) =>
-      ipcRenderer.invoke('transactions:saveTransaction', email, transaction),
-    getTransactions: (email: string, serverUrl?: string): Promise<ITransaction[]> =>
-      ipcRenderer.invoke('transactions:getTransactions', email, serverUrl),
+    storeTransaction: (transaction: Transaction): Promise<Transaction[]> =>
+      ipcRenderer.invoke('transactions:storeTransaction', transaction),
+    getTransactions: (user_id: string): Promise<Transaction[]> =>
+      ipcRenderer.invoke('transactions:getTransactions', user_id),
   },
 };
 typeof electronAPI;
