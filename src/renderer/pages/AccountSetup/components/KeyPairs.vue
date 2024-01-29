@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { onMounted, onUpdated, ref } from 'vue';
 
-import { IKeyPair } from '../../../../main/shared/interfaces';
+import { KeyPair } from '@prisma/client';
 
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
 import useUserStore from '../../../stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
-import useCreateTooltips from '@renderer/composables/useCreateTooltips';
+import useCreateTooltips from '../../../composables/useCreateTooltips';
 
 import {
   restorePrivateKey,
@@ -43,7 +43,9 @@ const keyExists = ref(false);
 
 /* Misc Functions */
 const validateExistingKey = () => {
-  if (keyPairsStore.keyPairs.some(kp => kp.publicKey === publicKey.value && kp.privateKey !== '')) {
+  if (
+    keyPairsStore.keyPairs.some(kp => kp.public_key === publicKey.value && kp.private_key !== '')
+  ) {
     keyExists.value = true;
   } else {
     keyExists.value = false;
@@ -71,20 +73,21 @@ const handleRestoreKey = async () => {
 
 const handleSaveKey = async () => {
   if (privateKey.value) {
-    const keyPair: IKeyPair = {
-      index: index.value,
-      privateKey: privateKey.value,
-      publicKey: publicKey.value,
-    };
-
-    if (nickname.value) {
-      keyPair.nickname = nickname.value;
-    }
-
     try {
       const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
 
-      await keyPairsStore.storeKeyPair(props.encryptPassword, keyPair, secretHash);
+      const keyPair: KeyPair = {
+        id: '',
+        user_id: user.data.id,
+        index: index.value,
+        public_key: publicKey.value,
+        private_key: privateKey.value,
+        organization_id: null,
+        secret_hash: secretHash,
+        nickname: nickname.value || null,
+      };
+
+      await keyPairsStore.storeKeyPair(keyPair, props.encryptPassword);
       user.data.secretHashes = [...user.data.secretHashes, secretHash];
 
       toast.success('Key Pair saved successfully', {

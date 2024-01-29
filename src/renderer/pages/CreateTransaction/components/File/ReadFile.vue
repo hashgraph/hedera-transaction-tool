@@ -42,8 +42,9 @@ const handleRead = async e => {
   try {
     isLoading.value = true;
 
-    const publicKey = keyPairsStore.keyPairs.find(kp => kp.accountId === payerData.accountId.value)
-      ?.publicKey;
+    const publicKey = keyPairsStore.accoundIds.find(acc =>
+      acc.accountIds.includes(payerData.accountId.value),
+    )?.publicKey;
 
     const privateKey = await decryptPrivateKey(user.data.id, userPassword.value, publicKey || '');
 
@@ -109,11 +110,11 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
         >
           <option value="">Select Payer ID</option>
           <option
-            v-for="kp in keyPairsStore.keyPairs.filter(kp => kp.accountId)"
-            :key="kp.accountId"
-            :value="kp.accountId"
+            v-for="(kp, i) in keyPairsStore.accoundIds.map(account => account.accountIds).flat()"
+            :key="i"
+            :value="kp"
           >
-            {{ kp.accountId }}
+            {{ kp }}
           </option>
         </select>
       </div>

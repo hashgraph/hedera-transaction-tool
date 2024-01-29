@@ -6,7 +6,7 @@ import useUserStore from '../../../stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 
-import { deleteEncryptedPrivateKeys } from '../../../services/keyPairService';
+// import { deleteEncryptedPrivateKeys } from '../../../services/keyPairService';
 
 import AppButton from '../../../components/ui/AppButton.vue';
 
@@ -49,11 +49,9 @@ const handleFormSubmit = async (event: Event) => {
       isLoading.value = true;
 
       //SEND PASSWORD RESET REQUEST
-      await deleteEncryptedPrivateKeys(
-        user.data.email,
-        user.data.activeServerURL,
-        user.data.activeUserId,
-      );
+      // await deleteEncryptedPrivateKeys(
+      //   user.data.id,
+      // );
       await keyPairsStore.refetch();
       props.handleContinue(inputNewPassword.value);
 

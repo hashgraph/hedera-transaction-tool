@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { onUnmounted, ref, watch } from 'vue';
 import { Mnemonic } from '@hashgraph/sdk';
-
-import { IKeyPair } from '../../../main/shared/interfaces';
+import { KeyPair } from '@prisma/client';
 
 import useKeyPairsStore from '../../stores/storeKeyPairs';
 import useUserStore from '../../stores/storeUser';
@@ -72,7 +71,7 @@ const handleRestoreKey = async e => {
 
     if (
       keyPairsStore.keyPairs.some(
-        kp => kp.publicKey === privateKey.publicKey.toStringRaw() && kp.privateKey !== '',
+        kp => kp.public_key === privateKey.publicKey.toStringRaw() && kp.public_key !== '',
       )
     ) {
       inputIndexInvalid.value = true;
@@ -99,19 +98,19 @@ const handleSaveKey = async e => {
   e.preventDefault();
 
   if (restoredKey.value) {
-    const keyPair: IKeyPair = {
-      index: index.value,
-      privateKey: restoredKey.value.privateKey,
-      publicKey: restoredKey.value.publicKey,
-    };
-
-    if (nickname.value) {
-      keyPair.nickname = nickname.value;
-    }
-
     try {
       const secretHash = await keyPairService.hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
-      await keyPairsStore.storeKeyPair(password.value, keyPair, secretHash);
+      const keyPair: KeyPair = {
+        id: '',
+        user_id: user.data.id,
+        index: index.value,
+        private_key: restoredKey.value.privateKey,
+        public_key: restoredKey.value.publicKey,
+        organization_id: null,
+        secret_hash: secretHash,
+        nickname: nickname.value || null,
+      };
+      await keyPairsStore.storeKeyPair(keyPair, password.value);
 
       keyPairsStore.clearRecoveryPhrase();
 

@@ -1,7 +1,6 @@
 import { Key, KeyList, Mnemonic, PrivateKey, PublicKey } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
-import { IKeyPair } from '../../main/shared/interfaces';
 import { KeyPair } from '@prisma/client';
 
 /* Key Pairs Service */
@@ -160,14 +159,19 @@ export const generateECDSAKeyPairFromString = (
   ecdsaPrivateKey: string,
   nickname: string,
   index?: number,
-): IKeyPair => {
+): {
+  index: number;
+  public_key: string;
+  private_key: string;
+  nickname: string | null;
+} => {
   try {
     const privateKey = PrivateKey.fromStringECDSA(ecdsaPrivateKey);
 
     return {
       nickname,
-      privateKey: privateKey.toStringRaw(),
-      publicKey: privateKey.publicKey.toStringRaw(),
+      private_key: privateKey.toStringRaw(),
+      public_key: privateKey.publicKey.toStringRaw(),
       index: index || -1,
     };
   } catch (error) {

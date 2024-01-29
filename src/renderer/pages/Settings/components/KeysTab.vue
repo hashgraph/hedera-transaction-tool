@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch } from 'vue';
 import { PublicKey } from '@hashgraph/sdk';
+import { KeyPair } from '@prisma/client';
 
 import useUserStore from '../../../stores/storeUser';
 import useKeyPairsStore from '../../../stores/storeKeyPairs';
@@ -47,7 +48,7 @@ const handleDecrypt = async e => {
     }
 
     decryptedKey.value = await decryptPrivateKey(
-      user.data.email,
+      user.data.id,
       userPassword.value,
       publicKeysPrivateKeyToDecrypt.value,
     );
@@ -60,10 +61,14 @@ const handleImportExternalKey = async e => {
   e.preventDefault();
 
   try {
-    await keyPairsStore.storeKeyPair(
-      userPassword.value,
-      generateECDSAKeyPairFromString(ecdsaKey.privateKey || '', ecdsaKey.nickname || ''),
-    );
+    const keyPair: KeyPair = {
+      id: '',
+      user_id: user.data.id,
+      ...generateECDSAKeyPairFromString(ecdsaKey.privateKey || '', ecdsaKey.nickname || ''),
+      organization_id: null,
+      secret_hash: null,
+    };
+    await keyPairsStore.storeKeyPair(keyPair, userPassword.value);
 
     isImportECDSAKeyModalShown.value = false;
 
@@ -99,7 +104,7 @@ watch(isDecryptedModalShown, newVal => {
     </div>
     <div
       v-for="keyPair in keyPairsStore.keyPairs"
-      :key="keyPair.publicKey"
+      :key="keyPair.public_key"
       class="rounded bg-dark-blue-700 p-4 mt-4"
     >
       <div class="d-flex justify-content-between align-items-center">
@@ -114,26 +119,41 @@ watch(isDecryptedModalShown, newVal => {
             Nickname: {{ keyPair.nickname }}
           </p>
         </div>
-        <AppButton size="small" color="primary" @click="handleShowDecryptModal(keyPair.publicKey)"
+        <AppButton size="small" color="primary" @click="handleShowDecryptModal(keyPair.public_key)"
           >Decrypt Private Key</AppButton
         >
       </div>
       <div class="form-group">
         <label class="form-label">Encrypted Private key</label>
-        <input type="text" readonly class="form-control py-3" :value="keyPair.privateKey" />
+        <input type="text" readonly class="form-control py-3" :value="keyPair.private_key" />
       </div>
       <div class="form-group mt-3">
         <label class="form-label"
           >{{
-            PublicKey.fromString(keyPair.publicKey)._key._type === 'secp256k1' ? 'ECDSA' : 'ED25519'
+            PublicKey.fromString(keyPair.public_key)._key._type === 'secp256k1'
+              ? 'ECDSA'
+              : 'ED25519'
           }}
           Public key</label
         >
-        <input type="text" readonly class="form-control py-3" :value="keyPair.publicKey" />
+        <input type="text" readonly class="form-control py-3" :value="keyPair.public_key" />
       </div>
-      <div v-show="keyPair.accountId" class="form-group mt-3">
+      <div
+        v-show="
+          keyPairsStore.accoundIds.find(acc => acc.publicKey === keyPair.public_key)?.accountIds[0]
+        "
+        class="form-group mt-3"
+      >
         <label class="form-label">Account ID</label>
-        <input type="text" readonly class="form-control py-3" :value="keyPair.accountId" />
+        <input
+          type="text"
+          readonly
+          class="form-control py-3"
+          :value="
+            keyPairsStore.accoundIds.find(acc => acc.publicKey === keyPair.public_key)
+              ?.accountIds[0]
+          "
+        />
       </div>
     </div>
     <AppModal v-model:show="isDecryptedModalShown" class="common-modal">

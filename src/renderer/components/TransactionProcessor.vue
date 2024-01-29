@@ -85,7 +85,7 @@ const localPublicKeysReq = computed(() =>
   requiredSignatures.value.filter(pk => keyPairs.publicKeys.includes(pk)),
 );
 const requiredLocalKeyPairs = computed(() =>
-  keyPairs.keyPairs.filter(kp => localPublicKeysReq.value.includes(kp.publicKey)),
+  keyPairs.keyPairs.filter(kp => localPublicKeysReq.value.includes(kp.public_key)),
 );
 const type = computed(
   () =>

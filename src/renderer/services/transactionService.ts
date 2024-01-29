@@ -7,7 +7,7 @@ import {
   TransactionId,
 } from '@hashgraph/sdk';
 
-import { IKeyPairWithAccountId } from '../../main/shared/interfaces';
+import { KeyPair } from '@prisma/client';
 
 import { CustomNetworkSettings, Network } from '../stores/storeNetwork';
 
@@ -37,7 +37,7 @@ export const createTransactionId = (
 
 /* Collects and adds the signatures for the provided key pairs */
 export const getTransactionSignatures = async (
-  keyPairs: IKeyPairWithAccountId[],
+  keyPairs: KeyPair[],
   transaction: Transaction,
   addToTransaction: boolean,
   userId: string,
@@ -49,9 +49,9 @@ export const getTransactionSignatures = async (
   try {
     await Promise.all(
       keyPairs.map(async keyPair => {
-        const privateKeyString = await decryptPrivateKey(userId, password, keyPair.publicKey);
+        const privateKeyString = await decryptPrivateKey(userId, password, keyPair.public_key);
 
-        const keyType = PublicKey.fromString(keyPair.publicKey);
+        const keyType = PublicKey.fromString(keyPair.public_key);
 
         const privateKey =
           keyType._key._type === 'secp256k1'
@@ -59,9 +59,9 @@ export const getTransactionSignatures = async (
             : PrivateKey.fromStringED25519(privateKeyString);
         const signature = privateKey.signTransaction(transaction);
 
-        if (!publicKeys.includes(keyPair.publicKey)) {
-          signatures.push({ publicKey: PublicKey.fromString(keyPair.publicKey), signature });
-          publicKeys.push(keyPair.publicKey);
+        if (!publicKeys.includes(keyPair.public_key)) {
+          signatures.push({ publicKey: PublicKey.fromString(keyPair.public_key), signature });
+          publicKeys.push(keyPair.public_key);
         }
       }),
     );

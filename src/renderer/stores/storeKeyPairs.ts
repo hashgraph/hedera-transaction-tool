@@ -1,12 +1,13 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { defineStore } from 'pinia';
 
+import { KeyPair } from '@prisma/client';
+
 import useNetworkStore from './storeNetwork';
 import useUserStore from './storeUser';
 
 import * as keyPairService from '../services/keyPairService';
 import * as mirrorNodeDataService from '../services/mirrorNodeDataService';
-import { KeyPair } from '@prisma/client';
 
 const useKeyPairsStore = defineStore('keyPairs', () => {
   /* Stores */
@@ -34,11 +35,18 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
 
       const publicKeyPair = accoundIds.find(acc => acc.publicKey === keyPair.public_key);
 
+      const accounts = await mirrorNodeDataService.getAccountId(
+        networkStore.mirrorNodeBaseURL,
+        keyPair.public_key,
+      );
+
       if (publicKeyPair) {
-        publicKeyPair.accountIds = await mirrorNodeDataService.getAccountId(
-          networkStore.mirrorNodeBaseURL,
-          keyPair.public_key,
-        );
+        publicKeyPair.accountIds = accounts;
+      } else {
+        accoundIds.push({
+          publicKey: keyPair.public_key,
+          accountIds: accounts,
+        });
       }
     }
   }
