@@ -3,79 +3,59 @@ import {
   storeKeyPair,
   deleteSecretHashes,
   changeDecryptionPassword,
-  getStoredKeyPairs,
-  getStoredKeysSecretHashes,
   decryptPrivateKey,
   deleteEncryptedPrivateKeys,
+  getKeyPairs,
+  getSecretHashes,
 } from '../../../services/localUser';
-import { IKeyPair } from '../../../shared/interfaces';
+import { KeyPair } from '@prisma/client';
 
 const createChannelName = (...props) => ['keyPairs', ...props].join(':');
 
 export default () => {
   // Store key pair
-  ipcMain.handle(
-    createChannelName('store'),
-    async (
-      _e,
-      email: string,
-      password: string,
-      keyPair: IKeyPair,
-      secretHash?: string,
-      serverUrl?: string,
-      userId?: string,
-    ) => {
-      await storeKeyPair(email, password, keyPair, secretHash, serverUrl, userId);
-    },
+  ipcMain.handle(createChannelName('store'), async (_e, keyPair: KeyPair, password: string) =>
+    storeKeyPair(keyPair, password),
   );
 
   // Change Decryption Password
   ipcMain.handle(
     createChannelName('changeDecryptionPassword'),
-    (_e, email: string, oldPassword: string, newPassword: string) =>
-      changeDecryptionPassword(email, oldPassword, newPassword),
+    (_e, userId: string, oldPassword: string, newPassword: string) =>
+      changeDecryptionPassword(userId, oldPassword, newPassword),
   );
 
   // Decrypted private key
   ipcMain.handle(
     createChannelName('decryptPrivateKey'),
-    async (_e, email: string, password: string, publicKey: string) =>
-      decryptPrivateKey(email, password, publicKey),
+    async (_e, userId: string, password: string, publicKey: string) =>
+      decryptPrivateKey(userId, password, publicKey),
   );
 
   // Get stored stored key pairs
-  ipcMain.handle(
-    createChannelName('getStored'),
-    async (
-      _e,
-      email: string,
-      serverUrl?: string,
-      userId?: string,
-      secretHash?: string,
-      secretHashName?: string,
-    ) => getStoredKeyPairs(email, serverUrl, userId, secretHash, secretHashName),
+  ipcMain.handle(createChannelName('getAll'), async (_e, userId: string, organizationId?: string) =>
+    getKeyPairs(userId, organizationId),
   );
 
   // Get stored keys' secret hashes
   ipcMain.handle(
-    createChannelName('getStoredKeysSecretHashes'),
-    async (_e, email: string, serverUrl?: string, userId?: string) =>
-      getStoredKeysSecretHashes(email, serverUrl, userId),
+    createChannelName('getSecretHashes'),
+    async (_e, userId: string, organizationId?: string) => getSecretHashes(userId, organizationId),
   );
 
   // Delete encrypted private keys
   ipcMain.handle(
     createChannelName('deleteEncryptedPrivateKeys'),
-    async (_e, email: string, serverUrl: string, userId: string) =>
-      deleteEncryptedPrivateKeys(email, serverUrl, userId),
+    async (_e, userId: string, organizationId: string) =>
+      deleteEncryptedPrivateKeys(userId, organizationId),
   );
 
   // Clear keys file
   ipcMain.handle(
     createChannelName('clear'),
-    async (_e, email: string, serverUrl?: string, userId?: string) => {
+    async (_e, userId: string, organizationId?: string) => {
       try {
-        await deleteSecretHashes(email, serverUrl, userId);
+        await deleteSecretHashes(userId, organizationId);
         return true;
       } catch {
         return false;

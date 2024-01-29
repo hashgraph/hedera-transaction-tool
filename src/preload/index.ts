@@ -2,11 +2,11 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 import { proto } from '@hashgraph/proto';
 
-import { IKeyPair, IOrganization, ITransaction } from '../main/shared/interfaces';
+import { IOrganization, ITransaction } from '../main/shared/interfaces';
 
 import { Theme } from '../main/modules/ipcHandlers/theme';
 import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
-import { User } from '@prisma/client';
+import { KeyPair, User } from '@prisma/client';
 
 export const electronAPI = {
   theme: {
@@ -29,48 +29,24 @@ export const electronAPI = {
     },
   },
   keyPairs: {
-    getStored: (
-      email: string,
-      serverUrl?: string,
-      userId?: string,
-      secretHash?: string,
-      secretHashName?: string,
-    ): Promise<IKeyPair[]> =>
-      ipcRenderer.invoke(
-        'keyPairs:getStored',
-        email,
-        serverUrl,
-        userId,
-        secretHash,
-        secretHashName,
-      ),
-    getStoredKeysSecretHashes: (
-      email: string,
-      serverUrl?: string,
-      userId?: string,
-    ): Promise<string[]> =>
-      ipcRenderer.invoke('keyPairs:getStoredKeysSecretHashes', email, serverUrl, userId),
-    store: (
-      email: string,
-      password: string,
-      keyPair: IKeyPair,
-      secretHash?: string,
-      serverUrl?: string,
-      userId?: string,
-    ): Promise<void> =>
-      ipcRenderer.invoke('keyPairs:store', email, password, keyPair, secretHash, serverUrl, userId),
+    getAll: (userId: string, organizationId?: string): Promise<KeyPair[]> =>
+      ipcRenderer.invoke('keyPairs:getAll', userId, organizationId),
+    getSecretHashes: (userId: string, organizationId?: string): Promise<string[]> =>
+      ipcRenderer.invoke('keyPairs:getSecretHashes', userId, organizationId),
+    store: (keyPair: KeyPair, password: string): Promise<void> =>
+      ipcRenderer.invoke('keyPairs:store', keyPair, password),
     changeDecryptionPassword: (
-      email: string,
+      userId: string,
       oldPassword: string,
       newPassword: string,
-    ): Promise<IKeyPair[]> =>
-      ipcRenderer.invoke('keyPairs:changeDecryptionPassword', email, oldPassword, newPassword),
-    decryptPrivateKey: (email: string, password: string, publicKey: string): Promise<string> =>
-      ipcRenderer.invoke('keyPairs:decryptPrivateKey', email, password, publicKey),
-    deleteEncryptedPrivateKeys: (email: string, serverUrl: string, userId: string): Promise<void> =>
-      ipcRenderer.invoke('keyPairs:deleteEncryptedPrivateKeys', email, serverUrl, userId),
-    clear: (email: string, serverUrl?: string, userId?: string): Promise<boolean> =>
-      ipcRenderer.invoke('keyPairs:clear', email, serverUrl, userId),
+    ): Promise<KeyPair[]> =>
+      ipcRenderer.invoke('keyPairs:changeDecryptionPassword', userId, oldPassword, newPassword),
+    decryptPrivateKey: (userId: string, password: string, publicKey: string): Promise<string> =>
+      ipcRenderer.invoke('keyPairs:decryptPrivateKey', userId, password, publicKey),
+    deleteEncryptedPrivateKeys: (userId: string, organizationId: string): Promise<void> =>
+      ipcRenderer.invoke('keyPairs:deleteEncryptedPrivateKeys', userId, organizationId),
+    clear: (userId: string, organizationId?: string): Promise<boolean> =>
+      ipcRenderer.invoke('keyPairs:clear', userId, organizationId),
   },
   utils: {
     openExternal: (url: string) => ipcRenderer.send('utils:openExternal', url),
