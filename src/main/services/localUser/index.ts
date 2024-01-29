@@ -11,6 +11,8 @@ export const getUserStorageFolderPath = (email: string) => `User Storage/${email
 export const resetData = async () => {
   const prisma = getPrismaClient();
 
+  await prisma.hederaAccount.deleteMany();
+  await prisma.organization.deleteMany();
   await prisma.transaction.deleteMany();
   await prisma.keyPair.deleteMany();
   await prisma.user.deleteMany();
