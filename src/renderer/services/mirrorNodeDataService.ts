@@ -17,9 +17,7 @@ import {
 export const getAccountId = async (mirrorNodeURL: string, publicKey: string) => {
   try {
     const { data } = await axios.get(`${mirrorNodeURL}/accounts/?account.publickey=${publicKey}`);
-    if (data.accounts.length > 0) {
-      return data.accounts[0].account;
-    }
+    return data.accounts.map(acc => acc.account);
   } catch (error) {
     console.log(error);
   }
