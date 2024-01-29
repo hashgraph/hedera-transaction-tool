@@ -537,27 +537,28 @@ defineExpose({
       :close-on-escape="false"
     >
       <div class="p-5">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isSignModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
-          <i class="bi bi-shield-lock large-icon" style="line-height: 16px"></i>
+        <div>
+          <i class="bi bi-x-lg cursor-pointer" @click="isSignModalShown = false"></i>
+        </div>
+        <div class="text-center mt-5">
+          <i class="bi bi-shield-lock large-icon"></i>
         </div>
         <form @submit="handleSignTransaction">
-          <h3 class="mt-5 text-main text-center text-bold">Enter your password</h3>
-          <div class="mt-4 form-group">
-            <input v-model="userPassword" type="password" class="form-control is-fill" />
+          <h3 class="text-center text-title text-bold mt-5">Enter your password</h3>
+          <div class="form-group mt-4">
+            <input
+              v-model="userPassword"
+              type="password"
+              class="form-control form-control-sm is-fill"
+            />
           </div>
-          <div class="mt-4">
-            <div v-if="chunksAmount">Estimated chunks: {{ chunksAmount }}</div>
+          <div class="d-grid mt-4">
+            <p v-if="chunksAmount">Estimated chunks: {{ chunksAmount }}</p>
             <AppButton
               color="primary"
-              size="large"
               :loading="isSigning"
               :disabled="userPassword.length === 0 || isSigning"
-              class="mt-1 w-100"
+              class="mt-1"
               type="submit"
               >Sign</AppButton
             >
@@ -572,19 +573,14 @@ defineExpose({
       :close-on-escape="false"
     >
       <div class="p-5">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isChunkingModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
+        <div>
+          <i class="bi bi-x-lg cursor-pointer" @click="isChunkingModalShown = false"></i>
+        </div>
+        <div class="text-center mt-5">
           <AppLoader />
         </div>
-        <h3 class="mt-5 text-main text-center text-bold">
-          Chunking
-          {{ type }}
-        </h3>
-        <p class="mt-3 text-center" v-if="chunksAmount">
+        <h3 class="text-center text-title text-bold mt-5">Chunking {{ type }}</h3>
+        <p class="text-center text-small text-secondary mt-4" v-if="chunksAmount">
           {{ processedChunks }} out of {{ chunksAmount }}
         </p>
       </div>
@@ -596,23 +592,21 @@ defineExpose({
       :close-on-escape="false"
     >
       <div class="p-5">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isExecuting = false"
-        ></i>
-        <div class="mt-5 text-center">
+        <div>
+          <i class="bi bi-x-lg cursor-pointer" @click="isExecuting = false"></i>
+        </div>
+        <div class="text-center mt-5">
           <AppLoader />
         </div>
-        <h3 class="mt-5 text-main text-center text-bold">
+        <h3 class="text-center text-title text-bold mt-5">
           Executing
           {{ type }}
         </h3>
-        <div class="mt-4">
-          <p v-if="chunksAmount">{{ processedChunks }} out of {{ chunksAmount }}</p>
-          <AppButton color="primary" size="large" class="mt-1 w-100" @click="isExecuting = false"
-            >Close</AppButton
-          >
+        <div class="d-grid mt-4">
+          <p class="text-center text-small text-secondary" v-if="chunksAmount">
+            {{ processedChunks }} out of {{ chunksAmount }}
+          </p>
+          <AppButton color="primary" class="mt-1" @click="isExecuting = false">Close</AppButton>
         </div>
       </div>
     </AppModal>
@@ -623,16 +617,16 @@ defineExpose({
       :close-on-escape="false"
     >
       <div class="p-5">
-        <i
-          class="bi bi-success d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isExecutedModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
-          <i class="bi bi-check-lg large-icon" style="line-height: 16px"></i>
+        <div>
+          <i class="bi bi-x-lg cursor-pointer" @click="isExecutedModalShown = false"></i>
         </div>
-        <h3 class="mt-5 text-main text-center text-bold"><slot name="successHeading"></slot></h3>
-        <p class="mt-4 text-small d-flex justify-content-between align-items">
+        <div class="text-center mt-5">
+          <i class="bi bi-check-lg large-icon"></i>
+        </div>
+        <h3 class="text-center text-title text-bold mt-5"><slot name="successHeading"></slot></h3>
+        <p
+          class="d-flex justify-content-between align-items text-center text-small text-secondary mt-4"
+        >
           <span class="text-bold text-secondary">Transaction ID:</span>
           <a
             class="link-primary cursor-pointer"
@@ -645,18 +639,18 @@ defineExpose({
           >
         </p>
         <slot name="successContent"></slot>
-        <AppButton
-          color="primary"
-          size="large"
-          class="mt-5 w-100"
-          @click="
-            () => {
-              isExecutedModalShown = false;
-              onCloseSuccessModalClick && onCloseSuccessModalClick();
-            }
-          "
-          >Close</AppButton
-        >
+        <div class="d-grid mt-5">
+          <AppButton
+            color="primary"
+            @click="
+              () => {
+                isExecutedModalShown = false;
+                onCloseSuccessModalClick && onCloseSuccessModalClick();
+              }
+            "
+            >Close</AppButton
+          >
+        </div>
       </div>
     </AppModal>
   </div>

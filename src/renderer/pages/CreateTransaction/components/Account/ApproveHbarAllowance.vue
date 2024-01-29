@@ -197,11 +197,11 @@ const handleCreate = async e => {
     >
       <template #successHeading>Allowance Approved Successfully</template>
       <template #successContent>
-        <p class="mt-2 text-small d-flex justify-content-between align-items">
+        <p class="text-small d-flex justify-content-between align-items mt-2">
           <span class="text-bold text-secondary">Owner Account ID:</span>
           <span>{{ ownerData.accountId.value }}</span>
         </p>
-        <p class="mt-2 text-small d-flex justify-content-between align-items">
+        <p class="text-small d-flex justify-content-between align-items mt-2">
           <span class="text-bold text-secondary">Spender Account ID:</span>
           <span>{{ spenderData.accountId.value }}</span>
         </p>

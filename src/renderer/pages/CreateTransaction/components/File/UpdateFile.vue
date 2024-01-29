@@ -361,11 +361,11 @@ watch(fileMeta, () => (content.value = ''));
     >
       <template #successHeading>File updated successfully</template>
       <template #successContent>
-        <p class="mt-2 text-small d-flex justify-content-between align-items">
+        <p class="text-small d-flex justify-content-between align-items mt-2">
           <span class="text-bold text-secondary">File ID:</span>
           <span>{{ fileId }}</span>
         </p>
-        <p v-if="chunksAmount" class="mt-2 text-small d-flex justify-content-between align-items">
+        <p v-if="chunksAmount" class="text-small d-flex justify-content-between align-items mt-2">
           <span class="text-bold text-secondary">Number of Chunks</span>
           <span>{{ chunksAmount }}</span>
         </p>

@@ -78,17 +78,18 @@ const handleChangePassword = async e => {
           }
         "
       >
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isSuccessModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
+        <div>
+          <i class="bi bi-x-lg cursor-pointer" @click="isSuccessModalShown = false"></i>
+        </div>
+
+        <div class="text-center mt-5">
           <i class="bi bi-check-lg large-icon cursor-pointer" style="line-height: 16px"></i>
         </div>
 
-        <h3 class="mt-5 text-main text-center text-bold">Password Changed Successfully</h3>
-        <AppButton color="primary" type="submit" size="large" class="mt-5 w-100">Close</AppButton>
+        <h3 class="text-center text-title text-bold mt-5">Password Changed Successfully</h3>
+        <div class="d-grid mt-5">
+          <AppButton color="primary" type="submit">Close</AppButton>
+        </div>
       </form>
     </AppModal>
   </div>

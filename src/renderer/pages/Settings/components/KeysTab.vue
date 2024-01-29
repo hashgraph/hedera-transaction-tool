@@ -158,91 +158,88 @@ watch(isDecryptedModalShown, newVal => {
     </div>
     <AppModal v-model:show="isDecryptedModalShown" class="common-modal">
       <div class="p-5">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isDecryptedModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
+        <div>
+          <i class="bi bi-x-lg cursor-pointer" @click="isDecryptedModalShown = false"></i>
+        </div>
+        <div class="text-center mt-5">
           <Transition name="fade" mode="out-in">
             <i
               v-if="!decryptedKey"
               class="bi bi-lock large-icon cursor-pointer"
-              style="line-height: 16px"
               @click="isDecryptedModalShown = false"
             ></i>
             <i
               v-else
               class="bi bi-unlock large-icon cursor-pointer"
-              style="line-height: 16px"
               @click="isDecryptedModalShown = false"
             ></i>
           </Transition>
         </div>
         <form @submit="handleDecrypt">
-          <h3 class="mt-5 text-main text-center text-bold">Enter your password</h3>
-          <input
-            v-model="userPassword"
-            type="password"
-            class="mt-5 form-control is-fill"
-            placeholder="Type your password"
-          />
-          <div class="mt-4 form-group">
-            <label class="form-label">Decrypted Private key</label>
-            <input v-model="decryptedKey" type="text" class="form-control is-fill" readonly />
+          <h3 class="text-center text-title text-bold mt-5">Decrypt private key</h3>
+          <div class="form-group mt-5">
+            <label class="form-label">Enter your password</label>
+            <input
+              v-model="userPassword"
+              type="password"
+              class="form-control form-control-sm is-fill"
+              placeholder="Type your password"
+            />
           </div>
-          <AppButton
-            type="submit"
-            color="primary"
-            size="large"
-            class="mt-5 w-100"
-            :disabled="userPassword.length === 0"
-            >Decrypt</AppButton
-          >
+          <div class="form-group mt-4">
+            <label class="form-label">Decrypted Private key</label>
+            <input
+              v-model="decryptedKey"
+              type="text"
+              class="form-control form-control-sm is-fill"
+              readonly
+            />
+          </div>
+          <div class="d-grid mt-5">
+            <AppButton type="submit" color="primary" :disabled="userPassword.length === 0"
+              >Decrypt</AppButton
+            >
+          </div>
         </form>
       </div>
     </AppModal>
     <AppModal v-model:show="isImportECDSAKeyModalShown" class="common-modal">
       <div class="p-5">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isImportECDSAKeyModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
+        <i class="bi bi-x-lg cursor-pointer" @click="isImportECDSAKeyModalShown = false"></i>
+        <div class="text-center mt-5">
           <i class="bi bi-key large-icon" style="line-height: 16px"></i>
         </div>
         <form @submit="handleImportExternalKey">
-          <div class="mt-4 form-group">
+          <div class="form-group mt-4">
             <label class="form-label">Enter your password</label>
             <input
               v-model="userPassword"
               type="password"
-              class="form-control is-fill"
+              class="form-control form-control-sm is-fill"
               placeholder="Type your password"
             />
           </div>
-          <div class="mt-4 form-group">
+          <div class="form-group mt-4">
             <label class="form-label">Enter nickname (optional)</label>
             <input
               v-model="ecdsaKey.nickname"
-              class="form-control is-fill"
+              class="form-control form-control-sm is-fill"
               name="nickname"
               placeholder="Type nickname"
             />
           </div>
-          <div class="mt-4 form-group">
+          <div class="form-group mt-4">
             <label class="form-label">Enter ECDSA Private key</label>
             <input
               v-model="ecdsaKey.privateKey"
-              class="form-control is-fill"
+              class="form-control form-control-sm is-fill"
               name="private-key"
               placeholder="Type ECDSA Private key"
             />
           </div>
-          <AppButton type="submit" color="primary" size="large" class="mt-5 w-100"
-            >Import</AppButton
-          >
+          <div class="d-grid mt-5">
+            <AppButton type="submit" color="primary">Import</AppButton>
+          </div>
         </form>
       </div>
     </AppModal>

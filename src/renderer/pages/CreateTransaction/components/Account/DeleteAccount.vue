@@ -167,7 +167,7 @@ onMounted(() => {
       <template #successContent>
         <p
           v-if="transactionProcessor?.transactionResult"
-          class="mt-2 text-small d-flex justify-content-between align-items"
+          class="text-small d-flex justify-content-between align-items mt-2"
         >
           <span class="text-bold text-secondary">Account ID:</span>
           <span>{{ accountData.accountId.value }}</span>

@@ -221,11 +221,11 @@ const handleCreate = async () => {
     >
       <template #successHeading>Hbar transferred successfully</template>
       <template #successContent>
-        <p class="mt-2 text-small d-flex justify-content-between align-items">
+        <p class="text-small d-flex justify-content-between align-items mt-2">
           <span class="text-bold text-secondary">Sender Account ID:</span>
           <span>{{ senderData.accountId.value }}</span>
         </p>
-        <p class="mt-2 text-small d-flex justify-content-between align-items">
+        <p class="text-small d-flex justify-content-between align-items mt-2">
           <span class="text-bold text-secondary">Receiver Account ID:</span>
           <span>{{ receiverData.accountId.value }}</span>
         </p>
