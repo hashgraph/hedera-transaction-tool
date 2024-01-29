@@ -52,7 +52,7 @@ model Organization {
 }
 
 model Transaction {
-  id               String  @id @default(uuid())
+  id               String   @id @default(uuid())
   name             String
   type             String
   description      String
@@ -62,13 +62,13 @@ model Transaction {
   status           String
   status_code      Int
   user_id          String
-  key_id           String
+  key_id           String?
   signature        String
   valid_start      String
   executed_at      Int
-  created_at       Int
-  updated_at       Int
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
   group_id         String?
-  user             User    @relation(fields: [user_id], references: [id])
-  key              KeyPair @relation(fields: [key_id], references: [id])
+  user             User     @relation(fields: [user_id], references: [id])
+  key              KeyPair? @relation(fields: [key_id], references: [id])
 }
