@@ -37,9 +37,11 @@ export const getKeyPairs = async (userId: string, organizationId?: string): Prom
 export const storeKeyPair = async (keyPair: KeyPair, password: string) => {
   try {
     keyPair.private_key = encrypt(keyPair.private_key, password);
-
     await prisma.keyPair.create({
-      data: keyPair,
+      data: {
+        ...keyPair,
+        id: undefined,
+      },
     });
   } catch (error: any) {
     console.log(error);

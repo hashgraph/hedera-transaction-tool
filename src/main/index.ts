@@ -9,7 +9,7 @@ import registerIpcListeners from './modules/ipcHandlers';
 import createWindow from './windows/mainWindow';
 
 initDatabase();
-registerIpcListeners(app);
+registerIpcListeners();
 
 let mainWindow: BrowserWindow | null;
 

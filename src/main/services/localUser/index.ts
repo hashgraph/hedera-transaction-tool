@@ -12,6 +12,6 @@ export const resetData = async () => {
   const prisma = getPrismaClient();
 
   await prisma.transaction.deleteMany();
-  await prisma.userKey.deleteMany();
+  await prisma.keyPair.deleteMany();
   await prisma.user.deleteMany();
 };
