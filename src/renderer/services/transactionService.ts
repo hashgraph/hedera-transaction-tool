@@ -12,6 +12,7 @@ import { KeyPair, Transaction as Tx } from '@prisma/client';
 import { CustomNetworkSettings, Network } from '../stores/storeNetwork';
 
 import { decryptPrivateKey } from './keyPairService';
+import { getMessageFromIPCError } from '../utils';
 
 /* Transaction service */
 
@@ -85,8 +86,7 @@ export const execute = async (
       JSON.stringify({ transactionBytes, network, customNetworkSettings }),
     );
   } catch (err: any) {
-    const message = err.message?.split(': Error: ')[1] || 'Transaction Failed';
-    throw Error(message);
+    throw Error(getMessageFromIPCError(err, 'Transaction Failed'));
   }
 };
 
@@ -103,8 +103,7 @@ export const executeQuery = async (
       JSON.stringify({ queryBytes, network, customNetworkSettings, accountId, privateKey }),
     );
   } catch (err: any) {
-    const message = err.message?.split(': Error: ')[1] || 'Query Execution Failed';
-    throw Error(message);
+    throw Error(getMessageFromIPCError(err, 'Query Execution Failed'));
   }
 };
 
@@ -113,8 +112,7 @@ export const storeTransaction = async (transaction: Tx) => {
   try {
     return await window.electronAPI.transactions.storeTransaction(transaction);
   } catch (err: any) {
-    const message = err.message?.split(': Error: ')[1] || 'Saving transaction Failed';
-    throw Error(message);
+    throw Error(getMessageFromIPCError(err, 'Saving transaction Failed'));
   }
 };
 
@@ -123,7 +121,6 @@ export const getTransactions = async (user_id: string) => {
   try {
     return await window.electronAPI.transactions.getTransactions(user_id);
   } catch (err: any) {
-    const message = err.message?.split(': Error: ')[1] || 'Getting transactions Failed';
-    throw Error(message);
+    throw Error(getMessageFromIPCError(err, 'Getting transactions Failed'));
   }
 };

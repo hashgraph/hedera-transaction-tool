@@ -57,6 +57,11 @@ const handlePaste = async (e: Event, index: number) => {
   }
 };
 
+const handleWordChange = (newWord: string, index: number) => {
+  words[index] = newWord;
+  words.value = [...words.value];
+};
+
 /* Hooks */
 onBeforeMount(() => {
   if (keyPairs.recoveryPhraseWords.length === 24) {
@@ -83,12 +88,7 @@ watch(words, async newWords => {
           class="col-3"
           :word="word"
           :index="index + 1"
-          :handle-word-change="
-            newWord => {
-              words[index] = newWord;
-              words = [...words];
-            }
-          "
+          :handle-word-change="newWord => handleWordChange(newWord, index)"
           visible-initially
           @paste="handlePaste($event, index)"
         />

@@ -106,9 +106,7 @@ watch(accountData.isValid, isValid => {
             </div>
             <div class="d-flex row" v-if="accountData.accountInfo.value?.autoRenewPeriod">
               <p class="col-4 text-secondary">Auto Renew Period:</p>
-              <p class="col-8">
-                {{ (accountData.accountInfo.value?.autoRenewPeriod / 86400).toFixed(0) }} days
-              </p>
+              <p class="col-8">{{ accountData.autoRenewPeriodInDays.value }} days</p>
             </div>
             <div class="d-flex row">
               <p class="col-4 text-secondary">Max. Auto. Association:</p>

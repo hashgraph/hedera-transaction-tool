@@ -1,11 +1,12 @@
 import { computed, ref, watch } from 'vue';
 
-import { AccountId, Hbar } from '@hashgraph/sdk';
+import { AccountId, Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import { IAccountInfoParsed, CryptoAllowance } from '../../main/shared/interfaces';
 
 import useNetworkStore from '../stores/storeNetwork';
 
+import { openExternal } from '../services/electronUtilsService';
 import { getAccountAllowances, getAccountInfo } from '../services/mirrorNodeDataService';
 import { flattenKeyList } from '../services/keyPairService';
 
@@ -23,15 +24,31 @@ export default function useAccountId() {
 
   /* Getters */
   const isValid = computed(() => Boolean(accountInfo.value));
-  const accountIdFormatted = computed(() =>
-    isValid.value ? AccountId.fromString(accountId.value).toString() : accountId.value,
-  );
+  const accountIdFormatted = computed(() => {
+    if (isValid.value) {
+      return AccountId.fromString(accountId.value).toString();
+    } else {
+      return accountId.value;
+    }
+  });
+  const accoundIdWithChecksum = computed(() => {
+    if (isValid.value) {
+      return accountInfo.value?.accountId.toStringWithChecksum(networkStore.client);
+    } else {
+      return accountIdFormatted.value;
+    }
+  });
+  const autoRenewPeriodInDays = computed(() => {
+    return ((accountInfo.value?.autoRenewPeriod || 0) / 86400).toFixed(0);
+  });
   const key = computed(() => accountInfo.value?.key);
-  const keysFlattened = computed(() =>
-    accountInfo.value?.key
-      ? flattenKeyList(accountInfo.value?.key).map(pk => pk.toStringRaw())
-      : [],
-  );
+  const keysFlattened = computed(() => {
+    if (accountInfo.value?.key) {
+      return flattenKeyList(accountInfo.value?.key).map(pk => pk.toStringRaw());
+    } else {
+      return [];
+    }
+  });
 
   /* Watchers */
   watch(accountId, async newAccountId => {
@@ -83,14 +100,44 @@ export default function useAccountId() {
     );
   }
 
+  function getStakedToString() {
+    if (accountInfo.value?.stakedNodeId) {
+      return `Node ${accountInfo.value?.stakedNodeId}`;
+    } else if (accountInfo.value?.stakedAccountId) {
+      return `Account ${accountInfo.value?.stakedAccountId}`;
+    } else {
+      return '';
+    }
+  }
+
+  function getFormattedPendingRewards() {
+    const rewards = accountInfo.value?.pendingRewards;
+    if (rewards) {
+      return rewards.toString(HbarUnit.Hbar);
+    } else {
+      return Hbar.fromString('0').toString();
+    }
+  }
+
+  function openAccountInHashscan() {
+    networkStore.network !== 'custom' &&
+      openExternal(`
+            https://hashscan.io/${networkStore.network}/account/${accountIdFormatted.value}`);
+  }
+
   return {
     accountId,
     accountInfo,
     accountIdFormatted,
+    accoundIdWithChecksum,
+    autoRenewPeriodInDays,
     key,
     keysFlattened,
     allowances,
     isValid,
     getSpenderAllowance,
+    getStakedToString,
+    getFormattedPendingRewards,
+    openAccountInHashscan,
   };
 }

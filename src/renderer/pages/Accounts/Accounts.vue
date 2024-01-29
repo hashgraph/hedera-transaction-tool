@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { Hbar, HbarUnit, KeyList, PublicKey } from '@hashgraph/sdk';
+import { KeyList, PublicKey } from '@hashgraph/sdk';
 
 import useUserStore from '../../stores/storeUser';
 import useNetworkStore from '../../stores/storeNetwork';
@@ -8,7 +8,6 @@ import useNetworkStore from '../../stores/storeNetwork';
 import useAccountId from '../../composables/useAccountId';
 
 import { getAll, remove } from '../../services/accountsService';
-import { openExternal } from '../../services/electronUtilsService';
 import { getKeyListLevels } from '../../services/keyPairService';
 import { getDollarAmount } from '../../services/mirrorNodeDataService';
 
@@ -242,18 +241,10 @@ const handleUnlinkAccount = async () => {
               </div>
               <div class="col-7">
                 <p class="text-small text-semi-bold">
-                  {{
-                    accountData.accountInfo.value?.accountId.toStringWithChecksum(
-                      networkStore.client,
-                    )
-                  }}
+                  {{ accountData.accoundIdWithChecksum.value }}
                   <i
                     class="bi bi-box-arrow-up-right link-primary cursor-pointer ms-1"
-                    @click="
-                      networkStore.network !== 'custom' &&
-                        openExternal(`
-            https://hashscan.io/${networkStore.network}/account/${accountData.accountIdFormatted.value}`)
-                    "
+                    @click="accountData.openAccountInHashscan"
                   ></i>
                 </p>
               </div>
@@ -369,12 +360,7 @@ const handleUnlinkAccount = async () => {
               <div class="col-7">
                 <p class="text-small text-semi-bold"></p>
                 <span>{{ accountData.accountInfo.value?.autoRenewPeriod }}s</span>
-                <span class="ms-4"
-                  >{{
-                    (accountData.accountInfo.value?.autoRenewPeriod / 86400).toFixed(0)
-                  }}
-                  days</span
-                >
+                <span class="ms-4">{{ accountData.autoRenewPeriodInDays.value }} days</span>
               </div>
             </div>
             <hr class="separator my-4" />
@@ -382,11 +368,7 @@ const handleUnlinkAccount = async () => {
               <div class="col-5"><p class="text-small text-semi-bold">Staked to</p></div>
               <div class="col-7">
                 <p class="text-small text-semi-bold">
-                  {{
-                    accountData.accountInfo.value?.stakedNodeId
-                      ? `Node ${accountData.accountInfo.value?.stakedNodeId}`
-                      : accountData.accountInfo.value?.stakedAccountId
-                  }}
+                  {{ accountData.getStakedToString() }}
                 </p>
               </div>
             </div>
@@ -394,11 +376,7 @@ const handleUnlinkAccount = async () => {
               <div class="col-5"><p class="text-small text-semi-bold">Pending Reward</p></div>
               <div class="col-7">
                 <p class="text-small text-semi-bold">
-                  {{
-                    (
-                      accountData.accountInfo.value?.pendingRewards || Hbar.fromString('0')
-                    ).toString(HbarUnit.Hbar)
-                  }}
+                  {{ accountData.getFormattedPendingRewards() }}
                 </p>
               </div>
             </div>

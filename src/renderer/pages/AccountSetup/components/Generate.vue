@@ -60,6 +60,11 @@ const handleVerify = () => {
     props.handleContinue(correctWords.value);
   }
 };
+
+const handleWordChange = (newWord: string, index: number) => {
+  words[index] = newWord;
+  words.value = [...words.value];
+};
 </script>
 <template>
   <div class="d-flex justify-content-center row">
@@ -75,12 +80,7 @@ const handleVerify = () => {
             :word="word"
             :index="index + 1"
             :readonly="!indexesToVerify.includes(index)"
-            :handle-word-change="
-              newWord => {
-                words[index] = newWord;
-                words = [...words];
-              }
-            "
+            :handle-word-change="newWord => handleWordChange(newWord, index)"
             visible-initially
           />
         </template>

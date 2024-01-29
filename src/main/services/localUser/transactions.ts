@@ -1,6 +1,7 @@
 import { Client, Query, Transaction } from '@hashgraph/sdk';
 import { Transaction as Tx } from '@prisma/client';
 import { getPrismaClient } from '../../db';
+import { getNumberArrayFromString } from '../../utils';
 
 const prisma = getPrismaClient();
 
@@ -18,7 +19,7 @@ export const executeTransaction = async (transactionData: string) => {
   } = JSON.parse(transactionData);
   const client = getClient();
 
-  const bytesArray = tx.transactionBytes.split(',').map(n => Number(n));
+  const bytesArray = getNumberArrayFromString(tx.transactionBytes);
 
   const transaction = Transaction.fromBytes(Uint8Array.from(bytesArray));
 
@@ -76,7 +77,7 @@ export const executeQuery = async (queryData: string) => {
 
   client.setOperator(tx.accountId, tx.privateKey);
 
-  const bytesArray = tx.queryBytes.split(',').map(n => Number(n));
+  const bytesArray = getNumberArrayFromString(tx.queryBytes);
 
   const transaction = Query.fromBytes(Uint8Array.from(bytesArray));
 
@@ -118,11 +119,11 @@ export const executeQuery = async (queryData: string) => {
 export const storeTransaction = async (transaction: Tx) => {
   try {
     const uint8TransactionHash = Uint8Array.from(
-      transaction.transaction_hash.split(',').map(b => Number(b)),
+      getNumberArrayFromString(transaction.transaction_hash),
     );
     transaction.transaction_hash = Buffer.from(uint8TransactionHash).toString('hex');
 
-    const uint8Body = Uint8Array.from(transaction.body.split(',').map(b => Number(b)));
+    const uint8Body = Uint8Array.from(getNumberArrayFromString(transaction.body));
     transaction.body = Buffer.from(uint8Body).toString('hex');
 
     return await prisma.transaction.create({
