@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeMount, reactive, ref } from 'vue';
 import { Status } from '@hashgraph/sdk';
+import { Transaction } from '@prisma/client';
 
 import useUserStore from '../../../stores/storeUser';
 
@@ -172,7 +173,7 @@ onBeforeMount(async () => {
           <td>
             <span
               class="badge bg-success text-break"
-              :class="{ 'bg-danger': ![0, 22].includes(transaction) }"
+              :class="{ 'bg-danger': ![0, 22].includes(transaction.status_code) }"
               >{{ getTransactionStatus(transaction) }}</span
             >
           </td>
