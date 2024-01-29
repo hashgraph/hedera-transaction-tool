@@ -45,11 +45,7 @@ const handleRead = async e => {
     const publicKey = keyPairsStore.keyPairs.find(kp => kp.accountId === payerData.accountId.value)
       ?.publicKey;
 
-    const privateKey = await decryptPrivateKey(
-      user.data.email,
-      userPassword.value,
-      publicKey || '',
-    );
+    const privateKey = await decryptPrivateKey(user.data.id, userPassword.value, publicKey || '');
 
     const query = new FileContentsQuery().setFileId(fileId.value);
 

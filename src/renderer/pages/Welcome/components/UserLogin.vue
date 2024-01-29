@@ -14,11 +14,11 @@ import {
   resetDataLocal,
   getUsersCount,
 } from '../../../services/userService';
+import { getSecretHashes } from '../../../services/keyPairService';
 
 import { isEmail } from '../../../utils/validator';
 
 import AppButton from '../../../components/ui/AppButton.vue';
-import { getSecretHashes } from '@renderer/services/keyPairService';
 
 /* Stores */
 const user = useUserStore();

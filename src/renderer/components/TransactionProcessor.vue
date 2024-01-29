@@ -109,7 +109,7 @@ async function handleSignTransaction(e: Event) {
       requiredLocalKeyPairs.value,
       transaction.value as any,
       true,
-      user.data.email,
+      user.data.id,
       userPassword.value,
     );
 
