@@ -1,84 +1,55 @@
-import { getUserStorageFolderPath } from '.';
+import { getPrismaClient } from '../../db';
 
-import Store, { Schema } from 'electron-store';
+const prisma = getPrismaClient();
 
-export type SchemaProperties = {
-  accounts: { accountId: string; nickname: string }[];
-};
-
-/* persisting accounts data in a JSON file */
-export default function getAccountsStore(email: string) {
-  const schema: Schema<SchemaProperties> = {
-    accounts: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          accountId: {
-            type: 'string',
-          },
-          nickname: {
-            type: 'string',
-          },
-        },
-      },
-      default: [],
-      uniqueItems: true,
-    },
-  };
-
-  const store = new Store({
-    schema,
-    cwd: getUserStorageFolderPath(email),
-    name: `accounts`,
-    clearInvalidConfig: true,
-  });
-
-  return store;
-}
-
-export const getAccounts = (email: string) => {
+export const getAccounts = (userId: string) => {
   try {
-    const store = getAccountsStore(email);
-    return store.get('accounts');
+    return prisma.hederaAccount.findMany({
+      where: {
+        user_id: userId,
+      },
+    });
   } catch (error) {
+    console.log(error);
     return [];
   }
 };
 
-export const addAccount = (email: string, accountId: string, nickname: string = '') => {
-  const store = getAccountsStore(email);
+export const addAccount = async (userId: string, accountId: string, nickname: string = '') => {
+  const accounts = await getAccounts(userId);
 
   if (
-    store.store.accounts.some(
-      acc => acc.accountId === accountId || (nickname && acc.nickname === nickname),
-    )
+    accounts.some(acc => acc.account_id === accountId || (nickname && acc.nickname === nickname))
   ) {
     throw new Error('Account ID or Nickname already exists!');
   }
 
-  store.set('accounts', [...store.store.accounts, { accountId, nickname }]);
+  await prisma.hederaAccount.create({
+    data: {
+      user_id: userId,
+      account_id: accountId,
+      nickname: nickname,
+    },
+  });
 
-  return store.get('accounts');
+  return await getAccounts(userId);
 };
 
-export const removeAccount = (email: string, accountId: string, nickname?: string) => {
-  const store = getAccountsStore(email);
+export const removeAccount = async (userId: string, accountId: string, nickname?: string) => {
+  const accounts = await getAccounts(userId);
 
   if (
-    !store.store.accounts.some(
-      acc => acc.accountId === accountId || (nickname && acc.nickname === nickname),
-    )
+    !accounts.some(acc => acc.account_id === accountId || (nickname && acc.nickname === nickname))
   ) {
     throw new Error(`Account ID ${nickname && `or ${nickname}`} not found!`);
   }
 
-  store.set(
-    'accounts',
-    store.store.accounts.filter(
-      acc => acc.accountId !== accountId || (nickname && acc.nickname !== nickname),
-    ),
-  );
+  await prisma.hederaAccount.deleteMany({
+    where: {
+      user_id: userId,
+      account_id: accountId,
+    },
+  });
 
-  return store.get('accounts');
+  return await getAccounts(userId);
 };

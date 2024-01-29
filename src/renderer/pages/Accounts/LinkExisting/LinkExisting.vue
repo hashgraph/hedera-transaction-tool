@@ -33,7 +33,7 @@ const handleLinkAccount = async e => {
         throw new Error('User not logged in');
       }
 
-      await add(user.data.email, accountData.accountIdFormatted.value, nickname.value);
+      await add(user.data.id, accountData.accountIdFormatted.value, nickname.value);
 
       router.push({ name: 'accounts' });
       toast.success('Account linked successfully!', { position: 'bottom-right' });

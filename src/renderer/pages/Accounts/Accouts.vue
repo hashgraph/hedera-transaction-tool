@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { Hbar, HbarUnit, KeyList, PublicKey } from '@hashgraph/sdk';
+import { HederaAccount } from '@prisma/client';
 
 import useUserStore from '../../stores/storeUser';
 import useNetworkStore from '../../stores/storeNetwork';
@@ -32,12 +33,7 @@ const networkStore = useNetworkStore();
 const accountData = useAccountId();
 
 /* State */
-const accounts = ref<
-  {
-    accountId: string;
-    nickname: string;
-  }[]
->([]);
+const accounts = ref<HederaAccount[]>([]);
 const hbarDollarAmount = computed(() => {
   if (!accountData.accountInfo.value) {
     return 0;
@@ -57,8 +53,8 @@ onMounted(async () => {
     throw new Error('Please login');
   }
 
-  accounts.value = await getAll(user.data.email);
-  accountData.accountId.value = accounts.value[0]?.accountId || '';
+  accounts.value = await getAll(user.data.id);
+  accountData.accountId.value = accounts.value[0]?.account_id || '';
 });
 
 /* Handlers */
@@ -67,10 +63,10 @@ const handleUnlinkAccount = async () => {
     throw new Error('Please login');
   }
 
-  await remove(user.data.email, accountData.accountIdFormatted.value);
+  await remove(user.data.id, accountData.accountIdFormatted.value);
 
-  accounts.value = await getAll(user.data.email);
-  accountData.accountId.value = accounts.value[0]?.accountId || '';
+  accounts.value = await getAll(user.data.id);
+  accountData.accountId.value = accounts.value[0]?.account_id || '';
 
   isUnlinkAccountModalShown.value = false;
 };
@@ -79,12 +75,12 @@ const handleSortAccounts = (sorting: Sorting) => {
   switch (sorting) {
     case Sorting.AccountIdAsc:
       accounts.value = accounts.value.sort(
-        (a, b) => Number(a.accountId.split('.')[2]) - Number(b.accountId.split('.')[2]),
+        (a, b) => Number(a.account_id.split('.')[2]) - Number(b.account_id.split('.')[2]),
       );
       break;
     case Sorting.AccountIdDesc:
       accounts.value = accounts.value.sort(
-        (a, b) => Number(b.accountId.split('.')[2]) - Number(a.accountId.split('.')[2]),
+        (a, b) => Number(b.account_id.split('.')[2]) - Number(a.account_id.split('.')[2]),
       );
       break;
     case Sorting.NicknameAsc:
@@ -156,17 +152,18 @@ const handleSortAccounts = (sorting: Sorting) => {
         </div>
         <hr class="my-5" />
         <div>
-          <template v-for="account in accounts" :key="account.accountId">
+          <template v-for="account in accounts" :key="account.account_id">
             <div
               class="mt-3 px-5 py-4 rounded-4 d-flex align-items-center justify-content-start cursor-pointer"
               :class="{
-                'bg-primary text-white': account.accountId === accountData.accountIdFormatted.value,
-                'bg-dark-blue-700': account.accountId !== accountData.accountIdFormatted.value,
+                'bg-primary text-white':
+                  account.account_id === accountData.accountIdFormatted.value,
+                'bg-dark-blue-700': account.account_id !== accountData.accountIdFormatted.value,
               }"
-              @click="accountData.accountId.value = account.accountId"
+              @click="accountData.accountId.value = account.account_id"
             >
               <i class="bi bi-person text-headline me-2 lh-1"></i>
-              <span>{{ account.nickname || account.accountId }}</span>
+              <span>{{ account.nickname || account.account_id }}</span>
             </div>
           </template>
         </div>
@@ -176,7 +173,7 @@ const handleSortAccounts = (sorting: Sorting) => {
           <div v-if="accountData.isValid.value" class="h-100 d-flex flex-column position-relative">
             <template
               v-if="
-                accounts.find(acc => acc.accountId === accountData.accountIdFormatted.value)
+                accounts.find(acc => acc.account_id === accountData.accountIdFormatted.value)
                   ?.nickname
               "
             >
@@ -184,7 +181,7 @@ const handleSortAccounts = (sorting: Sorting) => {
                 <p class="col-6">Nickname</p>
                 <p class="col-6 px-0">
                   {{
-                    accounts.find(acc => acc.accountId === accountData.accountIdFormatted.value)
+                    accounts.find(acc => acc.account_id === accountData.accountIdFormatted.value)
                       ?.nickname
                   }}
                 </p>

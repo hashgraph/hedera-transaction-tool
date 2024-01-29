@@ -98,7 +98,7 @@ const handleCreate = async e => {
 
 const handleExecuted = async ({ receipt }: { receipt: TransactionReceipt }) => {
   const accountId = new AccountId(receipt.accountId).toString() || '';
-  await add(user.data.email, accountId);
+  await add(user.data.id, accountId);
   toast.success(`Account ${accountId} linked`, { position: 'bottom-right' });
 };
 </script>

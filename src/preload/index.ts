@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { KeyPair, Transaction, User } from '@prisma/client';
+import { HederaAccount, KeyPair, Transaction, User } from '@prisma/client';
 
 import { proto } from '@hashgraph/proto';
 
@@ -55,19 +55,11 @@ export const electronAPI = {
     hash: (data: any): Promise<string> => ipcRenderer.invoke('utils:hash', data),
   },
   accounts: {
-    getAll: (email: string): Promise<{ accountId: string; nickname: string }[]> =>
+    getAll: (email: string): Promise<HederaAccount[]> =>
       ipcRenderer.invoke('accounts:getAll', email),
-    add: (
-      email: string,
-      accountId: string,
-      nickname: string,
-    ): Promise<{ accountId: string; nickname: string }[]> =>
+    add: (email: string, accountId: string, nickname: string): Promise<HederaAccount[]> =>
       ipcRenderer.invoke('accounts:add', email, accountId, nickname),
-    remove: (
-      email: string,
-      accountId: string,
-      nickname: string,
-    ): Promise<{ accountId: string; nickname: string }[]> =>
+    remove: (email: string, accountId: string, nickname: string): Promise<HederaAccount[]> =>
       ipcRenderer.invoke('accounts:remove', email, accountId, nickname),
   },
   localUser: {
