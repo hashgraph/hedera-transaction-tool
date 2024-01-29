@@ -1,3 +1,3 @@
-import Account from './Accouts.vue';
+import Accounts from './Accounts.vue';
 
-export default Account;
+export default Accounts;

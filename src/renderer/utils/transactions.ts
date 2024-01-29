@@ -25,3 +25,7 @@ export const getPayerFromTransaction = (transaction: Transaction): number => {
 export const getStatusFromCode = (transaction: Transaction): string => {
   return Status._fromCode(transaction.status_code).toString();
 };
+
+export const getFormattedDateFromTimestamp = (timestamp: Timestamp): string => {
+  return new Date(timestamp.seconds * 1000).toDateString();
+};

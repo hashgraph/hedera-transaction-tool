@@ -95,29 +95,6 @@
       stroke: $success;
     }
   }
-
-  // &.is-warning {
-  //   path {
-  //     fill: $warning-300;
-  //   }
-  // }
-
-  // &.is-info {
-  //   path {
-  //     fill: $primary-100;
-  //   }
-  // }
-
-  // &.is-gradient {
-  //   path {
-  //     fill: linear-gradient(139.83deg, #f32fd7 0%, #3845fb 100%);
-  //   }
-  // }
-
-  // &.is-small {
-  //   width: 20px;
-  //   height: 20px;
-  // }
 }
 
 /* Tabs */
@@ -236,7 +213,6 @@
 }
 
 /* Misc Containers */
-
 .container-dark-border {
   min-width: 430px;
   border-radius: 12px;
@@ -256,6 +232,20 @@
   align-items: center;
   padding: 12px;
   cursor: pointer;
+}
+
+.container-card-account {
+  border-radius: $border-radius;
+  cursor: pointer;
+  transition: background-color 0.15s linear;
+
+  &:hover {
+    background-color: var(--#{$prefix}table-header-bg-color);
+  }
+
+  &.is-selected {
+    background-color: var(--#{$prefix}table-header-bg-color);
+  }
 }
 
 /* Icons */
@@ -517,4 +507,19 @@
     font-size: 14px;
     padding: 16px;
   }
+}
+
+/* Separators */
+.separator {
+  border: 0;
+  margin: 0;
+  height: 1px;
+  width: 100%;
+  opacity: 1;
+  background-color: var(--#{$prefix}input-border-color);
+}
+
+/* Borders */
+.with-border-end {
+  border-right: 1px solid var(--#{$prefix}input-border-color);
 }

@@ -167,13 +167,13 @@ watch(isDecryptedModalShown, newVal => {
           <Transition name="fade" mode="out-in">
             <i
               v-if="!decryptedKey"
-              class="bi bi-lock extra-large-icon cursor-pointer"
+              class="bi bi-lock large-icon cursor-pointer"
               style="line-height: 16px"
               @click="isDecryptedModalShown = false"
             ></i>
             <i
               v-else
-              class="bi bi-unlock extra-large-icon cursor-pointer"
+              class="bi bi-unlock large-icon cursor-pointer"
               style="line-height: 16px"
               @click="isDecryptedModalShown = false"
             ></i>
@@ -210,7 +210,7 @@ watch(isDecryptedModalShown, newVal => {
           @click="isImportECDSAKeyModalShown = false"
         ></i>
         <div class="mt-5 text-center">
-          <i class="bi bi-key extra-large-icon" style="line-height: 16px"></i>
+          <i class="bi bi-key large-icon" style="line-height: 16px"></i>
         </div>
         <form @submit="handleImportExternalKey">
           <div class="mt-4 form-group">

@@ -543,7 +543,7 @@ defineExpose({
           @click="isSignModalShown = false"
         ></i>
         <div class="mt-5 text-center">
-          <i class="bi bi-shield-lock extra-large-icon" style="line-height: 16px"></i>
+          <i class="bi bi-shield-lock large-icon" style="line-height: 16px"></i>
         </div>
         <form @submit="handleSignTransaction">
           <h3 class="mt-5 text-main text-center text-bold">Enter your password</h3>
@@ -629,7 +629,7 @@ defineExpose({
           @click="isExecutedModalShown = false"
         ></i>
         <div class="mt-5 text-center">
-          <i class="bi bi-check-lg extra-large-icon" style="line-height: 16px"></i>
+          <i class="bi bi-check-lg large-icon" style="line-height: 16px"></i>
         </div>
         <h3 class="mt-5 text-main text-center text-bold"><slot name="successHeading"></slot></h3>
         <p class="mt-4 text-small d-flex justify-content-between align-items">
