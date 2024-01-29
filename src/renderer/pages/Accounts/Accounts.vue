@@ -12,9 +12,12 @@ import { openExternal } from '../../services/electronUtilsService';
 import { getKeyListLevels } from '../../services/keyPairService';
 import { getDollarAmount } from '../../services/mirrorNodeDataService';
 
+import { getFormattedDateFromTimestamp } from '../../utils/transactions';
+
 import AppButton from '../../components/ui/AppButton.vue';
 import AppModal from '../../components/ui/AppModal.vue';
 import KeyStructure from '../../components/KeyStructure.vue';
+import { HederaAccount } from '@prisma/client';
 
 /* Enums */
 // enum Sorting {
@@ -32,12 +35,7 @@ const networkStore = useNetworkStore();
 const accountData = useAccountId();
 
 /* State */
-const accounts = ref<
-  {
-    accountId: string;
-    nickname: string;
-  }[]
->([]);
+const accounts = ref<HederaAccount[]>([]);
 
 const hbarDollarAmount = computed(() => {
   if (!accountData.accountInfo.value) {
@@ -59,8 +57,8 @@ onMounted(async () => {
     throw new Error('Please login');
   }
 
-  accounts.value = await getAll(user.data.email);
-  accountData.accountId.value = accounts.value[0]?.accountId || '';
+  accounts.value = await getAll(user.data.id);
+  accountData.accountId.value = accounts.value[0]?.account_id || '';
 });
 
 /* Handlers */
@@ -72,7 +70,7 @@ const handleUnlinkAccount = async () => {
   await remove(user.data.email, accountData.accountIdFormatted.value);
 
   accounts.value = await getAll(user.data.email);
-  accountData.accountId.value = accounts.value[0]?.accountId || '';
+  accountData.accountId.value = accounts.value[0]?.account_id || '';
 
   isUnlinkAccountModalShown.value = false;
 };
@@ -199,13 +197,13 @@ const handleUnlinkAccount = async () => {
             <div
               class="container-card-account p-4 mt-3"
               :class="{
-                'is-selected': accountData.accountId.value === account.accountId,
+                'is-selected': accountData.accountId.value === account.account_id,
               }"
-              @click="accountData.accountId.value = account.accountId"
+              @click="accountData.accountId.value = account.account_id"
             >
               <p class="text-small text-semi-bold">{{ account.nickname }}</p>
               <div class="d-flex justify-content-between align-items-center">
-                <p class="text-micro text-secondary mt-2">{{ account.accountId }}</p>
+                <p class="text-micro text-secondary mt-2">{{ account.account_id }}</p>
                 <!-- <p class="text-micro text-success text-bold">
                   {{ accountData.accountInfo.value?.balance }}
                 </p> -->
@@ -216,10 +214,10 @@ const handleUnlinkAccount = async () => {
       </div>
       <div class="col-8 col-xxl-9 ps-4 pt-0">
         <Transition name="fade" mode="out-in">
-          <div v-if="accountData.isValid.value" class="h-100 d-flex flex-column position-relative">
+          <div v-if="accountData.isValid.value" class="h-100 position-relative">
             <template
               v-if="
-                accounts.find(acc => acc.accountId === accountData.accountIdFormatted.value)
+                accounts.find(acc => acc.account_id === accountData.accountIdFormatted.value)
                   ?.nickname
               "
             >
@@ -230,7 +228,7 @@ const handleUnlinkAccount = async () => {
                 <div class="col-7">
                   <p class="text-small text-semi-bold">
                     {{
-                      accounts.find(acc => acc.accountId === accountData.accountIdFormatted.value)
+                      accounts.find(acc => acc.account_id === accountData.accountIdFormatted.value)
                         ?.nickname
                     }}
                   </p>
@@ -344,9 +342,9 @@ const handleUnlinkAccount = async () => {
                 <p class="text-small text-semi-bold">
                   {{
                     accountData.accountInfo.value?.createdTimestamp
-                      ? new Date(
-                          accountData.accountInfo.value?.createdTimestamp.seconds * 1000,
-                        ).toDateString()
+                      ? getFormattedDateFromTimestamp(
+                          accountData.accountInfo.value?.createdTimestamp,
+                        )
                       : 'None'
                   }}
                 </p>
@@ -358,9 +356,9 @@ const handleUnlinkAccount = async () => {
                 <p class="text-small text-semi-bold">
                   {{
                     accountData.accountInfo.value?.expiryTimestamp
-                      ? new Date(
-                          accountData.accountInfo.value?.expiryTimestamp.seconds * 1000,
-                        ).toDateString()
+                      ? getFormattedDateFromTimestamp(
+                          accountData.accountInfo.value?.expiryTimestamp,
+                        )
                       : 'None'
                   }}
                 </p>
