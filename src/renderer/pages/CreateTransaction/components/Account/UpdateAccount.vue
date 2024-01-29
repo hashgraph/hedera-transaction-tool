@@ -12,9 +12,8 @@ import { createTransactionId } from '../../../../services/transactionService';
 
 import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
 import AppButton from '../../../../components/ui/AppButton.vue';
-import AppModal from '../../../../components/ui/AppModal.vue';
 import AppSwitch from '../../../../components/ui/AppSwitch.vue';
-import KeyStructure from '../../../../components/KeyStructure.vue';
+import KeyStructureModal from '../../../../components/KeyStructureModal.vue';
 
 /* Stores */
 const payerData = useAccountId();
@@ -333,16 +332,11 @@ watch(accountData.accountInfo, accountInfo => {
         </p>
       </template>
     </TransactionProcessor>
-    <AppModal v-model:show="isKeyStructureModalShown" class="modal-fit-content">
-      <div class="p-5">
-        <KeyStructure
-          v-if="accountData.key.value instanceof KeyList && true"
-          :key-list="accountData.key.value"
-        />
-        <div v-else-if="accountData.key.value instanceof PublicKey && true">
-          {{ accountData.key.value.toStringRaw() }}
-        </div>
-      </div>
-    </AppModal>
+
+    <KeyStructureModal
+      v-if="accountData.isValid.value"
+      v-model:show="isKeyStructureModalShown"
+      :account-key="accountData.key.value"
+    />
   </div>
 </template>

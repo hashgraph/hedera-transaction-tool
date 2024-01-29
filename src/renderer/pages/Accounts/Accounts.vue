@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { KeyList, PublicKey } from '@hashgraph/sdk';
+import { HederaAccount } from '@prisma/client';
 
 import useUserStore from '../../stores/storeUser';
 import useNetworkStore from '../../stores/storeNetwork';
@@ -15,8 +16,7 @@ import { getFormattedDateFromTimestamp } from '../../utils/transactions';
 
 import AppButton from '../../components/ui/AppButton.vue';
 import AppModal from '../../components/ui/AppModal.vue';
-import KeyStructure from '../../components/KeyStructure.vue';
-import { HederaAccount } from '@prisma/client';
+import KeyStructureModal from '../../components/KeyStructureModal.vue';
 
 /* Enums */
 // enum Sorting {
@@ -395,21 +395,12 @@ const handleUnlinkAccount = async () => {
           </div>
         </Transition>
 
-        <AppModal
-          v-model:show="isKeyStructureModalShown"
+        <KeyStructureModal
           v-if="accountData.isValid.value"
-          class="modal-fit-content"
-        >
-          <div class="p-5">
-            <KeyStructure
-              v-if="accountData.key.value instanceof KeyList && true"
-              :key-list="accountData.key.value"
-            />
-            <div v-else-if="accountData.key.value instanceof PublicKey && true">
-              {{ accountData.key.value.toStringRaw() }}
-            </div>
-          </div>
-        </AppModal>
+          v-model:show="isKeyStructureModalShown"
+          :account-key="accountData.key.value"
+        />
+
         <AppModal v-model:show="isUnlinkAccountModalShown" class="common-modal">
           <div class="modal-body">
             <i

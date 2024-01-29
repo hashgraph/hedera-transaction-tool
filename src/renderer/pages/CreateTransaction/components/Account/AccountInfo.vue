@@ -7,7 +7,7 @@ import useAccountId from '../../../../composables/useAccountId';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
-import KeyStructure from '../../../../components/KeyStructure.vue';
+import KeyStructureModal from '../../../../components/KeyStructureModal.vue';
 
 /* Composables */
 const toast = useToast();
@@ -139,6 +139,13 @@ watch(accountData.isValid, isValid => {
         </div>
       </template>
     </div>
+
+    <KeyStructureModal
+      v-if="accountData.isValid.value"
+      v-model:show="isKeyStructureModalShown"
+      :account-key="accountData.key.value"
+    />
+
     <AppModal
       v-model:show="isKeyStructureModalShown"
       v-if="accountData.isValid.value"

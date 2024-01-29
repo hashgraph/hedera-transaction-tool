@@ -1,13 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import {
-  AccountId,
-  KeyList,
-  PublicKey,
-  Hbar,
-  Key,
-  AccountAllowanceApproveTransaction,
-} from '@hashgraph/sdk';
+import { AccountId, Hbar, Key, AccountAllowanceApproveTransaction } from '@hashgraph/sdk';
 
 import useNetworkStore from '../../../../stores/storeNetwork';
 
@@ -18,8 +11,7 @@ import { createTransactionId } from '../../../../services/transactionService';
 
 import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
 import AppButton from '../../../../components/ui/AppButton.vue';
-import AppModal from '../../../../components/ui/AppModal.vue';
-import KeyStructure from '../../../../components/KeyStructure.vue';
+import KeyStructureModal from '../../../../components/KeyStructureModal.vue';
 
 /* Stores */
 const networkStore = useNetworkStore();
@@ -207,16 +199,10 @@ const handleCreate = async e => {
         </p>
       </template>
     </TransactionProcessor>
-    <AppModal v-model:show="isKeyStructureModalShown" class="modal-fit-content">
-      <div class="p-5">
-        <KeyStructure
-          v-if="keyStructureComponentKey instanceof KeyList && true"
-          :key-list="keyStructureComponentKey"
-        />
-        <div v-else-if="keyStructureComponentKey instanceof PublicKey && true">
-          {{ keyStructureComponentKey.toStringRaw() }}
-        </div>
-      </div>
-    </AppModal>
+
+    <KeyStructureModal
+      v-model:show="isKeyStructureModalShown"
+      :account-key="keyStructureComponentKey"
+    />
   </div>
 </template>
