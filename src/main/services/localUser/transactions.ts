@@ -1,41 +1,8 @@
-import fs from 'fs/promises';
-import Store, { Schema } from 'electron-store';
-
-import { getUserStorageFolderPath } from '.';
-
 import { Client, Query, Transaction } from '@hashgraph/sdk';
+import { Transaction as Tx } from '@prisma/client';
+import { getPrismaClient } from '../../db';
 
-import { IStoredTransaction, storedTransactionJSONSchema } from '../../shared/interfaces';
-
-type SchemaProperties = {
-  transactions: IStoredTransaction[];
-};
-
-/* persisting accounts data in a JSON file */
-export default function getTransactionsStore(email: string) {
-  const schema: Schema<SchemaProperties> = {
-    transactions: {
-      type: 'array',
-      items: storedTransactionJSONSchema,
-      default: [],
-    },
-  };
-
-  const store = new Store({
-    schema,
-    cwd: getUserStorageFolderPath(email),
-    name: 'transactions',
-    clearInvalidConfig: true,
-  });
-
-  return store;
-}
-
-// Deletes the file with stored transactions
-export const clearTransactions = async (email: string) => {
-  const store = getTransactionsStore(email);
-  await fs.unlink(store.path);
-};
+const prisma = getPrismaClient();
 
 // Executes a transaction
 export const executeTransaction = async (transactionData: string) => {
@@ -148,19 +115,46 @@ export const executeQuery = async (queryData: string) => {
 };
 
 // Stores a transaction
-export const saveTransaction = (email: string, transaction: IStoredTransaction) => {
-  const store = getTransactionsStore(email);
+export const storeTransaction = async (transaction: Tx) => {
+  try {
+    const uint8TransactionHash = Uint8Array.from(
+      transaction.transaction_hash.split(',').map(b => Number(b)),
+    );
+    transaction.transaction_hash = Buffer.from(uint8TransactionHash).toString('hex');
 
-  store.set('transactions', [...store.get('transactions'), transaction]);
+    const uint8Body = Uint8Array.from(transaction.body.split(',').map(b => Number(b)));
+    transaction.body = Buffer.from(uint8Body).toString('hex');
+
+    return await prisma.transaction.create({
+      data: {
+        ...transaction,
+        id: undefined,
+        created_at: undefined,
+        updated_at: undefined,
+      },
+    });
+  } catch (error: any) {
+    console.log(error);
+    throw new Error(error.message || 'Failed to store transaction');
+  }
 };
 
 // Get stored transactions
-export const getTransactions = (email: string, serverUrl?: string) => {
-  const store = getTransactionsStore(email);
+export const getTransactions = async (user_id: string) => {
+  try {
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        user_id: user_id,
+      },
+    });
 
-  if (serverUrl) {
-    return store.get('transactions').filter(t => t.serverUrl === serverUrl);
+    transactions.forEach(t => {
+      t.body = Uint8Array.from(Buffer.from(t.body, 'hex')).toString();
+    });
+
+    return transactions;
+  } catch (error: any) {
+    console.log(error);
+    throw new Error(error.message || 'Failed to fetch transactions');
   }
-
-  return store.get('transactions');
 };

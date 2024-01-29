@@ -3,9 +3,9 @@ import listenForConfigurationEvents from './configuration';
 import listenForUtilsEvents from './utils';
 import listenForLocalUserEvents from './localUser';
 
-export default function (app: Electron.App) {
+export default function () {
   listenForThemeEvents();
   listenForConfigurationEvents();
   listenForUtilsEvents();
-  listenForLocalUserEvents(app);
+  listenForLocalUserEvents();
 }

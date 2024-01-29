@@ -8,6 +8,7 @@ import {
   TransactionReceipt,
   TransactionResponse,
 } from '@hashgraph/sdk';
+import { Transaction as Tx } from '@prisma/client';
 
 import useUserStore from '../stores/storeUser';
 import useKeyPairsStore from '../stores/storeKeyPairs';
@@ -24,7 +25,7 @@ import {
   getTransactionSignatures,
   execute,
   createTransactionId,
-  saveTransaction,
+  storeTransaction,
 } from '../services/transactionService';
 import { openExternal } from '../services/electronUtilsService';
 
@@ -85,7 +86,7 @@ const localPublicKeysReq = computed(() =>
   requiredSignatures.value.filter(pk => keyPairs.publicKeys.includes(pk)),
 );
 const requiredLocalKeyPairs = computed(() =>
-  keyPairs.keyPairs.filter(kp => localPublicKeysReq.value.includes(kp.publicKey)),
+  keyPairs.keyPairs.filter(kp => localPublicKeysReq.value.includes(kp.public_key)),
 );
 const type = computed(
   () =>
@@ -109,7 +110,7 @@ async function handleSignTransaction(e: Event) {
       requiredLocalKeyPairs.value,
       transaction.value as any,
       true,
-      user.data.email,
+      user.data.id,
       userPassword.value,
     );
 
@@ -269,14 +270,26 @@ async function executeTransaction() {
 
   if (!type.value || !transaction.value.transactionId) throw new Error('Cannot save transaction');
 
-  await saveTransaction(user.data.email, {
-    mode: user.data.mode,
-    timestamp: new Date().getTime(),
-    status: status,
+  const tx: Tx = {
+    id: '',
+    name: `${type.value} (${transaction.value.transactionId.toString()})`,
     type: type.value,
-    transactionId: transaction.value.transactionId.toString(),
-    serverUrl: user.data.activeServerURL,
-  });
+    description: '',
+    transaction_id: transaction.value.transactionId.toString(),
+    transaction_hash: (await transaction.value.getTransactionHash()).toString(),
+    body: transaction.value.toBytes().toString(),
+    status: '',
+    status_code: status,
+    user_id: user.data.id,
+    key_id: null,
+    signature: '',
+    valid_start: transaction.value.transactionId.validStart?.toString() || '',
+    executed_at: new Date().getTime() / 1000,
+    created_at: new Date(),
+    updated_at: new Date(),
+    group_id: null,
+  };
+  await storeTransaction(tx);
 }
 
 async function sendSignedTransactionToOrganization() {
@@ -392,7 +405,7 @@ async function executeFileTransactions(
         requiredLocalKeyPairs.value,
         tx,
         true,
-        user.data.email,
+        user.data.id,
         userPassword.value,
       );
 
@@ -409,24 +422,39 @@ async function executeFileTransactions(
       processedChunks.value++;
     } catch (error: any) {
       console.log(error);
-
-      const data = JSON.parse(error.message);
-      status = data.status;
       hasFailed = true;
-      toast.error(data.message, { position: 'bottom-right' });
+
+      let message = error.message;
+      try {
+        const data = JSON.parse(error.message);
+        status = data.status;
+        message = data.message;
+      } catch {
+        /* empty */
+      }
+
+      toast.error(message, { position: 'bottom-right' });
     } finally {
-      await saveTransaction(user.data.email, {
-        mode: user.data.mode,
-        timestamp: new Date().getTime(),
-        status: status,
-        type: tx.constructor.name
-          .slice(1)
-          .split(/(?=[A-Z])/)
-          .join(' '),
-        transactionId: tx.transactionId?.toString() || '',
-        serverUrl: user.data.activeServerURL,
-        group: group,
-      });
+      const txToStore: Tx = {
+        id: '',
+        name: `${type.value} (${tx.transactionId.toString()})`,
+        type: type.value || '',
+        description: '',
+        transaction_id: tx.transactionId.toString(),
+        transaction_hash: (await tx.getTransactionHash()).toString(),
+        body: tx.toBytes().toString(),
+        status: '',
+        status_code: status,
+        user_id: user.data.id,
+        key_id: null,
+        signature: '',
+        valid_start: tx.transactionId.validStart?.toString() || '',
+        executed_at: new Date().getTime() / 1000,
+        created_at: new Date(),
+        updated_at: new Date(),
+        group_id: group,
+      };
+      await storeTransaction(txToStore);
     }
   }
 
@@ -451,7 +479,7 @@ async function sendSignedChunksToOrganization(transactions: Transaction[]) {
       requiredLocalKeyPairs.value,
       transactions[i],
       true,
-      user.data.email,
+      user.data.id,
       userPassword.value,
     );
     processedChunks.value++;

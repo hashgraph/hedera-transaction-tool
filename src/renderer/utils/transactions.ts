@@ -1,19 +1,27 @@
 import { Timestamp, Status } from '@hashgraph/sdk';
-import { IStoredTransaction } from 'src/main/shared/interfaces';
+import { Transaction } from '@prisma/client';
 
-export const getTransactionDate = (transaction: IStoredTransaction): string => {
+export const getTransactionDate = (transaction: Transaction): string => {
   return new Timestamp(
-    transaction.transactionId.split('@')[1].split('.')[0],
-    transaction.transactionId.split('@')[1].split('.')[1],
+    transaction.transaction_id.split('@')[1].split('.')[0],
+    transaction.transaction_id.split('@')[1].split('.')[1],
   )
     .toDate()
     .toDateString();
 };
 
-export const getTransactionId = (transaction: IStoredTransaction): string => {
-  return transaction.transactionId.split('@')[0];
+export const getTransactionId = (transaction: Transaction): string => {
+  return transaction.transaction_id.split('@')[0];
 };
 
-export const getTransactionStatus = (transaction: IStoredTransaction): string => {
-  return Status._fromCode(transaction.status).toString().split('_').join(' ');
+export const getTransactionStatus = (transaction: Transaction): string => {
+  return Status._fromCode(transaction.status_code).toString().split('_').join(' ');
+};
+
+export const getPayerFromTransaction = (transaction: Transaction): number => {
+  return Number(transaction.transaction_id.split('@')[0].split('.').join(''));
+};
+
+export const getStatusFromCode = (transaction: Transaction): string => {
+  return Status._fromCode(transaction.status_code).toString();
 };

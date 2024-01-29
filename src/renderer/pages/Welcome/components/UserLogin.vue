@@ -12,13 +12,13 @@ import {
   loginLocal,
   registerLocal,
   resetDataLocal,
-  hasRegisteredUsers,
+  getUsersCount,
 } from '../../../services/userService';
+import { getSecretHashes } from '../../../services/keyPairService';
 
 import { isEmail } from '../../../utils/validator';
 
 import AppButton from '../../../components/ui/AppButton.vue';
-import { getStoredKeysSecretHashes } from '@renderer/services/keyPairService';
 
 /* Stores */
 const user = useUserStore();
@@ -38,10 +38,10 @@ const inputPasswordInvalid = ref(false);
 const inputConfirmPasswordInvalid = ref(false);
 const passwordRequirements = reactive({
   length: false,
-  lowercase: false,
-  uppercase: false,
-  number: false,
-  special: false,
+  // lowercase: false,
+  // uppercase: false,
+  // number: false,
+  // special: false,
 });
 const tooltipContent = ref('');
 const shouldRegister = ref(false);
@@ -68,15 +68,15 @@ const handleOnFormSubmit = async (event: Event) => {
       toast.error('Password too weak', { position: 'bottom-right' });
       return;
     }
-    await registerLocal(inputEmail.value, inputPassword.value);
-    user.login(inputEmail.value, []);
+    const userData = await registerLocal(inputEmail.value, inputPassword.value);
+    user.login(userData, []);
     user.data.password = inputPassword.value;
     router.push({ name: 'accountSetup' });
   } else if (!shouldRegister.value) {
     try {
-      await loginLocal(inputEmail.value, inputPassword.value, false);
-      const secretHashes = await getStoredKeysSecretHashes(inputEmail.value);
-      user.login(inputEmail.value, secretHashes);
+      const userData = await loginLocal(inputEmail.value, inputPassword.value, false);
+      const secretHashes = await getSecretHashes(userData.id);
+      user.login(userData, secretHashes);
 
       if (secretHashes.length === 0) {
         user.data.password = inputPassword.value;
@@ -105,13 +105,14 @@ const handleResetData = async () => {
   inputPasswordInvalid.value = false;
   inputConfirmPasswordInvalid.value = false;
   await checkShouldRegister();
+  createTooltips();
+  setTooltipContent();
 };
 
 /* Hooks */
 onMounted(async () => {
   isPasswordStrong(inputPassword.value);
   await checkShouldRegister();
-
   if (shouldRegister.value) {
     createTooltips();
     setTooltipContent();
@@ -122,17 +123,17 @@ onMounted(async () => {
 function isPasswordStrong(password: string) {
   const validationRegex = [
     { regex: /.{10,}/ }, // min 10 letters,
-    { regex: /[0-9]/ }, // numbers from 0 - 9
-    { regex: /[a-z]/ }, // letters from a - z (lowercase)
-    { regex: /[A-Z]/ }, // letters from A-Z (uppercase),
-    { regex: /[^A-Za-z0-9]/ }, // special characters
+    // { regex: /[0-9]/ }, // numbers from 0 - 9
+    // { regex: /[a-z]/ }, // letters from a - z (lowercase)
+    // { regex: /[A-Z]/ }, // letters from A-Z (uppercase),
+    // { regex: /[^A-Za-z0-9]/ }, // special characters
   ];
 
   passwordRequirements.length = validationRegex[0].regex.test(password);
-  passwordRequirements.number = validationRegex[1].regex.test(password);
-  passwordRequirements.lowercase = validationRegex[2].regex.test(password);
-  passwordRequirements.uppercase = validationRegex[3].regex.test(password);
-  passwordRequirements.special = validationRegex[4].regex.test(password);
+  // passwordRequirements.number = validationRegex[1].regex.test(password);
+  // passwordRequirements.lowercase = validationRegex[2].regex.test(password);
+  // passwordRequirements.uppercase = validationRegex[3].regex.test(password);
+  // passwordRequirements.special = validationRegex[4].regex.test(password);
 
   const isStrong = validationRegex.reduce((isStrong, item) => {
     const isValid = item.regex.test(password);
@@ -143,26 +144,36 @@ function isPasswordStrong(password: string) {
 }
 
 function setTooltipContent() {
+  // tooltipContent.value = `
+  //         <div class='d-flex flex-column align-items-start px-3'>
+  //           <div class='${
+  //             passwordRequirements.lowercase ? 'text-success' : 'text-danger'
+  //           }'><i class='bi bi-${
+  //             passwordRequirements.lowercase ? 'check' : 'x'
+  //           }'></i>Lower case character</div>
+  //           <div class='${
+  //             passwordRequirements.uppercase ? 'text-success' : 'text-danger'
+  //           }'><i class='bi bi-${
+  //             passwordRequirements.uppercase ? 'check' : 'x'
+  //           }'></i>Upper case character</div>
+  //           <div class='${
+  //             passwordRequirements.number ? 'text-success' : 'text-danger'
+  //           }'><i class='bi bi-${passwordRequirements.number ? 'check' : 'x'}'></i>Have number</div>
+  //           <div class='${
+  //             passwordRequirements.special ? 'text-success' : 'text-danger'
+  //           }'><i class='bi bi-${
+  //             passwordRequirements.special ? 'check' : 'x'
+  //           }'></i>Special character</div>
+  //           <div class='${
+  //             passwordRequirements.length ? 'text-success' : 'text-danger'
+  //           }'><i class='bi bi-${
+  //             passwordRequirements.length ? 'check' : 'x'
+  //           }'></i>Be at least 10 characters</div>
+  //         </div>
+  //       `;
+
   tooltipContent.value = `
           <div class='d-flex flex-column align-items-start px-3'>
-            <div class='${
-              passwordRequirements.lowercase ? 'text-success' : 'text-danger'
-            }'><i class='bi bi-${
-              passwordRequirements.lowercase ? 'check' : 'x'
-            }'></i>Lower case character</div>
-            <div class='${
-              passwordRequirements.uppercase ? 'text-success' : 'text-danger'
-            }'><i class='bi bi-${
-              passwordRequirements.uppercase ? 'check' : 'x'
-            }'></i>Upper case character</div>
-            <div class='${
-              passwordRequirements.number ? 'text-success' : 'text-danger'
-            }'><i class='bi bi-${passwordRequirements.number ? 'check' : 'x'}'></i>Have number</div>
-            <div class='${
-              passwordRequirements.special ? 'text-success' : 'text-danger'
-            }'><i class='bi bi-${
-              passwordRequirements.special ? 'check' : 'x'
-            }'></i>Special character</div>
             <div class='${
               passwordRequirements.length ? 'text-success' : 'text-danger'
             }'><i class='bi bi-${
@@ -170,7 +181,6 @@ function setTooltipContent() {
             }'></i>Be at least 10 characters</div>
           </div>
         `;
-
   const tooltipList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
   Array.from(tooltipList).forEach(tooltipEl => {
     const tooltip = Tooltip.getInstance(tooltipEl);
@@ -180,7 +190,8 @@ function setTooltipContent() {
 
 async function checkShouldRegister() {
   try {
-    shouldRegister.value = !(await hasRegisteredUsers());
+    const usersCount = await getUsersCount();
+    shouldRegister.value = usersCount === 0;
   } catch (error) {
     shouldRegister.value = true;
   }

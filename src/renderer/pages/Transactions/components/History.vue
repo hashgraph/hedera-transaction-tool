@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import { onBeforeMount, reactive, ref } from 'vue';
-import { Status } from '@hashgraph/sdk';
-
-import { IStoredTransaction } from '../../../../main/shared/interfaces';
+import { computed, onBeforeMount, reactive, ref } from 'vue';
+import { Transaction } from '@prisma/client';
 
 import useUserStore from '../../../stores/storeUser';
 
@@ -12,6 +10,8 @@ import {
   getTransactionDate,
   getTransactionStatus,
   getTransactionId,
+  getPayerFromTransaction,
+  getStatusFromCode,
 } from '../../../utils/transactions';
 
 import AppButton from '../../../components/ui/AppButton.vue';
@@ -20,13 +20,18 @@ import AppButton from '../../../components/ui/AppButton.vue';
 const user = useUserStore();
 
 /* State */
-const transactions = ref<IStoredTransaction[]>([]);
+const transactions = ref<Transaction[]>([]);
 const sort = reactive<{ field: string; direction: 'asc' | 'desc' }>({
   field: 'timestamp',
   direction: 'desc',
 });
 
+const generatedClass = computed(() => {
+  return sort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
+});
+
 /* Handlers */
+// TODO to be refactored
 const handleSort = (field: string, direction: 'asc' | 'desc') => {
   sort.field = field;
   sort.direction = direction;
@@ -43,8 +48,8 @@ const handleSort = (field: string, direction: 'asc' | 'desc') => {
       break;
     case 'status':
       transactions.value = transactions.value.sort((t1, t2) => {
-        const status1 = Status._fromCode(t1.status).toString();
-        const status2 = Status._fromCode(t2.status).toString();
+        const status1 = getStatusFromCode(t1);
+        const status2 = getStatusFromCode(t2);
 
         if (direction === 'asc') {
           return status1.localeCompare(status2);
@@ -56,16 +61,16 @@ const handleSort = (field: string, direction: 'asc' | 'desc') => {
     case 'timestamp':
       transactions.value = transactions.value.sort((t1, t2) => {
         if (direction === 'asc') {
-          return t1.timestamp - t2.timestamp;
+          return t1.executed_at - t2.executed_at;
         } else if (direction === 'desc') {
-          return t2.timestamp - t1.timestamp;
+          return t2.executed_at - t1.executed_at;
         } else return 0;
       });
       break;
     case 'payerId':
       transactions.value = transactions.value.sort((t1, t2) => {
-        const payerId1 = Number(t1.transactionId.split('@')[0].split('.').join(''));
-        const payerId2 = Number(t2.transactionId.split('@')[0].split('.').join(''));
+        const payerId1 = getPayerFromTransaction(t1);
+        const payerId2 = getPayerFromTransaction(t2);
 
         if (direction === 'asc') {
           return payerId1 - payerId2;
@@ -84,9 +89,9 @@ const getOpositeDirection = () => (sort.direction === 'asc' ? 'desc' : 'asc');
 
 /* Hooks */
 onBeforeMount(async () => {
-  transactions.value = await getTransactions(user.data.email, user.data.activeServerURL);
+  transactions.value = await getTransactions(user.data.id);
   handleSort('timestamp', 'desc');
-  transactions.value = transactions.value.sort((t1, t2) => t2.timestamp - t1.timestamp);
+  transactions.value = transactions.value.sort((t1, t2) => t2.executed_at - t1.executed_at);
 });
 </script>
 
@@ -101,14 +106,7 @@ onBeforeMount(async () => {
             @click="handleSort('type', sort.field === 'type' ? getOpositeDirection() : 'asc')"
           >
             <span>Transaction Type</span>
-            <i
-              v-if="sort.field === 'type'"
-              class="bi text-title"
-              :class="{
-                'bi-arrow-down-short': sort.direction === 'desc',
-                'bi-arrow-up-short': sort.direction === 'asc',
-              }"
-            ></i>
+            <i v-if="sort.field === 'type'" class="bi text-title" :class="[generatedClass]"></i>
           </div>
         </th>
         <th>
@@ -117,14 +115,7 @@ onBeforeMount(async () => {
             @click="handleSort('status', sort.field === 'status' ? getOpositeDirection() : 'asc')"
           >
             <span>Status</span>
-            <i
-              v-if="sort.field === 'status'"
-              class="bi text-title"
-              :class="{
-                'bi-arrow-down-short': sort.direction === 'desc',
-                'bi-arrow-up-short': sort.direction === 'asc',
-              }"
-            ></i>
+            <i v-if="sort.field === 'status'" class="bi text-title" :class="[generatedClass]"></i>
           </div>
         </th>
         <th>
@@ -133,14 +124,7 @@ onBeforeMount(async () => {
             @click="handleSort('payerId', sort.field === 'payerId' ? getOpositeDirection() : 'asc')"
           >
             <span>Payer ID</span>
-            <i
-              v-if="sort.field === 'payerId'"
-              class="bi text-title"
-              :class="{
-                'bi-arrow-down-short': sort.direction === 'desc',
-                'bi-arrow-up-short': sort.direction === 'asc',
-              }"
-            ></i>
+            <i v-if="sort.field === 'payerId'" class="bi text-title" :class="[generatedClass]"></i>
           </div>
         </th>
         <th>
@@ -154,14 +138,13 @@ onBeforeMount(async () => {
             <i
               v-if="sort.field === 'timestamp'"
               class="bi text-title"
-              :class="{
-                'bi-arrow-down-short': sort.direction === 'desc',
-                'bi-arrow-up-short': sort.direction === 'asc',
-              }"
+              :class="[generatedClass]"
             ></i>
           </div>
         </th>
-        <th>Actions</th>
+        <th class="text-center">
+          <span>Actions</span>
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -174,7 +157,7 @@ onBeforeMount(async () => {
           <td>
             <span
               class="badge bg-success text-break"
-              :class="{ 'bg-danger': ![0, 22].includes(transaction.status) }"
+              :class="{ 'bg-danger': ![0, 22].includes(transaction.status_code) }"
               >{{ getTransactionStatus(transaction) }}</span
             >
           </td>
@@ -186,7 +169,7 @@ onBeforeMount(async () => {
               {{ getTransactionDate(transaction) }}
             </span>
           </td>
-          <td>
+          <td class="text-center">
             <AppButton color="primary">Details</AppButton>
           </td>
         </tr>

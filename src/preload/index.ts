@@ -1,8 +1,9 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import { HederaAccount, KeyPair, Transaction, User } from '@prisma/client';
 
 import { proto } from '@hashgraph/proto';
 
-import { IKeyPair, IOrganization, IStoredTransaction } from '../main/shared/interfaces';
+import { IOrganization } from '../main/shared/interfaces';
 
 import { Theme } from '../main/modules/ipcHandlers/theme';
 import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
@@ -28,48 +29,24 @@ export const electronAPI = {
     },
   },
   keyPairs: {
-    getStored: (
-      email: string,
-      serverUrl?: string,
-      userId?: string,
-      secretHash?: string,
-      secretHashName?: string,
-    ): Promise<IKeyPair[]> =>
-      ipcRenderer.invoke(
-        'keyPairs:getStored',
-        email,
-        serverUrl,
-        userId,
-        secretHash,
-        secretHashName,
-      ),
-    getStoredKeysSecretHashes: (
-      email: string,
-      serverUrl?: string,
-      userId?: string,
-    ): Promise<string[]> =>
-      ipcRenderer.invoke('keyPairs:getStoredKeysSecretHashes', email, serverUrl, userId),
-    store: (
-      email: string,
-      password: string,
-      keyPair: IKeyPair,
-      secretHash?: string,
-      serverUrl?: string,
-      userId?: string,
-    ): Promise<void> =>
-      ipcRenderer.invoke('keyPairs:store', email, password, keyPair, secretHash, serverUrl, userId),
+    getAll: (userId: string, organizationId?: string): Promise<KeyPair[]> =>
+      ipcRenderer.invoke('keyPairs:getAll', userId, organizationId),
+    getSecretHashes: (userId: string, organizationId?: string): Promise<string[]> =>
+      ipcRenderer.invoke('keyPairs:getSecretHashes', userId, organizationId),
+    store: (keyPair: KeyPair, password: string): Promise<void> =>
+      ipcRenderer.invoke('keyPairs:store', keyPair, password),
     changeDecryptionPassword: (
-      email: string,
+      userId: string,
       oldPassword: string,
       newPassword: string,
-    ): Promise<IKeyPair[]> =>
-      ipcRenderer.invoke('keyPairs:changeDecryptionPassword', email, oldPassword, newPassword),
-    decryptPrivateKey: (email: string, password: string, publicKey: string): Promise<string> =>
-      ipcRenderer.invoke('keyPairs:decryptPrivateKey', email, password, publicKey),
-    deleteEncryptedPrivateKeys: (email: string, serverUrl: string, userId: string): Promise<void> =>
-      ipcRenderer.invoke('keyPairs:deleteEncryptedPrivateKeys', email, serverUrl, userId),
-    clear: (email: string, serverUrl?: string, userId?: string): Promise<boolean> =>
-      ipcRenderer.invoke('keyPairs:clear', email, serverUrl, userId),
+    ): Promise<KeyPair[]> =>
+      ipcRenderer.invoke('keyPairs:changeDecryptionPassword', userId, oldPassword, newPassword),
+    decryptPrivateKey: (userId: string, password: string, publicKey: string): Promise<string> =>
+      ipcRenderer.invoke('keyPairs:decryptPrivateKey', userId, password, publicKey),
+    deleteEncryptedPrivateKeys: (userId: string, organizationId: string): Promise<void> =>
+      ipcRenderer.invoke('keyPairs:deleteEncryptedPrivateKeys', userId, organizationId),
+    clear: (userId: string, organizationId?: string): Promise<boolean> =>
+      ipcRenderer.invoke('keyPairs:clear', userId, organizationId),
   },
   utils: {
     openExternal: (url: string) => ipcRenderer.send('utils:openExternal', url),
@@ -78,34 +55,20 @@ export const electronAPI = {
     hash: (data: any): Promise<string> => ipcRenderer.invoke('utils:hash', data),
   },
   accounts: {
-    getAll: (email: string): Promise<{ accountId: string; nickname: string }[]> =>
+    getAll: (email: string): Promise<HederaAccount[]> =>
       ipcRenderer.invoke('accounts:getAll', email),
-    add: (
-      email: string,
-      accountId: string,
-      nickname: string,
-    ): Promise<{ accountId: string; nickname: string }[]> =>
+    add: (email: string, accountId: string, nickname: string): Promise<HederaAccount[]> =>
       ipcRenderer.invoke('accounts:add', email, accountId, nickname),
-    remove: (
-      email: string,
-      accountId: string,
-      nickname: string,
-    ): Promise<{ accountId: string; nickname: string }[]> =>
+    remove: (email: string, accountId: string, nickname: string): Promise<HederaAccount[]> =>
       ipcRenderer.invoke('accounts:remove', email, accountId, nickname),
   },
   localUser: {
-    login: (email: string, password: string, autoRegister?: boolean): Promise<boolean> =>
+    login: (email: string, password: string, autoRegister?: boolean): Promise<User> =>
       ipcRenderer.invoke('localUser:login', email, password, autoRegister),
-    register: (email: string, password: string) =>
+    register: (email: string, password: string): Promise<User> =>
       ipcRenderer.invoke('localUser:register', email, password),
-    resetData: (options?: {
-      email: string;
-      authData?: boolean;
-      keys?: boolean;
-      transactions?: boolean;
-      organizations?: boolean;
-    }) => ipcRenderer.invoke('localUser:resetData', options),
-    hasRegisteredUsers: () => ipcRenderer.invoke('localUser:hasRegisteredUsers'),
+    resetData: () => ipcRenderer.invoke('localUser:resetData'),
+    usersCount: (): Promise<number> => ipcRenderer.invoke('localUser:usersCount'),
   },
   transactions: {
     executeTransaction: (
@@ -116,10 +79,10 @@ export const electronAPI = {
       transactionId: string;
     }> => ipcRenderer.invoke('transactions:executeTransaction', transactionData),
     executeQuery: (queryData: string) => ipcRenderer.invoke('transactions:executeQuery', queryData),
-    saveTransaction: (email: string, transaction: IStoredTransaction) =>
-      ipcRenderer.invoke('transactions:saveTransaction', email, transaction),
-    getTransactions: (email: string, serverUrl?: string) =>
-      ipcRenderer.invoke('transactions:getTransactions', email, serverUrl),
+    storeTransaction: (transaction: Transaction): Promise<Transaction[]> =>
+      ipcRenderer.invoke('transactions:storeTransaction', transaction),
+    getTransactions: (user_id: string): Promise<Transaction[]> =>
+      ipcRenderer.invoke('transactions:getTransactions', user_id),
   },
 };
 typeof electronAPI;

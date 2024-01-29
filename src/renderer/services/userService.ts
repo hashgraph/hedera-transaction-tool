@@ -27,9 +27,9 @@ export const resetDataLocal = async () => {
   }
 };
 
-export const hasRegisteredUsers = async () => {
+export const getUsersCount = async () => {
   try {
-    return await window.electronAPI.localUser.hasRegisteredUsers();
+    return await window.electronAPI.localUser.usersCount();
   } catch (err: any) {
     const message = err.message?.split(': Error: ')[1] || 'Failed to check for registered users';
     throw Error(message);

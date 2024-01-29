@@ -1,6 +1,7 @@
 {
   "extends": "@electron-toolkit/tsconfig/tsconfig.web.json",
   "include": [
+    "node_modules/@prisma/client",
     "src/main/shared",
     "src/renderer/env.d.ts",
     "src/renderer/**/*",

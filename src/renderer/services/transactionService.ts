@@ -7,7 +7,7 @@ import {
   TransactionId,
 } from '@hashgraph/sdk';
 
-import { IKeyPairWithAccountId, IStoredTransaction } from '../../main/shared/interfaces';
+import { KeyPair, Transaction as Tx } from '@prisma/client';
 
 import { CustomNetworkSettings, Network } from '../stores/storeNetwork';
 
@@ -37,10 +37,10 @@ export const createTransactionId = (
 
 /* Collects and adds the signatures for the provided key pairs */
 export const getTransactionSignatures = async (
-  keyPairs: IKeyPairWithAccountId[],
+  keyPairs: KeyPair[],
   transaction: Transaction,
   addToTransaction: boolean,
-  email: string,
+  userId: string,
   password: string,
 ) => {
   const signatures: { publicKey: PublicKey; signature: Uint8Array }[] = [];
@@ -49,9 +49,9 @@ export const getTransactionSignatures = async (
   try {
     await Promise.all(
       keyPairs.map(async keyPair => {
-        const privateKeyString = await decryptPrivateKey(email, password, keyPair.publicKey);
+        const privateKeyString = await decryptPrivateKey(userId, password, keyPair.public_key);
 
-        const keyType = PublicKey.fromString(keyPair.publicKey);
+        const keyType = PublicKey.fromString(keyPair.public_key);
 
         const privateKey =
           keyType._key._type === 'secp256k1'
@@ -59,9 +59,9 @@ export const getTransactionSignatures = async (
             : PrivateKey.fromStringED25519(privateKeyString);
         const signature = privateKey.signTransaction(transaction);
 
-        if (!publicKeys.includes(keyPair.publicKey)) {
-          signatures.push({ publicKey: PublicKey.fromString(keyPair.publicKey), signature });
-          publicKeys.push(keyPair.publicKey);
+        if (!publicKeys.includes(keyPair.public_key)) {
+          signatures.push({ publicKey: PublicKey.fromString(keyPair.public_key), signature });
+          publicKeys.push(keyPair.public_key);
         }
       }),
     );
@@ -109,9 +109,9 @@ export const executeQuery = async (
 };
 
 /* Saves transaction info */
-export const saveTransaction = async (email: string, transaction: IStoredTransaction) => {
+export const storeTransaction = async (transaction: Tx) => {
   try {
-    await window.electronAPI.transactions.saveTransaction(email, transaction);
+    return await window.electronAPI.transactions.storeTransaction(transaction);
   } catch (err: any) {
     const message = err.message?.split(': Error: ')[1] || 'Saving transaction Failed';
     throw Error(message);
@@ -119,9 +119,9 @@ export const saveTransaction = async (email: string, transaction: IStoredTransac
 };
 
 /* Returns saved transactions */
-export const getTransactions = async (email: string, serverUrl?: string) => {
+export const getTransactions = async (user_id: string) => {
   try {
-    return await window.electronAPI.transactions.getTransactions(email, serverUrl);
+    return await window.electronAPI.transactions.getTransactions(user_id);
   } catch (err: any) {
     const message = err.message?.split(': Error: ')[1] || 'Getting transactions Failed';
     throw Error(message);

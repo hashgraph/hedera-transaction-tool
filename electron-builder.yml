@@ -11,6 +11,7 @@ files:
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 asarUnpack:
   - resources/**
+  - prisma/**
 win:
   executableName: ${productName}
 nsis:
@@ -24,3 +25,7 @@ linux:
     - snap
 publish:
   provider: github
+extraResources:
+  - node_modules/prisma/**/*
+  - node_modules/.prisma/**/*
+  - node_modules/@prisma/client/**/*

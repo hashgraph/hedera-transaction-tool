@@ -1,18 +1,17 @@
 import { ipcMain } from 'electron';
 
-import { login, register, resetData, hasRegisteredUsers } from '../../../services/localUser';
+import { getUsersCount, login, register, resetData } from '../../../services/localUser';
 
 const createChannelName = (...props) => ['localUser', ...props].join(':');
 
-export default (app: Electron.App) => {
+export default () => {
   /* Local User */
 
   // Login
   ipcMain.handle(
     createChannelName('login'),
-    async (_e, email: string, password: string, autoRegister?: boolean) => {
-      await login(app.getPath('userData'), email, password, autoRegister);
-    },
+    (_e, email: string, password: string, autoRegister?: boolean) =>
+      login(email, password, autoRegister),
   );
 
   // Register
@@ -21,22 +20,8 @@ export default (app: Electron.App) => {
   );
 
   // Reset
-  ipcMain.handle(
-    createChannelName('resetData'),
-    (
-      _e,
-      options?: {
-        email: string;
-        authData?: boolean;
-        keys?: boolean;
-        transactions?: boolean;
-        organizations?: boolean;
-      },
-    ) => resetData(app.getPath('userData'), options),
-  );
+  ipcMain.handle(createChannelName('resetData'), () => resetData());
 
   // Check if user has been registered
-  ipcMain.handle(createChannelName('hasRegisteredUsers'), () =>
-    hasRegisteredUsers(app.getPath('userData')),
-  );
+  ipcMain.handle(createChannelName('usersCount'), () => getUsersCount());
 };

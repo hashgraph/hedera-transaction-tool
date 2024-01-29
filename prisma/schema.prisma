@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:"
+}
+
+// DO NOT CHANGE MIGRATION MODULE!
+model Migration {
+  id         Int    @id @default(autoincrement())
+  name       String
+  created_at Int
+}
+
+model User {
+  id            String          @id @default(uuid())
+  email         String          @unique
+  password      String
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @updatedAt
+  keysPairs     KeyPair[]
+  transactions  Transaction[]
+  organizations Organization[]
+  HederaAccount HederaAccount[]
+}
+
+model KeyPair {
+  id              String        @id @default(uuid())
+  user_id         String
+  index           Int
+  public_key      String
+  private_key     String
+  organization_id String?
+  secret_hash     String?
+  nickname        String?
+  user            User          @relation(fields: [user_id], references: [id])
+  organization    Organization? @relation(fields: [organization_id], references: [id])
+  transactions    Transaction[]
+
+  @@index([user_id, secret_hash], name: "unique_user_key")
+}
+
+model Organization {
+  id       String @id @default(uuid())
+  user_id  String
+  email    String
+  password String
+  user     User   @relation(fields: [user_id], references: [id])
+
+  keyPairs KeyPair[]
+}
+
+model Transaction {
+  id               String   @id @default(uuid())
+  name             String
+  type             String
+  description      String
+  transaction_id   String
+  transaction_hash String
+  body             String
+  status           String
+  status_code      Int
+  user_id          String
+  key_id           String?
+  signature        String
+  valid_start      String
+  executed_at      Int
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+  group_id         String?
+  user             User     @relation(fields: [user_id], references: [id])
+  key              KeyPair? @relation(fields: [key_id], references: [id])
+}
+
+model HederaAccount {
+  id         String @id @default(uuid())
+  user_id    String
+  account_id String
+  nickname   String
+  user       User   @relation(fields: [user_id], references: [id])
+}

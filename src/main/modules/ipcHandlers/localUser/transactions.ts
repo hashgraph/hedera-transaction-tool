@@ -1,12 +1,11 @@
 import { ipcMain } from 'electron';
-
-import { IStoredTransaction } from '../../../shared/interfaces';
+import { Transaction } from '@prisma/client';
 
 import {
   executeQuery,
   executeTransaction,
   getTransactions,
-  saveTransaction,
+  storeTransaction,
 } from '../../../services/localUser';
 
 const createChannelName = (...props) => ['transactions', ...props].join(':');
@@ -25,13 +24,12 @@ export default () => {
   );
 
   // Stores a transaction
-  ipcMain.handle(
-    createChannelName('saveTransaction'),
-    (_e, email: string, transaction: IStoredTransaction) => saveTransaction(email, transaction),
+  ipcMain.handle(createChannelName('storeTransaction'), (_e, transaction: Transaction) =>
+    storeTransaction(transaction),
   );
 
   // Get stored transactions
-  ipcMain.handle(createChannelName('getTransactions'), (_e, email: string, serverUrl?: string) =>
-    getTransactions(email, serverUrl),
+  ipcMain.handle(createChannelName('getTransactions'), (_e, user_id: string) =>
+    getTransactions(user_id),
   );
 };

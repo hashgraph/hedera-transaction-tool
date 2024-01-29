@@ -37,3 +37,7 @@ export function decrypt(data, password: string) {
 
   return Buffer.from(hex, 'hex').toString('utf-8');
 }
+
+export function generateUUID() {
+  return crypto.randomUUID();
+}
