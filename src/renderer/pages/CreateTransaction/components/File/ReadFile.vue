@@ -149,7 +149,7 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
           @click="isUserPasswordModalShown = false"
         ></i>
         <div class="mt-5 text-center">
-          <i class="bi bi-shield-lock extra-large-icon" style="line-height: 16px"></i>
+          <i class="bi bi-shield-lock large-icon" style="line-height: 16px"></i>
         </div>
         <form @submit="handleRead">
           <h3 class="mt-5 text-main text-center text-bold">Enter your password</h3>

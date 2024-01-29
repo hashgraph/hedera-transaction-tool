@@ -508,3 +508,18 @@
     padding: 16px;
   }
 }
+
+/* Separators */
+.separator {
+  border: 0;
+  margin: 0;
+  height: 1px;
+  width: 100%;
+  opacity: 1;
+  background-color: var(--#{$prefix}input-border-color);
+}
+
+/* Borders */
+.with-border-end {
+  border-right: 1px solid var(--#{$prefix}input-border-color);
+}

@@ -84,7 +84,7 @@ const handleChangePassword = async e => {
           @click="isSuccessModalShown = false"
         ></i>
         <div class="mt-5 text-center">
-          <i class="bi bi-check-lg extra-large-icon cursor-pointer" style="line-height: 16px"></i>
+          <i class="bi bi-check-lg large-icon cursor-pointer" style="line-height: 16px"></i>
         </div>
 
         <h3 class="mt-5 text-main text-center text-bold">Password Changed Successfully</h3>

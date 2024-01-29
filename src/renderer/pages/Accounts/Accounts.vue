@@ -144,7 +144,7 @@ const handleUnlinkAccount = async () => {
       </div>
     </div>
     <div class="mt-7 h-100 row">
-      <div class="col-4 col-xxl-3 border-end pe-4 ps-0">
+      <div class="col-4 col-xxl-3 with-border-end pe-4 ps-0">
         <div class="dropdown">
           <AppButton
             color="primary"
@@ -191,7 +191,7 @@ const handleUnlinkAccount = async () => {
             </ul>
           </div>
         </div> -->
-        <hr class="my-5" />
+        <hr class="separator my-5" />
         <div>
           <template v-for="account in accounts" :key="account.accountId">
             <div
@@ -234,7 +234,7 @@ const handleUnlinkAccount = async () => {
                   </p>
                 </div>
               </div>
-              <hr class="my-4" />
+              <hr class="separator my-4" />
             </template>
             <div class="row">
               <div class="col-5">
@@ -335,7 +335,7 @@ const handleUnlinkAccount = async () => {
                 </p>
               </div>
             </div>
-            <hr class="my-4" />
+            <hr class="separator my-4" />
             <div class="row">
               <div class="col-5"><p class="text-small text-semi-bold">Created At</p></div>
               <div class="col-7">
@@ -377,7 +377,7 @@ const handleUnlinkAccount = async () => {
                 >
               </div>
             </div>
-            <hr class="my-4" />
+            <hr class="separator my-4" />
             <div class="row">
               <div class="col-5"><p class="text-small text-semi-bold">Staked to</p></div>
               <div class="col-7">
@@ -411,7 +411,7 @@ const handleUnlinkAccount = async () => {
               </div>
             </div>
             <template v-if="accountData.accountInfo.value?.deleted">
-              <hr class="my-4" />
+              <hr class="separator my-4" />
               <p class="text-danger">Account is deleted</p>
             </template>
           </div>
@@ -433,30 +433,26 @@ const handleUnlinkAccount = async () => {
           </div>
         </AppModal>
         <AppModal v-model:show="isUnlinkAccountModalShown" class="common-modal">
-          <div class="p-5">
+          <div class="modal-body">
             <i
               class="bi bi-x-lg d-inline-block cursor-pointer"
               style="line-height: 16px"
               @click="isUnlinkAccountModalShown = false"
             ></i>
-            <div class="mt-5 text-center">
-              <i class="bi bi-trash extra-large-icon" style="line-height: 16px"></i>
+            <div class="text-center mt-5">
+              <i class="bi bi-trash large-icon" style="line-height: 16px"></i>
             </div>
-            <p class="mt-5 text-center">Are you sure you want to remove account?</p>
-            <AppButton
-              color="primary"
-              size="large"
-              class="mt-5 w-100 rounded-4"
-              @click="handleUnlinkAccount"
-              >Confirm</AppButton
-            >
-            <AppButton
-              color="primary"
-              size="large"
-              class="mt-4 w-100 rounded-4"
-              @click="isUnlinkAccountModalShown = false"
-              >Cancel</AppButton
-            >
+            <h3 class="text-center text-title text-bold mt-5">Delete account</h3>
+            <p class="text-center text-small text-secondary mt-4">
+              Are you sure you want to remove account?
+            </p>
+            <hr class="separator my-5" />
+            <div class="d-grid">
+              <AppButton color="primary" @click="handleUnlinkAccount">Confirm</AppButton>
+              <AppButton color="secondary" class="mt-4" @click="isUnlinkAccountModalShown = false"
+                >Cancel</AppButton
+              >
+            </div>
           </div>
         </AppModal>
       </div>
