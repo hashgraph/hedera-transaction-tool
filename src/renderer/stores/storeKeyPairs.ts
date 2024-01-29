@@ -1,13 +1,12 @@
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { defineStore } from 'pinia';
-
-import { IKeyPair, IKeyPairWithAccountId } from '../../main/shared/interfaces';
 
 import useNetworkStore from './storeNetwork';
 import useUserStore from './storeUser';
 
 import * as keyPairService from '../services/keyPairService';
 import * as mirrorNodeDataService from '../services/mirrorNodeDataService';
+import { KeyPair } from '@prisma/client';
 
 const useKeyPairsStore = defineStore('keyPairs', () => {
   /* Stores */
@@ -16,10 +15,11 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
 
   /* State */
   const recoveryPhraseWords = ref<string[]>([]);
-  const keyPairs = ref<IKeyPairWithAccountId[]>([]);
+  const keyPairs = ref<KeyPair[]>([]);
+  const accoundIds = reactive<{ publicKey: string; accountIds: string[] }[]>([]);
 
   /* Getters */
-  const publicKeys = computed(() => keyPairs.value.map(kp => kp.publicKey));
+  const publicKeys = computed(() => keyPairs.value.map(kp => kp.public_key));
 
   /* Actions */
   async function refetch() {
@@ -27,18 +27,20 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
       throw Error('Please login to get stored keys!');
     }
 
-    keyPairs.value = await keyPairService.getStoredKeyPairs(
-      user.data.email,
-      user.data.activeServerURL,
-      user.data.activeUserId,
-    );
+    keyPairs.value = await keyPairService.getKeyPairs(user.data.id);
 
-    keyPairs.value.forEach(async kp => {
-      kp.accountId = await mirrorNodeDataService.getAccountId(
-        networkStore.mirrorNodeBaseURL,
-        kp.publicKey,
-      );
-    });
+    for (let i = 0; i < keyPairs.value.length; i++) {
+      const keyPair = keyPairs.value[i];
+
+      const publicKeyPair = accoundIds.find(acc => acc.publicKey === keyPair.public_key);
+
+      if (publicKeyPair) {
+        publicKeyPair.accountIds = await mirrorNodeDataService.getAccountId(
+          networkStore.mirrorNodeBaseURL,
+          keyPair.public_key,
+        );
+      }
+    }
   }
 
   function setRecoveryPhrase(words: string[]) {
@@ -51,27 +53,20 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
     recoveryPhraseWords.value = [];
   }
 
-  async function storeKeyPair(password: string, keyPair: IKeyPair, secretHash?: string) {
+  async function storeKeyPair(keyPair: KeyPair, password: string) {
     if (!user.data.isLoggedIn) {
       throw Error('Personal user is not logged in!');
     }
 
     if (
       user.data.secretHashes.length > 0 &&
-      secretHash &&
-      !user.data.secretHashes.includes(secretHash)
+      keyPair.secret_hash &&
+      !user.data.secretHashes.includes(keyPair.secret_hash)
     ) {
       throw Error('Different recovery phrase is used!');
     }
 
-    await keyPairService.storeKeyPair(
-      user.data.email,
-      password,
-      keyPair,
-      secretHash,
-      user.data.activeServerURL,
-      user.data.activeUserId,
-    );
+    await keyPairService.storeKeyPair(keyPair, password);
 
     await refetch();
   }
@@ -86,6 +81,7 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
   return {
     recoveryPhraseWords,
     keyPairs,
+    accoundIds,
     publicKeys,
     setRecoveryPhrase,
     clearRecoveryPhrase,

@@ -40,7 +40,7 @@ export const getTransactionSignatures = async (
   keyPairs: IKeyPairWithAccountId[],
   transaction: Transaction,
   addToTransaction: boolean,
-  email: string,
+  userId: string,
   password: string,
 ) => {
   const signatures: { publicKey: PublicKey; signature: Uint8Array }[] = [];
@@ -49,7 +49,7 @@ export const getTransactionSignatures = async (
   try {
     await Promise.all(
       keyPairs.map(async keyPair => {
-        const privateKeyString = await decryptPrivateKey(email, password, keyPair.publicKey);
+        const privateKeyString = await decryptPrivateKey(userId, password, keyPair.publicKey);
 
         const keyType = PublicKey.fromString(keyPair.publicKey);
 

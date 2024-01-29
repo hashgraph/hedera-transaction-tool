@@ -2,21 +2,17 @@ import { Key, KeyList, Mnemonic, PrivateKey, PublicKey } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
 import { IKeyPair } from '../../main/shared/interfaces';
+import { KeyPair } from '@prisma/client';
 
 /* Key Pairs Service */
 
 /* Get stored key pairs */
-export const getStoredKeyPairs = (
-  email: string,
-  serverUrl?: string,
-  userId?: string,
-  secretHash?: string,
-  secretHashName?: string,
-) => window.electronAPI.keyPairs.getStored(email, serverUrl, userId, secretHash, secretHashName);
+export const getKeyPairs = (userId: string, organizationId?: string) =>
+  window.electronAPI.keyPairs.getAll(userId, organizationId);
 
 /* Get stored secret hashes */
-export const getStoredKeysSecretHashes = (email: string, serverUrl?: string, userId?: string) =>
-  window.electronAPI.keyPairs.getStoredKeysSecretHashes(email, serverUrl, userId);
+export const getSecretHashes = (userId: string, organizationId?: string) =>
+  window.electronAPI.keyPairs.getSecretHashes(userId, organizationId);
 
 /* Restore private key from recovery phrase */
 export const restorePrivateKey = async (
@@ -41,24 +37,21 @@ export const restorePrivateKey = async (
   }
 };
 
-/* Store key pair along with its recovery phrase hash */
-export const storeKeyPair = (
-  email: string,
-  password: string,
-  keyPair: IKeyPair,
-  secretHash?: string,
-  serverUrl?: string,
-  userId?: string,
-) => window.electronAPI.keyPairs.store(email, password, keyPair, secretHash, serverUrl, userId);
+/* Store key pair*/
+export const storeKeyPair = (keyPair: KeyPair, password: string) =>
+  window.electronAPI.keyPairs.store(keyPair, password);
 
 /* Change the decryption password of a stored private key */
-export const changeDecryptionPassword = (email: string, oldPassword: string, newPassword: string) =>
-  window.electronAPI.keyPairs.changeDecryptionPassword(email, oldPassword, newPassword);
+export const changeDecryptionPassword = (
+  userId: string,
+  oldPassword: string,
+  newPassword: string,
+) => window.electronAPI.keyPairs.changeDecryptionPassword(userId, oldPassword, newPassword);
 
 /* Decrypt private key with user's password */
-export const decryptPrivateKey = async (email: string, password: string, publicKey: string) => {
+export const decryptPrivateKey = async (userId: string, password: string, publicKey: string) => {
   try {
-    return await window.electronAPI.keyPairs.decryptPrivateKey(email, password, publicKey);
+    return await window.electronAPI.keyPairs.decryptPrivateKey(userId, password, publicKey);
   } catch (error) {
     throw new Error('Failed to decrypt private key/s');
   }
@@ -69,12 +62,12 @@ export const hashRecoveryPhrase = (words: string[]) =>
   window.electronAPI.utils.hash(words.toString());
 
 /* Delete all stored key pairs */
-export const clearKeys = (email: string, serverUrl?: string, userId?: string) =>
-  window.electronAPI.keyPairs.clear(email, serverUrl, userId);
+export const clearKeys = (userId: string, organizationId?: string) =>
+  window.electronAPI.keyPairs.clear(userId, organizationId);
 
 /* Delete the encrypted private keys from user's key pairs */
-export const deleteEncryptedPrivateKeys = (email: string, serverUrl: string, userId: string) =>
-  window.electronAPI.keyPairs.deleteEncryptedPrivateKeys(email, serverUrl, userId);
+export const deleteEncryptedPrivateKeys = (userId: string, organizationId: string) =>
+  window.electronAPI.keyPairs.deleteEncryptedPrivateKeys(userId, organizationId);
 
 /* Validates if the provided recovery phrase is valid according to BIP-39 */
 export const validateMnemonic = async (words: string[]) => {
