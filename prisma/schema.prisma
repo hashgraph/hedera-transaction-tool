@@ -15,14 +15,15 @@ model Migration {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
+  id            String          @id @default(uuid())
+  email         String          @unique
   password      String
-  created_at    DateTime       @default(now())
-  updated_at    DateTime       @updatedAt
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @updatedAt
   keysPairs     KeyPair[]
   transactions  Transaction[]
   organizations Organization[]
+  HederaAccount HederaAccount[]
 }
 
 model KeyPair {
@@ -71,4 +72,12 @@ model Transaction {
   group_id         String?
   user             User     @relation(fields: [user_id], references: [id])
   key              KeyPair? @relation(fields: [key_id], references: [id])
+}
+
+model HederaAccount {
+  id         String @id @default(uuid())
+  user_id    String
+  account_id String
+  nickname   String
+  user       User   @relation(fields: [user_id], references: [id])
 }
