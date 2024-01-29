@@ -117,10 +117,20 @@ export const executeQuery = async (queryData: string) => {
 // Stores a transaction
 export const storeTransaction = async (transaction: Tx) => {
   try {
+    const uint8TransactionHash = Uint8Array.from(
+      transaction.transaction_hash.split(',').map(b => Number(b)),
+    );
+    transaction.transaction_hash = Buffer.from(uint8TransactionHash).toString('hex');
+
+    const uint8Body = Uint8Array.from(transaction.body.split(',').map(b => Number(b)));
+    transaction.body = Buffer.from(uint8Body).toString('hex');
+
     return await prisma.transaction.create({
       data: {
         ...transaction,
         id: undefined,
+        created_at: undefined,
+        updated_at: undefined,
       },
     });
   } catch (error: any) {
@@ -132,11 +142,17 @@ export const storeTransaction = async (transaction: Tx) => {
 // Get stored transactions
 export const getTransactions = async (user_id: string) => {
   try {
-    return await prisma.transaction.findMany({
+    const transactions = await prisma.transaction.findMany({
       where: {
         user_id: user_id,
       },
     });
+
+    transactions.forEach(t => {
+      t.body = Uint8Array.from(Buffer.from(t.body, 'hex')).toString();
+    });
+
+    return transactions;
   } catch (error: any) {
     console.log(error);
     throw new Error(error.message || 'Failed to fetch transactions');

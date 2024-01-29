@@ -281,12 +281,12 @@ async function executeTransaction() {
     status: '',
     status_code: status,
     user_id: user.data.id,
-    key_id: '',
+    key_id: null,
     signature: '',
     valid_start: transaction.value.transactionId.validStart?.toString() || '',
     executed_at: new Date().getTime() / 1000,
-    created_at: 0,
-    updated_at: 0,
+    created_at: new Date(),
+    updated_at: new Date(),
     group_id: null,
   };
   await storeTransaction(tx);
@@ -439,12 +439,12 @@ async function executeFileTransactions(
         status: '',
         status_code: status,
         user_id: user.data.id,
-        key_id: '',
+        key_id: null,
         signature: '',
         valid_start: tx.transactionId.validStart?.toString() || '',
         executed_at: new Date().getTime() / 1000,
-        created_at: 0,
-        updated_at: 0,
+        created_at: new Date(),
+        updated_at: new Date(),
         group_id: group,
       };
       await storeTransaction(txToStore);

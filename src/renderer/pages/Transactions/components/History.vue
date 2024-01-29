@@ -2,8 +2,6 @@
 import { onBeforeMount, reactive, ref } from 'vue';
 import { Status } from '@hashgraph/sdk';
 
-// import { IStoredTransaction } from '../../../../main/shared/interfaces';
-
 import useUserStore from '../../../stores/storeUser';
 
 import { getTransactions } from '../../../services/transactionService';
@@ -20,7 +18,7 @@ import AppButton from '../../../components/ui/AppButton.vue';
 const user = useUserStore();
 
 /* State */
-const transactions = ref<any[]>([]);
+const transactions = ref<Transaction[]>([]);
 const sort = reactive<{ field: string; direction: 'asc' | 'desc' }>({
   field: 'timestamp',
   direction: 'desc',
@@ -43,8 +41,8 @@ const handleSort = (field: string, direction: 'asc' | 'desc') => {
       break;
     case 'status':
       transactions.value = transactions.value.sort((t1, t2) => {
-        const status1 = Status._fromCode(t1.status).toString();
-        const status2 = Status._fromCode(t2.status).toString();
+        const status1 = Status._fromCode(t1.status_code).toString();
+        const status2 = Status._fromCode(t2.status_code).toString();
 
         if (direction === 'asc') {
           return status1.localeCompare(status2);
@@ -56,16 +54,16 @@ const handleSort = (field: string, direction: 'asc' | 'desc') => {
     case 'timestamp':
       transactions.value = transactions.value.sort((t1, t2) => {
         if (direction === 'asc') {
-          return t1.timestamp - t2.timestamp;
+          return t1.executed_at - t2.executed_at;
         } else if (direction === 'desc') {
-          return t2.timestamp - t1.timestamp;
+          return t2.executed_at - t1.executed_at;
         } else return 0;
       });
       break;
     case 'payerId':
       transactions.value = transactions.value.sort((t1, t2) => {
-        const payerId1 = Number(t1.transactionId.split('@')[0].split('.').join(''));
-        const payerId2 = Number(t2.transactionId.split('@')[0].split('.').join(''));
+        const payerId1 = Number(t1.transaction_id.split('@')[0].split('.').join(''));
+        const payerId2 = Number(t2.transaction_id.split('@')[0].split('.').join(''));
 
         if (direction === 'asc') {
           return payerId1 - payerId2;
@@ -86,7 +84,7 @@ const getOpositeDirection = () => (sort.direction === 'asc' ? 'desc' : 'asc');
 onBeforeMount(async () => {
   transactions.value = await getTransactions(user.data.id);
   handleSort('timestamp', 'desc');
-  transactions.value = transactions.value.sort((t1, t2) => t2.timestamp - t1.timestamp);
+  transactions.value = transactions.value.sort((t1, t2) => t2.executed_at - t1.executed_at);
 });
 </script>
 
@@ -174,7 +172,7 @@ onBeforeMount(async () => {
           <td>
             <span
               class="badge bg-success text-break"
-              :class="{ 'bg-danger': ![0, 22].includes(transaction.status) }"
+              :class="{ 'bg-danger': ![0, 22].includes(transaction) }"
               >{{ getTransactionStatus(transaction) }}</span
             >
           </td>
