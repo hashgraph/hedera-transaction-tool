@@ -17,3 +17,11 @@ export const getTransactionId = (transaction: Transaction): string => {
 export const getTransactionStatus = (transaction: Transaction): string => {
   return Status._fromCode(transaction.status_code).toString().split('_').join(' ');
 };
+
+export const getPayerFromTransaction = (transaction: Transaction): number => {
+  return Number(transaction.transaction_id.split('@')[0].split('.').join(''));
+};
+
+export const getStatusFromCode = (transaction: Transaction): string => {
+  return Status._fromCode(transaction.status_code).toString();
+};
