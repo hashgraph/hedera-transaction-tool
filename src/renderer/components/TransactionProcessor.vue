@@ -405,7 +405,7 @@ async function executeFileTransactions(
         requiredLocalKeyPairs.value,
         tx,
         true,
-        user.data.email,
+        user.data.id,
         userPassword.value,
       );
 
@@ -422,11 +422,18 @@ async function executeFileTransactions(
       processedChunks.value++;
     } catch (error: any) {
       console.log(error);
-
-      const data = JSON.parse(error.message);
-      status = data.status;
       hasFailed = true;
-      toast.error(data.message, { position: 'bottom-right' });
+
+      let message = error.message;
+      try {
+        const data = JSON.parse(error.message);
+        status = data.status;
+        message = data.message;
+      } catch {
+        /* empty */
+      }
+
+      toast.error(message, { position: 'bottom-right' });
     } finally {
       const txToStore: Tx = {
         id: '',
@@ -472,7 +479,7 @@ async function sendSignedChunksToOrganization(transactions: Transaction[]) {
       requiredLocalKeyPairs.value,
       transactions[i],
       true,
-      user.data.email,
+      user.data.id,
       userPassword.value,
     );
     processedChunks.value++;
