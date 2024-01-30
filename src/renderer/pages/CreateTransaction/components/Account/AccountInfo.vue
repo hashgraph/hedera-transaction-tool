@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { KeyList, PublicKey } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
-import AppModal from '../../../../components/ui/AppModal.vue';
+import AppInput from '../../../../components/ui/AppInput.vue';
 import KeyStructureModal from '../../../../components/KeyStructureModal.vue';
 
 /* Composables */
@@ -36,11 +35,10 @@ watch(accountData.isValid, isValid => {
     <div class="mt-4">
       <div class="mt-4 w-50 form-group">
         <label class="form-label">Set Account ID (Required)</label>
-        <input
-          :value="accountData.accountIdFormatted.value"
-          @input="accountData.accountId.value = ($event.target as HTMLInputElement).value"
-          type="text"
-          class="form-control is-fill"
+        <AppInput
+          :model-value="accountData.accountIdFormatted.value"
+          @update:model-value="v => (accountData.accountId.value = v)"
+          :filled="true"
           placeholder="Enter Account ID"
         />
       </div>
@@ -145,21 +143,5 @@ watch(accountData.isValid, isValid => {
       v-model:show="isKeyStructureModalShown"
       :account-key="accountData.key.value"
     />
-
-    <AppModal
-      v-model:show="isKeyStructureModalShown"
-      v-if="accountData.isValid.value"
-      class="modal-fit-content"
-    >
-      <div class="p-5">
-        <KeyStructure
-          v-if="accountData.key.value instanceof KeyList && true"
-          :key-list="accountData.key.value"
-        />
-        <div v-else-if="accountData.key.value instanceof PublicKey && true">
-          {{ accountData.key.value.toStringRaw() }}
-        </div>
-      </div>
-    </AppModal>
   </div>
 </template>

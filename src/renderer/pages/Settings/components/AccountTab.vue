@@ -10,6 +10,7 @@ import { changeDecryptionPassword } from '../../../services/keyPairService';
 
 import AppButton from '../../../components/ui/AppButton.vue';
 import AppModal from '../../../components/ui/AppModal.vue';
+import AppInput from '../../../components/ui/AppInput.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -50,20 +51,22 @@ const handleChangePassword = async e => {
     <form class="w-50 py-4 px-5 border" @submit="handleChangePassword">
       <div class="form-group">
         <label class="form-label">Current Password</label>
-        <input
+        <AppInput
           v-model="currentPassword"
           type="password"
           placeholder="Enter your current password"
-          class="form-control is-fill py-3"
+          :filled="true"
+          class="py-3"
         />
       </div>
       <div class="mt-4 form-group">
         <label class="form-label" placeholder="Enter new password">New Password</label>
-        <input
+        <AppInput
           v-model="newPassword"
           type="password"
           placeholder="Enter new password"
-          class="form-control is-fill py-3"
+          :filled="true"
+          class="py-3"
         />
       </div>
       <AppButton color="secondary" type="submit" class="mt-4">Change Password</AppButton>

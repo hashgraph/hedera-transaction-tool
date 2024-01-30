@@ -8,6 +8,7 @@ import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
 
 import AppButton from '../../components/ui/AppButton.vue';
+import AppInput from '../../components/ui/AppInput.vue';
 
 /* Stores */
 const organizationsStore = useOrganizationsStore();
@@ -58,22 +59,21 @@ const handleContinue = async (e: Event) => {
       class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
     >
       <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
-        <input
+        <AppInput
           v-model="organizationName"
-          type="text"
-          class="form-control is-fill"
+          :filled="true"
           placeholder="Enter name of Organization"
         />
-        <input
+        <AppInput
           v-model="serverUrl"
-          type="text"
-          class="mt-4 form-control is-fill"
+          :filled="true"
+          class="mt-4"
           placeholder="Enter Organization Server URL"
         />
-        <input
+        <AppInput
           v-model="serverPublicKey"
-          type="text"
-          class="mt-4 form-control is-fill"
+          :filled="true"
+          class="mt-4"
           placeholder="Enter Organization Server Public key"
         />
       </div>

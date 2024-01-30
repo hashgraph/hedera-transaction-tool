@@ -10,10 +10,11 @@ import useAccountId from '../../../../composables/useAccountId';
 
 import { createTransactionId } from '../../../../services/transactionService';
 
-import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppSwitch from '../../../../components/ui/AppSwitch.vue';
+import AppInput from '../../../../components/ui/AppInput.vue';
 import KeyStructureModal from '../../../../components/KeyStructureModal.vue';
+import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
 
 /* Stores */
 const payerData = useAccountId();
@@ -33,16 +34,16 @@ const maxTransactionfee = ref(2);
 
 const newAccountData = reactive<{
   receiverSignatureRequired: boolean;
-  maxAutomaticTokenAssociations: number | null;
-  stakedAccountId: string | null;
-  stakedNodeId: number | null;
+  maxAutomaticTokenAssociations: number;
+  stakedAccountId: string;
+  stakedNodeId: string;
   declineStakingReward: boolean;
-  memo: string | null;
+  memo: string;
 }>({
   receiverSignatureRequired: false,
   maxAutomaticTokenAssociations: 0,
   stakedAccountId: '',
-  stakedNodeId: null,
+  stakedNodeId: '',
   declineStakingReward: false,
   memo: '',
 });
@@ -85,7 +86,7 @@ const handleCreate = async e => {
       .setAccountId(accountData.accountId.value)
       .setReceiverSignatureRequired(newAccountData.receiverSignatureRequired)
       .setDeclineStakingReward(newAccountData.declineStakingReward)
-      .setMaxAutomaticTokenAssociations(newAccountData.maxAutomaticTokenAssociations)
+      .setMaxAutomaticTokenAssociations(Number(newAccountData.maxAutomaticTokenAssociations))
       .setAccountMemo(newAccountData.memo || '');
 
     newOwnerKeys.value.length > 0 && transaction.value.setKey(newOwnerKeyList.value);
@@ -113,7 +114,7 @@ const handleCreate = async e => {
       accountData.accountInfo.value.stakedNodeId?.toString() !==
         newAccountData.stakedNodeId.toString()
     ) {
-      transaction.value.setStakedNodeId(newAccountData.stakedNodeId);
+      transaction.value.setStakedNodeId(Number(newAccountData.stakedNodeId));
     }
 
     if (
@@ -149,14 +150,15 @@ watch(accountData.accountInfo, accountInfo => {
     newAccountData.receiverSignatureRequired = false;
     newAccountData.maxAutomaticTokenAssociations = 0;
     newAccountData.stakedAccountId = '';
-    newAccountData.stakedNodeId = null;
+    newAccountData.stakedNodeId = '';
     newAccountData.declineStakingReward = false;
     newAccountData.memo = '';
   } else {
     newAccountData.receiverSignatureRequired = accountInfo.receiverSignatureRequired;
     newAccountData.maxAutomaticTokenAssociations = accountInfo.maxAutomaticTokenAssociations || 0;
     newAccountData.stakedAccountId = accountInfo.stakedAccountId?.toString() || '';
-    newAccountData.stakedNodeId = accountInfo.stakedNodeId;
+    newAccountData.stakedNodeId =
+      accountInfo.stakedNodeId === 0 ? '' : accountInfo.stakedNodeId?.toString() || '';
     newAccountData.declineStakingReward = accountInfo.declineReward;
     newAccountData.memo = accountInfo.memo || '';
   }
@@ -177,30 +179,28 @@ watch(accountData.accountInfo, accountInfo => {
           <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
             >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
           >
-          <input
-            :value="payerData.accountIdFormatted.value"
-            @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
-            type="text"
-            class="form-control is-fill"
+          <AppInput
+            :model-value="payerData.accountIdFormatted.value"
+            @update:model-value="v => (payerData.accountId.value = v)"
+            :filled="true"
             placeholder="Enter Payer ID"
           />
         </div>
         <div class="form-group">
           <label class="form-label">Set Valid Start Time (Required)</label>
-          <input v-model="validStart" type="datetime-local" step="1" class="form-control is-fill" />
+          <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
         </div>
         <div class="form-group">
           <label class="form-label">Set Max Transaction Fee (Optional)</label>
-          <input v-model="maxTransactionfee" type="number" min="0" class="form-control is-fill" />
+          <AppInput v-model="maxTransactionfee" type="number" min="0" :filled="true" />
         </div>
       </div>
       <div class="mt-4 form-group">
         <label class="form-label">Set Account ID (Required)</label>
-        <input
-          :value="accountData.accountIdFormatted.value"
-          @input="accountData.accountId.value = ($event.target as HTMLInputElement).value"
-          type="text"
-          class="form-control is-fill"
+        <AppInput
+          :model-value="accountData.accountIdFormatted.value"
+          @update:model-value="v => (accountData.accountId.value = v)"
+          :filled="true"
           placeholder="Enter Account ID"
         />
       </div>
@@ -216,10 +216,9 @@ watch(accountData.accountInfo, accountInfo => {
       <div class="mt-4 form-group w-75">
         <label class="form-label">Set Key/s (Optional)</label>
         <div class="d-flex gap-3">
-          <input
+          <AppInput
             v-model="newOwnerKeyText"
-            type="text"
-            class="form-control is-fill"
+            :filled="true"
             placeholder="Enter new owner public key"
             style="max-width: 555px"
             @keypress="e => e.code === 'Enter' && handleAdd()"
@@ -232,13 +231,7 @@ watch(accountData.accountInfo, accountInfo => {
       <div class="mt-4 w-75">
         <template v-for="key in newOwnerKeys" :key="key">
           <div class="d-flex align-items-center gap-3">
-            <input
-              type="text"
-              readonly
-              class="form-control is-fill"
-              :value="key"
-              style="max-width: 555px"
-            />
+            <AppInput readonly :filled="true" :model-value="key" style="max-width: 555px" />
             <i
               class="bi bi-x-lg d-inline-block cursor-pointer"
               style="line-height: 16px"
@@ -257,34 +250,32 @@ watch(accountData.accountInfo, accountInfo => {
       </div>
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Max Automatic Token Associations (Optional)</label>
-        <input
+        <AppInput
           v-model="newAccountData.maxAutomaticTokenAssociations"
-          type="number"
           :min="0"
           :max="5000"
-          class="form-control is-fill"
+          :filled="true"
+          type="number"
           placeholder="Enter timestamp"
         />
       </div>
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Staked Account Id (Optional)</label>
-        <input
+        <AppInput
           v-model="newAccountData.stakedAccountId"
           :disabled="Boolean(newAccountData.stakedNodeId)"
-          type="text"
-          class="form-control is-fill"
+          :filled="true"
           placeholder="Enter Account Id"
         />
       </div>
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Staked Node Id (Optional)</label>
-        <input
+        <AppInput
           v-model="newAccountData.stakedNodeId"
           :disabled="
             Boolean(newAccountData.stakedAccountId && newAccountData.stakedAccountId.length > 0)
           "
-          type="text"
-          class="form-control is-fill"
+          :filled="true"
           placeholder="Enter Node Id"
         />
       </div>
@@ -298,11 +289,10 @@ watch(accountData.accountInfo, accountInfo => {
       </div>
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Account Memo (Optional)</label>
-        <input
+        <AppInput
           v-model="newAccountData.memo"
-          type="text"
+          :filled="true"
           maxlength="100"
-          class="form-control is-fill"
           placeholder="Enter Account Memo"
         />
       </div>

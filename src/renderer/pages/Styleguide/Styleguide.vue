@@ -2,6 +2,7 @@
 // import { useToast } from 'vue-toast-notification';
 
 import AppButton from '../../components/ui/AppButton.vue';
+import AppInput from '../../components/ui/AppInput.vue';
 // const $toast = useToast();
 
 // $toast.open({
@@ -304,20 +305,20 @@ import AppButton from '../../components/ui/AppButton.vue';
         <div class="form-group mb-5">
           <label class="form-label">Default input</label>
           <p class="text-small text-secondary mb-3">Text secondary</p>
-          <input type="email" class="form-control" placeholder="name@example.com" />
+          <AppInput type="email" placeholder="name@example.com" />
         </div>
       </div>
       <div class="col-lg-3">
         <div class="form-group mb-5">
           <label class="form-label">Default input invalid</label>
-          <input type="email" class="form-control is-invalid" placeholder="name@example.com" />
+          <AppInput type="email" class="is-invalid" placeholder="name@example.com" />
           <div class="invalid-feedback">Invalid e-mail.</div>
         </div>
       </div>
       <div class="col-lg-3">
         <div class="form-group mb-5">
           <label class="form-label">Default input disabled</label>
-          <input type="email" class="form-control" disabled placeholder="name@example.com" />
+          <AppInput type="email" disabled placeholder="name@example.com" />
         </div>
       </div>
     </div>
@@ -326,29 +327,20 @@ import AppButton from '../../components/ui/AppButton.vue';
       <div class="col-lg-3">
         <div class="form-group mb-5">
           <label class="form-label">Default input</label>
-          <input type="email" class="form-control is-fill" placeholder="name@example.com" />
+          <AppInput :filled="true" type="email" placeholder="name@example.com" />
         </div>
       </div>
       <div class="col-lg-3">
         <div class="form-group mb-5">
           <label class="form-label">Default input invalid</label>
-          <input
-            type="email"
-            class="form-control is-fill is-invalid"
-            placeholder="name@example.com"
-          />
+          <AppInput :filled="true" type="email" class="is-invalid" placeholder="name@example.com" />
           <div class="invalid-feedback">Invalid e-mail.</div>
         </div>
       </div>
       <div class="col-lg-3">
         <div class="form-group mb-5">
           <label class="form-label">Default input disabled</label>
-          <input
-            type="email"
-            class="form-control is-fill"
-            disabled
-            placeholder="name@example.com"
-          />
+          <AppInput :filled="true" type="email" disabled placeholder="name@example.com" />
         </div>
       </div>
     </div>
@@ -388,7 +380,7 @@ import AppButton from '../../components/ui/AppButton.vue';
           <label for="fileUpload" class="form-label">
             <span for="fileUpload" class="btn btn-primary">File upload</span>
           </label>
-          <input type="file" id="fileUpload" />
+          <AppInput type="file" id="fileUpload" />
         </div>
       </div>
     </div>

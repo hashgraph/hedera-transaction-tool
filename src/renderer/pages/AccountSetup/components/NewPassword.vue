@@ -9,6 +9,7 @@ import { useToast } from 'vue-toast-notification';
 // import { deleteEncryptedPrivateKeys } from '../../../services/keyPairService';
 
 import AppButton from '../../../components/ui/AppButton.vue';
+import AppInput from '../../../components/ui/AppInput.vue';
 
 /* Props */
 const props = defineProps<{
@@ -85,19 +86,20 @@ watch(inputConfrimPassword, val => {
       class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center"
     >
       <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
-        <input
+        <AppInput
           v-model="inputNewPassword"
-          type="password"
-          class="form-control is-fill"
+          :filled="true"
           :class="{ 'is-invalid': inputNewPasswordInvalid }"
+          type="password"
           placeholder="New Password"
         />
         <div v-if="inputNewPasswordInvalid" class="invalid-feedback">Invalid password.</div>
-        <input
+        <AppInput
           v-model="inputConfrimPassword"
-          type="password"
-          class="form-control is-fill mt-4"
+          :filled="true"
+          class="mt-4"
           :class="{ 'is-invalid': inputConfirmPasswordInvalid }"
+          type="password"
           placeholder="Confirm new Password"
         />
         <div v-if="inputConfirmPasswordInvalid" class="invalid-feedback">

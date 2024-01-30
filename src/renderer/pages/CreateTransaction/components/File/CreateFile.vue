@@ -9,8 +9,9 @@ import useAccountId from '../../../../composables/useAccountId';
 
 import { createTransactionId } from '../../../../services/transactionService';
 
-import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
 import AppButton from '../../../../components/ui/AppButton.vue';
+import AppInput from '../../../../components/ui/AppInput.vue';
+import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
 
 /* Stores */
 const networkStore = useNetworkStore();
@@ -99,30 +100,28 @@ const handleCreate = async e => {
           <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
             >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
           >
-          <input
-            :value="payerData.accountIdFormatted.value"
-            @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
-            type="text"
-            class="form-control is-fill"
+          <AppInput
+            :model-value="payerData.accountIdFormatted.value"
+            @update:model-value="v => (payerData.accountId.value = v)"
+            :filled="true"
             placeholder="Enter Payer ID"
           />
         </div>
         <div class="form-group">
           <label class="form-label">Set Valid Start Time (Required)</label>
-          <input v-model="validStart" type="datetime-local" step="1" class="form-control is-fill" />
+          <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
         </div>
         <div class="form-group">
           <label class="form-label">Set Max Transaction Fee (Optional)</label>
-          <input v-model="maxTransactionFee" type="number" min="0" class="form-control is-fill" />
+          <AppInput v-model="maxTransactionFee" type="number" min="0" :filled="true" />
         </div>
       </div>
       <div class="mt-4 form-group w-75">
         <label class="form-label">Set Keys (Required)</label>
         <div class="d-flex gap-3">
-          <input
+          <AppInput
             v-model="ownerKeyText"
-            type="text"
-            class="form-control is-fill"
+            :filled="true"
             placeholder="Enter owner public key"
             style="max-width: 555px"
             @keypress="e => e.code === 'Enter' && handleAdd()"
@@ -135,13 +134,7 @@ const handleCreate = async e => {
       <div class="mt-4 w-75">
         <template v-for="key in ownerKeys" :key="key">
           <div class="d-flex align-items-center gap-3">
-            <input
-              type="text"
-              readonly
-              class="form-control is-fill"
-              :value="key"
-              style="max-width: 555px"
-            />
+            <AppInput readonly :filled="true" :value="key" style="max-width: 555px" />
             <i
               class="bi bi-x-lg d-inline-block cursor-pointer"
               style="line-height: 16px"
@@ -152,20 +145,20 @@ const handleCreate = async e => {
       </div>
       <!-- <div class="mt-4 form-group w-50">
         <label class="form-label">Set File Memo (Optional)</label>
-        <input
+        <AppInput
           v-model="memo"
           type="text"
-          class="form-control is-fill"
+          :filled="true"
           maxlength="100"
           placeholder="Enter memo"
         />
       </div> -->
       <!-- <div class="mt-4 form-group w-25">
         <label class="form-label">Set Expiration Time (Optional)</label>
-        <input
+        <AppInput
           v-model="expirationTimestamp"
           type="datetime-local"
-          class="form-control is-fill"
+          :filled="true"
           placeholder="Enter timestamp"
         />
       </div> -->
@@ -173,7 +166,7 @@ const handleCreate = async e => {
         <label for="fileUpload" class="form-label">
           <span for="fileUpload" class="btn btn-primary">Upload File (.json, .txt)</span>
         </label>
-        <input
+        <AppInput
           class="form-control form-control-sm is-fill"
           id="fileUpload"
           name="fileUpload"

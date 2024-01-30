@@ -11,6 +11,7 @@ import { createTransactionId } from '../../../../services/transactionService';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppSwitch from '../../../../components/ui/AppSwitch.vue';
+import AppInput from '../../../../components/ui/AppInput.vue';
 import KeyStructureModal from '../../../../components/KeyStructureModal.vue';
 import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
 
@@ -99,21 +100,20 @@ const handleCreate = async () => {
             class="d-block form-label text-secondary"
             >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
           >
-          <input
-            :value="payerData.accountIdFormatted.value"
-            @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
-            type="text"
-            class="form-control is-fill"
-            :placeholder="`Enter ${isApprovedTransfer ? 'Spender' : 'Payer'} ID`"
+          <AppInput
+            :model-value="payerData.accountIdFormatted.value"
+            @update:model-value="v => (payerData.accountId.value = v)"
+            :filled="true"
+            placeholder="Enter Payer ID"
           />
         </div>
         <div class="form-group">
           <label class="form-label">Set Valid Start Time (Required)</label>
-          <input v-model="validStart" type="datetime-local" step="1" class="form-control is-fill" />
+          <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
         </div>
         <div class="form-group">
           <label class="form-label">Set Max Transaction Fee (Optional)</label>
-          <input v-model="maxTransactionfee" type="number" min="0" class="form-control is-fill" />
+          <AppInput v-model="maxTransactionfee" type="number" min="0" :filled="true" />
         </div>
       </div>
       <div class="mt-4 form-group">
@@ -123,11 +123,10 @@ const handleCreate = async () => {
           class="form-label text-secondary border-start border-1 ms-2 ps-2"
           >Balance: {{ senderData.accountInfo.value?.balance || 0 }}</label
         >
-        <input
+        <AppInput
           :value="senderData.accountIdFormatted.value"
           @input="senderData.accountId.value = ($event.target as HTMLInputElement).value"
-          type="text"
-          class="form-control is-fill"
+          :filled="true"
           placeholder="Enter Sender ID"
         />
       </div>
@@ -149,11 +148,10 @@ const handleCreate = async () => {
           class="form-label text-secondary border-start border-1 ms-2 ps-2"
           >Balance: {{ receiverData.accountInfo.value?.balance || 0 }}</label
         >
-        <input
+        <AppInput
           :value="receiverData.accountIdFormatted.value"
           @input="receiverData.accountId.value = ($event.target as HTMLInputElement).value"
-          type="text"
-          class="form-control is-fill"
+          :filled="true"
           placeholder="Enter Receiver ID"
         />
       </div>
@@ -173,12 +171,7 @@ const handleCreate = async () => {
       </div>
       <div class="mt-4 form-group">
         <label class="form-label">Amount</label>
-        <input
-          v-model="amount"
-          type="number"
-          class="form-control is-fill"
-          placeholder="Enter Amount"
-        />
+        <AppInput v-model="amount" type="number" :filled="true" placeholder="Enter Amount" />
       </div>
       <div class="mt-4">
         <AppSwitch

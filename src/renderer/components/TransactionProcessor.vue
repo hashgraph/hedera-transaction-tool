@@ -32,6 +32,7 @@ import { openExternal } from '../services/electronUtilsService';
 import AppButton from './ui/AppButton.vue';
 import AppModal from './ui/AppModal.vue';
 import AppLoader from './ui/AppLoader.vue';
+import AppInput from './ui/AppInput.vue';
 
 /* Props */
 const props = defineProps<{
@@ -171,12 +172,14 @@ async function process(
     _requiredSignatures.length * TRANSACTION_SIGNATURE_ESTIMATED_MAX_SIZE;
 
   if (_chunkSize) {
+    _chunkSize = Number(_chunkSize);
     if (_chunkSize < 1024) chunkSize.value = 1024;
     else if (_chunkSize + estimatedSignaturesSize > TRANSACTION_MAX_SIZE)
       throw new Error('Chunk too large, transaction max size could be exceeded');
     else chunkSize.value = _chunkSize;
   }
   if (_chunkInterval) {
+    _chunkInterval = Number(_chunkInterval);
     if (_chunkInterval <= 0) chunkInterval.value = 0.1;
     else chunkInterval.value = _chunkInterval;
   }
@@ -546,11 +549,7 @@ defineExpose({
         <form @submit="handleSignTransaction">
           <h3 class="text-center text-title text-bold mt-5">Enter your password</h3>
           <div class="form-group mt-4">
-            <input
-              v-model="userPassword"
-              type="password"
-              class="form-control form-control-sm is-fill"
-            />
+            <AppInput v-model="userPassword" type="password" :filled="true" />
           </div>
           <div class="d-grid mt-4">
             <p v-if="chunksAmount">Estimated chunks: {{ chunksAmount }}</p>

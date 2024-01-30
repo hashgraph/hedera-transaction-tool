@@ -21,6 +21,7 @@ import { createTransactionId } from '../../../../services/transactionService';
 import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppSwitch from '../../../../components/ui/AppSwitch.vue';
+import AppInput from '../../../../components/ui/AppInput.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -34,7 +35,7 @@ const payerData = useAccountId();
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<AccountCreateTransaction | null>(null);
-const validStart = ref();
+const validStart = ref('');
 const maxTransactionfee = ref(2);
 
 const accountData = reactive({
@@ -78,8 +79,8 @@ const handleCreate = async e => {
       .setKey(keyList.value)
       .setReceiverSignatureRequired(accountData.receiverSignatureRequired)
       .setDeclineStakingReward(accountData.declineStakingReward)
-      .setInitialBalance(accountData.initialBalance)
-      .setMaxAutomaticTokenAssociations(accountData.maxAutomaticTokenAssociations)
+      .setInitialBalance(Number(accountData.initialBalance))
+      .setMaxAutomaticTokenAssociations(Number(accountData.maxAutomaticTokenAssociations))
       .setAccountMemo(accountData.memo);
 
     accountData.stakedAccountId &&
@@ -117,50 +118,40 @@ const handleExecuted = async ({ receipt }: { receipt: TransactionReceipt }) => {
           <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
             >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
           >
-          <input
-            :value="payerData.accountIdFormatted.value"
-            @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
-            type="text"
-            class="form-control is-fill"
+          <AppInput
+            :model-value="payerData.accountIdFormatted.value"
+            @update:model-value="v => (payerData.accountId.value = v)"
+            :filled="true"
             placeholder="Enter Payer ID"
           />
         </div>
         <div class="form-group">
           <label class="form-label">Set Valid Start Time (Required)</label>
-          <input v-model="validStart" type="datetime-local" step="1" class="form-control is-fill" />
+          <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
         </div>
         <div class="form-group">
           <label class="form-label">Set Max Transaction Fee (Optional)</label>
-          <input v-model="maxTransactionfee" type="number" min="0" class="form-control is-fill" />
+          <AppInput v-model="maxTransactionfee" type="number" min="0" :filled="true" />
         </div>
       </div>
 
       <div class="mt-4 form-group w-75">
         <label class="form-label">Set Key/s (Required)</label>
         <div class="d-flex gap-3">
-          <input
+          <AppInput
             v-model="ownerKeyText"
-            type="text"
-            class="form-control is-fill"
+            :filled="true"
             placeholder="Enter owner public key"
             style="max-width: 555px"
             @keypress="e => e.code === 'Enter' && handleAdd()"
           />
-          <AppButton type="button" color="secondary" class="rounded-4" @click="handleAdd"
-            >Add</AppButton
-          >
+          <AppButton type="button" color="secondary" @click="handleAdd">Add</AppButton>
         </div>
       </div>
       <div class="mt-4 w-75">
         <template v-for="key in ownerKeys" :key="key">
           <div class="d-flex align-items-center gap-3">
-            <input
-              type="text"
-              readonly
-              class="form-control is-fill"
-              :value="key"
-              style="max-width: 555px"
-            />
+            <AppInput readonly :filled="true" :model-value="key" style="max-width: 555px" />
             <i
               class="bi bi-x-lg d-inline-block cursor-pointer"
               style="line-height: 16px"
@@ -171,12 +162,12 @@ const handleExecuted = async ({ receipt }: { receipt: TransactionReceipt }) => {
       </div>
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Initial Balance in HBar (Optional)</label>
-        <input
+        <AppInput
           v-model="accountData.initialBalance"
+          :filled="true"
           type="number"
           min="0"
-          class="form-control is-fill"
-          placeholder="Enter HBar amount"
+          placeholder="Enter Hbar amount"
         />
       </div>
       <div class="mt-4 form-group w-50">
@@ -189,33 +180,32 @@ const handleExecuted = async ({ receipt }: { receipt: TransactionReceipt }) => {
       </div>
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Max Automatic Token Associations (Optional)</label>
-        <input
+        <AppInput
           v-model="accountData.maxAutomaticTokenAssociations"
-          type="number"
           :min="0"
           :max="5000"
-          class="form-control is-fill"
-          placeholder="Enter timestamp"
+          :filled="true"
+          type="number"
+          placeholder="Enter Max Token Auto Associations"
         />
       </div>
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Staked Account Id (Optional)</label>
-        <input
+        <AppInput
           v-model="accountData.stakedAccountId"
           :disabled="Number(accountData.stakedNodeId) > 0"
-          type="text"
-          class="form-control is-fill"
+          :filled="true"
           placeholder="Enter Account Id"
         />
       </div>
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Staked Node Id (Optional)</label>
-        <input
+        <AppInput
           v-model="accountData.stakedNodeId"
           :disabled="accountData.stakedAccountId.length > 0"
+          :filled="true"
           type="number"
           min="0"
-          class="form-control is-fill"
           placeholder="Enter Node Id"
         />
       </div>
@@ -229,11 +219,10 @@ const handleExecuted = async ({ receipt }: { receipt: TransactionReceipt }) => {
       </div>
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set Account Memo (Optional)</label>
-        <input
+        <AppInput
           v-model="accountData.memo"
-          type="text"
+          :filled="true"
           maxlength="100"
-          class="form-control is-fill"
           placeholder="Enter Account Memo"
         />
       </div>

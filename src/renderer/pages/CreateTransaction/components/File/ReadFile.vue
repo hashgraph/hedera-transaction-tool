@@ -14,6 +14,7 @@ import { executeQuery } from '../../../../services/transactionService';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
+import AppInput from '../../../../components/ui/AppInput.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -120,10 +121,10 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
       </div>
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set File ID</label>
-        <input
+        <AppInput
           v-model="fileId"
-          type="text"
-          class="form-control is-fill py-3"
+          :filled="true"
+          class="py-3"
           placeholder="Enter owner public key"
         />
       </div>
@@ -152,11 +153,7 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
         <form @submit="handleRead">
           <h3 class="text-center text-title text-bold mt-5">Enter your password</h3>
           <div class="form-group mt-4">
-            <input
-              v-model="userPassword"
-              type="password"
-              class="form-control form-control-sm is-fill"
-            />
+            <AppInput v-model="userPassword" :filled="true" size="small" type="password" />
           </div>
           <div class="d-grid mt-5">
             <AppButton

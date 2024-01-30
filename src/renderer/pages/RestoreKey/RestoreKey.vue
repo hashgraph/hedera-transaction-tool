@@ -12,6 +12,7 @@ import { useToast } from 'vue-toast-notification';
 import * as keyPairService from '../../services/keyPairService';
 
 import AppButton from '../../components/ui/AppButton.vue';
+import AppInput from '../../components/ui/AppInput.vue';
 import Import from '../AccountSetup/components/Import.vue';
 
 /* Stores */
@@ -65,7 +66,7 @@ const handleRestoreKey = async e => {
     const privateKey = await keyPairService.restorePrivateKey(
       keyPairsStore.recoveryPhraseWords,
       '',
-      index.value,
+      Number(index.value),
       'ED25519',
     );
 
@@ -103,7 +104,7 @@ const handleSaveKey = async e => {
       const keyPair: KeyPair = {
         id: '',
         user_id: user.data.id,
-        index: index.value,
+        index: Number(index.value),
         private_key: restoredKey.value.privateKey,
         public_key: restoredKey.value.publicKey,
         organization_id: null,
@@ -167,10 +168,10 @@ onUnmounted(() => {
         <p class="text-main mt-5 text-center">Please enter new password</p>
         <div class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4">
           <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
-            <input
+            <AppInput
               v-model="password"
+              :filled="true"
               type="password"
-              class="form-control is-fill"
               placeholder="Enter password"
             />
             <AppButton
@@ -207,10 +208,10 @@ onUnmounted(() => {
         <p class="text-main mt-5 text-center">Please enter the index of the key</p>
         <div class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4">
           <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
-            <input
+            <AppInput
               v-model="index"
+              :filled="true"
               type="number"
-              class="form-control is-fill"
               :class="{ 'is-invalid': inputIndexInvalid }"
               placeholder="Enter key index"
             />
@@ -235,12 +236,7 @@ onUnmounted(() => {
         <p class="text-main mt-5 text-center">Please enter your nickname (optional)</p>
         <div class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4">
           <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
-            <input
-              v-model="nickname"
-              type="text"
-              class="form-control is-fill"
-              placeholder="Enter nickname"
-            />
+            <AppInput v-model="nickname" :filled="true" placeholder="Enter nickname" />
             <AppButton size="large" type="submit" color="primary" class="mt-5 d-block w-100"
               >Continue</AppButton
             >
