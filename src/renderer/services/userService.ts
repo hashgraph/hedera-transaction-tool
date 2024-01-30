@@ -33,3 +33,11 @@ export const getUsersCount = async () => {
     throw Error(getMessageFromIPCError(err, 'Failed to check for registered users'));
   }
 };
+
+export const comparePasswords = async (userId: string, password: string) => {
+  try {
+    return await window.electronAPI.localUser.comparePasswords(userId, password);
+  } catch (err: any) {
+    throw Error(getMessageFromIPCError(err, 'User not exists'));
+  }
+};

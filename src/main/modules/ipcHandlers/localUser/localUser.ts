@@ -1,6 +1,12 @@
 import { ipcMain } from 'electron';
 
-import { getUsersCount, login, register, resetData } from '../../../services/localUser';
+import {
+  comparePasswords,
+  getUsersCount,
+  login,
+  register,
+  resetData,
+} from '../../../services/localUser';
 
 const createChannelName = (...props) => ['localUser', ...props].join(':');
 
@@ -24,4 +30,9 @@ export default () => {
 
   // Check if user has been registered
   ipcMain.handle(createChannelName('usersCount'), () => getUsersCount());
+
+  // Check if user's password matches a given one
+  ipcMain.handle(createChannelName('comparePasswords'), (_e, userId: string, password: string) =>
+    comparePasswords(userId, password),
+  );
 };

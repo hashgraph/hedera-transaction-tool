@@ -69,6 +69,8 @@ export const electronAPI = {
       ipcRenderer.invoke('localUser:register', email, password),
     resetData: () => ipcRenderer.invoke('localUser:resetData'),
     usersCount: (): Promise<number> => ipcRenderer.invoke('localUser:usersCount'),
+    comparePasswords: (userId: string, password: string): Promise<boolean> =>
+      ipcRenderer.invoke('localUser:comparePasswords', userId, password),
   },
   transactions: {
     executeTransaction: (
