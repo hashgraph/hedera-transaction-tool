@@ -66,9 +66,8 @@ const handleUnlinkAccount = async () => {
     throw new Error('Please login');
   }
 
-  await remove(user.data.email, accountData.accountIdFormatted.value);
+  accounts.value = await remove(user.data.id, accountData.accountIdFormatted.value);
 
-  accounts.value = await getAll(user.data.email);
   accountData.accountId.value = accounts.value[0]?.account_id || '';
 
   isUnlinkAccountModalShown.value = false;
@@ -108,11 +107,7 @@ const handleUnlinkAccount = async () => {
     <div class="d-flex justify-content-between align-items-center">
       <h1 class="text-title text-bold">Accounts</h1>
       <div class="d-flex justify-content-end align-items-center">
-        <AppButton
-          v-if="!accountData.accountInfo.value?.deleted"
-          class="me-3"
-          color="secondary"
-          @click="isUnlinkAccountModalShown = true"
+        <AppButton class="me-3" color="secondary" @click="isUnlinkAccountModalShown = true"
           >Remove</AppButton
         >
         <AppButton

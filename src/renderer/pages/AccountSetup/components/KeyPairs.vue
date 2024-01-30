@@ -113,7 +113,7 @@ const handleSaveKey = async () => {
 //     const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
 //     const keyPairsToRestore = (
 //       await getStoredKeyPairs(
-//         user.data.email,
+//         user.data.id,
 //         user.data.activeServerURL || '',
 //         user.data.activeUserId || '',
 //       )
