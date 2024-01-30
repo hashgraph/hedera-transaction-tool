@@ -1,9 +1,10 @@
 <script setup lang="ts">
-// import { AccountId } from '@hashgraph/sdk';
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import useAccountId from '../composables/useAccountId';
 
 import AppInput from './ui/AppInput.vue';
+import { onMounted } from 'vue';
 
 /* Props */
 defineProps<{
@@ -13,10 +14,21 @@ defineProps<{
 }>();
 
 /* Emits */
-defineEmits(['update:payerId', 'update:validStart', 'update:maxTransactionFee']);
+const emit = defineEmits(['update:payerId', 'update:validStart', 'update:maxTransactionFee']);
+
+/* Stores */
+const keyPairs = useKeyPairsStore();
 
 /* Composables */
 const account = useAccountId();
+
+onMounted(() => {
+  const allAccountIds = keyPairs.accoundIds.map(a => a.accountIds).flat();
+  if (allAccountIds.length > 0) {
+    account.accountId.value = allAccountIds[0];
+    emit('update:payerId', allAccountIds[0]);
+  }
+});
 </script>
 <template>
   <div class="row flex-wrap align-items-end">
