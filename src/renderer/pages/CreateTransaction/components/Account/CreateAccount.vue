@@ -104,157 +104,153 @@ const handleExecuted = async ({ receipt }: { receipt: TransactionReceipt }) => {
 };
 </script>
 <template>
-  <div class="p-4 border rounded-4">
-    <div class="d-flex justify-content-between">
-      <div class="d-flex align-items-start">
-        <i class="bi bi-arrow-up me-2"></i>
-        <span class="text-title text-bold">Create Account Transaction</span>
-      </div>
-    </div>
-    <form class="mt-4" @submit="handleCreate">
-      <div class="mt-4 d-flex flex-wrap gap-5">
-        <div class="form-group col-4">
-          <label class="form-label">Set Payer ID (Required)</label>
-          <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
-            >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
-          >
-          <AppInput
-            :model-value="payerData.accountIdFormatted.value"
-            @update:model-value="v => (payerData.accountId.value = v)"
-            :filled="true"
-            placeholder="Enter Payer ID"
-          />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Set Valid Start Time (Required)</label>
-          <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Set Max Transaction Fee (Optional)</label>
-          <AppInput v-model="maxTransactionfee" type="number" min="0" :filled="true" />
-        </div>
-      </div>
+  <form @submit="handleCreate">
+    <div class="d-flex justify-content-between align-items-center">
+      <h2 class="text-title text-bold">Create Account Transaction</h2>
 
-      <div class="mt-4 form-group w-75">
-        <label class="form-label">Set Key/s (Required)</label>
-        <div class="d-flex gap-3">
-          <AppInput
-            v-model="ownerKeyText"
-            :filled="true"
-            placeholder="Enter owner public key"
-            style="max-width: 555px"
-            @keypress="e => e.code === 'Enter' && handleAdd()"
-          />
-          <AppButton type="button" color="secondary" @click="handleAdd">Add</AppButton>
-        </div>
-      </div>
-      <div class="mt-4 w-75">
-        <template v-for="key in ownerKeys" :key="key">
-          <div class="d-flex align-items-center gap-3">
-            <AppInput readonly :filled="true" :model-value="key" style="max-width: 555px" />
-            <i
-              class="bi bi-x-lg d-inline-block cursor-pointer"
-              style="line-height: 16px"
-              @click="ownerKeys = ownerKeys.filter(k => k !== key)"
-            ></i>
-          </div>
-        </template>
-      </div>
-      <div class="mt-4 form-group w-50">
-        <label class="form-label">Set Initial Balance in HBar (Optional)</label>
-        <AppInput
-          v-model="accountData.initialBalance"
-          :filled="true"
-          type="number"
-          min="0"
-          placeholder="Enter Hbar amount"
-        />
-      </div>
-      <div class="mt-4 form-group w-50">
-        <AppSwitch
-          v-model:checked="accountData.receiverSignatureRequired"
-          size="md"
-          name="receiver-signature"
-          label="Receiver Signature Required"
-        />
-      </div>
-      <div class="mt-4 form-group w-50">
-        <label class="form-label">Set Max Automatic Token Associations (Optional)</label>
-        <AppInput
-          v-model="accountData.maxAutomaticTokenAssociations"
-          :min="0"
-          :max="5000"
-          :filled="true"
-          type="number"
-          placeholder="Enter Max Token Auto Associations"
-        />
-      </div>
-      <div class="mt-4 form-group w-50">
-        <label class="form-label">Set Staked Account Id (Optional)</label>
-        <AppInput
-          v-model="accountData.stakedAccountId"
-          :disabled="Number(accountData.stakedNodeId) > 0"
-          :filled="true"
-          placeholder="Enter Account Id"
-        />
-      </div>
-      <div class="mt-4 form-group w-50">
-        <label class="form-label">Set Staked Node Id (Optional)</label>
-        <AppInput
-          v-model="accountData.stakedNodeId"
-          :disabled="accountData.stakedAccountId.length > 0"
-          :filled="true"
-          type="number"
-          min="0"
-          placeholder="Enter Node Id"
-        />
-      </div>
-      <div class="mt-4 form-group w-50">
-        <AppSwitch
-          v-model:checked="accountData.declineStakingReward"
-          size="md"
-          name="decline-signature"
-          label="Decline Staking Reward"
-        />
-      </div>
-      <div class="mt-4 form-group w-50">
-        <label class="form-label">Set Account Memo (Optional)</label>
-        <AppInput
-          v-model="accountData.memo"
-          :filled="true"
-          maxlength="100"
-          placeholder="Enter Account Memo"
-        />
-      </div>
-      <div class="mt-4">
+      <div class="d-flex justify-content-end align-items-center">
         <AppButton
           color="primary"
           type="submit"
           size="large"
           :disabled="keyList._keys.length === 0 || !payerData.isValid.value"
-          >Create</AppButton
+          >Sign & Submit</AppButton
         >
       </div>
-    </form>
-    <TransactionProcessor
-      ref="transactionProcessor"
-      :transaction-bytes="transaction?.toBytes() || null"
-      :on-executed="handleExecuted"
-      :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
-    >
-      <template #successHeading>Account created successfully</template>
-      <template #successContent>
-        <p
-          v-if="transactionProcessor?.transactionResult"
-          class="text-small d-flex justify-content-between align-items mt-2"
+    </div>
+
+    <div class="mt-4 d-flex flex-wrap gap-5">
+      <div class="form-group col-4">
+        <label class="form-label">Set Payer ID (Required)</label>
+        <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
+          >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
         >
-          <span class="text-bold text-secondary">Account ID:</span>
-          <span>{{
-            new AccountId(transactionProcessor?.transactionResult.receipt.accountId).toString() ||
-            ''
-          }}</span>
-        </p>
+        <AppInput
+          :model-value="payerData.accountIdFormatted.value"
+          @update:model-value="v => (payerData.accountId.value = v)"
+          :filled="true"
+          placeholder="Enter Payer ID"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Set Valid Start Time (Required)</label>
+        <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Set Max Transaction Fee (Optional)</label>
+        <AppInput v-model="maxTransactionfee" type="number" min="0" :filled="true" />
+      </div>
+    </div>
+    <div class="mt-4 form-group w-75">
+      <label class="form-label">Set Key/s (Required)</label>
+      <div class="d-flex gap-3">
+        <AppInput
+          v-model="ownerKeyText"
+          :filled="true"
+          placeholder="Enter owner public key"
+          style="max-width: 555px"
+          @keypress="e => e.code === 'Enter' && handleAdd()"
+        />
+        <AppButton type="button" color="secondary" @click="handleAdd">Add</AppButton>
+      </div>
+    </div>
+    <div class="mt-4 w-75">
+      <template v-for="key in ownerKeys" :key="key">
+        <div class="d-flex align-items-center gap-3">
+          <AppInput readonly :filled="true" :model-value="key" style="max-width: 555px" />
+          <i
+            class="bi bi-x-lg d-inline-block cursor-pointer"
+            style="line-height: 16px"
+            @click="ownerKeys = ownerKeys.filter(k => k !== key)"
+          ></i>
+        </div>
       </template>
-    </TransactionProcessor>
-  </div>
+    </div>
+    <div class="mt-4 form-group w-50">
+      <label class="form-label">Set Initial Balance in HBar (Optional)</label>
+      <AppInput
+        v-model="accountData.initialBalance"
+        :filled="true"
+        type="number"
+        min="0"
+        placeholder="Enter Hbar amount"
+      />
+    </div>
+    <div class="mt-4 form-group w-50">
+      <AppSwitch
+        v-model:checked="accountData.receiverSignatureRequired"
+        size="md"
+        name="receiver-signature"
+        label="Receiver Signature Required"
+      />
+    </div>
+    <div class="mt-4 form-group w-50">
+      <label class="form-label">Set Max Automatic Token Associations (Optional)</label>
+      <AppInput
+        v-model="accountData.maxAutomaticTokenAssociations"
+        :min="0"
+        :max="5000"
+        :filled="true"
+        type="number"
+        placeholder="Enter Max Token Auto Associations"
+      />
+    </div>
+    <div class="mt-4 form-group w-50">
+      <label class="form-label">Set Staked Account Id (Optional)</label>
+      <AppInput
+        v-model="accountData.stakedAccountId"
+        :disabled="Number(accountData.stakedNodeId) > 0"
+        :filled="true"
+        placeholder="Enter Account Id"
+      />
+    </div>
+    <div class="mt-4 form-group w-50">
+      <label class="form-label">Set Staked Node Id (Optional)</label>
+      <AppInput
+        v-model="accountData.stakedNodeId"
+        :disabled="accountData.stakedAccountId.length > 0"
+        :filled="true"
+        type="number"
+        min="0"
+        placeholder="Enter Node Id"
+      />
+    </div>
+    <div class="mt-4 form-group w-50">
+      <AppSwitch
+        v-model:checked="accountData.declineStakingReward"
+        size="md"
+        name="decline-signature"
+        label="Decline Staking Reward"
+      />
+    </div>
+    <div class="mt-4 form-group w-50">
+      <label class="form-label">Set Account Memo (Optional)</label>
+      <AppInput
+        v-model="accountData.memo"
+        :filled="true"
+        maxlength="100"
+        placeholder="Enter Account Memo"
+      />
+    </div>
+  </form>
+
+  <TransactionProcessor
+    ref="transactionProcessor"
+    :transaction-bytes="transaction?.toBytes() || null"
+    :on-executed="handleExecuted"
+    :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
+  >
+    <template #successHeading>Account created successfully</template>
+    <template #successContent>
+      <p
+        v-if="transactionProcessor?.transactionResult"
+        class="text-small d-flex justify-content-between align-items mt-2"
+      >
+        <span class="text-bold text-secondary">Account ID:</span>
+        <span>{{
+          new AccountId(transactionProcessor?.transactionResult.receipt.accountId).toString() || ''
+        }}</span>
+      </p>
+    </template>
+  </TransactionProcessor>
 </template>
