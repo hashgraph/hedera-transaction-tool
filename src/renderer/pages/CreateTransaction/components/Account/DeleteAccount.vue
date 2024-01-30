@@ -70,78 +70,11 @@ onMounted(() => {
 });
 </script>
 <template>
-  <div class="p-4 border rounded-4">
-    <div class="d-flex justify-content-between">
-      <div class="d-flex align-items-start">
-        <i class="bi bi-arrow-up me-2"></i>
-        <span class="text-title text-bold">Delete Account Transaction</span>
-      </div>
-    </div>
-    <form class="mt-4" @submit="handleCreate">
-      <div class="mt-4 d-flex flex-wrap gap-5">
-        <div class="form-group col-4">
-          <label class="form-label">Set Payer ID (Required)</label>
-          <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
-            >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
-          >
-          <AppInput
-            :model-value="payerData.accountIdFormatted.value"
-            @update:model-value="v => (payerData.accountId.value = v)"
-            :filled="true"
-            placeholder="Enter Payer ID"
-          />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Set Valid Start Time (Required)</label>
-          <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Set Max Transaction Fee (Optional)</label>
-          <AppInput v-model="maxTransactionfee" type="number" min="0" :filled="true" />
-        </div>
-      </div>
-      <div class="mt-4 form-group">
-        <label class="form-label">Set Account ID (Required)</label>
-        <label v-if="accountData.isValid.value" class="d-block form-label text-secondary"
-          >Balance: {{ accountData.accountInfo.value?.balance || 0 }}</label
-        >
-        <AppInput
-          :model-value="accountData.accountIdFormatted.value"
-          @update:model-value="v => (accountData.accountId.value = v)"
-          :filled="true"
-          placeholder="Enter Account ID"
-        />
-      </div>
-      <div class="mt-4" v-if="accountData.key.value">
-        <AppButton
-          color="secondary"
-          type="button"
-          size="small"
-          @click="isKeyStructureModalShown = true"
-          >View Key Structure</AppButton
-        >
-      </div>
-      <div class="mt-4 form-group">
-        <label class="form-label">Set Transfer Account ID (Required)</label>
-        <label v-if="transferAccountData.isValid.value" class="d-block form-label text-secondary"
-          >Receive Signature Required:
-          {{ transferAccountData.accountInfo.value?.receiverSignatureRequired || false }}</label
-        >
-        <AppInput
-          :model-value="transferAccountData.accountIdFormatted.value"
-          @update:model-value="v => (transferAccountData.accountId.value = v)"
-          :disabled="transferAccountData.accountInfo.value?.deleted"
-          :filled="true"
-          placeholder="Enter Account ID"
-        />
-      </div>
-      <p
-        v-if="accountData.accountInfo.value && accountData.accountInfo.value.deleted"
-        class="text-danger mt-4"
-      >
-        Account is already deleted!
-      </p>
-      <div class="mt-4">
+  <form @submit="handleCreate">
+    <div class="d-flex justify-content-between align-items-center">
+      <h2 class="text-title text-bold">Delete Account Transaction</h2>
+
+      <div class="d-flex justify-content-end align-items-center">
         <AppButton
           color="primary"
           type="submit"
@@ -151,31 +84,96 @@ onMounted(() => {
             !transferAccountData.isValid.value ||
             accountData.accountInfo.value?.deleted
           "
-          >Create</AppButton
+          >Sign & Submit</AppButton
         >
       </div>
-    </form>
-    <TransactionProcessor
-      ref="transactionProcessor"
-      :transaction-bytes="transaction?.toBytes() || null"
-      :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
-    >
-      <template #successHeading>Account deleted successfully</template>
-      <template #successContent>
-        <p
-          v-if="transactionProcessor?.transactionResult"
-          class="text-small d-flex justify-content-between align-items mt-2"
-        >
-          <span class="text-bold text-secondary">Account ID:</span>
-          <span>{{ accountData.accountId.value }}</span>
-        </p>
-      </template>
-    </TransactionProcessor>
+    </div>
 
-    <KeyStructureModal
-      v-if="accountData.isValid.value"
-      v-model:show="isKeyStructureModalShown"
-      :account-key="accountData.key.value"
-    />
-  </div>
+    <div class="mt-4 d-flex flex-wrap gap-5">
+      <div class="form-group col-4">
+        <label class="form-label">Set Payer ID (Required)</label>
+        <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
+          >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
+        >
+        <AppInput
+          :model-value="payerData.accountIdFormatted.value"
+          @update:model-value="v => (payerData.accountId.value = v)"
+          :filled="true"
+          placeholder="Enter Payer ID"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Set Valid Start Time (Required)</label>
+        <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Set Max Transaction Fee (Optional)</label>
+        <AppInput v-model="maxTransactionfee" type="number" min="0" :filled="true" />
+      </div>
+    </div>
+    <div class="mt-4 form-group">
+      <label class="form-label">Set Account ID (Required)</label>
+      <label v-if="accountData.isValid.value" class="d-block form-label text-secondary"
+        >Balance: {{ accountData.accountInfo.value?.balance || 0 }}</label
+      >
+      <AppInput
+        :model-value="accountData.accountIdFormatted.value"
+        @update:model-value="v => (accountData.accountId.value = v)"
+        :filled="true"
+        placeholder="Enter Account ID"
+      />
+    </div>
+    <div class="mt-4" v-if="accountData.key.value">
+      <AppButton
+        color="secondary"
+        type="button"
+        size="small"
+        @click="isKeyStructureModalShown = true"
+        >View Key Structure</AppButton
+      >
+    </div>
+    <div class="mt-4 form-group">
+      <label class="form-label">Set Transfer Account ID (Required)</label>
+      <label v-if="transferAccountData.isValid.value" class="d-block form-label text-secondary"
+        >Receive Signature Required:
+        {{ transferAccountData.accountInfo.value?.receiverSignatureRequired || false }}</label
+      >
+      <AppInput
+        :model-value="transferAccountData.accountIdFormatted.value"
+        @update:model-value="v => (transferAccountData.accountId.value = v)"
+        :disabled="transferAccountData.accountInfo.value?.deleted"
+        :filled="true"
+        placeholder="Enter Account ID"
+      />
+    </div>
+    <p
+      v-if="accountData.accountInfo.value && accountData.accountInfo.value.deleted"
+      class="text-danger mt-4"
+    >
+      Account is already deleted!
+    </p>
+  </form>
+
+  <TransactionProcessor
+    ref="transactionProcessor"
+    :transaction-bytes="transaction?.toBytes() || null"
+    :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
+  >
+    <template #successHeading>Account deleted successfully</template>
+    <template #successContent>
+      <p
+        v-if="transactionProcessor?.transactionResult"
+        class="text-small d-flex justify-content-between align-items mt-2"
+      >
+        <span class="text-bold text-secondary">Account ID:</span>
+        <span>{{ accountData.accountId.value }}</span>
+      </p>
+    </template>
+  </TransactionProcessor>
+
+  <KeyStructureModal
+    v-if="accountData.isValid.value"
+    v-model:show="isKeyStructureModalShown"
+    :account-key="accountData.key.value"
+  />
 </template>
