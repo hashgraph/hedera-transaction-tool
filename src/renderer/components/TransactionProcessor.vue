@@ -377,9 +377,10 @@ async function executeFileTransactions(
 
     let status = 0;
     let tx;
-
+    let txType = '';
     try {
       if (transaction instanceof FileUpdateTransaction && i === 0) {
+        txType = 'File Update Transaction';
         tx = new FileUpdateTransaction()
           .setTransactionId(createTransactionId(transaction.transactionId!.accountId!, new Date()))
           .setTransactionValidDuration(180)
@@ -392,6 +393,7 @@ async function executeFileTransactions(
         transaction.expirationTime && tx.setExpirationTime(transaction.expirationTime);
         tx.freezeWith(network.client);
       } else {
+        txType = 'File Append Transaction';
         tx = new FileAppendTransaction()
           .setTransactionId(createTransactionId(transaction.transactionId!.accountId!, new Date()))
           .setTransactionValidDuration(180)
@@ -440,8 +442,8 @@ async function executeFileTransactions(
     } finally {
       const txToStore: Tx = {
         id: '',
-        name: `${type.value} (${tx.transactionId.toString()})`,
-        type: type.value || '',
+        name: `${txType} (${tx.transactionId.toString()})`,
+        type: txType,
         description: '',
         transaction_id: tx.transactionId.toString(),
         transaction_hash: (await tx.getTransactionHash()).toString(),
