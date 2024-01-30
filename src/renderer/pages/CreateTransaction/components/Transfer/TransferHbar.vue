@@ -38,7 +38,8 @@ const keyStructureComponentKey = ref<Key | null>(null);
 const isKeyStructureModalShown = ref(false);
 
 /* Handlers */
-const handleCreate = async () => {
+const handleCreate = async e => {
+  e.preventDefault();
   try {
     transaction.value = new TransferTransaction()
       .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
@@ -72,116 +73,18 @@ const handleCreate = async () => {
 
     await transactionProcessor.value?.process(requiredSignatures);
   } catch (err: any) {
+    console.log(err);
+
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
 </script>
 <template>
-  <div class="p-4 border rounded-4">
-    <div class="d-flex justify-content-between">
-      <div class="d-flex align-items-start">
-        <i class="bi bi-arrow-up me-2"></i>
-        <span class="text-title text-bold">Transfer Hbar Transaction</span>
-      </div>
-    </div>
-    <div class="mt-4">
-      <div class="mt-4 d-flex flex-wrap gap-5">
-        <div class="form-group col-4">
-          <label class="form-label"
-            >Set {{ isApprovedTransfer ? 'Spender' : 'Payer' }} ID (Required)</label
-          >
-          <label
-            v-if="isApprovedTransfer && payerData.isValid.value"
-            class="d-block form-label text-secondary"
-            >Allowance: {{ senderData.getSpenderAllowance(payerData.accountId.value) }}</label
-          >
-          <label
-            v-if="!isApprovedTransfer && payerData.isValid.value"
-            class="d-block form-label text-secondary"
-            >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
-          >
-          <AppInput
-            :model-value="payerData.accountIdFormatted.value"
-            @update:model-value="v => (payerData.accountId.value = v)"
-            :filled="true"
-            placeholder="Enter Payer ID"
-          />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Set Valid Start Time (Required)</label>
-          <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Set Max Transaction Fee (Optional)</label>
-          <AppInput v-model="maxTransactionfee" type="number" min="0" :filled="true" />
-        </div>
-      </div>
-      <div class="mt-4 form-group">
-        <label class="form-label">Set Sender ID</label>
-        <label
-          v-if="senderData.isValid.value"
-          class="form-label text-secondary border-start border-1 ms-2 ps-2"
-          >Balance: {{ senderData.accountInfo.value?.balance || 0 }}</label
-        >
-        <AppInput
-          :value="senderData.accountIdFormatted.value"
-          @input="senderData.accountId.value = ($event.target as HTMLInputElement).value"
-          :filled="true"
-          placeholder="Enter Sender ID"
-        />
-      </div>
-      <div class="mt-4" v-if="senderData.key.value">
-        <AppButton
-          color="secondary"
-          size="small"
-          @click="
-            isKeyStructureModalShown = true;
-            keyStructureComponentKey = senderData.key.value;
-          "
-          >View Key Structure</AppButton
-        >
-      </div>
-      <div class="mt-4 form-group">
-        <label class="form-label">Set Receiver ID</label>
-        <label
-          v-if="receiverData.isValid.value"
-          class="form-label text-secondary border-start border-1 ms-2 ps-2"
-          >Balance: {{ receiverData.accountInfo.value?.balance || 0 }}</label
-        >
-        <AppInput
-          :value="receiverData.accountIdFormatted.value"
-          @input="receiverData.accountId.value = ($event.target as HTMLInputElement).value"
-          :filled="true"
-          placeholder="Enter Receiver ID"
-        />
-      </div>
-      <div
-        class="mt-4"
-        v-if="receiverData.accountInfo.value?.receiverSignatureRequired && receiverData.key.value"
-      >
-        <AppButton
-          color="secondary"
-          size="small"
-          @click="
-            isKeyStructureModalShown = true;
-            keyStructureComponentKey = receiverData.key.value;
-          "
-          >View Key Structure</AppButton
-        >
-      </div>
-      <div class="mt-4 form-group">
-        <label class="form-label">Amount</label>
-        <AppInput v-model="amount" type="number" :filled="true" placeholder="Enter Amount" />
-      </div>
-      <div class="mt-4">
-        <AppSwitch
-          v-model:checked="isApprovedTransfer"
-          name="is-approved-transfer"
-          size="md"
-          label="Approved Transfer (Transaction payer is the allowance spender)"
-        />
-      </div>
-      <div class="mt-4">
+  <form @submit="handleCreate">
+    <div class="d-flex justify-content-between align-items-center">
+      <h2 class="text-title text-bold">Transfer Hbar Transaction</h2>
+
+      <div class="d-flex justify-content-end align-items-center">
         <AppButton
           color="primary"
           size="large"
@@ -191,42 +94,139 @@ const handleCreate = async () => {
             !receiverData.accountId.value ||
             amount < 0
           "
-          @click="handleCreate"
-          >Create</AppButton
+          type="submit"
+          >Sign & Submit</AppButton
         >
       </div>
     </div>
-    <TransactionProcessor
-      ref="transactionProcessor"
-      :transaction-bytes="transaction?.toBytes() || null"
-      :on-close-success-modal-click="
-        () => {
-          payerData.accountId.value = '';
-          validStart = '';
-          maxTransactionfee = 2;
-          senderData.accountId.value = '';
-          receiverData.accountId.value = '';
-          amount = 0;
-          transaction = null;
-        }
-      "
-    >
-      <template #successHeading>Hbar transferred successfully</template>
-      <template #successContent>
-        <p class="text-small d-flex justify-content-between align-items mt-2">
-          <span class="text-bold text-secondary">Sender Account ID:</span>
-          <span>{{ senderData.accountId.value }}</span>
-        </p>
-        <p class="text-small d-flex justify-content-between align-items mt-2">
-          <span class="text-bold text-secondary">Receiver Account ID:</span>
-          <span>{{ receiverData.accountId.value }}</span>
-        </p>
-      </template>
-    </TransactionProcessor>
 
-    <KeyStructureModal
-      v-model:show="isKeyStructureModalShown"
-      :account-key="keyStructureComponentKey"
-    />
-  </div>
+    <div class="mt-4 d-flex flex-wrap gap-5">
+      <div class="form-group col-4">
+        <label class="form-label"
+          >Set {{ isApprovedTransfer ? 'Spender' : 'Payer' }} ID (Required)</label
+        >
+        <label
+          v-if="isApprovedTransfer && payerData.isValid.value"
+          class="d-block form-label text-secondary"
+          >Allowance: {{ senderData.getSpenderAllowance(payerData.accountId.value) }}</label
+        >
+        <label
+          v-if="!isApprovedTransfer && payerData.isValid.value"
+          class="d-block form-label text-secondary"
+          >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
+        >
+        <AppInput
+          :model-value="payerData.accountIdFormatted.value"
+          @update:model-value="v => (payerData.accountId.value = v)"
+          :filled="true"
+          placeholder="Enter Payer ID"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Set Valid Start Time (Required)</label>
+        <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Set Max Transaction Fee (Optional)</label>
+        <AppInput v-model="maxTransactionfee" type="number" min="0" :filled="true" />
+      </div>
+    </div>
+    <div class="mt-4 form-group">
+      <label class="form-label">Set Sender ID</label>
+      <label
+        v-if="senderData.isValid.value"
+        class="form-label text-secondary border-start border-1 ms-2 ps-2"
+        >Balance: {{ senderData.accountInfo.value?.balance || 0 }}</label
+      >
+      <AppInput
+        :value="senderData.accountIdFormatted.value"
+        @input="senderData.accountId.value = ($event.target as HTMLInputElement).value"
+        :filled="true"
+        placeholder="Enter Sender ID"
+      />
+    </div>
+    <div class="mt-4" v-if="senderData.key.value">
+      <AppButton
+        color="secondary"
+        size="small"
+        @click="
+          isKeyStructureModalShown = true;
+          keyStructureComponentKey = senderData.key.value;
+        "
+        >View Key Structure</AppButton
+      >
+    </div>
+    <div class="mt-4 form-group">
+      <label class="form-label">Set Receiver ID</label>
+      <label
+        v-if="receiverData.isValid.value"
+        class="form-label text-secondary border-start border-1 ms-2 ps-2"
+        >Balance: {{ receiverData.accountInfo.value?.balance || 0 }}</label
+      >
+      <AppInput
+        :value="receiverData.accountIdFormatted.value"
+        @input="receiverData.accountId.value = ($event.target as HTMLInputElement).value"
+        :filled="true"
+        placeholder="Enter Receiver ID"
+      />
+    </div>
+    <div
+      class="mt-4"
+      v-if="receiverData.accountInfo.value?.receiverSignatureRequired && receiverData.key.value"
+    >
+      <AppButton
+        color="secondary"
+        size="small"
+        @click="
+          isKeyStructureModalShown = true;
+          keyStructureComponentKey = receiverData.key.value;
+        "
+        >View Key Structure</AppButton
+      >
+    </div>
+    <div class="mt-4 form-group">
+      <label class="form-label">Amount</label>
+      <AppInput v-model="amount" type="number" :filled="true" placeholder="Enter Amount" />
+    </div>
+    <div class="mt-4">
+      <AppSwitch
+        v-model:checked="isApprovedTransfer"
+        name="is-approved-transfer"
+        size="md"
+        label="Approved Transfer (Transaction payer is the allowance spender)"
+      />
+    </div>
+  </form>
+  <TransactionProcessor
+    ref="transactionProcessor"
+    :transaction-bytes="transaction?.toBytes() || null"
+    :on-close-success-modal-click="
+      () => {
+        payerData.accountId.value = '';
+        senderData.accountId.value = '';
+        receiverData.accountId.value = '';
+        validStart = '';
+        maxTransactionfee = 2;
+        amount = 0;
+        transaction = null;
+      }
+    "
+  >
+    <template #successHeading>Hbar transferred successfully</template>
+    <template #successContent>
+      <p class="text-small d-flex justify-content-between align-items mt-2">
+        <span class="text-bold text-secondary">Sender Account ID:</span>
+        <span>{{ senderData.accountId.value }}</span>
+      </p>
+      <p class="text-small d-flex justify-content-between align-items mt-2">
+        <span class="text-bold text-secondary">Receiver Account ID:</span>
+        <span>{{ receiverData.accountId.value }}</span>
+      </p>
+    </template>
+  </TransactionProcessor>
+
+  <KeyStructureModal
+    v-model:show="isKeyStructureModalShown"
+    :account-key="keyStructureComponentKey"
+  />
 </template>
