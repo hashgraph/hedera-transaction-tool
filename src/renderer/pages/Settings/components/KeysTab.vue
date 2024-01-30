@@ -12,6 +12,7 @@ import {
   decryptPrivateKey,
   generateECDSAKeyPairFromString,
 } from '../../../services/keyPairService';
+import { comparePasswords } from '../../../services/userService';
 
 import AppButton from '../../../components/ui/AppButton.vue';
 import AppModal from '../../../components/ui/AppModal.vue';
@@ -69,13 +70,20 @@ const handleImportExternalKey = async e => {
       organization_id: null,
       secret_hash: null,
     };
+
+    if (keyPairsStore.keyPairs.find(kp => kp.public_key === keyPair.public_key)) {
+      throw new Error('Key pair already exists');
+    }
+
+    if (!(await comparePasswords(user.data.id, userPassword.value))) {
+      throw new Error('Incorrect password');
+    }
+
     await keyPairsStore.storeKeyPair(keyPair, userPassword.value);
 
     isImportECDSAKeyModalShown.value = false;
 
-    userPassword.value = '';
-    ecdsaKey.nickname = '';
-    ecdsaKey.privateKey = '';
+    toast.success('ECDSA private key imported successfully', { position: 'bottom-right' });
   } catch (err: any) {
     toast.error(err.message || 'Failed to import ECDSA private key', { position: 'bottom-right' });
   }
@@ -93,6 +101,11 @@ watch(isDecryptedModalShown, newVal => {
     publicKeysPrivateKeyToDecrypt.value = '';
     userPassword.value = '';
   }
+});
+watch(isImportECDSAKeyModalShown, () => {
+  userPassword.value = '';
+  ecdsaKey.nickname = '';
+  ecdsaKey.privateKey = '';
 });
 </script>
 <template>

@@ -43,3 +43,21 @@ export const deleteUser = async (email: string) => {
 };
 
 export const getUsersCount = () => prisma.user.count();
+
+export const comparePasswords = async (userId: string, password: string) => {
+  const firstUser = await prisma.user.findFirst({
+    where: {
+      id: userId,
+    },
+  });
+
+  if (!firstUser) {
+    throw new Error('User not found');
+  }
+
+  if (hash(password).toString('hex') === firstUser.password) {
+    return true;
+  } else {
+    return false;
+  }
+};

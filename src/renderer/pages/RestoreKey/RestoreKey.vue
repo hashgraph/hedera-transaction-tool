@@ -9,6 +9,7 @@ import useUserStore from '../../stores/storeUser';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
+import { comparePasswords } from '../../services/userService';
 import * as keyPairService from '../../services/keyPairService';
 
 import AppButton from '../../components/ui/AppButton.vue';
@@ -57,6 +58,16 @@ watch(index, () => {
 const handleFinish = e => {
   e.preventDefault();
   step.value++;
+};
+
+const handleEnterPassword = async e => {
+  e.preventDefault();
+
+  if (!(await comparePasswords(user.data.id, password.value))) {
+    throw new Error('Incorrect password');
+  }
+
+  keyPairsStore.recoveryPhraseWords.length === 24 ? (step.value += 2) : step.value++;
 };
 
 const handleRestoreKey = async e => {
@@ -154,16 +165,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Step 2 -->
-      <form
-        v-else-if="step === 1"
-        class="w-100"
-        @submit="
-          e => {
-            e.preventDefault();
-            keyPairsStore.recoveryPhraseWords.length === 24 ? (step += 2) : step++;
-          }
-        "
-      >
+      <form v-else-if="step === 1" class="w-100" @submit="handleEnterPassword">
         <h1 class="text-display text-bold text-center">Enter password</h1>
         <p class="text-main mt-5 text-center">Please enter new password</p>
         <div class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4">
