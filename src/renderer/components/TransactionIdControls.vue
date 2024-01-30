@@ -19,8 +19,8 @@ defineEmits(['update:payerId', 'update:validStart', 'update:maxTransactionFee'])
 const account = useAccountId();
 </script>
 <template>
-  <div class="d-flex flex-wrap align-items-end">
-    <div class="form-group col-4 me-4">
+  <div class="row flex-wrap align-items-end">
+    <div class="form-group col-4 col-xxl-3">
       <label class="form-label">Set Payer ID (Required)</label>
       <label v-if="account.isValid.value" class="d-block form-label text-secondary"
         >Balance: {{ account.accountInfo.value?.balance || 0 }}</label
@@ -37,7 +37,7 @@ const account = useAccountId();
         placeholder="Enter Payer ID"
       />
     </div>
-    <div class="form-group me-4">
+    <div class="form-group col-4 col-xxl-3">
       <label class="form-label">Set Valid Start Time</label>
       <AppInput
         :model-value="validStart"
@@ -47,7 +47,7 @@ const account = useAccountId();
         step="1"
       />
     </div>
-    <div class="form-group">
+    <div class="form-group col-4 col-xxl-3">
       <label class="form-label">Set Max Transaction Fee</label>
       <AppInput
         :model-value="maxTransactionFee"
