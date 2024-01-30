@@ -134,7 +134,7 @@ watch(fileMeta, () => (content.value = ''));
             signatureKeys.length === 0 ||
             (!content && !fileBuffer)
           "
-          >Create</AppButton
+          >Sign & Submit</AppButton
         >
       </div>
     </div>

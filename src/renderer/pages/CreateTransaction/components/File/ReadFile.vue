@@ -100,7 +100,7 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
           size="large"
           color="primary"
           :disabled="!fileId || !payerData.isValid.value"
-          >Read</AppButton
+          >Sign & Read</AppButton
         >
       </div>
     </div>
