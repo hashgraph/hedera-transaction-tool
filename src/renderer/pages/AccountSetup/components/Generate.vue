@@ -67,35 +67,33 @@ const handleWordChange = (newWord: string, index: number) => {
 };
 </script>
 <template>
-  <div class="d-flex justify-content-center row">
-    <div class="col-12 col-md-10 col-xl-8">
-      <div v-if="toVerify" class="text-center mb-8">
-        <h1 class="text-main text-bold">Verify Recovery Phrase</h1>
-        <h3 class="text-main mt-2">Enter the missing words</h3>
-      </div>
-      <div class="d-flex flex-wrap row g-3">
-        <template v-for="(word, index) in words || []" :key="index">
-          <AppRecoveryPhraseWord
-            class="col-3"
-            :word="word"
-            :index="index + 1"
-            :readonly="!indexesToVerify.includes(index)"
-            :handle-word-change="newWord => handleWordChange(newWord, index)"
-            visible-initially
-          />
-        </template>
-      </div>
-      <div v-if="!toVerify" class="mt-5">
-        <AppCheckBox
-          v-model:checked="checkboxChecked"
-          :label="
-            words.filter(w => w).length > 0
-              ? 'I have backed up my phrase somewhere safe.'
-              : 'I understand that if I lose my recovery phrase, I will not be able to create new keys or recover lost keys.'
-          "
-          name="recoveryPhraseAgreement"
+  <div>
+    <div v-if="toVerify" class="text-center mb-8">
+      <h1 class="text-main text-bold">Verify Recovery Phrase</h1>
+      <h3 class="text-main mt-2">Enter the missing words</h3>
+    </div>
+    <div class="d-flex flex-wrap row g-3">
+      <template v-for="(word, index) in words || []" :key="index">
+        <AppRecoveryPhraseWord
+          class="col-3"
+          :word="word"
+          :index="index + 1"
+          :readonly="!indexesToVerify.includes(index)"
+          :handle-word-change="newWord => handleWordChange(newWord, index)"
+          visible-initially
         />
-      </div>
+      </template>
+    </div>
+    <div v-if="!toVerify" class="mt-5">
+      <AppCheckBox
+        v-model:checked="checkboxChecked"
+        :label="
+          words.filter(w => w).length > 0
+            ? 'I have backed up my phrase somewhere safe.'
+            : 'I understand that if I lose my recovery phrase, I will not be able to create new keys or recover lost keys.'
+        "
+        name="recoveryPhraseAgreement"
+      />
     </div>
   </div>
   <div class="d-flex flex-column justify-content-center align-items-center gap-4 mt-8">

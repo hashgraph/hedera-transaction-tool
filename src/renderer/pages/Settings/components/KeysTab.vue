@@ -106,7 +106,7 @@ watch(isDecryptedModalShown, newVal => {
     <div
       v-for="keyPair in keyPairsStore.keyPairs"
       :key="keyPair.public_key"
-      class="rounded bg-dark-blue-700 p-4 mt-4"
+      class="rounded bg-dark-blue-800 p-4 mt-4"
     >
       <div class="d-flex justify-content-between align-items-center">
         <div class="mb-3 d-flex">
