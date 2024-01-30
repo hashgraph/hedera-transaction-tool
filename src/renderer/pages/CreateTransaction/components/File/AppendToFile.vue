@@ -9,8 +9,9 @@ import useAccountId from '../../../../composables/useAccountId';
 
 import { createTransactionId } from '../../../../services/transactionService';
 
-import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
 import AppButton from '../../../../components/ui/AppButton.vue';
+import AppInput from '../../../../components/ui/AppInput.vue';
+import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
 
 /* Stores */
 const networkStore = useNetworkStore();
@@ -46,7 +47,7 @@ const createTransaction = () => {
     .setNodeAccountIds([new AccountId(3)])
     .setFileId(fileId.value)
     .setMaxChunks(99999999999999)
-    .setChunkSize(chunkSize.value)
+    .setChunkSize(Number(chunkSize.value))
     .setContents(fileBuffer.value ? fileBuffer.value : new TextEncoder().encode(content.value));
 
   appendTransaction.freezeWith(networkStore.client);
@@ -101,9 +102,9 @@ const handleFileImport = async (e: Event) => {
 
 const handleCreate = async e => {
   e.preventDefault();
-
   try {
     transaction.value = createTransaction();
+
     await transactionProcessor.value?.process(
       payerData.keysFlattened.value.concat(signatureKeys.value),
       chunkSize.value,
@@ -132,39 +133,33 @@ watch(fileMeta, () => (content.value = ''));
           <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
             >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
           >
-          <input
-            :value="payerData.accountIdFormatted.value"
-            @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
-            type="text"
-            class="form-control is-fill"
+          <AppInput
+            :model-value="payerData.accountIdFormatted.value"
+            @update:model-value="v => (payerData.accountId.value = v)"
+            :filled="true"
             placeholder="Enter Payer ID"
           />
         </div>
         <div class="form-group">
           <label class="form-label">Set Valid Start Time (Required)</label>
-          <input v-model="validStart" type="datetime-local" step="1" class="form-control is-fill" />
+          <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
         </div>
         <div class="form-group">
           <label class="form-label">Set Max Transaction Fee (Optional)</label>
-          <input v-model="maxTransactionFee" type="number" min="0" class="form-control is-fill" />
+          <AppInput v-model="maxTransactionFee" type="number" min="0" :filled="true" />
         </div>
       </div>
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set File ID</label>
-        <input
-          v-model="fileId"
-          type="text"
-          class="form-control is-fill py-3"
-          placeholder="Enter File ID"
-        />
+        <AppInput v-model="fileId" :filled="true" class="py-3" placeholder="Enter File ID" />
       </div>
       <div class="mt-4 form-group w-75">
         <label class="form-label">Set Signature Keys (Required)</label>
         <div class="d-flex gap-3">
-          <input
+          <AppInput
             v-model="signatureKeyText"
-            type="text"
-            class="form-control is-fill py-3"
+            :filled="true"
+            class="py-3"
             placeholder="Enter signer public key"
             style="max-width: 555px"
             @keypress="e => e.code === 'Enter' && handleAddSignatureKey()"
@@ -181,11 +176,11 @@ watch(fileMeta, () => (content.value = ''));
       <div class="mt-4 w-75">
         <template v-for="key in signatureKeys" :key="key">
           <div class="d-flex align-items-center gap-3">
-            <input
-              type="text"
+            <AppInput
+              :model-value="key"
+              :filled="true"
               readonly
-              class="form-control is-fill py-3"
-              :value="key"
+              class="py-3"
               style="max-width: 555px"
             />
             <i
@@ -198,12 +193,13 @@ watch(fileMeta, () => (content.value = ''));
       </div>
       <div class="mt-4 form-group w-25">
         <label class="form-label">Set Chunk Size</label>
-        <input
+        <AppInput
           v-model="chunkSize"
+          :filled="true"
           type="number"
           min="1024"
           max="6144"
-          class="form-control is-fill py-3"
+          class="py-3"
         />
       </div>
       <div class="mt-4 form-group">
@@ -212,8 +208,9 @@ watch(fileMeta, () => (content.value = ''));
             >Upload File</span
           >
         </label>
-        <input
-          class="form-control form-control-sm is-fill"
+        <AppInput
+          :filled="true"
+          size="small"
           id="fileUpload"
           name="fileUpload"
           type="file"
@@ -276,11 +273,11 @@ watch(fileMeta, () => (content.value = ''));
     >
       <template #successHeading>Appended to file successfully</template>
       <template #successContent>
-        <p class="mt-2 text-small d-flex justify-content-between align-items">
+        <p class="text-small d-flex justify-content-between align-items mt-2">
           <span class="text-bold text-secondary">File ID:</span>
           <span>{{ fileId }}</span>
         </p>
-        <p v-if="chunksAmount" class="mt-2 text-small d-flex justify-content-between align-items">
+        <p v-if="chunksAmount" class="text-small d-flex justify-content-between align-items mt-2">
           <span class="text-bold text-secondary">Number of Chunks</span>
           <span>{{ chunksAmount }}</span>
         </p>

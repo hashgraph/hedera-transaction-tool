@@ -15,6 +15,7 @@ import {
   // getStoredKeyPairs,
 } from '../../../services/keyPairService';
 
+import AppInput from '../../../components/ui/AppInput.vue';
 // import AppButton from '../../../components/ui/AppButton.vue';
 // import AppSwitch from '../../../components/ui/AppSwitch.vue';
 
@@ -181,16 +182,11 @@ defineExpose({
     </div> -->
     <div class="form-group mt-5">
       <label class="form-label">Nickname <span class="fw-normal">- Optional</span></label>
-      <input
-        v-model="nickname"
-        type="text"
-        class="form-control is-fill"
-        placeholder="Enter Nickname"
-      />
+      <AppInput v-model="nickname" :filled="true" placeholder="Enter Nickname" />
     </div>
     <div class="form-group w-25 mt-5">
       <label class="form-label">Key Type</label>
-      <input type="text" class="form-control is-fill" value="ED25519" readonly />
+      <AppInput model-value="ED25519" readonly />
     </div>
     <!-- <AppSwitch
         v-model:checked="advancedMode"

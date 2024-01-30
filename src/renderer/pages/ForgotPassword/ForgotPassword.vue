@@ -4,6 +4,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import AppButton from '../../components/ui/AppButton.vue';
+import AppInput from '../../components/ui/AppInput.vue';
 
 /* Composables */
 const router = useRouter();
@@ -30,12 +31,7 @@ const handleFormSubmit = (event: Event) => {
       class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
     >
       <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
-        <input
-          v-model="inputEmail"
-          type="text"
-          class="form-control is-fill"
-          placeholder="Enter your email"
-        />
+        <AppInput v-model="inputEmail" :filled="true" placeholder="Enter your email" />
       </div>
       <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
         <AppButton

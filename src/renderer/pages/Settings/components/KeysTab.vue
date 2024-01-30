@@ -15,6 +15,7 @@ import {
 
 import AppButton from '../../../components/ui/AppButton.vue';
 import AppModal from '../../../components/ui/AppModal.vue';
+import AppInput from '../../../components/ui/AppInput.vue';
 
 /* Stores */
 const keyPairsStore = useKeyPairsStore();
@@ -26,7 +27,7 @@ const toast = useToast();
 /* State */
 const isDecryptedModalShown = ref(false);
 const isImportECDSAKeyModalShown = ref(false);
-const decryptedKey = ref<string | null>(null);
+const decryptedKey = ref('');
 const publicKeysPrivateKeyToDecrypt = ref('');
 const userPassword = ref('');
 const ecdsaKey = reactive<{ privateKey: string; nickname?: string }>({
@@ -88,7 +89,7 @@ onMounted(() => {
 /* Watchers */
 watch(isDecryptedModalShown, newVal => {
   if (!newVal) {
-    decryptedKey.value = null;
+    decryptedKey.value = '';
     publicKeysPrivateKeyToDecrypt.value = '';
     userPassword.value = '';
   }
@@ -105,7 +106,7 @@ watch(isDecryptedModalShown, newVal => {
     <div
       v-for="keyPair in keyPairsStore.keyPairs"
       :key="keyPair.public_key"
-      class="rounded bg-dark-blue-700 p-4 mt-4"
+      class="rounded bg-dark-blue-800 p-4 mt-4"
     >
       <div class="d-flex justify-content-between align-items-center">
         <div class="mb-3 d-flex">
@@ -125,7 +126,7 @@ watch(isDecryptedModalShown, newVal => {
       </div>
       <div class="form-group">
         <label class="form-label">Encrypted Private key</label>
-        <input type="text" readonly class="form-control py-3" :value="keyPair.private_key" />
+        <AppInput readonly class="py-3" :filled="true" :model-value="keyPair.private_key" />
       </div>
       <div class="form-group mt-3">
         <label class="form-label"
@@ -136,7 +137,7 @@ watch(isDecryptedModalShown, newVal => {
           }}
           Public key</label
         >
-        <input type="text" readonly class="form-control py-3" :value="keyPair.public_key" />
+        <AppInput readonly class="py-3" :filled="true" :model-value="keyPair.public_key" />
       </div>
       <div
         v-show="
@@ -145,11 +146,12 @@ watch(isDecryptedModalShown, newVal => {
         class="form-group mt-3"
       >
         <label class="form-label">Account ID</label>
-        <input
+        <AppInput
           type="text"
           readonly
-          class="form-control py-3"
-          :value="
+          class="py-3"
+          :filled="true"
+          :model-value="
             keyPairsStore.accoundIds.find(acc => acc.publicKey === keyPair.public_key)
               ?.accountIds[0]
           "
@@ -158,91 +160,87 @@ watch(isDecryptedModalShown, newVal => {
     </div>
     <AppModal v-model:show="isDecryptedModalShown" class="common-modal">
       <div class="p-5">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isDecryptedModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
+        <div>
+          <i class="bi bi-x-lg cursor-pointer" @click="isDecryptedModalShown = false"></i>
+        </div>
+        <div class="text-center mt-5">
           <Transition name="fade" mode="out-in">
             <i
               v-if="!decryptedKey"
               class="bi bi-lock large-icon cursor-pointer"
-              style="line-height: 16px"
               @click="isDecryptedModalShown = false"
             ></i>
             <i
               v-else
               class="bi bi-unlock large-icon cursor-pointer"
-              style="line-height: 16px"
               @click="isDecryptedModalShown = false"
             ></i>
           </Transition>
         </div>
         <form @submit="handleDecrypt">
-          <h3 class="mt-5 text-main text-center text-bold">Enter your password</h3>
-          <input
-            v-model="userPassword"
-            type="password"
-            class="mt-5 form-control is-fill"
-            placeholder="Type your password"
-          />
-          <div class="mt-4 form-group">
-            <label class="form-label">Decrypted Private key</label>
-            <input v-model="decryptedKey" type="text" class="form-control is-fill" readonly />
+          <h3 class="text-center text-title text-bold mt-5">Decrypt private key</h3>
+          <div class="form-group mt-5">
+            <label class="form-label">Enter your password</label>
+            <AppInput
+              v-model="userPassword"
+              :filled="true"
+              size="small"
+              type="password"
+              placeholder="Type your password"
+            />
           </div>
-          <AppButton
-            type="submit"
-            color="primary"
-            size="large"
-            class="mt-5 w-100"
-            :disabled="userPassword.length === 0"
-            >Decrypt</AppButton
-          >
+          <div class="form-group mt-4">
+            <label class="form-label">Decrypted Private key</label>
+            <AppInput v-model="decryptedKey" :filled="true" size="small" readonly />
+          </div>
+          <div class="d-grid mt-5">
+            <AppButton type="submit" color="primary" :disabled="userPassword.length === 0"
+              >Decrypt</AppButton
+            >
+          </div>
         </form>
       </div>
     </AppModal>
     <AppModal v-model:show="isImportECDSAKeyModalShown" class="common-modal">
       <div class="p-5">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isImportECDSAKeyModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
+        <i class="bi bi-x-lg cursor-pointer" @click="isImportECDSAKeyModalShown = false"></i>
+        <div class="text-center mt-5">
           <i class="bi bi-key large-icon" style="line-height: 16px"></i>
         </div>
         <form @submit="handleImportExternalKey">
-          <div class="mt-4 form-group">
+          <div class="form-group mt-4">
             <label class="form-label">Enter your password</label>
-            <input
+            <AppInput
               v-model="userPassword"
               type="password"
-              class="form-control is-fill"
+              :filled="true"
+              size="small"
               placeholder="Type your password"
             />
           </div>
-          <div class="mt-4 form-group">
+          <div class="form-group mt-4">
             <label class="form-label">Enter nickname (optional)</label>
-            <input
+            <AppInput
               v-model="ecdsaKey.nickname"
-              class="form-control is-fill"
+              :filled="true"
+              size="small"
               name="nickname"
               placeholder="Type nickname"
             />
           </div>
-          <div class="mt-4 form-group">
+          <div class="form-group mt-4">
             <label class="form-label">Enter ECDSA Private key</label>
-            <input
+            <AppInput
               v-model="ecdsaKey.privateKey"
-              class="form-control is-fill"
+              :filled="true"
+              size="small"
               name="private-key"
               placeholder="Type ECDSA Private key"
             />
           </div>
-          <AppButton type="submit" color="primary" size="large" class="mt-5 w-100"
-            >Import</AppButton
-          >
+          <div class="d-grid mt-5">
+            <AppButton type="submit" color="primary">Import</AppButton>
+          </div>
         </form>
       </div>
     </AppModal>

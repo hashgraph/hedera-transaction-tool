@@ -6,6 +6,7 @@ import useOrganizationsStore from '../../../stores/storeOrganizations';
 import { useToast } from 'vue-toast-notification';
 
 import AppButton from '../../../components/ui/AppButton.vue';
+import AppInput from '../../../components/ui/AppInput.vue';
 
 /* Stores */
 const organizationsStore = useOrganizationsStore();
@@ -59,20 +60,16 @@ const handleRemoveOrganization = async (serverUrl: string) => {
   <form class="p-4 border border-2 rounded-3" @submit="handleAddOrganization">
     <div class="d-flex align-items-center">
       <p class="me-4">Organization name:</p>
-      <input type="text" class="form-control is-fill w-25 py-3" v-model="newOrganizationName" />
+      <AppInput :filled="true" class="w-25 py-3" v-model="newOrganizationName" />
     </div>
     <div class="mt-4">
       <label class="form-label">organization server public key:</label>
-      <input
-        type="text"
-        class="form-control is-fill py-3"
-        v-model="newOrganizationServerPublicKey"
-      />
+      <AppInput :filled="true" class="py-3" v-model="newOrganizationServerPublicKey" />
     </div>
     <div class="mt-4 d-flex align-items-end">
       <div class="flex-1 me-4">
         <label class="form-label">organization server url:</label>
-        <input type="text" class="form-control is-fill py-3" v-model="newOrganizationServerUrl" />
+        <AppInput :filled="true" class="py-3" v-model="newOrganizationServerUrl" />
       </div>
       <AppButton color="primary" type="submit">Add Organization</AppButton>
     </div>
@@ -86,7 +83,7 @@ const handleRemoveOrganization = async (serverUrl: string) => {
     <div class="mt-4 d-flex align-items-end">
       <div class="flex-1 me-4">
         <label class="form-label">organization server url:</label>
-        <input type="text" disabled class="form-control is-fill py-3" :value="org.serverUrl" />
+        <AppInput :filled="true" disabled class="py-3" :value="org.serverUrl" />
       </div>
       <AppButton color="primary" @click="handleRemoveOrganization(org.serverUrl)">
         Remove

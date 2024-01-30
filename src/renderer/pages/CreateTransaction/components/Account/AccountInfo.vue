@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { KeyList, PublicKey } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
-import AppModal from '../../../../components/ui/AppModal.vue';
-import KeyStructure from '../../../../components/KeyStructure.vue';
+import AppInput from '../../../../components/ui/AppInput.vue';
+import KeyStructureModal from '../../../../components/KeyStructureModal.vue';
 
 /* Composables */
 const toast = useToast();
@@ -36,11 +35,10 @@ watch(accountData.isValid, isValid => {
     <div class="mt-4">
       <div class="mt-4 w-50 form-group">
         <label class="form-label">Set Account ID (Required)</label>
-        <input
-          :value="accountData.accountIdFormatted.value"
-          @input="accountData.accountId.value = ($event.target as HTMLInputElement).value"
-          type="text"
-          class="form-control is-fill"
+        <AppInput
+          :model-value="accountData.accountIdFormatted.value"
+          @update:model-value="v => (accountData.accountId.value = v)"
+          :filled="true"
           placeholder="Enter Account ID"
         />
       </div>
@@ -106,9 +104,7 @@ watch(accountData.isValid, isValid => {
             </div>
             <div class="d-flex row" v-if="accountData.accountInfo.value?.autoRenewPeriod">
               <p class="col-4 text-secondary">Auto Renew Period:</p>
-              <p class="col-8">
-                {{ (accountData.accountInfo.value?.autoRenewPeriod / 86400).toFixed(0) }} days
-              </p>
+              <p class="col-8">{{ accountData.autoRenewPeriodInDays.value }} days</p>
             </div>
             <div class="d-flex row">
               <p class="col-4 text-secondary">Max. Auto. Association:</p>
@@ -141,20 +137,11 @@ watch(accountData.isValid, isValid => {
         </div>
       </template>
     </div>
-    <AppModal
-      v-model:show="isKeyStructureModalShown"
+
+    <KeyStructureModal
       v-if="accountData.isValid.value"
-      class="modal-fit-content"
-    >
-      <div class="p-5">
-        <KeyStructure
-          v-if="accountData.key.value instanceof KeyList && true"
-          :key-list="accountData.key.value"
-        />
-        <div v-else-if="accountData.key.value instanceof PublicKey && true">
-          {{ accountData.key.value.toStringRaw() }}
-        </div>
-      </div>
-    </AppModal>
+      v-model:show="isKeyStructureModalShown"
+      :account-key="accountData.key.value"
+    />
   </div>
 </template>

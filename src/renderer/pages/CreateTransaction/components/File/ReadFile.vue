@@ -14,6 +14,7 @@ import { executeQuery } from '../../../../services/transactionService';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
+import AppInput from '../../../../components/ui/AppInput.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -120,10 +121,10 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
       </div>
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set File ID</label>
-        <input
+        <AppInput
           v-model="fileId"
-          type="text"
-          class="form-control is-fill py-3"
+          :filled="true"
+          class="py-3"
           placeholder="Enter owner public key"
         />
       </div>
@@ -143,28 +144,26 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
     </form>
     <AppModal v-model:show="isUserPasswordModalShown" class="common-modal">
       <div class="p-5">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          style="line-height: 16px"
-          @click="isUserPasswordModalShown = false"
-        ></i>
-        <div class="mt-5 text-center">
-          <i class="bi bi-shield-lock large-icon" style="line-height: 16px"></i>
+        <div>
+          <i class="bi bi-x-lg cursor-pointer" @click="isUserPasswordModalShown = false"></i>
+        </div>
+        <div class="text-center mt-5">
+          <i class="bi bi-shield-lock large-icon"></i>
         </div>
         <form @submit="handleRead">
-          <h3 class="mt-5 text-main text-center text-bold">Enter your password</h3>
-          <div class="mt-4 form-group">
-            <input v-model="userPassword" type="password" class="form-control is-fill" />
+          <h3 class="text-center text-title text-bold mt-5">Enter your password</h3>
+          <div class="form-group mt-4">
+            <AppInput v-model="userPassword" :filled="true" size="small" type="password" />
           </div>
-          <AppButton
-            :loading="isLoading"
-            :disabled="userPassword.length === 0 || isLoading"
-            color="primary"
-            size="large"
-            class="mt-5 w-100 rounded-4"
-            type="submit"
-            >Sign Query</AppButton
-          >
+          <div class="d-grid mt-5">
+            <AppButton
+              :loading="isLoading"
+              :disabled="userPassword.length === 0 || isLoading"
+              color="primary"
+              type="submit"
+              >Sign Query</AppButton
+            >
+          </div>
         </form>
       </div>
     </AppModal>

@@ -1,13 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import {
-  AccountId,
-  KeyList,
-  PublicKey,
-  Hbar,
-  Key,
-  AccountAllowanceApproveTransaction,
-} from '@hashgraph/sdk';
+import { AccountId, Hbar, Key, AccountAllowanceApproveTransaction } from '@hashgraph/sdk';
 
 import useNetworkStore from '../../../../stores/storeNetwork';
 
@@ -18,8 +11,8 @@ import { createTransactionId } from '../../../../services/transactionService';
 
 import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
 import AppButton from '../../../../components/ui/AppButton.vue';
-import AppModal from '../../../../components/ui/AppModal.vue';
-import KeyStructure from '../../../../components/KeyStructure.vue';
+import KeyStructureModal from '../../../../components/KeyStructureModal.vue';
+import AppInput from '../../../../components/ui/AppInput.vue';
 
 /* Stores */
 const networkStore = useNetworkStore();
@@ -85,21 +78,20 @@ const handleCreate = async e => {
           <label v-if="payerData.isValid.value" class="form-label text-secondary ms-3"
             >Balance: {{ payerData.accountInfo.value?.balance }}</label
           >
-          <input
-            :value="payerData.accountIdFormatted.value"
-            @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
-            type="text"
-            class="form-control is-fill"
+          <AppInput
+            :model-value="payerData.accountIdFormatted.value"
+            @update:model-value="v => (payerData.accountId.value = v)"
+            :filled="true"
             placeholder="Enter Payer ID"
           />
         </div>
         <div class="form-group">
           <label class="form-label">Set Valid Start Time (Required)</label>
-          <input v-model="validStart" type="datetime-local" step="1" class="form-control is-fill" />
+          <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
         </div>
         <div class="form-group">
           <label class="form-label">Set Max Transaction Fee (Optional)</label>
-          <input v-model="maxTransactionfee" type="number" min="0" class="form-control is-fill" />
+          <AppInput v-model="maxTransactionfee" type="number" min="0" :filled="true" />
         </div>
       </div>
       <div class="mt-4 form-group">
@@ -109,11 +101,10 @@ const handleCreate = async e => {
           class="form-label text-secondary border-start border-1 ms-2 ps-2"
           >Balance: {{ ownerData.accountInfo.value?.balance }}</label
         >
-        <input
-          :value="ownerData.accountIdFormatted.value"
-          @input="ownerData.accountId.value = ($event.target as HTMLInputElement).value"
-          type="text"
-          class="form-control is-fill"
+        <AppInput
+          :model-value="ownerData.accountIdFormatted.value"
+          @update:model-value="v => (ownerData.accountId.value = v)"
+          :filled="true"
           placeholder="Enter Owner ID"
         />
       </div>
@@ -136,11 +127,10 @@ const handleCreate = async e => {
           class="form-label text-secondary border-start border-1 ms-2 ps-2"
           >Allowance: {{ ownerData.getSpenderAllowance(spenderData.accountId.value) }}</label
         >
-        <input
-          :value="spenderData.accountIdFormatted.value"
-          @input="spenderData.accountId.value = ($event.target as HTMLInputElement).value"
-          type="text"
-          class="form-control is-fill"
+        <AppInput
+          :model-value="spenderData.accountIdFormatted.value"
+          @update:model-value="v => (spenderData.accountId.value = v)"
+          :filled="true"
           placeholder="Enter Spender ID"
         />
       </div>
@@ -158,12 +148,7 @@ const handleCreate = async e => {
       </div>
       <div class="mt-4 form-group">
         <label class="form-label">Amount</label>
-        <input
-          v-model="amount"
-          type="number"
-          class="form-control is-fill"
-          placeholder="Enter Amount"
-        />
+        <AppInput v-model="amount" :filled="true" type="number" placeholder="Enter Amount" />
       </div>
       <div class="mt-4">
         <AppButton
@@ -197,26 +182,20 @@ const handleCreate = async e => {
     >
       <template #successHeading>Allowance Approved Successfully</template>
       <template #successContent>
-        <p class="mt-2 text-small d-flex justify-content-between align-items">
+        <p class="text-small d-flex justify-content-between align-items mt-2">
           <span class="text-bold text-secondary">Owner Account ID:</span>
           <span>{{ ownerData.accountId.value }}</span>
         </p>
-        <p class="mt-2 text-small d-flex justify-content-between align-items">
+        <p class="text-small d-flex justify-content-between align-items mt-2">
           <span class="text-bold text-secondary">Spender Account ID:</span>
           <span>{{ spenderData.accountId.value }}</span>
         </p>
       </template>
     </TransactionProcessor>
-    <AppModal v-model:show="isKeyStructureModalShown" class="modal-fit-content">
-      <div class="p-5">
-        <KeyStructure
-          v-if="keyStructureComponentKey instanceof KeyList && true"
-          :key-list="keyStructureComponentKey"
-        />
-        <div v-else-if="keyStructureComponentKey instanceof PublicKey && true">
-          {{ keyStructureComponentKey.toStringRaw() }}
-        </div>
-      </div>
-    </AppModal>
+
+    <KeyStructureModal
+      v-model:show="isKeyStructureModalShown"
+      :account-key="keyStructureComponentKey"
+    />
   </div>
 </template>

@@ -9,8 +9,9 @@ import useAccountId from '../../../../composables/useAccountId';
 
 import { createTransactionId } from '../../../../services/transactionService';
 
-import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
 import AppButton from '../../../../components/ui/AppButton.vue';
+import AppInput from '../../../../components/ui/AppInput.vue';
+import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
 
 /* Stores */
 const networkStore = useNetworkStore();
@@ -161,39 +162,33 @@ watch(fileMeta, () => (content.value = ''));
           <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
             >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
           >
-          <input
-            :value="payerData.accountIdFormatted.value"
-            @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
-            type="text"
-            class="form-control is-fill"
+          <AppInput
+            :model-value="payerData.accountIdFormatted.value"
+            @update:model-value="v => (payerData.accountId.value = v)"
+            :filled="true"
             placeholder="Enter Payer ID"
           />
         </div>
         <div class="form-group">
           <label class="form-label">Set Valid Start Time (Required)</label>
-          <input v-model="validStart" type="datetime-local" step="1" class="form-control is-fill" />
+          <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
         </div>
         <div class="form-group">
           <label class="form-label">Set Max Transaction Fee (Optional)</label>
-          <input v-model="maxTransactionFee" type="number" min="0" class="form-control is-fill" />
+          <AppInput v-model="maxTransactionFee" type="number" min="0" :filled="true" />
         </div>
       </div>
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set File ID</label>
-        <input
-          v-model="fileId"
-          type="text"
-          class="form-control is-fill py-3"
-          placeholder="Enter File ID"
-        />
+        <AppInput v-model="fileId" :filled="true" class="py-3" placeholder="Enter File ID" />
       </div>
       <div class="mt-4 form-group w-75">
         <label class="form-label">Set Signature Keys (Required)</label>
         <div class="d-flex gap-3">
-          <input
+          <AppInput
             v-model="signatureKeyText"
-            type="text"
-            class="form-control is-fill py-3"
+            :filled="true"
+            class="py-3"
             placeholder="Enter signer public key"
             style="max-width: 555px"
             @keypress="e => e.code === 'Enter' && handleAddSignatureKey()"
@@ -210,11 +205,11 @@ watch(fileMeta, () => (content.value = ''));
       <div class="mt-4 w-75">
         <template v-for="key in signatureKeys" :key="key">
           <div class="d-flex align-items-center gap-3">
-            <input
-              type="text"
+            <AppInput
+              :model-value="key"
+              :filled="true"
+              class="py-3"
               readonly
-              class="form-control is-fill py-3"
-              :value="key"
               style="max-width: 555px"
             />
             <i
@@ -228,10 +223,10 @@ watch(fileMeta, () => (content.value = ''));
       <div class="form-group w-75">
         <label class="form-label">Set Keys (Optional)</label>
         <div class="d-flex gap-3">
-          <input
+          <AppInput
             v-model="ownerKeyText"
-            type="text"
-            class="form-control is-fill py-3"
+            :filled="true"
+            class="py-3"
             placeholder="Enter owner public key"
             style="max-width: 555px"
             @keypress="e => e.code === 'Enter' && handleAddOwnerKey()"
@@ -244,10 +239,11 @@ watch(fileMeta, () => (content.value = ''));
       <div class="mt-4 w-75">
         <template v-for="key in ownerKeys" :key="key">
           <div class="d-flex align-items-center gap-3">
-            <input
+            <AppInput
               type="text"
               readonly
-              class="form-control is-fill py-3"
+              :filled="true"
+              class="py-3"
               :value="key"
               style="max-width: 555px"
             />
@@ -261,31 +257,34 @@ watch(fileMeta, () => (content.value = ''));
       </div>
       <div class="mt-4 form-group w-50">
         <label class="form-label">Set File Memo (Optional)</label>
-        <input
+        <AppInput
           v-model="memo"
           type="text"
-          class="form-control is-fill py-3"
+          :filled="true"
+          class="py-3"
           maxlength="100"
           placeholder="Enter memo"
         />
       </div>
       <div class="mt-4 form-group w-25">
         <label class="form-label">Set Expiration Time (Optional)</label>
-        <input
+        <AppInput
           v-model="expirationTimestamp"
           type="datetime-local"
-          class="form-control is-fill py-3"
+          :filled="true"
+          class="py-3"
           placeholder="Enter timestamp"
         />
       </div>
       <div class="mt-4 form-group w-25">
         <label class="form-label">Set Chunk Size (If File is large)</label>
-        <input
+        <AppInput
           v-model="chunkSize"
           type="number"
           min="1024"
           max="6144"
-          class="form-control is-fill py-3"
+          :filled="true"
+          class="py-3"
         />
       </div>
       <div class="mt-4 form-group">
@@ -294,7 +293,7 @@ watch(fileMeta, () => (content.value = ''));
             >Upload File</span
           >
         </label>
-        <input
+        <AppInput
           class="form-control form-control-sm is-fill"
           id="fileUpload"
           name="fileUpload"
@@ -315,7 +314,7 @@ watch(fileMeta, () => (content.value = ''));
         <textarea
           v-model="content"
           :disabled="Boolean(fileBuffer)"
-          class="form-control is-fill py-3"
+          class="form-control py-3"
           rows="10"
         ></textarea>
       </div>
@@ -361,11 +360,11 @@ watch(fileMeta, () => (content.value = ''));
     >
       <template #successHeading>File updated successfully</template>
       <template #successContent>
-        <p class="mt-2 text-small d-flex justify-content-between align-items">
+        <p class="text-small d-flex justify-content-between align-items mt-2">
           <span class="text-bold text-secondary">File ID:</span>
           <span>{{ fileId }}</span>
         </p>
-        <p v-if="chunksAmount" class="mt-2 text-small d-flex justify-content-between align-items">
+        <p v-if="chunksAmount" class="text-small d-flex justify-content-between align-items mt-2">
           <span class="text-bold text-secondary">Number of Chunks</span>
           <span>{{ chunksAmount }}</span>
         </p>

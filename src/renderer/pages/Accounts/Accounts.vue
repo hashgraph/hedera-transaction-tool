@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { Hbar, HbarUnit, KeyList, PublicKey } from '@hashgraph/sdk';
+import { KeyList, PublicKey } from '@hashgraph/sdk';
+import { HederaAccount } from '@prisma/client';
 
 import useUserStore from '../../stores/storeUser';
 import useNetworkStore from '../../stores/storeNetwork';
@@ -8,7 +9,6 @@ import useNetworkStore from '../../stores/storeNetwork';
 import useAccountId from '../../composables/useAccountId';
 
 import { getAll, remove } from '../../services/accountsService';
-import { openExternal } from '../../services/electronUtilsService';
 import { getKeyListLevels } from '../../services/keyPairService';
 import { getDollarAmount } from '../../services/mirrorNodeDataService';
 
@@ -16,8 +16,7 @@ import { getFormattedDateFromTimestamp } from '../../utils/transactions';
 
 import AppButton from '../../components/ui/AppButton.vue';
 import AppModal from '../../components/ui/AppModal.vue';
-import KeyStructure from '../../components/KeyStructure.vue';
-import { HederaAccount } from '@prisma/client';
+import KeyStructureModal from '../../components/KeyStructureModal.vue';
 
 /* Enums */
 // enum Sorting {
@@ -153,18 +152,18 @@ const handleUnlinkAccount = async () => {
             data-bs-toggle="dropdown"
             >Add new</AppButton
           >
-          <ul class="dropdown-menu text-small">
-            <li class="dropdown-item">
-              <RouterLink to="create-transaction/createAccount" class="dropdown-item"
-                ><i class="bi bi-plus-lg"></i>
-                Create New
-              </RouterLink>
+          <ul class="dropdown-menu w-100 mt-3">
+            <li
+              class="dropdown-item cursor-pointer"
+              @click="$router.push('create-transaction/createAccount')"
+            >
+              <span class="text-small text-bold">Create New</span>
             </li>
-            <li class="dropdown-item">
-              <RouterLink to="accounts/link-existing" class="dropdown-item"
-                ><i class="bi bi-plus-lg"></i>
-                Link Existing Account
-              </RouterLink>
+            <li
+              class="dropdown-item cursor-pointer mt-3"
+              @click="$router.push('accounts/link-existing')"
+            >
+              <span class="text-small text-bold">Add Existing</span>
             </li>
           </ul>
         </div>
@@ -242,18 +241,10 @@ const handleUnlinkAccount = async () => {
               </div>
               <div class="col-7">
                 <p class="text-small text-semi-bold">
-                  {{
-                    accountData.accountInfo.value?.accountId.toStringWithChecksum(
-                      networkStore.client,
-                    )
-                  }}
+                  {{ accountData.accoundIdWithChecksum.value }}
                   <i
                     class="bi bi-box-arrow-up-right link-primary cursor-pointer ms-1"
-                    @click="
-                      networkStore.network !== 'custom' &&
-                        openExternal(`
-            https://hashscan.io/${networkStore.network}/account/${accountData.accountIdFormatted.value}`)
-                    "
+                    @click="accountData.openAccountInHashscan"
                   ></i>
                 </p>
               </div>
@@ -369,12 +360,7 @@ const handleUnlinkAccount = async () => {
               <div class="col-7">
                 <p class="text-small text-semi-bold"></p>
                 <span>{{ accountData.accountInfo.value?.autoRenewPeriod }}s</span>
-                <span class="ms-4"
-                  >{{
-                    (accountData.accountInfo.value?.autoRenewPeriod / 86400).toFixed(0)
-                  }}
-                  days</span
-                >
+                <span class="ms-4">{{ accountData.autoRenewPeriodInDays.value }} days</span>
               </div>
             </div>
             <hr class="separator my-4" />
@@ -382,11 +368,7 @@ const handleUnlinkAccount = async () => {
               <div class="col-5"><p class="text-small text-semi-bold">Staked to</p></div>
               <div class="col-7">
                 <p class="text-small text-semi-bold">
-                  {{
-                    accountData.accountInfo.value?.stakedNodeId
-                      ? `Node ${accountData.accountInfo.value?.stakedNodeId}`
-                      : accountData.accountInfo.value?.stakedAccountId
-                  }}
+                  {{ accountData.getStakedToString() }}
                 </p>
               </div>
             </div>
@@ -394,11 +376,7 @@ const handleUnlinkAccount = async () => {
               <div class="col-5"><p class="text-small text-semi-bold">Pending Reward</p></div>
               <div class="col-7">
                 <p class="text-small text-semi-bold">
-                  {{
-                    (
-                      accountData.accountInfo.value?.pendingRewards || Hbar.fromString('0')
-                    ).toString(HbarUnit.Hbar)
-                  }}
+                  {{ accountData.getFormattedPendingRewards() }}
                 </p>
               </div>
             </div>
@@ -417,21 +395,12 @@ const handleUnlinkAccount = async () => {
           </div>
         </Transition>
 
-        <AppModal
-          v-model:show="isKeyStructureModalShown"
+        <KeyStructureModal
           v-if="accountData.isValid.value"
-          class="modal-fit-content"
-        >
-          <div class="p-5">
-            <KeyStructure
-              v-if="accountData.key.value instanceof KeyList && true"
-              :key-list="accountData.key.value"
-            />
-            <div v-else-if="accountData.key.value instanceof PublicKey && true">
-              {{ accountData.key.value.toStringRaw() }}
-            </div>
-          </div>
-        </AppModal>
+          v-model:show="isKeyStructureModalShown"
+          :account-key="accountData.key.value"
+        />
+
         <AppModal v-model:show="isUnlinkAccountModalShown" class="common-modal">
           <div class="modal-body">
             <i

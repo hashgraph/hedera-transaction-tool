@@ -19,6 +19,7 @@ import { getSecretHashes } from '../../../services/keyPairService';
 import { isEmail } from '../../../utils/validator';
 
 import AppButton from '../../../components/ui/AppButton.vue';
+import AppInput from '../../../components/ui/AppInput.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -227,19 +228,18 @@ watch(inputEmail, pass => {
 
     <form @submit="handleOnFormSubmit" class="form-login mt-5 w-100">
       <label class="form-label">Email</label>
-      <input
+      <AppInput
         v-model="inputEmail"
-        type="text"
-        class="form-control is-fill"
+        :filled="true"
         :class="{ 'is-invalid': inputEmailInvalid }"
         placeholder="Enter email"
       />
       <div v-if="inputEmailInvalid" class="invalid-feedback">Invalid e-mail.</div>
       <label class="form-label mt-4">Password</label>
-      <input
+      <AppInput
         v-model="inputPassword"
+        :filled="true"
         type="password"
-        class="form-control is-fill"
         :class="{ 'is-invalid': inputPasswordInvalid }"
         placeholder="Enter password"
         :data-bs-toggle="shouldRegister ? 'tooltip' : ''"
@@ -252,10 +252,10 @@ watch(inputEmail, pass => {
       <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
       <template v-if="shouldRegister">
         <label class="form-label mt-4">Confirm password</label>
-        <input
+        <AppInput
           v-model="inputConfirmPassword"
+          :filled="true"
           type="password"
-          class="form-control is-fill"
           :class="{ 'is-invalid': inputConfirmPasswordInvalid }"
           placeholder="Confirm password"
         />

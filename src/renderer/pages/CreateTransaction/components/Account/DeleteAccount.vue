@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { AccountId, KeyList, PublicKey, Hbar, AccountDeleteTransaction } from '@hashgraph/sdk';
+import { AccountId, Hbar, AccountDeleteTransaction } from '@hashgraph/sdk';
 
 import useNetworkStore from '../../../../stores/storeNetwork';
 
@@ -10,10 +10,10 @@ import useAccountId from '../../../../composables/useAccountId';
 
 import { createTransactionId } from '../../../../services/transactionService';
 
-import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
 import AppButton from '../../../../components/ui/AppButton.vue';
-import AppModal from '../../../../components/ui/AppModal.vue';
-import KeyStructure from '../../../../components/KeyStructure.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
+import KeyStructureModal from '../../../../components/KeyStructureModal.vue';
+import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
 
 /* Stores */
 const networkStore = useNetworkStore();
@@ -84,21 +84,20 @@ onMounted(() => {
           <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
             >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
           >
-          <input
-            :value="payerData.accountIdFormatted.value"
-            @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
-            type="text"
-            class="form-control is-fill"
+          <AppInput
+            :model-value="payerData.accountIdFormatted.value"
+            @update:model-value="v => (payerData.accountId.value = v)"
+            :filled="true"
             placeholder="Enter Payer ID"
           />
         </div>
         <div class="form-group">
           <label class="form-label">Set Valid Start Time (Required)</label>
-          <input v-model="validStart" type="datetime-local" step="1" class="form-control is-fill" />
+          <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
         </div>
         <div class="form-group">
           <label class="form-label">Set Max Transaction Fee (Optional)</label>
-          <input v-model="maxTransactionfee" type="number" min="0" class="form-control is-fill" />
+          <AppInput v-model="maxTransactionfee" type="number" min="0" :filled="true" />
         </div>
       </div>
       <div class="mt-4 form-group">
@@ -106,11 +105,10 @@ onMounted(() => {
         <label v-if="accountData.isValid.value" class="d-block form-label text-secondary"
           >Balance: {{ accountData.accountInfo.value?.balance || 0 }}</label
         >
-        <input
-          :value="accountData.accountIdFormatted.value"
-          @input="accountData.accountId.value = ($event.target as HTMLInputElement).value"
-          type="text"
-          class="form-control is-fill"
+        <AppInput
+          :model-value="accountData.accountIdFormatted.value"
+          @update:model-value="v => (accountData.accountId.value = v)"
+          :filled="true"
           placeholder="Enter Account ID"
         />
       </div>
@@ -129,12 +127,11 @@ onMounted(() => {
           >Receive Signature Required:
           {{ transferAccountData.accountInfo.value?.receiverSignatureRequired || false }}</label
         >
-        <input
-          :value="transferAccountData.accountIdFormatted.value"
-          @input="transferAccountData.accountId.value = ($event.target as HTMLInputElement).value"
-          :disabled="accountData.accountInfo.value?.deleted"
-          type="text"
-          class="form-control is-fill"
+        <AppInput
+          :model-value="transferAccountData.accountIdFormatted.value"
+          @update:model-value="v => (transferAccountData.accountId.value = v)"
+          :disabled="transferAccountData.accountInfo.value?.deleted"
+          :filled="true"
           placeholder="Enter Account ID"
         />
       </div>
@@ -167,23 +164,18 @@ onMounted(() => {
       <template #successContent>
         <p
           v-if="transactionProcessor?.transactionResult"
-          class="mt-2 text-small d-flex justify-content-between align-items"
+          class="text-small d-flex justify-content-between align-items mt-2"
         >
           <span class="text-bold text-secondary">Account ID:</span>
           <span>{{ accountData.accountId.value }}</span>
         </p>
       </template>
     </TransactionProcessor>
-    <AppModal v-model:show="isKeyStructureModalShown" class="modal-fit-content">
-      <div class="p-5">
-        <KeyStructure
-          v-if="accountData.key.value instanceof KeyList && true"
-          :key-list="accountData.key.value"
-        />
-        <div v-else-if="accountData.key.value instanceof PublicKey && true">
-          {{ accountData.key.value.toStringRaw() }}
-        </div>
-      </div>
-    </AppModal>
+
+    <KeyStructureModal
+      v-if="accountData.isValid.value"
+      v-model:show="isKeyStructureModalShown"
+      :account-key="accountData.key.value"
+    />
   </div>
 </template>

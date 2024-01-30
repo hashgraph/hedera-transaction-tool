@@ -11,6 +11,7 @@ import useCreateTooltips from '../../../composables/useCreateTooltips';
 import { add } from '../../../services/accountsService';
 
 import AppButton from '../../../components/ui/AppButton.vue';
+import AppInput from '../../../components/ui/AppInput.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -58,11 +59,10 @@ const handleLinkAccount = async e => {
         <label v-if="accountData.isValid.value" class="d-block form-label text-secondary"
           >Balance: {{ accountData.accountInfo.value?.balance || 0 }}</label
         >
-        <input
-          :value="accountData.accountIdFormatted.value"
-          @input="accountData.accountId.value = ($event.target as HTMLInputElement).value"
-          type="text"
-          class="form-control is-fill"
+        <AppInput
+          :model-value="accountData.accountIdFormatted.value"
+          @update:model-value="v => (accountData.accountId.value = v)"
+          :filled="true"
           data-bs-toggle="tooltip"
           data-bs-placement="right"
           data-bs-custom-class="wide-tooltip"
@@ -72,7 +72,7 @@ const handleLinkAccount = async e => {
       </div>
       <div class="form-group mt-5">
         <label class="form-label">Set Nickname (optional)</label>
-        <input v-model="nickname" class="form-control is-fill" />
+        <AppInput v-model="nickname" :filled="true" />
       </div>
       <AppButton
         color="primary"

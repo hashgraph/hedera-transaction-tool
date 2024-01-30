@@ -6,6 +6,7 @@ import { useToast } from 'vue-toast-notification';
 import useNetworkStore, { CustomNetworkSettings } from '../../../stores/storeNetwork';
 
 import AppButton from '../../../components/ui/AppButton.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Stores */
 const networkStore = useNetworkStore();
@@ -91,33 +92,37 @@ onMounted(() => {
         <div v-if="isCustomSettingsVisible" class="mt-4">
           <div>
             <label class="form-label">Consensus Node Endpoint</label>
-            <input
+            <AppInput
               type="text"
-              class="form-control form-control-sm is-fill"
+              :filled="true"
+              size="small"
               v-model="customNetworkSettings.consensusNodeEndpoint"
             />
           </div>
           <div class="mt-4">
             <label class="form-label">Mirror Node GRPC Endpoint</label>
-            <input
+            <AppInput
               type="text"
-              class="form-control form-control-sm is-fill"
+              :filled="true"
+              size="small"
               v-model="customNetworkSettings.mirrorNodeGRPCEndpoint"
             />
           </div>
           <div class="mt-4">
             <label class="form-label">Mirror Node REST API Endpoint</label>
-            <input
+            <AppInput
               type="text"
-              class="form-control form-control-sm is-fill"
+              :filled="true"
+              size="small"
               v-model="customNetworkSettings.mirrorNodeRESTAPIEndpoint"
             />
           </div>
           <div class="mt-4">
             <label class="form-label">Node Account Id</label>
-            <input
+            <AppInput
               type="text"
-              class="form-control form-control-sm is-fill"
+              :filled="true"
+              size="small"
               v-model="customNetworkSettings.nodeAccountId"
             />
           </div>
@@ -131,28 +136,31 @@ onMounted(() => {
       <div class="mt-4">
         <div class="mb-4">
           <label class="form-label">Main NET MIRROR NODE LINK</label>
-          <input
+          <AppInput
             type="text"
-            class="form-control is-fill py-3"
-            :value="networkStore.getMirrorNodeLinkByNetwork('mainnet')"
+            class="py-3"
+            :filled="true"
+            :model-value="networkStore.getMirrorNodeLinkByNetwork('mainnet')"
             readonly
           />
         </div>
         <div class="mb-4">
           <label class="form-label">TEST NET MIRROR NODE LINK</label>
-          <input
+          <AppInput
             type="text"
-            class="form-control is-fill py-3"
-            :value="networkStore.getMirrorNodeLinkByNetwork('testnet')"
+            class="py-3"
+            :filled="true"
+            :model-value="networkStore.getMirrorNodeLinkByNetwork('testnet')"
             readonly
           />
         </div>
         <div class="mb-4">
           <label class="form-label">PREVIEW NET MIRROR NODE LINK</label>
-          <input
+          <AppInput
             type="text"
-            class="form-control is-fill py-3"
-            :value="networkStore.getMirrorNodeLinkByNetwork('previewnet')"
+            class="py-3"
+            :filled="true"
+            :model-value="networkStore.getMirrorNodeLinkByNetwork('previewnet')"
             readonly
           />
         </div>
@@ -164,11 +172,11 @@ onMounted(() => {
       <div class="mt-4">
         <div class="mb-4">
           <label class="form-label">Explorer Link</label>
-          <input type="text" class="form-control is-fill py-3" />
+          <AppInput type="text" :filled="true" class="py-3" />
         </div>
         <div class="mb-4">
           <label class="form-label">Explorer Name</label>
-          <input type="text" class="form-control is-fill py-3" />
+          <AppInput type="text" :filled="true" class="py-3" />
         </div>
       </div>
     </div>
