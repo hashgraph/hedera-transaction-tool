@@ -358,9 +358,10 @@ const handleUnlinkAccount = async () => {
             <div class="mt-4 row" v-if="accountData.accountInfo.value?.autoRenewPeriod">
               <div class="col-5"><p class="text-small text-semi-bold">Auto Renew Period</p></div>
               <div class="col-7">
-                <p class="text-small text-semi-bold"></p>
-                <span>{{ accountData.accountInfo.value?.autoRenewPeriod }}s</span>
-                <span class="ms-4">{{ accountData.autoRenewPeriodInDays.value }} days</span>
+                <p class="text-small text-semi-bold">
+                  <span>{{ accountData.accountInfo.value?.autoRenewPeriod }}s</span>
+                  <span class="ms-4">{{ accountData.autoRenewPeriodInDays.value }} days</span>
+                </p>
               </div>
             </div>
             <hr class="separator my-4" />

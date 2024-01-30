@@ -167,7 +167,7 @@ onMounted(() => {
       </div>
     </div>
     <!-- Explorer Settings -->
-    <div class="p-4 mt-7 border border-2 rounded-3">
+    <!-- <div class="p-4 mt-7 border border-2 rounded-3">
       <p>Explorer Settings</p>
       <div class="mt-4">
         <div class="mb-4">
@@ -179,6 +179,6 @@ onMounted(() => {
           <AppInput type="text" :filled="true" class="py-3" />
         </div>
       </div>
-    </div>
+    </div> -->
   </div>
 </template>

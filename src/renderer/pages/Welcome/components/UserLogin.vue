@@ -83,7 +83,7 @@ const handleOnFormSubmit = async (event: Event) => {
         user.data.password = inputPassword.value;
         router.push({ name: 'accountSetup' });
       } else {
-        router.push(router.previousPath ? { path: router.previousPath } : { name: 'settingsKeys' });
+        router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
       }
     } catch (error: any) {
       inputEmailInvalid.value = false;

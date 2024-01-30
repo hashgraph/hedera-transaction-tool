@@ -8,14 +8,14 @@ import TransactionSelectionModal from './components/TransactionSelectionModal.vu
 
 /* State */
 const tabItems = ref<TabItem[]>([
-  { title: 'Ready for Review' },
-  { title: 'Ready to Sign' },
-  { title: 'In Progress' },
-  { title: 'Ready for Submission' },
-  { title: 'History' },
+  // { title: 'Ready for Review' },
+  // { title: 'Ready to Sign' },
+  // { title: 'In Progress' },
+  // { title: 'Ready for Submission' },
   { title: 'Drafts' },
+  { title: 'History' },
 ]);
-const activeTabIndex = ref(4);
+const activeTabIndex = ref(1);
 const isTransactionSelectionModalShown = ref(false);
 
 /* Computed */
@@ -36,12 +36,12 @@ const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title
     </div>
     <div class="mt-4">
       <AppTabs :items="tabItems" v-model:active-index="activeTabIndex"></AppTabs>
-      <template v-if="activeTabTitle === 'Ready for Review'"></template>
+      <!-- <template v-if="activeTabTitle === 'Ready for Review'"></template>
       <template v-if="activeTabTitle === 'Ready to Sign'"> </template>
       <template v-if="activeTabTitle === 'In Progress'"></template>
-      <template v-if="activeTabTitle === 'Ready for Submission'"></template>
-      <template v-if="activeTabTitle === 'History'"><History /></template>
+      <template v-if="activeTabTitle === 'Ready for Submission'"></template> -->
       <template v-if="activeTabTitle === 'Drafts'"></template>
+      <template v-if="activeTabTitle === 'History'"><History /></template>
     </div>
 
     <TransactionSelectionModal v-model:show="isTransactionSelectionModalShown" />
