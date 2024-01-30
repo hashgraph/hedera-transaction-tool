@@ -152,18 +152,12 @@ const handleUnlinkAccount = async () => {
             data-bs-toggle="dropdown"
             >Add new</AppButton
           >
-          <ul class="dropdown-menu text-small">
-            <li class="dropdown-item">
-              <RouterLink to="create-transaction/createAccount" class="dropdown-item"
-                ><i class="bi bi-plus-lg"></i>
-                Create New
-              </RouterLink>
+          <ul class="dropdown-menu text-small overflow-hidden w-100 px-3 py-4 mt-4">
+            <li class="container-card-account text-body d-grid px-3 py-4">
+              <span @click="$router.push('create-transaction/createAccount')"> Create New </span>
             </li>
-            <li class="dropdown-item">
-              <RouterLink to="accounts/link-existing" class="dropdown-item"
-                ><i class="bi bi-plus-lg"></i>
-                Link Existing Account
-              </RouterLink>
+            <li class="container-card-account d-grid px-3 py-4">
+              <span @click="$router.push('accounts/link-existing')"> Add Existing </span>
             </li>
           </ul>
         </div>
