@@ -90,82 +90,71 @@ onMounted(async () => {
 watch(isUserPasswordModalShown, () => (userPassword.value = ''));
 </script>
 <template>
-  <div class="p-4 border rounded-4">
-    <div class="d-flex justify-content-between">
-      <div class="d-flex align-items-start">
-        <i class="bi bi-arrow-up me-2"></i>
-        <span class="text-small text-bold">Read File Query</span>
+  <form @submit="handleSubmit">
+    <div class="d-flex justify-content-between align-items-center">
+      <h2 class="text-title text-bold">Read File Query</h2>
+
+      <div class="d-flex justify-content-end align-items-center">
+        <AppButton type="submit" color="primary" :disabled="!fileId || !payerData.isValid.value"
+          >Sign & Read</AppButton
+        >
       </div>
     </div>
-    <form class="mt-4" @submit="handleSubmit">
-      <div class="mt-4 form-group w-50">
-        <label class="form-label">Set Payer ID</label>
-        <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
-          >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
+
+    <div class="mt-4 form-group w-50">
+      <label class="form-label">Set Payer ID</label>
+      <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
+        >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
+      >
+      <select
+        :value="payerData.accountIdFormatted.value"
+        @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
+        class="form-select py-3"
+        placeholder="Enter Payer ID"
+      >
+        <option value="">Select Payer ID</option>
+        <option
+          v-for="(kp, i) in keyPairsStore.accoundIds.map(account => account.accountIds).flat()"
+          :key="i"
+          :value="kp"
         >
-        <select
-          :value="payerData.accountIdFormatted.value"
-          @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
-          class="form-select py-3"
-          placeholder="Enter Payer ID"
-        >
-          <option value="">Select Payer ID</option>
-          <option
-            v-for="(kp, i) in keyPairsStore.accoundIds.map(account => account.accountIds).flat()"
-            :key="i"
-            :value="kp"
+          {{ kp }}
+        </option>
+      </select>
+    </div>
+    <div class="mt-4 form-group w-50">
+      <label class="form-label">Set File ID</label>
+      <AppInput v-model="fileId" :filled="true" class="py-3" placeholder="Enter owner public key" />
+    </div>
+    <div class="mt-4 form-group w-75">
+      <label class="form-label">File Content</label>
+      <textarea v-model="content" class="form-control is-fill py-3" rows="10" readonly></textarea>
+    </div>
+  </form>
+
+  <AppModal v-model:show="isUserPasswordModalShown" class="common-modal">
+    <div class="p-5">
+      <div>
+        <i class="bi bi-x-lg cursor-pointer" @click="isUserPasswordModalShown = false"></i>
+      </div>
+      <div class="text-center mt-5">
+        <i class="bi bi-shield-lock large-icon"></i>
+      </div>
+      <form @submit="handleRead">
+        <h3 class="text-center text-title text-bold mt-5">Enter your password</h3>
+        <div class="form-group mt-4">
+          <AppInput v-model="userPassword" :filled="true" size="small" type="password" />
+        </div>
+        <div class="d-grid mt-5">
+          <AppButton
+            :loading="isLoading"
+            :disabled="userPassword.length === 0 || isLoading"
+            color="primary"
+            type="submit"
+            >Sign Query</AppButton
           >
-            {{ kp }}
-          </option>
-        </select>
-      </div>
-      <div class="mt-4 form-group w-50">
-        <label class="form-label">Set File ID</label>
-        <AppInput
-          v-model="fileId"
-          :filled="true"
-          class="py-3"
-          placeholder="Enter owner public key"
-        />
-      </div>
-      <div class="mt-4 form-group w-75">
-        <label class="form-label">File Content</label>
-        <textarea v-model="content" class="form-control is-fill py-3" rows="10" readonly></textarea>
-      </div>
-      <div class="mt-4">
-        <AppButton
-          size="large"
-          type="submit"
-          color="primary"
-          :disabled="!fileId || !payerData.isValid.value"
-          >Read</AppButton
-        >
-      </div>
-    </form>
-    <AppModal v-model:show="isUserPasswordModalShown" class="common-modal">
-      <div class="p-5">
-        <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="isUserPasswordModalShown = false"></i>
         </div>
-        <div class="text-center mt-5">
-          <i class="bi bi-shield-lock large-icon"></i>
-        </div>
-        <form @submit="handleRead">
-          <h3 class="text-center text-title text-bold mt-5">Enter your password</h3>
-          <div class="form-group mt-4">
-            <AppInput v-model="userPassword" :filled="true" size="small" type="password" />
-          </div>
-          <div class="d-grid mt-5">
-            <AppButton
-              :loading="isLoading"
-              :disabled="userPassword.length === 0 || isLoading"
-              color="primary"
-              type="submit"
-              >Sign Query</AppButton
-            >
-          </div>
-        </form>
-      </div>
-    </AppModal>
-  </div>
+      </form>
+    </div>
+  </AppModal>
 </template>

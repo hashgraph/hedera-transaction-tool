@@ -148,13 +148,12 @@ const handleCreate = async e => {
 watch(fileMeta, () => (content.value = ''));
 </script>
 <template>
-  <form class="mt-4" @submit="handleCreate">
+  <form @submit="handleCreate">
     <div class="d-flex justify-content-between align-items-center">
       <h2 class="text-title text-bold">Update File Transaction</h2>
 
       <div class="d-flex justify-content-end align-items-center">
         <AppButton
-          size="large"
           type="submit"
           color="primary"
           :disabled="

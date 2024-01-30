@@ -119,126 +119,12 @@ const handleCreate = async e => {
 watch(fileMeta, () => (content.value = ''));
 </script>
 <template>
-  <div class="p-4 border rounded-4">
-    <div class="d-flex justify-content-between">
-      <div class="d-flex align-items-start">
-        <i class="bi bi-arrow-up me-2"></i>
-        <span class="text-small text-bold">Append To File Transaction</span>
-      </div>
-    </div>
-    <form class="mt-4" @submit="handleCreate">
-      <div class="mt-4 d-flex flex-wrap gap-5">
-        <div class="form-group col-4">
-          <label class="form-label">Set Payer ID (Required)</label>
-          <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
-            >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
-          >
-          <AppInput
-            :model-value="payerData.accountIdFormatted.value"
-            @update:model-value="v => (payerData.accountId.value = v)"
-            :filled="true"
-            placeholder="Enter Payer ID"
-          />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Set Valid Start Time (Required)</label>
-          <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Set Max Transaction Fee (Optional)</label>
-          <AppInput v-model="maxTransactionFee" type="number" min="0" :filled="true" />
-        </div>
-      </div>
-      <div class="mt-4 form-group w-50">
-        <label class="form-label">Set File ID</label>
-        <AppInput v-model="fileId" :filled="true" class="py-3" placeholder="Enter File ID" />
-      </div>
-      <div class="mt-4 form-group w-75">
-        <label class="form-label">Set Signature Keys (Required)</label>
-        <div class="d-flex gap-3">
-          <AppInput
-            v-model="signatureKeyText"
-            :filled="true"
-            class="py-3"
-            placeholder="Enter signer public key"
-            style="max-width: 555px"
-            @keypress="e => e.code === 'Enter' && handleAddSignatureKey()"
-          />
-          <AppButton
-            color="secondary"
-            type="button"
-            class="rounded-4"
-            @click="handleAddSignatureKey"
-            >Add</AppButton
-          >
-        </div>
-      </div>
-      <div class="mt-4 w-75">
-        <template v-for="key in signatureKeys" :key="key">
-          <div class="d-flex align-items-center gap-3">
-            <AppInput
-              :model-value="key"
-              :filled="true"
-              readonly
-              class="py-3"
-              style="max-width: 555px"
-            />
-            <i
-              class="bi bi-x-lg d-inline-block cursor-pointer"
-              style="line-height: 16px"
-              @click="signatureKeys = signatureKeys.filter(k => k !== key)"
-            ></i>
-          </div>
-        </template>
-      </div>
-      <div class="mt-4 form-group w-25">
-        <label class="form-label">Set Chunk Size</label>
-        <AppInput
-          v-model="chunkSize"
-          :filled="true"
-          type="number"
-          min="1024"
-          max="6144"
-          class="py-3"
-        />
-      </div>
-      <div class="mt-4 form-group">
-        <label for="fileUpload" class="form-label">
-          <span for="fileUpload" class="btn btn-primary" :class="{ disabled: content.length > 0 }"
-            >Upload File</span
-          >
-        </label>
-        <AppInput
-          :filled="true"
-          size="small"
-          id="fileUpload"
-          name="fileUpload"
-          type="file"
-          :disabled="content.length > 0"
-          @change="handleFileImport"
-        />
-        <template v-if="fileMeta">
-          <span v-if="fileMeta" class="ms-3">{{ fileMeta.name }}</span>
-          <span v-if="loadPercentage < 100" class="ms-3">{{ loadPercentage.toFixed(2) }}%</span>
-          <span v-if="fileMeta" class="ms-3 cursor-pointer" @click="handleRemoveFile"
-            ><i class="bi bi-x-lg"></i
-          ></span>
-        </template>
-      </div>
-      <div class="mt-4 form-group w-75">
-        <label class="form-label">Set File Contents</label>
-        <textarea
-          v-model="content"
-          :disabled="Boolean(fileBuffer)"
-          class="form-control is-fill py-3"
-          rows="10"
-        ></textarea>
-      </div>
+  <form @submit="handleCreate">
+    <div class="d-flex justify-content-between align-items-center">
+      <h2 class="text-title text-bold">Append File Transaction</h2>
 
-      <div class="mt-4">
-        <!-- <AppButton size="small" color="secondary" class="me-3 px-4 rounded-4">Save Draft</AppButton> -->
+      <div class="d-flex justify-content-end align-items-center">
         <AppButton
-          size="large"
           type="submit"
           color="primary"
           :disabled="
@@ -247,41 +133,146 @@ watch(fileMeta, () => (content.value = ''));
             signatureKeys.length === 0 ||
             (!content && !fileBuffer)
           "
-          >Create</AppButton
+          >Sign & Submit</AppButton
         >
       </div>
-    </form>
-    <TransactionProcessor
-      ref="transactionProcessor"
-      :transaction-bytes="transaction?.toBytes() || null"
-      :on-executed="(_result, _chunkAmount) => (chunksAmount = _chunkAmount || null)"
-      :on-close-success-modal-click="
-        () => {
-          payerData.accountId.value = '';
-          validStart = '';
-          maxTransactionFee = 2;
-          fileId = '';
-          signatureKeys = [];
-          fileMeta = null;
-          fileBuffer = null;
-          chunkSize = 2048;
-          content = '';
-          chunksAmount = null;
-          transaction = null;
-        }
-      "
-    >
-      <template #successHeading>Appended to file successfully</template>
-      <template #successContent>
-        <p class="text-small d-flex justify-content-between align-items mt-2">
-          <span class="text-bold text-secondary">File ID:</span>
-          <span>{{ fileId }}</span>
-        </p>
-        <p v-if="chunksAmount" class="text-small d-flex justify-content-between align-items mt-2">
-          <span class="text-bold text-secondary">Number of Chunks</span>
-          <span>{{ chunksAmount }}</span>
-        </p>
+    </div>
+
+    <div class="mt-4 d-flex flex-wrap gap-5">
+      <div class="form-group col-4">
+        <label class="form-label">Set Payer ID (Required)</label>
+        <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
+          >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
+        >
+        <AppInput
+          :model-value="payerData.accountIdFormatted.value"
+          @update:model-value="v => (payerData.accountId.value = v)"
+          :filled="true"
+          placeholder="Enter Payer ID"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Set Valid Start Time (Required)</label>
+        <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Set Max Transaction Fee (Optional)</label>
+        <AppInput v-model="maxTransactionFee" type="number" min="0" :filled="true" />
+      </div>
+    </div>
+    <div class="mt-4 form-group w-50">
+      <label class="form-label">Set File ID</label>
+      <AppInput v-model="fileId" :filled="true" class="py-3" placeholder="Enter File ID" />
+    </div>
+    <div class="mt-4 form-group w-75">
+      <label class="form-label">Set Signature Keys (Required)</label>
+      <div class="d-flex gap-3">
+        <AppInput
+          v-model="signatureKeyText"
+          :filled="true"
+          class="py-3"
+          placeholder="Enter signer public key"
+          style="max-width: 555px"
+          @keypress="e => e.code === 'Enter' && handleAddSignatureKey()"
+        />
+        <AppButton color="secondary" type="button" class="rounded-4" @click="handleAddSignatureKey"
+          >Add</AppButton
+        >
+      </div>
+    </div>
+    <div class="mt-4 w-75">
+      <template v-for="key in signatureKeys" :key="key">
+        <div class="d-flex align-items-center gap-3">
+          <AppInput
+            :model-value="key"
+            :filled="true"
+            readonly
+            class="py-3"
+            style="max-width: 555px"
+          />
+          <i
+            class="bi bi-x-lg d-inline-block cursor-pointer"
+            style="line-height: 16px"
+            @click="signatureKeys = signatureKeys.filter(k => k !== key)"
+          ></i>
+        </div>
       </template>
-    </TransactionProcessor>
-  </div>
+    </div>
+    <div class="mt-4 form-group w-25">
+      <label class="form-label">Set Chunk Size</label>
+      <AppInput
+        v-model="chunkSize"
+        :filled="true"
+        type="number"
+        min="1024"
+        max="6144"
+        class="py-3"
+      />
+    </div>
+    <div class="mt-4 form-group">
+      <label for="fileUpload" class="form-label">
+        <span for="fileUpload" class="btn btn-primary" :class="{ disabled: content.length > 0 }"
+          >Upload File</span
+        >
+      </label>
+      <AppInput
+        :filled="true"
+        size="small"
+        id="fileUpload"
+        name="fileUpload"
+        type="file"
+        :disabled="content.length > 0"
+        @change="handleFileImport"
+      />
+      <template v-if="fileMeta">
+        <span v-if="fileMeta" class="ms-3">{{ fileMeta.name }}</span>
+        <span v-if="loadPercentage < 100" class="ms-3">{{ loadPercentage.toFixed(2) }}%</span>
+        <span v-if="fileMeta" class="ms-3 cursor-pointer" @click="handleRemoveFile"
+          ><i class="bi bi-x-lg"></i
+        ></span>
+      </template>
+    </div>
+    <div class="mt-4 form-group w-75">
+      <label class="form-label">Set File Contents</label>
+      <textarea
+        v-model="content"
+        :disabled="Boolean(fileBuffer)"
+        class="form-control is-fill py-3"
+        rows="10"
+      ></textarea>
+    </div>
+  </form>
+
+  <TransactionProcessor
+    ref="transactionProcessor"
+    :transaction-bytes="transaction?.toBytes() || null"
+    :on-executed="(_result, _chunkAmount) => (chunksAmount = _chunkAmount || null)"
+    :on-close-success-modal-click="
+      () => {
+        payerData.accountId.value = '';
+        validStart = '';
+        maxTransactionFee = 2;
+        fileId = '';
+        signatureKeys = [];
+        fileMeta = null;
+        fileBuffer = null;
+        chunkSize = 2048;
+        content = '';
+        chunksAmount = null;
+        transaction = null;
+      }
+    "
+  >
+    <template #successHeading>Appended to file successfully</template>
+    <template #successContent>
+      <p class="text-small d-flex justify-content-between align-items mt-2">
+        <span class="text-bold text-secondary">File ID:</span>
+        <span>{{ fileId }}</span>
+      </p>
+      <p v-if="chunksAmount" class="text-small d-flex justify-content-between align-items mt-2">
+        <span class="text-bold text-secondary">Number of Chunks</span>
+        <span>{{ chunksAmount }}</span>
+      </p>
+    </template>
+  </TransactionProcessor>
 </template>
