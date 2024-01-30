@@ -87,7 +87,6 @@ const handleCreate = async e => {
       <div class="d-flex justify-content-end align-items-center">
         <AppButton
           color="primary"
-          size="large"
           :disabled="
             !payerData.accountId.value ||
             !senderData.accountId.value ||

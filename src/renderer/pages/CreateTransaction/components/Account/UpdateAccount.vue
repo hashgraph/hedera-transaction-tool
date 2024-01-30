@@ -173,7 +173,6 @@ watch(accountData.accountInfo, accountInfo => {
         <AppButton
           color="primary"
           type="submit"
-          size="large"
           :disabled="!accountData.accountId.value || !payerData.isValid.value"
           >Sign & Submit</AppButton
         >

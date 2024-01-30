@@ -78,7 +78,6 @@ onMounted(() => {
         <AppButton
           color="primary"
           type="submit"
-          size="large"
           :disabled="
             !accountData.isValid.value ||
             !transferAccountData.isValid.value ||

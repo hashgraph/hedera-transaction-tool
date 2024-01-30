@@ -95,11 +95,7 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
       <h2 class="text-title text-bold">Read File Query</h2>
 
       <div class="d-flex justify-content-end align-items-center">
-        <AppButton
-          type="submit"
-          size="large"
-          color="primary"
-          :disabled="!fileId || !payerData.isValid.value"
+        <AppButton type="submit" color="primary" :disabled="!fileId || !payerData.isValid.value"
           >Sign & Read</AppButton
         >
       </div>

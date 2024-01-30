@@ -94,7 +94,6 @@ const handleCreate = async e => {
         <AppButton
           color="primary"
           type="submit"
-          size="large"
           :disabled="keyList._keys.length === 0 || !payerData.isValid.value"
           >Sign & Submit</AppButton
         >

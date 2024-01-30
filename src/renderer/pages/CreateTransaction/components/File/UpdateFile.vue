@@ -154,7 +154,6 @@ watch(fileMeta, () => (content.value = ''));
 
       <div class="d-flex justify-content-end align-items-center">
         <AppButton
-          size="large"
           type="submit"
           color="primary"
           :disabled="

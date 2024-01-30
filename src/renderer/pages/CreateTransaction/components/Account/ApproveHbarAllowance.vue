@@ -72,7 +72,6 @@ const handleCreate = async e => {
         <AppButton
           color="primary"
           type="submit"
-          size="large"
           :disabled="
             !payerData.isValid.value ||
             !ownerData.isValid.value ||
