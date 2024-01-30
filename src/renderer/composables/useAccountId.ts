@@ -24,23 +24,21 @@ export default function useAccountId() {
 
   /* Getters */
   const isValid = computed(() => Boolean(accountInfo.value));
-  const accountIdFormatted = computed(() => {
-    if (isValid.value) {
-      return AccountId.fromString(accountId.value).toString();
-    } else {
-      return accountId.value;
-    }
-  });
-  const accoundIdWithChecksum = computed(() => {
-    if (isValid.value) {
-      return accountInfo.value?.accountId.toStringWithChecksum(networkStore.client);
-    } else {
-      return accountIdFormatted.value;
-    }
-  });
-  const autoRenewPeriodInDays = computed(() => {
-    return ((accountInfo.value?.autoRenewPeriod || 0) / 86400).toFixed(0);
-  });
+
+  const accountIdFormatted = computed(() =>
+    isValid.value ? AccountId.fromString(accountId.value).toString() : accountId.value,
+  );
+
+  const accoundIdWithChecksum = computed(() =>
+    isValid.value
+      ? accountInfo.value?.accountId.toStringWithChecksum(networkStore.client)
+      : accountIdFormatted.value,
+  );
+
+  const autoRenewPeriodInDays = computed(() =>
+    ((accountInfo.value?.autoRenewPeriod || 0) / 86400).toFixed(0),
+  );
+
   const key = computed(() => accountInfo.value?.key);
   const keysFlattened = computed(() => {
     if (accountInfo.value?.key) {
