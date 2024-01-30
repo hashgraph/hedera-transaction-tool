@@ -245,6 +245,7 @@ $border-color-dark: #372f52;
 
 $border-radius: 6px;
 $border-radius-lg: 8px;
+$border-radius-xl: 12px;
 
 // Box shadows
 $box-shadow-sm: 0px 5px 20px rgba(9, 10, 20, 0.45);
@@ -487,6 +488,18 @@ $progress-height: 8px;
 $progress-border-radius: 41px;
 // $progress-bar-bg: $positive-300;
 // $progress-bg: $error-200;
+
+// Dropdowns
+$dropdown-border-radius: $border-radius-xl;
+$dropdown-bg: var(--bs-contrainer-dark-bg-color);
+$dropdown-padding-x: 10px;
+$dropdown-padding-y: 16px;
+$dropdown-box-shadow:
+  0px 4px 6px 0px rgba(0, 0, 0, 0.09),
+  0px 0px 1px 1px rgba(167, 167, 167, 0.25);
+$dropdown-border-width: 0;
+$dropdown-item-padding-x: 16px;
+$dropdown-item-padding-y: 8px;
 
 $toast-colors: (
   'success': $success,
