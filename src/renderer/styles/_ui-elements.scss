@@ -248,6 +248,16 @@
   }
 }
 
+.container-main-bg {
+  border-radius: $border-radius;
+  background-color: var(--#{$prefix}contrainer-main-bg-color);
+  transition: background-color 0.15s linear;
+
+  @media (prefers-color-scheme: light) {
+    border: 1px solid $neutral-100;
+  }
+}
+
 .container-dropdown-menu-item {
   border-radius: $border-radius;
 

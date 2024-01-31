@@ -28,6 +28,7 @@ import {
   storeTransaction,
 } from '../../services/transactionService';
 import { openExternal } from '../../services/electronUtilsService';
+import { getDollarAmount } from '../../services/mirrorNodeDataService';
 
 import AppButton from '../ui/AppButton.vue';
 import AppModal from '../ui/AppModal.vue';
@@ -68,6 +69,7 @@ const chunkSize = ref(1024);
 const chunkInterval = ref(0.1);
 const userPassword = ref('');
 const requiredSignatures = ref<string[]>([]);
+const isConfirmShown = ref(false);
 const isSigning = ref(false);
 const isSignModalShown = ref(false);
 const isChunkingModalShown = ref(false);
@@ -98,6 +100,26 @@ const type = computed(
 );
 
 /* Handlers */
+function handleConfirmTransaction(e: Event) {
+  e.preventDefault();
+
+  // Personal user:
+  //  with all local keys -> Execute
+  //  with local and external -> FAIL
+  //  without local keys but external -> FAIL
+  // Organization user:
+  //  with all local -> Execute
+  //  with local and external -> SIGN AND SEND
+  //  without local but external -> SEND
+
+  if (localPublicKeysReq.value.length > 0) {
+    isConfirmShown.value = false;
+    isSignModalShown.value = true;
+  } else if (user.data.mode === 'organization') {
+    console.log('Send to back end along with required external signatures');
+  }
+}
+
 async function handleSignTransaction(e: Event) {
   e.preventDefault();
 
@@ -187,20 +209,7 @@ async function process(
 
   checkIfFileTransaction();
 
-  // Personal user:
-  //  with all local keys -> Execute
-  //  with local and external -> FAIL
-  //  without local keys but external -> FAIL
-  // Organization user:
-  //  with all local -> Execute
-  //  with local and external -> SIGN AND SEND
-  //  without local but external -> SEND
-
-  if (localPublicKeysReq.value.length > 0) {
-    isSignModalShown.value = true;
-  } else if (user.data.mode === 'organization') {
-    console.log('Send to back end along with required external signatures');
-  }
+  isConfirmShown.value = true;
 
   function validateProcess() {
     if (!transaction.value) {
@@ -535,6 +544,66 @@ defineExpose({
 </script>
 <template>
   <div>
+    <!-- Confirm modal -->
+    <AppModal
+      class="large=modal"
+      v-model:show="isConfirmShown"
+      :close-on-click-outside="false"
+      :close-on-escape="false"
+    >
+      <div class="p-5">
+        <div>
+          <i class="bi bi-x-lg cursor-pointer" @click="isConfirmShown = false"></i>
+        </div>
+        <div class="text-center">
+          <i class="bi bi-arrow-left-right large-icon"></i>
+        </div>
+        <form @submit="handleConfirmTransaction">
+          <h3 class="text-center text-title text-bold mt-5">Confirm Transaction</h3>
+          <div class="container-main-bg text-small p-4 mt-5">
+            <div class="d-flex justify-content-between p-3">
+              <p>Type of Transaction</p>
+              <p>{{ type }}</p>
+            </div>
+            <div class="d-flex justify-content-between p-3 mt-3">
+              <p>Transaction ID</p>
+              <p class="text-secondary">{{ transaction?.transactionId }}</p>
+            </div>
+            <div class="d-flex justify-content-between p-3 mt-3">
+              <p>Valid Start</p>
+              <p class="">
+                {{ transaction?.transactionId?.validStart?.toDate().toDateString() }}
+              </p>
+            </div>
+            <div
+              class="d-flex justify-content-between p-3 mt-3"
+              v-if="transaction?.maxTransactionFee"
+            >
+              <p>Max Transaction Fee</p>
+              <p class="">
+                {{ transaction?.maxTransactionFee }} ({{
+                  getDollarAmount(network.currentRate, transaction.maxTransactionFee.toBigNumber())
+                }})
+              </p>
+            </div>
+            <div v-if="chunksAmount" class="d-flex justify-content-between p-3 mt-3">
+              <p>Estimated Chunks</p>
+              <p class="text-secondary">{{ chunksAmount }}</p>
+            </div>
+          </div>
+
+          <hr class="separator my-5" />
+
+          <div class="d-flex justify-content-between">
+            <AppButton type="button" color="secondary" @click="isConfirmShown = false"
+              >Cancel</AppButton
+            >
+            <AppButton color="primary" type="submit">Sign</AppButton>
+          </div>
+        </form>
+      </div>
+    </AppModal>
+    <!-- Sign modal -->
     <AppModal
       class="common-modal"
       v-model:show="isSignModalShown"
@@ -545,28 +614,25 @@ defineExpose({
         <div>
           <i class="bi bi-x-lg cursor-pointer" @click="isSignModalShown = false"></i>
         </div>
-        <div class="text-center mt-5">
-          <i class="bi bi-shield-lock large-icon"></i>
-        </div>
         <form @submit="handleSignTransaction">
-          <h3 class="text-center text-title text-bold mt-5">Enter your password</h3>
-          <div class="form-group mt-4">
+          <h3 class="text-center text-title text-bold">Enter your password</h3>
+          <div class="form-group mt-5">
             <AppInput v-model="userPassword" type="password" :filled="true" />
           </div>
-          <div class="d-grid mt-4">
+          <div class="d-grid mt-5">
             <p v-if="chunksAmount">Estimated chunks: {{ chunksAmount }}</p>
             <AppButton
               color="primary"
               :loading="isSigning"
               :disabled="userPassword.length === 0 || isSigning"
-              class="mt-1"
               type="submit"
-              >Sign</AppButton
+              >Continue</AppButton
             >
           </div>
         </form>
       </div>
     </AppModal>
+    <!-- Chunking modal -->
     <AppModal
       class="common-modal"
       v-model:show="isChunkingModalShown"
@@ -577,7 +643,7 @@ defineExpose({
         <div>
           <i class="bi bi-x-lg cursor-pointer" @click="isChunkingModalShown = false"></i>
         </div>
-        <div class="text-center mt-5">
+        <div class="text-center">
           <AppLoader />
         </div>
         <h3 class="text-center text-title text-bold mt-5">Chunking {{ type }}</h3>
@@ -586,6 +652,7 @@ defineExpose({
         </p>
       </div>
     </AppModal>
+    <!-- Executing modal -->
     <AppModal
       class="common-modal"
       v-model:show="isExecuting"
@@ -596,7 +663,7 @@ defineExpose({
         <div>
           <i class="bi bi-x-lg cursor-pointer" @click="isExecuting = false"></i>
         </div>
-        <div class="text-center mt-5">
+        <div class="text-center">
           <AppLoader />
         </div>
         <h3 class="text-center text-title text-bold mt-5">
@@ -611,6 +678,7 @@ defineExpose({
         </div>
       </div>
     </AppModal>
+    <!-- Executed modal -->
     <AppModal
       class="transaction-success-modal"
       v-model:show="isExecutedModalShown"
@@ -621,7 +689,7 @@ defineExpose({
         <div>
           <i class="bi bi-x-lg cursor-pointer" @click="isExecutedModalShown = false"></i>
         </div>
-        <div class="text-center mt-5">
+        <div class="text-center">
           <i class="bi bi-check-lg large-icon"></i>
         </div>
         <h3 class="text-center text-title text-bold mt-5"><slot name="successHeading"></slot></h3>
