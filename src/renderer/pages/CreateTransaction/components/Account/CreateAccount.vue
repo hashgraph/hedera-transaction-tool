@@ -146,7 +146,7 @@ watch(
 
     <div class="row">
       <div class="form-group col-8 col-xl-6">
-        <label class="form-label">Keys</label>
+        <label class="form-label">Keys <span class="text-danger">*</span></label>
         <div class="d-flex gap-3">
           <AppInput v-model="ownerKeyText" :filled="true" placeholder="Enter owner public key" />
           <AppButton type="button" color="secondary" @click="handleAdd">Add</AppButton>
@@ -175,18 +175,18 @@ watch(
     </div>
     <div class="row mt-6">
       <div class="form-group col-8 col-md-5 col-xl-4 col-xxl-3">
-        <label class="form-label">Set Staked Node Id (Optional)</label>
+        <label class="form-label">Staked Node Id</label>
         <AppInput
           v-model="accountData.stakedNodeId"
           :disabled="accountData.stakedAccountId.length > 0"
           :filled="true"
           type="number"
           min="0"
-          placeholder="Enter Node Id"
+          placeholder="Enter Node Id Number"
         />
       </div>
       <div class="form-group col-8 col-md-5 col-xl-4 col-xxl-3">
-        <label class="form-label">Set Staked Account Id (Optional)</label>
+        <label class="form-label">Staked Account Id</label>
         <AppInput
           v-model="accountData.stakedAccountId"
           :disabled="Number(accountData.stakedNodeId) > 0"
@@ -202,7 +202,7 @@ watch(
           v-model="accountData.memo"
           :filled="true"
           maxlength="100"
-          placeholder="Enter Account Memo"
+          placeholder="Enter Memo"
         />
       </div>
     </div>
@@ -230,7 +230,7 @@ watch(
         />
       </div>
       <div class="form-group col-8 col-md-5 col-xl-4 col-xxl-3">
-        <label class="form-label">Set Max Automatic Token Associations</label>
+        <label class="form-label">Max Automatic Token Associations</label>
         <AppInput
           v-model="accountData.maxAutomaticTokenAssociations"
           :min="0"
