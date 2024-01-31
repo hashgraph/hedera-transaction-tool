@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 import { AccountId, EvmAddress, Hbar, HbarUnit, Key, PublicKey, Timestamp } from '@hashgraph/sdk';
+import { BigNumber } from 'bignumber.js';
 
 import { decodeProtobuffKey } from './electronUtilsService';
 
@@ -114,27 +115,20 @@ export const getExchangeRateSet = async (mirrorNodeLink: string, controller?: Ab
   return exchangeRateSet;
 };
 
-export const getDollarAmount = (hbarPrice: number, hbarAmount: number) => {
+export const getDollarAmount = (hbarPrice: number, hbarAmount: BigNumber) => {
   const fractionDigits = 5;
-
-  const dollarFormatting = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: fractionDigits,
-    maximumFractionDigits: fractionDigits,
-  });
 
   let result: string;
 
   if (hbarPrice !== null) {
     const resolution = Math.pow(10, -fractionDigits);
-    let usdAmount = hbarAmount * hbarPrice;
-    if (0 < usdAmount && usdAmount < +resolution) {
-      usdAmount = resolution;
-    } else if (-resolution < usdAmount && usdAmount < 0) {
-      usdAmount = -resolution;
+    let usdAmount = hbarAmount.times(hbarPrice);
+    if (usdAmount.isGreaterThan(0) && usdAmount.isLessThan(+resolution)) {
+      usdAmount = new BigNumber(resolution);
+    } else if (usdAmount.isGreaterThan(-resolution) && usdAmount.isLessThan(0)) {
+      usdAmount = new BigNumber(-resolution);
     }
-    result = dollarFormatting.format(usdAmount);
+    result = `$${usdAmount.decimalPlaces(fractionDigits)}`;
   } else {
     result = '';
   }
