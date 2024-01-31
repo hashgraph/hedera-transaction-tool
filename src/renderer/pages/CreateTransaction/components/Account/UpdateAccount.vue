@@ -10,11 +10,15 @@ import useAccountId from '../../../../composables/useAccountId';
 
 import { createTransactionId } from '../../../../services/transactionService';
 
+import { getDateTimeLocalInputValue } from '../../../../utils';
+
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppSwitch from '../../../../components/ui/AppSwitch.vue';
 import AppInput from '../../../../components/ui/AppInput.vue';
 import KeyStructureModal from '../../../../components/KeyStructureModal.vue';
 import TransactionProcessor from '../../../../components/Transaction/TransactionProcessor.vue';
+import TransactionHeaderControls from '../../../../components/Transaction/TransactionHeaderControls.vue';
+import TransactionIdControls from '../../../../components/Transaction/TransactionIdControls.vue';
 
 /* Stores */
 const payerData = useAccountId();
@@ -29,7 +33,7 @@ const toast = useToast();
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<AccountUpdateTransaction | null>(null);
-const validStart = ref('');
+const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionfee = ref(2);
 
 const newAccountData = reactive<{
@@ -37,14 +41,14 @@ const newAccountData = reactive<{
   maxAutomaticTokenAssociations: number;
   stakedAccountId: string;
   stakedNodeId: string;
-  declineStakingReward: boolean;
+  acceptStakingAwards: boolean;
   memo: string;
 }>({
   receiverSignatureRequired: false,
   maxAutomaticTokenAssociations: 0,
   stakedAccountId: '',
   stakedNodeId: '',
-  declineStakingReward: false,
+  acceptStakingAwards: false,
   memo: '',
 });
 const newOwnerKeyText = ref('');
@@ -85,11 +89,16 @@ const handleCreate = async e => {
       .setNodeAccountIds([new AccountId(3)])
       .setAccountId(accountData.accountId.value)
       .setReceiverSignatureRequired(newAccountData.receiverSignatureRequired)
-      .setDeclineStakingReward(newAccountData.declineStakingReward)
+      .setDeclineStakingReward(!newAccountData.acceptStakingAwards)
       .setMaxAutomaticTokenAssociations(Number(newAccountData.maxAutomaticTokenAssociations))
       .setAccountMemo(newAccountData.memo || '');
 
     newOwnerKeys.value.length > 0 && transaction.value.setKey(newOwnerKeyList.value);
+
+    if (!newAccountData.stakedAccountId && !newAccountData.stakedNodeId) {
+      transaction.value.clearStakedAccountId();
+      transaction.value.clearStakedNodeId();
+    }
 
     if (
       newAccountData.stakedAccountId &&
@@ -97,15 +106,7 @@ const handleCreate = async e => {
       !newAccountData.stakedNodeId &&
       accountData.accountInfo.value.stakedAccountId?.toString() !== newAccountData.stakedAccountId
     ) {
-      transaction.value.setStakedAccountId(AccountId.fromString(newAccountData.stakedAccountId));
-    }
-
-    if (
-      newAccountData.stakedAccountId !==
-        accountData.accountInfo.value.stakedAccountId?.toString() &&
-      newAccountData.stakedAccountId?.length === 0
-    ) {
-      transaction.value.clearStakedAccountId();
+      transaction.value.setStakedAccountId(newAccountData.stakedAccountId);
     }
 
     if (
@@ -115,14 +116,6 @@ const handleCreate = async e => {
         newAccountData.stakedNodeId.toString()
     ) {
       transaction.value.setStakedNodeId(Number(newAccountData.stakedNodeId));
-    }
-
-    if (
-      newAccountData.stakedNodeId?.toString() !==
-        accountData.accountInfo.value.stakedNodeId?.toString() &&
-      !newAccountData.stakedNodeId
-    ) {
-      transaction.value.clearStakedNodeId();
     }
 
     transaction.value.freezeWith(networkStore.client);
@@ -151,7 +144,7 @@ watch(accountData.accountInfo, accountInfo => {
     newAccountData.maxAutomaticTokenAssociations = 0;
     newAccountData.stakedAccountId = '';
     newAccountData.stakedNodeId = '';
-    newAccountData.declineStakingReward = false;
+    newAccountData.acceptStakingAwards = false;
     newAccountData.memo = '';
   } else {
     newAccountData.receiverSignatureRequired = accountInfo.receiverSignatureRequired;
@@ -159,94 +152,136 @@ watch(accountData.accountInfo, accountInfo => {
     newAccountData.stakedAccountId = accountInfo.stakedAccountId?.toString() || '';
     newAccountData.stakedNodeId =
       accountInfo.stakedNodeId === 0 ? '' : accountInfo.stakedNodeId?.toString() || '';
-    newAccountData.declineStakingReward = accountInfo.declineReward;
+    newAccountData.acceptStakingAwards = !accountInfo.declineReward;
     newAccountData.memo = accountInfo.memo || '';
   }
 });
+watch(
+  () => newAccountData.stakedAccountId,
+  id => {
+    try {
+      if (id !== '0') {
+        newAccountData.stakedAccountId = AccountId.fromString(id).toString();
+      }
+    } catch (error) {
+      /* empty */
+    }
+  },
+);
+
+/* Misc */
+const columnClass = 'col-8 col-md-6 col-xxl-4';
 </script>
 <template>
   <form @submit="handleCreate">
-    <div class="d-flex justify-content-between align-items-center">
-      <h2 class="text-title text-bold">Update Account Transaction</h2>
+    <TransactionHeaderControls
+      :create-requirements="!accountData.accountId.value || !payerData.isValid.value"
+      heading-text="Update Account Transaction"
+    />
 
-      <div class="d-flex justify-content-end align-items-center">
-        <AppButton
-          color="primary"
-          type="submit"
-          :disabled="!accountData.accountId.value || !payerData.isValid.value"
-          >Sign & Submit</AppButton
-        >
+    <TransactionIdControls
+      v-model:payer-id="payerData.accountId.value"
+      v-model:valid-start="validStart"
+      v-model:max-transaction-fee="maxTransactionfee"
+      class="mt-6"
+    />
+
+    <div class="form-group mt-6" :class="[columnClass]">
+      <label class="form-label">Account ID <span class="text-danger">*</span></label>
+      <div class="row align-items-center">
+        <div class="col-8">
+          <AppInput
+            :model-value="accountData.accountIdFormatted.value"
+            @update:model-value="v => (accountData.accountId.value = v)"
+            :filled="true"
+            placeholder="Enter Account ID"
+          />
+        </div>
+        <div class="col-4">
+          <AppButton
+            v-if="accountData.key.value"
+            class="text-nowrap"
+            color="secondary"
+            type="button"
+            @click="isKeyStructureModalShown = true"
+            >Show Key</AppButton
+          >
+        </div>
       </div>
     </div>
 
-    <div class="mt-4 d-flex flex-wrap gap-5">
-      <div class="form-group col-4">
-        <label class="form-label">Set Payer ID (Required)</label>
-        <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
-          >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
-        >
-        <AppInput
-          :model-value="payerData.accountIdFormatted.value"
-          @update:model-value="v => (payerData.accountId.value = v)"
-          :filled="true"
-          placeholder="Enter Payer ID"
-        />
-      </div>
-      <div class="form-group">
-        <label class="form-label">Set Valid Start Time (Required)</label>
-        <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">Set Max Transaction Fee (Optional)</label>
-        <AppInput v-model="maxTransactionfee" type="number" min="0" :filled="true" />
+    <hr class="separator my-6" />
+
+    <div class="row">
+      <div class="form-group col-8 col-xl-6">
+        <label class="form-label">Keys</label>
+        <div class="d-flex gap-3">
+          <AppInput
+            v-model="newOwnerKeyText"
+            :filled="true"
+            placeholder="Enter new owner public key"
+          />
+          <AppButton color="secondary" type="button" @click="handleAdd">Add</AppButton>
+        </div>
+        <template v-for="key in newOwnerKeys" :key="key">
+          <div class="d-flex align-items-center gap-3 mt-4">
+            <AppInput readonly :filled="true" :model-value="key" />
+            <i
+              class="bi bi-x-lg cursor-pointer"
+              @click="newOwnerKeys = newOwnerKeys.filter(k => k !== key)"
+            ></i>
+          </div>
+        </template>
       </div>
     </div>
-    <div class="mt-4 form-group">
-      <label class="form-label">Set Account ID (Required)</label>
-      <AppInput
-        :model-value="accountData.accountIdFormatted.value"
-        @update:model-value="v => (accountData.accountId.value = v)"
-        :filled="true"
-        placeholder="Enter Account ID"
+
+    <hr class="separator my-6" />
+
+    <div>
+      <AppSwitch
+        v-model:checked="newAccountData.acceptStakingAwards"
+        size="md"
+        name="accept-staking-awards"
+        label="Accept Staking Awards"
       />
     </div>
-    <div class="mt-4" v-if="accountData.key.value">
-      <AppButton
-        color="secondary"
-        type="button"
-        size="small"
-        @click="isKeyStructureModalShown = true"
-        >View Key Structure</AppButton
-      >
-    </div>
-    <div class="mt-4 form-group w-75">
-      <label class="form-label">Set Key/s (Optional)</label>
-      <div class="d-flex gap-3">
+    <div class="row mt-6">
+      <div class="form-group" :class="[columnClass]">
+        <label class="form-label">Staked Account Id</label>
         <AppInput
-          v-model="newOwnerKeyText"
+          v-model="newAccountData.stakedAccountId"
+          :disabled="Boolean(newAccountData.stakedNodeId)"
           :filled="true"
-          placeholder="Enter new owner public key"
-          style="max-width: 555px"
-          @keypress="e => e.code === 'Enter' && handleAdd()"
+          placeholder="Enter Account Id"
         />
-        <AppButton color="secondary" type="button" class="rounded-4" @click="handleAdd"
-          >Add</AppButton
-        >
+      </div>
+      <div class="form-group" :class="[columnClass]">
+        <label class="form-label">Staked Node Id</label>
+        <AppInput
+          v-model="newAccountData.stakedNodeId"
+          :disabled="
+            Boolean(newAccountData.stakedAccountId && newAccountData.stakedAccountId.length > 0)
+          "
+          :filled="true"
+          placeholder="Enter Node Id Number"
+        />
       </div>
     </div>
-    <div class="mt-4 w-75">
-      <template v-for="key in newOwnerKeys" :key="key">
-        <div class="d-flex align-items-center gap-3">
-          <AppInput readonly :filled="true" :model-value="key" style="max-width: 555px" />
-          <i
-            class="bi bi-x-lg d-inline-block cursor-pointer"
-            style="line-height: 16px"
-            @click="newOwnerKeys = newOwnerKeys.filter(k => k !== key)"
-          ></i>
-        </div>
-      </template>
+    <div class="row mt-6">
+      <div class="form-group" :class="[columnClass]">
+        <label class="form-label">Account Memo</label>
+        <AppInput
+          v-model="newAccountData.memo"
+          :filled="true"
+          maxlength="100"
+          placeholder="Enter Memo"
+        />
+      </div>
     </div>
-    <div class="mt-4 form-group w-50">
+
+    <hr class="separator my-6" />
+
+    <div>
       <AppSwitch
         v-model:checked="newAccountData.receiverSignatureRequired"
         size="md"
@@ -254,53 +289,18 @@ watch(accountData.accountInfo, accountInfo => {
         label="Receiver Signature Required"
       />
     </div>
-    <div class="mt-4 form-group w-50">
-      <label class="form-label">Set Max Automatic Token Associations (Optional)</label>
-      <AppInput
-        v-model="newAccountData.maxAutomaticTokenAssociations"
-        :min="0"
-        :max="5000"
-        :filled="true"
-        type="number"
-        placeholder="Enter timestamp"
-      />
-    </div>
-    <div class="mt-4 form-group w-50">
-      <label class="form-label">Set Staked Account Id (Optional)</label>
-      <AppInput
-        v-model="newAccountData.stakedAccountId"
-        :disabled="Boolean(newAccountData.stakedNodeId)"
-        :filled="true"
-        placeholder="Enter Account Id"
-      />
-    </div>
-    <div class="mt-4 form-group w-50">
-      <label class="form-label">Set Staked Node Id (Optional)</label>
-      <AppInput
-        v-model="newAccountData.stakedNodeId"
-        :disabled="
-          Boolean(newAccountData.stakedAccountId && newAccountData.stakedAccountId.length > 0)
-        "
-        :filled="true"
-        placeholder="Enter Node Id"
-      />
-    </div>
-    <div class="mt-4 form-group w-50">
-      <AppSwitch
-        v-model:checked="newAccountData.declineStakingReward"
-        size="md"
-        name="decline-signature"
-        label="Decline Staking Reward"
-      />
-    </div>
-    <div class="mt-4 form-group w-50">
-      <label class="form-label">Set Account Memo (Optional)</label>
-      <AppInput
-        v-model="newAccountData.memo"
-        :filled="true"
-        maxlength="100"
-        placeholder="Enter Account Memo"
-      />
+    <div class="row mt-6">
+      <div class="form-group" :class="[columnClass]">
+        <label class="form-label">Max Automatic Token Associations</label>
+        <AppInput
+          v-model="newAccountData.maxAutomaticTokenAssociations"
+          :min="0"
+          :max="5000"
+          :filled="true"
+          type="number"
+          placeholder="Enter timestamp"
+        />
+      </div>
     </div>
   </form>
 
