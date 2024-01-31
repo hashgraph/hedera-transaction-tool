@@ -14,7 +14,7 @@ import AppButton from '../../../../components/ui/AppButton.vue';
 import AppSwitch from '../../../../components/ui/AppSwitch.vue';
 import AppInput from '../../../../components/ui/AppInput.vue';
 import KeyStructureModal from '../../../../components/KeyStructureModal.vue';
-import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
+import TransactionProcessor from '../../../../components/Transaction/TransactionProcessor.vue';
 
 /* Stores */
 const payerData = useAccountId();

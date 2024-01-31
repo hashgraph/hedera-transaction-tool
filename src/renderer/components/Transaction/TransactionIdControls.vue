@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
-
-import useAccountId from '../composables/useAccountId';
-
-import AppInput from './ui/AppInput.vue';
 import { onMounted } from 'vue';
+
+import useKeyPairsStore from '../../stores/storeKeyPairs';
+
+import useAccountId from '../../composables/useAccountId';
+
+import AppInput from '../ui/AppInput.vue';
 
 /* Props */
 defineProps<{

@@ -20,11 +20,11 @@ import { createTransactionId } from '../../../../services/transactionService';
 
 import { getDateTimeLocalInputValue } from '../../../../utils';
 
-import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
+import TransactionProcessor from '../../../../components/Transaction/TransactionProcessor.vue';
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppSwitch from '../../../../components/ui/AppSwitch.vue';
 import AppInput from '../../../../components/ui/AppInput.vue';
-import TransactionIdControls from '@renderer/components/TransactionIdControls.vue';
+import TransactionIdControls from '../../../../components/Transaction/TransactionIdControls.vue';
 
 /* Stores */
 const user = useUserStore();

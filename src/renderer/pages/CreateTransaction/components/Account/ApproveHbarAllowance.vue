@@ -9,7 +9,7 @@ import useAccountId from '../../../../composables/useAccountId';
 
 import { createTransactionId } from '../../../../services/transactionService';
 
-import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
+import TransactionProcessor from '../../../../components/Transaction/TransactionProcessor.vue';
 import AppButton from '../../../../components/ui/AppButton.vue';
 import KeyStructureModal from '../../../../components/KeyStructureModal.vue';
 import AppInput from '../../../../components/ui/AppInput.vue';

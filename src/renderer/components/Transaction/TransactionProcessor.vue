@@ -10,29 +10,29 @@ import {
 } from '@hashgraph/sdk';
 import { Transaction as Tx } from '@prisma/client';
 
-import useUserStore from '../stores/storeUser';
-import useKeyPairsStore from '../stores/storeKeyPairs';
-import useNetworkStore from '../stores/storeNetwork';
+import useUserStore from '../../stores/storeUser';
+import useKeyPairsStore from '../../stores/storeKeyPairs';
+import useNetworkStore from '../../stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
 
 import {
   TRANSACTION_MAX_SIZE,
   TRANSACTION_SIGNATURE_ESTIMATED_MAX_SIZE,
-} from '../../main/shared/constants';
+} from '../../../main/shared/constants';
 
 import {
   getTransactionSignatures,
   execute,
   createTransactionId,
   storeTransaction,
-} from '../services/transactionService';
-import { openExternal } from '../services/electronUtilsService';
+} from '../../services/transactionService';
+import { openExternal } from '../../services/electronUtilsService';
 
-import AppButton from './ui/AppButton.vue';
-import AppModal from './ui/AppModal.vue';
-import AppLoader from './ui/AppLoader.vue';
-import AppInput from './ui/AppInput.vue';
+import AppButton from '../ui/AppButton.vue';
+import AppModal from '../ui/AppModal.vue';
+import AppLoader from '../ui/AppLoader.vue';
+import AppInput from '../ui/AppInput.vue';
 
 /* Props */
 const props = defineProps<{

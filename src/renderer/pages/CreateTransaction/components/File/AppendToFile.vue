@@ -11,7 +11,7 @@ import { createTransactionId } from '../../../../services/transactionService';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppInput from '../../../../components/ui/AppInput.vue';
-import TransactionProcessor from '../../../../components/TransactionProcessor.vue';
+import TransactionProcessor from '../../../../components/Transaction/TransactionProcessor.vue';
 
 /* Stores */
 const networkStore = useNetworkStore();
