@@ -1,0 +1,187 @@
+<script setup lang="ts">
+import { ProgressInfo, UpdateInfo } from 'electron-updater';
+import { onBeforeMount, ref } from 'vue';
+
+import { useToast } from 'vue-toast-notification';
+
+import { convertBytes } from '../utils';
+
+import AppModal from './ui/AppModal.vue';
+import AppButton from './ui/AppButton.vue';
+import AppProgressBar from './ui/AppProgressBar.vue';
+
+/* Composables */
+const toast = useToast();
+
+/* State */
+const updateInfo = ref<UpdateInfo | null>(null);
+const progressInfo = ref<ProgressInfo | null>(null);
+const isCheckingForUpdateShown = ref(false);
+const isUpdateAvailableShown = ref(false);
+const isUpdateNotAvailableShown = ref(false);
+const isDownloadingUpdateShown = ref(false);
+const isDownloadedShown = ref(false);
+
+/* Handlers */
+const handleCheckingForUpdates = () => (isCheckingForUpdateShown.value = true);
+
+const handleUpdateAvailable = (info: UpdateInfo) => {
+  isCheckingForUpdateShown.value = false;
+  isUpdateAvailableShown.value = true;
+  updateInfo.value = info;
+};
+
+const handleUpdateNotAvailable = () => {
+  isCheckingForUpdateShown.value = false;
+  isUpdateNotAvailableShown.value = true;
+  updateInfo.value = null;
+};
+
+const handleDownloadUpdate = () => {
+  isUpdateAvailableShown.value = false;
+  window.electronAPI.update.downloadUpdate();
+};
+
+const handleDownloadProgress = (info: ProgressInfo) => {
+  progressInfo.value = info;
+  isDownloadingUpdateShown.value = true;
+};
+
+const handleUpdateDownloaded = () => {
+  isDownloadingUpdateShown.value = false;
+  isDownloadedShown.value = true;
+};
+
+const handleInstall = () => {
+  window.electronAPI.update.quitAndInstall();
+};
+
+const handlerError = (message: string) => {
+  isCheckingForUpdateShown.value = false;
+  isUpdateAvailableShown.value = false;
+  isUpdateNotAvailableShown.value = false;
+  isDownloadingUpdateShown.value = false;
+  isDownloadedShown.value = false;
+
+  toast.error(message, { position: 'bottom-right' });
+};
+
+/* Hooks */
+onBeforeMount(() => {
+  window.electronAPI.update.onCheckingForUpdate(handleCheckingForUpdates);
+  window.electronAPI.update.onError(handlerError);
+  window.electronAPI.update.onUpdateAvailable(handleUpdateAvailable);
+  window.electronAPI.update.onUpdateNotAvailable(handleUpdateNotAvailable);
+  window.electronAPI.update.onDownloadProgess(handleDownloadProgress);
+  window.electronAPI.update.onUpdateDownloaded(handleUpdateDownloaded);
+});
+</script>
+<template>
+  <!-- Checking for update -->
+  <AppModal
+    :show="isCheckingForUpdateShown"
+    :close-on-click-outside="false"
+    :close-on-escape="false"
+    class="modal-fit-content"
+  >
+    <div class="text-center px-9 py-5">
+      <div>
+        <img src="/images/icon.png" class="pulse" style="height: 10vh" />
+      </div>
+      <p class="mt-5">Checking for update</p>
+    </div>
+  </AppModal>
+  <!-- Update Available -->
+  <AppModal
+    :show="isUpdateAvailableShown"
+    :close-on-click-outside="false"
+    :close-on-escape="false"
+    class="common-modal"
+  >
+    <div class="text-center p-4">
+      <div>
+        <img src="/images/icon.png" style="height: 10vh" />
+      </div>
+      <h2 class="text-title text-semi-bold mt-5">Update Available</h2>
+      <p class="text-main mt-3">Version {{ updateInfo?.version }}</p>
+      <div class="d-grid mt-5">
+        <AppButton color="primary" @click="handleDownloadUpdate">Download</AppButton>
+        <AppButton color="secondary" class="mt-3" @click="isUpdateAvailableShown = false"
+          >Cancel</AppButton
+        >
+      </div>
+    </div>
+  </AppModal>
+  <!-- Update Not Available -->
+  <AppModal :show="isUpdateNotAvailableShown" class="common-modal">
+    <div class="text-center p-4">
+      <div>
+        <img src="/images/icon.png" style="height: 10vh" />
+      </div>
+      <h2 class="text-title text-semi-bold mt-5">Update Not Available</h2>
+      <div class="d-grid mt-5">
+        <AppButton color="secondary" class="mt-3" @click="isUpdateNotAvailableShown = false"
+          >Close</AppButton
+        >
+      </div>
+    </div>
+  </AppModal>
+  <!-- Downloading -->
+  <AppModal
+    :show="isDownloadingUpdateShown"
+    :close-on-click-outside="false"
+    :close-on-escape="false"
+    class="common-modal"
+  >
+    <div class="text-center p-4">
+      <div>
+        <img src="/images/icon.png" style="height: 10vh" />
+      </div>
+      <h2 class="text-title text-semi-bold mt-5">Downloading update</h2>
+      <p class="text-main mt-3">Version {{ updateInfo?.version || '0.2.2' }}</p>
+      <div class="d-grid mt-4">
+        <div class="d-flex justify-content-between">
+          <p class="text-start text-footnote mt-3">
+            {{
+              convertBytes(progressInfo?.transferred || 0, { useBinaryUnits: false, decimals: 2 })
+            }}
+            of
+            {{ convertBytes(progressInfo?.total || 0, { useBinaryUnits: false, decimals: 2 }) }}
+          </p>
+          <p class="text-start text-micro mt-3">
+            {{
+              convertBytes(progressInfo?.bytesPerSecond || 0, {
+                useBinaryUnits: false,
+                decimals: 2,
+              })
+            }}/s
+          </p>
+        </div>
+
+        <AppProgressBar
+          :percent="Number(progressInfo?.percent.toFixed(2)) || 0"
+          :height="18"
+          class="mt-2"
+        />
+      </div>
+    </div>
+  </AppModal>
+  <!-- Update Available -->
+  <AppModal
+    :show="isDownloadedShown"
+    :close-on-click-outside="false"
+    :close-on-escape="false"
+    class="common-modal"
+  >
+    <div class="text-center p-4">
+      <div>
+        <img src="/images/icon.png" style="height: 10vh" />
+      </div>
+      <h2 class="text-title text-semi-bold mt-5">Install Update</h2>
+      <p class="text-main mt-3">Version {{ updateInfo?.version }}</p>
+      <div class="d-grid mt-5">
+        <AppButton color="primary" @click="handleInstall">Install</AppButton>
+      </div>
+    </div>
+  </AppModal>
+</template>
