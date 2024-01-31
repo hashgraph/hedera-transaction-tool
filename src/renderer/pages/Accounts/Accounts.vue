@@ -6,6 +6,7 @@ import { HederaAccount } from '@prisma/client';
 import useUserStore from '../../stores/storeUser';
 import useNetworkStore from '../../stores/storeNetwork';
 
+import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../composables/useAccountId';
 
 import { getAll, remove } from '../../services/accountsService';
@@ -31,6 +32,7 @@ const user = useUserStore();
 const networkStore = useNetworkStore();
 
 /* Composables */
+const toast = useToast();
 const accountData = useAccountId();
 
 /* State */
@@ -71,6 +73,8 @@ const handleUnlinkAccount = async () => {
   accountData.accountId.value = accounts.value[0]?.account_id || '';
 
   isUnlinkAccountModalShown.value = false;
+
+  toast.success('Account Unlinked!', { position: 'bottom-right' });
 };
 
 // const handleSortAccounts = (sorting: Sorting) => {
@@ -421,13 +425,13 @@ const handleUnlinkAccount = async () => {
             <div class="text-center mt-5">
               <i class="bi bi-trash large-icon" style="line-height: 16px"></i>
             </div>
-            <h3 class="text-center text-title text-bold mt-5">Delete account</h3>
+            <h3 class="text-center text-title text-bold mt-5">Unlink account</h3>
             <p class="text-center text-small text-secondary mt-4">
-              Are you sure you want to remove account?
+              Are you sure you want to remove this account from your account list?
             </p>
             <hr class="separator my-5" />
             <div class="d-grid">
-              <AppButton color="primary" @click="handleUnlinkAccount">Confirm</AppButton>
+              <AppButton color="primary" @click="handleUnlinkAccount">Unlink</AppButton>
               <AppButton color="secondary" class="mt-4" @click="isUnlinkAccountModalShown = false"
                 >Cancel</AppButton
               >
