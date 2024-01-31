@@ -31,7 +31,7 @@ export default function useAccountId() {
 
   const accoundIdWithChecksum = computed(() =>
     isValid.value
-      ? accountInfo.value?.accountId.toStringWithChecksum(networkStore.client)
+      ? accountInfo.value?.accountId.toStringWithChecksum(networkStore.client).split('-')
       : accountIdFormatted.value,
   );
 
@@ -104,7 +104,7 @@ export default function useAccountId() {
     } else if (accountInfo.value?.stakedAccountId) {
       return `Account ${accountInfo.value?.stakedAccountId}`;
     } else {
-      return '';
+      return 'None';
     }
   }
 

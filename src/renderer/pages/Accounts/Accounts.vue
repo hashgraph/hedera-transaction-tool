@@ -236,9 +236,23 @@ const handleUnlinkAccount = async () => {
               </div>
               <div class="col-7">
                 <p class="text-small text-semi-bold">
-                  {{ accountData.accoundIdWithChecksum.value }}
+                  <template
+                    v-if="
+                      accountData.accoundIdWithChecksum.value &&
+                      Array.isArray(accountData.accoundIdWithChecksum.value)
+                    "
+                  >
+                    <span>{{ accountData.accoundIdWithChecksum.value[0] }}</span>
+                    <span class="text-secondary"
+                      >-{{ accountData.accoundIdWithChecksum.value[1] }}</span
+                    >
+                  </template>
+                  <template v-else
+                    ><span>{{ accountData.accoundIdWithChecksum.value }}</span></template
+                  >
+
                   <i
-                    class="bi bi-box-arrow-up-right link-primary cursor-pointer ms-1"
+                    class="bi bi-box-arrow-up-right link-primary cursor-pointer ms-2"
                     @click="accountData.openAccountInHashscan"
                   ></i>
                 </p>
@@ -275,7 +289,7 @@ const handleUnlinkAccount = async () => {
                   >
                 </template>
                 <template v-else-if="accountData.key.value instanceof PublicKey && true">
-                  <p class="text-muted text-small">
+                  <p class="text-secondary text-small">
                     {{ accountData.key.value.toStringRaw() }}
                   </p>
                   <p class="text-small text-semi-bold text-pink mt-3">
