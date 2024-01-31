@@ -1,5 +1,6 @@
 import { app, BrowserWindow, session } from 'electron';
 import { optimizer, is } from '@electron-toolkit/utils';
+import log from 'electron-log/main';
 
 import initDatabase from './db';
 
@@ -7,6 +8,8 @@ import createMenu from './modules/menu';
 import registerIpcListeners from './modules/ipcHandlers';
 
 import createWindow from './windows/mainWindow';
+
+log.initialize();
 
 initDatabase();
 registerIpcListeners();
@@ -17,9 +20,9 @@ attachAppEvents();
 
 function attachAppEvents() {
   app.on('ready', () => {
-    createMenu();
-
     mainWindow = createWindow();
+
+    createMenu(mainWindow);
 
     /* main window events */
     mainWindow?.on('closed', () => {

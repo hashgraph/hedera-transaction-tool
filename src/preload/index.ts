@@ -1,4 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import { ProgressInfo, UpdateInfo } from 'electron-updater';
+import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
 import { HederaAccount, KeyPair, Transaction, User } from '@prisma/client';
 
 import { proto } from '@hashgraph/proto';
@@ -6,9 +8,30 @@ import { proto } from '@hashgraph/proto';
 import { IOrganization } from '../main/shared/interfaces';
 
 import { Theme } from '../main/modules/ipcHandlers/theme';
-import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
 
 export const electronAPI = {
+  update: {
+    onCheckingForUpdate: (callback: () => void) => {
+      ipcRenderer.on('update:checking-for-update', () => callback());
+    },
+    onError: (callback: (error: string) => void) => {
+      ipcRenderer.on('update:error', (_e, error: string) => callback(error));
+    },
+    onUpdateAvailable: (callback: (info: UpdateInfo) => void) => {
+      ipcRenderer.on('update:update-available', (_e, info: UpdateInfo) => callback(info));
+    },
+    onUpdateNotAvailable: (callback: () => void) => {
+      ipcRenderer.on('update:update-not-available', () => callback());
+    },
+    downloadUpdate: () => ipcRenderer.send('update:download-update'),
+    onDownloadProgess: (callback: (info: ProgressInfo) => void) => {
+      ipcRenderer.on('update:download-progress', (_e, info: ProgressInfo) => callback(info));
+    },
+    onUpdateDownloaded: (callback: () => void) => {
+      ipcRenderer.on('update:update-downloaded', () => callback());
+    },
+    quitAndInstall: () => ipcRenderer.send('update:quit-install'),
+  },
   theme: {
     isDark: (): Promise<boolean> => ipcRenderer.invoke('theme:isDark'),
     toggle: (theme: Theme): Promise<boolean> => ipcRenderer.invoke('theme:toggle', theme),
