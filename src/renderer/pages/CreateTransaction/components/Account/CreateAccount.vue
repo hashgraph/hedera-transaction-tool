@@ -25,6 +25,7 @@ import AppButton from '../../../../components/ui/AppButton.vue';
 import AppSwitch from '../../../../components/ui/AppSwitch.vue';
 import AppInput from '../../../../components/ui/AppInput.vue';
 import TransactionIdControls from '../../../../components/Transaction/TransactionIdControls.vue';
+import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -119,27 +120,22 @@ watch(
     }
   },
 );
+
+/* Misc */
+const columnClass = 'col-8 col-md-6 col-xxl-4';
 </script>
 <template>
   <form @submit="handleCreate">
-    <div class="d-flex justify-content-between align-items-center">
-      <h2 class="text-title text-bold">Create Account Transaction</h2>
-
-      <div class="d-flex justify-content-end align-items-center">
-        <AppButton
-          color="primary"
-          type="submit"
-          :disabled="keyList._keys.length === 0 || !payerData.isValid.value"
-          >Sign & Submit</AppButton
-        >
-      </div>
-    </div>
+    <TransactionHeaderControls
+      :create-requirements="keyList._keys.length === 0 || !payerData.isValid.value"
+      heading-text="Create Account Transaction"
+    />
 
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
       v-model:valid-start="validStart"
       v-model:max-transaction-fee="maxTransactionfee"
-      class="mt-4"
+      class="mt-6"
     />
 
     <hr class="separator my-6" />
@@ -174,7 +170,7 @@ watch(
       />
     </div>
     <div class="row mt-6">
-      <div class="form-group col-8 col-md-5 col-xl-4 col-xxl-3">
+      <div class="form-group" :class="[columnClass]">
         <label class="form-label">Staked Node Id</label>
         <AppInput
           v-model="accountData.stakedNodeId"
@@ -185,7 +181,7 @@ watch(
           placeholder="Enter Node Id Number"
         />
       </div>
-      <div class="form-group col-8 col-md-5 col-xl-4 col-xxl-3">
+      <div class="form-group" :class="[columnClass]">
         <label class="form-label">Staked Account Id</label>
         <AppInput
           v-model="accountData.stakedAccountId"
@@ -196,7 +192,7 @@ watch(
       </div>
     </div>
     <div class="row mt-6">
-      <div class="form-group col-8 col-md-5 col-xl-4 col-xxl-3">
+      <div class="form-group" :class="[columnClass]">
         <label class="form-label">Account Memo</label>
         <AppInput
           v-model="accountData.memo"
@@ -209,7 +205,7 @@ watch(
 
     <hr class="separator my-6" />
 
-    <div class="form-group mt-6">
+    <div>
       <AppSwitch
         v-model:checked="accountData.receiverSignatureRequired"
         size="md"
@@ -219,7 +215,7 @@ watch(
     </div>
 
     <div class="row mt-6">
-      <div class="form-group col-8 col-md-5 col-xl-4 col-xxl-3">
+      <div class="form-group" :class="[columnClass]">
         <label class="form-label">Initial Balance in HBar</label>
         <AppInput
           v-model="accountData.initialBalance"
@@ -229,7 +225,7 @@ watch(
           placeholder="Enter Hbar amount"
         />
       </div>
-      <div class="form-group col-8 col-md-5 col-xl-4 col-xxl-3">
+      <div class="form-group" :class="[columnClass]">
         <label class="form-label">Max Automatic Token Associations</label>
         <AppInput
           v-model="accountData.maxAutomaticTokenAssociations"
