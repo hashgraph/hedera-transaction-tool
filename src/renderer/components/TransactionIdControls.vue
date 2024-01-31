@@ -33,7 +33,7 @@ onMounted(() => {
 <template>
   <div class="row flex-wrap align-items-end">
     <div class="form-group col-4 col-xxl-3">
-      <label class="form-label">Set Payer ID (Required)</label>
+      <label class="form-label">Payer ID <span class="text-danger">*</span></label>
       <label v-if="account.isValid.value" class="d-block form-label text-secondary"
         >Balance: {{ account.accountInfo.value?.balance || 0 }}</label
       >
@@ -50,7 +50,7 @@ onMounted(() => {
       />
     </div>
     <div class="form-group col-4 col-xxl-3">
-      <label class="form-label">Set Valid Start Time</label>
+      <label class="form-label">Valid Start Time</label>
       <AppInput
         :model-value="validStart"
         @update:model-value="v => $emit('update:validStart', v)"
@@ -60,7 +60,7 @@ onMounted(() => {
       />
     </div>
     <div class="form-group col-4 col-xxl-3">
-      <label class="form-label">Set Max Transaction Fee</label>
+      <label class="form-label">Max Transaction Fee</label>
       <AppInput
         :model-value="maxTransactionFee"
         @update:model-value="v => $emit('update:maxTransactionFee', Number(v))"
