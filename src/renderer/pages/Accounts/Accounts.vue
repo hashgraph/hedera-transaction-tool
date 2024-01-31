@@ -45,7 +45,7 @@ const hbarDollarAmount = computed(() => {
 
   return getDollarAmount(
     networkStore.currentRate,
-    accountData.accountInfo.value.balance.toBigNumber().toNumber(),
+    accountData.accountInfo.value.balance.toBigNumber(),
   );
 });
 
