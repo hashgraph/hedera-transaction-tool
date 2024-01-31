@@ -148,12 +148,7 @@ watch(
       <div class="form-group col-8 col-xl-6">
         <label class="form-label">Keys</label>
         <div class="d-flex gap-3">
-          <AppInput
-            v-model="ownerKeyText"
-            :filled="true"
-            placeholder="Enter owner public key"
-            @keypress="e => e.code === 'Enter' && handleAdd()"
-          />
+          <AppInput v-model="ownerKeyText" :filled="true" placeholder="Enter owner public key" />
           <AppButton type="button" color="secondary" @click="handleAdd">Add</AppButton>
         </div>
         <template v-for="key in ownerKeys" :key="key">
@@ -252,7 +247,7 @@ watch(
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
     :on-executed="handleExecuted"
-    :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
+    :on-close-success-modal-click="() => $router.push({ name: 'transactions' })"
   >
     <template #successHeading>Account created successfully</template>
     <template #successContent>
