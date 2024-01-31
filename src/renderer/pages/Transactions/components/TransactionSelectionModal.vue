@@ -66,7 +66,7 @@ watch(
 //             </RouterLink>
 </script>
 <template>
-  <AppModal v-model:show="show" class="transaction-type-selection-modal">
+  <AppModal v-model:show="show" class="large-modal">
     <div class="p-5">
       <div class="d-flex align-items-center">
         <i

@@ -20,9 +20,11 @@ import { isEmail } from '../../../utils/validator';
 
 import AppButton from '../../../components/ui/AppButton.vue';
 import AppInput from '../../../components/ui/AppInput.vue';
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 /* Stores */
 const user = useUserStore();
+const keyPairs = useKeyPairsStore();
 
 /* Composables */
 const toast = useToast();
@@ -78,6 +80,8 @@ const handleOnFormSubmit = async (event: Event) => {
       const userData = await loginLocal(inputEmail.value, inputPassword.value, false);
       const secretHashes = await getSecretHashes(userData.id);
       user.login(userData, secretHashes);
+
+      await keyPairs.refetch();
 
       if (secretHashes.length === 0) {
         user.data.password = inputPassword.value;
