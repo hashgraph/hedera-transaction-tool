@@ -1,9 +1,9 @@
 import { Timestamp, Status } from '@hashgraph/sdk';
 import { Transaction } from '@prisma/client';
-import { openExternal } from '@renderer/services/electronUtilsService';
-import useNetworkStore from '../stores/storeNetwork';
 
-const networkStore = useNetworkStore();
+import { Network } from '../stores/storeNetwork';
+
+import { openExternal } from '../services/electronUtilsService';
 
 export const getTransactionDate = (transaction: Transaction): string => {
   return new Timestamp(
@@ -34,7 +34,7 @@ export const getFormattedDateFromTimestamp = (timestamp: Timestamp): string => {
   return new Date(timestamp.seconds * 1000).toDateString();
 };
 
-export const openTransactionInHashscan = transactionId => {
-  networkStore.network !== 'custom' &&
-    openExternal(`https://hashscan.io/${networkStore.network}/transaction/${transactionId}`);
+export const openTransactionInHashscan = (transactionId, network: Network) => {
+  network !== 'custom' &&
+    openExternal(`https://hashscan.io/${network}/transaction/${transactionId}`);
 };

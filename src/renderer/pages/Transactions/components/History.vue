@@ -3,6 +3,7 @@ import { computed, onBeforeMount, reactive, ref } from 'vue';
 import { Transaction } from '@prisma/client';
 
 import useUserStore from '../../../stores/storeUser';
+import useNetworkStore from '../../../stores/storeNetwork';
 
 import { getTransactions } from '../../../services/transactionService';
 
@@ -19,6 +20,7 @@ import AppButton from '../../../components/ui/AppButton.vue';
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 
 /* State */
 const transactions = ref<Transaction[]>([]);
@@ -86,7 +88,7 @@ const handleSort = (field: string, direction: 'asc' | 'desc') => {
 };
 
 const handleTransactionDetailsClick = (transaction: Transaction) => {
-  openTransactionInHashscan(transaction.transaction_id);
+  openTransactionInHashscan(transaction.transaction_id, network.network);
 };
 
 /* Functions */
