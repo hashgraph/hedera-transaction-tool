@@ -15,6 +15,7 @@ import { executeQuery } from '../../../../services/transactionService';
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
 import AppInput from '../../../../components/ui/AppInput.vue';
+import TransactionHeaderControls from '../../../../components/Transaction/TransactionHeaderControls.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -84,6 +85,11 @@ const handleSubmit = e => {
 /* Hooks */
 onMounted(async () => {
   await keyPairsStore.refetch();
+
+  const allAccountIds = keyPairsStore.accoundIds.map(a => a.accountIds).flat();
+  if (allAccountIds.length > 0) {
+    payerData.accountId.value = allAccountIds[0];
+  }
 });
 
 /* Watchers */
@@ -91,40 +97,29 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
 </script>
 <template>
   <form @submit="handleSubmit">
-    <div class="d-flex justify-content-between align-items-center">
-      <h2 class="text-title text-bold">Read File Query</h2>
-
-      <div class="d-flex justify-content-end align-items-center">
-        <AppButton type="submit" color="primary" :disabled="!fileId || !payerData.isValid.value"
-          >Sign & Read</AppButton
-        >
-      </div>
-    </div>
+    <TransactionHeaderControls
+      :create-requirements="!fileId || !payerData.isValid.value"
+      heading-text="Read File Query"
+      button-text="Sign and read"
+    />
 
     <div class="mt-4 form-group w-50">
-      <label class="form-label">Set Payer ID</label>
-      <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
-        >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
-      >
-      <select
-        :value="payerData.accountIdFormatted.value"
-        @input="payerData.accountId.value = ($event.target as HTMLInputElement).value"
-        class="form-select py-3"
-        placeholder="Enter Payer ID"
-      >
-        <option value="">Select Payer ID</option>
-        <option
-          v-for="(kp, i) in keyPairsStore.accoundIds.map(account => account.accountIds).flat()"
-          :key="i"
-          :value="kp"
+      <div class="form-group col-4 col-xxl-3">
+        <label class="form-label">Payer ID <span class="text-danger">*</span></label>
+        <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
+          >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
         >
-          {{ kp }}
-        </option>
-      </select>
+        <AppInput
+          :model-value="payerData.accountIdFormatted.value"
+          @update:model-value="v => (payerData.accountId.value = v)"
+          :filled="true"
+          placeholder="Enter Payer ID"
+        />
+      </div>
     </div>
     <div class="mt-4 form-group w-50">
       <label class="form-label">Set File ID</label>
-      <AppInput v-model="fileId" :filled="true" class="py-3" placeholder="Enter owner public key" />
+      <AppInput v-model="fileId" :filled="true" placeholder="Enter owner public key" />
     </div>
     <div class="mt-4 form-group w-75">
       <label class="form-label">File Content</label>

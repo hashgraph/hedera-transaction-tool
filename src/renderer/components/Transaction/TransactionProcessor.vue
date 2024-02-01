@@ -617,9 +617,9 @@ defineExpose({
         <form @submit="handleSignTransaction">
           <h3 class="text-center text-title text-bold">Enter your password</h3>
           <div class="form-group mt-5">
-            <AppInput v-model="userPassword" type="password" :filled="true" />
+            <AppInput size="small" v-model="userPassword" type="password" :filled="true" />
           </div>
-          <div class="d-grid mt-5">
+          <div class="d-grid mt-4">
             <p v-if="chunksAmount">Estimated chunks: {{ chunksAmount }}</p>
             <AppButton
               color="primary"

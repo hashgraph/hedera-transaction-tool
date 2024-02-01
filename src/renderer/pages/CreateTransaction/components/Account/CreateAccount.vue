@@ -40,7 +40,7 @@ const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<AccountCreateTransaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
-const maxTransactionfee = ref(2);
+const maxTransactionFee = ref(2);
 
 const accountData = reactive({
   accountId: '',
@@ -78,7 +78,7 @@ const handleCreate = async e => {
     transaction.value = new AccountCreateTransaction()
       .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
       .setTransactionValidDuration(180)
-      .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
+      .setMaxTransactionFee(new Hbar(maxTransactionFee.value))
       .setNodeAccountIds([new AccountId(3)])
       .setKey(keyList.value)
       .setReceiverSignatureRequired(accountData.receiverSignatureRequired)
@@ -134,7 +134,7 @@ const columnClass = 'col-8 col-md-6 col-xxl-4';
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
       v-model:valid-start="validStart"
-      v-model:max-transaction-fee="maxTransactionfee"
+      v-model:max-transaction-fee="maxTransactionFee"
       class="mt-6"
     />
 

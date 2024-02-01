@@ -12,6 +12,10 @@ import { createTransactionId } from '../../../../services/transactionService';
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppInput from '../../../../components/ui/AppInput.vue';
 import TransactionProcessor from '../../../../components/Transaction/TransactionProcessor.vue';
+import TransactionIdControls from '../../../../components/Transaction/TransactionIdControls.vue';
+import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
+
+import { getDateTimeLocalInputValue } from '@renderer/utils';
 
 /* Stores */
 const networkStore = useNetworkStore();
@@ -24,7 +28,7 @@ const payerData = useAccountId();
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<FileUpdateTransaction | null>(null);
-const validStart = ref('');
+const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref(2);
 
 const fileId = ref('');
@@ -149,49 +153,23 @@ watch(fileMeta, () => (content.value = ''));
 </script>
 <template>
   <form @submit="handleCreate">
-    <div class="d-flex justify-content-between align-items-center">
-      <h2 class="text-title text-bold">Update File Transaction</h2>
+    <TransactionHeaderControls
+      :create-requirements="ownerKeyList._keys.length === 0 || !payerData.isValid.value"
+      heading-text="Update File Transaction"
+    />
 
-      <div class="d-flex justify-content-end align-items-center">
-        <AppButton
-          type="submit"
-          color="primary"
-          :disabled="
-            !fileId ||
-            !payerData.isValid.value ||
-            signatureKeys.length === 0 ||
-            (content.length > 0 && fileBuffer)
-          "
-          >Sign & Submit</AppButton
-        >
-      </div>
-    </div>
+    <TransactionIdControls
+      v-model:payer-id="payerData.accountId.value"
+      v-model:valid-start="validStart"
+      v-model:max-transaction-fee="maxTransactionFee"
+      class="mt-6"
+    />
 
-    <div class="mt-4 d-flex flex-wrap gap-5">
-      <div class="form-group col-4">
-        <label class="form-label">Set Payer ID (Required)</label>
-        <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
-          >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
-        >
-        <AppInput
-          :model-value="payerData.accountIdFormatted.value"
-          @update:model-value="v => (payerData.accountId.value = v)"
-          :filled="true"
-          placeholder="Enter Payer ID"
-        />
-      </div>
-      <div class="form-group">
-        <label class="form-label">Set Valid Start Time (Required)</label>
-        <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">Set Max Transaction Fee (Optional)</label>
-        <AppInput v-model="maxTransactionFee" type="number" min="0" :filled="true" />
-      </div>
-    </div>
+    <hr class="separator my-6" />
+
     <div class="mt-4 form-group w-50">
       <label class="form-label">Set File ID</label>
-      <AppInput v-model="fileId" :filled="true" class="py-3" placeholder="Enter File ID" />
+      <AppInput v-model="fileId" :filled="true" placeholder="Enter File ID" />
     </div>
     <div class="mt-4 form-group w-75">
       <label class="form-label">Set Signature Keys (Required)</label>
@@ -199,7 +177,6 @@ watch(fileMeta, () => (content.value = ''));
         <AppInput
           v-model="signatureKeyText"
           :filled="true"
-          class="py-3"
           placeholder="Enter signer public key"
           style="max-width: 555px"
           @keypress="e => e.code === 'Enter' && handleAddSignatureKey()"
@@ -212,13 +189,7 @@ watch(fileMeta, () => (content.value = ''));
     <div class="mt-4 w-75">
       <template v-for="key in signatureKeys" :key="key">
         <div class="d-flex align-items-center gap-3">
-          <AppInput
-            :model-value="key"
-            :filled="true"
-            class="py-3"
-            readonly
-            style="max-width: 555px"
-          />
+          <AppInput :model-value="key" :filled="true" readonly style="max-width: 555px" />
           <i
             class="bi bi-x-lg d-inline-block cursor-pointer"
             style="line-height: 16px"
@@ -233,7 +204,6 @@ watch(fileMeta, () => (content.value = ''));
         <AppInput
           v-model="ownerKeyText"
           :filled="true"
-          class="py-3"
           placeholder="Enter owner public key"
           style="max-width: 555px"
           @keypress="e => e.code === 'Enter' && handleAddOwnerKey()"
@@ -246,14 +216,7 @@ watch(fileMeta, () => (content.value = ''));
     <div class="mt-4 w-75">
       <template v-for="key in ownerKeys" :key="key">
         <div class="d-flex align-items-center gap-3">
-          <AppInput
-            type="text"
-            readonly
-            :filled="true"
-            class="py-3"
-            :value="key"
-            style="max-width: 555px"
-          />
+          <AppInput type="text" readonly :filled="true" :value="key" style="max-width: 555px" />
           <i
             class="bi bi-x-lg d-inline-block cursor-pointer"
             style="line-height: 16px"
@@ -268,7 +231,6 @@ watch(fileMeta, () => (content.value = ''));
         v-model="memo"
         type="text"
         :filled="true"
-        class="py-3"
         maxlength="100"
         placeholder="Enter memo"
       />
@@ -279,20 +241,12 @@ watch(fileMeta, () => (content.value = ''));
         v-model="expirationTimestamp"
         type="datetime-local"
         :filled="true"
-        class="py-3"
         placeholder="Enter timestamp"
       />
     </div>
     <div class="mt-4 form-group w-25">
       <label class="form-label">Set Chunk Size (If File is large)</label>
-      <AppInput
-        v-model="chunkSize"
-        type="number"
-        min="1024"
-        max="6144"
-        :filled="true"
-        class="py-3"
-      />
+      <AppInput v-model="chunkSize" type="number" min="1024" max="6144" :filled="true" />
     </div>
     <div class="mt-4 form-group">
       <label for="fileUpload" class="form-label">

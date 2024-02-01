@@ -12,6 +12,7 @@ import {
   getTransactionId,
   getPayerFromTransaction,
   getStatusFromCode,
+  openTransactionInHashscan,
 } from '../../../utils/transactions';
 
 import AppButton from '../../../components/ui/AppButton.vue';
@@ -82,6 +83,10 @@ const handleSort = (field: string, direction: 'asc' | 'desc') => {
     default:
       break;
   }
+};
+
+const handleTransactionDetailsClick = (transaction: Transaction) => {
+  openTransactionInHashscan(transaction.transaction_id);
 };
 
 /* Functions */
@@ -170,7 +175,9 @@ onBeforeMount(async () => {
             </span>
           </td>
           <td class="text-center">
-            <AppButton color="primary">Details</AppButton>
+            <AppButton @click="handleTransactionDetailsClick(transaction)" color="primary"
+              >Details</AppButton
+            >
           </td>
         </tr>
       </template>
