@@ -58,7 +58,7 @@ const handlePaste = async (e: Event, index: number) => {
 };
 
 const handleWordChange = (newWord: string, index: number) => {
-  words[index] = newWord;
+  words.value[index] = newWord;
   words.value = [...words.value];
 };
 

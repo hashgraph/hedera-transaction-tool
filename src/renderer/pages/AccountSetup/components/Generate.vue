@@ -62,8 +62,6 @@ const handleVerify = () => {
 };
 
 const handleWordChange = (newWord: string, index: number) => {
-  console.log(newWord, index);
-
   words.value[index] = newWord;
   words.value = [...words.value];
 };
