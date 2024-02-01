@@ -3,10 +3,12 @@ import { onMounted } from 'vue';
 
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 
+import useUserStore from './stores/storeUser';
+
 import AppMenu from './components/Menu.vue';
 import AppHeader from './components/Header.vue';
+import AppUpdate from './components/AppUpdate.vue';
 import AppButton from './components/ui/AppButton.vue';
-import useUserStore from './stores/storeUser';
 
 /* Stores */
 const user = useUserStore();
@@ -51,5 +53,6 @@ onMounted(async () => {
     <AppButton class="btn-theme-changer" color="secondary" @click="handleThemeChange">
       <i class="bi bi-sun"></i
     ></AppButton>
+    <AppUpdate />
   </div>
 </template>

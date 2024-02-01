@@ -8,7 +8,7 @@ import logger from 'electron-log';
 import * as sqlite3 from 'better-sqlite3';
 import { PrismaClient } from '@prisma/client';
 
-const dbPath = path.join(electron.app.getPath('userData'), 'User Storage', 'database.db');
+const dbPath = path.join(electron.app.getPath('userData'), 'database.db');
 const migrationsPath = path.join(electron.app.getAppPath(), './prisma/migrations');
 
 if (!process.env.NODE_ENV) {

@@ -1,8 +1,8 @@
-import { Menu, shell } from 'electron';
+import { BrowserWindow, Menu, shell } from 'electron';
 
 import updater from './updater';
 
-export default function () {
+export default function (mainWindow: BrowserWindow) {
   const isMac = process.platform === 'darwin';
 
   const template = [
@@ -16,7 +16,7 @@ export default function () {
               {
                 label: 'Check for updates',
                 click: () => {
-                  updater();
+                  updater(mainWindow);
                 },
               },
               { type: 'separator' },
