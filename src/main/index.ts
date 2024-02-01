@@ -1,15 +1,15 @@
 import { app, BrowserWindow, session } from 'electron';
 import { optimizer, is } from '@electron-toolkit/utils';
-import log from 'electron-log/main';
 
 import initDatabase from './db';
 
+import initLogger from './modules/logger';
 import createMenu from './modules/menu';
 import registerIpcListeners from './modules/ipcHandlers';
 
 import createWindow from './windows/mainWindow';
 
-log.initialize();
+initLogger();
 
 initDatabase();
 registerIpcListeners();

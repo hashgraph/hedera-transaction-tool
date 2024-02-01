@@ -6,7 +6,6 @@ import icon from '../../../resources/icon.png?asset';
 
 export default function createWindow() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-  console.log(width, height);
 
   const mainWindow = new BrowserWindow({
     ...(process.platform === 'linux' ? { icon } : {}),
