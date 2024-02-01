@@ -47,7 +47,7 @@ function attachAppEvents() {
 
     app.on('activate', function () {
       if (mainWindow === null) {
-        createWindow();
+        mainWindow = createWindow();
       }
     });
   });
