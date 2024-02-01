@@ -9,12 +9,17 @@ import registerIpcListeners from './modules/ipcHandlers';
 
 import createWindow from './windows/mainWindow';
 
+let mainWindow: BrowserWindow | null;
+
 initLogger();
 
-initDatabase();
-registerIpcListeners();
+run();
 
-let mainWindow: BrowserWindow | null;
+async function run() {
+  await initDatabase();
+
+  registerIpcListeners();
+}
 
 attachAppEvents();
 
