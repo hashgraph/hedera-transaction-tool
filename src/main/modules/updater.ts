@@ -1,12 +1,10 @@
 import { BrowserWindow, ipcMain } from 'electron';
 import { ProgressInfo, autoUpdater } from 'electron-updater';
-import logger, { MainLogger } from 'electron-log';
+
+import { getAppUpdateLogger } from './logger';
 
 /* Enable logging */
-autoUpdater.logger = logger;
-if (isMainLogger(autoUpdater.logger)) {
-  autoUpdater.logger.transports.file.level = 'info';
-}
+autoUpdater.logger = getAppUpdateLogger();
 
 autoUpdater.autoDownload = false;
 
@@ -42,14 +40,10 @@ export default function (window: BrowserWindow) {
 
   /* Error */
   autoUpdater.on('error', error => {
-    logger.error(error.message);
+    // logger.error(error.message);
     window.webContents.send('update:error', error.cause || error.message);
   });
 
   autoUpdater.forceDevUpdateConfig = true;
   autoUpdater.checkForUpdates();
-}
-
-function isMainLogger(logger: any): logger is MainLogger {
-  return typeof logger.initialize === 'function';
 }

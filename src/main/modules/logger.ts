@@ -4,16 +4,19 @@ import { is } from '@electron-toolkit/utils';
 export default function () {
   /* Main logger */
   const mainLogger = logger.default;
+  mainLogger.errorHandler.startCatching();
   mainLogger.transports.file.fileName = `main${is.dev ? '-dev' : ''}.log`;
   mainLogger.transports.file.level = 'debug';
 
   /* Info logger */
   const infoLogger = logger.create({ logId: 'info' });
+  infoLogger.errorHandler.startCatching();
   infoLogger.transports.file.fileName = `info${is.dev ? '-dev' : ''}.log`;
   infoLogger.transports.file.level = 'info';
 
   /* Error logger */
   const errorLogger = logger.create({ logId: 'error' });
+  errorLogger.errorHandler.startCatching();
   errorLogger.transports.file.fileName = `error${is.dev ? '-dev' : ''}.log`;
   errorLogger.transports.file.level = 'error';
 
@@ -37,7 +40,7 @@ export default function () {
 }
 
 /* Update Logger */
-export function getUpdateLogger() {
+export function getAppUpdateLogger() {
   const updateLogger = logger.create({ logId: 'appUpdate' });
   updateLogger.transports.file.fileName = `app-updates${is.dev ? '-dev' : ''}.log`;
   updateLogger.transports.file.level = 'debug';
