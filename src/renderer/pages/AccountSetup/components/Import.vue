@@ -16,7 +16,7 @@ const props = defineProps<{
 const keyPairs = useKeyPairsStore();
 
 /* State */
-const words = ref(Array(24).fill(''));
+const words = ref<string[]>(Array(24).fill(''));
 
 const isMnenmonicValid = ref(false);
 const isSecretHashValid = ref(true);
@@ -42,6 +42,7 @@ const handlePaste = async (e: Event, index: number) => {
   const items = await navigator.clipboard.readText();
 
   const mnenmonic = items
+    .toLocaleLowerCase()
     .split(/[\s,]+|,\s*|\n/)
     .filter(w => w)
     .slice(0, 24);
@@ -53,12 +54,12 @@ const handlePaste = async (e: Event, index: number) => {
 
     await validateMatchingSecretHash();
   } else if (mnenmonic.length === 1) {
-    words.value[index] = mnenmonic[0];
+    words.value[index] = mnenmonic[0].toLocaleLowerCase();
   }
 };
 
 const handleWordChange = (newWord: string, index: number) => {
-  words.value[index] = newWord;
+  words.value[index] = newWord.toLocaleLowerCase();
   words.value = [...words.value];
 };
 
@@ -71,11 +72,11 @@ onBeforeMount(() => {
 
 /* Watchers */
 watch(words, async newWords => {
-  isMnenmonicValid.value = await validateMnemonic(newWords);
+  isMnenmonicValid.value = await validateMnemonic(newWords.map(w => w.toLocaleLowerCase()));
   await validateMatchingSecretHash();
 
   if (isMnenmonicValid.value && isSecretHashValid.value) {
-    return keyPairs.setRecoveryPhrase(words.value);
+    return keyPairs.setRecoveryPhrase(words.value.map(w => w.toLocaleLowerCase()));
   }
   keyPairs.clearRecoveryPhrase();
 });
