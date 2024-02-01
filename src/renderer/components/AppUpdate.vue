@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ProgressInfo, UpdateInfo } from 'electron-updater';
-import { onBeforeMount, ref } from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 
 import { useToast } from 'vue-toast-notification';
 
@@ -22,13 +22,22 @@ const isUpdateNotAvailableShown = ref(false);
 const isDownloadingUpdateShown = ref(false);
 const isDownloadedShown = ref(false);
 
+/* Computed */
+const progressBarLabel = computed(() => {
+  if (progressInfo.value && progressInfo.value.percent > 20) {
+    return `${progressInfo.value?.percent.toFixed(2)}%`;
+  } else {
+    return '';
+  }
+});
+
 /* Handlers */
 const handleCheckingForUpdates = () => (isCheckingForUpdateShown.value = true);
 
 const handleUpdateAvailable = (info: UpdateInfo) => {
+  updateInfo.value = info;
   isCheckingForUpdateShown.value = false;
   isUpdateAvailableShown.value = true;
-  updateInfo.value = info;
 };
 
 const handleUpdateNotAvailable = () => {
@@ -38,13 +47,13 @@ const handleUpdateNotAvailable = () => {
 };
 
 const handleDownloadUpdate = () => {
-  isUpdateAvailableShown.value = false;
   window.electronAPI.update.downloadUpdate();
+  isUpdateAvailableShown.value = false;
+  isDownloadingUpdateShown.value = true;
 };
 
 const handleDownloadProgress = (info: ProgressInfo) => {
   progressInfo.value = info;
-  isDownloadingUpdateShown.value = true;
 };
 
 const handleUpdateDownloaded = () => {
@@ -103,7 +112,7 @@ onBeforeMount(() => {
         <img src="/images/icon.png" style="height: 10vh" />
       </div>
       <h2 class="text-title text-semi-bold mt-5">Update Available</h2>
-      <p class="text-small text-secondary mt-3">Version {{ updateInfo?.version }}</p>
+      <p class="text-small text-secondary mt-3">Version {{ updateInfo?.version || '' }}</p>
       <div class="d-grid mt-5">
         <AppButton color="primary" @click="handleDownloadUpdate">Download</AppButton>
         <AppButton color="secondary" class="mt-3" @click="isUpdateAvailableShown = false"
@@ -138,28 +147,34 @@ onBeforeMount(() => {
         <img src="/images/icon.png" style="height: 10vh" />
       </div>
       <h2 class="text-title text-semi-bold mt-5">Downloading update</h2>
-      <p class="text-small text-secondary mt-3">Version {{ updateInfo?.version || '0.2.2' }}</p>
+      <p class="text-small text-secondary mt-3">Version {{ updateInfo?.version || '' }}</p>
       <div class="d-grid mt-4">
         <div class="d-flex justify-content-between">
-          <p class="text-start text-footnote mt-3">
+          <p class="text-start text-footnote mt-3" v-if="progressInfo">
             {{
-              convertBytes(progressInfo?.transferred || 0, { useBinaryUnits: false, decimals: 2 })
+              convertBytes(progressInfo?.transferred || 0, {
+                useBinaryUnits: false,
+                decimals: 2,
+              }) || '0'
             }}
             of
-            {{ convertBytes(progressInfo?.total || 0, { useBinaryUnits: false, decimals: 2 }) }}
+            {{
+              convertBytes(progressInfo?.total || 0, { useBinaryUnits: false, decimals: 2 }) || '0'
+            }}
           </p>
-          <p class="text-start text-micro mt-3">
+          <p class="text-start text-micro mt-3" v-if="progressInfo">
             {{
               convertBytes(progressInfo?.bytesPerSecond || 0, {
                 useBinaryUnits: false,
                 decimals: 2,
-              })
+              }) || ''
             }}/s
           </p>
         </div>
 
         <AppProgressBar
           :percent="Number(progressInfo?.percent.toFixed(2)) || 0"
+          :label="progressBarLabel"
           :height="18"
           class="mt-2"
         />
@@ -178,7 +193,7 @@ onBeforeMount(() => {
         <img src="/images/icon.png" style="height: 10vh" />
       </div>
       <h2 class="text-title text-semi-bold mt-5">Install Update</h2>
-      <p class="text-main mt-3">Version {{ updateInfo?.version }}</p>
+      <p class="text-small text-secondary mt-3">Version {{ updateInfo?.version || '' }}</p>
       <div class="d-grid mt-5">
         <AppButton color="primary" @click="handleInstall">Install</AppButton>
       </div>
