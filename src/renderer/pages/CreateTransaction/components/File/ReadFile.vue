@@ -118,8 +118,8 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
       </div>
     </div>
     <div class="mt-4 form-group w-50">
-      <label class="form-label">Set File ID</label>
-      <AppInput v-model="fileId" :filled="true" placeholder="Enter owner public key" />
+      <label class="form-label">File ID <span class="text-danger">*</span></label>
+      <AppInput v-model="fileId" :filled="true" placeholder="Enter File ID" />
     </div>
     <div class="mt-4 form-group w-75">
       <label class="form-label">File Content</label>

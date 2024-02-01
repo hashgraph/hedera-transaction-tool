@@ -144,7 +144,7 @@ watch(fileMeta, () => (content.value = ''));
     <hr class="separator my-6" />
 
     <div class="mt-4 form-group w-50">
-      <label class="form-label">Set File ID</label>
+      <label class="form-label">File ID <span class="text-danger">*</span></label>
       <AppInput v-model="fileId" :filled="true" placeholder="Enter File ID" />
     </div>
     <div class="mt-4 form-group w-75">
