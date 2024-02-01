@@ -103,7 +103,7 @@ onBeforeMount(() => {
         <img src="/images/icon.png" style="height: 10vh" />
       </div>
       <h2 class="text-title text-semi-bold mt-5">Update Available</h2>
-      <p class="text-main mt-3">Version {{ updateInfo?.version }}</p>
+      <p class="text-small text-secondary mt-3">Version {{ updateInfo?.version }}</p>
       <div class="d-grid mt-5">
         <AppButton color="primary" @click="handleDownloadUpdate">Download</AppButton>
         <AppButton color="secondary" class="mt-3" @click="isUpdateAvailableShown = false"
@@ -138,7 +138,7 @@ onBeforeMount(() => {
         <img src="/images/icon.png" style="height: 10vh" />
       </div>
       <h2 class="text-title text-semi-bold mt-5">Downloading update</h2>
-      <p class="text-main mt-3">Version {{ updateInfo?.version || '0.2.2' }}</p>
+      <p class="text-small text-secondary mt-3">Version {{ updateInfo?.version || '0.2.2' }}</p>
       <div class="d-grid mt-4">
         <div class="d-flex justify-content-between">
           <p class="text-start text-footnote mt-3">
