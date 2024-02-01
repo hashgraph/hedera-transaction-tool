@@ -71,6 +71,7 @@ export const deleteEncryptedPrivateKeys = (userId: string, organizationId: strin
 /* Validates if the provided recovery phrase is valid according to BIP-39 */
 export const validateMnemonic = async (words: string[]) => {
   try {
+    words = words.map(w => w.toLocaleLowerCase());
     await Mnemonic.fromWords(words);
     return true;
   } catch (error) {
