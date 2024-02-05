@@ -8,6 +8,7 @@ import useNetworkStore from '../../../../stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
+import { useRoute } from 'vue-router';
 
 import { decryptPrivateKey } from '../../../../services/keyPairService';
 import { executeQuery } from '../../../../services/transactionService';
@@ -25,6 +26,7 @@ const networkStore = useNetworkStore();
 /* Composables */
 const toast = useToast();
 const payerData = useAccountId();
+const route = useRoute();
 
 /* State */
 const fileId = ref('');
@@ -82,6 +84,7 @@ const handleSubmit = e => {
   e.preventDefault();
   isUserPasswordModalShown.value = true;
 };
+
 /* Hooks */
 onMounted(async () => {
   await keyPairsStore.refetch();
@@ -89,6 +92,10 @@ onMounted(async () => {
   const allAccountIds = keyPairsStore.accoundIds.map(a => a.accountIds).flat();
   if (allAccountIds.length > 0) {
     payerData.accountId.value = allAccountIds[0];
+  }
+
+  if (route.query.fileId) {
+    fileId.value = route.query.fileId.toString();
   }
 });
 
@@ -140,7 +147,7 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
         <div class="form-group mt-4">
           <AppInput v-model="userPassword" :filled="true" size="small" type="password" />
         </div>
-        <div class="d-grid mt-5">
+        <div class="d-grid mt-4">
           <AppButton
             :loading="isLoading"
             :disabled="userPassword.length === 0 || isLoading"

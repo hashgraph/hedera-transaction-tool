@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue';
 import { AccountId, FileUpdateTransaction, KeyList, PublicKey, Timestamp } from '@hashgraph/sdk';
 
 import useNetworkStore from '../../../../stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
+import { useRoute } from 'vue-router';
 
 import { createTransactionId } from '../../../../services/transactionService';
 
@@ -23,6 +24,7 @@ const networkStore = useNetworkStore();
 /* Composables */
 const toast = useToast();
 const payerData = useAccountId();
+const route = useRoute();
 
 /* State */
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
@@ -147,6 +149,13 @@ const handleCreate = async e => {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
+
+/* Hooks */
+onMounted(async () => {
+  if (route.query.fileId) {
+    fileId.value = route.query.fileId.toString();
+  }
+});
 
 /* Watchers */
 watch(fileMeta, () => (content.value = ''));
