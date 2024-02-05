@@ -141,7 +141,12 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
           >File content will be decoded, the actual content is protobuf encoded</label
         >
       </div>
-      <textarea v-model="content" class="form-control is-fill py-3" rows="10" readonly></textarea>
+      <textarea
+        v-model="content"
+        class="form-control text-code is-fill py-3"
+        rows="10"
+        readonly
+      ></textarea>
     </div>
   </form>
 
