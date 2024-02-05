@@ -6,6 +6,7 @@ import {
   HederaSpecialFileId,
   isHederaSpecialFileId,
   decodeProto,
+  encodeHederaSpecialFile,
 } from '../../shared/utils/hederaSpecialFiles';
 
 const prisma = getPrismaClient();
@@ -165,6 +166,20 @@ export const getTransactions = async (user_id: string) => {
     });
 
     return transactions;
+  } catch (error: any) {
+    console.log(error);
+    throw new Error(error.message || 'Failed to fetch transactions');
+  }
+};
+
+// Encode Special File
+export const encodeSpecialFile = async (content: Uint8Array, fileId: string) => {
+  try {
+    if (isHederaSpecialFileId(fileId)) {
+      return encodeHederaSpecialFile(content, fileId);
+    } else {
+      throw new Error('File is not one of special files');
+    }
   } catch (error: any) {
     console.log(error);
     throw new Error(error.message || 'Failed to fetch transactions');

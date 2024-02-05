@@ -105,13 +105,10 @@ function stringifyNodeAddressBook(exchangeRateSet: proto.INodeAddressBook) {
 
 function stringifyExchangeRetSet(exchangeRateSet: proto.IExchangeRateSet) {
   const exchangeRates = ExchangeRates._fromProtobuf(exchangeRateSet);
+  return JSON.stringify(exchangeRates, null, 2);
+}
 
-  return JSON.stringify(
-    {
-      currentRate: exchangeRates.currentRate.toJSON(),
-      nextRate: exchangeRates.nextRate.toJSON(),
-    },
-    null,
-    2,
-  );
+export function encodeHederaSpecialFile(content: Uint8Array, fileId: HederaSpecialFileId) {
+  /* empty */
+  console.log(content, fileId);
 }

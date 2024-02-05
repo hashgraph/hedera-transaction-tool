@@ -6,6 +6,7 @@ import {
   executeTransaction,
   getTransactions,
   storeTransaction,
+  encodeSpecialFile,
 } from '../../../services/localUser';
 
 const createChannelName = (...props) => ['transactions', ...props].join(':');
@@ -31,5 +32,11 @@ export default () => {
   // Get stored transactions
   ipcMain.handle(createChannelName('getTransactions'), (_e, user_id: string) =>
     getTransactions(user_id),
+  );
+
+  // Encode special file
+  ipcMain.handle(
+    createChannelName('encodeSpecialFile'),
+    (_e, content: Uint8Array, fileId: string) => encodeSpecialFile(content, fileId),
   );
 };

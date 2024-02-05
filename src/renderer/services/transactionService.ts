@@ -125,3 +125,11 @@ export const getTransactions = async (user_id: string) => {
     throw Error(getMessageFromIPCError(err, 'Getting transactions Failed'));
   }
 };
+
+export const encodeSpecialFileContent = async (content: Uint8Array, fileId: string) => {
+  try {
+    return await window.electronAPI.transactions.encodeSpecialFile(content, fileId);
+  } catch (err: any) {
+    throw Error(getMessageFromIPCError(err, 'Failed to encode special file'));
+  }
+};

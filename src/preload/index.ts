@@ -108,6 +108,8 @@ export const electronAPI = {
       ipcRenderer.invoke('transactions:storeTransaction', transaction),
     getTransactions: (user_id: string): Promise<Transaction[]> =>
       ipcRenderer.invoke('transactions:getTransactions', user_id),
+    encodeSpecialFile: (content: Uint8Array, fileId: string) =>
+      ipcRenderer.invoke('transactions:encodeSpecialFile', content, fileId),
   },
 };
 typeof electronAPI;
