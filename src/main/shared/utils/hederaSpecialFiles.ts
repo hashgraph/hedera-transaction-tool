@@ -1,5 +1,6 @@
 import { proto } from '@hashgraph/proto';
 import { AccountId, ExchangeRates } from '@hashgraph/sdk';
+import Long from 'long';
 
 export type HederaSpecialFileId =
   | '0.0.101'
@@ -101,14 +102,59 @@ function stringifyNodeAddressBook(nodeAddressBook: proto.INodeAddressBook) {
   return JSON.stringify(nodeAddressBookFormatted, null, 2);
 }
 
-function stringifyCurrentAndNextFeeSchedule();
-
 function stringifyExchangeRetSet(exchangeRateSet: proto.IExchangeRateSet) {
   const exchangeRates = ExchangeRates._fromProtobuf(exchangeRateSet);
   return JSON.stringify(exchangeRates, null, 2);
 }
 
 export function encodeHederaSpecialFile(content: Uint8Array, fileId: HederaSpecialFileId) {
-  /* empty */
-  console.log(content, fileId);
+  switch (fileId) {
+    case '0.0.101':
+    case '0.0.102':
+      return encodeNodeAddressBook(content);
+    case '0.0.111':
+    case '0.0.112':
+    case '0.0.121':
+    case '0.0.122':
+    case '0.0.123':
+      break;
+  }
+}
+
+function encodeNodeAddressBook(content: Uint8Array) {
+  const nodeAddresses: proto.INodeAddress[] = JSON.parse(Buffer.from(content).toString());
+
+  nodeAddresses.forEach(nodeAddress => {
+    // Node Id
+    nodeAddress.nodeId = nodeAddress.nodeId ? new Long(nodeAddress.nodeId, 0, true) : null;
+
+    // Acccount Id
+    nodeAddress.nodeAccountId = nodeAddress.nodeAccountId
+      ? AccountId.fromString(nodeAddress.nodeAccountId as string)._toProtobuf()
+      : null;
+
+    // Node Cert Hash
+    if (typeof nodeAddress.nodeCertHash === 'string') {
+      nodeAddress.nodeCertHash = new Uint8Array(Buffer.from(nodeAddress.nodeCertHash, 'utf-8'));
+    }
+
+    // Service Endpoints
+    nodeAddress.serviceEndpoint?.forEach(endpoint => {
+      if (typeof endpoint.ipAddressV4 === 'string') {
+        const ipAddressV4: string = endpoint.ipAddressV4;
+        endpoint.ipAddressV4 = Uint8Array.from(ipAddressV4.split('.').map(b => Number(b)));
+        endpoint.port = endpoint.port ? Number(endpoint.port) : null;
+      }
+    });
+  });
+
+  const nodeAddressBook: proto.INodeAddressBook = {
+    nodeAddress: nodeAddresses,
+  };
+
+  const protoNodeAddressBook = proto.NodeAddressBook.create(nodeAddressBook);
+  const encoded = proto.NodeAddressBook.encode(protoNodeAddressBook).finish();
+  console.log(proto.NodeAddressBook.decode(encoded));
+
+  return encoded;
 }

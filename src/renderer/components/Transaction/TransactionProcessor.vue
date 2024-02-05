@@ -26,11 +26,9 @@ import {
   execute,
   createTransactionId,
   storeTransaction,
-  encodeSpecialFileContent,
 } from '../../services/transactionService';
 import { openExternal } from '../../services/electronUtilsService';
 import { getDollarAmount } from '../../services/mirrorNodeDataService';
-import { isHederaSpecialFileId } from '../../../main/shared/utils/hederaSpecialFiles';
 
 import AppButton from '../ui/AppButton.vue';
 import AppModal from '../ui/AppModal.vue';
@@ -210,7 +208,6 @@ async function process(
   await nextTick();
 
   checkIfFileTransaction();
-  encodeIfSpecialFile();
 
   isConfirmShown.value = true;
 
@@ -245,20 +242,6 @@ async function process(
         estimatedTransactionSize >= TRANSACTION_MAX_SIZE
           ? Math.ceil(estimatedTransactionSize / chunkSize.value)
           : null;
-    }
-  }
-
-  async function encodeIfSpecialFile() {
-    if (
-      transaction.value instanceof FileUpdateTransaction &&
-      isHederaSpecialFileId(transaction.value.fileId?.toString()) &&
-      transaction.value.contents
-    ) {
-      const getEncodedContent = await encodeSpecialFileContent(
-        transaction.value.contents,
-        transaction.value.fileId.toString(),
-      );
-      transaction.value.setContents(getEncodedContent);
     }
   }
 }

@@ -8,7 +8,11 @@ import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
 import { useRoute } from 'vue-router';
 
-import { createTransactionId } from '../../../../services/transactionService';
+import {
+  createTransactionId,
+  encodeSpecialFileContent,
+} from '../../../../services/transactionService';
+import { isHederaSpecialFileId } from '../../../../../main/shared/utils/hederaSpecialFiles';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppInput from '../../../../components/ui/AppInput.vue';
@@ -58,7 +62,7 @@ const newKeysList = computed(
 );
 
 /* Misc Functions */
-const createTransaction = () => {
+const createTransaction = async () => {
   const updateTransaction = new FileUpdateTransaction()
     .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
     .setTransactionValidDuration(180)
@@ -79,6 +83,13 @@ const createTransaction = () => {
     updateTransaction.setContents(fileBuffer.value);
   }
 
+  if (isHederaSpecialFileId(updateTransaction.fileId?.toString()) && updateTransaction.contents) {
+    const getEncodedContent = await encodeSpecialFileContent(
+      updateTransaction.contents,
+      updateTransaction.fileId.toString(),
+    );
+    updateTransaction.setContents(getEncodedContent);
+  }
   updateTransaction.freezeWith(networkStore.client);
 
   return updateTransaction;
@@ -142,7 +153,7 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    transaction.value = createTransaction();
+    transaction.value = await createTransaction();
     await transactionProcessor.value?.process(
       payerData.keysFlattened.value.concat(newKeys.value, ownerKeys.value),
       chunkSize.value,
