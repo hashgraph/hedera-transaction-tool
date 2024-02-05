@@ -60,6 +60,8 @@ export function decodeProto(fileId: HederaSpecialFileId, response: any) {
     return stringifyNodeAddressBook(decoded);
   } else if (decoded instanceof proto.ExchangeRateSet) {
     return stringifyExchangeRetSet(decoded);
+  } else if (decoded instanceof proto.ServicesConfigurationList) {
+    return stringifyServicesConfigurationList(decoded);
   }
 
   return JSON.stringify(decoded, null, 2);
@@ -105,6 +107,15 @@ function stringifyNodeAddressBook(nodeAddressBook: proto.INodeAddressBook) {
 function stringifyExchangeRetSet(exchangeRateSet: proto.IExchangeRateSet) {
   const exchangeRates = ExchangeRates._fromProtobuf(exchangeRateSet);
   return JSON.stringify(exchangeRates, null, 2);
+}
+
+function stringifyServicesConfigurationList(
+  servicesConfigurationList: proto.IServicesConfigurationList,
+) {
+  const nameValues = servicesConfigurationList.nameValue?.map(
+    nv => `${nv.name}=${nv.value}${nv.data && nv.data.length > 0 ? ` data=${nv.data}` : ''}`,
+  );
+  return nameValues?.join('\n');
 }
 
 export function encodeHederaSpecialFile(content: Uint8Array, fileId: HederaSpecialFileId) {
