@@ -36,6 +36,11 @@ const validateMatchingSecretHash = async () => {
 };
 
 /* Handlers */
+const handleWordChange = (newWord: string, index: number) => {
+  words.value[index] = newWord.toLocaleLowerCase();
+  words.value = [...words.value];
+};
+
 const handlePaste = async (e: Event, index: number) => {
   e.preventDefault();
 
@@ -54,13 +59,8 @@ const handlePaste = async (e: Event, index: number) => {
 
     await validateMatchingSecretHash();
   } else if (mnenmonic.length === 1) {
-    words.value[index] = mnenmonic[0].toLocaleLowerCase();
+    handleWordChange(mnenmonic[0], index);
   }
-};
-
-const handleWordChange = (newWord: string, index: number) => {
-  words.value[index] = newWord.toLocaleLowerCase();
-  words.value = [...words.value];
 };
 
 /* Hooks */
