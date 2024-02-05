@@ -50,7 +50,7 @@ const specialFilesMapping = {
 };
 
 export function decodeProto(fileId: HederaSpecialFileId, response: any) {
-  if (specialFilesMapping[fileId].protoType === null) {
+  if (specialFilesMapping[fileId] === undefined) {
     throw new Error('File ID is not Hedera special file');
   }
 
@@ -114,6 +114,7 @@ export function encodeHederaSpecialFile(content: Uint8Array, fileId: HederaSpeci
       return encodeNodeAddressBook(content);
     case '0.0.111':
     case '0.0.112':
+      return encodeExchangeRates(content);
     case '0.0.121':
     case '0.0.122':
     case '0.0.123':
@@ -158,7 +159,16 @@ function encodeNodeAddressBook(content: Uint8Array) {
 
   const protoNodeAddressBook = proto.NodeAddressBook.create(nodeAddressBook);
   const encoded = proto.NodeAddressBook.encode(protoNodeAddressBook).finish();
-  console.log(proto.NodeAddressBook.decode(encoded));
 
   return encoded;
+}
+
+function encodeExchangeRates(content: Uint8Array) {
+  const exchangeRateSet: proto.IExchangeRateSet = JSON.parse(Buffer.from(content).toString());
+
+  const protoExchangeRateSet = proto.ExchangeRateSet.create(exchangeRateSet);
+
+  const protobuffEncodedBuffer = proto.ExchangeRateSet.encode(protoExchangeRateSet).finish();
+
+  return protobuffEncodedBuffer;
 }
