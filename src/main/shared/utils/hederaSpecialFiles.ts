@@ -60,6 +60,7 @@ export function decodeProto(fileId: HederaSpecialFileId, response: any) {
   } else if (decoded instanceof proto.ExchangeRateSet) {
     return stringifyExchangeRetSet(decoded);
   }
+
   return JSON.stringify(decoded, null, 2);
 }
 
@@ -76,10 +77,7 @@ function stringifyNodeAddressBook(exchangeRateSet: proto.INodeAddressBook) {
       });
 
       // Node Cert Hash
-      nodeAddress.nodeCertHash = Buffer.from(
-        nodeAddress.nodeCertHash.toString(),
-        'binary',
-      ).toString('utf-8') as any;
+      nodeAddress.nodeCertHash = Buffer.from(nodeAddress.nodeCertHash).toString('utf-8') as any;
 
       // Node Account ID
       if (nodeAddress.nodeAccountId) {
