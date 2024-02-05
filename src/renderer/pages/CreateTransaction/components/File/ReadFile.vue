@@ -111,7 +111,7 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
     />
 
     <div class="mt-4 form-group w-50">
-      <div class="form-group col-4 col-xxl-3">
+      <div class="form-group col-4">
         <label class="form-label">Payer ID <span class="text-danger">*</span></label>
         <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
           >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
