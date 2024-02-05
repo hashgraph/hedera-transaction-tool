@@ -64,10 +64,10 @@ export function decodeProto(fileId: HederaSpecialFileId, response: any) {
   return JSON.stringify(decoded, null, 2);
 }
 
-function stringifyNodeAddressBook(exchangeRateSet: proto.INodeAddressBook) {
-  const exchangeRateSetFormatted = exchangeRateSet.nodeAddress;
+function stringifyNodeAddressBook(nodeAddressBook: proto.INodeAddressBook) {
+  const nodeAddressBookFormatted = nodeAddressBook.nodeAddress;
 
-  exchangeRateSetFormatted?.forEach(nodeAddress => {
+  nodeAddressBookFormatted?.forEach(nodeAddress => {
     if (nodeAddress.nodeCertHash) {
       // Service Endpoint
       nodeAddress.serviceEndpoint?.forEach(e => {
@@ -98,8 +98,10 @@ function stringifyNodeAddressBook(exchangeRateSet: proto.INodeAddressBook) {
     }
   });
 
-  return JSON.stringify(exchangeRateSetFormatted, null, 2);
+  return JSON.stringify(nodeAddressBookFormatted, null, 2);
 }
+
+function stringifyCurrentAndNextFeeSchedule();
 
 function stringifyExchangeRetSet(exchangeRateSet: proto.IExchangeRateSet) {
   const exchangeRates = ExchangeRates._fromProtobuf(exchangeRateSet);
