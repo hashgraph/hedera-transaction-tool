@@ -34,13 +34,13 @@ const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref(2);
 
 const fileId = ref('');
-const signatureKeyText = ref('');
 const ownerKeyText = ref('');
+const newKeyText = ref('');
 const memo = ref('');
 const expirationTimestamp = ref();
 const chunkSize = ref(2048);
-const signatureKeys = ref<string[]>([]);
 const ownerKeys = ref<string[]>([]);
+const newKeys = ref<string[]>([]);
 
 const fileMeta = ref<File | null>(null);
 const fileReader = ref<FileReader | null>(null);
@@ -53,6 +53,9 @@ const chunksAmount = ref<number | null>(null);
 const ownerKeyList = computed(
   () => new KeyList(ownerKeys.value.map(key => PublicKey.fromString(key))),
 );
+const newKeysList = computed(
+  () => new KeyList(newKeys.value.map(key => PublicKey.fromString(key))),
+);
 
 /* Misc Functions */
 const createTransaction = () => {
@@ -64,7 +67,7 @@ const createTransaction = () => {
     .setFileId(fileId.value)
     .setFileMemo(memo.value);
 
-  ownerKeyList.value._keys.length > 0 && updateTransaction.setKeys(ownerKeyList.value);
+  newKeysList.value._keys.length > 0 && updateTransaction.setKeys(newKeysList.value);
 
   expirationTimestamp.value &&
     updateTransaction.setExpirationTime(Timestamp.fromDate(expirationTimestamp.value));
@@ -96,10 +99,10 @@ const handleAddOwnerKey = () => {
   ownerKeyText.value = '';
 };
 
-const handleAddSignatureKey = () => {
-  signatureKeys.value.push(signatureKeyText.value);
-  signatureKeys.value = signatureKeys.value.filter(isPublicKey);
-  signatureKeyText.value = '';
+const handleAddNewKey = () => {
+  newKeys.value.push(newKeyText.value);
+  newKeys.value = newKeys.value.filter(isPublicKey);
+  newKeyText.value = '';
 };
 
 const handleRemoveFile = async () => {
@@ -141,7 +144,7 @@ const handleCreate = async e => {
   try {
     transaction.value = createTransaction();
     await transactionProcessor.value?.process(
-      payerData.keysFlattened.value.concat(signatureKeys.value, ownerKeys.value),
+      payerData.keysFlattened.value.concat(newKeys.value, ownerKeys.value),
       chunkSize.value,
       1,
     );
@@ -181,42 +184,9 @@ watch(fileMeta, () => (content.value = ''));
       <AppInput v-model="fileId" :filled="true" placeholder="Enter File ID" />
     </div>
     <div class="mt-4 form-group w-75">
-      <label class="form-label">Set Signature Keys (Required)</label>
+      <label class="form-label">Signature Keys <span class="text-danger">*</span></label>
       <div class="d-flex gap-3">
-        <AppInput
-          v-model="signatureKeyText"
-          :filled="true"
-          placeholder="Enter signer public key"
-          style="max-width: 555px"
-          @keypress="e => e.code === 'Enter' && handleAddSignatureKey()"
-        />
-        <AppButton color="secondary" type="button" class="rounded-4" @click="handleAddSignatureKey"
-          >Add</AppButton
-        >
-      </div>
-    </div>
-    <div class="mt-4 w-75">
-      <template v-for="key in signatureKeys" :key="key">
-        <div class="d-flex align-items-center gap-3">
-          <AppInput :model-value="key" :filled="true" readonly style="max-width: 555px" />
-          <i
-            class="bi bi-x-lg d-inline-block cursor-pointer"
-            style="line-height: 16px"
-            @click="signatureKeys = signatureKeys.filter(k => k !== key)"
-          ></i>
-        </div>
-      </template>
-    </div>
-    <div class="form-group w-75">
-      <label class="form-label">Set Keys (Optional)</label>
-      <div class="d-flex gap-3">
-        <AppInput
-          v-model="ownerKeyText"
-          :filled="true"
-          placeholder="Enter owner public key"
-          style="max-width: 555px"
-          @keypress="e => e.code === 'Enter' && handleAddOwnerKey()"
-        />
+        <AppInput v-model="ownerKeyText" :filled="true" placeholder="Enter signer public key" />
         <AppButton color="secondary" type="button" class="rounded-4" @click="handleAddOwnerKey"
           >Add</AppButton
         >
@@ -225,7 +195,7 @@ watch(fileMeta, () => (content.value = ''));
     <div class="mt-4 w-75">
       <template v-for="key in ownerKeys" :key="key">
         <div class="d-flex align-items-center gap-3">
-          <AppInput type="text" readonly :filled="true" :value="key" style="max-width: 555px" />
+          <AppInput :model-value="key" :filled="true" readonly />
           <i
             class="bi bi-x-lg d-inline-block cursor-pointer"
             style="line-height: 16px"
@@ -234,8 +204,29 @@ watch(fileMeta, () => (content.value = ''));
         </div>
       </template>
     </div>
+    <div class="form-group w-75">
+      <label class="form-label">Keys</label>
+      <div class="d-flex gap-3">
+        <AppInput v-model="newKeyText" :filled="true" placeholder="Enter owner public key" />
+        <AppButton color="secondary" type="button" class="rounded-4" @click="handleAddNewKey"
+          >Add</AppButton
+        >
+      </div>
+    </div>
+    <div class="mt-4 w-75">
+      <template v-for="key in newKeys" :key="key">
+        <div class="d-flex align-items-center gap-3">
+          <AppInput type="text" readonly :filled="true" :value="key" />
+          <i
+            class="bi bi-x-lg d-inline-block cursor-pointer"
+            style="line-height: 16px"
+            @click="newKeys = newKeys.filter(k => k !== key)"
+          ></i>
+        </div>
+      </template>
+    </div>
     <div class="mt-4 form-group w-50">
-      <label class="form-label">Set File Memo (Optional)</label>
+      <label class="form-label">File Memo (Optional)</label>
       <AppInput
         v-model="memo"
         type="text"
@@ -296,11 +287,10 @@ watch(fileMeta, () => (content.value = ''));
     :on-executed="(_result, _chunkAmount) => (chunksAmount = _chunkAmount || null)"
     :on-close-success-modal-click="
       () => {
-        payerData.accountId.value = '';
         validStart = '';
         maxTransactionFee = 2;
         fileId = '';
-        signatureKeys = [];
+        newKeys = [];
         ownerKeys = [];
         memo = '';
         expirationTimestamp = undefined;
