@@ -128,6 +128,7 @@ export function encodeHederaSpecialFile(content: Uint8Array, fileId: HederaSpeci
       return encodeExchangeRates(content);
     case '0.0.121':
     case '0.0.122':
+      return encodeServicesConfigurationList(content);
     case '0.0.123':
       break;
     default:
@@ -180,6 +181,29 @@ function encodeExchangeRates(content: Uint8Array) {
   const protoExchangeRateSet = proto.ExchangeRateSet.create(exchangeRateSet);
 
   const protobuffEncodedBuffer = proto.ExchangeRateSet.encode(protoExchangeRateSet).finish();
+
+  return protobuffEncodedBuffer;
+}
+
+function encodeServicesConfigurationList(content: Uint8Array) {
+  const parsed = Buffer.from(content)
+    .toString()
+    .split('\n')
+    .filter(l => l)
+    .map(line => {
+      const args = line.split('=');
+      const setting = proto.Setting.create({
+        name: args[0],
+        value: `${args[1]}`,
+      });
+      return setting;
+    });
+
+  const properties = proto.ServicesConfigurationList.create({
+    nameValue: parsed,
+  });
+
+  const protobuffEncodedBuffer = proto.ServicesConfigurationList.encode(properties).finish();
 
   return protobuffEncodedBuffer;
 }
