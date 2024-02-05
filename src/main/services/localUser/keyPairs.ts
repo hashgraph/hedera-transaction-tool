@@ -31,6 +31,9 @@ export const getKeyPairs = async (userId: string, organizationId?: string): Prom
     where: {
       AND: [{ user_id: userId }, { organization_id: organizationId }],
     },
+    orderBy: {
+      secret_hash: 'desc',
+    },
   });
 
 // Store key pair
