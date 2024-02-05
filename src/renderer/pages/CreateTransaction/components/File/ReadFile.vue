@@ -7,11 +7,13 @@ import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 import useNetworkStore from '../../../../stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
-import useAccountId from '../../../../composables/useAccountId';
 import { useRoute } from 'vue-router';
+import useAccountId from '../../../../composables/useAccountId';
 
 import { decryptPrivateKey } from '../../../../services/keyPairService';
 import { executeQuery } from '../../../../services/transactionService';
+
+import { isHederaSpecialFileId } from '../../../../../main/shared/utils/hederaSpecialFiles';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppModal from '../../../../components/ui/AppModal.vue';
@@ -64,10 +66,14 @@ const handleRead = async e => {
     );
     isUserPasswordModalShown.value = false;
 
-    const decoder = new TextDecoder('utf-8');
-    const text = decoder.decode(response);
+    if (isHederaSpecialFileId(fileId.value)) {
+      content.value = response;
+    } else {
+      const decoder = new TextDecoder('utf-8');
+      const text = decoder.decode(response);
 
-    content.value = text;
+      content.value = text;
+    }
   } catch (err: any) {
     let message = 'Failed to execute query';
     if (err.message && typeof err.message === 'string') {
@@ -111,7 +117,7 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
     />
 
     <div class="mt-4 form-group w-50">
-      <div class="form-group col-4">
+      <div class="form-group col-8 col-md-6 col-lg-4">
         <label class="form-label">Payer ID <span class="text-danger">*</span></label>
         <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
           >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
@@ -129,7 +135,12 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
       <AppInput v-model="fileId" :filled="true" placeholder="Enter File ID" />
     </div>
     <div class="mt-4 form-group w-75">
-      <label class="form-label">File Content</label>
+      <div class="d-flex justify-content-between">
+        <label class="form-label">File Content</label>
+        <label class="form-label ms-5" v-if="isHederaSpecialFileId(fileId)"
+          >File content will be decoded, the actual content is protobuf encoded</label
+        >
+      </div>
       <textarea v-model="content" class="form-control is-fill py-3" rows="10" readonly></textarea>
     </div>
   </form>

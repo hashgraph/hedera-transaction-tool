@@ -1,7 +1,12 @@
-import { Client, Query, Transaction } from '@hashgraph/sdk';
+import { Client, FileContentsQuery, Query, Transaction } from '@hashgraph/sdk';
 import { Transaction as Tx } from '@prisma/client';
 import { getPrismaClient } from '../../db';
 import { getNumberArrayFromString } from '../../utils';
+import {
+  HederaSpecialFileId,
+  isHederaSpecialFileId,
+  decodeProto,
+} from '../../shared/utils/hederaSpecialFiles';
 
 const prisma = getPrismaClient();
 
@@ -72,6 +77,7 @@ export const executeQuery = async (queryData: string) => {
     } | null;
     accountId: string;
     privateKey: string;
+    type: string;
   } = JSON.parse(queryData);
   const client = getClient();
 
@@ -79,10 +85,15 @@ export const executeQuery = async (queryData: string) => {
 
   const bytesArray = getNumberArrayFromString(tx.queryBytes);
 
-  const transaction = Query.fromBytes(Uint8Array.from(bytesArray));
+  const query = Query.fromBytes(Uint8Array.from(bytesArray));
 
   try {
-    const response = await transaction.execute(client);
+    const response = await query.execute(client);
+
+    if (query instanceof FileContentsQuery && isHederaSpecialFileId(query.fileId?.toString())) {
+      const decoded = decodeProto(query.fileId.toString() as HederaSpecialFileId, response);
+      return { response: decoded };
+    }
     return { response };
   } catch (error: any) {
     console.log(error);
