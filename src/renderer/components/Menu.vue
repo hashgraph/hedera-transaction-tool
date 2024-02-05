@@ -13,6 +13,11 @@ const menuItems = [
     icon: 'bi bi-person',
   },
   {
+    link: '/file-service',
+    title: 'File Service',
+    icon: 'bi bi-file-text',
+  },
+  {
     link: '/tokens',
     title: 'Tokens',
     icon: 'bi bi-coin',
@@ -27,11 +32,7 @@ const menuItems = [
     title: 'Consensus Service',
     icon: 'bi bi-shield-check',
   },
-  {
-    link: '/file-service',
-    title: 'File Service',
-    icon: 'bi bi-file-text',
-  },
+
   {
     link: '/contact-list',
     title: 'Contact List',
