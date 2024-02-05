@@ -99,7 +99,7 @@ function stringifyNodeAddressBook(nodeAddressBook: proto.INodeAddressBook) {
     }
   });
 
-  return JSON.stringify(nodeAddressBookFormatted, null, 2);
+  return JSON.stringify({ nodeAddress: nodeAddressBookFormatted }, null, 2);
 }
 
 function stringifyExchangeRetSet(exchangeRateSet: proto.IExchangeRateSet) {
@@ -118,39 +118,43 @@ export function encodeHederaSpecialFile(content: Uint8Array, fileId: HederaSpeci
     case '0.0.122':
     case '0.0.123':
       break;
+    default:
+      throw new Error('File is not special');
   }
 }
 
 function encodeNodeAddressBook(content: Uint8Array) {
-  const nodeAddresses: proto.INodeAddress[] = JSON.parse(Buffer.from(content).toString());
+  const nodeAddressBook: proto.INodeAddressBook = JSON.parse(Buffer.from(content).toString());
 
-  nodeAddresses.forEach(nodeAddress => {
-    // Node Id
-    nodeAddress.nodeId = nodeAddress.nodeId ? new Long(nodeAddress.nodeId, 0, true) : null;
-
-    // Acccount Id
-    nodeAddress.nodeAccountId = nodeAddress.nodeAccountId
-      ? AccountId.fromString(nodeAddress.nodeAccountId as string)._toProtobuf()
-      : null;
-
-    // Node Cert Hash
-    if (typeof nodeAddress.nodeCertHash === 'string') {
-      nodeAddress.nodeCertHash = new Uint8Array(Buffer.from(nodeAddress.nodeCertHash, 'utf-8'));
-    }
-
-    // Service Endpoints
-    nodeAddress.serviceEndpoint?.forEach(endpoint => {
-      if (typeof endpoint.ipAddressV4 === 'string') {
-        const ipAddressV4: string = endpoint.ipAddressV4;
-        endpoint.ipAddressV4 = Uint8Array.from(ipAddressV4.split('.').map(b => Number(b)));
-        endpoint.port = endpoint.port ? Number(endpoint.port) : null;
+  if (nodeAddressBook.nodeAddress) {
+    nodeAddressBook.nodeAddress.forEach(nodeAddress => {
+      // Node Id
+      if (nodeAddress.nodeId === '0') {
+        nodeAddress.nodeId = undefined;
+      } else if (nodeAddress.nodeId) {
+        nodeAddress.nodeId = new Long(nodeAddress.nodeId, 0, true);
       }
-    });
-  });
 
-  const nodeAddressBook: proto.INodeAddressBook = {
-    nodeAddress: nodeAddresses,
-  };
+      // Acccount Id
+      nodeAddress.nodeAccountId = nodeAddress.nodeAccountId
+        ? AccountId.fromString(nodeAddress.nodeAccountId as string)._toProtobuf()
+        : null;
+
+      // Node Cert Hash
+      if (typeof nodeAddress.nodeCertHash === 'string') {
+        nodeAddress.nodeCertHash = new Uint8Array(Buffer.from(nodeAddress.nodeCertHash, 'utf-8'));
+      }
+
+      // Service Endpoints
+      nodeAddress.serviceEndpoint?.forEach(endpoint => {
+        if (typeof endpoint.ipAddressV4 === 'string') {
+          const ipAddressV4: string = endpoint.ipAddressV4;
+          endpoint.ipAddressV4 = Uint8Array.from(ipAddressV4.split('.').map(b => Number(b)));
+          endpoint.port = endpoint.port ? Number(endpoint.port) : null;
+        }
+      });
+    });
+  }
 
   const protoNodeAddressBook = proto.NodeAddressBook.create(nodeAddressBook);
   const encoded = proto.NodeAddressBook.encode(protoNodeAddressBook).finish();
