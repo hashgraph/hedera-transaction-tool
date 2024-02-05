@@ -8,31 +8,31 @@ import AppButton from '../../components/ui/AppButton.vue';
 const files = ref([
   {
     fileId: '0.0.101',
-    fileName: 'Test file 1',
+    fileName: 'Address Book',
   },
   {
     fileId: '0.0.102',
-    fileName: 'Test file 2',
+    fileName: 'Nodes Details',
   },
   {
     fileId: '0.0.111',
-    fileName: 'Test file 3',
+    fileName: 'Fee Schedules',
   },
   {
     fileId: '0.0.112',
-    fileName: 'Test file 4',
+    fileName: 'Exchange Rate Set',
   },
   {
     fileId: '0.0.121',
-    fileName: 'Test file 4',
+    fileName: 'Application Properties',
   },
   {
     fileId: '0.0.122',
-    fileName: 'Test file 5',
+    fileName: 'API Permission Properties',
   },
   {
     fileId: '0.0.123',
-    fileName: 'Test file 6',
+    fileName: 'Throttle Definitions',
   },
 ]);
 const selectedFileId = ref('0.0.101');
