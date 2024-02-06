@@ -38,7 +38,6 @@
     "electron-store": "^8.1.0",
     "electron-updater": "^6.1.7",
     "jwt-decode": "^4.0.0",
-    "long": "^5.2.3",
     "pinia": "^2.1.7",
     "vue-router": "^4.2.5",
     "vue-toast-notification": "^3.1.2"
