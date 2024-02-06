@@ -1,5 +1,12 @@
 import { proto } from '@hashgraph/proto';
-import { AccountId, ExchangeRates } from '@hashgraph/sdk';
+import {
+  AccountId,
+  ExchangeRates,
+  FeeComponents,
+  FeeData,
+  FeeSchedule,
+  FeeSchedules,
+} from '@hashgraph/sdk';
 import Long from 'long';
 
 export type HederaSpecialFileId =
@@ -58,6 +65,8 @@ export function decodeProto(fileId: HederaSpecialFileId, response: any) {
 
   if (decoded instanceof proto.NodeAddressBook) {
     return stringifyNodeAddressBook(decoded);
+  } else if (decoded instanceof proto.CurrentAndNextFeeSchedule) {
+    return stringifyCurrentAndNextFeeSchedule(decoded);
   } else if (decoded instanceof proto.ExchangeRateSet) {
     return stringifyExchangeRetSet(decoded);
   } else if (decoded instanceof proto.ServicesConfigurationList) {
@@ -104,6 +113,88 @@ function stringifyNodeAddressBook(nodeAddressBook: proto.INodeAddressBook) {
   });
 
   return JSON.stringify({ nodeAddress: nodeAddressBookFormatted }, null, 2);
+}
+
+function stringifyCurrentAndNextFeeSchedule(
+  currentAndNextFeeSchedule: proto.ICurrentAndNextFeeSchedule,
+) {
+  const feeSchedules = FeeSchedules._fromProtobuf(currentAndNextFeeSchedule);
+
+  if (feeSchedules.current) {
+    feeSchedules.current = stringifyFeeSchedule(feeSchedules.current);
+  }
+
+  if (feeSchedules.next) {
+    feeSchedules.next = stringifyFeeSchedule(feeSchedules.next);
+  }
+
+  return JSON.stringify(feeSchedules, null, 2);
+
+  function stringifyFeeSchedule(feeSchedule: FeeSchedule) {
+    // Expiration Time
+    if (feeSchedule.expirationTime) {
+      feeSchedule.expirationTime = feeSchedule?.expirationTime?.seconds.toString() as any;
+    }
+
+    feeSchedule.transactionFeeSchedule?.forEach(feeSchedule => {
+      // Fee Schedule Hedera Functionality
+      if (feeSchedule.hederaFunctionality) {
+        feeSchedule.hederaFunctionality = feeSchedule.hederaFunctionality?.toString() as any;
+      }
+
+      // Fee Schedule Fee Data
+      if (feeSchedule.feeData) {
+        feeSchedule.feeData = stringifyFeeData(feeSchedule.feeData);
+      }
+
+      // Fee Schedule Fees
+      if (feeSchedule.fees) {
+        feeSchedule.fees = feeSchedule.fees.map(fee => stringifyFeeData(fee));
+      }
+    });
+
+    return feeSchedule;
+  }
+
+  function stringifyFeeData(feeData: FeeData) {
+    // Fee Data Type
+    if (feeData.feeDataType) {
+      feeData.feeDataType = feeData.feeDataType.toString() as any;
+    }
+
+    // Fee Node Data
+    if (feeData.nodedata) {
+      feeData.nodedata = stringifyFeeComponent(feeData.nodedata);
+    }
+
+    // Fee Network Data
+    if (feeData.networkdata) {
+      feeData.networkdata = stringifyFeeComponent(feeData.networkdata);
+    }
+
+    // Fee Service Data
+    if (feeData.servicedata) {
+      feeData.servicedata = stringifyFeeComponent(feeData.servicedata);
+    }
+
+    return feeData;
+  }
+
+  function stringifyFeeComponent(feeComponent: FeeComponents) {
+    feeComponent.min = feeComponent.min.toString();
+    feeComponent.max = feeComponent.max.toString();
+    feeComponent.constant = feeComponent.constant.toString();
+    feeComponent.transactionBandwidthByte = feeComponent.transactionBandwidthByte.toString();
+    feeComponent.transactionVerification = feeComponent.transactionVerification.toString();
+    feeComponent.transactionRamByteHour = feeComponent.transactionRamByteHour.toString();
+    feeComponent.transactionStorageByteHour = feeComponent.transactionStorageByteHour.toString();
+    feeComponent.contractTransactionGas = feeComponent.contractTransactionGas.toString();
+    feeComponent.transferVolumeHbar = feeComponent.transferVolumeHbar.toString();
+    feeComponent.responseMemoryByte = feeComponent.responseMemoryByte.toString();
+    feeComponent.responseDiskByte = feeComponent.responseDiskByte.toString();
+
+    return feeComponent;
+  }
 }
 
 function stringifyExchangeRetSet(exchangeRateSet: proto.IExchangeRateSet) {
