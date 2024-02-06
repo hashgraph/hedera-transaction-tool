@@ -155,7 +155,7 @@ export function encodeHederaSpecialFile(content: Uint8Array, fileId: HederaSpeci
     case '0.0.122':
       return encodeServicesConfigurationList(content);
     case '0.0.123':
-      break;
+      return encodeThrottleDefinitions(content);
     default:
       throw new Error('File is not special');
   }
@@ -229,6 +229,44 @@ function encodeServicesConfigurationList(content: Uint8Array) {
   });
 
   const protobuffEncodedBuffer = proto.ServicesConfigurationList.encode(properties).finish();
+
+  return protobuffEncodedBuffer;
+}
+
+function encodeThrottleDefinitions(content: Uint8Array) {
+  const throttleDefinitions: proto.IThrottleDefinitions = JSON.parse(
+    Buffer.from(content).toString(),
+  );
+
+  throttleDefinitions.throttleBuckets?.forEach(throttleBucket => {
+    // Throttle Groups
+    throttleBucket.throttleGroups?.forEach(throttleGroup => {
+      // Operations
+      if (throttleGroup.operations) {
+        throttleGroup.operations = throttleGroup.operations.map(
+          operation => proto.HederaFunctionality[operation],
+        ) as any;
+      }
+
+      // Operations Per Second in ms
+      throttleGroup.milliOpsPerSec = new Long(throttleGroup.milliOpsPerSec, 0, true);
+    });
+
+    // @ts-ignore unused property
+    delete throttleBucket.burstPeriod;
+
+    // Burst Period in ms
+    if (throttleBucket.burstPeriodMs) {
+      throttleBucket.burstPeriodMs = new Long(throttleBucket.burstPeriodMs, 0, true);
+    }
+  });
+
+  const protoThrottleDefinitions = proto.ThrottleDefinitions.create(throttleDefinitions);
+
+  const protobuffEncodedBuffer =
+    proto.ThrottleDefinitions.encode(protoThrottleDefinitions).finish();
+
+  console.log(JSON.stringify(proto.ThrottleDefinitions.decode(protobuffEncodedBuffer)));
 
   return protobuffEncodedBuffer;
 }
