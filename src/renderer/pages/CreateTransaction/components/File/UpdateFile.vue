@@ -1,21 +1,26 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue';
 import { AccountId, FileUpdateTransaction, KeyList, PublicKey, Timestamp } from '@hashgraph/sdk';
 
 import useNetworkStore from '../../../../stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
+import { useRoute } from 'vue-router';
 
-import { createTransactionId } from '../../../../services/transactionService';
+import {
+  createTransactionId,
+  encodeSpecialFileContent,
+} from '../../../../services/transactionService';
+import { isHederaSpecialFileId } from '../../../../../main/shared/utils/hederaSpecialFiles';
+import { getDateTimeLocalInputValue } from '../../../../utils';
+import { isPublicKey } from '../../../../utils/validator';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppInput from '../../../../components/ui/AppInput.vue';
 import TransactionProcessor from '../../../../components/Transaction/TransactionProcessor.vue';
 import TransactionIdControls from '../../../../components/Transaction/TransactionIdControls.vue';
-import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
-
-import { getDateTimeLocalInputValue } from '@renderer/utils';
+import TransactionHeaderControls from '../../../../components/Transaction/TransactionHeaderControls.vue';
 
 /* Stores */
 const networkStore = useNetworkStore();
@@ -23,6 +28,7 @@ const networkStore = useNetworkStore();
 /* Composables */
 const toast = useToast();
 const payerData = useAccountId();
+const route = useRoute();
 
 /* State */
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
@@ -32,13 +38,13 @@ const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref(2);
 
 const fileId = ref('');
-const signatureKeyText = ref('');
 const ownerKeyText = ref('');
+const newKeyText = ref('');
 const memo = ref('');
 const expirationTimestamp = ref();
 const chunkSize = ref(2048);
-const signatureKeys = ref<string[]>([]);
 const ownerKeys = ref<string[]>([]);
+const newKeys = ref<string[]>([]);
 
 const fileMeta = ref<File | null>(null);
 const fileReader = ref<FileReader | null>(null);
@@ -51,9 +57,12 @@ const chunksAmount = ref<number | null>(null);
 const ownerKeyList = computed(
   () => new KeyList(ownerKeys.value.map(key => PublicKey.fromString(key))),
 );
+const newKeysList = computed(
+  () => new KeyList(newKeys.value.map(key => PublicKey.fromString(key))),
+);
 
 /* Misc Functions */
-const createTransaction = () => {
+const createTransaction = async () => {
   const updateTransaction = new FileUpdateTransaction()
     .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
     .setTransactionValidDuration(180)
@@ -62,7 +71,7 @@ const createTransaction = () => {
     .setFileId(fileId.value)
     .setFileMemo(memo.value);
 
-  ownerKeyList.value._keys.length > 0 && updateTransaction.setKeys(ownerKeyList.value);
+  newKeysList.value._keys.length > 0 && updateTransaction.setKeys(newKeysList.value);
 
   expirationTimestamp.value &&
     updateTransaction.setExpirationTime(Timestamp.fromDate(expirationTimestamp.value));
@@ -74,30 +83,29 @@ const createTransaction = () => {
     updateTransaction.setContents(fileBuffer.value);
   }
 
+  if (isHederaSpecialFileId(updateTransaction.fileId?.toString()) && updateTransaction.contents) {
+    const getEncodedContent = await encodeSpecialFileContent(
+      updateTransaction.contents,
+      updateTransaction.fileId.toString(),
+    );
+    updateTransaction.setContents(getEncodedContent);
+  }
   updateTransaction.freezeWith(networkStore.client);
 
   return updateTransaction;
 };
 
 /* Handlers */
-const isPublicKey = key => {
-  try {
-    return PublicKey.fromString(key);
-  } catch (error) {
-    return false;
-  }
-};
-
 const handleAddOwnerKey = () => {
   ownerKeys.value.push(ownerKeyText.value);
-  ownerKeys.value = ownerKeys.value.filter(isPublicKey);
+  ownerKeys.value = [...new Set(ownerKeys.value.filter(isPublicKey))];
   ownerKeyText.value = '';
 };
 
-const handleAddSignatureKey = () => {
-  signatureKeys.value.push(signatureKeyText.value);
-  signatureKeys.value = signatureKeys.value.filter(isPublicKey);
-  signatureKeyText.value = '';
+const handleAddNewKey = () => {
+  newKeys.value.push(newKeyText.value);
+  newKeys.value = [...new Set(newKeys.value.filter(isPublicKey))];
+  newKeyText.value = '';
 };
 
 const handleRemoveFile = async () => {
@@ -137,9 +145,9 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    transaction.value = createTransaction();
+    transaction.value = await createTransaction();
     await transactionProcessor.value?.process(
-      payerData.keysFlattened.value.concat(signatureKeys.value, ownerKeys.value),
+      payerData.keysFlattened.value.concat(newKeys.value, ownerKeys.value),
       chunkSize.value,
       1,
     );
@@ -147,6 +155,13 @@ const handleCreate = async e => {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
+
+/* Hooks */
+onMounted(async () => {
+  if (route.query.fileId) {
+    fileId.value = route.query.fileId.toString();
+  }
+});
 
 /* Watchers */
 watch(fileMeta, () => (content.value = ''));
@@ -172,42 +187,9 @@ watch(fileMeta, () => (content.value = ''));
       <AppInput v-model="fileId" :filled="true" placeholder="Enter File ID" />
     </div>
     <div class="mt-4 form-group w-75">
-      <label class="form-label">Set Signature Keys (Required)</label>
+      <label class="form-label">Signature Keys <span class="text-danger">*</span></label>
       <div class="d-flex gap-3">
-        <AppInput
-          v-model="signatureKeyText"
-          :filled="true"
-          placeholder="Enter signer public key"
-          style="max-width: 555px"
-          @keypress="e => e.code === 'Enter' && handleAddSignatureKey()"
-        />
-        <AppButton color="secondary" type="button" class="rounded-4" @click="handleAddSignatureKey"
-          >Add</AppButton
-        >
-      </div>
-    </div>
-    <div class="mt-4 w-75">
-      <template v-for="key in signatureKeys" :key="key">
-        <div class="d-flex align-items-center gap-3">
-          <AppInput :model-value="key" :filled="true" readonly style="max-width: 555px" />
-          <i
-            class="bi bi-x-lg d-inline-block cursor-pointer"
-            style="line-height: 16px"
-            @click="signatureKeys = signatureKeys.filter(k => k !== key)"
-          ></i>
-        </div>
-      </template>
-    </div>
-    <div class="form-group w-75">
-      <label class="form-label">Set Keys (Optional)</label>
-      <div class="d-flex gap-3">
-        <AppInput
-          v-model="ownerKeyText"
-          :filled="true"
-          placeholder="Enter owner public key"
-          style="max-width: 555px"
-          @keypress="e => e.code === 'Enter' && handleAddOwnerKey()"
-        />
+        <AppInput v-model="ownerKeyText" :filled="true" placeholder="Enter signer public key" />
         <AppButton color="secondary" type="button" class="rounded-4" @click="handleAddOwnerKey"
           >Add</AppButton
         >
@@ -215,18 +197,37 @@ watch(fileMeta, () => (content.value = ''));
     </div>
     <div class="mt-4 w-75">
       <template v-for="key in ownerKeys" :key="key">
-        <div class="d-flex align-items-center gap-3">
-          <AppInput type="text" readonly :filled="true" :value="key" style="max-width: 555px" />
+        <div class="d-flex align-items-center gap-3 mt-3">
+          <AppInput :model-value="key" :filled="true" readonly />
           <i
             class="bi bi-x-lg d-inline-block cursor-pointer"
-            style="line-height: 16px"
             @click="ownerKeys = ownerKeys.filter(k => k !== key)"
           ></i>
         </div>
       </template>
     </div>
+    <div class="form-group w-75">
+      <label class="form-label">Keys</label>
+      <div class="d-flex gap-3">
+        <AppInput v-model="newKeyText" :filled="true" placeholder="Enter owner public key" />
+        <AppButton color="secondary" type="button" class="rounded-4" @click="handleAddNewKey"
+          >Add</AppButton
+        >
+      </div>
+    </div>
+    <div class="mt-4 w-75">
+      <template v-for="key in newKeys" :key="key">
+        <div class="d-flex align-items-center gap-3 mt-3">
+          <AppInput type="text" readonly :filled="true" :value="key" />
+          <i
+            class="bi bi-x-lg d-inline-block cursor-pointer"
+            @click="newKeys = newKeys.filter(k => k !== key)"
+          ></i>
+        </div>
+      </template>
+    </div>
     <div class="mt-4 form-group w-50">
-      <label class="form-label">Set File Memo (Optional)</label>
+      <label class="form-label">File Memo</label>
       <AppInput
         v-model="memo"
         type="text"
@@ -236,7 +237,7 @@ watch(fileMeta, () => (content.value = ''));
       />
     </div>
     <div class="mt-4 form-group w-25">
-      <label class="form-label">Set Expiration Time (Optional)</label>
+      <label class="form-label">Expiration Time</label>
       <AppInput
         v-model="expirationTimestamp"
         type="datetime-local"
@@ -245,7 +246,7 @@ watch(fileMeta, () => (content.value = ''));
       />
     </div>
     <div class="mt-4 form-group w-25">
-      <label class="form-label">Set Chunk Size (If File is large)</label>
+      <label class="form-label">Chunk Size (If File is large)</label>
       <AppInput v-model="chunkSize" type="number" min="1024" max="6144" :filled="true" />
     </div>
     <div class="mt-4 form-group">
@@ -271,7 +272,7 @@ watch(fileMeta, () => (content.value = ''));
       </template>
     </div>
     <div class="mt-4 form-group w-75">
-      <label class="form-label">Set File Contents</label>
+      <label class="form-label">File Contents</label>
       <textarea
         v-model="content"
         :disabled="Boolean(fileBuffer)"
@@ -287,11 +288,10 @@ watch(fileMeta, () => (content.value = ''));
     :on-executed="(_result, _chunkAmount) => (chunksAmount = _chunkAmount || null)"
     :on-close-success-modal-click="
       () => {
-        payerData.accountId.value = '';
         validStart = '';
         maxTransactionFee = 2;
         fileId = '';
-        signatureKeys = [];
+        newKeys = [];
         ownerKeys = [];
         memo = '';
         expirationTimestamp = undefined;

@@ -52,6 +52,10 @@
   color: var(--#{$prefix}text-secondary-color) !important;
 }
 
+.text-code {
+  font-family: 'Courier New', Courier, monospace;
+}
+
 // Links
 .link {
   cursor: pointer;

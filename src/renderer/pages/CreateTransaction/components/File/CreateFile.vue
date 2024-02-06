@@ -10,6 +10,7 @@ import useAccountId from '../../../../composables/useAccountId';
 import { createTransactionId } from '../../../../services/transactionService';
 
 import { getDateTimeLocalInputValue } from '../../../../utils';
+import { isPublicKey } from '../../../../utils/validator';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppInput from '../../../../components/ui/AppInput.vue';
@@ -43,13 +44,7 @@ const keyList = computed(() => new KeyList(ownerKeys.value.map(key => PublicKey.
 /* Handlers */
 const handleAdd = () => {
   ownerKeys.value.push(ownerKeyText.value);
-  ownerKeys.value = ownerKeys.value.filter(key => {
-    try {
-      return PublicKey.fromString(key);
-    } catch (error) {
-      return false;
-    }
-  });
+  ownerKeys.value = [...new Set(ownerKeys.value.filter(isPublicKey))];
   ownerKeyText.value = '';
 };
 
@@ -106,13 +101,12 @@ const handleCreate = async e => {
     <hr class="separator my-6" />
 
     <div class="mt-4 form-group w-75">
-      <label class="form-label">Set Keys (Required)</label>
+      <label class="form-label">Keys <span class="text-danger">*</span></label>
       <div class="d-flex gap-3">
         <AppInput
           v-model="ownerKeyText"
           :filled="true"
           placeholder="Enter owner public key"
-          style="max-width: 555px"
           @keypress="e => e.code === 'Enter' && handleAdd()"
         />
         <AppButton color="secondary" type="button" class="rounded-4" @click="handleAdd"
@@ -122,18 +116,17 @@ const handleCreate = async e => {
     </div>
     <div class="mt-4 w-75">
       <template v-for="key in ownerKeys" :key="key">
-        <div class="d-flex align-items-center gap-3">
-          <AppInput readonly :filled="true" :value="key" style="max-width: 555px" />
+        <div class="d-flex align-items-center gap-3 mt-3">
+          <AppInput readonly :filled="true" :value="key" />
           <i
             class="bi bi-x-lg d-inline-block cursor-pointer"
-            style="line-height: 16px"
             @click="ownerKeys = ownerKeys.filter(k => k !== key)"
           ></i>
         </div>
       </template>
     </div>
     <!-- <div class="mt-4 form-group w-50">
-        <label class="form-label">Set File Memo (Optional)</label>
+        <label class="form-label">File Memo (Optional)</label>
         <AppInput
           v-model="memo"
           type="text"
@@ -143,7 +136,7 @@ const handleCreate = async e => {
         />
       </div> -->
     <!-- <div class="mt-4 form-group w-25">
-        <label class="form-label">Set Expiration Time (Optional)</label>
+        <label class="form-label">Expiration Time (Optional)</label>
         <AppInput
           v-model="expirationTimestamp"
           type="datetime-local"
@@ -165,7 +158,7 @@ const handleCreate = async e => {
         />
       </div> -->
     <div class="mt-4 form-group w-75">
-      <label class="form-label">Set File Contents</label>
+      <label class="form-label">File Contents</label>
       <textarea v-model="content" class="form-control is-fill" rows="10"></textarea>
     </div>
   </form>

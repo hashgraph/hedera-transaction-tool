@@ -8,14 +8,14 @@ import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
 
 import { createTransactionId } from '../../../../services/transactionService';
+import { getDateTimeLocalInputValue } from '../../../../utils';
+import { isPublicKey } from '../../../../utils/validator';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppInput from '../../../../components/ui/AppInput.vue';
 import TransactionProcessor from '../../../../components/Transaction/TransactionProcessor.vue';
 import TransactionIdControls from '../../../../components/Transaction/TransactionIdControls.vue';
-import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
-
-import { getDateTimeLocalInputValue } from '@renderer/utils';
+import TransactionHeaderControls from '../../../../components/Transaction/TransactionHeaderControls.vue';
 
 /* Stores */
 const networkStore = useNetworkStore();
@@ -66,13 +66,7 @@ const createTransaction = () => {
 
 const handleAddSignatureKey = () => {
   signatureKeys.value.push(signatureKeyText.value);
-  signatureKeys.value = signatureKeys.value.filter(key => {
-    try {
-      return PublicKey.fromString(key);
-    } catch (error) {
-      return false;
-    }
-  });
+  signatureKeys.value = signatureKeys.value.filter(isPublicKey);
   signatureKeyText.value = '';
 };
 
@@ -148,13 +142,12 @@ watch(fileMeta, () => (content.value = ''));
       <AppInput v-model="fileId" :filled="true" placeholder="Enter File ID" />
     </div>
     <div class="mt-4 form-group w-75">
-      <label class="form-label">Set Signature Keys (Required)</label>
+      <label class="form-label">Signature Keys <span class="text-danger">*</span></label>
       <div class="d-flex gap-3">
         <AppInput
           v-model="signatureKeyText"
           :filled="true"
           placeholder="Enter signer public key"
-          style="max-width: 555px"
           @keypress="e => e.code === 'Enter' && handleAddSignatureKey()"
         />
         <AppButton color="secondary" type="button" class="rounded-4" @click="handleAddSignatureKey"
@@ -164,18 +157,17 @@ watch(fileMeta, () => (content.value = ''));
     </div>
     <div class="mt-4 w-75">
       <template v-for="key in signatureKeys" :key="key">
-        <div class="d-flex align-items-center gap-3">
-          <AppInput :model-value="key" :filled="true" readonly style="max-width: 555px" />
+        <div class="d-flex align-items-center gap-3 mt-3">
+          <AppInput :model-value="key" :filled="true" readonly />
           <i
             class="bi bi-x-lg d-inline-block cursor-pointer"
-            style="line-height: 16px"
             @click="signatureKeys = signatureKeys.filter(k => k !== key)"
           ></i>
         </div>
       </template>
     </div>
     <div class="mt-4 form-group w-25">
-      <label class="form-label">Set Chunk Size</label>
+      <label class="form-label">Chunk Size</label>
       <AppInput v-model="chunkSize" :filled="true" type="number" min="1024" max="6144" />
     </div>
     <div class="mt-4 form-group">
@@ -202,7 +194,7 @@ watch(fileMeta, () => (content.value = ''));
       </template>
     </div>
     <div class="mt-4 form-group w-75">
-      <label class="form-label">Set File Contents</label>
+      <label class="form-label">File Contents</label>
       <textarea
         v-model="content"
         :disabled="Boolean(fileBuffer)"

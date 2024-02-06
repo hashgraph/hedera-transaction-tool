@@ -51,17 +51,18 @@ export const getTransactionSignatures = async (
     await Promise.all(
       keyPairs.map(async keyPair => {
         const privateKeyString = await decryptPrivateKey(userId, password, keyPair.public_key);
+        const startsWithHex = privateKeyString.startsWith('0x');
 
         const keyType = PublicKey.fromString(keyPair.public_key);
 
         const privateKey =
           keyType._key._type === 'secp256k1'
-            ? PrivateKey.fromStringECDSA(privateKeyString)
+            ? PrivateKey.fromStringECDSA(`${startsWithHex ? '' : '0x'}${privateKeyString}`)
             : PrivateKey.fromStringED25519(privateKeyString);
         const signature = privateKey.signTransaction(transaction);
 
         if (!publicKeys.includes(keyPair.public_key)) {
-          signatures.push({ publicKey: PublicKey.fromString(keyPair.public_key), signature });
+          signatures.push({ publicKey: privateKey.publicKey, signature });
           publicKeys.push(keyPair.public_key);
         }
       }),
@@ -122,5 +123,13 @@ export const getTransactions = async (user_id: string) => {
     return await window.electronAPI.transactions.getTransactions(user_id);
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Getting transactions Failed'));
+  }
+};
+
+export const encodeSpecialFileContent = async (content: Uint8Array, fileId: string) => {
+  try {
+    return await window.electronAPI.transactions.encodeSpecialFile(content, fileId);
+  } catch (err: any) {
+    throw Error(getMessageFromIPCError(err, 'Failed to encode special file'));
   }
 };

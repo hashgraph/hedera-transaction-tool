@@ -9,10 +9,12 @@ import useAccountId from '../../../../composables/useAccountId';
 
 import { createTransactionId } from '../../../../services/transactionService';
 
-import TransactionProcessor from '../../../../components/Transaction/TransactionProcessor.vue';
 import AppButton from '../../../../components/ui/AppButton.vue';
-import KeyStructureModal from '../../../../components/KeyStructureModal.vue';
 import AppInput from '../../../../components/ui/AppInput.vue';
+import TransactionProcessor from '../../../../components/Transaction/TransactionProcessor.vue';
+import TransactionHeaderControls from '../../../../components/Transaction/TransactionHeaderControls.vue';
+import TransactionIdControls from '../../../../components/Transaction/TransactionIdControls.vue';
+import KeyStructureModal from '../../../../components/KeyStructureModal.vue';
 
 /* Stores */
 const networkStore = useNetworkStore();
@@ -28,7 +30,7 @@ const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<AccountAllowanceApproveTransaction | null>(null);
 const validStart = ref('');
-const maxTransactionfee = ref(2);
+const maxTransactionFee = ref(2);
 
 const amount = ref(0);
 const keyStructureComponentKey = ref<Key | null>(null);
@@ -47,7 +49,7 @@ const handleCreate = async e => {
     transaction.value = new AccountAllowanceApproveTransaction()
       .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
       .setTransactionValidDuration(180)
-      .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
+      .setMaxTransactionFee(new Hbar(maxTransactionFee.value))
       .setNodeAccountIds([new AccountId(3)])
       .approveHbarAllowance(
         ownerData.accountId.value,
@@ -65,48 +67,25 @@ const handleCreate = async e => {
 </script>
 <template>
   <form @submit="handleCreate">
-    <div class="d-flex justify-content-between align-items-center">
-      <h2 class="text-title text-bold">Approve Hbar Allowance Transaction</h2>
+    <TransactionHeaderControls
+      heading-text="Approve Hbar Allowance Transaction"
+      :create-requirements="
+        !payerData.isValid.value ||
+        !ownerData.isValid.value ||
+        !spenderData.isValid.value ||
+        amount < 0
+      "
+    />
 
-      <div class="d-flex justify-content-end align-items-center">
-        <AppButton
-          color="primary"
-          type="submit"
-          :disabled="
-            !payerData.isValid.value ||
-            !ownerData.isValid.value ||
-            !spenderData.isValid.value ||
-            amount < 0
-          "
-          >Sign & Submit</AppButton
-        >
-      </div>
-    </div>
+    <TransactionIdControls
+      v-model:payer-id="payerData.accountId.value"
+      v-model:valid-start="validStart"
+      v-model:max-transaction-fee="maxTransactionFee"
+      class="mt-6"
+    />
 
-    <div class="mt-4 d-flex flex-wrap gap-5">
-      <div class="form-group col-4">
-        <label class="form-label">Set Payer ID (Required)</label>
-        <label v-if="payerData.isValid.value" class="form-label text-secondary ms-3"
-          >Balance: {{ payerData.accountInfo.value?.balance }}</label
-        >
-        <AppInput
-          :model-value="payerData.accountIdFormatted.value"
-          @update:model-value="v => (payerData.accountId.value = v)"
-          :filled="true"
-          placeholder="Enter Payer ID"
-        />
-      </div>
-      <div class="form-group">
-        <label class="form-label">Set Valid Start Time (Required)</label>
-        <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">Set Max Transaction Fee (Optional)</label>
-        <AppInput v-model="maxTransactionfee" type="number" min="0" :filled="true" />
-      </div>
-    </div>
     <div class="mt-4 form-group">
-      <label class="form-label">Set Owner ID</label>
+      <label class="form-label">Owner ID <span class="text-danger">*</span></label>
       <label
         v-if="ownerData.isValid.value"
         class="form-label text-secondary border-start border-1 ms-2 ps-2"
@@ -132,7 +111,7 @@ const handleCreate = async e => {
       >
     </div>
     <div class="mt-4 form-group">
-      <label class="form-label">Set Spender ID</label>
+      <label class="form-label">Spender ID <span class="text-danger">*</span></label>
       <label
         v-if="spenderData.isValid.value"
         class="form-label text-secondary border-start border-1 ms-2 ps-2"
@@ -158,7 +137,7 @@ const handleCreate = async e => {
       >
     </div>
     <div class="mt-4 form-group">
-      <label class="form-label">Amount</label>
+      <label class="form-label">Amount <span class="text-danger">*</span></label>
       <AppInput v-model="amount" :filled="true" type="number" placeholder="Enter Amount" />
     </div>
   </form>
@@ -170,7 +149,7 @@ const handleCreate = async e => {
       () => {
         payerData.accountId.value = '';
         validStart = '';
-        maxTransactionfee = 2;
+        maxTransactionFee = 2;
         ownerData.accountId.value = '';
         spenderData.accountId.value = '';
         amount = 0;

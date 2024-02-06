@@ -28,7 +28,13 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
       throw Error('Please login to get stored keys!');
     }
 
-    keyPairs.value = await keyPairService.getKeyPairs(user.data.id);
+    keyPairs.value = (await keyPairService.getKeyPairs(user.data.id)).sort((k1, k2) => {
+      if (k1.index < 0) {
+        return 1;
+      } else {
+        return k1.index - k2.index;
+      }
+    });
 
     for (let i = 0; i < keyPairs.value.length; i++) {
       const keyPair = keyPairs.value[i];

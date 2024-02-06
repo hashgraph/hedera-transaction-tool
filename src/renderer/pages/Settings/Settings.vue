@@ -22,7 +22,7 @@ const toast = useToast();
 /* Misc */
 const tabItems: TabItem[] = [
   { title: 'General' },
-  { title: 'Work Groups' },
+  // { title: 'Work Groups' },
   { title: 'Keys' },
   { title: 'Account' },
 ];

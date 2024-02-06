@@ -30,7 +30,7 @@ watch(accountData.isValid, isValid => {
   </div>
   <div class="mt-4">
     <div class="mt-4 w-50 form-group">
-      <label class="form-label">Set Account ID (Required)</label>
+      <label class="form-label">Account ID <span class="text-danger">*</span></label>
       <AppInput
         :model-value="accountData.accountIdFormatted.value"
         @update:model-value="v => (accountData.accountId.value = v)"
@@ -80,7 +80,9 @@ watch(accountData.isValid, isValid => {
               {{
                 accountData.accountInfo.value?.createdTimestamp
                   ? new Date(
-                      accountData.accountInfo.value?.createdTimestamp.seconds * 1000,
+                      accountData.accountInfo.value?.createdTimestamp.seconds
+                        .multiply(1000)
+                        .toNumber(),
                     ).toDateString()
                   : 'None'
               }}
@@ -92,7 +94,9 @@ watch(accountData.isValid, isValid => {
               {{
                 accountData.accountInfo.value?.expiryTimestamp
                   ? new Date(
-                      accountData.accountInfo.value?.expiryTimestamp.seconds * 1000,
+                      accountData.accountInfo.value?.expiryTimestamp.seconds
+                        .multiply(1000)
+                        .toNumber(),
                     ).toDateString()
                   : 'None'
               }}

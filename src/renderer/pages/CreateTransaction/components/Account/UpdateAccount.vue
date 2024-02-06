@@ -11,6 +11,7 @@ import useAccountId from '../../../../composables/useAccountId';
 import { createTransactionId } from '../../../../services/transactionService';
 
 import { getDateTimeLocalInputValue } from '../../../../utils';
+import { isPublicKey } from '../../../../utils/validator';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppSwitch from '../../../../components/ui/AppSwitch.vue';
@@ -64,13 +65,7 @@ const newOwnerKeyList = computed(
 /* Handlers */
 const handleAdd = () => {
   newOwnerKeys.value.push(newOwnerKeyText.value);
-  newOwnerKeys.value = newOwnerKeys.value.filter(key => {
-    try {
-      return PublicKey.fromString(key);
-    } catch (error) {
-      return false;
-    }
-  });
+  newOwnerKeys.value = [...new Set(newOwnerKeys.value.filter(isPublicKey))];
   newOwnerKeyText.value = '';
 };
 

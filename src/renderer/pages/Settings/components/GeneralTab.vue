@@ -54,7 +54,6 @@ onMounted(() => {
       <div class="mt-4 btn-group">
         <AppButton
           color="primary"
-          disabled
           :class="{ active: networkStore.network === 'mainnet' }"
           @click="
             networkStore.setNetwork('mainnet');

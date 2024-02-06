@@ -232,8 +232,8 @@ async function process(
 
   function checkIfFileTransaction() {
     if (
-      transaction.value! instanceof FileUpdateTransaction ||
-      transaction.value! instanceof FileAppendTransaction
+      transaction.value instanceof FileUpdateTransaction ||
+      transaction.value instanceof FileAppendTransaction
     ) {
       const sizeWithoutSignatures = transaction.value!.toBytes().length;
       const estimatedTransactionSize = sizeWithoutSignatures + estimatedSignaturesSize;
@@ -322,7 +322,7 @@ async function chunkFileTransactionForOrganization(
     const updateTransaction = new FileUpdateTransaction()
       .setTransactionId(transaction.transactionId!)
       .setTransactionValidDuration(180)
-      .setMaxTransactionFee(transaction.maxTransactionFee)
+      .setMaxTransactionFee(transaction.maxTransactionFee?.toString() || 2)
       .setNodeAccountIds(transaction.nodeAccountIds!)
       .setFileId(transaction.fileId!)
       .setContents(chunks[0]);
@@ -348,7 +348,7 @@ async function chunkFileTransactionForOrganization(
     const appendTransaction = new FileAppendTransaction()
       .setTransactionId(transactionId)
       .setTransactionValidDuration(180)
-      .setMaxTransactionFee(transaction.maxTransactionFee)
+      .setMaxTransactionFee(transaction.maxTransactionFee?.toString() || 2)
       .setNodeAccountIds(transaction.nodeAccountIds!)
       .setFileId(transaction.fileId!)
       .setContents(chunks[i])
@@ -393,7 +393,7 @@ async function executeFileTransactions(
         tx = new FileUpdateTransaction()
           .setTransactionId(createTransactionId(transaction.transactionId!.accountId!, new Date()))
           .setTransactionValidDuration(180)
-          .setMaxTransactionFee(transaction.maxTransactionFee)
+          .setMaxTransactionFee(transaction.maxTransactionFee?.toString() || 2)
           .setNodeAccountIds(transaction.nodeAccountIds!)
           .setFileId(transaction.fileId!)
           .setContents(chunks[0]);
@@ -406,7 +406,7 @@ async function executeFileTransactions(
         tx = new FileAppendTransaction()
           .setTransactionId(createTransactionId(transaction.transactionId!.accountId!, new Date()))
           .setTransactionValidDuration(180)
-          .setMaxTransactionFee(transaction.maxTransactionFee)
+          .setMaxTransactionFee(transaction.maxTransactionFee?.toString() || 2)
           .setNodeAccountIds(transaction.nodeAccountIds!)
           .setFileId(transaction.fileId!)
           .setContents(chunks[i])
