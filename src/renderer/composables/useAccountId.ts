@@ -29,11 +29,15 @@ export default function useAccountId() {
     isValid.value ? AccountId.fromString(accountId.value).toString() : accountId.value,
   );
 
-  const accoundIdWithChecksum = computed(() =>
-    isValid.value
-      ? accountInfo.value?.accountId.toStringWithChecksum(networkStore.client).split('-')
-      : accountIdFormatted.value,
-  );
+  const accoundIdWithChecksum = computed(() => {
+    try {
+      return isValid.value
+        ? accountInfo.value?.accountId.toStringWithChecksum(networkStore.client).split('-')
+        : accountIdFormatted.value;
+    } catch (error) {
+      return accountIdFormatted.value;
+    }
+  });
 
   const autoRenewPeriodInDays = computed(() =>
     ((accountInfo.value?.autoRenewPeriod || 0) / 86400).toFixed(0),
