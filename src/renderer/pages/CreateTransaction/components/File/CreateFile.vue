@@ -106,7 +106,7 @@ const handleCreate = async e => {
     <hr class="separator my-6" />
 
     <div class="mt-4 form-group w-75">
-      <label class="form-label">Set Keys (Required)</label>
+      <label class="form-label">Keys <span class="text-danger">*</span></label>
       <div class="d-flex gap-3">
         <AppInput
           v-model="ownerKeyText"
@@ -133,7 +133,7 @@ const handleCreate = async e => {
       </template>
     </div>
     <!-- <div class="mt-4 form-group w-50">
-        <label class="form-label">Set File Memo (Optional)</label>
+        <label class="form-label">File Memo (Optional)</label>
         <AppInput
           v-model="memo"
           type="text"
@@ -143,7 +143,7 @@ const handleCreate = async e => {
         />
       </div> -->
     <!-- <div class="mt-4 form-group w-25">
-        <label class="form-label">Set Expiration Time (Optional)</label>
+        <label class="form-label">Expiration Time (Optional)</label>
         <AppInput
           v-model="expirationTimestamp"
           type="datetime-local"
@@ -165,7 +165,7 @@ const handleCreate = async e => {
         />
       </div> -->
     <div class="mt-4 form-group w-75">
-      <label class="form-label">Set File Contents</label>
+      <label class="form-label">File Contents</label>
       <textarea v-model="content" class="form-control is-fill" rows="10"></textarea>
     </div>
   </form>
