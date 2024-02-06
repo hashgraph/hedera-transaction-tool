@@ -156,8 +156,9 @@ export const getKeyListLevels = (keyList: KeyList) => {
   return maxLevel + 1;
 };
 
-export const generateECDSAKeyPairFromString = (
-  ecdsaPrivateKey: string,
+export const generateExternalKeyPairFromString = (
+  privateKey: string,
+  type: 'ECDSA' | 'ED25519',
   nickname: string,
   index?: number,
 ): {
@@ -167,16 +168,22 @@ export const generateECDSAKeyPairFromString = (
   nickname: string | null;
 } => {
   try {
-    const privateKey = PrivateKey.fromStringECDSA(ecdsaPrivateKey);
+    let privateKeyInstance;
+    if (type === 'ECDSA') {
+      privateKeyInstance = PrivateKey.fromStringECDSA(privateKey);
+    } else if (type === 'ED25519') {
+      privateKeyInstance = PrivateKey.fromStringED25519(privateKey);
+    }
 
     return {
       nickname,
-      private_key: privateKey.toStringRaw(),
-      public_key: privateKey.publicKey.toStringRaw(),
+      private_key: privateKeyInstance.toStringRaw(),
+      public_key: privateKeyInstance.publicKey.toStringRaw(),
       index: index || -1,
     };
   } catch (error) {
-    throw new Error('Invalid ECDSA Private key');
+    console.log(error);
+    throw new Error(`Invalid ${type} Private key`);
   }
 };
 
