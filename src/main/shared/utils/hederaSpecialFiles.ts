@@ -102,12 +102,12 @@ function stringifyNodeAddressBook(nodeAddressBook: proto.INodeAddressBook) {
 
       // Node Account ID
       if (nodeAddress.nodeId) {
-        nodeAddress.nodeId = nodeAddress.nodeId.toString();
+        nodeAddress.nodeId = nodeAddress.nodeId.toString() as any;
       }
 
       // Node Account ID
       if (nodeAddress.stake) {
-        nodeAddress.stake = nodeAddress.stake.toString();
+        nodeAddress.stake = nodeAddress.stake.toString() as any;
       }
     }
   });
@@ -224,11 +224,15 @@ function stringifyThrottleDefinitions(throttleDefinitions: proto.IThrottleDefini
       }
 
       // Operations Per Second in ms
-      throttleGroup.milliOpsPerSec = throttleGroup.milliOpsPerSec.toString();
+      if (throttleGroup.milliOpsPerSec) {
+        throttleGroup.milliOpsPerSec = throttleGroup.milliOpsPerSec.toString() as any;
+      }
     });
 
     // Burst Period in ms
-    throttleBucket.burstPeriodMs = throttleBucket.burstPeriodMs.toString();
+    if (throttleBucket.burstPeriodMs) {
+      throttleBucket.burstPeriodMs = throttleBucket.burstPeriodMs.toString() as any;
+    }
   });
 
   return JSON.stringify(throttleDefinitions, null, 2);
@@ -259,10 +263,10 @@ function encodeNodeAddressBook(content: Uint8Array) {
   if (nodeAddressBook.nodeAddress) {
     nodeAddressBook.nodeAddress.forEach(nodeAddress => {
       // Node Id
-      if (nodeAddress.nodeId === '0') {
+      if ((nodeAddress.nodeId as any) === '0') {
         nodeAddress.nodeId = undefined;
       } else if (nodeAddress.nodeId) {
-        nodeAddress.nodeId = new Long(nodeAddress.nodeId, 0, false);
+        nodeAddress.nodeId = Long.fromString(nodeAddress.nodeId.toString(), false);
       }
 
       // Acccount Id
@@ -340,8 +344,13 @@ function encodeThrottleDefinitions(content: Uint8Array) {
         ) as any;
       }
 
-      // Operations Per Second in ms
-      throttleGroup.milliOpsPerSec = new Long(throttleGroup.milliOpsPerSec, 0, false);
+      if (throttleGroup.milliOpsPerSec) {
+        // Operations Per Second in ms
+        throttleGroup.milliOpsPerSec = Long.fromString(
+          throttleGroup.milliOpsPerSec.toString(),
+          false,
+        );
+      }
     });
 
     // @ts-ignore unused property
@@ -349,7 +358,10 @@ function encodeThrottleDefinitions(content: Uint8Array) {
 
     // Burst Period in ms
     if (throttleBucket.burstPeriodMs) {
-      throttleBucket.burstPeriodMs = new Long(throttleBucket.burstPeriodMs, 0, false);
+      throttleBucket.burstPeriodMs = Long.fromString(
+        throttleBucket.burstPeriodMs.toString(),
+        false,
+      );
     }
   });
 
@@ -357,8 +369,6 @@ function encodeThrottleDefinitions(content: Uint8Array) {
 
   const protobuffEncodedBuffer =
     proto.ThrottleDefinitions.encode(protoThrottleDefinitions).finish();
-
-  console.log(JSON.stringify(proto.ThrottleDefinitions.decode(protobuffEncodedBuffer)));
 
   return protobuffEncodedBuffer;
 }
@@ -404,8 +414,11 @@ function encodeCurrentAndNextFeeSchedules(content: Uint8Array) {
       }
     });
 
-    feeSchedule.expiryTime = proto.TimestampSeconds.create({ seconds: feeSchedule.expiryTime });
-
+    if (feeSchedule.expiryTime) {
+      feeSchedule.expiryTime = proto.TimestampSeconds.create({
+        seconds: feeSchedule.expiryTime as any,
+      });
+    }
     return feeSchedule;
   }
 
@@ -430,37 +443,37 @@ function encodeCurrentAndNextFeeSchedules(content: Uint8Array) {
 
   function formatFeeComponents(feeComponents: proto.IFeeComponents) {
     if (feeComponents.min) {
-      feeComponents.min = new Long(feeComponents.min, 0, false);
+      feeComponents.min = Long.fromString(feeComponents.min.toString(), false);
     }
     if (feeComponents.max) {
-      feeComponents.max = new Long(feeComponents.max, 0, false);
+      feeComponents.max = Long.fromString(feeComponents.max.toString(), false);
     }
     if (feeComponents.constant) {
-      feeComponents.constant = new Long(feeComponents.constant, 0, false);
+      feeComponents.constant = Long.fromString(feeComponents.constant.toString(), false);
     }
     if (feeComponents.bpt) {
-      feeComponents.bpt = new Long(feeComponents.bpt, 0, false);
+      feeComponents.bpt = Long.fromString(feeComponents.bpt.toString(), false);
     }
     if (feeComponents.vpt) {
-      feeComponents.vpt = new Long(feeComponents.vpt, 0, false);
+      feeComponents.vpt = Long.fromString(feeComponents.vpt.toString(), false);
     }
     if (feeComponents.rbh) {
-      feeComponents.rbh = new Long(feeComponents.rbh, 0, false);
+      feeComponents.rbh = Long.fromString(feeComponents.rbh.toString(), false);
     }
     if (feeComponents.sbh) {
-      feeComponents.sbh = new Long(feeComponents.sbh, 0, false);
+      feeComponents.sbh = Long.fromString(feeComponents.sbh.toString(), false);
     }
     if (feeComponents.gas) {
-      feeComponents.gas = new Long(feeComponents.gas, 0, false);
+      feeComponents.gas = Long.fromString(feeComponents.gas.toString(), false);
     }
     if (feeComponents.tv) {
-      feeComponents.tv = new Long(feeComponents.tv, 0, false);
+      feeComponents.tv = Long.fromString(feeComponents.tv.toString(), false);
     }
     if (feeComponents.bpr) {
-      feeComponents.bpr = new Long(feeComponents.bpr, 0, false);
+      feeComponents.bpr = Long.fromString(feeComponents.bpr.toString(), false);
     }
     if (feeComponents.sbpr) {
-      feeComponents.sbpr = new Long(feeComponents.sbpr, 0, false);
+      feeComponents.sbpr = Long.fromString(feeComponents.sbpr.toString(), false);
     }
 
     return feeComponents;
