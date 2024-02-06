@@ -10,7 +10,7 @@ import { useToast } from 'vue-toast-notification';
 
 import {
   decryptPrivateKey,
-  generateECDSAKeyPairFromString,
+  generateExternalKeyPairFromString,
 } from '../../../services/keyPairService';
 import { comparePasswords } from '../../../services/userService';
 
@@ -28,10 +28,14 @@ const toast = useToast();
 /* State */
 const isDecryptedModalShown = ref(false);
 const isImportECDSAKeyModalShown = ref(false);
+const isImportED25519KeyModalShown = ref(false);
 const decryptedKey = ref('');
 const publicKeysPrivateKeyToDecrypt = ref('');
 const userPassword = ref('');
 const ecdsaKey = reactive<{ privateKey: string; nickname?: string }>({
+  privateKey: '',
+});
+const ed25519Key = reactive<{ privateKey: string; nickname?: string }>({
   privateKey: '',
 });
 
@@ -66,7 +70,11 @@ const handleImportExternalKey = async e => {
     const keyPair: KeyPair = {
       id: '',
       user_id: user.data.id,
-      ...generateECDSAKeyPairFromString(ecdsaKey.privateKey || '', ecdsaKey.nickname || ''),
+      ...generateExternalKeyPairFromString(
+        ecdsaKey.privateKey || '',
+        'ECDSA',
+        ecdsaKey.nickname || '',
+      ),
       organization_id: null,
       secret_hash: null,
     };
@@ -89,6 +97,41 @@ const handleImportExternalKey = async e => {
   }
 };
 
+const handleImportExternalED25519Key = async e => {
+  e.preventDefault();
+
+  try {
+    const keyPair: KeyPair = {
+      id: '',
+      user_id: user.data.id,
+      ...generateExternalKeyPairFromString(
+        ed25519Key.privateKey || '',
+        'ED25519',
+        ed25519Key.nickname || '',
+      ),
+      organization_id: null,
+      secret_hash: null,
+    };
+
+    if (keyPairsStore.keyPairs.find(kp => kp.public_key === keyPair.public_key)) {
+      throw new Error('Key pair already exists');
+    }
+
+    if (!(await comparePasswords(user.data.id, userPassword.value))) {
+      throw new Error('Incorrect password');
+    }
+
+    await keyPairsStore.storeKeyPair(keyPair, userPassword.value);
+
+    isImportED25519KeyModalShown.value = false;
+
+    toast.success('ED25519 private key imported successfully', { position: 'bottom-right' });
+  } catch (err: any) {
+    toast.error(err.message || 'Failed to import ED25519 private key', {
+      position: 'bottom-right',
+    });
+  }
+};
 /* Hooks */
 onMounted(() => {
   keyPairsStore.refetch();
@@ -114,6 +157,9 @@ watch(isImportECDSAKeyModalShown, () => {
       <RouterLink class="btn btn-primary mb-4" :to="{ name: 'restoreKey' }">Restore key</RouterLink>
       <AppButton class="btn btn-primary mb-4" @click="isImportECDSAKeyModalShown = true"
         >Import ECDSA Key</AppButton
+      >
+      <AppButton class="btn btn-primary mb-4" @click="isImportED25519KeyModalShown = true"
+        >Import ED25519 Key</AppButton
       >
     </div>
     <div
@@ -249,6 +295,49 @@ watch(isImportECDSAKeyModalShown, () => {
               size="small"
               name="private-key"
               placeholder="Type ECDSA Private key"
+            />
+          </div>
+          <div class="d-grid mt-5">
+            <AppButton type="submit" color="primary">Import</AppButton>
+          </div>
+        </form>
+      </div>
+    </AppModal>
+    <AppModal v-model:show="isImportED25519KeyModalShown" class="common-modal">
+      <div class="p-5">
+        <i class="bi bi-x-lg cursor-pointer" @click="isImportED25519KeyModalShown = false"></i>
+        <div class="text-center mt-5">
+          <i class="bi bi-key large-icon"></i>
+        </div>
+        <form @submit="handleImportExternalED25519Key">
+          <div class="form-group mt-4">
+            <label class="form-label">Enter your password</label>
+            <AppInput
+              v-model="userPassword"
+              type="password"
+              :filled="true"
+              size="small"
+              placeholder="Type your password"
+            />
+          </div>
+          <div class="form-group mt-4">
+            <label class="form-label">Enter nickname (optional)</label>
+            <AppInput
+              v-model="ed25519Key.nickname"
+              :filled="true"
+              size="small"
+              name="nickname"
+              placeholder="Type nickname"
+            />
+          </div>
+          <div class="form-group mt-4">
+            <label class="form-label">Enter ED25519 Private key</label>
+            <AppInput
+              v-model="ed25519Key.privateKey"
+              :filled="true"
+              size="small"
+              name="private-key"
+              placeholder="Type ED25519 Private key"
             />
           </div>
           <div class="d-grid mt-5">
