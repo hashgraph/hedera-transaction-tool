@@ -62,6 +62,8 @@ export function decodeProto(fileId: HederaSpecialFileId, response: any) {
     return stringifyExchangeRetSet(decoded);
   } else if (decoded instanceof proto.ServicesConfigurationList) {
     return stringifyServicesConfigurationList(decoded);
+  } else if (decoded instanceof proto.ThrottleDefinitions) {
+    return stringifyThrottleDefinitions(decoded);
   }
 
   return JSON.stringify(decoded, null, 2);
@@ -116,6 +118,29 @@ function stringifyServicesConfigurationList(
     nv => `${nv.name}=${nv.value}${nv.data && nv.data.length > 0 ? ` data=${nv.data}` : ''}`,
   );
   return nameValues?.join('\n');
+}
+
+function stringifyThrottleDefinitions(throttleDefinitions: proto.IThrottleDefinitions) {
+  // Throttle Bucket
+  throttleDefinitions.throttleBuckets?.forEach(throttleBucket => {
+    // Throttle Groups
+    throttleBucket.throttleGroups?.forEach(throttleGroup => {
+      // Operations
+      if (throttleGroup.operations) {
+        throttleGroup.operations = throttleGroup.operations.map(
+          operation => proto.HederaFunctionality[operation],
+        ) as any;
+      }
+
+      // Operations Per Second in ms
+      throttleGroup.milliOpsPerSec = throttleGroup.milliOpsPerSec.toString();
+    });
+
+    // Burst Period in ms
+    throttleBucket.burstPeriodMs = throttleBucket.burstPeriodMs.toString();
+  });
+
+  return JSON.stringify(throttleDefinitions, null, 2);
 }
 
 export function encodeHederaSpecialFile(content: Uint8Array, fileId: HederaSpecialFileId) {
