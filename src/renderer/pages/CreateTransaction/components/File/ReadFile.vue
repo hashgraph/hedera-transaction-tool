@@ -49,7 +49,7 @@ const handleRead = async e => {
     isLoading.value = true;
 
     const publicKey = keyPairsStore.accoundIds.find(acc =>
-      acc.accountIds.includes(payerData.accountId.value),
+      acc.accountIds.includes(payerData.accountIdFormatted.value),
     )?.publicKey;
 
     const privateKey = await decryptPrivateKey(user.data.id, userPassword.value, publicKey || '');
