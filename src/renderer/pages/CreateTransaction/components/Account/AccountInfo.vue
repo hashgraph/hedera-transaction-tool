@@ -80,7 +80,9 @@ watch(accountData.isValid, isValid => {
               {{
                 accountData.accountInfo.value?.createdTimestamp
                   ? new Date(
-                      accountData.accountInfo.value?.createdTimestamp.seconds * 1000,
+                      accountData.accountInfo.value?.createdTimestamp.seconds
+                        .multiply(1000)
+                        .toNumber(),
                     ).toDateString()
                   : 'None'
               }}
@@ -92,7 +94,9 @@ watch(accountData.isValid, isValid => {
               {{
                 accountData.accountInfo.value?.expiryTimestamp
                   ? new Date(
-                      accountData.accountInfo.value?.expiryTimestamp.seconds * 1000,
+                      accountData.accountInfo.value?.expiryTimestamp.seconds
+                        .multiply(1000)
+                        .toNumber(),
                     ).toDateString()
                   : 'None'
               }}

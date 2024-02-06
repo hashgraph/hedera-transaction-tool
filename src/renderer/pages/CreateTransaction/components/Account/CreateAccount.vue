@@ -90,7 +90,7 @@ const handleCreate = async e => {
     accountData.stakedAccountId &&
       transaction.value.setStakedAccountId(AccountId.fromString(accountData.stakedAccountId));
     Number(accountData.stakedNodeId) > 0 &&
-      transaction.value.setStakedNodeId(accountData.stakedNodeId);
+      transaction.value.setStakedNodeId(Number(accountData.stakedNodeId));
 
     transaction.value.freezeWith(networkStore.client);
 
@@ -102,7 +102,7 @@ const handleCreate = async e => {
 };
 
 const handleExecuted = async ({ receipt }: { receipt: TransactionReceipt }) => {
-  const accountId = new AccountId(receipt.accountId).toString() || '';
+  const accountId = new AccountId(receipt.accountId as any).toString() || '';
   await add(user.data.id, accountId);
   toast.success(`Account ${accountId} linked`, { position: 'bottom-right' });
 };

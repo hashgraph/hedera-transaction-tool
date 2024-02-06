@@ -58,27 +58,27 @@ export const getAccountInfo = async (
   const accountInfo: IAccountInfoParsed = {
     accountId: AccountId.fromString(rawAccountInfo.account || ''),
     alias: rawAccountInfo.alias as string,
-    balance: Hbar.from(rawAccountInfo.balance?.balance, HbarUnit.Tinybar),
+    balance: Hbar.from(rawAccountInfo.balance?.balance || 0, HbarUnit.Tinybar),
     declineReward: Boolean(rawAccountInfo.decline_reward),
     deleted: Boolean(rawAccountInfo.deleted),
     ethereumNonce: Number(rawAccountInfo.ethereum_nonce),
     evmAddress: EvmAddress.fromString(rawAccountInfo.evm_address || ''),
     createdTimestamp: rawAccountInfo.created_timestamp
       ? new Timestamp(
-          rawAccountInfo.created_timestamp.split('.')[0],
-          rawAccountInfo.created_timestamp.split('.')[1],
+          Number(rawAccountInfo.created_timestamp.split('.')[0]),
+          Number(rawAccountInfo.created_timestamp.split('.')[1]),
         )
       : null,
     expiryTimestamp: rawAccountInfo.expiry_timestamp
       ? new Timestamp(
-          rawAccountInfo.expiry_timestamp.split('.')[0],
-          rawAccountInfo.expiry_timestamp.split('.')[1],
+          Number(rawAccountInfo.expiry_timestamp.split('.')[0]),
+          Number(rawAccountInfo.expiry_timestamp.split('.')[1]),
         )
       : null,
     key: key,
     maxAutomaticTokenAssociations: rawAccountInfo.max_automatic_token_associations,
     memo: rawAccountInfo.memo,
-    pendingRewards: Hbar.from(rawAccountInfo.pending_reward, HbarUnit.Tinybar),
+    pendingRewards: Hbar.from(rawAccountInfo.pending_reward || 0, HbarUnit.Tinybar),
     receiverSignatureRequired: Boolean(rawAccountInfo.receiver_sig_required),
     stakedAccountId: rawAccountInfo.staked_account_id
       ? AccountId.fromString(rawAccountInfo.staked_account_id)

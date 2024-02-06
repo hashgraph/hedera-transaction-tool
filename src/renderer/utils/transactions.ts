@@ -7,8 +7,8 @@ import { openExternal } from '../services/electronUtilsService';
 
 export const getTransactionDate = (transaction: Transaction): string => {
   return new Timestamp(
-    transaction.transaction_id.split('@')[1].split('.')[0],
-    transaction.transaction_id.split('@')[1].split('.')[1],
+    Number(transaction.transaction_id.split('@')[1].split('.')[0]),
+    Number(transaction.transaction_id.split('@')[1].split('.')[1]),
   )
     .toDate()
     .toDateString();
@@ -31,7 +31,7 @@ export const getStatusFromCode = (transaction: Transaction): string => {
 };
 
 export const getFormattedDateFromTimestamp = (timestamp: Timestamp): string => {
-  return new Date(timestamp.seconds * 1000).toDateString();
+  return new Date(timestamp.seconds.multiply(1000).toNumber()).toDateString();
 };
 
 export const openTransactionInHashscan = (transactionId, network: Network) => {
