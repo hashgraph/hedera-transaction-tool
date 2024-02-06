@@ -13,14 +13,14 @@ import {
   encodeSpecialFileContent,
 } from '../../../../services/transactionService';
 import { isHederaSpecialFileId } from '../../../../../main/shared/utils/hederaSpecialFiles';
+import { getDateTimeLocalInputValue } from '../../../../utils';
+import { isPublicKey } from '../../../../utils/validator';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppInput from '../../../../components/ui/AppInput.vue';
 import TransactionProcessor from '../../../../components/Transaction/TransactionProcessor.vue';
 import TransactionIdControls from '../../../../components/Transaction/TransactionIdControls.vue';
-import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
-
-import { getDateTimeLocalInputValue } from '@renderer/utils';
+import TransactionHeaderControls from '../../../../components/Transaction/TransactionHeaderControls.vue';
 
 /* Stores */
 const networkStore = useNetworkStore();
@@ -96,23 +96,15 @@ const createTransaction = async () => {
 };
 
 /* Handlers */
-const isPublicKey = key => {
-  try {
-    return PublicKey.fromString(key);
-  } catch (error) {
-    return false;
-  }
-};
-
 const handleAddOwnerKey = () => {
   ownerKeys.value.push(ownerKeyText.value);
-  ownerKeys.value = ownerKeys.value.filter(isPublicKey);
+  ownerKeys.value = [...new Set(ownerKeys.value.filter(isPublicKey))];
   ownerKeyText.value = '';
 };
 
 const handleAddNewKey = () => {
   newKeys.value.push(newKeyText.value);
-  newKeys.value = newKeys.value.filter(isPublicKey);
+  newKeys.value = [...new Set(newKeys.value.filter(isPublicKey))];
   newKeyText.value = '';
 };
 
@@ -205,11 +197,10 @@ watch(fileMeta, () => (content.value = ''));
     </div>
     <div class="mt-4 w-75">
       <template v-for="key in ownerKeys" :key="key">
-        <div class="d-flex align-items-center gap-3">
+        <div class="d-flex align-items-center gap-3 mt-3">
           <AppInput :model-value="key" :filled="true" readonly />
           <i
             class="bi bi-x-lg d-inline-block cursor-pointer"
-            style="line-height: 16px"
             @click="ownerKeys = ownerKeys.filter(k => k !== key)"
           ></i>
         </div>
@@ -226,11 +217,10 @@ watch(fileMeta, () => (content.value = ''));
     </div>
     <div class="mt-4 w-75">
       <template v-for="key in newKeys" :key="key">
-        <div class="d-flex align-items-center gap-3">
+        <div class="d-flex align-items-center gap-3 mt-3">
           <AppInput type="text" readonly :filled="true" :value="key" />
           <i
             class="bi bi-x-lg d-inline-block cursor-pointer"
-            style="line-height: 16px"
             @click="newKeys = newKeys.filter(k => k !== key)"
           ></i>
         </div>
