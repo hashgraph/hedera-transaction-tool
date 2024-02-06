@@ -19,13 +19,14 @@ import { add } from '../../../../services/accountsService';
 import { createTransactionId } from '../../../../services/transactionService';
 
 import { getDateTimeLocalInputValue } from '../../../../utils';
+import { isPublicKey } from '../../../../utils/validator';
 
 import TransactionProcessor from '../../../../components/Transaction/TransactionProcessor.vue';
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppSwitch from '../../../../components/ui/AppSwitch.vue';
 import AppInput from '../../../../components/ui/AppInput.vue';
 import TransactionIdControls from '../../../../components/Transaction/TransactionIdControls.vue';
-import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
+import TransactionHeaderControls from '../../../../components/Transaction/TransactionHeaderControls.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -61,13 +62,7 @@ const keyList = computed(() => new KeyList(ownerKeys.value.map(key => PublicKey.
 /* Handlers */
 const handleAdd = () => {
   ownerKeys.value.push(ownerKeyText.value);
-  ownerKeys.value = ownerKeys.value.filter(key => {
-    try {
-      return PublicKey.fromString(key);
-    } catch (error) {
-      return false;
-    }
-  });
+  ownerKeys.value = [...new Set(ownerKeys.value.filter(isPublicKey))];
   ownerKeyText.value = '';
 };
 
