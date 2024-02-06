@@ -148,7 +148,7 @@ watch(fileMeta, () => (content.value = ''));
       <AppInput v-model="fileId" :filled="true" placeholder="Enter File ID" />
     </div>
     <div class="mt-4 form-group w-75">
-      <label class="form-label">Set Signature Keys (Required)</label>
+      <label class="form-label">Signature Keys <span class="text-danger">*</span></label>
       <div class="d-flex gap-3">
         <AppInput
           v-model="signatureKeyText"
@@ -175,7 +175,7 @@ watch(fileMeta, () => (content.value = ''));
       </template>
     </div>
     <div class="mt-4 form-group w-25">
-      <label class="form-label">Set Chunk Size</label>
+      <label class="form-label">Chunk Size</label>
       <AppInput v-model="chunkSize" :filled="true" type="number" min="1024" max="6144" />
     </div>
     <div class="mt-4 form-group">
@@ -202,7 +202,7 @@ watch(fileMeta, () => (content.value = ''));
       </template>
     </div>
     <div class="mt-4 form-group w-75">
-      <label class="form-label">Set File Contents</label>
+      <label class="form-label">File Contents</label>
       <textarea
         v-model="content"
         :disabled="Boolean(fileBuffer)"

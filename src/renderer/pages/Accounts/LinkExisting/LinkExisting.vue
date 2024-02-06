@@ -54,7 +54,7 @@ const handleLinkAccount = async e => {
     >
     <form class="mt-5 col-12 col-md-8 col-xl-6 col-xxl-4" @submit="handleLinkAccount">
       <div class="form-group">
-        <label class="form-label">Set Hedera Account ID*</label>
+        <label class="form-label">Hedera Account ID <span class="text-danger">*</span></label>
 
         <label v-if="accountData.isValid.value" class="d-block form-label text-secondary"
           >Balance: {{ accountData.accountInfo.value?.balance || 0 }}</label
@@ -71,7 +71,7 @@ const handleLinkAccount = async e => {
         />
       </div>
       <div class="form-group mt-5">
-        <label class="form-label">Set Nickname (optional)</label>
+        <label class="form-label">Nickname</label>
         <AppInput v-model="nickname" :filled="true" />
       </div>
       <AppButton

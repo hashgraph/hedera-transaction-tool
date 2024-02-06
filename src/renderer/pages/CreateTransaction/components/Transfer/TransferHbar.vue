@@ -102,7 +102,8 @@ const handleCreate = async e => {
     <div class="mt-4 d-flex flex-wrap gap-5">
       <div class="form-group col-4">
         <label class="form-label"
-          >Set {{ isApprovedTransfer ? 'Spender' : 'Payer' }} ID (Required)</label
+          >{{ isApprovedTransfer ? 'Spender' : 'Payer' }} ID
+          <span class="text-danger">*</span></label
         >
         <label
           v-if="isApprovedTransfer && payerData.isValid.value"
@@ -122,16 +123,16 @@ const handleCreate = async e => {
         />
       </div>
       <div class="form-group">
-        <label class="form-label">Set Valid Start Time (Required)</label>
+        <label class="form-label">Valid Start Time <span class="text-danger">*</span></label>
         <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
       </div>
       <div class="form-group">
-        <label class="form-label">Set Max Transaction Fee (Optional)</label>
+        <label class="form-label">Max Transaction Fee</label>
         <AppInput v-model="maxTransactionfee" type="number" min="0" :filled="true" />
       </div>
     </div>
     <div class="mt-4 form-group">
-      <label class="form-label">Set Sender ID</label>
+      <label class="form-label">Sender ID <span class="text-danger">*</span></label>
       <label
         v-if="senderData.isValid.value"
         class="form-label text-secondary border-start border-1 ms-2 ps-2"
@@ -156,7 +157,7 @@ const handleCreate = async e => {
       >
     </div>
     <div class="mt-4 form-group">
-      <label class="form-label">Set Receiver ID</label>
+      <label class="form-label">Receiver ID <span class="text-danger">*</span></label>
       <label
         v-if="receiverData.isValid.value"
         class="form-label text-secondary border-start border-1 ms-2 ps-2"
@@ -184,7 +185,7 @@ const handleCreate = async e => {
       >
     </div>
     <div class="mt-4 form-group">
-      <label class="form-label">Amount</label>
+      <label class="form-label">Amount <span class="text-danger">*</span></label>
       <AppInput v-model="amount" type="number" :filled="true" placeholder="Enter Amount" />
     </div>
     <div class="mt-4">

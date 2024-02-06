@@ -237,7 +237,7 @@ watch(fileMeta, () => (content.value = ''));
       </template>
     </div>
     <div class="mt-4 form-group w-50">
-      <label class="form-label">File Memo (Optional)</label>
+      <label class="form-label">File Memo</label>
       <AppInput
         v-model="memo"
         type="text"
@@ -247,7 +247,7 @@ watch(fileMeta, () => (content.value = ''));
       />
     </div>
     <div class="mt-4 form-group w-25">
-      <label class="form-label">Set Expiration Time (Optional)</label>
+      <label class="form-label">Expiration Time</label>
       <AppInput
         v-model="expirationTimestamp"
         type="datetime-local"
@@ -256,7 +256,7 @@ watch(fileMeta, () => (content.value = ''));
       />
     </div>
     <div class="mt-4 form-group w-25">
-      <label class="form-label">Set Chunk Size (If File is large)</label>
+      <label class="form-label">Chunk Size (If File is large)</label>
       <AppInput v-model="chunkSize" type="number" min="1024" max="6144" :filled="true" />
     </div>
     <div class="mt-4 form-group">
@@ -282,7 +282,7 @@ watch(fileMeta, () => (content.value = ''));
       </template>
     </div>
     <div class="mt-4 form-group w-75">
-      <label class="form-label">Set File Contents</label>
+      <label class="form-label">File Contents</label>
       <textarea
         v-model="content"
         :disabled="Boolean(fileBuffer)"

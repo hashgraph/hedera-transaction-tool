@@ -30,7 +30,7 @@ watch(accountData.isValid, isValid => {
   </div>
   <div class="mt-4">
     <div class="mt-4 w-50 form-group">
-      <label class="form-label">Set Account ID (Required)</label>
+      <label class="form-label">Account ID <span class="text-danger">*</span></label>
       <AppInput
         :model-value="accountData.accountIdFormatted.value"
         @update:model-value="v => (accountData.accountId.value = v)"
