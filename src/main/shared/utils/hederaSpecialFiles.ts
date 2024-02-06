@@ -240,6 +240,7 @@ export function encodeHederaSpecialFile(content: Uint8Array, fileId: HederaSpeci
     case '0.0.102':
       return encodeNodeAddressBook(content);
     case '0.0.111':
+      return encodeCurrentAndNextFeeSchedules(content);
     case '0.0.112':
       return encodeExchangeRates(content);
     case '0.0.121':
@@ -261,7 +262,7 @@ function encodeNodeAddressBook(content: Uint8Array) {
       if (nodeAddress.nodeId === '0') {
         nodeAddress.nodeId = undefined;
       } else if (nodeAddress.nodeId) {
-        nodeAddress.nodeId = new Long(nodeAddress.nodeId, 0, true);
+        nodeAddress.nodeId = new Long(nodeAddress.nodeId, 0, false);
       }
 
       // Acccount Id
@@ -340,7 +341,7 @@ function encodeThrottleDefinitions(content: Uint8Array) {
       }
 
       // Operations Per Second in ms
-      throttleGroup.milliOpsPerSec = new Long(throttleGroup.milliOpsPerSec, 0, true);
+      throttleGroup.milliOpsPerSec = new Long(throttleGroup.milliOpsPerSec, 0, false);
     });
 
     // @ts-ignore unused property
@@ -348,7 +349,7 @@ function encodeThrottleDefinitions(content: Uint8Array) {
 
     // Burst Period in ms
     if (throttleBucket.burstPeriodMs) {
-      throttleBucket.burstPeriodMs = new Long(throttleBucket.burstPeriodMs, 0, true);
+      throttleBucket.burstPeriodMs = new Long(throttleBucket.burstPeriodMs, 0, false);
     }
   });
 
@@ -360,4 +361,108 @@ function encodeThrottleDefinitions(content: Uint8Array) {
   console.log(JSON.stringify(proto.ThrottleDefinitions.decode(protobuffEncodedBuffer)));
 
   return protobuffEncodedBuffer;
+}
+
+function encodeCurrentAndNextFeeSchedules(content: Uint8Array) {
+  const currentAndNextFeeSchedule: proto.ICurrentAndNextFeeSchedule = JSON.parse(
+    Buffer.from(content).toString(),
+  );
+
+  if (currentAndNextFeeSchedule.currentFeeSchedule) {
+    currentAndNextFeeSchedule.currentFeeSchedule = formatFeeSchedule(
+      currentAndNextFeeSchedule.currentFeeSchedule,
+    );
+  }
+
+  if (currentAndNextFeeSchedule.nextFeeSchedule) {
+    currentAndNextFeeSchedule.nextFeeSchedule = formatFeeSchedule(
+      currentAndNextFeeSchedule.nextFeeSchedule,
+    );
+  }
+
+  const protoExchangeRateSet = proto.CurrentAndNextFeeSchedule.create(currentAndNextFeeSchedule);
+
+  const protobuffEncodedBuffer =
+    proto.CurrentAndNextFeeSchedule.encode(protoExchangeRateSet).finish();
+
+  return protobuffEncodedBuffer;
+
+  function formatFeeSchedule(feeSchedule: proto.IFeeSchedule) {
+    feeSchedule.transactionFeeSchedule?.forEach(txfeeSchedule => {
+      if (txfeeSchedule.feeData) {
+        txfeeSchedule.feeData = formatFeeData(txfeeSchedule.feeData);
+      }
+
+      if (txfeeSchedule.fees) {
+        txfeeSchedule.fees = txfeeSchedule.fees.map(feeData => formatFeeData(feeData));
+      }
+
+      if (txfeeSchedule.hederaFunctionality) {
+        txfeeSchedule.hederaFunctionality = proto.HederaFunctionality[
+          txfeeSchedule.hederaFunctionality
+        ] as any;
+      }
+    });
+
+    feeSchedule.expiryTime = proto.TimestampSeconds.create({ seconds: feeSchedule.expiryTime });
+
+    return feeSchedule;
+  }
+
+  function formatFeeData(feeData: proto.IFeeData) {
+    if (feeData.networkdata) {
+      feeData.networkdata = formatFeeComponents(feeData.networkdata);
+    }
+
+    if (feeData.nodedata) {
+      feeData.nodedata = formatFeeComponents(feeData.nodedata);
+    }
+
+    if (feeData.servicedata) {
+      feeData.servicedata = formatFeeComponents(feeData.servicedata);
+    }
+
+    if (feeData.subType) {
+      feeData.subType = proto.SubType[feeData.subType] as any;
+    }
+    return feeData;
+  }
+
+  function formatFeeComponents(feeComponents: proto.IFeeComponents) {
+    if (feeComponents.min) {
+      feeComponents.min = new Long(feeComponents.min, 0, false);
+    }
+    if (feeComponents.max) {
+      feeComponents.max = new Long(feeComponents.max, 0, false);
+    }
+    if (feeComponents.constant) {
+      feeComponents.constant = new Long(feeComponents.constant, 0, false);
+    }
+    if (feeComponents.bpt) {
+      feeComponents.bpt = new Long(feeComponents.bpt, 0, false);
+    }
+    if (feeComponents.vpt) {
+      feeComponents.vpt = new Long(feeComponents.vpt, 0, false);
+    }
+    if (feeComponents.rbh) {
+      feeComponents.rbh = new Long(feeComponents.rbh, 0, false);
+    }
+    if (feeComponents.sbh) {
+      feeComponents.sbh = new Long(feeComponents.sbh, 0, false);
+    }
+    if (feeComponents.gas) {
+      feeComponents.gas = new Long(feeComponents.gas, 0, false);
+    }
+    if (feeComponents.tv) {
+      feeComponents.tv = new Long(feeComponents.tv, 0, false);
+    }
+    if (feeComponents.bpr) {
+      feeComponents.bpr = new Long(feeComponents.bpr, 0, false);
+    }
+    if (feeComponents.sbpr) {
+      feeComponents.sbpr = new Long(feeComponents.sbpr, 0, false);
+    }
+
+    return feeComponents;
+  }
 }
