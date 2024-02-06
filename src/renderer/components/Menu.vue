@@ -17,57 +17,31 @@ const menuItems = [
     title: 'File Service',
     icon: 'bi bi-file-text',
   },
-  {
-    link: '/tokens',
-    title: 'Tokens',
-    icon: 'bi bi-coin',
-  },
-  {
-    link: '/smart-contracts',
-    title: 'Smart Contracts',
-    icon: 'bi bi-arrows-angle-contract',
-  },
-  {
-    link: '/consensus-service',
-    title: 'Consensus Service',
-    icon: 'bi bi-shield-check',
-  },
-
-  {
-    link: '/contact-list',
-    title: 'Contact List',
-    icon: 'bi bi-book',
-  },
-  {
-    link: '/style-guide',
-    title: 'Style Guide',
-    icon: 'bi bi-feather',
-  },
-
   // {
   //   link: '/tokens',
   //   title: 'Tokens',
-  //   icon: 'bi bi-database',
+  //   icon: 'bi bi-coin',
   // },
   // {
   //   link: '/smart-contracts',
   //   title: 'Smart Contracts',
-  //   icon: 'bi bi-code-slash',
+  //   icon: 'bi bi-arrows-angle-contract',
   // },
   // {
   //   link: '/consensus-service',
   //   title: 'Consensus Service',
-  //   icon: 'bi bi-house-door',
+  //   icon: 'bi bi-shield-check',
   // },
-  // {
-  //   link: '/file-service',
-  //   title: 'File Service',
-  //   icon: 'bi bi-file-earmark',
-  // },
+
   // {
   //   link: '/contact-list',
   //   title: 'Contact List',
   //   icon: 'bi bi-book',
+  // },
+  // {
+  //   link: '/style-guide',
+  //   title: 'Style Guide',
+  //   icon: 'bi bi-feather',
   // },
 ];
 </script>
@@ -89,9 +63,9 @@ const menuItems = [
         :class="{ active: $route.path.startsWith('/settings') }"
         ><i class="bi bi-wrench"></i><span>Settings</span></RouterLink
       >
-      <RouterLink class="link-menu mt-2" to="/help"
+      <!-- <RouterLink class="link-menu mt-2" to="/help"
         ><i class="bi bi-question-circle"></i><span>Help</span></RouterLink
-      >
+      > -->
     </div>
   </div>
 </template>
