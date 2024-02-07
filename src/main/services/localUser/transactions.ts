@@ -1,4 +1,4 @@
-import { Client, FileContentsQuery, Query, Transaction } from '@hashgraph/sdk';
+import { Client, FileContentsQuery, PrivateKey, Query, Transaction } from '@hashgraph/sdk';
 import { Transaction as Tx } from '@prisma/client';
 import { getPrismaClient } from '../../db';
 import { getNumberArrayFromString } from '../../utils';
@@ -80,7 +80,18 @@ export const executeQuery = async (queryData: string) => {
   } = JSON.parse(queryData);
   const client = getClient();
 
-  client.setOperator(tx.accountId, tx.privateKey);
+  const privateKey =
+    tx.type === 'ED25519'
+      ? PrivateKey.fromStringED25519(tx.privateKey)
+      : tx.type === 'ECDSA'
+        ? PrivateKey.fromStringECDSA(tx.privateKey)
+        : null;
+
+  if (!privateKey) {
+    throw new Error('Invalid key type');
+  }
+
+  client.setOperator(tx.accountId, privateKey);
 
   const bytesArray = getNumberArrayFromString(tx.queryBytes);
 

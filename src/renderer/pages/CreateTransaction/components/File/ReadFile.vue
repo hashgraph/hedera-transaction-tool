@@ -51,8 +51,17 @@ const handleRead = async e => {
     const publicKey = keyPairsStore.accoundIds.find(acc =>
       acc.accountIds.includes(payerData.accountIdFormatted.value),
     )?.publicKey;
+    const keyPair = keyPairsStore.keyPairs.find(kp => kp.public_key === publicKey);
 
-    const privateKey = await decryptPrivateKey(user.data.id, userPassword.value, publicKey || '');
+    if (!keyPair) {
+      throw new Error('Unable to execute query, you should use a payer ID with one of your keys');
+    }
+
+    const privateKey = await decryptPrivateKey(
+      user.data.id,
+      userPassword.value,
+      keyPair.public_key,
+    );
 
     const query = new FileContentsQuery().setFileId(fileId.value);
 
@@ -63,6 +72,7 @@ const handleRead = async e => {
       networkStore.customNetworkSettings,
       payerData.accountId.value,
       privateKey,
+      keyPair.type,
     );
     isUserPasswordModalShown.value = false;
 
