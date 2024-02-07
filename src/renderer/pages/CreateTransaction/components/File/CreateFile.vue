@@ -3,11 +3,13 @@ import { computed, ref } from 'vue';
 import { AccountId, FileCreateTransaction, KeyList, PublicKey, Timestamp } from '@hashgraph/sdk';
 
 import useNetworkStore from '../../../../stores/storeNetwork';
+import useUserStore from '../../../../stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
 
 import { createTransactionId } from '../../../../services/transactionService';
+import { add } from '../../../../services/filesService';
 
 import { getDateTimeLocalInputValue } from '../../../../utils';
 import { isPublicKey } from '../../../../utils/validator';
@@ -19,7 +21,8 @@ import TransactionIdControls from '../../../../components/Transaction/Transactio
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 
 /* Stores */
-const networkStore = useNetworkStore();
+const network = useNetworkStore();
+const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
@@ -48,17 +51,6 @@ const handleAdd = () => {
   ownerKeyText.value = '';
 };
 
-// const handleFileImport = (e: Event) => {
-//   const fileImportEl = e.target as HTMLInputElement;
-//   const files = fileImportEl.files;
-
-//   if (files && files.length > 0) {
-//     const reader = new FileReader();
-//     reader.onload = () => (content.value = reader.result?.toString() || '');
-//     reader.readAsText(files[0]);
-//   }
-// };
-
 const handleCreate = async e => {
   e.preventDefault();
 
@@ -75,13 +67,20 @@ const handleCreate = async e => {
     if (expirationTimestamp.value)
       transaction.value.setExpirationTime(Timestamp.fromDate(expirationTimestamp.value));
 
-    transaction.value.freezeWith(networkStore.client);
+    transaction.value.freezeWith(network.client);
 
     const requiredSignatures = payerData.keysFlattened.value.concat(ownerKeys.value);
     await transactionProcessor.value?.process(requiredSignatures);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
+};
+
+const handleExecuted = () => {
+  add(
+    user.data.id,
+    new AccountId(transactionProcessor.value?.transactionResult.receipt.fileId).toString(),
+  );
 };
 </script>
 <template>
@@ -193,6 +192,7 @@ const handleCreate = async e => {
         transaction = null;
       }
     "
+    :on-executed="handleExecuted"
   >
     <template #successHeading>File created successfully</template>
     <template #successContent>
