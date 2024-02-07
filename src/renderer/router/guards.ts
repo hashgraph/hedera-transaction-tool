@@ -13,7 +13,7 @@ export function addGuards(router: Router) {
     }
 
     if (user.data.isLoggedIn && to.name === 'welcome') {
-      return { name: 'settingsKeys' };
+      return { name: 'transactions' };
     }
 
     if (!to.meta.withoutAuth && !user.data.isLoggedIn) {
