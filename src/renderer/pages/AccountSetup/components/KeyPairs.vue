@@ -83,6 +83,7 @@ const handleSaveKey = async () => {
         index: index.value,
         public_key: publicKey.value,
         private_key: privateKey.value,
+        type: 'ED25519',
         organization_id: null,
         secret_hash: secretHash,
         nickname: nickname.value || null,

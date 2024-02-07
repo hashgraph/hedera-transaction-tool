@@ -9,8 +9,6 @@ import {
   encodeHederaSpecialFile,
 } from '../../shared/utils/hederaSpecialFiles';
 
-const prisma = getPrismaClient();
-
 // Executes a transaction
 export const executeTransaction = async (transactionData: string) => {
   const tx: {
@@ -129,6 +127,8 @@ export const executeQuery = async (queryData: string) => {
 
 // Stores a transaction
 export const storeTransaction = async (transaction: Tx) => {
+  const prisma = getPrismaClient();
+
   try {
     const uint8TransactionHash = Uint8Array.from(
       getNumberArrayFromString(transaction.transaction_hash),
@@ -154,6 +154,8 @@ export const storeTransaction = async (transaction: Tx) => {
 
 // Get stored transactions
 export const getTransactions = async (user_id: string) => {
+  const prisma = getPrismaClient();
+
   try {
     const transactions = await prisma.transaction.findMany({
       where: {

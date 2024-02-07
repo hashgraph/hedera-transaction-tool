@@ -4,13 +4,13 @@ import { encrypt, decrypt } from '../../utils/crypto';
 
 import { getPrismaClient } from '../../db';
 
-const prisma = getPrismaClient();
-
 //Get all stored secret hash objects
 export const getSecretHashes = async (
   userId: string,
   organizationId?: string,
 ): Promise<string[]> => {
+  const prisma = getPrismaClient();
+
   const groups = await prisma.keyPair.groupBy({
     by: ['secret_hash'],
     where: {
@@ -26,8 +26,10 @@ export const getSecretHashes = async (
 };
 
 //Get stored key pairs
-export const getKeyPairs = async (userId: string, organizationId?: string): Promise<KeyPair[]> =>
-  prisma.keyPair.findMany({
+export const getKeyPairs = async (userId: string, organizationId?: string): Promise<KeyPair[]> => {
+  const prisma = getPrismaClient();
+
+  return prisma.keyPair.findMany({
     where: {
       AND: [{ user_id: userId }, { organization_id: organizationId }],
     },
@@ -35,9 +37,12 @@ export const getKeyPairs = async (userId: string, organizationId?: string): Prom
       secret_hash: 'desc',
     },
   });
+};
 
 // Store key pair
 export const storeKeyPair = async (keyPair: KeyPair, password: string) => {
+  const prisma = getPrismaClient();
+
   try {
     keyPair.private_key = encrypt(keyPair.private_key, password);
     await prisma.keyPair.create({
@@ -58,6 +63,8 @@ export const changeDecryptionPassword = async (
   oldPassword: string,
   newPassword: string,
 ) => {
+  const prisma = getPrismaClient();
+
   const keyPairs = await getKeyPairs(userId);
 
   for (let i = 0; i < keyPairs.length; i++) {
@@ -81,6 +88,8 @@ export const changeDecryptionPassword = async (
 
 // Decrypt user's private key
 export const decryptPrivateKey = async (userId: string, password: string, publicKey: string) => {
+  const prisma = getPrismaClient();
+
   const keyPair = await prisma.keyPair.findFirst({
     where: {
       user_id: userId,
@@ -96,6 +105,8 @@ export const decryptPrivateKey = async (userId: string, password: string, public
 
 // Delete encrypted private keys
 export const deleteEncryptedPrivateKeys = async (userId: string, organizationId: string) => {
+  const prisma = getPrismaClient();
+
   await prisma.keyPair.updateMany({
     where: {
       AND: [{ user_id: userId }, { organization_id: organizationId }],
@@ -108,6 +119,8 @@ export const deleteEncryptedPrivateKeys = async (userId: string, organizationId:
 
 // Clear user's keys
 export const deleteSecretHashes = async (userId: string, organizationId?: string) => {
+  const prisma = getPrismaClient();
+
   await prisma.keyPair.deleteMany({
     where: {
       AND: [{ user_id: userId }, { organization_id: organizationId }],

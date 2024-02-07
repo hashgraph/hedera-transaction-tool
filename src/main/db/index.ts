@@ -8,7 +8,7 @@ import * as sqlite3 from 'better-sqlite3';
 import { PrismaClient } from '@prisma/client';
 import { getDatabaseLogger } from '../modules/logger';
 
-const dbPath = path.join(electron.app.getPath('userData'), 'database.db');
+export const dbPath = path.join(electron.app.getPath('userData'), 'database.db');
 const migrationsPath = path.join(electron.app.getAppPath(), './prisma/migrations');
 
 export default async function initDatabase() {
@@ -117,10 +117,13 @@ export default async function initDatabase() {
     const prisma = getPrismaClient();
 
     try {
-      return await prisma.migration.findFirst({
+      const migration = await prisma.migration.findFirst({
         orderBy: [{ created_at: 'desc' }],
       });
+
+      return migration;
     } catch (error) {
+      await prisma.$disconnect();
       return null;
     }
   }
@@ -140,7 +143,35 @@ export default async function initDatabase() {
   }
 }
 
+export async function deleteDatabase() {
+  const databaseLogger = getDatabaseLogger();
+  databaseLogger.errorHandler.startCatching();
+  databaseLogger.transports.console.format = '{text}';
+
+  try {
+    await fsp.rm(dbPath);
+    databaseLogger.log('Database deleted successfully');
+  } catch (error) {
+    databaseLogger.error(error);
+  }
+
+  databaseLogger.errorHandler.stopCatching();
+}
+
+let prisma: PrismaClient;
+
 export function getPrismaClient() {
+  if (!prisma) {
+    prisma = createPrismaClient();
+  }
+  return prisma;
+}
+
+export function setPrismaClient(prismaClient: PrismaClient) {
+  prisma = prismaClient;
+}
+
+export function createPrismaClient() {
   return new PrismaClient({
     datasources: {
       db: {

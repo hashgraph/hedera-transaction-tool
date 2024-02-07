@@ -7,7 +7,7 @@ datasource db {
   url      = "file:"
 }
 
-// DO NOT CHANGE MIGRATION MODULE!
+// DO NOT CHANGE MIGRATION MODEL!
 model Migration {
   id         Int    @id @default(autoincrement())
   name       String
@@ -32,6 +32,7 @@ model KeyPair {
   index           Int
   public_key      String
   private_key     String
+  type            String
   organization_id String?
   secret_hash     String?
   nickname        String?
