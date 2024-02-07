@@ -98,10 +98,11 @@ export const executeQuery = async (
   customNetworkSettings: CustomNetworkSettings | null,
   accountId: string,
   privateKey: string,
+  type: string,
 ) => {
   try {
     return await window.electronAPI.transactions.executeQuery(
-      JSON.stringify({ queryBytes, network, customNetworkSettings, accountId, privateKey }),
+      JSON.stringify({ queryBytes, network, customNetworkSettings, accountId, privateKey, type }),
     );
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Query Execution Failed'));
