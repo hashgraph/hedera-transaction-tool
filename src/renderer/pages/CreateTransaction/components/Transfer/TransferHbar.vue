@@ -90,7 +90,7 @@ const handleCreate = async e => {
         !receiverData.accountId.value ||
         amount < 0
       "
-      heading-text="Create Account Transaction"
+      heading-text="Transfer Hbar Transaction"
     />
 
     <div class="mt-4 d-flex flex-wrap gap-5">
