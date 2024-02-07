@@ -1,16 +1,18 @@
 import { getMessageFromIPCError } from '../utils';
 
-export const getAll = (email: string) => window.electronAPI.accounts.getAll(email);
-export const add = async (email: string, accountId: string, nickname: string = '') => {
+export const getAll = (userId: string) => window.electronAPI.accounts.getAll(userId);
+
+export const add = async (userId: string, accountId: string, nickname: string = '') => {
   try {
-    return await window.electronAPI.accounts.add(email, accountId, nickname);
+    return await window.electronAPI.accounts.add(userId, accountId, nickname);
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Account link failed'));
   }
 };
-export const remove = async (email: string, accountId: string, nickname: string = '') => {
+
+export const remove = async (userId: string, accountId: string, nickname: string = '') => {
   try {
-    return await window.electronAPI.accounts.remove(email, accountId, nickname);
+    return await window.electronAPI.accounts.remove(userId, accountId, nickname);
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Account unlink failed'));
   }

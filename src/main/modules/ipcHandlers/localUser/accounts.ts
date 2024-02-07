@@ -8,19 +8,19 @@ export default () => {
   /* Accounts */
 
   // Get all
-  ipcMain.handle(createChannelName('getAll'), (_e, email: string) => getAccounts(email));
+  ipcMain.handle(createChannelName('getAll'), (_e, userId: string) => getAccounts(userId));
 
   // Add
   ipcMain.handle(
     createChannelName('add'),
-    (_e, email: string, accountId: string, nickname: string = '') =>
-      addAccount(email, accountId, nickname),
+    (_e, userId: string, accountId: string, nickname: string = '') =>
+      addAccount(userId, accountId, nickname),
   );
 
   // Remove
   ipcMain.handle(
     createChannelName('remove'),
-    (_e, email: string, accountId: string, nickname: string = '') =>
-      removeAccount(email, accountId, nickname),
+    (_e, userId: string, accountId: string, nickname: string = '') =>
+      removeAccount(userId, accountId, nickname),
   );
 };
