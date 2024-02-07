@@ -37,7 +37,10 @@ const accountData = useAccountId();
 
 /* State */
 const accounts = ref<HederaAccount[]>([]);
+const isKeyStructureModalShown = ref(false);
+const isUnlinkAccountModalShown = ref(false);
 
+/* Computed */
 const hbarDollarAmount = computed(() => {
   if (!accountData.accountInfo.value) {
     return 0;
@@ -48,9 +51,6 @@ const hbarDollarAmount = computed(() => {
     accountData.accountInfo.value.balance.toBigNumber(),
   );
 });
-
-const isKeyStructureModalShown = ref(false);
-const isUnlinkAccountModalShown = ref(false);
 
 /* Hooks */
 onMounted(async () => {
