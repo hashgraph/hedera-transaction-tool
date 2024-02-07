@@ -136,6 +136,7 @@ const handleCreate = async e => {
         </template>
       </div>
     </div>
+
     <!-- <div class="mt-4 form-group w-50">
         <label class="form-label">File Memo (Optional)</label>
         <AppInput
@@ -168,9 +169,12 @@ const handleCreate = async e => {
           @change="handleFileImport"
         />
       </div> -->
-    <div class="mt-4 form-group w-75">
-      <label class="form-label">File Contents</label>
-      <textarea v-model="content" class="form-control is-fill" rows="10"></textarea>
+
+    <div class="row mt-6">
+      <div class="form-group col-12 col-xl-8">
+        <label class="form-label">File Contents</label>
+        <textarea v-model="content" class="form-control is-fill" rows="10"></textarea>
+      </div>
     </div>
   </form>
 
