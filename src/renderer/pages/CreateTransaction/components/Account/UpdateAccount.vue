@@ -253,6 +253,7 @@ const columnClass = 'col-4 col-xxxl-3';
         label="Accept Staking Awards"
       />
     </div>
+
     <div class="row mt-6">
       <div class="form-group" :class="[columnClass]">
         <label class="form-label">Staked Account Id</label>
