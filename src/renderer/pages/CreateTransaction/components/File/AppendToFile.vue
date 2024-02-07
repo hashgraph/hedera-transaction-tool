@@ -120,6 +120,9 @@ const handleCreate = async e => {
 
 /* Watchers */
 watch(fileMeta, () => (content.value = ''));
+
+/* Misc */
+const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <form @submit="handleCreate">
@@ -141,7 +144,7 @@ watch(fileMeta, () => (content.value = ''));
     />
 
     <div class="row mt-6">
-      <div class="form-group col-4 col-xxxl-3">
+      <div class="form-group" :class="[columnClass]">
         <label class="form-label">File ID <span class="text-danger">*</span></label>
         <AppInput v-model="fileId" :filled="true" placeholder="Enter File ID" />
       </div>
@@ -183,7 +186,7 @@ watch(fileMeta, () => (content.value = ''));
     </div>
 
     <div class="row mt-6">
-      <div class="form-group col-4 col-xxxl-3">
+      <div class="form-group" :class="[columnClass]">
         <label class="form-label">Chunk Size</label>
         <AppInput v-model="chunkSize" :filled="true" type="number" min="1024" max="6144" />
       </div>

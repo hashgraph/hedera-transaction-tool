@@ -102,7 +102,7 @@ const columnClass = 'col-4 col-xxxl-3';
     </AppButton>
 
     <div class="row flex-wrap align-items-end mt-6">
-      <div class="form-group col-4 col-xxxl-3">
+      <div class="form-group" :class="[columnClass]">
         <label class="form-label"
           >{{ isApprovedTransfer ? 'Spender' : 'Payer' }} ID
           <span class="text-danger">*</span></label
@@ -124,11 +124,11 @@ const columnClass = 'col-4 col-xxxl-3';
           placeholder="Enter Payer ID"
         />
       </div>
-      <div class="form-group form-group col-4 col-xxxl-3">
+      <div class="form-group form-group" :class="[columnClass]">
         <label class="form-label">Valid Start Time <span class="text-danger">*</span></label>
         <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
       </div>
-      <div class="form-group form-group col-4 col-xxxl-3">
+      <div class="form-group form-group" :class="[columnClass]">
         <label class="form-label">Max Transaction Fee</label>
         <AppInput v-model="maxTransactionfee" type="number" min="0" :filled="true" />
       </div>
