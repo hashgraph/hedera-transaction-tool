@@ -23,6 +23,7 @@ import CreateTransaction from '../pages/CreateTransaction';
 import AccountTab from '../pages/Settings/components/AccountTab.vue';
 import ForgotPassword from '../pages/ForgotPassword';
 import LinkExisting from '../pages/Accounts/LinkExisting/LinkExisting.vue';
+import LinkExistingFile from '../pages/Files/LinkExistingFile';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -38,6 +39,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/smart-contracts', name: 'smartContracts', component: SmartContracts },
   { path: '/consensus-service', name: 'consensusService', component: ConsensusService },
   { path: '/files', name: 'files', component: Files },
+  { path: '/files/link-existing', name: 'linkExistingFile', component: LinkExistingFile },
   { path: '/contact-list', name: 'contactList', component: ContactList },
   { path: '/help', name: 'help', component: Help },
   { path: '/account-setup', name: 'accountSetup', component: AccountSetup },

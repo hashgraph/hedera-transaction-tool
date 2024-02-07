@@ -165,6 +165,12 @@ onMounted(async () => {
             >
               <span class="text-small text-bold">Read</span>
             </li>
+            <li
+              class="dropdown-item cursor-pointer mt-3"
+              @click="$router.push('files/link-existing')"
+            >
+              <span class="text-small text-bold">Add Existing</span>
+            </li>
           </ul>
         </div>
 
