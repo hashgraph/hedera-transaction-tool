@@ -65,6 +65,9 @@ const handleCreate = async e => {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
+
+/* Misc */
+const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <form @submit="handleCreate">
@@ -78,6 +81,11 @@ const handleCreate = async e => {
       "
     />
 
+    <AppButton type="button" color="secondary" class="mt-6" @click="$router.back()">
+      <span class="bi bi-arrow-left"></span>
+      Back
+    </AppButton>
+
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
       v-model:valid-start="validStart"
@@ -85,61 +93,65 @@ const handleCreate = async e => {
       class="mt-6"
     />
 
-    <div class="mt-4 form-group">
-      <label class="form-label">Owner ID <span class="text-danger">*</span></label>
-      <label
-        v-if="ownerData.isValid.value"
-        class="form-label text-secondary border-start border-1 ms-2 ps-2"
-        >Balance: {{ ownerData.accountInfo.value?.balance }}</label
-      >
-      <AppInput
-        :model-value="ownerData.accountIdFormatted.value"
-        @update:model-value="v => (ownerData.accountId.value = v)"
-        :filled="true"
-        placeholder="Enter Owner ID"
-      />
+    <div class="row align-items-end mt-6">
+      <div class="form-group" :class="[columnClass]">
+        <label class="form-label">Owner ID <span class="text-danger">*</span></label>
+        <label v-if="ownerData.isValid.value" class="form-label d-block text-secondary"
+          >Balance: {{ ownerData.accountInfo.value?.balance }}</label
+        >
+        <AppInput
+          :model-value="ownerData.accountIdFormatted.value"
+          @update:model-value="v => (ownerData.accountId.value = v)"
+          :filled="true"
+          placeholder="Enter Owner ID"
+        />
+      </div>
+      <div class="form-group" :class="[columnClass]" v-if="ownerData.key.value">
+        <AppButton
+          :outline="true"
+          color="primary"
+          type="button"
+          @click="
+            isKeyStructureModalShown = true;
+            keyStructureComponentKey = ownerData.key.value;
+          "
+          >Show Key</AppButton
+        >
+      </div>
     </div>
-    <div class="mt-4" v-if="ownerData.key.value">
-      <AppButton
-        color="secondary"
-        type="button"
-        size="small"
-        @click="
-          isKeyStructureModalShown = true;
-          keyStructureComponentKey = ownerData.key.value;
-        "
-        >View Key Structure</AppButton
-      >
+
+    <div class="row align-items-end mt-6">
+      <div class="form-group" :class="[columnClass]">
+        <label class="form-label">Spender ID <span class="text-danger">*</span></label>
+        <label v-if="spenderData.isValid.value" class="form-label d-block text-secondary"
+          >Allowance: {{ ownerData.getSpenderAllowance(spenderData.accountId.value) }}</label
+        >
+        <AppInput
+          :model-value="spenderData.accountIdFormatted.value"
+          @update:model-value="v => (spenderData.accountId.value = v)"
+          :filled="true"
+          placeholder="Enter Spender ID"
+        />
+      </div>
+      <div class="form-group" :class="[columnClass]" v-if="spenderData.key.value">
+        <AppButton
+          :outline="true"
+          color="primary"
+          type="button"
+          @click="
+            isKeyStructureModalShown = true;
+            keyStructureComponentKey = spenderData.key.value;
+          "
+          >Show Key</AppButton
+        >
+      </div>
     </div>
-    <div class="mt-4 form-group">
-      <label class="form-label">Spender ID <span class="text-danger">*</span></label>
-      <label
-        v-if="spenderData.isValid.value"
-        class="form-label text-secondary border-start border-1 ms-2 ps-2"
-        >Allowance: {{ ownerData.getSpenderAllowance(spenderData.accountId.value) }}</label
-      >
-      <AppInput
-        :model-value="spenderData.accountIdFormatted.value"
-        @update:model-value="v => (spenderData.accountId.value = v)"
-        :filled="true"
-        placeholder="Enter Spender ID"
-      />
-    </div>
-    <div class="mt-4" v-if="spenderData.key.value">
-      <AppButton
-        color="secondary"
-        type="button"
-        size="small"
-        @click="
-          isKeyStructureModalShown = true;
-          keyStructureComponentKey = spenderData.key.value;
-        "
-        >View Key Structure</AppButton
-      >
-    </div>
-    <div class="mt-4 form-group">
-      <label class="form-label">Amount <span class="text-danger">*</span></label>
-      <AppInput v-model="amount" :filled="true" type="number" placeholder="Enter Amount" />
+
+    <div class="row mt-6">
+      <div class="form-group" :class="[columnClass]">
+        <label class="form-label">Amount <span class="text-danger">*</span></label>
+        <AppInput v-model="amount" :filled="true" type="number" placeholder="Enter Amount" />
+      </div>
     </div>
   </form>
 

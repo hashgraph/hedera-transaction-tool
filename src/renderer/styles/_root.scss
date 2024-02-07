@@ -26,6 +26,8 @@
   --#{$prefix}table-header-bg-color: #{$light-blue-300};
 
   --#{$prefix}container-dropdown-menu-item-hover-color: #{$light-blue-300};
+
+  --#{$prefix}btn-secondary-bg-color: #{$light-blue-500};
 }
 
 @if $enable-dark-mode {
@@ -58,5 +60,7 @@
     --#{$prefix}table-header-bg-color: #{$dark-blue-600};
 
     --#{$prefix}container-dropdown-menu-item-hover-color: #{$dark-blue-600};
+
+    --#{$prefix}btn-secondary-bg-color: #{$dark-blue-600};
   }
 }

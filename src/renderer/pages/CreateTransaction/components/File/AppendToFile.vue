@@ -66,7 +66,7 @@ const createTransaction = () => {
 
 const handleAddSignatureKey = () => {
   signatureKeys.value.push(signatureKeyText.value);
-  signatureKeys.value = signatureKeys.value.filter(isPublicKey);
+  signatureKeys.value = [...new Set(signatureKeys.value.filter(isPublicKey))];
   signatureKeyText.value = '';
 };
 
@@ -120,6 +120,9 @@ const handleCreate = async e => {
 
 /* Watchers */
 watch(fileMeta, () => (content.value = ''));
+
+/* Misc */
+const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <form @submit="handleCreate">
@@ -128,6 +131,11 @@ watch(fileMeta, () => (content.value = ''));
       heading-text="Append File Transaction"
     />
 
+    <AppButton type="button" color="secondary" class="mt-6" @click="$router.back()">
+      <span class="bi bi-arrow-left"></span>
+      Back
+    </AppButton>
+
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
       v-model:valid-start="validStart"
@@ -135,42 +143,56 @@ watch(fileMeta, () => (content.value = ''));
       class="mt-6"
     />
 
+    <div class="row mt-6">
+      <div class="form-group" :class="[columnClass]">
+        <label class="form-label">File ID <span class="text-danger">*</span></label>
+        <AppInput v-model="fileId" :filled="true" placeholder="Enter File ID" />
+      </div>
+    </div>
+
     <hr class="separator my-6" />
 
-    <div class="mt-4 form-group w-50">
-      <label class="form-label">File ID <span class="text-danger">*</span></label>
-      <AppInput v-model="fileId" :filled="true" placeholder="Enter File ID" />
-    </div>
-    <div class="mt-4 form-group w-75">
-      <label class="form-label">Signature Keys <span class="text-danger">*</span></label>
-      <div class="d-flex gap-3">
-        <AppInput
-          v-model="signatureKeyText"
-          :filled="true"
-          placeholder="Enter signer public key"
-          @keypress="e => e.code === 'Enter' && handleAddSignatureKey()"
-        />
-        <AppButton color="secondary" type="button" class="rounded-4" @click="handleAddSignatureKey"
+    <div class="row">
+      <div class="form-group col-8 col-xxxl-6">
+        <label class="form-label">Signature Keys <span class="text-danger">*</span></label>
+        <div class="d-flex gap-3">
+          <AppInput
+            v-model="signatureKeyText"
+            :filled="true"
+            placeholder="Enter signer public key"
+          />
+        </div>
+      </div>
+
+      <div class="form-group col-4 col-xxxl-6 d-flex align-items-end">
+        <AppButton :outline="true" color="primary" type="button" @click="handleAddSignatureKey"
           >Add</AppButton
         >
       </div>
     </div>
-    <div class="mt-4 w-75">
-      <template v-for="key in signatureKeys" :key="key">
-        <div class="d-flex align-items-center gap-3 mt-3">
-          <AppInput :model-value="key" :filled="true" readonly />
-          <i
-            class="bi bi-x-lg d-inline-block cursor-pointer"
-            @click="signatureKeys = signatureKeys.filter(k => k !== key)"
-          ></i>
-        </div>
-      </template>
+
+    <div class="row">
+      <div class="form-group col-8 col-xxxl-6">
+        <template v-for="key in signatureKeys" :key="key">
+          <div class="d-flex align-items-center gap-3 mt-3">
+            <AppInput :model-value="key" :filled="true" readonly />
+            <i
+              class="bi bi-x-lg d-inline-block cursor-pointer"
+              @click="signatureKeys = signatureKeys.filter(k => k !== key)"
+            ></i>
+          </div>
+        </template>
+      </div>
     </div>
-    <div class="mt-4 form-group w-25">
-      <label class="form-label">Chunk Size</label>
-      <AppInput v-model="chunkSize" :filled="true" type="number" min="1024" max="6144" />
+
+    <div class="row mt-6">
+      <div class="form-group" :class="[columnClass]">
+        <label class="form-label">Chunk Size</label>
+        <AppInput v-model="chunkSize" :filled="true" type="number" min="1024" max="6144" />
+      </div>
     </div>
-    <div class="mt-4 form-group">
+
+    <div class="form-group mt-4">
       <label for="fileUpload" class="form-label">
         <span for="fileUpload" class="btn btn-primary" :class="{ disabled: content.length > 0 }"
           >Upload File</span
@@ -193,14 +215,17 @@ watch(fileMeta, () => (content.value = ''));
         ></span>
       </template>
     </div>
-    <div class="mt-4 form-group w-75">
-      <label class="form-label">File Contents</label>
-      <textarea
-        v-model="content"
-        :disabled="Boolean(fileBuffer)"
-        class="form-control is-fill py-3"
-        rows="10"
-      ></textarea>
+
+    <div class="row mt-6">
+      <div class="form-group col-12 col-xl-8">
+        <label class="form-label">File Contents</label>
+        <textarea
+          v-model="content"
+          :disabled="Boolean(fileBuffer)"
+          class="form-control is-fill py-3"
+          rows="10"
+        ></textarea>
+      </div>
     </div>
   </form>
 

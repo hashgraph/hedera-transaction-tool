@@ -80,6 +80,9 @@ const handleCreate = async e => {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
+
+/* Misc */
+const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <form @submit="handleCreate">
@@ -90,11 +93,16 @@ const handleCreate = async e => {
         !receiverData.accountId.value ||
         amount < 0
       "
-      heading-text="Create Account Transaction"
+      heading-text="Transfer Hbar Transaction"
     />
 
-    <div class="mt-4 d-flex flex-wrap gap-5">
-      <div class="form-group col-4">
+    <AppButton type="button" color="secondary" class="mt-6" @click="$router.back()">
+      <span class="bi bi-arrow-left"></span>
+      Back
+    </AppButton>
+
+    <div class="row flex-wrap align-items-end mt-6">
+      <div class="form-group" :class="[columnClass]">
         <label class="form-label"
           >{{ isApprovedTransfer ? 'Spender' : 'Payer' }} ID
           <span class="text-danger">*</span></label
@@ -116,73 +124,84 @@ const handleCreate = async e => {
           placeholder="Enter Payer ID"
         />
       </div>
-      <div class="form-group">
+      <div class="form-group form-group" :class="[columnClass]">
         <label class="form-label">Valid Start Time <span class="text-danger">*</span></label>
         <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
       </div>
-      <div class="form-group">
+      <div class="form-group form-group" :class="[columnClass]">
         <label class="form-label">Max Transaction Fee</label>
         <AppInput v-model="maxTransactionfee" type="number" min="0" :filled="true" />
       </div>
     </div>
-    <div class="mt-4 form-group">
-      <label class="form-label">Sender ID <span class="text-danger">*</span></label>
-      <label
-        v-if="senderData.isValid.value"
-        class="form-label text-secondary border-start border-1 ms-2 ps-2"
-        >Balance: {{ senderData.accountInfo.value?.balance || 0 }}</label
+
+    <div class="row align-items-end mt-6">
+      <div class="form-group" :class="[columnClass]">
+        <label class="form-label">Sender ID <span class="text-danger">*</span></label>
+        <label v-if="senderData.isValid.value" class="form-label d-block text-secondary"
+          >Balance: {{ senderData.accountInfo.value?.balance || 0 }}</label
+        >
+        <AppInput
+          :value="senderData.accountIdFormatted.value"
+          @input="senderData.accountId.value = ($event.target as HTMLInputElement).value"
+          :filled="true"
+          placeholder="Enter Sender ID"
+        />
+      </div>
+
+      <div class="form-group mt-6" :class="[columnClass]" v-if="senderData.key.value">
+        <AppButton
+          :outline="true"
+          color="primary"
+          type="button"
+          @click="
+            isKeyStructureModalShown = true;
+            keyStructureComponentKey = senderData.key.value;
+          "
+          >Show Key</AppButton
+        >
+      </div>
+    </div>
+
+    <div class="row align-items-end mt-6">
+      <div class="form-group" :class="[columnClass]">
+        <label class="form-label">Receiver ID <span class="text-danger">*</span></label>
+        <label v-if="receiverData.isValid.value" class="form-label d-block text-secondary"
+          >Balance: {{ receiverData.accountInfo.value?.balance || 0 }}</label
+        >
+        <AppInput
+          :value="receiverData.accountIdFormatted.value"
+          @input="receiverData.accountId.value = ($event.target as HTMLInputElement).value"
+          :filled="true"
+          placeholder="Enter Receiver ID"
+        />
+      </div>
+
+      <div
+        class="form-group mt-6"
+        :class="[columnClass]"
+        v-if="receiverData.accountInfo.value?.receiverSignatureRequired && receiverData.key.value"
       >
-      <AppInput
-        :value="senderData.accountIdFormatted.value"
-        @input="senderData.accountId.value = ($event.target as HTMLInputElement).value"
-        :filled="true"
-        placeholder="Enter Sender ID"
-      />
+        <AppButton
+          :outline="true"
+          color="primary"
+          type="button"
+          @click="
+            isKeyStructureModalShown = true;
+            keyStructureComponentKey = receiverData.key.value;
+          "
+          >Show Key</AppButton
+        >
+      </div>
     </div>
-    <div class="mt-4" v-if="senderData.key.value">
-      <AppButton
-        color="secondary"
-        size="small"
-        @click="
-          isKeyStructureModalShown = true;
-          keyStructureComponentKey = senderData.key.value;
-        "
-        >View Key Structure</AppButton
-      >
+
+    <div class="row mt-6">
+      <div class="form-group" :class="[columnClass]">
+        <label class="form-label">Amount <span class="text-danger">*</span></label>
+        <AppInput v-model="amount" type="number" :filled="true" placeholder="Enter Amount" />
+      </div>
     </div>
-    <div class="mt-4 form-group">
-      <label class="form-label">Receiver ID <span class="text-danger">*</span></label>
-      <label
-        v-if="receiverData.isValid.value"
-        class="form-label text-secondary border-start border-1 ms-2 ps-2"
-        >Balance: {{ receiverData.accountInfo.value?.balance || 0 }}</label
-      >
-      <AppInput
-        :value="receiverData.accountIdFormatted.value"
-        @input="receiverData.accountId.value = ($event.target as HTMLInputElement).value"
-        :filled="true"
-        placeholder="Enter Receiver ID"
-      />
-    </div>
-    <div
-      class="mt-4"
-      v-if="receiverData.accountInfo.value?.receiverSignatureRequired && receiverData.key.value"
-    >
-      <AppButton
-        color="secondary"
-        size="small"
-        @click="
-          isKeyStructureModalShown = true;
-          keyStructureComponentKey = receiverData.key.value;
-        "
-        >View Key Structure</AppButton
-      >
-    </div>
-    <div class="mt-4 form-group">
-      <label class="form-label">Amount <span class="text-danger">*</span></label>
-      <AppInput v-model="amount" type="number" :filled="true" placeholder="Enter Amount" />
-    </div>
-    <div class="mt-4">
+
+    <div class="mt-6">
       <AppSwitch
         v-model:checked="isApprovedTransfer"
         name="is-approved-transfer"
@@ -191,6 +210,7 @@ const handleCreate = async e => {
       />
     </div>
   </form>
+
   <TransactionProcessor
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"

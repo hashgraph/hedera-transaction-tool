@@ -25,6 +25,12 @@
   }
 }
 
+@each $color, $value in $theme-colors-button {
+  .btn-outline-#{$color} {
+    @include button-custom-outline-variant($btn-outline-text-color, $value);
+  }
+}
+
 .btn-percentage {
   cursor: pointer;
   border: 1px solid $dark-blue-300; //TO CHANGE COLOR

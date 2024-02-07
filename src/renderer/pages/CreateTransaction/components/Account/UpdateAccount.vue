@@ -165,7 +165,7 @@ watch(
 );
 
 /* Misc */
-const columnClass = 'col-8 col-md-6 col-xxl-4';
+const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <form @submit="handleCreate">
@@ -174,6 +174,11 @@ const columnClass = 'col-8 col-md-6 col-xxl-4';
       heading-text="Update Account Transaction"
     />
 
+    <AppButton type="button" color="secondary" class="mt-6" @click="$router.back()">
+      <span class="bi bi-arrow-left"></span>
+      Back
+    </AppButton>
+
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
       v-model:valid-start="validStart"
@@ -181,34 +186,34 @@ const columnClass = 'col-8 col-md-6 col-xxl-4';
       class="mt-6"
     />
 
-    <div class="form-group mt-6" :class="[columnClass]">
-      <label class="form-label">Account ID <span class="text-danger">*</span></label>
-      <div class="row align-items-center">
-        <div class="col-8">
-          <AppInput
-            :model-value="accountData.accountIdFormatted.value"
-            @update:model-value="v => (accountData.accountId.value = v)"
-            :filled="true"
-            placeholder="Enter Account ID"
-          />
-        </div>
-        <div class="col-4">
-          <AppButton
-            v-if="accountData.key.value"
-            class="text-nowrap"
-            color="secondary"
-            type="button"
-            @click="isKeyStructureModalShown = true"
-            >Show Key</AppButton
-          >
-        </div>
+    <div class="row mt-6">
+      <div class="form-group" :class="[columnClass]">
+        <label class="form-label">Account ID <span class="text-danger">*</span></label>
+        <AppInput
+          :model-value="accountData.accountIdFormatted.value"
+          @update:model-value="v => (accountData.accountId.value = v)"
+          :filled="true"
+          placeholder="Enter Account ID"
+        />
+      </div>
+
+      <div class="form-group mt-6" :class="[columnClass]">
+        <AppButton
+          v-if="accountData.key.value"
+          :outline="true"
+          class="text-nowrap"
+          color="primary"
+          type="button"
+          @click="isKeyStructureModalShown = true"
+          >Show Key</AppButton
+        >
       </div>
     </div>
 
     <hr class="separator my-6" />
 
     <div class="row">
-      <div class="form-group col-8 col-xl-6">
+      <div class="form-group col-8 col-xxxl-6">
         <label class="form-label">Keys</label>
         <div class="d-flex gap-3">
           <AppInput
@@ -216,8 +221,16 @@ const columnClass = 'col-8 col-md-6 col-xxl-4';
             :filled="true"
             placeholder="Enter new owner public key"
           />
-          <AppButton color="secondary" type="button" @click="handleAdd">Add</AppButton>
         </div>
+      </div>
+
+      <div class="form-group col-4 col-xxxl-6 d-flex align-items-end">
+        <AppButton :outline="true" color="primary" type="button" @click="handleAdd">Add</AppButton>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="form-group col-8 col-xxxl-6">
         <template v-for="key in newOwnerKeys" :key="key">
           <div class="d-flex align-items-center gap-3 mt-4">
             <AppInput readonly :filled="true" :model-value="key" />
@@ -240,6 +253,7 @@ const columnClass = 'col-8 col-md-6 col-xxl-4';
         label="Accept Staking Awards"
       />
     </div>
+
     <div class="row mt-6">
       <div class="form-group" :class="[columnClass]">
         <label class="form-label">Staked Account Id</label>

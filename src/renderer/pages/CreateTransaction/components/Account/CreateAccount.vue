@@ -117,7 +117,7 @@ watch(
 );
 
 /* Misc */
-const columnClass = 'col-8 col-md-6 col-xxl-4';
+const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <form @submit="handleCreate">
@@ -125,6 +125,11 @@ const columnClass = 'col-8 col-md-6 col-xxl-4';
       :create-requirements="keyList._keys.length === 0 || !payerData.isValid.value"
       heading-text="Create Account Transaction"
     />
+
+    <AppButton type="button" color="secondary" class="mt-6" @click="$router.back()">
+      <span class="bi bi-arrow-left"></span>
+      Back
+    </AppButton>
 
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
@@ -136,12 +141,20 @@ const columnClass = 'col-8 col-md-6 col-xxl-4';
     <hr class="separator my-6" />
 
     <div class="row">
-      <div class="form-group col-8 col-xl-6">
+      <div class="form-group col-8 col-xxxl-6">
         <label class="form-label">Keys <span class="text-danger">*</span></label>
         <div class="d-flex gap-3">
           <AppInput v-model="ownerKeyText" :filled="true" placeholder="Enter owner public key" />
-          <AppButton type="button" color="secondary" @click="handleAdd">Add</AppButton>
         </div>
+      </div>
+
+      <div class="form-group col-4 col-xxxl-6 d-flex align-items-end">
+        <AppButton :outline="true" type="button" color="primary" @click="handleAdd">Add</AppButton>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="form-group col-8 col-xxxl-6">
         <template v-for="key in ownerKeys" :key="key">
           <div class="d-flex align-items-center gap-3 mt-4">
             <AppInput readonly :filled="true" :model-value="key" />

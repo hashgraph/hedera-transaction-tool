@@ -22,7 +22,7 @@ import RestoreKey from '../pages/RestoreKey';
 import CreateTransaction from '../pages/CreateTransaction';
 import AccountTab from '../pages/Settings/components/AccountTab.vue';
 import ForgotPassword from '../pages/ForgotPassword';
-import LinkExisting from '@renderer/pages/Accounts/LinkExisting/LinkExisting.vue';
+import LinkExisting from '../pages/Accounts/LinkExisting/LinkExisting.vue';
 
 const routes: RouteRecordRaw[] = [
   {

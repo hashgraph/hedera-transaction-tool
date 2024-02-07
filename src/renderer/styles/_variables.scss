@@ -383,7 +383,7 @@ $texts: (
 
 // Buttons
 $btn-font-size: 14px;
-$btn-padding-y: 6px;
+$btn-padding-y: 7px;
 $btn-padding-x: 18px;
 
 $btn-padding-y-sm: 4px;
@@ -395,7 +395,7 @@ $btn-padding-x-lg: 18px;
 $btn-font-size-lg: 16px;
 
 $btn-line-height: 24px;
-$btn-font-weight: $font-weight-bold;
+$btn-font-weight: $font-weight-semi-bold;
 $btn-color: $neutral-00;
 
 $btn-border-radius: $border-radius;
@@ -411,6 +411,7 @@ $btn-disabled-opacity: 0.5;
 $btn-primary-color: $neutral-00;
 $btn-primary-disabled-background: #232342;
 $btn-primary-outline-color: $neutral-00;
+$btn-outline-text-color: var(--bs-menu-link-color-hover);
 // $btn-primary-outline-border-hover: $blue-neutral-200;
 
 // Forms
@@ -427,10 +428,10 @@ $input-border-color: var(--bs-input-border-color);
 $input-focus-border-color: var(--bs-input-focus-border-color);
 $input-focus-box-shadow: none;
 $input-height: auto;
-$input-line-height: 1.71;
+$input-line-height: 2;
 $form-group-margin-bottom: 0;
 // $input-bg: $blue-neutral-700;
-$input-padding-y: 15px;
+$input-padding-y: 5px;
 $input-padding-x: 12px;
 $input-font-size: 14px;
 // $input-disabled-bg: $blue-neutral-800;
