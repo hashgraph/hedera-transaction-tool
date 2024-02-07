@@ -189,10 +189,8 @@ watch(fileMeta, () => (content.value = ''));
     <div class="mt-4 form-group w-75">
       <label class="form-label">Signature Keys <span class="text-danger">*</span></label>
       <div class="d-flex gap-3">
-        <AppInput v-model="ownerKeyText" :filled="true" placeholder="Enter signer public key" />
-        <AppButton color="secondary" type="button" class="rounded-4" @click="handleAddOwnerKey"
-          >Add</AppButton
-        >
+        <AppInput v-model="ownerKeyText" :filled="true" placeholder="Enter owner public key" />
+        <AppButton color="secondary" type="button" @click="handleAddOwnerKey">Add</AppButton>
       </div>
     </div>
     <div class="mt-4 w-75">
@@ -209,10 +207,8 @@ watch(fileMeta, () => (content.value = ''));
     <div class="form-group w-75">
       <label class="form-label">Keys</label>
       <div class="d-flex gap-3">
-        <AppInput v-model="newKeyText" :filled="true" placeholder="Enter owner public key" />
-        <AppButton color="secondary" type="button" class="rounded-4" @click="handleAddNewKey"
-          >Add</AppButton
-        >
+        <AppInput v-model="newKeyText" :filled="true" placeholder="Update the keys on the file" />
+        <AppButton color="secondary" type="button" @click="handleAddNewKey">Add</AppButton>
       </div>
     </div>
     <div class="mt-4 w-75">
