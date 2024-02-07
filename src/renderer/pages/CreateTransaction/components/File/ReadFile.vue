@@ -126,6 +126,11 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
       button-text="Sign and read"
     />
 
+    <AppButton type="button" color="secondary" class="mt-6" @click="$router.back()">
+      <span class="bi bi-arrow-left"></span>
+      Back
+    </AppButton>
+
     <div class="mt-4 form-group w-50">
       <div class="form-group col-8 col-md-6 col-lg-4">
         <label class="form-label">Payer ID <span class="text-danger">*</span></label>
