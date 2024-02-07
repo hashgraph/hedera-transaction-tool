@@ -11,6 +11,8 @@ export default function createWindow() {
     ...(process.platform === 'linux' ? { icon } : {}),
     width: Math.round(width * 0.9),
     height: Math.round(height * 0.9),
+    minWidth: 960,
+    minHeight: 400,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       nodeIntegration: false,
