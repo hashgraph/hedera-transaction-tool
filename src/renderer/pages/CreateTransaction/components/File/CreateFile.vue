@@ -11,8 +11,9 @@ import useAccountId from '../../../../composables/useAccountId';
 import { createTransactionId } from '../../../../services/transactionService';
 import { add } from '../../../../services/filesService';
 
-import { getDateTimeLocalInputValue } from '../../../../utils';
-import { isPublicKey } from '../../../../utils/validator';
+import { getDateTimeLocalInputValue } from '@renderer/utils';
+import { getEntityIdFromTransactionResult } from '@renderer/utils/transactions';
+import { isPublicKey } from '@renderer/utils/validator';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppInput from '../../../../components/ui/AppInput.vue';
@@ -79,7 +80,7 @@ const handleCreate = async e => {
 const handleExecuted = () => {
   add(
     user.data.id,
-    new AccountId(transactionProcessor.value?.transactionResult.receipt.fileId).toString(),
+    getEntityIdFromTransactionResult(transactionProcessor.value?.transactionResult, 'fileId'),
   );
 };
 </script>
@@ -202,7 +203,7 @@ const handleExecuted = () => {
       >
         <span class="text-bold text-secondary">File ID:</span>
         <span>{{
-          new AccountId(transactionProcessor.transactionResult.receipt.fileId).toString() || ''
+          getEntityIdFromTransactionResult(transactionProcessor.transactionResult, 'fileId')
         }}</span>
       </p>
     </template>
