@@ -46,7 +46,7 @@ const handleFileItemClick = fileId => {
 <template>
   <div class="p-5">
     <div class="d-flex justify-content-between align-items-center">
-      <h1 class="text-title text-bold">File Service</h1>
+      <h1 class="text-title text-bold">Files</h1>
 
       <div class="d-flex justify-content-end align-items-center">
         <AppButton

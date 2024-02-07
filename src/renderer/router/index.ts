@@ -11,7 +11,7 @@ import Help from '../pages/Help';
 import Settings from '../pages/Settings';
 import SmartContracts from '../pages/SmartContracts';
 import ConsensusService from '../pages/ConsensusService';
-import FileService from '../pages/FileService';
+import Files from '../pages/Files';
 import ContactList from '../pages/ContactList';
 import AccountSetup from '../pages/AccountSetup';
 import GeneralTab from '../pages/Settings/components/GeneralTab.vue';
@@ -37,7 +37,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/tokens', name: 'tokens', component: Tokens },
   { path: '/smart-contracts', name: 'smartContracts', component: SmartContracts },
   { path: '/consensus-service', name: 'consensusService', component: ConsensusService },
-  { path: '/file-service', name: 'fileService', component: FileService },
+  { path: '/files', name: 'files', component: Files },
   { path: '/contact-list', name: 'contactList', component: ContactList },
   { path: '/help', name: 'help', component: Help },
   { path: '/account-setup', name: 'accountSetup', component: AccountSetup },
