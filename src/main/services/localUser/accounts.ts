@@ -1,8 +1,8 @@
 import { getPrismaClient } from '../../db';
 
-const prisma = getPrismaClient();
-
 export const getAccounts = (userId: string) => {
+  const prisma = getPrismaClient();
+
   try {
     return prisma.hederaAccount.findMany({
       where: {
@@ -16,6 +16,8 @@ export const getAccounts = (userId: string) => {
 };
 
 export const addAccount = async (userId: string, accountId: string, nickname: string = '') => {
+  const prisma = getPrismaClient();
+
   const accounts = await getAccounts(userId);
 
   if (
@@ -36,6 +38,8 @@ export const addAccount = async (userId: string, accountId: string, nickname: st
 };
 
 export const removeAccount = async (userId: string, accountId: string, nickname?: string) => {
+  const prisma = getPrismaClient();
+
   const accounts = await getAccounts(userId);
 
   if (

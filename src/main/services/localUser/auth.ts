@@ -2,9 +2,9 @@ import { generateUUID, hash } from '../../utils/crypto';
 
 import { getPrismaClient } from '../../db';
 
-const prisma = getPrismaClient();
-
 export const register = async (email: string, password: string) => {
+  const prisma = getPrismaClient();
+
   return await prisma.user.create({
     data: {
       id: generateUUID(),
@@ -15,6 +15,8 @@ export const register = async (email: string, password: string) => {
 };
 
 export const login = async (email: string, password: string, autoRegister?: boolean) => {
+  const prisma = getPrismaClient();
+
   const firstUser = await prisma.user.findFirst();
 
   if (!firstUser) {
@@ -35,6 +37,8 @@ export const login = async (email: string, password: string, autoRegister?: bool
 };
 
 export const deleteUser = async (email: string) => {
+  const prisma = getPrismaClient();
+
   await prisma.user.delete({
     where: {
       email,
@@ -42,9 +46,14 @@ export const deleteUser = async (email: string) => {
   });
 };
 
-export const getUsersCount = () => prisma.user.count();
+export const getUsersCount = () => {
+  const prisma = getPrismaClient();
+  return prisma.user.count();
+};
 
 export const comparePasswords = async (userId: string, password: string) => {
+  const prisma = getPrismaClient();
+
   const firstUser = await prisma.user.findFirst({
     where: {
       id: userId,
