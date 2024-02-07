@@ -76,6 +76,7 @@ const handleImportExternalKey = async e => {
         ecdsaKey.nickname || '',
       ),
       organization_id: null,
+      type: 'ECDSA',
       secret_hash: null,
     };
 
@@ -110,6 +111,7 @@ const handleImportExternalED25519Key = async e => {
         ed25519Key.nickname || '',
       ),
       organization_id: null,
+      type: 'ED25519',
       secret_hash: null,
     };
 
