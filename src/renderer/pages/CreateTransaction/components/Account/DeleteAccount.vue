@@ -75,7 +75,7 @@ onMounted(() => {
 });
 
 /* Misc */
-const columnClass = 'col-8 col-md-6 col-xxl-4';
+const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <form @submit="handleCreate">
@@ -101,35 +101,36 @@ const columnClass = 'col-8 col-md-6 col-xxl-4';
       class="mt-6"
     />
 
-    <hr class="separator my-6" />
-
-    <div class="form-group" :class="[columnClass]">
-      <label class="form-label">Account ID <span class="text-danger">*</span></label>
-      <label v-if="accountData.isValid.value" class="d-block form-label text-secondary"
-        >Balance: {{ accountData.accountInfo.value?.balance || 0 }}</label
-      >
-      <div class="row align-items-center">
-        <div class="col-8">
-          <AppInput
-            :model-value="accountData.accountIdFormatted.value"
-            @update:model-value="v => (accountData.accountId.value = v)"
-            :filled="true"
-            placeholder="Enter Account ID"
-          />
-        </div>
-        <div class="col-4">
-          <AppButton
-            v-if="accountData.key.value"
-            color="secondary"
-            type="button"
-            @click="
-              isKeyStructureModalShown = true;
-              selectedKey = accountData.key.value;
-            "
-            >Show Key</AppButton
-          >
-        </div>
+    <div class="row align-items-end mt-6">
+      <div class="form-group" :class="[columnClass]">
+        <label class="form-label">Account ID <span class="text-danger">*</span></label>
+        <label v-if="accountData.isValid.value" class="d-block form-label text-secondary"
+          >Balance: {{ accountData.accountInfo.value?.balance || 0 }}</label
+        >
+        <AppInput
+          :model-value="accountData.accountIdFormatted.value"
+          @update:model-value="v => (accountData.accountId.value = v)"
+          :filled="true"
+          placeholder="Enter Account ID"
+        />
       </div>
+
+      <div class="form-group" :class="[columnClass]">
+        <AppButton
+          v-if="accountData.key.value"
+          :outline="true"
+          color="primary"
+          type="button"
+          @click="
+            isKeyStructureModalShown = true;
+            selectedKey = accountData.key.value;
+          "
+          >Show Key</AppButton
+        >
+      </div>
+    </div>
+
+    <div class="my-4">
       <p
         v-if="accountData.accountInfo.value && accountData.accountInfo.value.deleted"
         class="text-danger mt-4"
@@ -138,35 +139,38 @@ const columnClass = 'col-8 col-md-6 col-xxl-4';
       </p>
     </div>
 
-    <div class="form-group mt-6" :class="[columnClass]">
-      <label class="form-label">Transfer Account ID <span class="text-danger">*</span></label>
-      <label v-if="transferAccountData.isValid.value" class="d-block form-label text-secondary"
-        >Receive Signature Required:
-        {{ transferAccountData.accountInfo.value?.receiverSignatureRequired || false }}</label
-      >
-      <div class="row align-items-center">
-        <div class="col-8">
-          <AppInput
-            :model-value="transferAccountData.accountIdFormatted.value"
-            @update:model-value="v => (transferAccountData.accountId.value = v)"
-            :disabled="transferAccountData.accountInfo.value?.deleted"
-            :filled="true"
-            placeholder="Enter Account ID"
-          />
-        </div>
-        <div class="col-4">
-          <AppButton
-            v-if="transferAccountData.key.value"
-            color="secondary"
-            type="button"
-            @click="
-              isKeyStructureModalShown = true;
-              selectedKey = transferAccountData.key.value;
-            "
-            >Show Key</AppButton
-          >
-        </div>
+    <div class="row align-items-end mt-6">
+      <div class="form-group" :class="[columnClass]">
+        <label class="form-label">Transfer Account ID <span class="text-danger">*</span></label>
+        <label v-if="transferAccountData.isValid.value" class="d-block form-label text-secondary"
+          >Receive Signature Required:
+          {{ transferAccountData.accountInfo.value?.receiverSignatureRequired || false }}</label
+        >
+        <AppInput
+          :model-value="transferAccountData.accountIdFormatted.value"
+          @update:model-value="v => (transferAccountData.accountId.value = v)"
+          :disabled="transferAccountData.accountInfo.value?.deleted"
+          :filled="true"
+          placeholder="Enter Account ID"
+        />
       </div>
+
+      <div class="form-group" :class="[columnClass]">
+        <AppButton
+          v-if="transferAccountData.key.value"
+          :outline="true"
+          color="primary"
+          type="button"
+          @click="
+            isKeyStructureModalShown = true;
+            selectedKey = transferAccountData.key.value;
+          "
+          >Show Key</AppButton
+        >
+      </div>
+    </div>
+
+    <div class="my-4">
       <p
         v-if="
           transferAccountData.accountInfo.value && transferAccountData.accountInfo.value.deleted
