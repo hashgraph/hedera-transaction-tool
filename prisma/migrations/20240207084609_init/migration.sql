@@ -1,16 +1,18 @@
-/*
-  Warnings:
+-- CreateTable
+CREATE TABLE "Migration" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "name" TEXT NOT NULL,
+    "created_at" INTEGER NOT NULL
+);
 
-  - You are about to drop the `UserKey` table. If the table is not empty, all the data it contains will be lost.
-
-*/
--- DropIndex
-DROP INDEX "unique_user_key";
-
--- DropTable
-PRAGMA foreign_keys=off;
-DROP TABLE "UserKey";
-PRAGMA foreign_keys=on;
+-- CreateTable
+CREATE TABLE "User" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "email" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" DATETIME NOT NULL
+);
 
 -- CreateTable
 CREATE TABLE "KeyPair" (
@@ -19,6 +21,7 @@ CREATE TABLE "KeyPair" (
     "index" INTEGER NOT NULL,
     "public_key" TEXT NOT NULL,
     "private_key" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
     "organization_id" TEXT,
     "secret_hash" TEXT,
     "nickname" TEXT,
@@ -35,9 +38,8 @@ CREATE TABLE "Organization" (
     CONSTRAINT "Organization_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
--- RedefineTables
-PRAGMA foreign_keys=OFF;
-CREATE TABLE "new_Transaction" (
+-- CreateTable
+CREATE TABLE "Transaction" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT NOT NULL,
     "type" TEXT NOT NULL,
@@ -48,21 +50,28 @@ CREATE TABLE "new_Transaction" (
     "status" TEXT NOT NULL,
     "status_code" INTEGER NOT NULL,
     "user_id" TEXT NOT NULL,
-    "key_id" TEXT NOT NULL,
+    "key_id" TEXT,
     "signature" TEXT NOT NULL,
     "valid_start" TEXT NOT NULL,
     "executed_at" INTEGER NOT NULL,
-    "created_at" INTEGER NOT NULL,
-    "updated_at" INTEGER NOT NULL,
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" DATETIME NOT NULL,
     "group_id" TEXT,
     CONSTRAINT "Transaction_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "Transaction_key_id_fkey" FOREIGN KEY ("key_id") REFERENCES "KeyPair" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    CONSTRAINT "Transaction_key_id_fkey" FOREIGN KEY ("key_id") REFERENCES "KeyPair" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
-INSERT INTO "new_Transaction" ("body", "created_at", "description", "executed_at", "group_id", "id", "key_id", "name", "signature", "status", "status_code", "transaction_hash", "transaction_id", "type", "updated_at", "user_id", "valid_start") SELECT "body", "created_at", "description", "executed_at", "group_id", "id", "key_id", "name", "signature", "status", "status_code", "transaction_hash", "transaction_id", "type", "updated_at", "user_id", "valid_start" FROM "Transaction";
-DROP TABLE "Transaction";
-ALTER TABLE "new_Transaction" RENAME TO "Transaction";
-PRAGMA foreign_key_check;
-PRAGMA foreign_keys=ON;
+
+-- CreateTable
+CREATE TABLE "HederaAccount" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "user_id" TEXT NOT NULL,
+    "account_id" TEXT NOT NULL,
+    "nickname" TEXT NOT NULL,
+    CONSTRAINT "HederaAccount_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
 CREATE INDEX "unique_user_key" ON "KeyPair"("user_id", "secret_hash");
