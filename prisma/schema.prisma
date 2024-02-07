@@ -24,6 +24,7 @@ model User {
   transactions  Transaction[]
   organizations Organization[]
   HederaAccount HederaAccount[]
+  HederaFile HederaFile[]
 }
 
 model KeyPair {
@@ -79,6 +80,14 @@ model HederaAccount {
   id         String @id @default(uuid())
   user_id    String
   account_id String
+  nickname   String
+  user       User   @relation(fields: [user_id], references: [id])
+}
+
+model HederaFile {
+  id         String @id @default(uuid())
+  user_id    String
+  file_id String
   nickname   String
   user       User   @relation(fields: [user_id], references: [id])
 }
