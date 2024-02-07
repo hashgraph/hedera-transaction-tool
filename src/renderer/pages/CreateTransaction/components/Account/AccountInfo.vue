@@ -28,6 +28,12 @@ watch(accountData.isValid, isValid => {
   <div class="d-flex justify-content-between align-items-center">
     <h2 class="text-title text-bold">Account Info</h2>
   </div>
+
+  <AppButton type="button" color="secondary" class="mt-6" @click="$router.back()">
+    <span class="bi bi-arrow-left"></span>
+    Back
+  </AppButton>
+
   <div class="mt-4">
     <div class="mt-4 w-50 form-group">
       <label class="form-label">Account ID <span class="text-danger">*</span></label>
