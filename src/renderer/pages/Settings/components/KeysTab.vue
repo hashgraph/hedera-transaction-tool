@@ -63,55 +63,17 @@ const handleDecrypt = async e => {
   }
 };
 
-const handleImportExternalKey = async e => {
-  e.preventDefault();
-
+const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
   try {
+    const privateKey = type === 'ED25519' ? ed25519Key.privateKey : ecdsaKey.privateKey;
+    const nickname = type === 'ED25519' ? ed25519Key.nickname : ecdsaKey.nickname;
+
     const keyPair: KeyPair = {
       id: '',
       user_id: user.data.id,
-      ...generateExternalKeyPairFromString(
-        ecdsaKey.privateKey || '',
-        'ECDSA',
-        ecdsaKey.nickname || '',
-      ),
+      ...generateExternalKeyPairFromString(privateKey, type, nickname || ''),
       organization_id: null,
-      type: 'ECDSA',
-      secret_hash: null,
-    };
-
-    if (keyPairsStore.keyPairs.find(kp => kp.public_key === keyPair.public_key)) {
-      throw new Error('Key pair already exists');
-    }
-
-    if (!(await comparePasswords(user.data.id, userPassword.value))) {
-      throw new Error('Incorrect password');
-    }
-
-    await keyPairsStore.storeKeyPair(keyPair, userPassword.value);
-
-    isImportECDSAKeyModalShown.value = false;
-
-    toast.success('ECDSA private key imported successfully', { position: 'bottom-right' });
-  } catch (err: any) {
-    toast.error(err.message || 'Failed to import ECDSA private key', { position: 'bottom-right' });
-  }
-};
-
-const handleImportExternalED25519Key = async e => {
-  e.preventDefault();
-
-  try {
-    const keyPair: KeyPair = {
-      id: '',
-      user_id: user.data.id,
-      ...generateExternalKeyPairFromString(
-        ed25519Key.privateKey || '',
-        'ED25519',
-        ed25519Key.nickname || '',
-      ),
-      organization_id: null,
-      type: 'ED25519',
+      type: type,
       secret_hash: null,
     };
 
@@ -126,6 +88,7 @@ const handleImportExternalED25519Key = async e => {
     await keyPairsStore.storeKeyPair(keyPair, userPassword.value);
 
     isImportED25519KeyModalShown.value = false;
+    isImportECDSAKeyModalShown.value = false;
 
     toast.success('ED25519 private key imported successfully', { position: 'bottom-right' });
   } catch (err: any) {
@@ -134,6 +97,7 @@ const handleImportExternalED25519Key = async e => {
     });
   }
 };
+
 /* Hooks */
 onMounted(() => {
   keyPairsStore.refetch();
@@ -147,10 +111,12 @@ watch(isDecryptedModalShown, newVal => {
     userPassword.value = '';
   }
 });
-watch(isImportECDSAKeyModalShown, () => {
+watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
   userPassword.value = '';
   ecdsaKey.nickname = '';
   ecdsaKey.privateKey = '';
+  ed25519Key.nickname = '';
+  ed25519Key.privateKey = '';
 });
 </script>
 <template>
@@ -268,7 +234,14 @@ watch(isImportECDSAKeyModalShown, () => {
         <div class="text-center mt-5">
           <i class="bi bi-key large-icon" style="line-height: 16px"></i>
         </div>
-        <form @submit="handleImportExternalKey">
+        <form
+          @submit="
+            e => {
+              e.preventDefault();
+              handleImportExternalKey('ECDSA');
+            }
+          "
+        >
           <div class="form-group mt-4">
             <label class="form-label">Enter your password</label>
             <AppInput
@@ -311,7 +284,14 @@ watch(isImportECDSAKeyModalShown, () => {
         <div class="text-center mt-5">
           <i class="bi bi-key large-icon"></i>
         </div>
-        <form @submit="handleImportExternalED25519Key">
+        <form
+          @submit="
+            e => {
+              e.preventDefault();
+              handleImportExternalKey('ED25519');
+            }
+          "
+        >
           <div class="form-group mt-4">
             <label class="form-label">Enter your password</label>
             <AppInput
