@@ -20,7 +20,7 @@ const transactionGroups = [
   {
     groupTitle: 'Crypto Service',
     items: [
-      { label: 'Crypto Transfer', name: 'transferHbar' },
+      { label: 'Transfer Tokens', name: 'transferHbar' },
       { label: 'Create Account', name: 'createAccount' },
       { label: 'Update Account', name: 'updateAccount' },
       { label: 'Delete Account', name: 'deleteAccount' },
