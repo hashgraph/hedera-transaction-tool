@@ -15,6 +15,7 @@ import AppSwitch from '../../../../components/ui/AppSwitch.vue';
 import AppInput from '../../../../components/ui/AppInput.vue';
 import KeyStructureModal from '../../../../components/KeyStructureModal.vue';
 import TransactionProcessor from '../../../../components/Transaction/TransactionProcessor.vue';
+import TransactionHeaderControls from '../../../../components/Transaction/TransactionHeaderControls.vue';
 
 /* Stores */
 const networkStore = useNetworkStore();
@@ -82,23 +83,15 @@ const handleCreate = async e => {
 </script>
 <template>
   <form @submit="handleCreate">
-    <div class="d-flex justify-content-between align-items-center">
-      <h2 class="text-title text-bold">Transfer Hbar Transaction</h2>
-
-      <div class="d-flex justify-content-end align-items-center">
-        <AppButton
-          color="primary"
-          :disabled="
-            !payerData.accountId.value ||
-            !senderData.accountId.value ||
-            !receiverData.accountId.value ||
-            amount < 0
-          "
-          type="submit"
-          >Sign & Submit</AppButton
-        >
-      </div>
-    </div>
+    <TransactionHeaderControls
+      :create-requirements="
+        !payerData.accountId.value ||
+        !senderData.accountId.value ||
+        !receiverData.accountId.value ||
+        amount < 0
+      "
+      heading-text="Create Account Transaction"
+    />
 
     <div class="mt-4 d-flex flex-wrap gap-5">
       <div class="form-group col-4">
