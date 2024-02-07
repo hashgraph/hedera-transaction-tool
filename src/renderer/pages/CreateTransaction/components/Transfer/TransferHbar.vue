@@ -8,6 +8,7 @@ import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
 
 import { createTransactionId } from '../../../../services/transactionService';
+import { getDateTimeLocalInputValue } from '@renderer/utils';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppSwitch from '../../../../components/ui/AppSwitch.vue';
@@ -28,7 +29,7 @@ const receiverData = useAccountId();
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<TransferTransaction | null>(null);
-const validStart = ref('');
+const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionfee = ref(2);
 
 const amount = ref(0);
