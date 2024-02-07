@@ -93,6 +93,11 @@ const handleCreate = async e => {
       heading-text="Transfer Hbar Transaction"
     />
 
+    <AppButton type="button" color="secondary" class="mt-6" @click="$router.back()">
+      <span class="bi bi-arrow-left"></span>
+      Back
+    </AppButton>
+
     <div class="mt-4 d-flex flex-wrap gap-5">
       <div class="form-group col-4">
         <label class="form-label"
