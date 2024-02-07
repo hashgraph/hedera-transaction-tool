@@ -14,7 +14,7 @@ const menuItems = [
   },
   {
     link: '/file-service',
-    title: 'File Service',
+    title: 'Files',
     icon: 'bi bi-file-text',
   },
   // {
