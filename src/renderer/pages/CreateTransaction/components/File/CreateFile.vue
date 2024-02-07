@@ -77,11 +77,8 @@ const handleCreate = async e => {
   }
 };
 
-const handleExecuted = () => {
-  add(
-    user.data.id,
-    getEntityIdFromTransactionResult(transactionProcessor.value?.transactionResult, 'fileId'),
-  );
+const handleExecuted = async result => {
+  await add(user.data.id, getEntityIdFromTransactionResult(result, 'fileId'));
 };
 </script>
 <template>
@@ -183,7 +180,6 @@ const handleExecuted = () => {
     :transaction-bytes="transaction?.toBytes() || null"
     :on-close-success-modal-click="
       () => {
-        payerData.accountId.value = '';
         validStart = '';
         maxTransactionFee = 2;
         ownerKeys = [];
