@@ -304,12 +304,12 @@ watch(fileMeta, () => (content.value = ''));
     </div>
 
     <div class="row mt-6">
-      <div class="col-8 col-xxxl-6">
+      <div class="form-group col-12 col-xl-8">
         <label class="form-label">File Contents</label>
         <textarea
           v-model="content"
           :disabled="Boolean(fileBuffer)"
-          class="form-control py-3"
+          class="form-control is-fill py-3"
           rows="10"
         ></textarea>
       </div>
