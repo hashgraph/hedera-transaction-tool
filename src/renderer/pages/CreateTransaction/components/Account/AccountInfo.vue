@@ -23,6 +23,9 @@ watch(accountData.isValid, isValid => {
     toast.error('Account not found', { position: 'bottom-right' });
   }
 });
+
+/* Misc */
+const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <div class="d-flex justify-content-between align-items-center">
@@ -34,8 +37,8 @@ watch(accountData.isValid, isValid => {
     Back
   </AppButton>
 
-  <div class="mt-4">
-    <div class="mt-4 w-50 form-group">
+  <div class="row mt-6">
+    <div class="form-group" :class="[columnClass]">
       <label class="form-label">Account ID <span class="text-danger">*</span></label>
       <AppInput
         :model-value="accountData.accountIdFormatted.value"
@@ -45,7 +48,7 @@ watch(accountData.isValid, isValid => {
       />
     </div>
     <template v-if="accountData.isValid.value">
-      <p class="mt-4">
+      <p class="mt-6">
         <span class="text-secondary">EVM Address: </span>
         {{ accountData.accountInfo.value?.evmAddress }}
       </p>
