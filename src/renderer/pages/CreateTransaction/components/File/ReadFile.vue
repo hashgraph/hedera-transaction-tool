@@ -117,6 +117,9 @@ onMounted(async () => {
 
 /* Watchers */
 watch(isUserPasswordModalShown, () => (userPassword.value = ''));
+
+/* Misc */
+const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <form @submit="handleSubmit">
@@ -131,8 +134,8 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
       Back
     </AppButton>
 
-    <div class="mt-4 form-group w-50">
-      <div class="form-group col-8 col-md-6 col-lg-4">
+    <div class="row mt-6">
+      <div class="form-group" :class="[columnClass]">
         <label class="form-label">Payer ID <span class="text-danger">*</span></label>
         <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
           >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
@@ -145,23 +148,29 @@ watch(isUserPasswordModalShown, () => (userPassword.value = ''));
         />
       </div>
     </div>
-    <div class="mt-4 form-group w-50">
-      <label class="form-label">File ID <span class="text-danger">*</span></label>
-      <AppInput v-model="fileId" :filled="true" placeholder="Enter File ID" />
-    </div>
-    <div class="mt-4 form-group w-75">
-      <div class="d-flex justify-content-between">
-        <label class="form-label">File Content</label>
-        <label class="form-label ms-5" v-if="isHederaSpecialFileId(fileId)"
-          >File content will be decoded, the actual content is protobuf encoded</label
-        >
+
+    <div class="row mt-6">
+      <div class="form-group" :class="[columnClass]">
+        <label class="form-label">File ID <span class="text-danger">*</span></label>
+        <AppInput v-model="fileId" :filled="true" placeholder="Enter File ID" />
       </div>
-      <textarea
-        v-model="content"
-        class="form-control text-code is-fill py-3"
-        rows="10"
-        readonly
-      ></textarea>
+    </div>
+
+    <div class="row mt-6">
+      <div class="col-12 col-xl-8">
+        <div class="d-flex justify-content-between">
+          <label class="form-label">File Content</label>
+          <label class="form-label ms-5" v-if="isHederaSpecialFileId(fileId)"
+            >File content will be decoded, the actual content is protobuf encoded</label
+          >
+        </div>
+        <textarea
+          v-model="content"
+          class="form-control text-code is-fill py-3"
+          rows="10"
+          readonly
+        ></textarea>
+      </div>
     </div>
   </form>
 
