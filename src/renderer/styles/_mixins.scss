@@ -50,7 +50,9 @@
 }
 
 @mixin transition-section {
-  transition: background-color 0.2s ease-in-out, padding 0.2s ease-in-out;
+  transition:
+    background-color 0.2s ease-in-out,
+    padding 0.2s ease-in-out;
 }
 
 @mixin custom-underline($color) {
@@ -126,4 +128,28 @@
   --#{$prefix}btn-disabled-color: #{$disabled-color};
   --#{$prefix}btn-disabled-bg: #{$disabled-background};
   --#{$prefix}btn-disabled-border-color: #{$disabled-border};
+}
+
+@mixin button-custom-outline-variant(
+  $text-color,
+  $color,
+  $color-hover: color-contrast($color),
+  $active-background: $color,
+  $active-border: $color,
+  $active-color: color-contrast($active-background)
+) {
+  --#{$prefix}btn-color: #{$text-color};
+  --#{$prefix}btn-border-color: #{$color};
+  --#{$prefix}btn-hover-color: #{$color-hover};
+  --#{$prefix}btn-hover-bg: #{$active-background};
+  --#{$prefix}btn-hover-border-color: #{$active-border};
+  --#{$prefix}btn-focus-shadow-rgb: #{to-rgb($color)};
+  --#{$prefix}btn-active-color: #{$active-color};
+  --#{$prefix}btn-active-bg: #{$active-background};
+  --#{$prefix}btn-active-border-color: #{$active-border};
+  --#{$prefix}btn-active-shadow: #{$btn-active-box-shadow};
+  --#{$prefix}btn-disabled-color: #{$color};
+  --#{$prefix}btn-disabled-bg: transparent;
+  --#{$prefix}btn-disabled-border-color: #{$color};
+  --#{$prefix}gradient: none;
 }
