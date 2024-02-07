@@ -16,8 +16,7 @@ import AppModal from '../../components/ui/AppModal.vue';
 const user = useUserStore();
 
 // TODO: Replace with real data from SQLite (temp solution) or BE DB
-/* State */
-const files = ref<HederaFile[]>([
+const specialFiles: HederaFile[] = [
   {
     id: '0.0.101',
     file_id: '0.0.101',
@@ -60,7 +59,9 @@ const files = ref<HederaFile[]>([
     nickname: 'Throttle Definitions',
     user_id: user.data.id,
   },
-]);
+];
+/* State */
+const files = ref<HederaFile[]>(specialFiles);
 const selectedFileId = ref('0.0.101');
 const isUnlinkFileModalShown = ref(false);
 
@@ -77,7 +78,7 @@ const handleUnlinkFile = async () => {
     throw new Error('Please login');
   }
 
-  files.value = files.value.concat(await remove(user.data.id, selectedFileId.value));
+  files.value = specialFiles.concat(await remove(user.data.id, selectedFileId.value));
 
   isUnlinkFileModalShown.value = false;
 
