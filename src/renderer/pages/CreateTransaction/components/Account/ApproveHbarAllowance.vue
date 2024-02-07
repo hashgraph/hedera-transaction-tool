@@ -8,6 +8,7 @@ import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
 
 import { createTransactionId } from '../../../../services/transactionService';
+import { getDateTimeLocalInputValue } from '@renderer/utils';
 
 import AppButton from '../../../../components/ui/AppButton.vue';
 import AppInput from '../../../../components/ui/AppInput.vue';
@@ -29,7 +30,7 @@ const spenderData = useAccountId();
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<AccountAllowanceApproveTransaction | null>(null);
-const validStart = ref('');
+const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref(2);
 
 const amount = ref(0);
