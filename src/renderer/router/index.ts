@@ -11,7 +11,7 @@ import Help from '../pages/Help';
 import Settings from '../pages/Settings';
 import SmartContracts from '../pages/SmartContracts';
 import ConsensusService from '../pages/ConsensusService';
-import FileService from '../pages/FileService';
+import Files from '../pages/Files';
 import ContactList from '../pages/ContactList';
 import AccountSetup from '../pages/AccountSetup';
 import GeneralTab from '../pages/Settings/components/GeneralTab.vue';
@@ -22,7 +22,8 @@ import RestoreKey from '../pages/RestoreKey';
 import CreateTransaction from '../pages/CreateTransaction';
 import AccountTab from '../pages/Settings/components/AccountTab.vue';
 import ForgotPassword from '../pages/ForgotPassword';
-import LinkExisting from '../pages/Accounts/LinkExisting/LinkExisting.vue';
+import LinkExistingAccount from '../pages/Accounts/LinkExistingAccount';
+import LinkExistingFile from '../pages/Files/LinkExistingFile';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -32,12 +33,13 @@ const routes: RouteRecordRaw[] = [
   },
   { path: '/style-guide', name: 'styleGuide', component: StyleGuide },
   { path: '/transactions', name: 'transactions', component: Transactions },
-  { path: '/accounts/link-existing', name: 'linkExistingAccount', component: LinkExisting },
+  { path: '/accounts/link-existing', name: 'linkExistingAccount', component: LinkExistingAccount },
   { path: '/accounts', name: 'accounts', component: Accounts },
   { path: '/tokens', name: 'tokens', component: Tokens },
   { path: '/smart-contracts', name: 'smartContracts', component: SmartContracts },
   { path: '/consensus-service', name: 'consensusService', component: ConsensusService },
-  { path: '/file-service', name: 'fileService', component: FileService },
+  { path: '/files', name: 'files', component: Files },
+  { path: '/files/link-existing', name: 'linkExistingFile', component: LinkExistingFile },
   { path: '/contact-list', name: 'contactList', component: ContactList },
   { path: '/help', name: 'help', component: Help },
   { path: '/account-setup', name: 'accountSetup', component: AccountSetup },

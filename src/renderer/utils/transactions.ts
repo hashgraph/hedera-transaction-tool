@@ -1,4 +1,10 @@
-import { Timestamp, Status } from '@hashgraph/sdk';
+import {
+  Timestamp,
+  Status,
+  TransactionReceipt,
+  AccountId,
+  TransactionResponse,
+} from '@hashgraph/sdk';
 import { Transaction } from '@prisma/client';
 
 import { Network } from '../stores/storeNetwork';
@@ -37,4 +43,21 @@ export const getFormattedDateFromTimestamp = (timestamp: Timestamp): string => {
 export const openTransactionInHashscan = (transactionId, network: Network) => {
   network !== 'custom' &&
     openExternal(`https://hashscan.io/${network}/transaction/${transactionId}`);
+};
+
+export const getEntityIdFromTransactionResult = (
+  result: {
+    response: TransactionResponse;
+    receipt: TransactionReceipt;
+    transactionId: string;
+  },
+  entityType: 'fileId' | 'accountId',
+) => {
+  if (!result.receipt[entityType]) {
+    throw new Error('No entity provided');
+  }
+
+  const entity = result.receipt[entityType];
+
+  return new AccountId(entity as any).toString();
 };

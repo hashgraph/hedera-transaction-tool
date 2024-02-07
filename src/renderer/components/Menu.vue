@@ -13,7 +13,7 @@ const menuItems = [
     icon: 'bi bi-person',
   },
   {
-    link: '/file-service',
+    link: '/files',
     title: 'Files',
     icon: 'bi bi-file-text',
   },

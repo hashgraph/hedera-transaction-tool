@@ -1,13 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
-import {
-  AccountId,
-  AccountCreateTransaction,
-  KeyList,
-  PublicKey,
-  Hbar,
-  TransactionReceipt,
-} from '@hashgraph/sdk';
+import { AccountId, AccountCreateTransaction, KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
@@ -27,6 +20,7 @@ import AppSwitch from '../../../../components/ui/AppSwitch.vue';
 import AppInput from '../../../../components/ui/AppInput.vue';
 import TransactionIdControls from '../../../../components/Transaction/TransactionIdControls.vue';
 import TransactionHeaderControls from '../../../../components/Transaction/TransactionHeaderControls.vue';
+import { getEntityIdFromTransactionResult } from '@renderer/utils/transactions';
 
 /* Stores */
 const user = useUserStore();
@@ -96,8 +90,8 @@ const handleCreate = async e => {
   }
 };
 
-const handleExecuted = async ({ receipt }: { receipt: TransactionReceipt }) => {
-  const accountId = new AccountId(receipt.accountId as any).toString() || '';
+const handleExecuted = async result => {
+  const accountId = getEntityIdFromTransactionResult(result, 'accountId');
   await add(user.data.id, accountId);
   toast.success(`Account ${accountId} linked`, { position: 'bottom-right' });
 };
@@ -261,7 +255,7 @@ const columnClass = 'col-4 col-xxxl-3';
       >
         <span class="text-bold text-secondary">Account ID:</span>
         <span>{{
-          new AccountId(transactionProcessor?.transactionResult.receipt.accountId).toString() || ''
+          getEntityIdFromTransactionResult(transactionProcessor?.transactionResult, 'accountId')
         }}</span>
       </p>
     </template>

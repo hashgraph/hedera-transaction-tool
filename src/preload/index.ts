@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { ProgressInfo, UpdateInfo } from 'electron-updater';
 import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
-import { HederaAccount, KeyPair, Transaction, User } from '@prisma/client';
+import { HederaAccount, HederaFile, KeyPair, Transaction, User } from '@prisma/client';
 
 import { proto } from '@hashgraph/proto';
 
@@ -78,12 +78,19 @@ export const electronAPI = {
     hash: (data: any): Promise<string> => ipcRenderer.invoke('utils:hash', data),
   },
   accounts: {
-    getAll: (email: string): Promise<HederaAccount[]> =>
-      ipcRenderer.invoke('accounts:getAll', email),
-    add: (email: string, accountId: string, nickname: string): Promise<HederaAccount[]> =>
-      ipcRenderer.invoke('accounts:add', email, accountId, nickname),
-    remove: (email: string, accountId: string, nickname: string): Promise<HederaAccount[]> =>
-      ipcRenderer.invoke('accounts:remove', email, accountId, nickname),
+    getAll: (userId: string): Promise<HederaAccount[]> =>
+      ipcRenderer.invoke('accounts:getAll', userId),
+    add: (userId: string, accountId: string, nickname: string): Promise<HederaAccount[]> =>
+      ipcRenderer.invoke('accounts:add', userId, accountId, nickname),
+    remove: (userId: string, accountId: string, nickname: string): Promise<HederaAccount[]> =>
+      ipcRenderer.invoke('accounts:remove', userId, accountId, nickname),
+  },
+  files: {
+    getAll: (userId: string): Promise<HederaFile[]> => ipcRenderer.invoke('files:getAll', userId),
+    add: (userId: string, accountId: string, nickname: string): Promise<HederaFile[]> =>
+      ipcRenderer.invoke('files:add', userId, accountId, nickname),
+    remove: (userId: string, accountId: string, nickname: string): Promise<HederaFile[]> =>
+      ipcRenderer.invoke('files:remove', userId, accountId, nickname),
   },
   localUser: {
     login: (email: string, password: string, autoRegister?: boolean): Promise<User> =>
