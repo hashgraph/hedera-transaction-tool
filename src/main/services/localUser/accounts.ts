@@ -57,3 +57,23 @@ export const removeAccount = async (userId: string, accountId: string, nickname?
 
   return await getAccounts(userId);
 };
+
+export const changeAccountNickname = async (
+  userId: string,
+  accountId: string,
+  nickname: string,
+) => {
+  const prisma = getPrismaClient();
+
+  await prisma.hederaAccount.updateMany({
+    where: {
+      user_id: userId,
+      account_id: accountId,
+    },
+    data: {
+      nickname: nickname,
+    },
+  });
+
+  return await getAccounts(userId);
+};

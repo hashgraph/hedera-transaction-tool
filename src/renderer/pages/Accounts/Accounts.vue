@@ -9,7 +9,7 @@ import useNetworkStore from '../../stores/storeNetwork';
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../composables/useAccountId';
 
-import { getAll, remove } from '../../services/accountsService';
+import { getAll, remove, changeNickname } from '../../services/accountsService';
 import { getKeyListLevels } from '../../services/keyPairService';
 import { getDollarAmount } from '../../services/mirrorNodeDataService';
 
@@ -39,6 +39,8 @@ const accountData = useAccountId();
 const accounts = ref<HederaAccount[]>([]);
 const isKeyStructureModalShown = ref(false);
 const isUnlinkAccountModalShown = ref(false);
+const isNicknameInputShown = ref(false);
+const nicknameInputRef = ref<HTMLInputElement | null>(null);
 
 /* Computed */
 const hbarDollarAmount = computed(() => {
@@ -63,6 +65,10 @@ onMounted(async () => {
 });
 
 /* Handlers */
+const handleSelectAccount = (accountId: string) => {
+  isNicknameInputShown.value = false;
+  accountData.accountId.value = accountId;
+};
 const handleUnlinkAccount = async () => {
   if (!user.data.isLoggedIn) {
     throw new Error('Please login');
@@ -75,6 +81,31 @@ const handleUnlinkAccount = async () => {
   isUnlinkAccountModalShown.value = false;
 
   toast.success('Account Unlinked!', { position: 'bottom-right' });
+};
+
+const handleNicknameDoubleClick = () => {
+  isNicknameInputShown.value = true;
+
+  if (nicknameInputRef.value) {
+    const currentNickname =
+      accounts.value.find(acc => acc.account_id === accountData.accountIdFormatted.value)
+        ?.nickname || '';
+    nicknameInputRef.value.value = currentNickname;
+
+    setTimeout(() => {
+      nicknameInputRef.value?.focus();
+    }, 50);
+  }
+};
+
+const handleChangeNickname = async () => {
+  isNicknameInputShown.value = false;
+
+  accounts.value = await changeNickname(
+    user.data.id,
+    accountData.accountIdFormatted.value,
+    nicknameInputRef.value?.value,
+  );
 };
 
 // const handleSortAccounts = (sorting: Sorting) => {
@@ -197,7 +228,7 @@ const handleUnlinkAccount = async () => {
               :class="{
                 'is-selected': accountData.accountId.value === account.account_id,
               }"
-              @click="accountData.accountId.value = account.account_id"
+              @click="handleSelectAccount(account.account_id)"
             >
               <p class="text-small text-semi-bold">{{ account.nickname }}</p>
               <div class="d-flex justify-content-between align-items-center">
@@ -213,27 +244,30 @@ const handleUnlinkAccount = async () => {
       <div class="col-8 col-xxl-9 ps-4 pt-0">
         <Transition name="fade" mode="out-in">
           <div v-if="accountData.isValid.value" class="h-100 position-relative">
-            <template
-              v-if="
-                accounts.find(acc => acc.account_id === accountData.accountIdFormatted.value)
-                  ?.nickname
-              "
-            >
-              <div class="row">
-                <div class="col-5">
-                  <p class="text-small text-semi-bold">Nickname</p>
-                </div>
-                <div class="col-7">
-                  <p class="text-small text-semi-bold">
-                    {{
-                      accounts.find(acc => acc.account_id === accountData.accountIdFormatted.value)
-                        ?.nickname
-                    }}
-                  </p>
-                </div>
+            <div class="row align-items-center">
+              <div class="col-5">
+                <p class="text-small text-semi-bold">Nickname</p>
               </div>
-              <hr class="separator my-4" />
-            </template>
+              <div class="col-7">
+                <input
+                  v-show="isNicknameInputShown"
+                  ref="nicknameInputRef"
+                  class="form-control is-fill"
+                  @blur="handleChangeNickname"
+                />
+                <p
+                  v-if="!isNicknameInputShown"
+                  class="text-small text-semi-bold py-3"
+                  @dblclick="handleNicknameDoubleClick"
+                >
+                  {{
+                    accounts.find(acc => acc.account_id === accountData.accountIdFormatted.value)
+                      ?.nickname || 'None'
+                  }}
+                </p>
+              </div>
+            </div>
+            <hr class="separator my-4" />
             <div class="row">
               <div class="col-5">
                 <p class="text-small text-semi-bold">Account ID</p>
