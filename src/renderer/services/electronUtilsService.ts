@@ -8,24 +8,34 @@ export const openExternal = (url: string) => window.electronAPI.utils.openExtern
 
 /* Decode Protobuff encoded key */
 export const decodeProtobuffKey = async (protobuffKey: string): Promise<Key | undefined> => {
-  const key = await window.electronAPI.utils.decodeProtobuffKey(protobuffKey);
+  try {
+    const key = await window.electronAPI.utils.decodeProtobuffKey(protobuffKey);
 
-  if (key.thresholdKey) {
-    return KeyList.__fromProtobufThresoldKey(key.thresholdKey);
-  }
-  if (key.keyList) {
-    return KeyList.__fromProtobufKeyList(key.keyList);
-  }
-  if (key.ed25519 || key.ECDSASecp256k1) {
-    return Key._fromProtobufKey(key);
-  }
+    if (key.thresholdKey) {
+      return KeyList.__fromProtobufThresoldKey(key.thresholdKey);
+    }
+    if (key.keyList) {
+      return KeyList.__fromProtobufKeyList(key.keyList);
+    }
+    if (key.ed25519 || key.ECDSASecp256k1) {
+      return Key._fromProtobufKey(key);
+    }
 
-  return undefined;
+    return undefined;
+  } catch (error) {
+    throw new Error('Failed to decode protobuf');
+  }
 };
 
 /* Decode Protobuff encoded key to KeyList or Public key */
 export const decodeProtobuffKeyNormalized = async (protobuffKey: string) => {
-  const key = await window.electronAPI.utils.decodeProtobuffKey(protobuffKey);
+  try {
+    const key = await window.electronAPI.utils.decodeProtobuffKey(protobuffKey);
+
+    return formatKey(key);
+  } catch (error) {
+    throw new Error('Failed to decode protobuf');
+  }
 
   function formatKey(key: HashgraphProto.proto.IKey) {
     if (key.thresholdKey && key.thresholdKey.keys) {
@@ -63,6 +73,4 @@ export const decodeProtobuffKeyNormalized = async (protobuffKey: string) => {
 
     return undefined;
   }
-
-  return formatKey(key);
 };
