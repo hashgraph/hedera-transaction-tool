@@ -5,7 +5,7 @@ import {
   changeAccountNickname,
   getAccounts,
   removeAccount,
-} from '../../../services/localUser';
+} from '@main/services/localUser';
 
 const createChannelName = (...props) => ['accounts', ...props].join(':');
 

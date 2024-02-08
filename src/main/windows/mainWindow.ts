@@ -1,8 +1,11 @@
+import { join } from 'path';
+
+import icon from '../../../resources/icon.png?asset';
+
 import { BrowserWindow, screen } from 'electron';
 import { is } from '@electron-toolkit/utils';
-import { join } from 'path';
-import { sendUpdateThemeEventTo } from '../modules/ipcHandlers/theme';
-import icon from '../../../resources/icon.png?asset';
+
+import { sendUpdateThemeEventTo } from '@main/modules/ipcHandlers/theme';
 
 export default function createWindow() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;

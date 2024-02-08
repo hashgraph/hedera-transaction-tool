@@ -1,12 +1,12 @@
 import { ipcMain } from 'electron';
-import { IOrganization } from '../../shared/interfaces';
+import { IOrganization } from '@main/shared/interfaces';
 
 import {
   clearStore,
   addOrganization,
   getOrganizations,
   removeOrganization,
-} from '../../services/configuration';
+} from '@main/services/configuration';
 
 const createChannelName = (...props) => ['configuration', ...props].join(':');
 

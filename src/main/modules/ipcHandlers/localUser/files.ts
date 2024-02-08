@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
 
-import { addFile, getFiles, removeFile } from '../../../services/localUser';
+import { addFile, getFiles, removeFile } from '@main/services/localUser';
 
 const createChannelName = (...props) => ['files', ...props].join(':');
 

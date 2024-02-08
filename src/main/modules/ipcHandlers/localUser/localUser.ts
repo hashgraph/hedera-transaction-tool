@@ -6,7 +6,7 @@ import {
   login,
   register,
   resetData,
-} from '../../../services/localUser';
+} from '@main/services/localUser';
 
 const createChannelName = (...props) => ['localUser', ...props].join(':');
 

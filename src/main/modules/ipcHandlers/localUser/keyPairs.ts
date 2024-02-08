@@ -8,7 +8,8 @@ import {
   getKeyPairs,
   getSecretHashes,
   deleteKeyPair,
-} from '../../../services/localUser';
+} from '@main/services/localUser';
+
 import { KeyPair } from '@prisma/client';
 
 const createChannelName = (...props) => ['keyPairs', ...props].join(':');

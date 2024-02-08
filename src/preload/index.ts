@@ -6,9 +6,9 @@ import { proto } from '@hashgraph/proto';
 
 import { HederaAccount, HederaFile, KeyPair, Transaction, User } from '@prisma/client';
 
-import { IOrganization } from '../main/shared/interfaces';
+import { IOrganization } from '@main/shared/interfaces';
 
-import { Theme } from '../main/modules/ipcHandlers/theme';
+import { Theme } from '@main/modules/ipcHandlers/theme';
 
 export const electronAPI = {
   update: {

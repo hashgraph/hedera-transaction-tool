@@ -5,6 +5,11 @@ import eslint from 'vite-plugin-eslint';
 
 export default defineConfig({
   main: {
+    resolve: {
+      alias: {
+        '@main': resolve('src/main'),
+      },
+    },
     plugins: [externalizeDepsPlugin()],
   },
   preload: {

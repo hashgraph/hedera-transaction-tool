@@ -1,4 +1,4 @@
-import { getPrismaClient } from '../../db';
+import { getPrismaClient } from '@main/db';
 
 export const getFiles = (userId: string) => {
   const prisma = getPrismaClient();

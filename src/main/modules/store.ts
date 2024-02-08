@@ -1,5 +1,6 @@
 import Store, { Schema } from 'electron-store';
-import { IOrganization } from '../shared/interfaces';
+
+import { IOrganization } from '@main/shared/interfaces';
 
 export type SchemaProperties = {
   organizations: IOrganization[];

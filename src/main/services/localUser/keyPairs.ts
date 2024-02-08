@@ -1,8 +1,8 @@
 import { KeyPair } from '@prisma/client';
 
-import { encrypt, decrypt } from '../../utils/crypto';
+import { encrypt, decrypt } from '@main/utils/crypto';
 
-import { getPrismaClient } from '../../db';
+import { getPrismaClient } from '@main/db';
 
 //Get all stored secret hash objects
 export const getSecretHashes = async (

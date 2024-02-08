@@ -7,7 +7,7 @@ import {
   getTransactions,
   storeTransaction,
   encodeSpecialFile,
-} from '../../../services/localUser';
+} from '@main/services/localUser';
 
 const createChannelName = (...props) => ['transactions', ...props].join(':');
 
