@@ -25,6 +25,14 @@ npm run devTools
 
 ### Start developing ⚒️
 
+Generate prisma client:
+
+```bash
+npx prisma generate
+```
+
+Run in development mode:
+
 ```bash
 npm run dev
 ```
@@ -32,7 +40,6 @@ npm run dev
 ### Additional Commands
 
 ```bash
-npm run dev # starts application with hot reload
 npm run build # builds application, distributable files can be found in "dist" folder
 
 # OR
