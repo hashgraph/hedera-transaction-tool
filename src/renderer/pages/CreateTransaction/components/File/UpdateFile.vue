@@ -2,25 +2,25 @@
 import { computed, ref, watch, onMounted } from 'vue';
 import { AccountId, FileUpdateTransaction, KeyList, PublicKey, Timestamp } from '@hashgraph/sdk';
 
-import useNetworkStore from '../../../../stores/storeNetwork';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
-import useAccountId from '../../../../composables/useAccountId';
 import { useRoute } from 'vue-router';
+import useAccountId from '@renderer/composables/useAccountId';
 
 import {
   createTransactionId,
   encodeSpecialFileContent,
-} from '../../../../services/transactionService';
-import { isHederaSpecialFileId } from '../../../../../main/shared/utils/hederaSpecialFiles';
-import { getDateTimeLocalInputValue } from '../../../../utils';
-import { isPublicKey } from '../../../../utils/validator';
+} from '@renderer/services/transactionService';
+import { isHederaSpecialFileId } from '@renderer/../main/shared/utils/hederaSpecialFiles';
+import { getDateTimeLocalInputValue } from '@renderer/utils';
+import { isPublicKey } from '@renderer/utils/validator';
 
-import AppButton from '../../../../components/ui/AppButton.vue';
-import AppInput from '../../../../components/ui/AppInput.vue';
-import TransactionProcessor from '../../../../components/Transaction/TransactionProcessor.vue';
-import TransactionIdControls from '../../../../components/Transaction/TransactionIdControls.vue';
-import TransactionHeaderControls from '../../../../components/Transaction/TransactionHeaderControls.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
+import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
+import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
+import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 
 /* Stores */
 const networkStore = useNetworkStore();

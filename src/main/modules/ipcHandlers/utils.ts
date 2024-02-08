@@ -3,7 +3,7 @@ import { ipcMain, shell } from 'electron';
 import { Key, KeyList } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
-import { hash } from '../../utils/crypto';
+import { hash } from '@main/utils/crypto';
 
 const createChannelName = (...props: string[]) => ['utils', ...props].join(':');
 

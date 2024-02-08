@@ -6,6 +6,12 @@
     "noImplicitAny": false,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "types": ["electron-vite/node"]
+    "types": ["electron-vite/node"],
+    "baseUrl": ".",
+    "paths": {
+      "@main/*": [
+        "src/main/*"
+      ]
+    }
   }
 }

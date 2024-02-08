@@ -1,5 +1,5 @@
-import { getMessageFromIPCError } from '../utils';
-import { IOrganization } from 'src/main/shared/interfaces';
+import { getMessageFromIPCError } from '@renderer/utils';
+import { IOrganization } from '@main/shared/interfaces';
 
 /* Configuration service */
 

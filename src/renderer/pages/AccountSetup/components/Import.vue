@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { onBeforeMount, ref, watch } from 'vue';
 
-import useKeyPairsStore from '../../../stores/storeKeyPairs';
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
-import { hashRecoveryPhrase, validateMnemonic } from '../../../services/keyPairService';
+import { hashRecoveryPhrase, validateMnemonic } from '@renderer/services/keyPairService';
 
-import AppRecoveryPhraseWord from '../../../components/ui/AppRecoveryPhraseWord.vue';
+import AppRecoveryPhraseWord from '@renderer/components/ui/AppRecoveryPhraseWord.vue';
 
 /* Props */
 const props = defineProps<{

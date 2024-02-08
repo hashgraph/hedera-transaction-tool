@@ -3,9 +3,9 @@ import { defineStore } from 'pinia';
 
 import { Client, Timestamp } from '@hashgraph/sdk';
 
-import { NetworkExchangeRateSetResponse } from '../../main/shared/interfaces';
+import { NetworkExchangeRateSetResponse } from '@main/shared/interfaces';
 
-import { getExchangeRateSet } from '../services/mirrorNodeDataService';
+import { getExchangeRateSet } from '@renderer/services/mirrorNodeDataService';
 
 export type Network = 'mainnet' | 'testnet' | 'previewnet' | 'custom';
 export type CustomNetworkSettings = {

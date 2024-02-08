@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
-import AppModal from '../../../components/ui/AppModal.vue';
+import AppModal from '@renderer/components/ui/AppModal.vue';
 
 /* Props */
 const props = defineProps<{

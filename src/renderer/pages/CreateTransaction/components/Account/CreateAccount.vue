@@ -3,24 +3,24 @@ import { computed, reactive, ref, watch } from 'vue';
 import { AccountId, AccountCreateTransaction, KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
-import useAccountId from '../../../../composables/useAccountId';
+import useAccountId from '@renderer/composables/useAccountId';
 
-import useUserStore from '../../../../stores/storeUser';
-import useNetworkStore from '../../../../stores/storeNetwork';
+import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { add } from '../../../../services/accountsService';
-import { createTransactionId } from '../../../../services/transactionService';
+import { add } from '@renderer/services/accountsService';
+import { createTransactionId } from '@renderer/services/transactionService';
 
-import { getDateTimeLocalInputValue } from '../../../../utils';
-import { isPublicKey } from '../../../../utils/validator';
-
-import TransactionProcessor from '../../../../components/Transaction/TransactionProcessor.vue';
-import AppButton from '../../../../components/ui/AppButton.vue';
-import AppSwitch from '../../../../components/ui/AppSwitch.vue';
-import AppInput from '../../../../components/ui/AppInput.vue';
-import TransactionIdControls from '../../../../components/Transaction/TransactionIdControls.vue';
-import TransactionHeaderControls from '../../../../components/Transaction/TransactionHeaderControls.vue';
+import { getDateTimeLocalInputValue } from '@renderer/utils';
+import { isPublicKey } from '@renderer/utils/validator';
 import { getEntityIdFromTransactionResult } from '@renderer/utils/transactions';
+
+import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
+import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
+import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 
 /* Stores */
 const user = useUserStore();

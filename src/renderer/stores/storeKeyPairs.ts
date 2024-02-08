@@ -6,8 +6,8 @@ import { KeyPair } from '@prisma/client';
 import useNetworkStore from './storeNetwork';
 import useUserStore from './storeUser';
 
-import * as keyPairService from '../services/keyPairService';
-import * as mirrorNodeDataService from '../services/mirrorNodeDataService';
+import * as keyPairService from '@renderer/services/keyPairService';
+import * as mirrorNodeDataService from '@renderer/services/mirrorNodeDataService';
 
 const useKeyPairsStore = defineStore('keyPairs', () => {
   /* Stores */

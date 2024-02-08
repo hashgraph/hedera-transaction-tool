@@ -2,22 +2,22 @@
 import { onMounted, ref } from 'vue';
 import { AccountId, Hbar, AccountDeleteTransaction, Key } from '@hashgraph/sdk';
 
-import useNetworkStore from '../../../../stores/storeNetwork';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRoute } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
-import useAccountId from '../../../../composables/useAccountId';
+import useAccountId from '@renderer/composables/useAccountId';
 
-import { createTransactionId } from '../../../../services/transactionService';
+import { createTransactionId } from '@renderer/services/transactionService';
 
-import { getDateTimeLocalInputValue } from '../../../../utils';
+import { getDateTimeLocalInputValue } from '@renderer/utils';
 
-import AppButton from '../../../../components/ui/AppButton.vue';
-import AppInput from '../../../../components/ui/AppInput.vue';
-import KeyStructureModal from '../../../../components/KeyStructureModal.vue';
-import TransactionProcessor from '../../../../components/Transaction/TransactionProcessor.vue';
-import TransactionHeaderControls from '../../../../components/Transaction/TransactionHeaderControls.vue';
-import TransactionIdControls from '../../../../components/Transaction/TransactionIdControls.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
+import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
+import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
+import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
+import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 
 /* Stores */
 const networkStore = useNetworkStore();

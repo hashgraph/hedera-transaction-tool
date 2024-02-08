@@ -5,6 +5,11 @@ import eslint from 'vite-plugin-eslint';
 
 export default defineConfig({
   main: {
+    resolve: {
+      alias: {
+        '@main': resolve('src/main'),
+      },
+    },
     plugins: [externalizeDepsPlugin()],
   },
   preload: {
@@ -17,6 +22,7 @@ export default defineConfig({
     resolve: {
       alias: {
         '@renderer': resolve('src/renderer'),
+        '@main': resolve('src/main'),
       },
     },
     plugins: [vue(), eslint()],

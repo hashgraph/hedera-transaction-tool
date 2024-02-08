@@ -2,13 +2,13 @@ import { computed, ref, watch } from 'vue';
 
 import { AccountId, Hbar, HbarUnit } from '@hashgraph/sdk';
 
-import { IAccountInfoParsed, CryptoAllowance } from '../../main/shared/interfaces';
+import { IAccountInfoParsed, CryptoAllowance } from '@main/shared/interfaces';
 
-import useNetworkStore from '../stores/storeNetwork';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { openExternal } from '../services/electronUtilsService';
-import { getAccountAllowances, getAccountInfo } from '../services/mirrorNodeDataService';
-import { flattenKeyList } from '../services/keyPairService';
+import { openExternal } from '@renderer/services/electronUtilsService';
+import { getAccountAllowances, getAccountInfo } from '@renderer/services/mirrorNodeDataService';
+import { flattenKeyList } from '@renderer/services/keyPairService';
 
 export default function useAccountId() {
   /* Stores */
@@ -22,7 +22,7 @@ export default function useAccountId() {
   const accountInfoController = ref<AbortController | null>(null);
   const allowancesController = ref<AbortController | null>(null);
 
-  /* Getters */
+  /* Computed */
   const isValid = computed(() => Boolean(accountInfo.value));
 
   const accountIdFormatted = computed(() =>

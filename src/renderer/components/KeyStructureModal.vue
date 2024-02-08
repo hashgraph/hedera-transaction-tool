@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 
-import AppModal from './ui/AppModal.vue';
-import KeyStructure from './KeyStructure.vue';
+import AppModal from '@renderer/components/ui/AppModal.vue';
+import KeyStructure from '@renderer/components/KeyStructure.vue';
 
 /* Props */
 defineProps<{

@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
-import useKeyPairsStore from '../../../stores/storeKeyPairs';
-import useUserStore from '../../../stores/storeUser';
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
+import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 
-// import { deleteEncryptedPrivateKeys } from '../../../services/keyPairService';
+// import { deleteEncryptedPrivateKeys } from '@renderer/services/keyPairService';
 
-import AppButton from '../../../components/ui/AppButton.vue';
-import AppInput from '../../../components/ui/AppInput.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Props */
 const props = defineProps<{

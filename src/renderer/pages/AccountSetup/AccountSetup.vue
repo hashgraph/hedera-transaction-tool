@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { onBeforeMount, ref } from 'vue';
 
-import useUserStore from '../../stores/storeUser';
-import useKeyPairsStore from '../../stores/storeKeyPairs';
+import useUserStore from '@renderer/stores/storeUser';
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import { useRouter } from 'vue-router';
 
-import AppButton from '../../components/ui/AppButton.vue';
-import AppStepper from '../../components/ui/AppStepper.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppStepper from '@renderer/components/ui/AppStepper.vue';
 
 import Faq from './components/Faq.vue';
 import GenerateOrImport from './components/GenerateOrImport.vue';

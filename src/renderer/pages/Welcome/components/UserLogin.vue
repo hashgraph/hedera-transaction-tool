@@ -2,25 +2,25 @@
 import { onMounted, reactive, ref, watch } from 'vue';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
-import useUserStore from '../../../stores/storeUser';
+import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
-import useCreateTooltips from '../../../composables/useCreateTooltips';
+import useCreateTooltips from '@renderer/composables/useCreateTooltips';
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import {
   loginLocal,
   registerLocal,
   resetDataLocal,
   getUsersCount,
-} from '../../../services/userService';
-import { getSecretHashes } from '../../../services/keyPairService';
+} from '@renderer/services/userService';
+import { getSecretHashes } from '@renderer/services/keyPairService';
 
-import { isEmail } from '../../../utils/validator';
+import { isEmail } from '@renderer/utils/validator';
 
-import AppButton from '../../../components/ui/AppButton.vue';
-import AppInput from '../../../components/ui/AppInput.vue';
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Stores */
 const user = useUserStore();

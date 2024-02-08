@@ -3,8 +3,8 @@ import './styles/styles.scss';
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 
-import router from './router';
-import { addGuards } from './router/guards';
+import router from '@renderer/router';
+import { addGuards } from '@renderer/router/guards';
 
 import ToastPlugin, { useToast } from 'vue-toast-notification';
 

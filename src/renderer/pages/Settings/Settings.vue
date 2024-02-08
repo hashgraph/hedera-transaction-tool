@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 
 import { useRouter, RouterView } from 'vue-router';
 
-import AppTabs, { TabItem } from '../../components/ui/AppTabs.vue';
+import AppTabs, { TabItem } from '@renderer/components/ui/AppTabs.vue';
 
 /* Composables */
 const router = useRouter();

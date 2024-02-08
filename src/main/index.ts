@@ -1,13 +1,13 @@
 import { app, BrowserWindow, session } from 'electron';
 import { optimizer, is } from '@electron-toolkit/utils';
 
-import initDatabase from './db';
+import initDatabase from '@main/db';
 
-import initLogger from './modules/logger';
-import createMenu from './modules/menu';
-import registerIpcListeners from './modules/ipcHandlers';
+import initLogger from '@main/modules/logger';
+import createMenu from '@main/modules/menu';
+import registerIpcListeners from '@main/modules/ipcHandlers';
 
-import createWindow from './windows/mainWindow';
+import createWindow from '@main/windows/mainWindow';
 
 let mainWindow: BrowserWindow | null;
 

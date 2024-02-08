@@ -1,5 +1,5 @@
-import { IOrganization } from '../shared/interfaces';
-import getStore from '../modules/store';
+import { IOrganization } from '@main/shared/interfaces';
+import getStore from '@main/modules/store';
 
 const store = getStore();
 

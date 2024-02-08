@@ -3,9 +3,9 @@ import { onMounted, ref } from 'vue';
 
 import { useToast } from 'vue-toast-notification';
 
-import useNetworkStore, { CustomNetworkSettings } from '../../../stores/storeNetwork';
+import useNetworkStore, { CustomNetworkSettings } from '@renderer/stores/storeNetwork';
 
-import AppButton from '../../../components/ui/AppButton.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Stores */

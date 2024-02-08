@@ -3,14 +3,14 @@ import { onMounted, ref } from 'vue';
 
 import { HederaFile } from '@prisma/client';
 
-import useUserStore from '../../stores/storeUser';
+import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 
 import { getAll, remove } from '@renderer/services/filesService';
 
-import AppButton from '../../components/ui/AppButton.vue';
-import AppModal from '../../components/ui/AppModal.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppModal from '@renderer/components/ui/AppModal.vue';
 
 /* Stores */
 const user = useUserStore();

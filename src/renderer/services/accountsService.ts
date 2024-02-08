@@ -1,4 +1,4 @@
-import { getMessageFromIPCError } from '../utils';
+import { getMessageFromIPCError } from '@renderer/utils';
 
 export const getAll = (userId: string) => window.electronAPI.accounts.getAll(userId);
 

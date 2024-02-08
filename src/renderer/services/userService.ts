@@ -1,4 +1,4 @@
-import { getMessageFromIPCError } from '../utils';
+import { getMessageFromIPCError } from '@renderer/utils';
 
 /* User Service */
 

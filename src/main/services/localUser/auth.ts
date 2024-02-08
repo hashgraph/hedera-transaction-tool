@@ -1,6 +1,6 @@
-import { generateUUID, hash } from '../../utils/crypto';
+import { generateUUID, hash } from '@main/utils/crypto';
 
-import { getPrismaClient } from '../../db';
+import { getPrismaClient } from '@main/db';
 
 export const register = async (email: string, password: string) => {
   const prisma = getPrismaClient();

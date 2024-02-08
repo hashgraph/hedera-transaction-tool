@@ -2,10 +2,10 @@
 import { computed, onBeforeMount, reactive, ref } from 'vue';
 import { Transaction } from '@prisma/client';
 
-import useUserStore from '../../../stores/storeUser';
-import useNetworkStore from '../../../stores/storeNetwork';
+import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { getTransactions } from '../../../services/transactionService';
+import { getTransactions } from '@renderer/services/transactionService';
 
 import {
   getTransactionDate,
@@ -14,9 +14,9 @@ import {
   getPayerFromTransaction,
   getStatusFromCode,
   openTransactionInHashscan,
-} from '../../../utils/transactions';
+} from '@renderer/utils/transactions';
 
-import AppButton from '../../../components/ui/AppButton.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
 
 /* Stores */
 const user = useUserStore();

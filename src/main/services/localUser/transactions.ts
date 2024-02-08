@@ -1,13 +1,15 @@
 import { Client, FileContentsQuery, PrivateKey, Query, Transaction } from '@hashgraph/sdk';
+
 import { Transaction as Tx } from '@prisma/client';
-import { getPrismaClient } from '../../db';
-import { getNumberArrayFromString } from '../../utils';
+import { getPrismaClient } from '@main/db';
+
+import { getNumberArrayFromString } from '@main/utils';
 import {
   HederaSpecialFileId,
   isHederaSpecialFileId,
   decodeProto,
   encodeHederaSpecialFile,
-} from '../../shared/utils/hederaSpecialFiles';
+} from '@main/shared/utils/hederaSpecialFiles';
 
 // Executes a transaction
 export const executeTransaction = async (transactionData: string) => {

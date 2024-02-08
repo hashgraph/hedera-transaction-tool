@@ -2,23 +2,23 @@
 import { computed, ref } from 'vue';
 import { AccountId, FileCreateTransaction, KeyList, PublicKey, Timestamp } from '@hashgraph/sdk';
 
-import useNetworkStore from '../../../../stores/storeNetwork';
-import useUserStore from '../../../../stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
+import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
-import useAccountId from '../../../../composables/useAccountId';
+import useAccountId from '@renderer/composables/useAccountId';
 
-import { createTransactionId } from '../../../../services/transactionService';
-import { add } from '../../../../services/filesService';
+import { createTransactionId } from '@renderer/services/transactionService';
+import { add } from '@renderer/services/filesService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
 import { getEntityIdFromTransactionResult } from '@renderer/utils/transactions';
 import { isPublicKey } from '@renderer/utils/validator';
 
-import AppButton from '../../../../components/ui/AppButton.vue';
-import AppInput from '../../../../components/ui/AppInput.vue';
-import TransactionProcessor from '../../../../components/Transaction/TransactionProcessor.vue';
-import TransactionIdControls from '../../../../components/Transaction/TransactionIdControls.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
+import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
+import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 
 /* Stores */

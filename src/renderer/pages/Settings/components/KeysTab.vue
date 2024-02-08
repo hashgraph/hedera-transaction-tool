@@ -3,8 +3,8 @@ import { onMounted, reactive, ref, watch } from 'vue';
 import { PublicKey } from '@hashgraph/sdk';
 import { KeyPair } from '@prisma/client';
 
-import useUserStore from '../../../stores/storeUser';
-import useKeyPairsStore from '../../../stores/storeKeyPairs';
+import useUserStore from '@renderer/stores/storeUser';
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import { useToast } from 'vue-toast-notification';
 
@@ -12,12 +12,12 @@ import {
   decryptPrivateKey,
   deleteKeyPair,
   generateExternalKeyPairFromString,
-} from '../../../services/keyPairService';
-import { comparePasswords } from '../../../services/userService';
+} from '@renderer/services/keyPairService';
+import { comparePasswords } from '@renderer/services/userService';
 
-import AppButton from '../../../components/ui/AppButton.vue';
-import AppModal from '../../../components/ui/AppModal.vue';
-import AppInput from '../../../components/ui/AppInput.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Stores */
 const keyPairsStore = useKeyPairsStore();
