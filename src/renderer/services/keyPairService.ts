@@ -79,6 +79,11 @@ export const validateMnemonic = async (words: string[]) => {
   }
 };
 
+/* Delete Key Pair */
+export const deleteKeyPair = async (keyPairId: string) => {
+  return await window.electronAPI.keyPairs.deleteKeyPair(keyPairId);
+};
+
 /* TLD Updates a key list */
 export const updateKeyList = (
   keyList: KeyList,
