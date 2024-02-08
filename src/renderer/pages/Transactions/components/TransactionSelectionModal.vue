@@ -25,7 +25,7 @@ const transactionGroups = [
       { label: 'Update Account', name: 'updateAccount' },
       { label: 'Delete Account', name: 'deleteAccount' },
       { label: 'Approve Allowance', name: 'approveHbarAllowance' },
-      { label: 'Account Info', name: 'accountInfo' },
+      // { label: 'Account Info', name: 'accountInfo' },
     ],
   },
   {

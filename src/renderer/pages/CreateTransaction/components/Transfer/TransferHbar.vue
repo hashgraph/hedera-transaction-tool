@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { AccountId, Hbar, Key, TransferTransaction } from '@hashgraph/sdk';
 
 import useNetworkStore from '../../../../stores/storeNetwork';
+import useKeyPairsStore from '../../../../stores/storeKeyPairs';
 
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '../../../../composables/useAccountId';
@@ -19,6 +20,7 @@ import TransactionHeaderControls from '../../../../components/Transaction/Transa
 
 /* Stores */
 const networkStore = useNetworkStore();
+const keyPairs = useKeyPairsStore();
 
 /* Composables */
 const toast = useToast();
@@ -80,6 +82,14 @@ const handleCreate = async e => {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
+
+/* Hooks */
+onMounted(() => {
+  const allAccountIds = keyPairs.accoundIds.map(a => a.accountIds).flat();
+  if (allAccountIds.length > 0) {
+    payerData.accountId.value = allAccountIds[0];
+  }
+});
 
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
