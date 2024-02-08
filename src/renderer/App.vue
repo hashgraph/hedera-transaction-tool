@@ -9,6 +9,7 @@ import AppMenu from '@renderer/components/Menu.vue';
 import AppHeader from '@renderer/components/Header.vue';
 import AppUpdate from '@renderer/components/AppUpdate.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import ImportantNote from './components/ImportantNote.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -53,6 +54,8 @@ onMounted(async () => {
     <AppButton class="btn-theme-changer" color="secondary" @click="handleThemeChange">
       <i class="bi bi-sun"></i
     ></AppButton>
+
     <AppUpdate />
+    <ImportantNote />
   </div>
 </template>
