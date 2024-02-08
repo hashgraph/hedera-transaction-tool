@@ -70,6 +70,8 @@ export const electronAPI = {
       ipcRenderer.invoke('keyPairs:deleteEncryptedPrivateKeys', userId, organizationId),
     clear: (userId: string, organizationId?: string): Promise<boolean> =>
       ipcRenderer.invoke('keyPairs:clear', userId, organizationId),
+    deleteKeyPair: (keyPairId: string): Promise<void> =>
+      ipcRenderer.invoke('keyPairs:deleteKeyPair', keyPairId),
   },
   utils: {
     openExternal: (url: string) => ipcRenderer.send('utils:openExternal', url),

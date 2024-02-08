@@ -24,7 +24,7 @@ model User {
   transactions  Transaction[]
   organizations Organization[]
   HederaAccount HederaAccount[]
-  HederaFile HederaFile[]
+  HederaFile    HederaFile[]
 }
 
 model KeyPair {
@@ -39,7 +39,6 @@ model KeyPair {
   nickname        String?
   user            User          @relation(fields: [user_id], references: [id])
   organization    Organization? @relation(fields: [organization_id], references: [id])
-  transactions    Transaction[]
 
   @@index([user_id, secret_hash], name: "unique_user_key")
 }
@@ -55,25 +54,24 @@ model Organization {
 }
 
 model Transaction {
-  id               String   @id @default(uuid())
-  name             String
-  type             String
-  description      String
-  transaction_id   String
-  transaction_hash String
-  body             String
-  status           String
-  status_code      Int
-  user_id          String
-  key_id           String?
-  signature        String
-  valid_start      String
-  executed_at      Int
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
-  group_id         String?
-  user             User     @relation(fields: [user_id], references: [id])
-  key              KeyPair? @relation(fields: [key_id], references: [id])
+  id                 String   @id @default(uuid())
+  name               String
+  type               String
+  description        String
+  transaction_id     String
+  transaction_hash   String
+  body               String
+  status             String
+  status_code        Int
+  user_id            String
+  signature          String
+  valid_start        String
+  executed_at        Int
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+  group_id           String?
+  creator_public_key String?
+  user               User     @relation(fields: [user_id], references: [id])
 }
 
 model HederaAccount {
@@ -85,9 +83,9 @@ model HederaAccount {
 }
 
 model HederaFile {
-  id         String @id @default(uuid())
-  user_id    String
-  file_id String
-  nickname   String
-  user       User   @relation(fields: [user_id], references: [id])
+  id       String @id @default(uuid())
+  user_id  String
+  file_id  String
+  nickname String
+  user     User   @relation(fields: [user_id], references: [id])
 }

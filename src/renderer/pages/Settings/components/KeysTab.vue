@@ -10,6 +10,7 @@ import { useToast } from 'vue-toast-notification';
 
 import {
   decryptPrivateKey,
+  deleteKeyPair,
   generateExternalKeyPairFromString,
 } from '../../../services/keyPairService';
 import { comparePasswords } from '../../../services/userService';
@@ -27,10 +28,12 @@ const toast = useToast();
 
 /* State */
 const isDecryptedModalShown = ref(false);
+const isDeleteModalShown = ref(false);
 const isImportECDSAKeyModalShown = ref(false);
 const isImportED25519KeyModalShown = ref(false);
 const decryptedKey = ref('');
 const publicKeysPrivateKeyToDecrypt = ref('');
+const keyPairIdToDelete = ref<string | null>(null);
 const userPassword = ref('');
 const ecdsaKey = reactive<{ privateKey: string; nickname?: string }>({
   privateKey: '',
@@ -60,6 +63,30 @@ const handleDecrypt = async e => {
     );
   } catch (err: any) {
     toast.error('Failed to decrypt private key', { position: 'bottom-right' });
+  }
+};
+
+const handleDeleteModal = (keyId: string) => {
+  keyPairIdToDelete.value = keyId;
+  isDeleteModalShown.value = true;
+};
+
+const handleDelete = async e => {
+  e.preventDefault();
+
+  try {
+    if (!user.data.isLoggedIn) {
+      throw Error('No user selected');
+    }
+
+    if (keyPairIdToDelete.value) {
+      await deleteKeyPair(keyPairIdToDelete.value);
+      await keyPairsStore.refetch();
+    }
+
+    isDeleteModalShown.value = false;
+  } catch (err: any) {
+    toast.error('Failed to delete key pair', { position: 'bottom-right' });
   }
 };
 
@@ -111,6 +138,11 @@ watch(isDecryptedModalShown, newVal => {
     userPassword.value = '';
   }
 });
+watch(isDeleteModalShown, newVal => {
+  if (!newVal) {
+    keyPairIdToDelete.value = null;
+  }
+});
 watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
   userPassword.value = '';
   ecdsaKey.nickname = '';
@@ -147,9 +179,18 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
             Nickname: {{ keyPair.nickname }}
           </p>
         </div>
-        <AppButton size="small" color="primary" @click="handleShowDecryptModal(keyPair.public_key)"
-          >Decrypt Private Key</AppButton
-        >
+        <div>
+          <AppButton size="small" color="primary" @click="handleDeleteModal(keyPair.id)"
+            >Delete</AppButton
+          >
+          <AppButton
+            size="small"
+            color="primary"
+            @click="handleShowDecryptModal(keyPair.public_key)"
+            class="ms-2"
+            >Decrypt Private Key</AppButton
+          >
+        </div>
       </div>
       <div class="form-group">
         <label class="form-label">Encrypted Private key</label>
@@ -192,16 +233,8 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
         </div>
         <div class="text-center mt-5">
           <Transition name="fade" mode="out-in">
-            <i
-              v-if="!decryptedKey"
-              class="bi bi-lock large-icon cursor-pointer"
-              @click="isDecryptedModalShown = false"
-            ></i>
-            <i
-              v-else
-              class="bi bi-unlock large-icon cursor-pointer"
-              @click="isDecryptedModalShown = false"
-            ></i>
+            <i v-if="!decryptedKey" class="bi bi-lock large-icon"></i>
+            <i v-else class="bi bi-unlock large-icon"></i>
           </Transition>
         </div>
         <form @submit="handleDecrypt">
@@ -211,19 +244,45 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
             <AppInput
               v-model="userPassword"
               :filled="true"
-              size="small"
               type="password"
               placeholder="Type your password"
             />
           </div>
           <div class="form-group mt-4">
             <label class="form-label">Decrypted Private key</label>
-            <AppInput v-model="decryptedKey" :filled="true" size="small" readonly />
+            <AppInput v-model="decryptedKey" :filled="true" readonly />
           </div>
           <div class="d-grid mt-5">
             <AppButton type="submit" color="primary" :disabled="userPassword.length === 0"
               >Decrypt</AppButton
             >
+          </div>
+        </form>
+      </div>
+    </AppModal>
+    <AppModal v-model:show="isDeleteModalShown" class="common-modal">
+      <div class="p-5">
+        <div>
+          <i class="bi bi-x-lg cursor-pointer" @click="isDeleteModalShown = false"></i>
+        </div>
+        <div class="text-center mt-5">
+          <i class="bi bi-trash3 large-icon"></i>
+        </div>
+        <form @submit="handleDelete">
+          <h3 class="text-center text-title text-bold mt-5">Delete key key pair</h3>
+          <div class="form-group mt-4">
+            <label class="form-label">Public key</label>
+            <AppInput
+              :value="
+                keyPairsStore.keyPairs.find(kp => kp.id === keyPairIdToDelete)?.public_key || ''
+              "
+              :filled="true"
+              size="small"
+              readonly
+            />
+          </div>
+          <div class="d-grid mt-5">
+            <AppButton type="submit" color="primary">Delete</AppButton>
           </div>
         </form>
       </div>

@@ -83,7 +83,7 @@ const handleUnlinkAccount = async () => {
   toast.success('Account Unlinked!', { position: 'bottom-right' });
 };
 
-const handleNicknameDoubleClick = () => {
+const handleStartNicknameEdit = () => {
   isNicknameInputShown.value = true;
 
   if (nicknameInputRef.value) {
@@ -258,12 +258,17 @@ const handleChangeNickname = async () => {
                 <p
                   v-if="!isNicknameInputShown"
                   class="text-small text-semi-bold py-3"
-                  @dblclick="handleNicknameDoubleClick"
+                  @dblclick="handleStartNicknameEdit"
                 >
                   {{
                     accounts.find(acc => acc.account_id === accountData.accountIdFormatted.value)
                       ?.nickname || 'None'
                   }}
+
+                  <span
+                    class="bi bi-pencil-square text-primary ms-1"
+                    @click="handleStartNicknameEdit"
+                  ></span>
                 </p>
               </div>
             </div>

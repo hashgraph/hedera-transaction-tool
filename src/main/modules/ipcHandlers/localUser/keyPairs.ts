@@ -7,6 +7,7 @@ import {
   deleteEncryptedPrivateKeys,
   getKeyPairs,
   getSecretHashes,
+  deleteKeyPair,
 } from '../../../services/localUser';
 import { KeyPair } from '@prisma/client';
 
@@ -61,5 +62,10 @@ export default () => {
         return false;
       }
     },
+  );
+
+  // Delete key pair
+  ipcMain.handle(createChannelName('deleteKeyPair'), async (_e, keyPairId: string) =>
+    deleteKeyPair(keyPairId),
   );
 };

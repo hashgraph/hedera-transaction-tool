@@ -127,3 +127,14 @@ export const deleteSecretHashes = async (userId: string, organizationId?: string
     },
   });
 };
+
+// Delete Key Pair
+export const deleteKeyPair = async (keyPairId: string) => {
+  const prisma = getPrismaClient();
+
+  await prisma.keyPair.delete({
+    where: {
+      id: keyPairId,
+    },
+  });
+};
