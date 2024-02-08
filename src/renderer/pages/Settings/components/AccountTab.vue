@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import useUserStore from '../../../stores/storeUser';
-import useKeyPairsStore from '../../../stores/storeKeyPairs';
+import useUserStore from '@renderer/stores/storeUser';
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import { useToast } from 'vue-toast-notification';
 
-import { changeDecryptionPassword } from '../../../services/keyPairService';
+import { changeDecryptionPassword } from '@renderer/services/keyPairService';
 
-import AppButton from '../../../components/ui/AppButton.vue';
-import AppModal from '../../../components/ui/AppModal.vue';
-import AppInput from '../../../components/ui/AppInput.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Stores */
 const user = useUserStore();

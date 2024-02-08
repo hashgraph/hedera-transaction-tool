@@ -4,9 +4,9 @@ import { Mnemonic } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 
-import AppButton from '../../../components/ui/AppButton.vue';
-import AppCheckBox from '../../../components/ui/AppCheckBox.vue';
-import AppRecoveryPhraseWord from '../../../components/ui/AppRecoveryPhraseWord.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
+import AppRecoveryPhraseWord from '@renderer/components/ui/AppRecoveryPhraseWord.vue';
 
 /* Props */
 const props = defineProps<{

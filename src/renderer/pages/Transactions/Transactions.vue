@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 
+import AppTabs, { TabItem } from '@renderer/components/ui/AppTabs.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
 import History from './components/History.vue';
-import AppTabs, { TabItem } from '../../components/ui/AppTabs.vue';
-import AppButton from '../../components/ui/AppButton.vue';
 import TransactionSelectionModal from './components/TransactionSelectionModal.vue';
 
 /* State */

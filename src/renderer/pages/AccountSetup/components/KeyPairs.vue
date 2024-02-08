@@ -3,21 +3,21 @@ import { onMounted, onUpdated, ref } from 'vue';
 
 import { KeyPair } from '@prisma/client';
 
-import useKeyPairsStore from '../../../stores/storeKeyPairs';
-import useUserStore from '../../../stores/storeUser';
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
+import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
-import useCreateTooltips from '../../../composables/useCreateTooltips';
+import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import {
   restorePrivateKey,
   hashRecoveryPhrase,
   // getStoredKeyPairs,
-} from '../../../services/keyPairService';
+} from '@renderer/services/keyPairService';
 
-import AppInput from '../../../components/ui/AppInput.vue';
-// import AppButton from '../../../components/ui/AppButton.vue';
-// import AppSwitch from '../../../components/ui/AppSwitch.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
+// import AppButton from '@renderer/components/ui/AppButton.vue';
+// import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 
 /* Props */
 const props = defineProps<{ encryptPassword: string }>();

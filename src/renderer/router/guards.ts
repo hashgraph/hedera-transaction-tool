@@ -1,6 +1,6 @@
 import { Router } from 'vue-router';
 
-import useUserStore from '../stores/storeUser';
+import useUserStore from '@renderer/stores/storeUser';
 
 export function addGuards(router: Router) {
   const user = useUserStore();

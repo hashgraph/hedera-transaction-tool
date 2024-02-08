@@ -1,9 +1,9 @@
 import { onMounted, ref } from 'vue';
 import { defineStore } from 'pinia';
 
-import { IOrganization } from '../../main/shared/interfaces';
+import { IOrganization } from '@main/shared/interfaces';
 
-import * as configService from '../services/configurationService';
+import * as configService from '@renderer/services/configurationService';
 
 const useOrganizationsStore = defineStore('organizations', () => {
   /* State */

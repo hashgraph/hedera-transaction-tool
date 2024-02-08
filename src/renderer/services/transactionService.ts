@@ -9,10 +9,11 @@ import {
 
 import { KeyPair, Transaction as Tx } from '@prisma/client';
 
-import { CustomNetworkSettings, Network } from '../stores/storeNetwork';
+import { CustomNetworkSettings, Network } from '@renderer/stores/storeNetwork';
+
+import { getMessageFromIPCError } from '@renderer/utils';
 
 import { decryptPrivateKey } from './keyPairService';
-import { getMessageFromIPCError } from '../utils';
 
 /* Transaction service */
 

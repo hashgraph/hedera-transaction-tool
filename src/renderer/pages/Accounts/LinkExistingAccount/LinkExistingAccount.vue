@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import useUserStore from '../../../stores/storeUser';
+import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
-import useAccountId from '../../../composables/useAccountId';
-import useCreateTooltips from '../../../composables/useCreateTooltips';
+import useAccountId from '@renderer/composables/useAccountId';
+import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
-import { add } from '../../../services/accountsService';
+import { add } from '@renderer/services/accountsService';
 
-import AppButton from '../../../components/ui/AppButton.vue';
-import AppInput from '../../../components/ui/AppInput.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Stores */
 const user = useUserStore();

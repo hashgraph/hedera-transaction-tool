@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, ref } from 'vue';
 
-import useUserStore from '../../../stores/storeUser';
-import useKeyPairsStore from '../../../stores/storeKeyPairs';
+import useUserStore from '@renderer/stores/storeUser';
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
-import { validateMnemonic } from '../../../services/keyPairService';
+import { validateMnemonic } from '@renderer/services/keyPairService';
 
-import AppTabs, { TabItem } from '../../../components/ui/AppTabs.vue';
+import AppTabs, { TabItem } from '@renderer/components/ui/AppTabs.vue';
 import Generate from './Generate.vue';
 import Import from './Import.vue';
 

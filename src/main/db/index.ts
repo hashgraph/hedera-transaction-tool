@@ -6,6 +6,7 @@ import electron from 'electron';
 
 import * as sqlite3 from 'better-sqlite3';
 import { PrismaClient } from '@prisma/client';
+
 import { getDatabaseLogger } from '../modules/logger';
 
 export const dbPath = path.join(electron.app.getPath('userData'), 'database.db');

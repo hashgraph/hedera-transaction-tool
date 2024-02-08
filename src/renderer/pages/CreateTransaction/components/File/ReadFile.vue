@@ -2,23 +2,23 @@
 import { onMounted, ref, watch } from 'vue';
 import { FileContentsQuery } from '@hashgraph/sdk';
 
-import useUserStore from '../../../../stores/storeUser';
-import useKeyPairsStore from '../../../../stores/storeKeyPairs';
-import useNetworkStore from '../../../../stores/storeNetwork';
+import useUserStore from '@renderer/stores/storeUser';
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
-import useAccountId from '../../../../composables/useAccountId';
+import useAccountId from '@renderer/composables/useAccountId';
 
-import { decryptPrivateKey } from '../../../../services/keyPairService';
-import { executeQuery } from '../../../../services/transactionService';
+import { decryptPrivateKey } from '@renderer/services/keyPairService';
+import { executeQuery } from '@renderer/services/transactionService';
 
-import { isHederaSpecialFileId } from '../../../../../main/shared/utils/hederaSpecialFiles';
+import { isHederaSpecialFileId } from '@main/shared/utils/hederaSpecialFiles';
 
-import AppButton from '../../../../components/ui/AppButton.vue';
-import AppModal from '../../../../components/ui/AppModal.vue';
-import AppInput from '../../../../components/ui/AppInput.vue';
-import TransactionHeaderControls from '../../../../components/Transaction/TransactionHeaderControls.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
+import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 
 /* Stores */
 const user = useUserStore();

@@ -3,18 +3,18 @@ import { onUnmounted, ref, watch } from 'vue';
 import { Mnemonic } from '@hashgraph/sdk';
 import { KeyPair } from '@prisma/client';
 
-import useKeyPairsStore from '../../stores/storeKeyPairs';
-import useUserStore from '../../stores/storeUser';
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
+import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
-import { comparePasswords } from '../../services/userService';
-import * as keyPairService from '../../services/keyPairService';
+import { comparePasswords } from '@renderer/services/userService';
+import { restorePrivateKey, hashRecoveryPhrase } from '@renderer/services/keyPairService';
 
-import AppButton from '../../components/ui/AppButton.vue';
-import AppInput from '../../components/ui/AppInput.vue';
-import Import from '../AccountSetup/components/Import.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
+import Import from '@renderer/pages/AccountSetup/components/Import.vue';
 
 /* Stores */
 const keyPairsStore = useKeyPairsStore();
@@ -74,7 +74,7 @@ const handleRestoreKey = async e => {
   e.preventDefault();
 
   try {
-    const privateKey = await keyPairService.restorePrivateKey(
+    const privateKey = await restorePrivateKey(
       keyPairsStore.recoveryPhraseWords,
       '',
       Number(index.value),
@@ -111,7 +111,7 @@ const handleSaveKey = async e => {
 
   if (restoredKey.value) {
     try {
-      const secretHash = await keyPairService.hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
+      const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
       const keyPair: KeyPair = {
         id: '',
         user_id: user.data.id,

@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import useUserStore from '../../../stores/storeUser';
+import { AccountId } from '@hashgraph/sdk';
+
+import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
-import useCreateTooltips from '../../../composables/useCreateTooltips';
+import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
-import { add } from '../../../services/filesService';
+import { add } from '@renderer/services/filesService';
 
-import AppButton from '../../../components/ui/AppButton.vue';
-import AppInput from '../../../components/ui/AppInput.vue';
 import { isAccountId } from '@renderer/utils/validator';
-import { AccountId } from '@hashgraph/sdk';
+
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Stores */
 const user = useUserStore();

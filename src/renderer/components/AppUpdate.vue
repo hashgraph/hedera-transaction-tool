@@ -4,11 +4,11 @@ import { computed, onBeforeMount, ref } from 'vue';
 
 import { useToast } from 'vue-toast-notification';
 
-import { convertBytes } from '../utils';
+import { convertBytes } from '@renderer/utils';
 
-import AppModal from './ui/AppModal.vue';
-import AppButton from './ui/AppButton.vue';
-import AppProgressBar from './ui/AppProgressBar.vue';
+import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppProgressBar from '@renderer/components/ui/AppProgressBar.vue';
 
 /* Composables */
 const toast = useToast();

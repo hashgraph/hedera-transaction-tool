@@ -1,5 +1,6 @@
 import { reactive } from 'vue';
 import { defineStore } from 'pinia';
+
 import { User } from '@prisma/client';
 
 export interface UserStore {

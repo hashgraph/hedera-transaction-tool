@@ -1,9 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { ProgressInfo, UpdateInfo } from 'electron-updater';
-import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
-import { HederaAccount, HederaFile, KeyPair, Transaction, User } from '@prisma/client';
 
+import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
+
+import { HederaAccount, HederaFile, KeyPair, Transaction, User } from '@prisma/client';
 
 import { IOrganization } from '../main/shared/interfaces';
 

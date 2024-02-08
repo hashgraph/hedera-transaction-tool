@@ -3,8 +3,8 @@ import { ref } from 'vue';
 
 import { useRouter } from 'vue-router';
 
-import AppButton from '../../components/ui/AppButton.vue';
-import AppInput from '../../components/ui/AppInput.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Composables */
 const router = useRouter();

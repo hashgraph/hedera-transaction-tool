@@ -2,28 +2,28 @@ import { RouteRecordRaw, createRouter, createWebHistory } from 'vue-router';
 
 import { attachMeta } from './meta';
 
-import Welocome from '../pages/Welcome';
-import StyleGuide from '../pages/Styleguide';
-import Transactions from '../pages/Transactions';
-import Accounts from '../pages/Accounts';
-import Tokens from '../pages/Tokens';
-import Help from '../pages/Help';
-import Settings from '../pages/Settings';
-import SmartContracts from '../pages/SmartContracts';
-import ConsensusService from '../pages/ConsensusService';
-import Files from '../pages/Files';
-import ContactList from '../pages/ContactList';
-import AccountSetup from '../pages/AccountSetup';
-import GeneralTab from '../pages/Settings/components/GeneralTab.vue';
-import WorkGroupsTab from '../pages/Settings/components/WorkGroupsTab.vue';
-import KeysTab from '../pages/Settings/components/KeysTab.vue';
-import SetupOrganization from '../pages/SetupOrganization';
-import RestoreKey from '../pages/RestoreKey';
-import CreateTransaction from '../pages/CreateTransaction';
-import AccountTab from '../pages/Settings/components/AccountTab.vue';
-import ForgotPassword from '../pages/ForgotPassword';
-import LinkExistingAccount from '../pages/Accounts/LinkExistingAccount';
-import LinkExistingFile from '../pages/Files/LinkExistingFile';
+import Welocome from '@renderer/pages/Welcome';
+import StyleGuide from '@renderer/pages/Styleguide';
+import Transactions from '@renderer/pages/Transactions';
+import Accounts from '@renderer/pages/Accounts';
+import Tokens from '@renderer/pages/Tokens';
+import Help from '@renderer/pages/Help';
+import Settings from '@renderer/pages/Settings';
+import SmartContracts from '@renderer/pages/SmartContracts';
+import ConsensusService from '@renderer/pages/ConsensusService';
+import Files from '@renderer/pages/Files';
+import ContactList from '@renderer/pages/ContactList';
+import AccountSetup from '@renderer/pages/AccountSetup';
+import GeneralTab from '@renderer/pages/Settings/components/GeneralTab.vue';
+import WorkGroupsTab from '@renderer/pages/Settings/components/WorkGroupsTab.vue';
+import KeysTab from '@renderer/pages/Settings/components/KeysTab.vue';
+import SetupOrganization from '@renderer/pages/SetupOrganization';
+import RestoreKey from '@renderer/pages/RestoreKey';
+import CreateTransaction from '@renderer/pages/CreateTransaction';
+import AccountTab from '@renderer/pages/Settings/components/AccountTab.vue';
+import ForgotPassword from '@renderer/pages/ForgotPassword';
+import LinkExistingAccount from '@renderer/pages/Accounts/LinkExistingAccount';
+import LinkExistingFile from '@renderer/pages/Files/LinkExistingFile';
 
 const routes: RouteRecordRaw[] = [
   {

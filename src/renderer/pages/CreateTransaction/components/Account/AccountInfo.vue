@@ -2,11 +2,11 @@
 import { ref, watch } from 'vue';
 
 import { useToast } from 'vue-toast-notification';
-import useAccountId from '../../../../composables/useAccountId';
+import useAccountId from '@renderer/composables/useAccountId';
 
-import AppButton from '../../../../components/ui/AppButton.vue';
-import AppInput from '../../../../components/ui/AppInput.vue';
-import KeyStructureModal from '../../../../components/KeyStructureModal.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
+import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 
 /* Composables */
 const toast = useToast();

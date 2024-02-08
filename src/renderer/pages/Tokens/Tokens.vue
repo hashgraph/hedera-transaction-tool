@@ -2,9 +2,9 @@
 import axios from 'axios';
 import { onBeforeMount, ref } from 'vue';
 
-import useNetworkStore from '../../stores/storeNetwork';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
-// import AppButton from '../../components/ui/AppButton.vue';
+// import AppButton from '@renderer/components/ui/AppButton.vue';
 
 interface ITransaction {
   transaction_id: string;

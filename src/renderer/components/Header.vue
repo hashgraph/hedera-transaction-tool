@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import useOrganizationsStore from '../stores/storeOrganizations';
-import useUserStore from '../stores/storeUser';
-import useKeyPairsStore from '../stores/storeKeyPairs';
+import useOrganizationsStore from '@renderer/stores/storeOrganizations';
+import useUserStore from '@renderer/stores/storeUser';
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import { useRouter } from 'vue-router';
 
-import Logo from './Logo.vue';
-import LogoText from './LogoText.vue';
+import Logo from '@renderer/components/Logo.vue';
+import LogoText from '@renderer/components/LogoText.vue';
 
 /* Stores */
 const organizationsStore = useOrganizationsStore();

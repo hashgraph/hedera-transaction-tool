@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import useOrganizationsStore from '../../stores/storeOrganizations';
-import useUserStore from '../../stores/storeUser';
+import useOrganizationsStore from '@renderer/stores/storeOrganizations';
+import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
 
-import AppButton from '../../components/ui/AppButton.vue';
-import AppInput from '../../components/ui/AppInput.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Stores */
 const organizationsStore = useOrganizationsStore();

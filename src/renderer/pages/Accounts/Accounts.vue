@@ -3,21 +3,21 @@ import { computed, onMounted, ref } from 'vue';
 import { KeyList, PublicKey } from '@hashgraph/sdk';
 import { HederaAccount } from '@prisma/client';
 
-import useUserStore from '../../stores/storeUser';
-import useNetworkStore from '../../stores/storeNetwork';
+import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
-import useAccountId from '../../composables/useAccountId';
+import useAccountId from '@renderer/composables/useAccountId';
 
-import { getAll, remove, changeNickname } from '../../services/accountsService';
-import { getKeyListLevels } from '../../services/keyPairService';
-import { getDollarAmount } from '../../services/mirrorNodeDataService';
+import { getAll, remove, changeNickname } from '@renderer/services/accountsService';
+import { getKeyListLevels } from '@renderer/services/keyPairService';
+import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 
-import { getFormattedDateFromTimestamp } from '../../utils/transactions';
+import { getFormattedDateFromTimestamp } from '@renderer/utils/transactions';
 
-import AppButton from '../../components/ui/AppButton.vue';
-import AppModal from '../../components/ui/AppModal.vue';
-import KeyStructureModal from '../../components/KeyStructureModal.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppModal from '@renderer/components/ui/AppModal.vue';
+import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 
 /* Enums */
 // enum Sorting {

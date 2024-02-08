@@ -7,9 +7,9 @@ import {
 } from '@hashgraph/sdk';
 import { Transaction } from '@prisma/client';
 
-import { Network } from '../stores/storeNetwork';
+import { Network } from '@renderer/stores/storeNetwork';
 
-import { openExternal } from '../services/electronUtilsService';
+import { openExternal } from '@renderer/services/electronUtilsService';
 
 export const getTransactionDate = (transaction: Transaction): string => {
   return new Timestamp(

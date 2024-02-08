@@ -1,8 +1,8 @@
 <script setup lang="ts">
 // import { useToast } from 'vue-toast-notification';
 
-import AppButton from '../../components/ui/AppButton.vue';
-import AppInput from '../../components/ui/AppInput.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
 // const $toast = useToast();
 
 // $toast.open({
