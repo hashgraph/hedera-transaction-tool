@@ -152,80 +152,143 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
 });
 </script>
 <template>
-  <div>
-    <div class="d-flex gap-4">
-      <RouterLink class="btn btn-primary mb-4" :to="{ name: 'restoreKey' }">Restore key</RouterLink>
-      <AppButton class="btn btn-primary mb-4" @click="isImportECDSAKeyModalShown = true"
-        >Import ECDSA Key</AppButton
-      >
-      <AppButton class="btn btn-primary mb-4" @click="isImportED25519KeyModalShown = true"
-        >Import ED25519 Key</AppButton
-      >
-    </div>
-    <div
-      v-for="keyPair in keyPairsStore.keyPairs"
-      :key="keyPair.public_key"
-      class="rounded bg-dark-blue-800 p-4 mt-4"
+  <div class="d-flex mb-5">
+    <RouterLink class="btn btn-primary me-4" :to="{ name: 'restoreKey' }">Restore key</RouterLink>
+    <AppButton class="btn btn-primary me-4" @click="isImportED25519KeyModalShown = true"
+      >Import ED25519 Key</AppButton
     >
-      <div class="d-flex justify-content-between align-items-center">
-        <div class="mb-3 d-flex">
-          <p v-if="keyPair.index >= 0" class="me-3 text-secondary text-bold text-main">
-            Index: {{ keyPair.index }}
-          </p>
-          <p v-else-if="!keyPair.nickname" class="me-3 text-secondary text-bold text-main">
-            ECDSA Imported Key Pair
-          </p>
-          <p v-if="keyPair.nickname" class="text-secondary text-bold text-main">
-            Nickname: {{ keyPair.nickname }}
-          </p>
-        </div>
-        <div>
-          <AppButton size="small" color="primary" @click="handleDeleteModal(keyPair.id)"
-            >Delete</AppButton
-          >
-          <AppButton
-            size="small"
-            color="primary"
-            @click="handleShowDecryptModal(keyPair.public_key)"
-            class="ms-2"
-            >Decrypt Private Key</AppButton
-          >
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Encrypted Private key</label>
-        <AppInput readonly class="py-3" :filled="true" :model-value="keyPair.private_key" />
-      </div>
-      <div class="form-group mt-3">
-        <label class="form-label"
-          >{{
-            PublicKey.fromString(keyPair.public_key)._key._type === 'secp256k1'
-              ? 'ECDSA'
-              : 'ED25519'
-          }}
-          Public key</label
-        >
-        <AppInput readonly class="py-3" :filled="true" :model-value="keyPair.public_key" />
-      </div>
+    <AppButton class="btn btn-primary" @click="isImportECDSAKeyModalShown = true"
+      >Import ECDSA Key</AppButton
+    >
+  </div>
+
+  <div class="row">
+    <div class="col-6 col-xxxl-5">
+      <h2 class="text-main text-bold">Keys from recovery phrase:</h2>
       <div
-        v-show="
-          keyPairsStore.accoundIds.find(acc => acc.publicKey === keyPair.public_key)?.accountIds[0]
-        "
-        class="form-group mt-3"
+        v-for="keyPair in keyPairsStore.keyPairs.filter(item => item.secret_hash != null)"
+        :key="keyPair.public_key"
+        class="rounded border bg-dark-blue-800 p-4 mt-4"
       >
-        <label class="form-label">Account ID</label>
-        <AppInput
-          type="text"
-          readonly
-          class="py-3"
-          :filled="true"
-          :model-value="
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="mb-3">
+            <p class="text-small mb-3">
+              <span class="text-secondary">Nickname: </span>
+              <span class="text-bold">{{ keyPair.nickname || 'N/A' }} ({{ keyPair.type }})</span>
+            </p>
+            <p v-if="keyPair.index >= 0" class="text-small">
+              <span class="text-secondary">Index: </span>
+              <span class="text-bold">{{ keyPair.index }}</span>
+            </p>
+          </div>
+          <div>
+            <AppButton size="small" color="primary" @click="handleDeleteModal(keyPair.id)"
+              >Delete</AppButton
+            >
+            <AppButton
+              size="small"
+              color="primary"
+              @click="handleShowDecryptModal(keyPair.public_key)"
+              class="ms-3"
+              >Decrypt Private Key</AppButton
+            >
+          </div>
+        </div>
+        <div class="form-group mt-3">
+          <label class="form-label"
+            >{{
+              PublicKey.fromString(keyPair.public_key)._key._type === 'secp256k1'
+                ? 'ECDSA'
+                : 'ED25519'
+            }}
+            Public key</label
+          >
+          <AppInput readonly :filled="true" :model-value="keyPair.public_key" />
+        </div>
+        <div
+          v-show="
             keyPairsStore.accoundIds.find(acc => acc.publicKey === keyPair.public_key)
               ?.accountIds[0]
           "
-        />
+          class="form-group mt-3"
+        >
+          <label class="form-label">Account ID</label>
+          <AppInput
+            type="text"
+            readonly
+            :filled="true"
+            :model-value="
+              keyPairsStore.accoundIds.find(acc => acc.publicKey === keyPair.public_key)
+                ?.accountIds[0]
+            "
+          />
+        </div>
       </div>
     </div>
+
+    <div class="col-6 col-xxxl-5">
+      <h2 class="text-main text-bold">Keys imported from PK:</h2>
+      <div
+        v-for="keyPair in keyPairsStore.keyPairs.filter(item => item.secret_hash === null)"
+        :key="keyPair.public_key"
+        class="rounded border bg-dark-blue-800 p-4 mt-4"
+      >
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="mb-3">
+            <p v-if="keyPair.index >= 0" class="mb-3 text-small">
+              <span class="text-secondary">Index: </span>
+              <span class="text-bold">{{ keyPair.index }}</span>
+            </p>
+            <p class="text-small">
+              <span class="text-secondary">Nickname: </span>
+              <span class="text-bold">{{ keyPair.nickname || 'N/A' }} ({{ keyPair.type }})</span>
+            </p>
+          </div>
+          <div>
+            <AppButton size="small" color="primary" @click="handleDeleteModal(keyPair.id)"
+              >Delete</AppButton
+            >
+            <AppButton
+              size="small"
+              color="primary"
+              @click="handleShowDecryptModal(keyPair.public_key)"
+              class="ms-3"
+              >Decrypt Private Key</AppButton
+            >
+          </div>
+        </div>
+        <div class="form-group mt-3">
+          <label class="form-label"
+            >{{
+              PublicKey.fromString(keyPair.public_key)._key._type === 'secp256k1'
+                ? 'ECDSA'
+                : 'ED25519'
+            }}
+            Public key</label
+          >
+          <AppInput readonly :filled="true" :model-value="keyPair.public_key" />
+        </div>
+        <div
+          v-show="
+            keyPairsStore.accoundIds.find(acc => acc.publicKey === keyPair.public_key)
+              ?.accountIds[0]
+          "
+          class="form-group mt-3"
+        >
+          <label class="form-label">Account ID</label>
+          <AppInput
+            type="text"
+            readonly
+            :filled="true"
+            :model-value="
+              keyPairsStore.accoundIds.find(acc => acc.publicKey === keyPair.public_key)
+                ?.accountIds[0]
+            "
+          />
+        </div>
+      </div>
+    </div>
+
     <AppModal v-model:show="isDecryptedModalShown" class="common-modal">
       <div class="p-5">
         <div>
@@ -260,6 +323,7 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
         </form>
       </div>
     </AppModal>
+
     <AppModal v-model:show="isDeleteModalShown" class="common-modal">
       <div class="p-5">
         <div>
@@ -287,6 +351,7 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
         </form>
       </div>
     </AppModal>
+
     <AppModal v-model:show="isImportECDSAKeyModalShown" class="common-modal">
       <div class="p-5">
         <i class="bi bi-x-lg cursor-pointer" @click="isImportECDSAKeyModalShown = false"></i>
@@ -302,13 +367,13 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
           "
         >
           <div class="form-group mt-4">
-            <label class="form-label">Enter your password</label>
+            <label class="form-label">Enter ECDSA Private key</label>
             <AppInput
-              v-model="userPassword"
-              type="password"
+              v-model="ecdsaKey.privateKey"
               :filled="true"
               size="small"
-              placeholder="Type your password"
+              name="private-key"
+              placeholder="Type ECDSA Private key"
             />
           </div>
           <div class="form-group mt-4">
@@ -321,14 +386,15 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
               placeholder="Type nickname"
             />
           </div>
+
           <div class="form-group mt-4">
-            <label class="form-label">Enter ECDSA Private key</label>
+            <label class="form-label">Enter your password</label>
             <AppInput
-              v-model="ecdsaKey.privateKey"
+              v-model="userPassword"
+              type="password"
               :filled="true"
               size="small"
-              name="private-key"
-              placeholder="Type ECDSA Private key"
+              placeholder="Type your password"
             />
           </div>
           <div class="d-grid mt-5">
@@ -337,6 +403,7 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
         </form>
       </div>
     </AppModal>
+
     <AppModal v-model:show="isImportED25519KeyModalShown" class="common-modal">
       <div class="p-5">
         <i class="bi bi-x-lg cursor-pointer" @click="isImportED25519KeyModalShown = false"></i>
@@ -352,13 +419,13 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
           "
         >
           <div class="form-group mt-4">
-            <label class="form-label">Enter your password</label>
+            <label class="form-label">Enter ED25519 Private key</label>
             <AppInput
-              v-model="userPassword"
-              type="password"
+              v-model="ed25519Key.privateKey"
               :filled="true"
               size="small"
-              placeholder="Type your password"
+              name="private-key"
+              placeholder="Type ED25519 Private key"
             />
           </div>
           <div class="form-group mt-4">
@@ -372,13 +439,13 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
             />
           </div>
           <div class="form-group mt-4">
-            <label class="form-label">Enter ED25519 Private key</label>
+            <label class="form-label">Enter your password</label>
             <AppInput
-              v-model="ed25519Key.privateKey"
+              v-model="userPassword"
+              type="password"
               :filled="true"
               size="small"
-              name="private-key"
-              placeholder="Type ED25519 Private key"
+              placeholder="Type your password"
             />
           </div>
           <div class="d-grid mt-5">
