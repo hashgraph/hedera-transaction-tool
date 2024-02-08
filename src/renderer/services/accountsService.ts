@@ -17,3 +17,11 @@ export const remove = async (userId: string, accountId: string, nickname: string
     throw Error(getMessageFromIPCError(err, 'Account unlink failed'));
   }
 };
+
+export const changeNickname = async (userId: string, accountId: string, nickname: string = '') => {
+  try {
+    return await window.electronAPI.accounts.changeNickname(userId, accountId, nickname);
+  } catch (err: any) {
+    throw Error(getMessageFromIPCError(err, 'Account nickname change failed'));
+  }
+};

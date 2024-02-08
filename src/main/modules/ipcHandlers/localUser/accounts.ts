@@ -1,6 +1,11 @@
 import { ipcMain } from 'electron';
 
-import { addAccount, getAccounts, removeAccount } from '../../../services/localUser';
+import {
+  addAccount,
+  changeAccountNickname,
+  getAccounts,
+  removeAccount,
+} from '../../../services/localUser';
 
 const createChannelName = (...props) => ['accounts', ...props].join(':');
 
@@ -22,5 +27,12 @@ export default () => {
     createChannelName('remove'),
     (_e, userId: string, accountId: string, nickname: string = '') =>
       removeAccount(userId, accountId, nickname),
+  );
+
+  // Change Nickname
+  ipcMain.handle(
+    createChannelName('changeNickname'),
+    (_e, userId: string, accountId: string, nickname: string = '') =>
+      changeAccountNickname(userId, accountId, nickname),
   );
 };

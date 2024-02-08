@@ -84,6 +84,12 @@ export const electronAPI = {
       ipcRenderer.invoke('accounts:add', userId, accountId, nickname),
     remove: (userId: string, accountId: string, nickname: string): Promise<HederaAccount[]> =>
       ipcRenderer.invoke('accounts:remove', userId, accountId, nickname),
+    changeNickname: (
+      userId: string,
+      accountId: string,
+      nickname: string,
+    ): Promise<HederaAccount[]> =>
+      ipcRenderer.invoke('accounts:changeNickname', userId, accountId, nickname),
   },
   files: {
     getAll: (userId: string): Promise<HederaFile[]> => ipcRenderer.invoke('files:getAll', userId),
