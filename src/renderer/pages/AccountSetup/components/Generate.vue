@@ -1,20 +1,21 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { Mnemonic } from '@hashgraph/sdk';
 
-import { useToast } from 'vue-toast-notification';
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppRecoveryPhraseWord from '@renderer/components/ui/AppRecoveryPhraseWord.vue';
+import { validateMnemonic } from '@renderer/services/keyPairService';
 
 /* Props */
 const props = defineProps<{
   handleContinue: (words: string[]) => void;
 }>();
 
-/* Composables */
-const toast = useToast();
+/* Stores */
+const keyPairs = useKeyPairsStore();
 
 /* State */
 const words = ref(Array(24).fill(''));
@@ -54,24 +55,30 @@ const handleProceedToVerification = () => {
   indexesToVerify.value.forEach(i => (words.value[i] = ''));
 };
 
-const handleVerify = () => {
-  if (words.value.toString() === correctWords.value.toString()) {
-    toast.success('Recovery Phrase Created successfully', { position: 'bottom-right' });
-    props.handleContinue(correctWords.value);
-  }
-};
-
 const handleWordChange = (newWord: string, index: number) => {
   words.value[index] = newWord;
   words.value = [...words.value];
 };
+
+/* Hooks */
+onMounted(async () => {
+  const areValid = await validateMnemonic(keyPairs.recoveryPhraseWords);
+  if (areValid) {
+    words.value = keyPairs.recoveryPhraseWords;
+    wordsConfirmed.value = true;
+    toVerify.value = true;
+  }
+});
+
+/* Watchers */
+watch(words, newWords => {
+  if (newWords.toString() === correctWords.value.toString()) {
+    props.handleContinue(correctWords.value);
+  }
+});
 </script>
 <template>
   <div>
-    <div v-if="toVerify" class="text-center mb-8">
-      <h1 class="text-main text-bold">Verify Recovery Phrase</h1>
-      <h3 class="text-main mt-2">Enter the missing words</h3>
-    </div>
     <div class="d-flex flex-wrap row g-3">
       <template v-for="(word, index) in words || []" :key="index">
         <AppRecoveryPhraseWord
@@ -96,35 +103,45 @@ const handleWordChange = (newWord: string, index: number) => {
       />
     </div>
   </div>
-  <div class="d-flex flex-column justify-content-center align-items-center gap-4 mt-8">
-    <AppButton
-      v-if="!wordsConfirmed && !toVerify"
-      :disabled="!checkboxChecked && words.filter(w => w).length === 0"
-      size="large"
-      color="primary"
-      class="rounded-4 min-w-50"
-      @click="handleGeneratePhrase"
-    >
-      <span v-if="words.filter(w => w).length === 0">Generate</span>
-      <span v-else>Generate again</span>
-    </AppButton>
-    <AppButton
-      v-if="words.filter(w => w).length > 0 && !toVerify"
-      :disabled="!checkboxChecked"
-      size="large"
-      color="secondary"
-      class="rounded-4 min-w-50"
-      @click="handleProceedToVerification"
-      >Continue</AppButton
-    >
-    <AppButton
-      v-if="toVerify"
-      :disabled="words.toString() !== correctWords.toString()"
-      size="large"
-      color="secondary"
-      class="rounded-4 min-w-50"
-      @click="handleVerify"
-      >Verify</AppButton
-    >
+
+  <div
+    class="row justify-content-center mt-6"
+    v-if="!wordsConfirmed && !toVerify && words.filter(w => w).length === 0"
+  >
+    <div class="col-6">
+      <AppButton
+        :disabled="!checkboxChecked && words.filter(w => w).length === 0"
+        color="primary"
+        class="w-100"
+        @click="handleGeneratePhrase"
+      >
+        <span>Generate</span>
+      </AppButton>
+    </div>
+  </div>
+
+  <div
+    class="row justify-content-between mt-6"
+    v-if="!wordsConfirmed && !toVerify && words.filter(w => w).length !== 0"
+  >
+    <div class="col-6 col-md-4">
+      <AppButton
+        :disabled="!checkboxChecked && words.filter(w => w).length === 0"
+        color="secondary"
+        @click="handleGeneratePhrase"
+        class="w-100"
+      >
+        <p><i class="bi bi-arrow-repeat"></i> Generate again</p>
+      </AppButton>
+    </div>
+    <div class="col-6 col-md-4">
+      <AppButton
+        :disabled="!checkboxChecked"
+        color="primary"
+        @click="handleProceedToVerification"
+        class="w-100"
+        >Next</AppButton
+      >
+    </div>
   </div>
 </template>
