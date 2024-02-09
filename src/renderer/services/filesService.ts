@@ -1,6 +1,12 @@
 import { getMessageFromIPCError } from '@renderer/utils';
 
-export const getAll = (userId: string) => window.electronAPI.files.getAll(userId);
+export const getAll = async (userId: string) => {
+  try {
+    return await window.electronAPI.files.getAll(userId);
+  } catch (error) {
+    return [];
+  }
+};
 
 export const add = async (userId: string, fileId: string, nickname: string = '') => {
   try {

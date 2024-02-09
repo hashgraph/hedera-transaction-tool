@@ -21,7 +21,7 @@ const router = useRouter();
 /* State */
 const organizationsDropDownRef = ref<HTMLSelectElement | null>(null);
 
-function handleOrganizationChange(e: Event) {
+async function handleOrganizationChange(e: Event) {
   const selectElement = e.target as HTMLSelectElement;
   const selectedOption = selectElement.selectedOptions[0];
 
@@ -42,7 +42,7 @@ function handleOrganizationChange(e: Event) {
       break;
   }
 
-  keyPairsStore.refetch();
+  await keyPairsStore.refetch();
 }
 </script>
 

@@ -126,8 +126,8 @@ const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
 };
 
 /* Hooks */
-onMounted(() => {
-  keyPairsStore.refetch();
+onMounted(async () => {
+  await keyPairsStore.refetch();
 });
 
 /* Watchers */

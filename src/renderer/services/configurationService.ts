@@ -5,7 +5,13 @@ import { IOrganization } from '@main/shared/interfaces';
 
 /* Organizations */
 /* Get Organizations */
-export const getOrganizations = () => window.electronAPI.config.organizations.getAll();
+export const getOrganizations = async () => {
+  try {
+    return await window.electronAPI.config.organizations.getAll();
+  } catch (err: any) {
+    return [];
+  }
+};
 
 /* Add Organization */
 export const addOrganization = async (organization: IOrganization) => {

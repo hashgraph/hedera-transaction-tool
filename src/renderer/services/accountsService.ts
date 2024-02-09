@@ -1,6 +1,12 @@
 import { getMessageFromIPCError } from '@renderer/utils';
 
-export const getAll = (userId: string) => window.electronAPI.accounts.getAll(userId);
+export const getAll = async (userId: string) => {
+  try {
+    return await window.electronAPI.accounts.getAll(userId);
+  } catch (err: any) {
+    throw Error(getMessageFromIPCError(err, 'Failed to get linked acccounts'));
+  }
+};
 
 export const add = async (userId: string, accountId: string, nickname: string = '') => {
   try {
