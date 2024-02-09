@@ -142,34 +142,47 @@ const handleChangeNickname = async () => {
     <div class="d-flex justify-content-between align-items-center">
       <h1 class="text-title text-bold">Accounts</h1>
       <div class="d-flex justify-content-end align-items-center">
-        <AppButton class="me-3" color="secondary" @click="isUnlinkAccountModalShown = true"
-          >Remove</AppButton
-        >
         <AppButton
-          v-if="!accountData.accountInfo.value?.deleted"
+          :outline="true"
+          color="secondary"
           class="me-3"
-          color="secondary"
-          @click="
-            $router.push({
-              name: 'createTransaction',
-              params: { type: 'deleteAccount' },
-              query: { accountId: accountData.accountIdFormatted.value },
-            })
-          "
-          >Delete</AppButton
+          @click="isUnlinkAccountModalShown = true"
+          >Unlink</AppButton
         >
-        <AppButton
-          v-if="!accountData.accountInfo.value?.deleted"
-          color="secondary"
-          @click="
-            $router.push({
-              name: 'createTransaction',
-              params: { type: 'updateAccount' },
-              query: { accountId: accountData.accountIdFormatted.value },
-            })
-          "
-          >Update</AppButton
-        >
+        <div class="dropdown" v-if="!accountData.accountInfo.value?.deleted">
+          <AppButton
+            color="primary"
+            class="w-100 d-flex align-items-center justify-content-center"
+            data-bs-toggle="dropdown"
+            >Update</AppButton
+          >
+          <ul class="dropdown-menu mt-3">
+            <li
+              class="dropdown-item cursor-pointer"
+              @click="
+                $router.push({
+                  name: 'createTransaction',
+                  params: { type: 'deleteAccount' },
+                  query: { accountId: accountData.accountIdFormatted.value },
+                })
+              "
+            >
+              <span class="text-small text-bold">Delete from Network</span>
+            </li>
+            <li
+              class="dropdown-item cursor-pointer mt-3"
+              @click="
+                $router.push({
+                  name: 'createTransaction',
+                  params: { type: 'updateAccount' },
+                  query: { accountId: accountData.accountIdFormatted.value },
+                })
+              "
+            >
+              <span class="text-small text-bold">Update in Network</span>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
     <div class="mt-7 h-100 row">
@@ -466,14 +479,27 @@ const handleChangeNickname = async () => {
             </div>
             <h3 class="text-center text-title text-bold mt-5">Unlink account</h3>
             <p class="text-center text-small text-secondary mt-4">
-              Are you sure you want to remove this account from your account list?
+              Are you sure you want to remove this Account from your Account list?
             </p>
             <hr class="separator my-5" />
-            <div class="d-grid">
-              <AppButton color="primary" @click="handleUnlinkAccount">Unlink</AppButton>
-              <AppButton color="secondary" class="mt-4" @click="isUnlinkAccountModalShown = false"
-                >Cancel</AppButton
-              >
+            <div class="row mt-4">
+              <div class="col-6">
+                <AppButton
+                  color="secondary"
+                  class="w-100"
+                  @click="isUnlinkAccountModalShown = false"
+                  >Cancel</AppButton
+                >
+              </div>
+              <div class="col-6">
+                <AppButton
+                  :outline="true"
+                  color="primary"
+                  class="w-100"
+                  @click="handleUnlinkAccount"
+                  >Unlink</AppButton
+                >
+              </div>
             </div>
           </div>
         </AppModal>
