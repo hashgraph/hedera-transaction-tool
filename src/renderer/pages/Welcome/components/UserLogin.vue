@@ -229,7 +229,7 @@ watch(inputEmail, pass => {
 });
 </script>
 <template>
-  <div class="container-dark-border p-5">
+  <div class="container-dark-border glow-dark-bg p-5">
     <h4 class="text-title text-bold text-center">
       {{ shouldRegister ? 'Register' : 'Sign In' }}
     </h4>
