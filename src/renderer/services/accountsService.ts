@@ -4,7 +4,7 @@ export const getAll = async (userId: string) => {
   try {
     return await window.electronAPI.accounts.getAll(userId);
   } catch (err: any) {
-    return [];
+    throw Error(getMessageFromIPCError(err, 'Failed to get linked acccounts'));
   }
 };
 

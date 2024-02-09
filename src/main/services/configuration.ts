@@ -7,7 +7,13 @@ const store = getStore();
 export const clearStore = () => store.clear();
 
 /* Organizations */
-export const getOrganizations = () => store.get('organizations');
+export const getOrganizations = () => {
+  try {
+    return store.get('organizations');
+  } catch (error) {
+    throw new Error('Failed to fetch stored organizations');
+  }
+};
 
 export const addOrganization = (organization: IOrganization) => {
   if (

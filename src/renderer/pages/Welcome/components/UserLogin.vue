@@ -2,6 +2,8 @@
 import { onMounted, reactive, ref, watch } from 'vue';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
+import { User } from '@prisma/client';
+
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
@@ -73,22 +75,14 @@ const handleOnFormSubmit = async (event: Event) => {
     }
     const userData = await registerLocal(inputEmail.value, inputPassword.value);
     user.login(userData, []);
+
     user.data.password = inputPassword.value;
     router.push({ name: 'accountSetup' });
   } else if (!shouldRegister.value) {
+    let userData: User | null = null;
+
     try {
-      const userData = await loginLocal(inputEmail.value, inputPassword.value, false);
-      const secretHashes = await getSecretHashes(userData.id);
-      user.login(userData, secretHashes);
-
-      await keyPairs.refetch();
-
-      if (secretHashes.length === 0) {
-        user.data.password = inputPassword.value;
-        router.push({ name: 'accountSetup' });
-      } else {
-        router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
-      }
+      userData = await loginLocal(inputEmail.value, inputPassword.value, false);
     } catch (error: any) {
       inputEmailInvalid.value = false;
       inputPasswordInvalid.value = false;
@@ -98,6 +92,19 @@ const handleOnFormSubmit = async (event: Event) => {
       }
       if (error.message.includes('password')) {
         inputPasswordInvalid.value = true;
+      }
+    }
+
+    if (userData) {
+      const secretHashes = await getSecretHashes(userData.id);
+      user.login(userData, secretHashes);
+
+      if (secretHashes.length === 0) {
+        user.data.password = inputPassword.value;
+        router.push({ name: 'accountSetup' });
+      } else {
+        router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
+        await keyPairs.refetch();
       }
     }
   }

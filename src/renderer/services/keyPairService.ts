@@ -8,14 +8,18 @@ import { getMessageFromIPCError } from '@renderer/utils';
 /* Key Pairs Service */
 
 /* Get stored key pairs */
-export const getKeyPairs = (userId: string, organizationId?: string) => {
-  return window.electronAPI.keyPairs.getAll(userId, organizationId);
+export const getKeyPairs = async (userId: string, organizationId?: string) => {
+  try {
+    return await window.electronAPI.keyPairs.getAll(userId, organizationId);
+  } catch (error: any) {
+    throw Error(getMessageFromIPCError(error, 'Failed to fetch key pairs'));
+  }
 };
 
 /* Get stored secret hashes */
-export const getSecretHashes = (userId: string, organizationId?: string) => {
+export const getSecretHashes = async (userId: string, organizationId?: string) => {
   try {
-    return window.electronAPI.keyPairs.getSecretHashes(userId, organizationId);
+    return await window.electronAPI.keyPairs.getSecretHashes(userId, organizationId);
   } catch (error) {
     throw Error(getMessageFromIPCError(error, 'Failed to fetch secret hashes'));
   }
@@ -45,22 +49,26 @@ export const restorePrivateKey = async (
 };
 
 /* Store key pair*/
-export const storeKeyPair = (keyPair: KeyPair, password: string) => {
+export const storeKeyPair = async (keyPair: KeyPair, password: string) => {
   try {
-    return window.electronAPI.keyPairs.store(keyPair, password);
+    return await window.electronAPI.keyPairs.store(keyPair, password);
   } catch (error) {
     throw Error(getMessageFromIPCError(error, 'Failed to store key pair'));
   }
 };
 
 /* Change the decryption password of a stored private key */
-export const changeDecryptionPassword = (
+export const changeDecryptionPassword = async (
   userId: string,
   oldPassword: string,
   newPassword: string,
 ) => {
   try {
-    return window.electronAPI.keyPairs.changeDecryptionPassword(userId, oldPassword, newPassword);
+    return await window.electronAPI.keyPairs.changeDecryptionPassword(
+      userId,
+      oldPassword,
+      newPassword,
+    );
   } catch (error) {
     throw Error(getMessageFromIPCError(error, 'Failed to change decryption password'));
   }
@@ -76,27 +84,27 @@ export const decryptPrivateKey = async (userId: string, password: string, public
 };
 
 /* Hash recovery phrase */
-export const hashRecoveryPhrase = (words: string[]) => {
+export const hashRecoveryPhrase = async (words: string[]) => {
   try {
-    return window.electronAPI.utils.hash(words.toString());
+    return await window.electronAPI.utils.hash(words.toString());
   } catch (error) {
     throw Error(getMessageFromIPCError(error, 'Failed to hash recovery phrase'));
   }
 };
 
 /* Delete all stored key pairs */
-export const clearKeys = (userId: string, organizationId?: string) => {
+export const clearKeys = async (userId: string, organizationId?: string) => {
   try {
-    return window.electronAPI.keyPairs.clear(userId, organizationId);
+    return await window.electronAPI.keyPairs.clear(userId, organizationId);
   } catch (error) {
     throw Error(getMessageFromIPCError(error, 'Failed to clear key pairs'));
   }
 };
 
 /* Delete the encrypted private keys from user's key pairs */
-export const deleteEncryptedPrivateKeys = (userId: string, organizationId: string) => {
+export const deleteEncryptedPrivateKeys = async (userId: string, organizationId: string) => {
   try {
-    return window.electronAPI.keyPairs.deleteEncryptedPrivateKeys(userId, organizationId);
+    return await window.electronAPI.keyPairs.deleteEncryptedPrivateKeys(userId, organizationId);
   } catch (error) {
     throw Error(getMessageFromIPCError(error, 'Failed to delete encrypted private keys'));
   }
@@ -114,9 +122,9 @@ export const validateMnemonic = async (words: string[]) => {
 };
 
 /* Delete Key Pair */
-export const deleteKeyPair = (keyPairId: string) => {
+export const deleteKeyPair = async (keyPairId: string) => {
   try {
-    return window.electronAPI.keyPairs.deleteKeyPair(keyPairId);
+    return await window.electronAPI.keyPairs.deleteKeyPair(keyPairId);
   } catch (error) {
     throw Error(getMessageFromIPCError(error, 'Failed to delete keys pair'));
   }
