@@ -614,20 +614,37 @@ defineExpose({
         <div>
           <i class="bi bi-x-lg cursor-pointer" @click="isSignModalShown = false"></i>
         </div>
-        <form @submit="handleSignTransaction">
+        <div class="text-center">
+          <i class="bi bi-unlock large-icon"></i>
+        </div>
+        <form @submit="handleSignTransaction" class="mt-5">
           <h3 class="text-center text-title text-bold">Enter your password</h3>
-          <div class="form-group mt-5">
+          <div class="form-group mt-5 mb-4">
+            <label class="form-label">Password</label>
             <AppInput size="small" v-model="userPassword" type="password" :filled="true" />
           </div>
-          <div class="d-grid mt-4">
-            <p v-if="chunksAmount">Estimated chunks: {{ chunksAmount }}</p>
-            <AppButton
-              color="primary"
-              :loading="isSigning"
-              :disabled="userPassword.length === 0 || isSigning"
-              type="submit"
-              >Continue</AppButton
-            >
+          <p v-if="chunksAmount" class="text-small mb-3">Estimated chunks: {{ chunksAmount }}</p>
+          <hr class="separator" />
+          <div class="row mt-4">
+            <div class="col-6">
+              <AppButton
+                color="secondary"
+                type="button"
+                class="w-100"
+                @click="isSignModalShown = false"
+                >Cancel</AppButton
+              >
+            </div>
+            <div class="col-6">
+              <AppButton
+                color="primary"
+                :loading="isSigning"
+                :disabled="userPassword.length === 0 || isSigning"
+                class="w-100"
+                type="submit"
+                >Continue</AppButton
+              >
+            </div>
           </div>
         </form>
       </div>
