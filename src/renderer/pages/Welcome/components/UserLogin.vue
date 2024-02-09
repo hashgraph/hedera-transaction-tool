@@ -229,12 +229,12 @@ watch(inputEmail, pass => {
 });
 </script>
 <template>
-  <div class="container-dark-border p-5">
+  <div class="container-dark-border glow-dark-bg p-5">
     <h4 class="text-title text-bold text-center">
       {{ shouldRegister ? 'Register' : 'Sign In' }}
     </h4>
     <p class="text-secondary text-small lh-base text-center mt-3">
-      Enter your username and password
+      {{ shouldRegister ? 'Enter e-mail and password' : 'Enter your e-mail and password' }}
     </p>
 
     <form @submit="handleOnFormSubmit" class="form-login mt-5 w-100">
@@ -280,14 +280,16 @@ watch(inputEmail, pass => {
           >Reset account</span
         >
       </div>
-      <AppButton
-        color="primary"
-        size="large"
-        type="submit"
-        class="mt-5 w-100"
-        :disabled="inputEmail.length === 0 || inputPassword.length === 0"
-        >{{ shouldRegister ? 'Register' : 'Sign In' }}</AppButton
-      >
+
+      <div class="d-grid mt-5">
+        <AppButton
+          color="primary"
+          type="submit"
+          class="w-100"
+          :disabled="inputEmail.length === 0 || inputPassword.length === 0"
+          >Sign in</AppButton
+        >
+      </div>
     </form>
   </div>
 </template>

@@ -132,7 +132,7 @@ onBeforeMount(() => {
             </template>
           </Transition>
 
-          <div class="mt-6 d-flex justify-content-between">
+          <div class="d-flex justify-content-between">
             <div class="d-flex">
               <AppButton
                 v-if="
@@ -141,7 +141,7 @@ onBeforeMount(() => {
                   isFaqShown
                 "
                 color="secondary"
-                class="d-flex align-items-center"
+                class="d-flex align-items-center mt-6"
                 @click="handleBack"
               >
                 <i class="bi bi-arrow-left-short text-headline lh-1"></i> Back</AppButton
@@ -151,6 +151,7 @@ onBeforeMount(() => {
               v-if="keyPairs.recoveryPhraseWords.length > 0"
               color="primary"
               @click="handleNext"
+              class="mt-6"
               >Next</AppButton
             >
           </div>

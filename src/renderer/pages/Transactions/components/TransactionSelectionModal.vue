@@ -67,7 +67,7 @@ watch(
 </script>
 <template>
   <AppModal v-model:show="show" class="large-modal">
-    <div class="p-5">
+    <div class="p-5" style="height: 330px">
       <div class="d-flex align-items-center">
         <i
           class="bi bi-x-lg cursor-pointer me-5"
