@@ -3,15 +3,23 @@ import { proto } from '@hashgraph/proto';
 
 import { KeyPair } from '@prisma/client';
 
+import { getMessageFromIPCError } from '@renderer/utils';
+
 /* Key Pairs Service */
 
 /* Get stored key pairs */
-export const getKeyPairs = (userId: string, organizationId?: string) =>
-  window.electronAPI.keyPairs.getAll(userId, organizationId);
+export const getKeyPairs = (userId: string, organizationId?: string) => {
+  return window.electronAPI.keyPairs.getAll(userId, organizationId);
+};
 
 /* Get stored secret hashes */
-export const getSecretHashes = (userId: string, organizationId?: string) =>
-  window.electronAPI.keyPairs.getSecretHashes(userId, organizationId);
+export const getSecretHashes = (userId: string, organizationId?: string) => {
+  try {
+    return window.electronAPI.keyPairs.getSecretHashes(userId, organizationId);
+  } catch (error) {
+    throw Error(getMessageFromIPCError(error, 'Failed to fetch secret hashes'));
+  }
+};
 
 /* Restore private key from recovery phrase */
 export const restorePrivateKey = async (
@@ -37,36 +45,62 @@ export const restorePrivateKey = async (
 };
 
 /* Store key pair*/
-export const storeKeyPair = (keyPair: KeyPair, password: string) =>
-  window.electronAPI.keyPairs.store(keyPair, password);
+export const storeKeyPair = (keyPair: KeyPair, password: string) => {
+  try {
+    return window.electronAPI.keyPairs.store(keyPair, password);
+  } catch (error) {
+    throw Error(getMessageFromIPCError(error, 'Failed to store key pair'));
+  }
+};
 
 /* Change the decryption password of a stored private key */
 export const changeDecryptionPassword = (
   userId: string,
   oldPassword: string,
   newPassword: string,
-) => window.electronAPI.keyPairs.changeDecryptionPassword(userId, oldPassword, newPassword);
+) => {
+  try {
+    return window.electronAPI.keyPairs.changeDecryptionPassword(userId, oldPassword, newPassword);
+  } catch (error) {
+    throw Error(getMessageFromIPCError(error, 'Failed to change decryption password'));
+  }
+};
 
 /* Decrypt private key with user's password */
 export const decryptPrivateKey = async (userId: string, password: string, publicKey: string) => {
   try {
     return await window.electronAPI.keyPairs.decryptPrivateKey(userId, password, publicKey);
   } catch (error) {
-    throw new Error('Failed to decrypt private key/s');
+    throw Error(getMessageFromIPCError(error, 'Failed to decrypt private key/s'));
   }
 };
 
 /* Hash recovery phrase */
-export const hashRecoveryPhrase = (words: string[]) =>
-  window.electronAPI.utils.hash(words.toString());
+export const hashRecoveryPhrase = (words: string[]) => {
+  try {
+    return window.electronAPI.utils.hash(words.toString());
+  } catch (error) {
+    throw Error(getMessageFromIPCError(error, 'Failed to hash recovery phrase'));
+  }
+};
 
 /* Delete all stored key pairs */
-export const clearKeys = (userId: string, organizationId?: string) =>
-  window.electronAPI.keyPairs.clear(userId, organizationId);
+export const clearKeys = (userId: string, organizationId?: string) => {
+  try {
+    return window.electronAPI.keyPairs.clear(userId, organizationId);
+  } catch (error) {
+    throw Error(getMessageFromIPCError(error, 'Failed to clear key pairs'));
+  }
+};
 
 /* Delete the encrypted private keys from user's key pairs */
-export const deleteEncryptedPrivateKeys = (userId: string, organizationId: string) =>
-  window.electronAPI.keyPairs.deleteEncryptedPrivateKeys(userId, organizationId);
+export const deleteEncryptedPrivateKeys = (userId: string, organizationId: string) => {
+  try {
+    return window.electronAPI.keyPairs.deleteEncryptedPrivateKeys(userId, organizationId);
+  } catch (error) {
+    throw Error(getMessageFromIPCError(error, 'Failed to delete encrypted private keys'));
+  }
+};
 
 /* Validates if the provided recovery phrase is valid according to BIP-39 */
 export const validateMnemonic = async (words: string[]) => {
@@ -80,8 +114,12 @@ export const validateMnemonic = async (words: string[]) => {
 };
 
 /* Delete Key Pair */
-export const deleteKeyPair = async (keyPairId: string) => {
-  return await window.electronAPI.keyPairs.deleteKeyPair(keyPairId);
+export const deleteKeyPair = (keyPairId: string) => {
+  try {
+    return window.electronAPI.keyPairs.deleteKeyPair(keyPairId);
+  } catch (error) {
+    throw Error(getMessageFromIPCError(error, 'Failed to delete keys pair'));
+  }
 };
 
 /* TLD Updates a key list */
