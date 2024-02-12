@@ -2,14 +2,21 @@
 import { ref, watch } from 'vue';
 import { Mnemonic } from '@hashgraph/sdk';
 
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
+
+import { validateMnemonic } from '@renderer/services/keyPairService';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppRecoveryPhraseWord from '@renderer/components/ui/AppRecoveryPhraseWord.vue';
 
 /* Props */
-const props = defineProps<{
-  handleContinue: (words: string[]) => void;
+defineProps<{
+  handleNext: () => void;
 }>();
+
+/* Store */
+const keyPairs = useKeyPairsStore();
 
 /* State */
 const words = ref(Array(24).fill(''));
@@ -50,15 +57,30 @@ const handleProceedToVerification = () => {
   words.value = [...words.value];
 };
 
+const handleSaveWords = async (words: string[]) => {
+  const isValid = await validateMnemonic(words);
+
+  if (!isValid) {
+    throw new Error('Invalid Recovery Phrase!');
+  } else {
+    keyPairs.setRecoveryPhrase(words);
+    wordsConfirmed.value = true;
+  }
+};
+
 const handleWordChange = (newWord: string, index: number) => {
   words.value[index] = newWord;
   words.value = [...words.value];
 };
 
+const handleCopyRecoveryPhrase = () => {
+  navigator.clipboard.writeText(words.value.join(', '));
+};
+
 /* Watchers */
 watch(words, newWords => {
   if (newWords.toString() === correctWords.value.toString()) {
-    props.handleContinue(correctWords.value);
+    handleSaveWords(correctWords.value);
   }
 });
 </script>
@@ -109,17 +131,26 @@ watch(words, newWords => {
     class="row justify-content-between mt-6"
     v-if="!wordsConfirmed && !toVerify && words.filter(w => w).length !== 0"
   >
-    <div class="col-6 col-md-4">
-      <AppButton
-        :disabled="!checkboxChecked && words.filter(w => w).length === 0"
-        color="secondary"
-        @click="handleGeneratePhrase"
-        class="w-100"
-      >
-        <p><i class="bi bi-arrow-repeat"></i> Generate again</p>
-      </AppButton>
+    <div class="col-8">
+      <div class="d-flex">
+        <AppButton
+          :disabled="!checkboxChecked && words.filter(w => w).length === 0"
+          color="secondary"
+          @click="handleGeneratePhrase"
+        >
+          <p><i class="bi bi-arrow-repeat"></i> Generate again</p>
+        </AppButton>
+        <AppButton
+          v-if="words.filter(w => w).length !== 0"
+          :outline="true"
+          color="primary"
+          @click="handleCopyRecoveryPhrase"
+          class="ms-4"
+          ><i class="bi bi-copy"></i> <span>Copy</span></AppButton
+        >
+      </div>
     </div>
-    <div class="col-6 col-md-4">
+    <div class="col-4">
       <AppButton
         :disabled="!checkboxChecked"
         color="primary"
@@ -127,6 +158,12 @@ watch(words, newWords => {
         class="w-100"
         >Verify</AppButton
       >
+    </div>
+  </div>
+
+  <div v-if="wordsConfirmed" class="row justify-content-end mt-6">
+    <div class="col-4">
+      <AppButton color="primary" class="w-100" @click="handleNext">Next</AppButton>
     </div>
   </div>
 </template>
