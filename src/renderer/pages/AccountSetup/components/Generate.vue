@@ -1,21 +1,15 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { Mnemonic } from '@hashgraph/sdk';
-
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppRecoveryPhraseWord from '@renderer/components/ui/AppRecoveryPhraseWord.vue';
-import { validateMnemonic } from '@renderer/services/keyPairService';
 
 /* Props */
 const props = defineProps<{
   handleContinue: (words: string[]) => void;
 }>();
-
-/* Stores */
-const keyPairs = useKeyPairsStore();
 
 /* State */
 const words = ref(Array(24).fill(''));
@@ -53,22 +47,13 @@ const handleProceedToVerification = () => {
   }
 
   indexesToVerify.value.forEach(i => (words.value[i] = ''));
+  words.value = [...words.value];
 };
 
 const handleWordChange = (newWord: string, index: number) => {
   words.value[index] = newWord;
   words.value = [...words.value];
 };
-
-/* Hooks */
-onMounted(async () => {
-  const areValid = await validateMnemonic(keyPairs.recoveryPhraseWords);
-  if (areValid) {
-    words.value = keyPairs.recoveryPhraseWords;
-    wordsConfirmed.value = true;
-    toVerify.value = true;
-  }
-});
 
 /* Watchers */
 watch(words, newWords => {
@@ -140,7 +125,7 @@ watch(words, newWords => {
         color="primary"
         @click="handleProceedToVerification"
         class="w-100"
-        >Next</AppButton
+        >Verify</AppButton
       >
     </div>
   </div>
