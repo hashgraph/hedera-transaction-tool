@@ -7,6 +7,7 @@ import AppendToFileVue from './components/File/AppendToFile.vue';
 import CreateFile from './components/File/CreateFile.vue';
 import ReadFile from './components/File/ReadFile.vue';
 import UpdateFile from './components/File/UpdateFile.vue';
+import FreezeVue from './components/Misc/Freeze.vue';
 import TransferHbar from './components/Transfer/TransferHbar.vue';
 
 const txTypeComponentMapping = {
@@ -20,6 +21,7 @@ const txTypeComponentMapping = {
   accountInfo: AccountInfoVue,
   transferHbar: TransferHbar,
   approveHbarAllowance: ApproveHbarAllowanceVue,
+  freeze: FreezeVue,
 };
 
 export default txTypeComponentMapping;
