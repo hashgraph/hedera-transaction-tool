@@ -25,7 +25,11 @@ export const getTransactionId = (transaction: Transaction): string => {
 };
 
 export const getTransactionStatus = (transaction: Transaction): string => {
-  return Status._fromCode(transaction.status_code).toString().split('_').join(' ');
+  try {
+    return Status._fromCode(transaction.status_code).toString().split('_').join(' ');
+  } catch (error) {
+    return 'Unknown';
+  }
 };
 
 export const getPayerFromTransaction = (transaction: Transaction): number => {
@@ -33,7 +37,11 @@ export const getPayerFromTransaction = (transaction: Transaction): number => {
 };
 
 export const getStatusFromCode = (transaction: Transaction): string => {
-  return Status._fromCode(transaction.status_code).toString();
+  try {
+    return Status._fromCode(transaction.status_code).toString();
+  } catch (error) {
+    return 'Unknown';
+  }
 };
 
 export const getFormattedDateFromTimestamp = (timestamp: Timestamp): string => {
