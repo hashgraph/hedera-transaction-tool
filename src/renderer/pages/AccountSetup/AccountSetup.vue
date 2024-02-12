@@ -67,10 +67,6 @@ const handleNext = async () => {
   }
 };
 
-const handleCopyRecoveryPhrase = () => {
-  navigator.clipboard.writeText(keyPairs.recoveryPhraseWords.join(', '));
-};
-
 /* Hooks */
 onBeforeMount(() => {
   if (user.data.mode === 'personal') {
@@ -121,7 +117,7 @@ onBeforeMount(() => {
 
             <!-- Step 2 -->
             <template v-else-if="step.current === 'recoveryPhrase'">
-              <GenerateOrImport />
+              <GenerateOrImport :handle-next="handleNext" />
             </template>
 
             <!--Step 3 -->
@@ -151,22 +147,13 @@ onBeforeMount(() => {
                 <i class="bi bi-arrow-left-short text-headline lh-1"></i> Back</AppButton
               >
             </div>
-            <div class="mt-6">
-              <AppButton
-                v-if="keyPairs.recoveryPhraseWords.length > 0"
-                :outline="true"
-                color="primary"
-                @click="handleCopyRecoveryPhrase"
-                ><i class="bi bi-copy"></i> <span>Copy</span></AppButton
-              >
-              <AppButton
-                v-if="keyPairs.recoveryPhraseWords.length > 0"
-                color="primary"
-                @click="handleNext"
-                class="ms-3"
-                >Next</AppButton
-              >
-            </div>
+            <AppButton
+              v-if="keyPairs.recoveryPhraseWords.length > 0 && step.current !== 'recoveryPhrase'"
+              color="primary"
+              @click="handleNext"
+              class="mt-6 ms-3"
+              >Next</AppButton
+            >
           </div>
         </div>
       </template>
