@@ -152,7 +152,7 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
 });
 </script>
 <template>
-  <div class="d-flex mb-5">
+  <div class="d-flex mb-3">
     <RouterLink class="btn btn-primary me-4" :to="{ name: 'restoreKey' }">Restore key</RouterLink>
     <AppButton class="btn btn-primary me-4" @click="isImportED25519KeyModalShown = true"
       >Import ED25519 Key</AppButton
@@ -163,7 +163,7 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
   </div>
 
   <div class="row">
-    <div class="col-12 col-lg-6 col-xxxl-5">
+    <div class="col-12 col-lg-6 col-xxxl-5 mt-4">
       <h2 class="text-main text-bold">Keys from recovery phrase:</h2>
       <div
         v-for="keyPair in keyPairsStore.keyPairs.filter(item => item.secret_hash != null)"
@@ -229,7 +229,7 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
       </div>
     </div>
 
-    <div class="col-12 col-lg-6 col-xxxl-5">
+    <div class="col-12 col-lg-6 col-xxxl-5 mt-4">
       <h2 class="text-main text-bold">Keys imported from PK:</h2>
       <div
         v-for="keyPair in keyPairsStore.keyPairs.filter(item => item.secret_hash === null)"
@@ -330,16 +330,24 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
       </div>
     </AppModal>
 
-    <AppModal v-model:show="isDeleteModalShown" class="common-modal">
+    <AppModal v-model:show="isDeleteModalShown">
       <div class="p-5">
         <div>
           <i class="bi bi-x-lg cursor-pointer" @click="isDeleteModalShown = false"></i>
         </div>
-        <div class="text-center mt-5">
+        <div class="text-center">
           <i class="bi bi-trash3 large-icon"></i>
         </div>
         <form @submit="handleDelete">
           <h3 class="text-center text-title text-bold mt-5">Delete key key pair</h3>
+          <p
+            class="text-center mt-4"
+            v-if="keyPairsStore.keyPairs.filter(item => item.secret_hash != null).length === 1"
+          >
+            You are about the delete the last key pair associated with your recovery phrase you have
+            used to set up the Transaction Tool. If you choose to proceed, you will have to go
+            through creating or importing a recovery phrase again. Do you wish to continue?
+          </p>
           <div class="form-group mt-4">
             <label class="form-label">Public key</label>
             <AppInput
