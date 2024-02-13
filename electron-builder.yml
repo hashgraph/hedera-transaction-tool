@@ -20,6 +20,11 @@ nsis:
   createDesktopShortcut: always
 mac:
   notarize: false
+  target:
+    - target: 'default'
+      arch:
+        - x64
+        - arm64
 linux:
   target:
     - snap
