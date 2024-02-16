@@ -129,11 +129,6 @@ const columnClass = 'col-4 col-xxxl-3';
       button-text="Sign and read"
     />
 
-    <AppButton type="button" color="secondary" class="mt-6" @click="$router.back()">
-      <span class="bi bi-arrow-left"></span>
-      Back
-    </AppButton>
-
     <div class="row mt-6">
       <div class="form-group" :class="[columnClass]">
         <label class="form-label">Payer ID <span class="text-danger">*</span></label>

@@ -18,7 +18,13 @@ withDefaults(
 </script>
 <template>
   <div class="d-flex justify-content-between align-items-center">
-    <h2 class="text-title text-bold">{{ headingText }}</h2>
+    <div class="d-flex align-items-center">
+      <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="$router.back()">
+        <i class="bi bi-arrow-left"></i>
+      </AppButton>
+
+      <h2 class="text-title text-bold">{{ headingText }}</h2>
+    </div>
 
     <div class="d-flex justify-content-end align-items-center">
       <AppButton

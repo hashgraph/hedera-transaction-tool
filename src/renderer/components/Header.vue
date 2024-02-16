@@ -53,7 +53,7 @@ async function handleOrganizationChange(e: Event) {
       <LogoText />
     </div>
     <div v-if="user.data.isLoggedIn" class="d-flex justify-content-end align-items-center">
-      <span class="container-icon">
+      <!-- <span class="container-icon">
         <i class="text-icon-main bi bi-search"></i>
       </span>
       <span class="container-icon">
@@ -61,7 +61,7 @@ async function handleOrganizationChange(e: Event) {
       </span>
       <span class="container-icon">
         <i class="text-icon-main bi bi-three-dots-vertical"></i>
-      </span>
+      </span> -->
       <div class="d-none me-4">
         <select
           class="form-select form-select-sm"

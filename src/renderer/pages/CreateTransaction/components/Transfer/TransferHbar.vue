@@ -104,12 +104,8 @@ const columnClass = 'col-4 col-xxxl-3';
         amount < 0
       "
       heading-text="Transfer Hbar Transaction"
+      class="flex-1"
     />
-
-    <AppButton type="button" color="secondary" class="mt-6" @click="$router.back()">
-      <span class="bi bi-arrow-left"></span>
-      Back
-    </AppButton>
 
     <div class="row flex-wrap align-items-end mt-6">
       <div class="form-group" :class="[columnClass]">

@@ -118,12 +118,8 @@ const columnClass = 'col-4 col-xxxl-3';
     <TransactionHeaderControls
       :create-requirements="keyList._keys.length === 0 || !payerData.isValid.value"
       heading-text="Create Account Transaction"
+      class="flex-1"
     />
-
-    <AppButton type="button" color="secondary" class="mt-6" @click="$router.back()">
-      <span class="bi bi-arrow-left"></span>
-      Back
-    </AppButton>
 
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
