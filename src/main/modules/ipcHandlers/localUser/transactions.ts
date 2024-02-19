@@ -7,6 +7,9 @@ import {
   getTransactions,
   storeTransaction,
   encodeSpecialFile,
+  setClient,
+  freezeTransaction,
+  signTransaction,
 } from '@main/services/localUser';
 
 const createChannelName = (...props) => ['transactions', ...props].join(':');
@@ -14,21 +17,42 @@ const createChannelName = (...props) => ['transactions', ...props].join(':');
 export default () => {
   /* Transactions */
 
-  // Execute transaction
+  // Set client
   ipcMain.handle(
-    createChannelName('executeTransaction'),
+    createChannelName('setClient'),
     (
       _e,
-      transactionBytes: string,
-      networkName: 'mainnet' | 'testnet' | 'previewnet' | 'custom',
-      network: {
+      network: string,
+      nodeAccountIds?: {
         [key: string]: string;
       },
-      mirrorNetwork: string,
-    ) => executeTransaction(transactionBytes, networkName, network, mirrorNetwork),
+      mirrorNetwork?: string[],
+    ) => setClient(network, nodeAccountIds, mirrorNetwork),
   );
 
-  // Execute query
+  // Freezes a transaction
+  ipcMain.handle(createChannelName('freezeTransaction'), (_e, transactionBytes: Uint8Array) =>
+    freezeTransaction(transactionBytes),
+  );
+
+  // Signs a transaction
+  ipcMain.handle(
+    createChannelName('signTransaction'),
+    (
+      _e,
+      transactionBytes: Uint8Array,
+      publicKeys: string[],
+      userId: string,
+      userPassword: string,
+    ) => signTransaction(transactionBytes, publicKeys, userId, userPassword),
+  );
+
+  // Executes a transaction
+  ipcMain.handle(createChannelName('executeTransaction'), (_e, transactionBytes: Uint8Array) =>
+    executeTransaction(transactionBytes),
+  );
+
+  // Executes a query
   ipcMain.handle(createChannelName('executeQuery'), (_e, queryData: string) =>
     executeQuery(queryData),
   );

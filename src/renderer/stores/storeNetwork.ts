@@ -6,13 +6,15 @@ import { Client, Timestamp } from '@hashgraph/sdk';
 import { NetworkExchangeRateSetResponse } from '@main/shared/interfaces';
 
 import { getExchangeRateSet } from '@renderer/services/mirrorNodeDataService';
+import { setClient } from '@renderer/services/transactionService';
 
 export type Network = 'mainnet' | 'testnet' | 'previewnet' | 'custom';
 export type CustomNetworkSettings = {
-  consensusNodeEndpoint: string;
+  nodeAccountIds: {
+    [key: string]: string;
+  };
   mirrorNodeGRPCEndpoint: string;
   mirrorNodeRESTAPIEndpoint: string;
-  nodeAccountId: string;
 };
 
 const useNetworkStore = defineStore('network', () => {
@@ -33,11 +35,7 @@ const useNetworkStore = defineStore('network', () => {
         return Client.forPreviewnet();
       case 'custom':
         if (customNetworkSettings.value) {
-          const node = {
-            [customNetworkSettings.value.consensusNodeEndpoint]:
-              customNetworkSettings.value.nodeAccountId,
-          };
-          return Client.forNetwork(node as any).setMirrorNetwork(
+          return Client.forNetwork(customNetworkSettings.value.nodeAccountIds).setMirrorNetwork(
             customNetworkSettings.value.mirrorNodeGRPCEndpoint,
           );
         }
@@ -76,6 +74,11 @@ const useNetworkStore = defineStore('network', () => {
         throw Error('Settings for custom network are required');
       }
       customNetworkSettings.value = _customNetworkSettings;
+      setClient(newNetwork, _customNetworkSettings.nodeAccountIds, [
+        _customNetworkSettings.mirrorNodeGRPCEndpoint,
+      ]);
+    } else {
+      setClient(newNetwork);
     }
 
     network.value = newNetwork;
@@ -86,6 +89,8 @@ const useNetworkStore = defineStore('network', () => {
   /* Hooks */
   onMounted(async () => {
     exchangeRateSet.value = await getExchangeRateSet(mirrorNodeBaseURL.value);
+
+    setClient(network.value);
   });
 
   /* Helpers */

@@ -11,40 +11,91 @@ import {
   encodeHederaSpecialFile,
 } from '@main/shared/utils/hederaSpecialFiles';
 
-const getMirrorNetwork = (network: string) => {
-  const mirrorNetworks = {
-    MAINNET: ['mainnet-public.mirrornode.hedera.com:443'],
-    TESTNET: ['testnet.mirrornode.hedera.com:443'],
-    PREVIEWNET: ['previewnet.mirrornode.hedera.com:443'],
-  };
+import { getKeyPairs } from '@main/services/localUser/keyPairs';
+import { decrypt } from '@main/utils/crypto';
+
+let client: Client;
+
+// Sets the client
+export const setClient = (
+  network: string,
+  nodeAccountIds?: {
+    [key: string]: string;
+  },
+  mirrorNetwork?: string[],
+) => {
   switch (network) {
     case 'mainnet':
-      return mirrorNetworks.MAINNET;
+      client = Client.forMainnet();
+      break;
     case 'testnet':
-      return mirrorNetworks.TESTNET;
+      client = Client.forTestnet();
+      break;
+
     case 'previewnet':
-      return mirrorNetworks.PREVIEWNET;
+      client = Client.forPreviewnet();
+      break;
+
+    case 'custom':
+      if (!nodeAccountIds || !mirrorNetwork) {
+        throw Error('Settings for custom network are required');
+      }
+      client = Client.forNetwork(nodeAccountIds).setMirrorNetwork(mirrorNetwork);
+      break;
     default:
-      throw new Error(`unknown network name: ${name}`);
+      throw Error('Network not supported');
   }
 };
 
-// Executes a transaction
-export const executeTransaction = async (
-  transactionBytes: string,
-  networkName: 'mainnet' | 'testnet' | 'previewnet' | 'custom',
-  network: {
-    [key: string]: string;
-  },
-  mirrorNetwork: string,
+// Gets the client
+export const getClient = () => {
+  return client;
+};
+
+// Freezes a transaction
+export const freezeTransaction = async (transactionBytes: Uint8Array) => {
+  const transaction = Transaction.fromBytes(transactionBytes);
+
+  transaction.freezeWith(client);
+
+  return transaction.toBytes();
+};
+
+// Signs a transaction
+export const signTransaction = async (
+  transactionBytes: Uint8Array,
+  publicKeys: string[],
+  userId: string,
+  userPassword: string,
 ) => {
-  const client = Client.forNetwork(network, {
-    network: network,
-  }).setMirrorNetwork(mirrorNetwork ? mirrorNetwork : getMirrorNetwork(networkName));
+  const transaction = Transaction.fromBytes(transactionBytes);
 
-  const bytesArray = getNumberArrayFromString(transactionBytes);
+  transaction.freezeWith(client);
 
-  const transaction = Transaction.fromBytes(Uint8Array.from(bytesArray));
+  const keyPairs = await getKeyPairs(userId);
+
+  for (let i = 0; i < publicKeys.length; i++) {
+    const keyPair = keyPairs.find(kp => kp.public_key === publicKeys[i]);
+
+    if (!keyPair) throw new Error('Required public key not found in local key pairs');
+
+    const decryptedPrivateKey = decrypt(keyPair.private_key, userPassword);
+    const startsWithHex = decryptedPrivateKey.startsWith('0x');
+
+    const privateKey =
+      keyPair.type === 'ECDSA'
+        ? PrivateKey.fromStringECDSA(`${startsWithHex ? '' : '0x'}${decryptedPrivateKey}`)
+        : PrivateKey.fromStringED25519(decryptedPrivateKey);
+
+    await transaction.sign(privateKey);
+  }
+
+  return transaction.toBytes();
+};
+
+// Executes a transaction
+export const executeTransaction = async (transactionBytes: Uint8Array) => {
+  const transaction = Transaction.fromBytes(transactionBytes);
 
   try {
     const response = await transaction.execute(client);
@@ -61,18 +112,10 @@ export const executeTransaction = async (
 export const executeQuery = async (queryData: string) => {
   const tx: {
     queryBytes: string;
-    network: 'mainnet' | 'testnet' | 'previewnet' | 'custom';
-    customNetworkSettings: {
-      consensusNodeEndpoint: string;
-      mirrorNodeGRPCEndpoint: string;
-      mirrorNodeRESTAPIEndpoint: string;
-      nodeAccountId: string;
-    } | null;
     accountId: string;
     privateKey: string;
     type: string;
   } = JSON.parse(queryData);
-  const client = getClient();
 
   const privateKey =
     tx.type === 'ED25519'
@@ -102,31 +145,8 @@ export const executeQuery = async (queryData: string) => {
   } catch (error: any) {
     console.log(error);
     throw new Error(error.message);
-  }
-
-  function getClient() {
-    switch (tx.network) {
-      case 'mainnet':
-        return Client.forMainnet();
-      case 'testnet':
-        return Client.forTestnet();
-      case 'previewnet':
-        return Client.forPreviewnet();
-      case 'custom':
-        if (tx.customNetworkSettings) {
-          const node = {
-            [tx.customNetworkSettings.consensusNodeEndpoint]:
-              tx.customNetworkSettings.nodeAccountId,
-          };
-
-          return Client.forNetwork(node as any).setMirrorNetwork(
-            tx.customNetworkSettings.mirrorNodeGRPCEndpoint,
-          );
-        }
-        throw Error('Settings for custom network are required');
-      default:
-        throw Error('Network not supported');
-    }
+  } finally {
+    client._operator = null;
   }
 };
 
