@@ -1,80 +1,57 @@
-import { Transaction } from '@hashgraph/sdk';
+import { TransactionDraft } from '@prisma/client';
+
+import { getMessageFromIPCError } from '@renderer/utils';
 import { getTransactionType } from '@renderer/utils/transactions';
 
-const transactionDraftsKey = 'transactionDrafts';
+/* Transaction Drafts Service */
 
-export const getRawDrafts = (): {
-  id: string;
-  type: string;
-  transactionBytes: string;
-}[] => {
-  const drafts = localStorage.getItem(transactionDraftsKey);
-
-  return drafts ? JSON.parse(drafts) : [];
-};
-
-export const getDrafts = () => {
-  const drafts = getRawDrafts().map(draft => {
-    const bytesArray = draft.transactionBytes.split(',').map(n => Number(n));
-    const transaction = Transaction.fromBytes(Uint8Array.from(bytesArray));
-
-    return {
-      id: draft.id,
-      type: draft.type,
-      transaction: transaction,
-    };
-  });
-
-  return drafts;
-};
-
-export const getDraft = <T extends Transaction>(
-  id: string,
-): { id: string; type: string; transaction: T } | null => {
-  const drafts = getDrafts();
-  const draft = drafts.find(d => d.id === id);
-
-  if (draft) {
-    return {
-      id: draft.id,
-      type: draft.type,
-      transaction: draft.transaction as T,
-    };
-  } else {
-    return null;
+/* Get raw drafts */
+export const getDrafts = async (userId: string) => {
+  try {
+    return await window.electronAPI.transactionDrafts.getDrafts(userId);
+  } catch (error: any) {
+    throw Error(getMessageFromIPCError(error, 'Failed to fetch transaction drafts'));
   }
 };
 
-export const addDraft = (transactionBytes: Uint8Array) => {
-  const drafts = getRawDrafts();
-
-  if (draftExists(transactionBytes)) {
-    throw new Error('Transaction draft already saved');
+export const getDraft = async (id: string) => {
+  try {
+    return await window.electronAPI.transactionDrafts.getDraft(id);
+  } catch (error: any) {
+    throw Error(getMessageFromIPCError(error, `Failed to fetch transaction with id: ${id}`));
   }
+};
 
-  const id = new Date().getTime().toString();
-
-  const newDraft = {
-    id,
-    type: getTransactionType(transactionBytes),
+export const addDraft = async (userId: string, transactionBytes: Uint8Array, details: string) => {
+  const transactionDraft: TransactionDraft = {
+    id: '3',
+    created_at: new Date(),
+    updated_at: new Date(),
+    user_id: userId,
     transactionBytes: transactionBytes.toString(),
+    type: getTransactionType(transactionBytes),
+    details: details || null,
   };
 
-  drafts.push(newDraft);
-
-  localStorage.setItem(transactionDraftsKey, JSON.stringify(drafts));
+  try {
+    return await window.electronAPI.transactionDrafts.addDraft(transactionDraft);
+  } catch (error: any) {
+    throw Error(getMessageFromIPCError(error, 'Failed to add transaction draft'));
+  }
 };
 
-export const removeDraft = (id: string) => {
-  let drafts = getRawDrafts();
-
-  drafts = drafts.filter(d => d.id != id);
-
-  localStorage.setItem(transactionDraftsKey, JSON.stringify(drafts));
+export const deleteDraft = async (id: string) => {
+  try {
+    return await window.electronAPI.transactionDrafts.deleteDraft(id);
+  } catch (error: any) {
+    throw Error(getMessageFromIPCError(error, `Failed to delete transaction with id: ${id}`));
+  }
 };
 
-export const draftExists = (transactionBytes: Uint8Array) => {
-  const drafts = getRawDrafts();
-
-  return drafts.some(d => d.transactionBytes === transactionBytes.toString());
+export const draftExists = async (transactionBytes: Uint8Array) => {
+  try {
+    return await window.electronAPI.transactionDrafts.draftExists(transactionBytes.toString());
+  } catch (error: any) {
+    throw Error(getMessageFromIPCError(error, `Failed to determine if transaction draft exist`));
+  }
 };

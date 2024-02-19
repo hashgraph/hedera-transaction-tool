@@ -163,6 +163,7 @@ export const getTransactions = async (user_id: string) => {
   }
 };
 
+/* Encodes a special file's content */
 export const encodeSpecialFileContent = async (content: Uint8Array, fileId: string) => {
   try {
     return await window.electronAPI.transactions.encodeSpecialFile(content, fileId);

@@ -73,3 +73,9 @@ export const getTransactionType = (transaction: Tx | Uint8Array) => {
     .split(/(?=[A-Z])/)
     .join(' ');
 };
+
+/* Parses a transaction bytes string to a transaction */
+export const getTransactionFromBytes = <T extends Tx>(transactionBytes: string): T => {
+  const bytesArray = transactionBytes.split(',').map(n => Number(n));
+  return Tx.fromBytes(Uint8Array.from(bytesArray)) as T;
+};

@@ -36,6 +36,8 @@ export const addDraft = async (draft: TransactionDraft) => {
     data: {
       ...draft,
       id: undefined,
+      created_at: undefined,
+      updated_at: undefined,
     },
   });
 };
