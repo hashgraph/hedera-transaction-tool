@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import AppButton from '@renderer/components/ui/AppButton.vue';
+import { useRoute } from 'vue-router';
+
 import { addDraft } from '@renderer/services/transactionDraftsService';
+
+import AppButton from '@renderer/components/ui/AppButton.vue';
 
 /* Props */
 const props = withDefaults(
@@ -19,13 +22,16 @@ const props = withDefaults(
   },
 );
 
+/* Composables */
+const route = useRoute();
+
 /* Handlers */
 const saveDraft = () => {
   if (!props.getTransactionBytes) return;
 
   const transactionBytes = props.getTransactionBytes();
 
-  addDraft(transactionBytes);
+  addDraft(transactionBytes, route.params.type.toString());
 };
 </script>
 <template>
