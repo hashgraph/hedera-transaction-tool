@@ -130,7 +130,7 @@ onMounted(() => {
       </Transition>
     </div>
     <!-- Mirror Node Settings -->
-    <div class="p-4 mt-7 border border-2 rounded-3">
+    <!-- <div class="p-4 mt-7 border border-2 rounded-3">
       <p>Mirror Node Settings</p>
       <div class="mt-4">
         <div class="mb-4">
@@ -164,7 +164,7 @@ onMounted(() => {
           />
         </div>
       </div>
-    </div>
+    </div> -->
     <!-- Explorer Settings -->
     <!-- <div class="p-4 mt-7 border border-2 rounded-3">
       <p>Explorer Settings</p>

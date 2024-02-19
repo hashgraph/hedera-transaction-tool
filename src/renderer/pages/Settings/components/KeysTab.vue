@@ -152,14 +152,28 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
 });
 </script>
 <template>
-  <div class="d-flex mb-3">
-    <RouterLink class="btn btn-primary me-4" :to="{ name: 'restoreKey' }">Restore key</RouterLink>
-    <AppButton class="btn btn-primary me-4" @click="isImportED25519KeyModalShown = true"
-      >Import ED25519 Key</AppButton
-    >
-    <AppButton class="btn btn-primary" @click="isImportECDSAKeyModalShown = true"
-      >Import ECDSA Key</AppButton
-    >
+  <div class="d-flex justify-content-between mb-3">
+    <div></div>
+    <div class="d-flex justify-content-end align-items-center">
+      <RouterLink class="btn btn-secondary me-4" :to="{ name: 'restoreKey' }">Restore</RouterLink>
+
+      <div class="dropdown">
+        <AppButton
+          color="primary"
+          class="w-100 d-flex align-items-center justify-content-center"
+          data-bs-toggle="dropdown"
+          >Import</AppButton
+        >
+        <ul class="dropdown-menu w-100 mt-3">
+          <li class="dropdown-item cursor-pointer" @click="isImportED25519KeyModalShown = true">
+            <span class="text-small text-bold">ED25519 Key</span>
+          </li>
+          <li class="dropdown-item cursor-pointer mt-3" @click="isImportECDSAKeyModalShown = true">
+            <span class="text-small text-bold">ECDSA Key</span>
+          </li>
+        </ul>
+      </div>
+    </div>
   </div>
 
   <div class="mt-4">
