@@ -22,7 +22,7 @@ export const getDraft = async (id: string) => {
   }
 };
 
-export const addDraft = async (userId: string, transactionBytes: Uint8Array, details: string) => {
+export const addDraft = async (userId: string, transactionBytes: Uint8Array, details?: string) => {
   const transactionDraft: TransactionDraft = {
     id: '3',
     created_at: new Date(),
