@@ -2,7 +2,14 @@ import { ipcMain } from 'electron';
 
 import { TransactionDraft } from '@prisma/client';
 
-import { addDraft, deleteDraft, draftExists, getDraft, getDrafts } from '@main/services/localUser';
+import {
+  addDraft,
+  deleteDraft,
+  draftExists,
+  getDraft,
+  getDrafts,
+  updateDraft,
+} from '@main/services/localUser';
 
 const createChannelName = (...props) => ['transactionDrafts', ...props].join(':');
 
@@ -18,6 +25,11 @@ export default () => {
   // Add a draft
   ipcMain.handle(createChannelName('addDraft'), (_e, transactionDraft: TransactionDraft) =>
     addDraft(transactionDraft),
+  );
+
+  // Update a draft
+  ipcMain.handle(createChannelName('updateDraft'), (_e, transactionDraft: TransactionDraft) =>
+    updateDraft(transactionDraft),
   );
 
   // Delete specific drafts

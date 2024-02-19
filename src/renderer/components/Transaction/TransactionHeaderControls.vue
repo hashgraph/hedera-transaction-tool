@@ -7,7 +7,14 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
 
-import { addDraft, draftExists } from '@renderer/services/transactionDraftsService';
+import {
+  addDraft,
+  draftExists,
+  getDraft,
+  updateDraft,
+} from '@renderer/services/transactionDraftsService';
+
+import { getTransactionFromBytes } from '@renderer/utils/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -54,13 +61,22 @@ const saveDraft = () => {
 
 /* Hooks */
 onBeforeRouteLeave(async to => {
-  if (!props.getTransactionBytes || route.query.draftId) return true;
+  if (!props.getTransactionBytes) return true;
 
-  if (
-    !(await draftExists(props.getTransactionBytes())) &&
-    !isSaveDraftModalShown.value &&
-    !props.isExecuted
-  ) {
+  const transactionBytes = props.getTransactionBytes();
+
+  if (route.query.draftId) {
+    const loadedDraft = await getDraft(route.query.draftId.toString());
+
+    if (getTransactionFromBytes(loadedDraft.transactionBytes).toBytes() != transactionBytes) {
+      await updateDraft(loadedDraft.id, transactionBytes);
+      return true;
+    } else {
+      return true;
+    }
+  }
+
+  if (!(await draftExists(transactionBytes)) && !isSaveDraftModalShown.value && !props.isExecuted) {
     isSaveDraftModalShown.value = true;
     routeTo.value = to;
     return false;

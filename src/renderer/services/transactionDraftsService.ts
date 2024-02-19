@@ -40,6 +40,20 @@ export const addDraft = async (userId: string, transactionBytes: Uint8Array, det
   }
 };
 
+export const updateDraft = async (id: string, transactionBytes: Uint8Array, details?: string) => {
+  try {
+    const draft = await getDraft(id);
+
+    draft.type = getTransactionType(transactionBytes);
+    draft.transactionBytes = transactionBytes.toString();
+    draft.details = details || null;
+
+    return await window.electronAPI.transactionDrafts.updateDraft(draft);
+  } catch (error: any) {
+    throw Error(getMessageFromIPCError(error, `Failed to fetch transaction with id: ${id}`));
+  }
+};
+
 export const deleteDraft = async (id: string) => {
   try {
     return await window.electronAPI.transactionDrafts.deleteDraft(id);

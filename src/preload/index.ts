@@ -163,6 +163,8 @@ export const electronAPI = {
       ipcRenderer.invoke('transactionDrafts:getDraft', id),
     addDraft: (draft: TransactionDraft): Promise<void> =>
       ipcRenderer.invoke('transactionDrafts:addDraft', draft),
+    updateDraft: (draft: TransactionDraft): Promise<void> =>
+      ipcRenderer.invoke('transactionDrafts:updateDraft', draft),
     deleteDraft: (id: string): Promise<void> =>
       ipcRenderer.invoke('transactionDrafts:deleteDraft', id),
     draftExists: (transactionBytes: string): Promise<boolean> =>
