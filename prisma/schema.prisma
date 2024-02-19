@@ -16,16 +16,17 @@ model Migration {
 }
 
 model User {
-  id            String          @id @default(uuid())
-  email         String          @unique
-  password      String
-  created_at    DateTime        @default(now())
-  updated_at    DateTime        @updatedAt
-  keysPairs     KeyPair[]
-  transactions  Transaction[]
-  organizations Organization[]
-  HederaAccount HederaAccount[]
-  HederaFile    HederaFile[]
+  id               String             @id @default(uuid())
+  email            String             @unique
+  password         String
+  created_at       DateTime           @default(now())
+  updated_at       DateTime           @updatedAt
+  keysPairs        KeyPair[]
+  transactions     Transaction[]
+  organizations    Organization[]
+  HederaAccount    HederaAccount[]
+  HederaFile       HederaFile[]
+  TransactionDraft TransactionDraft[]
 }
 
 model KeyPair {
@@ -73,6 +74,17 @@ model Transaction {
   group_id           String?
   creator_public_key String?
   user               User     @relation(fields: [user_id], references: [id])
+}
+
+model TransactionDraft {
+  id               String   @id @default(uuid())
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+  user_id          String
+  type             String
+  transactionBytes String
+  details          String?
+  user             User     @relation(fields: [user_id], references: [id])
 }
 
 model HederaAccount {
