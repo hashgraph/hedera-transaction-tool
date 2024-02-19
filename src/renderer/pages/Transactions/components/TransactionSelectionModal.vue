@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
+import { transactionTypeKeys } from '@renderer/pages/CreateTransaction/txTypeComponentMapping';
+
 import AppModal from '@renderer/components/ui/AppModal.vue';
 
 /* Props */
@@ -20,22 +22,22 @@ const transactionGroups = [
   {
     groupTitle: 'Crypto Service',
     items: [
-      { label: 'Transfer Tokens', name: 'transferHbar' },
-      { label: 'Create Account', name: 'createAccount' },
-      { label: 'Update Account', name: 'updateAccount' },
-      { label: 'Delete Account', name: 'deleteAccount' },
-      { label: 'Approve Allowance', name: 'approveHbarAllowance' },
-      // { label: 'Account Info', name: 'accountInfo' },
+      { label: 'Transfer Tokens', name: transactionTypeKeys.transfer },
+      { label: 'Create Account', name: transactionTypeKeys.createAccount },
+      { label: 'Update Account', name: transactionTypeKeys.updateAccount },
+      { label: 'Delete Account', name: transactionTypeKeys.deleteAccount },
+      { label: 'Approve Allowance', name: transactionTypeKeys.approveAllowance },
+      // { label: 'Account Info', name: transactionTypeKeys.accountInfo },
     ],
   },
   {
     groupTitle: 'File Service',
     items: [
-      { label: 'Create File', name: 'createFile' },
-      { label: 'Update File', name: 'updateFile' },
-      { label: 'Read File', name: 'readFile' },
-      { label: 'Append to File', name: 'appendToFile' },
-      // { label: 'Delete File', name: 'deleteFile' },
+      { label: 'Create File', name: transactionTypeKeys.createFile },
+      { label: 'Update File', name: transactionTypeKeys.updateFile },
+      { label: 'Read File', name: transactionTypeKeys.readFile },
+      { label: 'Append to File', name: transactionTypeKeys.appendToFile },
+      // { label: 'Delete File', name: transactionTypeKeys.deleteFile },
     ],
   },
   // { groupTitle: 'Token Service', items: [] },

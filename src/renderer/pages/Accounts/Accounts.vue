@@ -15,6 +15,8 @@ import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 
 import { getFormattedDateFromTimestamp } from '@renderer/utils/transactions';
 
+import { transactionTypeKeys } from '../CreateTransaction/txTypeComponentMapping';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
@@ -162,7 +164,7 @@ const handleChangeNickname = async () => {
               @click="
                 $router.push({
                   name: 'createTransaction',
-                  params: { type: 'deleteAccount' },
+                  params: { type: transactionTypeKeys.deleteAccount },
                   query: { accountId: accountData.accountIdFormatted.value },
                 })
               "
@@ -174,7 +176,7 @@ const handleChangeNickname = async () => {
               @click="
                 $router.push({
                   name: 'createTransaction',
-                  params: { type: 'updateAccount' },
+                  params: { type: transactionTypeKeys.updateAccount },
                   query: { accountId: accountData.accountIdFormatted.value },
                 })
               "
@@ -198,7 +200,14 @@ const handleChangeNickname = async () => {
           <ul class="dropdown-menu w-100 mt-3">
             <li
               class="dropdown-item cursor-pointer"
-              @click="$router.push('create-transaction/createAccount')"
+              @click="
+                $router.push({
+                  name: 'createTransaction',
+                  params: {
+                    type: transactionTypeKeys.createAccount,
+                  },
+                })
+              "
             >
               <span class="text-small text-bold">Create New</span>
             </li>

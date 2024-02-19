@@ -9,6 +9,8 @@ import { useToast } from 'vue-toast-notification';
 
 import { getAll, remove } from '@renderer/services/filesService';
 
+import { transactionTypeKeys } from '@renderer/pages/CreateTransaction/txTypeComponentMapping';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 
@@ -110,7 +112,7 @@ onMounted(async () => {
           @click="
             $router.push({
               name: 'createTransaction',
-              params: { type: 'updateFile' },
+              params: { type: transactionTypeKeys.updateFile },
               query: { fileId: selectedFileId },
             })
           "
@@ -122,7 +124,7 @@ onMounted(async () => {
           @click="
             $router.push({
               name: 'createTransaction',
-              params: { type: 'readFile' },
+              params: { type: transactionTypeKeys.readFile },
               query: { fileId: selectedFileId },
             })
           "
@@ -143,25 +145,53 @@ onMounted(async () => {
           <ul class="dropdown-menu w-100 mt-3">
             <li
               class="dropdown-item cursor-pointer"
-              @click="$router.push('create-transaction/createFile')"
+              @click="
+                $router.push({
+                  name: 'createTransaction',
+                  params: {
+                    type: transactionTypeKeys.createFile,
+                  },
+                })
+              "
             >
               <span class="text-small text-bold">Create New</span>
             </li>
             <li
               class="dropdown-item cursor-pointer mt-3"
-              @click="$router.push('create-transaction/updateFile')"
+              @click="
+                $router.push({
+                  name: 'createTransaction',
+                  params: {
+                    type: transactionTypeKeys.updateFile,
+                  },
+                })
+              "
             >
               <span class="text-small text-bold">Update</span>
             </li>
             <li
               class="dropdown-item cursor-pointer mt-3"
-              @click="$router.push('create-transaction/appendToFile')"
+              @click="
+                $router.push({
+                  name: 'createTransaction',
+                  params: {
+                    type: transactionTypeKeys.appendToFile,
+                  },
+                })
+              "
             >
               <span class="text-small text-bold">Append</span>
             </li>
             <li
               class="dropdown-item cursor-pointer mt-3"
-              @click="$router.push('create-transaction/readFile')"
+              @click="
+                $router.push({
+                  name: 'createTransaction',
+                  params: {
+                    type: transactionTypeKeys.readFile,
+                  },
+                })
+              "
             >
               <span class="text-small text-bold">Read</span>
             </li>
