@@ -1,13 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue';
-import {
-  AccountId,
-  FileUpdateTransaction,
-  KeyList,
-  PublicKey,
-  Timestamp,
-  Transaction,
-} from '@hashgraph/sdk';
+import { FileUpdateTransaction, KeyList, PublicKey, Timestamp, Transaction } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
@@ -119,6 +112,14 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
+    if (!isAccountId(payerData.accountId.value)) {
+      throw Error('Invalid Payer ID');
+    }
+
+    if (!isAccountId(fileId.value)) {
+      throw Error('Invalid File ID');
+    }
+
     const newTransaction = createTransaction();
 
     if (content.value.length > 0) {
@@ -187,13 +188,15 @@ const handleLoadFromDraft = async () => {
 /* Functions */
 function createTransaction() {
   const transaction = new FileUpdateTransaction()
-    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(maxTransactionFee.value)
-    .setNodeAccountIds([new AccountId(3)])
     .setFileMemo(memo.value);
 
-  if (fileId.value && isAccountId(fileId.value)) {
+  if (isAccountId(payerData.accountId.value)) {
+    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
+  }
+
+  if (isAccountId(fileId.value)) {
     transaction.setFileId(fileId.value);
   }
 
@@ -225,7 +228,7 @@ const columnClass = 'col-4 col-xxxl-3';
     <TransactionHeaderControls
       :get-transaction-bytes="() => createTransaction().toBytes()"
       :is-executed="isExecuted"
-      :create-requirements="ownerKeyList._keys.length === 0 || !payerData.isValid.value"
+      :create-requirements="ownerKeyList._keys.length === 0 || !payerData.isValid.value || !fileId"
       heading-text="Update File Transaction"
     />
 
