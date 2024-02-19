@@ -6,7 +6,6 @@ const transactionDraftsKey = 'transactionDrafts';
 export const getRawDrafts = (): {
   id: string;
   type: string;
-  routeParam: string;
   transactionBytes: string;
 }[] => {
   const drafts = localStorage.getItem(transactionDraftsKey);
@@ -22,7 +21,6 @@ export const getDrafts = () => {
     return {
       id: draft.id,
       type: draft.type,
-      routeParam: draft.routeParam,
       transaction: transaction,
     };
   });
@@ -32,7 +30,7 @@ export const getDrafts = () => {
 
 export const getDraft = <T extends Transaction>(
   id: string,
-): { id: string; type: string; routeParam: string; transaction: T } | null => {
+): { id: string; type: string; transaction: T } | null => {
   const drafts = getDrafts();
   const draft = drafts.find(d => d.id === id);
 
@@ -40,7 +38,6 @@ export const getDraft = <T extends Transaction>(
     return {
       id: draft.id,
       type: draft.type,
-      routeParam: draft.routeParam,
       transaction: draft.transaction as T,
     };
   } else {
@@ -48,7 +45,7 @@ export const getDraft = <T extends Transaction>(
   }
 };
 
-export const addDraft = (transactionBytes: Uint8Array, routeParam: string) => {
+export const addDraft = (transactionBytes: Uint8Array) => {
   const drafts = getRawDrafts();
 
   const id = new Date().getTime().toString();
@@ -56,7 +53,6 @@ export const addDraft = (transactionBytes: Uint8Array, routeParam: string) => {
   const newDraft = {
     id,
     type: getTransactionType(transactionBytes),
-    routeParam: routeParam,
     transactionBytes: transactionBytes.toString(),
   };
 
