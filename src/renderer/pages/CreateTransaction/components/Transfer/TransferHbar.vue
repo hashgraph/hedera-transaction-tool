@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { AccountId, Hbar, Key, TransferTransaction } from '@hashgraph/sdk';
+import { AccountId, Hbar, Key, Transaction, TransferTransaction } from '@hashgraph/sdk';
 
-import useNetworkStore from '@renderer/stores/storeNetwork';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import { useToast } from 'vue-toast-notification';
@@ -23,7 +22,6 @@ import TransactionHeaderControls from '@renderer/components/Transaction/Transact
 import { isAccountId } from '@renderer/utils/validator';
 
 /* Stores */
-const networkStore = useNetworkStore();
 const keyPairs = useKeyPairsStore();
 
 /* Composables */
@@ -36,7 +34,7 @@ const receiverData = useAccountId();
 /* State */
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
-const transaction = ref<TransferTransaction | null>(null);
+const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionfee = ref(2);
 
@@ -46,12 +44,13 @@ const keyStructureComponentKey = ref<Key | null>(null);
 
 const isKeyStructureModalShown = ref(false);
 
+const isExecuted = ref(false);
+
 /* Handlers */
 const handleCreate = async e => {
   e.preventDefault();
   try {
-    createTransaction();
-    transaction.value?.freezeWith(networkStore.client);
+    transaction.value = createTransaction();
 
     let requiredSignatures = payerData.keysFlattened.value;
 
@@ -97,31 +96,28 @@ const handleLoadFromDraft = () => {
 
 /* Functions */
 function createTransaction() {
-  transaction.value = new TransferTransaction()
+  const transaction = new TransferTransaction()
     .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
     .setNodeAccountIds([new AccountId(3)]);
 
   if (receiverData.accountId.value && isAccountId(receiverData.accountId.value)) {
-    transaction.value.addHbarTransfer(receiverData.accountId.value, new Hbar(amount.value));
+    transaction.addHbarTransfer(receiverData.accountId.value, new Hbar(amount.value));
   }
 
   if (isApprovedTransfer.value) {
     senderData.accountId.value &&
-      transaction.value?.addApprovedHbarTransfer(
+      transaction?.addApprovedHbarTransfer(
         senderData.accountId.value,
         new Hbar(amount.value).negated(),
       );
   } else {
     senderData.accountId.value &&
-      transaction.value?.addHbarTransfer(
-        senderData.accountId.value,
-        new Hbar(amount.value).negated(),
-      );
+      transaction?.addHbarTransfer(senderData.accountId.value, new Hbar(amount.value).negated());
   }
 
-  return transaction.value.toBytes();
+  return transaction;
 }
 
 /* Hooks */
@@ -140,7 +136,8 @@ const columnClass = 'col-4 col-xxxl-3';
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
-      :get-transaction-bytes="createTransaction"
+      :get-transaction-bytes="() => createTransaction().toBytes()"
+      :is-executed="isExecuted"
       :create-requirements="
         !payerData.accountId.value ||
         !senderData.accountId.value ||
@@ -275,6 +272,7 @@ const columnClass = 'col-4 col-xxxl-3';
         transaction = null;
       }
     "
+    :on-executed="() => (isExecuted = true)"
   >
     <template #successHeading>Hbar transferred successfully</template>
     <template #successContent>
