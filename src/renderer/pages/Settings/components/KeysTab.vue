@@ -162,7 +162,7 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
           color="primary"
           class="w-100 d-flex align-items-center justify-content-center"
           data-bs-toggle="dropdown"
-          >Import</AppButton
+          ><i class="bi bi-plus text-main me-2"></i> Import</AppButton
         >
         <ul class="dropdown-menu w-100 mt-3">
           <li class="dropdown-item cursor-pointer" @click="isImportED25519KeyModalShown = true">
