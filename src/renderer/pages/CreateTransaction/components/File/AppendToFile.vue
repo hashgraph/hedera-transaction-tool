@@ -93,7 +93,12 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    transaction.value = createTransaction();
+    const newTransaction = createTransaction();
+    newTransaction.setContents(
+      fileBuffer.value ? fileBuffer.value : new TextEncoder().encode(content.value),
+    );
+
+    transaction.value = newTransaction;
 
     await transactionProcessor.value?.process(
       payerData.keysFlattened.value.concat(signatureKeys.value),
@@ -137,8 +142,7 @@ function createTransaction() {
     .setTransactionValidDuration(180)
     .setNodeAccountIds([new AccountId(3)])
     .setMaxChunks(99999999999999)
-    .setChunkSize(Number(chunkSize.value))
-    .setContents(fileBuffer.value ? fileBuffer.value : new TextEncoder().encode(content.value));
+    .setChunkSize(Number(chunkSize.value));
 
   if (fileId.value && isAccountId(fileId.value)) {
     transaction.setFileId(fileId.value);
