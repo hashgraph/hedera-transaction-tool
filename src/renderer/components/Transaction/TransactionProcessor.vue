@@ -124,15 +124,14 @@ async function handleSignTransaction(e: Event) {
   try {
     isSigning.value = true;
 
-    const signatures = await getTransactionSignatures(
+    const signerPublicKeys = await getTransactionSignatures(
       requiredLocalKeyPairs.value,
-      transaction.value as any,
-      true,
+      transaction.value,
       user.data.id,
       userPassword.value,
     );
 
-    if (requiredLocalKeyPairs.value.length === signatures.length) {
+    if (requiredLocalKeyPairs.value.length === signerPublicKeys.length) {
       isSigned = true;
     }
   } catch (err: any) {
@@ -257,7 +256,6 @@ async function executeTransaction() {
       network.network,
       network.customNetworkSettings,
     );
-    // To store transaction result locally
 
     status = transactionResult.value.receipt.status._code;
 
@@ -318,7 +316,6 @@ async function chunkFileTransactionForOrganization(
       .setTransactionId(transaction.transactionId!)
       .setTransactionValidDuration(180)
       .setMaxTransactionFee(transaction.maxTransactionFee?.toString() || 2)
-      .setNodeAccountIds(transaction.nodeAccountIds!)
       .setFileId(transaction.fileId!)
       .setContents(chunks[0]);
     transaction.fileMemo && updateTransaction.setFileMemo(transaction.fileMemo);
@@ -344,7 +341,6 @@ async function chunkFileTransactionForOrganization(
       .setTransactionId(transactionId)
       .setTransactionValidDuration(180)
       .setMaxTransactionFee(transaction.maxTransactionFee?.toString() || 2)
-      .setNodeAccountIds(transaction.nodeAccountIds!)
       .setFileId(transaction.fileId!)
       .setContents(chunks[i])
       .setMaxChunks(1)
@@ -389,7 +385,6 @@ async function executeFileTransactions(
           .setTransactionId(createTransactionId(transaction.transactionId!.accountId!, new Date()))
           .setTransactionValidDuration(180)
           .setMaxTransactionFee(transaction.maxTransactionFee?.toString() || 2)
-          .setNodeAccountIds(transaction.nodeAccountIds!)
           .setFileId(transaction.fileId!)
           .setContents(chunks[0]);
         transaction.fileMemo && tx.setFileMemo(transaction.fileMemo);
@@ -402,7 +397,6 @@ async function executeFileTransactions(
           .setTransactionId(createTransactionId(transaction.transactionId!.accountId!, new Date()))
           .setTransactionValidDuration(180)
           .setMaxTransactionFee(transaction.maxTransactionFee?.toString() || 2)
-          .setNodeAccountIds(transaction.nodeAccountIds!)
           .setFileId(transaction.fileId!)
           .setContents(chunks[i])
           .setMaxChunks(1)
@@ -413,7 +407,6 @@ async function executeFileTransactions(
       await getTransactionSignatures(
         requiredLocalKeyPairs.value,
         tx,
-        true,
         user.data.id,
         userPassword.value,
       );
@@ -487,7 +480,6 @@ async function sendSignedChunksToOrganization(transactions: Transaction[]) {
     await getTransactionSignatures(
       requiredLocalKeyPairs.value,
       transactions[i],
-      true,
       user.data.id,
       userPassword.value,
     );
@@ -500,7 +492,6 @@ async function sendSignedChunksToOrganization(transactions: Transaction[]) {
 
 function validateTransaction(transaction: FileUpdateTransaction | FileAppendTransaction) {
   if (!transaction.transactionId) throw new Error('Transaction ID is missing');
-  if (!transaction.nodeAccountIds) throw new Error('Transaction node accounts are missing');
   if (!transaction.fileId) throw new Error('Transaction file ID is missing');
 }
 

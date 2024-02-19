@@ -41,37 +41,33 @@ export const createTransactionId = (
 export const getTransactionSignatures = async (
   keyPairs: KeyPair[],
   transaction: Transaction,
-  addToTransaction: boolean,
   userId: string,
   password: string,
 ) => {
-  const signatures: { publicKey: PublicKey; signature: Uint8Array }[] = [];
   const publicKeys: string[] = [];
 
   try {
     await Promise.all(
       keyPairs.map(async keyPair => {
-        const privateKeyString = await decryptPrivateKey(userId, password, keyPair.public_key);
-        const startsWithHex = privateKeyString.startsWith('0x');
-
-        const keyType = PublicKey.fromString(keyPair.public_key);
-
-        const privateKey =
-          keyType._key._type === 'secp256k1'
-            ? PrivateKey.fromStringECDSA(`${startsWithHex ? '' : '0x'}${privateKeyString}`)
-            : PrivateKey.fromStringED25519(privateKeyString);
-        const signature = privateKey.signTransaction(transaction);
-
         if (!publicKeys.includes(keyPair.public_key)) {
-          signatures.push({ publicKey: privateKey.publicKey, signature });
+          const privateKeyString = await decryptPrivateKey(userId, password, keyPair.public_key);
+          const startsWithHex = privateKeyString.startsWith('0x');
+
+          const keyType = PublicKey.fromString(keyPair.public_key);
+
+          const privateKey =
+            keyType._key._type === 'secp256k1'
+              ? PrivateKey.fromStringECDSA(`${startsWithHex ? '' : '0x'}${privateKeyString}`)
+              : PrivateKey.fromStringED25519(privateKeyString);
+
+          transaction.sign(privateKey);
+
           publicKeys.push(keyPair.public_key);
         }
       }),
     );
 
-    addToTransaction && signatures.forEach(s => transaction.addSignature(s.publicKey, s.signature));
-
-    return signatures;
+    return publicKeys;
   } catch (err: any) {
     throw Error(err.message || 'Failed to collect transaction signatures');
   }
