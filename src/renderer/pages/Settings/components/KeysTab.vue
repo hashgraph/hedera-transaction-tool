@@ -26,6 +26,12 @@ const user = useUserStore();
 /* Composables */
 const toast = useToast();
 
+enum Tabs {
+  ALL = 'All',
+  RECOVERY_PHRASE = 'Imported from Recovery Phrase',
+  PRIVATE_KEY = 'Imported from Private Key',
+}
+
 /* State */
 const isDecryptedModalShown = ref(false);
 const isDeleteModalShown = ref(false);
@@ -35,6 +41,7 @@ const decryptedKey = ref('');
 const publicKeysPrivateKeyToDecrypt = ref('');
 const keyPairIdToDelete = ref<string | null>(null);
 const userPassword = ref('');
+const currentTab = ref(Tabs.ALL);
 const ecdsaKey = reactive<{ privateKey: string; nickname?: string }>({
   privateKey: '',
 });
@@ -46,6 +53,10 @@ const ed25519Key = reactive<{ privateKey: string; nickname?: string }>({
 const handleShowDecryptModal = (publicKey: string) => {
   publicKeysPrivateKeyToDecrypt.value = publicKey;
   isDecryptedModalShown.value = true;
+};
+
+const handleTabChange = (tab: Tabs) => {
+  currentTab.value = tab;
 };
 
 const handleDecrypt = async e => {
@@ -153,7 +164,12 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
 </script>
 <template>
   <div class="d-flex justify-content-between mb-3">
-    <div></div>
+    <div class="btn-group-container" role="group">
+      <button type="button" class="btn btn-primary active">All</button>
+      <button type="button" class="btn btn-primary mx-3">Imported from Recovery Phrase</button>
+      <button type="button" class="btn btn-primary">Imported from Public Key</button>
+    </div>
+
     <div class="d-flex justify-content-end align-items-center">
       <RouterLink class="btn btn-secondary me-4" :to="{ name: 'restoreKey' }">Restore</RouterLink>
 
