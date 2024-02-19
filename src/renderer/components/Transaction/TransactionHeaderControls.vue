@@ -83,7 +83,10 @@ onBeforeRouteLeave(to => {
       :close-on-escape="false"
       class="common-modal"
     >
-      <div class="text-center p-5">
+      <div class="text-center p-4">
+        <div class="text-start">
+          <i class="bi bi-x-lg cursor-pointer" @click="isSaveDraftModalShown = false"></i>
+        </div>
         <div class="mt-3">
           <span class="bi bi-save large-icon"></span>
         </div>
