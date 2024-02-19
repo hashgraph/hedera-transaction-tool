@@ -12,9 +12,12 @@ import {
   createTransactionId,
   encodeSpecialFileContent,
 } from '@renderer/services/transactionService';
+import { getDraft } from '@renderer/services/transactionDraftsService';
+import { flattenKeyList } from '@renderer/services/keyPairService';
+
 import { isHederaSpecialFileId } from '@renderer/../main/shared/utils/hederaSpecialFiles';
 import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { isPublicKey } from '@renderer/utils/validator';
+import { isAccountId, isPublicKey } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -60,40 +63,6 @@ const ownerKeyList = computed(
 const newKeysList = computed(
   () => new KeyList(newKeys.value.map(key => PublicKey.fromString(key))),
 );
-
-/* Misc Functions */
-const createTransaction = async () => {
-  const updateTransaction = new FileUpdateTransaction()
-    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
-    .setTransactionValidDuration(180)
-    .setMaxTransactionFee(maxTransactionFee.value)
-    .setNodeAccountIds([new AccountId(3)])
-    .setFileId(fileId.value)
-    .setFileMemo(memo.value);
-
-  newKeysList.value._keys.length > 0 && updateTransaction.setKeys(newKeysList.value);
-
-  expirationTimestamp.value &&
-    updateTransaction.setExpirationTime(Timestamp.fromDate(expirationTimestamp.value));
-
-  if (content.value.length > 0) {
-    updateTransaction.setContents(content.value);
-  }
-  if (fileBuffer.value) {
-    updateTransaction.setContents(fileBuffer.value);
-  }
-
-  if (isHederaSpecialFileId(updateTransaction.fileId?.toString()) && updateTransaction.contents) {
-    const getEncodedContent = await encodeSpecialFileContent(
-      updateTransaction.contents,
-      updateTransaction.fileId.toString(),
-    );
-    updateTransaction.setContents(getEncodedContent);
-  }
-  updateTransaction.freezeWith(networkStore.client);
-
-  return updateTransaction;
-};
 
 /* Handlers */
 const handleAddOwnerKey = () => {
@@ -145,7 +114,28 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    transaction.value = await createTransaction();
+    createTransaction();
+
+    if (content.value.length > 0) {
+      transaction.value?.setContents(content.value);
+    }
+    if (fileBuffer.value) {
+      transaction.value?.setContents(fileBuffer.value);
+    }
+
+    if (
+      isHederaSpecialFileId(transaction.value?.fileId?.toString()) &&
+      transaction.value.contents
+    ) {
+      const getEncodedContent = await encodeSpecialFileContent(
+        transaction.value.contents,
+        transaction.value.fileId.toString(),
+      );
+      transaction.value.setContents(getEncodedContent);
+    }
+
+    transaction.value?.freezeWith(networkStore.client);
+
     await transactionProcessor.value?.process(
       payerData.keysFlattened.value.concat(newKeys.value, ownerKeys.value),
       chunkSize.value,
@@ -156,11 +146,67 @@ const handleCreate = async e => {
   }
 };
 
+const handleLoadFromDraft = () => {
+  const draft = getDraft<FileUpdateTransaction>(route.query.draftId?.toString() || '');
+
+  if (draft) {
+    transaction.value = draft.transaction;
+
+    if (draft.transaction.transactionId) {
+      payerData.accountId.value =
+        draft.transaction.transactionId.accountId?.toString() || payerData.accountId.value;
+    }
+
+    if (draft.transaction.maxTransactionFee) {
+      maxTransactionFee.value = draft.transaction.maxTransactionFee.toBigNumber().toNumber();
+    }
+
+    if (draft.transaction.keys) {
+      newKeys.value = draft.transaction.keys
+        .map(k => flattenKeyList(k).map(pk => pk.toStringRaw()))
+        .flat();
+    }
+
+    if (draft.transaction.fileId) {
+      fileId.value = draft.transaction.fileId.toString();
+    }
+
+    memo.value = draft.transaction.fileMemo || '';
+
+    if (draft.transaction.expirationTime) {
+      expirationTimestamp.value = draft.transaction.expirationTime;
+    }
+  }
+};
+
+/* Functions */
+function createTransaction() {
+  transaction.value = new FileUpdateTransaction()
+    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
+    .setTransactionValidDuration(180)
+    .setMaxTransactionFee(maxTransactionFee.value)
+    .setNodeAccountIds([new AccountId(3)])
+    .setFileMemo(memo.value);
+
+  if (fileId.value && isAccountId(fileId.value)) {
+    transaction.value.setFileId(fileId.value);
+  }
+
+  newKeysList.value._keys.length > 0 && transaction.value.setKeys(newKeysList.value);
+
+  expirationTimestamp.value &&
+    transaction.value.setExpirationTime(Timestamp.fromDate(expirationTimestamp.value));
+
+  return transaction.value.toBytes();
+}
+
 /* Hooks */
 onMounted(async () => {
   if (route.query.fileId) {
     fileId.value = route.query.fileId.toString();
   }
+
+  handleLoadFromDraft();
 });
 
 /* Watchers */
@@ -172,6 +218,7 @@ const columnClass = 'col-4 col-xxxl-3';
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
+      :get-transaction-bytes="createTransaction"
       :create-requirements="ownerKeyList._keys.length === 0 || !payerData.isValid.value"
       heading-text="Update File Transaction"
     />

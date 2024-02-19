@@ -9,8 +9,10 @@ import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
+import { getDraft } from '@renderer/services/transactionDraftsService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
+import { isAccountId } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -35,7 +37,7 @@ const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<AccountDeleteTransaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
-const maxTransactionfee = ref(2);
+const maxTransactionFee = ref(2);
 
 const selectedKey = ref<Key | null>();
 const isKeyStructureModalShown = ref(false);
@@ -45,15 +47,8 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    transaction.value = new AccountDeleteTransaction()
-      .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
-      .setTransactionValidDuration(180)
-      .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
-      .setNodeAccountIds([new AccountId(3)])
-      .setAccountId(accountData.accountId.value)
-      .setTransferAccountId(transferAccountData.accountId.value);
-
-    transaction.value.freezeWith(networkStore.client);
+    createTransaction();
+    transaction.value?.freezeWith(networkStore.client);
 
     const requiredSignatures = payerData.keysFlattened.value.concat(
       accountData.keysFlattened.value,
@@ -67,11 +62,52 @@ const handleCreate = async e => {
   }
 };
 
+const handleLoadFromDraft = () => {
+  const draft = getDraft<AccountDeleteTransaction>(route.query.draftId?.toString() || '');
+
+  if (draft) {
+    transaction.value = draft.transaction;
+
+    if (draft.transaction.transactionId) {
+      payerData.accountId.value =
+        draft.transaction.transactionId.accountId?.toString() || payerData.accountId.value;
+    }
+
+    if (draft.transaction.maxTransactionFee) {
+      maxTransactionFee.value = draft.transaction.maxTransactionFee.toBigNumber().toNumber();
+    }
+
+    accountData.accountId.value = draft.transaction.accountId?.toString() || '';
+    transferAccountData.accountId.value = draft.transaction.transferAccountId?.toString() || '';
+  }
+};
+
+/* Functions */
+function createTransaction() {
+  transaction.value = new AccountDeleteTransaction()
+    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
+    .setTransactionValidDuration(180)
+    .setMaxTransactionFee(new Hbar(maxTransactionFee.value))
+    .setNodeAccountIds([new AccountId(3)]);
+
+  if (accountData.accountId.value && isAccountId(accountData.accountId.value)) {
+    transaction.value.setAccountId(accountData.accountId.value);
+  }
+
+  if (transferAccountData.accountId.value && isAccountId(transferAccountData.accountId.value)) {
+    transaction.value.setTransferAccountId(transferAccountData.accountId.value);
+  }
+
+  return transaction.value.toBytes();
+}
+
 /* Hooks */
 onMounted(() => {
   if (route.query.accountId) {
     accountData.accountId.value = route.query.accountId.toString();
   }
+
+  handleLoadFromDraft();
 });
 
 /* Misc */
@@ -80,6 +116,7 @@ const columnClass = 'col-4 col-xxxl-3';
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
+      :get-transaction-bytes="createTransaction"
       :create-requirements="
         !accountData.isValid.value ||
         !transferAccountData.isValid.value ||
@@ -92,7 +129,7 @@ const columnClass = 'col-4 col-xxxl-3';
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
       v-model:valid-start="validStart"
-      v-model:max-transaction-fee="maxTransactionfee"
+      v-model:max-transaction-fee="maxTransactionFee"
       class="mt-6"
     />
 

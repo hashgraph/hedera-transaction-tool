@@ -1,15 +1,18 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, onMounted } from 'vue';
 import { AccountId, FileAppendTransaction, KeyList, PublicKey } from '@hashgraph/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
+import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
+import { getDraft } from '@renderer/services/transactionDraftsService';
+
 import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { isPublicKey } from '@renderer/utils/validator';
+import { isPublicKey, isAccountId } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -22,6 +25,7 @@ const networkStore = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
+const route = useRoute();
 const payerData = useAccountId();
 
 /* State */
@@ -49,21 +53,6 @@ const keyList = computed(
 );
 
 /* Handlers */
-const createTransaction = () => {
-  const appendTransaction = new FileAppendTransaction()
-    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
-    .setTransactionValidDuration(180)
-    .setNodeAccountIds([new AccountId(3)])
-    .setFileId(fileId.value)
-    .setMaxChunks(99999999999999)
-    .setChunkSize(Number(chunkSize.value))
-    .setContents(fileBuffer.value ? fileBuffer.value : new TextEncoder().encode(content.value));
-
-  appendTransaction.freezeWith(networkStore.client);
-
-  return appendTransaction;
-};
-
 const handleAddSignatureKey = () => {
   signatureKeys.value.push(signatureKeyText.value);
   signatureKeys.value = [...new Set(signatureKeys.value.filter(isPublicKey))];
@@ -105,8 +94,10 @@ const handleFileImport = async (e: Event) => {
 
 const handleCreate = async e => {
   e.preventDefault();
+
   try {
-    transaction.value = createTransaction();
+    createTransaction();
+    transaction.value?.freezeWith(networkStore.client);
 
     await transactionProcessor.value?.process(
       payerData.keysFlattened.value.concat(signatureKeys.value),
@@ -118,6 +109,53 @@ const handleCreate = async e => {
   }
 };
 
+const handleLoadFromDraft = () => {
+  const draft = getDraft<FileAppendTransaction>(route.query.draftId?.toString() || '');
+
+  if (draft) {
+    transaction.value = draft.transaction;
+
+    if (draft.transaction.transactionId) {
+      payerData.accountId.value =
+        draft.transaction.transactionId.accountId?.toString() || payerData.accountId.value;
+    }
+
+    if (draft.transaction.maxTransactionFee) {
+      maxTransactionFee.value = draft.transaction.maxTransactionFee.toBigNumber().toNumber();
+    }
+
+    if (draft.transaction.fileId) {
+      fileId.value = draft.transaction.fileId.toString();
+    }
+
+    if (draft.transaction.chunkSize) {
+      chunkSize.value = draft.transaction.chunkSize;
+    }
+  }
+};
+
+/* Functions */
+function createTransaction() {
+  transaction.value = new FileAppendTransaction()
+    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
+    .setTransactionValidDuration(180)
+    .setNodeAccountIds([new AccountId(3)])
+    .setMaxChunks(99999999999999)
+    .setChunkSize(Number(chunkSize.value))
+    .setContents(fileBuffer.value ? fileBuffer.value : new TextEncoder().encode(content.value));
+
+  if (fileId.value && isAccountId(fileId.value)) {
+    transaction.value.setFileId(fileId.value);
+  }
+
+  return transaction.value.toBytes();
+}
+
+/* Hooks */
+onMounted(async () => {
+  handleLoadFromDraft();
+});
+
 /* Watchers */
 watch(fileMeta, () => (content.value = ''));
 
@@ -127,6 +165,7 @@ const columnClass = 'col-4 col-xxxl-3';
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
+      :get-transaction-bytes="createTransaction"
       :create-requirements="keyList._keys.length === 0 || !payerData.isValid.value"
       heading-text="Append File Transaction"
     />

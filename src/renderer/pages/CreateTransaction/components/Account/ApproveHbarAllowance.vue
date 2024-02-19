@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { AccountId, Hbar, Key, AccountAllowanceApproveTransaction } from '@hashgraph/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
+import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
+import { getDraft } from '@renderer/services/transactionDraftsService';
 import { getDateTimeLocalInputValue } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -16,12 +18,14 @@ import TransactionProcessor from '@renderer/components/Transaction/TransactionPr
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
+import { isAccountId } from '@renderer/utils/validator';
 
 /* Stores */
 const networkStore = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
+const route = useRoute();
 const payerData = useAccountId();
 const ownerData = useAccountId();
 const spenderData = useAccountId();
@@ -47,17 +51,8 @@ const handleCreate = async e => {
       throw Error('Invalid owner');
     }
 
-    transaction.value = new AccountAllowanceApproveTransaction()
-      .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
-      .setTransactionValidDuration(180)
-      .setMaxTransactionFee(new Hbar(maxTransactionFee.value))
-      .setNodeAccountIds([new AccountId(3)])
-      .approveHbarAllowance(
-        ownerData.accountId.value,
-        spenderData.accountId.value,
-        new Hbar(amount.value),
-      )
-      .freezeWith(networkStore.client);
+    createTransaction();
+    transaction.value?.freezeWith(networkStore.client);
 
     const requiredSignatures = payerData.keysFlattened.value.concat(ownerData.keysFlattened.value);
     await transactionProcessor.value?.process(requiredSignatures);
@@ -66,12 +61,66 @@ const handleCreate = async e => {
   }
 };
 
+const handleLoadFromDraft = () => {
+  const draft = getDraft<AccountAllowanceApproveTransaction>(route.query.draftId?.toString() || '');
+
+  if (draft) {
+    transaction.value = draft.transaction;
+
+    if (draft.transaction.transactionId) {
+      payerData.accountId.value =
+        draft.transaction.transactionId.accountId?.toString() || payerData.accountId.value;
+    }
+
+    if (draft.transaction.maxTransactionFee) {
+      maxTransactionFee.value = draft.transaction.maxTransactionFee.toBigNumber().toNumber();
+    }
+
+    if (draft.transaction.hbarApprovals.length > 0) {
+      const hbarApproval = draft.transaction.hbarApprovals[0];
+
+      ownerData.accountId.value = hbarApproval.ownerAccountId?.toString() || '';
+      spenderData.accountId.value = hbarApproval.spenderAccountId?.toString() || '';
+      amount.value = hbarApproval.amount?.toBigNumber().toNumber() || 0;
+    }
+  }
+};
+
+/* Functions */
+function createTransaction() {
+  transaction.value = new AccountAllowanceApproveTransaction()
+    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
+    .setTransactionValidDuration(180)
+    .setMaxTransactionFee(new Hbar(maxTransactionFee.value))
+    .setNodeAccountIds([new AccountId(3)]);
+
+  if (
+    ownerData.accountId.value &&
+    isAccountId(ownerData.accountId.value) &&
+    spenderData.accountId.value &&
+    isAccountId(spenderData.accountId.value)
+  ) {
+    transaction.value.approveHbarAllowance(
+      ownerData.accountId.value,
+      spenderData.accountId.value,
+      new Hbar(amount.value),
+    );
+  }
+  return transaction.value.toBytes();
+}
+
+/* Hooks */
+onMounted(() => {
+  handleLoadFromDraft();
+});
+
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
+      :get-transaction-bytes="createTransaction"
       heading-text="Approve Hbar Allowance Transaction"
       :create-requirements="
         !payerData.isValid.value ||

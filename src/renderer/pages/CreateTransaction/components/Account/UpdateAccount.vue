@@ -9,9 +9,11 @@ import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
+import { getDraft } from '@renderer/services/transactionDraftsService';
+import { flattenKeyList } from '@renderer/services/keyPairService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { isPublicKey } from '@renderer/utils/validator';
+import { isAccountId, isPublicKey } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
@@ -35,7 +37,7 @@ const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<AccountUpdateTransaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
-const maxTransactionfee = ref(2);
+const maxTransactionFee = ref(2);
 
 const newAccountData = reactive<{
   receiverSignatureRequired: boolean;
@@ -77,43 +79,8 @@ const handleCreate = async e => {
       throw Error('Invalid Account');
     }
 
-    transaction.value = new AccountUpdateTransaction()
-      .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
-      .setTransactionValidDuration(180)
-      .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
-      .setNodeAccountIds([new AccountId(3)])
-      .setAccountId(accountData.accountId.value)
-      .setReceiverSignatureRequired(newAccountData.receiverSignatureRequired)
-      .setDeclineStakingReward(!newAccountData.acceptStakingAwards)
-      .setMaxAutomaticTokenAssociations(Number(newAccountData.maxAutomaticTokenAssociations))
-      .setAccountMemo(newAccountData.memo || '');
-
-    newOwnerKeys.value.length > 0 && transaction.value.setKey(newOwnerKeyList.value);
-
-    if (!newAccountData.stakedAccountId && !newAccountData.stakedNodeId) {
-      transaction.value.clearStakedAccountId();
-      transaction.value.clearStakedNodeId();
-    }
-
-    if (
-      newAccountData.stakedAccountId &&
-      newAccountData.stakedAccountId.length > 0 &&
-      !newAccountData.stakedNodeId &&
-      accountData.accountInfo.value.stakedAccountId?.toString() !== newAccountData.stakedAccountId
-    ) {
-      transaction.value.setStakedAccountId(newAccountData.stakedAccountId);
-    }
-
-    if (
-      newAccountData.stakedNodeId &&
-      !newAccountData.stakedAccountId &&
-      accountData.accountInfo.value.stakedNodeId?.toString() !==
-        newAccountData.stakedNodeId.toString()
-    ) {
-      transaction.value.setStakedNodeId(Number(newAccountData.stakedNodeId));
-    }
-
-    transaction.value.freezeWith(networkStore.client);
+    createTransaction();
+    transaction.value?.freezeWith(networkStore.client);
 
     const requiredSignatures = payerData.keysFlattened.value.concat(
       accountData.keysFlattened.value,
@@ -125,11 +92,91 @@ const handleCreate = async e => {
   }
 };
 
+const handleLoadFromDraft = () => {
+  const draft = getDraft<AccountUpdateTransaction>(route.query.draftId?.toString() || '');
+
+  if (draft) {
+    transaction.value = draft.transaction;
+
+    if (draft.transaction.transactionId) {
+      payerData.accountId.value =
+        draft.transaction.transactionId.accountId?.toString() || payerData.accountId.value;
+    }
+
+    if (draft.transaction.maxTransactionFee) {
+      maxTransactionFee.value = draft.transaction.maxTransactionFee.toBigNumber().toNumber();
+    }
+
+    accountData.accountId.value = draft.transaction.accountId?.toString() || '';
+
+    newAccountData.receiverSignatureRequired = draft.transaction.receiverSignatureRequired;
+    newAccountData.acceptStakingAwards = !draft.transaction.declineStakingRewards;
+    newAccountData.maxAutomaticTokenAssociations =
+      draft.transaction.maxAutomaticTokenAssociations.toNumber();
+    newAccountData.memo = draft.transaction.accountMemo || '';
+
+    if (draft.transaction.key) {
+      newOwnerKeys.value = flattenKeyList(draft.transaction.key).map(pk => pk.toStringRaw());
+    }
+
+    if (draft.transaction.stakedAccountId?.toString() !== '0.0.0') {
+      newAccountData.stakedAccountId = draft.transaction.stakedAccountId?.toString() || '';
+    }
+
+    if (draft.transaction.stakedNodeId >= 0) {
+      newAccountData.stakedNodeId = draft.transaction.stakedNodeId.toNumber() || '';
+    }
+  }
+};
+
+/* Functions */
+function createTransaction() {
+  transaction.value = new AccountUpdateTransaction()
+    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
+    .setTransactionValidDuration(180)
+    .setMaxTransactionFee(new Hbar(maxTransactionFee.value))
+    .setNodeAccountIds([new AccountId(3)])
+    .setReceiverSignatureRequired(newAccountData.receiverSignatureRequired)
+    .setDeclineStakingReward(!newAccountData.acceptStakingAwards)
+    .setMaxAutomaticTokenAssociations(Number(newAccountData.maxAutomaticTokenAssociations))
+    .setAccountMemo(newAccountData.memo || '');
+
+  accountData.accountId.value && transaction.value.setAccountId(accountData.accountId.value);
+  newOwnerKeys.value.length > 0 && transaction.value.setKey(newOwnerKeyList.value);
+
+  if (!newAccountData.stakedAccountId && !newAccountData.stakedNodeId) {
+    transaction.value.clearStakedAccountId();
+    transaction.value.clearStakedNodeId();
+  }
+
+  if (
+    newAccountData.stakedAccountId &&
+    newAccountData.stakedAccountId.length > 0 &&
+    !newAccountData.stakedNodeId &&
+    accountData.accountInfo.value?.stakedAccountId?.toString() !== newAccountData.stakedAccountId
+  ) {
+    transaction.value.setStakedAccountId(newAccountData.stakedAccountId);
+  }
+
+  if (
+    newAccountData.stakedNodeId &&
+    !newAccountData.stakedAccountId &&
+    accountData.accountInfo.value?.stakedNodeId?.toString() !==
+      newAccountData.stakedNodeId.toString()
+  ) {
+    transaction.value.setStakedNodeId(Number(newAccountData.stakedNodeId));
+  }
+
+  return transaction.value.toBytes();
+}
+
 /* Hooks */
 onMounted(() => {
   if (route.query.accountId) {
     accountData.accountId.value = route.query.accountId.toString();
   }
+
+  handleLoadFromDraft();
 });
 
 /* Watchers */
@@ -154,12 +201,8 @@ watch(accountData.accountInfo, accountInfo => {
 watch(
   () => newAccountData.stakedAccountId,
   id => {
-    try {
-      if (id !== '0') {
-        newAccountData.stakedAccountId = AccountId.fromString(id).toString();
-      }
-    } catch (error) {
-      /* empty */
+    if (isAccountId(id) && id !== '0') {
+      newAccountData.stakedAccountId = AccountId.fromString(id).toString();
     }
   },
 );
@@ -170,6 +213,7 @@ const columnClass = 'col-4 col-xxxl-3';
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
+      :get-transaction-bytes="createTransaction"
       :create-requirements="!accountData.accountId.value || !payerData.isValid.value"
       heading-text="Update Account Transaction"
     />
@@ -177,7 +221,7 @@ const columnClass = 'col-4 col-xxxl-3';
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
       v-model:valid-start="validStart"
-      v-model:max-transaction-fee="maxTransactionfee"
+      v-model:max-transaction-fee="maxTransactionFee"
       class="mt-6"
     />
 

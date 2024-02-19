@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { AccountId, AccountCreateTransaction, KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
@@ -8,11 +8,14 @@ import useAccountId from '@renderer/composables/useAccountId';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
+import { useRoute } from 'vue-router';
+
 import { add } from '@renderer/services/accountsService';
 import { createTransactionId } from '@renderer/services/transactionService';
+import { getDraft } from '@renderer/services/transactionDraftsService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { isPublicKey } from '@renderer/utils/validator';
+import { isAccountId, isPublicKey } from '@renderer/utils/validator';
 import { getEntityIdFromTransactionResult } from '@renderer/utils/transactions';
 
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
@@ -21,6 +24,7 @@ import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
+import { flattenKeyList } from '@renderer/services/keyPairService';
 
 /* Stores */
 const user = useUserStore();
@@ -28,6 +32,7 @@ const networkStore = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
+const route = useRoute();
 const payerData = useAccountId();
 
 /* State */
@@ -64,24 +69,8 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    transaction.value = new AccountCreateTransaction()
-      .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
-      .setTransactionValidDuration(180)
-      .setMaxTransactionFee(new Hbar(maxTransactionFee.value))
-      .setNodeAccountIds([new AccountId(3)])
-      .setKey(keyList.value)
-      .setReceiverSignatureRequired(accountData.receiverSignatureRequired)
-      .setDeclineStakingReward(!accountData.acceptStakingRewards)
-      .setInitialBalance(Number(accountData.initialBalance))
-      .setMaxAutomaticTokenAssociations(Number(accountData.maxAutomaticTokenAssociations))
-      .setAccountMemo(accountData.memo);
-
-    accountData.stakedAccountId &&
-      transaction.value.setStakedAccountId(AccountId.fromString(accountData.stakedAccountId));
-    Number(accountData.stakedNodeId) > 0 &&
-      transaction.value.setStakedNodeId(Number(accountData.stakedNodeId));
-
-    transaction.value.freezeWith(networkStore.client);
+    createTransaction();
+    transaction.value?.freezeWith(networkStore.client);
 
     const requiredSignatures = payerData.keysFlattened.value.concat(ownerKeys.value);
     await transactionProcessor.value?.process(requiredSignatures);
@@ -96,16 +85,73 @@ const handleExecuted = async result => {
   toast.success(`Account ${accountId} linked`, { position: 'bottom-right' });
 };
 
+const handleLoadFromDraft = () => {
+  const draft = getDraft<AccountCreateTransaction>(route.query.draftId?.toString() || '');
+
+  if (draft) {
+    transaction.value = draft.transaction;
+
+    if (draft.transaction.transactionId) {
+      payerData.accountId.value =
+        draft.transaction.transactionId.accountId?.toString() || payerData.accountId.value;
+    }
+
+    if (draft.transaction.maxTransactionFee) {
+      maxTransactionFee.value = draft.transaction.maxTransactionFee.toBigNumber().toNumber();
+    }
+
+    accountData.receiverSignatureRequired = draft.transaction.receiverSignatureRequired;
+    accountData.maxAutomaticTokenAssociations =
+      draft.transaction.maxAutomaticTokenAssociations.toNumber();
+    accountData.initialBalance = draft.transaction.initialBalance?.toBigNumber().toNumber() || 0;
+    accountData.stakedAccountId = draft.transaction.stakedAccountId?.toString() || '';
+
+    if (draft.transaction.stakedNodeId) {
+      accountData.stakedNodeId = draft.transaction.stakedNodeId.toNumber();
+    }
+
+    accountData.acceptStakingRewards = !draft.transaction.declineStakingRewards;
+    accountData.memo = draft.transaction.accountMemo || '';
+
+    if (draft.transaction.key) {
+      ownerKeys.value = flattenKeyList(draft.transaction.key).map(pk => pk.toStringRaw());
+    }
+  }
+};
+
+/* Functions */
+function createTransaction() {
+  transaction.value = new AccountCreateTransaction()
+    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
+    .setTransactionValidDuration(180)
+    .setMaxTransactionFee(new Hbar(maxTransactionFee.value))
+    .setNodeAccountIds([new AccountId(3)])
+    .setKey(keyList.value)
+    .setReceiverSignatureRequired(accountData.receiverSignatureRequired)
+    .setDeclineStakingReward(!accountData.acceptStakingRewards)
+    .setInitialBalance(Hbar.fromString(accountData.initialBalance.toString()))
+    .setMaxAutomaticTokenAssociations(Number(accountData.maxAutomaticTokenAssociations))
+    .setAccountMemo(accountData.memo);
+
+  accountData.stakedAccountId &&
+    transaction.value.setStakedAccountId(AccountId.fromString(accountData.stakedAccountId));
+  Number(accountData.stakedNodeId) > 0 &&
+    transaction.value.setStakedNodeId(Number(accountData.stakedNodeId));
+
+  return transaction.value.toBytes();
+}
+
+/* Hooks */
+onMounted(() => {
+  handleLoadFromDraft();
+});
+
 /* Watchers */
 watch(
   () => accountData.stakedAccountId,
   id => {
-    try {
-      if (id !== '0') {
-        accountData.stakedAccountId = AccountId.fromString(id).toString();
-      }
-    } catch (error) {
-      /* empty */
+    if (isAccountId(id) && id !== '0') {
+      accountData.stakedAccountId = AccountId.fromString(id).toString();
     }
   },
 );
@@ -116,6 +162,7 @@ const columnClass = 'col-4 col-xxxl-3';
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
+      :get-transaction-bytes="createTransaction"
       :create-requirements="keyList._keys.length === 0 || !payerData.isValid.value"
       heading-text="Create Account Transaction"
       class="flex-1"

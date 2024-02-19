@@ -6,9 +6,12 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import { useToast } from 'vue-toast-notification';
+import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
+import { getDraft } from '@renderer/services/transactionDraftsService';
+
 import { getDateTimeLocalInputValue } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -17,6 +20,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
+import { isAccountId } from '@renderer/utils/validator';
 
 /* Stores */
 const networkStore = useNetworkStore();
@@ -24,6 +28,7 @@ const keyPairs = useKeyPairsStore();
 
 /* Composables */
 const toast = useToast();
+const route = useRoute();
 const payerData = useAccountId();
 const senderData = useAccountId();
 const receiverData = useAccountId();
@@ -45,26 +50,8 @@ const isKeyStructureModalShown = ref(false);
 const handleCreate = async e => {
   e.preventDefault();
   try {
-    transaction.value = new TransferTransaction()
-      .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
-      .setTransactionValidDuration(180)
-      .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
-      .setNodeAccountIds([new AccountId(3)])
-      .addHbarTransfer(receiverData.accountId.value, new Hbar(amount.value));
-
-    if (isApprovedTransfer.value) {
-      transaction.value.addApprovedHbarTransfer(
-        senderData.accountId.value,
-        new Hbar(amount.value).negated(),
-      );
-    } else {
-      transaction.value.addHbarTransfer(
-        senderData.accountId.value,
-        new Hbar(amount.value).negated(),
-      );
-    }
-
-    transaction.value.freezeWith(networkStore.client);
+    createTransaction();
+    transaction.value?.freezeWith(networkStore.client);
 
     let requiredSignatures = payerData.keysFlattened.value;
 
@@ -83,12 +70,68 @@ const handleCreate = async e => {
   }
 };
 
+const handleLoadFromDraft = () => {
+  const draft = getDraft<TransferTransaction>(route.query.draftId?.toString() || '');
+
+  if (draft) {
+    transaction.value = draft.transaction;
+
+    if (draft.transaction.transactionId) {
+      payerData.accountId.value =
+        draft.transaction.transactionId.accountId?.toString() || payerData.accountId.value;
+    }
+    console.log(draft.transaction.hbarTransfers);
+
+    draft.transaction.hbarTransfers._map.forEach((value, accoundId) => {
+      const hbars = value.toBigNumber().toNumber();
+
+      if (hbars > 0) {
+        receiverData.accountId.value = accoundId;
+        amount.value = hbars;
+      } else {
+        senderData.accountId.value = accoundId;
+      }
+    });
+  }
+};
+
+/* Functions */
+function createTransaction() {
+  transaction.value = new TransferTransaction()
+    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
+    .setTransactionValidDuration(180)
+    .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
+    .setNodeAccountIds([new AccountId(3)]);
+
+  if (receiverData.accountId.value && isAccountId(receiverData.accountId.value)) {
+    transaction.value.addHbarTransfer(receiverData.accountId.value, new Hbar(amount.value));
+  }
+
+  if (isApprovedTransfer.value) {
+    senderData.accountId.value &&
+      transaction.value?.addApprovedHbarTransfer(
+        senderData.accountId.value,
+        new Hbar(amount.value).negated(),
+      );
+  } else {
+    senderData.accountId.value &&
+      transaction.value?.addHbarTransfer(
+        senderData.accountId.value,
+        new Hbar(amount.value).negated(),
+      );
+  }
+
+  return transaction.value.toBytes();
+}
+
 /* Hooks */
 onMounted(() => {
   const allAccountIds = keyPairs.accoundIds.map(a => a.accountIds).flat();
   if (allAccountIds.length > 0) {
     payerData.accountId.value = allAccountIds[0];
   }
+
+  handleLoadFromDraft();
 });
 
 /* Misc */
@@ -97,6 +140,7 @@ const columnClass = 'col-4 col-xxxl-3';
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
+      :get-transaction-bytes="createTransaction"
       :create-requirements="
         !payerData.accountId.value ||
         !senderData.accountId.value ||
