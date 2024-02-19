@@ -48,6 +48,10 @@ export const getDraft = <T extends Transaction>(
 export const addDraft = (transactionBytes: Uint8Array) => {
   const drafts = getRawDrafts();
 
+  if (drafts.some(d => d.transactionBytes === transactionBytes.toString())) {
+    throw new Error('Transaction draft already saved');
+  }
+
   const id = new Date().getTime().toString();
 
   const newDraft = {
