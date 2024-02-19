@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue';
-import { AccountId, FileAppendTransaction, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
+import { FileAppendTransaction, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
@@ -94,6 +94,14 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
+    if (!isAccountId(payerData.accountId.value)) {
+      throw Error('Invalid Payer ID');
+    }
+
+    if (!isAccountId(fileId.value)) {
+      throw Error('Invalid File ID');
+    }
+
     const newTransaction = createTransaction();
     newTransaction.setContents(
       fileBuffer.value ? fileBuffer.value : new TextEncoder().encode(content.value),
@@ -142,13 +150,14 @@ const handleLoadFromDraft = async () => {
 /* Functions */
 function createTransaction() {
   const transaction = new FileAppendTransaction()
-    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
     .setTransactionValidDuration(180)
-    .setNodeAccountIds([new AccountId(3)])
-    .setMaxChunks(99999999999999)
     .setChunkSize(Number(chunkSize.value));
 
-  if (fileId.value && isAccountId(fileId.value)) {
+  if (!isAccountId(payerData.accountId.value)) {
+    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
+  }
+
+  if (isAccountId(fileId.value)) {
     transaction.setFileId(fileId.value);
   }
 
@@ -171,7 +180,7 @@ const columnClass = 'col-4 col-xxxl-3';
     <TransactionHeaderControls
       :get-transaction-bytes="() => createTransaction().toBytes()"
       :is-executed="isExecuted"
-      :create-requirements="keyList._keys.length === 0 || !payerData.isValid.value"
+      :create-requirements="keyList._keys.length === 0 || !payerData.isValid.value || !fileId"
       heading-text="Append File Transaction"
     />
 
