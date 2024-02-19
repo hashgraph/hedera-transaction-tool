@@ -34,6 +34,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { getTransactionType } from '@renderer/utils/transactions';
 
 /* Props */
 const props = defineProps<{
@@ -91,13 +92,7 @@ const localPublicKeysReq = computed(() =>
 const requiredLocalKeyPairs = computed(() =>
   keyPairs.keyPairs.filter(kp => localPublicKeysReq.value.includes(kp.public_key)),
 );
-const type = computed(
-  () =>
-    transaction.value?.constructor.name
-      .slice(transaction.value?.constructor.name.startsWith('_') ? 1 : 0)
-      .split(/(?=[A-Z])/)
-      .join(' '),
-);
+const type = computed(() => transaction.value && getTransactionType(transaction.value));
 
 /* Handlers */
 function handleConfirmTransaction(e: Event) {
