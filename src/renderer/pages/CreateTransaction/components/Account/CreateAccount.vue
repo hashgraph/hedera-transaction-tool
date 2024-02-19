@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { AccountId, AccountCreateTransaction, KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
+import {
+  AccountId,
+  AccountCreateTransaction,
+  KeyList,
+  PublicKey,
+  Hbar,
+  Transaction,
+} from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRoute } from 'vue-router';
 
@@ -28,7 +34,6 @@ import { flattenKeyList } from '@renderer/services/keyPairService';
 
 /* Stores */
 const user = useUserStore();
-const networkStore = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
@@ -38,7 +43,7 @@ const payerData = useAccountId();
 /* State */
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
-const transaction = ref<AccountCreateTransaction | null>(null);
+const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref(2);
 
@@ -54,6 +59,7 @@ const accountData = reactive({
 });
 const ownerKeyText = ref('');
 const ownerKeys = ref<string[]>([]);
+const isExecuted = ref(false);
 
 /* Getters */
 const keyList = computed(() => new KeyList(ownerKeys.value.map(key => PublicKey.fromString(key))));
@@ -69,8 +75,7 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    createTransaction();
-    transaction.value?.freezeWith(networkStore.client);
+    transaction.value = createTransaction();
 
     const requiredSignatures = payerData.keysFlattened.value.concat(ownerKeys.value);
     await transactionProcessor.value?.process(requiredSignatures);
@@ -80,6 +85,7 @@ const handleCreate = async e => {
 };
 
 const handleExecuted = async result => {
+  isExecuted.value = true;
   const accountId = getEntityIdFromTransactionResult(result, 'accountId');
   await add(user.data.id, accountId);
   toast.success(`Account ${accountId} linked`, { position: 'bottom-right' });
@@ -121,7 +127,7 @@ const handleLoadFromDraft = () => {
 
 /* Functions */
 function createTransaction() {
-  transaction.value = new AccountCreateTransaction()
+  const transaction = new AccountCreateTransaction()
     .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(new Hbar(maxTransactionFee.value))
@@ -134,11 +140,11 @@ function createTransaction() {
     .setAccountMemo(accountData.memo);
 
   accountData.stakedAccountId &&
-    transaction.value.setStakedAccountId(AccountId.fromString(accountData.stakedAccountId));
+    transaction.setStakedAccountId(AccountId.fromString(accountData.stakedAccountId));
   Number(accountData.stakedNodeId) > 0 &&
-    transaction.value.setStakedNodeId(Number(accountData.stakedNodeId));
+    transaction.setStakedNodeId(Number(accountData.stakedNodeId));
 
-  return transaction.value.toBytes();
+  return transaction;
 }
 
 /* Hooks */
@@ -162,7 +168,8 @@ const columnClass = 'col-4 col-xxxl-3';
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
-      :get-transaction-bytes="createTransaction"
+      :get-transaction-bytes="() => createTransaction().toBytes()"
+      :is-executed="isExecuted"
       :create-requirements="keyList._keys.length === 0 || !payerData.isValid.value"
       heading-text="Create Account Transaction"
       class="flex-1"
