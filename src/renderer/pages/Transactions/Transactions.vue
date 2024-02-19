@@ -24,16 +24,13 @@ const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title
 
 <template>
   <div class="p-5">
-    <h1 class="text-title text-bold">Transactions</h1>
-    <div class="mt-7 d-flex">
-      <AppButton
-        color="primary"
-        class="d-flex align-items-center"
-        @click="isTransactionSelectionModalShown = true"
-      >
-        <span>Create</span> <i class="bi bi-plus text-subheader ms-2"></i
-      ></AppButton>
+    <div class="d-flex justify-content-between">
+      <h1 class="text-title text-bold">Transactions</h1>
+      <AppButton color="primary" @click="isTransactionSelectionModalShown = true">
+        <i class="bi bi-plus-lg"></i> <span>Create New</span>
+      </AppButton>
     </div>
+
     <div class="mt-4">
       <AppTabs :items="tabItems" v-model:active-index="activeTabIndex"></AppTabs>
       <!-- <template v-if="activeTabTitle === 'Ready for Review'"></template>
