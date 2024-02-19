@@ -2,6 +2,8 @@
 import { ref } from 'vue';
 import { RouteLocationNormalized, onBeforeRouteLeave } from 'vue-router';
 
+import useUserStore from '@renderer/stores/storeUser';
+
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
 
@@ -28,6 +30,9 @@ const props = withDefaults(
   },
 );
 
+/* Stores */
+const user = useUserStore();
+
 /* Composables */
 const toast = useToast();
 const route = useRoute();
@@ -42,17 +47,17 @@ const saveDraft = () => {
 
   const transactionBytes = props.getTransactionBytes();
 
-  addDraft(transactionBytes);
+  addDraft(user.data.id, transactionBytes);
 
   toast.success('Draft saved', { position: 'bottom-right' });
 };
 
 /* Hooks */
-onBeforeRouteLeave(to => {
+onBeforeRouteLeave(async to => {
   if (!props.getTransactionBytes || route.query.draftId) return true;
 
   if (
-    !draftExists(props.getTransactionBytes()) &&
+    !(await draftExists(props.getTransactionBytes())) &&
     !isSaveDraftModalShown.value &&
     !props.isExecuted
   ) {

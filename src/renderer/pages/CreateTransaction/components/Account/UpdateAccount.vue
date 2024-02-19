@@ -18,6 +18,7 @@ import { getDraft } from '@renderer/services/transactionDraftsService';
 import { flattenKeyList } from '@renderer/services/keyPairService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
+import { getTransactionFromBytes } from '@renderer/utils/transactions';
 import { isAccountId, isPublicKey } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -99,39 +100,44 @@ const handleCreate = async e => {
   }
 };
 
-const handleLoadFromDraft = () => {
-  const draft = getDraft<AccountUpdateTransaction>(route.query.draftId?.toString() || '');
+const handleLoadFromDraft = async () => {
+  if (!route.query.draftId) return;
+
+  const draft = await getDraft(route.query.draftId?.toString() || '');
+  const draftTransaction = await getTransactionFromBytes<AccountUpdateTransaction>(
+    draft.transactionBytes,
+  );
 
   if (draft) {
-    transaction.value = draft.transaction;
+    transaction.value = draftTransaction;
 
-    if (draft.transaction.transactionId) {
+    if (draftTransaction.transactionId) {
       payerData.accountId.value =
-        draft.transaction.transactionId.accountId?.toString() || payerData.accountId.value;
+        draftTransaction.transactionId.accountId?.toString() || payerData.accountId.value;
     }
 
-    if (draft.transaction.maxTransactionFee) {
-      maxTransactionFee.value = draft.transaction.maxTransactionFee.toBigNumber().toNumber();
+    if (draftTransaction.maxTransactionFee) {
+      maxTransactionFee.value = draftTransaction.maxTransactionFee.toBigNumber().toNumber();
     }
 
-    accountData.accountId.value = draft.transaction.accountId?.toString() || '';
+    accountData.accountId.value = draftTransaction.accountId?.toString() || '';
 
-    newAccountData.receiverSignatureRequired = draft.transaction.receiverSignatureRequired;
-    newAccountData.acceptStakingAwards = !draft.transaction.declineStakingRewards;
+    newAccountData.receiverSignatureRequired = draftTransaction.receiverSignatureRequired;
+    newAccountData.acceptStakingAwards = !draftTransaction.declineStakingRewards;
     newAccountData.maxAutomaticTokenAssociations =
-      draft.transaction.maxAutomaticTokenAssociations.toNumber();
-    newAccountData.memo = draft.transaction.accountMemo || '';
+      draftTransaction.maxAutomaticTokenAssociations.toNumber();
+    newAccountData.memo = draftTransaction.accountMemo || '';
 
-    if (draft.transaction.key) {
-      newOwnerKeys.value = flattenKeyList(draft.transaction.key).map(pk => pk.toStringRaw());
+    if (draftTransaction.key) {
+      newOwnerKeys.value = flattenKeyList(draftTransaction.key).map(pk => pk.toStringRaw());
     }
 
-    if (draft.transaction.stakedAccountId?.toString() !== '0.0.0') {
-      newAccountData.stakedAccountId = draft.transaction.stakedAccountId?.toString() || '';
+    if (draftTransaction.stakedAccountId?.toString() !== '0.0.0') {
+      newAccountData.stakedAccountId = draftTransaction.stakedAccountId?.toString() || '';
     }
 
-    if (draft.transaction.stakedNodeId >= 0) {
-      newAccountData.stakedNodeId = draft.transaction.stakedNodeId.toNumber() || '';
+    if (draftTransaction.stakedNodeId >= 0) {
+      newAccountData.stakedNodeId = draftTransaction.stakedNodeId.toNumber() || '';
     }
   }
 };
@@ -177,12 +183,12 @@ function createTransaction() {
 }
 
 /* Hooks */
-onMounted(() => {
+onMounted(async () => {
   if (route.query.accountId) {
     accountData.accountId.value = route.query.accountId.toString();
   }
 
-  handleLoadFromDraft();
+  await handleLoadFromDraft();
 });
 
 /* Watchers */

@@ -10,6 +10,7 @@ import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
+import { getTransactionFromBytes } from '@renderer/utils/transactions';
 import { isPublicKey, isAccountId } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -110,27 +111,30 @@ const handleCreate = async e => {
   }
 };
 
-const handleLoadFromDraft = () => {
-  const draft = getDraft<FileAppendTransaction>(route.query.draftId?.toString() || '');
+const handleLoadFromDraft = async () => {
+  if (!route.query.draftId) return;
+
+  const draft = await getDraft(route.query.draftId?.toString() || '');
+  const draftTransaction = getTransactionFromBytes<FileAppendTransaction>(draft.transactionBytes);
 
   if (draft) {
-    transaction.value = draft.transaction;
+    transaction.value = draftTransaction;
 
-    if (draft.transaction.transactionId) {
+    if (draftTransaction.transactionId) {
       payerData.accountId.value =
-        draft.transaction.transactionId.accountId?.toString() || payerData.accountId.value;
+        draftTransaction.transactionId.accountId?.toString() || payerData.accountId.value;
     }
 
-    if (draft.transaction.maxTransactionFee) {
-      maxTransactionFee.value = draft.transaction.maxTransactionFee.toBigNumber().toNumber();
+    if (draftTransaction.maxTransactionFee) {
+      maxTransactionFee.value = draftTransaction.maxTransactionFee.toBigNumber().toNumber();
     }
 
-    if (draft.transaction.fileId) {
-      fileId.value = draft.transaction.fileId.toString();
+    if (draftTransaction.fileId) {
+      fileId.value = draftTransaction.fileId.toString();
     }
 
-    if (draft.transaction.chunkSize) {
-      chunkSize.value = draft.transaction.chunkSize;
+    if (draftTransaction.chunkSize) {
+      chunkSize.value = draftTransaction.chunkSize;
     }
   }
 };
@@ -153,7 +157,7 @@ function createTransaction() {
 
 /* Hooks */
 onMounted(async () => {
-  handleLoadFromDraft();
+  await handleLoadFromDraft();
 });
 
 /* Watchers */

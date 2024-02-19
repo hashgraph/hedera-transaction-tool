@@ -14,7 +14,10 @@ import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
+
+import { getTransactionFromBytes } from '@renderer/utils/transactions';
 import { getDateTimeLocalInputValue } from '@renderer/utils';
+import { isAccountId } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -22,7 +25,6 @@ import TransactionProcessor from '@renderer/components/Transaction/TransactionPr
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
-import { isAccountId } from '@renderer/utils/validator';
 
 /* Composables */
 const toast = useToast();
@@ -63,23 +65,28 @@ const handleCreate = async e => {
   }
 };
 
-const handleLoadFromDraft = () => {
-  const draft = getDraft<AccountAllowanceApproveTransaction>(route.query.draftId?.toString() || '');
+const handleLoadFromDraft = async () => {
+  if (!route.query.draftId) return;
+
+  const draft = await getDraft(route.query.draftId?.toString() || '');
+  const draftTransaction = getTransactionFromBytes<AccountAllowanceApproveTransaction>(
+    draft.transactionBytes,
+  );
 
   if (draft) {
-    transaction.value = draft.transaction;
+    transaction.value = draftTransaction;
 
-    if (draft.transaction.transactionId) {
+    if (draftTransaction.transactionId) {
       payerData.accountId.value =
-        draft.transaction.transactionId.accountId?.toString() || payerData.accountId.value;
+        draftTransaction.transactionId.accountId?.toString() || payerData.accountId.value;
     }
 
-    if (draft.transaction.maxTransactionFee) {
-      maxTransactionFee.value = draft.transaction.maxTransactionFee.toBigNumber().toNumber();
+    if (draftTransaction.maxTransactionFee) {
+      maxTransactionFee.value = draftTransaction.maxTransactionFee.toBigNumber().toNumber();
     }
 
-    if (draft.transaction.hbarApprovals.length > 0) {
-      const hbarApproval = draft.transaction.hbarApprovals[0];
+    if (draftTransaction.hbarApprovals.length > 0) {
+      const hbarApproval = draftTransaction.hbarApprovals[0];
 
       ownerData.accountId.value = hbarApproval.ownerAccountId?.toString() || '';
       spenderData.accountId.value = hbarApproval.spenderAccountId?.toString() || '';
@@ -112,8 +119,8 @@ function createTransaction() {
 }
 
 /* Hooks */
-onMounted(() => {
-  handleLoadFromDraft();
+onMounted(async () => {
+  await handleLoadFromDraft();
 });
 
 /* Misc */

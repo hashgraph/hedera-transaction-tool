@@ -22,6 +22,7 @@ import { flattenKeyList } from '@renderer/services/keyPairService';
 
 import { isHederaSpecialFileId } from '@renderer/../main/shared/utils/hederaSpecialFiles';
 import { getDateTimeLocalInputValue } from '@renderer/utils';
+import { getTransactionFromBytes } from '@renderer/utils/transactions';
 import { isAccountId, isPublicKey } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -147,35 +148,38 @@ const handleCreate = async e => {
   }
 };
 
-const handleLoadFromDraft = () => {
-  const draft = getDraft<FileUpdateTransaction>(route.query.draftId?.toString() || '');
+const handleLoadFromDraft = async () => {
+  if (!route.query.draftId) return;
+
+  const draft = await getDraft(route.query.draftId?.toString() || '');
+  const draftTransaction = getTransactionFromBytes<FileUpdateTransaction>(draft.transactionBytes);
 
   if (draft) {
-    transaction.value = draft.transaction;
+    transaction.value = draftTransaction;
 
-    if (draft.transaction.transactionId) {
+    if (draftTransaction.transactionId) {
       payerData.accountId.value =
-        draft.transaction.transactionId.accountId?.toString() || payerData.accountId.value;
+        draftTransaction.transactionId.accountId?.toString() || payerData.accountId.value;
     }
 
-    if (draft.transaction.maxTransactionFee) {
-      maxTransactionFee.value = draft.transaction.maxTransactionFee.toBigNumber().toNumber();
+    if (draftTransaction.maxTransactionFee) {
+      maxTransactionFee.value = draftTransaction.maxTransactionFee.toBigNumber().toNumber();
     }
 
-    if (draft.transaction.keys) {
-      newKeys.value = draft.transaction.keys
+    if (draftTransaction.keys) {
+      newKeys.value = draftTransaction.keys
         .map(k => flattenKeyList(k).map(pk => pk.toStringRaw()))
         .flat();
     }
 
-    if (draft.transaction.fileId) {
-      fileId.value = draft.transaction.fileId.toString();
+    if (draftTransaction.fileId) {
+      fileId.value = draftTransaction.fileId.toString();
     }
 
-    memo.value = draft.transaction.fileMemo || '';
+    memo.value = draftTransaction.fileMemo || '';
 
-    if (draft.transaction.expirationTime) {
-      expirationTimestamp.value = draft.transaction.expirationTime;
+    if (draftTransaction.expirationTime) {
+      expirationTimestamp.value = draftTransaction.expirationTime;
     }
   }
 };
@@ -207,7 +211,7 @@ onMounted(async () => {
     fileId.value = route.query.fileId.toString();
   }
 
-  handleLoadFromDraft();
+  await handleLoadFromDraft();
 });
 
 /* Watchers */

@@ -10,6 +10,7 @@ import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
+import { getTransactionFromBytes } from '@renderer/utils/transactions';
 import { isAccountId } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -58,23 +59,28 @@ const handleCreate = async e => {
   }
 };
 
-const handleLoadFromDraft = () => {
-  const draft = getDraft<AccountDeleteTransaction>(route.query.draftId?.toString() || '');
+const handleLoadFromDraft = async () => {
+  if (!route.query.draftId) return;
+
+  const draft = await getDraft(route.query.draftId?.toString() || '');
+  const draftTransaction = getTransactionFromBytes<AccountDeleteTransaction>(
+    draft.transactionBytes,
+  );
 
   if (draft) {
-    transaction.value = draft.transaction;
+    transaction.value = draftTransaction;
 
-    if (draft.transaction.transactionId) {
+    if (draftTransaction.transactionId) {
       payerData.accountId.value =
-        draft.transaction.transactionId.accountId?.toString() || payerData.accountId.value;
+        draftTransaction.transactionId.accountId?.toString() || payerData.accountId.value;
     }
 
-    if (draft.transaction.maxTransactionFee) {
-      maxTransactionFee.value = draft.transaction.maxTransactionFee.toBigNumber().toNumber();
+    if (draftTransaction.maxTransactionFee) {
+      maxTransactionFee.value = draftTransaction.maxTransactionFee.toBigNumber().toNumber();
     }
 
-    accountData.accountId.value = draft.transaction.accountId?.toString() || '';
-    transferAccountData.accountId.value = draft.transaction.transferAccountId?.toString() || '';
+    accountData.accountId.value = draftTransaction.accountId?.toString() || '';
+    transferAccountData.accountId.value = draftTransaction.transferAccountId?.toString() || '';
   }
 };
 
@@ -98,12 +104,12 @@ function createTransaction() {
 }
 
 /* Hooks */
-onMounted(() => {
+onMounted(async () => {
   if (route.query.accountId) {
     accountData.accountId.value = route.query.accountId.toString();
   }
 
-  handleLoadFromDraft();
+  await handleLoadFromDraft();
 });
 
 /* Misc */
