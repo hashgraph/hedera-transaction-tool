@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { AccountId, Hbar, AccountDeleteTransaction, Key, Transaction } from '@hashgraph/sdk';
+import { Hbar, AccountDeleteTransaction, Key, Transaction } from '@hashgraph/sdk';
 
 import { useRoute } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
@@ -45,6 +45,18 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
+    if (!isAccountId(payerData.accountId.value)) {
+      throw Error('Invalid Payer ID');
+    }
+
+    if (!isAccountId(accountData.accountId.value)) {
+      throw Error('Invalid Account ID');
+    }
+
+    if (!isAccountId(transferAccountData.accountId.value)) {
+      throw Error('Invalid Transfer Account ID');
+    }
+
     transaction.value = createTransaction();
 
     const requiredSignatures = payerData.keysFlattened.value.concat(
@@ -87,16 +99,18 @@ const handleLoadFromDraft = async () => {
 /* Functions */
 function createTransaction() {
   const transaction = new AccountDeleteTransaction()
-    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(new Hbar(maxTransactionFee.value))
-    .setNodeAccountIds([new AccountId(3)]);
+    .setMaxTransactionFee(new Hbar(maxTransactionFee.value));
 
-  if (accountData.accountId.value && isAccountId(accountData.accountId.value)) {
+  if (isAccountId(payerData.accountId.value)) {
+    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
+  }
+
+  if (isAccountId(accountData.accountId.value)) {
     transaction.setAccountId(accountData.accountId.value);
   }
 
-  if (transferAccountData.accountId.value && isAccountId(transferAccountData.accountId.value)) {
+  if (isAccountId(transferAccountData.accountId.value)) {
     transaction.setTransferAccountId(transferAccountData.accountId.value);
   }
 
