@@ -1,8 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-
-import { getTransactionType } from '@renderer/utils/transactions';
-
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import { addDraft } from '@renderer/services/transactionDraftsService';
 
@@ -11,11 +7,11 @@ const props = withDefaults(
   defineProps<{
     handleSign?: () => void;
     handleSaveDraft?: () => void;
+    getTransactionBytes?: () => Uint8Array;
     createRequirements?: any;
     headingText?: string;
     buttonText?: string;
     buttonType?: string;
-    transactionBytes?: Uint8Array;
   }>(),
   {
     buttonText: 'Sign & Submit',
@@ -23,13 +19,13 @@ const props = withDefaults(
   },
 );
 
-const type = computed(() => props.transactionBytes && getTransactionType(props.transactionBytes));
-
 /* Handlers */
 const saveDraft = () => {
-  if (!props.transactionBytes || !type.value) return;
+  if (!props.getTransactionBytes) return;
 
-  addDraft(props.transactionBytes);
+  const transactionBytes = props.getTransactionBytes();
+
+  addDraft(transactionBytes);
 };
 </script>
 <template>
