@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, reactive, watch, onMounted } from 'vue';
-import { AccountId, AccountUpdateTransaction, KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
-
-import useNetworkStore from '@renderer/stores/storeNetwork';
+import {
+  AccountId,
+  AccountUpdateTransaction,
+  KeyList,
+  PublicKey,
+  Hbar,
+  Transaction,
+} from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
@@ -26,7 +31,6 @@ import TransactionIdControls from '@renderer/components/Transaction/TransactionI
 /* Stores */
 const payerData = useAccountId();
 const accountData = useAccountId();
-const networkStore = useNetworkStore();
 
 /* Composables */
 const route = useRoute();
@@ -35,7 +39,7 @@ const toast = useToast();
 /* State */
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
-const transaction = ref<AccountUpdateTransaction | null>(null);
+const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref(2);
 
@@ -58,6 +62,7 @@ const newOwnerKeyText = ref('');
 const newOwnerKeys = ref<string[]>([]);
 
 const isKeyStructureModalShown = ref(false);
+const isExecuted = ref(false);
 
 /* Computed */
 const newOwnerKeyList = computed(
@@ -79,15 +84,17 @@ const handleCreate = async e => {
       throw Error('Invalid Account');
     }
 
-    createTransaction();
-    transaction.value?.freezeWith(networkStore.client);
+    transaction.value = createTransaction();
 
     const requiredSignatures = payerData.keysFlattened.value.concat(
       accountData.keysFlattened.value,
       newOwnerKeys.value,
     );
+
     await transactionProcessor.value?.process(requiredSignatures);
   } catch (err: any) {
+    console.log(err);
+
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
@@ -131,22 +138,21 @@ const handleLoadFromDraft = () => {
 
 /* Functions */
 function createTransaction() {
-  transaction.value = new AccountUpdateTransaction()
+  const transaction = new AccountUpdateTransaction()
     .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(new Hbar(maxTransactionFee.value))
-    .setNodeAccountIds([new AccountId(3)])
     .setReceiverSignatureRequired(newAccountData.receiverSignatureRequired)
     .setDeclineStakingReward(!newAccountData.acceptStakingAwards)
     .setMaxAutomaticTokenAssociations(Number(newAccountData.maxAutomaticTokenAssociations))
     .setAccountMemo(newAccountData.memo || '');
 
-  accountData.accountId.value && transaction.value.setAccountId(accountData.accountId.value);
-  newOwnerKeys.value.length > 0 && transaction.value.setKey(newOwnerKeyList.value);
+  accountData.accountId.value && transaction.setAccountId(accountData.accountId.value);
+  newOwnerKeys.value.length > 0 && transaction.setKey(newOwnerKeyList.value);
 
   if (!newAccountData.stakedAccountId && !newAccountData.stakedNodeId) {
-    transaction.value.clearStakedAccountId();
-    transaction.value.clearStakedNodeId();
+    transaction.clearStakedAccountId();
+    transaction.clearStakedNodeId();
   }
 
   if (
@@ -155,7 +161,7 @@ function createTransaction() {
     !newAccountData.stakedNodeId &&
     accountData.accountInfo.value?.stakedAccountId?.toString() !== newAccountData.stakedAccountId
   ) {
-    transaction.value.setStakedAccountId(newAccountData.stakedAccountId);
+    transaction.setStakedAccountId(newAccountData.stakedAccountId);
   }
 
   if (
@@ -164,10 +170,10 @@ function createTransaction() {
     accountData.accountInfo.value?.stakedNodeId?.toString() !==
       newAccountData.stakedNodeId.toString()
   ) {
-    transaction.value.setStakedNodeId(Number(newAccountData.stakedNodeId));
+    transaction.setStakedNodeId(Number(newAccountData.stakedNodeId));
   }
 
-  return transaction.value.toBytes();
+  return transaction;
 }
 
 /* Hooks */
@@ -213,7 +219,8 @@ const columnClass = 'col-4 col-xxxl-3';
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
-      :get-transaction-bytes="createTransaction"
+      :get-transaction-bytes="() => createTransaction().toBytes()"
+      :is-executed="isExecuted"
       :create-requirements="!accountData.accountId.value || !payerData.isValid.value"
       heading-text="Update Account Transaction"
     />
@@ -356,6 +363,7 @@ const columnClass = 'col-4 col-xxxl-3';
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
     :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
+    :on-executed="() => (isExecuted = true)"
   >
     <template #successHeading>Account updated successfully</template>
     <template #successContent>
