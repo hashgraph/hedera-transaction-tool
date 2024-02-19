@@ -254,7 +254,8 @@ async function executeTransaction() {
     transactionResult.value = await execute(
       transaction.value.toBytes().toString(),
       network.network,
-      network.customNetworkSettings,
+      network.client.network,
+      network.client.mirrorNetwork[0],
     );
 
     status = transactionResult.value.receipt.status._code;
@@ -414,7 +415,8 @@ async function executeFileTransactions(
       const result = await execute(
         tx.toBytes().toString(),
         network.network,
-        network.customNetworkSettings,
+        network.client.network,
+        network.client.mirrorNetwork[0],
       );
 
       if (i === 0) firstTransactionResult = result;

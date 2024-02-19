@@ -15,8 +15,17 @@ export default () => {
   /* Transactions */
 
   // Execute transaction
-  ipcMain.handle(createChannelName('executeTransaction'), (_e, transactionData: string) =>
-    executeTransaction(transactionData),
+  ipcMain.handle(
+    createChannelName('executeTransaction'),
+    (
+      _e,
+      transactionBytes: string,
+      networkName: 'mainnet' | 'testnet' | 'previewnet' | 'custom',
+      network: {
+        [key: string]: string;
+      },
+      mirrorNetwork: string,
+    ) => executeTransaction(transactionBytes, networkName, network, mirrorNetwork),
   );
 
   // Execute query

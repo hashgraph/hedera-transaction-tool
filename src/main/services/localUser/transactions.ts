@@ -11,21 +11,38 @@ import {
   encodeHederaSpecialFile,
 } from '@main/shared/utils/hederaSpecialFiles';
 
-// Executes a transaction
-export const executeTransaction = async (transactionData: string) => {
-  const tx: {
-    transactionBytes: string;
-    network: 'mainnet' | 'testnet' | 'previewnet' | 'custom';
-    customNetworkSettings: {
-      consensusNodeEndpoint: string;
-      mirrorNodeGRPCEndpoint: string;
-      mirrorNodeRESTAPIEndpoint: string;
-      nodeAccountId: string;
-    } | null;
-  } = JSON.parse(transactionData);
-  const client = getClient();
+const getMirrorNetwork = (network: string) => {
+  const mirrorNetworks = {
+    MAINNET: ['mainnet-public.mirrornode.hedera.com:443'],
+    TESTNET: ['testnet.mirrornode.hedera.com:443'],
+    PREVIEWNET: ['previewnet.mirrornode.hedera.com:443'],
+  };
+  switch (network) {
+    case 'mainnet':
+      return mirrorNetworks.MAINNET;
+    case 'testnet':
+      return mirrorNetworks.TESTNET;
+    case 'previewnet':
+      return mirrorNetworks.PREVIEWNET;
+    default:
+      throw new Error(`unknown network name: ${name}`);
+  }
+};
 
-  const bytesArray = getNumberArrayFromString(tx.transactionBytes);
+// Executes a transaction
+export const executeTransaction = async (
+  transactionBytes: string,
+  networkName: 'mainnet' | 'testnet' | 'previewnet' | 'custom',
+  network: {
+    [key: string]: string;
+  },
+  mirrorNetwork: string,
+) => {
+  const client = Client.forNetwork(network, {
+    network: network,
+  }).setMirrorNetwork(mirrorNetwork ? mirrorNetwork : getMirrorNetwork(networkName));
+
+  const bytesArray = getNumberArrayFromString(transactionBytes);
 
   const transaction = Transaction.fromBytes(Uint8Array.from(bytesArray));
 
@@ -37,31 +54,6 @@ export const executeTransaction = async (transactionData: string) => {
     return { response, receipt, transactionId: response.transactionId.toString() };
   } catch (error: any) {
     throw new Error(JSON.stringify({ status: error.status._code, message: error.message }));
-  }
-
-  function getClient() {
-    switch (tx.network) {
-      case 'mainnet':
-        return Client.forMainnet();
-      case 'testnet':
-        return Client.forTestnet();
-      case 'previewnet':
-        return Client.forPreviewnet();
-      case 'custom':
-        if (tx.customNetworkSettings) {
-          const node = {
-            [tx.customNetworkSettings.consensusNodeEndpoint]:
-              tx.customNetworkSettings.nodeAccountId,
-          };
-
-          return Client.forNetwork(node as any).setMirrorNetwork(
-            tx.customNetworkSettings.mirrorNodeGRPCEndpoint,
-          );
-        }
-        throw Error('Settings for custom network are required');
-      default:
-        throw Error('Network not supported');
-    }
   }
 };
 

@@ -76,12 +76,21 @@ export const getTransactionSignatures = async (
 /* Executes the transaction in the main process */
 export const execute = async (
   transactionBytes: string,
-  network: Network,
-  customNetworkSettings: CustomNetworkSettings | null,
+  networkName: Network,
+  network: {
+    [key: string]: string | AccountId;
+  },
+  mirrorNetwork?: string,
 ) => {
   try {
+    Object.keys(network).forEach(key => {
+      network[key] = network[key].toString();
+    });
     return await window.electronAPI.transactions.executeTransaction(
-      JSON.stringify({ transactionBytes, network, customNetworkSettings }),
+      transactionBytes,
+      networkName,
+      network,
+      mirrorNetwork,
     );
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Transaction Failed'));
