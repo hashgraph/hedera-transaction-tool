@@ -166,10 +166,10 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
         >
         <ul class="dropdown-menu w-100 mt-3">
           <li class="dropdown-item cursor-pointer" @click="isImportED25519KeyModalShown = true">
-            <span class="text-small text-bold">ED25519 Key</span>
+            <span class="text-small">ED25519 Key</span>
           </li>
           <li class="dropdown-item cursor-pointer mt-3" @click="isImportECDSAKeyModalShown = true">
-            <span class="text-small text-bold">ECDSA Key</span>
+            <span class="text-small">ECDSA Key</span>
           </li>
         </ul>
       </div>
