@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue';
-import { AccountId, FileAppendTransaction, KeyList, PublicKey } from '@hashgraph/sdk';
-
-import useNetworkStore from '@renderer/stores/storeNetwork';
+import { AccountId, FileAppendTransaction, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
@@ -16,12 +14,9 @@ import { isPublicKey, isAccountId } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
+import FileTransactionProcessor from '@renderer/components/Transaction/FileTransactionProcessor.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
-
-/* Stores */
-const networkStore = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
@@ -29,9 +24,9 @@ const route = useRoute();
 const payerData = useAccountId();
 
 /* State */
-const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
+const transactionProcessor = ref<typeof FileTransactionProcessor | null>(null);
 
-const transaction = ref<FileAppendTransaction | null>(null);
+const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref(2);
 const fileId = ref('');
@@ -46,6 +41,8 @@ const content = ref('');
 
 const chunkSize = ref(2048);
 const chunksAmount = ref<number | null>(null);
+
+const isExecuted = ref(false);
 
 /* Getters */
 const keyList = computed(
@@ -96,8 +93,7 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    createTransaction();
-    transaction.value?.freezeWith(networkStore.client);
+    transaction.value = createTransaction();
 
     await transactionProcessor.value?.process(
       payerData.keysFlattened.value.concat(signatureKeys.value),
@@ -136,7 +132,7 @@ const handleLoadFromDraft = () => {
 
 /* Functions */
 function createTransaction() {
-  transaction.value = new FileAppendTransaction()
+  const transaction = new FileAppendTransaction()
     .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
     .setTransactionValidDuration(180)
     .setNodeAccountIds([new AccountId(3)])
@@ -145,10 +141,10 @@ function createTransaction() {
     .setContents(fileBuffer.value ? fileBuffer.value : new TextEncoder().encode(content.value));
 
   if (fileId.value && isAccountId(fileId.value)) {
-    transaction.value.setFileId(fileId.value);
+    transaction.setFileId(fileId.value);
   }
 
-  return transaction.value.toBytes();
+  return transaction;
 }
 
 /* Hooks */
@@ -165,7 +161,8 @@ const columnClass = 'col-4 col-xxxl-3';
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
-      :get-transaction-bytes="createTransaction"
+      :get-transaction-bytes="() => createTransaction().toBytes()"
+      :is-executed="isExecuted"
       :create-requirements="keyList._keys.length === 0 || !payerData.isValid.value"
       heading-text="Append File Transaction"
     />
@@ -263,10 +260,15 @@ const columnClass = 'col-4 col-xxxl-3';
     </div>
   </form>
 
-  <TransactionProcessor
+  <FileTransactionProcessor
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
-    :on-executed="(_result, _chunkAmount) => (chunksAmount = _chunkAmount || null)"
+    :on-executed="
+      (_result, _chunkAmount) => {
+        isExecuted = true;
+        chunksAmount = _chunkAmount || null;
+      }
+    "
     :on-close-success-modal-click="
       () => {
         payerData.accountId.value = '';
@@ -294,5 +296,5 @@ const columnClass = 'col-4 col-xxxl-3';
         <span>{{ chunksAmount }}</span>
       </p>
     </template>
-  </TransactionProcessor>
+  </FileTransactionProcessor>
 </template>
