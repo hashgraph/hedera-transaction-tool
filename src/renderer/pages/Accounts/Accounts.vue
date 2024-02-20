@@ -280,7 +280,7 @@ const handleChangeNickname = async () => {
                   }}
 
                   <span
-                    class="bi bi-pencil-square text-primary ms-1"
+                    class="bi bi-pencil-square text-primary ms-1 cursor-pointer"
                     @click="handleStartNicknameEdit"
                   ></span>
                 </p>

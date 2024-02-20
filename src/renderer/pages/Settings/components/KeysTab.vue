@@ -420,7 +420,7 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
           <AppCustomIcon :name="'bin'" style="height: 160px" />
         </div>
         <form @submit="handleDelete">
-          <h3 class="text-center text-title text-bold mt-3">Delete key key pair</h3>
+          <h3 class="text-center text-title text-bold mt-3">Delete key pair</h3>
           <p
             v-if="keyPairsStore.keyPairs.filter(item => item.secret_hash != null).length === 1"
             class="text-center mt-4"
