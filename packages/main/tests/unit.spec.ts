@@ -1,6 +1,6 @@
 import type {MockedClass, MockedObject} from 'vitest';
 import {beforeEach, expect, test, vi} from 'vitest';
-import {restoreOrCreateWindow} from '../src/mainWindow';
+import {restoreOrCreateWindow} from '../src/windows/mainWindow';
 
 import {BrowserWindow} from 'electron';
 
@@ -28,7 +28,56 @@ vi.mock('electron', () => {
     },
   };
 
-  return {BrowserWindow: bw, app};
+  const screen: Pick<Electron.Screen, 'getPrimaryDisplay'> = {
+    getPrimaryDisplay() {
+      const display: Electron.Display = {
+        accelerometerSupport: 'unknown',
+        bounds: {
+          x: 1,
+          y: 2,
+          width: 1000,
+          height: 1000,
+        },
+        colorDepth: 2,
+        colorSpace: '2',
+        depthPerComponent: 2,
+        detected: true,
+        displayFrequency: 2,
+        id: 2,
+        internal: true,
+        label: 'Main',
+        maximumCursorSize: {
+          height: 2,
+          width: 1,
+        },
+        monochrome: true,
+        nativeOrigin: {
+          x: 1,
+          y: 2,
+        },
+        rotation: 2,
+        scaleFactor: 2,
+        size: {
+          width: 1000,
+          height: 1000,
+        },
+        touchSupport: 'unknown',
+        workArea: {
+          x: 1,
+          y: 2,
+          width: 1000,
+          height: 1000,
+        },
+        workAreaSize: {
+          width: 1000,
+          height: 1000,
+        },
+      };
+      return display;
+    },
+  };
+
+  return {BrowserWindow: bw, app, screen};
 });
 
 beforeEach(() => {
@@ -40,6 +89,7 @@ test('Should create a new window', async () => {
   expect(mock.instances).toHaveLength(0);
 
   await restoreOrCreateWindow();
+
   expect(mock.instances).toHaveLength(1);
   const instance = mock.instances[0] as MockedObject<BrowserWindow>;
   const loadURLCalls = instance.loadURL.mock.calls.length;
@@ -55,7 +105,6 @@ test('Should create a new window', async () => {
 test('Should restore an existing window', async () => {
   const {mock} = vi.mocked(BrowserWindow);
 
-  // Create a window and minimize it.
   await restoreOrCreateWindow();
   expect(mock.instances).toHaveLength(1);
   const appWindow = vi.mocked(mock.instances[0]);
@@ -69,7 +118,6 @@ test('Should restore an existing window', async () => {
 test('Should create a new window if the previous one was destroyed', async () => {
   const {mock} = vi.mocked(BrowserWindow);
 
-  // Create a window and destroy it.
   await restoreOrCreateWindow();
   expect(mock.instances).toHaveLength(1);
   const appWindow = vi.mocked(mock.instances[0]);
