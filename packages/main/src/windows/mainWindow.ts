@@ -28,7 +28,9 @@ export default async function createWindow() {
     if (mainWindow) {
       sendUpdateThemeEventTo(mainWindow);
     }
+  });
 
+  mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
   });
 
