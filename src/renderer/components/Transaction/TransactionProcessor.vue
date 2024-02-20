@@ -92,11 +92,12 @@ const localPublicKeysReq = computed(() =>
 const requiredLocalKeyPairs = computed(() =>
   keyPairs.keyPairs.filter(kp => localPublicKeysReq.value.includes(kp.public_key)),
 );
-const type = computed(() =>
-  transaction.value?.constructor.name
-    .slice(transaction.value?.constructor.name.startsWith('_') ? 1 : 0)
-    .split(/(?=[A-Z])/)
-    .join(' '),
+const type = computed(
+  () =>
+    transaction.value?.constructor.name
+      .slice(transaction.value?.constructor.name.startsWith('_') ? 1 : 0)
+      .split(/(?=[A-Z])/)
+      .join(' '),
 );
 
 /* Handlers */
