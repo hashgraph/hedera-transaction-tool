@@ -41,3 +41,11 @@ export const comparePasswords = async (userId: string, password: string) => {
     throw Error(getMessageFromIPCError(err, 'User not exists'));
   }
 };
+
+export const changePassword = async (userId: string, oldPassword: string, newPassword: string) => {
+  try {
+    return await window.electronAPI.localUser.changePassword(userId, oldPassword, newPassword);
+  } catch (err: any) {
+    throw Error(getMessageFromIPCError(err, 'Failed to change password'));
+  }
+};

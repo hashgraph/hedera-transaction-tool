@@ -191,7 +191,7 @@ onUnmounted(() => {
 
       <!-- Step 3 -->
       <form v-else-if="step === 2" @submit="handleFinish">
-        <h1 class="text-center">Enter your recovery phrase</h1>
+        <h1 class="text-display text-bold text-center">Enter your recovery phrase</h1>
         <div class="mt-8">
           <Import :handle-continue="handleFinish" :secret-hashes="user.data.secretHashes" />
           <AppButton
@@ -222,10 +222,9 @@ onUnmounted(() => {
               Key at index {{ index }} is already restored.
             </div>
             <AppButton
-              size="large"
               type="submit"
               color="primary"
-              class="mt-5 d-block w-100"
+              class="mt-4 d-block w-100"
               :disabled="index < 0"
               >Continue</AppButton
             >
@@ -240,9 +239,7 @@ onUnmounted(() => {
         <div class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4">
           <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
             <AppInput v-model="nickname" :filled="true" placeholder="Enter nickname" />
-            <AppButton size="large" type="submit" color="primary" class="mt-5 d-block w-100"
-              >Continue</AppButton
-            >
+            <AppButton type="submit" color="primary" class="mt-4 d-block w-100">Continue</AppButton>
           </div>
         </div>
       </form>

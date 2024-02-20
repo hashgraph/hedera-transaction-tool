@@ -11,6 +11,7 @@ import { getAll, remove } from '@renderer/services/filesService';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -197,10 +198,10 @@ onMounted(async () => {
       <AppModal v-model:show="isUnlinkFileModalShown" class="common-modal">
         <div class="modal-body">
           <i class="bi bi-x-lg cursor-pointer" @click="isUnlinkFileModalShown = false"></i>
-          <div class="text-center mt-5">
-            <i class="bi bi-trash large-icon"></i>
+          <div class="text-center">
+            <AppCustomIcon :name="'bin'" style="height: 160px" />
           </div>
-          <h3 class="text-center text-title text-bold mt-5">Unlink file</h3>
+          <h3 class="text-center text-title text-bold mt-3">Unlink file</h3>
           <p class="text-center text-small text-secondary mt-4">
             Are you sure you want to remove this file from your file list?
           </p>

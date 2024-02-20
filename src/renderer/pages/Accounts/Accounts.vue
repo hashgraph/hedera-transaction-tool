@@ -16,6 +16,7 @@ import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 import { getFormattedDateFromTimestamp } from '@renderer/utils/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 
@@ -279,7 +280,7 @@ const handleChangeNickname = async () => {
                   }}
 
                   <span
-                    class="bi bi-pencil-square text-primary ms-1"
+                    class="bi bi-pencil-square text-primary ms-1 cursor-pointer"
                     @click="handleStartNicknameEdit"
                   ></span>
                 </p>
@@ -474,10 +475,10 @@ const handleChangeNickname = async () => {
               style="line-height: 16px"
               @click="isUnlinkAccountModalShown = false"
             ></i>
-            <div class="text-center mt-5">
-              <i class="bi bi-trash large-icon" style="line-height: 16px"></i>
+            <div class="text-center">
+              <AppCustomIcon :name="'bin'" style="height: 160px" />
             </div>
-            <h3 class="text-center text-title text-bold mt-5">Unlink account</h3>
+            <h3 class="text-center text-title text-bold mt-3">Unlink account</h3>
             <p class="text-center text-small text-secondary mt-4">
               Are you sure you want to remove this Account from your Account list?
             </p>

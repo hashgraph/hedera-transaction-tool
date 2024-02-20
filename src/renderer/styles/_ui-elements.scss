@@ -66,6 +66,13 @@
   }
 }
 
+.btn-group-container {
+  background-color: var(--#{$prefix}btn-group-container-bg-color);
+  border-radius: $border-radius;
+  padding: 8px;
+  box-shadow: 1px 1px 1px 0px #00000012 inset;
+}
+
 /* Forms */
 .form-control {
   &.is-fill {
