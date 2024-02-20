@@ -92,10 +92,9 @@ const handleDelete = async e => {
 
     if (keyPairIdToDelete.value) {
       await deleteKeyPair(keyPairIdToDelete.value);
+      isDeleteModalShown.value = false;
       await keyPairsStore.refetch();
     }
-
-    isDeleteModalShown.value = false;
   } catch (err: any) {
     toast.error('Failed to delete key pair', { position: 'bottom-right' });
   }
@@ -386,17 +385,6 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
             used to set up the Transaction Tool. If you choose to proceed, you will have to go
             through creating or importing a recovery phrase again. Do you wish to continue?
           </p>
-          <div class="form-group mt-4">
-            <label class="form-label">Public key</label>
-            <AppInput
-              :value="
-                keyPairsStore.keyPairs.find(kp => kp.id === keyPairIdToDelete)?.public_key || ''
-              "
-              :filled="true"
-              size="small"
-              readonly
-            />
-          </div>
           <div class="d-grid mt-5">
             <AppButton type="submit" color="primary">Delete</AppButton>
           </div>
