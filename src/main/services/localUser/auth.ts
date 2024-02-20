@@ -1,6 +1,7 @@
 import { generateUUID, hash } from '@main/utils/crypto';
 
 import { getPrismaClient } from '@main/db';
+import { changeDecryptionPassword } from './keyPairs';
 
 export const register = async (email: string, password: string) => {
   const prisma = getPrismaClient();
@@ -46,9 +47,9 @@ export const deleteUser = async (email: string) => {
   });
 };
 
-export const getUsersCount = () => {
+export const getUsersCount = async () => {
   const prisma = getPrismaClient();
-  return prisma.user.count();
+  return await prisma.user.count();
 };
 
 export const comparePasswords = async (userId: string, password: string) => {
@@ -69,4 +70,25 @@ export const comparePasswords = async (userId: string, password: string) => {
   } else {
     return false;
   }
+};
+
+export const changePassword = async (userId: string, oldPassword: string, newPassword: string) => {
+  const prisma = getPrismaClient();
+
+  const isOldCorrect = await comparePasswords(userId, oldPassword);
+
+  if (isOldCorrect) {
+    prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        password: hash(newPassword).toString('hex'),
+      },
+    });
+  } else {
+    throw new Error('Incorrect current password');
+  }
+
+  await changeDecryptionPassword(userId, oldPassword, newPassword);
 };

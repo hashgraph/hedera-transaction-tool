@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron';
 
 import {
+  changePassword,
   comparePasswords,
   getUsersCount,
   login,
@@ -34,5 +35,12 @@ export default () => {
   // Check if user's password matches a given one
   ipcMain.handle(createChannelName('comparePasswords'), (_e, userId: string, password: string) =>
     comparePasswords(userId, password),
+  );
+
+  // Change user's password
+  ipcMain.handle(
+    createChannelName('changePassword'),
+    (_e, userId: string, oldPassword: string, newPassword: string) =>
+      changePassword(userId, oldPassword, newPassword),
   );
 };

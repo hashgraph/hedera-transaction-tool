@@ -110,6 +110,8 @@ export const electronAPI = {
     usersCount: (): Promise<number> => ipcRenderer.invoke('localUser:usersCount'),
     comparePasswords: (userId: string, password: string): Promise<boolean> =>
       ipcRenderer.invoke('localUser:comparePasswords', userId, password),
+    changePassword: (userId: string, oldPassword: string, newPassword: string): Promise<void> =>
+      ipcRenderer.invoke('localUser:changePassword', userId, oldPassword, newPassword),
   },
   transactions: {
     executeTransaction: (

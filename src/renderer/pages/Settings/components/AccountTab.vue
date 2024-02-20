@@ -24,12 +24,13 @@ const toast = useToast();
 const currentPassword = ref('');
 const newPassword = ref('');
 
+const isConfirmModalShown = ref(false);
 const isSuccessModalShown = ref(false);
 
 /* Handlers */
 const handleChangePassword = async e => {
   e.preventDefault();
-
+  isConfirmModalShown.value = false;
   try {
     if (!user.data.isLoggedIn) {
       throw new Error('User is not logged in');
@@ -49,29 +50,64 @@ const handleChangePassword = async e => {
 </script>
 <template>
   <div>
-    <form class="w-50 py-4 px-5 border" @submit="handleChangePassword">
-      <div class="form-group">
-        <label class="form-label">Current Password</label>
+    <form
+      class="w-50 p-4 border rounded"
+      @submit="
+        e => {
+          e.preventDefault();
+          isConfirmModalShown = true;
+        }
+      "
+    >
+      <h3 class="text-main">Password</h3>
+      <div class="form-group mt-4">
+        <label class="form-label">Current Password <span class="text-danger">*</span></label>
         <AppInput
           v-model="currentPassword"
           type="password"
-          placeholder="Enter your current password"
+          placeholder="Enter Current Password"
           :filled="true"
-          class="py-3"
         />
       </div>
       <div class="mt-4 form-group">
-        <label class="form-label" placeholder="Enter new password">New Password</label>
+        <label class="form-label">New Password <span class="text-danger">*</span></label>
         <AppInput
           v-model="newPassword"
           type="password"
-          placeholder="Enter new password"
+          placeholder="Enter New Password"
           :filled="true"
-          class="py-3"
         />
       </div>
-      <AppButton color="secondary" type="submit" class="mt-4">Change Password</AppButton>
+      <div class="d-grid">
+        <AppButton color="primary" type="submit" class="mt-4">Change Password</AppButton>
+      </div>
     </form>
+    <AppModal v-model:show="isConfirmModalShown" class="common-modal">
+      <div class="modal-body">
+        <i
+          class="bi bi-x-lg d-inline-block cursor-pointer"
+          @click="isConfirmModalShown = false"
+        ></i>
+        <div class="text-center">
+          <AppCustomIcon :name="'questionMark'" style="height: 160px" />
+        </div>
+        <h3 class="text-center text-title text-bold mt-4">Change Password?</h3>
+        <p class="text-center text-small text-secondary mt-4">
+          Are you sure you want to change your password
+        </p>
+        <hr class="separator my-5" />
+        <div class="row mt-4">
+          <div class="col-6">
+            <AppButton class="w-100" @click="isConfirmModalShown = false">Cancel</AppButton>
+          </div>
+          <div class="col-6">
+            <AppButton color="primary" class="w-100" @click="handleChangePassword"
+              >Change</AppButton
+            >
+          </div>
+        </div>
+      </div>
+    </AppModal>
     <AppModal v-model:show="isSuccessModalShown" class="common-modal">
       <form
         class="p-5"
