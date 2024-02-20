@@ -37,7 +37,7 @@ const isDecryptedModalShown = ref(false);
 const isDeleteModalShown = ref(false);
 const isImportECDSAKeyModalShown = ref(false);
 const isImportED25519KeyModalShown = ref(false);
-const decryptedKey = ref('');
+const decryptedKeys = ref<{ decrypted: string | null; publicKey: string }[]>([]);
 const publicKeysPrivateKeyToDecrypt = ref('');
 const keyPairIdToDelete = ref<string | null>(null);
 const userPassword = ref('');
@@ -67,13 +67,35 @@ const handleDecrypt = async e => {
       throw Error('No user selected');
     }
 
-    decryptedKey.value = await decryptPrivateKey(
-      user.data.id,
-      userPassword.value,
-      publicKeysPrivateKeyToDecrypt.value,
+    const keyFromDecrypted = decryptedKeys.value.find(
+      kp => kp.publicKey === publicKeysPrivateKeyToDecrypt.value,
     );
+
+    if (!keyFromDecrypted) {
+      const decryptedKey = await decryptPrivateKey(
+        user.data.id,
+        userPassword.value,
+        publicKeysPrivateKeyToDecrypt.value,
+      );
+
+      decryptedKeys.value.push({
+        publicKey: publicKeysPrivateKeyToDecrypt.value,
+        decrypted: decryptedKey,
+      });
+    }
+
+    isDecryptedModalShown.value = false;
   } catch (err: any) {
     toast.error('Failed to decrypt private key', { position: 'bottom-right' });
+  }
+};
+
+const handleHideDecryptedKey = (publicKey: string) => {
+  const keyFromDecryptedIndex = decryptedKeys.value.findIndex(kp => kp.publicKey === publicKey);
+
+  if (keyFromDecryptedIndex >= 0) {
+    decryptedKeys.value.splice(keyFromDecryptedIndex, 1);
+    decryptedKeys.value = [...decryptedKeys.value];
   }
 };
 
@@ -148,8 +170,6 @@ onMounted(async () => {
 /* Watchers */
 watch(isDecryptedModalShown, newVal => {
   if (!newVal) {
-    decryptedKey.value = '';
-    publicKeysPrivateKeyToDecrypt.value = '';
     userPassword.value = '';
   }
 });
@@ -241,18 +261,33 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
                 }}
               </td>
               <td>
-                <span>{{ keyPair.public_key.slice(0, 16) }}.....</span>
+                <span>{{ keyPair.public_key.slice(0, 16) }}...</span>
                 <i
                   class="bi bi-copy cursor-pointer ms-3"
                   @click="handleCopyPublicKey(keyPair.public_key)"
                 ></i>
               </td>
               <td>
-                ****************
-                <i
-                  class="bi bi-eye-slash cursor-pointer ms-3"
-                  @click="handleShowDecryptModal(keyPair.public_key)"
-                ></i>
+                <template v-if="decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)">
+                  <span
+                    >{{
+                      decryptedKeys
+                        .find(kp => kp.publicKey === keyPair.public_key)
+                        ?.decrypted?.slice(0, 13)
+                    }}...</span
+                  >
+                  <i
+                    class="bi bi-eye-slash cursor-pointer ms-3"
+                    @click="handleHideDecryptedKey(keyPair.public_key)"
+                  ></i>
+                </template>
+                <template v-else>
+                  {{ '*'.repeat(16) }}
+                  <i
+                    class="bi bi-eye cursor-pointer ms-3"
+                    @click="handleShowDecryptModal(keyPair.public_key)"
+                  ></i>
+                </template>
               </td>
               <td>
                 <AppButton
@@ -304,18 +339,33 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
                 }}
               </td>
               <td>
-                <span>{{ keyPair.public_key.slice(0, 16) }}.....</span>
+                <span>{{ keyPair.public_key.slice(0, 16) }}...</span>
                 <i
                   class="bi bi-copy cursor-pointer ms-3"
                   @click="handleCopyPublicKey(keyPair.public_key)"
                 ></i>
               </td>
               <td>
-                ****************
-                <i
-                  class="bi bi-eye-slash cursor-pointer ms-3"
-                  @click="handleShowDecryptModal(keyPair.public_key)"
-                ></i>
+                <template v-if="decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)">
+                  <span
+                    >{{
+                      decryptedKeys
+                        .find(kp => kp.publicKey === keyPair.public_key)
+                        ?.decrypted?.slice(0, 13)
+                    }}...</span
+                  >
+                  <i
+                    class="bi bi-eye-slash cursor-pointer ms-3"
+                    @click="handleHideDecryptedKey(keyPair.public_key)"
+                  ></i>
+                </template>
+                <template v-else>
+                  {{ '*'.repeat(16) }}
+                  <i
+                    class="bi bi-eye cursor-pointer ms-3"
+                    @click="handleShowDecryptModal(keyPair.public_key)"
+                  ></i>
+                </template>
               </td>
               <td>
                 <AppButton
@@ -338,10 +388,7 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
           <i class="bi bi-x-lg cursor-pointer" @click="isDecryptedModalShown = false"></i>
         </div>
         <div class="text-center mt-5">
-          <Transition name="fade" mode="out-in">
-            <i v-if="!decryptedKey" class="bi bi-lock large-icon"></i>
-            <i v-else class="bi bi-unlock large-icon"></i>
-          </Transition>
+          <i class="bi bi-unlock large-icon"></i>
         </div>
         <form @submit="handleDecrypt">
           <h3 class="text-center text-title text-bold mt-5">Decrypt private key</h3>
@@ -353,10 +400,6 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
               type="password"
               placeholder="Type your password"
             />
-          </div>
-          <div class="form-group mt-4">
-            <label class="form-label">Decrypted Private key</label>
-            <AppInput v-model="decryptedKey" :filled="true" readonly />
           </div>
           <div class="d-grid mt-5">
             <AppButton type="submit" color="primary" :disabled="userPassword.length === 0"
