@@ -136,6 +136,11 @@ const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
   }
 };
 
+const handleCopyPublicKey = (publicKey: string) => {
+  navigator.clipboard.writeText(publicKey);
+  toast.success('Public Key copied successfully', { position: 'bottom-right' });
+};
+
 /* Hooks */
 onMounted(async () => {
   await keyPairsStore.refetch();
@@ -165,11 +170,11 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
 <template>
   <div class="d-flex justify-content-between mb-3">
     <div class="btn-group-container" role="group">
-      <template v-for="tab in Tabs" :key="tab">
+      <template v-for="(tab, index) in Object.values(Tabs)" :key="tab">
         <button
           type="button"
           class="btn btn-primary"
-          :class="{ active: tab === currentTab }"
+          :class="{ active: tab === currentTab, 'ms-3': index !== 0 }"
           @click="handleTabChange(tab)"
         >
           {{ tab }}
@@ -237,10 +242,14 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
                 }}
               </td>
               <td>
-                {{ keyPair.public_key }}
+                <span>{{ keyPair.public_key.slice(0, 16) }}.....</span>
+                <i
+                  class="bi bi-copy cursor-pointer ms-3"
+                  @click="handleCopyPublicKey(keyPair.public_key)"
+                ></i>
               </td>
               <td>
-                ***********************************
+                ****************
                 <i
                   class="bi bi-eye-slash cursor-pointer ms-3"
                   @click="handleShowDecryptModal(keyPair.public_key)"
@@ -296,10 +305,14 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
                 }}
               </td>
               <td>
-                {{ keyPair.public_key }}
+                <span>{{ keyPair.public_key.slice(0, 16) }}.....</span>
+                <i
+                  class="bi bi-copy cursor-pointer ms-3"
+                  @click="handleCopyPublicKey(keyPair.public_key)"
+                ></i>
               </td>
               <td>
-                ***********************************
+                ****************
                 <i
                   class="bi bi-eye-slash cursor-pointer ms-3"
                   @click="handleShowDecryptModal(keyPair.public_key)"
