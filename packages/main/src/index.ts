@@ -8,7 +8,7 @@ import initLogger from '@main/modules/logger';
 import createMenu from '@main/modules/menu';
 import registerIpcListeners from '@main/modules/ipcHandlers';
 
-import createWindow from '@main/windows/mainWindow';
+import {restoreOrCreateWindow} from '@main/windows/mainWindow';
 
 let mainWindow: BrowserWindow | null;
 
@@ -26,7 +26,7 @@ attachAppEvents();
 
 function attachAppEvents() {
   app.on('ready', async () => {
-    mainWindow = await createWindow();
+    mainWindow = await restoreOrCreateWindow();
 
     createMenu(mainWindow);
 
@@ -48,7 +48,7 @@ function attachAppEvents() {
 
     app.on('activate', async function () {
       if (mainWindow === null) {
-        mainWindow = await createWindow();
+        mainWindow = await restoreOrCreateWindow();
       }
     });
   });
