@@ -34,6 +34,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppCustomIcon from '../ui/AppCustomIcon.vue';
 
 /* Props */
 const props = defineProps<{
@@ -91,12 +92,11 @@ const localPublicKeysReq = computed(() =>
 const requiredLocalKeyPairs = computed(() =>
   keyPairs.keyPairs.filter(kp => localPublicKeysReq.value.includes(kp.public_key)),
 );
-const type = computed(
-  () =>
-    transaction.value?.constructor.name
-      .slice(transaction.value?.constructor.name.startsWith('_') ? 1 : 0)
-      .split(/(?=[A-Z])/)
-      .join(' '),
+const type = computed(() =>
+  transaction.value?.constructor.name
+    .slice(transaction.value?.constructor.name.startsWith('_') ? 1 : 0)
+    .split(/(?=[A-Z])/)
+    .join(' '),
 );
 
 /* Handlers */
@@ -546,8 +546,8 @@ defineExpose({
   <div>
     <!-- Confirm modal -->
     <AppModal
-      class="large=modal"
       v-model:show="isConfirmShown"
+      class="large=modal"
       :close-on-click-outside="false"
       :close-on-escape="false"
     >
@@ -576,8 +576,8 @@ defineExpose({
               </p>
             </div>
             <div
-              class="d-flex justify-content-between p-3 mt-3"
               v-if="transaction?.maxTransactionFee"
+              class="d-flex justify-content-between p-3 mt-3"
             >
               <p>Max Transaction Fee</p>
               <p class="">
@@ -605,8 +605,8 @@ defineExpose({
     </AppModal>
     <!-- Sign modal -->
     <AppModal
-      class="common-modal"
       v-model:show="isSignModalShown"
+      class="common-modal"
       :close-on-click-outside="false"
       :close-on-escape="false"
     >
@@ -615,13 +615,13 @@ defineExpose({
           <i class="bi bi-x-lg cursor-pointer" @click="isSignModalShown = false"></i>
         </div>
         <div class="text-center">
-          <i class="bi bi-unlock large-icon"></i>
+          <AppCustomIcon :name="'lock'" style="height: 160px" />
         </div>
-        <form @submit="handleSignTransaction" class="mt-5">
+        <form class="mt-3" @submit="handleSignTransaction">
           <h3 class="text-center text-title text-bold">Enter your password</h3>
           <div class="form-group mt-5 mb-4">
             <label class="form-label">Password</label>
-            <AppInput size="small" v-model="userPassword" type="password" :filled="true" />
+            <AppInput v-model="userPassword" size="small" type="password" :filled="true" />
           </div>
           <p v-if="chunksAmount" class="text-small mb-3">Estimated chunks: {{ chunksAmount }}</p>
           <hr class="separator" />
@@ -651,8 +651,8 @@ defineExpose({
     </AppModal>
     <!-- Chunking modal -->
     <AppModal
-      class="common-modal"
       v-model:show="isChunkingModalShown"
+      class="common-modal"
       :close-on-click-outside="false"
       :close-on-escape="false"
     >
@@ -664,15 +664,15 @@ defineExpose({
           <AppLoader />
         </div>
         <h3 class="text-center text-title text-bold mt-5">Chunking {{ type }}</h3>
-        <p class="text-center text-small text-secondary mt-4" v-if="chunksAmount">
+        <p v-if="chunksAmount" class="text-center text-small text-secondary mt-4">
           {{ processedChunks }} out of {{ chunksAmount }}
         </p>
       </div>
     </AppModal>
     <!-- Executing modal -->
     <AppModal
-      class="common-modal"
       v-model:show="isExecuting"
+      class="common-modal"
       :close-on-click-outside="false"
       :close-on-escape="false"
     >
@@ -688,7 +688,7 @@ defineExpose({
           {{ type }}
         </h3>
         <div class="d-grid mt-4">
-          <p class="text-center text-small text-secondary" v-if="chunksAmount">
+          <p v-if="chunksAmount" class="text-center text-small text-secondary">
             {{ processedChunks }} out of {{ chunksAmount }}
           </p>
           <AppButton color="primary" class="mt-1" @click="isExecuting = false">Close</AppButton>
@@ -697,8 +697,8 @@ defineExpose({
     </AppModal>
     <!-- Executed modal -->
     <AppModal
-      class="transaction-success-modal"
       v-model:show="isExecutedModalShown"
+      class="transaction-success-modal"
       :close-on-click-outside="false"
       :close-on-escape="false"
     >

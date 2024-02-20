@@ -421,8 +421,8 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
         <form @submit="handleDelete">
           <h3 class="text-center text-title text-bold mt-5">Delete key key pair</h3>
           <p
-            class="text-center mt-4"
             v-if="keyPairsStore.keyPairs.filter(item => item.secret_hash != null).length === 1"
+            class="text-center mt-4"
           >
             You are about the delete the last key pair associated with your recovery phrase you have
             used to set up the Transaction Tool. If you choose to proceed, you will have to go
