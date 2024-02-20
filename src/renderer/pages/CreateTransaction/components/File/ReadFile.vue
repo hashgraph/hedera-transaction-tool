@@ -18,6 +18,7 @@ import { isHederaSpecialFileId } from '@main/shared/utils/hederaSpecialFiles';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 
 /* Stores */
@@ -174,11 +175,11 @@ const columnClass = 'col-4 col-xxxl-3';
       <div>
         <i class="bi bi-x-lg cursor-pointer" @click="isUserPasswordModalShown = false"></i>
       </div>
-      <div class="text-center mt-5">
-        <i class="bi bi-shield-lock large-icon"></i>
+      <div class="text-center">
+        <AppCustomIcon :name="'lock'" style="height: 160px" />
       </div>
       <form @submit="handleRead">
-        <h3 class="text-center text-title text-bold mt-5">Enter your password</h3>
+        <h3 class="text-center text-title text-bold mt-3">Enter your password</h3>
         <div class="form-group mt-4">
           <AppInput v-model="userPassword" :filled="true" size="small" type="password" />
         </div>

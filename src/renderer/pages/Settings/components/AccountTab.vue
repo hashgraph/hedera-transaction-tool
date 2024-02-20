@@ -11,6 +11,7 @@ import { changeDecryptionPassword } from '@renderer/services/keyPairService';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -85,11 +86,11 @@ const handleChangePassword = async e => {
           <i class="bi bi-x-lg cursor-pointer" @click="isSuccessModalShown = false"></i>
         </div>
 
-        <div class="text-center mt-5">
-          <i class="bi bi-check-lg large-icon cursor-pointer" style="line-height: 16px"></i>
+        <div class="text-center">
+          <AppCustomIcon :name="'success'" style="height: 130px" />
         </div>
 
-        <h3 class="text-center text-title text-bold mt-5">Password Changed Successfully</h3>
+        <h3 class="text-center text-title text-bold mt-3">Password Changed Successfully</h3>
         <div class="d-grid mt-5">
           <AppButton color="primary" type="submit">Close</AppButton>
         </div>

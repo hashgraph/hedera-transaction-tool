@@ -18,6 +18,7 @@ import { comparePasswords } from '@renderer/services/userService';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Stores */
 const keyPairsStore = useKeyPairsStore();
@@ -387,11 +388,11 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
         <div>
           <i class="bi bi-x-lg cursor-pointer" @click="isDecryptedModalShown = false"></i>
         </div>
-        <div class="text-center mt-5">
-          <i class="bi bi-unlock large-icon"></i>
+        <div class="text-center">
+          <AppCustomIcon :name="'lock'" style="height: 160px" />
         </div>
         <form @submit="handleDecrypt">
-          <h3 class="text-center text-title text-bold mt-5">Decrypt private key</h3>
+          <h3 class="text-center text-title text-bold mt-3">Decrypt private key</h3>
           <div class="form-group mt-5">
             <label class="form-label">Enter your password</label>
             <AppInput
@@ -410,16 +411,16 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
       </div>
     </AppModal>
 
-    <AppModal v-model:show="isDeleteModalShown">
+    <AppModal v-model:show="isDeleteModalShown" class="common-modal">
       <div class="p-5">
         <div>
           <i class="bi bi-x-lg cursor-pointer" @click="isDeleteModalShown = false"></i>
         </div>
         <div class="text-center">
-          <i class="bi bi-trash3 large-icon"></i>
+          <AppCustomIcon :name="'bin'" style="height: 160px" />
         </div>
         <form @submit="handleDelete">
-          <h3 class="text-center text-title text-bold mt-5">Delete key key pair</h3>
+          <h3 class="text-center text-title text-bold mt-3">Delete key key pair</h3>
           <p
             v-if="keyPairsStore.keyPairs.filter(item => item.secret_hash != null).length === 1"
             class="text-center mt-4"
