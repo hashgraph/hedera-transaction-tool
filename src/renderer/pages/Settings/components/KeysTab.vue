@@ -27,7 +27,7 @@ const user = useUserStore();
 const toast = useToast();
 
 enum Tabs {
-  ALL = 'All',
+  // ALL = 'All',
   RECOVERY_PHRASE = 'Imported from Recovery Phrase',
   PRIVATE_KEY = 'Imported from Private Key',
 }
@@ -41,7 +41,7 @@ const decryptedKey = ref('');
 const publicKeysPrivateKeyToDecrypt = ref('');
 const keyPairIdToDelete = ref<string | null>(null);
 const userPassword = ref('');
-const currentTab = ref(Tabs.ALL);
+const currentTab = ref(Tabs.RECOVERY_PHRASE);
 const ecdsaKey = reactive<{ privateKey: string; nickname?: string }>({
   privateKey: '',
 });
@@ -165,9 +165,16 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
 <template>
   <div class="d-flex justify-content-between mb-3">
     <div class="btn-group-container" role="group">
-      <button type="button" class="btn btn-primary active">All</button>
-      <button type="button" class="btn btn-primary mx-3">Imported from Recovery Phrase</button>
-      <button type="button" class="btn btn-primary">Imported from Public Key</button>
+      <template v-for="tab in Tabs" :key="tab">
+        <button
+          type="button"
+          class="btn btn-primary"
+          :class="{ active: tab === currentTab }"
+          @click="handleTabChange(tab)"
+        >
+          {{ tab }}
+        </button>
+      </template>
     </div>
 
     <div class="d-flex justify-content-end align-items-center">
@@ -193,66 +200,68 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
   </div>
 
   <div class="mt-4">
-    <table class="table-custom">
-      <thead>
-        <tr>
-          <td class="w-10 text-end">Index</td>
-          <td>Nickname</td>
-          <td>Account Id</td>
-          <td>Key type</td>
-          <td>Public Key</td>
-          <td>Private Key</td>
-          <td></td>
-        </tr>
-      </thead>
-      <tbody class="text-secondary">
-        <template
-          v-for="keyPair in keyPairsStore.keyPairs.filter(item => item.secret_hash != null)"
-          :key="keyPair.public_key"
-        >
+    <div v-if="currentTab === Tabs.RECOVERY_PHRASE">
+      <table class="table-custom">
+        <thead>
           <tr>
-            <td class="text-end">{{ keyPair.index }}</td>
-            <td>
-              {{ keyPair.nickname || 'N/A' }}
-            </td>
-            <td>
-              {{
-                keyPairsStore.accoundIds.find(acc => acc.publicKey === keyPair.public_key)
-                  ?.accountIds[0] || 'N/A'
-              }}
-            </td>
-            <td>
-              {{
-                PublicKey.fromString(keyPair.public_key)._key._type === 'secp256k1'
-                  ? 'ECDSA'
-                  : 'ED25519'
-              }}
-            </td>
-            <td>
-              {{ keyPair.public_key }}
-            </td>
-            <td>
-              ***********************************
-              <i
-                class="bi bi-eye-slash cursor-pointer ms-3"
-                @click="handleShowDecryptModal(keyPair.public_key)"
-              ></i>
-            </td>
-            <td>
-              <AppButton
-                size="small"
-                :outline="true"
-                color="secondary"
-                @click="handleDeleteModal(keyPair.id)"
-                >Remove</AppButton
-              >
-            </td>
+            <td class="w-10 text-end">Index</td>
+            <td>Nickname</td>
+            <td>Account Id</td>
+            <td>Key type</td>
+            <td>Public Key</td>
+            <td>Private Key</td>
+            <td></td>
           </tr>
-        </template>
-      </tbody>
-    </table>
+        </thead>
+        <tbody class="text-secondary">
+          <template
+            v-for="keyPair in keyPairsStore.keyPairs.filter(item => item.secret_hash != null)"
+            :key="keyPair.public_key"
+          >
+            <tr>
+              <td class="text-end">{{ keyPair.index }}</td>
+              <td>
+                {{ keyPair.nickname || 'N/A' }}
+              </td>
+              <td>
+                {{
+                  keyPairsStore.accoundIds.find(acc => acc.publicKey === keyPair.public_key)
+                    ?.accountIds[0] || 'N/A'
+                }}
+              </td>
+              <td>
+                {{
+                  PublicKey.fromString(keyPair.public_key)._key._type === 'secp256k1'
+                    ? 'ECDSA'
+                    : 'ED25519'
+                }}
+              </td>
+              <td>
+                {{ keyPair.public_key }}
+              </td>
+              <td>
+                ***********************************
+                <i
+                  class="bi bi-eye-slash cursor-pointer ms-3"
+                  @click="handleShowDecryptModal(keyPair.public_key)"
+                ></i>
+              </td>
+              <td>
+                <AppButton
+                  size="small"
+                  :outline="true"
+                  color="secondary"
+                  @click="handleDeleteModal(keyPair.id)"
+                  >Remove</AppButton
+                >
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
 
-    <div class="mt-4">
+    <div v-if="currentTab === Tabs.PRIVATE_KEY">
       <table class="table-custom">
         <thead>
           <tr>

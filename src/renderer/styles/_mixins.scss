@@ -97,12 +97,7 @@
       tint-color($border, $btn-hover-border-tint-amount)
     ),
   $hover-color: $color,
-  $active-background:
-    if(
-      $color == $color-contrast-light,
-      shade-color($background, $btn-active-bg-shade-amount),
-      tint-color($background, $btn-active-bg-tint-amount)
-    ),
+  $active-background: tint-color($background, $btn-active-bg-tint-amount),
   $active-border:
     if(
       $color == $color-contrast-light,
