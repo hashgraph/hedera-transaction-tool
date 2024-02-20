@@ -1,12 +1,21 @@
 {
-  "arrowParens": "avoid",
-  "bracketSpacing": true,
-  "jsxBracketSameLine": false,
   "printWidth": 100,
   "semi": true,
   "singleQuote": true,
-  "jsxSingleQuote": false,
-  "tabWidth": 2,
+  "overrides": [
+    {
+      "files": ["**/*.css", "**/*.scss", "**/*.html"],
+      "options": {
+        "singleQuote": false
+      }
+    }
+  ],
   "trailingComma": "all",
-  "useTabs": false
+  "bracketSpacing": false,
+  "arrowParens": "avoid",
+  "proseWrap": "never",
+  "htmlWhitespaceSensitivity": "strict",
+  "vueIndentScriptAndStyle": false,
+  "endOfLine": "lf",
+  "singleAttributePerLine": true
 }

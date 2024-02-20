@@ -1,0 +1,23 @@
+appId: com.electron.app
+productName: Hedera Transaction Tool
+directories:
+  output: dist
+  buildResources: buildResources
+files:
+  - packages/**/dist/**
+asarUnpack:
+  - resources/**
+  - prisma/**
+mac:
+  notarize: false
+  target:
+    - target: 'default'
+      arch:
+        - x64
+        - arm64
+publish:
+  provider: github
+extraResources:
+  - node_modules/prisma/**/*
+  - node_modules/.prisma/**/*
+  - node_modules/@prisma/client/**/*

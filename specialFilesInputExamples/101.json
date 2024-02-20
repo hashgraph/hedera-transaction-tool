@@ -1,0 +1,15 @@
+{
+  "nodeAddress": [
+    {
+      "serviceEndpoint": [
+        {
+          "ipAddressV4": "34.94.106.61",
+          "port": 50211
+        }
+      ],
+      "nodeAccountId": "0.0.3",
+      "nodeCertHash": "a171e3ba83476747aeb2e2ac4d0e115caaab918203b0dfe1cdeab443438fc289abc8ba8a6aff83db5f1b334046da88c8",
+      "nodeId": "0"
+    }
+  ]
+}
