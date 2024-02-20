@@ -5,9 +5,6 @@ directories:
   buildResources: buildResources
 files:
   - packages/**/dist/**
-asarUnpack:
-  - resources/**
-  - prisma/**
 mac:
   notarize: false
   target:
@@ -21,3 +18,4 @@ extraResources:
   - node_modules/prisma/**/*
   - node_modules/.prisma/**/*
   - node_modules/@prisma/client/**/*
+  - prisma/**
