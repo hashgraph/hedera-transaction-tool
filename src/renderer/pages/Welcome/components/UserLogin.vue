@@ -23,6 +23,8 @@ import { isEmail } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -50,6 +52,7 @@ const passwordRequirements = reactive({
 });
 const tooltipContent = ref('');
 const shouldRegister = ref(false);
+const isResetDataModalShown = ref(false);
 
 /* Handlers */
 const handleOnFormSubmit = async (event: Event) => {
@@ -119,6 +122,7 @@ const handleResetData = async () => {
   await checkShouldRegister();
   createTooltips();
   setTooltipContent();
+  isResetDataModalShown.value = false;
 };
 
 /* Hooks */
@@ -276,7 +280,7 @@ watch(inputEmail, pass => {
       </template>
 
       <div v-if="!shouldRegister" class="mt-3 text-end">
-        <span @click="handleResetData" class="text-small link-primary cursor-pointer"
+        <span @click="isResetDataModalShown = true" class="text-small link-primary cursor-pointer"
           >Reset account</span
         >
       </div>
@@ -291,5 +295,33 @@ watch(inputEmail, pass => {
         >
       </div>
     </form>
+    <AppModal v-model:show="isResetDataModalShown" class="common-modal">
+      <div class="modal-body">
+        <i
+          class="bi bi-x-lg d-inline-block cursor-pointer"
+          @click="isResetDataModalShown = false"
+        ></i>
+        <div class="text-center">
+          <AppCustomIcon :name="'bin'" style="height: 160px" />
+        </div>
+        <h3 class="text-center text-title text-bold">Reset Data</h3>
+        <p class="text-center text-small text-secondary mt-4">
+          Are you sure you want to reset the app data?
+        </p>
+        <hr class="separator my-5" />
+        <div class="row mt-4">
+          <div class="col-6">
+            <AppButton color="secondary" class="w-100" @click="isResetDataModalShown = false"
+              >Cancel</AppButton
+            >
+          </div>
+          <div class="col-6">
+            <AppButton :outline="true" color="primary" class="w-100" @click="handleResetData"
+              >Reset</AppButton
+            >
+          </div>
+        </div>
+      </div>
+    </AppModal>
   </div>
 </template>
