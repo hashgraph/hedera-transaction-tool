@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { AccountId, Hbar, FreezeTransaction, FileId, Timestamp, FreezeType } from '@hashgraph/sdk';
+// import { AccountId, Hbar, FreezeTransaction, FileId, Timestamp, FreezeType } from '@hashgraph/sdk';
+import { AccountId, Hbar, FreezeTransaction, FileId, Timestamp } from '@hashgraph/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
@@ -48,7 +49,7 @@ const handleCreate = async e => {
       .setTransactionValidDuration(180)
       .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
       .setNodeAccountIds([new AccountId(3)])
-      .setFreezeType(FreezeType._fromCode(Number(freezeType.value)))
+      // .setFreezeType(FreezeType._fromCode(Number(freezeType.value)))
       .setStartTimestamp(Timestamp.fromDate(startTimestamp.value));
 
     isFileId(fileId.value) && transaction.value.setFileId(FileId.fromString(fileId.value));
@@ -69,10 +70,8 @@ const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <form @submit="handleCreate">
-    <TransactionHeaderControls
-      :create-requirements="!payerData.isValid.value"
-      heading-text="Freeze Transaction"
-    />
+    <!-- :create-requirements to be updated -->
+    <TransactionHeaderControls :create-requirements="true" heading-text="Freeze Transaction" />
 
     <AppButton type="button" color="secondary" class="mt-6" @click="$router.back()">
       <span class="bi bi-arrow-left"></span>
