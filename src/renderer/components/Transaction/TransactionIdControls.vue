@@ -7,6 +7,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 
 /* Props */
 defineProps<{
@@ -29,10 +30,9 @@ const accoundIds = computed(() => keyPairs.accoundIds.map(a => a.accountIds).fla
 const account = useAccountId();
 
 /* Handlers */
-const handlePayerChange = (e: Event) => {
-  const selectEl = e.target as HTMLSelectElement;
-  account.accountId.value = selectEl.value;
-  emit('update:payerId', selectEl.value);
+const handlePayerChange = payerId => {
+  account.accountId.value = payerId;
+  emit('update:payerId', payerId);
 };
 
 /* Hooks */
@@ -54,11 +54,7 @@ const columnClass = 'col-4 col-xxxl-3';
         >Balance: {{ account.accountInfo.value?.balance || 0 }}</label
       >
       <template v-if="user.data.mode === 'personal'">
-        <select class="form-select" :value="payerId" @change="handlePayerChange">
-          <template v-for="accountId in accoundIds" :key="accountId">
-            <option :value="accountId">{{ accountId }}</option>
-          </template>
-        </select>
+        <AccountIdsSelect :account-id="payerId" @update:account-id="handlePayerChange" />
       </template>
       <template v-else>
         <AppInput
