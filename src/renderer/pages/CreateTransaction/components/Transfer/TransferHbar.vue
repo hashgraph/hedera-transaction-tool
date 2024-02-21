@@ -4,6 +4,7 @@ import { AccountId, Hbar, Key, TransferTransaction } from '@hashgraph/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
+import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
@@ -14,6 +15,7 @@ import { getDateTimeLocalInputValue } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
@@ -21,6 +23,7 @@ import TransactionHeaderControls from '@renderer/components/Transaction/Transact
 /* Stores */
 const networkStore = useNetworkStore();
 const keyPairs = useKeyPairsStore();
+const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
@@ -123,12 +126,17 @@ const columnClass = 'col-4 col-xxxl-3';
           class="d-block form-label text-secondary"
           >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
         >
-        <AppInput
-          :model-value="payerData.accountIdFormatted.value"
-          @update:model-value="v => (payerData.accountId.value = v)"
-          :filled="true"
-          placeholder="Enter Payer ID"
-        />
+        <template v-if="user.data.mode === 'personal'">
+          <AccountIdsSelect v-model:account-id="payerData.accountId.value" :select-default="true" />
+        </template>
+        <template v-else>
+          <AppInput
+            :model-value="payerData.accountIdFormatted.value"
+            @update:model-value="v => (payerData.accountId.value = v)"
+            :filled="true"
+            placeholder="Enter Payer ID"
+          />
+        </template>
       </div>
       <div class="form-group form-group" :class="[columnClass]">
         <label class="form-label">Valid Start Time <span class="text-danger">*</span></label>
@@ -146,12 +154,20 @@ const columnClass = 'col-4 col-xxxl-3';
         <label v-if="senderData.isValid.value" class="form-label d-block text-secondary"
           >Balance: {{ senderData.accountInfo.value?.balance || 0 }}</label
         >
-        <AppInput
-          :value="senderData.accountIdFormatted.value"
-          @input="senderData.accountId.value = ($event.target as HTMLInputElement).value"
-          :filled="true"
-          placeholder="Enter Sender ID"
-        />
+        <template v-if="user.data.mode === 'personal'">
+          <AccountIdsSelect
+            v-model:account-id="senderData.accountId.value"
+            :select-default="true"
+          />
+        </template>
+        <template v-else>
+          <AppInput
+            :model-value="senderData.accountIdFormatted.value"
+            @update:model-value="v => (senderData.accountId.value = v)"
+            :filled="true"
+            placeholder="Enter Sender ID"
+          />
+        </template>
       </div>
 
       <div class="form-group mt-6" :class="[columnClass]" v-if="senderData.key.value">
