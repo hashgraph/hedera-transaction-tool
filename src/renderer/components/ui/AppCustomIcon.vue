@@ -11,7 +11,7 @@ type CustomIcon =
   | 'success';
 
 /* Props */
-defineProps<{
+const props = defineProps<{
   name: CustomIcon;
   imageClass?: string;
 }>();
@@ -20,23 +20,21 @@ defineProps<{
 const iconMapping: {
   [key in CustomIcon]: string;
 } = {
-  bin: 'Bin',
-  contact: 'Conact',
-  draft: 'Draft',
-  error: 'Error',
-  group: 'Group',
-  lock: 'Lock',
-  questionMark: 'QuestionMark',
-  success: 'Success',
+  bin: 'bin',
+  contact: 'contact',
+  draft: 'draft',
+  error: 'error',
+  group: 'group',
+  lock: 'lock',
+  questionMark: 'questionMark',
+  success: 'success',
 };
+console.log(import.meta.url);
+
+const imageUrl = new URL(`../../assets/icons/${iconMapping[props.name]}.png`, import.meta.url).href;
 </script>
 <template>
   <div>
-    <img
-      :src="`/images/customIcons/${iconMapping[name]}.png`"
-      :alt="name"
-      class="h-100"
-      :class="imageClass"
-    />
+    <img :src="imageUrl" :alt="name" class="h-100" :class="imageClass" />
   </div>
 </template>
