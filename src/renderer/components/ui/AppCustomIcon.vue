@@ -29,7 +29,6 @@ const iconMapping: {
   questionMark: 'questionMark',
   success: 'success',
 };
-console.log(import.meta.url);
 
 const imageUrl = new URL(`../../assets/icons/${iconMapping[props.name]}.png`, import.meta.url).href;
 </script>

@@ -15,6 +15,8 @@ import {
   // getStoredKeyPairs,
 } from '@renderer/services/keyPairService';
 
+import { getWidthOfElementWithText } from '@renderer/utils/dom';
+
 import AppInput from '@renderer/components/ui/AppInput.vue';
 // import AppButton from '@renderer/components/ui/AppButton.vue';
 // import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
@@ -37,7 +39,10 @@ const nickname = ref('');
 const index = ref(0);
 const passPhrase = ref('');
 
+const privateKeyRef = ref<HTMLSpanElement | null>(null);
 const privateKey = ref('');
+const privateKeyHidden = ref(true);
+const starCount = ref(0);
 const publicKey = ref('');
 
 const keyExists = ref(false);
@@ -153,6 +158,13 @@ const handleSaveKey = async () => {
 /* Hooks */
 onMounted(async () => {
   await handleRestoreKey();
+
+  if (privateKeyRef.value) {
+    const privateKeyWidth = getWidthOfElementWithText(privateKeyRef.value, privateKey.value);
+    const starWidth = getWidthOfElementWithText(privateKeyRef.value, '*');
+
+    starCount.value = Math.round(privateKeyWidth / starWidth);
+  }
 });
 
 onUpdated(() => {
@@ -235,7 +247,15 @@ defineExpose({
 
     <div class="form-group mt-5">
       <label class="form-label">ED25519 Private Key</label>
-      <p class="text-break text-secondary">{{ privateKey }}</p>
+      <p class="text-break text-secondary">
+        <span ref="privateKeyRef" id="pr">{{
+          !privateKeyHidden ? privateKey : '*'.repeat(starCount)
+        }}</span>
+        <span class="cursor-pointer ms-3">
+          <i v-if="!privateKeyHidden" class="bi bi-eye-slash" @click="privateKeyHidden = true"></i>
+          <i v-else class="bi bi-eye" @click="privateKeyHidden = false"></i>
+        </span>
+      </p>
     </div>
     <div class="form-group mt-4">
       <label class="form-label">ED25519 Public Key</label>
