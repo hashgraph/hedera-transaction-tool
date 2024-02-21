@@ -3,6 +3,7 @@ import { computed, ref, reactive, watch, onMounted } from 'vue';
 import { AccountId, AccountUpdateTransaction, KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
@@ -16,6 +17,7 @@ import { isPublicKey } from '@renderer/utils/validator';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
@@ -25,6 +27,7 @@ import TransactionIdControls from '@renderer/components/Transaction/TransactionI
 const payerData = useAccountId();
 const accountData = useAccountId();
 const networkStore = useNetworkStore();
+const user = useUserStore();
 
 /* Composables */
 const route = useRoute();
@@ -151,6 +154,7 @@ watch(accountData.accountInfo, accountInfo => {
     newAccountData.memo = accountInfo.memo || '';
   }
 });
+
 watch(
   () => newAccountData.stakedAccountId,
   id => {
@@ -164,6 +168,11 @@ watch(
   },
 );
 
+watch(payerData.isValid, isValid => {
+  if (isValid) {
+    newOwnerKeyText.value = payerData.keysFlattened.value[0];
+  }
+});
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
 </script>
@@ -184,12 +193,20 @@ const columnClass = 'col-4 col-xxxl-3';
     <div class="row mt-6">
       <div class="form-group" :class="[columnClass]">
         <label class="form-label">Account ID <span class="text-danger">*</span></label>
-        <AppInput
-          :model-value="accountData.accountIdFormatted.value"
-          @update:model-value="v => (accountData.accountId.value = v)"
-          :filled="true"
-          placeholder="Enter Account ID"
-        />
+        <template v-if="user.data.mode === 'personal'">
+          <AccountIdsSelect
+            v-model:account-id="accountData.accountId.value"
+            :select-default="true"
+          />
+        </template>
+        <template v-else>
+          <AppInput
+            :model-value="accountData.accountIdFormatted.value"
+            @update:model-value="v => (accountData.accountId.value = v)"
+            :filled="true"
+            placeholder="Enter Account ID"
+          />
+        </template>
       </div>
 
       <div class="form-group mt-6" :class="[columnClass]">

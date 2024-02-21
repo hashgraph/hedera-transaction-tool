@@ -110,6 +110,12 @@ watch(
   },
 );
 
+watch(payerData.isValid, isValid => {
+  if (isValid) {
+    ownerKeyText.value = payerData.keysFlattened.value[0];
+  }
+});
+
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
 </script>
