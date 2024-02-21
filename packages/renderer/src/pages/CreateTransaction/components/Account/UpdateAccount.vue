@@ -151,7 +151,7 @@ function createTransaction() {
     .setMaxAutomaticTokenAssociations(Number(newAccountData.maxAutomaticTokenAssociations))
     .setAccountMemo(newAccountData.memo || '');
 
-  if (!isAccountId(payerData.accountId.value)) {
+  if (isAccountId(payerData.accountId.value)) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
   }
 
