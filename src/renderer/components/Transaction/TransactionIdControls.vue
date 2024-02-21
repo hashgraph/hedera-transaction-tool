@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
 
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
+import useUserStore from '@renderer/stores/storeUser';
 
 import useAccountId from '@renderer/composables/useAccountId';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 
 /* Props */
 defineProps<{
@@ -19,16 +21,25 @@ const emit = defineEmits(['update:payerId', 'update:validStart', 'update:maxTran
 
 /* Stores */
 const keyPairs = useKeyPairsStore();
+const user = useUserStore();
+
+/* Computed */
+const accoundIds = computed(() => keyPairs.accoundIds.map(a => a.accountIds).flat());
 
 /* Composables */
 const account = useAccountId();
 
+/* Handlers */
+const handlePayerChange = payerId => {
+  account.accountId.value = payerId;
+  emit('update:payerId', payerId);
+};
+
 /* Hooks */
 onMounted(() => {
-  const allAccountIds = keyPairs.accoundIds.map(a => a.accountIds).flat();
-  if (allAccountIds.length > 0) {
-    account.accountId.value = allAccountIds[0];
-    emit('update:payerId', allAccountIds[0]);
+  if (accoundIds.value.length > 0) {
+    account.accountId.value = accoundIds.value[0];
+    emit('update:payerId', accoundIds.value[0]);
   }
 });
 
@@ -42,17 +53,22 @@ const columnClass = 'col-4 col-xxxl-3';
       <label v-if="account.isValid.value" class="d-block form-label text-secondary"
         >Balance: {{ account.accountInfo.value?.balance || 0 }}</label
       >
-      <AppInput
-        :model-value="account.isValid.value ? account.accountIdFormatted.value : payerId"
-        @update:model-value="
-          v => {
-            $emit('update:payerId', v);
-            account.accountId.value = v;
-          }
-        "
-        :filled="true"
-        placeholder="Enter Payer ID"
-      />
+      <template v-if="user.data.mode === 'personal'">
+        <AccountIdsSelect :account-id="payerId" @update:account-id="handlePayerChange" />
+      </template>
+      <template v-else>
+        <AppInput
+          :model-value="account.isValid.value ? account.accountIdFormatted.value : payerId"
+          @update:model-value="
+            v => {
+              $emit('update:payerId', v);
+              account.accountId.value = v;
+            }
+          "
+          :filled="true"
+          placeholder="Enter Payer ID"
+        />
+      </template>
     </div>
     <div class="form-group" :class="[columnClass]">
       <label class="form-label">Valid Start Time</label>
