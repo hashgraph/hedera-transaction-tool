@@ -9,6 +9,7 @@ import { validateMnemonic } from '@renderer/services/keyPairService';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppRecoveryPhraseWord from '@renderer/components/ui/AppRecoveryPhraseWord.vue';
+import { useToast } from 'vue-toast-notification';
 
 /* Props */
 defineProps<{
@@ -17,6 +18,9 @@ defineProps<{
 
 /* Store */
 const keyPairs = useKeyPairsStore();
+
+/* Composables */
+const toast = useToast();
 
 /* State */
 const words = ref(Array(24).fill(''));
@@ -75,6 +79,7 @@ const handleWordChange = (newWord: string, index: number) => {
 
 const handleCopyRecoveryPhrase = () => {
   navigator.clipboard.writeText(words.value.join(', '));
+  toast.success('Revovery phrase copied');
 };
 
 /* Watchers */
