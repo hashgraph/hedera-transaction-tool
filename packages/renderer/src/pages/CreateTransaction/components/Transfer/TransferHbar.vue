@@ -106,7 +106,6 @@ const handleLoadFromDraft = async () => {
     if (draftTransaction.maxTransactionFee) {
       maxTransactionFee.value = draftTransaction.maxTransactionFee.toBigNumber().toNumber();
     }
-    console.log(draftTransaction);
 
     draftTransaction.hbarTransfers._map.forEach((value, accoundId) => {
       const hbars = value.toBigNumber().toNumber();

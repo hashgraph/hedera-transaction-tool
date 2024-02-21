@@ -154,7 +154,7 @@ function createTransaction() {
     .setTransactionValidDuration(180)
     .setChunkSize(Number(chunkSize.value));
 
-  if (!isAccountId(payerData.accountId.value)) {
+  if (isAccountId(payerData.accountId.value)) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
   }
 
