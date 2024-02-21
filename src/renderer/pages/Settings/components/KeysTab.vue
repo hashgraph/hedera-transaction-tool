@@ -158,9 +158,9 @@ const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
   }
 };
 
-const handleCopyPublicKey = (publicKey: string) => {
-  navigator.clipboard.writeText(publicKey);
-  toast.success('Public Key copied successfully', { position: 'bottom-right' });
+const handleCopy = (text: string, message: string) => {
+  navigator.clipboard.writeText(text);
+  toast.success(message, { position: 'bottom-right' });
 };
 
 /* Hooks */
@@ -265,7 +265,7 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
                 <span>{{ keyPair.public_key.slice(0, 16) }}...</span>
                 <i
                   class="bi bi-copy cursor-pointer ms-3"
-                  @click="handleCopyPublicKey(keyPair.public_key)"
+                  @click="handleCopy(keyPair.public_key, 'Public Key copied successfully')"
                 ></i>
               </td>
               <td>
@@ -277,6 +277,16 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
                         ?.decrypted?.slice(0, 13)
                     }}...</span
                   >
+                  <i
+                    class="bi bi-copy cursor-pointer ms-3"
+                    @click="
+                      handleCopy(
+                        decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)?.decrypted ||
+                          '',
+                        'Private Key copied successfully',
+                      )
+                    "
+                  ></i>
                   <i
                     class="bi bi-eye-slash cursor-pointer ms-3"
                     @click="handleHideDecryptedKey(keyPair.public_key)"
@@ -343,7 +353,7 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
                 <span>{{ keyPair.public_key.slice(0, 16) }}...</span>
                 <i
                   class="bi bi-copy cursor-pointer ms-3"
-                  @click="handleCopyPublicKey(keyPair.public_key)"
+                  @click="handleCopy(keyPair.public_key, 'Public Key copied successfully')"
                 ></i>
               </td>
               <td>
@@ -355,6 +365,16 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
                         ?.decrypted?.slice(0, 13)
                     }}...</span
                   >
+                  <i
+                    class="bi bi-copy cursor-pointer ms-3"
+                    @click="
+                      handleCopy(
+                        decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)?.decrypted ||
+                          '',
+                        'Private Key copied successfully',
+                      )
+                    "
+                  ></i>
                   <i
                     class="bi bi-eye-slash cursor-pointer ms-3"
                     @click="handleHideDecryptedKey(keyPair.public_key)"
