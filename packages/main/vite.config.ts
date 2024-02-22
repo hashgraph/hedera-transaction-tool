@@ -36,5 +36,7 @@ export default defineConfig({
     emptyOutDir: true,
     reportCompressedSize: false,
   },
-  test: {},
+  test: {
+    globals: true,
+  },
 });

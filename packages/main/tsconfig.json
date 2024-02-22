@@ -9,12 +9,11 @@
     "strict": true,
     "isolatedModules": true,
     "noImplicitAny": false,
-    "types": ["node"],
+    "types": ["node", "vitest/globals"],
     "baseUrl": ".",
     "paths": {
       "@main/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*.ts", "../../types/**/*.d.ts", "../../types/**/*.ts"],
-  "exclude": ["**/*.spec.ts", "**/*.test.ts"]
+  "include": ["src/**/*.ts", "tests", "../../types/**/*.d.ts", "../../types/**/*.ts"]
 }
