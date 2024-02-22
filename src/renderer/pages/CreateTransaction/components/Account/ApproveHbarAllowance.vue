@@ -3,7 +3,6 @@ import { ref } from 'vue';
 import { AccountId, Hbar, Key, AccountAllowanceApproveTransaction } from '@hashgraph/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
-import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
@@ -13,7 +12,6 @@ import { getDateTimeLocalInputValue } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
@@ -21,7 +19,6 @@ import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 
 /* Stores */
 const networkStore = useNetworkStore();
-const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
@@ -98,17 +95,12 @@ const columnClass = 'col-4 col-xxxl-3';
           >Balance: {{ ownerData.accountInfo.value?.balance }}</label
         >
 
-        <template v-if="user.data.mode === 'personal'">
-          <AccountIdsSelect v-model:account-id="ownerData.accountId.value" :select-default="true" />
-        </template>
-        <template v-else>
-          <AppInput
-            :model-value="ownerData.accountIdFormatted.value"
-            @update:model-value="v => (ownerData.accountId.value = v)"
-            :filled="true"
-            placeholder="Enter Owner ID"
-          />
-        </template>
+        <AppInput
+          :model-value="ownerData.accountIdFormatted.value"
+          @update:model-value="v => (ownerData.accountId.value = v)"
+          :filled="true"
+          placeholder="Enter Owner ID"
+        />
       </div>
 
       <div class="form-group" :class="[columnClass]" v-if="ownerData.key.value">

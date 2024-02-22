@@ -154,20 +154,13 @@ const columnClass = 'col-4 col-xxxl-3';
         <label v-if="senderData.isValid.value" class="form-label d-block text-secondary"
           >Balance: {{ senderData.accountInfo.value?.balance || 0 }}</label
         >
-        <template v-if="user.data.mode === 'personal'">
-          <AccountIdsSelect
-            v-model:account-id="senderData.accountId.value"
-            :select-default="true"
-          />
-        </template>
-        <template v-else>
-          <AppInput
-            :model-value="senderData.accountIdFormatted.value"
-            @update:model-value="v => (senderData.accountId.value = v)"
-            :filled="true"
-            placeholder="Enter Sender ID"
-          />
-        </template>
+
+        <AppInput
+          :model-value="senderData.accountIdFormatted.value"
+          @update:model-value="v => (senderData.accountId.value = v)"
+          :filled="true"
+          placeholder="Enter Sender ID"
+        />
       </div>
 
       <div class="form-group mt-6" :class="[columnClass]" v-if="senderData.key.value">
