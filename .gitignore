@@ -10,3 +10,4 @@ thumbs.db
 .browserslistrc
 .electron-vendors.cache.json
 
+coverage
