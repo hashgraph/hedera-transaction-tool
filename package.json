@@ -21,7 +21,7 @@
     "test:e2e": "npm run build && vitest run",
     "test:main": "vitest run -r packages/main --passWithNoTests",
     "test:preload": "vitest run -r packages/preload --passWithNoTests",
-    "test:renderer": "vitest run -r packages/renderer --passWithNoTests --coverage",
+    "test:renderer": "vitest run -r packages/renderer --passWithNoTests",
     "dev": "node scripts/watch.js",
     "devTools": "./node_modules/.bin/vue-devtools",
     "lint": "eslint . --ext js,mjs,cjs,ts,mts,cts,vue",
