@@ -1,4 +1,5 @@
-import {generateUUID, hash} from '@main/utils/crypto';
+import {randomUUID} from 'node:crypto';
+import {hash} from '@main/utils/crypto';
 
 import {getPrismaClient} from '@main/db';
 
@@ -7,7 +8,7 @@ export const register = async (email: string, password: string) => {
 
   return await prisma.user.create({
     data: {
-      id: generateUUID(),
+      id: randomUUID(),
       email: email,
       password: hash(password).toString('hex'),
     },
