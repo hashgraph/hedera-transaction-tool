@@ -3,7 +3,6 @@ import { onMounted, ref } from 'vue';
 import { AccountId, Hbar, AccountDeleteTransaction, Key } from '@hashgraph/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
-import useUserStore from '@renderer/stores/storeUser';
 
 import { useRoute } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
@@ -15,7 +14,6 @@ import { getDateTimeLocalInputValue } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
@@ -23,7 +21,6 @@ import TransactionIdControls from '@renderer/components/Transaction/TransactionI
 
 /* Stores */
 const networkStore = useNetworkStore();
-const user = useUserStore();
 
 /* Composables */
 const route = useRoute();
@@ -105,20 +102,12 @@ const columnClass = 'col-4 col-xxxl-3';
         <label v-if="accountData.isValid.value" class="d-block form-label text-secondary"
           >Balance: {{ accountData.accountInfo.value?.balance || 0 }}</label
         >
-        <template v-if="user.data.mode === 'personal'">
-          <AccountIdsSelect
-            v-model:account-id="accountData.accountId.value"
-            :select-default="true"
-          />
-        </template>
-        <template v-else>
-          <AppInput
-            :model-value="accountData.accountIdFormatted.value"
-            @update:model-value="v => (accountData.accountId.value = v)"
-            :filled="true"
-            placeholder="Enter Payer ID"
-          />
-        </template>
+        <AppInput
+          :model-value="accountData.accountIdFormatted.value"
+          @update:model-value="v => (accountData.accountId.value = v)"
+          :filled="true"
+          placeholder="Enter Payer ID"
+        />
       </div>
 
       <div class="form-group" :class="[columnClass]">
