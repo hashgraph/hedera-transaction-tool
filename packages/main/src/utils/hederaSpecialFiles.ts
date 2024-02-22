@@ -61,7 +61,7 @@ export function decodeProto(fileId: HederaSpecialFileId, response: any) {
     return stringifyThrottleDefinitions(decoded);
   }
 
-  return JSON.stringify(decoded, null, 2);
+  // return JSON.stringify(decoded, null, 2);
 }
 
 function stringifyNodeAddressBook(nodeAddressBook: proto.INodeAddressBook) {
