@@ -1,15 +1,17 @@
-import {chrome} from '../../.electron-vendors.cache.json';
-import {preload} from 'unplugin-auto-expose';
+/// <reference types="vitest" />
+
 import {join} from 'node:path';
+
+import {chrome} from '../../.electron-vendors.cache.json';
+
+import {preload} from 'unplugin-auto-expose';
+
+import {defineConfig} from 'vite';
 
 const PACKAGE_ROOT = __dirname;
 const PROJECT_ROOT = join(PACKAGE_ROOT, '../..');
 
-/**
- * @type {import('vite').UserConfig}
- * @see https://vitejs.dev/config/
- */
-const config = {
+export default defineConfig({
   mode: process.env.MODE,
   root: PACKAGE_ROOT,
   envDir: PROJECT_ROOT,
@@ -34,8 +36,6 @@ const config = {
     emptyOutDir: true,
     reportCompressedSize: false,
   },
-
+  test: {},
   plugins: [preload.vite()],
-};
-
-export default config;
+});

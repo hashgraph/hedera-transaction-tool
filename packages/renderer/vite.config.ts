@@ -1,19 +1,20 @@
 /* eslint-env node */
+/// <reference types="vitest" />
+
+import {join} from 'node:path';
 
 import {chrome} from '../../.electron-vendors.cache.json';
+
 import vue from '@vitejs/plugin-vue';
 import eslintPlugin from 'vite-plugin-eslint';
+
 import {renderer} from 'unplugin-auto-expose';
-import {join} from 'node:path';
+import {defineConfig} from 'vite';
 
 const PACKAGE_ROOT = __dirname;
 const PROJECT_ROOT = join(PACKAGE_ROOT, '../..');
 
-/**
- * @type {import('vite').UserConfig}
- * @see https://vitejs.dev/config/
- */
-const config = {
+export default defineConfig({
   mode: process.env.MODE,
   root: PACKAGE_ROOT,
   envDir: PROJECT_ROOT,
@@ -49,6 +50,4 @@ const config = {
     }),
     eslintPlugin(),
   ],
-};
-
-export default config;
+});
