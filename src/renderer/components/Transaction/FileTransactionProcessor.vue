@@ -30,11 +30,13 @@ import {
 import { openExternal } from '@renderer/services/electronUtilsService';
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 
+import { getTransactionType } from '@renderer/utils/transactions';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { getTransactionType } from '@renderer/utils/transactions';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Props */
 const props = defineProps<{
@@ -598,9 +600,9 @@ defineExpose({
           <i class="bi bi-x-lg cursor-pointer" @click="isSignModalShown = false"></i>
         </div>
         <div class="text-center">
-          <i class="bi bi-unlock large-icon"></i>
+          <AppCustomIcon :name="'lock'" style="height: 160px" />
         </div>
-        <form @submit="handleSignTransaction" class="mt-5">
+        <form @submit="handleSignTransaction" class="mt-3">
           <h3 class="text-center text-title text-bold">Enter your password</h3>
           <div class="form-group mt-5 mb-4">
             <label class="form-label">Password</label>
