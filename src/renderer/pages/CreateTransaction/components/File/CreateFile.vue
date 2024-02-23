@@ -25,6 +25,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
+import { Prisma } from '@prisma/client';
 
 /* Stores */
 const user = useUserStore();
@@ -77,7 +78,13 @@ const handleCreate = async e => {
 
 const handleExecuted = async result => {
   isExecuted.value = true;
-  await add(user.data.id, getEntityIdFromTransactionResult(result, 'fileId'));
+
+  const file: Prisma.HederaFileUncheckedCreateInput = {
+    file_id: getEntityIdFromTransactionResult(result, 'fileId'),
+    user_id: user.data.id,
+  };
+
+  await add(file);
 };
 
 const handleLoadFromDraft = async () => {
