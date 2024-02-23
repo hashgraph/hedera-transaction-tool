@@ -91,7 +91,7 @@ function stringifyNodeAddressBook(nodeAddressBook: proto.INodeAddressBook) {
         nodeAddress.nodeId = nodeAddress.nodeId.toString() as any;
       }
 
-      // Node Account ID
+      // Stake
       if (nodeAddress.stake) {
         nodeAddress.stake = nodeAddress.stake.toString() as any;
       }
@@ -249,10 +249,14 @@ function encodeNodeAddressBook(content: Uint8Array) {
   if (nodeAddressBook.nodeAddress) {
     nodeAddressBook.nodeAddress.forEach(nodeAddress => {
       // Node Id
-      if ((nodeAddress.nodeId as any) === '0') {
-        nodeAddress.nodeId = undefined;
-      } else if (nodeAddress.nodeId) {
+      if (nodeAddress.nodeId) {
         nodeAddress.nodeId = Long.fromString(nodeAddress.nodeId.toString(), false);
+      }
+
+      // Stake
+
+      if (nodeAddress.stake) {
+        nodeAddress.stake = Long.fromString(nodeAddress.stake.toString(), false);
       }
 
       // Acccount Id
@@ -277,6 +281,7 @@ function encodeNodeAddressBook(content: Uint8Array) {
   }
 
   const protoNodeAddressBook = proto.NodeAddressBook.create(nodeAddressBook);
+
   const encoded = proto.NodeAddressBook.encode(protoNodeAddressBook).finish();
 
   return encoded;
