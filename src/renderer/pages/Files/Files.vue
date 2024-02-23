@@ -144,6 +144,7 @@ const handleUnlinkFile = async () => {
 
 const handleStartNicknameEdit = () => {
   isNicknameInputShown.value = true;
+  descriptionInputRef.value?.blur();
 
   if (nicknameInputRef.value) {
     nicknameInputRef.value.value = selectedFile.value?.nickname || '';
@@ -158,7 +159,7 @@ const handleChangeNickname = async () => {
   isNicknameInputShown.value = false;
 
   if (selectedFile.value) {
-    files.value = files.value.concat(
+    files.value = specialFiles.concat(
       await update(selectedFile.value.file_id, user.data.id, {
         nickname: nicknameInputRef.value?.value,
       }),
@@ -168,6 +169,7 @@ const handleChangeNickname = async () => {
 
 const handleStartDescriptionEdit = () => {
   isDescriptionInputShown.value = true;
+  nicknameInputRef.value?.blur();
 
   if (descriptionInputRef.value) {
     setTimeout(() => {
@@ -416,7 +418,13 @@ watch(files, newFiles => {
               <div class="col-5"><p class="text-small text-semi-bold">Memo</p></div>
               <div class="col-7">
                 <p class="text-small text-semi-bold">
-                  {{ selectedFileInfo?.fileMemo || 'None' }}
+                  {{
+                    selectedFileInfo
+                      ? selectedFileInfo.fileMemo.length > 0
+                        ? selectedFileInfo.fileMemo
+                        : 'None'
+                      : 'Unknown'
+                  }}
                 </p>
               </div>
             </div>
@@ -426,7 +434,7 @@ watch(files, newFiles => {
               </div>
               <div class="col-7">
                 <p class="text-small text-semi-bold">
-                  {{ selectedFileInfo?.ledgerId || 'None' }}
+                  {{ selectedFileInfo?.ledgerId || 'Unknown' }}
                 </p>
               </div>
             </div>
@@ -437,7 +445,7 @@ watch(files, newFiles => {
                   {{
                     selectedFileInfo?.expirationTime
                       ? getFormattedDateFromTimestamp(selectedFileInfo?.expirationTime)
-                      : 'None'
+                      : 'Unknown'
                   }}
                 </p>
               </div>
