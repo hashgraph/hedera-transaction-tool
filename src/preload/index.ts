@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { ProgressInfo, UpdateInfo } from 'electron-updater';
 
-import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
+import { AccountId, TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
 import { HederaAccount, HederaFile, KeyPair, Transaction, User } from '@prisma/client';
@@ -115,12 +115,24 @@ export const electronAPI = {
   },
   transactions: {
     executeTransaction: (
-      transactionData: string,
+      transactionBytes: string,
+      networkName: 'mainnet' | 'testnet' | 'previewnet' | 'custom',
+      network: {
+        [key: string]: string | AccountId;
+      },
+      mirrorNetwork?: string,
     ): Promise<{
       response: TransactionResponse;
       receipt: TransactionReceipt;
       transactionId: string;
-    }> => ipcRenderer.invoke('transactions:executeTransaction', transactionData),
+    }> =>
+      ipcRenderer.invoke(
+        'transactions:executeTransaction',
+        transactionBytes,
+        networkName,
+        network,
+        mirrorNetwork,
+      ),
     executeQuery: (queryData: string) => ipcRenderer.invoke('transactions:executeQuery', queryData),
     storeTransaction: (transaction: Transaction): Promise<Transaction[]> =>
       ipcRenderer.invoke('transactions:storeTransaction', transaction),
