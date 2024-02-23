@@ -76,6 +76,7 @@ const getOpositeDirection = () => (sort.direction === 'asc' ? 'desc' : 'asc');
 /* Hooks */
 onBeforeMount(async () => {
   drafts.value = getDrafts();
+  handleSort('timestamp', 'desc');
 });
 </script>
 
