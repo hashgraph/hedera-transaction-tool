@@ -10,18 +10,32 @@ import UpdateFile from './components/File/UpdateFile.vue';
 import FreezeVue from './components/Misc/Freeze.vue';
 import TransferHbar from './components/Transfer/TransferHbar.vue';
 
+export const transactionTypeKeys = {
+  createFile: 'FileCreateTransaction',
+  readFile: 'FileContentsQuery',
+  updateFile: 'FileUpdateTransaction',
+  appendToFile: 'FileAppendTransaction',
+  createAccount: 'AccountCreateTransaction',
+  updateAccount: 'AccountUpdateTransaction',
+  deleteAccount: 'AccountDeleteTransaction',
+  accountInfo: 'AccountInfoQuery',
+  transfer: 'TransferTransaction',
+  approveAllowance: 'AccountAllowanceApproveTransaction',
+  freeze: 'FreezeTransaction',
+};
+
 const txTypeComponentMapping = {
-  createFile: CreateFile,
-  readFile: ReadFile,
-  updateFile: UpdateFile,
-  appendToFile: AppendToFileVue,
-  createAccount: CreateAccount,
-  updateAccount: UpdateAccount,
-  deleteAccount: DeleteAccount,
-  accountInfo: AccountInfoVue,
-  transferHbar: TransferHbar,
-  approveHbarAllowance: ApproveHbarAllowanceVue,
-  freeze: FreezeVue,
+  [transactionTypeKeys.createFile]: CreateFile,
+  [transactionTypeKeys.readFile]: ReadFile,
+  [transactionTypeKeys.updateFile]: UpdateFile,
+  [transactionTypeKeys.appendToFile]: AppendToFileVue,
+  [transactionTypeKeys.createAccount]: CreateAccount,
+  [transactionTypeKeys.updateAccount]: UpdateAccount,
+  [transactionTypeKeys.deleteAccount]: DeleteAccount,
+  [transactionTypeKeys.accountInfo]: AccountInfoVue,
+  [transactionTypeKeys.transfer]: TransferHbar,
+  [transactionTypeKeys.approveAllowance]: ApproveHbarAllowanceVue,
+  [transactionTypeKeys.freeze]: FreezeVue,
 };
 
 export default txTypeComponentMapping;
