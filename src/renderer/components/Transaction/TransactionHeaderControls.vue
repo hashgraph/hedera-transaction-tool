@@ -16,6 +16,7 @@ const props = withDefaults(
     handleSign?: () => void;
     handleSaveDraft?: () => void;
     getTransactionBytes?: () => Uint8Array;
+    isExecuted?: boolean;
     createRequirements?: any;
     headingText?: string;
     buttonText?: string;
@@ -50,7 +51,11 @@ const saveDraft = () => {
 onBeforeRouteLeave(to => {
   if (!props.getTransactionBytes || route.query.draftId) return true;
 
-  if (!draftExists(props.getTransactionBytes()) && !isSaveDraftModalShown.value) {
+  if (
+    !draftExists(props.getTransactionBytes()) &&
+    !isSaveDraftModalShown.value &&
+    !props.isExecuted
+  ) {
     isSaveDraftModalShown.value = true;
     routeTo.value = to;
     return false;
