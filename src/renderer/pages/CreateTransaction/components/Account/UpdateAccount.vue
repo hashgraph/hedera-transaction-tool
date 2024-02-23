@@ -83,8 +83,12 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    if (!accountData.accountInfo.value) {
-      throw Error('Invalid Account');
+    if (!isAccountId(payerData.accountId.value)) {
+      throw Error('Invalid Payer ID');
+    }
+
+    if (!isAccountId(accountData.accountId.value)) {
+      throw Error('Invalid Account ID');
     }
 
     transaction.value = createTransaction();
@@ -148,7 +152,6 @@ const handleLoadFromDraft = async () => {
 /* Functions */
 function createTransaction() {
   const transaction = new AccountUpdateTransaction()
-    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(new Hbar(maxTransactionFee.value))
     .setReceiverSignatureRequired(newAccountData.receiverSignatureRequired)
@@ -156,7 +159,11 @@ function createTransaction() {
     .setMaxAutomaticTokenAssociations(Number(newAccountData.maxAutomaticTokenAssociations))
     .setAccountMemo(newAccountData.memo || '');
 
-  accountData.accountId.value && transaction.setAccountId(accountData.accountId.value);
+  if (!isAccountId(payerData.accountId.value)) {
+    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
+  }
+
+  isAccountId(accountData.accountId.value) && transaction.setAccountId(accountData.accountId.value);
   newOwnerKeys.value.length > 0 && transaction.setKey(newOwnerKeyList.value);
 
   if (!newAccountData.stakedAccountId && !newAccountData.stakedNodeId) {
@@ -165,8 +172,7 @@ function createTransaction() {
   }
 
   if (
-    newAccountData.stakedAccountId &&
-    newAccountData.stakedAccountId.length > 0 &&
+    isAccountId(newAccountData.stakedAccountId) &&
     !newAccountData.stakedNodeId &&
     accountData.accountInfo.value?.stakedAccountId?.toString() !== newAccountData.stakedAccountId
   ) {
@@ -315,7 +321,7 @@ const columnClass = 'col-4 col-xxxl-3';
         <label class="form-label">Staked Account Id</label>
         <AppInput
           v-model="newAccountData.stakedAccountId"
-          :disabled="Boolean(newAccountData.stakedNodeId)"
+          :disabled="newAccountData.stakedNodeId.length > 0"
           :filled="true"
           placeholder="Enter Account Id"
         />
@@ -324,6 +330,7 @@ const columnClass = 'col-4 col-xxxl-3';
         <label class="form-label">Staked Node Id</label>
         <AppInput
           v-model="newAccountData.stakedNodeId"
+          type="number"
           :disabled="
             Boolean(newAccountData.stakedAccountId && newAccountData.stakedAccountId.length > 0)
           "
