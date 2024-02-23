@@ -4,7 +4,14 @@ import { ProgressInfo, UpdateInfo } from 'electron-updater';
 import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
-import { HederaAccount, HederaFile, KeyPair, Transaction, User } from '@prisma/client';
+import {
+  HederaAccount,
+  HederaFile,
+  KeyPair,
+  Transaction,
+  TransactionDraft,
+  User,
+} from '@prisma/client';
 
 import { IOrganization } from '@main/shared/interfaces';
 
@@ -150,6 +157,18 @@ export const electronAPI = {
       ipcRenderer.invoke('transactions:getTransactions', user_id),
     encodeSpecialFile: (content: Uint8Array, fileId: string) =>
       ipcRenderer.invoke('transactions:encodeSpecialFile', content, fileId),
+  },
+  transactionDrafts: {
+    getDrafts: (userId: string): Promise<TransactionDraft[]> =>
+      ipcRenderer.invoke('transactionDrafts:getDrafts', userId),
+    getDraft: (id: string): Promise<TransactionDraft> =>
+      ipcRenderer.invoke('transactionDrafts:getDraft', id),
+    addDraft: (draft: TransactionDraft): Promise<void> =>
+      ipcRenderer.invoke('transactionDrafts:addDraft', draft),
+    deleteDraft: (id: string): Promise<void> =>
+      ipcRenderer.invoke('transactionDrafts:deleteDraft', id),
+    draftExists: (transactionBytes: string): Promise<void> =>
+      ipcRenderer.invoke('transactionDrafts:draftExists', transactionBytes),
   },
 };
 typeof electronAPI;

@@ -3,6 +3,7 @@ import listenForLocalUserEvents from './localUser';
 import listenForAccountsEvents from './accounts';
 import listenForTransactionsEvents from './transactions';
 import listenForFilesEvents from './files';
+import listenForTransactionDraftsEvents from './transactionDrafts';
 
 export default () => {
   listenForKeyPairEvents();
@@ -10,4 +11,5 @@ export default () => {
   listenForAccountsEvents();
   listenForTransactionsEvents();
   listenForFilesEvents();
+  listenForTransactionDraftsEvents();
 };
