@@ -69,9 +69,7 @@ const handleRead = async e => {
 
     // Send to Transaction w/ user signatures to Back End
     const { response } = await executeQuery(
-      query.toBytes().toString(),
-      networkStore.network,
-      networkStore.customNetworkSettings,
+      query.toBytes(),
       payerData.accountId.value,
       privateKey,
       keyPair.type,

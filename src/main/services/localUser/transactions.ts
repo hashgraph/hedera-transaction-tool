@@ -111,30 +111,26 @@ export const executeTransaction = async (transactionBytes: Uint8Array) => {
 };
 
 // Executes a query
-export const executeQuery = async (queryData: string) => {
-  const tx: {
-    queryBytes: string;
-    accountId: string;
-    privateKey: string;
-    type: string;
-  } = JSON.parse(queryData);
-
-  const privateKey =
-    tx.type === 'ED25519'
-      ? PrivateKey.fromStringED25519(tx.privateKey)
-      : tx.type === 'ECDSA'
-        ? PrivateKey.fromStringECDSA(tx.privateKey)
+export const executeQuery = async (
+  queryBytes: Uint8Array,
+  accountId: string,
+  privateKey: string,
+  privateKeyType: string,
+) => {
+  const typedPrivateKey =
+    privateKeyType === 'ED25519'
+      ? PrivateKey.fromStringED25519(privateKey)
+      : privateKeyType === 'ECDSA'
+        ? PrivateKey.fromStringECDSA(privateKey)
         : null;
 
-  if (!privateKey) {
+  if (!typedPrivateKey) {
     throw new Error('Invalid key type');
   }
 
-  client.setOperator(tx.accountId, privateKey);
+  client.setOperator(accountId, privateKey);
 
-  const bytesArray = getNumberArrayFromString(tx.queryBytes);
-
-  const query = Query.fromBytes(Uint8Array.from(bytesArray));
+  const query = Query.fromBytes(Uint8Array.from(queryBytes));
 
   try {
     const response = await query.execute(client);

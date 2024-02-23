@@ -9,8 +9,6 @@ import {
 
 import { KeyPair, Transaction as Tx } from '@prisma/client';
 
-import { CustomNetworkSettings, Network } from '@renderer/stores/storeNetwork';
-
 import { getMessageFromIPCError } from '@renderer/utils';
 
 import { decryptPrivateKey } from './keyPairService';
@@ -129,16 +127,17 @@ export const execute = async (transactionBytes: Uint8Array) => {
 
 /* Executes the query in the main process */
 export const executeQuery = async (
-  queryBytes: string,
-  network: Network,
-  customNetworkSettings: CustomNetworkSettings | null,
+  queryBytes: Uint8Array,
   accountId: string,
   privateKey: string,
-  type: string,
+  privateKeyType: string,
 ) => {
   try {
     return await window.electronAPI.transactions.executeQuery(
-      JSON.stringify({ queryBytes, network, customNetworkSettings, accountId, privateKey, type }),
+      queryBytes,
+      accountId,
+      privateKey,
+      privateKeyType,
     );
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Query Execution Failed'));

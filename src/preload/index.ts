@@ -150,7 +150,19 @@ export const electronAPI = {
       receipt: TransactionReceipt;
       transactionId: string;
     }> => ipcRenderer.invoke('transactions:executeTransaction', transactionBytes),
-    executeQuery: (queryData: string) => ipcRenderer.invoke('transactions:executeQuery', queryData),
+    executeQuery: (
+      queryBytes: Uint8Array,
+      accountId: string,
+      privateKey: string,
+      privateKeyType: string,
+    ) =>
+      ipcRenderer.invoke(
+        'transactions:executeQuery',
+        queryBytes,
+        accountId,
+        privateKey,
+        privateKeyType,
+      ),
     storeTransaction: (transaction: Transaction): Promise<Transaction[]> =>
       ipcRenderer.invoke('transactions:storeTransaction', transaction),
     getTransactions: (user_id: string): Promise<Transaction[]> =>

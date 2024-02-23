@@ -53,8 +53,10 @@ export default () => {
   );
 
   // Executes a query
-  ipcMain.handle(createChannelName('executeQuery'), (_e, queryData: string) =>
-    executeQuery(queryData),
+  ipcMain.handle(
+    createChannelName('executeQuery'),
+    (_e, queryBytes: Uint8Array, accountId: string, privateKey: string, privateKeyType: string) =>
+      executeQuery(queryBytes, accountId, privateKey, privateKeyType),
   );
 
   // Stores a transaction
