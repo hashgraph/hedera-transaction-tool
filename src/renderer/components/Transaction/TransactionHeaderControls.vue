@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { RouteLocationNormalized, onBeforeRouteLeave } from 'vue-router';
 
 import { useToast } from 'vue-toast-notification';
+import { useRoute } from 'vue-router';
 
 import { addDraft, draftExists } from '@renderer/services/transactionDraftsService';
 
@@ -28,6 +29,7 @@ const props = withDefaults(
 
 /* Composables */
 const toast = useToast();
+const route = useRoute();
 
 /* State */
 const routeTo = ref<RouteLocationNormalized | null>(null);
@@ -46,7 +48,7 @@ const saveDraft = () => {
 
 /* Hooks */
 onBeforeRouteLeave(to => {
-  if (!props.getTransactionBytes) return true;
+  if (!props.getTransactionBytes || route.query.draftId) return true;
 
   if (!draftExists(props.getTransactionBytes()) && !isSaveDraftModalShown.value) {
     isSaveDraftModalShown.value = true;
@@ -81,29 +83,31 @@ onBeforeRouteLeave(to => {
       :show="isSaveDraftModalShown"
       :close-on-click-outside="false"
       :close-on-escape="false"
-      class="common-modal"
+      class="small-modal"
     >
       <div class="text-center p-4">
         <div class="text-start">
           <i class="bi bi-x-lg cursor-pointer" @click="isSaveDraftModalShown = false"></i>
         </div>
-        <div class="mt-3">
-          <span class="bi bi-save large-icon"></span>
+        <div>
+          <img src="/images/draft.png" class="h-100" style="width: 200px" alt="draft" />
         </div>
-        <h2 class="text-title text-semi-bold mt-5">Do you want to save a draft?</h2>
-        <!-- <p class="text-small text-secondary mt-3"></p> -->
-        <div class="row justify-content-between mt-5">
-          <div class="col-5">
+        <h2 class="text-title text-semi-bold mt-3">Save draft?</h2>
+        <p class="text-small text-secondary mt-3">
+          Pick up exactly where you left off, without compromising your flow or losing valuable
+          time.
+        </p>
+        <div class="row mt-5">
+          <div class="col-6">
             <AppButton
-              :outline="true"
               color="secondary"
               type="button"
               class="w-100"
               @click="routeTo && $router.push(routeTo)"
-              >No</AppButton
+              >Cancel</AppButton
             >
           </div>
-          <div class="col-5">
+          <div class="col-6">
             <AppButton
               color="primary"
               type="button"
