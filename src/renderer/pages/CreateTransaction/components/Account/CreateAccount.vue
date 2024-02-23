@@ -78,10 +78,13 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
+    if (!isAccountId(payerData.accountId.value)) {
+      throw new Error('Invalid Payer ID');
+    }
+
     transaction.value = createTransaction();
 
-    const requiredSignatures = payerData.keysFlattened.value.concat(ownerKeys.value);
-    await transactionProcessor.value?.process(requiredSignatures);
+    await transactionProcessor.value?.process(payerData.keysFlattened.value);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
@@ -136,10 +139,8 @@ const handleLoadFromDraft = async () => {
 /* Functions */
 function createTransaction() {
   const transaction = new AccountCreateTransaction()
-    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(new Hbar(maxTransactionFee.value))
-    .setNodeAccountIds([new AccountId(3)])
     .setKey(keyList.value)
     .setReceiverSignatureRequired(accountData.receiverSignatureRequired)
     .setDeclineStakingReward(!accountData.acceptStakingRewards)
@@ -147,7 +148,11 @@ function createTransaction() {
     .setMaxAutomaticTokenAssociations(Number(accountData.maxAutomaticTokenAssociations))
     .setAccountMemo(accountData.memo);
 
-  accountData.stakedAccountId &&
+  if (isAccountId(payerData.accountId.value)) {
+    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
+  }
+
+  isAccountId(accountData.stakedAccountId) &&
     transaction.setStakedAccountId(AccountId.fromString(accountData.stakedAccountId));
   Number(accountData.stakedNodeId) > 0 &&
     transaction.setStakedNodeId(Number(accountData.stakedNodeId));
