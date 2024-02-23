@@ -17,6 +17,23 @@ import { decryptPrivateKey } from './keyPairService';
 
 /* Transaction service */
 
+/* Sets the client in the main processor */
+export const setClient = async (
+  network: string,
+  nodeAccountIds?: {
+    [key: string]: string;
+  },
+  mirrorNetwork?: string[],
+) => {
+  if (nodeAccountIds) {
+    Object.keys(nodeAccountIds).forEach(key => {
+      nodeAccountIds[key] = nodeAccountIds[key].toString();
+    });
+  }
+
+  await window.electronAPI.transactions.setClient(network, nodeAccountIds, mirrorNetwork);
+};
+
 /* Crafts transaction id by account id and valid start */
 export const createTransactionId = (
   accountId: AccountId | string,
@@ -73,25 +90,38 @@ export const getTransactionSignatures = async (
   }
 };
 
-/* Executes the transaction in the main process */
-export const execute = async (
-  transactionBytes: string,
-  networkName: Network,
-  network: {
-    [key: string]: string | AccountId;
-  },
-  mirrorNetwork?: string,
+/* Freezes the transaction in the main process */
+export const freeze = async (transactionBytes: Uint8Array) => {
+  try {
+    return await window.electronAPI.transactions.freezeTransaction(transactionBytes);
+  } catch (err: any) {
+    throw Error(getMessageFromIPCError(err, 'Freezing the transaction failed'));
+  }
+};
+
+/* Signs the transaction in the main process */
+export const signTransaction = async (
+  transactionBytes: Uint8Array,
+  publicKeys: string[],
+  userId: string,
+  userPassword: string,
 ) => {
   try {
-    Object.keys(network).forEach(key => {
-      network[key] = network[key].toString();
-    });
-    return await window.electronAPI.transactions.executeTransaction(
+    return await window.electronAPI.transactions.signTransaction(
       transactionBytes,
-      networkName,
-      network,
-      mirrorNetwork,
+      publicKeys,
+      userId,
+      userPassword,
     );
+  } catch (err: any) {
+    throw Error(getMessageFromIPCError(err, 'Transaction signing failed'));
+  }
+};
+
+/* Executes the transaction in the main process */
+export const execute = async (transactionBytes: Uint8Array) => {
+  try {
+    return await window.electronAPI.transactions.executeTransaction(transactionBytes);
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Transaction Failed'));
   }

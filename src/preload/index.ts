@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { ProgressInfo, UpdateInfo } from 'electron-updater';
 
-import { AccountId, TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
+import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
 import { HederaAccount, HederaFile, KeyPair, Transaction, User } from '@prisma/client';
@@ -114,25 +114,35 @@ export const electronAPI = {
       ipcRenderer.invoke('localUser:changePassword', userId, oldPassword, newPassword),
   },
   transactions: {
-    executeTransaction: (
-      transactionBytes: string,
-      networkName: 'mainnet' | 'testnet' | 'previewnet' | 'custom',
-      network: {
-        [key: string]: string | AccountId;
+    setClient: (
+      network: string,
+      nodeAccountIds?: {
+        [key: string]: string;
       },
-      mirrorNetwork?: string,
+      mirrorNetwork?: string[],
+    ) => ipcRenderer.invoke('transactions:setClient', network, nodeAccountIds, mirrorNetwork),
+    freezeTransaction: (transactionBytes: Uint8Array): Promise<Uint8Array> =>
+      ipcRenderer.invoke('transactions:freezeTransaction', transactionBytes),
+    signTransaction: (
+      transactionBytes: Uint8Array,
+      publicKeys: string[],
+      userId: string,
+      userPassword: string,
+    ): Promise<Uint8Array> =>
+      ipcRenderer.invoke(
+        'transactions:signTransaction',
+        transactionBytes,
+        publicKeys,
+        userId,
+        userPassword,
+      ),
+    executeTransaction: (
+      transactionBytes: Uint8Array,
     ): Promise<{
       response: TransactionResponse;
       receipt: TransactionReceipt;
       transactionId: string;
-    }> =>
-      ipcRenderer.invoke(
-        'transactions:executeTransaction',
-        transactionBytes,
-        networkName,
-        network,
-        mirrorNetwork,
-      ),
+    }> => ipcRenderer.invoke('transactions:executeTransaction', transactionBytes),
     executeQuery: (queryData: string) => ipcRenderer.invoke('transactions:executeQuery', queryData),
     storeTransaction: (transaction: Transaction): Promise<Transaction[]> =>
       ipcRenderer.invoke('transactions:storeTransaction', transaction),

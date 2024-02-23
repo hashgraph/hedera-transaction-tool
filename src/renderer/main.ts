@@ -24,8 +24,6 @@ app.use(router);
 const toast = useToast();
 
 app.config.errorHandler = (err: any) => {
-  console.log(err);
-
   let message = 'An error occured';
 
   if (err.message) {
