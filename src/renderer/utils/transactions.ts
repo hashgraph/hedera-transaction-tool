@@ -4,6 +4,7 @@ import {
   TransactionReceipt,
   AccountId,
   TransactionResponse,
+  Transaction as Tx,
 } from '@hashgraph/sdk';
 import { Transaction } from '@prisma/client';
 
@@ -68,4 +69,15 @@ export const getEntityIdFromTransactionResult = (
   const entity = result.receipt[entityType];
 
   return new AccountId(entity as any).toString();
+};
+
+export const getTransactionType = (transaction: Tx | Uint8Array) => {
+  if (transaction instanceof Uint8Array) {
+    transaction = Tx.fromBytes(transaction);
+  }
+
+  return transaction.constructor.name
+    .slice(transaction.constructor.name.startsWith('_') ? 1 : 0)
+    .split(/(?=[A-Z])/)
+    .join(' ');
 };
