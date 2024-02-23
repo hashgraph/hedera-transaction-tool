@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
-import { FileContentsQuery } from '@hashgraph/sdk';
+import { FileContentsQuery, FileInfoQuery } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
@@ -21,6 +21,8 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
+import { HederaFile } from '@prisma/client';
+import { getAll, update } from '@renderer/services/filesService';
 
 /* Stores */
 const user = useUserStore();
@@ -38,6 +40,7 @@ const content = ref('');
 const userPassword = ref('');
 const isLoading = ref(false);
 const isUserPasswordModalShown = ref(false);
+const storedFiles = ref<HederaFile[]>([]);
 
 /* Handlers */
 const handleRead = async e => {
@@ -67,14 +70,12 @@ const handleRead = async e => {
 
     const query = new FileContentsQuery().setFileId(fileId.value);
 
-    // Send to Transaction w/ user signatures to Back End
-    const { response } = await executeQuery(
+    const response = await executeQuery(
       query.toBytes(),
       payerData.accountId.value,
       privateKey,
       keyPair.type,
     );
-    isUserPasswordModalShown.value = false;
 
     if (isHederaSpecialFileId(fileId.value)) {
       content.value = response;
@@ -84,6 +85,20 @@ const handleRead = async e => {
 
       content.value = text;
     }
+
+    const fileInfoQuery = new FileInfoQuery().setFileId(fileId.value);
+
+    const infoResponse = await executeQuery(
+      fileInfoQuery.toBytes(),
+      payerData.accountId.value,
+      privateKey,
+      keyPair.type,
+    );
+
+    await updateIfStored(fileId.value, 'contentBytes', response);
+    await updateIfStored(fileId.value, 'metaBytes', infoResponse);
+
+    isUserPasswordModalShown.value = false;
   } catch (err: any) {
     let message = 'Failed to execute query';
     if (err.message && typeof err.message === 'string') {
@@ -113,10 +128,23 @@ onMounted(async () => {
   if (route.query.fileId) {
     fileId.value = route.query.fileId.toString();
   }
+
+  storedFiles.value = await getAll(user.data.id);
 });
 
 /* Watchers */
 watch(isUserPasswordModalShown, () => (userPassword.value = ''));
+
+/* Functions */
+async function updateIfStored(
+  fileId: string,
+  property: 'contentBytes' | 'metaBytes',
+  bytes: Uint8Array,
+) {
+  if (storedFiles.value.some(f => f.file_id === fileId)) {
+    await update(fileId, user.data.id, { [property]: bytes.join(',') });
+  }
+}
 
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
