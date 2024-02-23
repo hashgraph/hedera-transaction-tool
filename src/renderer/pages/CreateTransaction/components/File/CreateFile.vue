@@ -1,13 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import {
-  AccountId,
-  FileCreateTransaction,
-  KeyList,
-  PublicKey,
-  Timestamp,
-  Transaction,
-} from '@hashgraph/sdk';
+import { FileCreateTransaction, KeyList, PublicKey, Timestamp, Transaction } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -25,7 +18,7 @@ import {
   getEntityIdFromTransactionResult,
   getTransactionFromBytes,
 } from '@renderer/utils/transactions';
-import { isPublicKey } from '@renderer/utils/validator';
+import { isAccountId, isPublicKey } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -70,6 +63,9 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
+    if (!isAccountId(payerData.accountId.value)) {
+      throw Error('Invalid Payer ID');
+    }
     transaction.value = createTransaction();
 
     const requiredSignatures = payerData.keysFlattened.value.concat(ownerKeys.value);
@@ -118,13 +114,15 @@ const handleLoadFromDraft = async () => {
 /* Functions */
 function createTransaction() {
   const transaction = new FileCreateTransaction()
-    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(maxTransactionFee.value)
-    .setNodeAccountIds([new AccountId(3)])
     .setKeys(keyList.value)
     .setContents(content.value)
     .setFileMemo(memo.value);
+
+  if (isAccountId(payerData.accountId.value)) {
+    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
+  }
 
   if (expirationTimestamp.value)
     transaction.setExpirationTime(Timestamp.fromDate(expirationTimestamp.value));
