@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { FileCreateTransaction, KeyList, PublicKey, Timestamp, Transaction } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -133,6 +133,13 @@ function createTransaction() {
 /* Hooks */
 onMounted(async () => {
   await handleLoadFromDraft();
+});
+
+/* Watchers */
+watch(payerData.isValid, isValid => {
+  if (isValid) {
+    ownerKeyText.value = payerData.keysFlattened.value[0];
+  }
 });
 </script>
 <template>
