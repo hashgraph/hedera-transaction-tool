@@ -48,7 +48,7 @@ export const getDraft = <T extends Transaction>(
 export const addDraft = (transactionBytes: Uint8Array) => {
   const drafts = getRawDrafts();
 
-  if (drafts.some(d => d.transactionBytes === transactionBytes.toString())) {
+  if (draftExists(transactionBytes)) {
     throw new Error('Transaction draft already saved');
   }
 
@@ -71,4 +71,10 @@ export const removeDraft = (id: string) => {
   drafts = drafts.filter(d => d.id != id);
 
   localStorage.setItem(transactionDraftsKey, JSON.stringify(drafts));
+};
+
+export const draftExists = (transactionBytes: Uint8Array) => {
+  const drafts = getRawDrafts();
+
+  return drafts.some(d => d.transactionBytes === transactionBytes.toString());
 };
