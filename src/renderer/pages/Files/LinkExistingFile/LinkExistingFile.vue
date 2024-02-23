@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import { AccountId } from '@hashgraph/sdk';
-
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
@@ -11,10 +9,12 @@ import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import { add } from '@renderer/services/filesService';
 
-import { isAccountId } from '@renderer/utils/validator';
+import { isAccountId, isFileId } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { Prisma } from '@prisma/client';
+import { FileId } from '@hashgraph/sdk';
 
 /* Stores */
 const user = useUserStore();
@@ -27,6 +27,7 @@ useCreateTooltips();
 /* State */
 const fileId = ref('');
 const nickname = ref('');
+const description = ref('');
 
 const handleLinkFile = async e => {
   e.preventDefault();
@@ -37,7 +38,18 @@ const handleLinkFile = async e => {
         throw new Error('User not logged in');
       }
 
-      await add(user.data.id, AccountId.fromString(fileId.value).toString(), nickname.value);
+      if (!isFileId(fileId.value)) {
+        throw new Error('Invalid File ID');
+      }
+
+      const file: Prisma.HederaFileUncheckedCreateInput = {
+        file_id: FileId.fromString(fileId.value).toString(),
+        user_id: user.data.id,
+        nickname: nickname.value,
+        description: description.value,
+      };
+
+      await add(file);
 
       router.push({ name: 'files' });
       toast.success('File linked successfully!', { position: 'bottom-right' });
@@ -72,7 +84,11 @@ const handleLinkFile = async e => {
         <label class="form-label">Nickname</label>
         <AppInput v-model="nickname" :filled="true" />
       </div>
-      <AppButton color="primary" type="submit" class="mt-5 w-100" :disabled="!isAccountId(fileId)"
+      <div class="form-group mt-5">
+        <label class="form-label">Description</label>
+        <textarea v-model="description" class="form-control is-fill" rows="8"></textarea>
+      </div>
+      <AppButton color="primary" type="submit" class="mt-5 w-100" :disabled="!isFileId(fileId)"
         >Link File</AppButton
       >
     </form>
