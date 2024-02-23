@@ -2,6 +2,7 @@
 import { computed, onBeforeMount, reactive, ref } from 'vue';
 
 import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toast-notification';
 
 import { getDraft, getDrafts, removeDraft } from '@renderer/services/transactionDraftsService';
 
@@ -20,6 +21,7 @@ const generatedClass = computed(() => {
 
 /* Composables */
 const router = useRouter();
+const toast = useToast();
 
 /* Handlers */
 // TODO to be refactored
@@ -54,6 +56,8 @@ const handleSort = (field: string, direction: 'asc' | 'desc') => {
 const handleDeleteDraft = (id: string) => {
   removeDraft(id);
   drafts.value = getDrafts();
+
+  toast.success('Draft deleted', { position: 'bottom-right' });
 };
 
 const handleContinueDraft = (id: string) => {
