@@ -86,17 +86,19 @@ const handleRead = async e => {
       content.value = text;
     }
 
-    const fileInfoQuery = new FileInfoQuery().setFileId(fileId.value);
+    if (storedFiles.value.some(f => f.file_id === fileId.value)) {
+      const fileInfoQuery = new FileInfoQuery().setFileId(fileId.value);
 
-    const infoResponse = await executeQuery(
-      fileInfoQuery.toBytes(),
-      payerData.accountId.value,
-      privateKey,
-      keyPair.type,
-    );
+      const infoResponse = await executeQuery(
+        fileInfoQuery.toBytes(),
+        payerData.accountId.value,
+        privateKey,
+        keyPair.type,
+      );
 
-    await updateIfStored(fileId.value, 'contentBytes', response);
-    await updateIfStored(fileId.value, 'metaBytes', infoResponse);
+      await update(fileId.value, user.data.id, { contentBytes: response.join(',') });
+      await update(fileId.value, user.data.id, { metaBytes: infoResponse.join(',') });
+    }
 
     isUserPasswordModalShown.value = false;
   } catch (err: any) {
@@ -134,17 +136,6 @@ onMounted(async () => {
 
 /* Watchers */
 watch(isUserPasswordModalShown, () => (userPassword.value = ''));
-
-/* Functions */
-async function updateIfStored(
-  fileId: string,
-  property: 'contentBytes' | 'metaBytes',
-  bytes: Uint8Array,
-) {
-  if (storedFiles.value.some(f => f.file_id === fileId)) {
-    await update(fileId, user.data.id, { [property]: bytes.join(',') });
-  }
-}
 
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
