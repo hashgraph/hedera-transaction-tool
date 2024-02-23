@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { AccountId, Hbar, AccountDeleteTransaction, Key } from '@hashgraph/sdk';
-
-import useNetworkStore from '@renderer/stores/storeNetwork';
+import { AccountId, Hbar, AccountDeleteTransaction, Key, Transaction } from '@hashgraph/sdk';
 
 import { useRoute } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
@@ -21,9 +19,6 @@ import TransactionProcessor from '@renderer/components/Transaction/TransactionPr
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 
-/* Stores */
-const networkStore = useNetworkStore();
-
 /* Composables */
 const route = useRoute();
 const toast = useToast();
@@ -35,20 +30,21 @@ const transferAccountData = useAccountId();
 /* State */
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
-const transaction = ref<AccountDeleteTransaction | null>(null);
+const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref(2);
 
 const selectedKey = ref<Key | null>();
 const isKeyStructureModalShown = ref(false);
 
+const isExecuted = ref(false);
+
 /* Handlers */
 const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    createTransaction();
-    transaction.value?.freezeWith(networkStore.client);
+    transaction.value = createTransaction();
 
     const requiredSignatures = payerData.keysFlattened.value.concat(
       accountData.keysFlattened.value,
@@ -84,21 +80,21 @@ const handleLoadFromDraft = () => {
 
 /* Functions */
 function createTransaction() {
-  transaction.value = new AccountDeleteTransaction()
+  const transaction = new AccountDeleteTransaction()
     .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(new Hbar(maxTransactionFee.value))
     .setNodeAccountIds([new AccountId(3)]);
 
   if (accountData.accountId.value && isAccountId(accountData.accountId.value)) {
-    transaction.value.setAccountId(accountData.accountId.value);
+    transaction.setAccountId(accountData.accountId.value);
   }
 
   if (transferAccountData.accountId.value && isAccountId(transferAccountData.accountId.value)) {
-    transaction.value.setTransferAccountId(transferAccountData.accountId.value);
+    transaction.setTransferAccountId(transferAccountData.accountId.value);
   }
 
-  return transaction.value.toBytes();
+  return transaction;
 }
 
 /* Hooks */
@@ -116,7 +112,8 @@ const columnClass = 'col-4 col-xxxl-3';
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
-      :get-transaction-bytes="createTransaction"
+      :get-transaction-bytes="() => createTransaction().toBytes()"
+      :is-executed="isExecuted"
       :create-requirements="
         !accountData.isValid.value ||
         !transferAccountData.isValid.value ||
@@ -218,6 +215,7 @@ const columnClass = 'col-4 col-xxxl-3';
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
     :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
+    :on-executed="() => (isExecuted = true)"
   >
     <template #successHeading>Account deleted successfully</template>
     <template #successContent>
