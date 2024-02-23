@@ -164,12 +164,7 @@ watch(payerData.isValid, isValid => {
       <div class="form-group col-8 col-xxxl-6">
         <label class="form-label">Keys <span class="text-danger">*</span></label>
         <div class="d-flex gap-3">
-          <AppInput
-            v-model="ownerKeyText"
-            :filled="true"
-            placeholder="Enter owner public key"
-            @keypress="e => e.code === 'Enter' && handleAdd()"
-          />
+          <AppInput v-model="ownerKeyText" :filled="true" placeholder="Enter owner public key" />
         </div>
       </div>
 
