@@ -49,12 +49,12 @@ const routeTo = ref<RouteLocationNormalized | null>(null);
 const isSaveDraftModalShown = ref(false);
 
 /* Handlers */
-const saveDraft = () => {
+const saveDraft = async () => {
   if (!props.getTransactionBytes) return;
 
   const transactionBytes = props.getTransactionBytes();
 
-  addDraft(user.data.id, transactionBytes);
+  await addDraft(user.data.id, transactionBytes);
 
   toast.success('Draft saved', { position: 'bottom-right' });
 };
