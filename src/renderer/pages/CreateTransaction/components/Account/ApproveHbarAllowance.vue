@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { AccountId, Hbar, Key, AccountAllowanceApproveTransaction } from '@hashgraph/sdk';
-
-import useNetworkStore from '@renderer/stores/storeNetwork';
+import {
+  AccountId,
+  Hbar,
+  Key,
+  AccountAllowanceApproveTransaction,
+  Transaction,
+} from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
@@ -20,9 +24,6 @@ import TransactionIdControls from '@renderer/components/Transaction/TransactionI
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import { isAccountId } from '@renderer/utils/validator';
 
-/* Stores */
-const networkStore = useNetworkStore();
-
 /* Composables */
 const toast = useToast();
 const route = useRoute();
@@ -33,7 +34,7 @@ const spenderData = useAccountId();
 /* State */
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
-const transaction = ref<AccountAllowanceApproveTransaction | null>(null);
+const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref(2);
 
@@ -41,6 +42,8 @@ const amount = ref(0);
 const keyStructureComponentKey = ref<Key | null>(null);
 
 const isKeyStructureModalShown = ref(false);
+
+const isExecuted = ref(false);
 
 /* Handlers */
 const handleCreate = async e => {
@@ -51,8 +54,7 @@ const handleCreate = async e => {
       throw Error('Invalid owner');
     }
 
-    createTransaction();
-    transaction.value?.freezeWith(networkStore.client);
+    transaction.value = createTransaction();
 
     const requiredSignatures = payerData.keysFlattened.value.concat(ownerData.keysFlattened.value);
     await transactionProcessor.value?.process(requiredSignatures);
@@ -88,7 +90,7 @@ const handleLoadFromDraft = () => {
 
 /* Functions */
 function createTransaction() {
-  transaction.value = new AccountAllowanceApproveTransaction()
+  const transaction = new AccountAllowanceApproveTransaction()
     .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(new Hbar(maxTransactionFee.value))
@@ -100,13 +102,13 @@ function createTransaction() {
     spenderData.accountId.value &&
     isAccountId(spenderData.accountId.value)
   ) {
-    transaction.value.approveHbarAllowance(
+    transaction.approveHbarAllowance(
       ownerData.accountId.value,
       spenderData.accountId.value,
       new Hbar(amount.value),
     );
   }
-  return transaction.value.toBytes();
+  return transaction;
 }
 
 /* Hooks */
@@ -120,7 +122,8 @@ const columnClass = 'col-4 col-xxxl-3';
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
-      :get-transaction-bytes="createTransaction"
+      :get-transaction-bytes="() => createTransaction().toBytes()"
+      :is-executed="isExecuted"
       heading-text="Approve Hbar Allowance Transaction"
       :create-requirements="
         !payerData.isValid.value ||
@@ -214,6 +217,7 @@ const columnClass = 'col-4 col-xxxl-3';
         transaction = null;
       }
     "
+    :on-executed="() => (isExecuted = true)"
   >
     <template #successHeading>Allowance Approved Successfully</template>
     <template #successContent>
