@@ -73,7 +73,7 @@ const handleLinkFile = async e => {
         <AppInput v-model="nickname" :filled="true" />
       </div>
       <AppButton color="primary" type="submit" class="mt-5 w-100" :disabled="!isAccountId(fileId)"
-        >Link Account</AppButton
+        >Link File</AppButton
       >
     </form>
   </div>
