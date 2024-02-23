@@ -5,6 +5,7 @@ import AppTabs, { TabItem } from '@renderer/components/ui/AppTabs.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import History from './components/History.vue';
 import TransactionSelectionModal from './components/TransactionSelectionModal.vue';
+import Drafts from './components/Drafts.vue';
 
 /* State */
 const tabItems = ref<TabItem[]>([
@@ -37,7 +38,7 @@ const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title
       <template v-if="activeTabTitle === 'Ready to Sign'"> </template>
       <template v-if="activeTabTitle === 'In Progress'"></template>
       <template v-if="activeTabTitle === 'Ready for Submission'"></template> -->
-      <template v-if="activeTabTitle === 'Drafts'"></template>
+      <template v-if="activeTabTitle === 'Drafts'"><Drafts /></template>
       <template v-if="activeTabTitle === 'History'"><History /></template>
     </div>
 
