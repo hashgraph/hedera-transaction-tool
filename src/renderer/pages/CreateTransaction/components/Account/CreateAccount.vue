@@ -19,10 +19,14 @@ import { useRoute } from 'vue-router';
 import { add } from '@renderer/services/accountsService';
 import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
+import { flattenKeyList } from '@renderer/services/keyPairService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
 import { isAccountId, isPublicKey } from '@renderer/utils/validator';
-import { getEntityIdFromTransactionResult } from '@renderer/utils/transactions';
+import {
+  getEntityIdFromTransactionResult,
+  getTransactionFromBytes,
+} from '@renderer/utils/transactions';
 
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -30,7 +34,6 @@ import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
-import { flattenKeyList } from '@renderer/services/keyPairService';
 
 /* Stores */
 const user = useUserStore();
@@ -91,36 +94,41 @@ const handleExecuted = async result => {
   toast.success(`Account ${accountId} linked`, { position: 'bottom-right' });
 };
 
-const handleLoadFromDraft = () => {
-  const draft = getDraft<AccountCreateTransaction>(route.query.draftId?.toString() || '');
+const handleLoadFromDraft = async () => {
+  if (!route.query.draftId) return;
+
+  const draft = await getDraft(route.query.draftId.toString());
+  const draftTransaction = getTransactionFromBytes<AccountCreateTransaction>(
+    draft.transactionBytes,
+  );
 
   if (draft) {
-    transaction.value = draft.transaction;
+    transaction.value = draftTransaction;
 
-    if (draft.transaction.transactionId) {
+    if (draftTransaction.transactionId) {
       payerData.accountId.value =
-        draft.transaction.transactionId.accountId?.toString() || payerData.accountId.value;
+        draftTransaction.transactionId.accountId?.toString() || payerData.accountId.value;
     }
 
-    if (draft.transaction.maxTransactionFee) {
-      maxTransactionFee.value = draft.transaction.maxTransactionFee.toBigNumber().toNumber();
+    if (draftTransaction.maxTransactionFee) {
+      maxTransactionFee.value = draftTransaction.maxTransactionFee.toBigNumber().toNumber();
     }
 
-    accountData.receiverSignatureRequired = draft.transaction.receiverSignatureRequired;
+    accountData.receiverSignatureRequired = draftTransaction.receiverSignatureRequired;
     accountData.maxAutomaticTokenAssociations =
-      draft.transaction.maxAutomaticTokenAssociations.toNumber();
-    accountData.initialBalance = draft.transaction.initialBalance?.toBigNumber().toNumber() || 0;
-    accountData.stakedAccountId = draft.transaction.stakedAccountId?.toString() || '';
+      draftTransaction.maxAutomaticTokenAssociations.toNumber();
+    accountData.initialBalance = draftTransaction.initialBalance?.toBigNumber().toNumber() || 0;
+    accountData.stakedAccountId = draftTransaction.stakedAccountId?.toString() || '';
 
-    if (draft.transaction.stakedNodeId) {
-      accountData.stakedNodeId = draft.transaction.stakedNodeId.toNumber();
+    if (draftTransaction.stakedNodeId) {
+      accountData.stakedNodeId = draftTransaction.stakedNodeId.toNumber();
     }
 
-    accountData.acceptStakingRewards = !draft.transaction.declineStakingRewards;
-    accountData.memo = draft.transaction.accountMemo || '';
+    accountData.acceptStakingRewards = !draftTransaction.declineStakingRewards;
+    accountData.memo = draftTransaction.accountMemo || '';
 
-    if (draft.transaction.key) {
-      ownerKeys.value = flattenKeyList(draft.transaction.key).map(pk => pk.toStringRaw());
+    if (draftTransaction.key) {
+      ownerKeys.value = flattenKeyList(draftTransaction.key).map(pk => pk.toStringRaw());
     }
   }
 };
@@ -148,8 +156,8 @@ function createTransaction() {
 }
 
 /* Hooks */
-onMounted(() => {
-  handleLoadFromDraft();
+onMounted(async () => {
+  await handleLoadFromDraft();
 });
 
 /* Watchers */

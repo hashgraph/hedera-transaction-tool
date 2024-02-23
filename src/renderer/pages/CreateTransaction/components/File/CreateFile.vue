@@ -21,7 +21,10 @@ import { add } from '@renderer/services/filesService';
 import { flattenKeyList } from '@renderer/services/keyPairService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { getEntityIdFromTransactionResult } from '@renderer/utils/transactions';
+import {
+  getEntityIdFromTransactionResult,
+  getTransactionFromBytes,
+} from '@renderer/utils/transactions';
 import { isPublicKey } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -81,31 +84,34 @@ const handleExecuted = async result => {
   await add(user.data.id, getEntityIdFromTransactionResult(result, 'fileId'));
 };
 
-const handleLoadFromDraft = () => {
-  const draft = getDraft<FileCreateTransaction>(route.query.draftId?.toString() || '');
+const handleLoadFromDraft = async () => {
+  if (!route.query.draftId) return;
+
+  const draft = await getDraft(route.query.draftId?.toString() || '');
+  const draftTransaction = getTransactionFromBytes<FileCreateTransaction>(draft.transactionBytes);
 
   if (draft) {
-    transaction.value = draft.transaction;
+    transaction.value = draftTransaction;
 
-    if (draft.transaction.transactionId) {
+    if (draftTransaction.transactionId) {
       payerData.accountId.value =
-        draft.transaction.transactionId.accountId?.toString() || payerData.accountId.value;
+        draftTransaction.transactionId.accountId?.toString() || payerData.accountId.value;
     }
 
-    if (draft.transaction.maxTransactionFee) {
-      maxTransactionFee.value = draft.transaction.maxTransactionFee.toBigNumber().toNumber();
+    if (draftTransaction.maxTransactionFee) {
+      maxTransactionFee.value = draftTransaction.maxTransactionFee.toBigNumber().toNumber();
     }
 
-    if (draft.transaction.keys) {
-      ownerKeys.value = draft.transaction.keys
+    if (draftTransaction.keys) {
+      ownerKeys.value = draftTransaction.keys
         .map(k => flattenKeyList(k).map(pk => pk.toStringRaw()))
         .flat();
     }
 
-    content.value = draft.transaction.contents
-      ? new TextDecoder().decode(draft.transaction.contents)
+    content.value = draftTransaction.contents
+      ? new TextDecoder().decode(draftTransaction.contents)
       : '';
-    memo.value = draft.transaction.fileMemo || '';
+    memo.value = draftTransaction.fileMemo || '';
   }
 };
 
@@ -127,8 +133,8 @@ function createTransaction() {
 }
 
 /* Hooks */
-onMounted(() => {
-  handleLoadFromDraft();
+onMounted(async () => {
+  await handleLoadFromDraft();
 });
 </script>
 <template>

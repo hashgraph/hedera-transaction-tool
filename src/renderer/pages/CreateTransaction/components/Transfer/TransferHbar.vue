@@ -13,6 +13,8 @@ import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
+import { getTransactionFromBytes } from '@renderer/utils/transactions';
+import { isAccountId } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
@@ -21,7 +23,6 @@ import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
-import { isAccountId } from '@renderer/utils/validator';
 
 /* Stores */
 const keyPairs = useKeyPairsStore();
@@ -72,19 +73,21 @@ const handleCreate = async e => {
   }
 };
 
-const handleLoadFromDraft = () => {
-  const draft = getDraft<TransferTransaction>(route.query.draftId?.toString() || '');
+const handleLoadFromDraft = async () => {
+  if (!route.query.draftId) return;
+
+  const draft = await getDraft(route.query.draftId?.toString() || '');
+  const draftTransaction = getTransactionFromBytes<TransferTransaction>(draft.transactionBytes);
 
   if (draft) {
-    transaction.value = draft.transaction;
+    transaction.value = draftTransaction;
 
-    if (draft.transaction.transactionId) {
+    if (draftTransaction.transactionId) {
       payerData.accountId.value =
-        draft.transaction.transactionId.accountId?.toString() || payerData.accountId.value;
+        draftTransaction.transactionId.accountId?.toString() || payerData.accountId.value;
     }
-    console.log(draft.transaction.hbarTransfers);
 
-    draft.transaction.hbarTransfers._map.forEach((value, accoundId) => {
+    draftTransaction.hbarTransfers._map.forEach((value, accoundId) => {
       const hbars = value.toBigNumber().toNumber();
 
       if (hbars > 0) {
@@ -124,13 +127,13 @@ function createTransaction() {
 }
 
 /* Hooks */
-onMounted(() => {
+onMounted(async () => {
   const allAccountIds = keyPairs.accoundIds.map(a => a.accountIds).flat();
   if (allAccountIds.length > 0) {
     payerData.accountId.value = allAccountIds[0];
   }
 
-  handleLoadFromDraft();
+  await handleLoadFromDraft();
 });
 
 /* Misc */

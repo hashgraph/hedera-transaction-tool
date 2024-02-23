@@ -1,15 +1,21 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, reactive, ref } from 'vue';
 
+import { TransactionDraft } from '@prisma/client';
+
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
+import useUserStore from '@renderer/stores/storeUser';
 
-import { getDraft, getDrafts, removeDraft } from '@renderer/services/transactionDraftsService';
+import { getDraft, getDrafts, deleteDraft } from '@renderer/services/transactionDraftsService';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 
+/* Store */
+const user = useUserStore();
+
 /* State */
-const drafts = ref<{ id: string; type: string }[]>([]);
+const drafts = ref<TransactionDraft[]>([]);
 const sort = reactive<{ field: string; direction: 'asc' | 'desc' }>({
   field: 'timestamp',
   direction: 'asc',
@@ -42,9 +48,9 @@ const handleSort = (field: string, direction: 'asc' | 'desc') => {
     case 'timestamp':
       drafts.value = drafts.value.sort((t1, t2) => {
         if (direction === 'asc') {
-          return Number(t1.id) - Number(t2.id);
+          return t1.created_at.getTime() - t2.created_at.getTime();
         } else if (direction === 'desc') {
-          return Number(t2.id) - Number(t1.id);
+          return t2.created_at.getTime() - t1.created_at.getTime();
         } else return 0;
       });
       break;
@@ -53,20 +59,21 @@ const handleSort = (field: string, direction: 'asc' | 'desc') => {
   }
 };
 
-const handleDeleteDraft = (id: string) => {
-  removeDraft(id);
-  drafts.value = getDrafts();
+const handleDeleteDraft = async (id: string) => {
+  await deleteDraft(id);
 
-  toast.success('Draft deleted', { position: 'bottom-right' });
+  drafts.value = drafts.value.filter(d => d.id !== id);
+
+  toast.success('Draft successfully deleted', { position: 'bottom-right' });
 };
 
-const handleContinueDraft = (id: string) => {
-  const draft = getDraft(id);
+const handleContinueDraft = async (id: string) => {
+  const draft = await getDraft(id);
 
   router.push({
     name: 'createTransaction',
     params: {
-      type: draft?.type.replaceAll(' ', ''),
+      type: draft.type.replaceAll(' ', ''),
     },
     query: {
       draftId: draft?.id,
@@ -79,7 +86,7 @@ const getOpositeDirection = () => (sort.direction === 'asc' ? 'desc' : 'asc');
 
 /* Hooks */
 onBeforeMount(async () => {
-  drafts.value = getDrafts();
+  drafts.value = await getDrafts(user.data.id);
   handleSort('timestamp', 'desc');
 });
 </script>
@@ -124,7 +131,7 @@ onBeforeMount(async () => {
           <td>{{ i + 1 }}</td>
           <td>
             <span class="text-secondary">
-              {{ new Date(Number(draft.id)).toLocaleString() }}
+              {{ draft.created_at.toLocaleString() }}
             </span>
           </td>
           <td>
