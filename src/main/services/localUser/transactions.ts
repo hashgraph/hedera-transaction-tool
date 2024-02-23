@@ -137,9 +137,16 @@ export const executeQuery = async (
 
     if (query instanceof FileContentsQuery && isHederaSpecialFileId(query.fileId?.toString())) {
       const decoded = decodeProto(query.fileId.toString() as HederaSpecialFileId, response);
-      return { response: decoded };
+      return decoded;
     }
-    return { response };
+
+    //@ts-expect-error Check if there is a toBytes function
+    if (typeof response === 'object' && response !== null && response.toBytes) {
+      //@ts-expect-error Invoke toBytes()
+      return response.toBytes();
+    } else {
+      return response;
+    }
   } catch (error: any) {
     console.log(error);
     throw new Error(error.message);
