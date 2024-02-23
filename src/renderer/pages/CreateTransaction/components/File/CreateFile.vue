@@ -2,7 +2,10 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { FileCreateTransaction, KeyList, PublicKey, Timestamp, Transaction } from '@hashgraph/sdk';
 
+import { Prisma } from '@prisma/client';
+
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
@@ -14,6 +17,7 @@ import { add } from '@renderer/services/filesService';
 import { flattenKeyList } from '@renderer/services/keyPairService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
+import { createFileInfo } from '@renderer/utils/sdk';
 import {
   getEntityIdFromTransactionResult,
   getTransactionFromBytes,
@@ -25,10 +29,10 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
-import { Prisma } from '@prisma/client';
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
@@ -79,9 +83,25 @@ const handleCreate = async e => {
 const handleExecuted = async result => {
   isExecuted.value = true;
 
+  const fileTransaction = createTransaction();
+
+  const newFileId = getEntityIdFromTransactionResult(result, 'fileId');
+
+  const infoBytes = await createFileInfo({
+    fileId: newFileId,
+    size: fileTransaction.contents?.length || 0,
+    expirationTime: fileTransaction.expirationTime,
+    isDeleted: false,
+    keys: fileTransaction.keys || [],
+    fileMemo: memo.value,
+    ledgerId: network.client.ledgerId,
+  });
+
   const file: Prisma.HederaFileUncheckedCreateInput = {
-    file_id: getEntityIdFromTransactionResult(result, 'fileId'),
+    file_id: newFileId,
     user_id: user.data.id,
+    contentBytes: fileTransaction.contents?.join(','),
+    metaBytes: infoBytes.join(','),
   };
 
   await add(file);
