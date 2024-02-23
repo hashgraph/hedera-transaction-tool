@@ -1,12 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import {
-  AccountId,
-  Hbar,
-  Key,
-  AccountAllowanceApproveTransaction,
-  Transaction,
-} from '@hashgraph/sdk';
+import { Hbar, Key, AccountAllowanceApproveTransaction, Transaction } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
@@ -52,8 +46,16 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    if (!ownerData.accountId.value || !ownerData.isValid.value) {
-      throw Error('Invalid owner');
+    if (!isAccountId(payerData.accountId.value)) {
+      throw Error('Invalid Payer ID');
+    }
+
+    if (!isAccountId(ownerData.accountId.value)) {
+      throw Error('Invalid Owner ID');
+    }
+
+    if (!isAccountId(spenderData.accountId.value)) {
+      throw Error('Invalid Spender ID');
     }
 
     transaction.value = createTransaction();
@@ -98,17 +100,14 @@ const handleLoadFromDraft = async () => {
 /* Functions */
 function createTransaction() {
   const transaction = new AccountAllowanceApproveTransaction()
-    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(new Hbar(maxTransactionFee.value))
-    .setNodeAccountIds([new AccountId(3)]);
+    .setMaxTransactionFee(new Hbar(maxTransactionFee.value));
 
-  if (
-    ownerData.accountId.value &&
-    isAccountId(ownerData.accountId.value) &&
-    spenderData.accountId.value &&
-    isAccountId(spenderData.accountId.value)
-  ) {
+  if (isAccountId(payerData.accountId.value)) {
+    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
+  }
+
+  if (isAccountId(ownerData.accountId.value) && isAccountId(spenderData.accountId.value)) {
     transaction.approveHbarAllowance(
       ownerData.accountId.value,
       spenderData.accountId.value,
