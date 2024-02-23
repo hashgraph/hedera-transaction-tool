@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { AccountId, Hbar, Key, Transaction, TransferTransaction } from '@hashgraph/sdk';
+import { Hbar, Key, Transaction, TransferTransaction } from '@hashgraph/sdk';
 
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
@@ -40,7 +40,7 @@ const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
-const maxTransactionfee = ref(2);
+const maxTransactionFee = ref(2);
 
 const amount = ref(0);
 const isApprovedTransfer = ref(false);
@@ -54,6 +54,18 @@ const isExecuted = ref(false);
 const handleCreate = async e => {
   e.preventDefault();
   try {
+    if (!isAccountId(payerData.accountId.value)) {
+      throw Error('Invalid Payer ID');
+    }
+
+    if (!isAccountId(senderData.accountId.value)) {
+      throw Error('Invalid Sender ID');
+    }
+
+    if (!isAccountId(receiverData.accountId.value)) {
+      throw Error('Invalid Receiver ID');
+    }
+
     transaction.value = createTransaction();
 
     let requiredSignatures = payerData.keysFlattened.value;
@@ -83,18 +95,30 @@ const handleLoadFromDraft = async () => {
     transaction.value = draftTransaction;
 
     if (draftTransaction.transactionId) {
-      payerData.accountId.value =
-        draftTransaction.transactionId.accountId?.toString() || payerData.accountId.value;
+      const transactionId = draftTransaction.transactionId;
+
+      if (transactionId.accountId) {
+        payerData.accountId.value = transactionId.accountId.toString();
+      }
+      if (transactionId.validStart) {
+        validStart.value = getDateTimeLocalInputValue(transactionId.validStart.toDate());
+      }
     }
+
+    if (draftTransaction.maxTransactionFee) {
+      maxTransactionFee.value = draftTransaction.maxTransactionFee.toBigNumber().toNumber();
+    }
+    console.log(draftTransaction);
 
     draftTransaction.hbarTransfers._map.forEach((value, accoundId) => {
       const hbars = value.toBigNumber().toNumber();
 
-      if (hbars > 0) {
-        receiverData.accountId.value = accoundId;
-        amount.value = hbars;
-      } else {
+      amount.value = Math.abs(hbars);
+
+      if (hbars < 0) {
         senderData.accountId.value = accoundId;
+      } else {
+        receiverData.accountId.value = accoundId;
       }
     });
   }
@@ -103,23 +127,27 @@ const handleLoadFromDraft = async () => {
 /* Functions */
 function createTransaction() {
   const transaction = new TransferTransaction()
-    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
-    .setNodeAccountIds([new AccountId(3)]);
+    .setMaxTransactionFee(new Hbar(maxTransactionFee.value));
 
-  if (receiverData.accountId.value && isAccountId(receiverData.accountId.value)) {
+  if (isAccountId(payerData.accountId.value)) {
+    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
+  }
+
+  if (isAccountId(receiverData.accountId.value)) {
     transaction.addHbarTransfer(receiverData.accountId.value, new Hbar(amount.value));
   }
 
+  const isSenderValid = isAccountId(receiverData.accountId.value);
+
   if (isApprovedTransfer.value) {
-    senderData.accountId.value &&
+    isSenderValid &&
       transaction?.addApprovedHbarTransfer(
         senderData.accountId.value,
         new Hbar(amount.value).negated(),
       );
   } else {
-    senderData.accountId.value &&
+    isSenderValid &&
       transaction?.addHbarTransfer(senderData.accountId.value, new Hbar(amount.value).negated());
   }
 
@@ -188,7 +216,7 @@ const columnClass = 'col-4 col-xxxl-3';
       </div>
       <div class="form-group form-group" :class="[columnClass]">
         <label class="form-label">Max Transaction Fee</label>
-        <AppInput v-model="maxTransactionfee" type="number" min="0" :filled="true" />
+        <AppInput v-model="maxTransactionFee" type="number" min="0" :filled="true" />
       </div>
     </div>
 
@@ -279,7 +307,7 @@ const columnClass = 'col-4 col-xxxl-3';
         senderData.accountId.value = '';
         receiverData.accountId.value = '';
         validStart = '';
-        maxTransactionfee = 2;
+        maxTransactionFee = 2;
         amount = 0;
         transaction = null;
       }
