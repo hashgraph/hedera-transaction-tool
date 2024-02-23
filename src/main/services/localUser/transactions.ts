@@ -130,7 +130,7 @@ export const executeQuery = async (
 
   client.setOperator(accountId, privateKey);
 
-  const query = Query.fromBytes(Uint8Array.from(queryBytes));
+  const query = Query.fromBytes(queryBytes);
 
   try {
     const response = await query.execute(client);
