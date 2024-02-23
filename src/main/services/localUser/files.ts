@@ -58,9 +58,10 @@ export const updateFile = async (
 ) => {
   const prisma = getPrismaClient();
 
-  await prisma.hederaFile.update({
+  await prisma.hederaFile.updateMany({
     where: {
-      id: fileId,
+      file_id: fileId,
+      user_id: userId,
     },
     data: {
       ...file,
