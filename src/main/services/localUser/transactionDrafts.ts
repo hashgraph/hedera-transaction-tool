@@ -46,6 +46,21 @@ export const addDraft = async (draft: TransactionDraft) => {
   });
 };
 
+export const updateDraft = async (draft: TransactionDraft) => {
+  const prisma = getPrismaClient();
+
+  await prisma.transactionDraft.update({
+    where: {
+      id: draft.id,
+    },
+    data: {
+      type: draft.type,
+      transactionBytes: draft.transactionBytes,
+      details: draft.details,
+    },
+  });
+};
+
 export const deleteDraft = async (id: string) => {
   const prisma = getPrismaClient();
 
