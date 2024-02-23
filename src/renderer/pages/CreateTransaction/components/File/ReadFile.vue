@@ -19,6 +19,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 
 /* Stores */
@@ -136,12 +137,17 @@ const columnClass = 'col-4 col-xxxl-3';
         <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
           >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
         >
-        <AppInput
-          :model-value="payerData.accountIdFormatted.value"
-          @update:model-value="v => (payerData.accountId.value = v)"
-          :filled="true"
-          placeholder="Enter Payer ID"
-        />
+        <template v-if="user.data.mode === 'personal'">
+          <AccountIdsSelect v-model:account-id="payerData.accountId.value" :select-default="true" />
+        </template>
+        <template v-else>
+          <AppInput
+            :model-value="payerData.accountIdFormatted.value"
+            @update:model-value="v => (payerData.accountId.value = v)"
+            :filled="true"
+            placeholder="Enter Payer ID"
+          />
+        </template>
       </div>
     </div>
 
