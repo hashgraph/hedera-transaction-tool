@@ -1,15 +1,18 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { AccountId, FileCreateTransaction, KeyList, PublicKey, Timestamp } from '@hashgraph/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
+import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
+import { getDraft } from '@renderer/services/transactionDraftsService';
 import { add } from '@renderer/services/filesService';
+import { flattenKeyList } from '@renderer/services/keyPairService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
 import { getEntityIdFromTransactionResult } from '@renderer/utils/transactions';
@@ -27,6 +30,7 @@ const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
+const route = useRoute();
 const payerData = useAccountId();
 
 /* State */
@@ -56,19 +60,8 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    transaction.value = new FileCreateTransaction()
-      .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
-      .setTransactionValidDuration(180)
-      .setMaxTransactionFee(maxTransactionFee.value)
-      .setNodeAccountIds([new AccountId(3)])
-      .setKeys(keyList.value)
-      .setContents(content.value)
-      .setFileMemo(memo.value);
-
-    if (expirationTimestamp.value)
-      transaction.value.setExpirationTime(Timestamp.fromDate(expirationTimestamp.value));
-
-    transaction.value.freezeWith(network.client);
+    createTransaction();
+    transaction.value?.freezeWith(network.client);
 
     const requiredSignatures = payerData.keysFlattened.value.concat(ownerKeys.value);
     await transactionProcessor.value?.process(requiredSignatures);
@@ -80,10 +73,61 @@ const handleCreate = async e => {
 const handleExecuted = async result => {
   await add(user.data.id, getEntityIdFromTransactionResult(result, 'fileId'));
 };
+
+const handleLoadFromDraft = () => {
+  const draft = getDraft<FileCreateTransaction>(route.query.draftId?.toString() || '');
+
+  if (draft) {
+    transaction.value = draft.transaction;
+
+    if (draft.transaction.transactionId) {
+      payerData.accountId.value =
+        draft.transaction.transactionId.accountId?.toString() || payerData.accountId.value;
+    }
+
+    if (draft.transaction.maxTransactionFee) {
+      maxTransactionFee.value = draft.transaction.maxTransactionFee.toBigNumber().toNumber();
+    }
+
+    if (draft.transaction.keys) {
+      ownerKeys.value = draft.transaction.keys
+        .map(k => flattenKeyList(k).map(pk => pk.toStringRaw()))
+        .flat();
+    }
+
+    content.value = draft.transaction.contents
+      ? new TextDecoder().decode(draft.transaction.contents)
+      : '';
+    memo.value = draft.transaction.fileMemo || '';
+  }
+};
+
+/* Functions */
+function createTransaction() {
+  transaction.value = new FileCreateTransaction()
+    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
+    .setTransactionValidDuration(180)
+    .setMaxTransactionFee(maxTransactionFee.value)
+    .setNodeAccountIds([new AccountId(3)])
+    .setKeys(keyList.value)
+    .setContents(content.value)
+    .setFileMemo(memo.value);
+
+  if (expirationTimestamp.value)
+    transaction.value.setExpirationTime(Timestamp.fromDate(expirationTimestamp.value));
+
+  return transaction.value.toBytes();
+}
+
+/* Hooks */
+onMounted(() => {
+  handleLoadFromDraft();
+});
 </script>
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
+      :get-transaction-bytes="createTransaction"
       :create-requirements="keyList._keys.length === 0 || !payerData.isValid.value"
       heading-text="Create File Transaction"
     />
