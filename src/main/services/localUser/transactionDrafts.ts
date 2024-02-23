@@ -22,6 +22,10 @@ export const getDraft = async (id: string) => {
     },
   });
 
+  if (!draft) {
+    throw new Error('Transaction draft not found');
+  }
+
   return draft;
 };
 
