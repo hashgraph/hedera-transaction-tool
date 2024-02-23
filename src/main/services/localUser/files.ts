@@ -1,10 +1,11 @@
 import { getPrismaClient } from '@main/db';
+import { Prisma } from '@prisma/client';
 
-export const getFiles = (userId: string) => {
+export const getFiles = async (userId: string) => {
   const prisma = getPrismaClient();
 
   try {
-    return prisma.hederaFile.findMany({
+    return await prisma.hederaFile.findMany({
       where: {
         user_id: userId,
       },
@@ -15,39 +16,55 @@ export const getFiles = (userId: string) => {
   }
 };
 
-export const addFile = async (userId: string, fileId: string, nickname: string = '') => {
+export const addFile = async (file: Prisma.HederaFileUncheckedCreateInput) => {
   const prisma = getPrismaClient();
 
-  const Files = await getFiles(userId);
+  const files = await getFiles(file.user_id);
 
-  if (Files.some(acc => acc.file_id === fileId || (nickname && acc.nickname === nickname))) {
-    throw new Error('File ID or Nickname already exists!');
+  if (files.some(acc => acc.file_id === file.file_id)) {
+    throw new Error('File ID already exists!');
   }
 
   await prisma.hederaFile.create({
-    data: {
-      user_id: userId,
-      file_id: fileId,
-      nickname: nickname,
-    },
+    data: file,
   });
 
-  return await getFiles(userId);
+  return await getFiles(file.user_id);
 };
 
-export const removeFile = async (userId: string, fileId: string, nickname?: string) => {
+export const removeFile = async (userId: string, fileId: string) => {
   const prisma = getPrismaClient();
 
-  const Files = await getFiles(userId);
+  const files = await getFiles(userId);
 
-  if (!Files.some(acc => acc.file_id === fileId || (nickname && acc.nickname === nickname))) {
-    throw new Error(`File ID ${nickname && `or ${nickname}`} not found!`);
+  if (!files.some(acc => acc.file_id === fileId)) {
+    throw new Error(`File ID not found!`);
   }
 
   await prisma.hederaFile.deleteMany({
     where: {
       user_id: userId,
       file_id: fileId,
+    },
+  });
+
+  return await getFiles(userId);
+};
+
+export const updateFile = async (
+  fileId: string,
+  userId: string,
+  file: Prisma.HederaFileUncheckedUpdateInput,
+) => {
+  const prisma = getPrismaClient();
+
+  await prisma.hederaFile.update({
+    where: {
+      id: fileId,
+    },
+    data: {
+      ...file,
+      user_id: userId,
     },
   });
 

@@ -8,6 +8,7 @@ import {
   HederaAccount,
   HederaFile,
   KeyPair,
+  Prisma,
   Transaction,
   TransactionDraft,
   User,
@@ -103,10 +104,15 @@ export const electronAPI = {
   },
   files: {
     getAll: (userId: string): Promise<HederaFile[]> => ipcRenderer.invoke('files:getAll', userId),
-    add: (userId: string, accountId: string, nickname: string): Promise<HederaFile[]> =>
-      ipcRenderer.invoke('files:add', userId, accountId, nickname),
-    remove: (userId: string, accountId: string, nickname: string): Promise<HederaFile[]> =>
-      ipcRenderer.invoke('files:remove', userId, accountId, nickname),
+    add: (file: Prisma.HederaFileUncheckedCreateInput): Promise<HederaFile[]> =>
+      ipcRenderer.invoke('files:add', file),
+    update: (
+      fileId: string,
+      userId: string,
+      file: Prisma.HederaFileUncheckedUpdateInput,
+    ): Promise<HederaFile[]> => ipcRenderer.invoke('files:update', fileId, userId, file),
+    remove: (userId: string, accountId: string): Promise<HederaFile[]> =>
+      ipcRenderer.invoke('files:remove', userId, accountId),
   },
   localUser: {
     login: (email: string, password: string, autoRegister?: boolean): Promise<User> =>
