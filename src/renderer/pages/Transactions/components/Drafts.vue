@@ -5,6 +5,8 @@ import { useRouter } from 'vue-router';
 
 import { getDraft, getDrafts, removeDraft } from '@renderer/services/transactionDraftsService';
 
+import { transactionTypeKeys } from '@renderer/pages/CreateTransaction/txTypeComponentMapping';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 
 /* State */
@@ -58,12 +60,13 @@ const handleDeleteDraft = (id: string) => {
 
 const handleContinueDraft = (id: string) => {
   const draft = getDraft(id);
-  console.log(draft?.routeParam);
 
   router.push({
     name: 'createTransaction',
     params: {
-      type: draft?.routeParam,
+      type: transactionTypeKeys[
+        draft?.type.replaceAll(' ', '') as keyof typeof transactionTypeKeys
+      ],
     },
     query: {
       draftId: draft?.id,

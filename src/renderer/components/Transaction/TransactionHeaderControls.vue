@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRoute } from 'vue-router';
+import { useToast } from 'vue-toast-notification';
 
 import { addDraft } from '@renderer/services/transactionDraftsService';
 
@@ -23,7 +23,7 @@ const props = withDefaults(
 );
 
 /* Composables */
-const route = useRoute();
+const toast = useToast();
 
 /* Handlers */
 const saveDraft = () => {
@@ -31,7 +31,9 @@ const saveDraft = () => {
 
   const transactionBytes = props.getTransactionBytes();
 
-  addDraft(transactionBytes, route.params.type.toString());
+  addDraft(transactionBytes);
+
+  toast.success('Draft saved', { position: 'bottom-right' });
 };
 </script>
 <template>
