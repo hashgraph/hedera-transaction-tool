@@ -126,6 +126,7 @@ const handleLoadFromDraft = async () => {
 
     newAccountData.receiverSignatureRequired = draftTransaction.receiverSignatureRequired;
     newAccountData.acceptStakingAwards = !draftTransaction.declineStakingRewards;
+
     newAccountData.maxAutomaticTokenAssociations =
       draftTransaction.maxAutomaticTokenAssociations.toNumber();
     newAccountData.memo = draftTransaction.accountMemo || '';
@@ -138,7 +139,7 @@ const handleLoadFromDraft = async () => {
       newAccountData.stakedAccountId = draftTransaction.stakedAccountId?.toString() || '';
     }
 
-    if (draftTransaction.stakedNodeId >= 0) {
+    if (draftTransaction.stakedNodeId && draftTransaction.stakedNodeId >= 0) {
       newAccountData.stakedNodeId = draftTransaction.stakedNodeId.toNumber() || '';
     }
   }
@@ -186,11 +187,11 @@ function createTransaction() {
 
 /* Hooks */
 onMounted(async () => {
-  if (route.query.accountId) {
+  if (route.query.draftId) {
+    await handleLoadFromDraft();
+  } else if (route.query.accountId) {
     accountData.accountId.value = route.query.accountId.toString();
   }
-
-  await handleLoadFromDraft();
 });
 
 /* Watchers */
@@ -202,7 +203,7 @@ watch(accountData.accountInfo, accountInfo => {
     newAccountData.stakedNodeId = '';
     newAccountData.acceptStakingAwards = false;
     newAccountData.memo = '';
-  } else {
+  } else if (!route.query.draftId) {
     newAccountData.receiverSignatureRequired = accountInfo.receiverSignatureRequired;
     newAccountData.maxAutomaticTokenAssociations = accountInfo.maxAutomaticTokenAssociations || 0;
     newAccountData.stakedAccountId = accountInfo.stakedAccountId?.toString() || '';
