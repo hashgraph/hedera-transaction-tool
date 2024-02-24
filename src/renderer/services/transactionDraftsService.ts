@@ -1,4 +1,4 @@
-import { TransactionDraft } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import { getMessageFromIPCError } from '@renderer/utils';
 import { getTransactionType } from '@renderer/utils/transactions';
@@ -23,8 +23,7 @@ export const getDraft = async (id: string) => {
 };
 
 export const addDraft = async (userId: string, transactionBytes: Uint8Array, details?: string) => {
-  const transactionDraft: TransactionDraft = {
-    id: '3',
+  const transactionDraft: Prisma.TransactionDraftUncheckedCreateInput = {
     created_at: new Date(),
     updated_at: new Date(),
     user_id: userId,

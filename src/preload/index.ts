@@ -64,7 +64,7 @@ export const electronAPI = {
       ipcRenderer.invoke('keyPairs:getAll', userId, organizationId),
     getSecretHashes: (userId: string, organizationId?: string): Promise<string[]> =>
       ipcRenderer.invoke('keyPairs:getSecretHashes', userId, organizationId),
-    store: (keyPair: KeyPair, password: string): Promise<void> =>
+    store: (keyPair: Prisma.KeyPairUncheckedCreateInput, password: string): Promise<void> =>
       ipcRenderer.invoke('keyPairs:store', keyPair, password),
     changeDecryptionPassword: (
       userId: string,
@@ -165,8 +165,9 @@ export const electronAPI = {
         privateKey,
         privateKeyType,
       ),
-    storeTransaction: (transaction: Transaction): Promise<Transaction[]> =>
-      ipcRenderer.invoke('transactions:storeTransaction', transaction),
+    storeTransaction: (
+      transaction: Prisma.TransactionUncheckedCreateInput,
+    ): Promise<Transaction[]> => ipcRenderer.invoke('transactions:storeTransaction', transaction),
     getTransactions: (user_id: string): Promise<Transaction[]> =>
       ipcRenderer.invoke('transactions:getTransactions', user_id),
     encodeSpecialFile: (content: Uint8Array, fileId: string) =>
@@ -177,9 +178,9 @@ export const electronAPI = {
       ipcRenderer.invoke('transactionDrafts:getDrafts', userId),
     getDraft: (id: string): Promise<TransactionDraft> =>
       ipcRenderer.invoke('transactionDrafts:getDraft', id),
-    addDraft: (draft: TransactionDraft): Promise<void> =>
+    addDraft: (draft: Prisma.TransactionDraftUncheckedCreateInput): Promise<void> =>
       ipcRenderer.invoke('transactionDrafts:addDraft', draft),
-    updateDraft: (draft: TransactionDraft): Promise<void> =>
+    updateDraft: (draft: Prisma.TransactionDraftUncheckedCreateInput): Promise<void> =>
       ipcRenderer.invoke('transactionDrafts:updateDraft', draft),
     deleteDraft: (id: string): Promise<void> =>
       ipcRenderer.invoke('transactionDrafts:deleteDraft', id),

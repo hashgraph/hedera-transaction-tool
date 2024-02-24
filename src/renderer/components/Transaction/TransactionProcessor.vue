@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
 
 import { Transaction, TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
-import { Transaction as Tx } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
@@ -181,8 +181,7 @@ async function executeTransaction(transactionBytes: Uint8Array) {
   if (!type.value || !executedTransaction.transactionId || !transactionResult.value)
     throw new Error('Cannot save transaction');
 
-  const tx: Tx = {
-    id: '',
+  const tx: Prisma.TransactionUncheckedCreateInput = {
     name: `${type.value} (${executedTransaction.transactionId.toString()})`,
     type: type.value,
     description: '',
@@ -196,8 +195,6 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     signature: '',
     valid_start: executedTransaction.transactionId.validStart?.toString() || '',
     executed_at: new Date().getTime() / 1000,
-    created_at: new Date(),
-    updated_at: new Date(),
     group_id: null,
   };
 

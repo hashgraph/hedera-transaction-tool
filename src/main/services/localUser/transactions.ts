@@ -1,6 +1,6 @@
 import { Client, FileContentsQuery, PrivateKey, Query, Transaction } from '@hashgraph/sdk';
 
-import { Transaction as Tx } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { getPrismaClient } from '@main/db';
 
 import { getNumberArrayFromString } from '@main/utils';
@@ -167,7 +167,7 @@ export const executeQuery = async (
 };
 
 // Stores a transaction
-export const storeTransaction = async (transaction: Tx) => {
+export const storeTransaction = async (transaction: Prisma.TransactionUncheckedCreateInput) => {
   const prisma = getPrismaClient();
 
   try {
@@ -180,12 +180,7 @@ export const storeTransaction = async (transaction: Tx) => {
     transaction.body = Buffer.from(uint8Body).toString('hex');
 
     return await prisma.transaction.create({
-      data: {
-        ...transaction,
-        id: undefined,
-        created_at: undefined,
-        updated_at: undefined,
-      },
+      data: transaction,
     });
   } catch (error: any) {
     console.log(error);

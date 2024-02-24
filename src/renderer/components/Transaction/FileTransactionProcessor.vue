@@ -8,7 +8,7 @@ import {
   TransactionReceipt,
   TransactionResponse,
 } from '@hashgraph/sdk';
-import { Transaction as Tx } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
@@ -259,8 +259,7 @@ async function executeTransaction(transactionBytes: Uint8Array) {
 
   if (!type.value || !transaction.value.transactionId) throw new Error('Cannot save transaction');
 
-  const transactionToStore: Tx = {
-    id: '',
+  const transactionToStore: Prisma.TransactionUncheckedCreateInput = {
     name: `${type.value} (${transaction.value.transactionId.toString()})`,
     type: type.value,
     description: '',
@@ -274,8 +273,6 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     signature: '',
     valid_start: transaction.value.transactionId.validStart?.toString() || '',
     executed_at: new Date().getTime() / 1000,
-    created_at: new Date(),
-    updated_at: new Date(),
     group_id: null,
   };
   await storeTransaction(transactionToStore);
@@ -449,8 +446,7 @@ async function executeFileTransactions(
       throw new Error('No transaction to save');
     }
 
-    const transactionToStore: Tx = {
-      id: '',
+    const transactionToStore: Prisma.TransactionUncheckedCreateInput = {
       name: `${chunkTransactionType} (${chunkTransaction.transactionId?.toString()})`,
       type: chunkTransactionType,
       description: '',
@@ -464,8 +460,6 @@ async function executeFileTransactions(
       signature: '',
       valid_start: chunkTransaction.transactionId?.validStart?.toString() || '',
       executed_at: new Date().getTime() / 1000,
-      created_at: new Date(),
-      updated_at: new Date(),
       group_id: group,
     };
 

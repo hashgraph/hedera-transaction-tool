@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron';
-import { Transaction } from '@prisma/client';
+
+import { Prisma } from '@prisma/client';
 
 import {
   executeQuery,
@@ -60,8 +61,9 @@ export default () => {
   );
 
   // Stores a transaction
-  ipcMain.handle(createChannelName('storeTransaction'), (_e, transaction: Transaction) =>
-    storeTransaction(transaction),
+  ipcMain.handle(
+    createChannelName('storeTransaction'),
+    (_e, transaction: Prisma.TransactionUncheckedCreateInput) => storeTransaction(transaction),
   );
 
   // Get stored transactions

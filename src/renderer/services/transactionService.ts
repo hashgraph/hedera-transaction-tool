@@ -9,7 +9,7 @@ import {
   TransactionResponse,
 } from '@hashgraph/sdk';
 
-import { KeyPair, Transaction as Tx } from '@prisma/client';
+import { KeyPair, Prisma } from '@prisma/client';
 
 import { getMessageFromIPCError } from '@renderer/utils';
 
@@ -153,7 +153,7 @@ export const executeQuery = async (
 };
 
 /* Saves transaction info */
-export const storeTransaction = async (transaction: Tx) => {
+export const storeTransaction = async (transaction: Prisma.TransactionUncheckedCreateInput) => {
   try {
     return await window.electronAPI.transactions.storeTransaction(transaction);
   } catch (err: any) {

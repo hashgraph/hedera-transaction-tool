@@ -1,7 +1,7 @@
 import { Key, KeyList, Mnemonic, PrivateKey, PublicKey } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
-import { KeyPair } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import { getMessageFromIPCError } from '@renderer/utils';
 
@@ -49,7 +49,10 @@ export const restorePrivateKey = async (
 };
 
 /* Store key pair*/
-export const storeKeyPair = async (keyPair: KeyPair, password: string) => {
+export const storeKeyPair = async (
+  keyPair: Prisma.KeyPairUncheckedCreateInput,
+  password: string,
+) => {
   try {
     return await window.electronAPI.keyPairs.store(keyPair, password);
   } catch (error) {
