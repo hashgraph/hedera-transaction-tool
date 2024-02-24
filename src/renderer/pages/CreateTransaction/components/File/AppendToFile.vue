@@ -103,16 +103,20 @@ const handleCreate = async e => {
     }
 
     const newTransaction = createTransaction();
-    newTransaction.setContents(
-      fileBuffer.value ? fileBuffer.value : new TextEncoder().encode(content.value),
-    );
+
+    if (content.value.length > 0) {
+      newTransaction.setContents(content.value);
+    }
+    if (fileBuffer.value) {
+      newTransaction.setContents(fileBuffer.value);
+    }
 
     transaction.value = newTransaction;
 
     await transactionProcessor.value?.process(
       payerData.keysFlattened.value.concat(signatureKeys.value),
       chunkSize.value,
-      0,
+      1,
     );
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
@@ -151,7 +155,8 @@ const handleLoadFromDraft = async () => {
 function createTransaction() {
   const transaction = new FileAppendTransaction()
     .setTransactionValidDuration(180)
-    .setChunkSize(Number(chunkSize.value));
+    // .setChunkSize(Number(chunkSize.value))
+    .setMaxChunks(9999999999999);
 
   if (isAccountId(payerData.accountId.value)) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
