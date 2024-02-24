@@ -25,14 +25,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 /* Props */
 const props = defineProps<{
   transactionBytes: Uint8Array | null;
-  onExecuted?: (
-    result: {
-      response: TransactionResponse;
-      receipt: TransactionReceipt;
-      transactionId: string;
-    },
-    chunksAmount?: number,
-  ) => void;
+  onExecuted?: (response: TransactionResponse, receipt: TransactionReceipt) => void;
   onCloseSuccessModalClick?: () => void;
   watchExecutedModalShown?: (shown: boolean) => void;
 }>();
@@ -49,7 +42,6 @@ const toast = useToast();
 const transactionResult = ref<{
   response: TransactionResponse;
   receipt: TransactionReceipt;
-  transactionId: string;
 } | null>();
 const userPassword = ref('');
 const requiredSignatures = ref<string[]>([]);
@@ -164,12 +156,14 @@ async function executeTransaction(transactionBytes: Uint8Array) {
   try {
     isExecuting.value = true;
 
-    transactionResult.value = await execute(transactionBytes);
+    const { response, receipt } = await execute(transactionBytes);
 
-    status = transactionResult.value.receipt.status._code;
+    transactionResult.value = { response, receipt };
+
+    status = receipt.status._code;
 
     isExecutedModalShown.value = true;
-    props.onExecuted && props.onExecuted(transactionResult.value);
+    props.onExecuted && props.onExecuted(response, receipt);
 
     if (unmounted.value) {
       toast.success('Transaction executed', { position: 'bottom-right' });
@@ -184,7 +178,8 @@ async function executeTransaction(transactionBytes: Uint8Array) {
 
   const executedTransaction = Transaction.fromBytes(transactionBytes);
 
-  if (!type.value || !executedTransaction.transactionId) throw new Error('Cannot save transaction');
+  if (!type.value || !executedTransaction.transactionId || !transactionResult.value)
+    throw new Error('Cannot save transaction');
 
   const tx: Tx = {
     id: '',
@@ -192,7 +187,7 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     type: type.value,
     description: '',
     transaction_id: executedTransaction.transactionId.toString(),
-    transaction_hash: (await executedTransaction.getTransactionHash()).toString(),
+    transaction_hash: transactionResult.value.response.transactionHash.toString(),
     body: transactionBytes.toString(),
     status: '',
     status_code: status,
@@ -205,6 +200,7 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     updated_at: new Date(),
     group_id: null,
   };
+
   await storeTransaction(tx);
 }
 
@@ -381,9 +377,9 @@ defineExpose({
             @click="
               network.network !== 'custom' &&
                 openExternal(`
-            https://hashscan.io/${network.network}/transaction/${transactionResult?.transactionId}`)
+            https://hashscan.io/${network.network}/transaction/${transactionResult?.response.transactionId}`)
             "
-            >{{ transactionResult?.transactionId }}</a
+            >{{ transactionResult?.response.transactionId }}</a
           >
         </p>
         <slot name="successContent"></slot>

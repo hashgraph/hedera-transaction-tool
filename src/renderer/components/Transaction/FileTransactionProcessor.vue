@@ -42,11 +42,8 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 const props = defineProps<{
   transactionBytes: Uint8Array | null;
   onExecuted?: (
-    result: {
-      response: TransactionResponse;
-      receipt: TransactionReceipt;
-      transactionId: string;
-    },
+    response: TransactionResponse,
+    receipt: TransactionReceipt,
     chunksAmount?: number,
   ) => void;
   onCloseSuccessModalClick?: () => void;
@@ -65,7 +62,6 @@ const toast = useToast();
 const transactionResult = ref<{
   response: TransactionResponse;
   receipt: TransactionReceipt;
-  transactionId: string;
 } | null>();
 const chunksAmount = ref<number | null>(null);
 const chunkSize = ref(1024);
@@ -242,12 +238,13 @@ async function executeTransaction(transactionBytes: Uint8Array) {
   try {
     isExecuting.value = true;
 
-    transactionResult.value = await execute(transactionBytes);
+    const { response, receipt } = await execute(transactionBytes);
+    transactionResult.value = { response, receipt };
 
     status = transactionResult.value.receipt.status._code;
 
     isExecutedModalShown.value = true;
-    props.onExecuted && props.onExecuted(transactionResult.value);
+    props.onExecuted && props.onExecuted(response, receipt);
 
     if (unmounted.value) {
       toast.success('Transaction executed', { position: 'bottom-right' });
@@ -306,7 +303,7 @@ async function chunkFileTransactionForOrganization(
     const updateTransaction = new FileUpdateTransaction()
       .setTransactionId(transaction.transactionId!)
       .setTransactionValidDuration(180)
-      .setMaxTransactionFee(transaction.maxTransactionFee?.toString() || 2)
+      .setMaxTransactionFee(transaction.maxTransactionFee || 2)
       .setFileId(transaction.fileId!)
       .setContents(chunks[0]);
     transaction.fileMemo && updateTransaction.setFileMemo(transaction.fileMemo);
@@ -337,7 +334,7 @@ async function chunkFileTransactionForOrganization(
     const appendTransaction = new FileAppendTransaction()
       .setTransactionId(transactionId)
       .setTransactionValidDuration(180)
-      .setMaxTransactionFee(transaction.maxTransactionFee?.toString() || 2)
+      .setMaxTransactionFee(transaction.maxTransactionFee || 2)
       .setFileId(transaction.fileId!)
       .setContents(chunks[i])
       .setMaxChunks(1)
@@ -368,7 +365,6 @@ async function executeFileTransactions(
   let firstTransactionResult: {
     response: TransactionResponse;
     receipt: TransactionReceipt;
-    transactionId: string;
   } | null = null;
   processedChunks.value = 0;
   let hasFailed = false;
@@ -385,13 +381,19 @@ async function executeFileTransactions(
     let status = 0;
     let chunkTransaction: FileUpdateTransaction | FileAppendTransaction = transaction;
     let chunkTransactionType = '';
+
+    let executionResult: {
+      response: TransactionResponse;
+      receipt: TransactionReceipt;
+    } | null = null;
+
     try {
       if (transaction instanceof FileUpdateTransaction && i === 0) {
         chunkTransactionType = 'File Update Transaction';
         chunkTransaction = new FileUpdateTransaction()
           .setTransactionId(createTransactionId(transaction.transactionId!.accountId!, new Date()))
           .setTransactionValidDuration(180)
-          .setMaxTransactionFee(transaction.maxTransactionFee?.toString() || 2)
+          .setMaxTransactionFee(transaction.maxTransactionFee || 2)
           .setFileId(transaction.fileId!)
           .setContents(chunks[0]);
         transaction.fileMemo && chunkTransaction.setFileMemo(transaction.fileMemo);
@@ -400,18 +402,16 @@ async function executeFileTransactions(
           chunkTransaction.setKeys(transaction.keys);
         transaction.expirationTime &&
           chunkTransaction.setExpirationTime(transaction.expirationTime);
-      } else if (transaction instanceof FileAppendTransaction) {
+      } else {
         chunkTransactionType = 'File Append Transaction';
         chunkTransaction = new FileAppendTransaction()
           .setTransactionId(createTransactionId(transaction.transactionId!.accountId!, new Date()))
           .setTransactionValidDuration(180)
-          .setMaxTransactionFee(transaction.maxTransactionFee?.toString() || 2)
+          .setMaxTransactionFee(transaction.maxTransactionFee || 2)
           .setFileId(transaction.fileId!)
           .setContents(chunks[i])
           .setMaxChunks(1)
           .setChunkSize(chunkSize.value);
-      } else {
-        throw new Error('File transaction should be Update or Append');
       }
 
       const signedTransactionBytes = await signTransaction(
@@ -421,11 +421,12 @@ async function executeFileTransactions(
         userPassword.value,
       );
 
-      const result = await execute(signedTransactionBytes);
+      const { response, receipt } = await execute(signedTransactionBytes);
 
-      if (i === 0) firstTransactionResult = result;
+      if (i === 0) firstTransactionResult = { response, receipt };
+      executionResult = { response, receipt };
 
-      status = result.receipt.status._code;
+      status = receipt.status._code;
 
       processedChunks.value++;
     } catch (error: any) {
@@ -444,7 +445,7 @@ async function executeFileTransactions(
       toast.error(message, { position: 'bottom-right' });
     }
 
-    if (chunkTransaction === null) {
+    if (chunkTransaction === null || !executionResult) {
       throw new Error('No transaction to save');
     }
 
@@ -454,7 +455,7 @@ async function executeFileTransactions(
       type: chunkTransactionType,
       description: '',
       transaction_id: chunkTransaction.transactionId?.toString() || '',
-      transaction_hash: (await chunkTransaction.getTransactionHash()).toString(),
+      transaction_hash: executionResult.response.toString(),
       body: chunkTransaction.toBytes().toString(),
       status: '',
       status_code: status,
@@ -475,7 +476,12 @@ async function executeFileTransactions(
 
   if (firstTransactionResult) {
     transactionResult.value = firstTransactionResult;
-    props.onExecuted && props.onExecuted(transactionResult.value, chunksAmount.value || undefined);
+    props.onExecuted &&
+      props.onExecuted(
+        firstTransactionResult.response,
+        firstTransactionResult.receipt,
+        chunksAmount.value || undefined,
+      );
     isExecutedModalShown.value = true;
   }
 
@@ -704,9 +710,9 @@ defineExpose({
             @click="
               network.network !== 'custom' &&
                 openExternal(`
-            https://hashscan.io/${network.network}/transaction/${transactionResult?.transactionId}`)
+            https://hashscan.io/${network.network}/transaction/${transactionResult?.response.transactionId}`)
             "
-            >{{ transactionResult?.transactionId }}</a
+            >{{ transactionResult?.response.transactionId }}</a
           >
         </p>
         <slot name="successContent"></slot>
