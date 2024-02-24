@@ -387,7 +387,7 @@ const columnClass = 'col-4 col-xxxl-3';
         class="text-small d-flex justify-content-between align-items mt-2"
       >
         <span class="text-bold text-secondary">Account ID:</span>
-        <span>{{ accountData.accountId.value }}</span>
+        <span>{{ accountData.accountIdFormatted.value }}</span>
       </p>
     </template>
   </TransactionProcessor>

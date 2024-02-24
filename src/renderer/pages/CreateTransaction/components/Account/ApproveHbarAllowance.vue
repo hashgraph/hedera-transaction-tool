@@ -229,11 +229,11 @@ const columnClass = 'col-4 col-xxxl-3';
     <template #successContent>
       <p class="text-small d-flex justify-content-between align-items mt-2">
         <span class="text-bold text-secondary">Owner Account ID:</span>
-        <span>{{ ownerData.accountId.value }}</span>
+        <span>{{ ownerData.accountIdFormatted.value }}</span>
       </p>
       <p class="text-small d-flex justify-content-between align-items mt-2">
         <span class="text-bold text-secondary">Spender Account ID:</span>
-        <span>{{ spenderData.accountId.value }}</span>
+        <span>{{ spenderData.accountIdFormatted.value }}</span>
       </p>
     </template>
   </TransactionProcessor>

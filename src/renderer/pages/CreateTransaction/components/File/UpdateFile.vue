@@ -374,9 +374,9 @@ const columnClass = 'col-4 col-xxxl-3';
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
     :on-executed="
-      (_result, _chunkAmount) => {
+      (_response, _receipt, chunkAmount) => {
         isExecuted = true;
-        chunksAmount = _chunkAmount || null;
+        chunksAmount = chunkAmount || null;
       }
     "
     :on-close-success-modal-click="

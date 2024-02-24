@@ -1,11 +1,4 @@
-import {
-  Timestamp,
-  Status,
-  TransactionReceipt,
-  AccountId,
-  TransactionResponse,
-  Transaction as Tx,
-} from '@hashgraph/sdk';
+import { Timestamp, Status, TransactionReceipt, Transaction as Tx } from '@hashgraph/sdk';
 import { Transaction } from '@prisma/client';
 
 import { Network } from '@renderer/stores/storeNetwork';
@@ -54,21 +47,17 @@ export const openTransactionInHashscan = (transactionId, network: Network) => {
     openExternal(`https://hashscan.io/${network}/transaction/${transactionId}`);
 };
 
-export const getEntityIdFromTransactionResult = (
-  result: {
-    response: TransactionResponse;
-    receipt: TransactionReceipt;
-    transactionId: string;
-  },
+export const getEntityIdFromTransactionReceipt = (
+  receipt: TransactionReceipt,
   entityType: 'fileId' | 'accountId',
 ) => {
-  if (!result.receipt[entityType]) {
+  const entity = receipt[entityType];
+
+  if (!entity || entity === null) {
     throw new Error('No entity provided');
   }
 
-  const entity = result.receipt[entityType];
-
-  return new AccountId(entity as any).toString();
+  return entity.toString();
 };
 
 export const getTransactionType = (transaction: Tx | Uint8Array) => {

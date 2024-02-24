@@ -7,6 +7,7 @@ import {
   PublicKey,
   Hbar,
   Transaction,
+  TransactionReceipt,
 } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
@@ -24,7 +25,7 @@ import { flattenKeyList } from '@renderer/services/keyPairService';
 import { getDateTimeLocalInputValue } from '@renderer/utils';
 import { isAccountId, isPublicKey } from '@renderer/utils/validator';
 import {
-  getEntityIdFromTransactionResult,
+  getEntityIdFromTransactionReceipt,
   getTransactionFromBytes,
 } from '@renderer/utils/transactions';
 
@@ -90,9 +91,9 @@ const handleCreate = async e => {
   }
 };
 
-const handleExecuted = async result => {
+const handleExecuted = async (_response, receipt: TransactionReceipt) => {
   isExecuted.value = true;
-  const accountId = getEntityIdFromTransactionResult(result, 'accountId');
+  const accountId = getEntityIdFromTransactionReceipt(receipt, 'accountId');
   await add(user.data.id, accountId);
   toast.success(`Account ${accountId} linked`, { position: 'bottom-right' });
 };
@@ -324,7 +325,10 @@ const columnClass = 'col-4 col-xxxl-3';
       >
         <span class="text-bold text-secondary">Account ID:</span>
         <span>{{
-          getEntityIdFromTransactionResult(transactionProcessor?.transactionResult, 'accountId')
+          getEntityIdFromTransactionReceipt(
+            transactionProcessor?.transactionResult.receipt,
+            'accountId',
+          )
         }}</span>
       </p>
     </template>

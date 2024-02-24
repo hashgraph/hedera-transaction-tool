@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import { FileCreateTransaction, KeyList, PublicKey, Timestamp, Transaction } from '@hashgraph/sdk';
+import {
+  FileCreateTransaction,
+  KeyList,
+  PublicKey,
+  Timestamp,
+  Transaction,
+  TransactionReceipt,
+} from '@hashgraph/sdk';
 
 import { Prisma } from '@prisma/client';
 
@@ -19,7 +26,7 @@ import { flattenKeyList } from '@renderer/services/keyPairService';
 import { getDateTimeLocalInputValue } from '@renderer/utils';
 import { createFileInfo } from '@renderer/utils/sdk';
 import {
-  getEntityIdFromTransactionResult,
+  getEntityIdFromTransactionReceipt,
   getTransactionFromBytes,
 } from '@renderer/utils/transactions';
 import { isAccountId, isPublicKey } from '@renderer/utils/validator';
@@ -80,12 +87,12 @@ const handleCreate = async e => {
   }
 };
 
-const handleExecuted = async result => {
+const handleExecuted = async (_response, receipt: TransactionReceipt) => {
   isExecuted.value = true;
 
   const fileTransaction = createTransaction();
 
-  const newFileId = getEntityIdFromTransactionResult(result, 'fileId');
+  const newFileId = getEntityIdFromTransactionReceipt(receipt, 'fileId');
 
   const infoBytes = await createFileInfo({
     fileId: newFileId,
@@ -279,7 +286,10 @@ watch(payerData.isValid, isValid => {
       >
         <span class="text-bold text-secondary">File ID:</span>
         <span>{{
-          getEntityIdFromTransactionResult(transactionProcessor.transactionResult, 'fileId')
+          getEntityIdFromTransactionReceipt(
+            transactionProcessor.transactionResult.receipt,
+            'fileId',
+          )
         }}</span>
       </p>
     </template>
