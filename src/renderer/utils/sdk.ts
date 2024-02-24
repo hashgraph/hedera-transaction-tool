@@ -1,5 +1,14 @@
 import { proto } from '@hashgraph/proto';
-import { FileId, FileInfo, Key, KeyList, LedgerId, Long, Timestamp } from '@hashgraph/sdk';
+import {
+  FileId,
+  FileInfo,
+  Key,
+  KeyList,
+  LedgerId,
+  Long,
+  PublicKey,
+  Timestamp,
+} from '@hashgraph/sdk';
 
 export const createFileInfo = (props: {
   fileId: FileId | string;
@@ -40,4 +49,15 @@ export const createFileInfo = (props: {
   };
 
   return proto.FileGetInfoResponse.FileInfo.encode(protoBuf).finish();
+};
+
+export const normalizePublicKey = (key: Key) => {
+  const protoBuffKey = key._toProtobufKey();
+
+  if (protoBuffKey.ed25519) {
+    return PublicKey.fromBytesED25519(protoBuffKey.ed25519).toStringRaw();
+  } else if (protoBuffKey.ECDSASecp256k1) {
+    return PublicKey.fromBytesECDSA(protoBuffKey.ECDSASecp256k1).toStringRaw();
+  }
+  return '';
 };
