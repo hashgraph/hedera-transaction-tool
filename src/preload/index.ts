@@ -1,7 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { ProgressInfo, UpdateInfo } from 'electron-updater';
 
-import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
 import {
@@ -151,11 +150,8 @@ export const electronAPI = {
       ),
     executeTransaction: (
       transactionBytes: Uint8Array,
-    ): Promise<{
-      response: TransactionResponse;
-      receipt: TransactionReceipt;
-      transactionId: string;
-    }> => ipcRenderer.invoke('transactions:executeTransaction', transactionBytes),
+    ): Promise<{ responseJSON: string; receiptBytes: Uint8Array }> =>
+      ipcRenderer.invoke('transactions:executeTransaction', transactionBytes),
     executeQuery: (
       queryBytes: Uint8Array,
       accountId: string,

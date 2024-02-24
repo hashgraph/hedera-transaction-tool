@@ -102,7 +102,7 @@ export const executeTransaction = async (transactionBytes: Uint8Array) => {
 
     const receipt = await response.getReceipt(client);
 
-    return { response, receipt, transactionId: response.transactionId.toString() };
+    return { responseJSON: JSON.stringify(response.toJSON()), receiptBytes: receipt.toBytes() };
   } catch (error: any) {
     console.log(error);
 

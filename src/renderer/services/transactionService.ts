@@ -5,6 +5,8 @@ import {
   Timestamp,
   Transaction,
   TransactionId,
+  TransactionReceipt,
+  TransactionResponse,
 } from '@hashgraph/sdk';
 
 import { KeyPair, Transaction as Tx } from '@prisma/client';
@@ -119,7 +121,13 @@ export const signTransaction = async (
 /* Executes the transaction in the main process */
 export const execute = async (transactionBytes: Uint8Array) => {
   try {
-    return await window.electronAPI.transactions.executeTransaction(transactionBytes);
+    const executionResult =
+      await window.electronAPI.transactions.executeTransaction(transactionBytes);
+
+    return {
+      response: TransactionResponse.fromJSON(JSON.parse(executionResult.responseJSON)),
+      receipt: TransactionReceipt.fromBytes(executionResult.receiptBytes),
+    };
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Transaction Failed'));
   }
