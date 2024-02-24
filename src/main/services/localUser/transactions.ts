@@ -137,8 +137,19 @@ export const executeQuery = async (
 
     if (query instanceof FileContentsQuery && isHederaSpecialFileId(query.fileId?.toString())) {
       const decoded = decodeProto(query.fileId.toString() as HederaSpecialFileId, response);
+
       return decoded;
     }
+
+    // if (
+    //   Buffer.isBuffer(response) &&
+    //   query instanceof FileContentsQuery &&
+    //   response.length > 1000000
+    // ) {
+    //   const filePath = path.join(app.getPath('temp'), `${query.fileId?.toString()}.txt`);
+    //   await fs.writeFile(filePath, response);
+    //   shell.showItemInFolder(filePath);
+    // }
 
     //@ts-expect-error Check if there is a toBytes function
     if (typeof response === 'object' && response !== null && response.toBytes) {
