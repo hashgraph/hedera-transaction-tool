@@ -166,6 +166,10 @@ function createTransaction() {
 
 /* Hooks */
 onMounted(async () => {
+  if (route.query.fileId) {
+    fileId.value = route.query.fileId.toString();
+  }
+
   await handleLoadFromDraft();
 });
 

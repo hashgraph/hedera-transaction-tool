@@ -225,7 +225,18 @@ watch(files, newFiles => {
           "
           >Update</AppButton
         >
-
+        <AppButton
+          class="me-3"
+          color="secondary"
+          @click="
+            $router.push({
+              name: 'createTransaction',
+              params: { type: transactionTypeKeys.appendToFile },
+              query: { fileId: selectedFile?.file_id },
+            })
+          "
+          >Append</AppButton
+        >
         <AppButton
           color="secondary"
           @click="
