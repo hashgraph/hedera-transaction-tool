@@ -139,14 +139,14 @@ async function process(_requiredSignatures: string[]) {
       throw new Error('User is not logged in');
     }
 
-    if (
-      localPublicKeysReq.value.length < requiredSignatures.value.length &&
-      user.data.mode === 'personal'
-    ) {
-      throw new Error(
-        'Unable to execute, all of the required signatures should be with your keys. You are currently in Personal mode.',
-      );
-    }
+    // if (
+    //   localPublicKeysReq.value.length < requiredSignatures.value.length &&
+    //   user.data.mode === 'personal'
+    // ) {
+    //   throw new Error(
+    //     'Unable to execute, all of the required signatures should be with your keys. You are currently in Personal mode.',
+    //   );
+    // }
   }
 }
 
