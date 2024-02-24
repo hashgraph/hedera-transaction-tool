@@ -3,10 +3,11 @@ import { onMounted, ref } from 'vue';
 
 import { useToast } from 'vue-toast-notification';
 
-import useNetworkStore, { CustomNetworkSettings } from '@renderer/stores/storeNetwork';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { isAccountId } from '@renderer/utils/validator';
 
 /* Stores */
 const networkStore = useNetworkStore();
@@ -16,20 +17,26 @@ const toast = useToast();
 
 /* State */
 const isCustomSettingsVisible = ref(false);
-const customNetworkSettings = ref<CustomNetworkSettings>({
-  consensusNodeEndpoint: '127.0.0.1:50211',
-  mirrorNodeGRPCEndpoint: '127.0.0.1:5600',
-  mirrorNodeRESTAPIEndpoint: 'http://localhost:5551/api/v1',
-  nodeAccountId: '0.0.3',
-});
+
+const consensusNodeEndpoint = ref('127.0.0.1:50211');
+const mirrorNodeGRPCEndpoint = ref('127.0.0.1:5600');
+const mirrorNodeRESTAPIEndpoint = ref('http://localhost:5551/api/v1');
+const nodeAccountId = ref('0.0.3');
 
 /* Handlers */
 const handleSetCustomNetwork = async () => {
   try {
-    customNetworkSettings.value.nodeAccountId =
-      customNetworkSettings.value.nodeAccountId.toString();
+    if (!isAccountId(nodeAccountId.value)) {
+      throw new Error('Invalid node account ID');
+    }
 
-    await networkStore.setNetwork('custom', customNetworkSettings.value as any);
+    await networkStore.setNetwork('custom', {
+      nodeAccountIds: {
+        [consensusNodeEndpoint.value]: nodeAccountId.value,
+      },
+      mirrorNodeGRPCEndpoint: mirrorNodeGRPCEndpoint.value,
+      mirrorNodeRESTAPIEndpoint: mirrorNodeRESTAPIEndpoint.value,
+    });
   } catch (err: any) {
     let message = 'Failed to set custom network';
     if (err.message && typeof err.message === 'string') {
@@ -42,7 +49,12 @@ const handleSetCustomNetwork = async () => {
 /* Hooks */
 onMounted(() => {
   if (networkStore.customNetworkSettings) {
-    customNetworkSettings.value = networkStore.customNetworkSettings;
+    const firstNodeAccountId = Object.entries(networkStore.customNetworkSettings.nodeAccountIds)[0];
+
+    consensusNodeEndpoint.value = firstNodeAccountId[0];
+    nodeAccountId.value = firstNodeAccountId[1];
+    mirrorNodeGRPCEndpoint.value = networkStore.customNetworkSettings.mirrorNodeGRPCEndpoint;
+    mirrorNodeRESTAPIEndpoint.value = networkStore.customNetworkSettings.mirrorNodeRESTAPIEndpoint;
   }
 });
 </script>
@@ -91,39 +103,19 @@ onMounted(() => {
         <div v-if="isCustomSettingsVisible" class="mt-4">
           <div>
             <label class="form-label">Consensus Node Endpoint</label>
-            <AppInput
-              type="text"
-              :filled="true"
-              size="small"
-              v-model="customNetworkSettings.consensusNodeEndpoint"
-            />
+            <AppInput type="text" :filled="true" size="small" v-model="consensusNodeEndpoint" />
           </div>
           <div class="mt-4">
             <label class="form-label">Mirror Node GRPC Endpoint</label>
-            <AppInput
-              type="text"
-              :filled="true"
-              size="small"
-              v-model="customNetworkSettings.mirrorNodeGRPCEndpoint"
-            />
+            <AppInput type="text" :filled="true" size="small" v-model="mirrorNodeGRPCEndpoint" />
           </div>
           <div class="mt-4">
             <label class="form-label">Mirror Node REST API Endpoint</label>
-            <AppInput
-              type="text"
-              :filled="true"
-              size="small"
-              v-model="customNetworkSettings.mirrorNodeRESTAPIEndpoint"
-            />
+            <AppInput type="text" :filled="true" size="small" v-model="mirrorNodeRESTAPIEndpoint" />
           </div>
           <div class="mt-4">
             <label class="form-label">Node Account Id</label>
-            <AppInput
-              type="text"
-              :filled="true"
-              size="small"
-              v-model="customNetworkSettings.nodeAccountId"
-            />
+            <AppInput type="text" :filled="true" size="small" v-model="nodeAccountId" />
           </div>
           <AppButton color="primary" class="mt-4" @click="handleSetCustomNetwork">Set</AppButton>
         </div>
