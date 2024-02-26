@@ -136,9 +136,7 @@ export const executeQuery = async (
     const response = await query.execute(client);
 
     if (query instanceof FileContentsQuery && isHederaSpecialFileId(query.fileId?.toString())) {
-      const decoded = decodeProto(query.fileId.toString() as HederaSpecialFileId, response);
-
-      return decoded;
+      return decodeProto(query.fileId.toString() as HederaSpecialFileId, response);
     }
 
     // if (

@@ -70,10 +70,9 @@ onBeforeRouteLeave(async to => {
 
     if (getTransactionFromBytes(loadedDraft.transactionBytes).toBytes() != transactionBytes) {
       await updateDraft(loadedDraft.id, transactionBytes);
-      return true;
-    } else {
-      return true;
     }
+
+    return true;
   }
 
   if (!(await draftExists(transactionBytes)) && !isSaveDraftModalShown.value && !props.isExecuted) {
