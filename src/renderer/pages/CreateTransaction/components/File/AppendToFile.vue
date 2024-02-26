@@ -94,7 +94,7 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    if (!isAccountId(payerData.accountId.value)) {
+    if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
       throw Error('Invalid Payer ID');
     }
 
@@ -113,11 +113,8 @@ const handleCreate = async e => {
 
     transaction.value = newTransaction;
 
-    await transactionProcessor.value?.process(
-      payerData.keysFlattened.value.concat(signatureKeys.value),
-      chunkSize.value,
-      1,
-    );
+    const requiredKey = new KeyList([payerData.key.value, keyList.value]);
+    await transactionProcessor.value?.process(requiredKey, chunkSize.value, 1);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
@@ -297,7 +294,6 @@ const columnClass = 'col-4 col-xxxl-3';
     "
     :on-close-success-modal-click="
       () => {
-        payerData.accountId.value = '';
         validStart = '';
         maxTransactionFee = 2;
         fileId = '';

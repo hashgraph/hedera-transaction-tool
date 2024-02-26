@@ -112,7 +112,7 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    if (!isAccountId(payerData.accountId.value)) {
+    if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
       throw Error('Invalid Payer ID');
     }
 
@@ -139,11 +139,8 @@ const handleCreate = async e => {
 
     transaction.value = newTransaction;
 
-    await transactionProcessor.value?.process(
-      payerData.keysFlattened.value.concat(newKeys.value, ownerKeys.value),
-      chunkSize.value,
-      1,
-    );
+    const requiredKey = new KeyList([payerData.key.value, newKeysList.value, ownerKeyList.value]);
+    await transactionProcessor.value?.process(requiredKey, chunkSize.value, 1);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }

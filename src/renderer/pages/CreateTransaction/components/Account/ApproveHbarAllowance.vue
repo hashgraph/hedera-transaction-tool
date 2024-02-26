@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { Hbar, Key, AccountAllowanceApproveTransaction, Transaction } from '@hashgraph/sdk';
+import {
+  Hbar,
+  Key,
+  AccountAllowanceApproveTransaction,
+  Transaction,
+  KeyList,
+} from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
@@ -46,11 +52,11 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    if (!isAccountId(payerData.accountId.value)) {
+    if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
       throw Error('Invalid Payer ID');
     }
 
-    if (!isAccountId(ownerData.accountId.value)) {
+    if (!isAccountId(ownerData.accountId.value) || !ownerData.key.value) {
       throw Error('Invalid Owner ID');
     }
 
@@ -60,8 +66,8 @@ const handleCreate = async e => {
 
     transaction.value = createTransaction();
 
-    const requiredSignatures = payerData.keysFlattened.value.concat(ownerData.keysFlattened.value);
-    await transactionProcessor.value?.process(requiredSignatures);
+    const requiredKey = new KeyList([payerData.key.value, ownerData.key.value]);
+    await transactionProcessor.value?.process(requiredKey);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { Hbar, Key, Transaction, TransferTransaction } from '@hashgraph/sdk';
+import { Hbar, Key, KeyList, Transaction, TransferTransaction } from '@hashgraph/sdk';
 
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
@@ -54,30 +54,30 @@ const isExecuted = ref(false);
 const handleCreate = async e => {
   e.preventDefault();
   try {
-    if (!isAccountId(payerData.accountId.value)) {
+    if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
       throw Error('Invalid Payer ID');
     }
 
-    if (!isAccountId(senderData.accountId.value)) {
+    if (!isAccountId(senderData.accountId.value) || !senderData.key.value) {
       throw Error('Invalid Sender ID');
     }
 
-    if (!isAccountId(receiverData.accountId.value)) {
+    if (!isAccountId(receiverData.accountId.value) || !receiverData.key.value) {
       throw Error('Invalid Receiver ID');
     }
 
     transaction.value = createTransaction();
 
-    let requiredSignatures = payerData.keysFlattened.value;
+    const requiredKey = new KeyList([payerData.key.value]);
 
     if (!isApprovedTransfer.value) {
-      requiredSignatures = requiredSignatures.concat(senderData.keysFlattened.value);
+      requiredKey.push(senderData.key.value);
     }
     if (receiverData.accountInfo.value?.receiverSignatureRequired) {
-      requiredSignatures = requiredSignatures.concat(receiverData.keysFlattened.value);
+      requiredKey.push(receiverData.key.value);
     }
 
-    await transactionProcessor.value?.process(requiredSignatures);
+    await transactionProcessor.value?.process(requiredKey);
   } catch (err: any) {
     console.log(err);
 
@@ -303,7 +303,6 @@ const columnClass = 'col-4 col-xxxl-3';
     :transaction-bytes="transaction?.toBytes() || null"
     :on-close-success-modal-click="
       () => {
-        payerData.accountId.value = '';
         senderData.accountId.value = '';
         receiverData.accountId.value = '';
         validStart = '';

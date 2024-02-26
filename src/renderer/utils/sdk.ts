@@ -61,3 +61,26 @@ export const normalizePublicKey = (key: Key) => {
   }
   return '';
 };
+
+export const ableToSign = (publicKeys: string[], key: Key) => {
+  if (key instanceof KeyList) {
+    const keys = key.toArray();
+    let currentThreshold = 0;
+
+    keys.forEach(key => {
+      if (ableToSign(publicKeys, key)) {
+        currentThreshold++;
+      }
+    });
+
+    return currentThreshold >= (key.threshold || keys.length);
+  } else if (key instanceof PublicKey) {
+    if (publicKeys.includes(key.toStringRaw())) {
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    throw new Error(`Invalid key type`);
+  }
+};
