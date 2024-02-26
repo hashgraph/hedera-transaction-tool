@@ -209,7 +209,7 @@ watch(files, newFiles => {
     <div class="d-flex justify-content-between align-items-center">
       <h1 class="text-title text-bold">Files</h1>
 
-      <div class="d-flex justify-content-end align-items-center">
+      <div v-if="files.length > 0" class="d-flex justify-content-end align-items-center">
         <AppButton class="me-3" color="secondary" @click="isUnlinkFileModalShown = true"
           >Remove</AppButton
         >

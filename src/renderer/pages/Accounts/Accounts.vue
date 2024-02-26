@@ -144,7 +144,7 @@ const handleChangeNickname = async () => {
   <div class="p-5">
     <div class="d-flex justify-content-between align-items-center">
       <h1 class="text-title text-bold">Accounts</h1>
-      <div class="d-flex justify-content-end align-items-center">
+      <div v-if="accounts.length > 0" class="d-flex justify-content-end align-items-center">
         <AppButton
           :outline="true"
           color="secondary"
