@@ -10,7 +10,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
 
-import { getAll, remove, update } from '@renderer/services/filesService';
+import { getAll, remove, showContentInTemp, update } from '@renderer/services/filesService';
 import { flattenKeyList, getKeyListLevels } from '@renderer/services/keyPairService';
 
 import { getUInt8ArrayFromString, convertBytes } from '@renderer/utils';
@@ -388,7 +388,7 @@ watch(files, newFiles => {
                 </p>
               </div>
             </div>
-            <div class="row mt-4">
+            <div class="mt-4 row">
               <div class="col-5">
                 <p class="text-small text-semi-bold">Size</p>
               </div>
@@ -402,6 +402,19 @@ watch(files, newFiles => {
                       : 'Unknown'
                   }}
                 </p>
+              </div>
+            </div>
+            <div class="mt-4 row" v-if="selectedFile.contentBytes">
+              <div class="col-5">
+                <p class="text-small text-semi-bold">Content</p>
+              </div>
+              <div class="col-7">
+                <AppButton
+                  color="primary"
+                  size="small"
+                  @click="showContentInTemp(user.data.id, selectedFile.file_id)"
+                  >Open</AppButton
+                >
               </div>
             </div>
             <div class="mt-4 row" v-if="selectedFileInfo?.keys">
