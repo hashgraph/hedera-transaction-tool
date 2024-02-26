@@ -306,7 +306,7 @@ const columnClass = 'col-4 col-xxxl-3';
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
     :on-executed="handleExecuted"
-    :on-close-success-modal-click="() => $router.push({ name: 'transactions' })"
+    :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
   >
     <template #successHeading>Account created successfully</template>
     <template #successContent>

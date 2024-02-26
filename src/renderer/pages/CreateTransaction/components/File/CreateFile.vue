@@ -112,6 +112,7 @@ const handleExecuted = async (_response, receipt: TransactionReceipt) => {
   };
 
   await add(file);
+  toast.success(`File ${newFileId} linked`, { position: 'bottom-right' });
 };
 
 const handleLoadFromDraft = async () => {
@@ -256,17 +257,7 @@ watch(payerData.isValid, isValid => {
   <TransactionProcessor
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
-    :on-close-success-modal-click="
-      () => {
-        validStart = '';
-        maxTransactionFee = 2;
-        ownerKeys = [];
-        memo = '';
-        expirationTimestamp = undefined;
-
-        transaction = null;
-      }
-    "
+    :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
     :on-executed="handleExecuted"
   >
     <template #successHeading>File created successfully</template>
