@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
 
-import { Transaction, TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
+import { Key, KeyList, Transaction, TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -13,6 +13,7 @@ import { useToast } from 'vue-toast-notification';
 import { execute, signTransaction, storeTransaction } from '@renderer/services/transactionService';
 import { openExternal } from '@renderer/services/electronUtilsService';
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
+import { flattenKeyList } from '@renderer/services/keyPairService';
 
 import { getTransactionType } from '@renderer/utils/transactions';
 
@@ -21,6 +22,7 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import { ableToSign } from '@renderer/utils/sdk';
 
 /* Props */
 const props = defineProps<{
@@ -44,7 +46,7 @@ const transactionResult = ref<{
   receipt: TransactionReceipt;
 } | null>();
 const userPassword = ref('');
-const requiredSignatures = ref<string[]>([]);
+const signatureKey = ref<Key | KeyList | null>(null);
 const isConfirmShown = ref(false);
 const isSigning = ref(false);
 const isSignModalShown = ref(false);
@@ -57,11 +59,14 @@ const unmounted = ref(false);
 const transaction = computed(() =>
   props.transactionBytes ? Transaction.fromBytes(props.transactionBytes) : null,
 );
+const flattenedSignatureKey = computed(() =>
+  signatureKey.value ? flattenKeyList(signatureKey.value).map(pk => pk.toStringRaw()) : [],
+);
 const externalPublicKeysReq = computed(() =>
-  requiredSignatures.value.filter(pk => !keyPairs.publicKeys.includes(pk)),
+  flattenedSignatureKey.value.filter(pk => !keyPairs.publicKeys.includes(pk)),
 );
 const localPublicKeysReq = computed(() =>
-  requiredSignatures.value.filter(pk => keyPairs.publicKeys.includes(pk)),
+  flattenedSignatureKey.value.filter(pk => keyPairs.publicKeys.includes(pk)),
 );
 const type = computed(() => transaction.value && getTransactionType(transaction.value));
 
@@ -82,7 +87,7 @@ function handleConfirmTransaction(e: Event) {
     isConfirmShown.value = false;
     isSignModalShown.value = true;
   } else if (user.data.mode === 'organization') {
-    console.log('Send to back end along with required external signatures');
+    console.log('Send to back end along with siganture key');
   }
 }
 
@@ -107,7 +112,7 @@ async function handleSignTransaction(e: Event) {
       await executeTransaction(signedTransactionBytes);
     } else if (user.data.mode === 'organization') {
       await sendSignedTransactionToOrganization();
-      console.log('Send to back end signed along with required', externalPublicKeysReq.value);
+      console.log('Send to back end signed along with required', signatureKey.value);
     }
   } catch (err: any) {
     toast.error(err.message || 'Transaction signing failed', { position: 'bottom-right' });
@@ -117,9 +122,9 @@ async function handleSignTransaction(e: Event) {
 }
 
 /* Functions */
-async function process(_requiredSignatures: string[]) {
+async function process(requiredKey: Key) {
   resetData();
-  requiredSignatures.value = [...new Set(_requiredSignatures)];
+  signatureKey.value = requiredKey;
 
   await nextTick();
   await keyPairs.refetch();
@@ -139,14 +144,15 @@ async function process(_requiredSignatures: string[]) {
       throw new Error('User is not logged in');
     }
 
-    // if (
-    //   localPublicKeysReq.value.length < requiredSignatures.value.length &&
-    //   user.data.mode === 'personal'
-    // ) {
-    //   throw new Error(
-    //     'Unable to execute, all of the required signatures should be with your keys. You are currently in Personal mode.',
-    //   );
-    // }
+    if (
+      signatureKey.value &&
+      !ableToSign(keyPairs.publicKeys, signatureKey.value) &&
+      user.data.mode === 'personal'
+    ) {
+      throw new Error(
+        'Unable to execute, all of the required signatures should be with your keys. You are currently in Personal mode.',
+      );
+    }
   }
 }
 
@@ -213,7 +219,7 @@ function resetData() {
   isExecutedModalShown.value = false;
   isChunkingModalShown.value = false;
   isSignModalShown.value = false;
-  requiredSignatures.value = [];
+  signatureKey.value = null;
 }
 
 /* Hooks */
