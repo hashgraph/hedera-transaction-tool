@@ -261,21 +261,23 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     isExecuting.value = false;
   }
 
-  if (!type.value || !transaction.value.transactionId) throw new Error('Cannot save transaction');
+  const executedTransaction = Transaction.fromBytes(transactionBytes);
+
+  if (!type.value || !executedTransaction) throw new Error('Cannot save transaction');
 
   const transactionToStore: Prisma.TransactionUncheckedCreateInput = {
-    name: `${type.value} (${transaction.value.transactionId.toString()})`,
+    name: `${type.value} (${executedTransaction.transactionId?.toString()})`,
     type: type.value,
     description: '',
-    transaction_id: transaction.value.transactionId.toString(),
-    transaction_hash: (await transaction.value.getTransactionHash()).toString(),
-    body: transaction.value.toBytes().toString(),
+    transaction_id: executedTransaction.transactionId?.toString() || '',
+    transaction_hash: (await executedTransaction.getTransactionHash()).toString(),
+    body: executedTransaction.toBytes().toString(),
     status: '',
     status_code: status,
     user_id: user.data.id,
     creator_public_key: null,
     signature: '',
-    valid_start: transaction.value.transactionId.validStart?.toString() || '',
+    valid_start: executedTransaction.transactionId?.validStart?.toString() || '',
     executed_at: new Date().getTime() / 1000,
     group_id: null,
   };
@@ -383,10 +385,7 @@ async function executeFileTransactions(
     let chunkTransaction: FileUpdateTransaction | FileAppendTransaction = transaction;
     let chunkTransactionType = '';
 
-    let executionResult: {
-      response: TransactionResponse;
-      receipt: TransactionReceipt;
-    } | null = null;
+    let transactionHash: Uint8Array | null = null;
 
     try {
       if (transaction instanceof FileUpdateTransaction && i === 0) {
@@ -427,10 +426,12 @@ async function executeFileTransactions(
         userPassword.value,
       );
 
+      const executedTransaction = Transaction.fromBytes(signedTransactionBytes);
+      transactionHash = await executedTransaction.getTransactionHash();
+
       const { response, receipt } = await execute(signedTransactionBytes);
 
       if (i === 0) firstTransactionResult = { response, receipt };
-      executionResult = { response, receipt };
 
       status = receipt.status._code;
 
@@ -451,7 +452,7 @@ async function executeFileTransactions(
       toast.error(message, { position: 'bottom-right' });
     }
 
-    if (chunkTransaction === null || !executionResult) {
+    if (chunkTransaction === null || !transactionHash) {
       throw new Error('No transaction to save');
     }
 
@@ -460,7 +461,7 @@ async function executeFileTransactions(
       type: chunkTransactionType,
       description: '',
       transaction_id: chunkTransaction.transactionId?.toString() || '',
-      transaction_hash: executionResult.response.toString(),
+      transaction_hash: transactionHash.toString(),
       body: chunkTransaction.toBytes().toString(),
       status: '',
       status_code: status,
