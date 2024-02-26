@@ -4,7 +4,7 @@ import { app, shell } from 'electron';
 import { HederaFile, Prisma } from '@prisma/client';
 
 import { getPrismaClient } from '@main/db';
-import { getNumberArrayFromString, saveToTemp } from '@main/utils';
+import { deleteDirectory, getNumberArrayFromString, saveContentToPath } from '@main/utils';
 
 export const getFiles = async (userId: string) => {
   const prisma = getPrismaClient();
@@ -105,7 +105,7 @@ export const showContentInTemp = async (userId: string, fileId: string) => {
   const content = Buffer.from(getNumberArrayFromString(file.contentBytes));
 
   try {
-    const saved = await saveToTemp(filePath, content);
+    const saved = await saveContentToPath(filePath, content);
 
     if (saved) {
       shell.showItemInFolder(filePath);
@@ -114,5 +114,14 @@ export const showContentInTemp = async (userId: string, fileId: string) => {
   } catch (error) {
     console.log(error);
     throw new Error('Failed to open file content');
+  }
+};
+
+export const deleteTempFolder = async () => {
+  try {
+    const directoryPath = path.join(app.getPath('temp'), 'electronHederaFiles');
+    await deleteDirectory(directoryPath);
+  } catch (error) {
+    console.log(error);
   }
 };
