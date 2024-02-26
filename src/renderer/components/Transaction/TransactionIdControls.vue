@@ -47,6 +47,7 @@ const loadFromDraft = async (id: string) => {
     const transactionId = draftTransaction.transactionId;
 
     if (transactionId.accountId) {
+      account.accountId.value = transactionId.accountId.toString();
       emit('update:payerId', transactionId.accountId.toString());
     }
     if (transactionId.validStart) {

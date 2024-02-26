@@ -109,15 +109,6 @@ const handleLoadFromDraft = async () => {
   if (draft) {
     transaction.value = draftTransaction;
 
-    if (draftTransaction.transactionId) {
-      payerData.accountId.value =
-        draftTransaction.transactionId.accountId?.toString() || payerData.accountId.value;
-    }
-
-    if (draftTransaction.maxTransactionFee) {
-      maxTransactionFee.value = draftTransaction.maxTransactionFee.toBigNumber().toNumber();
-    }
-
     accountData.receiverSignatureRequired = draftTransaction.receiverSignatureRequired;
     accountData.maxAutomaticTokenAssociations =
       draftTransaction.maxAutomaticTokenAssociations.toNumber();

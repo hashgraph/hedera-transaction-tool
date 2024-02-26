@@ -84,15 +84,6 @@ const handleLoadFromDraft = async () => {
   if (draft) {
     transaction.value = draftTransaction;
 
-    if (draftTransaction.transactionId) {
-      payerData.accountId.value =
-        draftTransaction.transactionId.accountId?.toString() || payerData.accountId.value;
-    }
-
-    if (draftTransaction.maxTransactionFee) {
-      maxTransactionFee.value = draftTransaction.maxTransactionFee.toBigNumber().toNumber();
-    }
-
     if (draftTransaction.hbarApprovals.length > 0) {
       const hbarApproval = draftTransaction.hbarApprovals[0];
 
