@@ -110,8 +110,10 @@ export const electronAPI = {
       userId: string,
       file: Prisma.HederaFileUncheckedUpdateInput,
     ): Promise<HederaFile[]> => ipcRenderer.invoke('files:update', fileId, userId, file),
-    remove: (userId: string, accountId: string): Promise<HederaFile[]> =>
-      ipcRenderer.invoke('files:remove', userId, accountId),
+    remove: (userId: string, fileId: string): Promise<HederaFile[]> =>
+      ipcRenderer.invoke('files:remove', userId, fileId),
+    showContentInTemp: (userId: string, fileId: string): Promise<void> =>
+      ipcRenderer.invoke('files:showContentInTemp', userId, fileId),
   },
   localUser: {
     login: (email: string, password: string, autoRegister?: boolean): Promise<User> =>

@@ -36,3 +36,11 @@ export const remove = async (userId: string, fileId: string) => {
     throw Error(getMessageFromIPCError(err, 'File unlink failed'));
   }
 };
+
+export const showContentInTemp = async (userId: string, fileId: string) => {
+  try {
+    await window.electronAPI.files.showContentInTemp(userId, fileId);
+  } catch (err: any) {
+    throw Error(getMessageFromIPCError(err, 'Failed to open file'));
+  }
+};

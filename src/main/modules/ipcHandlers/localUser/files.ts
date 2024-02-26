@@ -1,6 +1,12 @@
 import { ipcMain } from 'electron';
 
-import { addFile, getFiles, removeFile, updateFile } from '@main/services/localUser';
+import {
+  addFile,
+  getFiles,
+  removeFile,
+  showContentInTemp,
+  updateFile,
+} from '@main/services/localUser';
 import { Prisma } from '@prisma/client';
 
 const createChannelName = (...props) => ['files', ...props].join(':');
@@ -26,5 +32,10 @@ export default () => {
   // Remove
   ipcMain.handle(createChannelName('remove'), (_e, userId: string, fileId: string) =>
     removeFile(userId, fileId),
+  );
+
+  // Show in temp folder
+  ipcMain.handle(createChannelName('showContentInTemp'), (_e, userId: string, fileId: string) =>
+    showContentInTemp(userId, fileId),
   );
 };

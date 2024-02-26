@@ -1,5 +1,10 @@
+import path from 'path';
+
+import { app, shell } from 'electron';
+import { HederaFile, Prisma } from '@prisma/client';
+
 import { getPrismaClient } from '@main/db';
-import { Prisma } from '@prisma/client';
+import { getNumberArrayFromString, saveToTemp } from '@main/utils';
 
 export const getFiles = async (userId: string) => {
   const prisma = getPrismaClient();
@@ -70,4 +75,44 @@ export const updateFile = async (
   });
 
   return await getFiles(userId);
+};
+
+export const showContentInTemp = async (userId: string, fileId: string) => {
+  const prisma = getPrismaClient();
+
+  let file: HederaFile | null = null;
+
+  try {
+    file = await prisma.hederaFile.findFirst({
+      where: {
+        user_id: userId,
+        file_id: fileId,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+  }
+
+  if (file === null) {
+    throw new Error('File not found');
+  }
+
+  if (file.contentBytes === null) {
+    throw new Error('File content is unknown');
+  }
+
+  const filePath = path.join(app.getPath('temp'), 'electronHederaFiles', `${fileId}.txt`);
+  const content = Buffer.from(getNumberArrayFromString(file.contentBytes));
+
+  try {
+    const saved = await saveToTemp(filePath, content);
+
+    if (saved) {
+      shell.showItemInFolder(filePath);
+      shell.openPath(filePath);
+    }
+  } catch (error) {
+    console.log(error);
+    throw new Error('Failed to open file content');
+  }
 };
