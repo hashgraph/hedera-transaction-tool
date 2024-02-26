@@ -401,8 +401,13 @@ async function executeFileTransactions(
           chunkTransaction.setExpirationTime(transaction.expirationTime);
       } else {
         chunkTransactionType = 'File Append Transaction';
+        const newValidStart = new Date();
+        newValidStart.setSeconds(0);
+
         chunkTransaction = new FileAppendTransaction()
-          .setTransactionId(createTransactionId(transaction.transactionId!.accountId!, new Date()))
+          .setTransactionId(
+            createTransactionId(transaction.transactionId!.accountId!, newValidStart),
+          )
           .setTransactionValidDuration(180)
           .setMaxTransactionFee(transaction.maxTransactionFee || 2)
           .setFileId(transaction.fileId!)
