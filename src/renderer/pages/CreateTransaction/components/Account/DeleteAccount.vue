@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { Hbar, AccountDeleteTransaction, Key, Transaction } from '@hashgraph/sdk';
+import { Hbar, AccountDeleteTransaction, Key, Transaction, KeyList } from '@hashgraph/sdk';
 
 import { useRoute } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
@@ -45,27 +45,27 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    if (!isAccountId(payerData.accountId.value)) {
+    if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
       throw Error('Invalid Payer ID');
     }
 
-    if (!isAccountId(accountData.accountId.value)) {
+    if (!isAccountId(accountData.accountId.value) || !accountData.key.value) {
       throw Error('Invalid Account ID');
     }
 
-    if (!isAccountId(transferAccountData.accountId.value)) {
+    if (!isAccountId(transferAccountData.accountId.value) || !transferAccountData.key.value) {
       throw Error('Invalid Transfer Account ID');
     }
 
     transaction.value = createTransaction();
 
-    const requiredSignatures = payerData.keysFlattened.value.concat(
-      accountData.keysFlattened.value,
-      transferAccountData.accountInfo.value?.receiverSignatureRequired
-        ? transferAccountData.keysFlattened.value
-        : [],
+    const requiredKey = new KeyList(
+      transferAccountData.accountInfo.value?.receiverSignatureRequired &&
+      transferAccountData.key.value
+        ? [payerData.key.value, accountData.key.value, transferAccountData.key.value]
+        : [payerData.key.value, accountData.key.value],
     );
-    await transactionProcessor.value?.process(requiredSignatures);
+    await transactionProcessor.value?.process(requiredKey);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
