@@ -85,7 +85,7 @@ const handleCreate = async e => {
 
     transaction.value = createTransaction();
 
-    await transactionProcessor.value?.process(payerData.keysFlattened.value);
+    await transactionProcessor.value?.process(payerData.key.value);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
