@@ -86,6 +86,8 @@ const handleRead = async e => {
       content.value = text;
     }
 
+    toast.success('File content read', { position: 'bottom-right' });
+
     if (storedFiles.value.some(f => f.file_id === fileId.value)) {
       const fileInfoQuery = new FileInfoQuery().setFileId(fileId.value);
 
@@ -98,6 +100,8 @@ const handleRead = async e => {
 
       await update(fileId.value, user.data.id, { contentBytes: response.join(',') });
       await update(fileId.value, user.data.id, { metaBytes: infoResponse.join(',') });
+
+      toast.success('Store file info updated', { position: 'bottom-right' });
     }
 
     isUserPasswordModalShown.value = false;
