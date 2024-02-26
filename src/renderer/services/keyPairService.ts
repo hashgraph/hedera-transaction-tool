@@ -164,34 +164,34 @@ export const updateKeyList = (
 export const flattenKeyList = (keyList: Key): PublicKey[] => {
   const protobufKey = keyList._toProtobufKey();
 
-  let keys: PublicKey[] = [];
+  const keys: PublicKey[] = [];
   const keysString: string[] = [];
 
   formatKey(protobufKey);
 
-  function getPublicKeyFromIKey(ikey: proto.Key) {
-    if (ikey.ed25519) {
-      return PublicKey.fromBytesED25519(ikey.ed25519);
-    }
-    if (ikey.ECDSASecp256k1) {
-      return PublicKey.fromBytesECDSA(ikey.ECDSASecp256k1);
-    }
-
-    return undefined;
-  }
-
-  function formatKey(key: any) {
+  function formatKey(key: proto.Key) {
     if (key.thresholdKey) {
-      key.thresholdKey.keys?.keys.forEach((key: proto.Key) => {
+      key.thresholdKey.keys?.keys?.forEach((key: proto.Key) => {
         formatKey(key);
       });
     } else if (key.keyList) {
-      keys = key.keyList.keys.map((k: proto.Key) => getPublicKeyFromIKey(k));
+      key.keyList.keys?.forEach((k: proto.Key) => {
+        formatKey(k);
+      });
     } else {
-      const pk = getPublicKeyFromIKey(key);
-      if (pk && !keysString.includes(pk.toStringRaw())) {
-        keys.push(pk);
-        keysString.push(pk.toStringRaw());
+      let publicKey: PublicKey;
+
+      if (key.ed25519) {
+        publicKey = PublicKey.fromBytesED25519(key.ed25519);
+      } else if (key.ECDSASecp256k1) {
+        publicKey = PublicKey.fromBytesECDSA(key.ECDSASecp256k1);
+      } else {
+        throw new Error('Unsupported key type');
+      }
+
+      if (publicKey && !keysString.includes(publicKey.toStringRaw())) {
+        keys.push(publicKey);
+        keysString.push(publicKey.toStringRaw());
       }
     }
   }
