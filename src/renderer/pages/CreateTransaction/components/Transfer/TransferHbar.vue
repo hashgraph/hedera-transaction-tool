@@ -303,7 +303,6 @@ const columnClass = 'col-4 col-xxxl-3';
     :transaction-bytes="transaction?.toBytes() || null"
     :on-close-success-modal-click="
       () => {
-        payerData.accountId.value = '';
         senderData.accountId.value = '';
         receiverData.accountId.value = '';
         validStart = '';
