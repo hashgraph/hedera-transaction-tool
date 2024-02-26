@@ -4,6 +4,8 @@ import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
 import {
   FileAppendTransaction,
   FileUpdateTransaction,
+  Key,
+  KeyList,
   Transaction,
   TransactionReceipt,
   TransactionResponse,
@@ -30,6 +32,7 @@ import {
 import { openExternal } from '@renderer/services/electronUtilsService';
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 
+import { ableToSign } from '@renderer/utils/sdk';
 import { getTransactionType } from '@renderer/utils/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -37,6 +40,7 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import { flattenKeyList } from '@renderer/services/keyPairService';
 
 /* Props */
 const props = defineProps<{
@@ -67,7 +71,7 @@ const chunksAmount = ref<number | null>(null);
 const chunkSize = ref(1024);
 const chunkInterval = ref(0.1);
 const userPassword = ref('');
-const requiredSignatures = ref<string[]>([]);
+const signatureKey = ref<Key | KeyList | null>(null);
 const isConfirmShown = ref(false);
 const isSigning = ref(false);
 const isSignModalShown = ref(false);
@@ -81,11 +85,14 @@ const unmounted = ref(false);
 const transaction = computed(() =>
   props.transactionBytes ? Transaction.fromBytes(props.transactionBytes) : null,
 );
+const flattenedSignatureKey = computed(() =>
+  signatureKey.value ? flattenKeyList(signatureKey.value).map(pk => pk.toStringRaw()) : [],
+);
 const externalPublicKeysReq = computed(() =>
-  requiredSignatures.value.filter(pk => !keyPairs.publicKeys.includes(pk)),
+  flattenedSignatureKey.value.filter(pk => !keyPairs.publicKeys.includes(pk)),
 );
 const localPublicKeysReq = computed(() =>
-  requiredSignatures.value.filter(pk => keyPairs.publicKeys.includes(pk)),
+  flattenedSignatureKey.value.filter(pk => keyPairs.publicKeys.includes(pk)),
 );
 const type = computed(() => transaction.value && getTransactionType(transaction.value));
 
@@ -106,7 +113,7 @@ function handleConfirmTransaction(e: Event) {
     isConfirmShown.value = false;
     isSignModalShown.value = true;
   } else if (user.data.mode === 'organization') {
-    console.log('Send to back end along with required external signatures');
+    console.log('Send to back end along with siganture key');
   }
 }
 
@@ -167,13 +174,9 @@ async function handleSignTransaction(e: Event) {
 }
 
 /* Functions */
-async function process(
-  _requiredSignatures: string[],
-  _chunkSize?: number,
-  _chunkInterval?: number,
-) {
+async function process(requiredKey: Key, _chunkSize?: number, _chunkInterval?: number) {
   resetData();
-  requiredSignatures.value = [...new Set(_requiredSignatures)];
+  signatureKey.value = requiredKey;
 
   await nextTick();
   await keyPairs.refetch();
@@ -181,7 +184,7 @@ async function process(
   validateProcess();
 
   const estimatedSignaturesSize =
-    _requiredSignatures.length * TRANSACTION_SIGNATURE_ESTIMATED_MAX_SIZE;
+    flattenedSignatureKey.value.length * TRANSACTION_SIGNATURE_ESTIMATED_MAX_SIZE;
 
   if (_chunkSize) {
     _chunkSize = Number(_chunkSize);
@@ -216,14 +219,15 @@ async function process(
       throw new Error('User is not logged in');
     }
 
-    // if (
-    //   localPublicKeysReq.value.length < requiredSignatures.value.length &&
-    //   user.data.mode === 'personal'
-    // ) {
-    //   throw new Error(
-    //     'Unable to execute, all of the required signatures should be with your keys. You are currently in Personal mode.',
-    //   );
-    // }
+    if (
+      signatureKey.value &&
+      !ableToSign(keyPairs.publicKeys, signatureKey.value) &&
+      user.data.mode === 'personal'
+    ) {
+      throw new Error(
+        'Unable to execute, all of the required signatures should be with your keys. You are currently in Personal mode.',
+      );
+    }
   }
 }
 
@@ -515,7 +519,7 @@ function resetData() {
   isExecutedModalShown.value = false;
   isChunkingModalShown.value = false;
   isSignModalShown.value = false;
-  requiredSignatures.value = [];
+  signatureKey.value = null;
   chunksAmount.value = null;
   chunkSize.value = 1024;
   chunkInterval.value = 0.1;
