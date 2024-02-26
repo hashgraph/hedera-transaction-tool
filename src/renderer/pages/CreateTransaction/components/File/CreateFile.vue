@@ -75,13 +75,13 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    if (!isAccountId(payerData.accountId.value)) {
+    if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
       throw Error('Invalid Payer ID');
     }
     transaction.value = createTransaction();
 
-    const requiredSignatures = payerData.keysFlattened.value.concat(ownerKeys.value);
-    await transactionProcessor.value?.process(requiredSignatures);
+    const requiredKey = new KeyList([payerData.key.value, keyList.value]);
+    await transactionProcessor.value?.process(requiredKey);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
