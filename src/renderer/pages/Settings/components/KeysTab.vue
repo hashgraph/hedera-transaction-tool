@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch } from 'vue';
 import { PublicKey } from '@hashgraph/sdk';
-import { KeyPair } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
@@ -128,8 +128,7 @@ const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
     const privateKey = type === 'ED25519' ? ed25519Key.privateKey : ecdsaKey.privateKey;
     const nickname = type === 'ED25519' ? ed25519Key.nickname : ecdsaKey.nickname;
 
-    const keyPair: KeyPair = {
-      id: '',
+    const keyPair: Prisma.KeyPairUncheckedCreateInput = {
       user_id: user.data.id,
       ...generateExternalKeyPairFromString(privateKey, type, nickname || ''),
       organization_id: null,
