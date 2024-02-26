@@ -18,7 +18,7 @@ export const getDraft = async (id: string) => {
 
   const draft = await prisma.transactionDraft.findFirst({
     where: {
-      id: id,
+      id,
     },
   });
 
@@ -41,17 +41,22 @@ export const addDraft = async (draft: Prisma.TransactionDraftUncheckedCreateInpu
   });
 };
 
-export const updateDraft = async (draft: Prisma.TransactionDraftUncheckedCreateInput) => {
+export const updateDraft = async ({
+  id,
+  type,
+  transactionBytes,
+  details,
+}: Prisma.TransactionDraftUncheckedCreateInput) => {
   const prisma = getPrismaClient();
 
   await prisma.transactionDraft.update({
     where: {
-      id: draft.id,
+      id,
     },
     data: {
-      type: draft.type,
-      transactionBytes: draft.transactionBytes,
-      details: draft.details,
+      type,
+      transactionBytes,
+      details,
     },
   });
 };
@@ -61,7 +66,7 @@ export const deleteDraft = async (id: string) => {
 
   await prisma.transactionDraft.delete({
     where: {
-      id: id,
+      id,
     },
   });
 };
@@ -71,7 +76,7 @@ export const draftExists = async (transactionBytes: string) => {
 
   const count = await prisma.transactionDraft.count({
     where: {
-      transactionBytes: transactionBytes,
+      transactionBytes,
     },
   });
 
