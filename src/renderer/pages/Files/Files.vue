@@ -93,6 +93,7 @@ const specialFiles: HederaFile[] = [
     contentBytes: null,
   },
 ];
+const specialFilesIds = specialFiles.map(f => f.file_id);
 
 /* State */
 const files = ref<HederaFile[]>(specialFiles);
@@ -143,6 +144,8 @@ const handleUnlinkFile = async () => {
 };
 
 const handleStartNicknameEdit = () => {
+  if (!selectedFile.value || specialFilesIds.includes(selectedFile.value.id)) return;
+
   isNicknameInputShown.value = true;
   descriptionInputRef.value?.blur();
 
@@ -168,6 +171,8 @@ const handleChangeNickname = async () => {
 };
 
 const handleStartDescriptionEdit = () => {
+  if (!selectedFile.value || specialFilesIds.includes(selectedFile.value.id)) return;
+
   isDescriptionInputShown.value = true;
   nicknameInputRef.value?.blur();
 
@@ -363,6 +368,7 @@ watch(files, newFiles => {
                   {{ selectedFile?.nickname || 'None' }}
 
                   <span
+                    v-if="!specialFilesIds.includes(selectedFile.file_id)"
                     class="bi bi-pencil-square text-primary ms-1 cursor-pointer"
                     @click="handleStartNicknameEdit"
                   ></span>
@@ -501,6 +507,7 @@ watch(files, newFiles => {
                   {{ selectedFile?.description || 'None' }}
 
                   <span
+                    v-if="!specialFilesIds.includes(selectedFile.file_id)"
                     class="bi bi-pencil-square text-primary ms-1 cursor-pointer"
                     @click="handleStartDescriptionEdit"
                   ></span>
