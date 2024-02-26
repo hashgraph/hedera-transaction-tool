@@ -177,6 +177,7 @@ async function executeTransaction(transactionBytes: Uint8Array) {
   } catch (err: any) {
     const data = JSON.parse(err.message);
     status = data.status;
+
     toast.error(data.message, { position: 'bottom-right' });
   } finally {
     isExecuting.value = false;
@@ -184,15 +185,14 @@ async function executeTransaction(transactionBytes: Uint8Array) {
 
   const executedTransaction = Transaction.fromBytes(transactionBytes);
 
-  if (!type.value || !executedTransaction.transactionId || !transactionResult.value)
-    throw new Error('Cannot save transaction');
+  if (!type.value || !executedTransaction.transactionId) throw new Error('Cannot save transaction');
 
   const tx: Prisma.TransactionUncheckedCreateInput = {
     name: `${type.value} (${executedTransaction.transactionId.toString()})`,
     type: type.value,
     description: '',
     transaction_id: executedTransaction.transactionId.toString(),
-    transaction_hash: transactionResult.value.response.transactionHash.toString(),
+    transaction_hash: (await executedTransaction.getTransactionHash()).toString(),
     body: transactionBytes.toString(),
     status: '',
     status_code: status,
