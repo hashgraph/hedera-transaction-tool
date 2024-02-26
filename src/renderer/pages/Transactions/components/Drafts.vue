@@ -10,6 +10,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { getDraft, getDrafts, deleteDraft } from '@renderer/services/transactionDraftsService';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppLoader from '@renderer/components/ui/AppLoader.vue';
 
 /* Store */
 const user = useUserStore();
@@ -20,7 +21,9 @@ const sort = reactive<{ field: string; direction: 'asc' | 'desc' }>({
   field: 'timestamp',
   direction: 'asc',
 });
+const isLoading = ref(true);
 
+/* Computed */
 const generatedClass = computed(() => {
   return sort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
 });
@@ -86,13 +89,22 @@ const getOpositeDirection = () => (sort.direction === 'asc' ? 'desc' : 'asc');
 
 /* Hooks */
 onBeforeMount(async () => {
-  drafts.value = await getDrafts(user.data.id);
-  handleSort('timestamp', 'desc');
+  try {
+    drafts.value = await getDrafts(user.data.id);
+    handleSort('timestamp', 'desc');
+  } catch (error) {
+    throw new Error((error as any).message);
+  } finally {
+    isLoading.value = false;
+  }
 });
 </script>
 
 <template>
-  <table class="table-custom">
+  <template v-if="isLoading">
+    <AppLoader />
+  </template>
+  <table v-else class="table-custom">
     <thead>
       <tr>
         <th class="w-10 text-end">#</th>
