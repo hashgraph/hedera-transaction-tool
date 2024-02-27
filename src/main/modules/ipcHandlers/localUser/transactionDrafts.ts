@@ -32,8 +32,8 @@ export default () => {
   // Update a draft
   ipcMain.handle(
     createChannelName('updateDraft'),
-    (_e, transactionDraft: Prisma.TransactionDraftUncheckedCreateInput) =>
-      updateDraft(transactionDraft),
+    (_e, id: string, transactionDraft: Prisma.TransactionDraftUncheckedUpdateInput) =>
+      updateDraft(id, transactionDraft),
   );
 
   // Delete specific drafts

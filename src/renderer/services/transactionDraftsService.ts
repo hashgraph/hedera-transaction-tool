@@ -39,17 +39,14 @@ export const addDraft = async (userId: string, transactionBytes: Uint8Array, det
   }
 };
 
-export const updateDraft = async (id: string, transactionBytes: Uint8Array, details?: string) => {
+export const updateDraft = async (
+  id: string,
+  draft: Prisma.TransactionDraftUncheckedUpdateInput,
+) => {
   try {
-    const draft = await getDraft(id);
-
-    draft.type = getTransactionType(transactionBytes);
-    draft.transactionBytes = transactionBytes.toString();
-    draft.details = details || null;
-
-    return await window.electronAPI.transactionDrafts.updateDraft(draft);
+    return await window.electronAPI.transactionDrafts.updateDraft(id, draft);
   } catch (error: any) {
-    throw Error(getMessageFromIPCError(error, `Failed to fetch transaction with id: ${id}`));
+    throw Error(getMessageFromIPCError(error, `Failed to fetch transaction with id: ${draft.id}`));
   }
 };
 

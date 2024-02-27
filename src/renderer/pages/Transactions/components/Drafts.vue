@@ -7,7 +7,12 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useUserStore from '@renderer/stores/storeUser';
 
-import { getDraft, getDrafts, deleteDraft } from '@renderer/services/transactionDraftsService';
+import {
+  getDraft,
+  getDrafts,
+  deleteDraft,
+  updateDraft,
+} from '@renderer/services/transactionDraftsService';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -59,6 +64,14 @@ const handleSort = (field: string, direction: 'asc' | 'desc') => {
       break;
     default:
       break;
+  }
+};
+
+const handleUpdateIsTemplate = async (e: Event, id: string) => {
+  const checkbox = e.currentTarget as HTMLInputElement | null;
+
+  if (checkbox) {
+    await updateDraft(id, { isTemplate: checkbox.checked });
   }
 };
 
@@ -133,6 +146,9 @@ onBeforeMount(async () => {
           </div>
         </th>
         <th class="text-center">
+          <span>Is Template</span>
+        </th>
+        <th class="text-center">
           <span>Actions</span>
         </th>
       </tr>
@@ -148,6 +164,14 @@ onBeforeMount(async () => {
           </td>
           <td>
             <span class="text-bold">{{ draft.type }}</span>
+          </td>
+          <td class="text-center">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              :checked="Boolean(draft.isTemplate)"
+              @change="e => handleUpdateIsTemplate(e, draft.id)"
+            />
           </td>
           <td class="text-center">
             <div class="d-flex justify-content-center flex-wrap gap-3">
