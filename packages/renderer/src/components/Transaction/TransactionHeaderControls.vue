@@ -133,7 +133,7 @@ onBeforeRouteLeave(async to => {
         </div>
         <div>
           <img
-            src="/images/draft.png"
+            src="/assets/images/draft.png"
             class="h-100"
             style="width: 200px"
             alt="draft"

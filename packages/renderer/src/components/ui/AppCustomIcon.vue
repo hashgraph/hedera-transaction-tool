@@ -30,7 +30,8 @@ const iconMapping: {
   success: 'success',
 };
 
-const imageUrl = new URL(`../../assets/icons/${iconMapping[props.name]}.png`, import.meta.url).href;
+const imageUrl = new URL(`../../../assets/icons/${iconMapping[props.name]}.png`, import.meta.url)
+  .href;
 </script>
 <template>
   <div>

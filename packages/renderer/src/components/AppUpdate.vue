@@ -96,7 +96,7 @@ onBeforeMount(() => {
     <div class="text-center px-9 py-5">
       <div>
         <img
-          src="/images/icon.png"
+          src="/assets/images/icon.png"
           class="pulse"
           style="height: 10vh"
         />
@@ -114,7 +114,7 @@ onBeforeMount(() => {
     <div class="text-center p-4">
       <div>
         <img
-          src="/images/icon.png"
+          src="/assets/images/icon.png"
           style="height: 10vh"
         />
       </div>
@@ -145,7 +145,7 @@ onBeforeMount(() => {
     <div class="text-center p-4">
       <div>
         <img
-          src="/images/icon.png"
+          src="/assets/images/icon.png"
           style="height: 10vh"
         />
       </div>
@@ -171,7 +171,7 @@ onBeforeMount(() => {
     <div class="text-center p-4">
       <div>
         <img
-          src="/images/icon.png"
+          src="/assets/images/icon.png"
           style="height: 10vh"
         />
       </div>
@@ -226,7 +226,7 @@ onBeforeMount(() => {
     <div class="text-center p-4">
       <div>
         <img
-          src="/images/icon.png"
+          src="/assets/images/icon.png"
           style="height: 10vh"
         />
       </div>
