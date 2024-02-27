@@ -53,6 +53,8 @@
     "@vue/devtools": "^6.5.1",
     "@vue/eslint-config-prettier": "^9.0.0",
     "@vue/eslint-config-typescript": "^12.0.0",
+    "vite-plugin-electron": "^0.28.0",
+    "vite-plugin-electron-renderer": "^0.14.5",
     "electron": "28.1.1",
     "electron-builder": "^24.9.1",
     "electron-vite": "^2.0.0",
