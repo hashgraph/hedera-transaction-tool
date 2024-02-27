@@ -22,6 +22,7 @@ lerna-debug.log*
 dist
 dist-ssr
 dist-electron
+release
 out
 
 .DS_Store
