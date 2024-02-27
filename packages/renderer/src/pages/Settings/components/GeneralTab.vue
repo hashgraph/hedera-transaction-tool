@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import {onMounted, ref} from 'vue';
 
-import { useToast } from 'vue-toast-notification';
+import {useToast} from 'vue-toast-notification';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { isAccountId } from '@renderer/utils/validator';
+import {isAccountId} from '@renderer/utils/validator';
 
 /* Stores */
 const networkStore = useNetworkStore();
@@ -42,7 +42,7 @@ const handleSetCustomNetwork = async () => {
     if (err.message && typeof err.message === 'string') {
       message = err.message;
     }
-    toast.error(message, { position: 'bottom-right' });
+    toast.error(message, {position: 'bottom-right'});
   }
 };
 
@@ -66,7 +66,7 @@ onMounted(() => {
       <div class="mt-4 btn-group">
         <AppButton
           color="primary"
-          :class="{ active: networkStore.network === 'mainnet' }"
+          :class="{active: networkStore.network === 'mainnet'}"
           @click="
             networkStore.setNetwork('mainnet');
             isCustomSettingsVisible = false;
@@ -75,7 +75,7 @@ onMounted(() => {
         >
         <AppButton
           color="primary"
-          :class="{ active: networkStore.network === 'testnet' }"
+          :class="{active: networkStore.network === 'testnet'}"
           @click="
             networkStore.setNetwork('testnet');
             isCustomSettingsVisible = false;
@@ -85,7 +85,7 @@ onMounted(() => {
         <AppButton
           color="primary"
           disabled
-          :class="{ active: networkStore.network === 'previewnet' }"
+          :class="{active: networkStore.network === 'previewnet'}"
           @click="
             networkStore.setNetwork('previewnet');
             isCustomSettingsVisible = false;
@@ -94,30 +94,61 @@ onMounted(() => {
         >
         <AppButton
           color="primary"
-          :class="{ active: networkStore.network === 'custom' }"
+          :class="{active: networkStore.network === 'custom'}"
           @click="isCustomSettingsVisible = true"
           >Custom</AppButton
         >
       </div>
-      <Transition name="fade" mode="out-in">
-        <div v-if="isCustomSettingsVisible" class="mt-4">
+      <Transition
+        name="fade"
+        mode="out-in"
+      >
+        <div
+          v-if="isCustomSettingsVisible"
+          class="mt-4"
+        >
           <div>
             <label class="form-label">Consensus Node Endpoint</label>
-            <AppInput type="text" :filled="true" size="small" v-model="consensusNodeEndpoint" />
+            <AppInput
+              type="text"
+              :filled="true"
+              size="small"
+              v-model="consensusNodeEndpoint"
+            />
           </div>
           <div class="mt-4">
             <label class="form-label">Mirror Node GRPC Endpoint</label>
-            <AppInput type="text" :filled="true" size="small" v-model="mirrorNodeGRPCEndpoint" />
+            <AppInput
+              type="text"
+              :filled="true"
+              size="small"
+              v-model="mirrorNodeGRPCEndpoint"
+            />
           </div>
           <div class="mt-4">
             <label class="form-label">Mirror Node REST API Endpoint</label>
-            <AppInput type="text" :filled="true" size="small" v-model="mirrorNodeRESTAPIEndpoint" />
+            <AppInput
+              type="text"
+              :filled="true"
+              size="small"
+              v-model="mirrorNodeRESTAPIEndpoint"
+            />
           </div>
           <div class="mt-4">
             <label class="form-label">Node Account Id</label>
-            <AppInput type="text" :filled="true" size="small" v-model="nodeAccountId" />
+            <AppInput
+              type="text"
+              :filled="true"
+              size="small"
+              v-model="nodeAccountId"
+            />
           </div>
-          <AppButton color="primary" class="mt-4" @click="handleSetCustomNetwork">Set</AppButton>
+          <AppButton
+            color="primary"
+            class="mt-4"
+            @click="handleSetCustomNetwork"
+            >Set</AppButton
+          >
         </div>
       </Transition>
     </div>

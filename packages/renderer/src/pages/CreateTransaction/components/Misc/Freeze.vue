@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import {ref} from 'vue';
 // import { AccountId, Hbar, FreezeTransaction, FileId, Timestamp, FreezeType } from '@hashgraph/sdk';
-import { AccountId, Hbar, FreezeTransaction, FileId, Timestamp } from '@hashgraph/sdk';
+import {AccountId, Hbar, FreezeTransaction, FileId, Timestamp} from '@hashgraph/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { useToast } from 'vue-toast-notification';
+import {useToast} from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import { createTransactionId } from '@renderer/services/transactionService';
+import {createTransactionId} from '@renderer/services/transactionService';
 
-import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { isFileId } from '@renderer/utils/validator';
+import {getDateTimeLocalInputValue} from '@renderer/utils';
+import {isFileId} from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -61,7 +61,7 @@ const handleCreate = async e => {
 
     await transactionProcessor.value?.process(requiredSignatures);
   } catch (err: any) {
-    toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
+    toast.error(err.message || 'Failed to create transaction', {position: 'bottom-right'});
   }
 };
 
@@ -71,9 +71,17 @@ const columnClass = 'col-4 col-xxxl-3';
 <template>
   <form @submit="handleCreate">
     <!-- :create-requirements to be updated -->
-    <TransactionHeaderControls :create-requirements="true" heading-text="Freeze Transaction" />
+    <TransactionHeaderControls
+      :create-requirements="true"
+      heading-text="Freeze Transaction"
+    />
 
-    <AppButton type="button" color="secondary" class="mt-6" @click="$router.back()">
+    <AppButton
+      type="button"
+      color="secondary"
+      class="mt-6"
+      @click="$router.back()"
+    >
       <span class="bi bi-arrow-left"></span>
       Back
     </AppButton>
@@ -88,7 +96,10 @@ const columnClass = 'col-4 col-xxxl-3';
     <div class="row mt-6">
       <div :class="[columnClass]">
         <label class="form-label">Freeze Type<span class="text-danger">*</span></label>
-        <select class="form-select" v-model="freezeType">
+        <select
+          class="form-select"
+          v-model="freezeType"
+        >
           <option value="0">Unknown Freeze Type</option>
           <option value="1">Freeze Only</option>
           <option value="2">Prepare Upgrade</option>
@@ -100,7 +111,10 @@ const columnClass = 'col-4 col-xxxl-3';
     </div>
 
     <div class="row align-items-end mt-6">
-      <div class="form-group" :class="[columnClass]">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+      >
         <label class="form-label">Start Time<span class="text-danger">*</span></label>
         <AppInput
           :model-value="startTimestamp"
@@ -113,7 +127,10 @@ const columnClass = 'col-4 col-xxxl-3';
     </div>
 
     <div class="row align-items-end mt-6">
-      <div class="form-group" :class="[columnClass]">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+      >
         <label class="form-label">File ID</label>
         <AppInput
           :model-value="fileId?.toString()"
@@ -129,7 +146,11 @@ const columnClass = 'col-4 col-xxxl-3';
     <div class="row align-items-end mt-6">
       <div class="form-group col-8 col-xxxl-6">
         <label class="form-label">File Hash</label>
-        <AppInput v-model="fileHash" :filled="true" placeholder="Enter File Hash" />
+        <AppInput
+          v-model="fileHash"
+          :filled="true"
+          placeholder="Enter File Hash"
+        />
       </div>
     </div>
   </form>

@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import {ref} from 'vue';
 
 import useOrganizationsStore from '@renderer/stores/storeOrganizations';
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useToast } from 'vue-toast-notification';
-import { useRouter } from 'vue-router';
+import {useToast} from 'vue-toast-notification';
+import {useRouter} from 'vue-router';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -37,14 +37,14 @@ const handleContinue = async (e: Event) => {
     user.data.mode = 'organization';
     user.data.activeServerURL = serverUrl.value;
 
-    toast.error('Organizations Added', { position: 'bottom-right' });
-    router.push({ name: 'welcome' });
+    toast.error('Organizations Added', {position: 'bottom-right'});
+    router.push({name: 'welcome'});
   } catch (err: any) {
     let message = 'Failed to add organization';
     if (err.message && typeof err.message === 'string') {
       message = err.message;
     }
-    toast.error(message, { position: 'bottom-right' });
+    toast.error(message, {position: 'bottom-right'});
   }
 };
 </script>

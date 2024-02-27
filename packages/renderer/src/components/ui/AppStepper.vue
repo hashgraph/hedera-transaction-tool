@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /* Props */
 defineProps<{
-  items: { title: string; name: string }[];
+  items: {title: string; name: string}[];
   activeIndex: number;
   itemClickable?: boolean;
-  handleItemClick?: (item: { title: string; name: string }, index: number) => void;
+  handleItemClick?: (item: {title: string; name: string}, index: number) => void;
 }>();
 </script>
 <template>
@@ -12,10 +12,13 @@ defineProps<{
     <div class="stepper-head position-relative">
       <div class="stepper-nav position-relative d-flex justify-content-around align-items-center">
         <hr class="flex-1 m-0" />
-        <template v-for="(item, index) in items" :key="index">
+        <template
+          v-for="(item, index) in items"
+          :key="index"
+        >
           <div
             class="stepper-nav-item position-relative"
-            :class="{ 'stepper-active': activeIndex === index, 'cursor-pointer': itemClickable }"
+            :class="{'stepper-active': activeIndex === index, 'cursor-pointer': itemClickable}"
             @click="handleItemClick && handleItemClick(item, index)"
           >
             <div class="stepper-nav-item-bubble text-small rounded-circle border border-dark p-2">

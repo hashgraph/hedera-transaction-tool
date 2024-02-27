@@ -1,9 +1,9 @@
-import { Key, KeyList, Mnemonic, PrivateKey, PublicKey } from '@hashgraph/sdk';
-import { proto } from '@hashgraph/proto';
+import {Key, KeyList, Mnemonic, PrivateKey, PublicKey} from '@hashgraph/sdk';
+import {proto} from '@hashgraph/proto';
 
-import { Prisma } from '@prisma/client';
+import {Prisma} from '@prisma/client';
 
-import { getMessageFromIPCError } from '@renderer/utils';
+import {getMessageFromIPCError} from '@renderer/utils';
 
 /* Key Pairs Service */
 
@@ -199,7 +199,7 @@ export const flattenKeyList = (keyList: Key): PublicKey[] => {
 };
 
 export const getKeyListLevels = (keyList: KeyList) => {
-  const result: { key: proto.Key; level: number }[] = [];
+  const result: {key: proto.Key; level: number}[] = [];
 
   flattenComplexKey(keyList._toProtobufKey(), 0, result);
 
@@ -244,16 +244,16 @@ export const generateExternalKeyPairFromString = (
 function flattenComplexKey(
   key: proto.Key,
   level: number,
-  result: { key: proto.Key; level: number }[],
+  result: {key: proto.Key; level: number}[],
 ): void {
-  let newLine: { key: proto.Key; level: number } | null;
+  let newLine: {key: proto.Key; level: number} | null;
   let childKeys: proto.Key[];
   if (key.keyList) {
     if (key.keyList.keys && key.keyList.keys.length == 1) {
       newLine = null;
       childKeys = [key.keyList.keys[0]];
     } else {
-      newLine = { key, level };
+      newLine = {key, level};
       childKeys = key.keyList?.keys ?? [];
     }
   } else if (key.thresholdKey) {
@@ -261,12 +261,12 @@ function flattenComplexKey(
       newLine = null;
       childKeys = [key.thresholdKey.keys?.keys[0]];
     } else {
-      newLine = { key, level };
+      newLine = {key, level};
 
       childKeys = key.thresholdKey?.keys?.keys ?? [];
     }
   } else {
-    newLine = { key, level };
+    newLine = {key, level};
 
     childKeys = [];
   }

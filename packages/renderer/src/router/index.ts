@@ -1,6 +1,6 @@
-import { RouteRecordRaw, createRouter, createWebHistory } from 'vue-router';
+import {RouteRecordRaw, createRouter, createWebHistory} from 'vue-router';
 
-import { attachMeta } from './meta';
+import {attachMeta} from './meta';
 
 import Welocome from '@renderer/pages/Welcome';
 import StyleGuide from '@renderer/pages/Styleguide';
@@ -31,22 +31,22 @@ const routes: RouteRecordRaw[] = [
     name: 'welcome',
     component: Welocome,
   },
-  { path: '/style-guide', name: 'styleGuide', component: StyleGuide },
-  { path: '/transactions', name: 'transactions', component: Transactions },
-  { path: '/accounts/link-existing', name: 'linkExistingAccount', component: LinkExistingAccount },
-  { path: '/accounts', name: 'accounts', component: Accounts },
-  { path: '/tokens', name: 'tokens', component: Tokens },
-  { path: '/smart-contracts', name: 'smartContracts', component: SmartContracts },
-  { path: '/consensus-service', name: 'consensusService', component: ConsensusService },
-  { path: '/files', name: 'files', component: Files },
-  { path: '/files/link-existing', name: 'linkExistingFile', component: LinkExistingFile },
-  { path: '/contact-list', name: 'contactList', component: ContactList },
-  { path: '/help', name: 'help', component: Help },
-  { path: '/account-setup', name: 'accountSetup', component: AccountSetup },
-  { path: '/setup-organization', name: 'setupOrganization', component: SetupOrganization },
-  { path: '/restore-key', name: 'restoreKey', component: RestoreKey },
-  { path: '/create-transaction/:type', name: 'createTransaction', component: CreateTransaction },
-  { path: '/forgot-password', name: 'forgotPassword', component: ForgotPassword },
+  {path: '/style-guide', name: 'styleGuide', component: StyleGuide},
+  {path: '/transactions', name: 'transactions', component: Transactions},
+  {path: '/accounts/link-existing', name: 'linkExistingAccount', component: LinkExistingAccount},
+  {path: '/accounts', name: 'accounts', component: Accounts},
+  {path: '/tokens', name: 'tokens', component: Tokens},
+  {path: '/smart-contracts', name: 'smartContracts', component: SmartContracts},
+  {path: '/consensus-service', name: 'consensusService', component: ConsensusService},
+  {path: '/files', name: 'files', component: Files},
+  {path: '/files/link-existing', name: 'linkExistingFile', component: LinkExistingFile},
+  {path: '/contact-list', name: 'contactList', component: ContactList},
+  {path: '/help', name: 'help', component: Help},
+  {path: '/account-setup', name: 'accountSetup', component: AccountSetup},
+  {path: '/setup-organization', name: 'setupOrganization', component: SetupOrganization},
+  {path: '/restore-key', name: 'restoreKey', component: RestoreKey},
+  {path: '/create-transaction/:type', name: 'createTransaction', component: CreateTransaction},
+  {path: '/forgot-password', name: 'forgotPassword', component: ForgotPassword},
   {
     path: '/settings',
     name: 'settings',
@@ -74,7 +74,7 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
-  { path: '/:catchAll(.*)', redirect: '/' },
+  {path: '/:catchAll(.*)', redirect: '/'},
 ];
 
 attachMeta(routes);

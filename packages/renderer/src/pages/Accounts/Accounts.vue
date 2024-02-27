@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import { KeyList, PublicKey } from '@hashgraph/sdk';
-import { HederaAccount } from '@prisma/client';
+import {computed, onMounted, ref} from 'vue';
+import {KeyList, PublicKey} from '@hashgraph/sdk';
+import {HederaAccount} from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { useToast } from 'vue-toast-notification';
+import {useToast} from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import { getAll, remove, changeNickname } from '@renderer/services/accountsService';
-import { getKeyListLevels } from '@renderer/services/keyPairService';
-import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
+import {getAll, remove, changeNickname} from '@renderer/services/accountsService';
+import {getKeyListLevels} from '@renderer/services/keyPairService';
+import {getDollarAmount} from '@renderer/services/mirrorNodeDataService';
 
-import { getFormattedDateFromTimestamp } from '@renderer/utils/transactions';
+import {getFormattedDateFromTimestamp} from '@renderer/utils/transactions';
 
-import { transactionTypeKeys } from '../CreateTransaction/txTypeComponentMapping';
+import {transactionTypeKeys} from '../CreateTransaction/txTypeComponentMapping';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
@@ -83,7 +83,7 @@ const handleUnlinkAccount = async () => {
 
   isUnlinkAccountModalShown.value = false;
 
-  toast.success('Account Unlinked!', { position: 'bottom-right' });
+  toast.success('Account Unlinked!', {position: 'bottom-right'});
 };
 
 const handleStartNicknameEdit = () => {
@@ -144,7 +144,10 @@ const handleChangeNickname = async () => {
   <div class="p-5">
     <div class="d-flex justify-content-between align-items-center">
       <h1 class="text-title text-bold">Accounts</h1>
-      <div v-if="accounts.length > 0" class="d-flex justify-content-end align-items-center">
+      <div
+        v-if="accounts.length > 0"
+        class="d-flex justify-content-end align-items-center"
+      >
         <AppButton
           :outline="true"
           color="secondary"
@@ -152,7 +155,10 @@ const handleChangeNickname = async () => {
           @click="isUnlinkAccountModalShown = true"
           >Unlink</AppButton
         >
-        <div class="dropdown" v-if="!accountData.accountInfo.value?.deleted">
+        <div
+          class="dropdown"
+          v-if="!accountData.accountInfo.value?.deleted"
+        >
           <AppButton
             color="primary"
             class="w-100 d-flex align-items-center justify-content-center"
@@ -165,8 +171,8 @@ const handleChangeNickname = async () => {
               @click="
                 $router.push({
                   name: 'createTransaction',
-                  params: { type: transactionTypeKeys.deleteAccount },
-                  query: { accountId: accountData.accountIdFormatted.value },
+                  params: {type: transactionTypeKeys.deleteAccount},
+                  query: {accountId: accountData.accountIdFormatted.value},
                 })
               "
             >
@@ -177,8 +183,8 @@ const handleChangeNickname = async () => {
               @click="
                 $router.push({
                   name: 'createTransaction',
-                  params: { type: transactionTypeKeys.updateAccount },
-                  query: { accountId: accountData.accountIdFormatted.value },
+                  params: {type: transactionTypeKeys.updateAccount},
+                  query: {accountId: accountData.accountIdFormatted.value},
                 })
               "
             >
@@ -245,7 +251,10 @@ const handleChangeNickname = async () => {
         </div> -->
         <hr class="separator my-5" />
         <div>
-          <template v-for="account in accounts" :key="account.accountId">
+          <template
+            v-for="account in accounts"
+            :key="account.accountId"
+          >
             <div
               class="container-card-account p-4 mt-3"
               :class="{
@@ -265,8 +274,14 @@ const handleChangeNickname = async () => {
         </div>
       </div>
       <div class="col-8 col-xxl-9 ps-4 pt-0">
-        <Transition name="fade" mode="out-in">
-          <div v-if="accountData.isValid.value" class="h-100 position-relative">
+        <Transition
+          name="fade"
+          mode="out-in"
+        >
+          <div
+            v-if="accountData.isValid.value"
+            class="h-100 position-relative"
+          >
             <div class="row align-items-center">
               <div class="col-5">
                 <p class="text-small text-semi-bold">Nickname</p>
@@ -350,7 +365,9 @@ const handleChangeNickname = async () => {
               <div class="col-7">
                 <template v-if="accountData.key.value instanceof KeyList && true">
                   Complex Key ({{ getKeyListLevels(accountData.key.value) }} levels)
-                  <span class="link-primary cursor-pointer" @click="isKeyStructureModalShown = true"
+                  <span
+                    class="link-primary cursor-pointer"
+                    @click="isKeyStructureModalShown = true"
                     >See details</span
                   >
                 </template>
@@ -430,7 +447,10 @@ const handleChangeNickname = async () => {
                 </p>
               </div>
             </div>
-            <div class="mt-4 row" v-if="accountData.accountInfo.value?.autoRenewPeriod">
+            <div
+              class="mt-4 row"
+              v-if="accountData.accountInfo.value?.autoRenewPeriod"
+            >
               <div class="col-5"><p class="text-small text-semi-bold">Auto Renew Period</p></div>
               <div class="col-7">
                 <p class="text-small text-semi-bold">
@@ -477,7 +497,10 @@ const handleChangeNickname = async () => {
           :account-key="accountData.key.value"
         />
 
-        <AppModal v-model:show="isUnlinkAccountModalShown" class="common-modal">
+        <AppModal
+          v-model:show="isUnlinkAccountModalShown"
+          class="common-modal"
+        >
           <div class="modal-body">
             <i
               class="bi bi-x-lg d-inline-block cursor-pointer"
@@ -485,7 +508,10 @@ const handleChangeNickname = async () => {
               @click="isUnlinkAccountModalShown = false"
             ></i>
             <div class="text-center">
-              <AppCustomIcon :name="'bin'" style="height: 160px" />
+              <AppCustomIcon
+                :name="'bin'"
+                style="height: 160px"
+              />
             </div>
             <h3 class="text-center text-title text-bold mt-3">Unlink account</h3>
             <p class="text-center text-small text-secondary mt-4">

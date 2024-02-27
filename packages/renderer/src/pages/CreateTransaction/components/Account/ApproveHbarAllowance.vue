@@ -1,23 +1,17 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import {
-  Hbar,
-  Key,
-  AccountAllowanceApproveTransaction,
-  Transaction,
-  KeyList,
-} from '@hashgraph/sdk';
+import {onMounted, ref} from 'vue';
+import {Hbar, Key, AccountAllowanceApproveTransaction, Transaction, KeyList} from '@hashgraph/sdk';
 
-import { useToast } from 'vue-toast-notification';
-import { useRoute } from 'vue-router';
+import {useToast} from 'vue-toast-notification';
+import {useRoute} from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import { createTransactionId } from '@renderer/services/transactionService';
-import { getDraft } from '@renderer/services/transactionDraftsService';
+import {createTransactionId} from '@renderer/services/transactionService';
+import {getDraft} from '@renderer/services/transactionDraftsService';
 
-import { getTransactionFromBytes } from '@renderer/utils/transactions';
-import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { isAccountId } from '@renderer/utils/validator';
+import {getTransactionFromBytes} from '@renderer/utils/transactions';
+import {getDateTimeLocalInputValue} from '@renderer/utils';
+import {isAccountId} from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -69,7 +63,7 @@ const handleCreate = async e => {
     const requiredKey = new KeyList([payerData.key.value, ownerData.key.value]);
     await transactionProcessor.value?.process(requiredKey);
   } catch (err: any) {
-    toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
+    toast.error(err.message || 'Failed to create transaction', {position: 'bottom-right'});
   }
 };
 
@@ -144,9 +138,14 @@ const columnClass = 'col-4 col-xxxl-3';
     />
 
     <div class="row align-items-end mt-6">
-      <div class="form-group" :class="[columnClass]">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+      >
         <label class="form-label">Owner ID <span class="text-danger">*</span></label>
-        <label v-if="ownerData.isValid.value" class="form-label d-block text-secondary"
+        <label
+          v-if="ownerData.isValid.value"
+          class="form-label d-block text-secondary"
           >Balance: {{ ownerData.accountInfo.value?.balance }}</label
         >
 
@@ -158,7 +157,11 @@ const columnClass = 'col-4 col-xxxl-3';
         />
       </div>
 
-      <div class="form-group" :class="[columnClass]" v-if="ownerData.key.value">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+        v-if="ownerData.key.value"
+      >
         <AppButton
           :outline="true"
           color="primary"
@@ -173,9 +176,14 @@ const columnClass = 'col-4 col-xxxl-3';
     </div>
 
     <div class="row align-items-end mt-6">
-      <div class="form-group" :class="[columnClass]">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+      >
         <label class="form-label">Spender ID <span class="text-danger">*</span></label>
-        <label v-if="spenderData.isValid.value" class="form-label d-block text-secondary"
+        <label
+          v-if="spenderData.isValid.value"
+          class="form-label d-block text-secondary"
           >Allowance: {{ ownerData.getSpenderAllowance(spenderData.accountId.value) }}</label
         >
         <AppInput
@@ -185,7 +193,11 @@ const columnClass = 'col-4 col-xxxl-3';
           placeholder="Enter Spender ID"
         />
       </div>
-      <div class="form-group" :class="[columnClass]" v-if="spenderData.key.value">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+        v-if="spenderData.key.value"
+      >
         <AppButton
           :outline="true"
           color="primary"
@@ -200,9 +212,17 @@ const columnClass = 'col-4 col-xxxl-3';
     </div>
 
     <div class="row mt-6">
-      <div class="form-group" :class="[columnClass]">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+      >
         <label class="form-label">Amount <span class="text-danger">*</span></label>
-        <AppInput v-model="amount" :filled="true" type="number" placeholder="Enter Amount" />
+        <AppInput
+          v-model="amount"
+          :filled="true"
+          type="number"
+          placeholder="Enter Amount"
+        />
       </div>
     </div>
   </form>

@@ -1,5 +1,5 @@
-import { Prisma } from '@prisma/client';
-import { getMessageFromIPCError } from '@renderer/utils';
+import {Prisma} from '@prisma/client';
+import {getMessageFromIPCError} from '@renderer/utils';
 
 export const getAll = async (userId: string) => {
   try {

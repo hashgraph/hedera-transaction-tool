@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, ref } from 'vue';
+import {computed, onBeforeMount, ref} from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
-import AppTabs, { TabItem } from '@renderer/components/ui/AppTabs.vue';
+import AppTabs, {TabItem} from '@renderer/components/ui/AppTabs.vue';
 import Generate from './Generate.vue';
 import Import from './Import.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -19,7 +19,7 @@ const keyPairsStore = useKeyPairsStore();
 const user = useUserStore();
 
 /* State */
-const tabItems = ref<TabItem[]>([{ title: 'Create New' }, { title: 'Import Existing' }]);
+const tabItems = ref<TabItem[]>([{title: 'Create New'}, {title: 'Import Existing'}]);
 const activeTabIndex = ref(1);
 
 /* Getters */
@@ -45,9 +45,17 @@ onBeforeMount(() => {
     </template>
     <template v-else-if="activeTabTitle === 'Import Existing'">
       <Import :secret-hashes="user.data.secretHashes" />
-      <div v-if="keyPairsStore.recoveryPhraseWords.length > 0" class="row justify-content-end mt-6">
+      <div
+        v-if="keyPairsStore.recoveryPhraseWords.length > 0"
+        class="row justify-content-end mt-6"
+      >
         <div class="col-4">
-          <AppButton color="primary" class="w-100" @click="handleNext">Next</AppButton>
+          <AppButton
+            color="primary"
+            class="w-100"
+            @click="handleNext"
+            >Next</AppButton
+          >
         </div>
       </div>
     </template>

@@ -27,7 +27,10 @@ const buttonValues = ['25', '50', '75', '100'];
       <span class="text-title text-numeric">{{ sliderValue }}%</span>
 
       <div class="d-flex mt-2">
-        <template v-for="(buttonValue, index) in buttonValues" :key="index">
+        <template
+          v-for="(buttonValue, index) in buttonValues"
+          :key="index"
+        >
           <AppButtonPercentage
             :class="[index !== 0 ? 'ms-3' : '']"
             @click="handleButtonClick(buttonValue)"

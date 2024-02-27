@@ -34,6 +34,11 @@ const imageUrl = new URL(`../../assets/icons/${iconMapping[props.name]}.png`, im
 </script>
 <template>
   <div>
-    <img :src="imageUrl" :alt="name" class="h-100" :class="imageClass" />
+    <img
+      :src="imageUrl"
+      :alt="name"
+      class="h-100"
+      :class="imageClass"
+    />
   </div>
 </template>

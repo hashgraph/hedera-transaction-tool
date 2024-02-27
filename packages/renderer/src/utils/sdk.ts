@@ -1,14 +1,5 @@
-import { proto } from '@hashgraph/proto';
-import {
-  FileId,
-  FileInfo,
-  Key,
-  KeyList,
-  LedgerId,
-  Long,
-  PublicKey,
-  Timestamp,
-} from '@hashgraph/sdk';
+import {proto} from '@hashgraph/proto';
+import {FileId, FileInfo, Key, KeyList, LedgerId, Long, PublicKey, Timestamp} from '@hashgraph/sdk';
 
 export const createFileInfo = (props: {
   fileId: FileId | string;

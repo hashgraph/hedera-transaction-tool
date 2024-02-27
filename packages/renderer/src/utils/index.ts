@@ -31,9 +31,9 @@ export const getDateTimeLocalInputValue = (date: Date) => {
 
 export const convertBytes = (
   bytes: number,
-  options: { useBinaryUnits?: boolean; decimals?: number } = {},
+  options: {useBinaryUnits?: boolean; decimals?: number} = {},
 ): string => {
-  const { useBinaryUnits = false, decimals = 2 } = options;
+  const {useBinaryUnits = false, decimals = 2} = options;
 
   if (decimals < 0) {
     throw new Error(`Invalid decimals ${decimals}`);

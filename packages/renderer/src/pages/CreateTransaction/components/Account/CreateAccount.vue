@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import {computed, onMounted, reactive, ref, watch} from 'vue';
 import {
   AccountId,
   AccountCreateTransaction,
@@ -10,20 +10,20 @@ import {
   TransactionReceipt,
 } from '@hashgraph/sdk';
 
-import { useToast } from 'vue-toast-notification';
+import {useToast} from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useRoute } from 'vue-router';
+import {useRoute} from 'vue-router';
 
-import { add } from '@renderer/services/accountsService';
-import { createTransactionId } from '@renderer/services/transactionService';
-import { getDraft } from '@renderer/services/transactionDraftsService';
-import { flattenKeyList } from '@renderer/services/keyPairService';
+import {add} from '@renderer/services/accountsService';
+import {createTransactionId} from '@renderer/services/transactionService';
+import {getDraft} from '@renderer/services/transactionDraftsService';
+import {flattenKeyList} from '@renderer/services/keyPairService';
 
-import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { isAccountId, isPublicKey } from '@renderer/utils/validator';
+import {getDateTimeLocalInputValue} from '@renderer/utils';
+import {isAccountId, isPublicKey} from '@renderer/utils/validator';
 import {
   getEntityIdFromTransactionReceipt,
   getTransactionFromBytes,
@@ -87,7 +87,7 @@ const handleCreate = async e => {
 
     await transactionProcessor.value?.process(payerData.key.value);
   } catch (err: any) {
-    toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
+    toast.error(err.message || 'Failed to create transaction', {position: 'bottom-right'});
   }
 };
 
@@ -95,7 +95,7 @@ const handleExecuted = async (_response, receipt: TransactionReceipt) => {
   isExecuted.value = true;
   const accountId = getEntityIdFromTransactionReceipt(receipt, 'accountId');
   await add(user.data.id, accountId);
-  toast.success(`Account ${accountId} linked`, { position: 'bottom-right' });
+  toast.success(`Account ${accountId} linked`, {position: 'bottom-right'});
 };
 
 const handleLoadFromDraft = async () => {
@@ -199,20 +199,37 @@ const columnClass = 'col-4 col-xxxl-3';
       <div class="form-group col-8 col-xxxl-6">
         <label class="form-label">Keys <span class="text-danger">*</span></label>
         <div class="d-flex gap-3">
-          <AppInput v-model="ownerKeyText" :filled="true" placeholder="Enter owner public key" />
+          <AppInput
+            v-model="ownerKeyText"
+            :filled="true"
+            placeholder="Enter owner public key"
+          />
         </div>
       </div>
 
       <div class="form-group col-4 col-xxxl-6 d-flex align-items-end">
-        <AppButton :outline="true" type="button" color="primary" @click="handleAdd">Add</AppButton>
+        <AppButton
+          :outline="true"
+          type="button"
+          color="primary"
+          @click="handleAdd"
+          >Add</AppButton
+        >
       </div>
     </div>
 
     <div class="row">
       <div class="form-group col-8 col-xxxl-6">
-        <template v-for="key in ownerKeys" :key="key">
+        <template
+          v-for="key in ownerKeys"
+          :key="key"
+        >
           <div class="d-flex align-items-center gap-3 mt-4">
-            <AppInput readonly :filled="true" :model-value="key" />
+            <AppInput
+              readonly
+              :filled="true"
+              :model-value="key"
+            />
             <i
               class="bi bi-x-lg cursor-pointer"
               @click="ownerKeys = ownerKeys.filter(k => k !== key)"
@@ -233,7 +250,10 @@ const columnClass = 'col-4 col-xxxl-3';
       />
     </div>
     <div class="row mt-6">
-      <div class="form-group" :class="[columnClass]">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+      >
         <label class="form-label">Staked Node Id</label>
         <AppInput
           v-model="accountData.stakedNodeId"
@@ -244,7 +264,10 @@ const columnClass = 'col-4 col-xxxl-3';
           placeholder="Enter Node Id Number"
         />
       </div>
-      <div class="form-group" :class="[columnClass]">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+      >
         <label class="form-label">Staked Account Id</label>
         <AppInput
           v-model="accountData.stakedAccountId"
@@ -255,7 +278,10 @@ const columnClass = 'col-4 col-xxxl-3';
       </div>
     </div>
     <div class="row mt-6">
-      <div class="form-group" :class="[columnClass]">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+      >
         <label class="form-label">Account Memo</label>
         <AppInput
           v-model="accountData.memo"
@@ -278,7 +304,10 @@ const columnClass = 'col-4 col-xxxl-3';
     </div>
 
     <div class="row mt-6">
-      <div class="form-group" :class="[columnClass]">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+      >
         <label class="form-label">Initial Balance in HBar</label>
         <AppInput
           v-model="accountData.initialBalance"
@@ -288,7 +317,10 @@ const columnClass = 'col-4 col-xxxl-3';
           placeholder="Enter Hbar amount"
         />
       </div>
-      <div class="form-group" :class="[columnClass]">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+      >
         <label class="form-label">Max Automatic Token Associations</label>
         <AppInput
           v-model="accountData.maxAutomaticTokenAssociations"
@@ -306,7 +338,7 @@ const columnClass = 'col-4 col-xxxl-3';
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
     :on-executed="handleExecuted"
-    :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
+    :on-close-success-modal-click="() => $router.push({name: 'accounts'})"
   >
     <template #successHeading>Account created successfully</template>
     <template #successContent>

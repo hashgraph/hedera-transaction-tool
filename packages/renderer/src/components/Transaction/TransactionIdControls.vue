@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import {onMounted} from 'vue';
 
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useRoute } from 'vue-router';
+import {useRoute} from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import { getDraft } from '@renderer/services/transactionDraftsService';
-import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { getTransactionFromBytes } from '@renderer/utils/transactions';
+import {getDraft} from '@renderer/services/transactionDraftsService';
+import {getDateTimeLocalInputValue} from '@renderer/utils';
+import {getTransactionFromBytes} from '@renderer/utils/transactions';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
@@ -78,13 +78,21 @@ const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <div class="row flex-wrap align-items-end">
-    <div class="form-group" :class="[columnClass]">
+    <div
+      class="form-group"
+      :class="[columnClass]"
+    >
       <label class="form-label">Payer ID <span class="text-danger">*</span></label>
-      <label v-if="account.isValid.value" class="d-block form-label text-secondary"
+      <label
+        v-if="account.isValid.value"
+        class="d-block form-label text-secondary"
         >Balance: {{ account.accountInfo.value?.balance || 0 }}</label
       >
       <template v-if="user.data.mode === 'personal'">
-        <AccountIdsSelect :account-id="payerId" @update:account-id="handlePayerChange" />
+        <AccountIdsSelect
+          :account-id="payerId"
+          @update:account-id="handlePayerChange"
+        />
       </template>
       <template v-else>
         <AppInput
@@ -100,7 +108,10 @@ const columnClass = 'col-4 col-xxxl-3';
         />
       </template>
     </div>
-    <div class="form-group" :class="[columnClass]">
+    <div
+      class="form-group"
+      :class="[columnClass]"
+    >
       <label class="form-label">Valid Start Time</label>
       <AppInput
         :model-value="validStart"
@@ -110,7 +121,10 @@ const columnClass = 'col-4 col-xxxl-3';
         step="1"
       />
     </div>
-    <div class="form-group" :class="[columnClass]">
+    <div
+      class="form-group"
+      :class="[columnClass]"
+    >
       <label class="form-label">Max Transaction Fee</label>
       <AppInput
         :model-value="maxTransactionFee"

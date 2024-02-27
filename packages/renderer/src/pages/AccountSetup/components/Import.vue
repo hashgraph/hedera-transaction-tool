@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { onBeforeMount, ref, watch } from 'vue';
+import {onBeforeMount, ref, watch} from 'vue';
 
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
-import { hashRecoveryPhrase, validateMnemonic } from '@renderer/services/keyPairService';
+import {hashRecoveryPhrase, validateMnemonic} from '@renderer/services/keyPairService';
 
 import AppRecoveryPhraseWord from '@renderer/components/ui/AppRecoveryPhraseWord.vue';
 
@@ -84,7 +84,10 @@ watch(words, async newWords => {
 <template>
   <div>
     <div class="d-flex flex-wrap row g-3">
-      <template v-for="(word, index) in words || []" :key="index">
+      <template
+        v-for="(word, index) in words || []"
+        :key="index"
+      >
         <AppRecoveryPhraseWord
           class="col-3"
           :word="word"
@@ -95,6 +98,10 @@ watch(words, async newWords => {
         />
       </template>
     </div>
-    <p v-if="!isSecretHashValid" class="mt-3 text-danger">Recovery phrase not match yours</p>
+    <p
+      v-if="!isSecretHashValid"
+      class="mt-3 text-danger"
+      >Recovery phrase not match yours</p
+    >
   </div>
 </template>

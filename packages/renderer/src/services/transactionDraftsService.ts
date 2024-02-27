@@ -1,7 +1,7 @@
-import { Prisma } from '@prisma/client';
+import {Prisma} from '@prisma/client';
 
-import { getMessageFromIPCError } from '@renderer/utils';
-import { getTransactionType } from '@renderer/utils/transactions';
+import {getMessageFromIPCError} from '@renderer/utils';
+import {getTransactionType} from '@renderer/utils/transactions';
 
 /* Transaction Drafts Service */
 

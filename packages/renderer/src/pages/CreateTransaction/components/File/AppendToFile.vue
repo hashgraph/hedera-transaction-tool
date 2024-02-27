@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from 'vue';
-import { FileAppendTransaction, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
+import {ref, watch, computed, onMounted} from 'vue';
+import {FileAppendTransaction, KeyList, PublicKey, Transaction} from '@hashgraph/sdk';
 
-import { useToast } from 'vue-toast-notification';
-import { useRoute } from 'vue-router';
+import {useToast} from 'vue-toast-notification';
+import {useRoute} from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import { createTransactionId } from '@renderer/services/transactionService';
-import { getDraft } from '@renderer/services/transactionDraftsService';
+import {createTransactionId} from '@renderer/services/transactionService';
+import {getDraft} from '@renderer/services/transactionDraftsService';
 
-import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { getTransactionFromBytes } from '@renderer/utils/transactions';
-import { isPublicKey, isAccountId } from '@renderer/utils/validator';
+import {getDateTimeLocalInputValue} from '@renderer/utils';
+import {getTransactionFromBytes} from '@renderer/utils/transactions';
+import {isPublicKey, isAccountId} from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -116,7 +116,7 @@ const handleCreate = async e => {
     const requiredKey = new KeyList([payerData.key.value, keyList.value]);
     await transactionProcessor.value?.process(requiredKey, chunkSize.value, 1);
   } catch (err: any) {
-    toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
+    toast.error(err.message || 'Failed to create transaction', {position: 'bottom-right'});
   }
 };
 
@@ -189,9 +189,16 @@ const columnClass = 'col-4 col-xxxl-3';
     />
 
     <div class="row mt-6">
-      <div class="form-group" :class="[columnClass]">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+      >
         <label class="form-label">File ID <span class="text-danger">*</span></label>
-        <AppInput v-model="fileId" :filled="true" placeholder="Enter File ID" />
+        <AppInput
+          v-model="fileId"
+          :filled="true"
+          placeholder="Enter File ID"
+        />
       </div>
     </div>
 
@@ -210,7 +217,11 @@ const columnClass = 'col-4 col-xxxl-3';
       </div>
 
       <div class="form-group col-4 col-xxxl-6 d-flex align-items-end">
-        <AppButton :outline="true" color="primary" type="button" @click="handleAddSignatureKey"
+        <AppButton
+          :outline="true"
+          color="primary"
+          type="button"
+          @click="handleAddSignatureKey"
           >Add</AppButton
         >
       </div>
@@ -218,9 +229,16 @@ const columnClass = 'col-4 col-xxxl-3';
 
     <div class="row">
       <div class="form-group col-8 col-xxxl-6">
-        <template v-for="key in signatureKeys" :key="key">
+        <template
+          v-for="key in signatureKeys"
+          :key="key"
+        >
           <div class="d-flex align-items-center gap-3 mt-3">
-            <AppInput :model-value="key" :filled="true" readonly />
+            <AppInput
+              :model-value="key"
+              :filled="true"
+              readonly
+            />
             <i
               class="bi bi-x-lg d-inline-block cursor-pointer"
               @click="signatureKeys = signatureKeys.filter(k => k !== key)"
@@ -231,15 +249,30 @@ const columnClass = 'col-4 col-xxxl-3';
     </div>
 
     <div class="row mt-6">
-      <div class="form-group" :class="[columnClass]">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+      >
         <label class="form-label">Chunk Size</label>
-        <AppInput v-model="chunkSize" :filled="true" type="number" min="1024" max="6144" />
+        <AppInput
+          v-model="chunkSize"
+          :filled="true"
+          type="number"
+          min="1024"
+          max="6144"
+        />
       </div>
     </div>
 
     <div class="form-group mt-4">
-      <label for="fileUpload" class="form-label">
-        <span for="fileUpload" class="btn btn-primary" :class="{ disabled: content.length > 0 }"
+      <label
+        for="fileUpload"
+        class="form-label"
+      >
+        <span
+          for="fileUpload"
+          class="btn btn-primary"
+          :class="{disabled: content.length > 0}"
           >Upload File</span
         >
       </label>
@@ -253,9 +286,20 @@ const columnClass = 'col-4 col-xxxl-3';
         @change="handleFileImport"
       />
       <template v-if="fileMeta">
-        <span v-if="fileMeta" class="ms-3">{{ fileMeta.name }}</span>
-        <span v-if="loadPercentage < 100" class="ms-3">{{ loadPercentage.toFixed(2) }}%</span>
-        <span v-if="fileMeta" class="ms-3 cursor-pointer" @click="handleRemoveFile"
+        <span
+          v-if="fileMeta"
+          class="ms-3"
+          >{{ fileMeta.name }}</span
+        >
+        <span
+          v-if="loadPercentage < 100"
+          class="ms-3"
+          >{{ loadPercentage.toFixed(2) }}%</span
+        >
+        <span
+          v-if="fileMeta"
+          class="ms-3 cursor-pointer"
+          @click="handleRemoveFile"
           ><i class="bi bi-x-lg"></i
         ></span>
       </template>
@@ -304,7 +348,10 @@ const columnClass = 'col-4 col-xxxl-3';
         <span class="text-bold text-secondary">File ID:</span>
         <span>{{ fileId }}</span>
       </p>
-      <p v-if="chunksAmount" class="text-small d-flex justify-content-between align-items mt-2">
+      <p
+        v-if="chunksAmount"
+        class="text-small d-flex justify-content-between align-items mt-2"
+      >
         <span class="text-bold text-secondary">Number of Chunks</span>
         <span>{{ chunksAmount }}</span>
       </p>

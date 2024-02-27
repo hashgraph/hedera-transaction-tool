@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { RouteLocationNormalized, onBeforeRouteLeave } from 'vue-router';
+import {ref} from 'vue';
+import {RouteLocationNormalized, onBeforeRouteLeave} from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useToast } from 'vue-toast-notification';
-import { useRoute } from 'vue-router';
+import {useToast} from 'vue-toast-notification';
+import {useRoute} from 'vue-router';
 
 import {
   addDraft,
@@ -14,7 +14,7 @@ import {
   updateDraft,
 } from '@renderer/services/transactionDraftsService';
 
-import { getTransactionFromBytes } from '@renderer/utils/transactions';
+import {getTransactionFromBytes} from '@renderer/utils/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -56,7 +56,7 @@ const saveDraft = async () => {
 
   await addDraft(user.data.id, transactionBytes);
 
-  toast.success('Draft saved', { position: 'bottom-right' });
+  toast.success('Draft saved', {position: 'bottom-right'});
 };
 
 /* Hooks */
@@ -87,7 +87,12 @@ onBeforeRouteLeave(async to => {
 <template>
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
     <div class="d-flex align-items-center">
-      <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="$router.back()">
+      <AppButton
+        type="button"
+        color="secondary"
+        class="btn-icon-only me-4"
+        @click="$router.back()"
+      >
         <i class="bi bi-arrow-left"></i>
       </AppButton>
 
@@ -118,10 +123,18 @@ onBeforeRouteLeave(async to => {
     >
       <div class="text-center p-4">
         <div class="text-start">
-          <i class="bi bi-x-lg cursor-pointer" @click="isSaveDraftModalShown = false"></i>
+          <i
+            class="bi bi-x-lg cursor-pointer"
+            @click="isSaveDraftModalShown = false"
+          ></i>
         </div>
         <div>
-          <img src="/images/draft.png" class="h-100" style="width: 200px" alt="draft" />
+          <img
+            src="/images/draft.png"
+            class="h-100"
+            style="width: 200px"
+            alt="draft"
+          />
         </div>
         <h2 class="text-title text-semi-bold mt-3">Save draft?</h2>
         <p class="text-small text-secondary mt-3">

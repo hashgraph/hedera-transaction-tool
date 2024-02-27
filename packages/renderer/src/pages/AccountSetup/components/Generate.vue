@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { Mnemonic } from '@hashgraph/sdk';
+import {ref, watch} from 'vue';
+import {Mnemonic} from '@hashgraph/sdk';
 
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
-import { validateMnemonic } from '@renderer/services/keyPairService';
+import {validateMnemonic} from '@renderer/services/keyPairService';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppRecoveryPhraseWord from '@renderer/components/ui/AppRecoveryPhraseWord.vue';
-import { useToast } from 'vue-toast-notification';
+import {useToast} from 'vue-toast-notification';
 
 /* Props */
 defineProps<{
@@ -92,7 +92,10 @@ watch(words, newWords => {
 <template>
   <div>
     <div class="d-flex flex-wrap row g-3">
-      <template v-for="(word, index) in words || []" :key="index">
+      <template
+        v-for="(word, index) in words || []"
+        :key="index"
+      >
         <AppRecoveryPhraseWord
           class="col-3"
           :word="word"
@@ -103,7 +106,10 @@ watch(words, newWords => {
         />
       </template>
     </div>
-    <div v-if="!toVerify" class="mt-5">
+    <div
+      v-if="!toVerify"
+      class="mt-5"
+    >
       <AppCheckBox
         v-model:checked="checkboxChecked"
         :label="
@@ -166,9 +172,17 @@ watch(words, newWords => {
     </div>
   </div>
 
-  <div v-if="wordsConfirmed" class="row justify-content-end mt-6">
+  <div
+    v-if="wordsConfirmed"
+    class="row justify-content-end mt-6"
+  >
     <div class="col-4">
-      <AppButton color="primary" class="w-100" @click="handleNext">Next</AppButton>
+      <AppButton
+        color="primary"
+        class="w-100"
+        @click="handleNext"
+        >Next</AppButton
+      >
     </div>
   </div>
 </template>

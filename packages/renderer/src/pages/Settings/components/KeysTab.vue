@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from 'vue';
-import { PublicKey } from '@hashgraph/sdk';
-import { Prisma } from '@prisma/client';
+import {onMounted, reactive, ref, watch} from 'vue';
+import {PublicKey} from '@hashgraph/sdk';
+import {Prisma} from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
-import { useToast } from 'vue-toast-notification';
+import {useToast} from 'vue-toast-notification';
 
 import {
   decryptPrivateKey,
   deleteKeyPair,
   generateExternalKeyPairFromString,
 } from '@renderer/services/keyPairService';
-import { comparePasswords } from '@renderer/services/userService';
+import {comparePasswords} from '@renderer/services/userService';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -38,15 +38,15 @@ const isDecryptedModalShown = ref(false);
 const isDeleteModalShown = ref(false);
 const isImportECDSAKeyModalShown = ref(false);
 const isImportED25519KeyModalShown = ref(false);
-const decryptedKeys = ref<{ decrypted: string | null; publicKey: string }[]>([]);
+const decryptedKeys = ref<{decrypted: string | null; publicKey: string}[]>([]);
 const publicKeysPrivateKeyToDecrypt = ref('');
 const keyPairIdToDelete = ref<string | null>(null);
 const userPassword = ref('');
 const currentTab = ref(Tabs.RECOVERY_PHRASE);
-const ecdsaKey = reactive<{ privateKey: string; nickname?: string }>({
+const ecdsaKey = reactive<{privateKey: string; nickname?: string}>({
   privateKey: '',
 });
-const ed25519Key = reactive<{ privateKey: string; nickname?: string }>({
+const ed25519Key = reactive<{privateKey: string; nickname?: string}>({
   privateKey: '',
 });
 
@@ -87,7 +87,7 @@ const handleDecrypt = async e => {
 
     isDecryptedModalShown.value = false;
   } catch (err: any) {
-    toast.error('Failed to decrypt private key', { position: 'bottom-right' });
+    toast.error('Failed to decrypt private key', {position: 'bottom-right'});
   }
 };
 
@@ -119,7 +119,7 @@ const handleDelete = async e => {
       await keyPairsStore.refetch();
     }
   } catch (err: any) {
-    toast.error('Failed to delete key pair', { position: 'bottom-right' });
+    toast.error('Failed to delete key pair', {position: 'bottom-right'});
   }
 };
 
@@ -149,7 +149,7 @@ const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
     isImportED25519KeyModalShown.value = false;
     isImportECDSAKeyModalShown.value = false;
 
-    toast.success('ED25519 private key imported successfully', { position: 'bottom-right' });
+    toast.success('ED25519 private key imported successfully', {position: 'bottom-right'});
   } catch (err: any) {
     toast.error(err.message || 'Failed to import ED25519 private key', {
       position: 'bottom-right',
@@ -159,7 +159,7 @@ const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
 
 const handleCopy = (text: string, message: string) => {
   navigator.clipboard.writeText(text);
-  toast.success(message, { position: 'bottom-right' });
+  toast.success(message, {position: 'bottom-right'});
 };
 
 /* Hooks */
@@ -188,12 +188,18 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
 </script>
 <template>
   <div class="d-flex justify-content-between mb-3">
-    <div class="btn-group-container" role="group">
-      <template v-for="(tab, index) in Object.values(Tabs)" :key="tab">
+    <div
+      class="btn-group-container"
+      role="group"
+    >
+      <template
+        v-for="(tab, index) in Object.values(Tabs)"
+        :key="tab"
+      >
         <button
           type="button"
           class="btn btn-primary"
-          :class="{ active: tab === currentTab, 'ms-3': index !== 0 }"
+          :class="{active: tab === currentTab, 'ms-3': index !== 0}"
           @click="handleTabChange(tab)"
         >
           {{ tab }}
@@ -202,7 +208,11 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
     </div>
 
     <div class="d-flex justify-content-end align-items-center">
-      <RouterLink class="btn btn-secondary me-4" :to="{ name: 'restoreKey' }">Restore</RouterLink>
+      <RouterLink
+        class="btn btn-secondary me-4"
+        :to="{name: 'restoreKey'}"
+        >Restore</RouterLink
+      >
 
       <div class="dropdown">
         <AppButton
@@ -212,10 +222,16 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
           ><i class="bi bi-plus text-main me-2"></i> Import</AppButton
         >
         <ul class="dropdown-menu w-100 mt-3">
-          <li class="dropdown-item cursor-pointer" @click="isImportED25519KeyModalShown = true">
+          <li
+            class="dropdown-item cursor-pointer"
+            @click="isImportED25519KeyModalShown = true"
+          >
             <span class="text-small">ED25519 Key</span>
           </li>
-          <li class="dropdown-item cursor-pointer mt-3" @click="isImportECDSAKeyModalShown = true">
+          <li
+            class="dropdown-item cursor-pointer mt-3"
+            @click="isImportECDSAKeyModalShown = true"
+          >
             <span class="text-small">ECDSA Key</span>
           </li>
         </ul>
@@ -402,13 +418,22 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
       </table>
     </div>
 
-    <AppModal v-model:show="isDecryptedModalShown" class="common-modal">
+    <AppModal
+      v-model:show="isDecryptedModalShown"
+      class="common-modal"
+    >
       <div class="p-5">
         <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="isDecryptedModalShown = false"></i>
+          <i
+            class="bi bi-x-lg cursor-pointer"
+            @click="isDecryptedModalShown = false"
+          ></i>
         </div>
         <div class="text-center">
-          <AppCustomIcon :name="'lock'" style="height: 160px" />
+          <AppCustomIcon
+            :name="'lock'"
+            style="height: 160px"
+          />
         </div>
         <form @submit="handleDecrypt">
           <h3 class="text-center text-title text-bold mt-3">Decrypt private key</h3>
@@ -422,7 +447,10 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
             />
           </div>
           <div class="d-grid mt-5">
-            <AppButton type="submit" color="primary" :disabled="userPassword.length === 0"
+            <AppButton
+              type="submit"
+              color="primary"
+              :disabled="userPassword.length === 0"
               >Decrypt</AppButton
             >
           </div>
@@ -430,13 +458,22 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
       </div>
     </AppModal>
 
-    <AppModal v-model:show="isDeleteModalShown" class="common-modal">
+    <AppModal
+      v-model:show="isDeleteModalShown"
+      class="common-modal"
+    >
       <div class="p-5">
         <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="isDeleteModalShown = false"></i>
+          <i
+            class="bi bi-x-lg cursor-pointer"
+            @click="isDeleteModalShown = false"
+          ></i>
         </div>
         <div class="text-center">
-          <AppCustomIcon :name="'bin'" style="height: 160px" />
+          <AppCustomIcon
+            :name="'bin'"
+            style="height: 160px"
+          />
         </div>
         <form @submit="handleDelete">
           <h3 class="text-center text-title text-bold mt-3">Delete key pair</h3>
@@ -449,17 +486,30 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
             through creating or importing a recovery phrase again. Do you wish to continue?
           </p>
           <div class="d-grid mt-5">
-            <AppButton type="submit" color="primary">Delete</AppButton>
+            <AppButton
+              type="submit"
+              color="primary"
+              >Delete</AppButton
+            >
           </div>
         </form>
       </div>
     </AppModal>
 
-    <AppModal v-model:show="isImportECDSAKeyModalShown" class="common-modal">
+    <AppModal
+      v-model:show="isImportECDSAKeyModalShown"
+      class="common-modal"
+    >
       <div class="p-5">
-        <i class="bi bi-x-lg cursor-pointer" @click="isImportECDSAKeyModalShown = false"></i>
+        <i
+          class="bi bi-x-lg cursor-pointer"
+          @click="isImportECDSAKeyModalShown = false"
+        ></i>
         <div class="text-center mt-5">
-          <i class="bi bi-key large-icon" style="line-height: 16px"></i>
+          <i
+            class="bi bi-key large-icon"
+            style="line-height: 16px"
+          ></i>
         </div>
         <form
           @submit="
@@ -501,15 +551,25 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
             />
           </div>
           <div class="d-grid mt-5">
-            <AppButton type="submit" color="primary">Import</AppButton>
+            <AppButton
+              type="submit"
+              color="primary"
+              >Import</AppButton
+            >
           </div>
         </form>
       </div>
     </AppModal>
 
-    <AppModal v-model:show="isImportED25519KeyModalShown" class="common-modal">
+    <AppModal
+      v-model:show="isImportED25519KeyModalShown"
+      class="common-modal"
+    >
       <div class="p-5">
-        <i class="bi bi-x-lg cursor-pointer" @click="isImportED25519KeyModalShown = false"></i>
+        <i
+          class="bi bi-x-lg cursor-pointer"
+          @click="isImportED25519KeyModalShown = false"
+        ></i>
         <div class="text-center mt-5">
           <i class="bi bi-key large-icon"></i>
         </div>
@@ -552,7 +612,11 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
             />
           </div>
           <div class="d-grid mt-5">
-            <AppButton type="submit" color="primary">Import</AppButton>
+            <AppButton
+              type="submit"
+              color="primary"
+              >Import</AppButton
+            >
           </div>
         </form>
       </div>

@@ -6,7 +6,7 @@ export const getWidthOfElementWithText = (element: HTMLElement, text: string) =>
 
   if (context) {
     context!.font = styles.font;
-    const { width } = context!.measureText(text);
+    const {width} = context!.measureText(text);
 
     return width;
   } else {

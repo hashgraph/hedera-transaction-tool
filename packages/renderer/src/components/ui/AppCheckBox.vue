@@ -19,7 +19,11 @@ defineEmits(['update:checked']);
       @input="$emit('update:checked', !checked)"
       :name="name"
     />
-    <label v-if="label" class="form-check-label text-small" :for="name">
+    <label
+      v-if="label"
+      class="form-check-label text-small"
+      :for="name"
+    >
       {{ label }}
     </label>
   </div>

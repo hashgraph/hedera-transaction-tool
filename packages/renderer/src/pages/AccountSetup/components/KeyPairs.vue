@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { onMounted, onUpdated, ref } from 'vue';
+import {onMounted, onUpdated, ref} from 'vue';
 
-import { Prisma } from '@prisma/client';
+import {Prisma} from '@prisma/client';
 
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useToast } from 'vue-toast-notification';
+import {useToast} from 'vue-toast-notification';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import {
@@ -15,14 +15,14 @@ import {
   // getStoredKeyPairs,
 } from '@renderer/services/keyPairService';
 
-import { getWidthOfElementWithText } from '@renderer/utils/dom';
+import {getWidthOfElementWithText} from '@renderer/utils/dom';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 // import AppButton from '@renderer/components/ui/AppButton.vue';
 // import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 
 /* Props */
-const props = defineProps<{ encryptPassword: string }>();
+const props = defineProps<{encryptPassword: string}>();
 
 /* Stores */
 const keyPairsStore = useKeyPairsStore();
@@ -73,7 +73,7 @@ const handleRestoreKey = async () => {
 
     validateExistingKey();
   } catch {
-    toast.error('Invalid recovery phrase', { position: 'bottom-right' });
+    toast.error('Invalid recovery phrase', {position: 'bottom-right'});
   }
 };
 
@@ -104,7 +104,7 @@ const handleSaveKey = async () => {
       if (err.message && typeof err.message === 'string') {
         message = err.message;
       }
-      toast.error(message, { position: 'bottom-right' });
+      toast.error(message, {position: 'bottom-right'});
     }
   }
 };
@@ -194,11 +194,18 @@ defineExpose({
     </div> -->
     <div class="form-group mt-5">
       <label class="form-label">Nickname <span class="fw-normal">- Optional</span></label>
-      <AppInput v-model="nickname" :filled="true" placeholder="Enter Nickname" />
+      <AppInput
+        v-model="nickname"
+        :filled="true"
+        placeholder="Enter Nickname"
+      />
     </div>
     <div class="form-group w-25 mt-5">
       <label class="form-label">Key Type</label>
-      <AppInput model-value="ED25519" readonly />
+      <AppInput
+        model-value="ED25519"
+        readonly
+      />
     </div>
     <!-- <AppSwitch
         v-model:checked="advancedMode"
@@ -247,12 +254,22 @@ defineExpose({
     <div class="form-group mt-5">
       <label class="form-label">ED25519 Private Key</label>
       <p class="text-break text-secondary">
-        <span ref="privateKeyRef" id="pr">{{
-          !privateKeyHidden ? privateKey : '*'.repeat(starCount)
-        }}</span>
+        <span
+          ref="privateKeyRef"
+          id="pr"
+          >{{ !privateKeyHidden ? privateKey : '*'.repeat(starCount) }}</span
+        >
         <span class="cursor-pointer ms-3">
-          <i v-if="!privateKeyHidden" class="bi bi-eye-slash" @click="privateKeyHidden = true"></i>
-          <i v-else class="bi bi-eye" @click="privateKeyHidden = false"></i>
+          <i
+            v-if="!privateKeyHidden"
+            class="bi bi-eye-slash"
+            @click="privateKeyHidden = true"
+          ></i>
+          <i
+            v-else
+            class="bi bi-eye"
+            @click="privateKeyHidden = false"
+          ></i>
         </span>
       </p>
     </div>
@@ -262,7 +279,10 @@ defineExpose({
     </div>
     <template v-if="user.data.mode === 'organization'">
       <hr class="my-6" />
-      <div class="alert alert-secondary d-flex align-items-start mb-0" role="alert">
+      <div
+        class="alert alert-secondary d-flex align-items-start mb-0"
+        role="alert"
+      >
         <i class="bi bi-exclamation-triangle text-warning me-3"></i>
 
         <div>

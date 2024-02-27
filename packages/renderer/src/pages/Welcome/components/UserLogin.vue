@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from 'vue';
+import {onMounted, reactive, ref, watch} from 'vue';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
-import { User } from '@prisma/client';
+import {User} from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
+import {useRouter} from 'vue-router';
+import {useToast} from 'vue-toast-notification';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
@@ -17,9 +17,9 @@ import {
   resetDataLocal,
   getUsersCount,
 } from '@renderer/services/userService';
-import { getSecretHashes } from '@renderer/services/keyPairService';
+import {getSecretHashes} from '@renderer/services/keyPairService';
 
-import { isEmail } from '@renderer/utils/validator';
+import {isEmail} from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -73,14 +73,14 @@ const handleOnFormSubmit = async (event: Event) => {
     !inputPasswordInvalid.value
   ) {
     if (inputPasswordInvalid.value) {
-      toast.error('Password too weak', { position: 'bottom-right' });
+      toast.error('Password too weak', {position: 'bottom-right'});
       return;
     }
     const userData = await registerLocal(inputEmail.value, inputPassword.value);
     user.login(userData, []);
 
     user.data.password = inputPassword.value;
-    router.push({ name: 'accountSetup' });
+    router.push({name: 'accountSetup'});
   } else if (!shouldRegister.value) {
     let userData: User | null = null;
 
@@ -104,9 +104,9 @@ const handleOnFormSubmit = async (event: Event) => {
 
       if (secretHashes.length === 0) {
         user.data.password = inputPassword.value;
-        router.push({ name: 'accountSetup' });
+        router.push({name: 'accountSetup'});
       } else {
-        router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
+        router.push(router.previousPath ? {path: router.previousPath} : {name: 'transactions'});
         await keyPairs.refetch();
       }
     }
@@ -115,7 +115,7 @@ const handleOnFormSubmit = async (event: Event) => {
 
 const handleResetData = async () => {
   await resetDataLocal();
-  toast.success('User data has been reset', { position: 'bottom-right' });
+  toast.success('User data has been reset', {position: 'bottom-right'});
   inputEmailInvalid.value = false;
   inputPasswordInvalid.value = false;
   inputConfirmPasswordInvalid.value = false;
@@ -138,7 +138,7 @@ onMounted(async () => {
 /* Misc */
 function isPasswordStrong(password: string) {
   const validationRegex = [
-    { regex: /.{10,}/ }, // min 10 letters,
+    {regex: /.{10,}/}, // min 10 letters,
     // { regex: /[0-9]/ }, // numbers from 0 - 9
     // { regex: /[a-z]/ }, // letters from a - z (lowercase)
     // { regex: /[A-Z]/ }, // letters from A-Z (uppercase),
@@ -200,7 +200,7 @@ function setTooltipContent() {
   const tooltipList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
   Array.from(tooltipList).forEach(tooltipEl => {
     const tooltip = Tooltip.getInstance(tooltipEl);
-    tooltip?.setContent({ '.tooltip-inner': tooltipContent.value });
+    tooltip?.setContent({'.tooltip-inner': tooltipContent.value});
   });
 }
 
@@ -241,21 +241,28 @@ watch(inputEmail, pass => {
       {{ shouldRegister ? 'Enter e-mail and password' : 'Enter your e-mail and password' }}
     </p>
 
-    <form @submit="handleOnFormSubmit" class="form-login mt-5 w-100">
+    <form
+      @submit="handleOnFormSubmit"
+      class="form-login mt-5 w-100"
+    >
       <label class="form-label">Email</label>
       <AppInput
         v-model="inputEmail"
         :filled="true"
-        :class="{ 'is-invalid': inputEmailInvalid }"
+        :class="{'is-invalid': inputEmailInvalid}"
         placeholder="Enter email"
       />
-      <div v-if="inputEmailInvalid" class="invalid-feedback">Invalid e-mail.</div>
+      <div
+        v-if="inputEmailInvalid"
+        class="invalid-feedback"
+        >Invalid e-mail.</div
+      >
       <label class="form-label mt-4">Password</label>
       <AppInput
         v-model="inputPassword"
         :filled="true"
         type="password"
-        :class="{ 'is-invalid': inputPasswordInvalid }"
+        :class="{'is-invalid': inputPasswordInvalid}"
         placeholder="Enter password"
         :data-bs-toggle="shouldRegister ? 'tooltip' : ''"
         data-bs-animation="false"
@@ -264,23 +271,35 @@ watch(inputEmail, pass => {
         data-bs-html="true"
         data-bs-title="_"
       />
-      <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
+      <div
+        v-if="inputPasswordInvalid"
+        class="invalid-feedback"
+        >Invalid password.</div
+      >
       <template v-if="shouldRegister">
         <label class="form-label mt-4">Confirm password</label>
         <AppInput
           v-model="inputConfirmPassword"
           :filled="true"
           type="password"
-          :class="{ 'is-invalid': inputConfirmPasswordInvalid }"
+          :class="{'is-invalid': inputConfirmPasswordInvalid}"
           placeholder="Confirm password"
         />
-        <div v-if="inputConfirmPasswordInvalid" class="invalid-feedback">
+        <div
+          v-if="inputConfirmPasswordInvalid"
+          class="invalid-feedback"
+        >
           Password do not match.
         </div>
       </template>
 
-      <div v-if="!shouldRegister" class="mt-3 text-end">
-        <span @click="isResetDataModalShown = true" class="text-small link-primary cursor-pointer"
+      <div
+        v-if="!shouldRegister"
+        class="mt-3 text-end"
+      >
+        <span
+          @click="isResetDataModalShown = true"
+          class="text-small link-primary cursor-pointer"
           >Reset account</span
         >
       </div>
@@ -295,14 +314,20 @@ watch(inputEmail, pass => {
         >
       </div>
     </form>
-    <AppModal v-model:show="isResetDataModalShown" class="common-modal">
+    <AppModal
+      v-model:show="isResetDataModalShown"
+      class="common-modal"
+    >
       <div class="modal-body">
         <i
           class="bi bi-x-lg d-inline-block cursor-pointer"
           @click="isResetDataModalShown = false"
         ></i>
         <div class="text-center">
-          <AppCustomIcon :name="'bin'" style="height: 160px" />
+          <AppCustomIcon
+            :name="'bin'"
+            style="height: 160px"
+          />
         </div>
         <h3 class="text-center text-title text-bold">Reset Data</h3>
         <p class="text-center text-small text-secondary mt-4">
@@ -311,12 +336,19 @@ watch(inputEmail, pass => {
         <hr class="separator my-5" />
         <div class="row mt-4">
           <div class="col-6">
-            <AppButton color="secondary" class="w-100" @click="isResetDataModalShown = false"
+            <AppButton
+              color="secondary"
+              class="w-100"
+              @click="isResetDataModalShown = false"
               >Cancel</AppButton
             >
           </div>
           <div class="col-6">
-            <AppButton :outline="true" color="primary" class="w-100" @click="handleResetData"
+            <AppButton
+              :outline="true"
+              color="primary"
+              class="w-100"
+              @click="handleResetData"
               >Reset</AppButton
             >
           </div>

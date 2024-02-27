@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import {ref} from 'vue';
 
 import useOrganizationsStore from '@renderer/stores/storeOrganizations';
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
-import { useRouter } from 'vue-router';
+import {useRouter} from 'vue-router';
 
 import Logo from '@renderer/components/Logo.vue';
 import LogoText from '@renderer/components/LogoText.vue';
@@ -33,7 +33,7 @@ async function handleOrganizationChange(e: Event) {
     case 'add-organization':
       if (organizationsDropDownRef.value) {
         organizationsDropDownRef.value.value = user.data.activeServerURL || 'local';
-        router.push({ name: 'setupOrganization' });
+        router.push({name: 'setupOrganization'});
       }
       return;
     default:
@@ -52,7 +52,10 @@ async function handleOrganizationChange(e: Event) {
       <Logo />
       <LogoText />
     </div>
-    <div v-if="user.data.isLoggedIn" class="d-flex justify-content-end align-items-center">
+    <div
+      v-if="user.data.isLoggedIn"
+      class="d-flex justify-content-end align-items-center"
+    >
       <!-- <span class="container-icon">
         <i class="text-icon-main bi bi-search"></i>
       </span>
@@ -69,7 +72,11 @@ async function handleOrganizationChange(e: Event) {
           @change="handleOrganizationChange"
           ref="organizationsDropDownRef"
         >
-          <option value="local" :selected="user.data.mode === 'personal'" default>
+          <option
+            value="local"
+            :selected="user.data.mode === 'personal'"
+            default
+          >
             No organization selected
           </option>
           <template

@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { Hbar, AccountDeleteTransaction, Key, Transaction, KeyList } from '@hashgraph/sdk';
+import {onMounted, ref} from 'vue';
+import {Hbar, AccountDeleteTransaction, Key, Transaction, KeyList} from '@hashgraph/sdk';
 
-import { useRoute } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
+import {useRoute} from 'vue-router';
+import {useToast} from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import { createTransactionId } from '@renderer/services/transactionService';
-import { getDraft } from '@renderer/services/transactionDraftsService';
+import {createTransactionId} from '@renderer/services/transactionService';
+import {getDraft} from '@renderer/services/transactionDraftsService';
 
-import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { getTransactionFromBytes } from '@renderer/utils/transactions';
-import { isAccountId } from '@renderer/utils/validator';
+import {getDateTimeLocalInputValue} from '@renderer/utils';
+import {getTransactionFromBytes} from '@renderer/utils/transactions';
+import {isAccountId} from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -67,7 +67,7 @@ const handleCreate = async e => {
     );
     await transactionProcessor.value?.process(requiredKey);
   } catch (err: any) {
-    toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
+    toast.error(err.message || 'Failed to create transaction', {position: 'bottom-right'});
   }
 };
 
@@ -142,9 +142,14 @@ const columnClass = 'col-4 col-xxxl-3';
     />
 
     <div class="row align-items-end mt-6">
-      <div class="form-group" :class="[columnClass]">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+      >
         <label class="form-label">Account ID <span class="text-danger">*</span></label>
-        <label v-if="accountData.isValid.value" class="d-block form-label text-secondary"
+        <label
+          v-if="accountData.isValid.value"
+          class="d-block form-label text-secondary"
           >Balance: {{ accountData.accountInfo.value?.balance || 0 }}</label
         >
         <AppInput
@@ -155,7 +160,10 @@ const columnClass = 'col-4 col-xxxl-3';
         />
       </div>
 
-      <div class="form-group" :class="[columnClass]">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+      >
         <AppButton
           v-if="accountData.key.value"
           :outline="true"
@@ -180,9 +188,14 @@ const columnClass = 'col-4 col-xxxl-3';
     </div>
 
     <div class="row align-items-end mt-6">
-      <div class="form-group" :class="[columnClass]">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+      >
         <label class="form-label">Transfer Account ID <span class="text-danger">*</span></label>
-        <label v-if="transferAccountData.isValid.value" class="d-block form-label text-secondary"
+        <label
+          v-if="transferAccountData.isValid.value"
+          class="d-block form-label text-secondary"
           >Receive Signature Required:
           {{ transferAccountData.accountInfo.value?.receiverSignatureRequired || false }}</label
         >
@@ -195,7 +208,10 @@ const columnClass = 'col-4 col-xxxl-3';
         />
       </div>
 
-      <div class="form-group" :class="[columnClass]">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+      >
         <AppButton
           v-if="transferAccountData.key.value"
           :outline="true"
@@ -225,7 +241,7 @@ const columnClass = 'col-4 col-xxxl-3';
   <TransactionProcessor
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
-    :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
+    :on-close-success-modal-click="() => $router.push({name: 'accounts'})"
     :on-executed="() => (isExecuted = true)"
   >
     <template #successHeading>Account deleted successfully</template>

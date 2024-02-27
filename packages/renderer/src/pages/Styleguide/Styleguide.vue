@@ -33,7 +33,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
     <div class="row mb-4">
       <div class="col-12 col-md-2">
         <div
-          :style="{ height: '64px', lineHeight: '64px', borderRadius: '2px' }"
+          :style="{height: '64px', lineHeight: '64px', borderRadius: '2px'}"
           class="mb-2 bg-primary text-white text-center"
         >
           Primary
@@ -41,7 +41,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
       </div>
       <div class="col-12 col-md-2">
         <div
-          :style="{ height: '64px', lineHeight: '64px', borderRadius: '2px' }"
+          :style="{height: '64px', lineHeight: '64px', borderRadius: '2px'}"
           class="mb-2 bg-secondary text-white text-center"
         >
           Secondary
@@ -54,7 +54,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
     <div class="row mb-4">
       <div class="col-12 col-md-2">
         <div
-          :style="{ height: '64px', lineHeight: '64px', borderRadius: '2px' }"
+          :style="{height: '64px', lineHeight: '64px', borderRadius: '2px'}"
           class="mb-2 bg-success text-white text-center"
         >
           Success
@@ -62,7 +62,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
       </div>
       <div class="col-12 col-md-2">
         <div
-          :style="{ height: '64px', lineHeight: '64px', borderRadius: '2px' }"
+          :style="{height: '64px', lineHeight: '64px', borderRadius: '2px'}"
           class="mb-2 bg-danger text-white text-center"
         >
           Danger
@@ -70,7 +70,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
       </div>
       <div class="col-12 col-md-2">
         <div
-          :style="{ height: '64px', lineHeight: '64px', borderRadius: '2px' }"
+          :style="{height: '64px', lineHeight: '64px', borderRadius: '2px'}"
           class="mb-2 bg-warning text-white text-center"
         >
           Warning
@@ -78,7 +78,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
       </div>
       <div class="col-12 col-md-2">
         <div
-          :style="{ height: '64px', lineHeight: '64px', borderRadius: '2px' }"
+          :style="{height: '64px', lineHeight: '64px', borderRadius: '2px'}"
           class="mb-2 bg-info text-white text-center"
         >
           Info
@@ -211,7 +211,12 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
         <div class="col-md-6">
           <code>.link-primary</code>
           <p class="text-main mt-3">
-            <a href="#test" class="link-primary"> The quick brown fox jumps over the lazy dog </a>
+            <a
+              href="#test"
+              class="link-primary"
+            >
+              The quick brown fox jumps over the lazy dog
+            </a>
           </p>
         </div>
       </div>
@@ -224,7 +229,12 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
         <div class="col-md-6">
           <code>.link-secondary</code>
           <p class="text-main mt-3">
-            <a href="#test" class="link-secondary"> The quick brown fox jumps over the lazy dog </a>
+            <a
+              href="#test"
+              class="link-secondary"
+            >
+              The quick brown fox jumps over the lazy dog
+            </a>
           </p>
         </div>
       </div>
@@ -237,25 +247,78 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 
     <div class="row mb-4">
       <div class="col-12 mb-4">
-        <AppButton color="primary" size="small" class="me-3">Primary small</AppButton>
-        <AppButton color="secondary" size="small" class="me-3">Secondary small</AppButton>
+        <AppButton
+          color="primary"
+          size="small"
+          class="me-3"
+          >Primary small</AppButton
+        >
+        <AppButton
+          color="secondary"
+          size="small"
+          class="me-3"
+          >Secondary small</AppButton
+        >
       </div>
       <div class="col-12 mb-4">
-        <AppButton color="primary" class="me-3">Primary</AppButton>
-        <AppButton color="secondary" class="me-3">Secondary</AppButton>
-        <AppButton color="primary" :loading="true" class="me-3">Primary</AppButton>
+        <AppButton
+          color="primary"
+          class="me-3"
+          >Primary</AppButton
+        >
+        <AppButton
+          color="secondary"
+          class="me-3"
+          >Secondary</AppButton
+        >
+        <AppButton
+          color="primary"
+          :loading="true"
+          class="me-3"
+          >Primary</AppButton
+        >
       </div>
       <div class="col-12 mb-4">
-        <AppButton color="primary" size="large" class="me-3">Primary Large</AppButton>
-        <AppButton color="secondary" size="large" class="me-3">Secondary Large</AppButton>
+        <AppButton
+          color="primary"
+          size="large"
+          class="me-3"
+          >Primary Large</AppButton
+        >
+        <AppButton
+          color="secondary"
+          size="large"
+          class="me-3"
+          >Secondary Large</AppButton
+        >
       </div>
       <div class="col-12 mb-4">
-        <AppButton color="primary" outline class="me-3">Primary outline</AppButton>
-        <AppButton color="secondary" outline class="me-3">Secondary outline</AppButton>
+        <AppButton
+          color="primary"
+          outline
+          class="me-3"
+          >Primary outline</AppButton
+        >
+        <AppButton
+          color="secondary"
+          outline
+          class="me-3"
+          >Secondary outline</AppButton
+        >
       </div>
       <div class="col-12 mb-4">
-        <AppButton color="primary" class="me-3" disabled>Primary disabled</AppButton>
-        <AppButton color="secondary" class="me-3" disabled>Secondary disabled</AppButton>
+        <AppButton
+          color="primary"
+          class="me-3"
+          disabled
+          >Primary disabled</AppButton
+        >
+        <AppButton
+          color="secondary"
+          class="me-3"
+          disabled
+          >Secondary disabled</AppButton
+        >
       </div>
     </div>
 
@@ -305,20 +368,31 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
         <div class="form-group mb-5">
           <label class="form-label">Default input</label>
           <p class="text-small text-secondary mb-3">Text secondary</p>
-          <AppInput type="email" placeholder="name@example.com" />
+          <AppInput
+            type="email"
+            placeholder="name@example.com"
+          />
         </div>
       </div>
       <div class="col-lg-3">
         <div class="form-group mb-5">
           <label class="form-label">Default input invalid</label>
-          <AppInput type="email" class="is-invalid" placeholder="name@example.com" />
+          <AppInput
+            type="email"
+            class="is-invalid"
+            placeholder="name@example.com"
+          />
           <div class="invalid-feedback">Invalid e-mail.</div>
         </div>
       </div>
       <div class="col-lg-3">
         <div class="form-group mb-5">
           <label class="form-label">Default input disabled</label>
-          <AppInput type="email" disabled placeholder="name@example.com" />
+          <AppInput
+            type="email"
+            disabled
+            placeholder="name@example.com"
+          />
         </div>
       </div>
     </div>
@@ -327,20 +401,34 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
       <div class="col-lg-3">
         <div class="form-group mb-5">
           <label class="form-label">Default input</label>
-          <AppInput :filled="true" type="email" placeholder="name@example.com" />
+          <AppInput
+            :filled="true"
+            type="email"
+            placeholder="name@example.com"
+          />
         </div>
       </div>
       <div class="col-lg-3">
         <div class="form-group mb-5">
           <label class="form-label">Default input invalid</label>
-          <AppInput :filled="true" type="email" class="is-invalid" placeholder="name@example.com" />
+          <AppInput
+            :filled="true"
+            type="email"
+            class="is-invalid"
+            placeholder="name@example.com"
+          />
           <div class="invalid-feedback">Invalid e-mail.</div>
         </div>
       </div>
       <div class="col-lg-3">
         <div class="form-group mb-5">
           <label class="form-label">Default input disabled</label>
-          <AppInput :filled="true" type="email" disabled placeholder="name@example.com" />
+          <AppInput
+            :filled="true"
+            type="email"
+            disabled
+            placeholder="name@example.com"
+          />
         </div>
       </div>
     </div>
@@ -377,10 +465,20 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
     <div class="row mb-4">
       <div class="col-lg-3">
         <div class="form-group mb-5">
-          <label for="fileUpload" class="form-label">
-            <span for="fileUpload" class="btn btn-primary">File upload</span>
+          <label
+            for="fileUpload"
+            class="form-label"
+          >
+            <span
+              for="fileUpload"
+              class="btn btn-primary"
+              >File upload</span
+            >
           </label>
-          <AppInput type="file" id="fileUpload" />
+          <AppInput
+            type="file"
+            id="fileUpload"
+          />
         </div>
       </div>
     </div>

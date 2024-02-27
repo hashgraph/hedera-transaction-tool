@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, reactive, ref } from 'vue';
-import { Transaction } from '@prisma/client';
+import {computed, onBeforeMount, reactive, ref} from 'vue';
+import {Transaction} from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { getTransactions } from '@renderer/services/transactionService';
+import {getTransactions} from '@renderer/services/transactionService';
 
 import {
   getTransactionDate,
@@ -25,7 +25,7 @@ const network = useNetworkStore();
 
 /* State */
 const transactions = ref<Transaction[]>([]);
-const sort = reactive<{ field: string; direction: 'asc' | 'desc' }>({
+const sort = reactive<{field: string; direction: 'asc' | 'desc'}>({
   field: 'timestamp',
   direction: 'desc',
 });
@@ -115,7 +115,10 @@ onBeforeMount(async () => {
   <template v-if="isLoading">
     <AppLoader />
   </template>
-  <table v-else class="table-custom">
+  <table
+    v-else
+    class="table-custom"
+  >
     <thead>
       <tr>
         <th class="w-10 text-end">#</th>
@@ -125,7 +128,11 @@ onBeforeMount(async () => {
             @click="handleSort('type', sort.field === 'type' ? getOpositeDirection() : 'asc')"
           >
             <span>Transaction Type</span>
-            <i v-if="sort.field === 'type'" class="bi text-title" :class="[generatedClass]"></i>
+            <i
+              v-if="sort.field === 'type'"
+              class="bi text-title"
+              :class="[generatedClass]"
+            ></i>
           </div>
         </th>
         <th>
@@ -134,7 +141,11 @@ onBeforeMount(async () => {
             @click="handleSort('status', sort.field === 'status' ? getOpositeDirection() : 'asc')"
           >
             <span>Status</span>
-            <i v-if="sort.field === 'status'" class="bi text-title" :class="[generatedClass]"></i>
+            <i
+              v-if="sort.field === 'status'"
+              class="bi text-title"
+              :class="[generatedClass]"
+            ></i>
           </div>
         </th>
         <th>
@@ -143,7 +154,11 @@ onBeforeMount(async () => {
             @click="handleSort('payerId', sort.field === 'payerId' ? getOpositeDirection() : 'asc')"
           >
             <span>Payer ID</span>
-            <i v-if="sort.field === 'payerId'" class="bi text-title" :class="[generatedClass]"></i>
+            <i
+              v-if="sort.field === 'payerId'"
+              class="bi text-title"
+              :class="[generatedClass]"
+            ></i>
           </div>
         </th>
         <th>
@@ -167,7 +182,10 @@ onBeforeMount(async () => {
       </tr>
     </thead>
     <tbody>
-      <template v-for="(transaction, i) in transactions" :key="i">
+      <template
+        v-for="(transaction, i) in transactions"
+        :key="i"
+      >
         <tr>
           <td>{{ i + 1 }}</td>
           <td>
@@ -176,7 +194,7 @@ onBeforeMount(async () => {
           <td>
             <span
               class="badge bg-success text-break"
-              :class="{ 'bg-danger': ![0, 22].includes(transaction.status_code) }"
+              :class="{'bg-danger': ![0, 22].includes(transaction.status_code)}"
               >{{ getTransactionStatus(transaction) }}</span
             >
           </td>
@@ -189,7 +207,9 @@ onBeforeMount(async () => {
             </span>
           </td>
           <td class="text-center">
-            <AppButton @click="handleTransactionDetailsClick(transaction)" color="primary"
+            <AppButton
+              @click="handleTransactionDetailsClick(transaction)"
+              color="primary"
               >Details</AppButton
             >
           </td>

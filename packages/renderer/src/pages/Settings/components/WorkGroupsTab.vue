@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import {ref} from 'vue';
 
 import useOrganizationsStore from '@renderer/stores/storeOrganizations';
 
-import { useToast } from 'vue-toast-notification';
+import {useToast} from 'vue-toast-notification';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -31,13 +31,13 @@ const handleAddOrganization = async e => {
         serverPublicKey: newOrganizationServerPublicKey.value,
       });
 
-      toast.success('Organization added successfully', { position: 'bottom-right' });
+      toast.success('Organization added successfully', {position: 'bottom-right'});
     } catch (err: any) {
       let message = 'Failed to add organization';
       if (err.message && typeof err.message === 'string') {
         message = err.message;
       }
-      toast.error(message, { position: 'bottom-right' });
+      toast.error(message, {position: 'bottom-right'});
     }
   }
 };
@@ -46,32 +46,51 @@ const handleRemoveOrganization = async (serverUrl: string) => {
   try {
     await organizationsStore.removeOrganization(serverUrl);
 
-    toast.success('Organization removed successfully', { position: 'bottom-right' });
+    toast.success('Organization removed successfully', {position: 'bottom-right'});
   } catch (err: any) {
     let message = 'Failed to remove organization';
     if (err.message && typeof err.message === 'string') {
       message = err.message;
     }
-    toast.error(message, { position: 'bottom-right' });
+    toast.error(message, {position: 'bottom-right'});
   }
 };
 </script>
 <template>
-  <form class="p-4 border border-2 rounded-3" @submit="handleAddOrganization">
+  <form
+    class="p-4 border border-2 rounded-3"
+    @submit="handleAddOrganization"
+  >
     <div class="d-flex align-items-center">
       <p class="me-4">Organization name:</p>
-      <AppInput :filled="true" class="w-25 py-3" v-model="newOrganizationName" />
+      <AppInput
+        :filled="true"
+        class="w-25 py-3"
+        v-model="newOrganizationName"
+      />
     </div>
     <div class="mt-4">
       <label class="form-label">organization server public key:</label>
-      <AppInput :filled="true" class="py-3" v-model="newOrganizationServerPublicKey" />
+      <AppInput
+        :filled="true"
+        class="py-3"
+        v-model="newOrganizationServerPublicKey"
+      />
     </div>
     <div class="mt-4 d-flex align-items-end">
       <div class="flex-1 me-4">
         <label class="form-label">organization server url:</label>
-        <AppInput :filled="true" class="py-3" v-model="newOrganizationServerUrl" />
+        <AppInput
+          :filled="true"
+          class="py-3"
+          v-model="newOrganizationServerUrl"
+        />
       </div>
-      <AppButton color="primary" type="submit">Add Organization</AppButton>
+      <AppButton
+        color="primary"
+        type="submit"
+        >Add Organization</AppButton
+      >
     </div>
   </form>
   <div
@@ -83,9 +102,17 @@ const handleRemoveOrganization = async (serverUrl: string) => {
     <div class="mt-4 d-flex align-items-end">
       <div class="flex-1 me-4">
         <label class="form-label">organization server url:</label>
-        <AppInput :filled="true" disabled class="py-3" :value="org.serverUrl" />
+        <AppInput
+          :filled="true"
+          disabled
+          class="py-3"
+          :value="org.serverUrl"
+        />
       </div>
-      <AppButton color="primary" @click="handleRemoveOrganization(org.serverUrl)">
+      <AppButton
+        color="primary"
+        @click="handleRemoveOrganization(org.serverUrl)"
+      >
         Remove
       </AppButton>
     </div>

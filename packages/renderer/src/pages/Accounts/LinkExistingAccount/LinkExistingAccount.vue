@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import {ref} from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
+import {useRouter} from 'vue-router';
+import {useToast} from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
-import { add } from '@renderer/services/accountsService';
+import {add} from '@renderer/services/accountsService';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -36,10 +36,10 @@ const handleLinkAccount = async e => {
 
       await add(user.data.id, accountData.accountIdFormatted.value, nickname.value);
 
-      router.push({ name: 'accounts' });
-      toast.success('Account linked successfully!', { position: 'bottom-right' });
+      router.push({name: 'accounts'});
+      toast.success('Account linked successfully!', {position: 'bottom-right'});
     } catch (error: any) {
-      toast.error(error.message || 'Account link failed', { position: 'bottom-right' });
+      toast.error(error.message || 'Account link failed', {position: 'bottom-right'});
     }
   }
 };
@@ -52,11 +52,16 @@ const handleLinkAccount = async e => {
       @click="$router.back()"
       ><i class="bi bi-arrow-left text-subheader me-2"></i> Back</AppButton
     >
-    <form class="mt-5 col-12 col-md-8 col-xl-6 col-xxl-4" @submit="handleLinkAccount">
+    <form
+      class="mt-5 col-12 col-md-8 col-xl-6 col-xxl-4"
+      @submit="handleLinkAccount"
+    >
       <div class="form-group">
         <label class="form-label">Hedera Account ID <span class="text-danger">*</span></label>
 
-        <label v-if="accountData.isValid.value" class="d-block form-label text-secondary"
+        <label
+          v-if="accountData.isValid.value"
+          class="d-block form-label text-secondary"
           >Balance: {{ accountData.accountInfo.value?.balance || 0 }}</label
         >
         <AppInput
@@ -72,7 +77,10 @@ const handleLinkAccount = async e => {
       </div>
       <div class="form-group mt-5">
         <label class="form-label">Nickname</label>
-        <AppInput v-model="nickname" :filled="true" />
+        <AppInput
+          v-model="nickname"
+          :filled="true"
+        />
       </div>
       <AppButton
         color="primary"

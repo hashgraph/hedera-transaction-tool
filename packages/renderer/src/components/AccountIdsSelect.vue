@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import {computed, onMounted} from 'vue';
 
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
@@ -33,8 +33,15 @@ onMounted(() => {
 </script>
 
 <template>
-  <select class="form-select" :value="accountId" @change="handleAccountIdChange">
-    <template v-for="accountId in accoundIds" :key="accountId">
+  <select
+    class="form-select"
+    :value="accountId"
+    @change="handleAccountIdChange"
+  >
+    <template
+      v-for="accountId in accoundIds"
+      :key="accountId"
+    >
       <option :value="accountId">{{ accountId }}</option>
     </template>
   </select>

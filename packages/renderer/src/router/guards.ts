@@ -1,4 +1,4 @@
-import { Router } from 'vue-router';
+import {Router} from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -13,12 +13,12 @@ export function addGuards(router: Router) {
     }
 
     if (user.data.isLoggedIn && to.name === 'welcome') {
-      return { name: 'transactions' };
+      return {name: 'transactions'};
     }
 
     if (!to.meta.withoutAuth && !user.data.isLoggedIn) {
       router.previousPath = to.path;
-      router.push({ name: 'welcome' });
+      router.push({name: 'welcome'});
     }
 
     return true;

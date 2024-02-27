@@ -9,11 +9,11 @@ import {
   TransactionResponse,
 } from '@hashgraph/sdk';
 
-import { KeyPair, Prisma } from '@prisma/client';
+import {KeyPair, Prisma} from '@prisma/client';
 
-import { getMessageFromIPCError } from '@renderer/utils';
+import {getMessageFromIPCError} from '@renderer/utils';
 
-import { decryptPrivateKey } from './keyPairService';
+import {decryptPrivateKey} from './keyPairService';
 
 /* Transaction service */
 

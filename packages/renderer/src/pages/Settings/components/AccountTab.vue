@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import {ref} from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
-import { useToast } from 'vue-toast-notification';
+import {useToast} from 'vue-toast-notification';
 
-import { changeDecryptionPassword } from '@renderer/services/keyPairService';
+import {changeDecryptionPassword} from '@renderer/services/keyPairService';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -44,7 +44,7 @@ const handleChangePassword = async e => {
       isSuccessModalShown.value = true;
     }
   } catch (err: any) {
-    toast.error('Failed to change password', { position: 'bottom-right' });
+    toast.error('Failed to change password', {position: 'bottom-right'});
   }
 };
 </script>
@@ -79,17 +79,28 @@ const handleChangePassword = async e => {
         />
       </div>
       <div class="d-grid">
-        <AppButton color="primary" type="submit" class="mt-4">Change Password</AppButton>
+        <AppButton
+          color="primary"
+          type="submit"
+          class="mt-4"
+          >Change Password</AppButton
+        >
       </div>
     </form>
-    <AppModal v-model:show="isConfirmModalShown" class="common-modal">
+    <AppModal
+      v-model:show="isConfirmModalShown"
+      class="common-modal"
+    >
       <div class="modal-body">
         <i
           class="bi bi-x-lg d-inline-block cursor-pointer"
           @click="isConfirmModalShown = false"
         ></i>
         <div class="text-center">
-          <AppCustomIcon :name="'questionMark'" style="height: 160px" />
+          <AppCustomIcon
+            :name="'questionMark'"
+            style="height: 160px"
+          />
         </div>
         <h3 class="text-center text-title text-bold mt-4">Change Password?</h3>
         <p class="text-center text-small text-secondary mt-4">
@@ -98,17 +109,27 @@ const handleChangePassword = async e => {
         <hr class="separator my-5" />
         <div class="row mt-4">
           <div class="col-6">
-            <AppButton class="w-100" @click="isConfirmModalShown = false">Cancel</AppButton>
+            <AppButton
+              class="w-100"
+              @click="isConfirmModalShown = false"
+              >Cancel</AppButton
+            >
           </div>
           <div class="col-6">
-            <AppButton color="primary" class="w-100" @click="handleChangePassword"
+            <AppButton
+              color="primary"
+              class="w-100"
+              @click="handleChangePassword"
               >Change</AppButton
             >
           </div>
         </div>
       </div>
     </AppModal>
-    <AppModal v-model:show="isSuccessModalShown" class="common-modal">
+    <AppModal
+      v-model:show="isSuccessModalShown"
+      class="common-modal"
+    >
       <form
         class="p-5"
         @submit="
@@ -119,16 +140,26 @@ const handleChangePassword = async e => {
         "
       >
         <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="isSuccessModalShown = false"></i>
+          <i
+            class="bi bi-x-lg cursor-pointer"
+            @click="isSuccessModalShown = false"
+          ></i>
         </div>
 
         <div class="text-center">
-          <AppCustomIcon :name="'success'" style="height: 130px" />
+          <AppCustomIcon
+            :name="'success'"
+            style="height: 130px"
+          />
         </div>
 
         <h3 class="text-center text-title text-bold mt-3">Password Changed Successfully</h3>
         <div class="d-grid mt-5">
-          <AppButton color="primary" type="submit">Close</AppButton>
+          <AppButton
+            color="primary"
+            type="submit"
+            >Close</AppButton
+          >
         </div>
       </form>
     </AppModal>

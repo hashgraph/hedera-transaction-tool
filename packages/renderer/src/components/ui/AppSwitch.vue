@@ -25,7 +25,12 @@ defineEmits(['update:checked']);
       :name="name"
       v-bind="$attrs"
     />
-    <label v-if="label" class="form-check-label" :class="labelClass" :for="name">
+    <label
+      v-if="label"
+      class="form-check-label"
+      :class="labelClass"
+      :for="name"
+    >
       {{ label }}
     </label>
   </div>

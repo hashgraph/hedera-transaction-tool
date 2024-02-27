@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import {computed, onMounted, ref, watch} from 'vue';
 
-import { FileId, FileInfo } from '@hashgraph/sdk';
+import {FileId, FileInfo} from '@hashgraph/sdk';
 
-import { HederaFile } from '@prisma/client';
+import {HederaFile} from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { useToast } from 'vue-toast-notification';
+import {useToast} from 'vue-toast-notification';
 
-import { getAll, remove, showContentInTemp, update } from '@renderer/services/filesService';
-import { flattenKeyList, getKeyListLevels } from '@renderer/services/keyPairService';
+import {getAll, remove, showContentInTemp, update} from '@renderer/services/filesService';
+import {flattenKeyList, getKeyListLevels} from '@renderer/services/keyPairService';
 
-import { getUInt8ArrayFromString, convertBytes } from '@renderer/utils';
-import { getFormattedDateFromTimestamp } from '@renderer/utils/transactions';
+import {getUInt8ArrayFromString, convertBytes} from '@renderer/utils';
+import {getFormattedDateFromTimestamp} from '@renderer/utils/transactions';
 
-import { transactionTypeKeys } from '@renderer/pages/CreateTransaction/txTypeComponentMapping';
+import {transactionTypeKeys} from '@renderer/pages/CreateTransaction/txTypeComponentMapping';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -114,9 +114,7 @@ const selectedFileInfo = computed(() =>
 const selectedFileIdWithChecksum = computed(
   () =>
     selectedFile.value &&
-    FileId.fromString(selectedFile.value?.file_id)
-      .toStringWithChecksum(network.client)
-      .split('-'),
+    FileId.fromString(selectedFile.value?.file_id).toStringWithChecksum(network.client).split('-'),
 );
 
 /* Composables */
@@ -140,7 +138,7 @@ const handleUnlinkFile = async () => {
 
   isUnlinkFileModalShown.value = false;
 
-  toast.success('File Unlinked!', { position: 'bottom-right' });
+  toast.success('File Unlinked!', {position: 'bottom-right'});
 };
 
 const handleStartNicknameEdit = () => {
@@ -214,8 +212,14 @@ watch(files, newFiles => {
     <div class="d-flex justify-content-between align-items-center">
       <h1 class="text-title text-bold">Files</h1>
 
-      <div v-if="files.length > 0" class="d-flex justify-content-end align-items-center">
-        <AppButton class="me-3" color="secondary" @click="isUnlinkFileModalShown = true"
+      <div
+        v-if="files.length > 0"
+        class="d-flex justify-content-end align-items-center"
+      >
+        <AppButton
+          class="me-3"
+          color="secondary"
+          @click="isUnlinkFileModalShown = true"
           >Remove</AppButton
         >
         <AppButton
@@ -224,8 +228,8 @@ watch(files, newFiles => {
           @click="
             $router.push({
               name: 'createTransaction',
-              params: { type: transactionTypeKeys.updateFile },
-              query: { fileId: selectedFile?.file_id },
+              params: {type: transactionTypeKeys.updateFile},
+              query: {fileId: selectedFile?.file_id},
             })
           "
           >Update</AppButton
@@ -236,8 +240,8 @@ watch(files, newFiles => {
           @click="
             $router.push({
               name: 'createTransaction',
-              params: { type: transactionTypeKeys.appendToFile },
-              query: { fileId: selectedFile?.file_id },
+              params: {type: transactionTypeKeys.appendToFile},
+              query: {fileId: selectedFile?.file_id},
             })
           "
           >Append</AppButton
@@ -247,8 +251,8 @@ watch(files, newFiles => {
           @click="
             $router.push({
               name: 'createTransaction',
-              params: { type: transactionTypeKeys.readFile },
-              query: { fileId: selectedFile?.file_id },
+              params: {type: transactionTypeKeys.readFile},
+              query: {fileId: selectedFile?.file_id},
             })
           "
           >Read</AppButton
@@ -330,7 +334,10 @@ watch(files, newFiles => {
         <hr class="separator my-5" />
 
         <div>
-          <template v-for="file in files" :key="file.fileId">
+          <template
+            v-for="file in files"
+            :key="file.fileId"
+          >
             <div
               class="container-card-account p-4 mt-3"
               :class="{
@@ -347,8 +354,14 @@ watch(files, newFiles => {
         </div>
       </div>
       <div class="col-8 col-xxl-9 ps-4 pt-0">
-        <Transition name="fade" mode="out-in">
-          <div v-if="selectedFile" class="h-100 position-relative">
+        <Transition
+          name="fade"
+          mode="out-in"
+        >
+          <div
+            v-if="selectedFile"
+            class="h-100 position-relative"
+          >
             <div class="row align-items-center">
               <div class="col-5">
                 <p class="text-small text-semi-bold">Nickname</p>
@@ -410,7 +423,10 @@ watch(files, newFiles => {
                 </p>
               </div>
             </div>
-            <div class="mt-4 row" v-if="selectedFile.contentBytes">
+            <div
+              class="mt-4 row"
+              v-if="selectedFile.contentBytes"
+            >
               <div class="col-5">
                 <p class="text-small text-semi-bold">Content</p>
               </div>
@@ -423,14 +439,19 @@ watch(files, newFiles => {
                 >
               </div>
             </div>
-            <div class="mt-4 row" v-if="selectedFileInfo?.keys">
+            <div
+              class="mt-4 row"
+              v-if="selectedFileInfo?.keys"
+            >
               <div class="col-5">
                 <p class="text-small text-semi-bold">Key</p>
               </div>
               <div class="col-7">
                 <template v-if="flattenKeyList(selectedFileInfo.keys).length > 1">
                   Complex Key ({{ getKeyListLevels(selectedFileInfo.keys) }} levels)
-                  <span class="link-primary cursor-pointer" @click="isKeyStructureModalShown = true"
+                  <span
+                    class="link-primary cursor-pointer"
+                    @click="isKeyStructureModalShown = true"
                     >See details</span
                   >
                 </template>
@@ -523,11 +544,20 @@ watch(files, newFiles => {
           :account-key="selectedFileInfo.keys"
         />
       </div>
-      <AppModal v-model:show="isUnlinkFileModalShown" class="common-modal">
+      <AppModal
+        v-model:show="isUnlinkFileModalShown"
+        class="common-modal"
+      >
         <div class="modal-body">
-          <i class="bi bi-x-lg cursor-pointer" @click="isUnlinkFileModalShown = false"></i>
+          <i
+            class="bi bi-x-lg cursor-pointer"
+            @click="isUnlinkFileModalShown = false"
+          ></i>
           <div class="text-center">
-            <AppCustomIcon :name="'bin'" style="height: 160px" />
+            <AppCustomIcon
+              :name="'bin'"
+              style="height: 160px"
+            />
           </div>
           <h3 class="text-center text-title text-bold mt-3">Unlink file</h3>
           <p class="text-center text-small text-secondary mt-4">
@@ -535,8 +565,15 @@ watch(files, newFiles => {
           </p>
           <hr class="separator my-5" />
           <div class="d-grid">
-            <AppButton color="primary" @click="handleUnlinkFile">Unlink</AppButton>
-            <AppButton color="secondary" class="mt-4" @click="isUnlinkFileModalShown = false"
+            <AppButton
+              color="primary"
+              @click="handleUnlinkFile"
+              >Unlink</AppButton
+            >
+            <AppButton
+              color="secondary"
+              class="mt-4"
+              @click="isUnlinkFileModalShown = false"
               >Cancel</AppButton
             >
           </div>

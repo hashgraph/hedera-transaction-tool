@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { Hbar, Key, KeyList, Transaction, TransferTransaction } from '@hashgraph/sdk';
+import {ref, onMounted} from 'vue';
+import {Hbar, Key, KeyList, Transaction, TransferTransaction} from '@hashgraph/sdk';
 
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useToast } from 'vue-toast-notification';
-import { useRoute } from 'vue-router';
+import {useToast} from 'vue-toast-notification';
+import {useRoute} from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import { createTransactionId } from '@renderer/services/transactionService';
-import { getDraft } from '@renderer/services/transactionDraftsService';
+import {createTransactionId} from '@renderer/services/transactionService';
+import {getDraft} from '@renderer/services/transactionDraftsService';
 
-import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { getTransactionFromBytes } from '@renderer/utils/transactions';
-import { isAccountId } from '@renderer/utils/validator';
+import {getDateTimeLocalInputValue} from '@renderer/utils';
+import {getTransactionFromBytes} from '@renderer/utils/transactions';
+import {isAccountId} from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
@@ -81,7 +81,7 @@ const handleCreate = async e => {
   } catch (err: any) {
     console.log(err);
 
-    toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
+    toast.error(err.message || 'Failed to create transaction', {position: 'bottom-right'});
   }
 };
 
@@ -183,7 +183,10 @@ const columnClass = 'col-4 col-xxxl-3';
     />
 
     <div class="row flex-wrap align-items-end mt-6">
-      <div class="form-group" :class="[columnClass]">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+      >
         <label class="form-label"
           >{{ isApprovedTransfer ? 'Spender' : 'Payer' }} ID
           <span class="text-danger">*</span></label
@@ -199,7 +202,10 @@ const columnClass = 'col-4 col-xxxl-3';
           >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
         >
         <template v-if="user.data.mode === 'personal'">
-          <AccountIdsSelect v-model:account-id="payerData.accountId.value" :select-default="true" />
+          <AccountIdsSelect
+            v-model:account-id="payerData.accountId.value"
+            :select-default="true"
+          />
         </template>
         <template v-else>
           <AppInput
@@ -210,20 +216,41 @@ const columnClass = 'col-4 col-xxxl-3';
           />
         </template>
       </div>
-      <div class="form-group form-group" :class="[columnClass]">
+      <div
+        class="form-group form-group"
+        :class="[columnClass]"
+      >
         <label class="form-label">Valid Start Time <span class="text-danger">*</span></label>
-        <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
+        <AppInput
+          v-model="validStart"
+          type="datetime-local"
+          step="1"
+          :filled="true"
+        />
       </div>
-      <div class="form-group form-group" :class="[columnClass]">
+      <div
+        class="form-group form-group"
+        :class="[columnClass]"
+      >
         <label class="form-label">Max Transaction Fee</label>
-        <AppInput v-model="maxTransactionFee" type="number" min="0" :filled="true" />
+        <AppInput
+          v-model="maxTransactionFee"
+          type="number"
+          min="0"
+          :filled="true"
+        />
       </div>
     </div>
 
     <div class="row align-items-end mt-6">
-      <div class="form-group" :class="[columnClass]">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+      >
         <label class="form-label">Sender ID <span class="text-danger">*</span></label>
-        <label v-if="senderData.isValid.value" class="form-label d-block text-secondary"
+        <label
+          v-if="senderData.isValid.value"
+          class="form-label d-block text-secondary"
           >Balance: {{ senderData.accountInfo.value?.balance || 0 }}</label
         >
 
@@ -235,7 +262,11 @@ const columnClass = 'col-4 col-xxxl-3';
         />
       </div>
 
-      <div class="form-group mt-6" :class="[columnClass]" v-if="senderData.key.value">
+      <div
+        class="form-group mt-6"
+        :class="[columnClass]"
+        v-if="senderData.key.value"
+      >
         <AppButton
           :outline="true"
           color="primary"
@@ -250,9 +281,14 @@ const columnClass = 'col-4 col-xxxl-3';
     </div>
 
     <div class="row align-items-end mt-6">
-      <div class="form-group" :class="[columnClass]">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+      >
         <label class="form-label">Receiver ID <span class="text-danger">*</span></label>
-        <label v-if="receiverData.isValid.value" class="form-label d-block text-secondary"
+        <label
+          v-if="receiverData.isValid.value"
+          class="form-label d-block text-secondary"
           >Balance: {{ receiverData.accountInfo.value?.balance || 0 }}</label
         >
         <AppInput
@@ -282,9 +318,17 @@ const columnClass = 'col-4 col-xxxl-3';
     </div>
 
     <div class="row mt-6">
-      <div class="form-group" :class="[columnClass]">
+      <div
+        class="form-group"
+        :class="[columnClass]"
+      >
         <label class="form-label">Amount <span class="text-danger">*</span></label>
-        <AppInput v-model="amount" type="number" :filled="true" placeholder="Enter Amount" />
+        <AppInput
+          v-model="amount"
+          type="number"
+          :filled="true"
+          placeholder="Enter Amount"
+        />
       </div>
     </div>
 

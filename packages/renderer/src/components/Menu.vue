@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterLink } from 'vue-router';
+import {RouterLink} from 'vue-router';
 
 const menuItems = [
   {
@@ -49,8 +49,14 @@ const menuItems = [
 <template>
   <div class="container-menu">
     <div>
-      <template v-for="(item, _index) in menuItems" :key="_index">
-        <RouterLink class="link-menu mt-2" :to="item.link">
+      <template
+        v-for="(item, _index) in menuItems"
+        :key="_index"
+      >
+        <RouterLink
+          class="link-menu mt-2"
+          :to="item.link"
+        >
           <i :class="item.icon"></i><span>{{ item.title }}</span></RouterLink
         >
       </template>
@@ -60,7 +66,7 @@ const menuItems = [
       <RouterLink
         class="link-menu mt-2"
         to="/settings/general"
-        :class="{ active: $route.path.startsWith('/settings') }"
+        :class="{active: $route.path.startsWith('/settings')}"
         ><i class="bi bi-wrench"></i><span>Settings</span></RouterLink
       >
       <!-- <RouterLink class="link-menu mt-2" to="/help"

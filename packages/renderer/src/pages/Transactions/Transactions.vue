@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import {computed, ref} from 'vue';
 
-import AppTabs, { TabItem } from '@renderer/components/ui/AppTabs.vue';
+import AppTabs, {TabItem} from '@renderer/components/ui/AppTabs.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import History from './components/History.vue';
 import TransactionSelectionModal from './components/TransactionSelectionModal.vue';
@@ -13,8 +13,8 @@ const tabItems = ref<TabItem[]>([
   // { title: 'Ready to Sign' },
   // { title: 'In Progress' },
   // { title: 'Ready for Submission' },
-  { title: 'Drafts' },
-  { title: 'History' },
+  {title: 'Drafts'},
+  {title: 'History'},
 ]);
 const activeTabIndex = ref(1);
 const isTransactionSelectionModalShown = ref(false);
@@ -27,13 +27,19 @@ const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title
   <div class="p-5">
     <div class="d-flex justify-content-between">
       <h1 class="text-title text-bold">Transactions</h1>
-      <AppButton color="primary" @click="isTransactionSelectionModalShown = true">
+      <AppButton
+        color="primary"
+        @click="isTransactionSelectionModalShown = true"
+      >
         <i class="bi bi-plus-lg"></i> <span>Create New</span>
       </AppButton>
     </div>
 
     <div class="mt-4">
-      <AppTabs :items="tabItems" v-model:active-index="activeTabIndex"></AppTabs>
+      <AppTabs
+        :items="tabItems"
+        v-model:active-index="activeTabIndex"
+      ></AppTabs>
       <!-- <template v-if="activeTabTitle === 'Ready for Review'"></template>
       <template v-if="activeTabTitle === 'Ready to Sign'"> </template>
       <template v-if="activeTabTitle === 'In Progress'"></template>

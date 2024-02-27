@@ -22,6 +22,10 @@ withDefaults(
       height: `${height}px`,
     }"
   >
-    <div class="progress-bar" :style="{ width: `${percent}%` }">{{ label }}</div>
+    <div
+      class="progress-bar"
+      :style="{width: `${percent}%`}"
+      >{{ label }}</div
+    >
   </div>
 </template>

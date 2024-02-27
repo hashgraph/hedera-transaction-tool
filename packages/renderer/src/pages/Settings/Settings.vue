@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import {computed, ref, watch} from 'vue';
 
-import { useRouter, RouterView } from 'vue-router';
+import {useRouter, RouterView} from 'vue-router';
 
-import AppTabs, { TabItem } from '@renderer/components/ui/AppTabs.vue';
+import AppTabs, {TabItem} from '@renderer/components/ui/AppTabs.vue';
 
 /* Composables */
 const router = useRouter();
 
 /* Misc */
 const tabItems: TabItem[] = [
-  { title: 'General' },
+  {title: 'General'},
   // { title: 'Work Groups' },
-  { title: 'Keys' },
-  { title: 'Account' },
+  {title: 'Keys'},
+  {title: 'Account'},
 ];
 const tabTitles = tabItems.map(t => t.title.toLocaleLowerCase().replaceAll(' ', '-'));
 
@@ -59,7 +59,10 @@ watch(router.currentRoute, newRoute => {
       <h1 class="text-title text-bold">Settings</h1>
     </div>
     <div class="mt-7">
-      <AppTabs :items="tabItems" v-model:active-index="activeTabIndex">
+      <AppTabs
+        :items="tabItems"
+        v-model:active-index="activeTabIndex"
+      >
         <template #[activeTabTitle]>
           <RouterView />
         </template>

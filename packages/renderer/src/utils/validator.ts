@@ -1,4 +1,4 @@
-import { AccountId, FileId, PublicKey } from '@hashgraph/sdk';
+import {AccountId, FileId, PublicKey} from '@hashgraph/sdk';
 
 export function isEmail(email: string) {
   if (/^[A-Za-z0-9_!#$%&'*+/=?`{|}~^.-]+@[A-Za-z0-9.-]+$/.test(email)) {

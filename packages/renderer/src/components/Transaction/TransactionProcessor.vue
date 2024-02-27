@@ -1,28 +1,28 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
+import {computed, nextTick, onBeforeUnmount, ref} from 'vue';
 
-import { Key, KeyList, Transaction, TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
-import { Prisma } from '@prisma/client';
+import {Key, KeyList, Transaction, TransactionReceipt, TransactionResponse} from '@hashgraph/sdk';
+import {Prisma} from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { useToast } from 'vue-toast-notification';
+import {useToast} from 'vue-toast-notification';
 
-import { execute, signTransaction, storeTransaction } from '@renderer/services/transactionService';
-import { openExternal } from '@renderer/services/electronUtilsService';
-import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
-import { flattenKeyList } from '@renderer/services/keyPairService';
+import {execute, signTransaction, storeTransaction} from '@renderer/services/transactionService';
+import {openExternal} from '@renderer/services/electronUtilsService';
+import {getDollarAmount} from '@renderer/services/mirrorNodeDataService';
+import {flattenKeyList} from '@renderer/services/keyPairService';
 
-import { getTransactionType } from '@renderer/utils/transactions';
+import {getTransactionType} from '@renderer/utils/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
-import { ableToSign } from '@renderer/utils/sdk';
+import {ableToSign} from '@renderer/utils/sdk';
 
 /* Props */
 const props = defineProps<{
@@ -115,7 +115,7 @@ async function handleSignTransaction(e: Event) {
       console.log('Send to back end signed along with required', signatureKey.value);
     }
   } catch (err: any) {
-    toast.error(err.message || 'Transaction signing failed', { position: 'bottom-right' });
+    toast.error(err.message || 'Transaction signing failed', {position: 'bottom-right'});
   } finally {
     isSigning.value = false;
   }
@@ -162,9 +162,9 @@ async function executeTransaction(transactionBytes: Uint8Array) {
   try {
     isExecuting.value = true;
 
-    const { response, receipt } = await execute(transactionBytes);
+    const {response, receipt} = await execute(transactionBytes);
 
-    transactionResult.value = { response, receipt };
+    transactionResult.value = {response, receipt};
 
     status = receipt.status._code;
 
@@ -172,13 +172,13 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     props.onExecuted && props.onExecuted(response, receipt);
 
     if (unmounted.value) {
-      toast.success('Transaction executed', { position: 'bottom-right' });
+      toast.success('Transaction executed', {position: 'bottom-right'});
     }
   } catch (err: any) {
     const data = JSON.parse(err.message);
     status = data.status;
 
-    toast.error(data.message, { position: 'bottom-right' });
+    toast.error(data.message, {position: 'bottom-right'});
   } finally {
     isExecuting.value = false;
   }
@@ -242,7 +242,10 @@ defineExpose({
     >
       <div class="p-5">
         <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="isConfirmShown = false"></i>
+          <i
+            class="bi bi-x-lg cursor-pointer"
+            @click="isConfirmShown = false"
+          ></i>
         </div>
         <div class="text-center">
           <i class="bi bi-arrow-left-right large-icon"></i>
@@ -280,10 +283,17 @@ defineExpose({
           <hr class="separator my-5" />
 
           <div class="d-flex justify-content-between">
-            <AppButton type="button" color="secondary" @click="isConfirmShown = false"
+            <AppButton
+              type="button"
+              color="secondary"
+              @click="isConfirmShown = false"
               >Cancel</AppButton
             >
-            <AppButton color="primary" type="submit">Sign</AppButton>
+            <AppButton
+              color="primary"
+              type="submit"
+              >Sign</AppButton
+            >
           </div>
         </form>
       </div>
@@ -297,16 +307,30 @@ defineExpose({
     >
       <div class="p-5">
         <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="isSignModalShown = false"></i>
+          <i
+            class="bi bi-x-lg cursor-pointer"
+            @click="isSignModalShown = false"
+          ></i>
         </div>
         <div class="text-center">
-          <AppCustomIcon :name="'lock'" style="height: 160px" />
+          <AppCustomIcon
+            :name="'lock'"
+            style="height: 160px"
+          />
         </div>
-        <form class="mt-3" @submit="handleSignTransaction">
+        <form
+          class="mt-3"
+          @submit="handleSignTransaction"
+        >
           <h3 class="text-center text-title text-bold">Enter your password</h3>
           <div class="form-group mt-5 mb-4">
             <label class="form-label">Password</label>
-            <AppInput v-model="userPassword" size="small" type="password" :filled="true" />
+            <AppInput
+              v-model="userPassword"
+              size="small"
+              type="password"
+              :filled="true"
+            />
           </div>
           <hr class="separator" />
           <div class="row mt-4">
@@ -342,7 +366,10 @@ defineExpose({
     >
       <div class="p-5">
         <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="isExecuting = false"></i>
+          <i
+            class="bi bi-x-lg cursor-pointer"
+            @click="isExecuting = false"
+          ></i>
         </div>
         <div class="text-center">
           <AppLoader />
@@ -352,7 +379,12 @@ defineExpose({
           {{ type }}
         </h3>
         <div class="d-grid mt-4">
-          <AppButton color="primary" class="mt-1" @click="isExecuting = false">Close</AppButton>
+          <AppButton
+            color="primary"
+            class="mt-1"
+            @click="isExecuting = false"
+            >Close</AppButton
+          >
         </div>
       </div>
     </AppModal>
@@ -365,7 +397,10 @@ defineExpose({
     >
       <div class="p-5">
         <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="isExecutedModalShown = false"></i>
+          <i
+            class="bi bi-x-lg cursor-pointer"
+            @click="isExecutedModalShown = false"
+          ></i>
         </div>
         <div class="text-center">
           <i class="bi bi-check-lg large-icon"></i>

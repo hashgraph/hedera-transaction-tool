@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import {ref, watch} from 'vue';
 
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useToast } from 'vue-toast-notification';
+import {useToast} from 'vue-toast-notification';
 
 // import { deleteEncryptedPrivateKeys } from '@renderer/services/keyPairService';
 
@@ -56,13 +56,13 @@ const handleFormSubmit = async (event: Event) => {
       await keyPairsStore.refetch();
       props.handleContinue(inputNewPassword.value);
 
-      toast.success('Password changed successfully', { position: 'bottom-right' });
+      toast.success('Password changed successfully', {position: 'bottom-right'});
     } catch (err: any) {
       let message = 'Failed to change password';
       if (err.message && typeof err.message === 'string') {
         message = err.message;
       }
-      toast.error(message, { position: 'bottom-right' });
+      toast.error(message, {position: 'bottom-right'});
     } finally {
       isLoading.value = false;
     }
@@ -89,20 +89,27 @@ watch(inputConfrimPassword, val => {
         <AppInput
           v-model="inputNewPassword"
           :filled="true"
-          :class="{ 'is-invalid': inputNewPasswordInvalid }"
+          :class="{'is-invalid': inputNewPasswordInvalid}"
           type="password"
           placeholder="New Password"
         />
-        <div v-if="inputNewPasswordInvalid" class="invalid-feedback">Invalid password.</div>
+        <div
+          v-if="inputNewPasswordInvalid"
+          class="invalid-feedback"
+          >Invalid password.</div
+        >
         <AppInput
           v-model="inputConfrimPassword"
           :filled="true"
           class="mt-4"
-          :class="{ 'is-invalid': inputConfirmPasswordInvalid }"
+          :class="{'is-invalid': inputConfirmPasswordInvalid}"
           type="password"
           placeholder="Confirm new Password"
         />
-        <div v-if="inputConfirmPasswordInvalid" class="invalid-feedback">
+        <div
+          v-if="inputConfirmPasswordInvalid"
+          class="invalid-feedback"
+        >
           Passwords do not match.
         </div>
         <AppButton
