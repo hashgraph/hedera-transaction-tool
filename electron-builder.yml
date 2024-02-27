@@ -2,11 +2,11 @@ appId: com.electron.app
 productName: Hedera Transaction Tool
 directories:
   buildResources: build
+  output: 'release'
 files:
   - 'dist'
   - 'dist-electron'
 asarUnpack:
-  - resources/**
   - prisma/**
 win:
   executableName: ${productName}
