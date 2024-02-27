@@ -66,12 +66,15 @@ onBeforeRouteLeave(async to => {
   const transactionBytes = props.getTransactionBytes();
 
   if (route.query.draftId) {
-    const loadedDraft = await getDraft(route.query.draftId.toString());
+    try {
+      const loadedDraft = await getDraft(route.query.draftId.toString());
 
-    if (getTransactionFromBytes(loadedDraft.transactionBytes).toBytes() != transactionBytes) {
-      await updateDraft(loadedDraft.id, transactionBytes);
+      if (getTransactionFromBytes(loadedDraft.transactionBytes).toBytes() != transactionBytes) {
+        await updateDraft(loadedDraft.id, { transactionBytes: transactionBytes.toString() });
+      }
+    } catch (error) {
+      console.log(error);
     }
-
     return true;
   }
 

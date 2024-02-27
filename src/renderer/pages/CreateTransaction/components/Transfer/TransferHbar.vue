@@ -90,7 +90,6 @@ const handleLoadFromDraft = async () => {
 
   const draft = await getDraft(route.query.draftId?.toString() || '');
   const draftTransaction = getTransactionFromBytes<TransferTransaction>(draft.transactionBytes);
-  console.log(draftTransaction.hbarTransfers);
 
   if (draft) {
     transaction.value = draftTransaction;

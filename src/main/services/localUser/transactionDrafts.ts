@@ -41,12 +41,10 @@ export const addDraft = async (draft: Prisma.TransactionDraftUncheckedCreateInpu
   });
 };
 
-export const updateDraft = async ({
-  id,
-  type,
-  transactionBytes,
-  details,
-}: Prisma.TransactionDraftUncheckedCreateInput) => {
+export const updateDraft = async (
+  id: string,
+  { type, transactionBytes, isTemplate, details }: Prisma.TransactionDraftUncheckedUpdateInput,
+) => {
   const prisma = getPrismaClient();
 
   await prisma.transactionDraft.update({
@@ -56,6 +54,7 @@ export const updateDraft = async ({
     data: {
       type,
       transactionBytes,
+      isTemplate,
       details,
     },
   });
