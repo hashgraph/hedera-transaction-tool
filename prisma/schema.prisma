@@ -103,5 +103,6 @@ model HederaFile {
   description String?
   metaBytes String?
   contentBytes String?
+  lastRefreshed DateTime?
   user     User   @relation(fields: [user_id], references: [id])
 }
