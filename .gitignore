@@ -20,6 +20,8 @@ lerna-debug.log*
 
 # Build
 dist
+dist-ssr
+dist-electron
 out
 
 .DS_Store
