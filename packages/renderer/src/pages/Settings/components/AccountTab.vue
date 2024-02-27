@@ -83,8 +83,9 @@ const handleChangePassword = async e => {
           color="primary"
           type="submit"
           class="mt-4"
-          >Change Password</AppButton
         >
+          Change Password
+        </AppButton>
       </div>
     </form>
     <AppModal
@@ -112,16 +113,18 @@ const handleChangePassword = async e => {
             <AppButton
               class="w-100"
               @click="isConfirmModalShown = false"
-              >Cancel</AppButton
             >
+              Cancel
+            </AppButton>
           </div>
           <div class="col-6">
             <AppButton
               color="primary"
               class="w-100"
               @click="handleChangePassword"
-              >Change</AppButton
             >
+              Change
+            </AppButton>
           </div>
         </div>
       </div>
@@ -158,8 +161,9 @@ const handleChangePassword = async e => {
           <AppButton
             color="primary"
             type="submit"
-            >Close</AppButton
           >
+            Close
+          </AppButton>
         </div>
       </form>
     </AppModal>

@@ -21,9 +21,9 @@ defineEmits(['update:checked']);
       type="checkbox"
       role="switch"
       :checked="checked"
-      @input="$emit('update:checked', !checked)"
       :name="name"
       v-bind="$attrs"
+      @input="$emit('update:checked', !checked)"
     />
     <label
       v-if="label"

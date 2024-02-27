@@ -1,4 +1,4 @@
-import {Prisma} from '@prisma/client';
+import type {Prisma} from '@prisma/client';
 
 import {getMessageFromIPCError} from '@renderer/utils';
 import {getTransactionType} from '@renderer/utils/transactions';
@@ -65,6 +65,6 @@ export const draftExists = async (transactionBytes: Uint8Array) => {
   try {
     return await window.electronAPI.transactionDrafts.draftExists(transactionBytes.toString());
   } catch (error: any) {
-    throw Error(getMessageFromIPCError(error, `Failed to determine if transaction draft exist`));
+    throw Error(getMessageFromIPCError(error, 'Failed to determine if transaction draft exist'));
   }
 };

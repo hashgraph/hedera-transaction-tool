@@ -64,33 +64,34 @@ const handleRemoveOrganization = async (serverUrl: string) => {
     <div class="d-flex align-items-center">
       <p class="me-4">Organization name:</p>
       <AppInput
+        v-model="newOrganizationName"
         :filled="true"
         class="w-25 py-3"
-        v-model="newOrganizationName"
       />
     </div>
     <div class="mt-4">
       <label class="form-label">organization server public key:</label>
       <AppInput
+        v-model="newOrganizationServerPublicKey"
         :filled="true"
         class="py-3"
-        v-model="newOrganizationServerPublicKey"
       />
     </div>
     <div class="mt-4 d-flex align-items-end">
       <div class="flex-1 me-4">
         <label class="form-label">organization server url:</label>
         <AppInput
+          v-model="newOrganizationServerUrl"
           :filled="true"
           class="py-3"
-          v-model="newOrganizationServerUrl"
         />
       </div>
       <AppButton
         color="primary"
         type="submit"
-        >Add Organization</AppButton
       >
+        Add Organization
+      </AppButton>
     </div>
   </form>
   <div

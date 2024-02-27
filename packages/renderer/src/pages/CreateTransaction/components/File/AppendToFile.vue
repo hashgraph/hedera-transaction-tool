@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {ref, watch, computed, onMounted} from 'vue';
-import {FileAppendTransaction, KeyList, PublicKey, Transaction} from '@hashgraph/sdk';
+import type {Transaction} from '@hashgraph/sdk';
+import {FileAppendTransaction, KeyList, PublicKey} from '@hashgraph/sdk';
 
 import {useToast} from 'vue-toast-notification';
 import {useRoute} from 'vue-router';
@@ -222,8 +223,9 @@ const columnClass = 'col-4 col-xxxl-3';
           color="primary"
           type="button"
           @click="handleAddSignatureKey"
-          >Add</AppButton
         >
+          Add
+        </AppButton>
       </div>
     </div>
 
@@ -277,9 +279,9 @@ const columnClass = 'col-4 col-xxxl-3';
         >
       </label>
       <AppInput
+        id="fileUpload"
         :filled="true"
         size="small"
-        id="fileUpload"
         name="fileUpload"
         type="file"
         :disabled="content.length > 0"

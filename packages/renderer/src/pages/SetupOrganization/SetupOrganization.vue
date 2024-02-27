@@ -55,8 +55,8 @@ const handleContinue = async (e: Event) => {
     <h1 class="text-huge text-bold text-center">Setup Organization</h1>
     <p class="mt-5">Please Enter Organisation details</p>
     <form
-      @submit="handleContinue"
       class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
+      @submit="handleContinue"
     >
       <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
         <AppInput
@@ -86,8 +86,9 @@ const handleContinue = async (e: Event) => {
           color="primary"
           size="large"
           class="w-100"
-          >Continue</AppButton
         >
+          Continue
+        </AppButton>
       </div>
     </form>
   </div>

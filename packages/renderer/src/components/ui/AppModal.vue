@@ -53,8 +53,8 @@ onBeforeUnmount(() => {
     :style="{display: show ? 'block' : 'none'}"
   >
     <div
-      class="modal-dialog modal-dialog-centered"
       ref="modalRef"
+      class="modal-dialog modal-dialog-centered"
     >
       <div class="modal-content"><slot></slot></div>
     </div>

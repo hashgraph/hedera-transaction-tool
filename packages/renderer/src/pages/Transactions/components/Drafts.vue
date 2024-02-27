@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, onBeforeMount, reactive, ref} from 'vue';
 
-import {TransactionDraft} from '@prisma/client';
+import type {TransactionDraft} from '@prisma/client';
 
 import {useRouter} from 'vue-router';
 import {useToast} from 'vue-toast-notification';
@@ -165,13 +165,15 @@ onBeforeMount(async () => {
                 :outline="true"
                 color="secondary"
                 @click="handleDeleteDraft(draft.id)"
-                >Delete</AppButton
               >
+                Delete
+              </AppButton>
               <AppButton
                 color="primary"
                 @click="handleContinueDraft(draft.id)"
-                >Continue</AppButton
               >
+                Continue
+              </AppButton>
             </div>
           </td>
         </tr>

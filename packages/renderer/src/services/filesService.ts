@@ -1,4 +1,4 @@
-import {Prisma} from '@prisma/client';
+import type {Prisma} from '@prisma/client';
 import {getMessageFromIPCError} from '@renderer/utils';
 
 export const getAll = async (userId: string) => {

@@ -150,16 +150,17 @@ onBeforeMount(() => {
                 class="d-flex align-items-center mt-6"
                 @click="handleBack"
               >
-                <i class="bi bi-arrow-left-short text-headline lh-1"></i> Back</AppButton
-              >
+                <i class="bi bi-arrow-left-short text-headline lh-1"></i> Back
+              </AppButton>
             </div>
             <AppButton
               v-if="keyPairs.recoveryPhraseWords.length > 0 && step.current !== 'recoveryPhrase'"
               color="primary"
-              @click="handleNext"
               class="mt-6 ms-3"
-              >Next</AppButton
+              @click="handleNext"
             >
+              Next
+            </AppButton>
           </div>
         </div>
       </template>

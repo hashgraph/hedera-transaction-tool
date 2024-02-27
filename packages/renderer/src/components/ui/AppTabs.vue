@@ -27,10 +27,10 @@ defineEmits(['update:active-index']);
       :class="[navClass]"
     >
       <li
-        class="nav-item p-0"
-        :class="[navItemClass]"
         v-for="(item, i) in items"
         :key="item.title"
+        class="nav-item p-0"
+        :class="[navItemClass]"
       >
         <AppButton
           class="tab-button text-small fw-medium gap-3 w-100"

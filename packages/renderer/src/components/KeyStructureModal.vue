@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import {Key, KeyList, PublicKey} from '@hashgraph/sdk';
+import type {Key} from '@hashgraph/sdk';
+import {KeyList, PublicKey} from '@hashgraph/sdk';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import KeyStructure from '@renderer/components/KeyStructure.vue';
@@ -19,8 +20,8 @@ const handleShowUpdate = show => emit('update:show', show);
 <template>
   <AppModal
     :show="show"
-    @update:show="handleShowUpdate"
     class="modal-fit-content"
+    @update:show="handleShowUpdate"
   >
     <div class="p-5">
       <KeyStructure

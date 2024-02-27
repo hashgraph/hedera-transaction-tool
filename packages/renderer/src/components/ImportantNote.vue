@@ -46,8 +46,9 @@ onMounted(() => {
         <AppButton
           color="primary"
           @click="handleAccept"
-          >I Understand and Agree</AppButton
         >
+          I Understand and Agree
+        </AppButton>
       </div>
     </div>
   </AppModal>

@@ -16,8 +16,8 @@ defineEmits(['update:checked']);
       class="form-check-input"
       type="checkbox"
       :checked="checked"
-      @input="$emit('update:checked', !checked)"
       :name="name"
+      @input="$emit('update:checked', !checked)"
     />
     <label
       v-if="label"

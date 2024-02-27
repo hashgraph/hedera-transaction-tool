@@ -2,7 +2,7 @@
 import {onMounted, reactive, ref, watch} from 'vue';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
-import {User} from '@prisma/client';
+import type {User} from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -242,8 +242,8 @@ watch(inputEmail, pass => {
     </p>
 
     <form
-      @submit="handleOnFormSubmit"
       class="form-login mt-5 w-100"
+      @submit="handleOnFormSubmit"
     >
       <label class="form-label">Email</label>
       <AppInput
@@ -255,8 +255,9 @@ watch(inputEmail, pass => {
       <div
         v-if="inputEmailInvalid"
         class="invalid-feedback"
-        >Invalid e-mail.</div
       >
+        Invalid e-mail.
+      </div>
       <label class="form-label mt-4">Password</label>
       <AppInput
         v-model="inputPassword"
@@ -274,8 +275,9 @@ watch(inputEmail, pass => {
       <div
         v-if="inputPasswordInvalid"
         class="invalid-feedback"
-        >Invalid password.</div
       >
+        Invalid password.
+      </div>
       <template v-if="shouldRegister">
         <label class="form-label mt-4">Confirm password</label>
         <AppInput
@@ -298,8 +300,8 @@ watch(inputEmail, pass => {
         class="mt-3 text-end"
       >
         <span
-          @click="isResetDataModalShown = true"
           class="text-small link-primary cursor-pointer"
+          @click="isResetDataModalShown = true"
           >Reset account</span
         >
       </div>
@@ -310,8 +312,9 @@ watch(inputEmail, pass => {
           type="submit"
           class="w-100"
           :disabled="inputEmail.length === 0 || inputPassword.length === 0"
-          >Sign in</AppButton
         >
+          Sign in
+        </AppButton>
       </div>
     </form>
     <AppModal
@@ -340,8 +343,9 @@ watch(inputEmail, pass => {
               color="secondary"
               class="w-100"
               @click="isResetDataModalShown = false"
-              >Cancel</AppButton
             >
+              Cancel
+            </AppButton>
           </div>
           <div class="col-6">
             <AppButton
@@ -349,8 +353,9 @@ watch(inputEmail, pass => {
               color="primary"
               class="w-100"
               @click="handleResetData"
-              >Reset</AppButton
             >
+              Reset
+            </AppButton>
           </div>
         </div>
       </div>

@@ -48,7 +48,7 @@ const handleKeyClick = (index: number, path: number[], publicKey: string) => {
             :key-list="item"
             :level="level + 1"
             :path="[...path, index]"
-            :handleClick="handleClick"
+            :handle-click="handleClick"
           />
         </div>
       </template>

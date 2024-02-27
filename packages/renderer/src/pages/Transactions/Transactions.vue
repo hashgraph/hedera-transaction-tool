@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import {computed, ref} from 'vue';
 
-import AppTabs, {TabItem} from '@renderer/components/ui/AppTabs.vue';
+import type {TabItem} from '@renderer/components/ui/AppTabs.vue';
+import AppTabs from '@renderer/components/ui/AppTabs.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import History from './components/History.vue';
 import TransactionSelectionModal from './components/TransactionSelectionModal.vue';
@@ -37,8 +38,8 @@ const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title
 
     <div class="mt-4">
       <AppTabs
-        :items="tabItems"
         v-model:active-index="activeTabIndex"
+        :items="tabItems"
       ></AppTabs>
       <!-- <template v-if="activeTabTitle === 'Ready for Review'"></template>
       <template v-if="activeTabTitle === 'Ready to Sign'"> </template>

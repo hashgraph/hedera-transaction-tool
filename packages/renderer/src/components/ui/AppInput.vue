@@ -29,7 +29,7 @@ const fillClass = computed(() => (props.filled ? 'is-fill' : ''));
 <template>
   <input
     :value="modelValue"
-    @input="$emit('update:modelValue', ($event.target! as HTMLInputElement).value)"
     :class="[sizeClass, fillClass]"
+    @input="$emit('update:modelValue', ($event.target! as HTMLInputElement).value)"
   />
 </template>

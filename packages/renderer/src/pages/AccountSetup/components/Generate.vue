@@ -123,8 +123,8 @@ watch(words, newWords => {
   </div>
 
   <div
-    class="row justify-content-center mt-6"
     v-if="!wordsConfirmed && !toVerify && words.filter(w => w).length === 0"
+    class="row justify-content-center mt-6"
   >
     <div class="col-6">
       <AppButton
@@ -139,8 +139,8 @@ watch(words, newWords => {
   </div>
 
   <div
-    class="row justify-content-between mt-6"
     v-if="!wordsConfirmed && !toVerify && words.filter(w => w).length !== 0"
+    class="row justify-content-between mt-6"
   >
     <div class="col-8">
       <div class="d-flex">
@@ -155,20 +155,22 @@ watch(words, newWords => {
           v-if="words.filter(w => w).length !== 0"
           :outline="true"
           color="primary"
-          @click="handleCopyRecoveryPhrase"
           class="ms-4"
-          ><i class="bi bi-copy"></i> <span>Copy</span></AppButton
+          @click="handleCopyRecoveryPhrase"
         >
+          <i class="bi bi-copy"></i> <span>Copy</span>
+        </AppButton>
       </div>
     </div>
     <div class="col-4">
       <AppButton
         :disabled="!checkboxChecked"
         color="primary"
-        @click="handleProceedToVerification"
         class="w-100"
-        >Verify</AppButton
+        @click="handleProceedToVerification"
       >
+        Verify
+      </AppButton>
     </div>
   </div>
 
@@ -181,8 +183,9 @@ watch(words, newWords => {
         color="primary"
         class="w-100"
         @click="handleNext"
-        >Next</AppButton
       >
+        Next
+      </AppButton>
     </div>
   </div>
 </template>

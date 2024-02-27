@@ -1,7 +1,8 @@
-import {Key, KeyList, Mnemonic, PrivateKey, PublicKey} from '@hashgraph/sdk';
-import {proto} from '@hashgraph/proto';
+import type {Key} from '@hashgraph/sdk';
+import {KeyList, Mnemonic, PrivateKey, PublicKey} from '@hashgraph/sdk';
+import type {proto} from '@hashgraph/proto';
 
-import {Prisma} from '@prisma/client';
+import type {Prisma} from '@prisma/client';
 
 import {getMessageFromIPCError} from '@renderer/utils';
 

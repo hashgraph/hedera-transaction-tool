@@ -10,7 +10,8 @@ defineProps<{
     <p
       v-if="loadingText"
       class="mt-3"
-      >{{ loadingText }}</p
     >
+      {{ loadingText }}
+    </p>
   </div>
 </template>

@@ -1,7 +1,7 @@
 import {computed, onMounted, reactive, ref} from 'vue';
 import {defineStore} from 'pinia';
 
-import {KeyPair, Prisma} from '@prisma/client';
+import type {KeyPair, Prisma} from '@prisma/client';
 
 import useNetworkStore from './storeNetwork';
 import useUserStore from './storeUser';

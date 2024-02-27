@@ -1,5 +1,6 @@
 import {proto} from '@hashgraph/proto';
-import {FileId, FileInfo, Key, KeyList, LedgerId, Long, PublicKey, Timestamp} from '@hashgraph/sdk';
+import type {Key, LedgerId, Timestamp} from '@hashgraph/sdk';
+import {FileId, FileInfo, KeyList, Long, PublicKey} from '@hashgraph/sdk';
 
 export const createFileInfo = (props: {
   fileId: FileId | string;
@@ -72,6 +73,6 @@ export const ableToSign = (publicKeys: string[], key: Key) => {
       return false;
     }
   } else {
-    throw new Error(`Invalid key type`);
+    throw new Error('Invalid key type');
   }
 };

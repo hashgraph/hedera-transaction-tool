@@ -1,15 +1,9 @@
 <script setup lang="ts">
 import {computed, onMounted, ref, watch} from 'vue';
-import {
-  FileCreateTransaction,
-  KeyList,
-  PublicKey,
-  Timestamp,
-  Transaction,
-  TransactionReceipt,
-} from '@hashgraph/sdk';
+import type {Transaction, TransactionReceipt} from '@hashgraph/sdk';
+import {FileCreateTransaction, KeyList, PublicKey, Timestamp} from '@hashgraph/sdk';
 
-import {Prisma} from '@prisma/client';
+import type {Prisma} from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -204,8 +198,9 @@ watch(payerData.isValid, isValid => {
           color="primary"
           type="button"
           @click="handleAdd"
-          >Add</AppButton
         >
+          Add
+        </AppButton>
       </div>
     </div>
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {onMounted, ref} from 'vue';
-import {Hbar, AccountDeleteTransaction, Key, Transaction, KeyList} from '@hashgraph/sdk';
+import type {Key, Transaction} from '@hashgraph/sdk';
+import {Hbar, AccountDeleteTransaction, KeyList} from '@hashgraph/sdk';
 
 import {useRoute} from 'vue-router';
 import {useToast} from 'vue-toast-notification';
@@ -154,9 +155,9 @@ const columnClass = 'col-4 col-xxxl-3';
         >
         <AppInput
           :model-value="accountData.accountIdFormatted.value"
-          @update:model-value="v => (accountData.accountId.value = v)"
           :filled="true"
           placeholder="Enter Payer ID"
+          @update:model-value="v => (accountData.accountId.value = v)"
         />
       </div>
 
@@ -173,8 +174,9 @@ const columnClass = 'col-4 col-xxxl-3';
             isKeyStructureModalShown = true;
             selectedKey = accountData.key.value;
           "
-          >Show Key</AppButton
         >
+          Show Key
+        </AppButton>
       </div>
     </div>
 
@@ -201,10 +203,10 @@ const columnClass = 'col-4 col-xxxl-3';
         >
         <AppInput
           :model-value="transferAccountData.accountIdFormatted.value"
-          @update:model-value="v => (transferAccountData.accountId.value = v)"
           :disabled="transferAccountData.accountInfo.value?.deleted"
           :filled="true"
           placeholder="Enter Account ID"
+          @update:model-value="v => (transferAccountData.accountId.value = v)"
         />
       </div>
 
@@ -221,8 +223,9 @@ const columnClass = 'col-4 col-xxxl-3';
             isKeyStructureModalShown = true;
             selectedKey = transferAccountData.key.value;
           "
-          >Show Key</AppButton
         >
+          Show Key
+        </AppButton>
       </div>
     </div>
 

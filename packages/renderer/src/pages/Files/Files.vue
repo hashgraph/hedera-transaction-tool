@@ -3,7 +3,7 @@ import {computed, onMounted, ref, watch} from 'vue';
 
 import {FileId, FileInfo} from '@hashgraph/sdk';
 
-import {HederaFile} from '@prisma/client';
+import type {HederaFile} from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -220,8 +220,9 @@ watch(files, newFiles => {
           class="me-3"
           color="secondary"
           @click="isUnlinkFileModalShown = true"
-          >Remove</AppButton
         >
+          Remove
+        </AppButton>
         <AppButton
           class="me-3"
           color="secondary"
@@ -232,8 +233,9 @@ watch(files, newFiles => {
               query: {fileId: selectedFile?.file_id},
             })
           "
-          >Update</AppButton
         >
+          Update
+        </AppButton>
         <AppButton
           class="me-3"
           color="secondary"
@@ -244,8 +246,9 @@ watch(files, newFiles => {
               query: {fileId: selectedFile?.file_id},
             })
           "
-          >Append</AppButton
         >
+          Append
+        </AppButton>
         <AppButton
           color="secondary"
           @click="
@@ -255,8 +258,9 @@ watch(files, newFiles => {
               query: {fileId: selectedFile?.file_id},
             })
           "
-          >Read</AppButton
         >
+          Read
+        </AppButton>
       </div>
     </div>
     <div class="mt-7 h-100 row">
@@ -267,8 +271,9 @@ watch(files, newFiles => {
             size="large"
             class="w-100 d-flex align-items-center justify-content-center"
             data-bs-toggle="dropdown"
-            >Add new</AppButton
           >
+            Add new
+          </AppButton>
           <ul class="dropdown-menu w-100 mt-3">
             <li
               class="dropdown-item cursor-pointer"
@@ -401,9 +406,9 @@ watch(files, newFiles => {
                     <span>{{ selectedFileIdWithChecksum[0] }}</span>
                     <span class="text-secondary">-{{ selectedFileIdWithChecksum[1] }}</span>
                   </template>
-                  <template v-else
-                    ><span>{{ selectedFileIdWithChecksum }}</span></template
-                  >
+                  <template v-else>
+                    <span>{{ selectedFileIdWithChecksum }}</span>
+                  </template>
                 </p>
               </div>
             </div>
@@ -424,8 +429,8 @@ watch(files, newFiles => {
               </div>
             </div>
             <div
-              class="mt-4 row"
               v-if="selectedFile.contentBytes"
+              class="mt-4 row"
             >
               <div class="col-5">
                 <p class="text-small text-semi-bold">Content</p>
@@ -435,13 +440,14 @@ watch(files, newFiles => {
                   color="primary"
                   size="small"
                   @click="showContentInTemp(user.data.id, selectedFile.file_id)"
-                  >Open</AppButton
                 >
+                  Open
+                </AppButton>
               </div>
             </div>
             <div
-              class="mt-4 row"
               v-if="selectedFileInfo?.keys"
+              class="mt-4 row"
             >
               <div class="col-5">
                 <p class="text-small text-semi-bold">Key</p>
@@ -514,9 +520,9 @@ watch(files, newFiles => {
                 <textarea
                   v-if="isDescriptionInputShown"
                   ref="descriptionInputRef"
+                  v-model="selectedFile.description"
                   class="form-control is-fill"
                   rows="8"
-                  v-model="selectedFile.description"
                   @blur="handleChangeDescription"
                 >
                 </textarea>
@@ -568,14 +574,16 @@ watch(files, newFiles => {
             <AppButton
               color="primary"
               @click="handleUnlinkFile"
-              >Unlink</AppButton
             >
+              Unlink
+            </AppButton>
             <AppButton
               color="secondary"
               class="mt-4"
               @click="isUnlinkFileModalShown = false"
-              >Cancel</AppButton
             >
+              Cancel
+            </AppButton>
           </div>
         </div>
       </AppModal>

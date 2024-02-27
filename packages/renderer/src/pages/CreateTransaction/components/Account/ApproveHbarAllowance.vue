@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {onMounted, ref} from 'vue';
-import {Hbar, Key, AccountAllowanceApproveTransaction, Transaction, KeyList} from '@hashgraph/sdk';
+import type {Key, Transaction} from '@hashgraph/sdk';
+import {Hbar, AccountAllowanceApproveTransaction, KeyList} from '@hashgraph/sdk';
 
 import {useToast} from 'vue-toast-notification';
 import {useRoute} from 'vue-router';
@@ -151,16 +152,16 @@ const columnClass = 'col-4 col-xxxl-3';
 
         <AppInput
           :model-value="ownerData.accountIdFormatted.value"
-          @update:model-value="v => (ownerData.accountId.value = v)"
           :filled="true"
           placeholder="Enter Owner ID"
+          @update:model-value="v => (ownerData.accountId.value = v)"
         />
       </div>
 
       <div
+        v-if="ownerData.key.value"
         class="form-group"
         :class="[columnClass]"
-        v-if="ownerData.key.value"
       >
         <AppButton
           :outline="true"
@@ -170,8 +171,9 @@ const columnClass = 'col-4 col-xxxl-3';
             isKeyStructureModalShown = true;
             keyStructureComponentKey = ownerData.key.value;
           "
-          >Show Key</AppButton
         >
+          Show Key
+        </AppButton>
       </div>
     </div>
 
@@ -188,15 +190,15 @@ const columnClass = 'col-4 col-xxxl-3';
         >
         <AppInput
           :model-value="spenderData.accountIdFormatted.value"
-          @update:model-value="v => (spenderData.accountId.value = v)"
           :filled="true"
           placeholder="Enter Spender ID"
+          @update:model-value="v => (spenderData.accountId.value = v)"
         />
       </div>
       <div
+        v-if="spenderData.key.value"
         class="form-group"
         :class="[columnClass]"
-        v-if="spenderData.key.value"
       >
         <AppButton
           :outline="true"
@@ -206,8 +208,9 @@ const columnClass = 'col-4 col-xxxl-3';
             isKeyStructureModalShown = true;
             keyStructureComponentKey = spenderData.key.value;
           "
-          >Show Key</AppButton
         >
+          Show Key
+        </AppButton>
       </div>
     </div>
 

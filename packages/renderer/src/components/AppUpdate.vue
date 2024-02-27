@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ProgressInfo, UpdateInfo} from 'electron-updater';
+import type {ProgressInfo, UpdateInfo} from 'electron-updater';
 import {computed, onBeforeMount, ref} from 'vue';
 
 import {useToast} from 'vue-toast-notification';
@@ -124,14 +124,16 @@ onBeforeMount(() => {
         <AppButton
           color="primary"
           @click="handleDownloadUpdate"
-          >Download</AppButton
         >
+          Download
+        </AppButton>
         <AppButton
           color="secondary"
           class="mt-3"
           @click="isUpdateAvailableShown = false"
-          >Cancel</AppButton
         >
+          Cancel
+        </AppButton>
       </div>
     </div>
   </AppModal>
@@ -153,8 +155,9 @@ onBeforeMount(() => {
           color="secondary"
           class="mt-3"
           @click="isUpdateNotAvailableShown = false"
-          >Close</AppButton
         >
+          Close
+        </AppButton>
       </div>
     </div>
   </AppModal>
@@ -177,8 +180,8 @@ onBeforeMount(() => {
       <div class="d-grid mt-4">
         <div class="d-flex justify-content-between">
           <p
-            class="text-start text-footnote mt-3"
             v-if="progressInfo"
+            class="text-start text-footnote mt-3"
           >
             {{
               convertBytes(progressInfo?.transferred || 0, {
@@ -192,8 +195,8 @@ onBeforeMount(() => {
             }}
           </p>
           <p
-            class="text-start text-micro mt-3"
             v-if="progressInfo"
+            class="text-start text-micro mt-3"
           >
             {{
               convertBytes(progressInfo?.bytesPerSecond || 0, {
@@ -233,8 +236,9 @@ onBeforeMount(() => {
         <AppButton
           color="primary"
           @click="handleInstall"
-          >Install</AppButton
         >
+          Install
+        </AppButton>
       </div>
     </div>
   </AppModal>

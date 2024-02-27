@@ -53,9 +53,9 @@ const handldeWordInput = (e: Event) => {
       @input="handldeWordInput"
     />
     <Transition
+      v-if="withToggler"
       name="fade"
       mode="out-in"
-      v-if="withToggler"
     >
       <i
         v-if="!isVisible"

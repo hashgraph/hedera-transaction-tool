@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {onUnmounted, ref, watch} from 'vue';
 import {Mnemonic} from '@hashgraph/sdk';
-import {Prisma} from '@prisma/client';
+import type {Prisma} from '@prisma/client';
 
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
@@ -161,15 +161,17 @@ onUnmounted(() => {
               color="primary"
               class="d-block w-100"
               @click="step++"
-              >Continue</AppButton
             >
+              Continue
+            </AppButton>
             <AppButton
               size="large"
               color="secondary"
               class="mt-4 d-block w-100"
               @click="$router.back()"
-              >Cancel</AppButton
             >
+              Cancel
+            </AppButton>
           </div>
         </div>
       </div>
@@ -196,8 +198,9 @@ onUnmounted(() => {
               color="primary"
               class="mt-5 d-block w-100"
               :disabled="password.length === 0"
-              >Continue</AppButton
             >
+              Continue
+            </AppButton>
           </div>
         </div>
       </form>
@@ -219,8 +222,9 @@ onUnmounted(() => {
             color="primary"
             class="mt-5 mx-auto col-6 col-xxl-4 d-block"
             :disabled="keyPairsStore.recoveryPhraseWords.length === 0"
-            >Continue</AppButton
           >
+            Continue
+          </AppButton>
         </div>
       </form>
 
@@ -252,8 +256,9 @@ onUnmounted(() => {
               color="primary"
               class="mt-4 d-block w-100"
               :disabled="index < 0"
-              >Continue</AppButton
             >
+              Continue
+            </AppButton>
           </div>
         </div>
       </form>
@@ -277,8 +282,9 @@ onUnmounted(() => {
               type="submit"
               color="primary"
               class="mt-4 d-block w-100"
-              >Continue</AppButton
             >
+              Continue
+            </AppButton>
           </div>
         </div>
       </form>

@@ -1,15 +1,15 @@
+import type {Transaction} from '@hashgraph/sdk';
 import {
   AccountId,
   PrivateKey,
   PublicKey,
   Timestamp,
-  Transaction,
   TransactionId,
   TransactionReceipt,
   TransactionResponse,
 } from '@hashgraph/sdk';
 
-import {KeyPair, Prisma} from '@prisma/client';
+import type {KeyPair, Prisma} from '@prisma/client';
 
 import {getMessageFromIPCError} from '@renderer/utils';
 

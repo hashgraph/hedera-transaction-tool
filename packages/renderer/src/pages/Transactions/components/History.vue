@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {computed, onBeforeMount, reactive, ref} from 'vue';
-import {Transaction} from '@prisma/client';
+import type {Transaction} from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -208,10 +208,11 @@ onBeforeMount(async () => {
           </td>
           <td class="text-center">
             <AppButton
-              @click="handleTransactionDetailsClick(transaction)"
               color="primary"
-              >Details</AppButton
+              @click="handleTransactionDetailsClick(transaction)"
             >
+              Details
+            </AppButton>
           </td>
         </tr>
       </template>

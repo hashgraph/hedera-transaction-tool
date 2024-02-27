@@ -101,7 +101,8 @@ watch(words, async newWords => {
     <p
       v-if="!isSecretHashValid"
       class="mt-3 text-danger"
-      >Recovery phrase not match yours</p
     >
+      Recovery phrase not match yours
+    </p>
   </div>
 </template>

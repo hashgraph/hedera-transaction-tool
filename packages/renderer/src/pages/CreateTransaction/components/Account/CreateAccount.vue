@@ -1,14 +1,7 @@
 <script setup lang="ts">
 import {computed, onMounted, reactive, ref, watch} from 'vue';
-import {
-  AccountId,
-  AccountCreateTransaction,
-  KeyList,
-  PublicKey,
-  Hbar,
-  Transaction,
-  TransactionReceipt,
-} from '@hashgraph/sdk';
+import type {Transaction, TransactionReceipt} from '@hashgraph/sdk';
+import {AccountId, AccountCreateTransaction, KeyList, PublicKey, Hbar} from '@hashgraph/sdk';
 
 import {useToast} from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
@@ -213,8 +206,9 @@ const columnClass = 'col-4 col-xxxl-3';
           type="button"
           color="primary"
           @click="handleAdd"
-          >Add</AppButton
         >
+          Add
+        </AppButton>
       </div>
     </div>
 

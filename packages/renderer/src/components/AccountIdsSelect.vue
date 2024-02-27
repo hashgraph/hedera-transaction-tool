@@ -39,10 +39,10 @@ onMounted(() => {
     @change="handleAccountIdChange"
   >
     <template
-      v-for="accountId in accoundIds"
-      :key="accountId"
+      v-for="id in accoundIds"
+      :key="id"
     >
-      <option :value="accountId">{{ accountId }}</option>
+      <option :value="id">{{ id }}</option>
     </template>
   </select>
 </template>

@@ -97,14 +97,14 @@ const columnClass = 'col-4 col-xxxl-3';
       <template v-else>
         <AppInput
           :model-value="account.isValid.value ? account.accountIdFormatted.value : payerId"
+          :filled="true"
+          placeholder="Enter Payer ID"
           @update:model-value="
             v => {
               $emit('update:payerId', v);
               account.accountId.value = v;
             }
           "
-          :filled="true"
-          placeholder="Enter Payer ID"
         />
       </template>
     </div>
@@ -115,10 +115,10 @@ const columnClass = 'col-4 col-xxxl-3';
       <label class="form-label">Valid Start Time</label>
       <AppInput
         :model-value="validStart"
-        @update:model-value="v => $emit('update:validStart', v)"
         :filled="true"
         type="datetime-local"
         step="1"
+        @update:model-value="v => $emit('update:validStart', v)"
       />
     </div>
     <div
@@ -128,10 +128,10 @@ const columnClass = 'col-4 col-xxxl-3';
       <label class="form-label">Max Transaction Fee</label>
       <AppInput
         :model-value="maxTransactionFee"
-        @update:model-value="v => $emit('update:maxTransactionFee', Number(v))"
         :filled="true"
         type="number"
         min="0"
+        @update:model-value="v => $emit('update:maxTransactionFee', Number(v))"
       />
     </div>
   </div>

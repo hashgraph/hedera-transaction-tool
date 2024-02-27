@@ -3,7 +3,8 @@ import {computed, ref, watch} from 'vue';
 
 import {useRouter, RouterView} from 'vue-router';
 
-import AppTabs, {TabItem} from '@renderer/components/ui/AppTabs.vue';
+import type {TabItem} from '@renderer/components/ui/AppTabs.vue';
+import AppTabs from '@renderer/components/ui/AppTabs.vue';
 
 /* Composables */
 const router = useRouter();
@@ -60,8 +61,8 @@ watch(router.currentRoute, newRoute => {
     </div>
     <div class="mt-7">
       <AppTabs
-        :items="tabItems"
         v-model:active-index="activeTabIndex"
+        :items="tabItems"
       >
         <template #[activeTabTitle]>
           <RouterView />

@@ -27,8 +27,8 @@ const handleFormSubmit = (event: Event) => {
     <h1 class="text-display text-bold text-center">Forgot Password</h1>
     <p class="text-main mt-5 text-center">Please enter your email</p>
     <form
-      @submit="handleFormSubmit"
       class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
+      @submit="handleFormSubmit"
     >
       <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
         <AppInput
@@ -44,8 +44,9 @@ const handleFormSubmit = (event: Event) => {
           type="submit"
           class="w-100"
           :disabled="inputEmail.length === 0"
-          >Continue</AppButton
         >
+          Continue
+        </AppButton>
       </div>
     </form>
   </div>

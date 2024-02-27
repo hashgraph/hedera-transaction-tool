@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import {computed, nextTick, onBeforeUnmount, ref} from 'vue';
 
-import {Key, KeyList, Transaction, TransactionReceipt, TransactionResponse} from '@hashgraph/sdk';
-import {Prisma} from '@prisma/client';
+import type {Key, KeyList, TransactionReceipt, TransactionResponse} from '@hashgraph/sdk';
+import {Transaction} from '@hashgraph/sdk';
+import type {Prisma} from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
@@ -287,13 +288,15 @@ defineExpose({
               type="button"
               color="secondary"
               @click="isConfirmShown = false"
-              >Cancel</AppButton
             >
+              Cancel
+            </AppButton>
             <AppButton
               color="primary"
               type="submit"
-              >Sign</AppButton
             >
+              Sign
+            </AppButton>
           </div>
         </form>
       </div>
@@ -340,8 +343,9 @@ defineExpose({
                 type="button"
                 class="w-100"
                 @click="isSignModalShown = false"
-                >Cancel</AppButton
               >
+                Cancel
+              </AppButton>
             </div>
             <div class="col-6">
               <AppButton
@@ -350,8 +354,9 @@ defineExpose({
                 :disabled="userPassword.length === 0 || isSigning"
                 class="w-100"
                 type="submit"
-                >Continue</AppButton
               >
+                Continue
+              </AppButton>
             </div>
           </div>
         </form>
@@ -383,8 +388,9 @@ defineExpose({
             color="primary"
             class="mt-1"
             @click="isExecuting = false"
-            >Close</AppButton
           >
+            Close
+          </AppButton>
         </div>
       </div>
     </AppModal>
@@ -430,8 +436,9 @@ defineExpose({
                 onCloseSuccessModalClick && onCloseSuccessModalClick();
               }
             "
-            >Close</AppButton
           >
+            Close
+          </AppButton>
         </div>
       </div>
     </AppModal>

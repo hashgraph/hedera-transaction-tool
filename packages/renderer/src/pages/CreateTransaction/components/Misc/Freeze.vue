@@ -97,8 +97,8 @@ const columnClass = 'col-4 col-xxxl-3';
       <div :class="[columnClass]">
         <label class="form-label">Freeze Type<span class="text-danger">*</span></label>
         <select
-          class="form-select"
           v-model="freezeType"
+          class="form-select"
         >
           <option value="0">Unknown Freeze Type</option>
           <option value="1">Freeze Only</option>
@@ -118,10 +118,10 @@ const columnClass = 'col-4 col-xxxl-3';
         <label class="form-label">Start Time<span class="text-danger">*</span></label>
         <AppInput
           :model-value="startTimestamp"
-          @update:model-value="v => (startTimestamp = v)"
           :filled="true"
           type="datetime-local"
           step="1"
+          @update:model-value="v => (startTimestamp = v)"
         />
       </div>
     </div>
@@ -134,11 +134,11 @@ const columnClass = 'col-4 col-xxxl-3';
         <label class="form-label">File ID</label>
         <AppInput
           :model-value="fileId?.toString()"
+          :filled="true"
+          placeholder="Enter File ID"
           @update:model-value="
             v => (fileId = isFileId(v) && v !== '0' ? FileId.fromString(v).toString() : v)
           "
-          :filled="true"
-          placeholder="Enter File ID"
         />
       </div>
     </div>

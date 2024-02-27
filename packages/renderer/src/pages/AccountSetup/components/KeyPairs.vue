@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {onMounted, onUpdated, ref} from 'vue';
 
-import {Prisma} from '@prisma/client';
+import type {Prisma} from '@prisma/client';
 
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
@@ -255,8 +255,8 @@ defineExpose({
       <label class="form-label">ED25519 Private Key</label>
       <p class="text-break text-secondary">
         <span
-          ref="privateKeyRef"
           id="pr"
+          ref="privateKeyRef"
           >{{ !privateKeyHidden ? privateKey : '*'.repeat(starCount) }}</span
         >
         <span class="cursor-pointer ms-3">

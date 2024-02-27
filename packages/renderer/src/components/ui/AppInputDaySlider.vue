@@ -26,13 +26,13 @@ defineEmits(['update:sliderValue']);
     <div class="mt-3">
       <input
         :value="sliderValue"
-        @[updateValueOn]="
-          $emit('update:sliderValue', Number(($event.target as HTMLInputElement)?.value))
-        "
         type="range"
         :min="minValue"
         :max="maxValue"
         class="form-range"
+        @[updateValueOn]="
+          $emit('update:sliderValue', Number(($event.target as HTMLInputElement)?.value))
+        "
       />
     </div>
   </div>

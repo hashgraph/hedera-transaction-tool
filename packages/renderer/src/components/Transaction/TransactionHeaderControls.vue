@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {ref} from 'vue';
-import {RouteLocationNormalized, onBeforeRouteLeave} from 'vue-router';
+import type {RouteLocationNormalized} from 'vue-router';
+import {onBeforeRouteLeave} from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -103,17 +104,19 @@ onBeforeRouteLeave(async to => {
         color="secondary"
         :outline="true"
         type="button"
-        @click="() => (handleSaveDraft ? handleSaveDraft() : saveDraft())"
         class="me-3"
-        ><i class="bi bi-save"></i> Save Draft</AppButton
+        @click="() => (handleSaveDraft ? handleSaveDraft() : saveDraft())"
       >
+        <i class="bi bi-save"></i> Save Draft
+      </AppButton>
       <AppButton
         color="primary"
         :type="buttonType"
         :disabled="createRequirements"
         @click="handleSign"
-        >{{ buttonText }}</AppButton
       >
+        {{ buttonText }}
+      </AppButton>
     </div>
     <AppModal
       :show="isSaveDraftModalShown"
@@ -148,8 +151,9 @@ onBeforeRouteLeave(async to => {
               type="button"
               class="w-100"
               @click="routeTo && $router.push(routeTo)"
-              >Cancel</AppButton
             >
+              Cancel
+            </AppButton>
           </div>
           <div class="col-6">
             <AppButton
@@ -160,8 +164,9 @@ onBeforeRouteLeave(async to => {
                 saveDraft();
                 routeTo && $router.push(routeTo);
               "
-              >Save</AppButton
             >
+              Save
+            </AppButton>
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, onMounted, ref} from 'vue';
 import {KeyList, PublicKey} from '@hashgraph/sdk';
-import {HederaAccount} from '@prisma/client';
+import type {HederaAccount} from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -153,18 +153,20 @@ const handleChangeNickname = async () => {
           color="secondary"
           class="me-3"
           @click="isUnlinkAccountModalShown = true"
-          >Unlink</AppButton
         >
+          Unlink
+        </AppButton>
         <div
-          class="dropdown"
           v-if="!accountData.accountInfo.value?.deleted"
+          class="dropdown"
         >
           <AppButton
             color="primary"
             class="w-100 d-flex align-items-center justify-content-center"
             data-bs-toggle="dropdown"
-            >Update</AppButton
           >
+            Update
+          </AppButton>
           <ul class="dropdown-menu mt-3">
             <li
               class="dropdown-item cursor-pointer"
@@ -202,8 +204,9 @@ const handleChangeNickname = async () => {
             size="large"
             class="w-100 d-flex align-items-center justify-content-center"
             data-bs-toggle="dropdown"
-            >Add new</AppButton
           >
+            Add new
+          </AppButton>
           <ul class="dropdown-menu w-100 mt-3">
             <li
               class="dropdown-item cursor-pointer"
@@ -328,9 +331,9 @@ const handleChangeNickname = async () => {
                       >-{{ accountData.accoundIdWithChecksum.value[1] }}</span
                     >
                   </template>
-                  <template v-else
-                    ><span>{{ accountData.accoundIdWithChecksum.value }}</span></template
-                  >
+                  <template v-else>
+                    <span>{{ accountData.accoundIdWithChecksum.value }}</span>
+                  </template>
 
                   <i
                     class="bi bi-box-arrow-up-right link-primary cursor-pointer ms-2"
@@ -448,8 +451,8 @@ const handleChangeNickname = async () => {
               </div>
             </div>
             <div
-              class="mt-4 row"
               v-if="accountData.accountInfo.value?.autoRenewPeriod"
+              class="mt-4 row"
             >
               <div class="col-5"><p class="text-small text-semi-bold">Auto Renew Period</p></div>
               <div class="col-7">
@@ -524,8 +527,9 @@ const handleChangeNickname = async () => {
                   color="secondary"
                   class="w-100"
                   @click="isUnlinkAccountModalShown = false"
-                  >Cancel</AppButton
                 >
+                  Cancel
+                </AppButton>
               </div>
               <div class="col-6">
                 <AppButton
@@ -533,8 +537,9 @@ const handleChangeNickname = async () => {
                   color="primary"
                   class="w-100"
                   @click="handleUnlinkAccount"
-                  >Unlink</AppButton
                 >
+                  Unlink
+                </AppButton>
               </div>
             </div>
           </div>

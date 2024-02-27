@@ -71,8 +71,9 @@ onMounted(() => {
             networkStore.setNetwork('mainnet');
             isCustomSettingsVisible = false;
           "
-          >Mainnet</AppButton
         >
+          Mainnet
+        </AppButton>
         <AppButton
           color="primary"
           :class="{active: networkStore.network === 'testnet'}"
@@ -80,8 +81,9 @@ onMounted(() => {
             networkStore.setNetwork('testnet');
             isCustomSettingsVisible = false;
           "
-          >Testnet</AppButton
         >
+          Testnet
+        </AppButton>
         <AppButton
           color="primary"
           disabled
@@ -90,14 +92,16 @@ onMounted(() => {
             networkStore.setNetwork('previewnet');
             isCustomSettingsVisible = false;
           "
-          >Previewnet</AppButton
         >
+          Previewnet
+        </AppButton>
         <AppButton
           color="primary"
           :class="{active: networkStore.network === 'custom'}"
           @click="isCustomSettingsVisible = true"
-          >Custom</AppButton
         >
+          Custom
+        </AppButton>
       </div>
       <Transition
         name="fade"
@@ -110,45 +114,46 @@ onMounted(() => {
           <div>
             <label class="form-label">Consensus Node Endpoint</label>
             <AppInput
+              v-model="consensusNodeEndpoint"
               type="text"
               :filled="true"
               size="small"
-              v-model="consensusNodeEndpoint"
             />
           </div>
           <div class="mt-4">
             <label class="form-label">Mirror Node GRPC Endpoint</label>
             <AppInput
+              v-model="mirrorNodeGRPCEndpoint"
               type="text"
               :filled="true"
               size="small"
-              v-model="mirrorNodeGRPCEndpoint"
             />
           </div>
           <div class="mt-4">
             <label class="form-label">Mirror Node REST API Endpoint</label>
             <AppInput
+              v-model="mirrorNodeRESTAPIEndpoint"
               type="text"
               :filled="true"
               size="small"
-              v-model="mirrorNodeRESTAPIEndpoint"
             />
           </div>
           <div class="mt-4">
             <label class="form-label">Node Account Id</label>
             <AppInput
+              v-model="nodeAccountId"
               type="text"
               :filled="true"
               size="small"
-              v-model="nodeAccountId"
             />
           </div>
           <AppButton
             color="primary"
             class="mt-4"
             @click="handleSetCustomNetwork"
-            >Set</AppButton
           >
+            Set
+          </AppButton>
         </div>
       </Transition>
     </div>

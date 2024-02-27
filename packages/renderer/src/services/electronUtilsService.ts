@@ -1,5 +1,5 @@
 import {Key, KeyList, PublicKey} from '@hashgraph/sdk';
-import * as HashgraphProto from '@hashgraph/proto';
+import type * as HashgraphProto from '@hashgraph/proto';
 
 /* Electron Utilities Service */
 

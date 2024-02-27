@@ -82,8 +82,8 @@ watch(inputConfrimPassword, val => {
     <h1 class="text-display text-bold text-center">New Password</h1>
     <p class="mt-5 text-main text-center">Please enter new password</p>
     <form
-      @submit="handleFormSubmit"
       class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center"
+      @submit="handleFormSubmit"
     >
       <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
         <AppInput
@@ -96,8 +96,9 @@ watch(inputConfrimPassword, val => {
         <div
           v-if="inputNewPasswordInvalid"
           class="invalid-feedback"
-          >Invalid password.</div
         >
+          Invalid password.
+        </div>
         <AppInput
           v-model="inputConfrimPassword"
           :filled="true"
@@ -119,8 +120,9 @@ watch(inputConfrimPassword, val => {
           class="w-100 mt-5"
           :loading="isLoading"
           :disabled="inputNewPassword.length === 0 || inputConfrimPassword.length === 0"
-          >Continue</AppButton
         >
+          Continue
+        </AppButton>
       </div>
     </form>
   </div>

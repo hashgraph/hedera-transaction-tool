@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {onMounted, reactive, ref, watch} from 'vue';
 import {PublicKey} from '@hashgraph/sdk';
-import {Prisma} from '@prisma/client';
+import type {Prisma} from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
@@ -211,16 +211,18 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
       <RouterLink
         class="btn btn-secondary me-4"
         :to="{name: 'restoreKey'}"
-        >Restore</RouterLink
       >
+        Restore
+      </RouterLink>
 
       <div class="dropdown">
         <AppButton
           color="primary"
           class="w-100 d-flex align-items-center justify-content-center"
           data-bs-toggle="dropdown"
-          ><i class="bi bi-plus text-main me-2"></i> Import</AppButton
         >
+          <i class="bi bi-plus text-main me-2"></i> Import
+        </AppButton>
         <ul class="dropdown-menu w-100 mt-3">
           <li
             class="dropdown-item cursor-pointer"
@@ -321,8 +323,9 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
                   :outline="true"
                   color="secondary"
                   @click="handleDeleteModal(keyPair.id)"
-                  >Remove</AppButton
                 >
+                  Remove
+                </AppButton>
               </td>
             </tr>
           </template>
@@ -409,8 +412,9 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
                   :outline="true"
                   color="secondary"
                   @click="handleDeleteModal(keyPair.id)"
-                  >Remove</AppButton
                 >
+                  Remove
+                </AppButton>
               </td>
             </tr>
           </template>
@@ -451,8 +455,9 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
               type="submit"
               color="primary"
               :disabled="userPassword.length === 0"
-              >Decrypt</AppButton
             >
+              Decrypt
+            </AppButton>
           </div>
         </form>
       </div>
@@ -489,8 +494,9 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
             <AppButton
               type="submit"
               color="primary"
-              >Delete</AppButton
             >
+              Delete
+            </AppButton>
           </div>
         </form>
       </div>
@@ -554,8 +560,9 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
             <AppButton
               type="submit"
               color="primary"
-              >Import</AppButton
             >
+              Import
+            </AppButton>
           </div>
         </form>
       </div>
@@ -615,8 +622,9 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
             <AppButton
               type="submit"
               color="primary"
-              >Import</AppButton
             >
+              Import
+            </AppButton>
           </div>
         </form>
       </div>

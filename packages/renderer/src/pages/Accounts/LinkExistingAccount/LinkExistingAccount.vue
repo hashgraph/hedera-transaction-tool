@@ -50,8 +50,9 @@ const handleLinkAccount = async e => {
       color="primary"
       class="d-flex align-items-center justify-content-center"
       @click="$router.back()"
-      ><i class="bi bi-arrow-left text-subheader me-2"></i> Back</AppButton
     >
+      <i class="bi bi-arrow-left text-subheader me-2"></i> Back
+    </AppButton>
     <form
       class="mt-5 col-12 col-md-8 col-xl-6 col-xxl-4"
       @submit="handleLinkAccount"
@@ -66,13 +67,13 @@ const handleLinkAccount = async e => {
         >
         <AppInput
           :model-value="accountData.accountIdFormatted.value"
-          @update:model-value="v => (accountData.accountId.value = v)"
           :filled="true"
           data-bs-toggle="tooltip"
           data-bs-placement="right"
           data-bs-custom-class="wide-tooltip"
           data-bs-title="The Account ID of the account you would like to link on the Hedera network."
           placeholder="0.0.4124"
+          @update:model-value="v => (accountData.accountId.value = v)"
         />
       </div>
       <div class="form-group mt-5">
@@ -87,8 +88,9 @@ const handleLinkAccount = async e => {
         type="submit"
         class="mt-5 w-100"
         :disabled="!accountData.isValid.value"
-        >Link Account</AppButton
       >
+        Link Account
+      </AppButton>
     </form>
   </div>
 </template>

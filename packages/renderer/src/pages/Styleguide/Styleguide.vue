@@ -251,74 +251,85 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
           color="primary"
           size="small"
           class="me-3"
-          >Primary small</AppButton
         >
+          Primary small
+        </AppButton>
         <AppButton
           color="secondary"
           size="small"
           class="me-3"
-          >Secondary small</AppButton
         >
+          Secondary small
+        </AppButton>
       </div>
       <div class="col-12 mb-4">
         <AppButton
           color="primary"
           class="me-3"
-          >Primary</AppButton
         >
+          Primary
+        </AppButton>
         <AppButton
           color="secondary"
           class="me-3"
-          >Secondary</AppButton
         >
+          Secondary
+        </AppButton>
         <AppButton
           color="primary"
           :loading="true"
           class="me-3"
-          >Primary</AppButton
         >
+          Primary
+        </AppButton>
       </div>
       <div class="col-12 mb-4">
         <AppButton
           color="primary"
           size="large"
           class="me-3"
-          >Primary Large</AppButton
         >
+          Primary Large
+        </AppButton>
         <AppButton
           color="secondary"
           size="large"
           class="me-3"
-          >Secondary Large</AppButton
         >
+          Secondary Large
+        </AppButton>
       </div>
       <div class="col-12 mb-4">
         <AppButton
           color="primary"
           outline
           class="me-3"
-          >Primary outline</AppButton
         >
+          Primary outline
+        </AppButton>
         <AppButton
           color="secondary"
           outline
           class="me-3"
-          >Secondary outline</AppButton
         >
+          Secondary outline
+        </AppButton>
       </div>
       <div class="col-12 mb-4">
         <AppButton
           color="primary"
           class="me-3"
           disabled
-          >Primary disabled</AppButton
         >
+          Primary disabled
+        </AppButton>
         <AppButton
           color="secondary"
           class="me-3"
           disabled
-          >Secondary disabled</AppButton
         >
+          Secondary disabled
+        </AppButton>
       </div>
     </div>
 
@@ -476,8 +487,8 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
             >
           </label>
           <AppInput
-            type="file"
             id="fileUpload"
+            type="file"
           />
         </div>
       </div>

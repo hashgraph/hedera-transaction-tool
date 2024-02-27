@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {ref, onMounted} from 'vue';
-import {Hbar, Key, KeyList, Transaction, TransferTransaction} from '@hashgraph/sdk';
+import type {Key, Transaction} from '@hashgraph/sdk';
+import {Hbar, KeyList, TransferTransaction} from '@hashgraph/sdk';
 
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
@@ -210,9 +211,9 @@ const columnClass = 'col-4 col-xxxl-3';
         <template v-else>
           <AppInput
             :model-value="payerData.accountIdFormatted.value"
-            @update:model-value="v => (payerData.accountId.value = v)"
             :filled="true"
             placeholder="Enter Payer ID"
+            @update:model-value="v => (payerData.accountId.value = v)"
           />
         </template>
       </div>
@@ -256,16 +257,16 @@ const columnClass = 'col-4 col-xxxl-3';
 
         <AppInput
           :model-value="senderData.accountIdFormatted.value"
-          @update:model-value="v => (senderData.accountId.value = v)"
           :filled="true"
           placeholder="Enter Sender ID"
+          @update:model-value="v => (senderData.accountId.value = v)"
         />
       </div>
 
       <div
+        v-if="senderData.key.value"
         class="form-group mt-6"
         :class="[columnClass]"
-        v-if="senderData.key.value"
       >
         <AppButton
           :outline="true"
@@ -275,8 +276,9 @@ const columnClass = 'col-4 col-xxxl-3';
             isKeyStructureModalShown = true;
             keyStructureComponentKey = senderData.key.value;
           "
-          >Show Key</AppButton
         >
+          Show Key
+        </AppButton>
       </div>
     </div>
 
@@ -293,16 +295,16 @@ const columnClass = 'col-4 col-xxxl-3';
         >
         <AppInput
           :value="receiverData.accountIdFormatted.value"
-          @input="receiverData.accountId.value = ($event.target as HTMLInputElement).value"
           :filled="true"
           placeholder="Enter Receiver ID"
+          @input="receiverData.accountId.value = ($event.target as HTMLInputElement).value"
         />
       </div>
 
       <div
+        v-if="receiverData.accountInfo.value?.receiverSignatureRequired && receiverData.key.value"
         class="form-group mt-6"
         :class="[columnClass]"
-        v-if="receiverData.accountInfo.value?.receiverSignatureRequired && receiverData.key.value"
       >
         <AppButton
           :outline="true"
@@ -312,8 +314,9 @@ const columnClass = 'col-4 col-xxxl-3';
             isKeyStructureModalShown = true;
             keyStructureComponentKey = receiverData.key.value;
           "
-          >Show Key</AppButton
         >
+          Show Key
+        </AppButton>
       </div>
     </div>
 

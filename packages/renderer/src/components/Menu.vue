@@ -57,8 +57,8 @@ const menuItems = [
           class="link-menu mt-2"
           :to="item.link"
         >
-          <i :class="item.icon"></i><span>{{ item.title }}</span></RouterLink
-        >
+          <i :class="item.icon"></i><span>{{ item.title }}</span>
+        </RouterLink>
       </template>
     </div>
 
@@ -67,8 +67,9 @@ const menuItems = [
         class="link-menu mt-2"
         to="/settings/general"
         :class="{active: $route.path.startsWith('/settings')}"
-        ><i class="bi bi-wrench"></i><span>Settings</span></RouterLink
       >
+        <i class="bi bi-wrench"></i><span>Settings</span>
+      </RouterLink>
       <!-- <RouterLink class="link-menu mt-2" to="/help"
         ><i class="bi bi-question-circle"></i><span>Help</span></RouterLink
       > -->

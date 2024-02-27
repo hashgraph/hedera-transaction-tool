@@ -67,10 +67,10 @@ async function handleOrganizationChange(e: Event) {
       </span> -->
       <div class="d-none me-4">
         <select
+          ref="organizationsDropDownRef"
           class="form-select form-select-sm"
           name="serverURL"
           @change="handleOrganizationChange"
-          ref="organizationsDropDownRef"
         >
           <option
             value="local"

@@ -4,7 +4,8 @@ import {computed, onBeforeMount, ref} from 'vue';
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
-import AppTabs, {TabItem} from '@renderer/components/ui/AppTabs.vue';
+import type {TabItem} from '@renderer/components/ui/AppTabs.vue';
+import AppTabs from '@renderer/components/ui/AppTabs.vue';
 import Generate from './Generate.vue';
 import Import from './Import.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -34,8 +35,8 @@ onBeforeMount(() => {
 <template>
   <div>
     <AppTabs
-      :items="tabItems"
       v-model:activeIndex="activeTabIndex"
+      :items="tabItems"
       class="mt-8 w-100"
       nav-item-class="flex-1"
       nav-item-button-class="justify-content-center"
@@ -54,8 +55,9 @@ onBeforeMount(() => {
             color="primary"
             class="w-100"
             @click="handleNext"
-            >Next</AppButton
           >
+            Next
+          </AppButton>
         </div>
       </div>
     </template>

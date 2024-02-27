@@ -13,7 +13,7 @@ import {isAccountId, isFileId} from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import {Prisma} from '@prisma/client';
+import type {Prisma} from '@prisma/client';
 import {FileId} from '@hashgraph/sdk';
 
 /* Stores */
@@ -65,8 +65,9 @@ const handleLinkFile = async e => {
       color="primary"
       class="d-flex align-items-center justify-content-center"
       @click="$router.back()"
-      ><i class="bi bi-arrow-left text-subheader me-2"></i> Back</AppButton
     >
+      <i class="bi bi-arrow-left text-subheader me-2"></i> Back
+    </AppButton>
     <form
       class="mt-5 col-12 col-md-8 col-xl-6 col-xxl-4"
       @submit="handleLinkFile"
@@ -103,8 +104,9 @@ const handleLinkFile = async e => {
         type="submit"
         class="mt-5 w-100"
         :disabled="!isFileId(fileId)"
-        >Link File</AppButton
       >
+        Link File
+      </AppButton>
     </form>
   </div>
 </template>
