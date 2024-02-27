@@ -9,6 +9,7 @@ import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
+import { useRoute } from 'vue-router';
 
 import { execute, signTransaction, storeTransaction } from '@renderer/services/transactionService';
 import { openExternal } from '@renderer/services/electronUtilsService';
@@ -23,6 +24,7 @@ import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import { ableToSign } from '@renderer/utils/sdk';
+import { deleteDraft, getDraft } from '@renderer/services/transactionDraftsService';
 
 /* Props */
 const props = defineProps<{
@@ -39,6 +41,7 @@ const keyPairs = useKeyPairsStore();
 
 /* Composables */
 const toast = useToast();
+const route = useRoute();
 
 /* State */
 const transactionResult = ref<{
@@ -169,7 +172,19 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     status = receipt.status._code;
 
     isExecutedModalShown.value = true;
+
     props.onExecuted && props.onExecuted(response, receipt);
+
+    if (route.query.draftId) {
+      try {
+        const draft = await getDraft(route.query.draftId.toString());
+        if (!draft.isTemplate) {
+          await deleteDraft(route.query.draftId.toString());
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
 
     if (unmounted.value) {
       toast.success('Transaction executed', { position: 'bottom-right' });
