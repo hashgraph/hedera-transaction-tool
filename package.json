@@ -7,7 +7,7 @@
     "url": "https://github.com/LimeChain"
   },
   "repository": "https://github.com/LimeChain/hedera-transaction-tool-release",
-  "main": "./out/main/index.js",
+  "main": "dist-electron/main/index.js",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts,.vue --fix",
@@ -16,8 +16,8 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "start": "vite preview",
     "devTools": "./node_modules/.bin/vue-devtools",
-    "dev": "vite dev -w",
-    "build": "npm run typecheck && vite build",
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:win": "npm run build && electron-builder --win --config",
     "build:mac": "npm run build && electron-builder --mac",
@@ -64,7 +64,6 @@
     "typescript": "^5.3.3",
     "vite": "^5.0.11",
     "vite-plugin-electron": "^0.28.0",
-    "vite-plugin-electron-renderer": "^0.14.5",
     "vite-plugin-eslint": "^1.8.1",
     "vue": "^3.4.15",
     "vue-tsc": "^1.8.27"
