@@ -1,23 +1,24 @@
 <script setup lang="ts">
-import {computed, onMounted, ref} from 'vue';
-import {KeyList, PublicKey} from '@hashgraph/sdk';
-import type {HederaAccount} from '@prisma/client';
+import { computed, onMounted, ref } from 'vue';
+import { KeyList, PublicKey } from '@hashgraph/sdk';
+import { HederaAccount } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import {useToast} from 'vue-toast-notification';
+import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import {getAll, remove, changeNickname} from '@renderer/services/accountsService';
-import {getKeyListLevels} from '@renderer/services/keyPairService';
-import {getDollarAmount} from '@renderer/services/mirrorNodeDataService';
+import { getAll, remove, changeNickname } from '@renderer/services/accountsService';
+import { getKeyListLevels } from '@renderer/services/keyPairService';
+import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 
-import {getFormattedDateFromTimestamp} from '@renderer/utils/transactions';
+import { getFormattedDateFromTimestamp } from '@renderer/utils/transactions';
 
-import {transactionTypeKeys} from '../CreateTransaction/txTypeComponentMapping';
+import { transactionTypeKeys } from '../CreateTransaction/txTypeComponentMapping';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 
@@ -82,7 +83,7 @@ const handleUnlinkAccount = async () => {
 
   isUnlinkAccountModalShown.value = false;
 
-  toast.success('Account Unlinked!', {position: 'bottom-right'});
+  toast.success('Account Unlinked!', { position: 'bottom-right' });
 };
 
 const handleStartNicknameEdit = () => {
@@ -143,34 +144,29 @@ const handleChangeNickname = async () => {
   <div class="p-5">
     <div class="d-flex justify-content-between align-items-center">
       <h1 class="text-title text-bold">Accounts</h1>
-      <div class="d-flex justify-content-end align-items-center">
+      <div v-if="accounts.length > 0" class="d-flex justify-content-end align-items-center">
         <AppButton
           :outline="true"
           color="secondary"
           class="me-3"
           @click="isUnlinkAccountModalShown = true"
+          >Unlink</AppButton
         >
-          Unlink
-        </AppButton>
-        <div
-          v-if="!accountData.accountInfo.value?.deleted"
-          class="dropdown"
-        >
+        <div class="dropdown" v-if="!accountData.accountInfo.value?.deleted">
           <AppButton
             color="primary"
             class="w-100 d-flex align-items-center justify-content-center"
             data-bs-toggle="dropdown"
+            >Update</AppButton
           >
-            Update
-          </AppButton>
           <ul class="dropdown-menu mt-3">
             <li
               class="dropdown-item cursor-pointer"
               @click="
                 $router.push({
                   name: 'createTransaction',
-                  params: {type: transactionTypeKeys.deleteAccount},
-                  query: {accountId: accountData.accountIdFormatted.value},
+                  params: { type: transactionTypeKeys.deleteAccount },
+                  query: { accountId: accountData.accountIdFormatted.value },
                 })
               "
             >
@@ -181,8 +177,8 @@ const handleChangeNickname = async () => {
               @click="
                 $router.push({
                   name: 'createTransaction',
-                  params: {type: transactionTypeKeys.updateAccount},
-                  query: {accountId: accountData.accountIdFormatted.value},
+                  params: { type: transactionTypeKeys.updateAccount },
+                  query: { accountId: accountData.accountIdFormatted.value },
                 })
               "
             >
@@ -200,9 +196,8 @@ const handleChangeNickname = async () => {
             size="large"
             class="w-100 d-flex align-items-center justify-content-center"
             data-bs-toggle="dropdown"
+            >Add new</AppButton
           >
-            Add new
-          </AppButton>
           <ul class="dropdown-menu w-100 mt-3">
             <li
               class="dropdown-item cursor-pointer"
@@ -250,10 +245,7 @@ const handleChangeNickname = async () => {
         </div> -->
         <hr class="separator my-5" />
         <div>
-          <template
-            v-for="account in accounts"
-            :key="account.accountId"
-          >
+          <template v-for="account in accounts" :key="account.accountId">
             <div
               class="container-card-account p-4 mt-3"
               :class="{
@@ -273,14 +265,8 @@ const handleChangeNickname = async () => {
         </div>
       </div>
       <div class="col-8 col-xxl-9 ps-4 pt-0">
-        <Transition
-          name="fade"
-          mode="out-in"
-        >
-          <div
-            v-if="accountData.isValid.value"
-            class="h-100 position-relative"
-          >
+        <Transition name="fade" mode="out-in">
+          <div v-if="accountData.isValid.value" class="h-100 position-relative">
             <div class="row align-items-center">
               <div class="col-5">
                 <p class="text-small text-semi-bold">Nickname</p>
@@ -303,7 +289,7 @@ const handleChangeNickname = async () => {
                   }}
 
                   <span
-                    class="bi bi-pencil-square text-primary ms-1"
+                    class="bi bi-pencil-square text-primary ms-1 cursor-pointer"
                     @click="handleStartNicknameEdit"
                   ></span>
                 </p>
@@ -327,9 +313,9 @@ const handleChangeNickname = async () => {
                       >-{{ accountData.accoundIdWithChecksum.value[1] }}</span
                     >
                   </template>
-                  <template v-else>
-                    <span>{{ accountData.accoundIdWithChecksum.value }}</span>
-                  </template>
+                  <template v-else
+                    ><span>{{ accountData.accoundIdWithChecksum.value }}</span></template
+                  >
 
                   <i
                     class="bi bi-box-arrow-up-right link-primary cursor-pointer ms-2"
@@ -364,9 +350,7 @@ const handleChangeNickname = async () => {
               <div class="col-7">
                 <template v-if="accountData.key.value instanceof KeyList && true">
                   Complex Key ({{ getKeyListLevels(accountData.key.value) }} levels)
-                  <span
-                    class="link-primary cursor-pointer"
-                    @click="isKeyStructureModalShown = true"
+                  <span class="link-primary cursor-pointer" @click="isKeyStructureModalShown = true"
                     >See details</span
                   >
                 </template>
@@ -446,10 +430,7 @@ const handleChangeNickname = async () => {
                 </p>
               </div>
             </div>
-            <div
-              v-if="accountData.accountInfo.value?.autoRenewPeriod"
-              class="mt-4 row"
-            >
+            <div class="mt-4 row" v-if="accountData.accountInfo.value?.autoRenewPeriod">
               <div class="col-5"><p class="text-small text-semi-bold">Auto Renew Period</p></div>
               <div class="col-7">
                 <p class="text-small text-semi-bold">
@@ -496,23 +477,17 @@ const handleChangeNickname = async () => {
           :account-key="accountData.key.value"
         />
 
-        <AppModal
-          v-model:show="isUnlinkAccountModalShown"
-          class="common-modal"
-        >
+        <AppModal v-model:show="isUnlinkAccountModalShown" class="common-modal">
           <div class="modal-body">
             <i
               class="bi bi-x-lg d-inline-block cursor-pointer"
               style="line-height: 16px"
               @click="isUnlinkAccountModalShown = false"
             ></i>
-            <div class="text-center mt-5">
-              <i
-                class="bi bi-trash large-icon"
-                style="line-height: 16px"
-              ></i>
+            <div class="text-center">
+              <AppCustomIcon :name="'bin'" style="height: 160px" />
             </div>
-            <h3 class="text-center text-title text-bold mt-5">Unlink account</h3>
+            <h3 class="text-center text-title text-bold mt-3">Unlink account</h3>
             <p class="text-center text-small text-secondary mt-4">
               Are you sure you want to remove this Account from your Account list?
             </p>
@@ -523,9 +498,8 @@ const handleChangeNickname = async () => {
                   color="secondary"
                   class="w-100"
                   @click="isUnlinkAccountModalShown = false"
+                  >Cancel</AppButton
                 >
-                  Cancel
-                </AppButton>
               </div>
               <div class="col-6">
                 <AppButton
@@ -533,9 +507,8 @@ const handleChangeNickname = async () => {
                   color="primary"
                   class="w-100"
                   @click="handleUnlinkAccount"
+                  >Unlink</AppButton
                 >
-                  Unlink
-                </AppButton>
               </div>
             </div>
           </div>

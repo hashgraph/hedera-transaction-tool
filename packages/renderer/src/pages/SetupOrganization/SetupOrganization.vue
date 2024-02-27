@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import {ref} from 'vue';
+import { ref } from 'vue';
 
 import useOrganizationsStore from '@renderer/stores/storeOrganizations';
 import useUserStore from '@renderer/stores/storeUser';
 
-import {useToast} from 'vue-toast-notification';
-import {useRouter} from 'vue-router';
+import { useToast } from 'vue-toast-notification';
+import { useRouter } from 'vue-router';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -37,14 +37,14 @@ const handleContinue = async (e: Event) => {
     user.data.mode = 'organization';
     user.data.activeServerURL = serverUrl.value;
 
-    toast.error('Organizations Added', {position: 'bottom-right'});
-    router.push({name: 'welcome'});
+    toast.error('Organizations Added', { position: 'bottom-right' });
+    router.push({ name: 'welcome' });
   } catch (err: any) {
     let message = 'Failed to add organization';
     if (err.message && typeof err.message === 'string') {
       message = err.message;
     }
-    toast.error(message, {position: 'bottom-right'});
+    toast.error(message, { position: 'bottom-right' });
   }
 };
 </script>
@@ -55,8 +55,8 @@ const handleContinue = async (e: Event) => {
     <h1 class="text-huge text-bold text-center">Setup Organization</h1>
     <p class="mt-5">Please Enter Organisation details</p>
     <form
-      class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
       @submit="handleContinue"
+      class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
     >
       <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
         <AppInput
@@ -86,9 +86,8 @@ const handleContinue = async (e: Event) => {
           color="primary"
           size="large"
           class="w-100"
+          >Continue</AppButton
         >
-          Continue
-        </AppButton>
       </div>
     </form>
   </div>

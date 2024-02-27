@@ -1,26 +1,29 @@
 <script setup lang="ts">
-import {computed, onBeforeMount, reactive, ref} from 'vue';
+import { computed, onBeforeMount, reactive, ref } from 'vue';
 
-import type {TransactionDraft} from '@prisma/client';
+import { TransactionDraft } from '@prisma/client';
 
-import {useRouter} from 'vue-router';
-import {useToast} from 'vue-toast-notification';
+import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toast-notification';
 import useUserStore from '@renderer/stores/storeUser';
 
-import {getDraft, getDrafts, deleteDraft} from '@renderer/services/transactionDraftsService';
+import { getDraft, getDrafts, deleteDraft } from '@renderer/services/transactionDraftsService';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppLoader from '@renderer/components/ui/AppLoader.vue';
 
 /* Store */
 const user = useUserStore();
 
 /* State */
 const drafts = ref<TransactionDraft[]>([]);
-const sort = reactive<{field: string; direction: 'asc' | 'desc'}>({
+const sort = reactive<{ field: string; direction: 'asc' | 'desc' }>({
   field: 'timestamp',
   direction: 'asc',
 });
+const isLoading = ref(true);
 
+/* Computed */
 const generatedClass = computed(() => {
   return sort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
 });
@@ -64,7 +67,7 @@ const handleDeleteDraft = async (id: string) => {
 
   drafts.value = drafts.value.filter(d => d.id !== id);
 
-  toast.success('Draft successfully deleted', {position: 'bottom-right'});
+  toast.success('Draft successfully deleted', { position: 'bottom-right' });
 };
 
 const handleContinueDraft = async (id: string) => {
@@ -86,13 +89,22 @@ const getOpositeDirection = () => (sort.direction === 'asc' ? 'desc' : 'asc');
 
 /* Hooks */
 onBeforeMount(async () => {
-  drafts.value = await getDrafts(user.data.id);
-  handleSort('timestamp', 'desc');
+  try {
+    drafts.value = await getDrafts(user.data.id);
+    handleSort('timestamp', 'desc');
+  } catch (error) {
+    throw new Error((error as any).message);
+  } finally {
+    isLoading.value = false;
+  }
 });
 </script>
 
 <template>
-  <table class="table-custom">
+  <template v-if="isLoading">
+    <AppLoader />
+  </template>
+  <table v-else class="table-custom">
     <thead>
       <tr>
         <th class="w-10 text-end">#</th>
@@ -117,11 +129,7 @@ onBeforeMount(async () => {
             @click="handleSort('type', sort.field === 'type' ? getOpositeDirection() : 'asc')"
           >
             <span>Transaction Type</span>
-            <i
-              v-if="sort.field === 'type'"
-              class="bi text-title"
-              :class="[generatedClass]"
-            ></i>
+            <i v-if="sort.field === 'type'" class="bi text-title" :class="[generatedClass]"></i>
           </div>
         </th>
         <th class="text-center">
@@ -130,10 +138,7 @@ onBeforeMount(async () => {
       </tr>
     </thead>
     <tbody>
-      <template
-        v-for="(draft, i) in drafts"
-        :key="draft.id"
-      >
+      <template v-for="(draft, i) in drafts" :key="draft.id">
         <tr>
           <td>{{ i + 1 }}</td>
           <td>
@@ -146,19 +151,10 @@ onBeforeMount(async () => {
           </td>
           <td class="text-center">
             <div class="d-flex justify-content-center flex-wrap gap-3">
-              <AppButton
-                :outline="true"
-                color="secondary"
-                @click="handleDeleteDraft(draft.id)"
+              <AppButton :outline="true" color="secondary" @click="handleDeleteDraft(draft.id)"
+                >Delete</AppButton
               >
-                Delete
-              </AppButton>
-              <AppButton
-                color="primary"
-                @click="handleContinueDraft(draft.id)"
-              >
-                Continue
-              </AppButton>
+              <AppButton color="primary" @click="handleContinueDraft(draft.id)">Continue</AppButton>
             </div>
           </td>
         </tr>

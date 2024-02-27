@@ -39,11 +39,15 @@ npm run dev
 ### Additional Commands
 
 ```bash
-npm run build:cros # builds application, distributable files can be found in "dist" folder (Only mac is supported)
+npm run build:cross # builds application, distributable files can be found in "dist" folder (Only mac is supported)
 
 # OR
 
 npm run build:mac # uses mac as build target
+```
+
+```bash
+npm run test # Runs the tests in the application
 ```
 
 ## Publish

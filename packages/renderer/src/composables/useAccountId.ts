@@ -2,7 +2,7 @@ import {computed, ref, watch} from 'vue';
 
 import {AccountId, Hbar, HbarUnit} from '@hashgraph/sdk';
 
-import type {IAccountInfoParsed, CryptoAllowance} from '../../../../types/interfaces';
+import type {CryptoAllowance, IAccountInfoParsed} from '../../../../types/interfaces';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 

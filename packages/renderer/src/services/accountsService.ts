@@ -1,4 +1,4 @@
-import {getMessageFromIPCError} from '@renderer/utils';
+import { getMessageFromIPCError } from '@renderer/utils';
 
 export const getAll = async (userId: string) => {
   try {

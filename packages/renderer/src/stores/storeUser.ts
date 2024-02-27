@@ -1,7 +1,7 @@
-import {reactive} from 'vue';
-import {defineStore} from 'pinia';
+import { reactive } from 'vue';
+import { defineStore } from 'pinia';
 
-import type {User} from '@prisma/client';
+import { User } from '@prisma/client';
 
 export interface UserStore {
   isLoggedIn: boolean;

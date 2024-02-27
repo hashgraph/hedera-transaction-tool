@@ -1,21 +1,31 @@
 <script setup lang="ts">
-import {onMounted, ref} from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
-import type {HederaFile} from '@prisma/client';
+import { FileId, FileInfo } from '@hashgraph/sdk';
+
+import { HederaFile } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import {useToast} from 'vue-toast-notification';
+import { useToast } from 'vue-toast-notification';
 
-import {getAll, remove} from '@renderer/services/filesService';
+import { getAll, remove, showContentInTemp, update } from '@renderer/services/filesService';
+import { flattenKeyList, getKeyListLevels } from '@renderer/services/keyPairService';
 
-import {transactionTypeKeys} from '@renderer/pages/CreateTransaction/txTypeComponentMapping';
+import { getUInt8ArrayFromString, convertBytes } from '@renderer/utils';
+import { getFormattedDateFromTimestamp } from '@renderer/utils/transactions';
+
+import { transactionTypeKeys } from '@renderer/pages/CreateTransaction/txTypeComponentMapping';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 
 // TODO: Replace with real data from SQLite (temp solution) or BE DB
 const specialFiles: HederaFile[] = [
@@ -24,55 +34,97 @@ const specialFiles: HederaFile[] = [
     file_id: '0.0.101',
     nickname: 'Address Book',
     user_id: user.data.id,
+    description: null,
+    metaBytes: null,
+    contentBytes: null,
   },
   {
     id: '0.0.102',
     file_id: '0.0.102',
     nickname: 'Nodes Details',
     user_id: user.data.id,
+    description: null,
+    metaBytes: null,
+    contentBytes: null,
   },
   {
     id: '0.0.111',
     file_id: '0.0.111',
     nickname: 'Fee Schedules',
     user_id: user.data.id,
+    description: null,
+    metaBytes: null,
+    contentBytes: null,
   },
   {
     id: '0.0.112',
     file_id: '0.0.112',
     nickname: 'Exchange Rate Set',
     user_id: user.data.id,
+    description: null,
+    metaBytes: null,
+    contentBytes: null,
   },
   {
     id: '0.0.121',
     file_id: '0.0.121',
     nickname: 'Application Properties',
     user_id: user.data.id,
+    description: null,
+    metaBytes: null,
+    contentBytes: null,
   },
   {
     id: '0.0.122',
     file_id: '0.0.122',
     nickname: 'API Permission Properties',
     user_id: user.data.id,
+    description: null,
+    metaBytes: null,
+    contentBytes: null,
   },
   {
     id: '0.0.123',
     file_id: '0.0.123',
     nickname: 'Throttle Definitions',
     user_id: user.data.id,
+    description: null,
+    metaBytes: null,
+    contentBytes: null,
   },
 ];
+const specialFilesIds = specialFiles.map(f => f.file_id);
+
 /* State */
 const files = ref<HederaFile[]>(specialFiles);
-const selectedFileId = ref('0.0.101');
+const selectedFile = ref<HederaFile | null>(null);
 const isUnlinkFileModalShown = ref(false);
+const isKeyStructureModalShown = ref(false);
+const isNicknameInputShown = ref(false);
+const nicknameInputRef = ref<HTMLInputElement | null>(null);
+const isDescriptionInputShown = ref(false);
+const descriptionInputRef = ref<HTMLInputElement | null>(null);
+
+/* Computed */
+const selectedFileInfo = computed(() =>
+  selectedFile.value?.metaBytes
+    ? FileInfo.fromBytes(getUInt8ArrayFromString(selectedFile.value.metaBytes))
+    : null,
+);
+const selectedFileIdWithChecksum = computed(
+  () =>
+    selectedFile.value &&
+    FileId.fromString(selectedFile.value?.file_id)
+      .toStringWithChecksum(network.client)
+      .split('-'),
+);
 
 /* Composables */
 const toast = useToast();
 
 /* Handlers */
 const handleFileItemClick = fileId => {
-  selectedFileId.value = fileId;
+  selectedFile.value = files.value.find(f => f.file_id === fileId) || null;
 };
 
 const handleUnlinkFile = async () => {
@@ -80,11 +132,66 @@ const handleUnlinkFile = async () => {
     throw new Error('Please login');
   }
 
-  files.value = specialFiles.concat(await remove(user.data.id, selectedFileId.value));
+  if (!selectedFile.value) {
+    throw new Error('Please select file first');
+  }
+
+  files.value = specialFiles.concat(await remove(user.data.id, selectedFile.value.file_id));
 
   isUnlinkFileModalShown.value = false;
 
-  toast.success('File Unlinked!', {position: 'bottom-right'});
+  toast.success('File Unlinked!', { position: 'bottom-right' });
+};
+
+const handleStartNicknameEdit = () => {
+  if (!selectedFile.value || specialFilesIds.includes(selectedFile.value.id)) return;
+
+  isNicknameInputShown.value = true;
+  descriptionInputRef.value?.blur();
+
+  if (nicknameInputRef.value) {
+    nicknameInputRef.value.value = selectedFile.value?.nickname || '';
+
+    setTimeout(() => {
+      nicknameInputRef.value?.focus();
+    }, 50);
+  }
+};
+
+const handleChangeNickname = async () => {
+  isNicknameInputShown.value = false;
+
+  if (selectedFile.value) {
+    files.value = specialFiles.concat(
+      await update(selectedFile.value.file_id, user.data.id, {
+        nickname: nicknameInputRef.value?.value,
+      }),
+    );
+  }
+};
+
+const handleStartDescriptionEdit = () => {
+  if (!selectedFile.value || specialFilesIds.includes(selectedFile.value.id)) return;
+
+  isDescriptionInputShown.value = true;
+  nicknameInputRef.value?.blur();
+
+  if (descriptionInputRef.value) {
+    setTimeout(() => {
+      descriptionInputRef.value?.focus();
+    }, 50);
+  }
+};
+
+const handleChangeDescription = async () => {
+  isDescriptionInputShown.value = false;
+  if (selectedFile.value) {
+    files.value = specialFiles.concat(
+      await update(selectedFile.value.file_id, user.data.id, {
+        description: descriptionInputRef.value?.value,
+      }),
+    );
+  }
 };
 
 /* Hooks */
@@ -95,6 +202,11 @@ onMounted(async () => {
 
   files.value = files.value.concat(await getAll(user.data.id));
 });
+
+/* Watchers */
+watch(files, newFiles => {
+  selectedFile.value = newFiles.find(f => f.file_id === selectedFile.value?.file_id) || newFiles[0];
+});
 </script>
 
 <template>
@@ -102,40 +214,45 @@ onMounted(async () => {
     <div class="d-flex justify-content-between align-items-center">
       <h1 class="text-title text-bold">Files</h1>
 
-      <div class="d-flex justify-content-end align-items-center">
-        <AppButton
-          class="me-3"
-          color="secondary"
-          @click="isUnlinkFileModalShown = true"
+      <div v-if="files.length > 0" class="d-flex justify-content-end align-items-center">
+        <AppButton class="me-3" color="secondary" @click="isUnlinkFileModalShown = true"
+          >Remove</AppButton
         >
-          Remove
-        </AppButton>
         <AppButton
           class="me-3"
           color="secondary"
           @click="
             $router.push({
               name: 'createTransaction',
-              params: {type: transactionTypeKeys.updateFile},
-              query: {fileId: selectedFileId},
+              params: { type: transactionTypeKeys.updateFile },
+              query: { fileId: selectedFile?.file_id },
             })
           "
+          >Update</AppButton
         >
-          Update
-        </AppButton>
-
+        <AppButton
+          class="me-3"
+          color="secondary"
+          @click="
+            $router.push({
+              name: 'createTransaction',
+              params: { type: transactionTypeKeys.appendToFile },
+              query: { fileId: selectedFile?.file_id },
+            })
+          "
+          >Append</AppButton
+        >
         <AppButton
           color="secondary"
           @click="
             $router.push({
               name: 'createTransaction',
-              params: {type: transactionTypeKeys.readFile},
-              query: {fileId: selectedFileId},
+              params: { type: transactionTypeKeys.readFile },
+              query: { fileId: selectedFile?.file_id },
             })
           "
+          >Read</AppButton
         >
-          Read
-        </AppButton>
       </div>
     </div>
     <div class="mt-7 h-100 row">
@@ -146,9 +263,8 @@ onMounted(async () => {
             size="large"
             class="w-100 d-flex align-items-center justify-content-center"
             data-bs-toggle="dropdown"
+            >Add new</AppButton
           >
-            Add new
-          </AppButton>
           <ul class="dropdown-menu w-100 mt-3">
             <li
               class="dropdown-item cursor-pointer"
@@ -214,14 +330,11 @@ onMounted(async () => {
         <hr class="separator my-5" />
 
         <div>
-          <template
-            v-for="file in files"
-            :key="file.fileId"
-          >
+          <template v-for="file in files" :key="file.fileId">
             <div
               class="container-card-account p-4 mt-3"
               :class="{
-                'is-selected': selectedFileId === file.file_id,
+                'is-selected': selectedFile?.file_id === file.file_id,
               }"
               @click="handleFileItemClick(file.file_id)"
             >
@@ -233,38 +346,199 @@ onMounted(async () => {
           </template>
         </div>
       </div>
-      <div class="col-8 col-xxl-9 ps-4 pt-0"></div>
-      <AppModal
-        v-model:show="isUnlinkFileModalShown"
-        class="common-modal"
-      >
-        <div class="modal-body">
-          <i
-            class="bi bi-x-lg cursor-pointer"
-            @click="isUnlinkFileModalShown = false"
-          ></i>
-          <div class="text-center mt-5">
-            <i class="bi bi-trash large-icon"></i>
+      <div class="col-8 col-xxl-9 ps-4 pt-0">
+        <Transition name="fade" mode="out-in">
+          <div v-if="selectedFile" class="h-100 position-relative">
+            <div class="row align-items-center">
+              <div class="col-5">
+                <p class="text-small text-semi-bold">Nickname</p>
+              </div>
+              <div class="col-7">
+                <input
+                  v-show="isNicknameInputShown"
+                  ref="nicknameInputRef"
+                  class="form-control is-fill"
+                  @blur="handleChangeNickname"
+                />
+                <p
+                  v-if="!isNicknameInputShown"
+                  class="text-small text-semi-bold py-3"
+                  @dblclick="handleStartNicknameEdit"
+                >
+                  {{ selectedFile?.nickname || 'None' }}
+
+                  <span
+                    v-if="!specialFilesIds.includes(selectedFile.file_id)"
+                    class="bi bi-pencil-square text-primary ms-1 cursor-pointer"
+                    @click="handleStartNicknameEdit"
+                  ></span>
+                </p>
+              </div>
+            </div>
+            <hr class="separator my-4" />
+            <div class="row">
+              <div class="col-5">
+                <p class="text-small text-semi-bold">File ID</p>
+              </div>
+              <div class="col-7">
+                <p class="text-small text-semi-bold">
+                  <template
+                    v-if="selectedFileIdWithChecksum && Array.isArray(selectedFileIdWithChecksum)"
+                  >
+                    <span>{{ selectedFileIdWithChecksum[0] }}</span>
+                    <span class="text-secondary">-{{ selectedFileIdWithChecksum[1] }}</span>
+                  </template>
+                  <template v-else
+                    ><span>{{ selectedFileIdWithChecksum }}</span></template
+                  >
+                </p>
+              </div>
+            </div>
+            <div class="mt-4 row">
+              <div class="col-5">
+                <p class="text-small text-semi-bold">Size</p>
+              </div>
+              <div class="col-7">
+                <p class="text-small">
+                  {{
+                    selectedFileInfo?.size
+                      ? convertBytes(selectedFileInfo.size.toNumber(), {
+                          decimals: 0,
+                        })
+                      : 'Unknown'
+                  }}
+                </p>
+              </div>
+            </div>
+            <div class="mt-4 row" v-if="selectedFile.contentBytes">
+              <div class="col-5">
+                <p class="text-small text-semi-bold">Content</p>
+              </div>
+              <div class="col-7">
+                <AppButton
+                  color="primary"
+                  size="small"
+                  @click="showContentInTemp(user.data.id, selectedFile.file_id)"
+                  >Open</AppButton
+                >
+              </div>
+            </div>
+            <div class="mt-4 row" v-if="selectedFileInfo?.keys">
+              <div class="col-5">
+                <p class="text-small text-semi-bold">Key</p>
+              </div>
+              <div class="col-7">
+                <template v-if="flattenKeyList(selectedFileInfo.keys).length > 1">
+                  Complex Key ({{ getKeyListLevels(selectedFileInfo.keys) }} levels)
+                  <span class="link-primary cursor-pointer" @click="isKeyStructureModalShown = true"
+                    >See details</span
+                  >
+                </template>
+                <template v-else>
+                  <p class="text-secondary text-small">
+                    {{ flattenKeyList(selectedFileInfo.keys)[0].toStringRaw() }}
+                  </p>
+                  <p class="text-small text-semi-bold text-pink mt-3">
+                    {{ flattenKeyList(selectedFileInfo.keys)[0]._key._type }}
+                  </p>
+                </template>
+              </div>
+            </div>
+            <div class="mt-4 row">
+              <div class="col-5"><p class="text-small text-semi-bold">Memo</p></div>
+              <div class="col-7">
+                <p class="text-small text-semi-bold">
+                  {{
+                    selectedFileInfo
+                      ? selectedFileInfo.fileMemo.length > 0
+                        ? selectedFileInfo.fileMemo
+                        : 'None'
+                      : 'Unknown'
+                  }}
+                </p>
+              </div>
+            </div>
+            <div class="mt-4 row">
+              <div class="col-5">
+                <p class="text-small text-semi-bold">Ledger ID</p>
+              </div>
+              <div class="col-7">
+                <p class="text-small text-semi-bold">
+                  {{ selectedFileInfo?.ledgerId || 'Unknown' }}
+                </p>
+              </div>
+            </div>
+            <div class="mt-4 row">
+              <div class="col-5"><p class="text-small text-semi-bold">Expires At</p></div>
+              <div class="col-7">
+                <p class="text-small text-semi-bold">
+                  {{
+                    selectedFileInfo?.expirationTime
+                      ? getFormattedDateFromTimestamp(selectedFileInfo?.expirationTime)
+                      : 'Unknown'
+                  }}
+                </p>
+              </div>
+            </div>
+            <template v-if="selectedFileInfo?.isDeleted">
+              <hr class="separator my-4" />
+              <p class="text-danger">File is deleted</p>
+            </template>
+            <hr class="separator my-4" />
+            <div class="row align-items-start">
+              <div class="col-5">
+                <div class="text-small text-semi-bold">Description</div>
+              </div>
+              <div class="col-7">
+                <textarea
+                  v-if="isDescriptionInputShown"
+                  ref="descriptionInputRef"
+                  class="form-control is-fill"
+                  rows="8"
+                  v-model="selectedFile.description"
+                  @blur="handleChangeDescription"
+                >
+                </textarea>
+                <p
+                  v-if="!isDescriptionInputShown"
+                  class="text-small text-semi-bold"
+                  @dblclick="handleStartDescriptionEdit"
+                >
+                  {{ selectedFile?.description || 'None' }}
+
+                  <span
+                    v-if="!specialFilesIds.includes(selectedFile.file_id)"
+                    class="bi bi-pencil-square text-primary ms-1 cursor-pointer"
+                    @click="handleStartDescriptionEdit"
+                  ></span>
+                </p>
+              </div>
+            </div>
           </div>
-          <h3 class="text-center text-title text-bold mt-5">Unlink file</h3>
+        </Transition>
+
+        <KeyStructureModal
+          v-if="selectedFileInfo"
+          v-model:show="isKeyStructureModalShown"
+          :account-key="selectedFileInfo.keys"
+        />
+      </div>
+      <AppModal v-model:show="isUnlinkFileModalShown" class="common-modal">
+        <div class="modal-body">
+          <i class="bi bi-x-lg cursor-pointer" @click="isUnlinkFileModalShown = false"></i>
+          <div class="text-center">
+            <AppCustomIcon :name="'bin'" style="height: 160px" />
+          </div>
+          <h3 class="text-center text-title text-bold mt-3">Unlink file</h3>
           <p class="text-center text-small text-secondary mt-4">
             Are you sure you want to remove this file from your file list?
           </p>
           <hr class="separator my-5" />
           <div class="d-grid">
-            <AppButton
-              color="primary"
-              @click="handleUnlinkFile"
+            <AppButton color="primary" @click="handleUnlinkFile">Unlink</AppButton>
+            <AppButton color="secondary" class="mt-4" @click="isUnlinkFileModalShown = false"
+              >Cancel</AppButton
             >
-              Unlink
-            </AppButton>
-            <AppButton
-              color="secondary"
-              class="mt-4"
-              @click="isUnlinkFileModalShown = false"
-            >
-              Cancel
-            </AppButton>
           </div>
         </div>
       </AppModal>

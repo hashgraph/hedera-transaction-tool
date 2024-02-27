@@ -1,18 +1,23 @@
 <script setup lang="ts">
-import {onMounted, ref} from 'vue';
-import type {Key, Transaction} from '@hashgraph/sdk';
-import {Hbar, AccountAllowanceApproveTransaction} from '@hashgraph/sdk';
+import { onMounted, ref } from 'vue';
+import {
+  Hbar,
+  Key,
+  AccountAllowanceApproveTransaction,
+  Transaction,
+  KeyList,
+} from '@hashgraph/sdk';
 
-import {useToast} from 'vue-toast-notification';
-import {useRoute} from 'vue-router';
+import { useToast } from 'vue-toast-notification';
+import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import {createTransactionId} from '@renderer/services/transactionService';
-import {getDraft} from '@renderer/services/transactionDraftsService';
+import { createTransactionId } from '@renderer/services/transactionService';
+import { getDraft } from '@renderer/services/transactionDraftsService';
 
-import {getTransactionFromBytes} from '@renderer/utils/transactions';
-import {getDateTimeLocalInputValue} from '@renderer/utils';
-import {isAccountId} from '@renderer/utils/validator';
+import { getTransactionFromBytes } from '@renderer/utils/transactions';
+import { getDateTimeLocalInputValue } from '@renderer/utils';
+import { isAccountId } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -47,11 +52,11 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    if (!isAccountId(payerData.accountId.value)) {
+    if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
       throw Error('Invalid Payer ID');
     }
 
-    if (!isAccountId(ownerData.accountId.value)) {
+    if (!isAccountId(ownerData.accountId.value) || !ownerData.key.value) {
       throw Error('Invalid Owner ID');
     }
 
@@ -61,10 +66,10 @@ const handleCreate = async e => {
 
     transaction.value = createTransaction();
 
-    const requiredSignatures = payerData.keysFlattened.value.concat(ownerData.keysFlattened.value);
-    await transactionProcessor.value?.process(requiredSignatures);
+    const requiredKey = new KeyList([payerData.key.value, ownerData.key.value]);
+    await transactionProcessor.value?.process(requiredKey);
   } catch (err: any) {
-    toast.error(err.message || 'Failed to create transaction', {position: 'bottom-right'});
+    toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
 
@@ -78,15 +83,6 @@ const handleLoadFromDraft = async () => {
 
   if (draft) {
     transaction.value = draftTransaction;
-
-    if (draftTransaction.transactionId) {
-      payerData.accountId.value =
-        draftTransaction.transactionId.accountId?.toString() || payerData.accountId.value;
-    }
-
-    if (draftTransaction.maxTransactionFee) {
-      maxTransactionFee.value = draftTransaction.maxTransactionFee.toBigNumber().toNumber();
-    }
 
     if (draftTransaction.hbarApprovals.length > 0) {
       const hbarApproval = draftTransaction.hbarApprovals[0];
@@ -148,28 +144,21 @@ const columnClass = 'col-4 col-xxxl-3';
     />
 
     <div class="row align-items-end mt-6">
-      <div
-        class="form-group"
-        :class="[columnClass]"
-      >
+      <div class="form-group" :class="[columnClass]">
         <label class="form-label">Owner ID <span class="text-danger">*</span></label>
-        <label
-          v-if="ownerData.isValid.value"
-          class="form-label d-block text-secondary"
+        <label v-if="ownerData.isValid.value" class="form-label d-block text-secondary"
           >Balance: {{ ownerData.accountInfo.value?.balance }}</label
         >
+
         <AppInput
           :model-value="ownerData.accountIdFormatted.value"
+          @update:model-value="v => (ownerData.accountId.value = v)"
           :filled="true"
           placeholder="Enter Owner ID"
-          @update:model-value="v => (ownerData.accountId.value = v)"
         />
       </div>
-      <div
-        v-if="ownerData.key.value"
-        class="form-group"
-        :class="[columnClass]"
-      >
+
+      <div class="form-group" :class="[columnClass]" v-if="ownerData.key.value">
         <AppButton
           :outline="true"
           color="primary"
@@ -178,35 +167,25 @@ const columnClass = 'col-4 col-xxxl-3';
             isKeyStructureModalShown = true;
             keyStructureComponentKey = ownerData.key.value;
           "
+          >Show Key</AppButton
         >
-          Show Key
-        </AppButton>
       </div>
     </div>
 
     <div class="row align-items-end mt-6">
-      <div
-        class="form-group"
-        :class="[columnClass]"
-      >
+      <div class="form-group" :class="[columnClass]">
         <label class="form-label">Spender ID <span class="text-danger">*</span></label>
-        <label
-          v-if="spenderData.isValid.value"
-          class="form-label d-block text-secondary"
+        <label v-if="spenderData.isValid.value" class="form-label d-block text-secondary"
           >Allowance: {{ ownerData.getSpenderAllowance(spenderData.accountId.value) }}</label
         >
         <AppInput
           :model-value="spenderData.accountIdFormatted.value"
+          @update:model-value="v => (spenderData.accountId.value = v)"
           :filled="true"
           placeholder="Enter Spender ID"
-          @update:model-value="v => (spenderData.accountId.value = v)"
         />
       </div>
-      <div
-        v-if="spenderData.key.value"
-        class="form-group"
-        :class="[columnClass]"
-      >
+      <div class="form-group" :class="[columnClass]" v-if="spenderData.key.value">
         <AppButton
           :outline="true"
           color="primary"
@@ -215,24 +194,15 @@ const columnClass = 'col-4 col-xxxl-3';
             isKeyStructureModalShown = true;
             keyStructureComponentKey = spenderData.key.value;
           "
+          >Show Key</AppButton
         >
-          Show Key
-        </AppButton>
       </div>
     </div>
 
     <div class="row mt-6">
-      <div
-        class="form-group"
-        :class="[columnClass]"
-      >
+      <div class="form-group" :class="[columnClass]">
         <label class="form-label">Amount <span class="text-danger">*</span></label>
-        <AppInput
-          v-model="amount"
-          :filled="true"
-          type="number"
-          placeholder="Enter Amount"
-        />
+        <AppInput v-model="amount" :filled="true" type="number" placeholder="Enter Amount" />
       </div>
     </div>
   </form>
@@ -242,7 +212,6 @@ const columnClass = 'col-4 col-xxxl-3';
     :transaction-bytes="transaction?.toBytes() || null"
     :on-close-success-modal-click="
       () => {
-        payerData.accountId.value = '';
         validStart = '';
         maxTransactionFee = 2;
         ownerData.accountId.value = '';
@@ -257,11 +226,11 @@ const columnClass = 'col-4 col-xxxl-3';
     <template #successContent>
       <p class="text-small d-flex justify-content-between align-items mt-2">
         <span class="text-bold text-secondary">Owner Account ID:</span>
-        <span>{{ ownerData.accountId.value }}</span>
+        <span>{{ ownerData.accountIdFormatted.value }}</span>
       </p>
       <p class="text-small d-flex justify-content-between align-items mt-2">
         <span class="text-bold text-secondary">Spender Account ID:</span>
-        <span>{{ spenderData.accountId.value }}</span>
+        <span>{{ spenderData.accountIdFormatted.value }}</span>
       </p>
     </template>
   </TransactionProcessor>

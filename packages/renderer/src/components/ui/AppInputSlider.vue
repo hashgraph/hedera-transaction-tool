@@ -27,15 +27,12 @@ const buttonValues = ['25', '50', '75', '100'];
       <span class="text-title text-numeric">{{ sliderValue }}%</span>
 
       <div class="d-flex mt-2">
-        <template
-          v-for="(buttonValue, index) in buttonValues"
-          :key="index"
-        >
+        <template v-for="(buttonValue, index) in buttonValues" :key="index">
           <AppButtonPercentage
             :class="[index !== 0 ? 'ms-3' : '']"
+            @click="handleButtonClick(buttonValue)"
             :percentage-amount="buttonValue"
             :is-selected="sliderValue === buttonValue"
-            @click="handleButtonClick(buttonValue)"
           />
         </template>
       </div>
@@ -44,13 +41,13 @@ const buttonValues = ['25', '50', '75', '100'];
     <div class="mt-3">
       <input
         :value="sliderValue"
+        @[updateValueOn]="
+          $emit('update:sliderValue', Number(($event.target as HTMLInputElement)?.value))
+        "
         type="range"
         min="0"
         max="100"
         class="form-range"
-        @[updateValueOn]="
-          $emit('update:sliderValue', Number(($event.target as HTMLInputElement)?.value))
-        "
       />
     </div>
   </div>

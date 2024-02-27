@@ -1,6 +1,6 @@
 import {ipcMain} from 'electron';
 
-import type {TransactionDraft} from '@prisma/client';
+import type {Prisma} from '@prisma/client';
 
 import {
   addDraft,
@@ -23,13 +23,17 @@ export default () => {
   ipcMain.handle(createChannelName('getDraft'), (_e, id: string) => getDraft(id));
 
   // Add a draft
-  ipcMain.handle(createChannelName('addDraft'), (_e, transactionDraft: TransactionDraft) =>
-    addDraft(transactionDraft),
+  ipcMain.handle(
+    createChannelName('addDraft'),
+    (_e, transactionDraft: Prisma.TransactionDraftUncheckedCreateInput) =>
+      addDraft(transactionDraft),
   );
 
   // Update a draft
-  ipcMain.handle(createChannelName('updateDraft'), (_e, transactionDraft: TransactionDraft) =>
-    updateDraft(transactionDraft),
+  ipcMain.handle(
+    createChannelName('updateDraft'),
+    (_e, transactionDraft: Prisma.TransactionDraftUncheckedCreateInput) =>
+      updateDraft(transactionDraft),
   );
 
   // Delete specific drafts

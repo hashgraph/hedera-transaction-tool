@@ -1,10 +1,17 @@
-import {getPrismaClient} from '@main/db';
+import path from 'path';
 
-export const getFiles = (userId: string) => {
+import {app, shell} from 'electron';
+
+import type {HederaFile, Prisma} from '@prisma/client';
+
+import {getPrismaClient} from '@main/db';
+import {deleteDirectory, getNumberArrayFromString, saveContentToPath} from '@main/utils';
+
+export const getFiles = async (userId: string) => {
   const prisma = getPrismaClient();
 
   try {
-    return prisma.hederaFile.findMany({
+    return await prisma.hederaFile.findMany({
       where: {
         user_id: userId,
       },
@@ -15,33 +22,29 @@ export const getFiles = (userId: string) => {
   }
 };
 
-export const addFile = async (userId: string, fileId: string, nickname: string = '') => {
+export const addFile = async (file: Prisma.HederaFileUncheckedCreateInput) => {
   const prisma = getPrismaClient();
 
-  const Files = await getFiles(userId);
+  const files = await getFiles(file.user_id);
 
-  if (Files.some(acc => acc.file_id === fileId || (nickname && acc.nickname === nickname))) {
-    throw new Error('File ID or Nickname already exists!');
+  if (files.some(acc => acc.file_id === file.file_id)) {
+    throw new Error('File ID already exists!');
   }
 
   await prisma.hederaFile.create({
-    data: {
-      user_id: userId,
-      file_id: fileId,
-      nickname: nickname,
-    },
+    data: file,
   });
 
-  return await getFiles(userId);
+  return await getFiles(file.user_id);
 };
 
-export const removeFile = async (userId: string, fileId: string, nickname?: string) => {
+export const removeFile = async (userId: string, fileId: string) => {
   const prisma = getPrismaClient();
 
-  const Files = await getFiles(userId);
+  const files = await getFiles(userId);
 
-  if (!Files.some(acc => acc.file_id === fileId || (nickname && acc.nickname === nickname))) {
-    throw new Error(`File ID ${nickname && `or ${nickname}`} not found!`);
+  if (!files.some(acc => acc.file_id === fileId)) {
+    throw new Error('File ID not found!');
   }
 
   await prisma.hederaFile.deleteMany({
@@ -52,4 +55,74 @@ export const removeFile = async (userId: string, fileId: string, nickname?: stri
   });
 
   return await getFiles(userId);
+};
+
+export const updateFile = async (
+  fileId: string,
+  userId: string,
+  file: Prisma.HederaFileUncheckedUpdateInput,
+) => {
+  const prisma = getPrismaClient();
+
+  await prisma.hederaFile.updateMany({
+    where: {
+      file_id: fileId,
+      user_id: userId,
+    },
+    data: {
+      ...file,
+      user_id: userId,
+    },
+  });
+
+  return await getFiles(userId);
+};
+
+export const showContentInTemp = async (userId: string, fileId: string) => {
+  const prisma = getPrismaClient();
+
+  let file: HederaFile | null = null;
+
+  try {
+    file = await prisma.hederaFile.findFirst({
+      where: {
+        user_id: userId,
+        file_id: fileId,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+  }
+
+  if (file === null) {
+    throw new Error('File not found');
+  }
+
+  if (file.contentBytes === null) {
+    throw new Error('File content is unknown');
+  }
+
+  const filePath = path.join(app.getPath('temp'), 'electronHederaFiles', `${fileId}.txt`);
+  const content = Buffer.from(getNumberArrayFromString(file.contentBytes));
+
+  try {
+    const saved = await saveContentToPath(filePath, content);
+
+    if (saved) {
+      shell.showItemInFolder(filePath);
+      shell.openPath(filePath);
+    }
+  } catch (error) {
+    console.log(error);
+    throw new Error('Failed to open file content');
+  }
+};
+
+export const deleteTempFolder = async () => {
+  try {
+    const directoryPath = path.join(app.getPath('temp'), 'electronHederaFiles');
+    await deleteDirectory(directoryPath);
+  } catch (error) {
+    console.log(error);
+  }
 };

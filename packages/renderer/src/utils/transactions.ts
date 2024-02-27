@@ -1,11 +1,12 @@
-import type {TransactionReceipt, TransactionResponse} from '@hashgraph/sdk';
-import {Timestamp, Status, AccountId, Transaction as Tx} from '@hashgraph/sdk';
+import type {TransactionReceipt} from '@hashgraph/sdk';
+import {Timestamp, Status, Transaction as Tx} from '@hashgraph/sdk';
 import type {Transaction} from '@prisma/client';
+
+import type {HederaSpecialFileId} from '../../../../types/interfaces';
 
 import type {Network} from '@renderer/stores/storeNetwork';
 
 import {openExternal} from '@renderer/services/electronUtilsService';
-import type {HederaSpecialFileId} from '../../../../types/interfaces';
 
 export const getTransactionDate = (transaction: Transaction): string => {
   return new Timestamp(
@@ -21,7 +22,11 @@ export const getTransactionId = (transaction: Transaction): string => {
 };
 
 export const getTransactionStatus = (transaction: Transaction): string => {
-  return Status._fromCode(transaction.status_code).toString().split('_').join(' ');
+  try {
+    return Status._fromCode(transaction.status_code).toString().split('_').join(' ');
+  } catch (error) {
+    return 'Unknown';
+  }
 };
 
 export const getPayerFromTransaction = (transaction: Transaction): number => {
@@ -29,7 +34,11 @@ export const getPayerFromTransaction = (transaction: Transaction): number => {
 };
 
 export const getStatusFromCode = (transaction: Transaction): string => {
-  return Status._fromCode(transaction.status_code).toString();
+  try {
+    return Status._fromCode(transaction.status_code).toString();
+  } catch (error) {
+    return 'Unknown';
+  }
 };
 
 export const getFormattedDateFromTimestamp = (timestamp: Timestamp): string => {
@@ -41,21 +50,17 @@ export const openTransactionInHashscan = (transactionId, network: Network) => {
     openExternal(`https://hashscan.io/${network}/transaction/${transactionId}`);
 };
 
-export const getEntityIdFromTransactionResult = (
-  result: {
-    response: TransactionResponse;
-    receipt: TransactionReceipt;
-    transactionId: string;
-  },
+export const getEntityIdFromTransactionReceipt = (
+  receipt: TransactionReceipt,
   entityType: 'fileId' | 'accountId',
 ) => {
-  if (!result.receipt[entityType]) {
+  const entity = receipt[entityType];
+
+  if (!entity || entity === null) {
     throw new Error('No entity provided');
   }
 
-  const entity = result.receipt[entityType];
-
-  return new AccountId(entity as any).toString();
+  return entity.toString();
 };
 
 export const getTransactionType = (transaction: Tx | Uint8Array) => {

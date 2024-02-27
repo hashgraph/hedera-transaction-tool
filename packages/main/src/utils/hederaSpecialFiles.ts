@@ -1,4 +1,5 @@
 import {proto} from '@hashgraph/proto';
+
 import type {FeeComponents, FeeData, FeeSchedule} from '@hashgraph/sdk';
 import {AccountId, ExchangeRates, FeeSchedules, Long} from '@hashgraph/sdk';
 
@@ -61,7 +62,7 @@ export function decodeProto(fileId: HederaSpecialFileId, response: any) {
     return stringifyThrottleDefinitions(decoded);
   }
 
-  // return JSON.stringify(decoded, null, 2);
+  return JSON.stringify(decoded, null, 2);
 }
 
 function stringifyNodeAddressBook(nodeAddressBook: proto.INodeAddressBook) {
@@ -91,7 +92,7 @@ function stringifyNodeAddressBook(nodeAddressBook: proto.INodeAddressBook) {
         nodeAddress.nodeId = nodeAddress.nodeId.toString() as any;
       }
 
-      // Stake
+      // Node Account ID
       if (nodeAddress.stake) {
         nodeAddress.stake = nodeAddress.stake.toString() as any;
       }
@@ -249,14 +250,10 @@ function encodeNodeAddressBook(content: Uint8Array) {
   if (nodeAddressBook.nodeAddress) {
     nodeAddressBook.nodeAddress.forEach(nodeAddress => {
       // Node Id
-      if (nodeAddress.nodeId) {
+      if ((nodeAddress.nodeId as any) === '0') {
+        nodeAddress.nodeId = undefined;
+      } else if (nodeAddress.nodeId) {
         nodeAddress.nodeId = Long.fromString(nodeAddress.nodeId.toString(), false);
-      }
-
-      // Stake
-
-      if (nodeAddress.stake) {
-        nodeAddress.stake = Long.fromString(nodeAddress.stake.toString(), false);
       }
 
       // Acccount Id
@@ -281,7 +278,6 @@ function encodeNodeAddressBook(content: Uint8Array) {
   }
 
   const protoNodeAddressBook = proto.NodeAddressBook.create(nodeAddressBook);
-
   const encoded = proto.NodeAddressBook.encode(protoNodeAddressBook).finish();
 
   return encoded;

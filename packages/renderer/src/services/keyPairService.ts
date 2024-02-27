@@ -1,10 +1,9 @@
-import type {Key} from '@hashgraph/sdk';
-import {KeyList, Mnemonic, PrivateKey, PublicKey} from '@hashgraph/sdk';
-import type {proto} from '@hashgraph/proto';
+import { Key, KeyList, Mnemonic, PrivateKey, PublicKey } from '@hashgraph/sdk';
+import { proto } from '@hashgraph/proto';
 
-import type {KeyPair} from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
-import {getMessageFromIPCError} from '@renderer/utils';
+import { getMessageFromIPCError } from '@renderer/utils';
 
 /* Key Pairs Service */
 
@@ -50,7 +49,10 @@ export const restorePrivateKey = async (
 };
 
 /* Store key pair*/
-export const storeKeyPair = async (keyPair: KeyPair, password: string) => {
+export const storeKeyPair = async (
+  keyPair: Prisma.KeyPairUncheckedCreateInput,
+  password: string,
+) => {
   try {
     return await window.electronAPI.keyPairs.store(keyPair, password);
   } catch (error) {
@@ -162,34 +164,34 @@ export const updateKeyList = (
 export const flattenKeyList = (keyList: Key): PublicKey[] => {
   const protobufKey = keyList._toProtobufKey();
 
-  let keys: PublicKey[] = [];
+  const keys: PublicKey[] = [];
   const keysString: string[] = [];
 
   formatKey(protobufKey);
 
-  function getPublicKeyFromIKey(ikey: proto.Key) {
-    if (ikey.ed25519) {
-      return PublicKey.fromBytesED25519(ikey.ed25519);
-    }
-    if (ikey.ECDSASecp256k1) {
-      return PublicKey.fromBytesECDSA(ikey.ECDSASecp256k1);
-    }
-
-    return undefined;
-  }
-
-  function formatKey(key: any) {
+  function formatKey(key: proto.Key) {
     if (key.thresholdKey) {
-      key.thresholdKey.keys?.keys.forEach((key: proto.Key) => {
+      key.thresholdKey.keys?.keys?.forEach((key: proto.Key) => {
         formatKey(key);
       });
     } else if (key.keyList) {
-      keys = key.keyList.keys.map((k: proto.Key) => getPublicKeyFromIKey(k));
+      key.keyList.keys?.forEach((k: proto.Key) => {
+        formatKey(k);
+      });
     } else {
-      const pk = getPublicKeyFromIKey(key);
-      if (pk && !keysString.includes(pk.toStringRaw())) {
-        keys.push(pk);
-        keysString.push(pk.toStringRaw());
+      let publicKey: PublicKey;
+
+      if (key.ed25519) {
+        publicKey = PublicKey.fromBytesED25519(key.ed25519);
+      } else if (key.ECDSASecp256k1) {
+        publicKey = PublicKey.fromBytesECDSA(key.ECDSASecp256k1);
+      } else {
+        throw new Error('Unsupported key type');
+      }
+
+      if (publicKey && !keysString.includes(publicKey.toStringRaw())) {
+        keys.push(publicKey);
+        keysString.push(publicKey.toStringRaw());
       }
     }
   }
@@ -197,7 +199,7 @@ export const flattenKeyList = (keyList: Key): PublicKey[] => {
 };
 
 export const getKeyListLevels = (keyList: KeyList) => {
-  const result: {key: proto.Key; level: number}[] = [];
+  const result: { key: proto.Key; level: number }[] = [];
 
   flattenComplexKey(keyList._toProtobufKey(), 0, result);
 
@@ -242,16 +244,16 @@ export const generateExternalKeyPairFromString = (
 function flattenComplexKey(
   key: proto.Key,
   level: number,
-  result: {key: proto.Key; level: number}[],
+  result: { key: proto.Key; level: number }[],
 ): void {
-  let newLine: {key: proto.Key; level: number} | null;
+  let newLine: { key: proto.Key; level: number } | null;
   let childKeys: proto.Key[];
   if (key.keyList) {
     if (key.keyList.keys && key.keyList.keys.length == 1) {
       newLine = null;
       childKeys = [key.keyList.keys[0]];
     } else {
-      newLine = {key, level};
+      newLine = { key, level };
       childKeys = key.keyList?.keys ?? [];
     }
   } else if (key.thresholdKey) {
@@ -259,12 +261,12 @@ function flattenComplexKey(
       newLine = null;
       childKeys = [key.thresholdKey.keys?.keys[0]];
     } else {
-      newLine = {key, level};
+      newLine = { key, level };
 
       childKeys = key.thresholdKey?.keys?.keys ?? [];
     }
   } else {
-    newLine = {key, level};
+    newLine = { key, level };
 
     childKeys = [];
   }

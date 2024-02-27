@@ -1,25 +1,35 @@
 <script setup lang="ts">
-import {computed, onMounted, ref} from 'vue';
-import type {Transaction} from '@hashgraph/sdk';
-import {FileCreateTransaction, KeyList, PublicKey, Timestamp} from '@hashgraph/sdk';
+import { computed, onMounted, ref, watch } from 'vue';
+import {
+  FileCreateTransaction,
+  KeyList,
+  PublicKey,
+  Timestamp,
+  Transaction,
+  TransactionReceipt,
+} from '@hashgraph/sdk';
+
+import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import {useToast} from 'vue-toast-notification';
-import {useRoute} from 'vue-router';
+import { useToast } from 'vue-toast-notification';
+import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import {createTransactionId} from '@renderer/services/transactionService';
-import {getDraft} from '@renderer/services/transactionDraftsService';
-import {add} from '@renderer/services/filesService';
-import {flattenKeyList} from '@renderer/services/keyPairService';
+import { createTransactionId } from '@renderer/services/transactionService';
+import { getDraft } from '@renderer/services/transactionDraftsService';
+import { add } from '@renderer/services/filesService';
+import { flattenKeyList } from '@renderer/services/keyPairService';
 
-import {getDateTimeLocalInputValue} from '@renderer/utils';
+import { getDateTimeLocalInputValue } from '@renderer/utils';
+import { createFileInfo } from '@renderer/utils/sdk';
 import {
-  getEntityIdFromTransactionResult,
+  getEntityIdFromTransactionReceipt,
   getTransactionFromBytes,
 } from '@renderer/utils/transactions';
-import {isAccountId, isPublicKey} from '@renderer/utils/validator';
+import { isAccountId, isPublicKey } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -29,6 +39,7 @@ import TransactionHeaderControls from '@renderer/components/Transaction/Transact
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
@@ -64,21 +75,44 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    if (!isAccountId(payerData.accountId.value)) {
+    if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
       throw Error('Invalid Payer ID');
     }
     transaction.value = createTransaction();
 
-    const requiredSignatures = payerData.keysFlattened.value.concat(ownerKeys.value);
-    await transactionProcessor.value?.process(requiredSignatures);
+    const requiredKey = new KeyList([payerData.key.value, keyList.value]);
+    await transactionProcessor.value?.process(requiredKey);
   } catch (err: any) {
-    toast.error(err.message || 'Failed to create transaction', {position: 'bottom-right'});
+    toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
 
-const handleExecuted = async result => {
+const handleExecuted = async (_response, receipt: TransactionReceipt) => {
   isExecuted.value = true;
-  await add(user.data.id, getEntityIdFromTransactionResult(result, 'fileId'));
+
+  const fileTransaction = createTransaction();
+
+  const newFileId = getEntityIdFromTransactionReceipt(receipt, 'fileId');
+
+  const infoBytes = await createFileInfo({
+    fileId: newFileId,
+    size: fileTransaction.contents?.length || 0,
+    expirationTime: fileTransaction.expirationTime,
+    isDeleted: false,
+    keys: fileTransaction.keys || [],
+    fileMemo: memo.value,
+    ledgerId: network.client.ledgerId,
+  });
+
+  const file: Prisma.HederaFileUncheckedCreateInput = {
+    file_id: newFileId,
+    user_id: user.data.id,
+    contentBytes: fileTransaction.contents?.join(','),
+    metaBytes: infoBytes.join(','),
+  };
+
+  await add(file);
+  toast.success(`File ${newFileId} linked`, { position: 'bottom-right' });
 };
 
 const handleLoadFromDraft = async () => {
@@ -89,15 +123,6 @@ const handleLoadFromDraft = async () => {
 
   if (draft) {
     transaction.value = draftTransaction;
-
-    if (draftTransaction.transactionId) {
-      payerData.accountId.value =
-        draftTransaction.transactionId.accountId?.toString() || payerData.accountId.value;
-    }
-
-    if (draftTransaction.maxTransactionFee) {
-      maxTransactionFee.value = draftTransaction.maxTransactionFee.toBigNumber().toNumber();
-    }
 
     if (draftTransaction.keys) {
       ownerKeys.value = draftTransaction.keys
@@ -135,6 +160,13 @@ function createTransaction() {
 onMounted(async () => {
   await handleLoadFromDraft();
 });
+
+/* Watchers */
+watch(payerData.isValid, isValid => {
+  if (isValid) {
+    ownerKeyText.value = payerData.keysFlattened.value[0];
+  }
+});
 </script>
 <template>
   <form @submit="handleCreate">
@@ -158,39 +190,20 @@ onMounted(async () => {
       <div class="form-group col-8 col-xxxl-6">
         <label class="form-label">Keys <span class="text-danger">*</span></label>
         <div class="d-flex gap-3">
-          <AppInput
-            v-model="ownerKeyText"
-            :filled="true"
-            placeholder="Enter owner public key"
-            @keypress="e => e.code === 'Enter' && handleAdd()"
-          />
+          <AppInput v-model="ownerKeyText" :filled="true" placeholder="Enter owner public key" />
         </div>
       </div>
 
       <div class="form-group col-4 col-xxxl-6 d-flex align-items-end">
-        <AppButton
-          :outline="true"
-          color="primary"
-          type="button"
-          @click="handleAdd"
-        >
-          Add
-        </AppButton>
+        <AppButton :outline="true" color="primary" type="button" @click="handleAdd">Add</AppButton>
       </div>
     </div>
 
     <div class="row">
       <div class="form-group col-8 col-xxxl-6">
-        <template
-          v-for="key in ownerKeys"
-          :key="key"
-        >
+        <template v-for="key in ownerKeys" :key="key">
           <div class="d-flex align-items-center gap-3 mt-3">
-            <AppInput
-              readonly
-              :filled="true"
-              :value="key"
-            />
+            <AppInput readonly :filled="true" :value="key" />
             <i
               class="bi bi-x-lg d-inline-block cursor-pointer"
               @click="ownerKeys = ownerKeys.filter(k => k !== key)"
@@ -236,11 +249,7 @@ onMounted(async () => {
     <div class="row mt-6">
       <div class="form-group col-12 col-xl-8">
         <label class="form-label">File Contents</label>
-        <textarea
-          v-model="content"
-          class="form-control is-fill"
-          rows="10"
-        ></textarea>
+        <textarea v-model="content" class="form-control is-fill" rows="10"></textarea>
       </div>
     </div>
   </form>
@@ -248,17 +257,7 @@ onMounted(async () => {
   <TransactionProcessor
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
-    :on-close-success-modal-click="
-      () => {
-        validStart = '';
-        maxTransactionFee = 2;
-        ownerKeys = [];
-        memo = '';
-        expirationTimestamp = undefined;
-
-        transaction = null;
-      }
-    "
+    :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
     :on-executed="handleExecuted"
   >
     <template #successHeading>File created successfully</template>
@@ -269,7 +268,10 @@ onMounted(async () => {
       >
         <span class="text-bold text-secondary">File ID:</span>
         <span>{{
-          getEntityIdFromTransactionResult(transactionProcessor.transactionResult, 'fileId')
+          getEntityIdFromTransactionReceipt(
+            transactionProcessor.transactionResult.receipt,
+            'fileId',
+          )
         }}</span>
       </p>
     </template>

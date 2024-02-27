@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from 'axios';
-import {onBeforeMount, ref} from 'vue';
+import { onBeforeMount, ref } from 'vue';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
@@ -24,7 +24,7 @@ onBeforeMount(async () => {
   isLoading.value = true;
   try {
     const {
-      data: {transactions},
+      data: { transactions },
     } = await axios.get(`${networkStore.mirrorNodeBaseURL}/transactions`);
     transactionsFetched.value = transactions;
   } catch (error) {

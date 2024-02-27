@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import {onMounted, ref} from 'vue';
-import type {Key, Transaction} from '@hashgraph/sdk';
-import {Hbar, AccountDeleteTransaction} from '@hashgraph/sdk';
+import { onMounted, ref } from 'vue';
+import { Hbar, AccountDeleteTransaction, Key, Transaction, KeyList } from '@hashgraph/sdk';
 
-import {useRoute} from 'vue-router';
-import {useToast} from 'vue-toast-notification';
+import { useRoute } from 'vue-router';
+import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import {createTransactionId} from '@renderer/services/transactionService';
-import {getDraft} from '@renderer/services/transactionDraftsService';
+import { createTransactionId } from '@renderer/services/transactionService';
+import { getDraft } from '@renderer/services/transactionDraftsService';
 
-import {getDateTimeLocalInputValue} from '@renderer/utils';
-import {getTransactionFromBytes} from '@renderer/utils/transactions';
-import {isAccountId} from '@renderer/utils/validator';
+import { getDateTimeLocalInputValue } from '@renderer/utils';
+import { getTransactionFromBytes } from '@renderer/utils/transactions';
+import { isAccountId } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -46,29 +45,29 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    if (!isAccountId(payerData.accountId.value)) {
+    if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
       throw Error('Invalid Payer ID');
     }
 
-    if (!isAccountId(accountData.accountId.value)) {
+    if (!isAccountId(accountData.accountId.value) || !accountData.key.value) {
       throw Error('Invalid Account ID');
     }
 
-    if (!isAccountId(transferAccountData.accountId.value)) {
+    if (!isAccountId(transferAccountData.accountId.value) || !transferAccountData.key.value) {
       throw Error('Invalid Transfer Account ID');
     }
 
     transaction.value = createTransaction();
 
-    const requiredSignatures = payerData.keysFlattened.value.concat(
-      accountData.keysFlattened.value,
-      transferAccountData.accountInfo.value?.receiverSignatureRequired
-        ? transferAccountData.keysFlattened.value
-        : [],
+    const requiredKey = new KeyList(
+      transferAccountData.accountInfo.value?.receiverSignatureRequired &&
+      transferAccountData.key.value
+        ? [payerData.key.value, accountData.key.value, transferAccountData.key.value]
+        : [payerData.key.value, accountData.key.value],
     );
-    await transactionProcessor.value?.process(requiredSignatures);
+    await transactionProcessor.value?.process(requiredKey);
   } catch (err: any) {
-    toast.error(err.message || 'Failed to create transaction', {position: 'bottom-right'});
+    toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
 
@@ -82,15 +81,6 @@ const handleLoadFromDraft = async () => {
 
   if (draft) {
     transaction.value = draftTransaction;
-
-    if (draftTransaction.transactionId) {
-      payerData.accountId.value =
-        draftTransaction.transactionId.accountId?.toString() || payerData.accountId.value;
-    }
-
-    if (draftTransaction.maxTransactionFee) {
-      maxTransactionFee.value = draftTransaction.maxTransactionFee.toBigNumber().toNumber();
-    }
 
     accountData.accountId.value = draftTransaction.accountId?.toString() || '';
     transferAccountData.accountId.value = draftTransaction.transferAccountId?.toString() || '';
@@ -152,28 +142,20 @@ const columnClass = 'col-4 col-xxxl-3';
     />
 
     <div class="row align-items-end mt-6">
-      <div
-        class="form-group"
-        :class="[columnClass]"
-      >
+      <div class="form-group" :class="[columnClass]">
         <label class="form-label">Account ID <span class="text-danger">*</span></label>
-        <label
-          v-if="accountData.isValid.value"
-          class="d-block form-label text-secondary"
+        <label v-if="accountData.isValid.value" class="d-block form-label text-secondary"
           >Balance: {{ accountData.accountInfo.value?.balance || 0 }}</label
         >
         <AppInput
           :model-value="accountData.accountIdFormatted.value"
-          :filled="true"
-          placeholder="Enter Account ID"
           @update:model-value="v => (accountData.accountId.value = v)"
+          :filled="true"
+          placeholder="Enter Payer ID"
         />
       </div>
 
-      <div
-        class="form-group"
-        :class="[columnClass]"
-      >
+      <div class="form-group" :class="[columnClass]">
         <AppButton
           v-if="accountData.key.value"
           :outline="true"
@@ -183,9 +165,8 @@ const columnClass = 'col-4 col-xxxl-3';
             isKeyStructureModalShown = true;
             selectedKey = accountData.key.value;
           "
+          >Show Key</AppButton
         >
-          Show Key
-        </AppButton>
       </div>
     </div>
 
@@ -199,30 +180,22 @@ const columnClass = 'col-4 col-xxxl-3';
     </div>
 
     <div class="row align-items-end mt-6">
-      <div
-        class="form-group"
-        :class="[columnClass]"
-      >
+      <div class="form-group" :class="[columnClass]">
         <label class="form-label">Transfer Account ID <span class="text-danger">*</span></label>
-        <label
-          v-if="transferAccountData.isValid.value"
-          class="d-block form-label text-secondary"
+        <label v-if="transferAccountData.isValid.value" class="d-block form-label text-secondary"
           >Receive Signature Required:
           {{ transferAccountData.accountInfo.value?.receiverSignatureRequired || false }}</label
         >
         <AppInput
           :model-value="transferAccountData.accountIdFormatted.value"
+          @update:model-value="v => (transferAccountData.accountId.value = v)"
           :disabled="transferAccountData.accountInfo.value?.deleted"
           :filled="true"
           placeholder="Enter Account ID"
-          @update:model-value="v => (transferAccountData.accountId.value = v)"
         />
       </div>
 
-      <div
-        class="form-group"
-        :class="[columnClass]"
-      >
+      <div class="form-group" :class="[columnClass]">
         <AppButton
           v-if="transferAccountData.key.value"
           :outline="true"
@@ -232,9 +205,8 @@ const columnClass = 'col-4 col-xxxl-3';
             isKeyStructureModalShown = true;
             selectedKey = transferAccountData.key.value;
           "
+          >Show Key</AppButton
         >
-          Show Key
-        </AppButton>
       </div>
     </div>
 
@@ -253,7 +225,7 @@ const columnClass = 'col-4 col-xxxl-3';
   <TransactionProcessor
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
-    :on-close-success-modal-click="() => $router.push({name: 'accounts'})"
+    :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
     :on-executed="() => (isExecuted = true)"
   >
     <template #successHeading>Account deleted successfully</template>
@@ -263,7 +235,7 @@ const columnClass = 'col-4 col-xxxl-3';
         class="text-small d-flex justify-content-between align-items mt-2"
       >
         <span class="text-bold text-secondary">Account ID:</span>
-        <span>{{ accountData.accountId.value }}</span>
+        <span>{{ accountData.accountIdFormatted.value }}</span>
       </p>
     </template>
   </TransactionProcessor>

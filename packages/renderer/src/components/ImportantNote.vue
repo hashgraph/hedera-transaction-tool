@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {onMounted, ref} from 'vue';
+import { onMounted, ref } from 'vue';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from './ui/AppButton.vue';
@@ -43,12 +43,7 @@ onMounted(() => {
         code in its current form is not recommended and is at your own risk.
       </p>
       <div class="mt-5 text-center">
-        <AppButton
-          color="primary"
-          @click="handleAccept"
-        >
-          I Understand and Agree
-        </AppButton>
+        <AppButton color="primary" @click="handleAccept">I Understand and Agree</AppButton>
       </div>
     </div>
   </AppModal>

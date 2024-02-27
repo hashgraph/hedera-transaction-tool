@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import {ref, watch} from 'vue';
+import { ref, watch } from 'vue';
 
-import {transactionTypeKeys} from '@renderer/pages/CreateTransaction/txTypeComponentMapping';
+import { transactionTypeKeys } from '@renderer/pages/CreateTransaction/txTypeComponentMapping';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 
@@ -22,27 +22,27 @@ const transactionGroups = [
   {
     groupTitle: 'Crypto Service',
     items: [
-      {label: 'Transfer Tokens', name: transactionTypeKeys.transfer},
-      {label: 'Create Account', name: transactionTypeKeys.createAccount},
-      {label: 'Update Account', name: transactionTypeKeys.updateAccount},
-      {label: 'Delete Account', name: transactionTypeKeys.deleteAccount},
-      {label: 'Approve Allowance', name: transactionTypeKeys.approveAllowance},
+      { label: 'Transfer Tokens', name: transactionTypeKeys.transfer },
+      { label: 'Create Account', name: transactionTypeKeys.createAccount },
+      { label: 'Update Account', name: transactionTypeKeys.updateAccount },
+      { label: 'Delete Account', name: transactionTypeKeys.deleteAccount },
+      { label: 'Approve Allowance', name: transactionTypeKeys.approveAllowance },
       // { label: 'Account Info', name: transactionTypeKeys.accountInfo },
     ],
   },
   {
     groupTitle: 'File Service',
     items: [
-      {label: 'Create File', name: transactionTypeKeys.createFile},
-      {label: 'Update File', name: transactionTypeKeys.updateFile},
-      {label: 'Read File', name: transactionTypeKeys.readFile},
-      {label: 'Append to File', name: transactionTypeKeys.appendToFile},
+      { label: 'Create File', name: transactionTypeKeys.createFile },
+      { label: 'Update File', name: transactionTypeKeys.updateFile },
+      { label: 'Read File', name: transactionTypeKeys.readFile },
+      { label: 'Append to File', name: transactionTypeKeys.appendToFile },
       // { label: 'Delete File', name: transactionTypeKeys.deleteFile },
     ],
   },
   // { groupTitle: 'Token Service', items: [] },
   // { groupTitle: 'Smart Contract Service', items: [] },
-  // { groupTitle: 'Consensus Service', items: [] },
+  { groupTitle: 'Consensus Service', items: [{ label: 'Freeze', name: 'freeze' }] },
   // { groupTitle: 'Token Service', items: [] },
   // { groupTitle: 'Schedule Service', items: [] },
   // { groupTitle: 'Freeze Service', items: [] },
@@ -68,14 +68,8 @@ watch(
 //             </RouterLink>
 </script>
 <template>
-  <AppModal
-    v-model:show="show"
-    class="large-modal"
-  >
-    <div
-      class="p-5"
-      style="height: 330px"
-    >
+  <AppModal v-model:show="show" class="large-modal">
+    <div class="p-5" style="height: 330px">
       <div class="d-flex align-items-center">
         <i
           class="bi bi-x-lg cursor-pointer me-5"
@@ -86,13 +80,10 @@ watch(
       </div>
       <div class="row mt-5">
         <div class="col-5">
-          <template
-            v-for="(group, i) in transactionGroups"
-            :key="group.groupTitle"
-          >
+          <template v-for="(group, i) in transactionGroups" :key="group.groupTitle">
             <a
               class="link-menu cursor-pointer fw-bold mt-2"
-              :class="{active: activeGroupIndex === i}"
+              :class="{ active: activeGroupIndex === i }"
               @click="activeGroupIndex = i"
             >
               {{ group.groupTitle }}
@@ -101,13 +92,10 @@ watch(
         </div>
         <div class="col-7">
           <div class="border-start ps-2">
-            <template
-              v-for="item in transactionGroups[activeGroupIndex].items"
-              :key="item.name"
-            >
+            <template v-for="item in transactionGroups[activeGroupIndex].items" :key="item.name">
               <a
                 class="link-menu cursor-pointer"
-                @click="$router.push({name: 'createTransaction', params: {type: item.name}})"
+                @click="$router.push({ name: 'createTransaction', params: { type: item.name } })"
               >
                 {{ item.label }}
               </a>

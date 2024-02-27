@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import {onMounted, ref} from 'vue';
+import { onMounted, ref } from 'vue';
 
-import {useToast} from 'vue-toast-notification';
+import { useToast } from 'vue-toast-notification';
 
-import type {CustomNetworkSettings} from '@renderer/stores/storeNetwork';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { isAccountId } from '@renderer/utils/validator';
 
 /* Stores */
 const networkStore = useNetworkStore();
@@ -17,40 +17,44 @@ const toast = useToast();
 
 /* State */
 const isCustomSettingsVisible = ref(false);
-const customNetworkSettings = ref<CustomNetworkSettings>({
-  nodeAccountIds: {},
-  mirrorNodeGRPCEndpoint: '127.0.0.1:5600',
-  mirrorNodeRESTAPIEndpoint: 'http://localhost:5551/api/v1',
-});
 
 const consensusNodeEndpoint = ref('127.0.0.1:50211');
+const mirrorNodeGRPCEndpoint = ref('127.0.0.1:5600');
+const mirrorNodeRESTAPIEndpoint = ref('http://localhost:5551/api/v1');
 const nodeAccountId = ref('0.0.3');
 
 /* Handlers */
 const handleSetCustomNetwork = async () => {
   try {
-    customNetworkSettings.value.nodeAccountIds = {
-      [consensusNodeEndpoint.value]: nodeAccountId.value,
-    };
+    if (!isAccountId(nodeAccountId.value)) {
+      throw new Error('Invalid node account ID');
+    }
 
-    await networkStore.setNetwork('custom', customNetworkSettings.value as any);
+    await networkStore.setNetwork('custom', {
+      nodeAccountIds: {
+        [consensusNodeEndpoint.value]: nodeAccountId.value,
+      },
+      mirrorNodeGRPCEndpoint: mirrorNodeGRPCEndpoint.value,
+      mirrorNodeRESTAPIEndpoint: mirrorNodeRESTAPIEndpoint.value,
+    });
   } catch (err: any) {
     let message = 'Failed to set custom network';
     if (err.message && typeof err.message === 'string') {
       message = err.message;
     }
-    toast.error(message, {position: 'bottom-right'});
+    toast.error(message, { position: 'bottom-right' });
   }
 };
 
 /* Hooks */
 onMounted(() => {
   if (networkStore.customNetworkSettings) {
-    customNetworkSettings.value = networkStore.customNetworkSettings;
+    const firstNodeAccountId = Object.entries(networkStore.customNetworkSettings.nodeAccountIds)[0];
 
-    const nodeAccountIdData = Object.values(networkStore.customNetworkSettings.nodeAccountIds)[0];
-    consensusNodeEndpoint.value = nodeAccountIdData[0];
-    consensusNodeEndpoint.value = nodeAccountIdData[1];
+    consensusNodeEndpoint.value = firstNodeAccountId[0];
+    nodeAccountId.value = firstNodeAccountId[1];
+    mirrorNodeGRPCEndpoint.value = networkStore.customNetworkSettings.mirrorNodeGRPCEndpoint;
+    mirrorNodeRESTAPIEndpoint.value = networkStore.customNetworkSettings.mirrorNodeRESTAPIEndpoint;
   }
 });
 </script>
@@ -62,99 +66,63 @@ onMounted(() => {
       <div class="mt-4 btn-group">
         <AppButton
           color="primary"
-          :class="{active: networkStore.network === 'mainnet'}"
+          :class="{ active: networkStore.network === 'mainnet' }"
           @click="
             networkStore.setNetwork('mainnet');
             isCustomSettingsVisible = false;
           "
+          >Mainnet</AppButton
         >
-          Mainnet
-        </AppButton>
         <AppButton
           color="primary"
-          :class="{active: networkStore.network === 'testnet'}"
+          :class="{ active: networkStore.network === 'testnet' }"
           @click="
             networkStore.setNetwork('testnet');
             isCustomSettingsVisible = false;
           "
+          >Testnet</AppButton
         >
-          Testnet
-        </AppButton>
         <AppButton
           color="primary"
           disabled
-          :class="{active: networkStore.network === 'previewnet'}"
+          :class="{ active: networkStore.network === 'previewnet' }"
           @click="
             networkStore.setNetwork('previewnet');
             isCustomSettingsVisible = false;
           "
+          >Previewnet</AppButton
         >
-          Previewnet
-        </AppButton>
         <AppButton
           color="primary"
-          :class="{active: networkStore.network === 'custom'}"
+          :class="{ active: networkStore.network === 'custom' }"
           @click="isCustomSettingsVisible = true"
+          >Custom</AppButton
         >
-          Custom
-        </AppButton>
       </div>
-      <Transition
-        name="fade"
-        mode="out-in"
-      >
-        <div
-          v-if="isCustomSettingsVisible"
-          class="mt-4"
-        >
+      <Transition name="fade" mode="out-in">
+        <div v-if="isCustomSettingsVisible" class="mt-4">
           <div>
             <label class="form-label">Consensus Node Endpoint</label>
-            <AppInput
-              v-model="consensusNodeEndpoint"
-              type="text"
-              :filled="true"
-              size="small"
-            />
+            <AppInput type="text" :filled="true" size="small" v-model="consensusNodeEndpoint" />
           </div>
           <div class="mt-4">
             <label class="form-label">Mirror Node GRPC Endpoint</label>
-            <AppInput
-              v-model="customNetworkSettings.mirrorNodeGRPCEndpoint"
-              type="text"
-              :filled="true"
-              size="small"
-            />
+            <AppInput type="text" :filled="true" size="small" v-model="mirrorNodeGRPCEndpoint" />
           </div>
           <div class="mt-4">
             <label class="form-label">Mirror Node REST API Endpoint</label>
-            <AppInput
-              v-model="customNetworkSettings.mirrorNodeRESTAPIEndpoint"
-              type="text"
-              :filled="true"
-              size="small"
-            />
+            <AppInput type="text" :filled="true" size="small" v-model="mirrorNodeRESTAPIEndpoint" />
           </div>
           <div class="mt-4">
             <label class="form-label">Node Account Id</label>
-            <AppInput
-              v-model="nodeAccountId"
-              type="text"
-              :filled="true"
-              size="small"
-            />
+            <AppInput type="text" :filled="true" size="small" v-model="nodeAccountId" />
           </div>
-          <AppButton
-            color="primary"
-            class="mt-4"
-            @click="handleSetCustomNetwork"
-          >
-            Set
-          </AppButton>
+          <AppButton color="primary" class="mt-4" @click="handleSetCustomNetwork">Set</AppButton>
         </div>
       </Transition>
     </div>
     <!-- Mirror Node Settings -->
-    <div class="p-4 mt-7 border border-2 rounded-3">
+    <!-- <div class="p-4 mt-7 border border-2 rounded-3">
       <p>Mirror Node Settings</p>
       <div class="mt-4">
         <div class="mb-4">
@@ -188,7 +156,7 @@ onMounted(() => {
           />
         </div>
       </div>
-    </div>
+    </div> -->
     <!-- Explorer Settings -->
     <!-- <div class="p-4 mt-7 border border-2 rounded-3">
       <p>Explorer Settings</p>

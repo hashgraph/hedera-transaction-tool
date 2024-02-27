@@ -1,7 +1,7 @@
-import type {TransactionDraft} from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
-import {getMessageFromIPCError} from '@renderer/utils';
-import {getTransactionType} from '@renderer/utils/transactions';
+import { getMessageFromIPCError } from '@renderer/utils';
+import { getTransactionType } from '@renderer/utils/transactions';
 
 /* Transaction Drafts Service */
 
@@ -23,8 +23,7 @@ export const getDraft = async (id: string) => {
 };
 
 export const addDraft = async (userId: string, transactionBytes: Uint8Array, details?: string) => {
-  const transactionDraft: TransactionDraft = {
-    id: '3',
+  const transactionDraft: Prisma.TransactionDraftUncheckedCreateInput = {
     created_at: new Date(),
     updated_at: new Date(),
     user_id: userId,
@@ -66,6 +65,6 @@ export const draftExists = async (transactionBytes: Uint8Array) => {
   try {
     return await window.electronAPI.transactionDrafts.draftExists(transactionBytes.toString());
   } catch (error: any) {
-    throw Error(getMessageFromIPCError(error, 'Failed to determine if transaction draft exist'));
+    throw Error(getMessageFromIPCError(error, `Failed to determine if transaction draft exist`));
   }
 };

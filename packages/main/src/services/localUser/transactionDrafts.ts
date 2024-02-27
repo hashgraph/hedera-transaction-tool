@@ -1,4 +1,4 @@
-import type {TransactionDraft} from '@prisma/client';
+import type {Prisma} from '@prisma/client';
 import {getPrismaClient} from '@main/db';
 
 export const getDrafts = async (userId: string) => {
@@ -18,7 +18,7 @@ export const getDraft = async (id: string) => {
 
   const draft = await prisma.transactionDraft.findFirst({
     where: {
-      id: id,
+      id,
     },
   });
 
@@ -29,7 +29,7 @@ export const getDraft = async (id: string) => {
   return draft;
 };
 
-export const addDraft = async (draft: TransactionDraft) => {
+export const addDraft = async (draft: Prisma.TransactionDraftUncheckedCreateInput) => {
   if (await draftExists(draft.transactionBytes)) {
     throw new Error('Transaction draft already exists');
   }
@@ -37,26 +37,26 @@ export const addDraft = async (draft: TransactionDraft) => {
   const prisma = getPrismaClient();
 
   await prisma.transactionDraft.create({
-    data: {
-      ...draft,
-      id: undefined,
-      created_at: undefined,
-      updated_at: undefined,
-    },
+    data: draft,
   });
 };
 
-export const updateDraft = async (draft: TransactionDraft) => {
+export const updateDraft = async ({
+  id,
+  type,
+  transactionBytes,
+  details,
+}: Prisma.TransactionDraftUncheckedCreateInput) => {
   const prisma = getPrismaClient();
 
   await prisma.transactionDraft.update({
     where: {
-      id: draft.id,
+      id,
     },
     data: {
-      type: draft.type,
-      transactionBytes: draft.transactionBytes,
-      details: draft.details,
+      type,
+      transactionBytes,
+      details,
     },
   });
 };
@@ -66,7 +66,7 @@ export const deleteDraft = async (id: string) => {
 
   await prisma.transactionDraft.delete({
     where: {
-      id: id,
+      id,
     },
   });
 };
@@ -76,7 +76,7 @@ export const draftExists = async (transactionBytes: string) => {
 
   const count = await prisma.transactionDraft.count({
     where: {
-      transactionBytes: transactionBytes,
+      transactionBytes,
     },
   });
 

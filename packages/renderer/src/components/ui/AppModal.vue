@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {onBeforeUnmount, onMounted, ref} from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 
 /* Props */
 const props = withDefaults(
@@ -50,17 +50,11 @@ onBeforeUnmount(() => {
     class="modal fade show"
     aria-labelledby="exampleModalLabel"
     aria-hidden="true"
-    :style="{display: show ? 'block' : 'none'}"
+    :style="{ display: show ? 'block' : 'none' }"
   >
-    <div
-      ref="modalRef"
-      class="modal-dialog modal-dialog-centered"
-    >
+    <div class="modal-dialog modal-dialog-centered" ref="modalRef">
       <div class="modal-content"><slot></slot></div>
     </div>
   </div>
-  <div
-    :style="{display: show ? 'block' : 'none'}"
-    class="modal-backdrop fade show"
-  ></div>
+  <div :style="{ display: show ? 'block' : 'none' }" class="modal-backdrop fade show"></div>
 </template>

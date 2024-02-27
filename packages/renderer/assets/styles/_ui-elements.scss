@@ -1,7 +1,7 @@
 /* Buttons */
 @each $color, $value in $theme-colors-button {
   .btn-#{$color} {
-    @if $color == "light" {
+    @if $color == 'light' {
       @include button-custom-variant(
         $value,
         $value,
@@ -10,7 +10,7 @@
         $active-background: shade-color($value, $btn-active-bg-shade-amount),
         $active-border: shade-color($value, $btn-active-border-shade-amount)
       );
-    } @else if $color == "dark" {
+    } @else if $color == 'dark' {
       @include button-custom-variant(
         $value,
         $value,
@@ -64,6 +64,13 @@
   i {
     font-size: 16px;
   }
+}
+
+.btn-group-container {
+  background-color: var(--#{$prefix}btn-group-container-bg-color);
+  border-radius: $border-radius;
+  padding: 8px;
+  box-shadow: 1px 1px 1px 0px #00000012 inset;
 }
 
 /* Forms */
@@ -145,7 +152,7 @@
 .container-loader {
   width: 80px;
   height: 80px;
-  background-image: url("/assets/images/loader.svg");
+  background-image: url('/images/loader.svg');
   background-repeat: no-repeat;
   animation: 0.75s linear infinite spinner-border;
 }
@@ -300,7 +307,7 @@
     color: $dark-blue-200 !important;
   }
 
-  &[withtoggler="true"] {
+  &[withtoggler='true'] {
     input {
       padding-right: 30% !important;
     }

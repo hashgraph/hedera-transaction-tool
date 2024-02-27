@@ -11,10 +11,7 @@ const FAQs = [1, 2, 3, 4];
       </p>
       <div class="mt-8">
         <div class="accordion border-0">
-          <template
-            v-for="item in FAQs"
-            :key="item"
-          >
+          <template v-for="item in FAQs" :key="item">
             <div class="accordion-item border-0 border-bottom">
               <h2 class="accordion-header">
                 <button
@@ -28,10 +25,7 @@ const FAQs = [1, 2, 3, 4];
                   Frequently Asked Question {{ item }}
                 </button>
               </h2>
-              <div
-                :id="`collapse${item}`"
-                class="accordion-collapse collapse"
-              >
+              <div :id="`collapse${item}`" class="accordion-collapse collapse">
                 <div class="accordion-body pt-0 mt-n2">
                   Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
                   incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.

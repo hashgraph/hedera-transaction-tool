@@ -11,9 +11,8 @@ import {createTransactionId, encodeSpecialFileContent} from '@renderer/services/
 import {getDraft} from '@renderer/services/transactionDraftsService';
 import {flattenKeyList} from '@renderer/services/keyPairService';
 
-import {isHederaSpecialFileId} from '@renderer/utils/transactions';
 import {getDateTimeLocalInputValue} from '@renderer/utils';
-import {getTransactionFromBytes} from '@renderer/utils/transactions';
+import {getTransactionFromBytes, isHederaSpecialFileId} from '@renderer/utils/transactions';
 import {isAccountId, isPublicKey} from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -110,7 +109,7 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    if (!isAccountId(payerData.accountId.value)) {
+    if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
       throw Error('Invalid Payer ID');
     }
 
@@ -137,11 +136,8 @@ const handleCreate = async e => {
 
     transaction.value = newTransaction;
 
-    await transactionProcessor.value?.process(
-      payerData.keysFlattened.value.concat(newKeys.value, ownerKeys.value),
-      chunkSize.value,
-      1,
-    );
+    const requiredKey = new KeyList([payerData.key.value, newKeysList.value, ownerKeyList.value]);
+    await transactionProcessor.value?.process(requiredKey, chunkSize.value, 1);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', {position: 'bottom-right'});
   }
@@ -155,15 +151,6 @@ const handleLoadFromDraft = async () => {
 
   if (draft) {
     transaction.value = draftTransaction;
-
-    if (draftTransaction.transactionId) {
-      payerData.accountId.value =
-        draftTransaction.transactionId.accountId?.toString() || payerData.accountId.value;
-    }
-
-    if (draftTransaction.maxTransactionFee) {
-      maxTransactionFee.value = draftTransaction.maxTransactionFee.toBigNumber().toNumber();
-    }
 
     if (draftTransaction.keys) {
       newKeys.value = draftTransaction.keys
@@ -438,9 +425,9 @@ const columnClass = 'col-4 col-xxxl-3';
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
     :on-executed="
-      (_result, _chunkAmount) => {
+      (_response, _receipt, chunkAmount) => {
         isExecuted = true;
-        chunksAmount = _chunkAmount || null;
+        chunksAmount = chunkAmount || null;
       }
     "
     :on-close-success-modal-click="

@@ -1,7 +1,7 @@
-import {computed, onMounted, reactive, ref} from 'vue';
-import {defineStore} from 'pinia';
+import { computed, onMounted, reactive, ref } from 'vue';
+import { defineStore } from 'pinia';
 
-import type {KeyPair} from '@prisma/client';
+import { KeyPair, Prisma } from '@prisma/client';
 
 import useNetworkStore from './storeNetwork';
 import useUserStore from './storeUser';
@@ -17,7 +17,7 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
   /* State */
   const recoveryPhraseWords = ref<string[]>([]);
   const keyPairs = ref<KeyPair[]>([]);
-  const accoundIds = reactive<{publicKey: string; accountIds: string[]}[]>([]);
+  const accoundIds = reactive<{ publicKey: string; accountIds: string[] }[]>([]);
 
   /* Getters */
   const publicKeys = computed(() => keyPairs.value.map(kp => kp.public_key));
@@ -67,7 +67,7 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
     recoveryPhraseWords.value = [];
   }
 
-  async function storeKeyPair(keyPair: KeyPair, password: string) {
+  async function storeKeyPair(keyPair: Prisma.KeyPairUncheckedCreateInput, password: string) {
     if (!user.data.isLoggedIn) {
       throw Error('Personal user is not logged in!');
     }

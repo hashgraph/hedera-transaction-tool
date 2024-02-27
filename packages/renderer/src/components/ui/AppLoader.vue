@@ -7,11 +7,6 @@ defineProps<{
 <template>
   <div class="d-flex justify-content-center align-items-center">
     <div class="container-loader"></div>
-    <p
-      v-if="loadingText"
-      class="mt-3"
-    >
-      {{ loadingText }}
-    </p>
+    <p v-if="loadingText" class="mt-3">{{ loadingText }}</p>
   </div>
 </template>

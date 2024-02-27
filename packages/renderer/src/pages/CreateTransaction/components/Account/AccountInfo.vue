@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import {ref, watch} from 'vue';
+import { ref, watch } from 'vue';
 
-import {useToast} from 'vue-toast-notification';
+import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -20,7 +20,7 @@ watch(accountData.isValid, isValid => {
   if (isValid) {
     toast.clear();
   } else {
-    toast.error('Account not found', {position: 'bottom-right'});
+    toast.error('Account not found', { position: 'bottom-right' });
   }
 });
 
@@ -32,27 +32,19 @@ const columnClass = 'col-4 col-xxxl-3';
     <h2 class="text-title text-bold">Account Info</h2>
   </div>
 
-  <AppButton
-    type="button"
-    color="secondary"
-    class="mt-6"
-    @click="$router.back()"
-  >
+  <AppButton type="button" color="secondary" class="mt-6" @click="$router.back()">
     <span class="bi bi-arrow-left"></span>
     Back
   </AppButton>
 
   <div class="row mt-6">
-    <div
-      class="form-group"
-      :class="[columnClass]"
-    >
+    <div class="form-group" :class="[columnClass]">
       <label class="form-label">Account ID <span class="text-danger">*</span></label>
       <AppInput
         :model-value="accountData.accountIdFormatted.value"
+        @update:model-value="v => (accountData.accountId.value = v)"
         :filled="true"
         placeholder="Enter Account ID"
-        @update:model-value="v => (accountData.accountId.value = v)"
       />
     </div>
     <template v-if="accountData.isValid.value">
@@ -119,10 +111,7 @@ const columnClass = 'col-4 col-xxxl-3';
               }}
             </p>
           </div>
-          <div
-            v-if="accountData.accountInfo.value?.autoRenewPeriod"
-            class="d-flex row"
-          >
+          <div class="d-flex row" v-if="accountData.accountInfo.value?.autoRenewPeriod">
             <p class="col-4 text-secondary">Auto Renew Period:</p>
             <p class="col-8">{{ accountData.autoRenewPeriodInDays.value }} days</p>
           </div>
@@ -141,9 +130,8 @@ const columnClass = 'col-4 col-xxxl-3';
               color="secondary"
               size="small"
               @click="isKeyStructureModalShown = true"
+              >View Key Structure</AppButton
             >
-              View Key Structure
-            </AppButton>
           </div>
           <p class="mt-4"></p>
           <div class="d-flex row">

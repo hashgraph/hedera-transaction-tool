@@ -1,38 +1,33 @@
 <script setup lang="ts">
-import {computed, nextTick, onBeforeUnmount, ref} from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
 
-import type {TransactionReceipt, TransactionResponse} from '@hashgraph/sdk';
-import {Transaction} from '@hashgraph/sdk';
-import type {Transaction as Tx} from '@prisma/client';
+import { Key, KeyList, Transaction, TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
+import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import {useToast} from 'vue-toast-notification';
+import { useToast } from 'vue-toast-notification';
 
-import {execute, signTransaction, storeTransaction} from '@renderer/services/transactionService';
-import {openExternal} from '@renderer/services/electronUtilsService';
-import {getDollarAmount} from '@renderer/services/mirrorNodeDataService';
+import { execute, signTransaction, storeTransaction } from '@renderer/services/transactionService';
+import { openExternal } from '@renderer/services/electronUtilsService';
+import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
+import { flattenKeyList } from '@renderer/services/keyPairService';
 
-import {getTransactionType} from '@renderer/utils/transactions';
+import { getTransactionType } from '@renderer/utils/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import { ableToSign } from '@renderer/utils/sdk';
 
 /* Props */
 const props = defineProps<{
   transactionBytes: Uint8Array | null;
-  onExecuted?: (
-    result: {
-      response: TransactionResponse;
-      receipt: TransactionReceipt;
-      transactionId: string;
-    },
-    chunksAmount?: number,
-  ) => void;
+  onExecuted?: (response: TransactionResponse, receipt: TransactionReceipt) => void;
   onCloseSuccessModalClick?: () => void;
   watchExecutedModalShown?: (shown: boolean) => void;
 }>();
@@ -49,10 +44,9 @@ const toast = useToast();
 const transactionResult = ref<{
   response: TransactionResponse;
   receipt: TransactionReceipt;
-  transactionId: string;
 } | null>();
 const userPassword = ref('');
-const requiredSignatures = ref<string[]>([]);
+const signatureKey = ref<Key | KeyList | null>(null);
 const isConfirmShown = ref(false);
 const isSigning = ref(false);
 const isSignModalShown = ref(false);
@@ -65,11 +59,14 @@ const unmounted = ref(false);
 const transaction = computed(() =>
   props.transactionBytes ? Transaction.fromBytes(props.transactionBytes) : null,
 );
+const flattenedSignatureKey = computed(() =>
+  signatureKey.value ? flattenKeyList(signatureKey.value).map(pk => pk.toStringRaw()) : [],
+);
 const externalPublicKeysReq = computed(() =>
-  requiredSignatures.value.filter(pk => !keyPairs.publicKeys.includes(pk)),
+  flattenedSignatureKey.value.filter(pk => !keyPairs.publicKeys.includes(pk)),
 );
 const localPublicKeysReq = computed(() =>
-  requiredSignatures.value.filter(pk => keyPairs.publicKeys.includes(pk)),
+  flattenedSignatureKey.value.filter(pk => keyPairs.publicKeys.includes(pk)),
 );
 const type = computed(() => transaction.value && getTransactionType(transaction.value));
 
@@ -90,7 +87,7 @@ function handleConfirmTransaction(e: Event) {
     isConfirmShown.value = false;
     isSignModalShown.value = true;
   } else if (user.data.mode === 'organization') {
-    console.log('Send to back end along with required external signatures');
+    console.log('Send to back end along with siganture key');
   }
 }
 
@@ -115,19 +112,19 @@ async function handleSignTransaction(e: Event) {
       await executeTransaction(signedTransactionBytes);
     } else if (user.data.mode === 'organization') {
       await sendSignedTransactionToOrganization();
-      console.log('Send to back end signed along with required', externalPublicKeysReq.value);
+      console.log('Send to back end signed along with required', signatureKey.value);
     }
   } catch (err: any) {
-    toast.error(err.message || 'Transaction signing failed', {position: 'bottom-right'});
+    toast.error(err.message || 'Transaction signing failed', { position: 'bottom-right' });
   } finally {
     isSigning.value = false;
   }
 }
 
 /* Functions */
-async function process(_requiredSignatures: string[]) {
+async function process(requiredKey: Key) {
   resetData();
-  requiredSignatures.value = [...new Set(_requiredSignatures)];
+  signatureKey.value = requiredKey;
 
   await nextTick();
   await keyPairs.refetch();
@@ -148,7 +145,8 @@ async function process(_requiredSignatures: string[]) {
     }
 
     if (
-      localPublicKeysReq.value.length < requiredSignatures.value.length &&
+      signatureKey.value &&
+      !ableToSign(keyPairs.publicKeys, signatureKey.value) &&
       user.data.mode === 'personal'
     ) {
       throw new Error(
@@ -164,20 +162,23 @@ async function executeTransaction(transactionBytes: Uint8Array) {
   try {
     isExecuting.value = true;
 
-    transactionResult.value = await execute(transactionBytes);
+    const { response, receipt } = await execute(transactionBytes);
 
-    status = transactionResult.value.receipt.status._code;
+    transactionResult.value = { response, receipt };
+
+    status = receipt.status._code;
 
     isExecutedModalShown.value = true;
-    props.onExecuted && props.onExecuted(transactionResult.value);
+    props.onExecuted && props.onExecuted(response, receipt);
 
     if (unmounted.value) {
-      toast.success('Transaction executed', {position: 'bottom-right'});
+      toast.success('Transaction executed', { position: 'bottom-right' });
     }
   } catch (err: any) {
     const data = JSON.parse(err.message);
     status = data.status;
-    toast.error(data.message, {position: 'bottom-right'});
+
+    toast.error(data.message, { position: 'bottom-right' });
   } finally {
     isExecuting.value = false;
   }
@@ -186,8 +187,7 @@ async function executeTransaction(transactionBytes: Uint8Array) {
 
   if (!type.value || !executedTransaction.transactionId) throw new Error('Cannot save transaction');
 
-  const tx: Tx = {
-    id: '',
+  const tx: Prisma.TransactionUncheckedCreateInput = {
     name: `${type.value} (${executedTransaction.transactionId.toString()})`,
     type: type.value,
     description: '',
@@ -201,10 +201,9 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     signature: '',
     valid_start: executedTransaction.transactionId.validStart?.toString() || '',
     executed_at: new Date().getTime() / 1000,
-    created_at: new Date(),
-    updated_at: new Date(),
     group_id: null,
   };
+
   await storeTransaction(tx);
 }
 
@@ -220,7 +219,7 @@ function resetData() {
   isExecutedModalShown.value = false;
   isChunkingModalShown.value = false;
   isSignModalShown.value = false;
-  requiredSignatures.value = [];
+  signatureKey.value = null;
 }
 
 /* Hooks */
@@ -243,10 +242,7 @@ defineExpose({
     >
       <div class="p-5">
         <div>
-          <i
-            class="bi bi-x-lg cursor-pointer"
-            @click="isConfirmShown = false"
-          ></i>
+          <i class="bi bi-x-lg cursor-pointer" @click="isConfirmShown = false"></i>
         </div>
         <div class="text-center">
           <i class="bi bi-arrow-left-right large-icon"></i>
@@ -284,19 +280,10 @@ defineExpose({
           <hr class="separator my-5" />
 
           <div class="d-flex justify-content-between">
-            <AppButton
-              type="button"
-              color="secondary"
-              @click="isConfirmShown = false"
+            <AppButton type="button" color="secondary" @click="isConfirmShown = false"
+              >Cancel</AppButton
             >
-              Cancel
-            </AppButton>
-            <AppButton
-              color="primary"
-              type="submit"
-            >
-              Sign
-            </AppButton>
+            <AppButton color="primary" type="submit">Sign</AppButton>
           </div>
         </form>
       </div>
@@ -310,27 +297,16 @@ defineExpose({
     >
       <div class="p-5">
         <div>
-          <i
-            class="bi bi-x-lg cursor-pointer"
-            @click="isSignModalShown = false"
-          ></i>
+          <i class="bi bi-x-lg cursor-pointer" @click="isSignModalShown = false"></i>
         </div>
         <div class="text-center">
-          <i class="bi bi-unlock large-icon"></i>
+          <AppCustomIcon :name="'lock'" style="height: 160px" />
         </div>
-        <form
-          class="mt-5"
-          @submit="handleSignTransaction"
-        >
+        <form class="mt-3" @submit="handleSignTransaction">
           <h3 class="text-center text-title text-bold">Enter your password</h3>
           <div class="form-group mt-5 mb-4">
             <label class="form-label">Password</label>
-            <AppInput
-              v-model="userPassword"
-              size="small"
-              type="password"
-              :filled="true"
-            />
+            <AppInput v-model="userPassword" size="small" type="password" :filled="true" />
           </div>
           <hr class="separator" />
           <div class="row mt-4">
@@ -340,9 +316,8 @@ defineExpose({
                 type="button"
                 class="w-100"
                 @click="isSignModalShown = false"
+                >Cancel</AppButton
               >
-                Cancel
-              </AppButton>
             </div>
             <div class="col-6">
               <AppButton
@@ -351,9 +326,8 @@ defineExpose({
                 :disabled="userPassword.length === 0 || isSigning"
                 class="w-100"
                 type="submit"
+                >Continue</AppButton
               >
-                Continue
-              </AppButton>
             </div>
           </div>
         </form>
@@ -368,10 +342,7 @@ defineExpose({
     >
       <div class="p-5">
         <div>
-          <i
-            class="bi bi-x-lg cursor-pointer"
-            @click="isExecuting = false"
-          ></i>
+          <i class="bi bi-x-lg cursor-pointer" @click="isExecuting = false"></i>
         </div>
         <div class="text-center">
           <AppLoader />
@@ -381,13 +352,7 @@ defineExpose({
           {{ type }}
         </h3>
         <div class="d-grid mt-4">
-          <AppButton
-            color="primary"
-            class="mt-1"
-            @click="isExecuting = false"
-          >
-            Close
-          </AppButton>
+          <AppButton color="primary" class="mt-1" @click="isExecuting = false">Close</AppButton>
         </div>
       </div>
     </AppModal>
@@ -400,10 +365,7 @@ defineExpose({
     >
       <div class="p-5">
         <div>
-          <i
-            class="bi bi-x-lg cursor-pointer"
-            @click="isExecutedModalShown = false"
-          ></i>
+          <i class="bi bi-x-lg cursor-pointer" @click="isExecutedModalShown = false"></i>
         </div>
         <div class="text-center">
           <i class="bi bi-check-lg large-icon"></i>
@@ -418,9 +380,9 @@ defineExpose({
             @click="
               network.network !== 'custom' &&
                 openExternal(`
-            https://hashscan.io/${network.network}/transaction/${transactionResult?.transactionId}`)
+            https://hashscan.io/${network.network}/transaction/${transactionResult?.response.transactionId}`)
             "
-            >{{ transactionResult?.transactionId }}</a
+            >{{ transactionResult?.response.transactionId }}</a
           >
         </p>
         <slot name="successContent"></slot>
@@ -433,9 +395,8 @@ defineExpose({
                 onCloseSuccessModalClick && onCloseSuccessModalClick();
               }
             "
+            >Close</AppButton
           >
-            Close
-          </AppButton>
         </div>
       </div>
     </AppModal>

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import {onBeforeMount, ref} from 'vue';
+import { onBeforeMount, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
-import {useRouter} from 'vue-router';
+import { useRouter } from 'vue-router';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppStepper from '@renderer/components/ui/AppStepper.vue';
@@ -23,11 +23,11 @@ const router = useRouter();
 
 /* State */
 const keyPairsComponent = ref<typeof KeyPairs | null>(null);
-const step = ref({previous: 'newPassword', current: 'newPassword'});
+const step = ref({ previous: 'newPassword', current: 'newPassword' });
 const stepperItems = ref([
-  {title: 'New Password', name: 'newPassword'},
-  {title: 'Recovery Phrase', name: 'recoveryPhrase'},
-  {title: 'Key Pairs', name: 'keyPairs'},
+  { title: 'New Password', name: 'newPassword' },
+  { title: 'Recovery Phrase', name: 'recoveryPhrase' },
+  { title: 'Key Pairs', name: 'keyPairs' },
 ]);
 const password = ref('');
 const isFaqShown = ref(false);
@@ -57,7 +57,7 @@ const handleNext = async () => {
       await keyPairsComponent.value?.handleSaveKey();
       user.data.password = '';
 
-      router.push({name: 'settingsKeys'});
+      router.push({ name: 'settingsKeys' });
     } else {
       step.value.current =
         currentIndex >= 0
@@ -78,10 +78,7 @@ onBeforeMount(() => {
 </script>
 <template>
   <div class="my-0 mx-auto p-7">
-    <Transition
-      name="fade"
-      mode="out-in"
-    >
+    <Transition name="fade" mode="out-in">
       <template v-if="!isFaqShown">
         <div
           class="col-12 col-lg-10 col-xl-8 col-xxl-6 bg-modal-surface rounded-4 position-relative p-5 mx-auto"
@@ -104,10 +101,7 @@ onBeforeMount(() => {
             </div>
           </template>
 
-          <Transition
-            name="fade"
-            mode="out-in"
-          >
+          <Transition name="fade" mode="out-in">
             <!-- Step 1 -->
             <template v-if="step.current === 'newPassword'">
               <NewPassword
@@ -150,17 +144,16 @@ onBeforeMount(() => {
                 class="d-flex align-items-center mt-6"
                 @click="handleBack"
               >
-                <i class="bi bi-arrow-left-short text-headline lh-1"></i> Back
-              </AppButton>
+                <i class="bi bi-arrow-left-short text-headline lh-1"></i> Back</AppButton
+              >
             </div>
             <AppButton
               v-if="keyPairs.recoveryPhraseWords.length > 0 && step.current !== 'recoveryPhrase'"
               color="primary"
-              class="mt-6 ms-3"
               @click="handleNext"
+              class="mt-6 ms-3"
+              >Next</AppButton
             >
-              Next
-            </AppButton>
           </div>
         </div>
       </template>

@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import {ref} from 'vue';
-
-import {AccountId} from '@hashgraph/sdk';
+import { ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import {useRouter} from 'vue-router';
-import {useToast} from 'vue-toast-notification';
+import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toast-notification';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
-import {add} from '@renderer/services/filesService';
+import { add } from '@renderer/services/filesService';
 
-import {isAccountId} from '@renderer/utils/validator';
+import { isAccountId, isFileId } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { Prisma } from '@prisma/client';
+import { FileId } from '@hashgraph/sdk';
 
 /* Stores */
 const user = useUserStore();
@@ -27,6 +27,7 @@ useCreateTooltips();
 /* State */
 const fileId = ref('');
 const nickname = ref('');
+const description = ref('');
 
 const handleLinkFile = async e => {
   e.preventDefault();
@@ -37,12 +38,23 @@ const handleLinkFile = async e => {
         throw new Error('User not logged in');
       }
 
-      await add(user.data.id, AccountId.fromString(fileId.value).toString(), nickname.value);
+      if (!isFileId(fileId.value)) {
+        throw new Error('Invalid File ID');
+      }
 
-      router.push({name: 'files'});
-      toast.success('File linked successfully!', {position: 'bottom-right'});
+      const file: Prisma.HederaFileUncheckedCreateInput = {
+        file_id: FileId.fromString(fileId.value).toString(),
+        user_id: user.data.id,
+        nickname: nickname.value,
+        description: description.value,
+      };
+
+      await add(file);
+
+      router.push({ name: 'files' });
+      toast.success('File linked successfully!', { position: 'bottom-right' });
     } catch (error: any) {
-      toast.error(error.message || 'File link failed', {position: 'bottom-right'});
+      toast.error(error.message || 'File link failed', { position: 'bottom-right' });
     }
   }
 };
@@ -53,13 +65,9 @@ const handleLinkFile = async e => {
       color="primary"
       class="d-flex align-items-center justify-content-center"
       @click="$router.back()"
+      ><i class="bi bi-arrow-left text-subheader me-2"></i> Back</AppButton
     >
-      <i class="bi bi-arrow-left text-subheader me-2"></i> Back
-    </AppButton>
-    <form
-      class="mt-5 col-12 col-md-8 col-xl-6 col-xxl-4"
-      @submit="handleLinkFile"
-    >
+    <form class="mt-5 col-12 col-md-8 col-xl-6 col-xxl-4" @submit="handleLinkFile">
       <div class="form-group">
         <label class="form-label">Hedera File ID <span class="text-danger">*</span></label>
         <AppInput
@@ -74,19 +82,15 @@ const handleLinkFile = async e => {
       </div>
       <div class="form-group mt-5">
         <label class="form-label">Nickname</label>
-        <AppInput
-          v-model="nickname"
-          :filled="true"
-        />
+        <AppInput v-model="nickname" :filled="true" />
       </div>
-      <AppButton
-        color="primary"
-        type="submit"
-        class="mt-5 w-100"
-        :disabled="!isAccountId(fileId)"
+      <div class="form-group mt-5">
+        <label class="form-label">Description</label>
+        <textarea v-model="description" class="form-control is-fill" rows="8"></textarea>
+      </div>
+      <AppButton color="primary" type="submit" class="mt-5 w-100" :disabled="!isFileId(fileId)"
+        >Link File</AppButton
       >
-        Link Account
-      </AppButton>
     </form>
   </div>
 </template>

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import {computed, nextTick, onBeforeUnmount, ref} from 'vue';
 
+import type {Key, KeyList, TransactionReceipt, TransactionResponse} from '@hashgraph/sdk';
 import {FileAppendTransaction, FileUpdateTransaction, Transaction} from '@hashgraph/sdk';
-import type {TransactionReceipt, TransactionResponse} from '@hashgraph/sdk';
-import type {Transaction as Tx} from '@prisma/client';
+import type {Prisma} from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
@@ -22,21 +22,22 @@ import {
 import {openExternal} from '@renderer/services/electronUtilsService';
 import {getDollarAmount} from '@renderer/services/mirrorNodeDataService';
 
+import {ableToSign} from '@renderer/utils/sdk';
+import {getTransactionType} from '@renderer/utils/transactions';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import {getTransactionType} from '@renderer/utils/transactions';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import {flattenKeyList} from '@renderer/services/keyPairService';
 
 /* Props */
 const props = defineProps<{
   transactionBytes: Uint8Array | null;
   onExecuted?: (
-    result: {
-      response: TransactionResponse;
-      receipt: TransactionReceipt;
-      transactionId: string;
-    },
+    response: TransactionResponse,
+    receipt: TransactionReceipt,
     chunksAmount?: number,
   ) => void;
   onCloseSuccessModalClick?: () => void;
@@ -55,13 +56,12 @@ const toast = useToast();
 const transactionResult = ref<{
   response: TransactionResponse;
   receipt: TransactionReceipt;
-  transactionId: string;
 } | null>();
 const chunksAmount = ref<number | null>(null);
 const chunkSize = ref(1024);
 const chunkInterval = ref(0.1);
 const userPassword = ref('');
-const requiredSignatures = ref<string[]>([]);
+const signatureKey = ref<Key | KeyList | null>(null);
 const isConfirmShown = ref(false);
 const isSigning = ref(false);
 const isSignModalShown = ref(false);
@@ -75,11 +75,14 @@ const unmounted = ref(false);
 const transaction = computed(() =>
   props.transactionBytes ? Transaction.fromBytes(props.transactionBytes) : null,
 );
+const flattenedSignatureKey = computed(() =>
+  signatureKey.value ? flattenKeyList(signatureKey.value).map(pk => pk.toStringRaw()) : [],
+);
 const externalPublicKeysReq = computed(() =>
-  requiredSignatures.value.filter(pk => !keyPairs.publicKeys.includes(pk)),
+  flattenedSignatureKey.value.filter(pk => !keyPairs.publicKeys.includes(pk)),
 );
 const localPublicKeysReq = computed(() =>
-  requiredSignatures.value.filter(pk => keyPairs.publicKeys.includes(pk)),
+  flattenedSignatureKey.value.filter(pk => keyPairs.publicKeys.includes(pk)),
 );
 const type = computed(() => transaction.value && getTransactionType(transaction.value));
 
@@ -100,7 +103,7 @@ function handleConfirmTransaction(e: Event) {
     isConfirmShown.value = false;
     isSignModalShown.value = true;
   } else if (user.data.mode === 'organization') {
-    console.log('Send to back end along with required external signatures');
+    console.log('Send to back end along with siganture key');
   }
 }
 
@@ -161,13 +164,9 @@ async function handleSignTransaction(e: Event) {
 }
 
 /* Functions */
-async function process(
-  _requiredSignatures: string[],
-  _chunkSize?: number,
-  _chunkInterval?: number,
-) {
+async function process(requiredKey: Key, _chunkSize?: number, _chunkInterval?: number) {
   resetData();
-  requiredSignatures.value = [...new Set(_requiredSignatures)];
+  signatureKey.value = requiredKey;
 
   await nextTick();
   await keyPairs.refetch();
@@ -175,7 +174,7 @@ async function process(
   validateProcess();
 
   const estimatedSignaturesSize =
-    _requiredSignatures.length * TRANSACTION_SIGNATURE_ESTIMATED_MAX_SIZE;
+    flattenedSignatureKey.value.length * TRANSACTION_SIGNATURE_ESTIMATED_MAX_SIZE;
 
   if (_chunkSize) {
     _chunkSize = Number(_chunkSize);
@@ -211,7 +210,8 @@ async function process(
     }
 
     if (
-      localPublicKeysReq.value.length < requiredSignatures.value.length &&
+      signatureKey.value &&
+      !ableToSign(keyPairs.publicKeys, signatureKey.value) &&
       user.data.mode === 'personal'
     ) {
       throw new Error(
@@ -232,12 +232,13 @@ async function executeTransaction(transactionBytes: Uint8Array) {
   try {
     isExecuting.value = true;
 
-    transactionResult.value = await execute(transactionBytes);
+    const {response, receipt} = await execute(transactionBytes);
+    transactionResult.value = {response, receipt};
 
     status = transactionResult.value.receipt.status._code;
 
     isExecutedModalShown.value = true;
-    props.onExecuted && props.onExecuted(transactionResult.value);
+    props.onExecuted && props.onExecuted(response, receipt);
 
     if (unmounted.value) {
       toast.success('Transaction executed', {position: 'bottom-right'});
@@ -250,25 +251,24 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     isExecuting.value = false;
   }
 
-  if (!type.value || !transaction.value.transactionId) throw new Error('Cannot save transaction');
+  const executedTransaction = Transaction.fromBytes(transactionBytes);
 
-  const transactionToStore: Tx = {
-    id: '',
-    name: `${type.value} (${transaction.value.transactionId.toString()})`,
+  if (!type.value || !executedTransaction) throw new Error('Cannot save transaction');
+
+  const transactionToStore: Prisma.TransactionUncheckedCreateInput = {
+    name: `${type.value} (${executedTransaction.transactionId?.toString()})`,
     type: type.value,
     description: '',
-    transaction_id: transaction.value.transactionId.toString(),
-    transaction_hash: (await transaction.value.getTransactionHash()).toString(),
-    body: transaction.value.toBytes().toString(),
+    transaction_id: executedTransaction.transactionId?.toString() || '',
+    transaction_hash: (await executedTransaction.getTransactionHash()).toString(),
+    body: executedTransaction.toBytes().toString(),
     status: '',
     status_code: status,
     user_id: user.data.id,
     creator_public_key: null,
     signature: '',
-    valid_start: transaction.value.transactionId.validStart?.toString() || '',
+    valid_start: executedTransaction.transactionId?.validStart?.toString() || '',
     executed_at: new Date().getTime() / 1000,
-    created_at: new Date(),
-    updated_at: new Date(),
     group_id: null,
   };
   await storeTransaction(transactionToStore);
@@ -296,7 +296,7 @@ async function chunkFileTransactionForOrganization(
     const updateTransaction = new FileUpdateTransaction()
       .setTransactionId(transaction.transactionId!)
       .setTransactionValidDuration(180)
-      .setMaxTransactionFee(transaction.maxTransactionFee?.toString() || 2)
+      .setMaxTransactionFee(transaction.maxTransactionFee || 2)
       .setFileId(transaction.fileId!)
       .setContents(chunks[0]);
     transaction.fileMemo && updateTransaction.setFileMemo(transaction.fileMemo);
@@ -327,7 +327,7 @@ async function chunkFileTransactionForOrganization(
     const appendTransaction = new FileAppendTransaction()
       .setTransactionId(transactionId)
       .setTransactionValidDuration(180)
-      .setMaxTransactionFee(transaction.maxTransactionFee?.toString() || 2)
+      .setMaxTransactionFee(transaction.maxTransactionFee || 2)
       .setFileId(transaction.fileId!)
       .setContents(chunks[i])
       .setMaxChunks(1)
@@ -358,7 +358,6 @@ async function executeFileTransactions(
   let firstTransactionResult: {
     response: TransactionResponse;
     receipt: TransactionReceipt;
-    transactionId: string;
   } | null = null;
   processedChunks.value = 0;
   let hasFailed = false;
@@ -375,13 +374,16 @@ async function executeFileTransactions(
     let status = 0;
     let chunkTransaction: FileUpdateTransaction | FileAppendTransaction = transaction;
     let chunkTransactionType = '';
+
+    let transactionHash: Uint8Array | null = null;
+
     try {
       if (transaction instanceof FileUpdateTransaction && i === 0) {
         chunkTransactionType = 'File Update Transaction';
         chunkTransaction = new FileUpdateTransaction()
           .setTransactionId(createTransactionId(transaction.transactionId!.accountId!, new Date()))
           .setTransactionValidDuration(180)
-          .setMaxTransactionFee(transaction.maxTransactionFee?.toString() || 2)
+          .setMaxTransactionFee(transaction.maxTransactionFee || 2)
           .setFileId(transaction.fileId!)
           .setContents(chunks[0]);
         transaction.fileMemo && chunkTransaction.setFileMemo(transaction.fileMemo);
@@ -390,18 +392,21 @@ async function executeFileTransactions(
           chunkTransaction.setKeys(transaction.keys);
         transaction.expirationTime &&
           chunkTransaction.setExpirationTime(transaction.expirationTime);
-      } else if (transaction instanceof FileAppendTransaction) {
+      } else {
         chunkTransactionType = 'File Append Transaction';
+        const newValidStart = new Date();
+        newValidStart.setSeconds(0);
+
         chunkTransaction = new FileAppendTransaction()
-          .setTransactionId(createTransactionId(transaction.transactionId!.accountId!, new Date()))
+          .setTransactionId(
+            createTransactionId(transaction.transactionId!.accountId!, newValidStart),
+          )
           .setTransactionValidDuration(180)
-          .setMaxTransactionFee(transaction.maxTransactionFee?.toString() || 2)
+          .setMaxTransactionFee(transaction.maxTransactionFee || 2)
           .setFileId(transaction.fileId!)
           .setContents(chunks[i])
           .setMaxChunks(1)
           .setChunkSize(chunkSize.value);
-      } else {
-        throw new Error('File transaction should be Update or Append');
       }
 
       const signedTransactionBytes = await signTransaction(
@@ -411,11 +416,14 @@ async function executeFileTransactions(
         userPassword.value,
       );
 
-      const result = await execute(signedTransactionBytes);
+      const executedTransaction = Transaction.fromBytes(signedTransactionBytes);
+      transactionHash = await executedTransaction.getTransactionHash();
 
-      if (i === 0) firstTransactionResult = result;
+      const {response, receipt} = await execute(signedTransactionBytes);
 
-      status = result.receipt.status._code;
+      if (i === 0) firstTransactionResult = {response, receipt};
+
+      status = receipt.status._code;
 
       processedChunks.value++;
     } catch (error: any) {
@@ -434,17 +442,16 @@ async function executeFileTransactions(
       toast.error(message, {position: 'bottom-right'});
     }
 
-    if (chunkTransaction === null) {
+    if (chunkTransaction === null || !transactionHash) {
       throw new Error('No transaction to save');
     }
 
-    const transactionToStore: Tx = {
-      id: '',
+    const transactionToStore: Prisma.TransactionUncheckedCreateInput = {
       name: `${chunkTransactionType} (${chunkTransaction.transactionId?.toString()})`,
       type: chunkTransactionType,
       description: '',
       transaction_id: chunkTransaction.transactionId?.toString() || '',
-      transaction_hash: (await chunkTransaction.getTransactionHash()).toString(),
+      transaction_hash: transactionHash.toString(),
       body: chunkTransaction.toBytes().toString(),
       status: '',
       status_code: status,
@@ -453,8 +460,6 @@ async function executeFileTransactions(
       signature: '',
       valid_start: chunkTransaction.transactionId?.validStart?.toString() || '',
       executed_at: new Date().getTime() / 1000,
-      created_at: new Date(),
-      updated_at: new Date(),
       group_id: group,
     };
 
@@ -465,7 +470,12 @@ async function executeFileTransactions(
 
   if (firstTransactionResult) {
     transactionResult.value = firstTransactionResult;
-    props.onExecuted && props.onExecuted(transactionResult.value, chunksAmount.value || undefined);
+    props.onExecuted &&
+      props.onExecuted(
+        firstTransactionResult.response,
+        firstTransactionResult.receipt,
+        chunksAmount.value || undefined,
+      );
     isExecutedModalShown.value = true;
   }
 
@@ -500,7 +510,7 @@ function resetData() {
   isExecutedModalShown.value = false;
   isChunkingModalShown.value = false;
   isSignModalShown.value = false;
-  requiredSignatures.value = [];
+  signatureKey.value = null;
   chunksAmount.value = null;
   chunkSize.value = 1024;
   chunkInterval.value = 0.1;
@@ -608,10 +618,13 @@ defineExpose({
           ></i>
         </div>
         <div class="text-center">
-          <i class="bi bi-unlock large-icon"></i>
+          <AppCustomIcon
+            :name="'lock'"
+            style="height: 160px"
+          />
         </div>
         <form
-          class="mt-5"
+          class="mt-3"
           @submit="handleSignTransaction"
         >
           <h3 class="text-center text-title text-bold">Enter your password</h3>
@@ -748,9 +761,9 @@ defineExpose({
             @click="
               network.network !== 'custom' &&
                 openExternal(`
-            https://hashscan.io/${network.network}/transaction/${transactionResult?.transactionId}`)
+            https://hashscan.io/${network.network}/transaction/${transactionResult?.response.transactionId}`)
             "
-            >{{ transactionResult?.transactionId }}</a
+            >{{ transactionResult?.response.transactionId }}</a
           >
         </p>
         <slot name="successContent"></slot>

@@ -30,7 +30,7 @@ export const addAccount = async (userId: string, accountId: string, nickname: st
     data: {
       user_id: userId,
       account_id: accountId,
-      nickname: nickname,
+      nickname,
     },
   });
 
@@ -71,7 +71,7 @@ export const changeAccountNickname = async (
       account_id: accountId,
     },
     data: {
-      nickname: nickname,
+      nickname,
     },
   });
 

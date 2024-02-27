@@ -1,30 +1,32 @@
 <script setup lang="ts">
-import {ref, onMounted} from 'vue';
-import type {Key, Transaction} from '@hashgraph/sdk';
-import {Hbar, TransferTransaction} from '@hashgraph/sdk';
+import { ref, onMounted } from 'vue';
+import { Hbar, Key, KeyList, Transaction, TransferTransaction } from '@hashgraph/sdk';
 
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
+import useUserStore from '@renderer/stores/storeUser';
 
-import {useToast} from 'vue-toast-notification';
-import {useRoute} from 'vue-router';
+import { useToast } from 'vue-toast-notification';
+import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import {createTransactionId} from '@renderer/services/transactionService';
-import {getDraft} from '@renderer/services/transactionDraftsService';
+import { createTransactionId } from '@renderer/services/transactionService';
+import { getDraft } from '@renderer/services/transactionDraftsService';
 
-import {getDateTimeLocalInputValue} from '@renderer/utils';
-import {getTransactionFromBytes} from '@renderer/utils/transactions';
-import {isAccountId} from '@renderer/utils/validator';
+import { getDateTimeLocalInputValue } from '@renderer/utils';
+import { getTransactionFromBytes } from '@renderer/utils/transactions';
+import { isAccountId } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 
 /* Stores */
 const keyPairs = useKeyPairsStore();
+const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
@@ -52,34 +54,34 @@ const isExecuted = ref(false);
 const handleCreate = async e => {
   e.preventDefault();
   try {
-    if (!isAccountId(payerData.accountId.value)) {
+    if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
       throw Error('Invalid Payer ID');
     }
 
-    if (!isAccountId(senderData.accountId.value)) {
+    if (!isAccountId(senderData.accountId.value) || !senderData.key.value) {
       throw Error('Invalid Sender ID');
     }
 
-    if (!isAccountId(receiverData.accountId.value)) {
+    if (!isAccountId(receiverData.accountId.value) || !receiverData.key.value) {
       throw Error('Invalid Receiver ID');
     }
 
     transaction.value = createTransaction();
 
-    let requiredSignatures = payerData.keysFlattened.value;
+    const requiredKey = new KeyList([payerData.key.value]);
 
     if (!isApprovedTransfer.value) {
-      requiredSignatures = requiredSignatures.concat(senderData.keysFlattened.value);
+      requiredKey.push(senderData.key.value);
     }
     if (receiverData.accountInfo.value?.receiverSignatureRequired) {
-      requiredSignatures = requiredSignatures.concat(receiverData.keysFlattened.value);
+      requiredKey.push(receiverData.key.value);
     }
 
-    await transactionProcessor.value?.process(requiredSignatures);
+    await transactionProcessor.value?.process(requiredKey);
   } catch (err: any) {
     console.log(err);
 
-    toast.error(err.message || 'Failed to create transaction', {position: 'bottom-right'});
+    toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
 
@@ -106,6 +108,7 @@ const handleLoadFromDraft = async () => {
     if (draftTransaction.maxTransactionFee) {
       maxTransactionFee.value = draftTransaction.maxTransactionFee.toBigNumber().toNumber();
     }
+    console.log(draftTransaction);
 
     draftTransaction.hbarTransfers._map.forEach((value, accoundId) => {
       const hbars = value.toBigNumber().toNumber();
@@ -180,10 +183,7 @@ const columnClass = 'col-4 col-xxxl-3';
     />
 
     <div class="row flex-wrap align-items-end mt-6">
-      <div
-        class="form-group"
-        :class="[columnClass]"
-      >
+      <div class="form-group" :class="[columnClass]">
         <label class="form-label"
           >{{ isApprovedTransfer ? 'Spender' : 'Payer' }} ID
           <span class="text-danger">*</span></label
@@ -198,63 +198,44 @@ const columnClass = 'col-4 col-xxxl-3';
           class="d-block form-label text-secondary"
           >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
         >
-        <AppInput
-          :model-value="payerData.accountIdFormatted.value"
-          :filled="true"
-          placeholder="Enter Payer ID"
-          @update:model-value="v => (payerData.accountId.value = v)"
-        />
+        <template v-if="user.data.mode === 'personal'">
+          <AccountIdsSelect v-model:account-id="payerData.accountId.value" :select-default="true" />
+        </template>
+        <template v-else>
+          <AppInput
+            :model-value="payerData.accountIdFormatted.value"
+            @update:model-value="v => (payerData.accountId.value = v)"
+            :filled="true"
+            placeholder="Enter Payer ID"
+          />
+        </template>
       </div>
-      <div
-        class="form-group form-group"
-        :class="[columnClass]"
-      >
+      <div class="form-group form-group" :class="[columnClass]">
         <label class="form-label">Valid Start Time <span class="text-danger">*</span></label>
-        <AppInput
-          v-model="validStart"
-          type="datetime-local"
-          step="1"
-          :filled="true"
-        />
+        <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
       </div>
-      <div
-        class="form-group form-group"
-        :class="[columnClass]"
-      >
+      <div class="form-group form-group" :class="[columnClass]">
         <label class="form-label">Max Transaction Fee</label>
-        <AppInput
-          v-model="maxTransactionFee"
-          type="number"
-          min="0"
-          :filled="true"
-        />
+        <AppInput v-model="maxTransactionFee" type="number" min="0" :filled="true" />
       </div>
     </div>
 
     <div class="row align-items-end mt-6">
-      <div
-        class="form-group"
-        :class="[columnClass]"
-      >
+      <div class="form-group" :class="[columnClass]">
         <label class="form-label">Sender ID <span class="text-danger">*</span></label>
-        <label
-          v-if="senderData.isValid.value"
-          class="form-label d-block text-secondary"
+        <label v-if="senderData.isValid.value" class="form-label d-block text-secondary"
           >Balance: {{ senderData.accountInfo.value?.balance || 0 }}</label
         >
+
         <AppInput
-          :value="senderData.accountIdFormatted.value"
+          :model-value="senderData.accountIdFormatted.value"
+          @update:model-value="v => (senderData.accountId.value = v)"
           :filled="true"
           placeholder="Enter Sender ID"
-          @input="senderData.accountId.value = ($event.target as HTMLInputElement).value"
         />
       </div>
 
-      <div
-        v-if="senderData.key.value"
-        class="form-group mt-6"
-        :class="[columnClass]"
-      >
+      <div class="form-group mt-6" :class="[columnClass]" v-if="senderData.key.value">
         <AppButton
           :outline="true"
           color="primary"
@@ -263,35 +244,29 @@ const columnClass = 'col-4 col-xxxl-3';
             isKeyStructureModalShown = true;
             keyStructureComponentKey = senderData.key.value;
           "
+          >Show Key</AppButton
         >
-          Show Key
-        </AppButton>
       </div>
     </div>
 
     <div class="row align-items-end mt-6">
-      <div
-        class="form-group"
-        :class="[columnClass]"
-      >
+      <div class="form-group" :class="[columnClass]">
         <label class="form-label">Receiver ID <span class="text-danger">*</span></label>
-        <label
-          v-if="receiverData.isValid.value"
-          class="form-label d-block text-secondary"
+        <label v-if="receiverData.isValid.value" class="form-label d-block text-secondary"
           >Balance: {{ receiverData.accountInfo.value?.balance || 0 }}</label
         >
         <AppInput
           :value="receiverData.accountIdFormatted.value"
+          @input="receiverData.accountId.value = ($event.target as HTMLInputElement).value"
           :filled="true"
           placeholder="Enter Receiver ID"
-          @input="receiverData.accountId.value = ($event.target as HTMLInputElement).value"
         />
       </div>
 
       <div
-        v-if="receiverData.accountInfo.value?.receiverSignatureRequired && receiverData.key.value"
         class="form-group mt-6"
         :class="[columnClass]"
+        v-if="receiverData.accountInfo.value?.receiverSignatureRequired && receiverData.key.value"
       >
         <AppButton
           :outline="true"
@@ -301,24 +276,15 @@ const columnClass = 'col-4 col-xxxl-3';
             isKeyStructureModalShown = true;
             keyStructureComponentKey = receiverData.key.value;
           "
+          >Show Key</AppButton
         >
-          Show Key
-        </AppButton>
       </div>
     </div>
 
     <div class="row mt-6">
-      <div
-        class="form-group"
-        :class="[columnClass]"
-      >
+      <div class="form-group" :class="[columnClass]">
         <label class="form-label">Amount <span class="text-danger">*</span></label>
-        <AppInput
-          v-model="amount"
-          type="number"
-          :filled="true"
-          placeholder="Enter Amount"
-        />
+        <AppInput v-model="amount" type="number" :filled="true" placeholder="Enter Amount" />
       </div>
     </div>
 
@@ -337,7 +303,6 @@ const columnClass = 'col-4 col-xxxl-3';
     :transaction-bytes="transaction?.toBytes() || null"
     :on-close-success-modal-click="
       () => {
-        payerData.accountId.value = '';
         senderData.accountId.value = '';
         receiverData.accountId.value = '';
         validStart = '';

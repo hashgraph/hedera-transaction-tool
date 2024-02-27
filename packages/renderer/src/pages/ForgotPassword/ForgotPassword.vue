@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import {ref} from 'vue';
+import { ref } from 'vue';
 
-import {useRouter} from 'vue-router';
+import { useRouter } from 'vue-router';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -18,7 +18,7 @@ const handleFormSubmit = (event: Event) => {
 
   // SEND BACK END PASSWORD RESET REQUEST FOR ENTERED EMAIL
 
-  router.push({name: 'welcome'});
+  router.push({ name: 'welcome' });
 };
 </script>
 
@@ -27,15 +27,11 @@ const handleFormSubmit = (event: Event) => {
     <h1 class="text-display text-bold text-center">Forgot Password</h1>
     <p class="text-main mt-5 text-center">Please enter your email</p>
     <form
-      class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
       @submit="handleFormSubmit"
+      class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
     >
       <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
-        <AppInput
-          v-model="inputEmail"
-          :filled="true"
-          placeholder="Enter your email"
-        />
+        <AppInput v-model="inputEmail" :filled="true" placeholder="Enter your email" />
       </div>
       <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
         <AppButton
@@ -44,9 +40,8 @@ const handleFormSubmit = (event: Event) => {
           type="submit"
           class="w-100"
           :disabled="inputEmail.length === 0"
+          >Continue</AppButton
         >
-          Continue
-        </AppButton>
       </div>
     </form>
   </div>

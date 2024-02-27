@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type {ProgressInfo, UpdateInfo} from 'electron-updater';
-import {computed, onBeforeMount, ref} from 'vue';
+import { ProgressInfo, UpdateInfo } from 'electron-updater';
+import { computed, onBeforeMount, ref } from 'vue';
 
-import {useToast} from 'vue-toast-notification';
+import { useToast } from 'vue-toast-notification';
 
-import {convertBytes} from '@renderer/utils';
+import { convertBytes } from '@renderer/utils';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -72,7 +72,7 @@ const handlerError = (message: string) => {
   isDownloadingUpdateShown.value = false;
   isDownloadedShown.value = false;
 
-  toast.error(message, {position: 'bottom-right'});
+  toast.error(message, { position: 'bottom-right' });
 };
 
 /* Hooks */
@@ -95,11 +95,7 @@ onBeforeMount(() => {
   >
     <div class="text-center px-9 py-5">
       <div>
-        <img
-          src="/assets/images/icon.png"
-          class="pulse"
-          style="height: 10vh"
-        />
+        <img src="/images/icon.png" class="pulse" style="height: 10vh" />
       </div>
       <p class="mt-5">Checking for update</p>
     </div>
@@ -113,51 +109,29 @@ onBeforeMount(() => {
   >
     <div class="text-center p-4">
       <div>
-        <img
-          src="/assets/images/icon.png"
-          style="height: 10vh"
-        />
+        <img src="/images/icon.png" style="height: 10vh" />
       </div>
       <h2 class="text-title text-semi-bold mt-5">Update Available</h2>
       <p class="text-small text-secondary mt-3">Version {{ updateInfo?.version || '' }}</p>
       <div class="d-grid mt-5">
-        <AppButton
-          color="primary"
-          @click="handleDownloadUpdate"
+        <AppButton color="primary" @click="handleDownloadUpdate">Download</AppButton>
+        <AppButton color="secondary" class="mt-3" @click="isUpdateAvailableShown = false"
+          >Cancel</AppButton
         >
-          Download
-        </AppButton>
-        <AppButton
-          color="secondary"
-          class="mt-3"
-          @click="isUpdateAvailableShown = false"
-        >
-          Cancel
-        </AppButton>
       </div>
     </div>
   </AppModal>
   <!-- Update Not Available -->
-  <AppModal
-    :show="isUpdateNotAvailableShown"
-    class="common-modal"
-  >
+  <AppModal :show="isUpdateNotAvailableShown" class="common-modal">
     <div class="text-center p-4">
       <div>
-        <img
-          src="/assets/images/icon.png"
-          style="height: 10vh"
-        />
+        <img src="/images/icon.png" style="height: 10vh" />
       </div>
       <h2 class="text-title text-semi-bold mt-5">Update Not Available</h2>
       <div class="d-grid mt-5">
-        <AppButton
-          color="secondary"
-          class="mt-3"
-          @click="isUpdateNotAvailableShown = false"
+        <AppButton color="secondary" class="mt-3" @click="isUpdateNotAvailableShown = false"
+          >Close</AppButton
         >
-          Close
-        </AppButton>
       </div>
     </div>
   </AppModal>
@@ -170,19 +144,13 @@ onBeforeMount(() => {
   >
     <div class="text-center p-4">
       <div>
-        <img
-          src="/assets/images/icon.png"
-          style="height: 10vh"
-        />
+        <img src="/images/icon.png" style="height: 10vh" />
       </div>
       <h2 class="text-title text-semi-bold mt-5">Downloading update</h2>
       <p class="text-small text-secondary mt-3">Version {{ updateInfo?.version || '' }}</p>
       <div class="d-grid mt-4">
         <div class="d-flex justify-content-between">
-          <p
-            v-if="progressInfo"
-            class="text-start text-footnote mt-3"
-          >
+          <p class="text-start text-footnote mt-3" v-if="progressInfo">
             {{
               convertBytes(progressInfo?.transferred || 0, {
                 useBinaryUnits: false,
@@ -191,13 +159,10 @@ onBeforeMount(() => {
             }}
             of
             {{
-              convertBytes(progressInfo?.total || 0, {useBinaryUnits: false, decimals: 2}) || '0'
+              convertBytes(progressInfo?.total || 0, { useBinaryUnits: false, decimals: 2 }) || '0'
             }}
           </p>
-          <p
-            v-if="progressInfo"
-            class="text-start text-micro mt-3"
-          >
+          <p class="text-start text-micro mt-3" v-if="progressInfo">
             {{
               convertBytes(progressInfo?.bytesPerSecond || 0, {
                 useBinaryUnits: false,
@@ -225,20 +190,12 @@ onBeforeMount(() => {
   >
     <div class="text-center p-4">
       <div>
-        <img
-          src="/assets/images/icon.png"
-          style="height: 10vh"
-        />
+        <img src="/images/icon.png" style="height: 10vh" />
       </div>
       <h2 class="text-title text-semi-bold mt-5">Install Update</h2>
       <p class="text-small text-secondary mt-3">Version {{ updateInfo?.version || '' }}</p>
       <div class="d-grid mt-5">
-        <AppButton
-          color="primary"
-          @click="handleInstall"
-        >
-          Install
-        </AppButton>
+        <AppButton color="primary" @click="handleInstall">Install</AppButton>
       </div>
     </div>
   </AppModal>

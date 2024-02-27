@@ -2,7 +2,7 @@ import {Client, FileContentsQuery, PrivateKey, Query, Transaction} from '@hashgr
 
 import type {HederaSpecialFileId} from '../../../../../types/interfaces';
 
-import type {Transaction as Tx} from '@prisma/client';
+import type {Prisma} from '@prisma/client';
 import {getPrismaClient} from '@main/db';
 
 import {getNumberArrayFromString} from '@main/utils';
@@ -103,46 +103,60 @@ export const executeTransaction = async (transactionBytes: Uint8Array) => {
 
     const receipt = await response.getReceipt(client);
 
-    return {response, receipt, transactionId: response.transactionId.toString()};
+    return {responseJSON: JSON.stringify(response.toJSON()), receiptBytes: receipt.toBytes()};
   } catch (error: any) {
-    throw new Error(JSON.stringify({status: error.status._code, message: error.message}));
+    console.log(error);
+
+    throw new Error(JSON.stringify({status: error?.status?._code || -1, message: error.message}));
   }
 };
 
 // Executes a query
-export const executeQuery = async (queryData: string) => {
-  const tx: {
-    queryBytes: string;
-    accountId: string;
-    privateKey: string;
-    type: string;
-  } = JSON.parse(queryData);
-
-  const privateKey =
-    tx.type === 'ED25519'
-      ? PrivateKey.fromStringED25519(tx.privateKey)
-      : tx.type === 'ECDSA'
-        ? PrivateKey.fromStringECDSA(tx.privateKey)
+export const executeQuery = async (
+  queryBytes: Uint8Array,
+  accountId: string,
+  privateKey: string,
+  privateKeyType: string,
+) => {
+  const typedPrivateKey =
+    privateKeyType === 'ED25519'
+      ? PrivateKey.fromStringED25519(privateKey)
+      : privateKeyType === 'ECDSA'
+        ? PrivateKey.fromStringECDSA(privateKey)
         : null;
 
-  if (!privateKey) {
+  if (!typedPrivateKey) {
     throw new Error('Invalid key type');
   }
 
-  client.setOperator(tx.accountId, privateKey);
+  client.setOperator(accountId, privateKey);
 
-  const bytesArray = getNumberArrayFromString(tx.queryBytes);
-
-  const query = Query.fromBytes(Uint8Array.from(bytesArray));
+  const query = Query.fromBytes(queryBytes);
 
   try {
     const response = await query.execute(client);
 
     if (query instanceof FileContentsQuery && isHederaSpecialFileId(query.fileId?.toString())) {
-      const decoded = decodeProto(query.fileId.toString() as HederaSpecialFileId, response);
-      return {response: decoded};
+      return decodeProto(query.fileId?.toString() as HederaSpecialFileId, response);
     }
-    return {response};
+
+    // if (
+    //   Buffer.isBuffer(response) &&
+    //   query instanceof FileContentsQuery &&
+    //   response.length > 1000000
+    // ) {
+    //   const filePath = path.join(app.getPath('temp'), `${query.fileId?.toString()}.txt`);
+    //   await fs.writeFile(filePath, response);
+    //   shell.showItemInFolder(filePath);
+    // }
+
+    //@ts-expect-error Check if there is a toBytes function
+    if (typeof response === 'object' && response !== null && response.toBytes) {
+      //@ts-expect-error Invoke toBytes()
+      return response.toBytes();
+    } else {
+      return response;
+    }
   } catch (error: any) {
     console.log(error);
     throw new Error(error.message);
@@ -152,7 +166,7 @@ export const executeQuery = async (queryData: string) => {
 };
 
 // Stores a transaction
-export const storeTransaction = async (transaction: Tx) => {
+export const storeTransaction = async (transaction: Prisma.TransactionUncheckedCreateInput) => {
   const prisma = getPrismaClient();
 
   try {
@@ -165,12 +179,7 @@ export const storeTransaction = async (transaction: Tx) => {
     transaction.body = Buffer.from(uint8Body).toString('hex');
 
     return await prisma.transaction.create({
-      data: {
-        ...transaction,
-        id: undefined,
-        created_at: undefined,
-        updated_at: undefined,
-      },
+      data: transaction,
     });
   } catch (error: any) {
     console.log(error);

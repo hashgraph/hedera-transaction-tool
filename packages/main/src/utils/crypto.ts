@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 
-export function hash(data: any) {
+export function hash(data) {
   return crypto.createHash('sha256').update(data).digest();
 }
 
@@ -16,7 +16,7 @@ export function createCredentials(password: string) {
   return [key, iv];
 }
 
-export function encrypt(data: string, password: string) {
+export function encrypt(data, password: string) {
   data = Buffer.from(data, 'utf-8').toString('hex');
 
   const [key, iv] = createCredentials(password);
@@ -28,7 +28,7 @@ export function encrypt(data: string, password: string) {
   return encrypted;
 }
 
-export function decrypt(data: string, password: string) {
+export function decrypt(data, password: string) {
   const [key, iv] = createCredentials(password);
 
   const decipher = crypto.createDecipheriv('aes-192-cbc', key, iv);

@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import {computed, onBeforeMount, reactive, ref} from 'vue';
-import type {Transaction} from '@prisma/client';
+import { computed, onBeforeMount, reactive, ref } from 'vue';
+import { Transaction } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import {getTransactions} from '@renderer/services/transactionService';
+import { getTransactions } from '@renderer/services/transactionService';
 
 import {
   getTransactionDate,
@@ -17,6 +17,7 @@ import {
 } from '@renderer/utils/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppLoader from '@renderer/components/ui/AppLoader.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -24,11 +25,13 @@ const network = useNetworkStore();
 
 /* State */
 const transactions = ref<Transaction[]>([]);
-const sort = reactive<{field: string; direction: 'asc' | 'desc'}>({
+const sort = reactive<{ field: string; direction: 'asc' | 'desc' }>({
   field: 'timestamp',
   direction: 'desc',
 });
+const isLoading = ref(true);
 
+/* Computed */
 const generatedClass = computed(() => {
   return sort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
 });
@@ -96,14 +99,23 @@ const getOpositeDirection = () => (sort.direction === 'asc' ? 'desc' : 'asc');
 
 /* Hooks */
 onBeforeMount(async () => {
-  transactions.value = await getTransactions(user.data.id);
-  handleSort('timestamp', 'desc');
-  transactions.value = transactions.value.sort((t1, t2) => t2.executed_at - t1.executed_at);
+  try {
+    transactions.value = await getTransactions(user.data.id);
+    handleSort('timestamp', 'desc');
+    transactions.value = transactions.value.sort((t1, t2) => t2.executed_at - t1.executed_at);
+  } catch (error) {
+    throw new Error((error as any).message);
+  } finally {
+    isLoading.value = false;
+  }
 });
 </script>
 
 <template>
-  <table class="table-custom">
+  <template v-if="isLoading">
+    <AppLoader />
+  </template>
+  <table v-else class="table-custom">
     <thead>
       <tr>
         <th class="w-10 text-end">#</th>
@@ -113,11 +125,7 @@ onBeforeMount(async () => {
             @click="handleSort('type', sort.field === 'type' ? getOpositeDirection() : 'asc')"
           >
             <span>Transaction Type</span>
-            <i
-              v-if="sort.field === 'type'"
-              class="bi text-title"
-              :class="[generatedClass]"
-            ></i>
+            <i v-if="sort.field === 'type'" class="bi text-title" :class="[generatedClass]"></i>
           </div>
         </th>
         <th>
@@ -126,11 +134,7 @@ onBeforeMount(async () => {
             @click="handleSort('status', sort.field === 'status' ? getOpositeDirection() : 'asc')"
           >
             <span>Status</span>
-            <i
-              v-if="sort.field === 'status'"
-              class="bi text-title"
-              :class="[generatedClass]"
-            ></i>
+            <i v-if="sort.field === 'status'" class="bi text-title" :class="[generatedClass]"></i>
           </div>
         </th>
         <th>
@@ -139,11 +143,7 @@ onBeforeMount(async () => {
             @click="handleSort('payerId', sort.field === 'payerId' ? getOpositeDirection() : 'asc')"
           >
             <span>Payer ID</span>
-            <i
-              v-if="sort.field === 'payerId'"
-              class="bi text-title"
-              :class="[generatedClass]"
-            ></i>
+            <i v-if="sort.field === 'payerId'" class="bi text-title" :class="[generatedClass]"></i>
           </div>
         </th>
         <th>
@@ -167,10 +167,7 @@ onBeforeMount(async () => {
       </tr>
     </thead>
     <tbody>
-      <template
-        v-for="(transaction, i) in transactions"
-        :key="i"
-      >
+      <template v-for="(transaction, i) in transactions" :key="i">
         <tr>
           <td>{{ i + 1 }}</td>
           <td>
@@ -179,7 +176,7 @@ onBeforeMount(async () => {
           <td>
             <span
               class="badge bg-success text-break"
-              :class="{'bg-danger': ![0, 22].includes(transaction.status_code)}"
+              :class="{ 'bg-danger': ![0, 22].includes(transaction.status_code) }"
               >{{ getTransactionStatus(transaction) }}</span
             >
           </td>
@@ -192,12 +189,9 @@ onBeforeMount(async () => {
             </span>
           </td>
           <td class="text-center">
-            <AppButton
-              color="primary"
-              @click="handleTransactionDetailsClick(transaction)"
+            <AppButton @click="handleTransactionDetailsClick(transaction)" color="primary"
+              >Details</AppButton
             >
-              Details
-            </AppButton>
           </td>
         </tr>
       </template>

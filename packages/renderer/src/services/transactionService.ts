@@ -1,13 +1,19 @@
-import type {Transaction} from '@hashgraph/sdk';
-import {AccountId, PrivateKey, PublicKey, Timestamp, TransactionId} from '@hashgraph/sdk';
+import {
+  AccountId,
+  PrivateKey,
+  PublicKey,
+  Timestamp,
+  Transaction,
+  TransactionId,
+  TransactionReceipt,
+  TransactionResponse,
+} from '@hashgraph/sdk';
 
-import type {KeyPair, Transaction as Tx} from '@prisma/client';
+import { KeyPair, Prisma } from '@prisma/client';
 
-import type {CustomNetworkSettings, Network} from '@renderer/stores/storeNetwork';
+import { getMessageFromIPCError } from '@renderer/utils';
 
-import {getMessageFromIPCError} from '@renderer/utils';
-
-import {decryptPrivateKey} from './keyPairService';
+import { decryptPrivateKey } from './keyPairService';
 
 /* Transaction service */
 
@@ -115,7 +121,13 @@ export const signTransaction = async (
 /* Executes the transaction in the main process */
 export const execute = async (transactionBytes: Uint8Array) => {
   try {
-    return await window.electronAPI.transactions.executeTransaction(transactionBytes);
+    const executionResult =
+      await window.electronAPI.transactions.executeTransaction(transactionBytes);
+
+    return {
+      response: TransactionResponse.fromJSON(JSON.parse(executionResult.responseJSON)),
+      receipt: TransactionReceipt.fromBytes(executionResult.receiptBytes),
+    };
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Transaction Failed'));
   }
@@ -123,16 +135,17 @@ export const execute = async (transactionBytes: Uint8Array) => {
 
 /* Executes the query in the main process */
 export const executeQuery = async (
-  queryBytes: string,
-  network: Network,
-  customNetworkSettings: CustomNetworkSettings | null,
+  queryBytes: Uint8Array,
   accountId: string,
   privateKey: string,
-  type: string,
+  privateKeyType: string,
 ) => {
   try {
     return await window.electronAPI.transactions.executeQuery(
-      JSON.stringify({queryBytes, network, customNetworkSettings, accountId, privateKey, type}),
+      queryBytes,
+      accountId,
+      privateKey,
+      privateKeyType,
     );
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Query Execution Failed'));
@@ -140,7 +153,7 @@ export const executeQuery = async (
 };
 
 /* Saves transaction info */
-export const storeTransaction = async (transaction: Tx) => {
+export const storeTransaction = async (transaction: Prisma.TransactionUncheckedCreateInput) => {
   try {
     return await window.electronAPI.transactions.storeTransaction(transaction);
   } catch (err: any) {

@@ -99,6 +99,9 @@ model HederaFile {
   id       String @id @default(uuid())
   user_id  String
   file_id  String
-  nickname String
+  nickname String?
+  description String?
+  metaBytes String?
+  contentBytes String?
   user     User   @relation(fields: [user_id], references: [id])
 }

@@ -29,11 +29,11 @@ export const getDateTimeLocalInputValue = (date: Date) => {
   return formattedDate.slice(0, 19);
 };
 
-export function convertBytes(
+export const convertBytes = (
   bytes: number,
-  options: {useBinaryUnits?: boolean; decimals?: number} = {},
-): string {
-  const {useBinaryUnits = false, decimals = 2} = options;
+  options: { useBinaryUnits?: boolean; decimals?: number } = {},
+): string => {
+  const { useBinaryUnits = false, decimals = 2 } = options;
 
   if (decimals < 0) {
     throw new Error(`Invalid decimals ${decimals}`);
@@ -46,5 +46,15 @@ export function convertBytes(
 
   const i = Math.floor(Math.log(bytes) / Math.log(base));
 
+  if (bytes <= 0) {
+    return `${bytes.toFixed(decimals)} ${units[0]}`;
+  }
+
   return `${(bytes / Math.pow(base, i)).toFixed(decimals)} ${units[i]}`;
-}
+};
+
+export const getUInt8ArrayFromString = (bytes: string) => {
+  const numberArray = bytes.split(',').map(n => Number(n));
+
+  return Uint8Array.from(numberArray);
+};

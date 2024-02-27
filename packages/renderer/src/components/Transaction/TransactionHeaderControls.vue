@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import {ref} from 'vue';
-import type {RouteLocationNormalized} from 'vue-router';
-import {onBeforeRouteLeave} from 'vue-router';
+import { ref } from 'vue';
+import { RouteLocationNormalized, onBeforeRouteLeave } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import {useToast} from 'vue-toast-notification';
-import {useRoute} from 'vue-router';
+import { useToast } from 'vue-toast-notification';
+import { useRoute } from 'vue-router';
 
 import {
   addDraft,
@@ -15,7 +14,7 @@ import {
   updateDraft,
 } from '@renderer/services/transactionDraftsService';
 
-import {getTransactionFromBytes} from '@renderer/utils/transactions';
+import { getTransactionFromBytes } from '@renderer/utils/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -57,7 +56,7 @@ const saveDraft = async () => {
 
   await addDraft(user.data.id, transactionBytes);
 
-  toast.success('Draft saved', {position: 'bottom-right'});
+  toast.success('Draft saved', { position: 'bottom-right' });
 };
 
 /* Hooks */
@@ -71,10 +70,9 @@ onBeforeRouteLeave(async to => {
 
     if (getTransactionFromBytes(loadedDraft.transactionBytes).toBytes() != transactionBytes) {
       await updateDraft(loadedDraft.id, transactionBytes);
-      return true;
-    } else {
-      return true;
     }
+
+    return true;
   }
 
   if (!(await draftExists(transactionBytes)) && !isSaveDraftModalShown.value && !props.isExecuted) {
@@ -88,25 +86,29 @@ onBeforeRouteLeave(async to => {
 </script>
 <template>
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-    <h2 class="text-title text-bold">{{ headingText }}</h2>
+    <div class="d-flex align-items-center">
+      <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="$router.back()">
+        <i class="bi bi-arrow-left"></i>
+      </AppButton>
+
+      <h2 class="text-title text-bold">{{ headingText }}</h2>
+    </div>
     <div class="d-flex justify-content-end align-items-center">
       <AppButton
         color="secondary"
         :outline="true"
         type="button"
-        class="me-3"
         @click="() => (handleSaveDraft ? handleSaveDraft() : saveDraft())"
+        class="me-3"
+        ><i class="bi bi-save"></i> Save Draft</AppButton
       >
-        <i class="bi bi-save"></i> Save Draft
-      </AppButton>
       <AppButton
         color="primary"
         :type="buttonType"
         :disabled="createRequirements"
         @click="handleSign"
+        >{{ buttonText }}</AppButton
       >
-        {{ buttonText }}
-      </AppButton>
     </div>
     <AppModal
       :show="isSaveDraftModalShown"
@@ -116,18 +118,10 @@ onBeforeRouteLeave(async to => {
     >
       <div class="text-center p-4">
         <div class="text-start">
-          <i
-            class="bi bi-x-lg cursor-pointer"
-            @click="isSaveDraftModalShown = false"
-          ></i>
+          <i class="bi bi-x-lg cursor-pointer" @click="isSaveDraftModalShown = false"></i>
         </div>
         <div>
-          <img
-            src="/assets/images/draft.png"
-            class="h-100"
-            style="width: 200px"
-            alt="draft"
-          />
+          <img src="/images/draft.png" class="h-100" style="width: 200px" alt="draft" />
         </div>
         <h2 class="text-title text-semi-bold mt-3">Save draft?</h2>
         <p class="text-small text-secondary mt-3">
@@ -141,9 +135,8 @@ onBeforeRouteLeave(async to => {
               type="button"
               class="w-100"
               @click="routeTo && $router.push(routeTo)"
+              >Cancel</AppButton
             >
-              Cancel
-            </AppButton>
           </div>
           <div class="col-6">
             <AppButton
@@ -154,9 +147,8 @@ onBeforeRouteLeave(async to => {
                 saveDraft();
                 routeTo && $router.push(routeTo);
               "
+              >Save</AppButton
             >
-              Save
-            </AppButton>
           </div>
         </div>
       </div>

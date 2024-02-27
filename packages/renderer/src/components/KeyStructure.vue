@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import {KeyList, Key, PublicKey} from '@hashgraph/sdk';
+import { KeyList, Key } from '@hashgraph/sdk';
+
+import { normalizePublicKey } from '@renderer/utils/sdk';
 
 /* Props */
 const props = withDefaults(
@@ -25,18 +27,6 @@ const handleKeyClick = (index: number, path: number[], publicKey: string) => {
   const clickedPath = [...path, index];
   props.handleClick && props.handleClick(clickedPath, publicKey);
 };
-
-/* Misc */
-const normalizePublicKey = (key: Key) => {
-  const protoBuffKey = key._toProtobufKey();
-
-  if (protoBuffKey.ed25519) {
-    return PublicKey.fromBytesED25519(protoBuffKey.ed25519).toStringRaw();
-  } else if (protoBuffKey.ECDSASecp256k1) {
-    return PublicKey.fromBytesECDSA(protoBuffKey.ECDSASecp256k1).toStringRaw();
-  }
-  return '';
-};
 </script>
 <template>
   <div>
@@ -48,25 +38,19 @@ const normalizePublicKey = (key: Key) => {
       }}
       of {{ keyList.toArray().length }})
     </p>
-    <template
-      v-for="(item, index) in keyList.toArray()"
-      :key="index"
-    >
+    <template v-for="(item, index) in keyList.toArray()" :key="index">
       <template v-if="item instanceof KeyList && true">
         <div class="ms-5">
           <KeyStructure
             :key-list="item"
             :level="level + 1"
             :path="[...path, index]"
-            :handle-click="handleClick"
+            :handleClick="handleClick"
           />
         </div>
       </template>
       <template v-else-if="item instanceof Key && true">
-        <p
-          class="ms-5 my-3"
-          @click="handleKeyClick(index, path, normalizePublicKey(item))"
-        >
+        <p class="ms-5 my-3" @click="handleKeyClick(index, path, normalizePublicKey(item))">
           {{ normalizePublicKey(item) }}
         </p>
       </template>

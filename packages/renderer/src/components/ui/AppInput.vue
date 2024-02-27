@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed} from 'vue';
+import { computed } from 'vue';
 
 const props = defineProps<{
   modelValue?: string | number;
@@ -29,7 +29,7 @@ const fillClass = computed(() => (props.filled ? 'is-fill' : ''));
 <template>
   <input
     :value="modelValue"
-    :class="[sizeClass, fillClass]"
     @input="$emit('update:modelValue', ($event.target! as HTMLInputElement).value)"
+    :class="[sizeClass, fillClass]"
   />
 </template>

@@ -67,7 +67,9 @@ const newOwnerKeyList = computed(
 /* Handlers */
 const handleAdd = () => {
   newOwnerKeys.value.push(newOwnerKeyText.value);
-  newOwnerKeys.value = [...new Set(newOwnerKeys.value.filter(isPublicKey))];
+  newOwnerKeys.value = newOwnerKeys.value
+    .filter(isPublicKey)
+    .filter((pk, i) => newOwnerKeys.value.indexOf(pk) === i);
   newOwnerKeyText.value = '';
 };
 
@@ -75,25 +77,24 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    if (!isAccountId(payerData.accountId.value)) {
+    if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
       throw Error('Invalid Payer ID');
     }
 
-    if (!isAccountId(accountData.accountId.value)) {
+    if (!isAccountId(accountData.accountId.value) || !accountData.key.value) {
       throw Error('Invalid Account ID');
     }
 
     transaction.value = createTransaction();
 
-    const requiredSignatures = payerData.keysFlattened.value.concat(
-      accountData.keysFlattened.value,
-      newOwnerKeys.value,
-    );
+    const requiredKey = new KeyList([
+      payerData.key.value,
+      accountData.key.value,
+      newOwnerKeyList.value,
+    ]);
 
-    await transactionProcessor.value?.process(requiredSignatures);
+    await transactionProcessor.value?.process(requiredKey);
   } catch (err: any) {
-    console.log(err);
-
     toast.error(err.message || 'Failed to create transaction', {position: 'bottom-right'});
   }
 };
@@ -108,15 +109,6 @@ const handleLoadFromDraft = async () => {
 
   if (draft) {
     transaction.value = draftTransaction;
-
-    if (draftTransaction.transactionId) {
-      payerData.accountId.value =
-        draftTransaction.transactionId.accountId?.toString() || payerData.accountId.value;
-    }
-
-    if (draftTransaction.maxTransactionFee) {
-      maxTransactionFee.value = draftTransaction.maxTransactionFee.toBigNumber().toNumber();
-    }
 
     accountData.accountId.value = draftTransaction.accountId?.toString() || '';
 
@@ -211,6 +203,7 @@ watch(accountData.accountInfo, accountInfo => {
     newAccountData.memo = accountInfo.memo || '';
   }
 });
+
 watch(
   () => newAccountData.stakedAccountId,
   id => {
@@ -219,7 +212,6 @@ watch(
     }
   },
 );
-
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
 </script>
@@ -245,6 +237,7 @@ const columnClass = 'col-4 col-xxxl-3';
         :class="[columnClass]"
       >
         <label class="form-label">Account ID <span class="text-danger">*</span></label>
+
         <AppInput
           :model-value="accountData.accountIdFormatted.value"
           :filled="true"
@@ -413,7 +406,7 @@ const columnClass = 'col-4 col-xxxl-3';
         class="text-small d-flex justify-content-between align-items mt-2"
       >
         <span class="text-bold text-secondary">Account ID:</span>
-        <span>{{ accountData.accountId.value }}</span>
+        <span>{{ accountData.accountIdFormatted.value }}</span>
       </p>
     </template>
   </TransactionProcessor>

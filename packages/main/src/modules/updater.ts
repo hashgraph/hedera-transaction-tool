@@ -1,5 +1,6 @@
 import type {BrowserWindow} from 'electron';
 import {ipcMain} from 'electron';
+
 import type {ProgressInfo} from 'electron-updater';
 import electronUpdater from 'electron-updater';
 

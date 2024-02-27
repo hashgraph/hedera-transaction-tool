@@ -7,6 +7,7 @@ import AppendToFileVue from './components/File/AppendToFile.vue';
 import CreateFile from './components/File/CreateFile.vue';
 import ReadFile from './components/File/ReadFile.vue';
 import UpdateFile from './components/File/UpdateFile.vue';
+import FreezeVue from './components/Misc/Freeze.vue';
 import TransferHbar from './components/Transfer/TransferHbar.vue';
 
 export const transactionTypeKeys = {
@@ -20,6 +21,7 @@ export const transactionTypeKeys = {
   accountInfo: 'AccountInfoQuery',
   transfer: 'TransferTransaction',
   approveAllowance: 'AccountAllowanceApproveTransaction',
+  freeze: 'FreezeTransaction',
 };
 
 const txTypeComponentMapping = {
@@ -33,6 +35,7 @@ const txTypeComponentMapping = {
   [transactionTypeKeys.accountInfo]: AccountInfoVue,
   [transactionTypeKeys.transfer]: TransferHbar,
   [transactionTypeKeys.approveAllowance]: ApproveHbarAllowanceVue,
+  [transactionTypeKeys.freeze]: FreezeVue,
 };
 
 export default txTypeComponentMapping;
