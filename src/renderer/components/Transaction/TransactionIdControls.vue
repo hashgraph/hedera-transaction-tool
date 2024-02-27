@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { onMounted } from 'vue';
 
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
 
+import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
+
+import { getDraft } from '@renderer/services/transactionDraftsService';
+import { getDateTimeLocalInputValue } from '@renderer/utils';
+import { getTransactionFromBytes } from '@renderer/utils/transactions';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
@@ -23,10 +28,8 @@ const emit = defineEmits(['update:payerId', 'update:validStart', 'update:maxTran
 const keyPairs = useKeyPairsStore();
 const user = useUserStore();
 
-/* Computed */
-const accoundIds = computed(() => keyPairs.accoundIds.map(a => a.accountIds).flat());
-
 /* Composables */
+const route = useRoute();
 const account = useAccountId();
 
 /* Handlers */
@@ -35,11 +38,38 @@ const handlePayerChange = payerId => {
   emit('update:payerId', payerId);
 };
 
+/* Functions */
+const loadFromDraft = async (id: string) => {
+  const draft = await getDraft(id.toString());
+  const draftTransaction = getTransactionFromBytes(draft.transactionBytes);
+
+  if (draftTransaction.transactionId) {
+    const transactionId = draftTransaction.transactionId;
+
+    if (transactionId.accountId) {
+      account.accountId.value = transactionId.accountId.toString();
+      emit('update:payerId', transactionId.accountId.toString());
+    }
+    if (transactionId.validStart) {
+      emit('update:validStart', getDateTimeLocalInputValue(transactionId.validStart.toDate()));
+    }
+  }
+
+  if (draftTransaction.maxTransactionFee) {
+    emit('update:maxTransactionFee', draftTransaction.maxTransactionFee.toBigNumber().toNumber());
+  }
+};
+
 /* Hooks */
-onMounted(() => {
-  if (accoundIds.value.length > 0) {
-    account.accountId.value = accoundIds.value[0];
-    emit('update:payerId', accoundIds.value[0]);
+onMounted(async () => {
+  if (route.query.draftId) {
+    await loadFromDraft(route.query.draftId.toString());
+  } else {
+    const allAccountIds = keyPairs.accoundIds.map(a => a.accountIds).flat();
+    if (allAccountIds.length > 0) {
+      account.accountId.value = allAccountIds[0];
+      emit('update:payerId', allAccountIds[0]);
+    }
   }
 });
 

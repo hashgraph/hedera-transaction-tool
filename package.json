@@ -27,7 +27,7 @@
   "dependencies": {
     "@electron-toolkit/utils": "^3.0.0",
     "@hashgraph/proto": "^2.14.0-beta.3",
-    "@hashgraph/sdk": "^2.40.0",
+    "@hashgraph/sdk": "^2.42.0-beta.4",
     "@prisma/client": "^5.8.1",
     "@types/bootstrap": "^5.2.10",
     "axios": "^1.6.5",

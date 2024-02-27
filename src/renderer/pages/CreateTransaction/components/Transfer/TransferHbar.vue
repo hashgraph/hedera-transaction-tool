@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { AccountId, Hbar, Key, TransferTransaction } from '@hashgraph/sdk';
+import { Hbar, Key, KeyList, Transaction, TransferTransaction } from '@hashgraph/sdk';
 
-import useNetworkStore from '@renderer/stores/storeNetwork';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
+import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
+import { getDraft } from '@renderer/services/transactionDraftsService';
+
 import { getDateTimeLocalInputValue } from '@renderer/utils';
+import { getTransactionFromBytes } from '@renderer/utils/transactions';
+import { isAccountId } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
@@ -21,12 +25,12 @@ import TransactionProcessor from '@renderer/components/Transaction/TransactionPr
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 
 /* Stores */
-const networkStore = useNetworkStore();
 const keyPairs = useKeyPairsStore();
 const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
+const route = useRoute();
 const payerData = useAccountId();
 const senderData = useAccountId();
 const receiverData = useAccountId();
@@ -34,9 +38,9 @@ const receiverData = useAccountId();
 /* State */
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
-const transaction = ref<TransferTransaction | null>(null);
+const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
-const maxTransactionfee = ref(2);
+const maxTransactionFee = ref(2);
 
 const amount = ref(0);
 const isApprovedTransfer = ref(false);
@@ -44,41 +48,36 @@ const keyStructureComponentKey = ref<Key | null>(null);
 
 const isKeyStructureModalShown = ref(false);
 
+const isExecuted = ref(false);
+
 /* Handlers */
 const handleCreate = async e => {
   e.preventDefault();
   try {
-    transaction.value = new TransferTransaction()
-      .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
-      .setTransactionValidDuration(180)
-      .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
-      .setNodeAccountIds([new AccountId(3)])
-      .addHbarTransfer(receiverData.accountId.value, new Hbar(amount.value));
-
-    if (isApprovedTransfer.value) {
-      transaction.value.addApprovedHbarTransfer(
-        senderData.accountId.value,
-        new Hbar(amount.value).negated(),
-      );
-    } else {
-      transaction.value.addHbarTransfer(
-        senderData.accountId.value,
-        new Hbar(amount.value).negated(),
-      );
+    if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
+      throw Error('Invalid Payer ID');
     }
 
-    transaction.value.freezeWith(networkStore.client);
+    if (!isAccountId(senderData.accountId.value) || !senderData.key.value) {
+      throw Error('Invalid Sender ID');
+    }
 
-    let requiredSignatures = payerData.keysFlattened.value;
+    if (!isAccountId(receiverData.accountId.value) || !receiverData.key.value) {
+      throw Error('Invalid Receiver ID');
+    }
+
+    transaction.value = createTransaction();
+
+    const requiredKey = new KeyList([payerData.key.value]);
 
     if (!isApprovedTransfer.value) {
-      requiredSignatures = requiredSignatures.concat(senderData.keysFlattened.value);
+      requiredKey.push(senderData.key.value);
     }
     if (receiverData.accountInfo.value?.receiverSignatureRequired) {
-      requiredSignatures = requiredSignatures.concat(receiverData.keysFlattened.value);
+      requiredKey.push(receiverData.key.value);
     }
 
-    await transactionProcessor.value?.process(requiredSignatures);
+    await transactionProcessor.value?.process(requiredKey);
   } catch (err: any) {
     console.log(err);
 
@@ -86,12 +85,83 @@ const handleCreate = async e => {
   }
 };
 
+const handleLoadFromDraft = async () => {
+  if (!route.query.draftId) return;
+
+  const draft = await getDraft(route.query.draftId?.toString() || '');
+  const draftTransaction = getTransactionFromBytes<TransferTransaction>(draft.transactionBytes);
+
+  if (draft) {
+    transaction.value = draftTransaction;
+
+    if (draftTransaction.transactionId) {
+      const transactionId = draftTransaction.transactionId;
+
+      if (transactionId.accountId) {
+        payerData.accountId.value = transactionId.accountId.toString();
+      }
+      if (transactionId.validStart) {
+        validStart.value = getDateTimeLocalInputValue(transactionId.validStart.toDate());
+      }
+    }
+
+    if (draftTransaction.maxTransactionFee) {
+      maxTransactionFee.value = draftTransaction.maxTransactionFee.toBigNumber().toNumber();
+    }
+    console.log(draftTransaction);
+
+    draftTransaction.hbarTransfers._map.forEach((value, accoundId) => {
+      const hbars = value.toBigNumber().toNumber();
+
+      amount.value = Math.abs(hbars);
+
+      if (hbars < 0) {
+        senderData.accountId.value = accoundId;
+      } else {
+        receiverData.accountId.value = accoundId;
+      }
+    });
+  }
+};
+
+/* Functions */
+function createTransaction() {
+  const transaction = new TransferTransaction()
+    .setTransactionValidDuration(180)
+    .setMaxTransactionFee(new Hbar(maxTransactionFee.value));
+
+  if (isAccountId(payerData.accountId.value)) {
+    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
+  }
+
+  if (isAccountId(receiverData.accountId.value)) {
+    transaction.addHbarTransfer(receiverData.accountId.value, new Hbar(amount.value));
+  }
+
+  const isSenderValid = isAccountId(receiverData.accountId.value);
+
+  if (isApprovedTransfer.value) {
+    isSenderValid &&
+      transaction?.addApprovedHbarTransfer(
+        senderData.accountId.value,
+        new Hbar(amount.value).negated(),
+      );
+  } else {
+    isSenderValid &&
+      transaction?.addHbarTransfer(senderData.accountId.value, new Hbar(amount.value).negated());
+  }
+
+  return transaction;
+}
+
 /* Hooks */
-onMounted(() => {
+onMounted(async () => {
   const allAccountIds = keyPairs.accoundIds.map(a => a.accountIds).flat();
   if (allAccountIds.length > 0) {
     payerData.accountId.value = allAccountIds[0];
   }
+
+  await handleLoadFromDraft();
 });
 
 /* Misc */
@@ -100,6 +170,8 @@ const columnClass = 'col-4 col-xxxl-3';
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
+      :get-transaction-bytes="() => createTransaction().toBytes()"
+      :is-executed="isExecuted"
       :create-requirements="
         !payerData.accountId.value ||
         !senderData.accountId.value ||
@@ -144,7 +216,7 @@ const columnClass = 'col-4 col-xxxl-3';
       </div>
       <div class="form-group form-group" :class="[columnClass]">
         <label class="form-label">Max Transaction Fee</label>
-        <AppInput v-model="maxTransactionfee" type="number" min="0" :filled="true" />
+        <AppInput v-model="maxTransactionFee" type="number" min="0" :filled="true" />
       </div>
     </div>
 
@@ -231,15 +303,15 @@ const columnClass = 'col-4 col-xxxl-3';
     :transaction-bytes="transaction?.toBytes() || null"
     :on-close-success-modal-click="
       () => {
-        payerData.accountId.value = '';
         senderData.accountId.value = '';
         receiverData.accountId.value = '';
         validStart = '';
-        maxTransactionfee = 2;
+        maxTransactionFee = 2;
         amount = 0;
         transaction = null;
       }
     "
+    :on-executed="() => (isExecuted = true)"
   >
     <template #successHeading>Hbar transferred successfully</template>
     <template #successContent>

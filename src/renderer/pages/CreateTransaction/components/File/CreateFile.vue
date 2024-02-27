@@ -1,19 +1,35 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { AccountId, FileCreateTransaction, KeyList, PublicKey, Timestamp } from '@hashgraph/sdk';
+import { computed, onMounted, ref, watch } from 'vue';
+import {
+  FileCreateTransaction,
+  KeyList,
+  PublicKey,
+  Timestamp,
+  Transaction,
+  TransactionReceipt,
+} from '@hashgraph/sdk';
 
-import useNetworkStore from '@renderer/stores/storeNetwork';
+import { Prisma } from '@prisma/client';
+
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
+import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
+import { getDraft } from '@renderer/services/transactionDraftsService';
 import { add } from '@renderer/services/filesService';
+import { flattenKeyList } from '@renderer/services/keyPairService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { getEntityIdFromTransactionResult } from '@renderer/utils/transactions';
-import { isPublicKey } from '@renderer/utils/validator';
+import { createFileInfo } from '@renderer/utils/sdk';
+import {
+  getEntityIdFromTransactionReceipt,
+  getTransactionFromBytes,
+} from '@renderer/utils/transactions';
+import { isAccountId, isPublicKey } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -22,17 +38,18 @@ import TransactionIdControls from '@renderer/components/Transaction/TransactionI
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 
 /* Stores */
-const network = useNetworkStore();
 const user = useUserStore();
+const network = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
+const route = useRoute();
 const payerData = useAccountId();
 
 /* State */
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
-const transaction = ref<FileCreateTransaction | null>(null);
+const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref(2);
 
@@ -41,6 +58,8 @@ const memo = ref('');
 const expirationTimestamp = ref();
 const content = ref('');
 const ownerKeys = ref<string[]>([]);
+
+const isExecuted = ref(false);
 
 /* Getters */
 const keyList = computed(() => new KeyList(ownerKeys.value.map(key => PublicKey.fromString(key))));
@@ -56,34 +75,104 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    transaction.value = new FileCreateTransaction()
-      .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
-      .setTransactionValidDuration(180)
-      .setMaxTransactionFee(maxTransactionFee.value)
-      .setNodeAccountIds([new AccountId(3)])
-      .setKeys(keyList.value)
-      .setContents(content.value)
-      .setFileMemo(memo.value);
+    if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
+      throw Error('Invalid Payer ID');
+    }
+    transaction.value = createTransaction();
 
-    if (expirationTimestamp.value)
-      transaction.value.setExpirationTime(Timestamp.fromDate(expirationTimestamp.value));
-
-    transaction.value.freezeWith(network.client);
-
-    const requiredSignatures = payerData.keysFlattened.value.concat(ownerKeys.value);
-    await transactionProcessor.value?.process(requiredSignatures);
+    const requiredKey = new KeyList([payerData.key.value, keyList.value]);
+    await transactionProcessor.value?.process(requiredKey);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
 
-const handleExecuted = async result => {
-  await add(user.data.id, getEntityIdFromTransactionResult(result, 'fileId'));
+const handleExecuted = async (_response, receipt: TransactionReceipt) => {
+  isExecuted.value = true;
+
+  const fileTransaction = createTransaction();
+
+  const newFileId = getEntityIdFromTransactionReceipt(receipt, 'fileId');
+
+  const infoBytes = await createFileInfo({
+    fileId: newFileId,
+    size: fileTransaction.contents?.length || 0,
+    expirationTime: fileTransaction.expirationTime,
+    isDeleted: false,
+    keys: fileTransaction.keys || [],
+    fileMemo: memo.value,
+    ledgerId: network.client.ledgerId,
+  });
+
+  const file: Prisma.HederaFileUncheckedCreateInput = {
+    file_id: newFileId,
+    user_id: user.data.id,
+    contentBytes: fileTransaction.contents?.join(','),
+    metaBytes: infoBytes.join(','),
+  };
+
+  await add(file);
+  toast.success(`File ${newFileId} linked`, { position: 'bottom-right' });
 };
+
+const handleLoadFromDraft = async () => {
+  if (!route.query.draftId) return;
+
+  const draft = await getDraft(route.query.draftId?.toString() || '');
+  const draftTransaction = getTransactionFromBytes<FileCreateTransaction>(draft.transactionBytes);
+
+  if (draft) {
+    transaction.value = draftTransaction;
+
+    if (draftTransaction.keys) {
+      ownerKeys.value = draftTransaction.keys
+        .map(k => flattenKeyList(k).map(pk => pk.toStringRaw()))
+        .flat();
+    }
+
+    content.value = draftTransaction.contents
+      ? new TextDecoder().decode(draftTransaction.contents)
+      : '';
+    memo.value = draftTransaction.fileMemo || '';
+  }
+};
+
+/* Functions */
+function createTransaction() {
+  const transaction = new FileCreateTransaction()
+    .setTransactionValidDuration(180)
+    .setMaxTransactionFee(maxTransactionFee.value)
+    .setKeys(keyList.value)
+    .setContents(content.value)
+    .setFileMemo(memo.value);
+
+  if (isAccountId(payerData.accountId.value)) {
+    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
+  }
+
+  if (expirationTimestamp.value)
+    transaction.setExpirationTime(Timestamp.fromDate(expirationTimestamp.value));
+
+  return transaction;
+}
+
+/* Hooks */
+onMounted(async () => {
+  await handleLoadFromDraft();
+});
+
+/* Watchers */
+watch(payerData.isValid, isValid => {
+  if (isValid) {
+    ownerKeyText.value = payerData.keysFlattened.value[0];
+  }
+});
 </script>
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
+      :get-transaction-bytes="() => createTransaction().toBytes()"
+      :is-executed="isExecuted"
       :create-requirements="keyList._keys.length === 0 || !payerData.isValid.value"
       heading-text="Create File Transaction"
     />
@@ -101,12 +190,7 @@ const handleExecuted = async result => {
       <div class="form-group col-8 col-xxxl-6">
         <label class="form-label">Keys <span class="text-danger">*</span></label>
         <div class="d-flex gap-3">
-          <AppInput
-            v-model="ownerKeyText"
-            :filled="true"
-            placeholder="Enter owner public key"
-            @keypress="e => e.code === 'Enter' && handleAdd()"
-          />
+          <AppInput v-model="ownerKeyText" :filled="true" placeholder="Enter owner public key" />
         </div>
       </div>
 
@@ -173,17 +257,7 @@ const handleExecuted = async result => {
   <TransactionProcessor
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
-    :on-close-success-modal-click="
-      () => {
-        validStart = '';
-        maxTransactionFee = 2;
-        ownerKeys = [];
-        memo = '';
-        expirationTimestamp = undefined;
-
-        transaction = null;
-      }
-    "
+    :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
     :on-executed="handleExecuted"
   >
     <template #successHeading>File created successfully</template>
@@ -194,7 +268,10 @@ const handleExecuted = async result => {
       >
         <span class="text-bold text-secondary">File ID:</span>
         <span>{{
-          getEntityIdFromTransactionResult(transactionProcessor.transactionResult, 'fileId')
+          getEntityIdFromTransactionReceipt(
+            transactionProcessor.transactionResult.receipt,
+            'fileId',
+          )
         }}</span>
       </p>
     </template>

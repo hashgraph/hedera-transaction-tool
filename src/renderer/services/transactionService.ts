@@ -5,17 +5,34 @@ import {
   Timestamp,
   Transaction,
   TransactionId,
+  TransactionReceipt,
+  TransactionResponse,
 } from '@hashgraph/sdk';
 
-import { KeyPair, Transaction as Tx } from '@prisma/client';
-
-import { CustomNetworkSettings, Network } from '@renderer/stores/storeNetwork';
+import { KeyPair, Prisma } from '@prisma/client';
 
 import { getMessageFromIPCError } from '@renderer/utils';
 
 import { decryptPrivateKey } from './keyPairService';
 
 /* Transaction service */
+
+/* Sets the client in the main processor */
+export const setClient = async (
+  network: string,
+  nodeAccountIds?: {
+    [key: string]: string;
+  },
+  mirrorNetwork?: string[],
+) => {
+  if (nodeAccountIds) {
+    Object.keys(nodeAccountIds).forEach(key => {
+      nodeAccountIds[key] = nodeAccountIds[key].toString();
+    });
+  }
+
+  await window.electronAPI.transactions.setClient(network, nodeAccountIds, mirrorNetwork);
+};
 
 /* Crafts transaction id by account id and valid start */
 export const createTransactionId = (
@@ -41,52 +58,76 @@ export const createTransactionId = (
 export const getTransactionSignatures = async (
   keyPairs: KeyPair[],
   transaction: Transaction,
-  addToTransaction: boolean,
   userId: string,
   password: string,
 ) => {
-  const signatures: { publicKey: PublicKey; signature: Uint8Array }[] = [];
   const publicKeys: string[] = [];
 
   try {
     await Promise.all(
       keyPairs.map(async keyPair => {
-        const privateKeyString = await decryptPrivateKey(userId, password, keyPair.public_key);
-        const startsWithHex = privateKeyString.startsWith('0x');
-
-        const keyType = PublicKey.fromString(keyPair.public_key);
-
-        const privateKey =
-          keyType._key._type === 'secp256k1'
-            ? PrivateKey.fromStringECDSA(`${startsWithHex ? '' : '0x'}${privateKeyString}`)
-            : PrivateKey.fromStringED25519(privateKeyString);
-        const signature = privateKey.signTransaction(transaction);
-
         if (!publicKeys.includes(keyPair.public_key)) {
-          signatures.push({ publicKey: privateKey.publicKey, signature });
+          const privateKeyString = await decryptPrivateKey(userId, password, keyPair.public_key);
+          const startsWithHex = privateKeyString.startsWith('0x');
+
+          const keyType = PublicKey.fromString(keyPair.public_key);
+
+          const privateKey =
+            keyType._key._type === 'secp256k1'
+              ? PrivateKey.fromStringECDSA(`${startsWithHex ? '' : '0x'}${privateKeyString}`)
+              : PrivateKey.fromStringED25519(privateKeyString);
+
+          transaction.sign(privateKey);
+
           publicKeys.push(keyPair.public_key);
         }
       }),
     );
 
-    addToTransaction && signatures.forEach(s => transaction.addSignature(s.publicKey, s.signature));
-
-    return signatures;
+    return publicKeys;
   } catch (err: any) {
     throw Error(err.message || 'Failed to collect transaction signatures');
   }
 };
 
-/* Executes the transaction in the main process */
-export const execute = async (
-  transactionBytes: string,
-  network: Network,
-  customNetworkSettings: CustomNetworkSettings | null,
+/* Freezes the transaction in the main process */
+export const freeze = async (transactionBytes: Uint8Array) => {
+  try {
+    return await window.electronAPI.transactions.freezeTransaction(transactionBytes);
+  } catch (err: any) {
+    throw Error(getMessageFromIPCError(err, 'Freezing the transaction failed'));
+  }
+};
+
+/* Signs the transaction in the main process */
+export const signTransaction = async (
+  transactionBytes: Uint8Array,
+  publicKeys: string[],
+  userId: string,
+  userPassword: string,
 ) => {
   try {
-    return await window.electronAPI.transactions.executeTransaction(
-      JSON.stringify({ transactionBytes, network, customNetworkSettings }),
+    return await window.electronAPI.transactions.signTransaction(
+      transactionBytes,
+      publicKeys,
+      userId,
+      userPassword,
     );
+  } catch (err: any) {
+    throw Error(getMessageFromIPCError(err, 'Transaction signing failed'));
+  }
+};
+
+/* Executes the transaction in the main process */
+export const execute = async (transactionBytes: Uint8Array) => {
+  try {
+    const executionResult =
+      await window.electronAPI.transactions.executeTransaction(transactionBytes);
+
+    return {
+      response: TransactionResponse.fromJSON(JSON.parse(executionResult.responseJSON)),
+      receipt: TransactionReceipt.fromBytes(executionResult.receiptBytes),
+    };
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Transaction Failed'));
   }
@@ -94,16 +135,17 @@ export const execute = async (
 
 /* Executes the query in the main process */
 export const executeQuery = async (
-  queryBytes: string,
-  network: Network,
-  customNetworkSettings: CustomNetworkSettings | null,
+  queryBytes: Uint8Array,
   accountId: string,
   privateKey: string,
-  type: string,
+  privateKeyType: string,
 ) => {
   try {
     return await window.electronAPI.transactions.executeQuery(
-      JSON.stringify({ queryBytes, network, customNetworkSettings, accountId, privateKey, type }),
+      queryBytes,
+      accountId,
+      privateKey,
+      privateKeyType,
     );
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Query Execution Failed'));
@@ -111,7 +153,7 @@ export const executeQuery = async (
 };
 
 /* Saves transaction info */
-export const storeTransaction = async (transaction: Tx) => {
+export const storeTransaction = async (transaction: Prisma.TransactionUncheckedCreateInput) => {
   try {
     return await window.electronAPI.transactions.storeTransaction(transaction);
   } catch (err: any) {
@@ -128,6 +170,7 @@ export const getTransactions = async (user_id: string) => {
   }
 };
 
+/* Encodes a special file's content */
 export const encodeSpecialFileContent = async (content: Uint8Array, fileId: string) => {
   try {
     return await window.electronAPI.transactions.encodeSpecialFile(content, fileId);

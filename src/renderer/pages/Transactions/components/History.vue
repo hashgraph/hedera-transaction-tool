@@ -17,6 +17,7 @@ import {
 } from '@renderer/utils/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppLoader from '@renderer/components/ui/AppLoader.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -28,7 +29,9 @@ const sort = reactive<{ field: string; direction: 'asc' | 'desc' }>({
   field: 'timestamp',
   direction: 'desc',
 });
+const isLoading = ref(true);
 
+/* Computed */
 const generatedClass = computed(() => {
   return sort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
 });
@@ -96,14 +99,23 @@ const getOpositeDirection = () => (sort.direction === 'asc' ? 'desc' : 'asc');
 
 /* Hooks */
 onBeforeMount(async () => {
-  transactions.value = await getTransactions(user.data.id);
-  handleSort('timestamp', 'desc');
-  transactions.value = transactions.value.sort((t1, t2) => t2.executed_at - t1.executed_at);
+  try {
+    transactions.value = await getTransactions(user.data.id);
+    handleSort('timestamp', 'desc');
+    transactions.value = transactions.value.sort((t1, t2) => t2.executed_at - t1.executed_at);
+  } catch (error) {
+    throw new Error((error as any).message);
+  } finally {
+    isLoading.value = false;
+  }
 });
 </script>
 
 <template>
-  <table class="table-custom">
+  <template v-if="isLoading">
+    <AppLoader />
+  </template>
+  <table v-else class="table-custom">
     <thead>
       <tr>
         <th class="w-10 text-end">#</th>

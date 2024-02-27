@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue';
-import { AccountId, FileUpdateTransaction, KeyList, PublicKey, Timestamp } from '@hashgraph/sdk';
-
-import useNetworkStore from '@renderer/stores/storeNetwork';
+import { FileUpdateTransaction, KeyList, PublicKey, Timestamp, Transaction } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
@@ -12,18 +10,19 @@ import {
   createTransactionId,
   encodeSpecialFileContent,
 } from '@renderer/services/transactionService';
+import { getDraft } from '@renderer/services/transactionDraftsService';
+import { flattenKeyList } from '@renderer/services/keyPairService';
+
 import { isHederaSpecialFileId } from '@renderer/../main/shared/utils/hederaSpecialFiles';
 import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { isPublicKey } from '@renderer/utils/validator';
+import { getTransactionFromBytes } from '@renderer/utils/transactions';
+import { isAccountId, isPublicKey } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
+import FileTransactionProcessor from '@renderer/components/Transaction/FileTransactionProcessor.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
-
-/* Stores */
-const networkStore = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
@@ -31,9 +30,9 @@ const payerData = useAccountId();
 const route = useRoute();
 
 /* State */
-const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
+const transactionProcessor = ref<typeof FileTransactionProcessor | null>(null);
 
-const transaction = ref<FileUpdateTransaction | null>(null);
+const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref(2);
 
@@ -53,6 +52,8 @@ const loadPercentage = ref(0);
 const content = ref('');
 const chunksAmount = ref<number | null>(null);
 
+const isExecuted = ref(false);
+
 /* Getters */
 const ownerKeyList = computed(
   () => new KeyList(ownerKeys.value.map(key => PublicKey.fromString(key))),
@@ -60,40 +61,6 @@ const ownerKeyList = computed(
 const newKeysList = computed(
   () => new KeyList(newKeys.value.map(key => PublicKey.fromString(key))),
 );
-
-/* Misc Functions */
-const createTransaction = async () => {
-  const updateTransaction = new FileUpdateTransaction()
-    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
-    .setTransactionValidDuration(180)
-    .setMaxTransactionFee(maxTransactionFee.value)
-    .setNodeAccountIds([new AccountId(3)])
-    .setFileId(fileId.value)
-    .setFileMemo(memo.value);
-
-  newKeysList.value._keys.length > 0 && updateTransaction.setKeys(newKeysList.value);
-
-  expirationTimestamp.value &&
-    updateTransaction.setExpirationTime(Timestamp.fromDate(expirationTimestamp.value));
-
-  if (content.value.length > 0) {
-    updateTransaction.setContents(content.value);
-  }
-  if (fileBuffer.value) {
-    updateTransaction.setContents(fileBuffer.value);
-  }
-
-  if (isHederaSpecialFileId(updateTransaction.fileId?.toString()) && updateTransaction.contents) {
-    const getEncodedContent = await encodeSpecialFileContent(
-      updateTransaction.contents,
-      updateTransaction.fileId.toString(),
-    );
-    updateTransaction.setContents(getEncodedContent);
-  }
-  updateTransaction.freezeWith(networkStore.client);
-
-  return updateTransaction;
-};
 
 /* Handlers */
 const handleAddOwnerKey = () => {
@@ -145,22 +112,97 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    transaction.value = await createTransaction();
-    await transactionProcessor.value?.process(
-      payerData.keysFlattened.value.concat(newKeys.value, ownerKeys.value),
-      chunkSize.value,
-      1,
-    );
+    if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
+      throw Error('Invalid Payer ID');
+    }
+
+    if (!isAccountId(fileId.value)) {
+      throw Error('Invalid File ID');
+    }
+
+    const newTransaction = createTransaction();
+
+    if (content.value.length > 0) {
+      newTransaction.setContents(content.value);
+    }
+    if (fileBuffer.value) {
+      newTransaction.setContents(fileBuffer.value);
+    }
+
+    if (isHederaSpecialFileId(newTransaction.fileId?.toString()) && newTransaction.contents) {
+      const getEncodedContent = await encodeSpecialFileContent(
+        newTransaction.contents,
+        newTransaction.fileId.toString(),
+      );
+      newTransaction.setContents(getEncodedContent);
+    }
+
+    transaction.value = newTransaction;
+
+    const requiredKey = new KeyList([payerData.key.value, newKeysList.value, ownerKeyList.value]);
+    await transactionProcessor.value?.process(requiredKey, chunkSize.value, 1);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
+
+const handleLoadFromDraft = async () => {
+  if (!route.query.draftId) return;
+
+  const draft = await getDraft(route.query.draftId?.toString() || '');
+  const draftTransaction = getTransactionFromBytes<FileUpdateTransaction>(draft.transactionBytes);
+
+  if (draft) {
+    transaction.value = draftTransaction;
+
+    if (draftTransaction.keys) {
+      newKeys.value = draftTransaction.keys
+        .map(k => flattenKeyList(k).map(pk => pk.toStringRaw()))
+        .flat();
+    }
+
+    if (draftTransaction.fileId) {
+      fileId.value = draftTransaction.fileId.toString();
+    }
+
+    memo.value = draftTransaction.fileMemo || '';
+
+    if (draftTransaction.expirationTime) {
+      expirationTimestamp.value = draftTransaction.expirationTime;
+    }
+  }
+};
+
+/* Functions */
+function createTransaction() {
+  const transaction = new FileUpdateTransaction()
+    .setTransactionValidDuration(180)
+    .setMaxTransactionFee(maxTransactionFee.value)
+    .setFileMemo(memo.value);
+
+  if (isAccountId(payerData.accountId.value)) {
+    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
+  }
+
+  if (isAccountId(fileId.value)) {
+    transaction.setFileId(fileId.value);
+  }
+
+  newKeysList.value._keys.length > 0 && transaction.setKeys(newKeysList.value);
+
+  expirationTimestamp.value &&
+    transaction.setExpirationTime(Timestamp.fromDate(expirationTimestamp.value));
+
+  return transaction;
+}
 
 /* Hooks */
 onMounted(async () => {
   if (route.query.fileId) {
     fileId.value = route.query.fileId.toString();
   }
+
+  await handleLoadFromDraft();
 });
 
 /* Watchers */
@@ -172,7 +214,9 @@ const columnClass = 'col-4 col-xxxl-3';
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
-      :create-requirements="ownerKeyList._keys.length === 0 || !payerData.isValid.value"
+      :get-transaction-bytes="() => createTransaction().toBytes()"
+      :is-executed="isExecuted"
+      :create-requirements="ownerKeyList._keys.length === 0 || !payerData.isValid.value || !fileId"
       heading-text="Update File Transaction"
     />
 
@@ -314,10 +358,15 @@ const columnClass = 'col-4 col-xxxl-3';
     </div>
   </form>
 
-  <TransactionProcessor
+  <FileTransactionProcessor
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
-    :on-executed="(_result, _chunkAmount) => (chunksAmount = _chunkAmount || null)"
+    :on-executed="
+      (_response, _receipt, chunkAmount) => {
+        isExecuted = true;
+        chunksAmount = chunkAmount || null;
+      }
+    "
     :on-close-success-modal-click="
       () => {
         validStart = '';
@@ -347,5 +396,5 @@ const columnClass = 'col-4 col-xxxl-3';
         <span>{{ chunksAmount }}</span>
       </p>
     </template>
-  </TransactionProcessor>
+  </FileTransactionProcessor>
 </template>

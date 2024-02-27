@@ -1,14 +1,23 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { AccountId, Hbar, Key, AccountAllowanceApproveTransaction } from '@hashgraph/sdk';
-
-import useNetworkStore from '@renderer/stores/storeNetwork';
+import { onMounted, ref } from 'vue';
+import {
+  Hbar,
+  Key,
+  AccountAllowanceApproveTransaction,
+  Transaction,
+  KeyList,
+} from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
+import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
+import { getDraft } from '@renderer/services/transactionDraftsService';
+
+import { getTransactionFromBytes } from '@renderer/utils/transactions';
 import { getDateTimeLocalInputValue } from '@renderer/utils';
+import { isAccountId } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -17,11 +26,9 @@ import TransactionHeaderControls from '@renderer/components/Transaction/Transact
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 
-/* Stores */
-const networkStore = useNetworkStore();
-
 /* Composables */
 const toast = useToast();
+const route = useRoute();
 const payerData = useAccountId();
 const ownerData = useAccountId();
 const spenderData = useAccountId();
@@ -29,7 +36,7 @@ const spenderData = useAccountId();
 /* State */
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
-const transaction = ref<AccountAllowanceApproveTransaction | null>(null);
+const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref(2);
 
@@ -38,33 +45,79 @@ const keyStructureComponentKey = ref<Key | null>(null);
 
 const isKeyStructureModalShown = ref(false);
 
+const isExecuted = ref(false);
+
 /* Handlers */
 const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    if (!ownerData.accountId.value || !ownerData.isValid.value) {
-      throw Error('Invalid owner');
+    if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
+      throw Error('Invalid Payer ID');
     }
 
-    transaction.value = new AccountAllowanceApproveTransaction()
-      .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
-      .setTransactionValidDuration(180)
-      .setMaxTransactionFee(new Hbar(maxTransactionFee.value))
-      .setNodeAccountIds([new AccountId(3)])
-      .approveHbarAllowance(
-        ownerData.accountId.value,
-        spenderData.accountId.value,
-        new Hbar(amount.value),
-      )
-      .freezeWith(networkStore.client);
+    if (!isAccountId(ownerData.accountId.value) || !ownerData.key.value) {
+      throw Error('Invalid Owner ID');
+    }
 
-    const requiredSignatures = payerData.keysFlattened.value.concat(ownerData.keysFlattened.value);
-    await transactionProcessor.value?.process(requiredSignatures);
+    if (!isAccountId(spenderData.accountId.value)) {
+      throw Error('Invalid Spender ID');
+    }
+
+    transaction.value = createTransaction();
+
+    const requiredKey = new KeyList([payerData.key.value, ownerData.key.value]);
+    await transactionProcessor.value?.process(requiredKey);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
+
+const handleLoadFromDraft = async () => {
+  if (!route.query.draftId) return;
+
+  const draft = await getDraft(route.query.draftId?.toString() || '');
+  const draftTransaction = getTransactionFromBytes<AccountAllowanceApproveTransaction>(
+    draft.transactionBytes,
+  );
+
+  if (draft) {
+    transaction.value = draftTransaction;
+
+    if (draftTransaction.hbarApprovals.length > 0) {
+      const hbarApproval = draftTransaction.hbarApprovals[0];
+
+      ownerData.accountId.value = hbarApproval.ownerAccountId?.toString() || '';
+      spenderData.accountId.value = hbarApproval.spenderAccountId?.toString() || '';
+      amount.value = hbarApproval.amount?.toBigNumber().toNumber() || 0;
+    }
+  }
+};
+
+/* Functions */
+function createTransaction() {
+  const transaction = new AccountAllowanceApproveTransaction()
+    .setTransactionValidDuration(180)
+    .setMaxTransactionFee(new Hbar(maxTransactionFee.value));
+
+  if (isAccountId(payerData.accountId.value)) {
+    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
+  }
+
+  if (isAccountId(ownerData.accountId.value) && isAccountId(spenderData.accountId.value)) {
+    transaction.approveHbarAllowance(
+      ownerData.accountId.value,
+      spenderData.accountId.value,
+      new Hbar(amount.value),
+    );
+  }
+  return transaction;
+}
+
+/* Hooks */
+onMounted(async () => {
+  await handleLoadFromDraft();
+});
 
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
@@ -72,6 +125,8 @@ const columnClass = 'col-4 col-xxxl-3';
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
+      :get-transaction-bytes="() => createTransaction().toBytes()"
+      :is-executed="isExecuted"
       heading-text="Approve Hbar Allowance Transaction"
       :create-requirements="
         !payerData.isValid.value ||
@@ -165,16 +220,17 @@ const columnClass = 'col-4 col-xxxl-3';
         transaction = null;
       }
     "
+    :on-executed="() => (isExecuted = true)"
   >
     <template #successHeading>Allowance Approved Successfully</template>
     <template #successContent>
       <p class="text-small d-flex justify-content-between align-items mt-2">
         <span class="text-bold text-secondary">Owner Account ID:</span>
-        <span>{{ ownerData.accountId.value }}</span>
+        <span>{{ ownerData.accountIdFormatted.value }}</span>
       </p>
       <p class="text-small d-flex justify-content-between align-items mt-2">
         <span class="text-bold text-secondary">Spender Account ID:</span>
-        <span>{{ spenderData.accountId.value }}</span>
+        <span>{{ spenderData.accountIdFormatted.value }}</span>
       </p>
     </template>
   </TransactionProcessor>

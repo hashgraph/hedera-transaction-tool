@@ -8,6 +8,7 @@ import createMenu from '@main/modules/menu';
 import registerIpcListeners from '@main/modules/ipcHandlers';
 
 import createWindow from '@main/windows/mainWindow';
+import { deleteTempFolder } from './services/localUser';
 
 let mainWindow: BrowserWindow | null;
 
@@ -58,5 +59,21 @@ function attachAppEvents() {
 
   app.on('window-all-closed', function () {
     if (process.platform !== 'darwin') app.quit();
+  });
+
+  let deleteRetires = 0;
+  app.on('before-quit', async function (e) {
+    if (deleteRetires === 0) {
+      e.preventDefault();
+
+      deleteRetires++;
+      try {
+        await deleteTempFolder();
+      } catch (error) {
+        console.log(error);
+      }
+
+      app.quit();
+    }
   });
 }

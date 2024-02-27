@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
-import { FileContentsQuery } from '@hashgraph/sdk';
+import { FileContentsQuery, FileInfoQuery } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
@@ -19,7 +19,10 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
+import { HederaFile } from '@prisma/client';
+import { getAll, update } from '@renderer/services/filesService';
 
 /* Stores */
 const user = useUserStore();
@@ -37,6 +40,7 @@ const content = ref('');
 const userPassword = ref('');
 const isLoading = ref(false);
 const isUserPasswordModalShown = ref(false);
+const storedFiles = ref<HederaFile[]>([]);
 
 /* Handlers */
 const handleRead = async e => {
@@ -66,16 +70,12 @@ const handleRead = async e => {
 
     const query = new FileContentsQuery().setFileId(fileId.value);
 
-    // Send to Transaction w/ user signatures to Back End
-    const { response } = await executeQuery(
-      query.toBytes().toString(),
-      networkStore.network,
-      networkStore.customNetworkSettings,
+    const response = await executeQuery(
+      query.toBytes(),
       payerData.accountId.value,
       privateKey,
       keyPair.type,
     );
-    isUserPasswordModalShown.value = false;
 
     if (isHederaSpecialFileId(fileId.value)) {
       content.value = response;
@@ -85,6 +85,26 @@ const handleRead = async e => {
 
       content.value = text;
     }
+
+    toast.success('File content read', { position: 'bottom-right' });
+
+    if (storedFiles.value.some(f => f.file_id === fileId.value)) {
+      const fileInfoQuery = new FileInfoQuery().setFileId(fileId.value);
+
+      const infoResponse = await executeQuery(
+        fileInfoQuery.toBytes(),
+        payerData.accountId.value,
+        privateKey,
+        keyPair.type,
+      );
+
+      await update(fileId.value, user.data.id, { contentBytes: response.join(',') });
+      await update(fileId.value, user.data.id, { metaBytes: infoResponse.join(',') });
+
+      toast.success('Store file info updated', { position: 'bottom-right' });
+    }
+
+    isUserPasswordModalShown.value = false;
   } catch (err: any) {
     let message = 'Failed to execute query';
     if (err.message && typeof err.message === 'string') {
@@ -114,6 +134,8 @@ onMounted(async () => {
   if (route.query.fileId) {
     fileId.value = route.query.fileId.toString();
   }
+
+  storedFiles.value = await getAll(user.data.id);
 });
 
 /* Watchers */
@@ -136,12 +158,17 @@ const columnClass = 'col-4 col-xxxl-3';
         <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
           >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
         >
-        <AppInput
-          :model-value="payerData.accountIdFormatted.value"
-          @update:model-value="v => (payerData.accountId.value = v)"
-          :filled="true"
-          placeholder="Enter Payer ID"
-        />
+        <template v-if="user.data.mode === 'personal'">
+          <AccountIdsSelect v-model:account-id="payerData.accountId.value" :select-default="true" />
+        </template>
+        <template v-else>
+          <AppInput
+            :model-value="payerData.accountIdFormatted.value"
+            @update:model-value="v => (payerData.accountId.value = v)"
+            :filled="true"
+            placeholder="Enter Payer ID"
+          />
+        </template>
       </div>
     </div>
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUpdated, ref } from 'vue';
 
-import { KeyPair } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
@@ -82,8 +82,7 @@ const handleSaveKey = async () => {
     try {
       const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
 
-      const keyPair: KeyPair = {
-        id: '',
+      const keyPair: Prisma.KeyPairUncheckedCreateInput = {
         user_id: user.data.id,
         index: index.value,
         public_key: publicKey.value,

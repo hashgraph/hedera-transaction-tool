@@ -1,4 +1,7 @@
 import { ipcMain } from 'electron';
+
+import { Prisma } from '@prisma/client';
+
 import {
   storeKeyPair,
   deleteSecretHashes,
@@ -10,14 +13,14 @@ import {
   deleteKeyPair,
 } from '@main/services/localUser';
 
-import { KeyPair } from '@prisma/client';
-
 const createChannelName = (...props) => ['keyPairs', ...props].join(':');
 
 export default () => {
   // Store key pair
-  ipcMain.handle(createChannelName('store'), async (_e, keyPair: KeyPair, password: string) =>
-    storeKeyPair(keyPair, password),
+  ipcMain.handle(
+    createChannelName('store'),
+    async (_e, keyPair: Prisma.KeyPairUncheckedCreateInput, password: string) =>
+      storeKeyPair(keyPair, password),
   );
 
   // Change Decryption Password

@@ -1,10 +1,4 @@
-import {
-  Timestamp,
-  Status,
-  TransactionReceipt,
-  AccountId,
-  TransactionResponse,
-} from '@hashgraph/sdk';
+import { Timestamp, Status, TransactionReceipt, Transaction as Tx } from '@hashgraph/sdk';
 import { Transaction } from '@prisma/client';
 
 import { Network } from '@renderer/stores/storeNetwork';
@@ -53,19 +47,32 @@ export const openTransactionInHashscan = (transactionId, network: Network) => {
     openExternal(`https://hashscan.io/${network}/transaction/${transactionId}`);
 };
 
-export const getEntityIdFromTransactionResult = (
-  result: {
-    response: TransactionResponse;
-    receipt: TransactionReceipt;
-    transactionId: string;
-  },
+export const getEntityIdFromTransactionReceipt = (
+  receipt: TransactionReceipt,
   entityType: 'fileId' | 'accountId',
 ) => {
-  if (!result.receipt[entityType]) {
+  const entity = receipt[entityType];
+
+  if (!entity || entity === null) {
     throw new Error('No entity provided');
   }
 
-  const entity = result.receipt[entityType];
+  return entity.toString();
+};
 
-  return new AccountId(entity as any).toString();
+export const getTransactionType = (transaction: Tx | Uint8Array) => {
+  if (transaction instanceof Uint8Array) {
+    transaction = Tx.fromBytes(transaction);
+  }
+
+  return transaction.constructor.name
+    .slice(transaction.constructor.name.startsWith('_') ? 1 : 0)
+    .split(/(?=[A-Z])/)
+    .join(' ');
+};
+
+/* Parses a transaction bytes string to a transaction */
+export const getTransactionFromBytes = <T extends Tx>(transactionBytes: string): T => {
+  const bytesArray = transactionBytes.split(',').map(n => Number(n));
+  return Tx.fromBytes(Uint8Array.from(bytesArray)) as T;
 };

@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { AccountId, Hbar, AccountDeleteTransaction, Key } from '@hashgraph/sdk';
-
-import useNetworkStore from '@renderer/stores/storeNetwork';
+import { Hbar, AccountDeleteTransaction, Key, Transaction, KeyList } from '@hashgraph/sdk';
 
 import { useRoute } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
+import { getDraft } from '@renderer/services/transactionDraftsService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
+import { getTransactionFromBytes } from '@renderer/utils/transactions';
+import { isAccountId } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -18,9 +19,6 @@ import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
-
-/* Stores */
-const networkStore = useNetworkStore();
 
 /* Composables */
 const route = useRoute();
@@ -33,45 +31,90 @@ const transferAccountData = useAccountId();
 /* State */
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
-const transaction = ref<AccountDeleteTransaction | null>(null);
+const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
-const maxTransactionfee = ref(2);
+const maxTransactionFee = ref(2);
 
 const selectedKey = ref<Key | null>();
 const isKeyStructureModalShown = ref(false);
+
+const isExecuted = ref(false);
 
 /* Handlers */
 const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    transaction.value = new AccountDeleteTransaction()
-      .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
-      .setTransactionValidDuration(180)
-      .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
-      .setNodeAccountIds([new AccountId(3)])
-      .setAccountId(accountData.accountId.value)
-      .setTransferAccountId(transferAccountData.accountId.value);
+    if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
+      throw Error('Invalid Payer ID');
+    }
 
-    transaction.value.freezeWith(networkStore.client);
+    if (!isAccountId(accountData.accountId.value) || !accountData.key.value) {
+      throw Error('Invalid Account ID');
+    }
 
-    const requiredSignatures = payerData.keysFlattened.value.concat(
-      accountData.keysFlattened.value,
-      transferAccountData.accountInfo.value?.receiverSignatureRequired
-        ? transferAccountData.keysFlattened.value
-        : [],
+    if (!isAccountId(transferAccountData.accountId.value) || !transferAccountData.key.value) {
+      throw Error('Invalid Transfer Account ID');
+    }
+
+    transaction.value = createTransaction();
+
+    const requiredKey = new KeyList(
+      transferAccountData.accountInfo.value?.receiverSignatureRequired &&
+      transferAccountData.key.value
+        ? [payerData.key.value, accountData.key.value, transferAccountData.key.value]
+        : [payerData.key.value, accountData.key.value],
     );
-    await transactionProcessor.value?.process(requiredSignatures);
+    await transactionProcessor.value?.process(requiredKey);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
 
+const handleLoadFromDraft = async () => {
+  if (!route.query.draftId) return;
+
+  const draft = await getDraft(route.query.draftId?.toString() || '');
+  const draftTransaction = getTransactionFromBytes<AccountDeleteTransaction>(
+    draft.transactionBytes,
+  );
+
+  if (draft) {
+    transaction.value = draftTransaction;
+
+    accountData.accountId.value = draftTransaction.accountId?.toString() || '';
+    transferAccountData.accountId.value = draftTransaction.transferAccountId?.toString() || '';
+  }
+};
+
+/* Functions */
+function createTransaction() {
+  const transaction = new AccountDeleteTransaction()
+    .setTransactionValidDuration(180)
+    .setMaxTransactionFee(new Hbar(maxTransactionFee.value));
+
+  if (isAccountId(payerData.accountId.value)) {
+    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
+  }
+
+  if (isAccountId(accountData.accountId.value)) {
+    transaction.setAccountId(accountData.accountId.value);
+  }
+
+  if (isAccountId(transferAccountData.accountId.value)) {
+    transaction.setTransferAccountId(transferAccountData.accountId.value);
+  }
+
+  return transaction;
+}
+
 /* Hooks */
-onMounted(() => {
+onMounted(async () => {
   if (route.query.accountId) {
     accountData.accountId.value = route.query.accountId.toString();
   }
+
+  await handleLoadFromDraft();
 });
 
 /* Misc */
@@ -80,6 +123,8 @@ const columnClass = 'col-4 col-xxxl-3';
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
+      :get-transaction-bytes="() => createTransaction().toBytes()"
+      :is-executed="isExecuted"
       :create-requirements="
         !accountData.isValid.value ||
         !transferAccountData.isValid.value ||
@@ -92,7 +137,7 @@ const columnClass = 'col-4 col-xxxl-3';
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
       v-model:valid-start="validStart"
-      v-model:max-transaction-fee="maxTransactionfee"
+      v-model:max-transaction-fee="maxTransactionFee"
       class="mt-6"
     />
 
@@ -181,6 +226,7 @@ const columnClass = 'col-4 col-xxxl-3';
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
     :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
+    :on-executed="() => (isExecuted = true)"
   >
     <template #successHeading>Account deleted successfully</template>
     <template #successContent>
@@ -189,7 +235,7 @@ const columnClass = 'col-4 col-xxxl-3';
         class="text-small d-flex justify-content-between align-items mt-2"
       >
         <span class="text-bold text-secondary">Account ID:</span>
-        <span>{{ accountData.accountId.value }}</span>
+        <span>{{ accountData.accountIdFormatted.value }}</span>
       </p>
     </template>
   </TransactionProcessor>

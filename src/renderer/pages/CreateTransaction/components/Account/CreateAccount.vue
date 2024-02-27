@@ -1,19 +1,33 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue';
-import { AccountId, AccountCreateTransaction, KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import {
+  AccountId,
+  AccountCreateTransaction,
+  KeyList,
+  PublicKey,
+  Hbar,
+  Transaction,
+  TransactionReceipt,
+} from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useNetworkStore from '@renderer/stores/storeNetwork';
+
+import { useRoute } from 'vue-router';
 
 import { add } from '@renderer/services/accountsService';
 import { createTransactionId } from '@renderer/services/transactionService';
+import { getDraft } from '@renderer/services/transactionDraftsService';
+import { flattenKeyList } from '@renderer/services/keyPairService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { isPublicKey } from '@renderer/utils/validator';
-import { getEntityIdFromTransactionResult } from '@renderer/utils/transactions';
+import { isAccountId, isPublicKey } from '@renderer/utils/validator';
+import {
+  getEntityIdFromTransactionReceipt,
+  getTransactionFromBytes,
+} from '@renderer/utils/transactions';
 
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -24,16 +38,16 @@ import TransactionHeaderControls from '@renderer/components/Transaction/Transact
 
 /* Stores */
 const user = useUserStore();
-const networkStore = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
+const route = useRoute();
 const payerData = useAccountId();
 
 /* State */
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
-const transaction = ref<AccountCreateTransaction | null>(null);
+const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref(2);
 
@@ -49,6 +63,7 @@ const accountData = reactive({
 });
 const ownerKeyText = ref('');
 const ownerKeys = ref<string[]>([]);
+const isExecuted = ref(false);
 
 /* Getters */
 const keyList = computed(() => new KeyList(ownerKeys.value.map(key => PublicKey.fromString(key))));
@@ -64,48 +79,90 @@ const handleCreate = async e => {
   e.preventDefault();
 
   try {
-    transaction.value = new AccountCreateTransaction()
-      .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
-      .setTransactionValidDuration(180)
-      .setMaxTransactionFee(new Hbar(maxTransactionFee.value))
-      .setNodeAccountIds([new AccountId(3)])
-      .setKey(keyList.value)
-      .setReceiverSignatureRequired(accountData.receiverSignatureRequired)
-      .setDeclineStakingReward(!accountData.acceptStakingRewards)
-      .setInitialBalance(Number(accountData.initialBalance))
-      .setMaxAutomaticTokenAssociations(Number(accountData.maxAutomaticTokenAssociations))
-      .setAccountMemo(accountData.memo);
+    if (!isAccountId(payerData.accountId.value)) {
+      throw new Error('Invalid Payer ID');
+    }
 
-    accountData.stakedAccountId &&
-      transaction.value.setStakedAccountId(AccountId.fromString(accountData.stakedAccountId));
-    Number(accountData.stakedNodeId) > 0 &&
-      transaction.value.setStakedNodeId(Number(accountData.stakedNodeId));
+    transaction.value = createTransaction();
 
-    transaction.value.freezeWith(networkStore.client);
-
-    const requiredSignatures = payerData.keysFlattened.value.concat(ownerKeys.value);
-    await transactionProcessor.value?.process(requiredSignatures);
+    await transactionProcessor.value?.process(payerData.key.value);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
 
-const handleExecuted = async result => {
-  const accountId = getEntityIdFromTransactionResult(result, 'accountId');
+const handleExecuted = async (_response, receipt: TransactionReceipt) => {
+  isExecuted.value = true;
+  const accountId = getEntityIdFromTransactionReceipt(receipt, 'accountId');
   await add(user.data.id, accountId);
   toast.success(`Account ${accountId} linked`, { position: 'bottom-right' });
 };
+
+const handleLoadFromDraft = async () => {
+  if (!route.query.draftId) return;
+
+  const draft = await getDraft(route.query.draftId.toString());
+  const draftTransaction = getTransactionFromBytes<AccountCreateTransaction>(
+    draft.transactionBytes,
+  );
+
+  if (draft) {
+    transaction.value = draftTransaction;
+
+    accountData.receiverSignatureRequired = draftTransaction.receiverSignatureRequired;
+    accountData.maxAutomaticTokenAssociations =
+      draftTransaction.maxAutomaticTokenAssociations.toNumber();
+    accountData.initialBalance = draftTransaction.initialBalance?.toBigNumber().toNumber() || 0;
+    accountData.stakedAccountId = draftTransaction.stakedAccountId?.toString() || '';
+
+    if (draftTransaction.stakedNodeId) {
+      accountData.stakedNodeId = draftTransaction.stakedNodeId.toNumber();
+    }
+
+    accountData.acceptStakingRewards = !draftTransaction.declineStakingRewards;
+    accountData.memo = draftTransaction.accountMemo || '';
+
+    if (draftTransaction.key) {
+      ownerKeys.value = flattenKeyList(draftTransaction.key).map(pk => pk.toStringRaw());
+    }
+  }
+};
+
+/* Functions */
+function createTransaction() {
+  const transaction = new AccountCreateTransaction()
+    .setTransactionValidDuration(180)
+    .setMaxTransactionFee(new Hbar(maxTransactionFee.value))
+    .setKey(keyList.value)
+    .setReceiverSignatureRequired(accountData.receiverSignatureRequired)
+    .setDeclineStakingReward(!accountData.acceptStakingRewards)
+    .setInitialBalance(Hbar.fromString(accountData.initialBalance.toString()))
+    .setMaxAutomaticTokenAssociations(Number(accountData.maxAutomaticTokenAssociations))
+    .setAccountMemo(accountData.memo);
+
+  if (isAccountId(payerData.accountId.value)) {
+    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
+  }
+
+  isAccountId(accountData.stakedAccountId) &&
+    transaction.setStakedAccountId(AccountId.fromString(accountData.stakedAccountId));
+  Number(accountData.stakedNodeId) > 0 &&
+    transaction.setStakedNodeId(Number(accountData.stakedNodeId));
+
+  return transaction;
+}
+
+/* Hooks */
+onMounted(async () => {
+  await handleLoadFromDraft();
+});
 
 /* Watchers */
 watch(
   () => accountData.stakedAccountId,
   id => {
-    try {
-      if (id !== '0') {
-        accountData.stakedAccountId = AccountId.fromString(id).toString();
-      }
-    } catch (error) {
-      /* empty */
+    if (isAccountId(id) && id !== '0') {
+      accountData.stakedAccountId = AccountId.fromString(id).toString();
     }
   },
 );
@@ -122,6 +179,8 @@ const columnClass = 'col-4 col-xxxl-3';
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
+      :get-transaction-bytes="() => createTransaction().toBytes()"
+      :is-executed="isExecuted"
       :create-requirements="keyList._keys.length === 0 || !payerData.isValid.value"
       heading-text="Create Account Transaction"
       class="flex-1"
@@ -247,7 +306,7 @@ const columnClass = 'col-4 col-xxxl-3';
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
     :on-executed="handleExecuted"
-    :on-close-success-modal-click="() => $router.push({ name: 'transactions' })"
+    :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
   >
     <template #successHeading>Account created successfully</template>
     <template #successContent>
@@ -257,7 +316,10 @@ const columnClass = 'col-4 col-xxxl-3';
       >
         <span class="text-bold text-secondary">Account ID:</span>
         <span>{{
-          getEntityIdFromTransactionResult(transactionProcessor?.transactionResult, 'accountId')
+          getEntityIdFromTransactionReceipt(
+            transactionProcessor?.transactionResult.receipt,
+            'accountId',
+          )
         }}</span>
       </p>
     </template>

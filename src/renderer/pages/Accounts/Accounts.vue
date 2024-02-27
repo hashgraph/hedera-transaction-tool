@@ -15,6 +15,8 @@ import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 
 import { getFormattedDateFromTimestamp } from '@renderer/utils/transactions';
 
+import { transactionTypeKeys } from '../CreateTransaction/txTypeComponentMapping';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -142,7 +144,7 @@ const handleChangeNickname = async () => {
   <div class="p-5">
     <div class="d-flex justify-content-between align-items-center">
       <h1 class="text-title text-bold">Accounts</h1>
-      <div class="d-flex justify-content-end align-items-center">
+      <div v-if="accounts.length > 0" class="d-flex justify-content-end align-items-center">
         <AppButton
           :outline="true"
           color="secondary"
@@ -163,7 +165,7 @@ const handleChangeNickname = async () => {
               @click="
                 $router.push({
                   name: 'createTransaction',
-                  params: { type: 'deleteAccount' },
+                  params: { type: transactionTypeKeys.deleteAccount },
                   query: { accountId: accountData.accountIdFormatted.value },
                 })
               "
@@ -175,7 +177,7 @@ const handleChangeNickname = async () => {
               @click="
                 $router.push({
                   name: 'createTransaction',
-                  params: { type: 'updateAccount' },
+                  params: { type: transactionTypeKeys.updateAccount },
                   query: { accountId: accountData.accountIdFormatted.value },
                 })
               "
@@ -199,7 +201,14 @@ const handleChangeNickname = async () => {
           <ul class="dropdown-menu w-100 mt-3">
             <li
               class="dropdown-item cursor-pointer"
-              @click="$router.push('create-transaction/createAccount')"
+              @click="
+                $router.push({
+                  name: 'createTransaction',
+                  params: {
+                    type: transactionTypeKeys.createAccount,
+                  },
+                })
+              "
             >
               <span class="text-small text-bold">Create New</span>
             </li>

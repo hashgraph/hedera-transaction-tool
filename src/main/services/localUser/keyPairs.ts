@@ -1,4 +1,4 @@
-import { KeyPair } from '@prisma/client';
+import { KeyPair, Prisma } from '@prisma/client';
 
 import { encrypt, decrypt } from '@main/utils/crypto';
 
@@ -40,16 +40,16 @@ export const getKeyPairs = async (userId: string, organizationId?: string): Prom
 };
 
 // Store key pair
-export const storeKeyPair = async (keyPair: KeyPair, password: string) => {
+export const storeKeyPair = async (
+  keyPair: Prisma.KeyPairUncheckedCreateInput,
+  password: string,
+) => {
   const prisma = getPrismaClient();
 
   try {
     keyPair.private_key = encrypt(keyPair.private_key, password);
     await prisma.keyPair.create({
-      data: {
-        ...keyPair,
-        id: undefined,
-      },
+      data: keyPair,
     });
   } catch (error: any) {
     console.log(error);

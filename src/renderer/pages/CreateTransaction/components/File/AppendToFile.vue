@@ -1,33 +1,33 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
-import { AccountId, FileAppendTransaction, KeyList, PublicKey } from '@hashgraph/sdk';
-
-import useNetworkStore from '@renderer/stores/storeNetwork';
+import { ref, watch, computed, onMounted } from 'vue';
+import { FileAppendTransaction, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
+import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
+import { getDraft } from '@renderer/services/transactionDraftsService';
+
 import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { isPublicKey } from '@renderer/utils/validator';
+import { getTransactionFromBytes } from '@renderer/utils/transactions';
+import { isPublicKey, isAccountId } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
+import FileTransactionProcessor from '@renderer/components/Transaction/FileTransactionProcessor.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 
-/* Stores */
-const networkStore = useNetworkStore();
-
 /* Composables */
 const toast = useToast();
+const route = useRoute();
 const payerData = useAccountId();
 
 /* State */
-const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
+const transactionProcessor = ref<typeof FileTransactionProcessor | null>(null);
 
-const transaction = ref<FileAppendTransaction | null>(null);
+const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref(2);
 const fileId = ref('');
@@ -43,27 +43,14 @@ const content = ref('');
 const chunkSize = ref(2048);
 const chunksAmount = ref<number | null>(null);
 
+const isExecuted = ref(false);
+
 /* Getters */
 const keyList = computed(
   () => new KeyList(signatureKeys.value.map(key => PublicKey.fromString(key))),
 );
 
 /* Handlers */
-const createTransaction = () => {
-  const appendTransaction = new FileAppendTransaction()
-    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
-    .setTransactionValidDuration(180)
-    .setNodeAccountIds([new AccountId(3)])
-    .setFileId(fileId.value)
-    .setMaxChunks(99999999999999)
-    .setChunkSize(Number(chunkSize.value))
-    .setContents(fileBuffer.value ? fileBuffer.value : new TextEncoder().encode(content.value));
-
-  appendTransaction.freezeWith(networkStore.client);
-
-  return appendTransaction;
-};
-
 const handleAddSignatureKey = () => {
   signatureKeys.value.push(signatureKeyText.value);
   signatureKeys.value = [...new Set(signatureKeys.value.filter(isPublicKey))];
@@ -105,18 +92,79 @@ const handleFileImport = async (e: Event) => {
 
 const handleCreate = async e => {
   e.preventDefault();
-  try {
-    transaction.value = createTransaction();
 
-    await transactionProcessor.value?.process(
-      payerData.keysFlattened.value.concat(signatureKeys.value),
-      chunkSize.value,
-      0,
-    );
+  try {
+    if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
+      throw Error('Invalid Payer ID');
+    }
+
+    if (!isAccountId(fileId.value)) {
+      throw Error('Invalid File ID');
+    }
+
+    const newTransaction = createTransaction();
+
+    if (content.value.length > 0) {
+      newTransaction.setContents(content.value);
+    }
+    if (fileBuffer.value) {
+      newTransaction.setContents(fileBuffer.value);
+    }
+
+    transaction.value = newTransaction;
+
+    const requiredKey = new KeyList([payerData.key.value, keyList.value]);
+    await transactionProcessor.value?.process(requiredKey, chunkSize.value, 1);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
+
+const handleLoadFromDraft = async () => {
+  if (!route.query.draftId) return;
+
+  const draft = await getDraft(route.query.draftId?.toString() || '');
+  const draftTransaction = getTransactionFromBytes<FileAppendTransaction>(draft.transactionBytes);
+
+  if (draft) {
+    transaction.value = draftTransaction;
+
+    if (draftTransaction.fileId) {
+      fileId.value = draftTransaction.fileId.toString();
+    }
+
+    if (draftTransaction.chunkSize) {
+      chunkSize.value = draftTransaction.chunkSize;
+    }
+  }
+};
+
+/* Functions */
+function createTransaction() {
+  const transaction = new FileAppendTransaction()
+    .setTransactionValidDuration(180)
+    // .setChunkSize(Number(chunkSize.value))
+    .setMaxChunks(9999999999999);
+
+  if (isAccountId(payerData.accountId.value)) {
+    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
+  }
+
+  if (isAccountId(fileId.value)) {
+    transaction.setFileId(fileId.value);
+  }
+
+  return transaction;
+}
+
+/* Hooks */
+onMounted(async () => {
+  if (route.query.fileId) {
+    fileId.value = route.query.fileId.toString();
+  }
+
+  await handleLoadFromDraft();
+});
 
 /* Watchers */
 watch(fileMeta, () => (content.value = ''));
@@ -127,7 +175,9 @@ const columnClass = 'col-4 col-xxxl-3';
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
-      :create-requirements="keyList._keys.length === 0 || !payerData.isValid.value"
+      :get-transaction-bytes="() => createTransaction().toBytes()"
+      :is-executed="isExecuted"
+      :create-requirements="keyList._keys.length === 0 || !payerData.isValid.value || !fileId"
       heading-text="Append File Transaction"
     />
 
@@ -224,13 +274,17 @@ const columnClass = 'col-4 col-xxxl-3';
     </div>
   </form>
 
-  <TransactionProcessor
+  <FileTransactionProcessor
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
-    :on-executed="(_result, _chunkAmount) => (chunksAmount = _chunkAmount || null)"
+    :on-executed="
+      (_response, _receipt, chunkAmount) => {
+        isExecuted = true;
+        chunksAmount = chunkAmount || null;
+      }
+    "
     :on-close-success-modal-click="
       () => {
-        payerData.accountId.value = '';
         validStart = '';
         maxTransactionFee = 2;
         fileId = '';
@@ -255,5 +309,5 @@ const columnClass = 'col-4 col-xxxl-3';
         <span>{{ chunksAmount }}</span>
       </p>
     </template>
-  </TransactionProcessor>
+  </FileTransactionProcessor>
 </template>

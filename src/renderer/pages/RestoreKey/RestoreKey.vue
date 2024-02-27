@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onUnmounted, ref, watch } from 'vue';
 import { Mnemonic } from '@hashgraph/sdk';
-import { KeyPair } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
@@ -112,8 +112,7 @@ const handleSaveKey = async e => {
   if (restoredKey.value) {
     try {
       const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
-      const keyPair: KeyPair = {
-        id: '',
+      const keyPair: Prisma.KeyPairUncheckedCreateInput = {
         user_id: user.data.id,
         index: Number(index.value),
         private_key: restoredKey.value.privateKey,
