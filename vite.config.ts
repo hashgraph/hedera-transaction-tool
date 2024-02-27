@@ -1,3 +1,5 @@
+/// <reference types="vitest" />
+
 import { resolve } from 'node:path';
 import fs from 'node:fs';
 
@@ -70,6 +72,9 @@ export default defineConfig(({ command }) => {
     ],
     server: {
       port: 8082,
+    },
+    test: {
+      globals: true,
     },
     clearScreen: false,
   };
