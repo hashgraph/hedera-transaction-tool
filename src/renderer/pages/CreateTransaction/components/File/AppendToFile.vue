@@ -53,7 +53,9 @@ const keyList = computed(
 /* Handlers */
 const handleAddSignatureKey = () => {
   signatureKeys.value.push(signatureKeyText.value);
-  signatureKeys.value = [...new Set(signatureKeys.value.filter(isPublicKey))];
+  signatureKeys.value = signatureKeys.value
+    .filter(isPublicKey)
+    .filter((pk, i) => signatureKeys.value.indexOf(pk) === i);
   signatureKeyText.value = '';
 };
 

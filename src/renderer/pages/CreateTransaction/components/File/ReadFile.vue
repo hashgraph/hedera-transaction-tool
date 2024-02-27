@@ -101,7 +101,7 @@ const handleRead = async e => {
       await update(fileId.value, user.data.id, { contentBytes: response.join(',') });
       await update(fileId.value, user.data.id, { metaBytes: infoResponse.join(',') });
 
-      toast.success('Store file info updated', { position: 'bottom-right' });
+      toast.success('Stored file info updated', { position: 'bottom-right' });
     }
 
     isUserPasswordModalShown.value = false;

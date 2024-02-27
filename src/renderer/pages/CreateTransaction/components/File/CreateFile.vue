@@ -67,7 +67,9 @@ const keyList = computed(() => new KeyList(ownerKeys.value.map(key => PublicKey.
 /* Handlers */
 const handleAdd = () => {
   ownerKeys.value.push(ownerKeyText.value);
-  ownerKeys.value = [...new Set(ownerKeys.value.filter(isPublicKey))];
+  ownerKeys.value = ownerKeys.value
+    .filter(isPublicKey)
+    .filter((pk, i) => ownerKeys.value.indexOf(pk) === i);
   ownerKeyText.value = '';
 };
 
@@ -257,7 +259,7 @@ watch(payerData.isValid, isValid => {
   <TransactionProcessor
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
-    :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
+    :on-close-success-modal-click="() => $router.push({ name: 'files' })"
     :on-executed="handleExecuted"
   >
     <template #successHeading>File created successfully</template>

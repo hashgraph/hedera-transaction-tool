@@ -90,6 +90,7 @@ const handleLoadFromDraft = async () => {
 
   const draft = await getDraft(route.query.draftId?.toString() || '');
   const draftTransaction = getTransactionFromBytes<TransferTransaction>(draft.transactionBytes);
+  console.log(draftTransaction.hbarTransfers);
 
   if (draft) {
     transaction.value = draftTransaction;
@@ -108,7 +109,6 @@ const handleLoadFromDraft = async () => {
     if (draftTransaction.maxTransactionFee) {
       maxTransactionFee.value = draftTransaction.maxTransactionFee.toBigNumber().toNumber();
     }
-    console.log(draftTransaction);
 
     draftTransaction.hbarTransfers._map.forEach((value, accoundId) => {
       const hbars = value.toBigNumber().toNumber();
@@ -138,7 +138,7 @@ function createTransaction() {
     transaction.addHbarTransfer(receiverData.accountId.value, new Hbar(amount.value));
   }
 
-  const isSenderValid = isAccountId(receiverData.accountId.value);
+  const isSenderValid = isAccountId(senderData.accountId.value);
 
   if (isApprovedTransfer.value) {
     isSenderValid &&

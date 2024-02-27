@@ -7,6 +7,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import { useToast } from 'vue-toast-notification';
+import { useRouter } from 'vue-router';
 
 import {
   decryptPrivateKey,
@@ -26,6 +27,7 @@ const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
+const router = useRouter();
 
 enum Tabs {
   // ALL = 'All',
@@ -117,6 +119,10 @@ const handleDelete = async e => {
       await deleteKeyPair(keyPairIdToDelete.value);
       isDeleteModalShown.value = false;
       await keyPairsStore.refetch();
+
+      if (user.data.secretHashes.length === 0) {
+        router.push({ name: 'accountSetup' });
+      }
     }
   } catch (err: any) {
     toast.error('Failed to delete key pair', { position: 'bottom-right' });

@@ -71,7 +71,9 @@ const keyList = computed(() => new KeyList(ownerKeys.value.map(key => PublicKey.
 /* Handlers */
 const handleAdd = () => {
   ownerKeys.value.push(ownerKeyText.value);
-  ownerKeys.value = [...new Set(ownerKeys.value.filter(isPublicKey))];
+  ownerKeys.value = ownerKeys.value
+    .filter(isPublicKey)
+    .filter((pk, i) => ownerKeys.value.indexOf(pk) === i);
   ownerKeyText.value = '';
 };
 

@@ -65,13 +65,17 @@ const newKeysList = computed(
 /* Handlers */
 const handleAddOwnerKey = () => {
   ownerKeys.value.push(ownerKeyText.value);
-  ownerKeys.value = [...new Set(ownerKeys.value.filter(isPublicKey))];
+  ownerKeys.value = ownerKeys.value
+    .filter(isPublicKey)
+    .filter((pk, i) => ownerKeys.value.indexOf(pk) === i);
   ownerKeyText.value = '';
 };
 
 const handleAddNewKey = () => {
   newKeys.value.push(newKeyText.value);
-  newKeys.value = [...new Set(newKeys.value.filter(isPublicKey))];
+  newKeys.value = newKeys.value
+    .filter(isPublicKey)
+    .filter((pk, i) => newKeys.value.indexOf(pk) === i);
   newKeyText.value = '';
 };
 
