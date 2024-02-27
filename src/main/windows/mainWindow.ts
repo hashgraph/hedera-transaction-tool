@@ -4,7 +4,7 @@ import { BrowserWindow, screen } from 'electron';
 
 import { sendUpdateThemeEventTo } from '@main/modules/ipcHandlers/theme';
 
-export default function createWindow() {
+async function createWindow() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 
   const preload = join(__dirname, '../preload/index.js');
@@ -18,8 +18,17 @@ export default function createWindow() {
       preload,
       nodeIntegration: false,
       contextIsolation: true,
+      sandbox: false,
     },
     show: false,
+  });
+
+  mainWindow.on('ready-to-show', () => {
+    if (mainWindow) {
+      sendUpdateThemeEventTo(mainWindow);
+    }
+
+    mainWindow?.show();
   });
 
   if (process.env.VITE_DEV_SERVER_URL) {
@@ -29,14 +38,21 @@ export default function createWindow() {
     mainWindow.loadFile(join(process.env.DIST, 'index.html'));
   }
 
-  /* main window web contents' events */
-  mainWindow.webContents.on('did-finish-load', () => {
-    if (mainWindow) {
-      sendUpdateThemeEventTo(mainWindow);
-    }
-
-    mainWindow?.show();
-  });
-
   return mainWindow;
+}
+
+export async function restoreOrCreateWindow() {
+  let window = BrowserWindow.getAllWindows().find(w => !w.isDestroyed());
+
+  if (window === undefined) {
+    window = await createWindow();
+  }
+
+  if (window.isMinimized()) {
+    window.restore();
+  }
+
+  window.focus();
+
+  return window;
 }
