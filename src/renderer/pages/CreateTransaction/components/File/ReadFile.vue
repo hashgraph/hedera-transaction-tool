@@ -98,8 +98,11 @@ const handleRead = async e => {
         keyPair.type,
       );
 
-      await update(fileId.value, user.data.id, { contentBytes: response.join(',') });
-      await update(fileId.value, user.data.id, { metaBytes: infoResponse.join(',') });
+      await update(fileId.value, user.data.id, {
+        contentBytes: response.join(','),
+        metaBytes: infoResponse.join(','),
+        lastRefreshed: new Date(),
+      });
 
       toast.success('Stored file info updated', { position: 'bottom-right' });
     }

@@ -37,6 +37,7 @@ const specialFiles: HederaFile[] = [
     description: null,
     metaBytes: null,
     contentBytes: null,
+    lastRefreshed: null,
   },
   {
     id: '0.0.102',
@@ -46,6 +47,7 @@ const specialFiles: HederaFile[] = [
     description: null,
     metaBytes: null,
     contentBytes: null,
+    lastRefreshed: null,
   },
   {
     id: '0.0.111',
@@ -55,6 +57,7 @@ const specialFiles: HederaFile[] = [
     description: null,
     metaBytes: null,
     contentBytes: null,
+    lastRefreshed: null,
   },
   {
     id: '0.0.112',
@@ -64,6 +67,7 @@ const specialFiles: HederaFile[] = [
     description: null,
     metaBytes: null,
     contentBytes: null,
+    lastRefreshed: null,
   },
   {
     id: '0.0.121',
@@ -73,6 +77,7 @@ const specialFiles: HederaFile[] = [
     description: null,
     metaBytes: null,
     contentBytes: null,
+    lastRefreshed: null,
   },
   {
     id: '0.0.122',
@@ -82,6 +87,7 @@ const specialFiles: HederaFile[] = [
     description: null,
     metaBytes: null,
     contentBytes: null,
+    lastRefreshed: null,
   },
   {
     id: '0.0.123',
@@ -91,6 +97,7 @@ const specialFiles: HederaFile[] = [
     description: null,
     metaBytes: null,
     contentBytes: null,
+    lastRefreshed: null,
   },
 ];
 const specialFilesIds = specialFiles.map(f => f.file_id);
@@ -485,7 +492,17 @@ watch(files, newFiles => {
               <p class="text-danger">File is deleted</p>
             </template>
             <hr class="separator my-4" />
-            <div class="row align-items-start">
+            <div v-if="selectedFile.lastRefreshed" class="row align-items-start">
+              <div class="col-5">
+                <div class="text-small text-semi-bold">Last Refreshed</div>
+              </div>
+              <div class="col-7">
+                <p class="text-small text-semi-bold">
+                  {{ selectedFile.lastRefreshed.toDateString() }}
+                </p>
+              </div>
+            </div>
+            <div class="mt-4 row align-items-start">
               <div class="col-5">
                 <div class="text-small text-semi-bold">Description</div>
               </div>

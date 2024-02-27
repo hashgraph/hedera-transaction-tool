@@ -111,6 +111,7 @@ const handleExecuted = async (_response, receipt: TransactionReceipt) => {
     user_id: user.data.id,
     contentBytes: fileTransaction.contents?.join(','),
     metaBytes: infoBytes.join(','),
+    lastRefreshed: new Date(),
   };
 
   await add(file);
