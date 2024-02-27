@@ -39,6 +39,12 @@ export default defineConfig(({ command }) => {
                 external: Object.keys('dependencies' in pkg ? pkg.dependencies : {}),
               },
             },
+            resolve: {
+              alias: {
+                '@renderer': resolve('src/renderer'),
+                '@main': resolve('src/main'),
+              },
+            },
           },
         },
         preload: {
@@ -50,6 +56,11 @@ export default defineConfig(({ command }) => {
               outDir: 'dist-electron/preload',
               rollupOptions: {
                 external: Object.keys('dependencies' in pkg ? pkg.dependencies : {}),
+              },
+            },
+            resolve: {
+              alias: {
+                '@main': resolve('src/main'),
               },
             },
           },
