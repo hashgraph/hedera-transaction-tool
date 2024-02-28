@@ -6,17 +6,9 @@ import {
   FeeData,
   FeeSchedule,
   FeeSchedules,
+  Long,
 } from '@hashgraph/sdk';
-import Long from 'long';
-
-export type HederaSpecialFileId =
-  | '0.0.101'
-  | '0.0.102'
-  | '0.0.111'
-  | '0.0.112'
-  | '0.0.121'
-  | '0.0.122'
-  | '0.0.123';
+import { HederaSpecialFileId } from '@main/shared/interfaces';
 
 export function isHederaSpecialFileId(value: any): value is HederaSpecialFileId {
   const validValues: HederaSpecialFileId[] = [

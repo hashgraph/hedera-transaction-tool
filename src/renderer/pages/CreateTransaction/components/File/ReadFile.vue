@@ -2,6 +2,8 @@
 import { onMounted, ref, watch } from 'vue';
 import { FileContentsQuery, FileInfoQuery } from '@hashgraph/sdk';
 
+import { HederaFile } from '@prisma/client';
+
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -12,8 +14,9 @@ import useAccountId from '@renderer/composables/useAccountId';
 
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { executeQuery } from '@renderer/services/transactionService';
+import { getAll, update } from '@renderer/services/filesService';
 
-import { isHederaSpecialFileId } from '@main/shared/utils/hederaSpecialFiles';
+import { isHederaSpecialFileId } from '@renderer/utils/sdk';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -21,8 +24,6 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
-import { HederaFile } from '@prisma/client';
-import { getAll, update } from '@renderer/services/filesService';
 
 /* Stores */
 const user = useUserStore();

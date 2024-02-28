@@ -3,13 +3,14 @@ import { Client, FileContentsQuery, PrivateKey, Query, Transaction } from '@hash
 import { Prisma } from '@prisma/client';
 import { getPrismaClient } from '@main/db';
 
+import { HederaSpecialFileId } from '@main/shared/interfaces';
+
 import { getNumberArrayFromString } from '@main/utils';
 import {
-  HederaSpecialFileId,
   isHederaSpecialFileId,
   decodeProto,
   encodeHederaSpecialFile,
-} from '@main/shared/utils/hederaSpecialFiles';
+} from '@main/utils/hederaSpecialFiles';
 
 import { getKeyPairs } from '@main/services/localUser/keyPairs';
 import { decrypt } from '@main/utils/crypto';

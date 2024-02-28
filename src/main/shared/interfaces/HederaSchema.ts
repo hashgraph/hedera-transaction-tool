@@ -745,3 +745,12 @@ function compareNumber(n1: number | null | undefined, n2: number | null | undefi
   }
   return result;
 }
+
+export type HederaSpecialFileId =
+  | '0.0.101'
+  | '0.0.102'
+  | '0.0.111'
+  | '0.0.112'
+  | '0.0.121'
+  | '0.0.122'
+  | '0.0.123';
