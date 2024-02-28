@@ -1,6 +1,6 @@
-import {expect} from 'vitest';
+import { expect } from 'vitest';
 
-import {createCredentials, decrypt, encrypt, hash} from '@main/utils/crypto';
+import { createCredentials, decrypt, encrypt, hash } from '@main/utils/crypto';
 
 describe('Crypto utilities', () => {
   test('hash: Returns correct SHA256 Hash', () => {

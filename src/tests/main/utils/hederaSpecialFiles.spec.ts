@@ -1,15 +1,14 @@
-import {expect} from 'vitest';
-import {FileId} from '@hashgraph/sdk';
+import { expect } from 'vitest';
+import { FileId } from '@hashgraph/sdk';
 
-import {JSONtoUInt8Array} from '@main/utils';
+import { JSONtoUInt8Array } from '@main/utils';
 
 import {
   decodeProto,
   encodeHederaSpecialFile,
   isHederaSpecialFileId,
-} from '@main/utils/hederaSpecialFiles';
-
-import type {HederaSpecialFileId} from '../../../../types/interfaces';
+  HederaSpecialFileId,
+} from '@main/shared/utils/hederaSpecialFiles';
 
 import {
   buffer as buffer101,
@@ -21,11 +20,11 @@ import {
   decodedString as string102,
   protoInput as protoInput102,
 } from '../_constants_/0.0.102';
-import {buffer as buffer111, decodedString as string111} from '../_constants_/0.0.111';
-import {buffer as buffer112, decodedString as string112} from '../_constants_/0.0.112';
-import {buffer as buffer121, decodedString as string121} from '../_constants_/0.0.121';
-import {buffer as buffer122, decodedString as string122} from '../_constants_/0.0.122';
-import {buffer as buffer123, decodedString as string123} from '../_constants_/0.0.123';
+import { buffer as buffer111, decodedString as string111 } from '../_constants_/0.0.111';
+import { buffer as buffer112, decodedString as string112 } from '../_constants_/0.0.112';
+import { buffer as buffer121, decodedString as string121 } from '../_constants_/0.0.121';
+import { buffer as buffer122, decodedString as string122 } from '../_constants_/0.0.122';
+import { buffer as buffer123, decodedString as string123 } from '../_constants_/0.0.123';
 
 describe('Hedera Special Files utilities', () => {
   test('isHederaSpecialFileId: validates that a file is special', () => {

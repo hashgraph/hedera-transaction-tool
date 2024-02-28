@@ -1,6 +1,6 @@
-import {expect} from 'vitest';
+import { expect } from 'vitest';
 
-import {JSONtoUInt8Array, getNumberArrayFromString} from '@main/utils';
+import { JSONtoUInt8Array, getNumberArrayFromString } from '@main/utils';
 
 describe('General utilities', () => {
   test('getNumberArrayFromString: Returns correct numbers array from string', () => {
