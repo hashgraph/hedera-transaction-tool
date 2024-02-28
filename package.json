@@ -25,8 +25,8 @@
     "publish": "npm run build && electron-builder -m -p 'onTagOrDraft'",
     "test": "vitest",
     "test:coverage": "vitest --coverage",
-    "test:main": "vitest main",
-    "test:renderer": "vitest renderer"
+    "test:main": "npm run test --project main --passWithNoTests",
+    "test:renderer": "npm run test --project renderer --passWithNoTests"
   },
   "dependencies": {
     "@electron-toolkit/utils": "^3.0.0",
@@ -62,6 +62,7 @@
     "electron-builder": "^24.9.1",
     "eslint": "^8.56.0",
     "eslint-plugin-vue": "^9.20.1",
+    "happy-dom": "^13.6.2",
     "less": "^4.2.0",
     "prettier": "3.1.1",
     "prisma": "^5.8.1",
