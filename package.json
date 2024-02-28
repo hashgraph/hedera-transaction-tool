@@ -25,7 +25,8 @@
     "publish": "npm run build && electron-builder -m -p 'onTagOrDraft'",
     "test:main": "vitest --config src/tests/vitest.config.main.ts --passWithNoTests",
     "test:renderer": "vitest --config src/tests/vitest.config.renderer.ts --passWithNoTests",
-    "test:main:coverage": "vitest --config src/tests/vitest.config.main.ts --coverage.enabled --coverage.include=srcq/main",
+    "test:e2e": "npm run build && vitest --config src/tests/vitest.config.e2e.ts --passWithNoTests",
+    "test:main:coverage": "vitest --config src/tests/vitest.config.main.ts --coverage.enabled --coverage.include=src/main",
     "test:renderer:coverage": "vitest --config src/tests/vitest.config.renderer.ts --coverage.enabled --coverage.include=src/renderer"
   },
   "dependencies": {
@@ -65,6 +66,7 @@
     "eslint-plugin-vue": "^9.20.1",
     "happy-dom": "^13.6.2",
     "less": "^4.2.0",
+    "playwright": "^1.42.0",
     "prettier": "3.1.1",
     "prisma": "^5.8.1",
     "sass": "^1.70.0",
