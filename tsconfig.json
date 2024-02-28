@@ -2,7 +2,6 @@
   "files": [],
   "compilerOptions": {
     "skipLibCheck": true,
-    "types": ["vitest/globals"],
   },
   "references": [{ "path": "./tsconfig.node.json" }, { "path": "./tsconfig.web.json" }],
 }

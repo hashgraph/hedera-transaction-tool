@@ -1,4 +1,3 @@
-import { expect, describe, test } from 'vitest';
 import { mount } from '@vue/test-utils';
 
 import { createMemoryHistory, createRouter } from 'vue-router';
