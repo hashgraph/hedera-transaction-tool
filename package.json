@@ -25,8 +25,8 @@
     "publish": "npm run build && electron-builder -m -p 'onTagOrDraft'",
     "test:main": "vitest --config src/tests/vitest.config.main.ts --passWithNoTests",
     "test:renderer": "vitest --config src/tests/vitest.config.renderer.ts --passWithNoTests",
-    "test:main:coverage": "vitest --config src/tests/vitest.config.main.ts --coverage",
-    "test:renderer:coverage": "vitest --config src/tests/vitest.config.renderer.ts --coverage"
+    "test:main:coverage": "vitest --config src/tests/vitest.config.main.ts --coverage.enabled --coverage.include=srcq/main",
+    "test:renderer:coverage": "vitest --config src/tests/vitest.config.renderer.ts --coverage.enabled --coverage.include=src/renderer"
   },
   "dependencies": {
     "@electron-toolkit/utils": "^3.0.0",
