@@ -10,7 +10,10 @@ import { PrismaClient } from '@prisma/client';
 import { getDatabaseLogger } from '@main/modules/logger';
 
 export const dbPath = path.join(electron.app.getPath('userData'), 'database.db');
-const migrationsPath = path.join(electron.app.getAppPath(), './prisma/migrations');
+const migrationsPath = path.join(
+  electron.app.getAppPath(),
+  import.meta.env.DEV ? './prisma/migrations' : '../prisma/migrations',
+);
 
 export default async function initDatabase() {
   const databaseLogger = getDatabaseLogger();
