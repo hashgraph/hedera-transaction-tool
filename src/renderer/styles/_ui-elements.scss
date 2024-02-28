@@ -593,3 +593,19 @@
     transform: scale(0.75);
   }
 }
+
+/* Public Key Input */
+.public-key-input {
+  position: relative;
+
+  .public-key-input-before,
+  .public-key-input-after {
+    position: absolute;
+    top: 50%;
+    transform: translate(0%, -50%);
+  }
+
+  .public-key-input-after {
+    right: 0;
+  }
+}
