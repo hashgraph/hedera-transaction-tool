@@ -3,9 +3,11 @@ import { ref, watch } from 'vue';
 
 import { Key, PublicKey } from '@hashgraph/sdk';
 
-import AppButton from './ui/AppButton.vue';
-import AppPublicKeyInput from './ui/AppPublicKeyInput.vue';
 import { isPublicKey } from '@renderer/utils/validator';
+
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppPublicKeyInput from '@renderer/components/ui/AppPublicKeyInput.vue';
+import ComplexKeyModal from '@renderer/components/ComplexKey/ComplexKeyModal.vue';
 
 /* Props */
 const props = defineProps<{
@@ -25,10 +27,12 @@ enum Tabs {
 /* State */
 const currentTab = ref(Tabs.SIGNLE);
 const publicKeyInputRef = ref<InstanceType<typeof AppPublicKeyInput> | null>(null);
+const complexKeyModalShown = ref(false);
 
 /* Handlers */
 const handleTabChange = (tab: Tabs) => {
   currentTab.value = tab;
+  complexKeyModalShown.value = tab === Tabs.COMPLEX;
 };
 
 const handlePublicKeyChange = (value: string) => {
@@ -52,6 +56,10 @@ watch([() => props.modelKey, currentTab, publicKeyInputRef], value => {
     publicKeyInputRef.value.inputRef.inputRef.value = newKey.toStringRaw();
   }
 });
+
+watch(complexKeyModalShown, show => {
+  currentTab.value = show ? Tabs.COMPLEX : Tabs.SIGNLE;
+});
 </script>
 <template>
   <div class="border rounded p-4">
@@ -65,7 +73,11 @@ watch([() => props.modelKey, currentTab, publicKeyInputRef], value => {
             :color="currentTab === tab ? 'primary' : undefined"
             type="button"
             class="w-100"
-            :class="{ active: tab === currentTab, 'ms-3': index !== 0 }"
+            :class="{
+              active: tab === currentTab,
+              'text-body': tab !== currentTab,
+              'ms-3': index !== 0,
+            }"
             @click="handleTabChange(tab)"
           >
             {{ tab }}
@@ -82,6 +94,13 @@ watch([() => props.modelKey, currentTab, publicKeyInputRef], value => {
             @update:model-value="handlePublicKeyChange"
           />
         </div>
+      </template>
+      <template v-if="currentTab === Tabs.COMPLEX">
+        <ComplexKeyModal
+          v-model:show="complexKeyModalShown"
+          :model-key="modelKey"
+          @update:model-key="key => emit('update:modelKey', key)"
+        />
       </template>
     </div>
   </div>
