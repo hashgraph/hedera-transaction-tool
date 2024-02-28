@@ -1,9 +1,9 @@
-import {expect, describe, test} from 'vitest';
-import {mount} from '@vue/test-utils';
+import { expect, describe, test } from 'vitest';
+import { mount } from '@vue/test-utils';
 
-import {createMemoryHistory, createRouter} from 'vue-router';
+import { createMemoryHistory, createRouter } from 'vue-router';
 
-import Menu from '../../src/components/Menu.vue';
+import Menu from '@renderer/components/Menu.vue';
 
 const mockRouter = createRouter({
   history: createMemoryHistory(),
