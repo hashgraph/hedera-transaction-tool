@@ -73,9 +73,6 @@ export default defineConfig(({ command }) => {
     server: {
       port: 8082,
     },
-    test: {
-      globals: true,
-    },
     clearScreen: false,
   };
 });
