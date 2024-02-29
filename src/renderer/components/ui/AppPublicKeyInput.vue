@@ -72,7 +72,7 @@ defineExpose({
       ref="afterItemRef"
       class="public-key-input-after text-small border-start px-4"
     >
-      <span class="bi bi-x-lg" @click="onCrossIconClick"> </span>
+      <span class="bi bi-x-lg cursor-pointer" @click="onCrossIconClick"> </span>
     </div>
   </div>
 </template>
