@@ -358,7 +358,7 @@ watch(files, newFiles => {
           <div v-if="selectedFile" class="h-100 position-relative">
             <div class="row align-items-center">
               <div class="col-5">
-                <p class="text-small text-semi-bold">Nickname</p>
+                <p class="text-small text-semi-bold">File Name</p>
               </div>
               <div class="col-7">
                 <input
