@@ -11,9 +11,11 @@ import {
   getTransactionDate,
   getTransactionStatus,
   getTransactionId,
+  // getTransactionPayerId,
   getPayerFromTransaction,
   getStatusFromCode,
   openTransactionInHashscan,
+  getTransactionValidStart,
 } from '@renderer/utils/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -85,6 +87,18 @@ const handleSort = (field: string, direction: 'asc' | 'desc') => {
         } else return 0;
       });
       break;
+    case 'transactionId':
+      transactions.value = transactions.value.sort((t1, t2) => {
+        const validStart1 = getTransactionValidStart(t1)?.seconds;
+        const validStart2 = getTransactionValidStart(t2)?.seconds;
+
+        if (direction === 'asc') {
+          return validStart1 - validStart2;
+        } else if (direction === 'desc') {
+          return validStart2 - validStart1;
+        } else return 0;
+      });
+      break;
     default:
       break;
   }
@@ -118,7 +132,24 @@ onBeforeMount(async () => {
   <table v-else class="table-custom">
     <thead>
       <tr>
-        <th class="w-10 text-end">#</th>
+        <th>
+          <div
+            class="table-sort-link"
+            @click="
+              handleSort(
+                'transactionId',
+                sort.field === 'transactionId' ? getOpositeDirection() : 'asc',
+              )
+            "
+          >
+            <span>Transaction ID</span>
+            <i
+              v-if="sort.field === 'transactionId'"
+              class="bi text-title"
+              :class="[generatedClass]"
+            ></i>
+          </div>
+        </th>
         <th>
           <div
             class="table-sort-link"
@@ -137,7 +168,7 @@ onBeforeMount(async () => {
             <i v-if="sort.field === 'status'" class="bi text-title" :class="[generatedClass]"></i>
           </div>
         </th>
-        <th>
+        <!-- <th>
           <div
             class="table-sort-link"
             @click="handleSort('payerId', sort.field === 'payerId' ? getOpositeDirection() : 'asc')"
@@ -145,7 +176,7 @@ onBeforeMount(async () => {
             <span>Payer ID</span>
             <i v-if="sort.field === 'payerId'" class="bi text-title" :class="[generatedClass]"></i>
           </div>
-        </th>
+        </th> -->
         <th>
           <div
             class="table-sort-link"
@@ -167,9 +198,9 @@ onBeforeMount(async () => {
       </tr>
     </thead>
     <tbody>
-      <template v-for="(transaction, i) in transactions" :key="i">
+      <template v-for="transaction in transactions" :key="transaction.created_at.toString()">
         <tr>
-          <td>{{ i + 1 }}</td>
+          <td>{{ getTransactionId(transaction) }}</td>
           <td>
             <span class="text-bold">{{ transaction.type }}</span>
           </td>
@@ -180,9 +211,9 @@ onBeforeMount(async () => {
               >{{ getTransactionStatus(transaction) }}</span
             >
           </td>
-          <td>
-            <span class="text-secondary">{{ getTransactionId(transaction) }}</span>
-          </td>
+          <!-- <td>
+            <span class="text-secondary">{{ getTransactionPayerId(transaction) }}</span>
+          </td> -->
           <td>
             <span class="text-secondary">
               {{ getTransactionDate(transaction) }}
