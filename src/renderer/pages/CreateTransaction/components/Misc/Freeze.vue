@@ -13,7 +13,6 @@ import { createTransactionId } from '@renderer/services/transactionService';
 import { getDateTimeLocalInputValue } from '@renderer/utils';
 import { isFileId } from '@renderer/utils/validator';
 
-import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
@@ -72,11 +71,6 @@ const columnClass = 'col-4 col-xxxl-3';
   <form @submit="handleCreate">
     <!-- :create-requirements to be updated -->
     <TransactionHeaderControls :create-requirements="true" heading-text="Freeze Transaction" />
-
-    <AppButton type="button" color="secondary" class="mt-6" @click="$router.back()">
-      <span class="bi bi-arrow-left"></span>
-      Back
-    </AppButton>
 
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
