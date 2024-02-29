@@ -17,6 +17,7 @@ import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
+import { useRoute } from 'vue-router';
 
 import {
   TRANSACTION_MAX_SIZE,
@@ -31,6 +32,7 @@ import {
 } from '@renderer/services/transactionService';
 import { openExternal } from '@renderer/services/electronUtilsService';
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
+import { getDraft, deleteDraft } from '@renderer/services/transactionDraftsService';
 
 import { ableToSign } from '@renderer/utils/sdk';
 import { getTransactionType } from '@renderer/utils/transactions';
@@ -61,6 +63,7 @@ const keyPairs = useKeyPairsStore();
 
 /* Composables */
 const toast = useToast();
+const route = useRoute();
 
 /* State */
 const transactionResult = ref<{
@@ -249,6 +252,18 @@ async function executeTransaction(transactionBytes: Uint8Array) {
 
     isExecutedModalShown.value = true;
     props.onExecuted && props.onExecuted(response, receipt);
+
+    if (route.query.draftId) {
+      try {
+        const draft = await getDraft(route.query.draftId.toString());
+
+        if (!draft.isTemplate) {
+          await deleteDraft(route.query.draftId.toString());
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
 
     if (unmounted.value) {
       toast.success('Transaction executed', { position: 'bottom-right' });
@@ -487,6 +502,18 @@ async function executeFileTransactions(
         chunksAmount.value || undefined,
       );
     isExecutedModalShown.value = true;
+  }
+
+  if (route.query.draftId) {
+    try {
+      const draft = await getDraft(route.query.draftId.toString());
+
+      if (!draft.isTemplate) {
+        await deleteDraft(route.query.draftId.toString());
+      }
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   if (unmounted.value) {
