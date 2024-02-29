@@ -435,7 +435,7 @@ watch(files, newFiles => {
                   color="primary"
                   size="small"
                   @click="showContentInTemp(user.data.id, selectedFile.file_id)"
-                  >Open</AppButton
+                  >View</AppButton
                 >
               </div>
             </div>
