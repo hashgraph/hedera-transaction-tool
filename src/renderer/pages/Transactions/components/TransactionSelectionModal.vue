@@ -42,7 +42,7 @@ const transactionGroups = [
   },
   // { groupTitle: 'Token Service', items: [] },
   // { groupTitle: 'Smart Contract Service', items: [] },
-  { groupTitle: 'Consensus Service', items: [{ label: 'Freeze', name: 'freeze' }] },
+  { groupTitle: 'Software Update', items: [{ label: 'Freeze', name: transactionTypeKeys.freeze }] },
   // { groupTitle: 'Token Service', items: [] },
   // { groupTitle: 'Schedule Service', items: [] },
   // { groupTitle: 'Freeze Service', items: [] },
