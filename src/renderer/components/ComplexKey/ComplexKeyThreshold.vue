@@ -1,10 +1,11 @@
 <!-- eslint-disable @typescript-eslint/no-unused-vars -->
 <script setup lang="ts">
 import { ref } from 'vue';
-import { KeyList, PublicKey } from '@hashgraph/sdk';
+import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 
-import AppButton from '../ui/AppButton.vue';
-import AppPublicKeyInput from '../ui/AppPublicKeyInput.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppPublicKeyInput from '@renderer/components/ui/AppPublicKeyInput.vue';
+import ComplexKeyAddPublicKeyModal from '@renderer/components/ComplexKey/ComplexKeyAddPublicKeyModal.vue';
 
 /* Props */
 const props = defineProps<{
@@ -18,6 +19,8 @@ const emit = defineEmits(['update:keyList']);
 
 /* State */
 const areChildrenShown = ref(true);
+const addPublicKeyModalShown = ref(false);
+const selectAccountModalShown = ref(false);
 
 /* Handlers */
 const handleThresholdChange = (e: Event) => {
@@ -25,34 +28,33 @@ const handleThresholdChange = (e: Event) => {
   emit('update:keyList', props.keyList.setThreshold(threshold));
 };
 
-const handleAddPublicKey = () => {
-  // Open public key modal
+// const handleSelectAccount = () => {
+// Open accounts modal
+// };
+
+const handleAddPublicKey = (publicKey: PublicKey) => {
+  const keys = props.keyList.toArray();
+  keys.push(publicKey);
+  emitNewKeyList(keys, props.keyList.threshold);
 };
 
 const handleRemovePublicKey = (publicKey: PublicKey) => {
   const keys = props.keyList.toArray();
   const index = keys.findIndex(key => key === publicKey);
   keys.splice(index, 1);
-  const newKeyList = new KeyList(keys, props.keyList.threshold);
-  emit('update:keyList', newKeyList);
-};
-
-const handleAddAccount = () => {
-  // Open accounts modal
+  emitNewKeyList(keys, props.keyList.threshold);
 };
 
 const handleAddThreshold = () => {
   const keys = props.keyList.toArray();
   keys.push(new KeyList([]));
-  const newKeyList = new KeyList(keys, props.keyList.threshold);
-  emit('update:keyList', newKeyList);
+  emitNewKeyList(keys, props.keyList.threshold);
 };
 
 const handleRemoveThreshold = (i: number) => {
   const keys = props.keyList.toArray();
   keys.splice(i, 1);
-  const newKeyList = new KeyList(keys, props.keyList.threshold);
-  emit('update:keyList', newKeyList);
+  emitNewKeyList(keys, props.keyList.threshold);
 };
 
 const handleKeyListUpdate = (index: number, newKeyList: KeyList) => {
@@ -62,6 +64,12 @@ const handleKeyListUpdate = (index: number, newKeyList: KeyList) => {
 
   emit('update:keyList', newParentKeyList);
 };
+
+/* Funtions */
+function emitNewKeyList(keys: Key[], threshold: number | null) {
+  const newKeyList = new KeyList(keys, threshold);
+  emit('update:keyList', newKeyList);
+}
 </script>
 <template>
   <div class="key-node d-flex justify-content-between bg-secondary text-white rounded py-3 px-4">
@@ -102,10 +110,10 @@ const handleKeyListUpdate = (index: number, newKeyList: KeyList) => {
             ><span class="bi bi-plus-lg"></span> Add</AppButton
           >
           <ul class="dropdown-menu mt-3">
-            <li class="dropdown-item cursor-pointer" @click="handleAddPublicKey">
+            <li class="dropdown-item cursor-pointer" @click="selectAccountModalShown = true">
               <span class="text-small">Account</span>
             </li>
-            <li class="dropdown-item cursor-pointer mt-3" @click="handleAddAccount">
+            <li class="dropdown-item cursor-pointer mt-3" @click="addPublicKeyModalShown = true">
               <span class="text-small">Public Key</span>
             </li>
             <li class="dropdown-item cursor-pointer mt-3" @click="handleAddThreshold">
@@ -151,4 +159,9 @@ const handleKeyListUpdate = (index: number, newKeyList: KeyList) => {
       </template>
     </div>
   </Transition>
+  <ComplexKeyAddPublicKeyModal
+    v-if="addPublicKeyModalShown"
+    v-model:show="addPublicKeyModalShown"
+    :on-public-key-add="handleAddPublicKey"
+  />
 </template>
