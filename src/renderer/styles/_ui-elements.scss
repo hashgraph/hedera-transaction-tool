@@ -357,6 +357,7 @@
 .transaction-success-modal {
   --bs-modal-width: 430px;
 }
+
 .large-modal {
   --bs-modal-width: 75vw;
 
@@ -366,6 +367,21 @@
 
   @include media-breakpoint-up(xxl) {
     --bs-modal-width: 50vw;
+  }
+}
+
+.full-screen-modal {
+  --bs-modal-width: 100vw;
+
+  .modal-dialog {
+    margin-top: 0;
+    margin-bottom: 0;
+    max-height: 100vh;
+  }
+
+  .modal-content {
+    height: 100vh;
+    max-height: 100vh;
   }
 }
 
@@ -607,5 +623,72 @@
 
   .public-key-input-after {
     right: 0;
+  }
+}
+
+/* Complex Key Structure */
+
+.key-node-wrapper {
+  padding-top: 20px;
+  border-left: 2px solid $body-bg;
+  padding-left: 20px;
+  margin-left: 20px;
+
+  &:last-child {
+    .key-node {
+      &::after {
+        content: '';
+        position: absolute;
+        width: 20px;
+        height: 52%;
+        top: 54%;
+        left: -32px;
+        background: $modal-content-bg;
+      }
+    }
+  }
+
+  & > .key-node::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 2px;
+    background: $body-bg;
+    top: 50%;
+    transform: translateY(-50%);
+    left: -22px;
+  }
+}
+
+.key-node {
+  position: relative;
+}
+
+.key-node-container {
+  position: relative;
+  padding-top: 20px;
+  padding-left: 20px;
+  margin-left: 20px;
+  border-left: 2px solid $body-bg;
+
+  &:last-child::after {
+    content: '';
+    position: absolute;
+    width: 2px;
+    background: $modal-content-bg;
+    top: 49px;
+    height: 100%;
+    left: -2px;
+  }
+
+  & > .key-node::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 2px;
+    background: $body-bg;
+    top: 50%;
+    transform: translateY(-50%);
+    left: -22px;
   }
 }
