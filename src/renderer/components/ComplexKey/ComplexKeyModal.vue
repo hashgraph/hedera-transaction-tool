@@ -62,14 +62,16 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
             <AppButton type="submit" color="primary" class="ms-3">Save</AppButton>
           </div>
           <div class="mt-5 h-100 overflow-auto">
-            <template v-if="!summaryMode">
-              <ComplexKey :model-key="currentKey" @update:model-key="handleComplexKeyUpdate" />
-            </template>
-            <template v-else>
-              <KeyStructure
-                :key-list="currentKey instanceof KeyList ? currentKey : new KeyList([])"
-              />
-            </template>
+            <Transition name="fade" :mode="'out-in'">
+              <div v-if="!summaryMode">
+                <ComplexKey :model-key="currentKey" @update:model-key="handleComplexKeyUpdate" />
+              </div>
+              <div v-else>
+                <KeyStructure
+                  :key-list="currentKey instanceof KeyList ? currentKey : new KeyList([])"
+                />
+              </div>
+            </Transition>
           </div>
         </div>
       </form>
