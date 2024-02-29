@@ -31,6 +31,7 @@ onMounted(() => {
     keyList.value = props.modelKey;
   } else if (props.modelKey instanceof PublicKey) {
     keyList.value = new KeyList([props.modelKey]);
+    emit('update:modelKey', keyList.value);
   }
 });
 </script>
