@@ -8,6 +8,7 @@ import { isPublicKey } from '@renderer/utils/validator';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppPublicKeyInput from '@renderer/components/ui/AppPublicKeyInput.vue';
 import ComplexKeyModal from '@renderer/components/ComplexKey/ComplexKeyModal.vue';
+import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 
 /* Props */
 const props = defineProps<{
@@ -28,6 +29,7 @@ enum Tabs {
 const currentTab = ref(Tabs.SIGNLE);
 const publicKeyInputRef = ref<InstanceType<typeof AppPublicKeyInput> | null>(null);
 const complexKeyModalShown = ref(false);
+const keyStructureModalShown = ref(false);
 
 /* Handlers */
 const handleTabChange = (tab: Tabs) => {
@@ -97,6 +99,16 @@ watch([() => props.modelKey, currentTab, publicKeyInputRef], value => {
           :model-key="modelKey"
           @update:model-key="key => emit('update:modelKey', key)"
         />
+        <div class="d-grid mt-4">
+          <AppButton
+            v-if="modelKey"
+            color="primary"
+            type="button"
+            @click="keyStructureModalShown = true"
+            >Show Key</AppButton
+          >
+          <KeyStructureModal v-model:show="keyStructureModalShown" :account-key="modelKey" />
+        </div>
       </template>
     </div>
   </div>
