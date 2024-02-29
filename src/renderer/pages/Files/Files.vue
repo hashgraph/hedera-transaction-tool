@@ -507,9 +507,13 @@ watch(files, newFiles => {
               </div>
               <div class="col-7">
                 <p class="text-small text-semi-bold">
-                  {{ selectedFile.lastRefreshed.toDateString() }}
+                  {{ selectedFile.lastRefreshed.toDateString() }} at
+                  {{ selectedFile.lastRefreshed.toLocaleTimeString() }}
                 </p>
               </div>
+            </div>
+            <div v-else>
+              <p class="text-small text-semi-bold">You haven't read this file yet</p>
             </div>
             <div class="mt-4 row align-items-start">
               <div class="col-5">
