@@ -56,10 +56,6 @@ watch([() => props.modelKey, currentTab, publicKeyInputRef], value => {
     publicKeyInputRef.value.inputRef.inputRef.value = newKey.toStringRaw();
   }
 });
-
-watch(complexKeyModalShown, show => {
-  currentTab.value = show ? Tabs.COMPLEX : Tabs.SIGNLE;
-});
 </script>
 <template>
   <div class="border rounded p-4">
