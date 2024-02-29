@@ -7,9 +7,10 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import ComplexKey from '@renderer/components/ComplexKey/ComplexKey.vue';
+import KeyStructure from '../KeyStructure.vue';
 
 /* Props */
-defineProps<{
+const props = defineProps<{
   modelKey: Key | null;
   show: boolean;
 }>();
@@ -18,8 +19,9 @@ defineProps<{
 const emit = defineEmits(['update:show', 'update:modelKey']);
 
 /* State */
-const currentKey = ref<Key | null>(null);
+const currentKey = ref<Key | null>(props.modelKey);
 const errorModalShow = ref(false);
+const summaryMode = ref(false);
 
 /* Handlers */
 const handleShowUpdate = show => emit('update:show', show);
@@ -54,10 +56,20 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
         <h1 class="text-title text-center">Complex Key</h1>
         <div :style="modalContentContainerStyle">
           <div class="text-end">
-            <AppButton type="submit" color="primary">Save</AppButton>
+            <AppButton type="button" class="text-body" @click="summaryMode = !summaryMode">{{
+              summaryMode ? 'Edit Mode' : 'View Summary'
+            }}</AppButton>
+            <AppButton type="submit" color="primary" class="ms-3">Save</AppButton>
           </div>
           <div class="mt-5 h-100 overflow-auto">
-            <ComplexKey :model-key="modelKey" @update:model-key="handleComplexKeyUpdate" />
+            <template v-if="!summaryMode">
+              <ComplexKey :model-key="currentKey" @update:model-key="handleComplexKeyUpdate" />
+            </template>
+            <template v-else>
+              <KeyStructure
+                :key-list="currentKey instanceof KeyList ? currentKey : new KeyList([])"
+              />
+            </template>
           </div>
         </div>
       </form>
