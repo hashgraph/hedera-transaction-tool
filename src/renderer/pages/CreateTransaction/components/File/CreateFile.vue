@@ -24,7 +24,7 @@ import { add } from '@renderer/services/filesService';
 import { flattenKeyList } from '@renderer/services/keyPairService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { createFileInfo } from '@renderer/utils/sdk';
+import { createFileInfo, getMinimunExpirationTime } from '@renderer/utils/sdk';
 import {
   getEntityIdFromTransactionReceipt,
   getTransactionFromBytes,
@@ -137,6 +137,13 @@ const handleLoadFromDraft = async () => {
       ? new TextDecoder().decode(draftTransaction.contents)
       : '';
     memo.value = draftTransaction.fileMemo || '';
+
+    if (draftTransaction.expirationTime) {
+      expirationTimestamp.value =
+        draftTransaction.expirationTime.toDate() > getMinimunExpirationTime()
+          ? getDateTimeLocalInputValue(draftTransaction.expirationTime.toDate())
+          : '';
+    }
   }
 };
 
@@ -152,9 +159,8 @@ function createTransaction() {
   if (isAccountId(payerData.accountId.value)) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
   }
-
   if (expirationTimestamp.value)
-    transaction.setExpirationTime(Timestamp.fromDate(expirationTimestamp.value));
+    transaction.setExpirationTime(Timestamp.fromDate(new Date(expirationTimestamp.value)));
 
   return transaction;
 }
@@ -216,8 +222,9 @@ watch(payerData.isValid, isValid => {
       </div>
     </div>
 
-    <!-- <div class="mt-4 form-group w-50">
-        <label class="form-label">File Memo (Optional)</label>
+    <div class="row mt-6">
+      <div class="form-group col-8 col-xxxl-6">
+        <label class="form-label">Memo</label>
         <AppInput
           v-model="memo"
           type="text"
@@ -225,29 +232,24 @@ watch(payerData.isValid, isValid => {
           maxlength="100"
           placeholder="Enter memo"
         />
-      </div> -->
-    <!-- <div class="mt-4 form-group w-25">
-        <label class="form-label">Expiration Time (Optional)</label>
-        <AppInput
-          v-model="expirationTimestamp"
-          type="datetime-local"
-          :filled="true"
-          placeholder="Enter timestamp"
-        />
-      </div> -->
-    <!-- <div class="mt-4 form-group w-25">
-        <label for="fileUpload" class="form-label">
-          <span for="fileUpload" class="btn btn-primary">Upload File (.json, .txt)</span>
-        </label>
-        <AppInput
-          class="form-control form-control-sm is-fill"
-          id="fileUpload"
-          name="fileUpload"
-          type="file"
-          accept=".json,.txt"
-          @change="handleFileImport"
-        />
-      </div> -->
+      </div>
+    </div>
+
+    <div class="row mt-6">
+      <div class="form-group col-4 col-xxxl-3">
+        <label class="form-label">Expiration Time</label>
+
+        <div class="">
+          <AppInput
+            v-model="expirationTimestamp"
+            type="datetime-local"
+            step="any"
+            :min="getDateTimeLocalInputValue(getMinimunExpirationTime())"
+            :filled="true"
+          />
+        </div>
+      </div>
+    </div>
 
     <div class="row mt-6">
       <div class="form-group col-12 col-xl-8">
