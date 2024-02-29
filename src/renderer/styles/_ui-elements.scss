@@ -350,6 +350,10 @@
   --bs-modal-width: 356px;
 }
 
+.medium-modal {
+  --bs-modal-width: 490px;
+}
+
 .modal-fit-content {
   --bs-modal-width: fit-content;
 }
@@ -373,15 +377,15 @@
 .full-screen-modal {
   --bs-modal-width: 100vw;
 
-  .modal-dialog {
+  & > .modal-dialog {
     margin-top: 0;
     margin-bottom: 0;
     max-height: 100vh;
-  }
 
-  .modal-content {
-    height: 100vh;
-    max-height: 100vh;
+    & > .modal-content {
+      height: 100vh;
+      max-height: 100vh;
+    }
   }
 }
 
