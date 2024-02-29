@@ -7,7 +7,8 @@ import initLogger from '@main/modules/logger';
 import createMenu from '@main/modules/menu';
 import registerIpcListeners from '@main/modules/ipcHandlers';
 
-import createWindow from '@main/windows/mainWindow';
+import { restoreOrCreateWindow } from '@main/windows/mainWindow';
+
 import { deleteTempFolder } from './services/localUser';
 
 let mainWindow: BrowserWindow | null;
@@ -25,8 +26,8 @@ async function run() {
 attachAppEvents();
 
 function attachAppEvents() {
-  app.on('ready', () => {
-    mainWindow = createWindow();
+  app.on('ready', async () => {
+    mainWindow = await restoreOrCreateWindow();
 
     createMenu(mainWindow);
 
@@ -46,9 +47,9 @@ function attachAppEvents() {
       });
     }
 
-    app.on('activate', function () {
+    app.on('activate', async function () {
       if (mainWindow === null) {
-        mainWindow = createWindow();
+        mainWindow = await restoreOrCreateWindow();
       }
     });
   });

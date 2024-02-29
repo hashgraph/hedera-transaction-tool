@@ -1,38 +1,35 @@
 import { join } from 'path';
 
-import icon from '../../../resources/icon.png?asset';
-
 import { BrowserWindow, screen } from 'electron';
-import { is } from '@electron-toolkit/utils';
 
 import { sendUpdateThemeEventTo } from '@main/modules/ipcHandlers/theme';
 
-export default function createWindow() {
+process.env.DIST_ELECTRON = join(__dirname, '..');
+process.env.DIST = join(process.env.DIST_ELECTRON, '../dist');
+process.env.VITE_PUBLIC = process.env.VITE_DEV_SERVER_URL
+  ? join(process.env.DIST_ELECTRON, '../public')
+  : process.env.DIST;
+
+async function createWindow() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 
+  const preload = join(__dirname, '../preload/index.js');
+
   const mainWindow = new BrowserWindow({
-    ...(process.platform === 'linux' ? { icon } : {}),
     width: Math.round(width * 0.9),
     height: Math.round(height * 0.9),
     minWidth: 960,
     minHeight: 400,
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload,
       nodeIntegration: false,
       contextIsolation: true,
+      sandbox: false,
     },
     show: false,
   });
 
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
-    mainWindow.webContents.openDevTools();
-  } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
-  }
-
-  /* main window web contents' events */
-  mainWindow.webContents.on('did-finish-load', () => {
+  mainWindow.on('ready-to-show', () => {
     if (mainWindow) {
       sendUpdateThemeEventTo(mainWindow);
     }
@@ -40,5 +37,28 @@ export default function createWindow() {
     mainWindow?.show();
   });
 
+  if (process.env.VITE_DEV_SERVER_URL) {
+    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+    mainWindow.webContents.openDevTools();
+  } else {
+    mainWindow.loadFile(join(process.env.DIST, 'index.html'));
+  }
+
   return mainWindow;
+}
+
+export async function restoreOrCreateWindow() {
+  let window = BrowserWindow.getAllWindows().find(w => !w.isDestroyed());
+
+  if (window === undefined) {
+    window = await createWindow();
+  }
+
+  if (window.isMinimized()) {
+    window.restore();
+  }
+
+  window.focus();
+
+  return window;
 }

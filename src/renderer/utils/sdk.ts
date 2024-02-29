@@ -9,6 +9,7 @@ import {
   PublicKey,
   Timestamp,
 } from '@hashgraph/sdk';
+import { HederaSpecialFileId } from '@main/shared/interfaces';
 
 export const createFileInfo = (props: {
   fileId: FileId | string;
@@ -84,3 +85,17 @@ export const ableToSign = (publicKeys: string[], key: Key) => {
     throw new Error(`Invalid key type`);
   }
 };
+
+export function isHederaSpecialFileId(value: any): value is HederaSpecialFileId {
+  const validValues: HederaSpecialFileId[] = [
+    '0.0.101',
+    '0.0.102',
+    '0.0.111',
+    '0.0.112',
+    '0.0.121',
+    '0.0.122',
+    '0.0.123',
+  ];
+
+  return validValues.includes(value);
+}

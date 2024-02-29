@@ -2,15 +2,11 @@ appId: com.electron.app
 productName: Hedera Transaction Tool
 directories:
   buildResources: build
+  output: 'release'
 files:
-  - '!**/.vscode/*'
-  - '!src/*'
-  - '!electron.vite.config.{js,ts,mjs,cjs}'
-  - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,CHANGELOG.md,README.md}'
-  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
-  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - 'dist'
+  - 'dist-electron'
 asarUnpack:
-  - resources/**
   - prisma/**
 win:
   executableName: ${productName}
@@ -34,3 +30,4 @@ extraResources:
   - node_modules/prisma/**/*
   - node_modules/.prisma/**/*
   - node_modules/@prisma/client/**/*
+  - prisma/**

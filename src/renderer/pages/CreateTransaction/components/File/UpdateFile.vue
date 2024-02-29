@@ -13,10 +13,10 @@ import {
 import { getDraft } from '@renderer/services/transactionDraftsService';
 import { flattenKeyList } from '@renderer/services/keyPairService';
 
-import { isHederaSpecialFileId } from '@renderer/../main/shared/utils/hederaSpecialFiles';
 import { getDateTimeLocalInputValue } from '@renderer/utils';
 import { getTransactionFromBytes } from '@renderer/utils/transactions';
 import { isAccountId, isPublicKey } from '@renderer/utils/validator';
+import { isHederaSpecialFileId } from '@renderer/utils/sdk';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -136,7 +136,7 @@ const handleCreate = async e => {
     if (isHederaSpecialFileId(newTransaction.fileId?.toString()) && newTransaction.contents) {
       const getEncodedContent = await encodeSpecialFileContent(
         newTransaction.contents,
-        newTransaction.fileId.toString(),
+        newTransaction.fileId?.toString(),
       );
       newTransaction.setContents(getEncodedContent);
     }

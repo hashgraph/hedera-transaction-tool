@@ -18,8 +18,14 @@ yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
 
+# Test
+coverage
+
 # Build
 dist
+dist-ssr
+dist-electron
+release
 out
 
 .DS_Store

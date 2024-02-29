@@ -6,9 +6,11 @@
     "src/renderer/env.d.ts",
     "src/renderer/**/*",
     "src/renderer/**/*.vue",
+    "src/tests/renderer"
   ],
   "compilerOptions": {
     "composite": true,
+    "types": ["vitest/globals"],
     "baseUrl": ".",
     "paths": {
       "@renderer/*": [
