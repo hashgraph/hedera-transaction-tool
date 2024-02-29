@@ -7,8 +7,6 @@ import {
   Transaction,
   TransactionReceipt,
   Key,
-  KeyList,
-  PublicKey,
 } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
@@ -124,7 +122,7 @@ const handleLoadFromDraft = async () => {
 };
 
 const handleOwnerKeyUpdate = key => {
-  console.log(key);
+  ownerKey.value = key;
 };
 
 /* Functions */
@@ -171,53 +169,7 @@ watch(
 
 watch(payerData.isValid, isValid => {
   if (isValid && payerData.key.value) {
-    // ownerKey.value = payerData.key.value;
-
-    const publicKey1 = PublicKey.fromString(
-      '61f37fc1bbf3ff4453712ee6a305c5c7255955f7889ec3bf30426f1863158ef4',
-    );
-    const publicKey2 = PublicKey.fromString(
-      'f6e076efe91ff0e92d77799397da70b315c8e513de4afdf41bede21a7239e1cf',
-    );
-    const publicKey3 = PublicKey.fromString(
-      '025dbb2eeb98dff5c8461d6c22466cdb3097730744a42cec79f6ac666fa90187e2',
-    );
-
-    // Key List 1
-    const keyList1 = new KeyList([publicKey1, publicKey2, publicKey3]); // user & user
-
-    // Key List 2
-    const keyList2 = new KeyList([keyList1, publicKey3], 1); // multisig & user
-
-    // Key List 3
-    const keyList3 = new KeyList([keyList2, publicKey1], 2); // multisig & user & user
-
-    // Key List 4
-    const keyList4 = new KeyList([keyList3, keyList2], 2); // multisig & multisig
-
-    // Key List 5
-    const keyList5 = new KeyList([keyList4, publicKey3], 1); // multisig & multisig
-
-    // const publicKey1 = PublicKey.fromString(
-    //   '61f37fc1bbf3ff4453712ee6a305c5c7255955f7889ec3bf30426f1863158ef4',
-    // );
-    // const publicKey2 = PublicKey.fromString(
-    //   'f6e076efe91ff0e92d77799397da70b315c8e513de4afdf41bede21a7239e1cf',
-    // );
-
-    // // Key List 1
-    // const keyList1 = new KeyList([publicKey1, publicKey2]); // user & user
-
-    // // Key List 3
-    // const keyList3 = new KeyList([keyList1, publicKey1], 2); // multisig & user & user
-
-    // // Key List 4
-    // const keyList4 = new KeyList([keyList3, keyList1], 2); // multisig & multisig
-
-    // // Key List 5
-    // const keyList5 = new KeyList([publicKey1, keyList4, publicKey2], 1); // multisig & multisig
-
-    ownerKey.value = keyList5;
+    ownerKey.value = payerData.key.value;
   }
 });
 

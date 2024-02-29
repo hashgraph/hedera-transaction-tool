@@ -56,7 +56,6 @@ const handleShowUpdate = show => emit('update:show', show);
 
 const handleInsert = async (e: Event) => {
   e.preventDefault();
-  console.log('inseet');
 
   if (!isAccountId(selectedAccount.value || '')) {
     throw new Error('Invalid Account ID');
