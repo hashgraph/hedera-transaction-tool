@@ -58,6 +58,12 @@ watch([() => props.modelKey, currentTab, publicKeyInputRef], value => {
     publicKeyInputRef.value.inputRef.inputRef.value = newKey.toStringRaw();
   }
 });
+
+watch(complexKeyModalShown, show => {
+  if (!show && props.modelKey === null) {
+    currentTab.value = Tabs.SIGNLE;
+  }
+});
 </script>
 <template>
   <div class="border rounded p-4">
