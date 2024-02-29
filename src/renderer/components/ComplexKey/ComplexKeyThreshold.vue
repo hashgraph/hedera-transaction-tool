@@ -6,6 +6,7 @@ import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppPublicKeyInput from '@renderer/components/ui/AppPublicKeyInput.vue';
 import ComplexKeyAddPublicKeyModal from '@renderer/components/ComplexKey/ComplexKeyAddPublicKeyModal.vue';
+import ComplexKeySelectAccountModal from '@renderer/components/ComplexKey/ComplexKeySelectAccountModal.vue';
 
 /* Props */
 const props = defineProps<{
@@ -28,9 +29,11 @@ const handleThresholdChange = (e: Event) => {
   emit('update:keyList', props.keyList.setThreshold(threshold));
 };
 
-// const handleSelectAccount = () => {
-// Open accounts modal
-// };
+const handleSelectAccount = (key: Key) => {
+  const keys = props.keyList.toArray();
+  keys.push(key);
+  emitNewKeyList(keys, props.keyList.threshold);
+};
 
 const handleAddPublicKey = (publicKey: PublicKey) => {
   const keys = props.keyList.toArray();
@@ -163,5 +166,10 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
     v-if="addPublicKeyModalShown"
     v-model:show="addPublicKeyModalShown"
     :on-public-key-add="handleAddPublicKey"
+  />
+  <ComplexKeySelectAccountModal
+    v-if="selectAccountModalShown"
+    v-model:show="selectAccountModalShown"
+    :on-select-account="handleSelectAccount"
   />
 </template>
