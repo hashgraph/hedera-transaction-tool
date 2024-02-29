@@ -65,6 +65,7 @@ defineExpose({
       :size="size"
       :filled="filled"
       @update:model-value="handleUpdateModelValue"
+      v-bind="$attrs"
     />
 
     <div
