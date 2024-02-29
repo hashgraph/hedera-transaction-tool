@@ -29,9 +29,9 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
         <i class="bi bi-x-lg cursor-pointer" @click="$emit('update:show', false)"></i>
       </div>
       <h1 class="text-title text-center">Complex Key</h1>
-      <div class="" :style="modalContentContainerStyle">
+      <div :style="modalContentContainerStyle">
         <div class="text-end">
-          <AppButton color="primary">Save</AppButton>
+          <AppButton type="button" color="primary">Save</AppButton>
         </div>
         <div class="mt-5 h-100 overflow-auto">
           <ComplexKey :model-key="modelKey" @update:model-key="handleComplexKeyUpdate" />
