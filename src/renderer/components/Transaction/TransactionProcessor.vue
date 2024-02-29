@@ -38,6 +38,7 @@ const props = defineProps<{
 const user = useUserStore();
 const network = useNetworkStore();
 const keyPairs = useKeyPairsStore();
+const test = 1;
 
 /* Composables */
 const toast = useToast();
