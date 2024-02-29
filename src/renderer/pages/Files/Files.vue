@@ -9,6 +9,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
+import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import { getAll, remove, showContentInTemp, update } from '@renderer/services/filesService';
 import { flattenKeyList, getKeyListLevels } from '@renderer/services/keyPairService';
@@ -26,6 +27,9 @@ import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+
+/* Composables */
+const createTooltips = useCreateTooltips();
 
 // TODO: Replace with real data from SQLite (temp solution) or BE DB
 const specialFiles: HederaFile[] = [
@@ -156,13 +160,13 @@ const handleStartNicknameEdit = () => {
   isNicknameInputShown.value = true;
   descriptionInputRef.value?.blur();
 
-  if (nicknameInputRef.value) {
-    nicknameInputRef.value.value = selectedFile.value?.nickname || '';
-
-    setTimeout(() => {
+  setTimeout(() => {
+    if (nicknameInputRef.value) {
+      createTooltips();
+      nicknameInputRef.value.value = selectedFile.value?.nickname || '';
       nicknameInputRef.value?.focus();
-    }, 50);
-  }
+    }
+  }, 50);
 };
 
 const handleChangeNickname = async () => {
@@ -183,11 +187,12 @@ const handleStartDescriptionEdit = () => {
   isDescriptionInputShown.value = true;
   nicknameInputRef.value?.blur();
 
-  if (descriptionInputRef.value) {
-    setTimeout(() => {
+  setTimeout(() => {
+    if (descriptionInputRef.value) {
+      createTooltips();
       descriptionInputRef.value?.focus();
-    }, 50);
-  }
+    }
+  }, 50);
 };
 
 const handleChangeDescription = async () => {
@@ -366,6 +371,10 @@ watch(files, newFiles => {
                   ref="nicknameInputRef"
                   class="form-control is-fill"
                   @blur="handleChangeNickname"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="left"
+                  data-bs-custom-class="wide-tooltip"
+                  data-bs-title="This information is not stored on the network"
                 />
                 <p
                   v-if="!isNicknameInputShown"
@@ -514,6 +523,10 @@ watch(files, newFiles => {
                   rows="8"
                   v-model="selectedFile.description"
                   @blur="handleChangeDescription"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="left"
+                  data-bs-custom-class="wide-tooltip"
+                  data-bs-title="This information is not stored on the network"
                 >
                 </textarea>
                 <p
