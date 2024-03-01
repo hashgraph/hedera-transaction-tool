@@ -80,16 +80,16 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
       <Transition name="fade" mode="out-in">
         <span
           v-if="areChildrenShown"
-          class="bi bi-chevron-up"
+          class="bi bi-chevron-up cursor-pointer"
           @click="areChildrenShown = !areChildrenShown"
         ></span>
         <span
           v-else
-          class="bi bi-chevron-down"
+          class="bi bi-chevron-down cursor-pointer"
           @click="areChildrenShown = !areChildrenShown"
         ></span>
       </Transition>
-      <p class="text-small ms-3">Threshold</p>
+      <p class="text-small text-semi-bold ms-3">Threshold</p>
       <div class="ms-3">
         <select
           class="form-select is-fill"
@@ -140,8 +140,10 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
           <div class="key-node-wrapper">
             <div class="key-node">
               <AppPublicKeyInput
+                class="text-semi-bold"
                 :model-value="key.toStringRaw()"
                 filled
+                readOnly
                 has-cross-icon
                 :on-cross-icon-click="() => handleRemovePublicKey(key)"
               />
