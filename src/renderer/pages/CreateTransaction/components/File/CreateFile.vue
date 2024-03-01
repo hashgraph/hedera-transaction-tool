@@ -58,6 +58,8 @@ const memo = ref('');
 const expirationTimestamp = ref();
 const content = ref('');
 const ownerKeys = ref<string[]>([]);
+const fileName = ref('');
+const description = ref('');
 
 const isExecuted = ref(false);
 
@@ -112,6 +114,8 @@ const handleExecuted = async (_response, receipt: TransactionReceipt) => {
     contentBytes: fileTransaction.contents?.join(','),
     metaBytes: infoBytes.join(','),
     lastRefreshed: new Date(),
+    nickname: fileName.value,
+    description: description.value,
   };
 
   await add(file);
@@ -255,6 +259,25 @@ watch(payerData.isValid, isValid => {
       <div class="form-group col-12 col-xl-8">
         <label class="form-label">File Contents</label>
         <textarea v-model="content" class="form-control is-fill" rows="10"></textarea>
+      </div>
+    </div>
+
+    <hr class="separator my-6" />
+
+    <div class="row mt-6">
+      <div class="form-group col-4 col-xxxl-3">
+        <label class="form-label">Name</label>
+
+        <div class="">
+          <AppInput v-model="fileName" :filled="true" />
+        </div>
+      </div>
+    </div>
+
+    <div class="row mt-6">
+      <div class="form-group col-12 col-xl-8">
+        <label class="form-label">Description</label>
+        <textarea v-model="description" class="form-control is-fill" rows="5"></textarea>
       </div>
     </div>
   </form>
