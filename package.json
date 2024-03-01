@@ -49,7 +49,7 @@
     "@electron-toolkit/eslint-config": "^1.0.2",
     "@electron-toolkit/eslint-config-ts": "^1.0.1",
     "@electron-toolkit/tsconfig": "^1.0.1",
-    "@rushstack/eslint-patch": "^1.7.0",
+    "@rushstack/eslint-patch": "^1.7.2",
     "@types/better-sqlite3": "^7.6.9",
     "@types/bootstrap": "^5.2.10",
     "@types/node": "^20.11.5",
