@@ -75,7 +75,9 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
 }
 </script>
 <template>
-  <div class="key-node d-flex justify-content-between bg-secondary text-white rounded py-3 px-4">
+  <div
+    class="key-node d-flex justify-content-between key-threshhold-bg text-white rounded py-3 px-4"
+  >
     <div class="d-flex align-items-center">
       <Transition name="fade" mode="out-in">
         <span

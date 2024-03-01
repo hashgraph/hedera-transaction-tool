@@ -632,6 +632,10 @@
 
 /* Complex Key Structure */
 
+.key-threshhold-bg {
+  background-color: var(--#{$prefix}input-border-color);
+}
+
 .key-node-wrapper {
   padding-top: 20px;
   border-left: 2px solid $body-bg;
