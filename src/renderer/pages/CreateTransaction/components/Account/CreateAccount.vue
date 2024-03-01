@@ -64,6 +64,7 @@ const accountData = reactive({
 const ownerKeyText = ref('');
 const ownerKeys = ref<string[]>([]);
 const isExecuted = ref(false);
+const nickname = ref('');
 
 /* Getters */
 const keyList = computed(() => new KeyList(ownerKeys.value.map(key => PublicKey.fromString(key))));
@@ -96,7 +97,7 @@ const handleCreate = async e => {
 const handleExecuted = async (_response, receipt: TransactionReceipt) => {
   isExecuted.value = true;
   const accountId = getEntityIdFromTransactionReceipt(receipt, 'accountId');
-  await add(user.data.id, accountId);
+  await add(user.data.id, accountId, nickname.value);
   toast.success(`Account ${accountId} linked`, { position: 'bottom-right' });
 };
 
@@ -300,6 +301,17 @@ const columnClass = 'col-4 col-xxxl-3';
           type="number"
           placeholder="Enter Max Token Auto Associations"
         />
+      </div>
+    </div>
+
+    <hr class="separator my-6" />
+
+    <div class="row mt-6">
+      <div class="form-group" :class="[columnClass]">
+        <label class="form-label">Nickname</label>
+        <div class="">
+          <AppInput v-model="nickname" :filled="true" />
+        </div>
       </div>
     </div>
   </form>
