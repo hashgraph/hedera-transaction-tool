@@ -125,9 +125,7 @@ const selectedFileInfo = computed(() =>
 const selectedFileIdWithChecksum = computed(
   () =>
     selectedFile.value &&
-    FileId.fromString(selectedFile.value?.file_id)
-      .toStringWithChecksum(network.client)
-      .split('-'),
+    FileId.fromString(selectedFile.value?.file_id).toStringWithChecksum(network.client).split('-'),
 );
 
 /* Composables */
