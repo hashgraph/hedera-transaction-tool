@@ -1,4 +1,10 @@
-import { Timestamp, Status, TransactionReceipt, Transaction as Tx } from '@hashgraph/sdk';
+import {
+  Timestamp,
+  Status,
+  TransactionReceipt,
+  Transaction as Tx,
+  TransactionId,
+} from '@hashgraph/sdk';
 import { Transaction } from '@prisma/client';
 
 import { Network } from '@renderer/stores/storeNetwork';
@@ -15,7 +21,17 @@ export const getTransactionDate = (transaction: Transaction): string => {
 };
 
 export const getTransactionId = (transaction: Transaction): string => {
+  const transactionId = TransactionId.fromString(transaction.transaction_id);
+  return `${transactionId.accountId?.toString()}@${transactionId.validStart?.seconds.toString()}`;
+};
+
+export const getTransactionPayerId = (transaction: Transaction): string => {
   return transaction.transaction_id.split('@')[0];
+};
+
+export const getTransactionValidStart = (transaction: Transaction) => {
+  const transactionId = TransactionId.fromString(transaction.transaction_id);
+  return transactionId.validStart;
 };
 
 export const getTransactionStatus = (transaction: Transaction): string => {
