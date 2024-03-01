@@ -447,7 +447,13 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
         <form @submit="handleDelete">
           <h3 class="text-center text-title text-bold mt-3">Delete key pair</h3>
           <p
-            v-if="keyPairsStore.keyPairs.filter(item => item.secret_hash != null).length === 1"
+            v-if="
+              keyPairsStore.keyPairs.filter(item => item.secret_hash != null).length === 1 &&
+              keyPairsStore.keyPairs
+                .filter(item => item.secret_hash != null)
+                .map(k => k.id)
+                .includes(keyPairIdToDelete || '')
+            "
             class="text-center mt-4"
           >
             You are about the delete the last key pair associated with your recovery phrase you have
