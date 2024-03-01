@@ -9,7 +9,7 @@ export function isEmail(email: string) {
 
 export function isPublicKey(key: string) {
   try {
-    return PublicKey.fromString(key);
+    return Boolean(PublicKey.fromString(key));
   } catch (error) {
     return false;
   }

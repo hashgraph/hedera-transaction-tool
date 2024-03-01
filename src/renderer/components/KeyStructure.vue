@@ -31,9 +31,9 @@ const handleKeyClick = (index: number, path: number[], publicKey: string) => {
 <template>
   <div>
     <p>
-      List ({{
+      Threshold ({{
         !keyList.threshold || keyList.threshold === keyList.toArray().length
-          ? 'all'
+          ? keyList.toArray().length
           : keyList.threshold
       }}
       of {{ keyList.toArray().length }})
