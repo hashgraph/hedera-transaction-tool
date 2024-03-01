@@ -15,16 +15,16 @@ import { execute, signTransaction, storeTransaction } from '@renderer/services/t
 import { openExternal } from '@renderer/services/electronUtilsService';
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 import { flattenKeyList } from '@renderer/services/keyPairService';
+import { deleteDraft, getDraft } from '@renderer/services/transactionDraftsService';
 
 import { getTransactionType } from '@renderer/utils/transactions';
+import { ableToSign } from '@renderer/utils/sdk';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
-import { ableToSign } from '@renderer/utils/sdk';
-import { deleteDraft, getDraft } from '@renderer/services/transactionDraftsService';
 
 /* Props */
 const props = defineProps<{
@@ -178,6 +178,7 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     if (route.query.draftId) {
       try {
         const draft = await getDraft(route.query.draftId.toString());
+
         if (!draft.isTemplate) {
           await deleteDraft(route.query.draftId.toString());
         }

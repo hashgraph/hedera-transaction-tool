@@ -9,6 +9,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
+import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import { getAll, remove, showContentInTemp, update } from '@renderer/services/filesService';
 import { flattenKeyList, getKeyListLevels } from '@renderer/services/keyPairService';
@@ -26,6 +27,9 @@ import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+
+/* Composables */
+const createTooltips = useCreateTooltips();
 
 // TODO: Replace with real data from SQLite (temp solution) or BE DB
 const specialFiles: HederaFile[] = [
@@ -156,13 +160,13 @@ const handleStartNicknameEdit = () => {
   isNicknameInputShown.value = true;
   descriptionInputRef.value?.blur();
 
-  if (nicknameInputRef.value) {
-    nicknameInputRef.value.value = selectedFile.value?.nickname || '';
-
-    setTimeout(() => {
+  setTimeout(() => {
+    if (nicknameInputRef.value) {
+      createTooltips();
+      nicknameInputRef.value.value = selectedFile.value?.nickname || '';
       nicknameInputRef.value?.focus();
-    }, 50);
-  }
+    }
+  }, 50);
 };
 
 const handleChangeNickname = async () => {
@@ -183,11 +187,12 @@ const handleStartDescriptionEdit = () => {
   isDescriptionInputShown.value = true;
   nicknameInputRef.value?.blur();
 
-  if (descriptionInputRef.value) {
-    setTimeout(() => {
+  setTimeout(() => {
+    if (descriptionInputRef.value) {
+      createTooltips();
       descriptionInputRef.value?.focus();
-    }, 50);
-  }
+    }
+  }, 50);
 };
 
 const handleChangeDescription = async () => {
@@ -358,7 +363,7 @@ watch(files, newFiles => {
           <div v-if="selectedFile" class="h-100 position-relative">
             <div class="row align-items-center">
               <div class="col-5">
-                <p class="text-small text-semi-bold">Nickname</p>
+                <p class="text-small text-semi-bold">File Name</p>
               </div>
               <div class="col-7">
                 <input
@@ -366,6 +371,10 @@ watch(files, newFiles => {
                   ref="nicknameInputRef"
                   class="form-control is-fill"
                   @blur="handleChangeNickname"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="left"
+                  data-bs-custom-class="wide-tooltip"
+                  data-bs-title="This information is not stored on the network"
                 />
                 <p
                   v-if="!isNicknameInputShown"
@@ -426,7 +435,7 @@ watch(files, newFiles => {
                   color="primary"
                   size="small"
                   @click="showContentInTemp(user.data.id, selectedFile.file_id)"
-                  >Open</AppButton
+                  >View</AppButton
                 >
               </div>
             </div>
@@ -498,9 +507,13 @@ watch(files, newFiles => {
               </div>
               <div class="col-7">
                 <p class="text-small text-semi-bold">
-                  {{ selectedFile.lastRefreshed.toDateString() }}
+                  {{ selectedFile.lastRefreshed.toDateString() }} at
+                  {{ selectedFile.lastRefreshed.toLocaleTimeString() }}
                 </p>
               </div>
+            </div>
+            <div v-else>
+              <p class="text-small text-semi-bold">You haven't read this file yet</p>
             </div>
             <div class="mt-4 row align-items-start">
               <div class="col-5">
@@ -514,6 +527,10 @@ watch(files, newFiles => {
                   rows="8"
                   v-model="selectedFile.description"
                   @blur="handleChangeDescription"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="left"
+                  data-bs-custom-class="wide-tooltip"
+                  data-bs-title="This information is not stored on the network"
                 >
                 </textarea>
                 <p

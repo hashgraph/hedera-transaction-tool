@@ -99,3 +99,17 @@ export function isHederaSpecialFileId(value: any): value is HederaSpecialFileId 
 
   return validValues.includes(value);
 }
+
+export function getMinimumExpirationTime() {
+  const now = new Date();
+  now.setDate(now.getDate() + 30);
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+
+  return now;
+}
+
+export function getMaximumExpirationTime() {
+  const now = new Date();
+  now.setDate(now.getDate() + 92);
+  return now;
+}
