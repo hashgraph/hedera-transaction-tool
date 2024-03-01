@@ -2,34 +2,35 @@ import { RouteRecordRaw, createRouter, createWebHistory } from 'vue-router';
 
 import { attachMeta } from './meta';
 
-import Welocome from '@renderer/pages/Welcome';
-import StyleGuide from '@renderer/pages/Styleguide';
 import Transactions from '@renderer/pages/Transactions';
-import Accounts from '@renderer/pages/Accounts';
-import Tokens from '@renderer/pages/Tokens';
-import Help from '@renderer/pages/Help';
-import Settings from '@renderer/pages/Settings';
-import SmartContracts from '@renderer/pages/SmartContracts';
-import ConsensusService from '@renderer/pages/ConsensusService';
-import Files from '@renderer/pages/Files';
-import ContactList from '@renderer/pages/ContactList';
-import AccountSetup from '@renderer/pages/AccountSetup';
-import GeneralTab from '@renderer/pages/Settings/components/GeneralTab.vue';
-import WorkGroupsTab from '@renderer/pages/Settings/components/WorkGroupsTab.vue';
-import KeysTab from '@renderer/pages/Settings/components/KeysTab.vue';
-import SetupOrganization from '@renderer/pages/SetupOrganization';
-import RestoreKey from '@renderer/pages/RestoreKey';
-import CreateTransaction from '@renderer/pages/CreateTransaction';
-import AccountTab from '@renderer/pages/Settings/components/AccountTab.vue';
-import ForgotPassword from '@renderer/pages/ForgotPassword';
-import LinkExistingAccount from '@renderer/pages/Accounts/LinkExistingAccount';
-import LinkExistingFile from '@renderer/pages/Files/LinkExistingFile';
+
+const Welcome = () => import('@renderer/pages/Welcome');
+const StyleGuide = () => import('@renderer/pages/Styleguide');
+const Accounts = () => import('@renderer/pages/Accounts');
+const Tokens = () => import('@renderer/pages/Tokens');
+const Help = () => import('@renderer/pages/Help');
+const Settings = () => import('@renderer/pages/Settings');
+const SmartContracts = () => import('@renderer/pages/SmartContracts');
+const ConsensusService = () => import('@renderer/pages/ConsensusService');
+const Files = () => import('@renderer/pages/Files');
+const ContactList = () => import('@renderer/pages/ContactList');
+const AccountSetup = () => import('@renderer/pages/AccountSetup');
+const GeneralTab = () => import('@renderer/pages/Settings/components/GeneralTab.vue');
+const WorkGroupsTab = () => import('@renderer/pages/Settings/components/WorkGroupsTab.vue');
+const KeysTab = () => import('@renderer/pages/Settings/components/KeysTab.vue');
+const SetupOrganization = () => import('@renderer/pages/SetupOrganization');
+const RestoreKey = () => import('@renderer/pages/RestoreKey');
+const CreateTransaction = () => import('@renderer/pages/CreateTransaction');
+const AccountTab = () => import('@renderer/pages/Settings/components/AccountTab.vue');
+const ForgotPassword = () => import('@renderer/pages/ForgotPassword');
+const LinkExistingAccount = () => import('@renderer/pages/Accounts/LinkExistingAccount');
+const LinkExistingFile = () => import('@renderer/pages/Files/LinkExistingFile');
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'welcome',
-    component: Welocome,
+    component: Welcome,
   },
   { path: '/style-guide', name: 'styleGuide', component: StyleGuide },
   { path: '/transactions', name: 'transactions', component: Transactions },
