@@ -24,7 +24,11 @@ import { add } from '@renderer/services/filesService';
 import { flattenKeyList } from '@renderer/services/keyPairService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { createFileInfo, getMinimunExpirationTime } from '@renderer/utils/sdk';
+import {
+  createFileInfo,
+  getMinimumExpirationTime,
+  getMaximumExpirationTime,
+} from '@renderer/utils/sdk';
 import {
   getEntityIdFromTransactionReceipt,
   getTransactionFromBytes,
@@ -143,8 +147,10 @@ const handleLoadFromDraft = async () => {
     memo.value = draftTransaction.fileMemo || '';
 
     if (draftTransaction.expirationTime) {
+      const expirationDate = draftTransaction.expirationTime.toDate();
+
       expirationTimestamp.value =
-        draftTransaction.expirationTime.toDate() > getMinimunExpirationTime()
+        expirationDate > getMinimumExpirationTime() && expirationDate < getMaximumExpirationTime()
           ? getDateTimeLocalInputValue(draftTransaction.expirationTime.toDate())
           : '';
     }
@@ -248,7 +254,8 @@ watch(payerData.isValid, isValid => {
             v-model="expirationTimestamp"
             type="datetime-local"
             step="any"
-            :min="getDateTimeLocalInputValue(getMinimunExpirationTime())"
+            :min="getDateTimeLocalInputValue(getMinimumExpirationTime())"
+            :max="getDateTimeLocalInputValue(getMaximumExpirationTime())"
             :filled="true"
           />
         </div>

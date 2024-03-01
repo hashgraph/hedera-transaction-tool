@@ -16,7 +16,11 @@ import { flattenKeyList } from '@renderer/services/keyPairService';
 import { getDateTimeLocalInputValue } from '@renderer/utils';
 import { getTransactionFromBytes } from '@renderer/utils/transactions';
 import { isAccountId, isPublicKey } from '@renderer/utils/validator';
-import { isHederaSpecialFileId, getMinimunExpirationTime } from '@renderer/utils/sdk';
+import {
+  isHederaSpecialFileId,
+  getMinimumExpirationTime,
+  getMaximumExpirationTime,
+} from '@renderer/utils/sdk';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -172,8 +176,10 @@ const handleLoadFromDraft = async () => {
     memo.value = draftTransaction.fileMemo || '';
 
     if (draftTransaction.expirationTime) {
+      const expirationDate = draftTransaction.expirationTime.toDate();
+
       expirationTimestamp.value =
-        draftTransaction.expirationTime.toDate() > getMinimunExpirationTime()
+        expirationDate > getMinimumExpirationTime() && expirationDate < getMaximumExpirationTime()
           ? getDateTimeLocalInputValue(draftTransaction.expirationTime.toDate())
           : '';
     }
@@ -323,7 +329,8 @@ const columnClass = 'col-4 col-xxxl-3';
             v-model="expirationTimestamp"
             type="datetime-local"
             step="any"
-            :min="getDateTimeLocalInputValue(getMinimunExpirationTime())"
+            :min="getDateTimeLocalInputValue(getMinimumExpirationTime())"
+            :max="getDateTimeLocalInputValue(getMaximumExpirationTime())"
             :filled="true"
           />
         </div>
