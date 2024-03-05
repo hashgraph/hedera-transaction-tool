@@ -8,6 +8,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
+import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
 import { isAccountId, isFileId } from '@renderer/utils/validator';
@@ -62,6 +63,18 @@ const handleLoadFromDraft = async () => {
 
   if (draft) {
     transaction.value = draftTransaction;
+
+    if (draftTransaction.startTimestamp) {
+      startTimestamp.value = getDateTimeLocalInputValue(draftTransaction.startTimestamp.toDate());
+    }
+
+    if (isFileId(draftTransaction.fileId?.toString() || '')) {
+      fileId.value = draftTransaction.fileId?.toString() || '';
+    }
+
+    if (draftTransaction.fileHash) {
+      fileHash.value = await uint8ArrayToHex(draftTransaction.fileHash);
+    }
   }
 };
 
