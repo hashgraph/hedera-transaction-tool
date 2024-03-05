@@ -162,9 +162,9 @@ export const storeTransaction = async (transaction: Prisma.TransactionUncheckedC
 };
 
 /* Returns saved transactions */
-export const getTransactions = async (user_id: string) => {
+export const getTransactions = async (findArgs: Prisma.TransactionFindManyArgs) => {
   try {
-    return await window.electronAPI.transactions.getTransactions(user_id);
+    return await window.electronAPI.transactions.getTransactions(findArgs);
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Getting transactions Failed'));
   }

@@ -46,9 +46,9 @@ export const getPayerFromTransaction = (transaction: Transaction): number => {
   return Number(transaction.transaction_id.split('@')[0].split('.').join(''));
 };
 
-export const getStatusFromCode = (transaction: Transaction): string => {
+export const getStatusFromCode = (code: number): string => {
   try {
-    return Status._fromCode(transaction.status_code).toString();
+    return Status._fromCode(code).toString();
   } catch (error) {
     return 'Unknown';
   }
