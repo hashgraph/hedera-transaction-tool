@@ -8,6 +8,7 @@ import { isPublicKey } from '@renderer/utils/validator';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppPublicKeyInput from '@renderer/components/ui/AppPublicKeyInput.vue';
 import ComplexKeyModal from '@renderer/components/ComplexKey/ComplexKeyModal.vue';
+import ComplexKeyAddPublicKeyModal from '@renderer/components/ComplexKey/ComplexKeyAddPublicKeyModal.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 
 /* Props */
@@ -30,6 +31,7 @@ const currentTab = ref(Tabs.SIGNLE);
 const publicKeyInputRef = ref<InstanceType<typeof AppPublicKeyInput> | null>(null);
 const complexKeyModalShown = ref(false);
 const keyStructureModalShown = ref(false);
+const addPublicKeyModalShown = ref(false);
 
 /* Handlers */
 const handleTabChange = (tab: Tabs) => {
@@ -43,6 +45,11 @@ const handlePublicKeyChange = (value: string) => {
   } else {
     emit('update:modelKey', null);
   }
+};
+
+const handleAddPublicKey = (key: PublicKey) => {
+  emit('update:modelKey', key);
+  addPublicKeyModalShown.value = false;
 };
 
 /* Hooks */
@@ -92,12 +99,22 @@ watch(complexKeyModalShown, show => {
     <div>
       <template v-if="currentTab === Tabs.SIGNLE">
         <div class="mt-5">
+          <p class="text-purple cursor-pointer" @click="addPublicKeyModalShown = true">
+            <span class="bi bi-plus-lg"></span><span>Select Key</span>
+          </p>
+        </div>
+        <div class="mt-5">
           <AppPublicKeyInput
             ref="publicKeyInputRef"
             :filled="true"
             @update:model-value="handlePublicKeyChange"
           />
         </div>
+        <ComplexKeyAddPublicKeyModal
+          v-if="addPublicKeyModalShown"
+          v-model:show="addPublicKeyModalShown"
+          :on-public-key-add="handleAddPublicKey"
+        />
       </template>
       <template v-if="currentTab === Tabs.COMPLEX">
         <ComplexKeyModal
