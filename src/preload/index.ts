@@ -86,6 +86,8 @@ export const electronAPI = {
     decodeProtobuffKey: (protobuffEncodedKey: string): Promise<proto.Key> =>
       ipcRenderer.invoke('utils:decodeProtobuffKey', protobuffEncodedKey),
     hash: (data: any): Promise<string> => ipcRenderer.invoke('utils:hash', data),
+    uint8ArrayToHex: (data: Uint8Array): Promise<string> =>
+      ipcRenderer.invoke('utils:uint8ArrayToHex', data),
   },
   accounts: {
     getAll: (userId: string): Promise<HederaAccount[]> =>

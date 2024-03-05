@@ -74,3 +74,12 @@ export const decodeProtobuffKeyNormalized = async (protobuffKey: string) => {
     return undefined;
   }
 };
+
+/* Converts Uint8Array to hex string */
+export const uint8ArrayToHex = async (data: Uint8Array) => {
+  try {
+    return await window.electronAPI.utils.uint8ArrayToHex(data);
+  } catch (error) {
+    throw new Error('Failed to convert UInt8Array to hex string');
+  }
+};
