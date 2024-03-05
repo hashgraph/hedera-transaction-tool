@@ -62,8 +62,6 @@ const handleLoadFromDraft = async () => {
 
   if (draft) {
     transaction.value = draftTransaction;
-
-    console.log(draftTransaction.freezeType);
   }
 };
 
