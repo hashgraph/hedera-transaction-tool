@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, reactive, ref } from 'vue';
-import { Transaction } from '@prisma/client';
+import { Prisma, Transaction } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -11,10 +11,8 @@ import {
   getTransactionDate,
   getTransactionStatus,
   getTransactionId,
-  // getTransactionPayerId,
-  getPayerFromTransaction,
-  getStatusFromCode,
   openTransactionInHashscan,
+  getStatusFromCode,
   getTransactionValidStart,
 } from '@renderer/utils/transactions';
 
@@ -27,10 +25,12 @@ const network = useNetworkStore();
 
 /* State */
 const transactions = ref<Transaction[]>([]);
-const sort = reactive<{ field: string; direction: 'asc' | 'desc' }>({
-  field: 'timestamp',
+const sort = reactive<{ field: Prisma.TransactionScalarFieldEnum; direction: Prisma.SortOrder }>({
+  field: 'created_at',
   direction: 'desc',
 });
+const page = ref(0);
+const pageSize = ref(10);
 const isLoading = ref(true);
 
 /* Computed */
@@ -40,55 +40,46 @@ const generatedClass = computed(() => {
 
 /* Handlers */
 // TODO to be refactored
-const handleSort = (field: string, direction: 'asc' | 'desc') => {
+const handleSort = (field: Prisma.TransactionScalarFieldEnum, direction: Prisma.SortOrder) => {
   sort.field = field;
   sort.direction = direction;
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  let sortCallback = (_t1: Transaction, _t2: Transaction) => 0;
+
   switch (field) {
     case 'type':
-      transactions.value = transactions.value.sort((t1, t2) => {
+      sortCallback = (t1, t2) => {
         if (direction === 'asc') {
           return t1.type.localeCompare(t2.type);
         } else if (direction === 'desc') {
           return t2.type.localeCompare(t1.type);
         } else return 0;
-      });
+      };
       break;
-    case 'status':
-      transactions.value = transactions.value.sort((t1, t2) => {
-        const status1 = getStatusFromCode(t1);
-        const status2 = getStatusFromCode(t2);
+    case 'status_code':
+      sortCallback = (t1, t2) => {
+        const status1 = getStatusFromCode(t1.status_code);
+        const status2 = getStatusFromCode(t2.status_code);
 
         if (direction === 'asc') {
           return status1.localeCompare(status2);
         } else if (direction === 'desc') {
           return status2.localeCompare(status1);
         } else return 0;
-      });
+      };
       break;
-    case 'timestamp':
-      transactions.value = transactions.value.sort((t1, t2) => {
+    case 'created_at':
+      sortCallback = (t1, t2) => {
         if (direction === 'asc') {
-          return t1.executed_at - t2.executed_at;
+          return t1.created_at.getTime() - t2.created_at.getTime();
         } else if (direction === 'desc') {
-          return t2.executed_at - t1.executed_at;
+          return t2.created_at.getTime() - t1.created_at.getTime();
         } else return 0;
-      });
+      };
       break;
-    case 'payerId':
-      transactions.value = transactions.value.sort((t1, t2) => {
-        const payerId1 = getPayerFromTransaction(t1);
-        const payerId2 = getPayerFromTransaction(t2);
-
-        if (direction === 'asc') {
-          return payerId1 - payerId2;
-        } else if (direction === 'desc') {
-          return payerId2 - payerId1;
-        } else return 0;
-      });
-      break;
-    case 'transactionId':
-      transactions.value = transactions.value.sort((t1, t2) => {
+    case 'transaction_id':
+      sortCallback = (t1, t2) => {
         const validStart1 = getTransactionValidStart(t1)?.seconds;
         const validStart2 = getTransactionValidStart(t2)?.seconds;
 
@@ -97,11 +88,19 @@ const handleSort = (field: string, direction: 'asc' | 'desc') => {
         } else if (direction === 'desc') {
           return validStart2 - validStart1;
         } else return 0;
-      });
+      };
       break;
     default:
       break;
   }
+
+  transactions.value = transactions.value.sort(sortCallback);
+};
+
+const handleLoadMore = async () => {
+  page.value += 1;
+  const nextPage = await getTransactions(createFindArgs());
+  transactions.value = transactions.value.concat(nextPage);
 };
 
 const handleTransactionDetailsClick = (transaction: Transaction) => {
@@ -109,16 +108,27 @@ const handleTransactionDetailsClick = (transaction: Transaction) => {
 };
 
 /* Functions */
-const getOpositeDirection = () => (sort.direction === 'asc' ? 'desc' : 'asc');
+function getOpositeDirection() {
+  return sort.direction === 'asc' ? 'desc' : 'asc';
+}
+
+function createFindArgs(): Prisma.TransactionFindManyArgs {
+  return {
+    where: {
+      user_id: user.data.id,
+    },
+    // orderBy: {
+    //   [sort.field]: sort.direction,
+    // },
+    skip: page.value * pageSize.value,
+    take: pageSize.value,
+  };
+}
 
 /* Hooks */
 onBeforeMount(async () => {
   try {
-    transactions.value = await getTransactions(user.data.id);
-    handleSort('timestamp', 'desc');
-    transactions.value = transactions.value.sort((t1, t2) => t2.executed_at - t1.executed_at);
-  } catch (error) {
-    throw new Error((error as any).message);
+    transactions.value = await getTransactions(createFindArgs());
   } finally {
     isLoading.value = false;
   }
@@ -137,14 +147,14 @@ onBeforeMount(async () => {
             class="table-sort-link"
             @click="
               handleSort(
-                'transactionId',
-                sort.field === 'transactionId' ? getOpositeDirection() : 'asc',
+                'transaction_id',
+                sort.field === 'transaction_id' ? getOpositeDirection() : 'asc',
               )
             "
           >
             <span>Transaction ID</span>
             <i
-              v-if="sort.field === 'transactionId'"
+              v-if="sort.field === 'transaction_id'"
               class="bi text-title"
               :class="[generatedClass]"
             ></i>
@@ -162,31 +172,31 @@ onBeforeMount(async () => {
         <th>
           <div
             class="table-sort-link"
-            @click="handleSort('status', sort.field === 'status' ? getOpositeDirection() : 'asc')"
+            @click="
+              handleSort(
+                'status_code',
+                sort.field === 'status_code' ? getOpositeDirection() : 'asc',
+              )
+            "
           >
             <span>Status</span>
-            <i v-if="sort.field === 'status'" class="bi text-title" :class="[generatedClass]"></i>
+            <i
+              v-if="sort.field === 'status_code'"
+              class="bi text-title"
+              :class="[generatedClass]"
+            ></i>
           </div>
         </th>
-        <!-- <th>
-          <div
-            class="table-sort-link"
-            @click="handleSort('payerId', sort.field === 'payerId' ? getOpositeDirection() : 'asc')"
-          >
-            <span>Payer ID</span>
-            <i v-if="sort.field === 'payerId'" class="bi text-title" :class="[generatedClass]"></i>
-          </div>
-        </th> -->
         <th>
           <div
             class="table-sort-link"
             @click="
-              handleSort('timestamp', sort.field === 'timestamp' ? getOpositeDirection() : 'asc')
+              handleSort('created_at', sort.field === 'created_at' ? getOpositeDirection() : 'asc')
             "
           >
             <span>Timestamp</span>
             <i
-              v-if="sort.field === 'timestamp'"
+              v-if="sort.field === 'created_at'"
               class="bi text-title"
               :class="[generatedClass]"
             ></i>
@@ -211,9 +221,6 @@ onBeforeMount(async () => {
               >{{ getTransactionStatus(transaction) }}</span
             >
           </td>
-          <!-- <td>
-            <span class="text-secondary">{{ getTransactionPayerId(transaction) }}</span>
-          </td> -->
           <td>
             <span class="text-secondary">
               {{ getTransactionDate(transaction) }}
@@ -228,4 +235,9 @@ onBeforeMount(async () => {
       </template>
     </tbody>
   </table>
+  <div class="row justify-content-center">
+    <div class="col-4 d-grid">
+      <AppButton color="primary" @click="handleLoadMore">Load more</AppButton>
+    </div>
+  </div>
 </template>

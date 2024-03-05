@@ -1,14 +1,10 @@
 import { Prisma } from '@prisma/client';
 import { getPrismaClient } from '@main/db';
 
-export const getDrafts = async (userId: string) => {
+export const getDrafts = async (findArgs: Prisma.TransactionDraftFindManyArgs) => {
   const prisma = getPrismaClient();
 
-  const drafts = await prisma.transactionDraft.findMany({
-    where: {
-      user_id: userId,
-    },
-  });
+  const drafts = await prisma.transactionDraft.findMany(findArgs);
 
   return drafts;
 };

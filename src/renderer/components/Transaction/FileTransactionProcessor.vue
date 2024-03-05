@@ -35,7 +35,7 @@ import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 import { getDraft, deleteDraft } from '@renderer/services/transactionDraftsService';
 
 import { ableToSign } from '@renderer/utils/sdk';
-import { getTransactionType } from '@renderer/utils/transactions';
+import { getStatusFromCode, getTransactionType } from '@renderer/utils/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -287,7 +287,7 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     transaction_id: executedTransaction.transactionId?.toString() || '',
     transaction_hash: (await executedTransaction.getTransactionHash()).toString(),
     body: executedTransaction.toBytes().toString(),
-    status: '',
+    status: getStatusFromCode(status),
     status_code: status,
     user_id: user.data.id,
     creator_public_key: null,
@@ -478,7 +478,7 @@ async function executeFileTransactions(
       transaction_id: chunkTransaction.transactionId?.toString() || '',
       transaction_hash: transactionHash.toString(),
       body: chunkTransaction.toBytes().toString(),
-      status: '',
+      status: getStatusFromCode(status),
       status_code: status,
       user_id: user.data.id,
       creator_public_key: null,

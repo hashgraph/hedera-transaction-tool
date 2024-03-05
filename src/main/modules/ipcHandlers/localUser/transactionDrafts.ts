@@ -17,7 +17,10 @@ export default () => {
   /* Transaction drafts */
 
   // Get all drafts
-  ipcMain.handle(createChannelName('getDrafts'), (_e, userId: string) => getDrafts(userId));
+  ipcMain.handle(
+    createChannelName('getDrafts'),
+    (_e, findArgs: Prisma.TransactionDraftFindManyArgs) => getDrafts(findArgs),
+  );
 
   // Get specific drafts
   ipcMain.handle(createChannelName('getDraft'), (_e, id: string) => getDraft(id));

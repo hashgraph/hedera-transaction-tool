@@ -188,15 +188,11 @@ export const storeTransaction = async (transaction: Prisma.TransactionUncheckedC
 };
 
 // Get stored transactions
-export const getTransactions = async (user_id: string) => {
+export const getTransactions = async (findArgs: Prisma.TransactionFindManyArgs) => {
   const prisma = getPrismaClient();
 
   try {
-    const transactions = await prisma.transaction.findMany({
-      where: {
-        user_id: user_id,
-      },
-    });
+    const transactions = await prisma.transaction.findMany(findArgs);
 
     transactions.forEach(t => {
       t.body = Uint8Array.from(Buffer.from(t.body, 'hex')).toString();

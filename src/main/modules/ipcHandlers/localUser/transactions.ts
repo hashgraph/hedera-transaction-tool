@@ -67,8 +67,9 @@ export default () => {
   );
 
   // Get stored transactions
-  ipcMain.handle(createChannelName('getTransactions'), (_e, user_id: string) =>
-    getTransactions(user_id),
+  ipcMain.handle(
+    createChannelName('getTransactions'),
+    (_e, findArgs: Prisma.TransactionFindManyArgs) => getTransactions(findArgs),
   );
 
   // Encode special file

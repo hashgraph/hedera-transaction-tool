@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, reactive, ref } from 'vue';
 
-import { TransactionDraft } from '@prisma/client';
+import { Prisma, TransactionDraft } from '@prisma/client';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
@@ -22,10 +22,15 @@ const user = useUserStore();
 
 /* State */
 const drafts = ref<TransactionDraft[]>([]);
-const sort = reactive<{ field: string; direction: 'asc' | 'desc' }>({
-  field: 'timestamp',
-  direction: 'asc',
+const sort = reactive<{
+  field: Prisma.TransactionDraftScalarFieldEnum;
+  direction: Prisma.SortOrder;
+}>({
+  field: 'created_at',
+  direction: 'desc',
 });
+const page = ref(0);
+const pageSize = ref(10);
 const isLoading = ref(true);
 
 /* Computed */
@@ -39,7 +44,7 @@ const toast = useToast();
 
 /* Handlers */
 // TODO to be refactored
-const handleSort = (field: string, direction: 'asc' | 'desc') => {
+const handleSort = (field: Prisma.TransactionDraftScalarFieldEnum, direction: Prisma.SortOrder) => {
   sort.field = field;
   sort.direction = direction;
 
@@ -53,7 +58,7 @@ const handleSort = (field: string, direction: 'asc' | 'desc') => {
         } else return 0;
       });
       break;
-    case 'timestamp':
+    case 'created_at':
       drafts.value = drafts.value.sort((t1, t2) => {
         if (direction === 'asc') {
           return t1.created_at.getTime() - t2.created_at.getTime();
@@ -65,6 +70,12 @@ const handleSort = (field: string, direction: 'asc' | 'desc') => {
     default:
       break;
   }
+};
+
+const handleLoadMore = async () => {
+  page.value += 1;
+  const nextPage = await getDrafts(createFindArgs());
+  drafts.value = drafts.value.concat(nextPage);
 };
 
 const handleUpdateIsTemplate = async (e: Event, id: string) => {
@@ -98,15 +109,24 @@ const handleContinueDraft = async (id: string) => {
 };
 
 /* Functions */
-const getOpositeDirection = () => (sort.direction === 'asc' ? 'desc' : 'asc');
+function getOpositeDirection() {
+  return sort.direction === 'asc' ? 'desc' : 'asc';
+}
+
+function createFindArgs(): Prisma.TransactionDraftFindManyArgs {
+  return {
+    where: {
+      user_id: user.data.id,
+    },
+    skip: page.value * pageSize.value,
+    take: pageSize.value,
+  };
+}
 
 /* Hooks */
 onBeforeMount(async () => {
   try {
-    drafts.value = await getDrafts(user.data.id);
-    handleSort('timestamp', 'desc');
-  } catch (error) {
-    throw new Error((error as any).message);
+    drafts.value = await getDrafts(createFindArgs());
   } finally {
     isLoading.value = false;
   }
@@ -125,12 +145,12 @@ onBeforeMount(async () => {
           <div
             class="table-sort-link"
             @click="
-              handleSort('timestamp', sort.field === 'timestamp' ? getOpositeDirection() : 'asc')
+              handleSort('created_at', sort.field === 'created_at' ? getOpositeDirection() : 'asc')
             "
           >
             <span>Date</span>
             <i
-              v-if="sort.field === 'timestamp'"
+              v-if="sort.field === 'created_at'"
               class="bi text-title"
               :class="[generatedClass]"
             ></i>
@@ -185,4 +205,9 @@ onBeforeMount(async () => {
       </template>
     </tbody>
   </table>
+  <div class="row justify-content-center">
+    <div class="col-4 d-grid">
+      <AppButton color="primary" @click="handleLoadMore">Load more</AppButton>
+    </div>
+  </div>
 </template>
