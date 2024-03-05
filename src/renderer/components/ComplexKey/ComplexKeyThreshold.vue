@@ -1,7 +1,8 @@
-<!-- eslint-disable @typescript-eslint/no-unused-vars -->
 <script setup lang="ts">
 import { ref } from 'vue';
 import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
+
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppPublicKeyInput from '@renderer/components/ui/AppPublicKeyInput.vue';
@@ -17,6 +18,9 @@ const props = defineProps<{
 
 /* Emits */
 const emit = defineEmits(['update:keyList']);
+
+/* Props */
+const keyPairs = useKeyPairsStore();
 
 /* State */
 const areChildrenShown = ref(true);
@@ -147,6 +151,7 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
                 filled
                 readOnly
                 has-cross-icon
+                :label="keyPairs.getNickname(key.toStringRaw())"
                 :on-cross-icon-click="() => handleRemovePublicKey(key)"
               />
             </div>

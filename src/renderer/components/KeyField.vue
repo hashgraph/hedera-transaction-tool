@@ -3,6 +3,8 @@ import { ref, watch } from 'vue';
 
 import { Key, PublicKey } from '@hashgraph/sdk';
 
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
+
 import { isPublicKey } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -25,6 +27,9 @@ enum Tabs {
   SIGNLE = 'Single',
   COMPLEX = 'Complex',
 }
+
+/* Stores */
+const keyPairs = useKeyPairsStore();
 
 /* State */
 const currentTab = ref(Tabs.SIGNLE);
@@ -97,7 +102,7 @@ watch(complexKeyModalShown, show => {
       </template>
     </div>
     <div>
-      <template v-if="currentTab === Tabs.SIGNLE">
+      <template v-if="currentTab === Tabs.SIGNLE && modelKey instanceof PublicKey && true">
         <div class="mt-5">
           <p class="text-purple cursor-pointer" @click="addPublicKeyModalShown = true">
             <span class="bi bi-plus-lg"></span><span>Select Key</span>
@@ -107,6 +112,7 @@ watch(complexKeyModalShown, show => {
           <AppPublicKeyInput
             ref="publicKeyInputRef"
             :filled="true"
+            :label="keyPairs.getNickname(modelKey.toStringRaw())"
             @update:model-value="handlePublicKeyChange"
           />
         </div>

@@ -61,9 +61,15 @@ const handleInsert = (e: Event) => {
         <div>
           <h3 class="text-small">Recent</h3>
           <div class="mt-4 overflow-auto" :style="{ height: '150px', paddingRight: '10px' }">
-            <template v-for="pk in keyPairs.publicKeys" :key="pk">
-              <div class="mt-3" @click="publicKey = pk">
-                <AppPublicKeyInput :model-value="pk" filled class="cursor-pointer" readonly />
+            <template v-for="kp in keyPairs.keyPairs" :key="kp.public_key">
+              <div class="mt-3" @click="publicKey = kp.public_key">
+                <AppPublicKeyInput
+                  :model-value="kp.public_key"
+                  :label="kp.nickname || 'Public Key'"
+                  filled
+                  class="cursor-pointer"
+                  readonly
+                />
               </div>
             </template>
           </div>
