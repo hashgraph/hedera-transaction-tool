@@ -1,32 +1,20 @@
 <script setup lang="ts">
 import { KeyList, Key } from '@hashgraph/sdk';
 
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
+
 import { normalizePublicKey } from '@renderer/utils/sdk';
 
 /* Props */
-const props = withDefaults(
-  defineProps<{
-    keyList: KeyList;
-    readonly?: boolean;
-    level?: number;
-    path?: any;
-    handleClick?: (path: number[], publicKey: string) => void;
-  }>(),
-  {
-    readonly: false,
-    level: 0,
-    path: [],
-  },
-);
+defineProps<{
+  keyList: KeyList;
+}>();
 
 /* Emits */
 defineEmits(['update:keyList']);
 
-/* Handlers */
-const handleKeyClick = (index: number, path: number[], publicKey: string) => {
-  const clickedPath = [...path, index];
-  props.handleClick && props.handleClick(clickedPath, publicKey);
-};
+/* Stores */
+const keyPairs = useKeyPairsStore();
 </script>
 <template>
   <div>
@@ -38,20 +26,17 @@ const handleKeyClick = (index: number, path: number[], publicKey: string) => {
       }}
       of {{ keyList.toArray().length }})
     </p>
-    <template v-for="(item, index) in keyList.toArray()" :key="index">
+    <template v-for="(item, _index) in keyList.toArray()" :key="_index">
       <template v-if="item instanceof KeyList && true">
         <div class="ms-5">
-          <KeyStructure
-            :key-list="item"
-            :level="level + 1"
-            :path="[...path, index]"
-            :handleClick="handleClick"
-          />
+          <KeyStructure :key-list="item" />
         </div>
       </template>
       <template v-else-if="item instanceof Key && true">
-        <p class="ms-5 my-3" @click="handleKeyClick(index, path, normalizePublicKey(item))">
-          {{ normalizePublicKey(item) }}
+        <p class="ms-5 my-3">
+          <span v-if="keyPairs.getNickname(normalizePublicKey(item))" class="text-pink"
+            >({{ keyPairs.getNickname(normalizePublicKey(item)) }}) </span
+          >{{ normalizePublicKey(item) }}
         </p>
       </template>
     </template>
