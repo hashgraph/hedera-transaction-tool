@@ -91,6 +91,11 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
     await refetch();
   }
 
+  function getNickname(publicKey: string) {
+    const keyPair = keyPairs.value.find(kp => kp.public_key === publicKey);
+    return keyPair?.nickname || undefined;
+  }
+
   /* Lifecycle hooks */
   onMounted(async () => {
     if (user.data.isLoggedIn) {
@@ -107,6 +112,7 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
     clearRecoveryPhrase,
     storeKeyPair,
     refetch,
+    getNickname,
   };
 });
 

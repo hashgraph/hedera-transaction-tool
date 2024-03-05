@@ -1,15 +1,21 @@
 <script setup lang="ts">
 import AppInput from './AppInput.vue';
-import { onMounted, ref } from 'vue';
+import { onMounted, onUpdated, ref } from 'vue';
 
 /* Props */
-const props = defineProps<{
-  modelValue?: string;
-  filled?: boolean;
-  size?: 'small' | 'large' | undefined;
-  hasCrossIcon?: boolean;
-  onCrossIconClick?: () => void;
-}>();
+const props = withDefaults(
+  defineProps<{
+    modelValue?: string;
+    filled?: boolean;
+    size?: 'small' | 'large' | undefined;
+    label?: string;
+    hasCrossIcon?: boolean;
+    onCrossIconClick?: () => void;
+  }>(),
+  {
+    label: 'Public key',
+  },
+);
 
 /* Emits */
 const emit = defineEmits(['update:modelValue']);
@@ -18,34 +24,49 @@ const emit = defineEmits(['update:modelValue']);
 const beforeItemRef = ref<HTMLDivElement | null>(null);
 const afterItemRef = ref<HTMLDivElement | null>(null);
 const inputRef = ref<InstanceType<typeof AppInput> | null>(null);
+const initialPaddingX = ref<[number, number]>([0, 0]);
 
 /* Handlers */
 const handleUpdateModelValue = (value: string) => {
   emit('update:modelValue', value);
 };
 
-/* Hooks */
-onMounted(() => {
-  const getNumberFromPixels = (string: string) => Number(string.split('px')[0]);
-
+const handlePaddingUpdate = () => {
   if (inputRef.value?.inputRef) {
-    const { paddingLeft, paddingRight } = getComputedStyle(inputRef.value.inputRef);
-
     if (beforeItemRef.value) {
       const { width: beforeItemWidth } = getComputedStyle(beforeItemRef.value);
       inputRef.value.inputRef.style.paddingLeft = `${
-        getNumberFromPixels(beforeItemWidth) + getNumberFromPixels(paddingLeft)
+        getNumberFromPixels(beforeItemWidth) + initialPaddingX.value[0]
       }px`;
     }
 
     if (afterItemRef.value && props.hasCrossIcon) {
       const { width: afterItemWidth } = getComputedStyle(afterItemRef.value);
       inputRef.value.inputRef.style.paddingRight = `${
-        getNumberFromPixels(afterItemWidth) + getNumberFromPixels(paddingRight)
+        getNumberFromPixels(afterItemWidth) + initialPaddingX.value[1]
       }px`;
     }
   }
+};
+
+/* Hooks */
+onMounted(() => {
+  if (inputRef.value?.inputRef) {
+    const { paddingLeft, paddingRight } = getComputedStyle(inputRef.value.inputRef);
+    initialPaddingX.value = [getNumberFromPixels(paddingLeft), getNumberFromPixels(paddingRight)];
+  }
+
+  handlePaddingUpdate();
 });
+
+onUpdated(() => {
+  handlePaddingUpdate();
+});
+
+/* Functions */
+function getNumberFromPixels(string: string) {
+  return Number(string.split('px')[0]);
+}
 
 /* Exposes */
 defineExpose({
@@ -56,7 +77,7 @@ defineExpose({
   <div class="public-key-input">
     <div ref="beforeItemRef" class="public-key-input-before text-small border-end px-4">
       <span class="bi bi-key"> </span>
-      <span class="ms-2">Public Key</span>
+      <span class="ms-2">{{ label }}</span>
     </div>
 
     <AppInput

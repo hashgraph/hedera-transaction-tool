@@ -133,33 +133,6 @@ export const deleteKeyPair = async (keyPairId: string) => {
   }
 };
 
-/* TLD Updates a key list */
-export const updateKeyList = (
-  keyList: KeyList,
-  path: number[],
-  publicKey?: string | null,
-  threshold?: number,
-) => {
-  const keys = keyList.toArray();
-
-  for (let i = 0; i < keyList._keys.length; i++) {
-    const key = keyList._keys[i];
-
-    if (path[0] === i) {
-      if (key instanceof KeyList) {
-        keys[i] = updateKeyList(key, path.slice(1), publicKey, threshold);
-      } else {
-        publicKey ? (keys[i] = PublicKey.fromString(publicKey)) : '';
-      }
-    } else {
-      keys[i] = key;
-    }
-  }
-
-  const resultThreshold = path.length === 1 ? threshold : keyList.threshold;
-  return new KeyList(keys, resultThreshold);
-};
-
 /* Flattens a key list to public keys*/
 export const flattenKeyList = (keyList: Key): PublicKey[] => {
   const protobufKey = keyList._toProtobufKey();
