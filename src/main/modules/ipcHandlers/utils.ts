@@ -27,4 +27,8 @@ export default () => {
 
     return str;
   });
+
+  ipcMain.handle(createChannelName('uint8ArrayToHex'), (_e, data: Uint8Array): string => {
+    return Buffer.from(data).toString('hex');
+  });
 };
