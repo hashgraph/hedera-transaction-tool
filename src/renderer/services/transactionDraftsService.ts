@@ -6,9 +6,9 @@ import { getTransactionType } from '@renderer/utils/transactions';
 /* Transaction Drafts Service */
 
 /* Get raw drafts */
-export const getDrafts = async (userId: string) => {
+export const getDrafts = async (findArgs: Prisma.TransactionDraftFindManyArgs) => {
   try {
-    return await window.electronAPI.transactionDrafts.getDrafts(userId);
+    return await window.electronAPI.transactionDrafts.getDrafts(findArgs);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, 'Failed to fetch transaction drafts'));
   }
