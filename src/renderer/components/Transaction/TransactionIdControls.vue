@@ -8,7 +8,6 @@ import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { getDraft } from '@renderer/services/transactionDraftsService';
-import { getDateTimeLocalInputValue } from '@renderer/utils';
 import { getTransactionFromBytes } from '@renderer/utils/transactions';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -49,9 +48,6 @@ const loadFromDraft = async (id: string) => {
     if (transactionId.accountId) {
       account.accountId.value = transactionId.accountId.toString();
       emit('update:payerId', transactionId.accountId.toString());
-    }
-    if (transactionId.validStart) {
-      emit('update:validStart', getDateTimeLocalInputValue(transactionId.validStart.toDate()));
     }
   }
 
