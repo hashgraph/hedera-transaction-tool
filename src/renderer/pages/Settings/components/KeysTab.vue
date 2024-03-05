@@ -236,8 +236,8 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
           <tr>
             <td class="w-10 text-end">Index</td>
             <td>Nickname</td>
-            <td>Account Id</td>
-            <td>Key type</td>
+            <td>Account ID</td>
+            <td>Key Type</td>
             <td>Public Key</td>
             <td>Private Key</td>
             <td></td>
@@ -325,8 +325,8 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
         <thead>
           <tr>
             <td>Nickname</td>
-            <td>Account Id</td>
-            <td>Key type</td>
+            <td>Account ID</td>
+            <td>Key Type</td>
             <td>Public Key</td>
             <td>Private Key</td>
             <td></td>
