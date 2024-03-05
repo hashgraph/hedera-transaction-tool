@@ -100,9 +100,6 @@ const handleLoadFromDraft = async () => {
       if (transactionId.accountId) {
         payerData.accountId.value = transactionId.accountId.toString();
       }
-      if (transactionId.validStart) {
-        validStart.value = getDateTimeLocalInputValue(transactionId.validStart.toDate());
-      }
     }
 
     if (draftTransaction.maxTransactionFee) {
