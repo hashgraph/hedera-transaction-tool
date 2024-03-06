@@ -113,3 +113,31 @@ export function getMaximumExpirationTime() {
   now.setDate(now.getDate() + 92);
   return now;
 }
+
+export function isPublicKeyInKeyList(publicKey: PublicKey, keyList: KeyList) {
+  const keys = keyList.toArray();
+  return keys.some(key => {
+    if (key instanceof PublicKey) {
+      return key.toStringRaw() === publicKey.toStringRaw();
+    }
+    return false;
+  });
+}
+
+export function isKeyListValid(keyList: KeyList) {
+  const keys = keyList.toArray();
+
+  if (keys.length === 0 || (keyList.threshold && keyList.threshold > keys.length)) {
+    return false;
+  }
+
+  const everyNestedKeyValid = keys.every(key => {
+    if (key instanceof KeyList && !isKeyListValid(key)) {
+      return false;
+    } else {
+      return true;
+    }
+  });
+
+  return everyNestedKeyValid;
+}

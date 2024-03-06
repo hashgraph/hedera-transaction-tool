@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
-import { Key, PublicKey } from '@hashgraph/sdk';
+import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
@@ -12,6 +12,7 @@ import AppPublicKeyInput from '@renderer/components/ui/AppPublicKeyInput.vue';
 import ComplexKeyModal from '@renderer/components/ComplexKey/ComplexKeyModal.vue';
 import ComplexKeyAddPublicKeyModal from '@renderer/components/ComplexKey/ComplexKeyAddPublicKeyModal.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
+import { flattenKeyList } from '@renderer/services/keyPairService';
 
 /* Props */
 const props = defineProps<{
@@ -57,7 +58,7 @@ const handleAddPublicKey = (key: PublicKey) => {
   addPublicKeyModalShown.value = false;
 };
 
-/* Hooks */
+/* Watchers */
 watch([() => props.modelKey, currentTab, publicKeyInputRef], value => {
   const [newKey] = value;
 
@@ -68,6 +69,13 @@ watch([() => props.modelKey, currentTab, publicKeyInputRef], value => {
     publicKeyInputRef.value?.inputRef?.inputRef
   ) {
     publicKeyInputRef.value.inputRef.inputRef.value = newKey.toStringRaw();
+  }
+});
+
+watch(currentTab, tab => {
+  if (tab === Tabs.SIGNLE && props.modelKey instanceof KeyList) {
+    const publicKeys = flattenKeyList(props.modelKey);
+    publicKeys.length > 0 && emit('update:modelKey', publicKeys[0]);
   }
 });
 

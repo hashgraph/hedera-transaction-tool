@@ -2,7 +2,10 @@
 import { ref } from 'vue';
 import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 
+import { useToast } from 'vue-toast-notification';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
+
+import { isPublicKeyInKeyList } from '@renderer/utils/sdk';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppPublicKeyInput from '@renderer/components/ui/AppPublicKeyInput.vue';
@@ -19,8 +22,11 @@ const props = defineProps<{
 /* Emits */
 const emit = defineEmits(['update:keyList']);
 
-/* Props */
+/* Stores */
 const keyPairs = useKeyPairsStore();
+
+/* Composables */
+const toast = useToast();
 
 /* State */
 const areChildrenShown = ref(true);
@@ -40,9 +46,13 @@ const handleSelectAccount = (key: Key) => {
 };
 
 const handleAddPublicKey = (publicKey: PublicKey) => {
-  const keys = props.keyList.toArray();
-  keys.push(publicKey);
-  emitNewKeyList(keys, props.keyList.threshold);
+  if (!isPublicKeyInKeyList(publicKey, props.keyList)) {
+    const keys = props.keyList.toArray();
+    keys.push(publicKey);
+    emitNewKeyList(keys, props.keyList.threshold);
+  } else {
+    toast.error('Public key already exists in the key list');
+  }
 };
 
 const handleRemovePublicKey = (publicKey: PublicKey) => {
