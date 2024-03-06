@@ -11,6 +11,7 @@ import {
   setClient,
   freezeTransaction,
   signTransaction,
+  getTransactionsCount,
 } from '@main/services/localUser';
 
 const createChannelName = (...props) => ['transactions', ...props].join(':');
@@ -70,6 +71,11 @@ export default () => {
   ipcMain.handle(
     createChannelName('getTransactions'),
     (_e, findArgs: Prisma.TransactionFindManyArgs) => getTransactions(findArgs),
+  );
+
+  // Get transactions count
+  ipcMain.handle(createChannelName('getTransactionsCount'), (_e, userId: string) =>
+    getTransactionsCount(userId),
   );
 
   // Encode special file

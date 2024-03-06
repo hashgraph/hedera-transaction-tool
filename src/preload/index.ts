@@ -174,6 +174,8 @@ export const electronAPI = {
     ): Promise<Transaction[]> => ipcRenderer.invoke('transactions:storeTransaction', transaction),
     getTransactions: (findArgs: Prisma.TransactionFindManyArgs): Promise<Transaction[]> =>
       ipcRenderer.invoke('transactions:getTransactions', findArgs),
+    getTransactionsCount: (userId: string): Promise<number> =>
+      ipcRenderer.invoke('transactions:getTransactionsCount', userId),
     encodeSpecialFile: (content: Uint8Array, fileId: string) =>
       ipcRenderer.invoke('transactions:encodeSpecialFile', content, fileId),
   },

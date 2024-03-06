@@ -200,8 +200,23 @@ export const getTransactions = async (findArgs: Prisma.TransactionFindManyArgs) 
 
     return transactions;
   } catch (error: any) {
-    console.log(error);
     throw new Error(error.message || 'Failed to fetch transactions');
+  }
+};
+
+export const getTransactionsCount = async (userId: string) => {
+  const prisma = getPrismaClient();
+
+  try {
+    const count = await prisma.transaction.count({
+      where: {
+        user_id: userId,
+      },
+    });
+
+    return count;
+  } catch (error: any) {
+    throw new Error(error.message || 'Failed to get transactions count');
   }
 };
 
