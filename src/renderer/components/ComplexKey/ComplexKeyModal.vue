@@ -60,7 +60,7 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
         <div>
           <i class="bi bi-x-lg cursor-pointer" @click="handleClose"></i>
         </div>
-        <h1 class="text-title text-center">Complex Key</h1>
+        <h1 class="text-title text-semi-bold text-center">Complex Key</h1>
         <div :style="modalContentContainerStyle">
           <div class="text-end">
             <AppButton type="button" class="text-body" @click="summaryMode = !summaryMode">{{
