@@ -8,7 +8,6 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { getTransactions } from '@renderer/services/transactionService';
 
 import {
-  getTransactionDate,
   getTransactionStatus,
   getTransactionId,
   openTransactionInHashscan,
@@ -225,7 +224,7 @@ onBeforeMount(async () => {
           </td>
           <td>
             <span class="text-secondary">
-              {{ getTransactionDate(transaction) }}
+              {{ transaction.created_at.toDateString() }}
             </span>
           </td>
           <td class="text-center">
