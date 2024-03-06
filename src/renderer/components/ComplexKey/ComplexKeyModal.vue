@@ -7,7 +7,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import ComplexKey from '@renderer/components/ComplexKey/ComplexKey.vue';
-import KeyStructure from '../KeyStructure.vue';
+import KeyStructure from '@renderer/components/KeyStructure.vue';
 
 /* Props */
 const props = defineProps<{
@@ -43,6 +43,11 @@ const handleSave = e => {
   handleShowUpdate(false);
 };
 
+const handleClose = () => {
+  emit('update:show', false);
+  currentKey.value = props.modelKey;
+};
+
 /* Misc */
 const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
 </script>
@@ -51,7 +56,7 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
     <div class="p-5 h-100">
       <form @submit="handleSave" class="h-100">
         <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="$emit('update:show', false)"></i>
+          <i class="bi bi-x-lg cursor-pointer" @click="handleClose"></i>
         </div>
         <h1 class="text-title text-center">Complex Key</h1>
         <div :style="modalContentContainerStyle">
@@ -61,7 +66,7 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
             }}</AppButton>
             <AppButton type="submit" color="primary" class="ms-3">Save</AppButton>
           </div>
-          <div class="mt-5 h-100 overflow-auto">
+          <div v-if="show" class="mt-5 h-100 overflow-auto">
             <Transition name="fade" :mode="'out-in'">
               <div v-if="!summaryMode">
                 <ComplexKey :model-key="currentKey" @update:model-key="handleComplexKeyUpdate" />

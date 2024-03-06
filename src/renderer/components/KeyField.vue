@@ -57,7 +57,7 @@ const handleAddPublicKey = (key: PublicKey) => {
   addPublicKeyModalShown.value = false;
 };
 
-/* Hooks */
+/* Watchers */
 watch([() => props.modelKey, currentTab, publicKeyInputRef], value => {
   const [newKey] = value;
 
