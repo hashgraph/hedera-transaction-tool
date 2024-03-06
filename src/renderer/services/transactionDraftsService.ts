@@ -65,3 +65,12 @@ export const draftExists = async (transactionBytes: Uint8Array) => {
     throw Error(getMessageFromIPCError(error, `Failed to determine if transaction draft exist`));
   }
 };
+
+/* Returns saved drafts count */
+export const getDraftsCount = async (userId: string) => {
+  try {
+    return await window.electronAPI.transactionDrafts.getDraftsCount(userId);
+  } catch (err: any) {
+    throw Error(getMessageFromIPCError(err, 'Failed to get transactions count'));
+  }
+};

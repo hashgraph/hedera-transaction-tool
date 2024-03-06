@@ -8,6 +8,7 @@ import {
   draftExists,
   getDraft,
   getDrafts,
+  getDraftsCount,
   updateDraft,
 } from '@main/services/localUser';
 
@@ -45,5 +46,10 @@ export default () => {
   // Returns whether a draft with such transaction exists
   ipcMain.handle(createChannelName('draftExists'), (_e, transactionBytes: string) =>
     draftExists(transactionBytes),
+  );
+
+  // Get drafts count
+  ipcMain.handle(createChannelName('getDraftsCount'), (_e, userId: string) =>
+    getDraftsCount(userId),
   );
 };
