@@ -98,7 +98,7 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
         </div>
         <h3 class="text-center text-title text-bold mt-4">Error</h3>
         <p class="text-center text-small text-secondary mt-3">
-          You cannot save this structure with empty list
+          You cannot save key list with invalid structure
         </p>
         <hr class="separator my-5" />
         <div class="row justify-content-center mt-4">
