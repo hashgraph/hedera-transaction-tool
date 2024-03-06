@@ -101,6 +101,7 @@ const handleLoadMore = async () => {
   page.value += 1;
   const nextPage = await getTransactions(createFindArgs());
   transactions.value = transactions.value.concat(nextPage);
+  handleSort(sort.field, sort.direction);
 };
 
 const handleTransactionDetailsClick = (transaction: Transaction) => {
@@ -129,6 +130,7 @@ function createFindArgs(): Prisma.TransactionFindManyArgs {
 onBeforeMount(async () => {
   try {
     transactions.value = await getTransactions(createFindArgs());
+    handleSort(sort.field, sort.direction);
   } finally {
     isLoading.value = false;
   }

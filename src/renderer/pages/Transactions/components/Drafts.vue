@@ -76,6 +76,7 @@ const handleLoadMore = async () => {
   page.value += 1;
   const nextPage = await getDrafts(createFindArgs());
   drafts.value = drafts.value.concat(nextPage);
+  handleSort(sort.field, sort.direction);
 };
 
 const handleUpdateIsTemplate = async (e: Event, id: string) => {
@@ -127,6 +128,7 @@ function createFindArgs(): Prisma.TransactionDraftFindManyArgs {
 onBeforeMount(async () => {
   try {
     drafts.value = await getDrafts(createFindArgs());
+    handleSort(sort.field, sort.direction);
   } finally {
     isLoading.value = false;
   }
