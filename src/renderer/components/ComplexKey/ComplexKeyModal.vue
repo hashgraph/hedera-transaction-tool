@@ -3,6 +3,8 @@ import { ref } from 'vue';
 
 import { Key, KeyList } from '@hashgraph/sdk';
 
+import { isKeyListValid } from '@renderer/utils/sdk';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
@@ -33,7 +35,7 @@ const handleSave = e => {
 
   if (
     currentKey.value === null ||
-    (currentKey.value instanceof KeyList && currentKey.value.toArray().length === 0)
+    (currentKey.value instanceof KeyList && !isKeyListValid(currentKey.value))
   ) {
     errorModalShow.value = true;
     return;
