@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, reactive, ref } from 'vue';
+import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 import { Prisma, Transaction } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { getTransactions } from '@renderer/services/transactionService';
+import { getTransactions, getTransactionsCount } from '@renderer/services/transactionService';
 
 import {
-  getTransactionDate,
   getTransactionStatus,
   getTransactionId,
   openTransactionInHashscan,
@@ -18,6 +17,7 @@ import {
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
+import AppPager from '@renderer/components/ui/AppPager.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -29,7 +29,8 @@ const sort = reactive<{ field: Prisma.TransactionScalarFieldEnum; direction: Pri
   field: 'created_at',
   direction: 'desc',
 });
-const page = ref(0);
+const totalItems = ref(0);
+const currentPage = ref(1);
 const pageSize = ref(10);
 const isLoading = ref(true);
 
@@ -97,12 +98,6 @@ const handleSort = (field: Prisma.TransactionScalarFieldEnum, direction: Prisma.
   transactions.value = transactions.value.sort(sortCallback);
 };
 
-const handleLoadMore = async () => {
-  page.value += 1;
-  const nextPage = await getTransactions(createFindArgs());
-  transactions.value = transactions.value.concat(nextPage);
-};
-
 const handleTransactionDetailsClick = (transaction: Transaction) => {
   openTransactionInHashscan(transaction.transaction_id, network.network);
 };
@@ -120,7 +115,7 @@ function createFindArgs(): Prisma.TransactionFindManyArgs {
     // orderBy: {
     //   [sort.field]: sort.direction,
     // },
-    skip: page.value * pageSize.value,
+    skip: (currentPage.value - 1) * pageSize.value,
     take: pageSize.value,
   };
 }
@@ -128,7 +123,20 @@ function createFindArgs(): Prisma.TransactionFindManyArgs {
 /* Hooks */
 onBeforeMount(async () => {
   try {
+    totalItems.value = await getTransactionsCount(user.data.id);
     transactions.value = await getTransactions(createFindArgs());
+    handleSort(sort.field, sort.direction);
+  } finally {
+    isLoading.value = false;
+  }
+});
+
+/* Watchers */
+watch([currentPage, pageSize], async () => {
+  isLoading.value = true;
+  try {
+    transactions.value = await getTransactions(createFindArgs());
+    handleSort(sort.field, sort.direction);
   } finally {
     isLoading.value = false;
   }
@@ -139,7 +147,7 @@ onBeforeMount(async () => {
   <template v-if="isLoading">
     <AppLoader />
   </template>
-  <table v-else class="table-custom">
+  <table v-show="!isLoading" class="table-custom">
     <thead>
       <tr>
         <th>
@@ -223,7 +231,7 @@ onBeforeMount(async () => {
           </td>
           <td>
             <span class="text-secondary">
-              {{ getTransactionDate(transaction) }}
+              {{ transaction.created_at.toDateString() }}
             </span>
           </td>
           <td class="text-center">
@@ -235,9 +243,10 @@ onBeforeMount(async () => {
       </template>
     </tbody>
   </table>
-  <div class="row justify-content-center">
-    <div class="col-4 d-grid">
-      <AppButton color="primary" @click="handleLoadMore">Load more</AppButton>
-    </div>
-  </div>
+  <AppPager
+    v-show="!isLoading"
+    v-model:current-page="currentPage"
+    v-model:per-page="pageSize"
+    :total-items="totalItems"
+  />
 </template>

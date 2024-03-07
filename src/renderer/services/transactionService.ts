@@ -170,6 +170,15 @@ export const getTransactions = async (findArgs: Prisma.TransactionFindManyArgs) 
   }
 };
 
+/* Returns saved transactions count */
+export const getTransactionsCount = async (userId: string) => {
+  try {
+    return await window.electronAPI.transactions.getTransactionsCount(userId);
+  } catch (err: any) {
+    throw Error(getMessageFromIPCError(err, 'Failed to get transactions count'));
+  }
+};
+
 /* Encodes a special file's content */
 export const encodeSpecialFileContent = async (content: Uint8Array, fileId: string) => {
   try {

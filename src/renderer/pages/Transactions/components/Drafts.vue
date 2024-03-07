@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, reactive, ref } from 'vue';
+import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 
 import { Prisma, TransactionDraft } from '@prisma/client';
 
@@ -12,10 +12,12 @@ import {
   getDrafts,
   deleteDraft,
   updateDraft,
+  getDraftsCount,
 } from '@renderer/services/transactionDraftsService';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
+import AppPager from '@renderer/components/ui/AppPager.vue';
 
 /* Store */
 const user = useUserStore();
@@ -29,7 +31,8 @@ const sort = reactive<{
   field: 'created_at',
   direction: 'desc',
 });
-const page = ref(0);
+const totalItems = ref(0);
+const currentPage = ref(1);
 const pageSize = ref(10);
 const isLoading = ref(true);
 
@@ -67,15 +70,18 @@ const handleSort = (field: Prisma.TransactionDraftScalarFieldEnum, direction: Pr
         } else return 0;
       });
       break;
+    case 'isTemplate':
+      drafts.value = drafts.value.sort((t1, t2) => {
+        if (direction === 'asc') {
+          return Number(t1.isTemplate) - Number(t2.isTemplate);
+        } else if (direction === 'desc') {
+          return Number(t2.isTemplate) - Number(t1.isTemplate);
+        } else return 0;
+      });
+      break;
     default:
       break;
   }
-};
-
-const handleLoadMore = async () => {
-  page.value += 1;
-  const nextPage = await getDrafts(createFindArgs());
-  drafts.value = drafts.value.concat(nextPage);
 };
 
 const handleUpdateIsTemplate = async (e: Event, id: string) => {
@@ -118,7 +124,7 @@ function createFindArgs(): Prisma.TransactionDraftFindManyArgs {
     where: {
       user_id: user.data.id,
     },
-    skip: page.value * pageSize.value,
+    skip: (currentPage.value - 1) * pageSize.value,
     take: pageSize.value,
   };
 }
@@ -126,7 +132,20 @@ function createFindArgs(): Prisma.TransactionDraftFindManyArgs {
 /* Hooks */
 onBeforeMount(async () => {
   try {
+    totalItems.value = await getDraftsCount(user.data.id);
     drafts.value = await getDrafts(createFindArgs());
+    handleSort(sort.field, sort.direction);
+  } finally {
+    isLoading.value = false;
+  }
+});
+
+/* Watchers */
+watch([currentPage, pageSize], async () => {
+  isLoading.value = true;
+  try {
+    drafts.value = await getDrafts(createFindArgs());
+    handleSort(sort.field, sort.direction);
   } finally {
     isLoading.value = false;
   }
@@ -137,7 +156,7 @@ onBeforeMount(async () => {
   <template v-if="isLoading">
     <AppLoader />
   </template>
-  <table v-else class="table-custom">
+  <table v-show="!isLoading" class="table-custom">
     <thead>
       <tr>
         <th class="w-10 text-end">#</th>
@@ -165,8 +184,20 @@ onBeforeMount(async () => {
             <i v-if="sort.field === 'type'" class="bi text-title" :class="[generatedClass]"></i>
           </div>
         </th>
-        <th class="text-center">
-          <span>Is Template</span>
+        <th>
+          <div
+            class="table-sort-link justify-content-center"
+            @click="
+              handleSort('isTemplate', sort.field === 'isTemplate' ? getOpositeDirection() : 'asc')
+            "
+          >
+            <span>Is Template</span>
+            <i
+              v-if="sort.field === 'isTemplate'"
+              class="bi text-title"
+              :class="[generatedClass]"
+            ></i>
+          </div>
         </th>
         <th class="text-center">
           <span>Actions</span>
@@ -205,9 +236,10 @@ onBeforeMount(async () => {
       </template>
     </tbody>
   </table>
-  <div class="row justify-content-center">
-    <div class="col-4 d-grid">
-      <AppButton color="primary" @click="handleLoadMore">Load more</AppButton>
-    </div>
-  </div>
+  <AppPager
+    v-show="!isLoading"
+    v-model:current-page="currentPage"
+    v-model:per-page="pageSize"
+    :total-items="totalItems"
+  />
 </template>

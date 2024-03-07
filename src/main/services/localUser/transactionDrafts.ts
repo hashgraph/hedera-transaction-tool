@@ -77,3 +77,19 @@ export const draftExists = async (transactionBytes: string) => {
 
   return count > 0;
 };
+
+export const getDraftsCount = async (userId: string) => {
+  const prisma = getPrismaClient();
+
+  try {
+    const count = await prisma.transactionDraft.count({
+      where: {
+        user_id: userId,
+      },
+    });
+
+    return count;
+  } catch (error: any) {
+    throw new Error(error.message || 'Failed to get drafts count');
+  }
+};

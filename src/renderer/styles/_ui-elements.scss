@@ -631,7 +631,6 @@
 }
 
 /* Complex Key Structure */
-
 .key-threshhold-bg {
   background-color: var(--#{$prefix}container-threshhold-key);
 }
@@ -698,5 +697,29 @@
     top: 50%;
     transform: translateY(-50%);
     left: -22px;
+  }
+}
+
+/* Pager */
+.pager {
+  background-color: var(--#{$prefix}card-primary-bg-color);
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  &,
+  .pager-item,
+  .page-link {
+    border-radius: $border-radius;
+  }
+
+  .page-link {
+    cursor: pointer;
+    user-select: none;
+    padding-top: map-get($spacers, 2);
+    padding-bottom: map-get($spacers, 2);
+    padding-left: map-get($spacers, 3);
+    padding-right: map-get($spacers, 3);
   }
 }
