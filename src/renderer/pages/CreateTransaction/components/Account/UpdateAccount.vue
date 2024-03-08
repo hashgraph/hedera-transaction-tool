@@ -143,7 +143,7 @@ const handleLoadFromDraft = async () => {
 function createTransaction() {
   const transaction = new AccountUpdateTransaction()
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(new Hbar(maxTransactionFee.value))
+    .setMaxTransactionFee(new Hbar(maxTransactionFee.value || 0))
     .setReceiverSignatureRequired(newAccountData.receiverSignatureRequired)
     .setDeclineStakingReward(!newAccountData.acceptStakingAwards)
     .setMaxAutomaticTokenAssociations(Number(newAccountData.maxAutomaticTokenAssociations))

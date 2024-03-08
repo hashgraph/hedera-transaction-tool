@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import {
   FileCreateTransaction,
+  Hbar,
   KeyList,
   PublicKey,
   Timestamp,
@@ -161,7 +162,7 @@ const handleLoadFromDraft = async () => {
 function createTransaction() {
   const transaction = new FileCreateTransaction()
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(maxTransactionFee.value)
+    .setMaxTransactionFee(new Hbar(maxTransactionFee.value || 0))
     .setKeys(keyList.value)
     .setContents(content.value)
     .setFileMemo(memo.value);

@@ -98,7 +98,7 @@ const handleLoadFromDraft = async () => {
 function createTransaction() {
   const transaction = new AccountAllowanceApproveTransaction()
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(new Hbar(maxTransactionFee.value));
+    .setMaxTransactionFee(new Hbar(maxTransactionFee.value || 0));
 
   if (isAccountId(payerData.accountId.value)) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
@@ -108,7 +108,7 @@ function createTransaction() {
     transaction.approveHbarAllowance(
       ownerData.accountId.value,
       spenderData.accountId.value,
-      new Hbar(amount.value),
+      new Hbar(amount.value || 0),
     );
   }
   return transaction;

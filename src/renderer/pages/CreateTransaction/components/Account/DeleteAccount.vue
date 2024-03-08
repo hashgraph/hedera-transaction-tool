@@ -114,7 +114,7 @@ const handleExecuted = async () => {
 function createTransaction() {
   const transaction = new AccountDeleteTransaction()
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(new Hbar(maxTransactionFee.value));
+    .setMaxTransactionFee(new Hbar(maxTransactionFee.value || 0));
 
   if (isAccountId(payerData.accountId.value)) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));

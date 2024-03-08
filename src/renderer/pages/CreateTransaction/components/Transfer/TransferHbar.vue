@@ -124,14 +124,14 @@ const handleLoadFromDraft = async () => {
 function createTransaction() {
   const transaction = new TransferTransaction()
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(new Hbar(maxTransactionFee.value));
+    .setMaxTransactionFee(new Hbar(maxTransactionFee.value || 0));
 
   if (isAccountId(payerData.accountId.value)) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
   }
 
   if (isAccountId(receiverData.accountId.value)) {
-    transaction.addHbarTransfer(receiverData.accountId.value, new Hbar(amount.value));
+    transaction.addHbarTransfer(receiverData.accountId.value, new Hbar(Number(amount.value)));
   }
 
   const isSenderValid = isAccountId(senderData.accountId.value);
@@ -140,11 +140,14 @@ function createTransaction() {
     isSenderValid &&
       transaction?.addApprovedHbarTransfer(
         senderData.accountId.value,
-        new Hbar(amount.value).negated(),
+        new Hbar(Number(amount.value)).negated(),
       );
   } else {
     isSenderValid &&
-      transaction?.addHbarTransfer(senderData.accountId.value, new Hbar(amount.value).negated());
+      transaction?.addHbarTransfer(
+        senderData.accountId.value,
+        new Hbar(Number(amount.value)).negated(),
+      );
   }
 
   return transaction;

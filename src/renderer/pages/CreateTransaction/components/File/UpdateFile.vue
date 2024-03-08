@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue';
-import { FileUpdateTransaction, KeyList, PublicKey, Timestamp, Transaction } from '@hashgraph/sdk';
+import {
+  FileUpdateTransaction,
+  Hbar,
+  KeyList,
+  PublicKey,
+  Timestamp,
+  Transaction,
+} from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
@@ -190,7 +197,7 @@ const handleLoadFromDraft = async () => {
 function createTransaction() {
   const transaction = new FileUpdateTransaction()
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(maxTransactionFee.value)
+    .setMaxTransactionFee(new Hbar(maxTransactionFee.value || 0))
     .setFileMemo(memo.value);
 
   if (isAccountId(payerData.accountId.value)) {
