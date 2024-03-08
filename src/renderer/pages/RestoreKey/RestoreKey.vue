@@ -34,27 +34,11 @@ const index = ref(0);
 const nickname = ref('');
 
 const inputIndexInvalid = ref(false);
+const importRef = ref<InstanceType<typeof Import> | null>(null);
 
 const restoredKey = ref<{ privateKey: string; publicKey: string } | null>(null);
 
-/* Watchers */
-watch(recoveryPhrase, async newRecoveryPhrase => {
-  if (!newRecoveryPhrase) {
-    ableToContinue.value = false;
-  } else if (newRecoveryPhrase.length === 24) {
-    try {
-      await Mnemonic.fromWords(recoveryPhrase.value || []);
-      ableToContinue.value = true;
-    } catch {
-      ableToContinue.value = false;
-    }
-  }
-});
-
-watch(index, () => {
-  inputIndexInvalid.value = false;
-});
-
+/* Handlers */
 const handleFinish = e => {
   e.preventDefault();
   step.value++;
@@ -138,8 +122,27 @@ const handleSaveKey = async e => {
   }
 };
 
+/* Hooks */
 onUnmounted(() => {
   keyPairsStore.clearRecoveryPhrase();
+});
+
+/* Watchers */
+watch(recoveryPhrase, async newRecoveryPhrase => {
+  if (!newRecoveryPhrase) {
+    ableToContinue.value = false;
+  } else if (newRecoveryPhrase.length === 24) {
+    try {
+      await Mnemonic.fromWords(recoveryPhrase.value || []);
+      ableToContinue.value = true;
+    } catch {
+      ableToContinue.value = false;
+    }
+  }
+});
+
+watch(index, () => {
+  inputIndexInvalid.value = false;
 });
 </script>
 <template>
@@ -192,15 +195,27 @@ onUnmounted(() => {
       <form v-else-if="step === 2" @submit="handleFinish">
         <h1 class="text-display text-bold text-center">Enter your recovery phrase</h1>
         <div class="mt-8">
-          <Import :handle-continue="handleFinish" :secret-hashes="user.data.secretHashes" />
-          <AppButton
-            size="large"
-            type="submit"
-            color="primary"
-            class="mt-5 mx-auto col-6 col-xxl-4 d-block"
-            :disabled="keyPairsStore.recoveryPhraseWords.length === 0"
-            >Continue</AppButton
+          <Import
+            ref="importRef"
+            :handle-continue="handleFinish"
+            :secret-hashes="user.data.secretHashes"
+          />
+          <div
+            v-if="keyPairsStore.recoveryPhraseWords.length > 0"
+            class="row justify-content-between mt-6"
           >
+            <div class="col-4 d-grid">
+              <AppButton color="secondary" @click="importRef?.clearWords()">Clear</AppButton>
+            </div>
+            <div class="col-4 d-grid">
+              <AppButton
+                color="primary"
+                :disabled="keyPairsStore.recoveryPhraseWords.length === 0"
+                type="submit"
+                >Continue</AppButton
+              >
+            </div>
+          </div>
         </div>
       </form>
 
