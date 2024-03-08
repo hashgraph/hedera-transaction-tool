@@ -11,8 +11,6 @@ import {
   getTransactionStatus,
   getTransactionId,
   openTransactionInHashscan,
-  getStatusFromCode,
-  getTransactionValidStart,
 } from '@renderer/utils/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -40,62 +38,13 @@ const generatedClass = computed(() => {
 });
 
 /* Handlers */
-// TODO to be refactored
-const handleSort = (field: Prisma.TransactionScalarFieldEnum, direction: Prisma.SortOrder) => {
+const handleSort = async (
+  field: Prisma.TransactionScalarFieldEnum,
+  direction: Prisma.SortOrder,
+) => {
   sort.field = field;
   sort.direction = direction;
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let sortCallback = (_t1: Transaction, _t2: Transaction) => 0;
-
-  switch (field) {
-    case 'type':
-      sortCallback = (t1, t2) => {
-        if (direction === 'asc') {
-          return t1.type.localeCompare(t2.type);
-        } else if (direction === 'desc') {
-          return t2.type.localeCompare(t1.type);
-        } else return 0;
-      };
-      break;
-    case 'status_code':
-      sortCallback = (t1, t2) => {
-        const status1 = getStatusFromCode(t1.status_code);
-        const status2 = getStatusFromCode(t2.status_code);
-
-        if (direction === 'asc') {
-          return status1.localeCompare(status2);
-        } else if (direction === 'desc') {
-          return status2.localeCompare(status1);
-        } else return 0;
-      };
-      break;
-    case 'created_at':
-      sortCallback = (t1, t2) => {
-        if (direction === 'asc') {
-          return t1.created_at.getTime() - t2.created_at.getTime();
-        } else if (direction === 'desc') {
-          return t2.created_at.getTime() - t1.created_at.getTime();
-        } else return 0;
-      };
-      break;
-    case 'transaction_id':
-      sortCallback = (t1, t2) => {
-        const validStart1 = getTransactionValidStart(t1)?.seconds;
-        const validStart2 = getTransactionValidStart(t2)?.seconds;
-
-        if (direction === 'asc') {
-          return validStart1 - validStart2;
-        } else if (direction === 'desc') {
-          return validStart2 - validStart1;
-        } else return 0;
-      };
-      break;
-    default:
-      break;
-  }
-
-  transactions.value = transactions.value.sort(sortCallback);
+  transactions.value = await getTransactions(createFindArgs());
 };
 
 const handleTransactionDetailsClick = (transaction: Transaction) => {
@@ -112,9 +61,9 @@ function createFindArgs(): Prisma.TransactionFindManyArgs {
     where: {
       user_id: user.data.id,
     },
-    // orderBy: {
-    //   [sort.field]: sort.direction,
-    // },
+    orderBy: {
+      [sort.field]: sort.direction,
+    },
     skip: (currentPage.value - 1) * pageSize.value,
     take: pageSize.value,
   };

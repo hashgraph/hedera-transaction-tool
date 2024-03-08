@@ -46,42 +46,13 @@ const router = useRouter();
 const toast = useToast();
 
 /* Handlers */
-// TODO to be refactored
-const handleSort = (field: Prisma.TransactionDraftScalarFieldEnum, direction: Prisma.SortOrder) => {
+const handleSort = async (
+  field: Prisma.TransactionDraftScalarFieldEnum,
+  direction: Prisma.SortOrder,
+) => {
   sort.field = field;
   sort.direction = direction;
-
-  switch (field) {
-    case 'type':
-      drafts.value = drafts.value.sort((t1, t2) => {
-        if (direction === 'asc') {
-          return t1.type.localeCompare(t2.type);
-        } else if (direction === 'desc') {
-          return t2.type.localeCompare(t1.type);
-        } else return 0;
-      });
-      break;
-    case 'created_at':
-      drafts.value = drafts.value.sort((t1, t2) => {
-        if (direction === 'asc') {
-          return t1.created_at.getTime() - t2.created_at.getTime();
-        } else if (direction === 'desc') {
-          return t2.created_at.getTime() - t1.created_at.getTime();
-        } else return 0;
-      });
-      break;
-    case 'isTemplate':
-      drafts.value = drafts.value.sort((t1, t2) => {
-        if (direction === 'asc') {
-          return Number(t1.isTemplate) - Number(t2.isTemplate);
-        } else if (direction === 'desc') {
-          return Number(t2.isTemplate) - Number(t1.isTemplate);
-        } else return 0;
-      });
-      break;
-    default:
-      break;
-  }
+  drafts.value = await getDrafts(createFindArgs());
 };
 
 const handleUpdateIsTemplate = async (e: Event, id: string) => {
@@ -106,7 +77,7 @@ const handleContinueDraft = async (id: string) => {
   router.push({
     name: 'createTransaction',
     params: {
-      type: draft.type.replaceAll(' ', ''),
+      type: draft.type.replace(/\s/g, ''),
     },
     query: {
       draftId: draft?.id,
@@ -123,6 +94,9 @@ function createFindArgs(): Prisma.TransactionDraftFindManyArgs {
   return {
     where: {
       user_id: user.data.id,
+    },
+    orderBy: {
+      [sort.field]: sort.direction,
     },
     skip: (currentPage.value - 1) * pageSize.value,
     take: pageSize.value,
