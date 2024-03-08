@@ -63,6 +63,10 @@ const handlePaste = async (e: Event, index: number) => {
   }
 };
 
+const handleClearWords = () => {
+  words.value = Array(24).fill('');
+};
+
 /* Hooks */
 onBeforeMount(() => {
   if (keyPairs.recoveryPhraseWords.length === 24) {
@@ -79,6 +83,11 @@ watch(words, async newWords => {
     return keyPairs.setRecoveryPhrase(words.value.map(w => w.toLocaleLowerCase()));
   }
   keyPairs.clearRecoveryPhrase();
+});
+
+/* Exposes */
+defineExpose({
+  clearWords: handleClearWords,
 });
 </script>
 <template>
