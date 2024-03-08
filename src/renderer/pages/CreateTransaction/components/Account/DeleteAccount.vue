@@ -189,7 +189,6 @@ const columnClass = 'col-4 col-xxxl-3';
         <AppInput
           :model-value="transferAccountData.accountIdFormatted.value"
           @update:model-value="v => (transferAccountData.accountId.value = v)"
-          :disabled="transferAccountData.accountInfo.value?.deleted"
           :filled="true"
           placeholder="Enter Account ID"
         />
