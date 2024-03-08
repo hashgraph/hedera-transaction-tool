@@ -15,6 +15,7 @@ defineProps<{
 }>();
 
 /* Stores */
+const importRef = ref<InstanceType<typeof Import> | null>(null);
 const keyPairsStore = useKeyPairsStore();
 const user = useUserStore();
 
@@ -44,10 +45,16 @@ onBeforeMount(() => {
       <Generate :handle-next="handleNext" />
     </template>
     <template v-else-if="activeTabTitle === 'Import Existing'">
-      <Import :secret-hashes="user.data.secretHashes" />
-      <div v-if="keyPairsStore.recoveryPhraseWords.length > 0" class="row justify-content-end mt-6">
-        <div class="col-4">
-          <AppButton color="primary" class="w-100" @click="handleNext">Next</AppButton>
+      <Import ref="importRef" :secret-hashes="user.data.secretHashes" />
+      <div
+        v-if="keyPairsStore.recoveryPhraseWords.length > 0"
+        class="row justify-content-between mt-6"
+      >
+        <div class="col-4 d-grid">
+          <AppButton color="secondary" @click="importRef?.clearWords()">Clear</AppButton>
+        </div>
+        <div class="col-4 d-grid">
+          <AppButton color="primary" @click="handleNext">Next</AppButton>
         </div>
       </div>
     </template>

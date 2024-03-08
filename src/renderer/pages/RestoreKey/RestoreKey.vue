@@ -34,27 +34,11 @@ const index = ref(0);
 const nickname = ref('');
 
 const inputIndexInvalid = ref(false);
+const importRef = ref<InstanceType<typeof Import> | null>(null);
 
 const restoredKey = ref<{ privateKey: string; publicKey: string } | null>(null);
 
-/* Watchers */
-watch(recoveryPhrase, async newRecoveryPhrase => {
-  if (!newRecoveryPhrase) {
-    ableToContinue.value = false;
-  } else if (newRecoveryPhrase.length === 24) {
-    try {
-      await Mnemonic.fromWords(recoveryPhrase.value || []);
-      ableToContinue.value = true;
-    } catch {
-      ableToContinue.value = false;
-    }
-  }
-});
-
-watch(index, () => {
-  inputIndexInvalid.value = false;
-});
-
+/* Handlers */
 const handleFinish = e => {
   e.preventDefault();
   step.value++;
@@ -138,110 +122,156 @@ const handleSaveKey = async e => {
   }
 };
 
+/* Hooks */
 onUnmounted(() => {
   keyPairsStore.clearRecoveryPhrase();
 });
+
+/* Watchers */
+watch(recoveryPhrase, async newRecoveryPhrase => {
+  if (!newRecoveryPhrase) {
+    ableToContinue.value = false;
+  } else if (newRecoveryPhrase.length === 24) {
+    try {
+      await Mnemonic.fromWords(recoveryPhrase.value || []);
+      ableToContinue.value = true;
+    } catch {
+      ableToContinue.value = false;
+    }
+  }
+});
+
+watch(index, () => {
+  inputIndexInvalid.value = false;
+});
 </script>
 <template>
-  <div class="p-10 d-flex flex-column justify-content-center align-items-center">
-    <Transition name="fade" mode="out-in">
-      <!-- Step 1 -->
-      <div v-if="step === 0" class="w-100">
-        <h1 class="text-display text-bold text-center">Restore Key Pair</h1>
-        <div class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4">
-          <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
-            <AppButton size="large" color="primary" class="d-block w-100" @click="step++"
-              >Continue</AppButton
-            >
-            <AppButton
-              size="large"
-              color="secondary"
-              class="mt-4 d-block w-100"
-              @click="$router.back()"
-              >Cancel</AppButton
-            >
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 2 -->
-      <form v-else-if="step === 1" class="w-100" @submit="handleEnterPassword">
-        <h1 class="text-display text-bold text-center">Enter password</h1>
-        <p class="text-main mt-5 text-center">Please enter new password</p>
-        <div class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4">
-          <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
-            <AppInput
-              v-model="password"
-              :filled="true"
-              type="password"
-              placeholder="Enter password"
-            />
-            <AppButton
-              size="large"
-              type="submit"
-              color="primary"
-              class="mt-5 d-block w-100"
-              :disabled="password.length === 0"
-              >Continue</AppButton
-            >
-          </div>
-        </div>
-      </form>
-
-      <!-- Step 3 -->
-      <form v-else-if="step === 2" @submit="handleFinish">
-        <h1 class="text-display text-bold text-center">Enter your recovery phrase</h1>
-        <div class="mt-8">
-          <Import :handle-continue="handleFinish" :secret-hashes="user.data.secretHashes" />
-          <AppButton
-            size="large"
-            type="submit"
-            color="primary"
-            class="mt-5 mx-auto col-6 col-xxl-4 d-block"
-            :disabled="keyPairsStore.recoveryPhraseWords.length === 0"
-            >Continue</AppButton
+  <div class="p-8">
+    <div class="position-absolute">
+      <AppButton color="secondary" @click="$router.back()">Back</AppButton>
+    </div>
+    <div class="d-flex flex-column justify-content-center align-items-center h-100">
+      <Transition name="fade" mode="out-in">
+        <!-- Step 1 -->
+        <div v-if="step === 0" class="w-100">
+          <h1 class="text-display text-bold text-center">Restore Key Pair</h1>
+          <div
+            class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
           >
-        </div>
-      </form>
-
-      <!-- Step 4 -->
-      <form v-else-if="step === 3" class="w-100" @submit="handleRestoreKey">
-        <h1 class="text-display text-bold text-center">Provide Index of Key</h1>
-        <p class="text-main mt-5 text-center">Please enter the index of the key</p>
-        <div class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4">
-          <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
-            <AppInput
-              v-model="index"
-              :filled="true"
-              type="number"
-              :class="{ 'is-invalid': inputIndexInvalid }"
-              placeholder="Enter key index"
-            />
-            <div v-if="inputIndexInvalid" class="invalid-feedback">
-              Key at index {{ index }} is already restored.
+            <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
+              <AppButton size="large" color="primary" class="d-block w-100" @click="step++"
+                >Continue</AppButton
+              >
+              <AppButton
+                size="large"
+                color="secondary"
+                class="mt-4 d-block w-100"
+                @click="$router.back()"
+                >Cancel</AppButton
+              >
             </div>
-            <AppButton
-              type="submit"
-              color="primary"
-              class="mt-4 d-block w-100"
-              :disabled="index < 0"
-              >Continue</AppButton
-            >
           </div>
         </div>
-      </form>
 
-      <!-- Step 5 -->
-      <form v-else-if="step === 4" class="w-100" @submit="handleSaveKey">
-        <h1 class="text-display text-bold text-center">Enter nickname</h1>
-        <p class="text-main mt-5 text-center">Please enter your nickname (optional)</p>
-        <div class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4">
-          <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
-            <AppInput v-model="nickname" :filled="true" placeholder="Enter nickname" />
-            <AppButton type="submit" color="primary" class="mt-4 d-block w-100">Continue</AppButton>
+        <!-- Step 2 -->
+        <form v-else-if="step === 1" class="w-100" @submit="handleEnterPassword">
+          <h1 class="text-display text-bold text-center">Enter password</h1>
+          <p class="text-main mt-5 text-center">Please enter new password</p>
+          <div
+            class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
+          >
+            <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
+              <AppInput
+                v-model="password"
+                :filled="true"
+                type="password"
+                placeholder="Enter password"
+              />
+              <AppButton
+                size="large"
+                type="submit"
+                color="primary"
+                class="mt-5 d-block w-100"
+                :disabled="password.length === 0"
+                >Continue</AppButton
+              >
+            </div>
           </div>
-        </div>
-      </form>
-    </Transition>
+        </form>
+
+        <!-- Step 3 -->
+        <form v-else-if="step === 2" @submit="handleFinish">
+          <h1 class="text-display text-bold text-center">Enter your recovery phrase</h1>
+          <div class="mt-8">
+            <Import
+              ref="importRef"
+              :handle-continue="handleFinish"
+              :secret-hashes="user.data.secretHashes"
+            />
+            <div
+              v-if="keyPairsStore.recoveryPhraseWords.length > 0"
+              class="row justify-content-between mt-6"
+            >
+              <div class="col-4 d-grid">
+                <AppButton color="secondary" @click="importRef?.clearWords()">Clear</AppButton>
+              </div>
+              <div class="col-4 d-grid">
+                <AppButton
+                  color="primary"
+                  :disabled="keyPairsStore.recoveryPhraseWords.length === 0"
+                  type="submit"
+                  >Continue</AppButton
+                >
+              </div>
+            </div>
+          </div>
+        </form>
+
+        <!-- Step 4 -->
+        <form v-else-if="step === 3" class="w-100" @submit="handleRestoreKey">
+          <h1 class="text-display text-bold text-center">Provide Index of Key</h1>
+          <p class="text-main mt-5 text-center">Please enter the index of the key</p>
+          <div
+            class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
+          >
+            <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
+              <AppInput
+                v-model="index"
+                :filled="true"
+                type="number"
+                :class="{ 'is-invalid': inputIndexInvalid }"
+                placeholder="Enter key index"
+              />
+              <div v-if="inputIndexInvalid" class="invalid-feedback">
+                Key at index {{ index }} is already restored.
+              </div>
+              <AppButton
+                type="submit"
+                color="primary"
+                class="mt-4 d-block w-100"
+                :disabled="index < 0"
+                >Continue</AppButton
+              >
+            </div>
+          </div>
+        </form>
+
+        <!-- Step 5 -->
+        <form v-else-if="step === 4" class="w-100" @submit="handleSaveKey">
+          <h1 class="text-display text-bold text-center">Enter nickname</h1>
+          <p class="text-main mt-5 text-center">Please enter your nickname (optional)</p>
+          <div
+            class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
+          >
+            <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
+              <AppInput v-model="nickname" :filled="true" placeholder="Enter nickname" />
+              <AppButton type="submit" color="primary" class="mt-4 d-block w-100"
+                >Continue</AppButton
+              >
+            </div>
+          </div>
+        </form>
+      </Transition>
+    </div>
   </div>
 </template>
