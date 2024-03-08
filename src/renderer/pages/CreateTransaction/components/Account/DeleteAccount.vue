@@ -2,6 +2,9 @@
 import { onMounted, ref } from 'vue';
 import { Hbar, AccountDeleteTransaction, Key, Transaction, KeyList } from '@hashgraph/sdk';
 
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
+import useUserStore from '@renderer/stores/storeUser';
+
 import { useRoute } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
@@ -19,6 +22,11 @@ import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
+import { remove } from '@renderer/services/accountsService';
+
+/* Stores */
+const keyPairs = useKeyPairsStore();
+const user = useUserStore();
 
 /* Composables */
 const route = useRoute();
@@ -85,6 +93,21 @@ const handleLoadFromDraft = async () => {
     accountData.accountId.value = draftTransaction.accountId?.toString() || '';
     transferAccountData.accountId.value = draftTransaction.transferAccountId?.toString() || '';
   }
+};
+
+const handleExecuted = async () => {
+  isExecuted.value = true;
+
+  try {
+    await remove(user.data.id, accountData.accountId.value);
+  } catch {
+    /* Ignore if not found or error */
+  }
+
+  // Counter mirror node delay
+  setInterval(async () => {
+    await keyPairs.refetch();
+  }, 3000);
 };
 
 /* Functions */
@@ -225,7 +248,7 @@ const columnClass = 'col-4 col-xxxl-3';
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
     :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
-    :on-executed="() => (isExecuted = true)"
+    :on-executed="handleExecuted"
   >
     <template #successHeading>Account deleted successfully</template>
     <template #successContent>

@@ -41,11 +41,14 @@ const search = ref('');
 
 /* Computed */
 const accountIdsList = computed(() => {
-  const keyPairsAccountIds = keyPairs.accoundIds
-    .map(a => a.accountIds)
+  const keyPairsAccountIds = keyPairs.publicKeyToAccounts
+    .map(a => a.accounts)
     .flat()
-    .filter(accountId => !accounts.value.some(account => account.account_id === accountId))
-    .map(account => ({ accountId: account, nickname: '' }));
+    .filter(
+      acc =>
+        acc.account !== null && !accounts.value.some(account => account.account_id === acc.account),
+    )
+    .map(account => ({ accountId: account.account || '', nickname: '' }));
 
   return accounts.value
     .map(account => ({ accountId: account.account_id, nickname: account.nickname }))

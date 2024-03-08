@@ -152,9 +152,9 @@ function createTransaction() {
 
 /* Hooks */
 onMounted(async () => {
-  const allAccountIds = keyPairs.accoundIds.map(a => a.accountIds).flat();
-  if (allAccountIds.length > 0) {
-    payerData.accountId.value = allAccountIds[0];
+  const allAccounts = keyPairs.publicKeyToAccounts.map(a => a.accounts).flat();
+  if (allAccounts.length > 0 && allAccounts[0].account) {
+    payerData.accountId.value = allAccounts[0].account;
   }
 
   await handleLoadFromDraft();

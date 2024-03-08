@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
@@ -16,7 +16,13 @@ const emit = defineEmits(['update:accountId']);
 const keyPairs = useKeyPairsStore();
 
 /* Computed */
-const accoundIds = computed(() => keyPairs.accoundIds.map(a => a.accountIds).flat());
+const accoundIds = computed(() =>
+  keyPairs.publicKeyToAccounts
+    .map(a => a.accounts)
+    .flat()
+    .filter(acc => !acc.deleted && acc.account !== null)
+    .map(account => account.account),
+);
 
 /* Handlers */
 const handleAccountIdChange = (e: Event) => {
@@ -30,6 +36,16 @@ onMounted(() => {
     emit('update:accountId', accoundIds.value[0]);
   }
 });
+
+/* Watchers */
+watch(
+  () => keyPairs.publicKeyToAccounts,
+  () => {
+    if (props.accountId.length === 0 && props.selectDefault) {
+      emit('update:accountId', accoundIds.value[0]);
+    }
+  },
+);
 </script>
 
 <template>
