@@ -17,6 +17,7 @@ import { isAccountId } from '@renderer/utils/validator';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppListItem from '@renderer/components/ui/AppListItem.vue';
 
 /* Props */
 const props = defineProps<{
@@ -99,16 +100,17 @@ watch(selectedAccountData.key, key => {
               )"
               :key="account.accountId"
             >
-              <div class="mt-3">
-                <p
-                  class="form-control is-fill cursor-pointer"
-                  :class="{ 'text-pink': account.accountId === selectedAccount }"
-                  @click="selectedAccount = account.accountId"
-                >
+              <AppListItem
+                class="mt-3"
+                :selected="account.accountId === selectedAccount"
+                :value="account.accountId"
+                @click="selectedAccount = account.accountId"
+              >
+                <p>
                   {{ account.accountId }}
                   <span v-if="account.nickname.length > 0">({{ account.nickname }})</span>
                 </p>
-              </div>
+              </AppListItem>
             </template>
           </div>
         </div>
