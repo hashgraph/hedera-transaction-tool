@@ -175,7 +175,7 @@ const columnClass = 'col-4 col-xxxl-3';
           :model-value="accountData.accountIdFormatted.value"
           @update:model-value="v => (accountData.accountId.value = v)"
           :filled="true"
-          placeholder="Enter Payer ID"
+          placeholder="Enter Account ID"
         />
       </div>
 

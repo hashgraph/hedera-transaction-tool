@@ -114,6 +114,7 @@ const columnClass = 'col-4 col-xxxl-3';
         :filled="true"
         type="number"
         min="0"
+        placeholder="Enter Max Transaction Fee"
       />
     </div>
   </div>
