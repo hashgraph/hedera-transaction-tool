@@ -21,6 +21,19 @@ export const getComplexKeys = async (userId: string) => {
   }
 };
 
+export const getComplexKey = async (userId: string, keyListBytes: Uint8Array) => {
+  const prisma = getPrismaClient();
+
+  const protobufEncoded = Buffer.from(keyListBytes).toString('hex');
+
+  return await prisma.complexKey.findFirst({
+    where: {
+      user_id: userId,
+      protobufEncoded,
+    },
+  });
+};
+
 export const complexKeyExists = async (userId: string, keyListBytes: Uint8Array) => {
   const prisma = getPrismaClient();
 

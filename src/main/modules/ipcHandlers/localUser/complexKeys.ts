@@ -3,7 +3,7 @@ import { ipcMain } from 'electron';
 import {
   addComplexKey,
   getComplexKeys,
-  complexKeyExists,
+  getComplexKey,
   removeComplexKey,
   updateComplexKey,
 } from '@main/services/localUser';
@@ -21,10 +21,10 @@ export default () => {
   // Get all stored complex keys
   ipcMain.handle(createChannelName('getAll'), async (_e, userId: string) => getComplexKeys(userId));
 
-  // Returns true if the complex key exists
+  // Returns particular complex key of a user
   ipcMain.handle(
-    createChannelName('complexKeyExists'),
-    async (_e, userId: string, keyListBytes: Uint8Array) => complexKeyExists(userId, keyListBytes),
+    createChannelName('getComplexKey'),
+    async (_e, userId: string, keyListBytes: Uint8Array) => getComplexKey(userId, keyListBytes),
   );
 
   // Delete complex key

@@ -26,12 +26,13 @@ export const addComplexKey = async (
   }
 };
 
-/* Checks whether complex key is already added */
-export const complexKeyExists = async (userId: string, keyListBytes: Uint8Array) => {
+/* Gets particular complex key of a user */
+export const getComplexKey = async (userId: string, keyList: KeyList) => {
   try {
-    return await window.electronAPI.complexKeys.complexKeyExists(userId, keyListBytes);
+    const keyListBytes = encodeKeyList(keyList);
+    return await window.electronAPI.complexKeys.getComplexKey(userId, keyListBytes);
   } catch (error: any) {
-    throw Error(getMessageFromIPCError(error, `Failed to check wheter complex key exists`));
+    throw Error(getMessageFromIPCError(error, `Failed to fetch complex key`));
   }
 };
 
@@ -51,14 +52,4 @@ export const updateComplexKey = async (id: string, newKeyListBytes: Uint8Array) 
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, `Failed to update complex key`));
   }
-};
-
-export const getComplexKey = async (userId: string, keyList: KeyList) => {
-  const bytes = encodeKeyList(keyList);
-
-  const savedKeys = await getComplexKeys(userId);
-
-  return savedKeys.find(key => {
-    return key.protobufEncoded === bytes.toString();
-  });
 };
