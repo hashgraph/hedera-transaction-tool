@@ -15,10 +15,16 @@ import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import { flattenKeyList } from '@renderer/services/keyPairService';
 
 /* Props */
-const props = defineProps<{
-  modelKey: Key | null;
-  isRequired?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    modelKey: Key | null;
+    isRequired?: boolean;
+    label?: string;
+  }>(),
+  {
+    label: 'Key',
+  },
+);
 
 /* Emits */
 const emit = defineEmits(['update:modelKey']);
@@ -88,7 +94,7 @@ watch(complexKeyModalShown, show => {
 <template>
   <div class="border rounded p-4">
     <label class="form-label d-block"
-      >Keys <span v-if="isRequired" class="text-danger">*</span></label
+      >{{ label }} <span v-if="isRequired" class="text-danger">*</span></label
     >
     <div class="btn-group-container row gx-1" role="group">
       <template v-for="(tab, index) in Object.values(Tabs)" :key="tab">
