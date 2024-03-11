@@ -75,7 +75,6 @@ onMounted(async () => {
 watch(selectedAccountData.key, key => {
   if (key) {
     props.onSelectAccount(key);
-    handleShowUpdate(false);
   }
 });
 </script>

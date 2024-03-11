@@ -4,6 +4,7 @@ import listenForAccountsEvents from './accounts';
 import listenForTransactionsEvents from './transactions';
 import listenForFilesEvents from './files';
 import listenForTransactionDraftsEvents from './transactionDrafts';
+import listenForComplexKeyEvents from './complexKeys';
 
 export default () => {
   listenForKeyPairEvents();
@@ -12,4 +13,5 @@ export default () => {
   listenForTransactionsEvents();
   listenForFilesEvents();
   listenForTransactionDraftsEvents();
+  listenForComplexKeyEvents();
 };
