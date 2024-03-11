@@ -37,9 +37,9 @@ export const getComplexKey = async (userId: string, keyList: KeyList) => {
 };
 
 /* Removes complex key */
-export const deleteComplexKey = async (userId: string, keyListBytes: Uint8Array) => {
+export const deleteComplexKey = async (id: string) => {
   try {
-    return await window.electronAPI.complexKeys.remove(userId, keyListBytes);
+    return await window.electronAPI.complexKeys.delete(id);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, `Failed to remove complex key`));
   }

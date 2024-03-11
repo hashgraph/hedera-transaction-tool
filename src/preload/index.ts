@@ -125,8 +125,7 @@ export const electronAPI = {
       ipcRenderer.invoke('complexKeys:getAll', userId),
     getComplexKey: (userId: string, keyListBytes: Uint8Array): Promise<ComplexKey> =>
       ipcRenderer.invoke('complexKeys:getComplexKey', userId, keyListBytes),
-    remove: (userId: string, keyListBytes: Uint8Array): Promise<ComplexKey[]> =>
-      ipcRenderer.invoke('complexKeys:remove', userId, keyListBytes),
+    delete: (id: string): Promise<ComplexKey[]> => ipcRenderer.invoke('complexKeys:delete', id),
     update: (id: string, newKeyListBytes: Uint8Array): Promise<ComplexKey> =>
       ipcRenderer.invoke('complexKeys:update', id, newKeyListBytes),
   },

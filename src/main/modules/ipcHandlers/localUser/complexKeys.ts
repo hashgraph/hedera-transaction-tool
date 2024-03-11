@@ -4,7 +4,7 @@ import {
   addComplexKey,
   getComplexKeys,
   getComplexKey,
-  removeComplexKey,
+  deleteComplexKey,
   updateComplexKey,
 } from '@main/services/localUser';
 
@@ -28,10 +28,7 @@ export default () => {
   );
 
   // Delete complex key
-  ipcMain.handle(
-    createChannelName('remove'),
-    async (_e, userId: string, keyListBytes: Uint8Array) => removeComplexKey(userId, keyListBytes),
-  );
+  ipcMain.handle(createChannelName('delete'), async (_e, id: string) => deleteComplexKey(id));
 
   // Updates existing complex key
   ipcMain.handle(createChannelName('update'), async (_e, id: string, newKeyListBytes: Uint8Array) =>
