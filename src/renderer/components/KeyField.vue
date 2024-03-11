@@ -77,6 +77,12 @@ const handleAddPublicKey = (key: PublicKey) => {
   addPublicKeyModalShown.value = false;
 };
 
+const handleCreateNew = () => {
+  selectedComplexKey.value = null;
+  emit('update:modelKey', null);
+  complexKeyModalShown.value = true;
+};
+
 const handleSelectSavedComplexKey = (complexKey: ComplexKey) => {
   selectedComplexKey.value = complexKey;
   emit('update:modelKey', decodeKeyList(complexKey.protobufEncoded));
@@ -202,7 +208,7 @@ watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) =
           />
         </ComplexKeyModal>
         <div class="d-flex mt-5">
-          <p class="text-purple cursor-pointer" @click="complexKeyModalShown = true">
+          <p class="text-purple cursor-pointer" @click="handleCreateNew">
             <span class="bi bi-plus-lg"></span><span>Create new</span>
           </p>
           <p class="cursor-pointer ms-3" @click="selectSavedKeyModalShown = true">Add Existing</p>
