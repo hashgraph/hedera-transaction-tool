@@ -61,7 +61,7 @@ const menuItems = [
         class="link-menu mt-2"
         to="/settings/general"
         :class="{ active: $route.path.startsWith('/settings') }"
-        ><i class="bi bi-wrench"></i><span>Settings</span></RouterLink
+        ><i class="bi bi-gear"></i><span>Settings</span></RouterLink
       >
       <!-- <RouterLink class="link-menu mt-2" to="/help"
         ><i class="bi bi-question-circle"></i><span>Help</span></RouterLink
