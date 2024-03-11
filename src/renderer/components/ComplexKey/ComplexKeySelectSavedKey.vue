@@ -109,32 +109,35 @@ onBeforeMount(async () => {
                 :value="kl.id"
                 @click="handleSelectKeyList(kl.id)"
                 :selected="kl.id === complexKeyId"
-                class="d-flex justify-content-between align-items-center flex-nowrap text-nowrap"
               >
-                <div class="d-flex align-items-center w-100">
-                  <span class="text-semi-bold text-truncate" style="max-width: 35%">
-                    {{ kl.nickname }}
-                  </span>
-                  <p
-                    class="text-body bg-dark-blue-800 flex-centered rounded ms-3"
-                    style="width: 36px; height: 36px"
-                  >
-                    {{
-                      decodeKeyList(kl.protobufEncoded).threshold ||
-                      decodeKeyList(kl.protobufEncoded).toArray().length
-                    }}
-                  </p>
-                  <p class="text-secondary ms-3">
-                    of {{ decodeKeyList(kl.protobufEncoded).toArray().length }}
-                  </p>
-                  <p class="text-secondary border-start border-secondary-subtle ps-4 ms-4">
-                    {{ kl.updated_at.toDateString() }}
-                  </p>
-                  <div class="flex-1 text-end ms-3">
-                    <span
-                      class="bi bi-trash text-danger cursor-pointer"
-                      @click="handleTrashClick($event, kl.id)"
-                    ></span>
+                <div
+                  class="d-flex justify-content-between align-items-center flex-nowrap text-nowrap"
+                >
+                  <div class="d-flex align-items-center w-100">
+                    <span class="text-semi-bold text-truncate" style="max-width: 35%">
+                      {{ kl.nickname }}
+                    </span>
+                    <p
+                      class="text-body bg-dark-blue-800 flex-centered rounded ms-3"
+                      style="width: 36px; height: 36px"
+                    >
+                      {{
+                        decodeKeyList(kl.protobufEncoded).threshold ||
+                        decodeKeyList(kl.protobufEncoded).toArray().length
+                      }}
+                    </p>
+                    <p class="text-secondary ms-3">
+                      of {{ decodeKeyList(kl.protobufEncoded).toArray().length }}
+                    </p>
+                    <p class="text-secondary border-start border-secondary-subtle ps-4 ms-4">
+                      {{ kl.updated_at.toDateString() }}
+                    </p>
+                    <div class="flex-1 text-end ms-3">
+                      <span
+                        class="bi bi-trash text-danger cursor-pointer"
+                        @click="handleTrashClick($event, kl.id)"
+                      ></span>
+                    </div>
                   </div>
                 </div>
               </AppListItem>

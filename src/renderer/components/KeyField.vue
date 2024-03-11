@@ -17,6 +17,7 @@ import { decodeKeyList, encodeKeyList } from '@renderer/utils/sdk';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppPublicKeyInput from '@renderer/components/ui/AppPublicKeyInput.vue';
+import AppListItem from '@renderer/components/ui/AppListItem.vue';
 import ComplexKeyModal from '@renderer/components/ComplexKey/ComplexKeyModal.vue';
 import ComplexKeyAddPublicKeyModal from '@renderer/components/ComplexKey/ComplexKeyAddPublicKeyModal.vue';
 import ComplexKeySelectSavedKey from '@renderer/components/ComplexKey/ComplexKeySelectSavedKey.vue';
@@ -215,35 +216,31 @@ watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) =
             Add Existing
           </p>
         </div>
-        <div
-          class="key-node d-flex justify-content-between key-threshhold-bg text-white rounded py-4 px-3 mt-3"
-          v-if="modelKey instanceof KeyList && true"
-        >
-          <div class="col-11 d-flex align-items-center text-small">
-            <div class="text-semi-bold text-truncate" style="max-width: 35%">
-              {{ selectedComplexKey ? selectedComplexKey.nickname : 'Unsaved Key List' }}
-            </div>
+        <AppListItem :selected="true" v-if="modelKey instanceof KeyList && true" class="mt-3">
+          <div class="d-flex justify-content-between align-items-center flex-nowrap text-nowrap">
+            <div class="d-flex align-items-center w-100">
+              <span class="text-semi-bold text-truncate" style="max-width: 35%">
+                {{ selectedComplexKey ? selectedComplexKey.nickname : 'Unsaved Key List' }}
+              </span>
 
-            <div class="d-flex align-items-center border-start border-secondary-subtle ms-4">
-              <AppButton
-                type="button"
-                size="small"
-                color="primary"
-                class="ms-4"
-                @click="handleEditComplexKey"
+              <div
+                class="d-flex align-items-center text-secondary border-start border-secondary-subtle ps-4 ms-4"
               >
-                <span class="bi bi-pencil"></span>
-                <span class="ms-3">Edit</span>
-              </AppButton>
-              <p v-if="selectedComplexKey" class="text-secondary ms-3">
-                {{ selectedComplexKey.updated_at.toDateString() }}
-              </p>
+                <AppButton type="button" size="small" color="primary" @click="handleEditComplexKey">
+                  <span class="bi bi-pencil"></span>
+                  <span class="ms-3">Edit</span>
+                </AppButton>
+                <p v-if="selectedComplexKey" class="text-secondary ms-3">
+                  {{ selectedComplexKey.updated_at.toDateString() }}
+                </p>
+              </div>
+
+              <div class="flex-1 text-end ms-3">
+                <span class="bi bi-x-lg cursor-pointer" @click="handleDeselectComplexKey"></span>
+              </div>
             </div>
           </div>
-          <div class="col-1 flex-centered">
-            <span class="bi bi-x-lg cursor-pointer" @click="handleDeselectComplexKey"></span>
-          </div>
-        </div>
+        </AppListItem>
         <ComplexKeySelectSavedKey
           v-if="selectSavedKeyModalShown"
           v-model:show="selectSavedKeyModalShown"
