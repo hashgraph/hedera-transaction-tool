@@ -31,10 +31,12 @@ const props = withDefaults(
     headingText?: string;
     buttonText?: string;
     buttonType?: string;
+    sendIconVisible?: boolean;
   }>(),
   {
     buttonText: 'Sign & Submit',
     buttonType: 'submit',
+    sendIconVisible: true,
   },
 );
 
@@ -113,7 +115,11 @@ onBeforeRouteLeave(async to => {
         :type="buttonType"
         :disabled="createRequirements"
         @click="handleSign"
-        >{{ buttonText }}</AppButton
+      >
+        <template v-if="sendIconVisible">
+          <span class="bi bi-send"></span>
+        </template>
+        {{ buttonText }}</AppButton
       >
     </div>
     <AppModal
