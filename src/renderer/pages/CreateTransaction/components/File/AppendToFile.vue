@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from 'vue';
-import { FileAppendTransaction, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
+import { ref, watch, onMounted } from 'vue';
+import { FileAppendTransaction, Key, KeyList, Transaction } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
@@ -11,10 +11,10 @@ import { getDraft } from '@renderer/services/transactionDraftsService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
 import { getTransactionFromBytes } from '@renderer/utils/transactions';
-import { isPublicKey, isAccountId } from '@renderer/utils/validator';
+import { isAccountId } from '@renderer/utils/validator';
 
-import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import KeyField from '@renderer/components/KeyField.vue';
 import FileTransactionProcessor from '@renderer/components/Transaction/FileTransactionProcessor.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
@@ -31,8 +31,7 @@ const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref(2);
 const fileId = ref('');
-const signatureKeyText = ref('');
-const signatureKeys = ref<string[]>([]);
+const ownerKey = ref<Key | null>(null);
 
 const fileMeta = ref<File | null>(null);
 const fileReader = ref<FileReader | null>(null);
@@ -45,20 +44,7 @@ const chunksAmount = ref<number | null>(null);
 
 const isExecuted = ref(false);
 
-/* Getters */
-const keyList = computed(
-  () => new KeyList(signatureKeys.value.map(key => PublicKey.fromString(key))),
-);
-
 /* Handlers */
-const handleAddSignatureKey = () => {
-  signatureKeys.value.push(signatureKeyText.value);
-  signatureKeys.value = signatureKeys.value
-    .filter(isPublicKey)
-    .filter((pk, i) => signatureKeys.value.indexOf(pk) === i);
-  signatureKeyText.value = '';
-};
-
 const handleRemoveFile = async () => {
   fileReader.value?.abort();
   fileMeta.value = null;
@@ -104,6 +90,10 @@ const handleCreate = async e => {
       throw Error('Invalid File ID');
     }
 
+    if (!ownerKey.value) {
+      throw Error('Signature key is required');
+    }
+
     const newTransaction = createTransaction();
 
     if (content.value.length > 0) {
@@ -115,7 +105,7 @@ const handleCreate = async e => {
 
     transaction.value = newTransaction;
 
-    const requiredKey = new KeyList([payerData.key.value, keyList.value]);
+    const requiredKey = new KeyList([payerData.key.value, ownerKey.value]);
     await transactionProcessor.value?.process(requiredKey, chunkSize.value, 1);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
@@ -145,7 +135,7 @@ const handleLoadFromDraft = async () => {
 function createTransaction() {
   const transaction = new FileAppendTransaction()
     .setTransactionValidDuration(180)
-    // .setChunkSize(Number(chunkSize.value))
+    .setChunkSize(Number(chunkSize.value))
     .setMaxChunks(9999999999999);
 
   if (isAccountId(payerData.accountId.value)) {
@@ -179,7 +169,7 @@ const columnClass = 'col-4 col-xxxl-3';
     <TransactionHeaderControls
       :get-transaction-bytes="() => createTransaction().toBytes()"
       :is-executed="isExecuted"
-      :create-requirements="keyList._keys.length === 0 || !payerData.isValid.value || !fileId"
+      :create-requirements="!ownerKey || !payerData.isValid.value || !fileId"
       heading-text="Append File Transaction"
     />
 
@@ -201,34 +191,12 @@ const columnClass = 'col-4 col-xxxl-3';
 
     <div class="row">
       <div class="form-group col-8 col-xxxl-6">
-        <label class="form-label">Signature Keys <span class="text-danger">*</span></label>
-        <div class="d-flex gap-3">
-          <AppInput
-            v-model="signatureKeyText"
-            :filled="true"
-            placeholder="Enter signer public key"
-          />
-        </div>
-      </div>
-
-      <div class="form-group col-4 col-xxxl-6 d-flex align-items-end">
-        <AppButton :outline="true" color="primary" type="button" @click="handleAddSignatureKey"
-          >Add</AppButton
-        >
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="form-group col-8 col-xxxl-6">
-        <template v-for="key in signatureKeys" :key="key">
-          <div class="d-flex align-items-center gap-3 mt-3">
-            <AppInput :model-value="key" :filled="true" readonly />
-            <i
-              class="bi bi-x-lg d-inline-block cursor-pointer"
-              @click="signatureKeys = signatureKeys.filter(k => k !== key)"
-            ></i>
-          </div>
-        </template>
+        <KeyField
+          :model-key="ownerKey"
+          @update:model-key="key => (ownerKey = key)"
+          is-required
+          label="Signature Key"
+        />
       </div>
     </div>
 
@@ -290,7 +258,7 @@ const columnClass = 'col-4 col-xxxl-3';
         validStart = '';
         maxTransactionFee = 2;
         fileId = '';
-        signatureKeys = [];
+        ownerKey = null;
         fileMeta = null;
         fileBuffer = null;
         chunkSize = 2048;
