@@ -228,9 +228,7 @@ const columnClass = 'col-4 col-xxxl-3';
       </div>
     </div>
 
-    <hr class="separator my-6" />
-
-    <div class="row">
+    <div class="row mt-6">
       <div class="form-group col-8 col-xxxl-6">
         <KeyField
           :model-key="ownerKey"

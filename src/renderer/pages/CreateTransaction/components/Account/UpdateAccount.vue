@@ -246,17 +246,13 @@ const columnClass = 'col-4 col-xxxl-3';
       </div>
     </div>
 
-    <hr class="separator my-6" />
-
-    <div class="row">
+    <div class="row mt-6">
       <div class="form-group col-8 col-xxxl-6">
         <KeyField :model-key="newOwnerKey" @update:model-key="key => (newOwnerKey = key)" />
       </div>
     </div>
 
-    <hr class="separator my-6" />
-
-    <div>
+    <div class="mt-6">
       <AppSwitch
         v-model:checked="newAccountData.acceptStakingAwards"
         size="md"
@@ -288,6 +284,7 @@ const columnClass = 'col-4 col-xxxl-3';
         />
       </div>
     </div>
+
     <div class="row mt-6">
       <div class="form-group" :class="[columnClass]">
         <label class="form-label">Account Memo</label>
@@ -300,9 +297,7 @@ const columnClass = 'col-4 col-xxxl-3';
       </div>
     </div>
 
-    <hr class="separator my-6" />
-
-    <div>
+    <div class="mt-6">
       <AppSwitch
         v-model:checked="newAccountData.receiverSignatureRequired"
         size="md"
@@ -310,6 +305,7 @@ const columnClass = 'col-4 col-xxxl-3';
         label="Receiver Signature Required"
       />
     </div>
+
     <div class="row mt-6">
       <div class="form-group" :class="[columnClass]">
         <label class="form-label">Max Automatic Token Associations</label>

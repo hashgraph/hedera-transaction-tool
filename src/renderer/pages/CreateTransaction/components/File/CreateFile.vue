@@ -200,9 +200,7 @@ watch(payerData.isValid, isValid => {
       class="mt-6"
     />
 
-    <hr class="separator my-6" />
-
-    <div class="row">
+    <div class="row mt-6">
       <div class="form-group col-8 col-xxxl-6">
         <KeyField :model-key="ownerKey" @update:model-key="key => (ownerKey = key)" is-required />
       </div>
@@ -244,8 +242,6 @@ watch(payerData.isValid, isValid => {
         <textarea v-model="content" class="form-control is-fill" rows="10"></textarea>
       </div>
     </div>
-
-    <hr class="separator my-6" />
 
     <div class="row mt-6">
       <div class="form-group col-4 col-xxxl-3">
