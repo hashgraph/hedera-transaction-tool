@@ -47,15 +47,16 @@ export const addComplexKey = async (userId: string, keyListBytes: Uint8Array, ni
     throw new Error('Complex key already exists!');
   }
 
-  await prisma.complexKey.create({
+  const newKey = await prisma.complexKey.create({
     data: {
       user_id: userId,
       protobufEncoded,
       nickname,
     },
   });
+  newKey.protobufEncoded = Uint8Array.from(Buffer.from(newKey.protobufEncoded, 'hex')).toString();
 
-  return await getComplexKeys(userId);
+  return newKey;
 };
 
 export const removeComplexKey = async (userId: string, keyListBytes: Uint8Array) => {
@@ -79,25 +80,29 @@ export const removeComplexKey = async (userId: string, keyListBytes: Uint8Array)
   return await getComplexKeys(userId);
 };
 
-export const updateComplexKey = async (
-  userId: string,
-  oldKeyListBytes: Uint8Array,
-  newKeyListBytes: Uint8Array,
-) => {
+export const updateComplexKey = async (id: string, newKeyListBytes: Uint8Array) => {
   const prisma = getPrismaClient();
 
-  const oldProtobufEncoded = Buffer.from(oldKeyListBytes).toString('hex');
   const newProtobufEncoded = Buffer.from(newKeyListBytes).toString('hex');
 
   await prisma.complexKey.updateMany({
     where: {
-      user_id: userId,
-      protobufEncoded: oldProtobufEncoded,
+      id,
     },
     data: {
       protobufEncoded: newProtobufEncoded,
     },
   });
 
-  return await getComplexKeys(userId);
+  const updateKey = await prisma.complexKey.findFirst({ where: { id: id } });
+
+  if (!updateKey) {
+    throw new Error('Complex key not found!');
+  }
+
+  updateKey.protobufEncoded = Uint8Array.from(
+    Buffer.from(updateKey.protobufEncoded, 'hex'),
+  ).toString();
+
+  return updateKey;
 };

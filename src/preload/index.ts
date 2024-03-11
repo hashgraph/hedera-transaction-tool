@@ -119,7 +119,7 @@ export const electronAPI = {
       ipcRenderer.invoke('files:showContentInTemp', userId, fileId),
   },
   complexKeys: {
-    add: (userId: string, keyListBytes: Uint8Array, nickname: string): Promise<ComplexKey[]> =>
+    add: (userId: string, keyListBytes: Uint8Array, nickname: string): Promise<ComplexKey> =>
       ipcRenderer.invoke('complexKeys:add', userId, keyListBytes, nickname),
     getAll: (userId: string): Promise<ComplexKey[]> =>
       ipcRenderer.invoke('complexKeys:getAll', userId),
@@ -127,12 +127,8 @@ export const electronAPI = {
       ipcRenderer.invoke('complexKeys:complexKeyExists', userId, keyListBytes),
     remove: (userId: string, keyListBytes: Uint8Array): Promise<ComplexKey[]> =>
       ipcRenderer.invoke('complexKeys:remove', userId, keyListBytes),
-    update: (
-      userId: string,
-      oldKeyListBytes: Uint8Array,
-      newKeyListBytes: Uint8Array,
-    ): Promise<ComplexKey[]> =>
-      ipcRenderer.invoke('complexKeys:update', userId, oldKeyListBytes, newKeyListBytes),
+    update: (id: string, newKeyListBytes: Uint8Array): Promise<ComplexKey> =>
+      ipcRenderer.invoke('complexKeys:update', id, newKeyListBytes),
   },
   localUser: {
     login: (email: string, password: string, autoRegister?: boolean): Promise<User> =>

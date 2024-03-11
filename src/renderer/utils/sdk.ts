@@ -148,6 +148,8 @@ export function encodeKeyList(keyList: KeyList) {
 }
 
 export function decodeKeyList(keyListBytes: string) {
+  console.log(keyListBytes);
+
   const bytesArray = Uint8Array.from(keyListBytes.split(',').map(b => Number(b)));
   const protoKey = proto.Key.decode(bytesArray);
   const key = Key._fromProtobufKey(protoKey);

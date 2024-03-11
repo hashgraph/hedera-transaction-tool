@@ -34,9 +34,7 @@ export default () => {
   );
 
   // Updates existing complex key
-  ipcMain.handle(
-    createChannelName('update'),
-    async (_e, userId: string, oldKeyListBytes: Uint8Array, newKeyListBytes: Uint8Array) =>
-      updateComplexKey(userId, oldKeyListBytes, newKeyListBytes),
+  ipcMain.handle(createChannelName('update'), async (_e, id: string, newKeyListBytes: Uint8Array) =>
+    updateComplexKey(id, newKeyListBytes),
   );
 };

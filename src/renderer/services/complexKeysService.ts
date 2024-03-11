@@ -43,13 +43,9 @@ export const deleteComplexKey = async (userId: string, keyListBytes: Uint8Array)
 };
 
 /* Updates complex key */
-export const updateComplexKey = async (
-  userId: string,
-  oldKeyListBytes: Uint8Array,
-  newKeyListBytes: Uint8Array,
-) => {
+export const updateComplexKey = async (id: string, newKeyListBytes: Uint8Array) => {
   try {
-    return await window.electronAPI.complexKeys.update(userId, oldKeyListBytes, newKeyListBytes);
+    return await window.electronAPI.complexKeys.update(id, newKeyListBytes);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, `Failed to update complex key`));
   }
