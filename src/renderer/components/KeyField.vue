@@ -76,6 +76,10 @@ watch([() => props.modelKey, currentTab, publicKeyInputRef], value => {
   ) {
     publicKeyInputRef.value.inputRef.inputRef.value = newKey.toStringRaw();
   }
+
+  if (newKey instanceof KeyList && currentTab.value === Tabs.SIGNLE) {
+    currentTab.value = Tabs.COMPLEX;
+  }
 });
 
 watch(currentTab, tab => {
