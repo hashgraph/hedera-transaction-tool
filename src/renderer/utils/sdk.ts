@@ -141,3 +141,19 @@ export function isKeyListValid(keyList: KeyList) {
 
   return everyNestedKeyValid;
 }
+
+export function encodeKeyList(keyList: KeyList) {
+  const ikey = keyList._toProtobufKey();
+  return proto.Key.encode(ikey).finish();
+}
+
+export function decodeKeyList(keyListBytes: string) {
+  const bytesArray = Uint8Array.from(keyListBytes.split(',').map(b => Number(b)));
+  const key = proto.Key.decode(bytesArray);
+
+  if (key instanceof KeyList) {
+    return key;
+  } else {
+    throw new Error('Invalid key list');
+  }
+}
