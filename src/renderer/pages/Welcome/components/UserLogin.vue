@@ -285,14 +285,16 @@ watch(inputEmail, pass => {
         >
       </div>
 
-      <div class="d-grid mt-5">
-        <AppButton
-          color="primary"
-          type="submit"
-          class="w-100"
-          :disabled="inputEmail.length === 0 || inputPassword.length === 0"
-          >Sign in</AppButton
-        >
+      <div class="row justify-content-end mt-5">
+        <div class="col-6 d-grid" :class="[shouldRegister ? 'col-6' : 'col-12']">
+          <AppButton
+            color="primary"
+            type="submit"
+            class="w-100"
+            :disabled="inputEmail.length === 0 || inputPassword.length === 0"
+            >{{ shouldRegister ? 'Next' : 'Sign in' }}</AppButton
+          >
+        </div>
       </div>
     </form>
     <AppModal v-model:show="isResetDataModalShown" class="common-modal">
