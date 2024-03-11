@@ -19,7 +19,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppPublicKeyInput from '@renderer/components/ui/AppPublicKeyInput.vue';
 import ComplexKeyModal from '@renderer/components/ComplexKey/ComplexKeyModal.vue';
 import ComplexKeyAddPublicKeyModal from '@renderer/components/ComplexKey/ComplexKeyAddPublicKeyModal.vue';
-import ComplexKeySelectSavedKey from './ComplexKey/ComplexKeySelectSavedKey.vue';
+import ComplexKeySelectSavedKey from '@renderer/components/ComplexKey/ComplexKeySelectSavedKey.vue';
 import ComplexKeySaveKeyModal from '@renderer/components/ComplexKey/ComplexKeySaveKeyModal.vue';
 
 /* Props */
