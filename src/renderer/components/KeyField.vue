@@ -116,7 +116,7 @@ watch(complexKeyModalShown, show => {
       </template>
     </div>
     <div>
-      <template v-if="currentTab === Tabs.SIGNLE && modelKey instanceof PublicKey && true">
+      <template v-if="currentTab === Tabs.SIGNLE">
         <div class="mt-5">
           <p class="text-purple cursor-pointer" @click="addPublicKeyModalShown = true">
             <span class="bi bi-plus-lg"></span><span>Select Key</span>
@@ -126,7 +126,11 @@ watch(complexKeyModalShown, show => {
           <AppPublicKeyInput
             ref="publicKeyInputRef"
             :filled="true"
-            :label="keyPairs.getNickname(modelKey.toStringRaw())"
+            :label="
+              modelKey instanceof PublicKey
+                ? keyPairs.getNickname(modelKey.toStringRaw())
+                : 'Public Key'
+            "
             @update:model-value="handlePublicKeyChange"
           />
         </div>
