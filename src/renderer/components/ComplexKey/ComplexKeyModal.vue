@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 import { Key, KeyList } from '@hashgraph/sdk';
 
@@ -47,8 +47,15 @@ const handleSave = e => {
 
 const handleClose = () => {
   emit('update:show', false);
-  currentKey.value = props.modelKey;
 };
+
+/* Watchers */
+watch(
+  () => props.show,
+  () => {
+    currentKey.value = props.modelKey;
+  },
+);
 
 /* Misc */
 const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
