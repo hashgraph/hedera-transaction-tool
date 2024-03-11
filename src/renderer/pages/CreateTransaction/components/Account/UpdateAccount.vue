@@ -319,7 +319,7 @@ const columnClass = 'col-4 col-xxxl-3';
           :max="5000"
           :filled="true"
           type="number"
-          placeholder="Enter timestamp"
+          placeholder="Enter Max Token Associations"
         />
       </div>
     </div>

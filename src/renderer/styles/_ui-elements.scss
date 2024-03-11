@@ -723,3 +723,16 @@
     padding-right: map-get($spacers, 3);
   }
 }
+
+/* List Item */
+.list-item {
+  padding: map-get($spacers, 3) map-get($spacers, 4);
+  border-radius: $border-radius;
+  background-color: var(--#{$prefix}input-fill-bg-color);
+  transition: background-color 0.15s linear;
+
+  &[selected],
+  &:hover {
+    background-color: var(--#{$prefix}input-fill-focus-bg-color);
+  }
+}

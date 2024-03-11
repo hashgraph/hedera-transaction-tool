@@ -284,7 +284,14 @@ const columnClass = 'col-4 col-xxxl-3';
     <div class="row mt-6">
       <div class="form-group" :class="[columnClass]">
         <label class="form-label">Chunk Size (If File is large)</label>
-        <AppInput v-model="chunkSize" type="number" min="1024" max="6144" :filled="true" />
+        <AppInput
+          v-model="chunkSize"
+          type="number"
+          min="1024"
+          max="6144"
+          :filled="true"
+          placeholder="Enter Chunk Size"
+        />
       </div>
     </div>
 

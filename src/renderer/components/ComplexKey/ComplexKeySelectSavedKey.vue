@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, ref } from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 
 import { ComplexKey } from '@prisma/client';
 
@@ -12,6 +12,7 @@ import { decodeKeyList } from '@renderer/utils/sdk';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppListItem from '@renderer/components/ui/AppListItem.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Props */
@@ -28,16 +29,19 @@ const user = useUserStore();
 
 /* State */
 const keyLists = ref<ComplexKey[]>([]);
-const complexKey = ref<ComplexKey | null>(null);
+const complexKeyId = ref<string | null>(null);
 const search = ref('');
 const deleteSavedKeyModalShown = ref(false);
 const complexKeyToDeleteId = ref<string | null>(null);
 
+/* Computed */
+const complexKey = computed(() => keyLists.value.find(kl => kl.id === complexKeyId.value) || null);
+
 /* Handlers */
 const handleShowUpdate = show => emit('update:show', show);
 
-const handleSelectKeyList = (kl: ComplexKey) => {
-  complexKey.value = kl;
+const handleSelectKeyList = (id: string) => {
+  complexKeyId.value = id;
 };
 
 const handleTrashClick = (e, id: string) => {
@@ -55,7 +59,7 @@ const handleDeleteSavedKey = async e => {
   }
 
   deleteSavedKeyModalShown.value = false;
-  complexKey.value = null;
+  complexKeyId.value = null;
 };
 
 const handleDone = (e: Event) => {
@@ -82,8 +86,9 @@ onBeforeMount(async () => {
         <h1 class="text-title text-semi-bold text-center">Saved Complex Keys</h1>
         <div class="mt-5">
           <AppInput
-            v-model:model-value="search"
+            :model-value="complexKey?.nickname"
             filled
+            readonly
             type="text"
             placeholder="Search Complex Key"
           />
@@ -101,18 +106,21 @@ onBeforeMount(async () => {
               )"
               :key="kl.id"
             >
-              <div
-                class="key-node d-flex justify-content-between key-threshhold-bg rounded py-4 px-3 mt-3 cursor-pointer"
-                @click="handleSelectKeyList(kl)"
+              <AppListItem
+                :value="kl.id"
+                @click="handleSelectKeyList(kl.id)"
+                :selected="kl.id === complexKeyId"
+                class="mt-3"
               >
-                <div class="col-11 d-flex align-items-center text-small">
-                  <div class="text-semi-bold text-truncate" style="max-width: 35%">
-                    {{ kl.nickname }}
-                  </div>
-
-                  <div class="d-flex align-items-center ms-4">
+                <div
+                  class="d-flex justify-content-between align-items-center flex-nowrap text-nowrap"
+                >
+                  <div class="d-flex align-items-center w-100">
+                    <span class="text-semi-bold text-truncate" style="max-width: 35%">
+                      {{ kl.nickname }}
+                    </span>
                     <p
-                      class="text-body bg-dark-blue-700 flex-centered rounded ms-3"
+                      class="text-body bg-dark-blue-800 flex-centered rounded ms-3"
                       style="width: 36px; height: 36px"
                     >
                       {{
@@ -126,15 +134,15 @@ onBeforeMount(async () => {
                     <p class="text-secondary border-start border-secondary-subtle ps-4 ms-4">
                       {{ kl.updated_at.toDateString() }}
                     </p>
+                    <div class="flex-1 text-end ms-3">
+                      <span
+                        class="bi bi-trash text-danger cursor-pointer"
+                        @click="handleTrashClick($event, kl.id)"
+                      ></span>
+                    </div>
                   </div>
                 </div>
-                <div class="col-1 flex-centered">
-                  <span
-                    class="bi bi-trash text-danger cursor-pointer"
-                    @click="handleTrashClick($event, kl.id)"
-                  ></span>
-                </div>
-              </div>
+              </AppListItem>
             </template>
           </div>
         </div>
@@ -168,18 +176,12 @@ onBeforeMount(async () => {
             <hr class="separator my-5" />
             <div class="row mt-4">
               <div class="col-6 d-grid">
-                <AppButton color="secondary" @click="deleteSavedKeyModalShown = false"
+                <AppButton type="button" color="secondary" @click="deleteSavedKeyModalShown = false"
                   >Cancel</AppButton
                 >
               </div>
               <div class="col-6 d-grid">
-                <AppButton
-                  :outline="true"
-                  color="primary"
-                  type="submit"
-                  @click="handleDeleteSavedKey"
-                  >Remove</AppButton
-                >
+                <AppButton :outline="true" color="primary" type="submit">Remove</AppButton>
               </div>
             </div>
           </form>

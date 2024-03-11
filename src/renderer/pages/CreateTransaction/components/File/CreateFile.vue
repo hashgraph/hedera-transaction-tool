@@ -252,7 +252,7 @@ watch(payerData.isValid, isValid => {
         <label class="form-label">Name</label>
 
         <div class="">
-          <AppInput v-model="fileName" :filled="true" />
+          <AppInput v-model="fileName" :filled="true" placeholder="Enter File Name" />
         </div>
       </div>
     </div>
@@ -260,7 +260,12 @@ watch(payerData.isValid, isValid => {
     <div class="row mt-6">
       <div class="form-group col-12 col-xl-8">
         <label class="form-label">Description</label>
-        <textarea v-model="description" class="form-control is-fill" rows="5"></textarea>
+        <textarea
+          v-model="description"
+          class="form-control is-fill"
+          rows="5"
+          placeholder="Enter File Description"
+        ></textarea>
       </div>
     </div>
   </form>

@@ -215,7 +215,13 @@ const columnClass = 'col-4 col-xxxl-3';
       </div>
       <div class="form-group form-group" :class="[columnClass]">
         <label class="form-label">Max Transaction Fee</label>
-        <AppInput v-model="maxTransactionFee" type="number" min="0" :filled="true" />
+        <AppInput
+          v-model="maxTransactionFee"
+          type="number"
+          min="0"
+          :filled="true"
+          placeholder="Enter Max Transaction Fee"
+        />
       </div>
     </div>
 
