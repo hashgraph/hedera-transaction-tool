@@ -91,11 +91,12 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
               v-if="onSaveComplexKey && !currentKeyInvalid"
               type="button"
               color="primary"
+              :outline="true"
               class="ms-3"
               @click="handleSaveComplexKeyButtonClick"
               >Save Complex Key</AppButton
             >
-            <AppButton type="submit" color="primary" class="ms-3">Save</AppButton>
+            <AppButton type="submit" color="primary" class="ms-3">Done</AppButton>
           </div>
           <div v-if="show" class="mt-5 h-100 overflow-auto">
             <Transition name="fade" :mode="'out-in'">
