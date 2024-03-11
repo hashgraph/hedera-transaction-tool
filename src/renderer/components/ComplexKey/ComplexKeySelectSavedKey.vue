@@ -86,8 +86,9 @@ onBeforeMount(async () => {
         <h1 class="text-title text-semi-bold text-center">Saved Complex Keys</h1>
         <div class="mt-5">
           <AppInput
-            v-model:model-value="search"
+            :model-value="complexKey?.nickname"
             filled
+            readonly
             type="text"
             placeholder="Search Complex Key"
           />
