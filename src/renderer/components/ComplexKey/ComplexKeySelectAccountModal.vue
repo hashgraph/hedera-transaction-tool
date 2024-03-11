@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 import { Key } from '@hashgraph/sdk';
 
@@ -37,8 +37,6 @@ const keyPairs = useKeyPairsStore();
 
 /* State */
 const accounts = ref<HederaAccount[]>([]);
-const selectedAccount = ref<string | null>(null);
-const search = ref('');
 
 /* Computed */
 const accountIdsList = computed(() => {
@@ -61,22 +59,20 @@ const handleShowUpdate = show => emit('update:show', show);
 const handleInsert = async (e: Event) => {
   e.preventDefault();
 
-  if (!isAccountId(selectedAccount.value || '')) {
+  if (!isAccountId(selectedAccountData.accountId.value)) {
     throw new Error('Invalid Account ID');
   }
-  selectedAccountData.accountId.value = selectedAccount.value || '';
+
+  if (!selectedAccountData.key.value) {
+    throw new Error('Invalid key');
+  }
+
+  props.onSelectAccount(selectedAccountData.key.value);
 };
 
 /* Hooks */
 onMounted(async () => {
   accounts.value = await getAll(user.data.id);
-});
-
-/* Watchers */
-watch(selectedAccountData.key, key => {
-  if (key) {
-    props.onSelectAccount(key);
-  }
 });
 </script>
 <template>
@@ -88,23 +84,28 @@ watch(selectedAccountData.key, key => {
         </div>
         <h1 class="text-title text-semi-bold text-center">Add Account</h1>
         <div class="mt-5">
-          <AppInput v-model:model-value="search" filled type="text" placeholder="Search Accounts" />
+          <AppInput
+            :model-value="
+              selectedAccountData.isValid.value
+                ? selectedAccountData.accountIdFormatted.value
+                : selectedAccountData.accountId.value
+            "
+            @update:model-value="v => (selectedAccountData.accountId.value = v)"
+            filled
+            type="text"
+            placeholder="Enter Account ID"
+          />
         </div>
         <hr class="separator my-5" />
         <div>
           <h3 class="text-small">Recent</h3>
           <div class="mt-4 overflow-auto" :style="{ height: '150px', paddingRight: '10px' }">
-            <template
-              v-for="account in accountIdsList.filter(
-                acc => acc.accountId.includes(search) || acc.nickname.includes(search),
-              )"
-              :key="account.accountId"
-            >
+            <template v-for="account in accountIdsList" :key="account.accountId">
               <AppListItem
                 class="mt-3"
-                :selected="account.accountId === selectedAccount"
+                :selected="account.accountId === selectedAccountData.accountId.value"
                 :value="account.accountId"
-                @click="selectedAccount = account.accountId"
+                @click="selectedAccountData.accountId.value = account.accountId"
               >
                 <p>
                   {{ account.accountId }}
@@ -122,10 +123,7 @@ watch(selectedAccountData.key, key => {
             >
           </div>
           <div class="col-4 d-grid">
-            <AppButton
-              color="primary"
-              type="submit"
-              :disabled="!selectedAccount || selectedAccount.length === 0"
+            <AppButton color="primary" type="submit" :disabled="!selectedAccountData.isValid.value"
               >Insert</AppButton
             >
           </div>
