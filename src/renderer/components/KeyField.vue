@@ -171,7 +171,7 @@ watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) =
     <div>
       <template v-if="currentTab === Tabs.SIGNLE">
         <div class="mt-5">
-          <p class="text-purple cursor-pointer" @click="addPublicKeyModalShown = true">
+          <p class="text-purple text-small cursor-pointer" @click="addPublicKeyModalShown = true">
             <span class="bi bi-plus-lg"></span><span>Select Key</span>
           </p>
         </div>
