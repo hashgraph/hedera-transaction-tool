@@ -169,7 +169,7 @@ watch(
 );
 
 watch(payerData.isValid, isValid => {
-  if (isValid && payerData.key.value) {
+  if (isValid && payerData.key.value && !ownerKey.value) {
     ownerKey.value = payerData.key.value;
   }
 });
