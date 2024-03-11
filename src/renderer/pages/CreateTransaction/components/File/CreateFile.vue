@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import {
   FileCreateTransaction,
   Hbar,
+  Key,
   KeyList,
-  PublicKey,
   Timestamp,
   Transaction,
   TransactionReceipt,
@@ -22,7 +22,6 @@ import useAccountId from '@renderer/composables/useAccountId';
 import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 import { add } from '@renderer/services/filesService';
-import { flattenKeyList } from '@renderer/services/keyPairService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
 import {
@@ -34,10 +33,10 @@ import {
   getEntityIdFromTransactionReceipt,
   getTransactionFromBytes,
 } from '@renderer/utils/transactions';
-import { isAccountId, isPublicKey } from '@renderer/utils/validator';
+import { isAccountId } from '@renderer/utils/validator';
 
-import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import KeyField from '@renderer/components/KeyField.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
@@ -58,27 +57,16 @@ const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref(2);
 
-const ownerKeyText = ref('');
 const memo = ref('');
 const expirationTimestamp = ref();
 const content = ref('');
-const ownerKeys = ref<string[]>([]);
+const ownerKey = ref<Key | null>(null);
 const fileName = ref('');
 const description = ref('');
 
 const isExecuted = ref(false);
 
-/* Getters */
-const keyList = computed(() => new KeyList(ownerKeys.value.map(key => PublicKey.fromString(key))));
-
 /* Handlers */
-const handleAdd = () => {
-  ownerKeys.value.push(ownerKeyText.value);
-  ownerKeys.value = ownerKeys.value
-    .filter(isPublicKey)
-    .filter((pk, i) => ownerKeys.value.indexOf(pk) === i);
-  ownerKeyText.value = '';
-};
 
 const handleCreate = async e => {
   e.preventDefault();
@@ -87,9 +75,14 @@ const handleCreate = async e => {
     if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
       throw Error('Invalid Payer ID');
     }
+
+    if (!ownerKey.value) {
+      throw Error('Key is required');
+    }
+
     transaction.value = createTransaction();
 
-    const requiredKey = new KeyList([payerData.key.value, keyList.value]);
+    const requiredKey = new KeyList([payerData.key.value, ownerKey.value]);
     await transactionProcessor.value?.process(requiredKey);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
@@ -137,9 +130,7 @@ const handleLoadFromDraft = async () => {
     transaction.value = draftTransaction;
 
     if (draftTransaction.keys) {
-      ownerKeys.value = draftTransaction.keys
-        .map(k => flattenKeyList(k).map(pk => pk.toStringRaw()))
-        .flat();
+      ownerKey.value = new KeyList(draftTransaction.keys);
     }
 
     content.value = draftTransaction.contents
@@ -163,9 +154,14 @@ function createTransaction() {
   const transaction = new FileCreateTransaction()
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(new Hbar(maxTransactionFee.value || 0))
-    .setKeys(keyList.value)
     .setContents(content.value)
     .setFileMemo(memo.value);
+
+  if (ownerKey.value) {
+    transaction.setKeys(
+      ownerKey.value instanceof KeyList ? ownerKey.value : new KeyList([ownerKey.value]),
+    );
+  }
 
   if (isAccountId(payerData.accountId.value)) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
@@ -183,8 +179,8 @@ onMounted(async () => {
 
 /* Watchers */
 watch(payerData.isValid, isValid => {
-  if (isValid) {
-    ownerKeyText.value = payerData.keysFlattened.value[0];
+  if (isValid && payerData.key.value) {
+    ownerKey.value = payerData.key.value;
   }
 });
 </script>
@@ -193,7 +189,7 @@ watch(payerData.isValid, isValid => {
     <TransactionHeaderControls
       :get-transaction-bytes="() => createTransaction().toBytes()"
       :is-executed="isExecuted"
-      :create-requirements="keyList._keys.length === 0 || !payerData.isValid.value"
+      :create-requirements="!ownerKey || !payerData.isValid.value"
       heading-text="Create File Transaction"
     />
 
@@ -208,28 +204,7 @@ watch(payerData.isValid, isValid => {
 
     <div class="row">
       <div class="form-group col-8 col-xxxl-6">
-        <label class="form-label">Keys <span class="text-danger">*</span></label>
-        <div class="d-flex gap-3">
-          <AppInput v-model="ownerKeyText" :filled="true" placeholder="Enter owner public key" />
-        </div>
-      </div>
-
-      <div class="form-group col-4 col-xxxl-6 d-flex align-items-end">
-        <AppButton :outline="true" color="primary" type="button" @click="handleAdd">Add</AppButton>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="form-group col-8 col-xxxl-6">
-        <template v-for="key in ownerKeys" :key="key">
-          <div class="d-flex align-items-center gap-3 mt-3">
-            <AppInput readonly :filled="true" :value="key" />
-            <i
-              class="bi bi-x-lg d-inline-block cursor-pointer"
-              @click="ownerKeys = ownerKeys.filter(k => k !== key)"
-            ></i>
-          </div>
-        </template>
+        <KeyField :model-key="ownerKey" @update:model-key="key => (ownerKey = key)" is-required />
       </div>
     </div>
 
