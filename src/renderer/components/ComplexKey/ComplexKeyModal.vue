@@ -3,7 +3,13 @@ import { computed, ref, watch } from 'vue';
 
 import { Key, KeyList } from '@hashgraph/sdk';
 
-import { isKeyListValid } from '@renderer/utils/sdk';
+import useUserStore from '@renderer/stores/storeUser';
+
+import { useToast } from 'vue-toast-notification';
+
+import { complexKeyExists, addComplexKey } from '@renderer/services/complexKeysService';
+
+import { isKeyListValid, encodeKeyList } from '@renderer/utils/sdk';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -20,6 +26,12 @@ const props = defineProps<{
 
 /* Emits */
 const emit = defineEmits(['update:show', 'update:modelKey']);
+
+/* Stores */
+const user = useUserStore();
+
+/* Composables */
+const toast = useToast();
 
 /* State */
 const currentKey = ref<Key | null>(props.modelKey);
@@ -57,6 +69,17 @@ const handleSaveKeyList = async e => {
   if (currentKeyInvalid.value) {
     errorModalShow.value = true;
     return;
+  }
+
+  const keyListBytes = encodeKeyList(currentKey.value as KeyList);
+
+  const exists = await complexKeyExists(user.data.id, keyListBytes);
+
+  if (exists) {
+    console.log('Key already exists');
+  } else {
+    await addComplexKey(user.data.id, keyListBytes, keyListNickname.value);
+    toast.success('Key list saved successfully', { position: 'bottom-right' });
   }
 
   emit('update:modelKey', currentKey.value);
