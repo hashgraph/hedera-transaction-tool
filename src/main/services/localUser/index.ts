@@ -4,6 +4,7 @@ export * from './accounts';
 export * from './files';
 export * from './transactions';
 export * from './transactionDrafts';
+export * from './complexKeys';
 
 import initDatabase, { createPrismaClient, deleteDatabase, setPrismaClient } from '../../db';
 

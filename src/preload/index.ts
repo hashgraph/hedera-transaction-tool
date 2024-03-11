@@ -4,6 +4,7 @@ import { ProgressInfo, UpdateInfo } from 'electron-updater';
 import { proto } from '@hashgraph/proto';
 
 import {
+  ComplexKey,
   HederaAccount,
   HederaFile,
   KeyPair,
@@ -116,6 +117,22 @@ export const electronAPI = {
       ipcRenderer.invoke('files:remove', userId, fileId),
     showContentInTemp: (userId: string, fileId: string): Promise<void> =>
       ipcRenderer.invoke('files:showContentInTemp', userId, fileId),
+  },
+  complexKeys: {
+    add: (complexKey: Prisma.ComplexKeyUncheckedCreateInput): Promise<ComplexKey[]> =>
+      ipcRenderer.invoke('complexKeys:add', complexKey),
+    getAll: (userId: string): Promise<ComplexKey[]> =>
+      ipcRenderer.invoke('complexKeys:getAll', userId),
+    complexKeyExists: (userId: string, protobufEncoded: string): Promise<boolean> =>
+      ipcRenderer.invoke('complexKeys:complexKeyExists', userId, protobufEncoded),
+    remove: (userId: string, protobufEncoded: string): Promise<ComplexKey[]> =>
+      ipcRenderer.invoke('complexKeys:remove', userId, protobufEncoded),
+    update: (
+      userId: string,
+      oldProtobufEncoded: string,
+      newProtobufEncoded: string,
+    ): Promise<ComplexKey[]> =>
+      ipcRenderer.invoke('complexKeys:update', userId, oldProtobufEncoded, newProtobufEncoded),
   },
   localUser: {
     login: (email: string, password: string, autoRegister?: boolean): Promise<User> =>
