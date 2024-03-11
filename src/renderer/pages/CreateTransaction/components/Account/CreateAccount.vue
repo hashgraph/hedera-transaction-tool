@@ -27,10 +27,10 @@ import {
   getTransactionFromBytes,
 } from '@renderer/utils/transactions';
 
-import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
+import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import KeyField from '@renderer/components/KeyField.vue';
 

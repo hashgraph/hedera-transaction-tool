@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, ref, reactive, watch, onMounted } from 'vue';
+import { ref, reactive, watch, onMounted } from 'vue';
 import {
   AccountId,
   AccountUpdateTransaction,
   KeyList,
-  PublicKey,
   Hbar,
   Transaction,
+  Key,
 } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
@@ -15,16 +15,16 @@ import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
-import { flattenKeyList } from '@renderer/services/keyPairService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
 import { getTransactionFromBytes } from '@renderer/utils/transactions';
-import { isAccountId, isPublicKey } from '@renderer/utils/validator';
+import { isAccountId } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
+import KeyField from '@renderer/components/KeyField.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
@@ -59,26 +59,11 @@ const newAccountData = reactive<{
   acceptStakingAwards: false,
   memo: '',
 });
-const newOwnerKeyText = ref('');
-const newOwnerKeys = ref<string[]>([]);
-
+const newOwnerKey = ref<Key | null>(null);
 const isKeyStructureModalShown = ref(false);
 const isExecuted = ref(false);
 
-/* Computed */
-const newOwnerKeyList = computed(
-  () => new KeyList(newOwnerKeys.value.map(key => PublicKey.fromString(key))),
-);
-
 /* Handlers */
-const handleAdd = () => {
-  newOwnerKeys.value.push(newOwnerKeyText.value);
-  newOwnerKeys.value = newOwnerKeys.value
-    .filter(isPublicKey)
-    .filter((pk, i) => newOwnerKeys.value.indexOf(pk) === i);
-  newOwnerKeyText.value = '';
-};
-
 const handleCreate = async e => {
   e.preventDefault();
 
@@ -93,11 +78,8 @@ const handleCreate = async e => {
 
     transaction.value = createTransaction();
 
-    const requiredKey = new KeyList([
-      payerData.key.value,
-      accountData.key.value,
-      newOwnerKeyList.value,
-    ]);
+    const requiredKey = new KeyList([payerData.key.value, accountData.key.value]);
+    newOwnerKey.value && requiredKey.push(newOwnerKey.value);
 
     await transactionProcessor.value?.process(requiredKey);
   } catch (err: any) {
@@ -126,7 +108,7 @@ const handleLoadFromDraft = async () => {
     newAccountData.memo = draftTransaction.accountMemo || '';
 
     if (draftTransaction.key) {
-      newOwnerKeys.value = flattenKeyList(draftTransaction.key).map(pk => pk.toStringRaw());
+      newOwnerKey.value = draftTransaction.key;
     }
 
     if (draftTransaction.stakedAccountId?.toString() !== '0.0.0') {
@@ -154,7 +136,7 @@ function createTransaction() {
   }
 
   isAccountId(accountData.accountId.value) && transaction.setAccountId(accountData.accountId.value);
-  newOwnerKeys.value.length > 0 && transaction.setKey(newOwnerKeyList.value);
+  newOwnerKey.value && transaction.setKey(newOwnerKey.value);
 
   if (!newAccountData.stakedAccountId && !newAccountData.stakedNodeId) {
     transaction.clearStakedAccountId();
@@ -199,6 +181,7 @@ watch(accountData.accountInfo, accountInfo => {
     newAccountData.stakedNodeId = '';
     newAccountData.acceptStakingAwards = false;
     newAccountData.memo = '';
+    newOwnerKey.value = null;
   } else if (!route.query.draftId) {
     newAccountData.receiverSignatureRequired = accountInfo.receiverSignatureRequired;
     newAccountData.maxAutomaticTokenAssociations = accountInfo.maxAutomaticTokenAssociations || 0;
@@ -207,6 +190,7 @@ watch(accountData.accountInfo, accountInfo => {
       accountInfo.stakedNodeId === 0 ? '' : accountInfo.stakedNodeId?.toString() || '';
     newAccountData.acceptStakingAwards = !accountInfo.declineReward;
     newAccountData.memo = accountInfo.memo || '';
+    newOwnerKey.value = accountInfo.key;
   }
 });
 
@@ -266,32 +250,7 @@ const columnClass = 'col-4 col-xxxl-3';
 
     <div class="row">
       <div class="form-group col-8 col-xxxl-6">
-        <label class="form-label">Keys</label>
-        <div class="d-flex gap-3">
-          <AppInput
-            v-model="newOwnerKeyText"
-            :filled="true"
-            placeholder="Enter new owner public key"
-          />
-        </div>
-      </div>
-
-      <div class="form-group col-4 col-xxxl-6 d-flex align-items-end">
-        <AppButton :outline="true" color="primary" type="button" @click="handleAdd">Add</AppButton>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="form-group col-8 col-xxxl-6">
-        <template v-for="key in newOwnerKeys" :key="key">
-          <div class="d-flex align-items-center gap-3 mt-4">
-            <AppInput readonly :filled="true" :model-value="key" />
-            <i
-              class="bi bi-x-lg cursor-pointer"
-              @click="newOwnerKeys = newOwnerKeys.filter(k => k !== key)"
-            ></i>
-          </div>
-        </template>
+        <KeyField :model-key="newOwnerKey" @update:model-key="key => (newOwnerKey = key)" />
       </div>
     </div>
 
