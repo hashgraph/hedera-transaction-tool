@@ -8,9 +8,9 @@ import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import { isPublicKey } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppListItem from '@renderer/components/ui/AppListItem.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import AppPublicKeyInput from '@renderer/components/ui/AppPublicKeyInput.vue';
 
 /* Props */
 const props = defineProps<{
@@ -63,13 +63,22 @@ const handleInsert = (e: Event) => {
           <div class="mt-4 overflow-auto" :style="{ height: '150px', paddingRight: '10px' }">
             <template v-for="kp in keyPairs.keyPairs" :key="kp.public_key">
               <div class="mt-3" @click="publicKey = kp.public_key">
-                <AppPublicKeyInput
-                  :model-value="kp.public_key"
-                  :label="kp.nickname || 'Public Key'"
-                  filled
-                  class="cursor-pointer"
-                  readonly
-                />
+                <AppListItem
+                  class="mt-3"
+                  :selected="publicKey === kp.public_key"
+                  :value="kp.public_key"
+                  @click="publicKey = kp.public_key"
+                >
+                  <div class="d-flex">
+                    <p class="text-nowrap">
+                      <span class="bi bi-key"></span>
+                      <span class="ms-2 text-nowrap">{{ kp.nickname || 'Public Key' }}</span>
+                    </p>
+                    <div class="border-start px-4 mx-4">
+                      <span>{{ kp.public_key }}</span>
+                    </div>
+                  </div>
+                </AppListItem>
               </div>
             </template>
           </div>
