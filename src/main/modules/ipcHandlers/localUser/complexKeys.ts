@@ -24,13 +24,13 @@ export default () => {
   // Returns true if the complex key exists
   ipcMain.handle(
     createChannelName('complexKeyExists'),
-    async (_e, userId: string, protobufEncoded: string) =>
-      complexKeyExists(userId, protobufEncoded),
+    async (_e, userId: string, keyListBytes: Uint8Array) => complexKeyExists(userId, keyListBytes),
   );
 
   // Delete complex key
-  ipcMain.handle(createChannelName('remove'), async (_e, userId: string, protobufEncoded: string) =>
-    removeComplexKey(userId, protobufEncoded),
+  ipcMain.handle(
+    createChannelName('remove'),
+    async (_e, userId: string, keyListBytes: Uint8Array) => removeComplexKey(userId, keyListBytes),
   );
 
   // Updates existing complex key

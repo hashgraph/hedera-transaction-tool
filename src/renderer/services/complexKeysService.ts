@@ -25,18 +25,18 @@ export const addComplexKey = async (
 };
 
 /* Checks whether complex key is already added */
-export const complexKeyExists = async (userId: string, protobufEncoded: string) => {
+export const complexKeyExists = async (userId: string, keyListBytes: Uint8Array) => {
   try {
-    return await window.electronAPI.complexKeys.complexKeyExists(userId, protobufEncoded);
+    return await window.electronAPI.complexKeys.complexKeyExists(userId, keyListBytes);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, `Failed to check wheter complex key exists`));
   }
 };
 
 /* Removes complex key */
-export const deleteComplexKey = async (userId: string, protobufEncoded: string) => {
+export const deleteComplexKey = async (userId: string, keyListBytes: Uint8Array) => {
   try {
-    return await window.electronAPI.complexKeys.remove(userId, protobufEncoded);
+    return await window.electronAPI.complexKeys.remove(userId, keyListBytes);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, `Failed to remove complex key`));
   }

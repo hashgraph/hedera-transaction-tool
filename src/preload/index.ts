@@ -123,10 +123,10 @@ export const electronAPI = {
       ipcRenderer.invoke('complexKeys:add', userId, keyListBytes, nickname),
     getAll: (userId: string): Promise<ComplexKey[]> =>
       ipcRenderer.invoke('complexKeys:getAll', userId),
-    complexKeyExists: (userId: string, protobufEncoded: string): Promise<boolean> =>
-      ipcRenderer.invoke('complexKeys:complexKeyExists', userId, protobufEncoded),
-    remove: (userId: string, protobufEncoded: string): Promise<ComplexKey[]> =>
-      ipcRenderer.invoke('complexKeys:remove', userId, protobufEncoded),
+    complexKeyExists: (userId: string, keyListBytes: Uint8Array): Promise<boolean> =>
+      ipcRenderer.invoke('complexKeys:complexKeyExists', userId, keyListBytes),
+    remove: (userId: string, keyListBytes: Uint8Array): Promise<ComplexKey[]> =>
+      ipcRenderer.invoke('complexKeys:remove', userId, keyListBytes),
     update: (
       userId: string,
       oldKeyListBytes: Uint8Array,

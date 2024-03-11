@@ -21,8 +21,10 @@ export const getComplexKeys = async (userId: string) => {
   }
 };
 
-export const complexKeyExists = async (userId: string, protobufEncoded: string) => {
+export const complexKeyExists = async (userId: string, keyListBytes: Uint8Array) => {
   const prisma = getPrismaClient();
+
+  const protobufEncoded = Buffer.from(keyListBytes).toString('hex');
 
   const count = await prisma.complexKey.count({
     where: {
@@ -39,7 +41,7 @@ export const addComplexKey = async (userId: string, keyListBytes: Uint8Array, ni
 
   const protobufEncoded = Buffer.from(keyListBytes).toString('hex');
 
-  const exists = await complexKeyExists(userId, protobufEncoded);
+  const exists = await complexKeyExists(userId, keyListBytes);
 
   if (exists) {
     throw new Error('Complex key already exists!');
@@ -56,14 +58,16 @@ export const addComplexKey = async (userId: string, keyListBytes: Uint8Array, ni
   return await getComplexKeys(userId);
 };
 
-export const removeComplexKey = async (userId: string, protobufEncoded: string) => {
+export const removeComplexKey = async (userId: string, keyListBytes: Uint8Array) => {
   const prisma = getPrismaClient();
 
-  const exists = await complexKeyExists(userId, protobufEncoded);
+  const exists = await complexKeyExists(userId, keyListBytes);
 
   if (!exists) {
     throw new Error(`Complex key not found!`);
   }
+
+  const protobufEncoded = Buffer.from(keyListBytes).toString('hex');
 
   await prisma.complexKey.deleteMany({
     where: {
