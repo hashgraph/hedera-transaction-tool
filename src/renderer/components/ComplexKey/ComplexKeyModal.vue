@@ -1,40 +1,29 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 
-import { KeyList } from '@hashgraph/sdk';
-import { ComplexKey as StoredComplexKey } from '@prisma/client';
+import { Key, KeyList } from '@hashgraph/sdk';
 
-import { useToast } from 'vue-toast-notification';
-
-import { updateComplexKey } from '@renderer/services/complexKeysService';
-
-import { isKeyListValid, encodeKeyList, decodeKeyList } from '@renderer/utils/sdk';
+import { isKeyListValid } from '@renderer/utils/sdk';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import ComplexKey from '@renderer/components/ComplexKey/ComplexKey.vue';
-import ComplexKeySaveKeyModal from '@renderer/components/ComplexKey/ComplexKeySaveKeyModal.vue';
 import KeyStructure from '@renderer/components/KeyStructure.vue';
 
 /* Props */
 const props = defineProps<{
-  modelKey: StoredComplexKey | null;
+  modelKey: Key | null;
   show: boolean;
+  onSaveComplexKey?: () => void;
 }>();
 
 /* Emits */
 const emit = defineEmits(['update:show', 'update:modelKey']);
 
-/* Computed */
-const toast = useToast();
-
 /* State */
-const currentKey = ref<KeyList | null>(
-  props.modelKey ? decodeKeyList(props.modelKey.protobufEncoded) : null,
-);
+const currentKey = ref<Key | null>(props.modelKey);
 const errorModalShow = ref(false);
-const saveKeyListModalShown = ref(false);
 const summaryMode = ref(false);
 
 /* Computed */
@@ -49,6 +38,19 @@ const handleShowUpdate = show => emit('update:show', show);
 
 const handleComplexKeyUpdate = (key: KeyList) => (currentKey.value = key);
 
+const handleSaveComplexKeyButtonClick = () => {
+  if (currentKeyInvalid.value) {
+    errorModalShow.value = true;
+    return;
+  }
+
+  emit('update:modelKey', currentKey.value);
+
+  if (props.onSaveComplexKey) {
+    props.onSaveComplexKey();
+  }
+};
+
 const handleSaveButtonClick = async e => {
   e.preventDefault();
 
@@ -57,25 +59,7 @@ const handleSaveButtonClick = async e => {
     return;
   }
 
-  const keyListBytes = encodeKeyList(currentKey.value as KeyList);
-
-  if (props.modelKey) {
-    const updatedKey = await updateComplexKey(props.modelKey.id, keyListBytes);
-    emit('update:modelKey', updatedKey);
-    handleShowUpdate(false);
-    toast.success('Key list updated successfully', { position: 'bottom-right' });
-  } else {
-    saveKeyListModalShown.value = true;
-  }
-};
-
-const handleSaveKeyList = async (complexKey: StoredComplexKey) => {
-  emit('update:modelKey', complexKey);
-  handleShowUpdate(false);
-  saveKeyListModalShown.value = false;
-};
-
-const handleClose = () => {
+  emit('update:modelKey', currentKey.value);
   emit('update:show', false);
 };
 
@@ -83,7 +67,7 @@ const handleClose = () => {
 watch(
   () => props.show,
   () => {
-    currentKey.value = props.modelKey ? decodeKeyList(props.modelKey.protobufEncoded) : null;
+    currentKey.value = props.modelKey;
   },
 );
 
@@ -95,7 +79,7 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
     <div class="p-5 h-100">
       <form @submit="handleSaveButtonClick" class="h-100">
         <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="handleClose"></i>
+          <i class="bi bi-x-lg cursor-pointer" @click="$emit('update:show', false)"></i>
         </div>
         <h1 class="text-title text-semi-bold text-center">Complex Key</h1>
         <div :style="modalContentContainerStyle">
@@ -103,6 +87,14 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
             <AppButton type="button" class="text-body" @click="summaryMode = !summaryMode">{{
               summaryMode ? 'Edit Mode' : 'View Summary'
             }}</AppButton>
+            <AppButton
+              v-if="onSaveComplexKey && !currentKeyInvalid"
+              type="button"
+              color="primary"
+              class="ms-3"
+              @click="handleSaveComplexKeyButtonClick"
+              >Save Complex Key</AppButton
+            >
             <AppButton type="submit" color="primary" class="ms-3">Save</AppButton>
           </div>
           <div v-if="show" class="mt-5 h-100 overflow-auto">
@@ -147,11 +139,6 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
         </div>
       </div>
     </AppModal>
-    <ComplexKeySaveKeyModal
-      v-if="currentKey"
-      v-model:show="saveKeyListModalShown"
-      :key-list="currentKey"
-      :on-complex-key-save="handleSaveKeyList"
-    />
+    <slot></slot>
   </AppModal>
 </template>

@@ -181,6 +181,7 @@ watch(accountData.accountInfo, accountInfo => {
     newAccountData.stakedNodeId = '';
     newAccountData.acceptStakingAwards = false;
     newAccountData.memo = '';
+    newOwnerKey.value = null;
   } else if (!route.query.draftId) {
     newAccountData.receiverSignatureRequired = accountInfo.receiverSignatureRequired;
     newAccountData.maxAutomaticTokenAssociations = accountInfo.maxAutomaticTokenAssociations || 0;
@@ -189,6 +190,7 @@ watch(accountData.accountInfo, accountInfo => {
       accountInfo.stakedNodeId === 0 ? '' : accountInfo.stakedNodeId?.toString() || '';
     newAccountData.acceptStakingAwards = !accountInfo.declineReward;
     newAccountData.memo = accountInfo.memo || '';
+    newOwnerKey.value = accountInfo.key;
   }
 });
 

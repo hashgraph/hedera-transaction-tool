@@ -3,21 +3,27 @@ import { ref, watch } from 'vue';
 
 import { ComplexKey } from '@prisma/client';
 
-import { Key, PublicKey } from '@hashgraph/sdk';
+import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
+import useUserStore from '@renderer/stores/storeUser';
+
+import { useToast } from 'vue-toast-notification';
+
+import { getComplexKey, updateComplexKey } from '@renderer/services/complexKeysService';
 
 import { isPublicKey } from '@renderer/utils/validator';
-import { decodeKeyList } from '@renderer/utils/sdk';
+import { decodeKeyList, encodeKeyList } from '@renderer/utils/sdk';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppPublicKeyInput from '@renderer/components/ui/AppPublicKeyInput.vue';
 import ComplexKeyModal from '@renderer/components/ComplexKey/ComplexKeyModal.vue';
 import ComplexKeyAddPublicKeyModal from '@renderer/components/ComplexKey/ComplexKeyAddPublicKeyModal.vue';
 import ComplexKeySelectSavedKey from './ComplexKey/ComplexKeySelectSavedKey.vue';
+import ComplexKeySaveKeyModal from '@renderer/components/ComplexKey/ComplexKeySaveKeyModal.vue';
 
 /* Props */
-withDefaults(
+const props = withDefaults(
   defineProps<{
     modelKey: Key | null;
     isRequired?: boolean;
@@ -39,6 +45,10 @@ enum Tabs {
 
 /* Stores */
 const keyPairs = useKeyPairsStore();
+const user = useUserStore();
+
+/* Composables */
+const toast = useToast();
 
 /* State */
 const currentTab = ref(Tabs.SIGNLE);
@@ -47,6 +57,7 @@ const selectedComplexKey = ref<ComplexKey | null>(null);
 const complexKeyModalShown = ref(false);
 const addPublicKeyModalShown = ref(false);
 const selectSavedKeyModalShown = ref(false);
+const saveKeyListModalShown = ref(false);
 
 /* Handlers */
 const handleTabChange = (tab: Tabs) => {
@@ -77,21 +88,54 @@ const handleDeselectComplexKey = () => {
   emit('update:modelKey', null);
 };
 
+const handleSaveKeyList = async (complexKey: ComplexKey) => {
+  selectedComplexKey.value = complexKey;
+  complexKeyModalShown.value = false;
+  saveKeyListModalShown.value = false;
+};
+
 const handleEditComplexKey = () => {
   complexKeyModalShown.value = true;
 };
 
-const handleComplexKeyUpdate = (complexKey: ComplexKey) => {
-  selectedComplexKey.value = complexKey;
-  emit('update:modelKey', decodeKeyList(complexKey.protobufEncoded));
+const handleComplexKeyUpdate = async (keyList: KeyList) => {
+  emit('update:modelKey', keyList);
+
+  if (selectedComplexKey.value) {
+    const keyListBytes = encodeKeyList(keyList);
+    const updatedKey = await updateComplexKey(selectedComplexKey.value.id, keyListBytes);
+    selectedComplexKey.value = updatedKey;
+    toast.success('Key list updated successfully', { position: 'bottom-right' });
+  }
+};
+
+const handleSaveComplexKeyButtonClick = () => {
+  saveKeyListModalShown.value = true;
 };
 
 /* Watchers */
 watch(currentTab, tab => {
-  if (tab === Tabs.COMPLEX && selectedComplexKey.value) {
-    emit('update:modelKey', decodeKeyList(selectedComplexKey.value.protobufEncoded));
+  if (tab === Tabs.COMPLEX) {
+    if (props.modelKey instanceof KeyList) {
+      return;
+    } else if (selectedComplexKey.value) {
+      emit('update:modelKey', decodeKeyList(selectedComplexKey.value.protobufEncoded));
+    } else {
+      emit('update:modelKey', null);
+    }
   } else {
     emit('update:modelKey', null);
+  }
+});
+
+watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) => {
+  if (newKey instanceof PublicKey && newInputRef?.inputRef?.inputRef) {
+    newInputRef.inputRef.inputRef.value = newKey.toStringRaw();
+  } else if (newKey instanceof KeyList) {
+    selectedComplexKey.value = (await getComplexKey(user.data.id, newKey)) || null;
+    currentTab.value = Tabs.COMPLEX;
+  } else if (newInputRef?.inputRef?.inputRef) {
+    newInputRef.inputRef.inputRef.value = '';
   }
 });
 </script>
@@ -146,9 +190,17 @@ watch(currentTab, tab => {
       <template v-if="currentTab === Tabs.COMPLEX">
         <ComplexKeyModal
           v-model:show="complexKeyModalShown"
-          :model-key="selectedComplexKey"
+          :model-key="modelKey"
           @update:model-key="handleComplexKeyUpdate"
-        />
+          :on-save-complex-key="selectedComplexKey ? undefined : handleSaveComplexKeyButtonClick"
+        >
+          <ComplexKeySaveKeyModal
+            v-if="saveKeyListModalShown && modelKey instanceof KeyList && true"
+            v-model:show="saveKeyListModalShown"
+            :key-list="modelKey"
+            :on-complex-key-save="handleSaveKeyList"
+          />
+        </ComplexKeyModal>
         <div class="d-flex mt-5">
           <p class="text-purple cursor-pointer" @click="complexKeyModalShown = true">
             <span class="bi bi-plus-lg"></span><span>Create new</span>
@@ -156,12 +208,12 @@ watch(currentTab, tab => {
           <p class="cursor-pointer ms-3" @click="selectSavedKeyModalShown = true">Add Existing</p>
         </div>
         <div
-          class="key-node d-flex justify-content-between key-threshhold-bg text-white rounded py-4 px-3 mt-3 cursor-pointer"
-          v-if="selectedComplexKey"
+          class="key-node d-flex justify-content-between key-threshhold-bg text-white rounded py-4 px-3 mt-3"
+          v-if="modelKey instanceof KeyList && true"
         >
           <div class="col-11 d-flex align-items-center text-small">
             <div class="text-semi-bold text-truncate" style="max-width: 35%">
-              {{ selectedComplexKey.nickname }}
+              {{ selectedComplexKey ? selectedComplexKey.nickname : 'Unsaved Key List' }}
             </div>
 
             <div class="d-flex align-items-center border-start border-secondary-subtle ms-4">
@@ -175,16 +227,13 @@ watch(currentTab, tab => {
                 <span class="bi bi-pencil"></span>
                 <span class="ms-3">Edit</span>
               </AppButton>
-              <p class="text-secondary ms-3">
+              <p v-if="selectedComplexKey" class="text-secondary ms-3">
                 {{ selectedComplexKey.updated_at.toDateString() }}
               </p>
             </div>
           </div>
           <div class="col-1 flex-centered">
-            <span
-              class="bi bi-trash text-danger cursor-pointer"
-              @click="handleDeselectComplexKey"
-            ></span>
+            <span class="bi bi-x-lg cursor-pointer" @click="handleDeselectComplexKey"></span>
           </div>
         </div>
         <ComplexKeySelectSavedKey

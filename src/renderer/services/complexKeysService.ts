@@ -1,4 +1,6 @@
+import { KeyList } from '@hashgraph/sdk';
 import { getMessageFromIPCError } from '@renderer/utils';
+import { encodeKeyList } from '@renderer/utils/sdk';
 
 /* Complex Keys Service */
 
@@ -49,4 +51,14 @@ export const updateComplexKey = async (id: string, newKeyListBytes: Uint8Array) 
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, `Failed to update complex key`));
   }
+};
+
+export const getComplexKey = async (userId: string, keyList: KeyList) => {
+  const bytes = encodeKeyList(keyList);
+
+  const savedKeys = await getComplexKeys(userId);
+
+  return savedKeys.find(key => {
+    return key.protobufEncoded === bytes.toString();
+  });
 };
