@@ -1,0 +1,123 @@
+<script setup lang="ts">
+import { onBeforeMount, ref } from 'vue';
+
+import { ComplexKey } from '@prisma/client';
+
+import useUserStore from '@renderer/stores/storeUser';
+
+import { getComplexKeys } from '@renderer/services/complexKeysService';
+
+import { decodeKeyList } from '@renderer/utils/sdk';
+
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
+
+/* Props */
+const props = defineProps<{
+  show: boolean;
+  onKeyListSelect: (complexKey: ComplexKey) => void;
+}>();
+
+/* Emits */
+const emit = defineEmits(['update:show']);
+
+/* Stores */
+const user = useUserStore();
+
+/* State */
+const keyLists = ref<ComplexKey[]>([]);
+const complexKey = ref<ComplexKey | null>(null);
+const search = ref('');
+
+/* Handlers */
+const handleShowUpdate = show => emit('update:show', show);
+
+const handleSelectKeyList = (kl: ComplexKey) => {
+  complexKey.value = kl;
+};
+
+const handleDone = (e: Event) => {
+  e.preventDefault();
+
+  if (complexKey.value) {
+    props.onKeyListSelect(complexKey.value);
+    handleShowUpdate(false);
+  }
+};
+
+/* Hooks */
+onBeforeMount(async () => {
+  keyLists.value = await getComplexKeys(user.data.id);
+});
+</script>
+<template>
+  <AppModal :show="show" @update:show="handleShowUpdate" class="medium-modal">
+    <div class="p-4">
+      <form @submit="handleDone">
+        <div>
+          <i class="bi bi-x-lg cursor-pointer" @click="$emit('update:show', false)"></i>
+        </div>
+        <h1 class="text-title text-center">Saved Complex Keys</h1>
+        <div class="mt-5">
+          <AppInput
+            v-model:model-value="search"
+            filled
+            type="text"
+            placeholder="Search Complex Key"
+          />
+        </div>
+        <hr class="separator my-5" />
+        <div>
+          <div class="overflow-auto" :style="{ height: '20vh', paddingRight: '10px' }">
+            <template
+              v-for="kl in keyLists.filter(
+                kl =>
+                  kl.nickname.toLocaleLowerCase().includes(search.toLocaleLowerCase()) ||
+                  decodeKeyList(kl.protobufEncoded).toArray().length.toString().includes(search) ||
+                  decodeKeyList(kl.protobufEncoded).threshold ||
+                  '' == search,
+              )"
+              :key="kl.id"
+            >
+              <div
+                class="key-node d-flex justify-content-between key-threshhold-bg text-white rounded py-4 px-3 mt-3 cursor-pointer"
+                @click="handleSelectKeyList(kl)"
+              >
+                <div class="d-flex align-items-center text-small">
+                  <p class="text-semi-bold ms-3">{{ kl.nickname }}</p>
+                  <p
+                    class="text-body bg-dark-blue-700 flex-centered rounded ms-3"
+                    style="width: 36px; height: 36px"
+                  >
+                    {{
+                      decodeKeyList(kl.protobufEncoded).threshold ||
+                      decodeKeyList(kl.protobufEncoded).toArray().length
+                    }}
+                  </p>
+                  <p class="text-secondary ms-3">
+                    of {{ decodeKeyList(kl.protobufEncoded).toArray().length }}
+                  </p>
+                  <p class="text-secondary border-start border-secondary-subtle ps-4 ms-4">
+                    {{ kl.updated_at.toDateString() }}
+                  </p>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+        <hr class="separator my-5" />
+        <div class="row justify-content-between">
+          <div class="col-4 d-grid">
+            <AppButton color="secondary" type="button" @click="handleShowUpdate(false)"
+              >Cancel</AppButton
+            >
+          </div>
+          <div class="col-4 d-grid">
+            <AppButton color="primary" type="submit" :disabled="!complexKey">Done</AppButton>
+          </div>
+        </div>
+      </form>
+    </div>
+  </AppModal>
+</template>
