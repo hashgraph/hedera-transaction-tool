@@ -566,11 +566,17 @@ watch(files, newFiles => {
             Are you sure you want to remove this file from your file list?
           </p>
           <hr class="separator my-5" />
-          <div class="d-grid">
-            <AppButton color="primary" @click="handleUnlinkFile">Unlink</AppButton>
-            <AppButton color="secondary" class="mt-4" @click="isUnlinkFileModalShown = false"
-              >Cancel</AppButton
-            >
+          <div class="row mt-4">
+            <div class="col-6 d-grid">
+              <AppButton color="secondary" @click="isUnlinkFileModalShown = false"
+                >Cancel</AppButton
+              >
+            </div>
+            <div class="col-6 d-grid">
+              <AppButton :outline="true" color="primary" @click="handleUnlinkFile"
+                >Unlink</AppButton
+              >
+            </div>
           </div>
         </div>
       </AppModal>
