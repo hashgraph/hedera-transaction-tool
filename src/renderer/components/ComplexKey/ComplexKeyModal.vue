@@ -1,44 +1,41 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 
-import { Key, KeyList } from '@hashgraph/sdk';
-
-import useUserStore from '@renderer/stores/storeUser';
+import { KeyList } from '@hashgraph/sdk';
+import { ComplexKey as StoredComplexKey } from '@prisma/client';
 
 import { useToast } from 'vue-toast-notification';
 
-import { complexKeyExists, addComplexKey } from '@renderer/services/complexKeysService';
+import { updateComplexKey } from '@renderer/services/complexKeysService';
 
-import { isKeyListValid, encodeKeyList } from '@renderer/utils/sdk';
+import { isKeyListValid, encodeKeyList, decodeKeyList } from '@renderer/utils/sdk';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import ComplexKey from '@renderer/components/ComplexKey/ComplexKey.vue';
+import ComplexKeySaveKeyModal from '@renderer/components/ComplexKey/ComplexKeySaveKeyModal.vue';
 import KeyStructure from '@renderer/components/KeyStructure.vue';
 
 /* Props */
 const props = defineProps<{
-  modelKey: Key | null;
+  modelKey: StoredComplexKey | null;
   show: boolean;
 }>();
 
 /* Emits */
 const emit = defineEmits(['update:show', 'update:modelKey']);
 
-/* Stores */
-const user = useUserStore();
-
-/* Composables */
+/* Computed */
 const toast = useToast();
 
 /* State */
-const currentKey = ref<Key | null>(props.modelKey);
+const currentKey = ref<KeyList | null>(
+  props.modelKey ? decodeKeyList(props.modelKey.protobufEncoded) : null,
+);
 const errorModalShow = ref(false);
 const saveKeyListModalShown = ref(false);
 const summaryMode = ref(false);
-const keyListNickname = ref('');
 
 /* Computed */
 const currentKeyInvalid = computed(
@@ -52,18 +49,7 @@ const handleShowUpdate = show => emit('update:show', show);
 
 const handleComplexKeyUpdate = (key: KeyList) => (currentKey.value = key);
 
-const handleSaveButtonClick = e => {
-  e.preventDefault();
-
-  if (currentKeyInvalid.value) {
-    errorModalShow.value = true;
-    return;
-  }
-
-  saveKeyListModalShown.value = true;
-};
-
-const handleSaveKeyList = async e => {
+const handleSaveButtonClick = async e => {
   e.preventDefault();
 
   if (currentKeyInvalid.value) {
@@ -73,16 +59,18 @@ const handleSaveKeyList = async e => {
 
   const keyListBytes = encodeKeyList(currentKey.value as KeyList);
 
-  const exists = await complexKeyExists(user.data.id, keyListBytes);
-
-  if (exists) {
-    console.log('Key already exists');
+  if (props.modelKey) {
+    const updatedKey = await updateComplexKey(props.modelKey.id, keyListBytes);
+    emit('update:modelKey', updatedKey);
+    handleShowUpdate(false);
+    toast.success('Key list updated successfully', { position: 'bottom-right' });
   } else {
-    await addComplexKey(user.data.id, keyListBytes, keyListNickname.value);
-    toast.success('Key list saved successfully', { position: 'bottom-right' });
+    saveKeyListModalShown.value = true;
   }
+};
 
-  emit('update:modelKey', currentKey.value);
+const handleSaveKeyList = async (complexKey: StoredComplexKey) => {
+  emit('update:modelKey', complexKey);
   handleShowUpdate(false);
   saveKeyListModalShown.value = false;
 };
@@ -95,7 +83,7 @@ const handleClose = () => {
 watch(
   () => props.show,
   () => {
-    currentKey.value = props.modelKey;
+    currentKey.value = props.modelKey ? decodeKeyList(props.modelKey.protobufEncoded) : null;
   },
 );
 
@@ -159,39 +147,11 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
         </div>
       </div>
     </AppModal>
-    <AppModal
+    <ComplexKeySaveKeyModal
+      v-if="currentKey"
       v-model:show="saveKeyListModalShown"
-      class="common-modal"
-      :close-on-click-outside="false"
-      :close-on-escape="false"
-    >
-      <div class="p-5">
-        <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="saveKeyListModalShown = false"></i>
-        </div>
-        <form class="mt-3" @submit="handleSaveKeyList">
-          <h3 class="text-center text-title text-bold">Enter your password</h3>
-          <div class="form-group mt-5 mb-4">
-            <label class="form-label">Nickname</label>
-            <AppInput
-              v-model:model-value="keyListNickname"
-              :filled="true"
-              placeholder="Enter Name of Key List"
-            />
-          </div>
-          <hr class="separator" />
-          <div class="row mt-4">
-            <div class="col-6 d-grid">
-              <AppButton color="secondary" type="button" @click="saveKeyListModalShown = false"
-                >Cancel</AppButton
-              >
-            </div>
-            <div class="col-6 d-grid">
-              <AppButton color="primary" :disabled="keyListNickname.length === 0">Save</AppButton>
-            </div>
-          </div>
-        </form>
-      </div>
-    </AppModal>
+      :key-list="currentKey"
+      :on-complex-key-save="handleSaveKeyList"
+    />
   </AppModal>
 </template>

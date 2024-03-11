@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
+import { Key, KeyList } from '@hashgraph/sdk';
 
 import ComplexKeyThreshold from '@renderer/components/ComplexKey/ComplexKeyThreshold.vue';
 
@@ -29,9 +29,6 @@ const handleKeyListRemove = () => {
 onMounted(() => {
   if (props.modelKey instanceof KeyList) {
     keyList.value = props.modelKey;
-  } else if (props.modelKey instanceof PublicKey) {
-    keyList.value = new KeyList([props.modelKey]);
-    emit('update:modelKey', keyList.value);
   }
 });
 </script>

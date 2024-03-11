@@ -1,21 +1,23 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
-import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
+import { ComplexKey } from '@prisma/client';
+
+import { Key, PublicKey } from '@hashgraph/sdk';
 
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import { isPublicKey } from '@renderer/utils/validator';
+import { decodeKeyList } from '@renderer/utils/sdk';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppPublicKeyInput from '@renderer/components/ui/AppPublicKeyInput.vue';
 import ComplexKeyModal from '@renderer/components/ComplexKey/ComplexKeyModal.vue';
 import ComplexKeyAddPublicKeyModal from '@renderer/components/ComplexKey/ComplexKeyAddPublicKeyModal.vue';
-import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
-import { flattenKeyList } from '@renderer/services/keyPairService';
+import ComplexKeySelectSavedKey from './ComplexKey/ComplexKeySelectSavedKey.vue';
 
 /* Props */
-const props = withDefaults(
+withDefaults(
   defineProps<{
     modelKey: Key | null;
     isRequired?: boolean;
@@ -41,14 +43,14 @@ const keyPairs = useKeyPairsStore();
 /* State */
 const currentTab = ref(Tabs.SIGNLE);
 const publicKeyInputRef = ref<InstanceType<typeof AppPublicKeyInput> | null>(null);
+const selectedComplexKey = ref<ComplexKey | null>(null);
 const complexKeyModalShown = ref(false);
-const keyStructureModalShown = ref(false);
 const addPublicKeyModalShown = ref(false);
+const selectSavedKeyModalShown = ref(false);
 
 /* Handlers */
 const handleTabChange = (tab: Tabs) => {
   currentTab.value = tab;
-  complexKeyModalShown.value = tab === Tabs.COMPLEX;
 };
 
 const handlePublicKeyChange = (value: string) => {
@@ -64,34 +66,32 @@ const handleAddPublicKey = (key: PublicKey) => {
   addPublicKeyModalShown.value = false;
 };
 
+const handleSelectSavedComplexKey = (complexKey: ComplexKey) => {
+  selectedComplexKey.value = complexKey;
+  emit('update:modelKey', decodeKeyList(complexKey.protobufEncoded));
+  selectSavedKeyModalShown.value = false;
+};
+
+const handleDeselectComplexKey = () => {
+  selectedComplexKey.value = null;
+  emit('update:modelKey', null);
+};
+
+const handleEditComplexKey = () => {
+  complexKeyModalShown.value = true;
+};
+
+const handleComplexKeyUpdate = (complexKey: ComplexKey) => {
+  selectedComplexKey.value = complexKey;
+  emit('update:modelKey', decodeKeyList(complexKey.protobufEncoded));
+};
+
 /* Watchers */
-watch([() => props.modelKey, currentTab, publicKeyInputRef], value => {
-  const [newKey] = value;
-
-  if (
-    newKey &&
-    currentTab.value === Tabs.SIGNLE &&
-    newKey instanceof PublicKey &&
-    publicKeyInputRef.value?.inputRef?.inputRef
-  ) {
-    publicKeyInputRef.value.inputRef.inputRef.value = newKey.toStringRaw();
-  }
-
-  if (newKey instanceof KeyList && currentTab.value === Tabs.SIGNLE) {
-    currentTab.value = Tabs.COMPLEX;
-  }
-});
-
 watch(currentTab, tab => {
-  if (tab === Tabs.SIGNLE && props.modelKey instanceof KeyList) {
-    const publicKeys = flattenKeyList(props.modelKey);
-    publicKeys.length > 0 && emit('update:modelKey', publicKeys[0]);
-  }
-});
-
-watch(complexKeyModalShown, show => {
-  if (!show && props.modelKey === null) {
-    currentTab.value = Tabs.SIGNLE;
+  if (tab === Tabs.COMPLEX && selectedComplexKey.value) {
+    emit('update:modelKey', decodeKeyList(selectedComplexKey.value.protobufEncoded));
+  } else {
+    emit('update:modelKey', null);
   }
 });
 </script>
@@ -102,11 +102,10 @@ watch(complexKeyModalShown, show => {
     >
     <div class="btn-group-container row gx-1" role="group">
       <template v-for="(tab, index) in Object.values(Tabs)" :key="tab">
-        <div class="col-6">
+        <div class="col-6 d-grid">
           <AppButton
             :color="currentTab === tab ? 'primary' : undefined"
             type="button"
-            class="w-100"
             :class="{
               active: tab === currentTab,
               'text-body': tab !== currentTab,
@@ -147,19 +146,52 @@ watch(complexKeyModalShown, show => {
       <template v-if="currentTab === Tabs.COMPLEX">
         <ComplexKeyModal
           v-model:show="complexKeyModalShown"
-          :model-key="modelKey"
-          @update:model-key="key => emit('update:modelKey', key)"
+          :model-key="selectedComplexKey"
+          @update:model-key="handleComplexKeyUpdate"
         />
-        <div class="d-grid mt-4">
-          <AppButton
-            v-if="modelKey"
-            color="primary"
-            type="button"
-            @click="keyStructureModalShown = true"
-            >Show Key</AppButton
-          >
-          <KeyStructureModal v-model:show="keyStructureModalShown" :account-key="modelKey" />
+        <div class="d-flex mt-5">
+          <p class="text-purple cursor-pointer" @click="complexKeyModalShown = true">
+            <span class="bi bi-plus-lg"></span><span>Create new</span>
+          </p>
+          <p class="cursor-pointer ms-3" @click="selectSavedKeyModalShown = true">Add Existing</p>
         </div>
+        <div
+          class="key-node d-flex justify-content-between key-threshhold-bg text-white rounded py-4 px-3 mt-3 cursor-pointer"
+          v-if="selectedComplexKey"
+        >
+          <div class="col-11 d-flex align-items-center text-small">
+            <div class="text-semi-bold text-truncate" style="max-width: 35%">
+              {{ selectedComplexKey.nickname }}
+            </div>
+
+            <div class="d-flex align-items-center border-start border-secondary-subtle ms-4">
+              <AppButton
+                type="button"
+                size="small"
+                color="primary"
+                class="ms-4"
+                @click="handleEditComplexKey"
+              >
+                <span class="bi bi-pencil"></span>
+                <span class="ms-3">Edit</span>
+              </AppButton>
+              <p class="text-secondary ms-3">
+                {{ selectedComplexKey.updated_at.toDateString() }}
+              </p>
+            </div>
+          </div>
+          <div class="col-1 flex-centered">
+            <span
+              class="bi bi-trash text-danger cursor-pointer"
+              @click="handleDeselectComplexKey"
+            ></span>
+          </div>
+        </div>
+        <ComplexKeySelectSavedKey
+          v-if="selectSavedKeyModalShown"
+          v-model:show="selectSavedKeyModalShown"
+          :on-key-list-select="handleSelectSavedComplexKey"
+        />
       </template>
     </div>
   </div>
