@@ -99,7 +99,7 @@ onMounted(async () => {
         <hr class="separator my-5" />
         <div>
           <h3 class="text-small">Recent</h3>
-          <div class="mt-4 overflow-auto" :style="{ height: '150px', paddingRight: '10px' }">
+          <div class="mt-4 overflow-auto" :style="{ height: '158px' }">
             <template v-for="account in accountIdsList" :key="account.accountId">
               <AppListItem
                 class="mt-3"

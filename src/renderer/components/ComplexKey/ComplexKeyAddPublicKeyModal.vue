@@ -60,26 +60,24 @@ const handleInsert = (e: Event) => {
         <hr class="separator my-5" />
         <div>
           <h3 class="text-small">Recent</h3>
-          <div class="mt-4 overflow-auto" :style="{ height: '150px', paddingRight: '10px' }">
+          <div class="mt-4 overflow-auto" :style="{ height: '158px' }">
             <template v-for="kp in keyPairs.keyPairs" :key="kp.public_key">
-              <div class="mt-3" @click="publicKey = kp.public_key">
-                <AppListItem
-                  class="mt-3"
-                  :selected="publicKey === kp.public_key"
-                  :value="kp.public_key"
-                  @click="publicKey = kp.public_key"
-                >
-                  <div class="d-flex">
-                    <p class="text-nowrap">
-                      <span class="bi bi-key"></span>
-                      <span class="ms-2 text-nowrap">{{ kp.nickname || 'Public Key' }}</span>
-                    </p>
-                    <div class="border-start px-4 mx-4">
-                      <span>{{ kp.public_key }}</span>
-                    </div>
+              <AppListItem
+                class="mt-3"
+                :selected="publicKey === kp.public_key"
+                :value="kp.public_key"
+                @click="publicKey = kp.public_key"
+              >
+                <div class="d-flex overflow-hidden">
+                  <p class="text-nowrap">
+                    <span class="bi bi-key m-2"></span>
+                    <span class="ms-2 text-nowrap">{{ kp.nickname || 'Public Key' }}</span>
+                  </p>
+                  <div class="border-start px-4 mx-4">
+                    <span>{{ kp.public_key }}</span>
                   </div>
-                </AppListItem>
-              </div>
+                </div>
+              </AppListItem>
             </template>
           </div>
         </div>
