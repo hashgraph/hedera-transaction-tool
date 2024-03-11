@@ -79,7 +79,7 @@ onBeforeMount(async () => {
         <div>
           <i class="bi bi-x-lg cursor-pointer" @click="$emit('update:show', false)"></i>
         </div>
-        <h1 class="text-title text-center">Saved Complex Keys</h1>
+        <h1 class="text-title text-semi-bold text-center">Saved Complex Keys</h1>
         <div class="mt-5">
           <AppInput
             v-model:model-value="search"
