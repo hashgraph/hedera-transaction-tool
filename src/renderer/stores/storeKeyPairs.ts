@@ -2,13 +2,13 @@ import { computed, onMounted, ref } from 'vue';
 import { defineStore } from 'pinia';
 
 import { KeyPair, Prisma } from '@prisma/client';
+import { AccountInfo } from '@main/shared/interfaces';
 
 import useNetworkStore from './storeNetwork';
 import useUserStore from './storeUser';
 
 import * as keyPairService from '@renderer/services/keyPairService';
 import * as mirrorNodeDataService from '@renderer/services/mirrorNodeDataService';
-import { getSecretHashes } from '@renderer/services/keyPairService';
 
 const useKeyPairsStore = defineStore('keyPairs', () => {
   /* Stores */
@@ -18,7 +18,7 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
   /* State */
   const recoveryPhraseWords = ref<string[]>([]);
   const keyPairs = ref<KeyPair[]>([]);
-  const accoundIds = ref<{ publicKey: string; accountIds: string[] }[]>([]);
+  const publicKeyToAccounts = ref<{ publicKey: string; accounts: AccountInfo[] }[]>([]);
 
   /* Getters */
   const publicKeys = computed(() => keyPairs.value.map(kp => kp.public_key));
@@ -37,27 +37,30 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
       }
     });
 
-    const secretHashes = await getSecretHashes(user.data.id);
+    const secretHashes = await keyPairService.getSecretHashes(user.data.id);
     user.data.secretHashes = secretHashes;
 
-    accoundIds.value = [];
+    publicKeyToAccounts.value = [];
 
     for (let i = 0; i < keyPairs.value.length; i++) {
       const keyPair = keyPairs.value[i];
 
-      const publicKeyPair = accoundIds.value.find(acc => acc.publicKey === keyPair.public_key);
+      const publicKeyPair = publicKeyToAccounts.value.findIndex(
+        acc => acc.publicKey === keyPair.public_key,
+      );
 
-      const accounts = await mirrorNodeDataService.getAccountId(
+      const accounts = await mirrorNodeDataService.getAccountsByPublicKey(
         networkStore.mirrorNodeBaseURL,
         keyPair.public_key,
       );
 
-      if (publicKeyPair) {
-        publicKeyPair.accountIds = accounts;
+      if (publicKeyPair >= 0) {
+        publicKeyToAccounts.value[publicKeyPair].accounts = accounts;
+        publicKeyToAccounts.value = [...publicKeyToAccounts.value];
       } else {
-        accoundIds.value.push({
+        publicKeyToAccounts.value.push({
           publicKey: keyPair.public_key,
-          accountIds: accounts,
+          accounts: accounts,
         });
       }
     }
@@ -106,7 +109,7 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
   return {
     recoveryPhraseWords,
     keyPairs,
-    accoundIds,
+    publicKeyToAccounts,
     publicKeys,
     setRecoveryPhrase,
     clearRecoveryPhrase,

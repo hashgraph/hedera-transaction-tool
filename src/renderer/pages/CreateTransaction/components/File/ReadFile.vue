@@ -54,8 +54,8 @@ const handleRead = async e => {
   try {
     isLoading.value = true;
 
-    const publicKey = keyPairsStore.accoundIds.find(acc =>
-      acc.accountIds.includes(payerData.accountIdFormatted.value),
+    const publicKey = keyPairsStore.publicKeyToAccounts.find(pa =>
+      pa.accounts.some(acc => acc.account === payerData.accountIdFormatted.value),
     )?.publicKey;
     const keyPair = keyPairsStore.keyPairs.find(kp => kp.public_key === publicKey);
 
@@ -130,9 +130,9 @@ const handleSubmit = e => {
 onMounted(async () => {
   await keyPairsStore.refetch();
 
-  const allAccountIds = keyPairsStore.accoundIds.map(a => a.accountIds).flat();
-  if (allAccountIds.length > 0) {
-    payerData.accountId.value = allAccountIds[0];
+  const allAccounts = keyPairsStore.publicKeyToAccounts.map(a => a.accounts).flat();
+  if (allAccounts.length > 0 && allAccounts[0].account) {
+    payerData.accountId.value = allAccounts[0].account;
   }
 
   if (route.query.fileId) {

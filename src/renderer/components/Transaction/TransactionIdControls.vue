@@ -61,10 +61,10 @@ onMounted(async () => {
   if (route.query.draftId) {
     await loadFromDraft(route.query.draftId.toString());
   } else {
-    const allAccountIds = keyPairs.accoundIds.map(a => a.accountIds).flat();
-    if (allAccountIds.length > 0) {
-      account.accountId.value = allAccountIds[0];
-      emit('update:payerId', allAccountIds[0]);
+    const allAccounts = keyPairs.publicKeyToAccounts.map(a => a.accounts).flat();
+    if (allAccounts.length > 0 && allAccounts[0].account) {
+      account.accountId.value = allAccounts[0].account;
+      emit('update:payerId', allAccounts[0].account);
     }
   }
 });

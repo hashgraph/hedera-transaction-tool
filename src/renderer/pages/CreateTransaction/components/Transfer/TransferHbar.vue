@@ -124,14 +124,14 @@ const handleLoadFromDraft = async () => {
 function createTransaction() {
   const transaction = new TransferTransaction()
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(new Hbar(maxTransactionFee.value));
+    .setMaxTransactionFee(new Hbar(maxTransactionFee.value || 0));
 
   if (isAccountId(payerData.accountId.value)) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
   }
 
   if (isAccountId(receiverData.accountId.value)) {
-    transaction.addHbarTransfer(receiverData.accountId.value, new Hbar(amount.value));
+    transaction.addHbarTransfer(receiverData.accountId.value, new Hbar(Number(amount.value)));
   }
 
   const isSenderValid = isAccountId(senderData.accountId.value);
@@ -140,11 +140,14 @@ function createTransaction() {
     isSenderValid &&
       transaction?.addApprovedHbarTransfer(
         senderData.accountId.value,
-        new Hbar(amount.value).negated(),
+        new Hbar(Number(amount.value)).negated(),
       );
   } else {
     isSenderValid &&
-      transaction?.addHbarTransfer(senderData.accountId.value, new Hbar(amount.value).negated());
+      transaction?.addHbarTransfer(
+        senderData.accountId.value,
+        new Hbar(Number(amount.value)).negated(),
+      );
   }
 
   return transaction;
@@ -152,9 +155,9 @@ function createTransaction() {
 
 /* Hooks */
 onMounted(async () => {
-  const allAccountIds = keyPairs.accoundIds.map(a => a.accountIds).flat();
-  if (allAccountIds.length > 0) {
-    payerData.accountId.value = allAccountIds[0];
+  const allAccounts = keyPairs.publicKeyToAccounts.map(a => a.accounts).flat();
+  if (allAccounts.length > 0 && allAccounts[0].account) {
+    payerData.accountId.value = allAccounts[0].account;
   }
 
   await handleLoadFromDraft();

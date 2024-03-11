@@ -2,12 +2,16 @@
 import { onMounted, ref } from 'vue';
 import { Hbar, AccountDeleteTransaction, Key, Transaction, KeyList } from '@hashgraph/sdk';
 
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
+import useUserStore from '@renderer/stores/storeUser';
+
 import { useRoute } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
+import { remove } from '@renderer/services/accountsService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
 import { getTransactionFromBytes } from '@renderer/utils/transactions';
@@ -19,6 +23,10 @@ import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
+
+/* Stores */
+const keyPairs = useKeyPairsStore();
+const user = useUserStore();
 
 /* Composables */
 const route = useRoute();
@@ -87,11 +95,27 @@ const handleLoadFromDraft = async () => {
   }
 };
 
+const handleExecuted = async () => {
+  isExecuted.value = true;
+
+  try {
+    await remove(user.data.id, accountData.accountId.value);
+  } catch {
+    /* Ignore if not found or error */
+  }
+
+  // Counter mirror node delay
+  setTimeout(async () => {
+    await keyPairs.refetch();
+    console.log('Refetched');
+  }, 5000);
+};
+
 /* Functions */
 function createTransaction() {
   const transaction = new AccountDeleteTransaction()
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(new Hbar(maxTransactionFee.value));
+    .setMaxTransactionFee(new Hbar(maxTransactionFee.value || 0));
 
   if (isAccountId(payerData.accountId.value)) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
@@ -189,7 +213,6 @@ const columnClass = 'col-4 col-xxxl-3';
         <AppInput
           :model-value="transferAccountData.accountIdFormatted.value"
           @update:model-value="v => (transferAccountData.accountId.value = v)"
-          :disabled="transferAccountData.accountInfo.value?.deleted"
           :filled="true"
           placeholder="Enter Account ID"
         />
@@ -226,7 +249,7 @@ const columnClass = 'col-4 col-xxxl-3';
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
     :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
-    :on-executed="() => (isExecuted = true)"
+    :on-executed="handleExecuted"
   >
     <template #successHeading>Account deleted successfully</template>
     <template #successContent>

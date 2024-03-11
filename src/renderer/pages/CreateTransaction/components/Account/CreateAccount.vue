@@ -130,10 +130,10 @@ const handleOwnerKeyUpdate = key => {
 function createTransaction() {
   const transaction = new AccountCreateTransaction()
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(new Hbar(maxTransactionFee.value))
+    .setMaxTransactionFee(new Hbar(maxTransactionFee.value || 0))
     .setReceiverSignatureRequired(accountData.receiverSignatureRequired)
     .setDeclineStakingReward(!accountData.acceptStakingRewards)
-    .setInitialBalance(Hbar.fromString(accountData.initialBalance.toString()))
+    .setInitialBalance(Hbar.fromString(accountData.initialBalance.toString() || '0'))
     .setMaxAutomaticTokenAssociations(Number(accountData.maxAutomaticTokenAssociations))
     .setAccountMemo(accountData.memo);
 

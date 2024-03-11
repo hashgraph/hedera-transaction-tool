@@ -255,8 +255,9 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
               </td>
               <td>
                 {{
-                  keyPairsStore.accoundIds.find(acc => acc.publicKey === keyPair.public_key)
-                    ?.accountIds[0] || 'N/A'
+                  keyPairsStore.publicKeyToAccounts.find(
+                    acc => acc.publicKey === keyPair.public_key,
+                  )?.accounts[0]?.account || 'N/A'
                 }}
               </td>
               <td>
@@ -343,8 +344,9 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
               </td>
               <td>
                 {{
-                  keyPairsStore.accoundIds.find(acc => acc.publicKey === keyPair.public_key)
-                    ?.accountIds[0] || 'N/A'
+                  keyPairsStore.publicKeyToAccounts.find(
+                    acc => acc.publicKey === keyPair.public_key,
+                  )?.accounts[0]?.account || 'N/A'
                 }}
               </td>
               <td>
