@@ -11,6 +11,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
+import { remove } from '@renderer/services/accountsService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
 import { getTransactionFromBytes } from '@renderer/utils/transactions';
@@ -22,7 +23,6 @@ import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
-import { remove } from '@renderer/services/accountsService';
 
 /* Stores */
 const keyPairs = useKeyPairsStore();
@@ -107,7 +107,8 @@ const handleExecuted = async () => {
   // Counter mirror node delay
   setTimeout(async () => {
     await keyPairs.refetch();
-  }, 3000);
+    console.log('Refetched');
+  }, 5000);
 };
 
 /* Functions */
