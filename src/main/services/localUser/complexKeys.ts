@@ -1,15 +1,20 @@
 import { getPrismaClient } from '@main/db';
-import { Prisma } from '@prisma/client';
 
-export const getComplexKeys = (userId: string) => {
+export const getComplexKeys = async (userId: string) => {
   const prisma = getPrismaClient();
 
   try {
-    return prisma.complexKey.findMany({
+    const complexKeys = await prisma.complexKey.findMany({
       where: {
         user_id: userId,
       },
     });
+
+    complexKeys.forEach(key => {
+      key.protobufEncoded = Uint8Array.from(Buffer.from(key.protobufEncoded, 'hex')).toString();
+    });
+
+    return complexKeys;
   } catch (error) {
     console.log(error);
     return [];
@@ -29,20 +34,26 @@ export const complexKeyExists = async (userId: string, protobufEncoded: string) 
   return count > 0;
 };
 
-export const addComplexKey = async (complexKey: Prisma.ComplexKeyUncheckedCreateInput) => {
+export const addComplexKey = async (userId: string, keyListBytes: Uint8Array, nickname: string) => {
   const prisma = getPrismaClient();
 
-  const exists = await complexKeyExists(complexKey.user_id, complexKey.protobufEncoded);
+  const protobufEncoded = Buffer.from(keyListBytes).toString('hex');
+
+  const exists = await complexKeyExists(userId, protobufEncoded);
 
   if (exists) {
     throw new Error('Complex key already exists!');
   }
 
   await prisma.complexKey.create({
-    data: complexKey,
+    data: {
+      user_id: userId,
+      protobufEncoded,
+      nickname,
+    },
   });
 
-  return await getComplexKeys(complexKey.user_id);
+  return await getComplexKeys(userId);
 };
 
 export const removeComplexKey = async (userId: string, protobufEncoded: string) => {
@@ -66,10 +77,13 @@ export const removeComplexKey = async (userId: string, protobufEncoded: string) 
 
 export const updateComplexKey = async (
   userId: string,
-  oldProtobufEncoded: string,
-  newProtobufEncoded: string,
+  oldKeyListBytes: Uint8Array,
+  newKeyListBytes: Uint8Array,
 ) => {
   const prisma = getPrismaClient();
+
+  const oldProtobufEncoded = Buffer.from(oldKeyListBytes).toString('hex');
+  const newProtobufEncoded = Buffer.from(newKeyListBytes).toString('hex');
 
   await prisma.complexKey.updateMany({
     where: {

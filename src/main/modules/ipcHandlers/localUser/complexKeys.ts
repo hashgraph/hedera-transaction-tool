@@ -1,7 +1,5 @@
 import { ipcMain } from 'electron';
 
-import { Prisma } from '@prisma/client';
-
 import {
   addComplexKey,
   getComplexKeys,
@@ -16,7 +14,8 @@ export default () => {
   // Adds a new complex key
   ipcMain.handle(
     createChannelName('add'),
-    async (_e, complexKey: Prisma.ComplexKeyUncheckedCreateInput) => addComplexKey(complexKey),
+    async (_e, userId: string, keyListBytes: Uint8Array, nickname: string) =>
+      addComplexKey(userId, keyListBytes, nickname),
   );
 
   // Get all stored complex keys
@@ -37,7 +36,7 @@ export default () => {
   // Updates existing complex key
   ipcMain.handle(
     createChannelName('update'),
-    async (_e, userId: string, oldProtobufEncoded: string, newProtobufEncoded: string) =>
-      updateComplexKey(userId, oldProtobufEncoded, newProtobufEncoded),
+    async (_e, userId: string, oldKeyListBytes: Uint8Array, newKeyListBytes: Uint8Array) =>
+      updateComplexKey(userId, oldKeyListBytes, newKeyListBytes),
   );
 };

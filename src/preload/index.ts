@@ -119,8 +119,8 @@ export const electronAPI = {
       ipcRenderer.invoke('files:showContentInTemp', userId, fileId),
   },
   complexKeys: {
-    add: (complexKey: Prisma.ComplexKeyUncheckedCreateInput): Promise<ComplexKey[]> =>
-      ipcRenderer.invoke('complexKeys:add', complexKey),
+    add: (userId: string, keyListBytes: Uint8Array, nickname: string): Promise<ComplexKey[]> =>
+      ipcRenderer.invoke('complexKeys:add', userId, keyListBytes, nickname),
     getAll: (userId: string): Promise<ComplexKey[]> =>
       ipcRenderer.invoke('complexKeys:getAll', userId),
     complexKeyExists: (userId: string, protobufEncoded: string): Promise<boolean> =>
@@ -129,10 +129,10 @@ export const electronAPI = {
       ipcRenderer.invoke('complexKeys:remove', userId, protobufEncoded),
     update: (
       userId: string,
-      oldProtobufEncoded: string,
-      newProtobufEncoded: string,
+      oldKeyListBytes: Uint8Array,
+      newKeyListBytes: Uint8Array,
     ): Promise<ComplexKey[]> =>
-      ipcRenderer.invoke('complexKeys:update', userId, oldProtobufEncoded, newProtobufEncoded),
+      ipcRenderer.invoke('complexKeys:update', userId, oldKeyListBytes, newKeyListBytes),
   },
   localUser: {
     login: (email: string, password: string, autoRegister?: boolean): Promise<User> =>

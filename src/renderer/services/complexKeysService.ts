@@ -1,5 +1,3 @@
-import { Prisma } from '@prisma/client';
-
 import { getMessageFromIPCError } from '@renderer/utils';
 
 /* Complex Keys Service */
@@ -14,15 +12,13 @@ export const getDrafts = async (userId: string) => {
 };
 
 /* Adds complex key */
-export const addComplexKey = async (userId: string, protobufEncoded: string, nickname: string) => {
-  const complexKey: Prisma.ComplexKeyUncheckedCreateInput = {
-    user_id: userId,
-    protobufEncoded,
-    nickname,
-  };
-
+export const addComplexKey = async (
+  userId: string,
+  encodedKeyList: Uint8Array,
+  nickname: string,
+) => {
   try {
-    return await window.electronAPI.complexKeys.add(complexKey);
+    return await window.electronAPI.complexKeys.add(userId, encodedKeyList, nickname);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, 'Failed to save complex key'));
   }
@@ -49,15 +45,11 @@ export const deleteComplexKey = async (userId: string, protobufEncoded: string) 
 /* Updates complex key */
 export const updateComplexKey = async (
   userId: string,
-  oldProtobufEncoded: string,
-  newProtobufEncoded: string,
+  oldKeyListBytes: Uint8Array,
+  newKeyListBytes: Uint8Array,
 ) => {
   try {
-    return await window.electronAPI.complexKeys.update(
-      userId,
-      oldProtobufEncoded,
-      newProtobufEncoded,
-    );
+    return await window.electronAPI.complexKeys.update(userId, oldKeyListBytes, newKeyListBytes);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, `Failed to update complex key`));
   }
