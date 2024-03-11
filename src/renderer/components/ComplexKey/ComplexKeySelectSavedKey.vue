@@ -5,13 +5,14 @@ import { ComplexKey } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { getComplexKeys } from '@renderer/services/complexKeysService';
+import { deleteComplexKey, getComplexKeys } from '@renderer/services/complexKeysService';
 
 import { decodeKeyList } from '@renderer/utils/sdk';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Props */
 const props = defineProps<{
@@ -29,12 +30,32 @@ const user = useUserStore();
 const keyLists = ref<ComplexKey[]>([]);
 const complexKey = ref<ComplexKey | null>(null);
 const search = ref('');
+const deleteSavedKeyModalShown = ref(false);
+const complexKeyToDeleteId = ref<string | null>(null);
 
 /* Handlers */
 const handleShowUpdate = show => emit('update:show', show);
 
 const handleSelectKeyList = (kl: ComplexKey) => {
   complexKey.value = kl;
+};
+
+const handleTrashClick = (e, id: string) => {
+  e.stopPropagation();
+  complexKeyToDeleteId.value = id;
+  deleteSavedKeyModalShown.value = true;
+};
+
+const handleDeleteSavedKey = async e => {
+  e.preventDefault();
+
+  if (complexKeyToDeleteId.value) {
+    await deleteComplexKey(complexKeyToDeleteId.value);
+    keyLists.value = await getComplexKeys(user.data.id);
+  }
+
+  deleteSavedKeyModalShown.value = false;
+  complexKey.value = null;
 };
 
 const handleDone = (e: Event) => {
@@ -81,26 +102,37 @@ onBeforeMount(async () => {
               :key="kl.id"
             >
               <div
-                class="key-node d-flex justify-content-between key-threshhold-bg text-white rounded py-4 px-3 mt-3 cursor-pointer"
+                class="key-node d-flex justify-content-between key-threshhold-bg text-white rounded py-4 px-3 mt-3"
                 @click="handleSelectKeyList(kl)"
               >
-                <div class="d-flex align-items-center text-small">
-                  <p class="text-semi-bold ms-3">{{ kl.nickname }}</p>
-                  <p
-                    class="text-body bg-dark-blue-700 flex-centered rounded ms-3"
-                    style="width: 36px; height: 36px"
-                  >
-                    {{
-                      decodeKeyList(kl.protobufEncoded).threshold ||
-                      decodeKeyList(kl.protobufEncoded).toArray().length
-                    }}
-                  </p>
-                  <p class="text-secondary ms-3">
-                    of {{ decodeKeyList(kl.protobufEncoded).toArray().length }}
-                  </p>
-                  <p class="text-secondary border-start border-secondary-subtle ps-4 ms-4">
-                    {{ kl.updated_at.toDateString() }}
-                  </p>
+                <div class="col-11 d-flex align-items-center text-small">
+                  <div class="text-semi-bold text-truncate" style="max-width: 35%">
+                    {{ kl.nickname }}
+                  </div>
+
+                  <div class="d-flex align-items-center ms-4">
+                    <p
+                      class="text-body bg-dark-blue-700 flex-centered rounded ms-3"
+                      style="width: 36px; height: 36px"
+                    >
+                      {{
+                        decodeKeyList(kl.protobufEncoded).threshold ||
+                        decodeKeyList(kl.protobufEncoded).toArray().length
+                      }}
+                    </p>
+                    <p class="text-secondary ms-3">
+                      of {{ decodeKeyList(kl.protobufEncoded).toArray().length }}
+                    </p>
+                    <p class="text-secondary border-start border-secondary-subtle ps-4 ms-4">
+                      {{ kl.updated_at.toDateString() }}
+                    </p>
+                  </div>
+                </div>
+                <div class="col-1 flex-centered">
+                  <span
+                    class="bi bi-trash text-danger cursor-pointer"
+                    @click="handleTrashClick($event, kl.id)"
+                  ></span>
                 </div>
               </div>
             </template>
@@ -118,6 +150,41 @@ onBeforeMount(async () => {
           </div>
         </div>
       </form>
+      <AppModal v-model:show="deleteSavedKeyModalShown" class="common-modal">
+        <div class="modal-body">
+          <i
+            class="bi bi-x-lg d-inline-block cursor-pointer"
+            style="line-height: 16px"
+            @click="deleteSavedKeyModalShown = false"
+          ></i>
+          <div class="text-center">
+            <AppCustomIcon :name="'bin'" style="height: 160px" />
+          </div>
+          <form @submit="handleDeleteSavedKey">
+            <h3 class="text-center text-title text-bold mt-3">Remove Key List</h3>
+            <p class="text-center text-small text-secondary mt-4">
+              Are you sure you want to remove this Key List from your Complex Keys List
+            </p>
+            <hr class="separator my-5" />
+            <div class="row mt-4">
+              <div class="col-6 d-grid">
+                <AppButton color="secondary" @click="deleteSavedKeyModalShown = false"
+                  >Cancel</AppButton
+                >
+              </div>
+              <div class="col-6 d-grid">
+                <AppButton
+                  :outline="true"
+                  color="primary"
+                  type="submit"
+                  @click="handleDeleteSavedKey"
+                  >Remove</AppButton
+                >
+              </div>
+            </div>
+          </form>
+        </div>
+      </AppModal>
     </div>
   </AppModal>
 </template>
