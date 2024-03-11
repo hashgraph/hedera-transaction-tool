@@ -27,6 +27,7 @@ model User {
   HederaAccount    HederaAccount[]
   HederaFile       HederaFile[]
   TransactionDraft TransactionDraft[]
+  ComplexKey       ComplexKey[]
 }
 
 model KeyPair {
@@ -106,4 +107,14 @@ model HederaFile {
   contentBytes  String?
   lastRefreshed DateTime?
   user          User      @relation(fields: [user_id], references: [id])
+}
+
+model ComplexKey {
+  id        String @id @default(uuid())
+  user_id   String
+  nickname  String
+  protobufEncoded String
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+  user      User   @relation(fields: [user_id], references: [id])
 }
