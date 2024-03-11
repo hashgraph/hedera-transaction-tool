@@ -102,7 +102,7 @@ onBeforeMount(async () => {
               :key="kl.id"
             >
               <div
-                class="key-node d-flex justify-content-between key-threshhold-bg text-white rounded py-4 px-3 mt-3 cursor-pointer"
+                class="key-node d-flex justify-content-between key-threshhold-bg rounded py-4 px-3 mt-3 cursor-pointer"
                 @click="handleSelectKeyList(kl)"
               >
                 <div class="col-11 d-flex align-items-center text-small">
