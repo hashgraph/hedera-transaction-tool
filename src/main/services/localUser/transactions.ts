@@ -5,15 +5,16 @@ import { getPrismaClient } from '@main/db';
 
 import { HederaSpecialFileId } from '@main/shared/interfaces';
 
+import { getKeyPairs } from '@main/services/localUser/keyPairs';
+
 import { getNumberArrayFromString } from '@main/utils';
 import {
   isHederaSpecialFileId,
   decodeProto,
   encodeHederaSpecialFile,
 } from '@main/utils/hederaSpecialFiles';
-
-import { getKeyPairs } from '@main/services/localUser/keyPairs';
 import { decrypt } from '@main/utils/crypto';
+import { getStatusCodeFromMessage } from '@main/utils/sdk';
 
 let client: Client;
 
@@ -105,9 +106,12 @@ export const executeTransaction = async (transactionBytes: Uint8Array) => {
 
     return { responseJSON: JSON.stringify(response.toJSON()), receiptBytes: receipt.toBytes() };
   } catch (error: any) {
-    console.log(error);
+    let status = error.status?._code || 21;
+    if (!error.status) {
+      status = getStatusCodeFromMessage(error.message);
+    }
 
-    throw new Error(JSON.stringify({ status: error?.status?._code || -1, message: error.message }));
+    throw new Error(JSON.stringify({ status, message: error.message }));
   }
 };
 
