@@ -3,7 +3,7 @@ import { getMessageFromIPCError } from '@renderer/utils';
 /* Complex Keys Service */
 
 /* Get all complex keys */
-export const getDrafts = async (userId: string) => {
+export const getComplexKeys = async (userId: string) => {
   try {
     return await window.electronAPI.complexKeys.getAll(userId);
   } catch (error: any) {
