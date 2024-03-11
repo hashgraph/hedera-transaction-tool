@@ -40,9 +40,14 @@ const handleThresholdChange = (e: Event) => {
 };
 
 const handleSelectAccount = (key: Key) => {
-  const keys = props.keyList.toArray();
-  keys.push(key);
-  emitNewKeyList(keys, props.keyList.threshold);
+  if (key instanceof PublicKey && isPublicKeyInKeyList(key, props.keyList)) {
+    toast.error('Public key already exists in the key list');
+  } else {
+    const keys = props.keyList.toArray();
+    keys.push(key);
+    emitNewKeyList(keys, props.keyList.threshold);
+    selectAccountModalShown.value = false;
+  }
 };
 
 const handleAddPublicKey = (publicKey: PublicKey) => {
