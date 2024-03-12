@@ -1,39 +1,29 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { Hbar, Key, KeyList, Transaction, TransferTransaction } from '@hashgraph/sdk';
-
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
-import useUserStore from '@renderer/stores/storeUser';
+import { ref, onMounted, computed } from 'vue';
+import { Hbar, KeyList, Transaction, TransferTransaction, Transfer } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
-import { getDraft } from '@renderer/services/transactionDraftsService';
+import { getDraft, updateDraft } from '@renderer/services/transactionDraftsService';
 
 import { getDateTimeLocalInputValue } from '@renderer/utils';
 import { getTransactionFromBytes } from '@renderer/utils/transactions';
 import { isAccountId } from '@renderer/utils/validator';
 
-import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
-import AppInput from '@renderer/components/ui/AppInput.vue';
-import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
-import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
-import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
+import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
+import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
+import TransferCard from '@renderer/components/TransferCard.vue';
 
-/* Stores */
-const keyPairs = useKeyPairsStore();
-const user = useUserStore();
+/* Interfaces */
 
 /* Composables */
 const toast = useToast();
 const route = useRoute();
 const payerData = useAccountId();
-const senderData = useAccountId();
-const receiverData = useAccountId();
 
 /* State */
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
@@ -42,13 +32,37 @@ const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref(2);
 
-const amount = ref(0);
-const isApprovedTransfer = ref(false);
-const keyStructureComponentKey = ref<Key | null>(null);
-
-const isKeyStructureModalShown = ref(false);
+const transfers = ref<Transfer[]>([]);
 
 const isExecuted = ref(false);
+
+/* Computed */
+const totalBalance = computed(() => {
+  const totalBalance = transfers.value.reduce(
+    (acc, debit) => acc.plus(debit.amount.toBigNumber()),
+    new Hbar(0).toBigNumber(),
+  );
+  return new Hbar(totalBalance);
+});
+
+const totalBalanceAdjustments = computed(
+  () => [...new Set(transfers.value.map(t => t.accountId.toString()))].length,
+);
+
+const balanceAdjustmentsPerAccount = computed(() => {
+  return transfers.value.reduce((acc, transfer) => {
+    const accountId = transfer.accountId.toString();
+    const amount = transfer.amount.toBigNumber();
+
+    if (acc[accountId]) {
+      acc[accountId] = acc[accountId].plus(amount);
+    } else {
+      acc[accountId] = amount;
+    }
+
+    return acc;
+  }, {});
+});
 
 /* Handlers */
 const handleCreate = async e => {
@@ -58,24 +72,9 @@ const handleCreate = async e => {
       throw Error('Invalid Payer ID');
     }
 
-    if (!isAccountId(senderData.accountId.value) || !senderData.key.value) {
-      throw Error('Invalid Sender ID');
-    }
-
-    if (!isAccountId(receiverData.accountId.value) || !receiverData.key.value) {
-      throw Error('Invalid Receiver ID');
-    }
-
     transaction.value = createTransaction();
 
     const requiredKey = new KeyList([payerData.key.value]);
-
-    if (!isApprovedTransfer.value) {
-      requiredKey.push(senderData.key.value);
-    }
-    if (receiverData.accountInfo.value?.receiverSignatureRequired) {
-      requiredKey.push(receiverData.key.value);
-    }
 
     await transactionProcessor.value?.process(requiredKey);
   } catch (err: any) {
@@ -83,6 +82,10 @@ const handleCreate = async e => {
 
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
+};
+
+const handleDraftAdded = async (id: string) => {
+  await updateDraft(id, { details: JSON.stringify({ transfers: transfers.value }) });
 };
 
 const handleLoadFromDraft = async () => {
@@ -106,18 +109,78 @@ const handleLoadFromDraft = async () => {
       maxTransactionFee.value = draftTransaction.maxTransactionFee.toBigNumber().toNumber();
     }
 
-    draftTransaction.hbarTransfers._map.forEach((value, accoundId) => {
-      const hbars = value.toBigNumber().toNumber();
+    if (draft.details) {
+      try {
+        const details = JSON.parse(draft.details);
+        transfers.value = details.transfers.map(
+          ({
+            accountId,
+            amount,
+            isApproved,
+          }: {
+            accountId: string;
+            amount: string;
+            isApproved: boolean;
+          }) => new Transfer({ accountId, amount: Hbar.fromTinybars(amount), isApproved }),
+        );
+      } catch {
+        /* Empty */
+      }
+    }
+  }
+};
 
-      amount.value = Math.abs(hbars);
+const handleAddSenderTransfer = (accountId: string, amount: Hbar, isApproved: boolean) => {
+  const debittedAccounts = transfers.value.filter(
+    debit => debit.accountId.toString() === accountId && debit.amount.isNegative(),
+  );
 
-      if (hbars < 0) {
-        senderData.accountId.value = accoundId;
-      } else {
-        receiverData.accountId.value = accoundId;
+  if (
+    debittedAccounts.every(account => isApproved && !account.isApproved) ||
+    debittedAccounts.every(account => !isApproved && account.isApproved)
+  ) {
+    transfers.value.push(
+      new Transfer({
+        accountId,
+        amount: amount.negated(),
+        isApproved,
+      }),
+    );
+  } else {
+    debittedAccounts.forEach(account => {
+      const updatedAmount = new Hbar(
+        account.amount.toBigNumber().plus(amount.negated().toBigNumber()),
+      );
+
+      if (account.isApproved && isApproved) {
+        account.amount = updatedAmount;
+      } else if (!isApproved && !account.isApproved) {
+        account.amount = updatedAmount;
       }
     });
   }
+
+  transfers.value = [...transfers.value];
+};
+
+const handleAddReceiverTransfer = (accountId: string, amount: Hbar) => {
+  const creditted = transfers.value.find(
+    credit => credit.accountId.toString() === accountId && !credit.amount.isNegative(),
+  );
+
+  if (!creditted) {
+    transfers.value.push(
+      new Transfer({
+        accountId,
+        amount: amount,
+        isApproved: false,
+      }),
+    );
+  } else {
+    creditted.amount = new Hbar(creditted.amount.toBigNumber().plus(amount.toBigNumber()));
+  }
+
+  transfers.value = [...transfers.value];
 };
 
 /* Functions */
@@ -130,176 +193,117 @@ function createTransaction() {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
   }
 
-  if (isAccountId(receiverData.accountId.value)) {
-    transaction.addHbarTransfer(receiverData.accountId.value, new Hbar(Number(amount.value)));
-  }
-
-  const isSenderValid = isAccountId(senderData.accountId.value);
-
-  if (isApprovedTransfer.value) {
-    isSenderValid &&
-      transaction?.addApprovedHbarTransfer(
-        senderData.accountId.value,
-        new Hbar(Number(amount.value)).negated(),
-      );
-  } else {
-    isSenderValid &&
-      transaction?.addHbarTransfer(
-        senderData.accountId.value,
-        new Hbar(Number(amount.value)).negated(),
-      );
-  }
+  transfers.value.forEach(transfer => {
+    transfer.isApproved
+      ? transaction.addApprovedHbarTransfer(transfer.accountId.toString(), transfer.amount)
+      : transaction.addHbarTransfer(transfer.accountId.toString(), transfer.amount);
+  });
 
   return transaction;
 }
 
 /* Hooks */
 onMounted(async () => {
-  const allAccounts = keyPairs.publicKeyToAccounts.map(a => a.accounts).flat();
-  if (allAccounts.length > 0 && allAccounts[0].account) {
-    payerData.accountId.value = allAccounts[0].account;
-  }
-
   await handleLoadFromDraft();
 });
-
-/* Misc */
-const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <form @submit="handleCreate">
     <TransactionHeaderControls
       :get-transaction-bytes="() => createTransaction().toBytes()"
+      :handle-draft-added="handleDraftAdded"
       :is-executed="isExecuted"
       :create-requirements="
         !payerData.accountId.value ||
-        !senderData.accountId.value ||
-        !receiverData.accountId.value ||
-        amount < 0
+        !totalBalance.toBigNumber().isEqualTo(0) ||
+        totalBalanceAdjustments > 10
       "
       heading-text="Transfer Hbar Transaction"
       class="flex-1"
     />
 
-    <div class="row flex-wrap align-items-end mt-6">
-      <div class="form-group" :class="[columnClass]">
-        <label class="form-label"
-          >{{ isApprovedTransfer ? 'Spender' : 'Payer' }} ID
-          <span class="text-danger">*</span></label
-        >
-        <label
-          v-if="isApprovedTransfer && payerData.isValid.value"
-          class="d-block form-label text-secondary"
-          >Allowance: {{ senderData.getSpenderAllowance(payerData.accountId.value) }}</label
-        >
-        <label
-          v-if="!isApprovedTransfer && payerData.isValid.value"
-          class="d-block form-label text-secondary"
-          >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
-        >
-        <template v-if="user.data.mode === 'personal'">
-          <AccountIdsSelect v-model:account-id="payerData.accountId.value" :select-default="true" />
-        </template>
-        <template v-else>
-          <AppInput
-            :model-value="payerData.accountIdFormatted.value"
-            @update:model-value="v => (payerData.accountId.value = v)"
-            :filled="true"
-            placeholder="Enter Payer ID"
+    <TransactionIdControls
+      v-model:payer-id="payerData.accountId.value"
+      v-model:valid-start="validStart"
+      v-model:max-transaction-fee="maxTransactionFee"
+      class="mt-6"
+    />
+
+    <div class="border rounded p-5 mt-5">
+      <div class="flex-centered">
+        <div class="flex-1">
+          <TransferCard
+            account-label="From"
+            @handle-add-transfer="handleAddSenderTransfer"
+            :show-approved="true"
+            :show-balance="true"
+            :spender="payerData.accountIdFormatted.value"
+            :button-disabled="totalBalanceAdjustments >= 10"
           />
-        </template>
+        </div>
+        <div class="mx-6">
+          <span class="bi bi-arrow-right"></span>
+        </div>
+        <div class="flex-1">
+          <TransferCard
+            account-label="To"
+            @handle-add-transfer="handleAddReceiverTransfer"
+            :button-disabled="totalBalanceAdjustments >= 10"
+          />
+        </div>
       </div>
-      <div class="form-group form-group" :class="[columnClass]">
-        <label class="form-label">Valid Start Time <span class="text-danger">*</span></label>
-        <AppInput v-model="validStart" type="datetime-local" step="1" :filled="true" />
+      <div class="d-flex">
+        <div class="flex-1">
+          <div class="mt-3">
+            <template v-for="(debit, i) in transfers" :key="debit.accountId">
+              <div v-if="debit.amount.isNegative()" class="mt-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <p class="text-small text-secondary">
+                    {{ debit.accountId }} {{ debit.isApproved ? '(Approved)' : '' }}
+                  </p>
+                  <div class="">
+                    <span class="text-small text-secondary">{{ debit.amount }}</span>
+                    <span
+                      class="bi bi-x-lg text-small text-secondary cursor-pointer ms-3"
+                      @click="() => transfers.splice(i, 1)"
+                    ></span>
+                  </div>
+                </div>
+                <hr class="separator" />
+              </div>
+            </template>
+          </div>
+        </div>
+        <div class="mx-6"></div>
+        <div class="flex-1">
+          <div class="mt-3">
+            <template v-for="(credit, i) in transfers" :key="credit.accountId">
+              <div v-if="!credit.amount.isNegative()" class="mt-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <p class="text-small text-secondary">{{ credit.accountId }}</p>
+                  <div class="">
+                    <span class="text-small text-secondary">{{ credit.amount }}</span>
+                    <span
+                      class="bi bi-x-lg text-small text-secondary cursor-pointer ms-3"
+                      @click="() => transfers.splice(i, 1)"
+                    ></span>
+                  </div>
+                </div>
+                <hr class="separator" />
+              </div>
+            </template>
+          </div>
+        </div>
       </div>
-      <div class="form-group form-group" :class="[columnClass]">
-        <label class="form-label">Max Transaction Fee</label>
-        <AppInput
-          v-model="maxTransactionFee"
-          type="number"
-          min="0"
-          :filled="true"
-          placeholder="Enter Max Transaction Fee"
-        />
+      <div class="d-flex justify-content-between mt-5">
+        <p class="text-small">
+          <span>{{ totalBalanceAdjustments }}</span>
+          <span class="text-secondary"> Adjustments</span>
+        </p>
+        <p class="text-small">
+          <span class="text-secondary">Balance</span> <span>{{ totalBalance }}</span>
+        </p>
       </div>
-    </div>
-
-    <div class="row align-items-end mt-6">
-      <div class="form-group" :class="[columnClass]">
-        <label class="form-label">Sender ID <span class="text-danger">*</span></label>
-        <label v-if="senderData.isValid.value" class="form-label d-block text-secondary"
-          >Balance: {{ senderData.accountInfo.value?.balance || 0 }}</label
-        >
-
-        <AppInput
-          :model-value="senderData.accountIdFormatted.value"
-          @update:model-value="v => (senderData.accountId.value = v)"
-          :filled="true"
-          placeholder="Enter Sender ID"
-        />
-      </div>
-
-      <div class="form-group mt-6" :class="[columnClass]" v-if="senderData.key.value">
-        <AppButton
-          :outline="true"
-          color="primary"
-          type="button"
-          @click="
-            isKeyStructureModalShown = true;
-            keyStructureComponentKey = senderData.key.value;
-          "
-          >Show Key</AppButton
-        >
-      </div>
-    </div>
-
-    <div class="row align-items-end mt-6">
-      <div class="form-group" :class="[columnClass]">
-        <label class="form-label">Receiver ID <span class="text-danger">*</span></label>
-        <label v-if="receiverData.isValid.value" class="form-label d-block text-secondary"
-          >Balance: {{ receiverData.accountInfo.value?.balance || 0 }}</label
-        >
-        <AppInput
-          :value="receiverData.accountIdFormatted.value"
-          @input="receiverData.accountId.value = ($event.target as HTMLInputElement).value"
-          :filled="true"
-          placeholder="Enter Receiver ID"
-        />
-      </div>
-
-      <div
-        class="form-group mt-6"
-        :class="[columnClass]"
-        v-if="receiverData.accountInfo.value?.receiverSignatureRequired && receiverData.key.value"
-      >
-        <AppButton
-          :outline="true"
-          color="primary"
-          type="button"
-          @click="
-            isKeyStructureModalShown = true;
-            keyStructureComponentKey = receiverData.key.value;
-          "
-          >Show Key</AppButton
-        >
-      </div>
-    </div>
-
-    <div class="row mt-6">
-      <div class="form-group" :class="[columnClass]">
-        <label class="form-label">Amount <span class="text-danger">*</span></label>
-        <AppInput v-model="amount" type="number" :filled="true" placeholder="Enter Amount" />
-      </div>
-    </div>
-
-    <div class="mt-6">
-      <AppSwitch
-        v-model:checked="isApprovedTransfer"
-        name="is-approved-transfer"
-        size="md"
-        label="Approved Transfer (Transaction payer is the allowance spender)"
-      />
     </div>
   </form>
 
@@ -308,11 +312,8 @@ const columnClass = 'col-4 col-xxxl-3';
     :transaction-bytes="transaction?.toBytes() || null"
     :on-close-success-modal-click="
       () => {
-        senderData.accountId.value = '';
-        receiverData.accountId.value = '';
         validStart = '';
         maxTransactionFee = 2;
-        amount = 0;
         transaction = null;
       }
     "
@@ -320,19 +321,23 @@ const columnClass = 'col-4 col-xxxl-3';
   >
     <template #successHeading>Hbar transferred successfully</template>
     <template #successContent>
-      <p class="text-small d-flex justify-content-between align-items mt-2">
-        <span class="text-bold text-secondary">Sender Account ID:</span>
-        <span>{{ senderData.accountId.value }}</span>
-      </p>
-      <p class="text-small d-flex justify-content-between align-items mt-2">
-        <span class="text-bold text-secondary">Receiver Account ID:</span>
-        <span>{{ receiverData.accountId.value }}</span>
-      </p>
+      <div class="mt-4">
+        <template
+          v-for="account of Object.entries(balanceAdjustmentsPerAccount)"
+          :key="account.accountId"
+        >
+          <div class="mt-3">
+            <p class="text-small d-flex justify-content-between align-items">
+              <span class="text-bold text-secondary">Account ID:</span>
+              <span>{{ account[0] }}</span>
+            </p>
+            <p class="text-small d-flex justify-content-between align-items">
+              <span class="text-bold text-secondary">Balance:</span>
+              <span>{{ new Hbar(account[1]) }}</span>
+            </p>
+          </div>
+        </template>
+      </div>
     </template>
   </TransactionProcessor>
-
-  <KeyStructureModal
-    v-model:show="isKeyStructureModalShown"
-    :account-key="keyStructureComponentKey"
-  />
 </template>
