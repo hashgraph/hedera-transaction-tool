@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 
 import { Hbar } from '@hashgraph/sdk';
 
@@ -8,6 +8,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 
 /* Props */
 withDefaults(
@@ -33,11 +34,8 @@ const emit = defineEmits<{
 const accountData = useAccountId();
 
 /* State */
-const amountRaw = ref('0');
+const amount = ref<Hbar>(new Hbar(0));
 const isApprovedTransfer = ref(false);
-
-/* Computed */
-const amount = computed(() => new Hbar(Number(amountRaw.value) || 0));
 
 /* Handlers */
 const handleSubmit = (e: Event) => {
@@ -54,6 +52,7 @@ const handleSubmit = (e: Event) => {
   emit(
     'handleAddTransfer',
     accountData.accountIdFormatted.value,
+    // @ts-expect-error Broken type inference
     amount.value,
     isApprovedTransfer.value,
   );
@@ -75,11 +74,12 @@ const handleSubmit = (e: Event) => {
         />
       </div>
       <div class="form-group mt-4">
-        <label class="form-label mb-0 me-3">Amount</label>
+        <label class="form-label mb-0 me-3">Amount ℏ</label>
         <label v-if="spender && isApprovedTransfer" class="form-label text-secondary"
           >Allowance: {{ accountData.getSpenderAllowance(spender) }}</label
         >
-        <AppInput v-model="amountRaw" type="number" :filled="true" placeholder="Enter Amount" />
+        <!-- @vue-ignore Broken type inference -->
+        <AppHbarInput v-model:model-value="amount" placeholder="Enter Amount" :filled="true" />
       </div>
       <div class="d-flex align-items-center justify-content-end flex-wrap gap-4 mt-4">
         <template v-if="showApproved">
