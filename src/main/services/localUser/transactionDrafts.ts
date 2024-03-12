@@ -32,7 +32,7 @@ export const addDraft = async (draft: Prisma.TransactionDraftUncheckedCreateInpu
 
   const prisma = getPrismaClient();
 
-  await prisma.transactionDraft.create({
+  return await prisma.transactionDraft.create({
     data: draft,
   });
 };
