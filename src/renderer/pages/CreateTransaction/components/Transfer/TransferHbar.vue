@@ -216,7 +216,8 @@ onMounted(async () => {
       :create-requirements="
         !payerData.accountId.value ||
         !totalBalance.toBigNumber().isEqualTo(0) ||
-        totalBalanceAdjustments > 10
+        totalBalanceAdjustments > 10 ||
+        totalBalanceAdjustments === 0
       "
       heading-text="Transfer Hbar Transaction"
       class="flex-1"
@@ -230,21 +231,27 @@ onMounted(async () => {
     />
 
     <div class="border rounded p-5 mt-5">
-      <div class="flex-centered">
-        <div class="flex-1">
-          <TransferCard
+      <div class="row">
+        <div class="col-5 flex-1">
+          <!-- <TransferCard
             account-label="From"
             @handle-add-transfer="handleAddSenderTransfer"
             :show-approved="true"
             :show-balance="true"
             :spender="payerData.accountIdFormatted.value"
             :button-disabled="totalBalanceAdjustments >= 10"
+          /> -->
+          <TransferCard
+            account-label="From"
+            @handle-add-transfer="handleAddSenderTransfer"
+            :show-balance="true"
+            :button-disabled="totalBalanceAdjustments >= 10"
           />
         </div>
-        <div class="mx-6">
+        <div class="col-1 align-self-center text-center">
           <span class="bi bi-arrow-right"></span>
         </div>
-        <div class="flex-1">
+        <div class="col-5 flex-1">
           <TransferCard
             account-label="To"
             @handle-add-transfer="handleAddReceiverTransfer"
@@ -252,19 +259,24 @@ onMounted(async () => {
           />
         </div>
       </div>
-      <div class="d-flex">
-        <div class="flex-1">
+
+      <div class="row mt-3">
+        <div class="col-5 flex-1">
           <div class="mt-3">
             <template v-for="(debit, i) in transfers" :key="debit.accountId">
               <div v-if="debit.amount.isNegative()" class="mt-3">
-                <div class="d-flex justify-content-between align-items-center">
-                  <p class="text-small text-secondary">
-                    {{ debit.accountId }} {{ debit.isApproved ? '(Approved)' : '' }}
-                  </p>
-                  <div class="">
-                    <span class="text-small text-secondary">{{ debit.amount }}</span>
+                <div class="row align-items-center px-3">
+                  <div class="col-4 overflow-hidden">
+                    <p class="text-small text-secondary overflow-hidden">
+                      {{ debit.accountId }} {{ debit.isApproved ? '(Approved)' : '' }}
+                    </p>
+                  </div>
+                  <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
+                    <p class="text-small text-secondary overflow-hidden">{{ debit.amount }}</p>
+                  </div>
+                  <div class="col-2 col-lg-1 text-end">
                     <span
-                      class="bi bi-x-lg text-small text-secondary cursor-pointer ms-3"
+                      class="bi bi-x-lg text-small text-secondary cursor-pointer"
                       @click="() => transfers.splice(i, 1)"
                     ></span>
                   </div>
@@ -274,17 +286,23 @@ onMounted(async () => {
             </template>
           </div>
         </div>
-        <div class="mx-6"></div>
-        <div class="flex-1">
+        <div class="col-1"></div>
+        <div class="col-5 flex-1">
           <div class="mt-3">
             <template v-for="(credit, i) in transfers" :key="credit.accountId">
               <div v-if="!credit.amount.isNegative()" class="mt-3">
-                <div class="d-flex justify-content-between align-items-center">
-                  <p class="text-small text-secondary">{{ credit.accountId }}</p>
-                  <div class="">
-                    <span class="text-small text-secondary">{{ credit.amount }}</span>
+                <div class="row align-items-center px-3">
+                  <div class="col-4 overflow-hidden">
+                    <p class="text-small text-secondary overflow-hidden">
+                      {{ credit.accountId }}
+                    </p>
+                  </div>
+                  <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
+                    <p class="text-small text-secondary overflow-hidden">{{ credit.amount }}</p>
+                  </div>
+                  <div class="col-2 col-lg-1 text-end">
                     <span
-                      class="bi bi-x-lg text-small text-secondary cursor-pointer ms-3"
+                      class="bi bi-x-lg text-small text-secondary cursor-pointer"
                       @click="() => transfers.splice(i, 1)"
                     ></span>
                   </div>
@@ -295,12 +313,15 @@ onMounted(async () => {
           </div>
         </div>
       </div>
-      <div class="d-flex justify-content-between mt-5">
+
+      <div class="d-flex justify-content-between flex-wrap overflow-hidden gap-3 mt-5">
         <p class="text-small">
           <span>{{ totalBalanceAdjustments }}</span>
-          <span class="text-secondary"> Adjustments</span>
+          <span class="text-secondary">
+            Adjustment{{ totalBalanceAdjustments != 1 ? 's' : '' }}</span
+          >
         </p>
-        <p class="text-small">
+        <p class="text-small text-nowrap">
           <span class="text-secondary">Balance</span> <span>{{ totalBalance }}</span>
         </p>
       </div>
