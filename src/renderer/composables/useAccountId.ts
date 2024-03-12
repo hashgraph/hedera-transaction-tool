@@ -98,7 +98,7 @@ export default function useAccountId() {
 
   function getSpenderAllowance(spenderId: string | AccountId) {
     return Hbar.fromTinybars(
-      allowances.value.find(al => al.spender === spenderId.toString())?.amount_granted || 0,
+      allowances.value.find(al => al.spender === spenderId.toString())?.amount || 0,
     );
   }
 
