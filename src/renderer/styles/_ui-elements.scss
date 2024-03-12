@@ -74,7 +74,8 @@
 }
 
 /* Forms */
-.form-control {
+.form-control,
+.form-select {
   &.is-fill {
     background-color: var(--bs-input-fill-bg-color);
   }

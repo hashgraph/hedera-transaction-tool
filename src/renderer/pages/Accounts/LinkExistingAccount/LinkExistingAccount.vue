@@ -46,12 +46,13 @@ const handleLinkAccount = async e => {
 </script>
 <template>
   <div class="p-5">
-    <AppButton
-      color="primary"
-      class="d-flex align-items-center justify-content-center"
-      @click="$router.back()"
-      ><i class="bi bi-arrow-left text-subheader me-2"></i> Back</AppButton
-    >
+    <div class="d-flex align-items-center">
+      <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="$router.back()">
+        <i class="bi bi-arrow-left"></i>
+      </AppButton>
+
+      <h2 class="text-title text-bold">Link existing account</h2>
+    </div>
     <form class="mt-5 col-12 col-md-8 col-xl-6 col-xxl-4" @submit="handleLinkAccount">
       <div class="form-group">
         <label class="form-label">Hedera Account ID <span class="text-danger">*</span></label>
