@@ -102,6 +102,7 @@ $danger: $error-500;
 $warning: $warning-500;
 $info: $light-blue-900;
 $gray: $neutral-200;
+$transparent: transparent;
 
 // Add custom colors to theme-colors map
 $theme-colors: (
@@ -117,6 +118,8 @@ $theme-colors: (
 $theme-colors-button: (
   'primary': $primary,
   'secondary': $secondary,
+  'borderless': $transparent,
+  'danger': $danger,
 );
 
 // Gradients

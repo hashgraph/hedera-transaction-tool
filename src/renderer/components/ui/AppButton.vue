@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /* Props */
 const props = defineProps<{
-  color?: 'primary' | 'secondary';
+  color?: 'primary' | 'secondary' | 'borderless' | 'danger';
   loading?: boolean;
   loadingText?: string;
   size?: 'small' | 'large' | 'default';
@@ -19,6 +19,8 @@ const outlinePrefix = props.outline ? '-outline' : '';
 const colorMapping = {
   primary: `btn${outlinePrefix}-primary`,
   secondary: `btn${outlinePrefix}-secondary`,
+  borderless: `btn${outlinePrefix}-borderless`,
+  danger: `btn${outlinePrefix}-danger`,
 };
 </script>
 <template>
