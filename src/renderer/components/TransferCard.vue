@@ -14,6 +14,8 @@ withDefaults(
   defineProps<{
     accountLabel: string;
     showApproved?: boolean;
+    showBalance?: boolean;
+    spender?: string;
     buttonDisabled?: boolean;
   }>(),
   {
@@ -61,7 +63,10 @@ const handleSubmit = (e: Event) => {
   <div class="border rounded p-4">
     <form @submit="handleSubmit">
       <div class="form-group">
-        <label class="form-label">{{ accountLabel }}</label>
+        <label class="form-label mb-0 me-3">{{ accountLabel }}</label>
+        <label v-if="showBalance" class="form-label text-secondary"
+          >Balance: {{ accountData.accountInfo.value?.balance }}</label
+        >
         <AppInput
           :model-value="accountData.accountIdFormatted.value"
           @update:model-value="v => (accountData.accountId.value = v)"
@@ -70,7 +75,10 @@ const handleSubmit = (e: Event) => {
         />
       </div>
       <div class="form-group mt-4">
-        <label class="form-label">Amount</label>
+        <label class="form-label mb-0 me-3">Amount</label>
+        <label v-if="spender && isApprovedTransfer" class="form-label text-secondary"
+          >Allowance: {{ accountData.getSpenderAllowance(spender) }}</label
+        >
         <AppInput v-model="amountRaw" type="number" :filled="true" placeholder="Enter Amount" />
       </div>
       <div class="d-flex align-items-center justify-content-end flex-wrap gap-4 mt-4">
