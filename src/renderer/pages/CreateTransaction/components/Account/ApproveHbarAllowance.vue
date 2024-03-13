@@ -21,6 +21,7 @@ import { isAccountId } from '@renderer/utils/validator';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
@@ -38,9 +39,9 @@ const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
-const maxTransactionFee = ref(2);
+const maxTransactionFee = ref<Hbar>(new Hbar(2));
 
-const amount = ref(0);
+const amount = ref<Hbar>(new Hbar(0));
 const keyStructureComponentKey = ref<Key | null>(null);
 
 const isKeyStructureModalShown = ref(false);
@@ -89,7 +90,7 @@ const handleLoadFromDraft = async () => {
 
       ownerData.accountId.value = hbarApproval.ownerAccountId?.toString() || '';
       spenderData.accountId.value = hbarApproval.spenderAccountId?.toString() || '';
-      amount.value = hbarApproval.amount?.toBigNumber().toNumber() || 0;
+      amount.value = hbarApproval.amount || new Hbar(0);
     }
   }
 };
@@ -98,7 +99,7 @@ const handleLoadFromDraft = async () => {
 function createTransaction() {
   const transaction = new AccountAllowanceApproveTransaction()
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(new Hbar(maxTransactionFee.value || 0));
+    .setMaxTransactionFee(maxTransactionFee.value);
 
   if (isAccountId(payerData.accountId.value)) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
@@ -108,7 +109,7 @@ function createTransaction() {
     transaction.approveHbarAllowance(
       ownerData.accountId.value,
       spenderData.accountId.value,
-      new Hbar(amount.value || 0),
+      amount.value,
     );
   }
   return transaction;
@@ -132,14 +133,14 @@ const columnClass = 'col-4 col-xxxl-3';
         !payerData.isValid.value ||
         !ownerData.isValid.value ||
         !spenderData.isValid.value ||
-        amount < 0
+        amount.toBigNumber().isLessThan(0)
       "
     />
 
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
       v-model:valid-start="validStart"
-      v-model:max-transaction-fee="maxTransactionFee"
+      v-model:max-transaction-fee="maxTransactionFee as Hbar"
       class="mt-6"
     />
 
@@ -202,7 +203,11 @@ const columnClass = 'col-4 col-xxxl-3';
     <div class="row mt-6">
       <div class="form-group" :class="[columnClass]">
         <label class="form-label">Amount <span class="text-danger">*</span></label>
-        <AppInput v-model="amount" :filled="true" type="number" placeholder="Enter Amount" />
+        <AppHbarInput
+          v-model:model-value="amount as Hbar"
+          placeholder="Enter Amount"
+          :filled="true"
+        />
       </div>
     </div>
   </form>
@@ -213,10 +218,10 @@ const columnClass = 'col-4 col-xxxl-3';
     :on-close-success-modal-click="
       () => {
         validStart = '';
-        maxTransactionFee = 2;
+        maxTransactionFee = new Hbar(2);
         ownerData.accountId.value = '';
         spenderData.accountId.value = '';
-        amount = 0;
+        amount = new Hbar(0);
         transaction = null;
       }
     "
