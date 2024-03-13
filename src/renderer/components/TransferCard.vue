@@ -15,10 +15,12 @@ const props = withDefaults(
   defineProps<{
     accountLabel: string;
     showApproved?: boolean;
-    showBalance?: boolean;
+    showBalanceInLabel?: boolean;
+    showTransferRest?: boolean;
     spender?: string;
     clearOnAddTransfer?: boolean;
     buttonDisabled?: boolean;
+    addRestDisabled?: boolean;
   }>(),
   {
     showApproved: false,
@@ -28,7 +30,8 @@ const props = withDefaults(
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'handleAddTransfer', accountId: string, amount: Hbar, isApproved: boolean): void;
+  (event: 'transferAdded', accountId: string, amount: Hbar, isApproved: boolean): void;
+  (event: 'restAdded', accountId: string, isApproved: boolean): void;
 }>();
 
 /* Composables */
@@ -51,25 +54,44 @@ const handleSubmit = (e: Event) => {
   }
 
   emit(
-    'handleAddTransfer',
+    'transferAdded',
     accountData.accountIdFormatted.value,
     amount.value as Hbar,
     isApprovedTransfer.value,
   );
 
   if (props.clearOnAddTransfer) {
-    accountData.accountId.value = '';
-    amount.value = new Hbar(0);
-    isApprovedTransfer.value = false;
+    clearData();
   }
 };
+
+const handleAddRest = () => {
+  if (!accountData.isValid.value) {
+    throw new Error('Invalid Account ID');
+  }
+
+  emit('restAdded', accountData.accountIdFormatted.value, isApprovedTransfer.value);
+
+  if (props.clearOnAddTransfer) {
+    clearData();
+  }
+};
+
+/* Functions */
+function clearData() {
+  accountData.accountId.value = '';
+  amount.value = new Hbar(0);
+  isApprovedTransfer.value = false;
+}
 </script>
 <template>
   <div class="border rounded p-4">
     <form @submit="handleSubmit">
       <div class="form-group">
         <label class="form-label mb-0 me-3">{{ accountLabel }}</label>
-        <label v-if="showBalance && accountData.isValid.value" class="form-label text-secondary"
+        <label
+          v-if="showBalanceInLabel && accountData.isValid.value"
+          class="form-label text-secondary"
           >Balance: {{ accountData.accountInfo.value?.balance }}</label
         >
         <AppInput
@@ -99,16 +121,28 @@ const handleSubmit = (e: Event) => {
             ></AppSwitch>
           </div>
         </template>
-        <AppButton
-          color="primary"
-          :disabled="
-            !accountData.isValid.value ||
-            amount.isNegative() ||
-            amount.toBigNumber().isEqualTo(0) ||
-            buttonDisabled
-          "
-          ><span class="bi bi-plus-lg"></span> Add Transfer</AppButton
-        >
+        <div>
+          <template v-if="showTransferRest">
+            <AppButton
+              type="button"
+              color="secondary"
+              class="me-4"
+              @click="handleAddRest"
+              :disabled="!accountData.isValid.value || addRestDisabled"
+              >Add Rest</AppButton
+            >
+          </template>
+          <AppButton
+            color="primary"
+            :disabled="
+              !accountData.isValid.value ||
+              amount.isNegative() ||
+              amount.toBigNumber().isEqualTo(0) ||
+              buttonDisabled
+            "
+            ><span class="bi bi-plus-lg"></span> Add Transfer</AppButton
+          >
+        </div>
       </div>
     </form>
   </div>
