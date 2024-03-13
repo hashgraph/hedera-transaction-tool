@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import { Hbar } from '@hashgraph/sdk';
+import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import useAccountId from '@renderer/composables/useAccountId';
 
@@ -82,7 +82,7 @@ const handleSubmit = (e: Event) => {
         />
       </div>
       <div class="form-group mt-4">
-        <label class="form-label mb-0 me-3">Amount ℏ</label>
+        <label class="form-label mb-0 me-3">Amount {{ HbarUnit.Hbar._symbol }}</label>
         <label v-if="spender?.trim() && isApprovedTransfer" class="form-label text-secondary"
           >Allowance: {{ accountData.getSpenderAllowance(spender) }}</label
         >
