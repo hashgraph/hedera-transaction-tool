@@ -66,8 +66,14 @@
 /* Flex */
 .flex-centered {
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+}
+
+.flex-between-centered {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .absolute-centered {

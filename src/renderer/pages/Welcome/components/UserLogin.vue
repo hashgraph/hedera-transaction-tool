@@ -310,18 +310,12 @@ watch(inputEmail, pass => {
         <p class="text-center text-small text-secondary mt-4">
           Are you sure you want to reset the app data?
         </p>
+
         <hr class="separator my-5" />
-        <div class="row mt-4">
-          <div class="col-6">
-            <AppButton color="borderless" class="w-100" @click="isResetDataModalShown = false"
-              >Cancel</AppButton
-            >
-          </div>
-          <div class="col-6">
-            <AppButton :outline="true" color="danger" class="w-100" @click="handleResetData"
-              >Reset</AppButton
-            >
-          </div>
+
+        <div class="flex-between-centered gap-4">
+          <AppButton color="borderless" @click="isResetDataModalShown = false">Cancel</AppButton>
+          <AppButton :outline="true" color="danger" @click="handleResetData">Reset</AppButton>
         </div>
       </div>
     </AppModal>
