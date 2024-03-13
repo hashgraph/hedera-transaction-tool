@@ -26,7 +26,7 @@ const route = useRoute();
 const payerData = useAccountId();
 
 /* State */
-const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
+const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
 
 const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
@@ -246,6 +246,7 @@ onMounted(async () => {
             @handle-add-transfer="handleAddSenderTransfer"
             :show-balance="true"
             :button-disabled="totalBalanceAdjustments >= 10"
+            :clear-on-add-transfer="true"
           />
         </div>
         <div class="col-1 align-self-center text-center">
@@ -256,6 +257,7 @@ onMounted(async () => {
             account-label="To"
             @handle-add-transfer="handleAddReceiverTransfer"
             :button-disabled="totalBalanceAdjustments >= 10"
+            :clear-on-add-transfer="true"
           />
         </div>
       </div>
