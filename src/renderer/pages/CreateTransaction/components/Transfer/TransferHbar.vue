@@ -9,9 +9,12 @@ import useAccountId from '@renderer/composables/useAccountId';
 import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft, updateDraft } from '@renderer/services/transactionDraftsService';
 
-import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { getTransactionFromBytes } from '@renderer/utils/transactions';
-import { isAccountId } from '@renderer/utils/validator';
+import {
+  getDateTimeLocalInputValue,
+  getTransactionFromBytes,
+  isAccountId,
+  stringifyHbar,
+} from '@renderer/utils';
 
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
@@ -274,7 +277,9 @@ onMounted(async () => {
                     </p>
                   </div>
                   <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
-                    <p class="text-small text-secondary overflow-hidden">{{ debit.amount }}</p>
+                    <p class="text-small text-secondary overflow-hidden">
+                      {{ stringifyHbar(debit.amount as Hbar) }}
+                    </p>
                   </div>
                   <div class="col-2 col-lg-1 text-end">
                     <span
@@ -300,7 +305,9 @@ onMounted(async () => {
                     </p>
                   </div>
                   <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
-                    <p class="text-small text-secondary overflow-hidden">{{ credit.amount }}</p>
+                    <p class="text-small text-secondary overflow-hidden">
+                      {{ stringifyHbar(credit.amount as Hbar) }}
+                    </p>
                   </div>
                   <div class="col-2 col-lg-1 text-end">
                     <span
@@ -323,8 +330,8 @@ onMounted(async () => {
             Adjustment{{ totalBalanceAdjustments != 1 ? 's' : '' }}</span
           >
         </p>
-        <p class="text-small text-nowrap">
-          <span class="text-secondary">Balance</span> <span>{{ totalBalance }}</span>
+        <p class="text-small text-wrap">
+          <span class="text-secondary">Balance</span> <span>{{ stringifyHbar(totalBalance) }}</span>
         </p>
       </div>
     </div>
