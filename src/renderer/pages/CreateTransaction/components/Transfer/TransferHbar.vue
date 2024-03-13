@@ -261,18 +261,18 @@ onMounted(async () => {
               <div v-if="debit.amount.isNegative()" class="mt-3">
                 <div class="row align-items-center px-3">
                   <div class="col-4 overflow-hidden">
-                    <p class="text-small text-secondary overflow-hidden">
+                    <p class="text-secondary text-small overflow-hidden">
                       {{ debit.accountId }} {{ debit.isApproved ? '(Approved)' : '' }}
                     </p>
                   </div>
                   <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
-                    <p class="text-small text-secondary overflow-hidden">
+                    <p class="text-secondary text-small text-bold overflow-hidden">
                       {{ stringifyHbar(debit.amount as Hbar) }}
                     </p>
                   </div>
                   <div class="col-2 col-lg-1 text-end">
                     <span
-                      class="bi bi-x-lg text-small text-secondary cursor-pointer"
+                      class="bi bi-x-lg text-secondary text-small cursor-pointer"
                       @click="() => transfers.splice(i, 1)"
                     ></span>
                   </div>
@@ -289,18 +289,18 @@ onMounted(async () => {
               <div v-if="!credit.amount.isNegative()" class="mt-3">
                 <div class="row align-items-center px-3">
                   <div class="col-4 overflow-hidden">
-                    <p class="text-small text-secondary overflow-hidden">
+                    <p class="text-secondary text-small overflow-hidden">
                       {{ credit.accountId }}
                     </p>
                   </div>
                   <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
-                    <p class="text-small text-secondary overflow-hidden">
+                    <p class="text-secondary text-small text-bold overflow-hidden">
                       {{ stringifyHbar(credit.amount as Hbar) }}
                     </p>
                   </div>
                   <div class="col-2 col-lg-1 text-end">
                     <span
-                      class="bi bi-x-lg text-small text-secondary cursor-pointer"
+                      class="bi bi-x-lg text-secondary text-small cursor-pointer"
                       @click="() => transfers.splice(i, 1)"
                     ></span>
                   </div>
