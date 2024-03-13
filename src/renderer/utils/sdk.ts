@@ -3,6 +3,7 @@ import {
   FileId,
   FileInfo,
   Hbar,
+  HbarUnit,
   Key,
   KeyList,
   LedgerId,
@@ -166,4 +167,69 @@ export function formatHbar(hbar: Hbar) {
     .toFixed(8)
     .replace(/\.0*$|(\.\d*[1-9])0+$/, '$1')
     .trim();
+}
+
+export function stringifyHbar(hbar: Hbar) {
+  // -100000000th < 100000001 < 100000000 * 1000
+  console.log(hbar._valueInTinybar.toString());
+
+  if (
+    hbar._valueInTinybar.isLessThan(HbarUnit.Microbar._tinybar) &&
+    hbar._valueInTinybar.isGreaterThan(HbarUnit.Microbar._tinybar.negated())
+  ) {
+    return `${hbar.to(HbarUnit.Tinybar)} ${HbarUnit.Tinybar._symbol}`;
+  }
+
+  if (
+    (hbar._valueInTinybar.isLessThan(HbarUnit.Millibar._tinybar) &&
+      hbar._valueInTinybar.isGreaterThanOrEqualTo(HbarUnit.Microbar._tinybar)) ||
+    (hbar._valueInTinybar.isGreaterThan(HbarUnit.Millibar._tinybar.negated()) &&
+      hbar._valueInTinybar.isLessThanOrEqualTo(HbarUnit.Microbar._tinybar.negated()))
+  ) {
+    return `${hbar.to(HbarUnit.Microbar)} ${HbarUnit.Microbar._symbol}`;
+  }
+
+  if (
+    (hbar._valueInTinybar.isLessThan(HbarUnit.Hbar._tinybar) &&
+      hbar._valueInTinybar.isGreaterThanOrEqualTo(HbarUnit.Millibar._tinybar)) ||
+    (hbar._valueInTinybar.isGreaterThan(HbarUnit.Hbar._tinybar.negated()) &&
+      hbar._valueInTinybar.isLessThanOrEqualTo(HbarUnit.Millibar._tinybar.negated()))
+  ) {
+    return `${hbar.to(HbarUnit.Millibar)} ${HbarUnit.Millibar._symbol}`;
+  }
+
+  if (
+    (hbar._valueInTinybar.isLessThan(HbarUnit.Kilobar._tinybar) &&
+      hbar._valueInTinybar.isGreaterThanOrEqualTo(HbarUnit.Hbar._tinybar)) ||
+    (hbar._valueInTinybar.isGreaterThan(HbarUnit.Kilobar._tinybar.negated()) &&
+      hbar._valueInTinybar.isLessThanOrEqualTo(HbarUnit.Hbar._tinybar.negated()))
+  ) {
+    return `${hbar.to(HbarUnit.Hbar)} ${HbarUnit.Hbar._symbol}`;
+  }
+
+  if (
+    (hbar._valueInTinybar.isLessThan(HbarUnit.Megabar._tinybar) &&
+      hbar._valueInTinybar.isGreaterThanOrEqualTo(HbarUnit.Kilobar._tinybar)) ||
+    (hbar._valueInTinybar.isGreaterThan(HbarUnit.Megabar._tinybar.negated()) &&
+      hbar._valueInTinybar.isLessThanOrEqualTo(HbarUnit.Kilobar._tinybar.negated()))
+  ) {
+    return `${hbar.to(HbarUnit.Kilobar)} ${HbarUnit.Kilobar._symbol}`;
+  }
+
+  if (
+    (hbar._valueInTinybar.isLessThan(HbarUnit.Gigabar._tinybar) &&
+      hbar._valueInTinybar.isGreaterThanOrEqualTo(HbarUnit.Megabar._tinybar)) ||
+    (hbar._valueInTinybar.isGreaterThan(HbarUnit.Gigabar._tinybar.negated()) &&
+      hbar._valueInTinybar.isLessThanOrEqualTo(HbarUnit.Megabar._tinybar.negated()))
+  ) {
+    return `${hbar.to(HbarUnit.Megabar)} ${HbarUnit.Megabar._symbol}`;
+  }
+  if (
+    hbar._valueInTinybar.isGreaterThanOrEqualTo(HbarUnit.Gigabar._tinybar) ||
+    hbar._valueInTinybar.isLessThanOrEqualTo(HbarUnit.Megabar._tinybar.negated())
+  ) {
+    return `${hbar.to(HbarUnit.Gigabar)} ${HbarUnit.Gigabar._symbol}`;
+  }
+
+  throw new Error('Invalid Hbar');
 }
