@@ -7,6 +7,7 @@ import {
   Transaction,
   TransactionReceipt,
   Key,
+  HbarUnit,
 } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
@@ -29,6 +30,7 @@ import {
 
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
@@ -47,13 +49,13 @@ const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
-const maxTransactionFee = ref(2);
+const maxTransactionFee = ref<Hbar>(new Hbar(2));
 
 const accountData = reactive({
   accountId: '',
   receiverSignatureRequired: false,
   maxAutomaticTokenAssociations: 0,
-  initialBalance: 0,
+  initialBalance: new Hbar(0),
   stakedAccountId: '',
   stakedNodeId: '',
   acceptStakingRewards: true,
@@ -106,7 +108,7 @@ const handleLoadFromDraft = async () => {
     accountData.receiverSignatureRequired = draftTransaction.receiverSignatureRequired;
     accountData.maxAutomaticTokenAssociations =
       draftTransaction.maxAutomaticTokenAssociations.toNumber();
-    accountData.initialBalance = draftTransaction.initialBalance?.toBigNumber().toNumber() || 0;
+    accountData.initialBalance = draftTransaction.initialBalance || new Hbar(0);
     accountData.stakedAccountId = draftTransaction.stakedAccountId?.toString() || '';
 
     if (draftTransaction.stakedNodeId) {
@@ -130,7 +132,7 @@ const handleOwnerKeyUpdate = key => {
 function createTransaction() {
   const transaction = new AccountCreateTransaction()
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(new Hbar(maxTransactionFee.value || 0))
+    .setMaxTransactionFee(maxTransactionFee.value)
     .setReceiverSignatureRequired(accountData.receiverSignatureRequired)
     .setDeclineStakingReward(!accountData.acceptStakingRewards)
     .setInitialBalance(Hbar.fromString(accountData.initialBalance.toString() || '0'))
@@ -190,7 +192,7 @@ const columnClass = 'col-4 col-xxxl-3';
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
       v-model:valid-start="validStart"
-      v-model:max-transaction-fee="maxTransactionFee"
+      v-model:max-transaction-fee="maxTransactionFee as Hbar"
       class="mt-6"
     />
 
@@ -259,13 +261,11 @@ const columnClass = 'col-4 col-xxxl-3';
 
     <div class="row mt-6">
       <div class="form-group" :class="[columnClass]">
-        <label class="form-label">Initial Balance in HBar</label>
-        <AppInput
-          v-model="accountData.initialBalance"
+        <label class="form-label">Initial Balance {{ HbarUnit.Hbar._symbol }}</label>
+        <AppHbarInput
+          v-model:model-value="accountData.initialBalance as Hbar"
+          placeholder="Enter Amount"
           :filled="true"
-          type="number"
-          min="0"
-          placeholder="Enter Hbar amount"
         />
       </div>
       <div class="form-group" :class="[columnClass]">
