@@ -101,18 +101,6 @@ const handleLoadFromDraft = async () => {
   if (draft) {
     transaction.value = draftTransaction;
 
-    if (draftTransaction.transactionId) {
-      const transactionId = draftTransaction.transactionId;
-
-      if (transactionId.accountId) {
-        payerData.accountId.value = transactionId.accountId.toString();
-      }
-    }
-
-    if (draftTransaction.maxTransactionFee) {
-      maxTransactionFee.value = draftTransaction.maxTransactionFee;
-    }
-
     if (draft.details) {
       try {
         const details = JSON.parse(draft.details);
