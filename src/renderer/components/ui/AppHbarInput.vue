@@ -25,6 +25,11 @@ const handleUpdateValue = async value => {
   value = value.trim();
   setInputValue(value);
 
+  if (value === '' || value === '.' || value === '0') {
+    emit('update:modelValue', new Hbar(0));
+    return;
+  }
+
   const separatorIndex = value.search(/[.,]/);
 
   if (separatorIndex !== -1 && value.length - separatorIndex - 1 > 8) {
