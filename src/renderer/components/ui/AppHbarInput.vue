@@ -44,8 +44,12 @@ const handleUpdateValue = async value => {
     value = value + '0';
   }
 
-  const hbar = Hbar.fromString(value || '0', HbarUnit.Hbar);
-  emit('update:modelValue', hbar);
+  try {
+    const hbar = Hbar.fromString(value || '0', HbarUnit.Hbar);
+    emit('update:modelValue', hbar);
+  } catch (error) {
+    throw new Error('Invalid Hbar value');
+  }
 };
 
 const handleKeyDown = e => {
