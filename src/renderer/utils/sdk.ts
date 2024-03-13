@@ -144,7 +144,7 @@ export function isKeyListValid(keyList: KeyList) {
   return everyNestedKeyValid;
 }
 
-export function encodeKeyList(keyList: KeyList) {
+export function encodeKey(keyList: Key) {
   const ikey = keyList._toProtobufKey();
   return proto.Key.encode(ikey).finish();
 }

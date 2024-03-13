@@ -10,7 +10,7 @@ import { useToast } from 'vue-toast-notification';
 
 import { addComplexKey } from '@renderer/services/complexKeysService';
 
-import { encodeKeyList } from '@renderer/utils/sdk';
+import { encodeKey } from '@renderer/utils/sdk';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -41,7 +41,7 @@ const handleShowUpdate = show => emit('update:show', show);
 const handleSaveKeyList = async e => {
   e.preventDefault();
 
-  const keyListBytes = encodeKeyList(props.keyList);
+  const keyListBytes = encodeKey(props.keyList);
   const newKey = await addComplexKey(user.data.id, keyListBytes, nickname.value);
 
   toast.success('Key list saved successfully', { position: 'bottom-right' });
