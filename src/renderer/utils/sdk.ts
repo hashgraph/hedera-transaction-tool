@@ -2,6 +2,7 @@ import { proto } from '@hashgraph/proto';
 import {
   FileId,
   FileInfo,
+  Hbar,
   Key,
   KeyList,
   LedgerId,
@@ -157,4 +158,12 @@ export function decodeKeyList(keyListBytes: string) {
   } else {
     throw new Error('Invalid key list');
   }
+}
+
+export function formatHbar(hbar: Hbar) {
+  return hbar
+    .toBigNumber()
+    .toFixed(8)
+    .replace(/\.0*$|(\.\d*[1-9])0+$/, '$1')
+    .trim();
 }
