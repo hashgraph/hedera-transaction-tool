@@ -37,7 +37,7 @@ const transactionProcessor = ref<typeof FileTransactionProcessor | null>(null);
 
 const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
-const maxTransactionFee = ref(2);
+const maxTransactionFee = ref<Hbar>(new Hbar(2));
 
 const fileId = ref('');
 const memo = ref('');
@@ -167,7 +167,7 @@ const handleLoadFromDraft = async () => {
 function createTransaction() {
   const transaction = new FileUpdateTransaction()
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(new Hbar(maxTransactionFee.value || 0))
+    .setMaxTransactionFee(maxTransactionFee.value)
     .setFileMemo(memo.value);
 
   if (isAccountId(payerData.accountId.value)) {
@@ -217,7 +217,7 @@ const columnClass = 'col-4 col-xxxl-3';
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
       v-model:valid-start="validStart"
-      v-model:max-transaction-fee="maxTransactionFee"
+      v-model:max-transaction-fee="maxTransactionFee as Hbar"
       class="mt-6"
     />
 
@@ -343,7 +343,7 @@ const columnClass = 'col-4 col-xxxl-3';
     :on-close-success-modal-click="
       () => {
         validStart = '';
-        maxTransactionFee = 2;
+        maxTransactionFee = new Hbar(2);
         fileId = '';
         newOwnerKey = null;
         ownerKey = null;

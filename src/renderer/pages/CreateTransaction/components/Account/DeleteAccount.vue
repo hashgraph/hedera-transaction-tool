@@ -41,7 +41,7 @@ const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
-const maxTransactionFee = ref(2);
+const maxTransactionFee = ref<Hbar>(new Hbar(2));
 
 const selectedKey = ref<Key | null>();
 const isKeyStructureModalShown = ref(false);
@@ -115,7 +115,7 @@ const handleExecuted = async () => {
 function createTransaction() {
   const transaction = new AccountDeleteTransaction()
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(new Hbar(maxTransactionFee.value || 0));
+    .setMaxTransactionFee(maxTransactionFee.value);
 
   if (isAccountId(payerData.accountId.value)) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
@@ -161,7 +161,7 @@ const columnClass = 'col-4 col-xxxl-3';
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
       v-model:valid-start="validStart"
-      v-model:max-transaction-fee="maxTransactionFee"
+      v-model:max-transaction-fee="maxTransactionFee as Hbar"
       class="mt-6"
     />
 

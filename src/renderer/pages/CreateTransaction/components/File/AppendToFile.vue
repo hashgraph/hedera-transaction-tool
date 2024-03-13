@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
-import { FileAppendTransaction, Key, KeyList, Transaction } from '@hashgraph/sdk';
+import { FileAppendTransaction, Hbar, Key, KeyList, Transaction } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
@@ -29,7 +29,7 @@ const transactionProcessor = ref<typeof FileTransactionProcessor | null>(null);
 
 const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
-const maxTransactionFee = ref(2);
+const maxTransactionFee = ref<Hbar>(new Hbar(2));
 const fileId = ref('');
 const ownerKey = ref<Key | null>(null);
 
@@ -176,7 +176,7 @@ const columnClass = 'col-4 col-xxxl-3';
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
       v-model:valid-start="validStart"
-      v-model:max-transaction-fee="maxTransactionFee"
+      v-model:max-transaction-fee="maxTransactionFee as Hbar"
       class="mt-6"
     />
 
@@ -263,7 +263,7 @@ const columnClass = 'col-4 col-xxxl-3';
     :on-close-success-modal-click="
       () => {
         validStart = '';
-        maxTransactionFee = 2;
+        maxTransactionFee = new Hbar(2);
         fileId = '';
         ownerKey = null;
         fileMeta = null;

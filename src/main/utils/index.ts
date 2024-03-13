@@ -37,8 +37,7 @@ export const deleteDirectory = async (directoryPath: string) => {
     }
 
     return true;
-  } catch (error) {
-    console.log(error);
+  } catch {
     return false;
   }
 };

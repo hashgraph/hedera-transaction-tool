@@ -4,6 +4,7 @@ import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
 import {
   FileAppendTransaction,
   FileUpdateTransaction,
+  Hbar,
   Key,
   KeyList,
   Transaction,
@@ -34,7 +35,7 @@ import { openExternal } from '@renderer/services/electronUtilsService';
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 import { getDraft, deleteDraft } from '@renderer/services/transactionDraftsService';
 
-import { ableToSign } from '@renderer/utils/sdk';
+import { ableToSign, stringifyHbar } from '@renderer/utils/sdk';
 import { getStatusFromCode, getTransactionType } from '@renderer/utils/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -321,7 +322,7 @@ async function chunkFileTransactionForOrganization(
     const updateTransaction = new FileUpdateTransaction()
       .setTransactionId(transaction.transactionId!)
       .setTransactionValidDuration(180)
-      .setMaxTransactionFee(transaction.maxTransactionFee || 2)
+      .setMaxTransactionFee(transaction.maxTransactionFee || new Hbar(2))
       .setFileId(transaction.fileId!)
       .setContents(chunks[0]);
     transaction.fileMemo && updateTransaction.setFileMemo(transaction.fileMemo);
@@ -352,7 +353,7 @@ async function chunkFileTransactionForOrganization(
     const appendTransaction = new FileAppendTransaction()
       .setTransactionId(transactionId)
       .setTransactionValidDuration(180)
-      .setMaxTransactionFee(transaction.maxTransactionFee || 2)
+      .setMaxTransactionFee(transaction.maxTransactionFee || new Hbar(2))
       .setFileId(transaction.fileId!)
       .setContents(chunks[i])
       .setMaxChunks(1)
@@ -408,7 +409,7 @@ async function executeFileTransactions(
         chunkTransaction = new FileUpdateTransaction()
           .setTransactionId(createTransactionId(transaction.transactionId!.accountId!, new Date()))
           .setTransactionValidDuration(180)
-          .setMaxTransactionFee(transaction.maxTransactionFee || 2)
+          .setMaxTransactionFee(transaction.maxTransactionFee || new Hbar(2))
           .setFileId(transaction.fileId!)
           .setContents(chunks[0]);
         transaction.fileMemo && chunkTransaction.setFileMemo(transaction.fileMemo);
@@ -427,7 +428,7 @@ async function executeFileTransactions(
             createTransactionId(transaction.transactionId!.accountId!, newValidStart),
           )
           .setTransactionValidDuration(180)
-          .setMaxTransactionFee(transaction.maxTransactionFee || 2)
+          .setMaxTransactionFee(transaction.maxTransactionFee || new Hbar(2))
           .setFileId(transaction.fileId!)
           .setContents(chunks[i])
           .setMaxChunks(1)
@@ -603,7 +604,7 @@ defineExpose({
             >
               <p>Max Transaction Fee</p>
               <p class="">
-                {{ transaction?.maxTransactionFee }} ({{
+                {{ stringifyHbar(transaction.maxTransactionFee) }} ({{
                   getDollarAmount(network.currentRate, transaction.maxTransactionFee.toBigNumber())
                 }})
               </p>

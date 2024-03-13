@@ -31,8 +31,23 @@ export const getAccountsByPublicKey = async (
   publicKey: string,
 ): Promise<AccountInfo[]> => {
   try {
-    const { data } = await axios.get(`${mirrorNodeURL}/accounts/?account.publickey=${publicKey}`);
-    return data.accounts;
+    let accounts: AccountInfo[] = [];
+
+    let nextUrl: string | null =
+      `${mirrorNodeURL}/accounts/?account.publickey=${publicKey}&limit=25&order=asc`;
+
+    while (nextUrl) {
+      const { data } = await axios.get(nextUrl);
+      accounts = accounts.concat(data.accounts);
+
+      if (data.links?.next) {
+        nextUrl = `${mirrorNodeURL}${data.links.next.slice(data.links.next.indexOf('/accounts'))}`;
+      } else {
+        nextUrl = null;
+      }
+    }
+
+    return accounts;
   } catch (error) {
     console.log(error);
     return [];

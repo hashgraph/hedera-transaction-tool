@@ -13,7 +13,7 @@ import { useToast } from 'vue-toast-notification';
 import { getComplexKey, updateComplexKey } from '@renderer/services/complexKeysService';
 
 import { isPublicKey } from '@renderer/utils/validator';
-import { decodeKeyList, encodeKeyList } from '@renderer/utils/sdk';
+import { decodeKeyList, encodeKey } from '@renderer/utils/sdk';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppPublicKeyInput from '@renderer/components/ui/AppPublicKeyInput.vue';
@@ -109,7 +109,7 @@ const handleComplexKeyUpdate = async (keyList: KeyList) => {
   emit('update:modelKey', keyList);
 
   if (selectedComplexKey.value) {
-    const keyListBytes = encodeKeyList(keyList);
+    const keyListBytes = encodeKey(keyList);
     const updatedKey = await updateComplexKey(selectedComplexKey.value.id, keyListBytes);
     selectedComplexKey.value = updatedKey;
     toast.success('Key list updated successfully', { position: 'bottom-right' });

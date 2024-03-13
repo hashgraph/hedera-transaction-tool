@@ -1,3 +1,8 @@
+export * from './dom';
+export * from './sdk';
+export * from './transactions';
+export * from './validator';
+
 export const getMessageFromIPCError = (err: any, msg: string) => {
   return err.message?.split(': Error: ')[1] || msg;
 };

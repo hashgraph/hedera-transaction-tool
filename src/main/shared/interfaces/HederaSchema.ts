@@ -69,6 +69,7 @@ export interface CryptoAllowancesResponse {
 }
 
 export interface CryptoAllowance {
+  amount: number; // The amount left of the spender's allowance in tinybars.
   amount_granted: number; // The granted amount of the spender's allowance in tinybars.
   owner: string | null; // Network entity ID in the format of shard.realm.num
   spender: string | null; // Network entity ID in the format of shard.realm.num

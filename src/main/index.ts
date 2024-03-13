@@ -27,14 +27,7 @@ attachAppEvents();
 
 function attachAppEvents() {
   app.on('ready', async () => {
-    mainWindow = await restoreOrCreateWindow();
-
-    createMenu(mainWindow);
-
-    /* main window events */
-    mainWindow?.on('closed', () => {
-      mainWindow = null;
-    });
+    await initMainWindow();
 
     if (!is.dev) {
       session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
@@ -49,7 +42,7 @@ function attachAppEvents() {
 
     app.on('activate', async function () {
       if (mainWindow === null) {
-        mainWindow = await restoreOrCreateWindow();
+        await initMainWindow();
       }
     });
   });
@@ -64,17 +57,29 @@ function attachAppEvents() {
 
   let deleteRetires = 0;
   app.on('before-quit', async function (e) {
+    mainWindow?.close();
+
     if (deleteRetires === 0) {
       e.preventDefault();
 
       deleteRetires++;
       try {
         await deleteTempFolder();
-      } catch (error) {
-        console.log(error);
+      } catch {
+        /* Empty */
       }
 
       app.quit();
     }
+  });
+}
+
+async function initMainWindow() {
+  mainWindow = await restoreOrCreateWindow();
+
+  createMenu(mainWindow);
+
+  mainWindow.on('closed', () => {
+    mainWindow = null;
   });
 }

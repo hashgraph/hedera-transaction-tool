@@ -208,14 +208,13 @@ watch(index, () => {
               :handle-continue="handleFinish"
               :secret-hashes="user.data.secretHashes"
             />
-            <div
-              v-if="keyPairsStore.recoveryPhraseWords.length > 0"
-              class="row justify-content-between mt-6"
-            >
+            <div class="row justify-content-between mt-6">
               <div class="col-4 d-grid">
-                <AppButton color="secondary" @click="importRef?.clearWords()">Clear</AppButton>
+                <AppButton type="button" color="secondary" @click="importRef?.clearWords()"
+                  >Clear</AppButton
+                >
               </div>
-              <div class="col-4 d-grid">
+              <div v-if="keyPairsStore.recoveryPhraseWords.length > 0" class="col-4 d-grid">
                 <AppButton
                   color="primary"
                   :disabled="keyPairsStore.recoveryPhraseWords.length === 0"

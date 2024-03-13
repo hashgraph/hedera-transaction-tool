@@ -24,6 +24,7 @@ const props = withDefaults(
   defineProps<{
     handleSign?: () => void;
     handleSaveDraft?: () => void;
+    handleDraftAdded?: (id: string) => void;
     getTransactionBytes?: () => Uint8Array;
     isExecuted?: boolean;
     createRequirements?: any;
@@ -54,7 +55,8 @@ const saveDraft = async () => {
 
   const transactionBytes = props.getTransactionBytes();
 
-  await addDraft(user.data.id, transactionBytes);
+  const { id } = await addDraft(user.data.id, transactionBytes);
+  props.handleDraftAdded && props.handleDraftAdded(id);
 
   toast.success('Draft saved', { position: 'bottom-right' });
 };
@@ -71,6 +73,7 @@ onBeforeRouteLeave(async to => {
 
       if (getTransactionFromBytes(loadedDraft.transactionBytes).toBytes() != transactionBytes) {
         await updateDraft(loadedDraft.id, { transactionBytes: transactionBytes.toString() });
+        props.handleDraftAdded && props.handleDraftAdded(loadedDraft.id);
       }
     } catch (error) {
       console.log(error);

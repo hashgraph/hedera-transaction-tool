@@ -1,6 +1,6 @@
 import { KeyList } from '@hashgraph/sdk';
 import { getMessageFromIPCError } from '@renderer/utils';
-import { encodeKeyList } from '@renderer/utils/sdk';
+import { encodeKey } from '@renderer/utils/sdk';
 
 /* Complex Keys Service */
 
@@ -29,7 +29,7 @@ export const addComplexKey = async (
 /* Gets particular complex key of a user */
 export const getComplexKey = async (userId: string, keyList: KeyList) => {
   try {
-    const keyListBytes = encodeKeyList(keyList);
+    const keyListBytes = encodeKey(keyList);
     return await window.electronAPI.complexKeys.getComplexKey(userId, keyListBytes);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, `Failed to fetch complex key`));

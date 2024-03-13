@@ -196,7 +196,7 @@ export const electronAPI = {
       ipcRenderer.invoke('transactionDrafts:getDrafts', findArgs),
     getDraft: (id: string): Promise<TransactionDraft> =>
       ipcRenderer.invoke('transactionDrafts:getDraft', id),
-    addDraft: (draft: Prisma.TransactionDraftUncheckedCreateInput): Promise<void> =>
+    addDraft: (draft: Prisma.TransactionDraftUncheckedCreateInput): Promise<TransactionDraft> =>
       ipcRenderer.invoke('transactionDrafts:addDraft', draft),
     updateDraft: (id: string, draft: Prisma.TransactionDraftUncheckedUpdateInput): Promise<void> =>
       ipcRenderer.invoke('transactionDrafts:updateDraft', id, draft),

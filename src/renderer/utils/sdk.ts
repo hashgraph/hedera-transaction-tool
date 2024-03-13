@@ -2,6 +2,8 @@ import { proto } from '@hashgraph/proto';
 import {
   FileId,
   FileInfo,
+  Hbar,
+  HbarUnit,
   Key,
   KeyList,
   LedgerId,
@@ -142,7 +144,7 @@ export function isKeyListValid(keyList: KeyList) {
   return everyNestedKeyValid;
 }
 
-export function encodeKeyList(keyList: KeyList) {
+export function encodeKey(keyList: Key) {
   const ikey = keyList._toProtobufKey();
   return proto.Key.encode(ikey).finish();
 }
@@ -157,4 +159,58 @@ export function decodeKeyList(keyListBytes: string) {
   } else {
     throw new Error('Invalid key list');
   }
+}
+
+export function formatHbar(hbar: Hbar) {
+  return hbar
+    .toBigNumber()
+    .toFixed(8)
+    .replace(/\.0*$|(\.\d*[1-9])0+$/, '$1')
+    .trim();
+}
+
+export function stringifyHbar(hbar: Hbar) {
+  const denominations = [
+    HbarUnit.Tinybar,
+    HbarUnit.Microbar,
+    HbarUnit.Millibar,
+    HbarUnit.Hbar,
+    HbarUnit.Kilobar,
+    HbarUnit.Megabar,
+    HbarUnit.Gigabar,
+  ];
+
+  if (
+    hbar._valueInTinybar.isLessThan(HbarUnit.Microbar._tinybar) &&
+    hbar._valueInTinybar.isGreaterThan(HbarUnit.Microbar._tinybar.negated())
+  ) {
+    return `${hbar.to(HbarUnit.Tinybar)} ${HbarUnit.Tinybar._symbol}`;
+  }
+
+  const checkCommonDenomination = (currentDenomination: HbarUnit, nextDenomination: HbarUnit) => {
+    if (
+      (hbar._valueInTinybar.isLessThan(nextDenomination._tinybar) &&
+        hbar._valueInTinybar.isGreaterThanOrEqualTo(currentDenomination._tinybar)) ||
+      (hbar._valueInTinybar.isGreaterThan(nextDenomination._tinybar.negated()) &&
+        hbar._valueInTinybar.isLessThanOrEqualTo(currentDenomination._tinybar.negated()))
+    ) {
+      return `${hbar.to(currentDenomination)} ${currentDenomination._symbol}`;
+    }
+
+    return null;
+  };
+
+  for (let i = 1; i < denominations.length - 1; i++) {
+    const result = checkCommonDenomination(denominations[i], denominations[i + 1]);
+    if (result) return result;
+  }
+
+  if (
+    hbar._valueInTinybar.isGreaterThanOrEqualTo(HbarUnit.Gigabar._tinybar) ||
+    hbar._valueInTinybar.isLessThanOrEqualTo(HbarUnit.Megabar._tinybar.negated())
+  ) {
+    return `${hbar.to(HbarUnit.Gigabar)} ${HbarUnit.Gigabar._symbol}`;
+  }
+
+  throw new Error('Invalid Hbar');
 }

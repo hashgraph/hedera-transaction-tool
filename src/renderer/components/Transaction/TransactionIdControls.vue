@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 
+import { Hbar, HbarUnit } from '@hashgraph/sdk';
+
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -8,16 +10,18 @@ import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { getDraft } from '@renderer/services/transactionDraftsService';
-import { getTransactionFromBytes } from '@renderer/utils/transactions';
+
+import { getTransactionFromBytes, stringifyHbar } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 
 /* Props */
 defineProps<{
   payerId: string;
   validStart: string;
-  maxTransactionFee: number;
+  maxTransactionFee: Hbar;
 }>();
 
 /* Emits */
@@ -52,7 +56,7 @@ const loadFromDraft = async (id: string) => {
   }
 
   if (draftTransaction.maxTransactionFee) {
-    emit('update:maxTransactionFee', draftTransaction.maxTransactionFee.toBigNumber().toNumber());
+    emit('update:maxTransactionFee', draftTransaction.maxTransactionFee);
   }
 };
 
@@ -77,7 +81,8 @@ const columnClass = 'col-4 col-xxxl-3';
     <div class="form-group" :class="[columnClass]">
       <label class="form-label">Payer ID <span class="text-danger">*</span></label>
       <label v-if="account.isValid.value" class="d-block form-label text-secondary"
-        >Balance: {{ account.accountInfo.value?.balance || 0 }}</label
+        >Balance:
+        {{ stringifyHbar((account.accountInfo.value?.balance as Hbar) || new Hbar(0)) }}</label
       >
       <template v-if="user.data.mode === 'personal'">
         <AccountIdsSelect :account-id="payerId" @update:account-id="handlePayerChange" />
@@ -107,13 +112,11 @@ const columnClass = 'col-4 col-xxxl-3';
       />
     </div>
     <div class="form-group" :class="[columnClass]">
-      <label class="form-label">Max Transaction Fee</label>
-      <AppInput
+      <label class="form-label">Max Transaction Fee {{ HbarUnit.Hbar._symbol }}</label>
+      <AppHbarInput
         :model-value="maxTransactionFee"
-        @update:model-value="v => $emit('update:maxTransactionFee', Number(v))"
+        @update:model-value="v => $emit('update:maxTransactionFee', v)"
         :filled="true"
-        type="number"
-        min="0"
         placeholder="Enter Max Transaction Fee"
       />
     </div>

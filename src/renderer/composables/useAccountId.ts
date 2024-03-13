@@ -1,6 +1,6 @@
 import { computed, ref, watch } from 'vue';
 
-import { AccountId, Hbar, HbarUnit } from '@hashgraph/sdk';
+import { AccountId, Hbar } from '@hashgraph/sdk';
 
 import { IAccountInfoParsed, CryptoAllowance } from '@main/shared/interfaces';
 
@@ -9,6 +9,8 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { openExternal } from '@renderer/services/electronUtilsService';
 import { getAccountAllowances, getAccountInfo } from '@renderer/services/mirrorNodeDataService';
 import { flattenKeyList } from '@renderer/services/keyPairService';
+
+import { stringifyHbar } from '@renderer/utils';
 
 export default function useAccountId() {
   /* Stores */
@@ -98,7 +100,7 @@ export default function useAccountId() {
 
   function getSpenderAllowance(spenderId: string | AccountId) {
     return Hbar.fromTinybars(
-      allowances.value.find(al => al.spender === spenderId.toString())?.amount_granted || 0,
+      allowances.value.find(al => al.spender === spenderId.toString())?.amount || 0,
     );
   }
 
@@ -115,7 +117,7 @@ export default function useAccountId() {
   function getFormattedPendingRewards() {
     const rewards = accountInfo.value?.pendingRewards;
     if (rewards) {
-      return rewards.toString(HbarUnit.Hbar);
+      return stringifyHbar(rewards as Hbar);
     } else {
       return Hbar.fromString('0').toString();
     }

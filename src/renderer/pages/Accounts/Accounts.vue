@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { KeyList, PublicKey } from '@hashgraph/sdk';
+import { KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
 import { HederaAccount } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -21,6 +21,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
+import { stringifyHbar } from '@renderer/utils';
 
 /* Enums */
 // enum Sorting {
@@ -338,7 +339,9 @@ const handleChangeNickname = async () => {
               <div class="col-5"><p class="text-small text-semi-bold">Balance</p></div>
               <div class="col-7">
                 <p class="text-small text-semi-bold">
-                  {{ accountData.accountInfo.value?.balance || 'None' }}
+                  {{
+                    stringifyHbar((accountData.accountInfo.value?.balance as Hbar) || new Hbar(0))
+                  }}
                   <span class="text-pink">({{ hbarDollarAmount }})</span>
                 </p>
               </div>
