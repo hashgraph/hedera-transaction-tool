@@ -5,6 +5,8 @@ import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import useAccountId from '@renderer/composables/useAccountId';
 
+import { stringifyHbar } from '@renderer/utils';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -92,7 +94,10 @@ function clearData() {
         <label
           v-if="showBalanceInLabel && accountData.isValid.value"
           class="form-label text-secondary"
-          >Balance: {{ accountData.accountInfo.value?.balance }}</label
+          >Balance:
+          {{
+            stringifyHbar((accountData.accountInfo.value?.balance as Hbar) || new Hbar(0))
+          }}</label
         >
         <AppInput
           :model-value="accountData.accountIdFormatted.value"
@@ -104,7 +109,7 @@ function clearData() {
       <div class="form-group mt-4">
         <label class="form-label mb-0 me-3">Amount {{ HbarUnit.Hbar._symbol }}</label>
         <label v-if="spender?.trim() && isApprovedTransfer" class="form-label text-secondary"
-          >Allowance: {{ accountData.getSpenderAllowance(spender) }}</label
+          >Allowance: {{ stringifyHbar(accountData.getSpenderAllowance(spender)) }}</label
         >
         <!-- @vue-ignore Broken type inference -->
         <AppHbarInput v-model:model-value="amount" placeholder="Enter Amount" :filled="true" />
