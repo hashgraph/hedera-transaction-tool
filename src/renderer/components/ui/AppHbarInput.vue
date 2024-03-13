@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { formatHbar } from '@renderer/utils/sdk';
 
 /* Props */
 const props = defineProps<{
@@ -17,10 +18,13 @@ const emit = defineEmits(['update:modelValue']);
 
 /* State */
 const appInputRef = ref<InstanceType<typeof AppInput> | null>(null);
-const appInputValue = ref(props.modelValue.toBigNumber().toString());
+const appInputValue = ref(formatHbar(props.modelValue));
 
 /* Handlers */
 const handleUpdateValue = async value => {
+  value = value.trim();
+  setInputValue(value);
+
   const separatorIndex = value.search(/[.,]/);
 
   if (separatorIndex !== -1 && value.length - separatorIndex - 1 > 8) {
@@ -49,6 +53,28 @@ const handleKeyDown = e => {
     e.preventDefault();
   }
 };
+
+/* Functions */
+function setValue(value: Hbar) {
+  setInputValue(formatHbar(value));
+  appInputValue.value = formatHbar(value);
+}
+
+function setInputValue(value: string) {
+  if (appInputRef.value?.inputRef?.value) {
+    appInputRef.value.inputRef.value = value;
+  }
+}
+
+/* Watchers */
+watch(
+  () => props.modelValue,
+  value => {
+    if (formatHbar(value) !== appInputValue.value) {
+      setValue(value);
+    }
+  },
+);
 </script>
 <template>
   <AppInput
