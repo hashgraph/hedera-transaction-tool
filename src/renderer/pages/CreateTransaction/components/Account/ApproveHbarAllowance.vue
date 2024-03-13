@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue';
 import {
   Hbar,
+  HbarUnit,
   Key,
   AccountAllowanceApproveTransaction,
   Transaction,
@@ -202,7 +203,9 @@ const columnClass = 'col-4 col-xxxl-3';
 
     <div class="row mt-6">
       <div class="form-group" :class="[columnClass]">
-        <label class="form-label">Amount <span class="text-danger">*</span></label>
+        <label class="form-label"
+          >Amount {{ HbarUnit.Hbar._symbol }} <span class="text-danger">*</span></label
+        >
         <AppHbarInput
           v-model:model-value="amount as Hbar"
           placeholder="Enter Amount"
