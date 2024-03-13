@@ -34,7 +34,7 @@ import { openExternal } from '@renderer/services/electronUtilsService';
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 import { getDraft, deleteDraft } from '@renderer/services/transactionDraftsService';
 
-import { ableToSign } from '@renderer/utils/sdk';
+import { ableToSign, stringifyHbar } from '@renderer/utils/sdk';
 import { getStatusFromCode, getTransactionType } from '@renderer/utils/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -603,7 +603,7 @@ defineExpose({
             >
               <p>Max Transaction Fee</p>
               <p class="">
-                {{ transaction?.maxTransactionFee }} ({{
+                {{ stringifyHbar(transaction.maxTransactionFee) }} ({{
                   getDollarAmount(network.currentRate, transaction.maxTransactionFee.toBigNumber())
                 }})
               </p>
