@@ -404,13 +404,17 @@ onMounted(async () => {
   <TransactionProcessor
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
+    :on-close-success-modal-click="
+      () => {
+        transfers = [];
+      }
+    "
     :on-executed="
       () => {
         isExecuted = true;
         validStart = '';
         maxTransactionFee = new Hbar(2);
         transaction = null;
-        transfers = [];
       }
     "
   >
