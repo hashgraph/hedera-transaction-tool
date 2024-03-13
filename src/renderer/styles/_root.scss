@@ -31,6 +31,10 @@
 
   --#{$prefix}btn-group-container-bg-color: #{$light-blue-200};
   --#{$prefix}container-threshhold-key: #{$light-blue-600};
+
+  --#{$prefix}modal-bg-color: #{$neutral-00};
+
+  --#{$prefix}separator-bg-color: #{$dark-blue-100};
 }
 
 @if $enable-dark-mode {
@@ -68,5 +72,9 @@
 
     --#{$prefix}btn-group-container-bg-color: #{$dark-blue-700};
     --#{$prefix}container-threshhold-key: #{$dark-blue-600};
+
+    --#{$prefix}modal-bg-color: #{$dark-blue-950};
+
+    --#{$prefix}separator-bg-color: #{$dark-blue-700};
   }
 }
