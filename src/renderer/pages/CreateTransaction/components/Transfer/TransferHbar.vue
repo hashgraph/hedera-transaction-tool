@@ -2,12 +2,17 @@
 import { ref, onMounted, computed } from 'vue';
 import { Hbar, KeyList, Transaction, TransferTransaction, Transfer } from '@hashgraph/sdk';
 
+import { IAccountInfoParsed } from '@main/shared/interfaces';
+
+import useNetworkStore from '@renderer/stores/storeNetwork';
+
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft, updateDraft } from '@renderer/services/transactionDraftsService';
+import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
 
 import {
   getDateTimeLocalInputValue,
@@ -21,7 +26,8 @@ import TransactionIdControls from '@renderer/components/Transaction/TransactionI
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransferCard from '@renderer/components/TransferCard.vue';
 
-/* Interfaces */
+/* Stores */
+const network = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
@@ -32,10 +38,23 @@ const payerData = useAccountId();
 const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
 
 const transaction = ref<Transaction | null>(null);
+const savedDraft = ref<{
+  id: string;
+  created_at: Date;
+  updated_at: Date;
+  user_id: string;
+  type: string;
+  transactionBytes: string;
+  isTemplate: boolean | null;
+  details: string | null;
+}>();
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref<Hbar>(new Hbar(2));
 
 const transfers = ref<Transfer[]>([]);
+const accountInfos = ref<{
+  [key: string]: IAccountInfoParsed;
+}>({});
 
 const isExecuted = ref(false);
 
@@ -77,10 +96,7 @@ const handleCreate = async e => {
 
     transaction.value = createTransaction();
 
-    // TO GET REQUIRED KEYS
-    const requiredKey = new KeyList([payerData.key.value]);
-
-    await transactionProcessor.value?.process(requiredKey);
+    await transactionProcessor.value?.process(getRequiredKeys());
   } catch (err: any) {
     console.log(err);
 
@@ -89,6 +105,8 @@ const handleCreate = async e => {
 };
 
 const handleDraftAdded = async (id: string) => {
+  if (savedDraft.value?.isTemplate) return;
+
   await updateDraft(id, { details: JSON.stringify({ transfers: transfers.value }) });
 };
 
@@ -97,6 +115,7 @@ const handleLoadFromDraft = async () => {
 
   const draft = await getDraft(route.query.draftId?.toString() || '');
   const draftTransaction = getTransactionFromBytes<TransferTransaction>(draft.transactionBytes);
+  savedDraft.value = draft;
 
   if (draft) {
     transaction.value = draftTransaction;
@@ -104,7 +123,7 @@ const handleLoadFromDraft = async () => {
     if (draft.details) {
       try {
         const details = JSON.parse(draft.details);
-        transfers.value = details.transfers.map(
+        const loadedTransfers = details.transfers.map(
           ({
             accountId,
             amount,
@@ -115,6 +134,18 @@ const handleLoadFromDraft = async () => {
             isApproved: boolean;
           }) => new Transfer({ accountId, amount: Hbar.fromTinybars(amount), isApproved }),
         );
+
+        const accountIds = loadedTransfers.map(t => t.accountId.toString());
+        for (const accountId of accountIds) {
+          if (!accountInfos.value[accountId]) {
+            accountInfos.value[accountId] = await getAccountInfo(
+              accountId,
+              network.mirrorNodeBaseURL,
+            );
+          }
+        }
+
+        transfers.value = loadedTransfers;
       } catch {
         /* Empty */
       }
@@ -122,7 +153,7 @@ const handleLoadFromDraft = async () => {
   }
 };
 
-const handleAddSenderTransfer = (accountId: string, amount: Hbar, isApproved: boolean) => {
+const handleAddSenderTransfer = async (accountId: string, amount: Hbar, isApproved: boolean) => {
   const debittedAccounts = transfers.value.filter(
     debit => debit.accountId.toString() === accountId && debit.amount.isNegative(),
   );
@@ -138,6 +169,11 @@ const handleAddSenderTransfer = (accountId: string, amount: Hbar, isApproved: bo
         isApproved,
       }),
     );
+
+    if (!accountInfos.value[accountId]) {
+      accountInfos.value[accountId] = await getAccountInfo(accountId, network.mirrorNodeBaseURL);
+      accountInfos.value = { ...accountInfos.value };
+    }
   } else {
     debittedAccounts.forEach(account => {
       const updatedAmount = new Hbar(
@@ -155,7 +191,13 @@ const handleAddSenderTransfer = (accountId: string, amount: Hbar, isApproved: bo
   transfers.value = [...transfers.value];
 };
 
-const handleAddReceiverTransfer = (accountId: string, amount: Hbar) => {
+const handleReceiverRestButtonClick = (accountId: string, isApproved: boolean) => {
+  if (totalBalance.value.isNegative() && !isApproved) {
+    handleAddReceiverTransfer(accountId, totalBalance.value.negated());
+  }
+};
+
+const handleAddReceiverTransfer = async (accountId: string, amount: Hbar) => {
   const creditted = transfers.value.find(
     credit => credit.accountId.toString() === accountId && !credit.amount.isNegative(),
   );
@@ -168,10 +210,20 @@ const handleAddReceiverTransfer = (accountId: string, amount: Hbar) => {
         isApproved: false,
       }),
     );
+
+    if (!accountInfos.value[accountId]) {
+      accountInfos.value[accountId] = await getAccountInfo(accountId, network.mirrorNodeBaseURL);
+      accountInfos.value = { ...accountInfos.value };
+    }
   } else {
     creditted.amount = new Hbar(creditted.amount.toBigNumber().plus(amount.toBigNumber()));
   }
 
+  transfers.value = [...transfers.value];
+};
+
+const handleRemoveTransfer = async (index: number) => {
+  transfers.value.splice(index, 1);
   transfers.value = [...transfers.value];
 };
 
@@ -192,6 +244,32 @@ function createTransaction() {
   });
 
   return transaction;
+}
+
+function getRequiredKeys() {
+  if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
+    throw Error('Invalid Payer ID');
+  }
+
+  const keyList = new KeyList([payerData.key.value]);
+
+  const addedKeysForAccountIds: string[] = [];
+  for (const transfer of transfers.value.filter(t => !t.isApproved)) {
+    const accountId = transfer.accountId.toString();
+    const key = accountInfos.value[accountId].key;
+    const receiverSigRequired = accountInfos.value[accountId].receiverSignatureRequired;
+
+    if (
+      key &&
+      !addedKeysForAccountIds.includes(accountId) &&
+      (transfer.amount.isNegative() || (!transfer.amount.isNegative() && receiverSigRequired))
+    ) {
+      keyList.push(key);
+      addedKeysForAccountIds.push(accountId);
+    }
+  }
+
+  return keyList;
 }
 
 /* Hooks */
@@ -225,14 +303,6 @@ onMounted(async () => {
     <div class="border rounded p-5 mt-5">
       <div class="row">
         <div class="col-5 flex-1">
-          <!-- <TransferCard
-            account-label="From"
-            @transfer-added="handleAddSenderTransfer"
-            :show-approved="true"
-            :show-balance="true"
-            :spender="payerData.accountIdFormatted.value"
-            :button-disabled="totalBalanceAdjustments >= 10"
-          /> -->
           <TransferCard
             account-label="From"
             @transfer-added="handleAddSenderTransfer"
@@ -248,12 +318,7 @@ onMounted(async () => {
           <TransferCard
             account-label="To"
             @transfer-added="handleAddReceiverTransfer"
-            @rest-added="
-              accountId =>
-                totalBalance.isNegative()
-                  ? handleAddReceiverTransfer(accountId, totalBalance.negated())
-                  : {}
-            "
+            @rest-added="handleReceiverRestButtonClick"
             :button-disabled="totalBalanceAdjustments >= 10"
             :add-rest-disabled="
               totalBalance.toBigNumber().isGreaterThanOrEqualTo(0) || totalBalanceAdjustments >= 10
@@ -283,7 +348,7 @@ onMounted(async () => {
                   <div class="col-2 col-lg-1 text-end">
                     <span
                       class="bi bi-x-lg text-secondary text-small cursor-pointer"
-                      @click="() => transfers.splice(i, 1)"
+                      @click="handleRemoveTransfer(i)"
                     ></span>
                   </div>
                 </div>
@@ -311,7 +376,7 @@ onMounted(async () => {
                   <div class="col-2 col-lg-1 text-end">
                     <span
                       class="bi bi-x-lg text-secondary text-small cursor-pointer"
-                      @click="() => transfers.splice(i, 1)"
+                      @click="handleRemoveTransfer(i)"
                     ></span>
                   </div>
                 </div>
@@ -339,14 +404,15 @@ onMounted(async () => {
   <TransactionProcessor
     ref="transactionProcessor"
     :transaction-bytes="transaction?.toBytes() || null"
-    :on-close-success-modal-click="
+    :on-executed="
       () => {
+        isExecuted = true;
         validStart = '';
         maxTransactionFee = new Hbar(2);
         transaction = null;
+        transfers = [];
       }
     "
-    :on-executed="() => (isExecuted = true)"
   >
     <template #successHeading>Hbar transferred successfully</template>
     <template #successContent>
