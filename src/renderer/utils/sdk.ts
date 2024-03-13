@@ -170,9 +170,6 @@ export function formatHbar(hbar: Hbar) {
 }
 
 export function stringifyHbar(hbar: Hbar) {
-  // -100000000th < 100000001 < 100000000 * 1000
-  console.log(hbar._valueInTinybar.toString());
-
   if (
     hbar._valueInTinybar.isLessThan(HbarUnit.Microbar._tinybar) &&
     hbar._valueInTinybar.isGreaterThan(HbarUnit.Microbar._tinybar.negated())
