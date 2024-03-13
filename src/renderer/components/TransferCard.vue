@@ -72,7 +72,7 @@ const handleSubmit = (e: Event) => {
     <form @submit="handleSubmit">
       <div class="form-group">
         <label class="form-label mb-0 me-3">{{ accountLabel }}</label>
-        <label v-if="showBalance" class="form-label text-secondary"
+        <label v-if="showBalance && accountData.isValid.value" class="form-label text-secondary"
           >Balance: {{ accountData.accountInfo.value?.balance }}</label
         >
         <AppInput
@@ -84,7 +84,7 @@ const handleSubmit = (e: Event) => {
       </div>
       <div class="form-group mt-4">
         <label class="form-label mb-0 me-3">Amount ℏ</label>
-        <label v-if="spender && isApprovedTransfer" class="form-label text-secondary"
+        <label v-if="spender?.trim() && isApprovedTransfer" class="form-label text-secondary"
           >Allowance: {{ accountData.getSpenderAllowance(spender) }}</label
         >
         <!-- @vue-ignore Broken type inference -->
