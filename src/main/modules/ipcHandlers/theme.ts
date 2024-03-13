@@ -8,10 +8,16 @@ export function sendUpdateThemeEventTo(window: BrowserWindow) {
   });
 }
 
+export function removeListeners() {
+  nativeTheme.removeAllListeners('updated');
+}
+
 export default () => {
   nativeTheme.themeSource = 'system';
 
-  ipcMain.handle('theme:isDark', () => nativeTheme.shouldUseDarkColors);
+  ipcMain.handle('theme:isDark', () => {
+    return nativeTheme.shouldUseDarkColors;
+  });
 
   ipcMain.handle('theme:toggle', (_e, theme: Theme) => {
     nativeTheme.themeSource = theme;

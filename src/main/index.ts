@@ -27,14 +27,7 @@ attachAppEvents();
 
 function attachAppEvents() {
   app.on('ready', async () => {
-    mainWindow = await restoreOrCreateWindow();
-
-    createMenu(mainWindow);
-
-    /* main window events */
-    mainWindow?.on('closed', () => {
-      mainWindow = null;
-    });
+    await initMainWindow();
 
     if (!is.dev) {
       session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
@@ -49,7 +42,7 @@ function attachAppEvents() {
 
     app.on('activate', async function () {
       if (mainWindow === null) {
-        mainWindow = await restoreOrCreateWindow();
+        await initMainWindow();
       }
     });
   });
@@ -76,5 +69,15 @@ function attachAppEvents() {
 
       app.quit();
     }
+  });
+}
+
+async function initMainWindow() {
+  mainWindow = await restoreOrCreateWindow();
+
+  createMenu(mainWindow);
+
+  mainWindow.on('closed', () => {
+    mainWindow = null;
   });
 }

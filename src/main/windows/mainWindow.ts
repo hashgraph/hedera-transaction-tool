@@ -2,7 +2,7 @@ import { join } from 'path';
 
 import { BrowserWindow, screen } from 'electron';
 
-import { sendUpdateThemeEventTo } from '@main/modules/ipcHandlers/theme';
+import { removeListeners, sendUpdateThemeEventTo } from '@main/modules/ipcHandlers/theme';
 
 process.env.DIST_ELECTRON = join(__dirname, '..');
 process.env.DIST = join(process.env.DIST_ELECTRON, '../dist');
@@ -35,6 +35,10 @@ async function createWindow() {
     }
 
     mainWindow?.show();
+  });
+
+  mainWindow.on('closed', () => {
+    removeListeners();
   });
 
   if (process.env.VITE_DEV_SERVER_URL) {
