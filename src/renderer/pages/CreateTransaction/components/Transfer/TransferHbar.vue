@@ -227,7 +227,7 @@ onMounted(async () => {
         <div class="col-5 flex-1">
           <!-- <TransferCard
             account-label="From"
-            @handle-add-transfer="handleAddSenderTransfer"
+            @transfer-added="handleAddSenderTransfer"
             :show-approved="true"
             :show-balance="true"
             :spender="payerData.accountIdFormatted.value"
@@ -235,7 +235,7 @@ onMounted(async () => {
           /> -->
           <TransferCard
             account-label="From"
-            @handle-add-transfer="handleAddSenderTransfer"
+            @transfer-added="handleAddSenderTransfer"
             :show-balance="true"
             :button-disabled="totalBalanceAdjustments >= 10"
             :clear-on-add-transfer="true"
@@ -247,8 +247,18 @@ onMounted(async () => {
         <div class="col-5 flex-1">
           <TransferCard
             account-label="To"
-            @handle-add-transfer="handleAddReceiverTransfer"
+            @transfer-added="handleAddReceiverTransfer"
+            @rest-added="
+              accountId =>
+                totalBalance.isNegative()
+                  ? handleAddReceiverTransfer(accountId, totalBalance.negated())
+                  : {}
+            "
             :button-disabled="totalBalanceAdjustments >= 10"
+            :add-rest-disabled="
+              totalBalance.toBigNumber().isGreaterThanOrEqualTo(0) || totalBalanceAdjustments >= 10
+            "
+            :show-transfer-rest="true"
             :clear-on-add-transfer="true"
           />
         </div>
