@@ -46,13 +46,14 @@ onBeforeMount(() => {
     </template>
     <template v-else-if="activeTabTitle === 'Import Existing'">
       <Import ref="importRef" :secret-hashes="user.data.secretHashes" />
-      <div class="row justify-content-between mt-6">
-        <div class="col-4 d-grid">
-          <AppButton color="secondary" @click="importRef?.clearWords()">Clear</AppButton>
-        </div>
-        <div v-if="keyPairsStore.recoveryPhraseWords.length > 0" class="col-4 d-grid">
-          <AppButton color="primary" @click="handleNext">Next</AppButton>
-        </div>
+      <div class="flex-between-centered mt-6">
+        <AppButton color="borderless" @click="importRef?.clearWords()">Clear</AppButton>
+        <AppButton
+          v-if="keyPairsStore.recoveryPhraseWords.length > 0"
+          color="primary"
+          @click="handleNext"
+          >Next</AppButton
+        >
       </div>
     </template>
   </div>

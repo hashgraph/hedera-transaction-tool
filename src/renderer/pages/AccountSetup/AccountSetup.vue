@@ -130,7 +130,7 @@ onBeforeMount(() => {
             </template>
           </Transition>
 
-          <div class="d-flex justify-content-between mt-6">
+          <div class="d-flex justify-content-between">
             <div class="d-flex">
               <AppButton
                 v-if="
@@ -138,18 +138,18 @@ onBeforeMount(() => {
                   (user.data.mode === 'organization' && stepperItems[1].name != step.current) ||
                   isFaqShown
                 "
-                color="secondary"
-                class="d-flex align-items-center"
+                color="borderless"
+                class="flex-centered mt-6"
                 @click="handleBack"
               >
-                <i class="bi bi-arrow-left-short text-headline lh-1"></i> Back</AppButton
+                <i class="bi bi-arrow-left-short text-main"></i> Back</AppButton
               >
             </div>
             <AppButton
               v-if="keyPairs.recoveryPhraseWords.length > 0 && step.current !== 'recoveryPhrase'"
               color="primary"
               @click="handleNext"
-              class="ms-3 px-6"
+              class="ms-3 mt-6"
               >Next</AppButton
             >
           </div>

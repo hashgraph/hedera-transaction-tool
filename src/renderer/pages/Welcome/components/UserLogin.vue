@@ -286,7 +286,7 @@ watch(inputEmail, pass => {
       </div>
 
       <div class="row justify-content-end mt-5">
-        <div class="col-6 d-grid" :class="[shouldRegister ? 'col-6' : 'col-12']">
+        <div class="d-grid">
           <AppButton
             color="primary"
             type="submit"
