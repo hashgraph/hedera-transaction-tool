@@ -42,7 +42,7 @@ const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
-const maxTransactionFee = ref(2);
+const maxTransactionFee = ref<Hbar>(new Hbar(2));
 
 const newAccountData = reactive<{
   receiverSignatureRequired: boolean;
@@ -125,7 +125,7 @@ const handleLoadFromDraft = async () => {
 function createTransaction() {
   const transaction = new AccountUpdateTransaction()
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(new Hbar(maxTransactionFee.value || 0))
+    .setMaxTransactionFee(maxTransactionFee.value)
     .setReceiverSignatureRequired(newAccountData.receiverSignatureRequired)
     .setDeclineStakingReward(!newAccountData.acceptStakingAwards)
     .setMaxAutomaticTokenAssociations(Number(newAccountData.maxAutomaticTokenAssociations))
@@ -217,7 +217,7 @@ const columnClass = 'col-4 col-xxxl-3';
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
       v-model:valid-start="validStart"
-      v-model:max-transaction-fee="maxTransactionFee"
+      v-model:max-transaction-fee="maxTransactionFee as Hbar"
       class="mt-6"
     />
 
