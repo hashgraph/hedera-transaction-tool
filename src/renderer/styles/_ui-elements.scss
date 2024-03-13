@@ -51,6 +51,7 @@
 }
 
 .btn-icon-only {
+  min-width: auto;
   padding: 8px 12px;
 
   i {
@@ -59,6 +60,7 @@
 }
 
 .btn-theme-changer {
+  min-width: auto;
   position: fixed;
   bottom: 32px;
   right: 32px;
@@ -348,7 +350,7 @@
 
 /* Modal Overrides */
 .small-modal {
-  --bs-modal-width: 330px;
+  --bs-modal-width: 356px;
 }
 
 .common-modal {
