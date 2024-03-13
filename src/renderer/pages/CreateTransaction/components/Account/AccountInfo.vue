@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
+import { Hbar } from '@hashgraph/sdk';
+
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
+
+import { stringifyHbar } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -57,7 +61,9 @@ const columnClass = 'col-4 col-xxxl-3';
         <div class="col-6 d-flex flex-column gap-3">
           <div class="d-flex row">
             <p class="col-4 text-secondary">Balance:</p>
-            <p class="col-8">{{ accountData.accountInfo.value?.balance }}</p>
+            <p class="col-8">
+              {{ stringifyHbar((accountData.accountInfo.value?.balance as Hbar) || new Hbar(0)) }}
+            </p>
           </div>
           <div class="d-flex row">
             <p class="col-4 text-secondary">Staked to:</p>
@@ -71,7 +77,13 @@ const columnClass = 'col-4 col-xxxl-3';
           </div>
           <div class="d-flex row">
             <p class="col-4 text-secondary">Pending Reward:</p>
-            <p class="col-8">{{ accountData.accountInfo.value?.pendingRewards }}</p>
+            <p class="col-8">
+              {{
+                stringifyHbar(
+                  (accountData.accountInfo.value?.pendingRewards as Hbar) || new Hbar(0),
+                )
+              }}
+            </p>
           </div>
           <div class="d-flex row">
             <p class="col-4 text-secondary">Rewards:</p>
