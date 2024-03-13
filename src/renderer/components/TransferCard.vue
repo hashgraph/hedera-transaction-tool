@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import { Hbar, HbarUnit, Key } from '@hashgraph/sdk';
+import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import useAccountId from '@renderer/composables/useAccountId';
 
@@ -32,21 +32,8 @@ const props = withDefaults(
 
 /* Emits */
 const emit = defineEmits<{
-  (
-    event: 'transferAdded',
-    accountId: string,
-    amount: Hbar,
-    isApproved: boolean,
-    accountKey: Key,
-    isReceiverSigRequired: boolean,
-  ): void;
-  (
-    event: 'restAdded',
-    accountId: string,
-    isApproved: boolean,
-    accountKey: Key,
-    isReceiverSigRequired: boolean,
-  ): void;
+  (event: 'transferAdded', accountId: string, amount: Hbar, isApproved: boolean): void;
+  (event: 'restAdded', accountId: string, isApproved: boolean): void;
 }>();
 
 /* Composables */
@@ -60,7 +47,9 @@ const isApprovedTransfer = ref(false);
 const handleSubmit = (e: Event) => {
   e.preventDefault();
 
-  validateAddTransfer();
+  if (!accountData.isValid.value) {
+    throw new Error('Invalid Account ID');
+  }
 
   if (amount.value.isNegative() || amount.value.toBigNumber().isEqualTo(0)) {
     throw new Error('Amount must be greater than zero');
@@ -71,8 +60,6 @@ const handleSubmit = (e: Event) => {
     accountData.accountIdFormatted.value,
     amount.value as Hbar,
     isApprovedTransfer.value,
-    accountData.key.value!,
-    accountData.accountInfo.value!.receiverSignatureRequired,
   );
 
   if (props.clearOnAddTransfer) {
@@ -81,15 +68,11 @@ const handleSubmit = (e: Event) => {
 };
 
 const handleAddRest = () => {
-  validateAddTransfer();
+  if (!accountData.isValid.value) {
+    throw new Error('Invalid Account ID');
+  }
 
-  emit(
-    'restAdded',
-    accountData.accountIdFormatted.value,
-    isApprovedTransfer.value,
-    accountData.key.value!,
-    accountData.accountInfo.value!.receiverSignatureRequired,
-  );
+  emit('restAdded', accountData.accountIdFormatted.value, isApprovedTransfer.value);
 
   if (props.clearOnAddTransfer) {
     clearData();
@@ -101,20 +84,6 @@ function clearData() {
   accountData.accountId.value = '';
   amount.value = new Hbar(0);
   isApprovedTransfer.value = false;
-}
-
-function validateAddTransfer() {
-  if (!accountData.isValid.value) {
-    throw new Error('Invalid Account ID');
-  }
-
-  if (!accountData.key.value) {
-    throw new Error('Cannot parse account key');
-  }
-
-  if (!accountData.accountInfo.value) {
-    throw new Error('Cannot determine if receiver signature is required');
-  }
 }
 </script>
 <template>
