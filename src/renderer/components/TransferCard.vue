@@ -35,8 +35,6 @@ const emit = defineEmits<{
 const accountData = useAccountId();
 
 /* State */
-const hbarInputRef = ref<InstanceType<typeof AppHbarInput> | null>(null);
-
 const amount = ref<Hbar>(new Hbar(0));
 const isApprovedTransfer = ref(false);
 
@@ -87,12 +85,7 @@ const handleSubmit = (e: Event) => {
           >Allowance: {{ accountData.getSpenderAllowance(spender) }}</label
         >
         <!-- @vue-ignore Broken type inference -->
-        <AppHbarInput
-          ref="hbarInputRef"
-          v-model:model-value="amount"
-          placeholder="Enter Amount"
-          :filled="true"
-        />
+        <AppHbarInput v-model:model-value="amount" placeholder="Enter Amount" :filled="true" />
       </div>
       <div class="d-flex align-items-center justify-content-end flex-wrap gap-4 mt-4">
         <template v-if="showApproved">

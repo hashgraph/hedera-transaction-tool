@@ -77,6 +77,7 @@ const handleCreate = async e => {
 
     transaction.value = createTransaction();
 
+    // TO GET REQUIRED KEYS
     const requiredKey = new KeyList([payerData.key.value]);
 
     await transactionProcessor.value?.process(requiredKey);
