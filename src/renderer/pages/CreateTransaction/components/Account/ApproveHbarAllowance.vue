@@ -16,9 +16,12 @@ import useAccountId from '@renderer/composables/useAccountId';
 import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
-import { getTransactionFromBytes } from '@renderer/utils/transactions';
-import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { isAccountId } from '@renderer/utils/validator';
+import {
+  getDateTimeLocalInputValue,
+  stringifyHbar,
+  isAccountId,
+  getTransactionFromBytes,
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -149,7 +152,8 @@ const columnClass = 'col-4 col-xxxl-3';
       <div class="form-group" :class="[columnClass]">
         <label class="form-label">Owner ID <span class="text-danger">*</span></label>
         <label v-if="ownerData.isValid.value" class="form-label d-block text-secondary"
-          >Balance: {{ ownerData.accountInfo.value?.balance }}</label
+          >Balance:
+          {{ stringifyHbar((ownerData.accountInfo.value?.balance as Hbar) || new Hbar(0)) }}</label
         >
 
         <AppInput
@@ -178,7 +182,8 @@ const columnClass = 'col-4 col-xxxl-3';
       <div class="form-group" :class="[columnClass]">
         <label class="form-label">Spender ID <span class="text-danger">*</span></label>
         <label v-if="spenderData.isValid.value" class="form-label d-block text-secondary"
-          >Allowance: {{ ownerData.getSpenderAllowance(spenderData.accountId.value) }}</label
+          >Allowance:
+          {{ stringifyHbar(ownerData.getSpenderAllowance(spenderData.accountId.value)) }}</label
         >
         <AppInput
           :model-value="spenderData.accountIdFormatted.value"
