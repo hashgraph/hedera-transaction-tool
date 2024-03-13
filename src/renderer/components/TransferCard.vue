@@ -55,8 +55,7 @@ const handleSubmit = (e: Event) => {
   emit(
     'handleAddTransfer',
     accountData.accountIdFormatted.value,
-    // @ts-ignore Broken type inference
-    amount.value,
+    amount.value as Hbar,
     isApprovedTransfer.value,
   );
 
