@@ -11,12 +11,13 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 
 /* Props */
-withDefaults(
+const props = withDefaults(
   defineProps<{
     accountLabel: string;
     showApproved?: boolean;
     showBalance?: boolean;
     spender?: string;
+    clearOnAddTransfer?: boolean;
     buttonDisabled?: boolean;
   }>(),
   {
@@ -34,6 +35,8 @@ const emit = defineEmits<{
 const accountData = useAccountId();
 
 /* State */
+const hbarInputRef = ref<InstanceType<typeof AppHbarInput> | null>(null);
+
 const amount = ref<Hbar>(new Hbar(0));
 const isApprovedTransfer = ref(false);
 
@@ -52,10 +55,16 @@ const handleSubmit = (e: Event) => {
   emit(
     'handleAddTransfer',
     accountData.accountIdFormatted.value,
-    // @ts-expect-error Broken type inference
+    // @ts-ignore Broken type inference
     amount.value,
     isApprovedTransfer.value,
   );
+
+  if (props.clearOnAddTransfer) {
+    accountData.accountId.value = '';
+    amount.value = new Hbar(0);
+    isApprovedTransfer.value = false;
+  }
 };
 </script>
 <template>
@@ -79,7 +88,12 @@ const handleSubmit = (e: Event) => {
           >Allowance: {{ accountData.getSpenderAllowance(spender) }}</label
         >
         <!-- @vue-ignore Broken type inference -->
-        <AppHbarInput v-model:model-value="amount" placeholder="Enter Amount" :filled="true" />
+        <AppHbarInput
+          ref="hbarInputRef"
+          v-model:model-value="amount"
+          placeholder="Enter Amount"
+          :filled="true"
+        />
       </div>
       <div class="d-flex align-items-center justify-content-end flex-wrap gap-4 mt-4">
         <template v-if="showApproved">
