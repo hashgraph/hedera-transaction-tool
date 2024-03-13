@@ -10,7 +10,8 @@ import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { getDraft } from '@renderer/services/transactionDraftsService';
-import { getTransactionFromBytes } from '@renderer/utils/transactions';
+
+import { getTransactionFromBytes, stringifyHbar } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
@@ -80,7 +81,8 @@ const columnClass = 'col-4 col-xxxl-3';
     <div class="form-group" :class="[columnClass]">
       <label class="form-label">Payer ID <span class="text-danger">*</span></label>
       <label v-if="account.isValid.value" class="d-block form-label text-secondary"
-        >Balance: {{ account.accountInfo.value?.balance || 0 }}</label
+        >Balance:
+        {{ stringifyHbar((account.accountInfo.value?.balance as Hbar) || new Hbar(0)) }}</label
       >
       <template v-if="user.data.mode === 'personal'">
         <AccountIdsSelect :account-id="payerId" @update:account-id="handlePayerChange" />
