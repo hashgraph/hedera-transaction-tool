@@ -30,7 +30,7 @@ const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<FreezeTransaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
-const maxTransactionfee = ref(2);
+const maxTransactionfee = ref<Hbar>(new Hbar(2));
 
 const freezeType = ref(-1);
 const startTimestamp = ref(getDateTimeLocalInputValue(new Date()));
@@ -92,7 +92,7 @@ function createTransaction() {
   const transaction = new FreezeTransaction()
     .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(new Hbar(maxTransactionfee.value))
+    .setMaxTransactionFee(maxTransactionfee.value)
     .setNodeAccountIds([new AccountId(3)]);
   // .setFreezeType(FreezeType._fromCode(Number(freezeType.value)))
 
@@ -125,7 +125,7 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
       v-model:valid-start="validStart"
-      v-model:max-transaction-fee="maxTransactionfee"
+      v-model:max-transaction-fee="maxTransactionfee as Hbar"
       class="mt-6"
     />
 
