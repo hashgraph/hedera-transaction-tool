@@ -57,6 +57,8 @@ function attachAppEvents() {
 
   let deleteRetires = 0;
   app.on('before-quit', async function (e) {
+    mainWindow?.close();
+
     if (deleteRetires === 0) {
       e.preventDefault();
 
