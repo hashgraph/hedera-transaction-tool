@@ -33,7 +33,7 @@ const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | nul
 
 const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
-const maxTransactionFee = ref(2);
+const maxTransactionFee = ref<Hbar>(new Hbar(2));
 
 const transfers = ref<Transfer[]>([]);
 
@@ -109,7 +109,7 @@ const handleLoadFromDraft = async () => {
     }
 
     if (draftTransaction.maxTransactionFee) {
-      maxTransactionFee.value = draftTransaction.maxTransactionFee.toBigNumber().toNumber();
+      maxTransactionFee.value = draftTransaction.maxTransactionFee;
     }
 
     if (draft.details) {
@@ -190,7 +190,7 @@ const handleAddReceiverTransfer = (accountId: string, amount: Hbar) => {
 function createTransaction() {
   const transaction = new TransferTransaction()
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(new Hbar(maxTransactionFee.value || 0));
+    .setMaxTransactionFee(maxTransactionFee.value);
 
   if (isAccountId(payerData.accountId.value)) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
@@ -229,7 +229,7 @@ onMounted(async () => {
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
       v-model:valid-start="validStart"
-      v-model:max-transaction-fee="maxTransactionFee"
+      v-model:max-transaction-fee="maxTransactionFee as Hbar"
       class="mt-6"
     />
 
@@ -343,7 +343,7 @@ onMounted(async () => {
     :on-close-success-modal-click="
       () => {
         validStart = '';
-        maxTransactionFee = 2;
+        maxTransactionFee = new Hbar(2);
         transaction = null;
       }
     "
