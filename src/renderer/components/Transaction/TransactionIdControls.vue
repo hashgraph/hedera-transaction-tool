@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 
+import { Hbar, HbarUnit } from '@hashgraph/sdk';
+
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -11,13 +13,14 @@ import { getDraft } from '@renderer/services/transactionDraftsService';
 import { getTransactionFromBytes } from '@renderer/utils/transactions';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 
 /* Props */
 defineProps<{
   payerId: string;
   validStart: string;
-  maxTransactionFee: number;
+  maxTransactionFee: Hbar;
 }>();
 
 /* Emits */
@@ -52,7 +55,7 @@ const loadFromDraft = async (id: string) => {
   }
 
   if (draftTransaction.maxTransactionFee) {
-    emit('update:maxTransactionFee', draftTransaction.maxTransactionFee.toBigNumber().toNumber());
+    emit('update:maxTransactionFee', draftTransaction.maxTransactionFee);
   }
 };
 
@@ -107,13 +110,11 @@ const columnClass = 'col-4 col-xxxl-3';
       />
     </div>
     <div class="form-group" :class="[columnClass]">
-      <label class="form-label">Max Transaction Fee</label>
-      <AppInput
+      <label class="form-label">Max Transaction Fee {{ HbarUnit.Hbar._symbol }}</label>
+      <AppHbarInput
         :model-value="maxTransactionFee"
-        @update:model-value="v => $emit('update:maxTransactionFee', Number(v))"
+        @update:model-value="v => $emit('update:maxTransactionFee', v)"
         :filled="true"
-        type="number"
-        min="0"
         placeholder="Enter Max Transaction Fee"
       />
     </div>
