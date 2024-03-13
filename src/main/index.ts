@@ -63,8 +63,8 @@ function attachAppEvents() {
       deleteRetires++;
       try {
         await deleteTempFolder();
-      } catch (error) {
-        console.log(error);
+      } catch {
+        /* Empty */
       }
 
       app.quit();

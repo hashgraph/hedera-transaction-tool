@@ -121,7 +121,7 @@ export const deleteTempFolder = async () => {
   try {
     const directoryPath = path.join(app.getPath('temp'), 'electronHederaFiles');
     await deleteDirectory(directoryPath);
-  } catch (error) {
-    console.log(error);
+  } catch {
+    /* Empty */
   }
 };
