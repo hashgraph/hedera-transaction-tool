@@ -1,4 +1,8 @@
 /* Buttons */
+.btn {
+  min-width: 156px;
+}
+
 @each $color, $value in $theme-colors-button {
   .btn-#{$color} {
     @if $color == 'light' {
@@ -348,7 +352,7 @@
 }
 
 .common-modal {
-  --bs-modal-width: 356px;
+  --bs-modal-width: 386px;
 }
 
 .medium-modal {
