@@ -80,14 +80,26 @@
   align-items: center;
 }
 
+.g-12px {
+  --bs-gutter-x: 12px !important;
+  --bs-gutter-y: 12px !important;
+}
+
+.fill-remaining {
+  flex: 1 1 auto;
+  overflow: auto;
+}
+
+.flex-column-100 {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Absolute Positioning */
 .absolute-centered {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-}
-
-.g-12px {
-  --bs-gutter-x: 12px !important;
-  --bs-gutter-y: 12px !important;
 }
