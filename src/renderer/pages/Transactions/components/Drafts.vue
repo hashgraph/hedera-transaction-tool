@@ -209,10 +209,10 @@ watch([currentPage, pageSize], async () => {
               </td>
               <td class="text-center">
                 <div class="d-flex justify-content-center flex-wrap gap-3">
-                  <AppButton :outline="true" color="secondary" @click="handleDeleteDraft(draft.id)"
+                  <AppButton color="borderless" @click="handleDeleteDraft(draft.id)"
                     >Delete</AppButton
                   >
-                  <AppButton color="primary" @click="handleContinueDraft(draft.id)"
+                  <AppButton color="secondary" @click="handleContinueDraft(draft.id)"
                     >Continue</AppButton
                   >
                 </div>

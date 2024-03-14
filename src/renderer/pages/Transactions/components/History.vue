@@ -190,7 +190,7 @@ watch([currentPage, pageSize], async () => {
                 </span>
               </td>
               <td class="text-center">
-                <AppButton @click="handleTransactionDetailsClick(transaction)" color="primary"
+                <AppButton @click="handleTransactionDetailsClick(transaction)" color="secondary"
                   >Details</AppButton
                 >
               </td>

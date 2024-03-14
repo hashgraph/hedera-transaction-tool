@@ -154,12 +154,7 @@ const handleChangeNickname = async () => {
           >Unlink</AppButton
         >
         <div class="dropdown" v-if="!accountData.accountInfo.value?.deleted">
-          <AppButton
-            color="primary"
-            class="w-100 d-flex align-items-center justify-content-center"
-            data-bs-toggle="dropdown"
-            >Update</AppButton
-          >
+          <AppButton color="secondary" data-bs-toggle="dropdown">Update</AppButton>
           <ul class="dropdown-menu mt-3">
             <li
               class="dropdown-item cursor-pointer"
