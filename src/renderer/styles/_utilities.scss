@@ -26,6 +26,10 @@
   max-height: 24px;
 }
 
+.min-w-unset {
+  min-width: unset !important;
+}
+
 .min-w-25 {
   min-width: 25%;
 }

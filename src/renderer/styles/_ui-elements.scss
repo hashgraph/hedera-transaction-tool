@@ -539,6 +539,7 @@
   td,
   th {
     padding: 8px 16px;
+    white-space: nowrap;
 
     &:first-of-type {
       border-top-left-radius: 10px;

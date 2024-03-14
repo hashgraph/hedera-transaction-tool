@@ -230,26 +230,32 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
   </div>
 
   <div class="mt-4">
-    <div v-if="currentTab === Tabs.RECOVERY_PHRASE">
+    <div class="overflow-auto">
       <table class="table-custom">
         <thead>
           <tr>
-            <td class="w-10 text-end">Index</td>
-            <td>Nickname</td>
-            <td>Account ID</td>
-            <td>Key Type</td>
-            <td>Public Key</td>
-            <td>Private Key</td>
-            <td></td>
+            <th v-if="currentTab === Tabs.RECOVERY_PHRASE" class="w-10 text-end">Index</th>
+            <th>Nickname</th>
+            <th>Account ID</th>
+            <th>Key Type</th>
+            <th>Public Key</th>
+            <th>Private Key</th>
+            <th></th>
           </tr>
         </thead>
         <tbody class="text-secondary">
           <template
-            v-for="keyPair in keyPairsStore.keyPairs.filter(item => item.secret_hash != null)"
+            v-for="keyPair in keyPairsStore.keyPairs.filter(item =>
+              currentTab === Tabs.RECOVERY_PHRASE
+                ? item.secret_hash !== null
+                : item.secret_hash === null,
+            )"
             :key="keyPair.public_key"
           >
             <tr>
-              <td class="text-end">{{ keyPair.index }}</td>
+              <td v-if="currentTab === Tabs.RECOVERY_PHRASE" class="text-end">
+                {{ keyPair.index }}
+              </td>
               <td>
                 {{ keyPair.nickname || 'N/A' }}
               </td>
@@ -268,141 +274,55 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
                 }}
               </td>
               <td>
-                <span>{{ keyPair.public_key.slice(0, 16) }}...</span>
-                <i
-                  class="bi bi-copy cursor-pointer ms-3"
-                  @click="handleCopy(keyPair.public_key, 'Public Key copied successfully')"
-                ></i>
-              </td>
-              <td>
-                <template v-if="decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)">
+                <p class="d-flex text-nowrap">
+                  <span class="d-inline-block text-truncate" style="width: 12vw">{{
+                    keyPair.public_key
+                  }}</span>
                   <span
-                    >{{
-                      decryptedKeys
-                        .find(kp => kp.publicKey === keyPair.public_key)
-                        ?.decrypted?.slice(0, 13)
-                    }}...</span
-                  >
-                  <i
                     class="bi bi-copy cursor-pointer ms-3"
-                    @click="
-                      handleCopy(
-                        decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)?.decrypted ||
-                          '',
-                        'Private Key copied successfully',
-                      )
-                    "
-                  ></i>
-                  <i
-                    class="bi bi-eye-slash cursor-pointer ms-3"
-                    @click="handleHideDecryptedKey(keyPair.public_key)"
-                  ></i>
-                </template>
-                <template v-else>
-                  {{ '*'.repeat(16) }}
-                  <i
-                    class="bi bi-eye cursor-pointer ms-3"
-                    @click="handleShowDecryptModal(keyPair.public_key)"
-                  ></i>
-                </template>
+                    @click="handleCopy(keyPair.public_key, 'Public Key copied successfully')"
+                  ></span>
+                </p>
               </td>
               <td>
+                <p class="d-flex text-nowrap">
+                  <template v-if="decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)">
+                    <span class="d-inline-block text-truncate" style="width: 12vw">{{
+                      decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)?.decrypted
+                    }}</span>
+                    <span
+                      class="bi bi-copy cursor-pointer ms-3"
+                      @click="
+                        handleCopy(
+                          decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)
+                            ?.decrypted || '',
+                          'Private Key copied successfully',
+                        )
+                      "
+                    ></span>
+                    <span
+                      class="bi bi-eye-slash cursor-pointer ms-3"
+                      @click="handleHideDecryptedKey(keyPair.public_key)"
+                    ></span>
+                  </template>
+                  <template v-else>
+                    {{ '*'.repeat(16) }}
+                    <span
+                      class="bi bi-eye cursor-pointer ms-3"
+                      @click="handleShowDecryptModal(keyPair.public_key)"
+                    ></span>
+                  </template>
+                </p>
+              </td>
+              <td class="text-center">
                 <AppButton
                   size="small"
+                  color="danger"
                   :outline="true"
-                  color="secondary"
                   @click="handleDeleteModal(keyPair.id)"
-                  >Remove</AppButton
-                >
-              </td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
-    </div>
-
-    <div v-if="currentTab === Tabs.PRIVATE_KEY">
-      <table class="table-custom">
-        <thead>
-          <tr>
-            <td>Nickname</td>
-            <td>Account ID</td>
-            <td>Key Type</td>
-            <td>Public Key</td>
-            <td>Private Key</td>
-            <td></td>
-          </tr>
-        </thead>
-        <tbody class="text-secondary">
-          <template
-            v-for="keyPair in keyPairsStore.keyPairs.filter(item => item.secret_hash === null)"
-            :key="keyPair.public_key"
-          >
-            <tr>
-              <td>
-                {{ keyPair.nickname || 'N/A' }}
-              </td>
-              <td>
-                {{
-                  keyPairsStore.publicKeyToAccounts.find(
-                    acc => acc.publicKey === keyPair.public_key,
-                  )?.accounts[0]?.account || 'N/A'
-                }}
-              </td>
-              <td>
-                {{
-                  PublicKey.fromString(keyPair.public_key)._key._type === 'secp256k1'
-                    ? 'ECDSA'
-                    : 'ED25519'
-                }}
-              </td>
-              <td>
-                <span>{{ keyPair.public_key.slice(0, 16) }}...</span>
-                <i
-                  class="bi bi-copy cursor-pointer ms-3"
-                  @click="handleCopy(keyPair.public_key, 'Public Key copied successfully')"
-                ></i>
-              </td>
-              <td>
-                <template v-if="decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)">
-                  <span
-                    >{{
-                      decryptedKeys
-                        .find(kp => kp.publicKey === keyPair.public_key)
-                        ?.decrypted?.slice(0, 13)
-                    }}...</span
-                  >
-                  <i
-                    class="bi bi-copy cursor-pointer ms-3"
-                    @click="
-                      handleCopy(
-                        decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)?.decrypted ||
-                          '',
-                        'Private Key copied successfully',
-                      )
-                    "
-                  ></i>
-                  <i
-                    class="bi bi-eye-slash cursor-pointer ms-3"
-                    @click="handleHideDecryptedKey(keyPair.public_key)"
-                  ></i>
-                </template>
-                <template v-else>
-                  {{ '*'.repeat(16) }}
-                  <i
-                    class="bi bi-eye cursor-pointer ms-3"
-                    @click="handleShowDecryptModal(keyPair.public_key)"
-                  ></i>
-                </template>
-              </td>
-              <td>
-                <AppButton
-                  size="small"
-                  :outline="true"
-                  color="secondary"
-                  @click="handleDeleteModal(keyPair.id)"
-                  >Remove</AppButton
-                >
+                  class="min-w-unset"
+                  ><span class="bi bi-trash"></span
+                ></AppButton>
               </td>
             </tr>
           </template>
