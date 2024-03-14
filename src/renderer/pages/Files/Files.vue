@@ -220,7 +220,7 @@ watch(files, newFiles => {
 </script>
 
 <template>
-  <div class="p-5">
+  <div class="px-6 py-5">
     <div class="d-flex justify-content-between align-items-center">
       <h1 class="text-title text-bold">Files</h1>
 
