@@ -109,6 +109,7 @@ input[type='file'] {
 
 .container-main-content {
   background-color: var(--#{$prefix}contrainer-main-bg-color);
+  height: calc(100vh - 80px);
 
   .logged-in:not(.should-setup-account) & {
     border-top-left-radius: 16px;
