@@ -4,16 +4,21 @@ import { computed, ref, watch } from 'vue';
 import { useRouter, RouterView } from 'vue-router';
 
 import AppTabs, { TabItem } from '@renderer/components/ui/AppTabs.vue';
+import ImportExternalPrivateKeyDropDown from '@renderer/components/ImportExternalPrivateKeyDropDown.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
 
 /* Composables */
 const router = useRouter();
 
 /* Misc */
+const generalTitle = 'General';
+const keysTitle = 'Keys';
+const accountTitle = 'Account';
 const tabItems: TabItem[] = [
-  { title: 'General' },
+  { title: generalTitle },
   // { title: 'Work Groups' },
-  { title: 'Keys' },
-  { title: 'Account' },
+  { title: keysTitle },
+  { title: accountTitle },
 ];
 const tabTitles = tabItems.map(t => t.title.toLocaleLowerCase().replaceAll(' ', '-'));
 
@@ -55,8 +60,17 @@ watch(router.currentRoute, newRoute => {
 </script>
 <template>
   <div class="p-5">
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-start">
       <h1 class="text-title text-bold">Settings</h1>
+      <div
+        v-if="activeTabIndex === tabItems.findIndex(t => t.title === keysTitle)"
+        class="d-flex gap-3"
+      >
+        <AppButton color="borderless" @click="$router.push({ name: 'restoreKey' })">
+          Restore
+        </AppButton>
+        <ImportExternalPrivateKeyDropDown class="min-w-unset" />
+      </div>
     </div>
     <div class="mt-7">
       <AppTabs :items="tabItems" v-model:active-index="activeTabIndex">

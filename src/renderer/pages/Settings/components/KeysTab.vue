@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { PublicKey } from '@hashgraph/sdk';
-import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
@@ -9,12 +8,7 @@ import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
 
-import {
-  decryptPrivateKey,
-  deleteKeyPair,
-  generateExternalKeyPairFromString,
-} from '@renderer/services/keyPairService';
-import { comparePasswords } from '@renderer/services/userService';
+import { decryptPrivateKey, deleteKeyPair } from '@renderer/services/keyPairService';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -30,7 +24,7 @@ const toast = useToast();
 const router = useRouter();
 
 enum Tabs {
-  // ALL = 'All',
+  ALL = 'All',
   RECOVERY_PHRASE = 'Imported from Recovery Phrase',
   PRIVATE_KEY = 'Imported from Private Key',
 }
@@ -38,19 +32,12 @@ enum Tabs {
 /* State */
 const isDecryptedModalShown = ref(false);
 const isDeleteModalShown = ref(false);
-const isImportECDSAKeyModalShown = ref(false);
-const isImportED25519KeyModalShown = ref(false);
+
 const decryptedKeys = ref<{ decrypted: string | null; publicKey: string }[]>([]);
 const publicKeysPrivateKeyToDecrypt = ref('');
 const keyPairIdToDelete = ref<string | null>(null);
 const userPassword = ref('');
-const currentTab = ref(Tabs.RECOVERY_PHRASE);
-const ecdsaKey = reactive<{ privateKey: string; nickname?: string }>({
-  privateKey: '',
-});
-const ed25519Key = reactive<{ privateKey: string; nickname?: string }>({
-  privateKey: '',
-});
+const currentTab = ref(Tabs.ALL);
 
 /* Handlers */
 const handleShowDecryptModal = (publicKey: string) => {
@@ -129,40 +116,6 @@ const handleDelete = async e => {
   }
 };
 
-const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
-  try {
-    const privateKey = type === 'ED25519' ? ed25519Key.privateKey : ecdsaKey.privateKey;
-    const nickname = type === 'ED25519' ? ed25519Key.nickname : ecdsaKey.nickname;
-
-    const keyPair: Prisma.KeyPairUncheckedCreateInput = {
-      user_id: user.data.id,
-      ...generateExternalKeyPairFromString(privateKey, type, nickname || ''),
-      organization_id: null,
-      type: type,
-      secret_hash: null,
-    };
-
-    if (keyPairsStore.keyPairs.find(kp => kp.public_key === keyPair.public_key)) {
-      throw new Error('Key pair already exists');
-    }
-
-    if (!(await comparePasswords(user.data.id, userPassword.value))) {
-      throw new Error('Incorrect password');
-    }
-
-    await keyPairsStore.storeKeyPair(keyPair, userPassword.value);
-
-    isImportED25519KeyModalShown.value = false;
-    isImportECDSAKeyModalShown.value = false;
-
-    toast.success('ED25519 private key imported successfully', { position: 'bottom-right' });
-  } catch (err: any) {
-    toast.error(err.message || 'Failed to import ED25519 private key', {
-      position: 'bottom-right',
-    });
-  }
-};
-
 const handleCopy = (text: string, message: string) => {
   navigator.clipboard.writeText(text);
   toast.success(message, { position: 'bottom-right' });
@@ -184,57 +137,26 @@ watch(isDeleteModalShown, newVal => {
     keyPairIdToDelete.value = null;
   }
 });
-watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
-  userPassword.value = '';
-  ecdsaKey.nickname = '';
-  ecdsaKey.privateKey = '';
-  ed25519Key.nickname = '';
-  ed25519Key.privateKey = '';
-});
 </script>
 <template>
-  <div class="d-flex justify-content-between mb-3">
-    <div class="btn-group-container" role="group">
-      <template v-for="(tab, index) in Object.values(Tabs)" :key="tab">
-        <button
-          type="button"
-          class="btn btn-primary"
-          :class="{ active: tab === currentTab, 'ms-3': index !== 0 }"
-          @click="handleTabChange(tab)"
-        >
-          {{ tab }}
-        </button>
-      </template>
-    </div>
-
-    <div class="d-flex justify-content-end align-items-center">
-      <RouterLink class="btn btn-secondary me-4" :to="{ name: 'restoreKey' }">Restore</RouterLink>
-
-      <div class="dropdown">
-        <AppButton
-          color="primary"
-          class="w-100 d-flex align-items-center justify-content-center"
-          data-bs-toggle="dropdown"
-          ><i class="bi bi-plus text-main me-2"></i> Import</AppButton
-        >
-        <ul class="dropdown-menu w-100 mt-3">
-          <li class="dropdown-item cursor-pointer" @click="isImportED25519KeyModalShown = true">
-            <span class="text-small">ED25519 Key</span>
-          </li>
-          <li class="dropdown-item cursor-pointer mt-3" @click="isImportECDSAKeyModalShown = true">
-            <span class="text-small">ECDSA Key</span>
-          </li>
-        </ul>
-      </div>
-    </div>
+  <div class="d-flex mb-3">
+    <template v-for="tab in Object.values(Tabs)" :key="tab">
+      <AppButton type="button" color="borderless" class="min-w-unset" @click="handleTabChange(tab)">
+        {{ tab }}
+      </AppButton>
+    </template>
   </div>
-
   <div class="mt-4">
     <div class="overflow-auto">
       <table class="table-custom">
         <thead>
           <tr>
-            <th v-if="currentTab === Tabs.RECOVERY_PHRASE" class="w-10 text-end">Index</th>
+            <th
+              v-if="currentTab === Tabs.RECOVERY_PHRASE || currentTab === Tabs.ALL"
+              class="w-10 text-end"
+            >
+              Index
+            </th>
             <th>Nickname</th>
             <th>Account ID</th>
             <th>Key Type</th>
@@ -245,16 +167,24 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
         </thead>
         <tbody class="text-secondary">
           <template
-            v-for="keyPair in keyPairsStore.keyPairs.filter(item =>
-              currentTab === Tabs.RECOVERY_PHRASE
-                ? item.secret_hash !== null
-                : item.secret_hash === null,
-            )"
+            v-for="keyPair in keyPairsStore.keyPairs.filter(item => {
+              switch (currentTab) {
+                case Tabs.ALL:
+                  return true;
+                case Tabs.RECOVERY_PHRASE:
+                  return item.secret_hash !== null;
+                case Tabs.PRIVATE_KEY:
+                  return item.secret_hash === null;
+              }
+            })"
             :key="keyPair.public_key"
           >
             <tr>
-              <td v-if="currentTab === Tabs.RECOVERY_PHRASE" class="text-end">
-                {{ keyPair.index }}
+              <td
+                v-if="currentTab === Tabs.RECOVERY_PHRASE || currentTab === Tabs.ALL"
+                class="text-end"
+              >
+                {{ keyPair.index >= 0 ? keyPair.index : 'N/A' }}
               </td>
               <td>
                 {{ keyPair.nickname || 'N/A' }}
@@ -386,113 +316,6 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
           </p>
           <div class="d-grid mt-5">
             <AppButton type="submit" color="danger" :outline="true">Delete</AppButton>
-          </div>
-        </form>
-      </div>
-    </AppModal>
-
-    <AppModal v-model:show="isImportECDSAKeyModalShown" class="common-modal">
-      <div class="p-5">
-        <i class="bi bi-x-lg cursor-pointer" @click="isImportECDSAKeyModalShown = false"></i>
-        <div class="text-center mt-5">
-          <i class="bi bi-key large-icon" style="line-height: 16px"></i>
-        </div>
-        <form
-          @submit="
-            e => {
-              e.preventDefault();
-              handleImportExternalKey('ECDSA');
-            }
-          "
-        >
-          <div class="form-group mt-4">
-            <label class="form-label">Enter ECDSA Private key</label>
-            <AppInput
-              v-model="ecdsaKey.privateKey"
-              :filled="true"
-              size="small"
-              name="private-key"
-              placeholder="Type ECDSA Private key"
-            />
-          </div>
-          <div class="form-group mt-4">
-            <label class="form-label">Enter nickname (optional)</label>
-            <AppInput
-              v-model="ecdsaKey.nickname"
-              :filled="true"
-              size="small"
-              name="nickname"
-              placeholder="Type nickname"
-            />
-          </div>
-
-          <div class="form-group mt-4">
-            <label class="form-label">Enter your password</label>
-            <AppInput
-              v-model="userPassword"
-              type="password"
-              :filled="true"
-              size="small"
-              placeholder="Type your password"
-            />
-          </div>
-          <hr class="separator my-5" />
-
-          <div class="d-grid">
-            <AppButton type="submit" color="primary">Import</AppButton>
-          </div>
-        </form>
-      </div>
-    </AppModal>
-
-    <AppModal v-model:show="isImportED25519KeyModalShown" class="common-modal">
-      <div class="p-5">
-        <i class="bi bi-x-lg cursor-pointer" @click="isImportED25519KeyModalShown = false"></i>
-        <div class="text-center mt-5">
-          <i class="bi bi-key large-icon"></i>
-        </div>
-        <form
-          @submit="
-            e => {
-              e.preventDefault();
-              handleImportExternalKey('ED25519');
-            }
-          "
-        >
-          <div class="form-group mt-4">
-            <label class="form-label">Enter ED25519 Private key</label>
-            <AppInput
-              v-model="ed25519Key.privateKey"
-              :filled="true"
-              size="small"
-              name="private-key"
-              placeholder="Type ED25519 Private key"
-            />
-          </div>
-          <div class="form-group mt-4">
-            <label class="form-label">Enter nickname (optional)</label>
-            <AppInput
-              v-model="ed25519Key.nickname"
-              :filled="true"
-              size="small"
-              name="nickname"
-              placeholder="Type nickname"
-            />
-          </div>
-          <div class="form-group mt-4">
-            <label class="form-label">Enter your password</label>
-            <AppInput
-              v-model="userPassword"
-              type="password"
-              :filled="true"
-              size="small"
-              placeholder="Type your password"
-            />
-          </div>
-          <hr class="separator my-5" />
-
-          <div class="d-grid">
-            <AppButton type="submit" color="primary">Import</AppButton>
           </div>
         </form>
       </div>
