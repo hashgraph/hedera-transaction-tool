@@ -229,7 +229,7 @@ watch(files, newFiles => {
         <h1 class="text-title text-bold">Files</h1>
       </div>
       <div class="row g-0 overflow-hidden mt-6">
-        <div class="col-4 col-xxl-3 flex-column-100 with-border-end pe-4 ps-0">
+        <div class="col-4 col-xxl-3 flex-column-100 overflow-hidden with-border-end pe-4 ps-0">
           <div class="dropdown">
             <AppButton color="primary" size="large" class="w-100" data-bs-toggle="dropdown"
               >Add new</AppButton
@@ -321,10 +321,11 @@ watch(files, newFiles => {
               <div class="flex-between-centered flex-wrap gap-3">
                 <div class="d-flex align-items-center flex-wrap gap-3">
                   <AppInput
-                    v-show="isNicknameInputShown"
+                    v-if="isNicknameInputShown"
                     ref="nicknameInputRef"
                     @blur="handleChangeNickname"
                     :filled="true"
+                    placeholder="Enter Nickname"
                     data-bs-toggle="tooltip"
                     data-bs-placement="left"
                     data-bs-custom-class="wide-tooltip"
@@ -402,7 +403,6 @@ watch(files, newFiles => {
                   </div>
                 </div>
               </div>
-              <div class="row align-items-center"></div>
               <hr class="separator my-4" />
               <div class="fill-remaining overflow-x-hidden pe-3">
                 <div class="row">
