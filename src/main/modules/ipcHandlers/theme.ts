@@ -1,10 +1,13 @@
 import { BrowserWindow, ipcMain, nativeTheme } from 'electron';
 
-export type Theme = 'system' | 'light' | 'dark';
+import { Theme } from '@main/shared/interfaces';
 
 export function sendUpdateThemeEventTo(window: BrowserWindow) {
   nativeTheme.on('updated', () => {
-    window.webContents.send('theme:update', nativeTheme.shouldUseDarkColors);
+    window.webContents.send('theme:update', {
+      shouldUseDarkColors: nativeTheme.shouldUseDarkColors,
+      themeSource: nativeTheme.themeSource,
+    });
   });
 }
 
@@ -22,5 +25,9 @@ export default () => {
   ipcMain.handle('theme:toggle', (_e, theme: Theme) => {
     nativeTheme.themeSource = theme;
     return nativeTheme.shouldUseDarkColors;
+  });
+
+  ipcMain.handle('theme:mode', () => {
+    return nativeTheme.themeSource;
   });
 };
