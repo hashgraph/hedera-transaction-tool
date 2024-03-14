@@ -206,13 +206,13 @@ const handleChangeNickname = async () => {
           <div class="fill-remaining pe-3">
             <template v-for="account in accounts" :key="account.accountId">
               <div
-                class="container-card-account p-4 mt-3"
+                class="container-card-account overflow-hidden p-4 mt-3"
                 :class="{
                   'is-selected': accountData.accountId.value === account.account_id,
                 }"
                 @click="handleSelectAccount(account.account_id)"
               >
-                <p class="text-small text-semi-bold">{{ account.nickname }}</p>
+                <p class="text-small text-semi-bold overflow-hidden">{{ account.nickname }}</p>
                 <div class="d-flex justify-content-between align-items-center">
                   <p class="text-micro text-secondary mt-2">{{ account.account_id }}</p>
                   <!-- <p class="text-micro text-success text-bold">
@@ -243,10 +243,13 @@ const handleChangeNickname = async () => {
                     class="text-title text-semi-bold py-3"
                     @dblclick="handleStartNicknameEdit"
                   >
-                    {{
-                      accounts.find(acc => acc.account_id === accountData.accountIdFormatted.value)
-                        ?.nickname || 'None'
-                    }}
+                    <span class="text-truncate">
+                      {{
+                        accounts.find(
+                          acc => acc.account_id === accountData.accountIdFormatted.value,
+                        )?.nickname || 'None'
+                      }}
+                    </span>
 
                     <span
                       class="bi bi-pencil-square text-main text-primary ms-1 cursor-pointer"

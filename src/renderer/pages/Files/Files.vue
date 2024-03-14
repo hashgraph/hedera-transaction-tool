@@ -301,13 +301,13 @@ watch(files, newFiles => {
           <div class="fill-remaining pe-3">
             <template v-for="file in files" :key="file.fileId">
               <div
-                class="container-card-account p-4 mt-3"
+                class="container-card-account overflow-hidden p-4 mt-3"
                 :class="{
                   'is-selected': selectedFile?.file_id === file.file_id,
                 }"
                 @click="handleFileItemClick(file.file_id)"
               >
-                <p class="text-small text-semi-bold">{{ file.nickname }}</p>
+                <p class="text-small text-semi-bold overflow-hidden">{{ file.nickname }}</p>
                 <div class="d-flex justify-content-between align-items-center">
                   <p class="text-micro text-secondary mt-2">{{ file.file_id }}</p>
                 </div>
