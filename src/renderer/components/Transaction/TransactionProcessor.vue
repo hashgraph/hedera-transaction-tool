@@ -294,8 +294,8 @@ defineExpose({
 
           <hr class="separator my-5" />
 
-          <div class="d-flex justify-content-between">
-            <AppButton type="button" color="secondary" @click="isConfirmShown = false"
+          <div class="flex-between-centered gap-4">
+            <AppButton type="button" color="borderless" @click="isConfirmShown = false"
               >Cancel</AppButton
             >
             <AppButton color="primary" type="submit">Sign</AppButton>
@@ -323,27 +323,18 @@ defineExpose({
             <label class="form-label">Password</label>
             <AppInput v-model="userPassword" size="small" type="password" :filled="true" />
           </div>
-          <hr class="separator" />
-          <div class="row mt-4">
-            <div class="col-6">
-              <AppButton
-                color="secondary"
-                type="button"
-                class="w-100"
-                @click="isSignModalShown = false"
-                >Cancel</AppButton
-              >
-            </div>
-            <div class="col-6">
-              <AppButton
-                color="primary"
-                :loading="isSigning"
-                :disabled="userPassword.length === 0 || isSigning"
-                class="w-100"
-                type="submit"
-                >Continue</AppButton
-              >
-            </div>
+          <hr class="separator my-5" />
+          <div class="flex-between-centered gap-4">
+            <AppButton color="borderless" type="button" @click="isSignModalShown = false"
+              >Cancel</AppButton
+            >
+            <AppButton
+              color="primary"
+              :loading="isSigning"
+              :disabled="userPassword.length === 0 || isSigning"
+              type="submit"
+              >Continue</AppButton
+            >
           </div>
         </form>
       </div>
@@ -366,8 +357,10 @@ defineExpose({
           Executing
           {{ type }}
         </h3>
-        <div class="d-grid mt-4">
-          <AppButton color="primary" class="mt-1" @click="isExecuting = false">Close</AppButton>
+        <hr class="separator my-5" />
+
+        <div class="d-grid">
+          <AppButton color="primary" @click="isExecuting = false">Close</AppButton>
         </div>
       </div>
     </AppModal>
@@ -401,7 +394,10 @@ defineExpose({
           >
         </p>
         <slot name="successContent"></slot>
-        <div class="d-grid mt-5">
+
+        <hr class="separator my-5" />
+
+        <div class="d-grid">
           <AppButton
             color="primary"
             @click="

@@ -140,28 +140,22 @@ onBeforeRouteLeave(async to => {
           Pick up exactly where you left off, without compromising your flow or losing valuable
           time.
         </p>
-        <div class="row mt-5">
-          <div class="col-6">
-            <AppButton
-              color="secondary"
-              type="button"
-              class="w-100"
-              @click="routeTo && $router.push(routeTo)"
-              >Cancel</AppButton
-            >
-          </div>
-          <div class="col-6">
-            <AppButton
-              color="primary"
-              type="button"
-              class="w-100"
-              @click="
-                saveDraft();
-                routeTo && $router.push(routeTo);
-              "
-              >Save</AppButton
-            >
-          </div>
+
+        <hr class="separator my-5" />
+
+        <div class="flex-between-centered gap-4">
+          <AppButton color="borderless" type="button" @click="routeTo && $router.push(routeTo)"
+            >Cancel</AppButton
+          >
+          <AppButton
+            color="primary"
+            type="button"
+            @click="
+              saveDraft();
+              routeTo && $router.push(routeTo);
+            "
+            >Save</AppButton
+          >
         </div>
       </div>
     </AppModal>

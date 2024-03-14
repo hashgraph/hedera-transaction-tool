@@ -113,11 +113,12 @@ onBeforeMount(() => {
       </div>
       <h2 class="text-title text-semi-bold mt-5">Update Available</h2>
       <p class="text-small text-secondary mt-3">Version {{ updateInfo?.version || '' }}</p>
-      <div class="d-grid mt-5">
+
+      <hr class="separator my-5" />
+
+      <div class="flex-between-centered gap-4">
+        <AppButton color="borderless" @click="isUpdateAvailableShown = false">Cancel</AppButton>
         <AppButton color="primary" @click="handleDownloadUpdate">Download</AppButton>
-        <AppButton color="secondary" class="mt-3" @click="isUpdateAvailableShown = false"
-          >Cancel</AppButton
-        >
       </div>
     </div>
   </AppModal>

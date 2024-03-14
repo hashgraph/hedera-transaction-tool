@@ -617,8 +617,8 @@ defineExpose({
 
           <hr class="separator my-5" />
 
-          <div class="d-flex justify-content-between">
-            <AppButton type="button" color="secondary" @click="isConfirmShown = false"
+          <div class="flex-between-centered gap-4">
+            <AppButton color="borderless" type="button" @click="isConfirmShown = false"
               >Cancel</AppButton
             >
             <AppButton color="primary" type="submit">Sign</AppButton>
@@ -647,27 +647,20 @@ defineExpose({
             <AppInput size="small" v-model="userPassword" type="password" :filled="true" />
           </div>
           <p v-if="chunksAmount" class="text-small mb-3">Estimated chunks: {{ chunksAmount }}</p>
-          <hr class="separator" />
-          <div class="row mt-4">
-            <div class="col-6">
-              <AppButton
-                color="secondary"
-                type="button"
-                class="w-100"
-                @click="isSignModalShown = false"
-                >Cancel</AppButton
-              >
-            </div>
-            <div class="col-6">
-              <AppButton
-                color="primary"
-                :loading="isSigning"
-                :disabled="userPassword.length === 0 || isSigning"
-                class="w-100"
-                type="submit"
-                >Continue</AppButton
-              >
-            </div>
+
+          <hr class="separator my-5" />
+
+          <div class="flex-between-centered gap-4">
+            <AppButton color="borderless" type="button" @click="isSignModalShown = false"
+              >Cancel</AppButton
+            >
+            <AppButton
+              color="primary"
+              :loading="isSigning"
+              :disabled="userPassword.length === 0 || isSigning"
+              type="submit"
+              >Continue</AppButton
+            >
           </div>
         </form>
       </div>
@@ -710,7 +703,10 @@ defineExpose({
           Executing
           {{ type }}
         </h3>
-        <div class="d-grid mt-4">
+
+        <hr class="separator my-5" />
+
+        <div class="d-grid">
           <p class="text-center text-small text-secondary" v-if="chunksAmount">
             {{ processedChunks }} out of {{ chunksAmount }}
           </p>
@@ -748,7 +744,10 @@ defineExpose({
           >
         </p>
         <slot name="successContent"></slot>
-        <div class="d-grid mt-5">
+
+        <hr class="separator my-5" />
+
+        <div class="d-grid">
           <AppButton
             color="primary"
             @click="

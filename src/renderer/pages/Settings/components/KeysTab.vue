@@ -429,6 +429,8 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
               placeholder="Type your password"
             />
           </div>
+          <hr class="separator my-5" />
+
           <div class="d-grid mt-5">
             <AppButton type="submit" color="primary" :disabled="userPassword.length === 0"
               >Decrypt</AppButton
@@ -463,7 +465,7 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
             through creating or importing a recovery phrase again. Do you wish to continue?
           </p>
           <div class="d-grid mt-5">
-            <AppButton type="submit" color="primary">Delete</AppButton>
+            <AppButton type="submit" color="danger" :outline="true">Delete</AppButton>
           </div>
         </form>
       </div>
@@ -514,7 +516,9 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
               placeholder="Type your password"
             />
           </div>
-          <div class="d-grid mt-5">
+          <hr class="separator my-5" />
+
+          <div class="d-grid">
             <AppButton type="submit" color="primary">Import</AppButton>
           </div>
         </form>
@@ -565,7 +569,9 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
               placeholder="Type your password"
             />
           </div>
-          <div class="d-grid mt-5">
+          <hr class="separator my-5" />
+
+          <div class="d-grid">
             <AppButton type="submit" color="primary">Import</AppButton>
           </div>
         </form>

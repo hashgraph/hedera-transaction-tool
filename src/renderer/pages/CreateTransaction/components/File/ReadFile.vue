@@ -214,7 +214,9 @@ const columnClass = 'col-4 col-xxxl-3';
         <div class="form-group mt-4">
           <AppInput v-model="userPassword" :filled="true" size="small" type="password" />
         </div>
-        <div class="d-grid mt-4">
+        <hr class="separator my-5" />
+
+        <div class="d-grid">
           <AppButton
             :loading="isLoading"
             :disabled="userPassword.length === 0 || isLoading"

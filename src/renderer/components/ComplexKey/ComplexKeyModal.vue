@@ -130,13 +130,13 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
         <p class="text-center text-small text-secondary mt-3">
           You cannot save key list with invalid structure
         </p>
+
         <hr class="separator my-5" />
-        <div class="row justify-content-center mt-4">
-          <div class="col-6 d-grid">
-            <AppButton type="button" color="secondary" @click="errorModalShow = false"
-              >Close</AppButton
-            >
-          </div>
+
+        <div class="d-grid">
+          <AppButton type="button" color="secondary" @click="errorModalShow = false"
+            >Close</AppButton
+          >
         </div>
       </div>
     </AppModal>

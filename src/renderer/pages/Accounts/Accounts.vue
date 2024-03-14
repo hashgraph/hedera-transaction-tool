@@ -495,24 +495,13 @@ const handleChangeNickname = async () => {
               Are you sure you want to remove this Account from your Account list?
             </p>
             <hr class="separator my-5" />
-            <div class="row mt-4">
-              <div class="col-6">
-                <AppButton
-                  color="secondary"
-                  class="w-100"
-                  @click="isUnlinkAccountModalShown = false"
-                  >Cancel</AppButton
-                >
-              </div>
-              <div class="col-6">
-                <AppButton
-                  :outline="true"
-                  color="primary"
-                  class="w-100"
-                  @click="handleUnlinkAccount"
-                  >Unlink</AppButton
-                >
-              </div>
+            <div class="flex-between-centered gap-4">
+              <AppButton color="borderless" @click="isUnlinkAccountModalShown = false"
+                >Cancel</AppButton
+              >
+              <AppButton :outline="true" color="danger" @click="handleUnlinkAccount"
+                >Unlink</AppButton
+              >
             </div>
           </div>
         </AppModal>
