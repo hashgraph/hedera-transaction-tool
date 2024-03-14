@@ -53,7 +53,7 @@ const handleLinkAccount = async e => {
 
       <h2 class="text-title text-bold">Link existing account</h2>
     </div>
-    <form class="mt-5 col-12 col-md-8 col-xl-6 col-xxl-4" @submit="handleLinkAccount">
+    <form class="mt-5 col-12 col-md-8 col-lg-6 col-xxl-4" @submit="handleLinkAccount">
       <div class="form-group">
         <label class="form-label">Hedera Account ID <span class="text-danger">*</span></label>
 
@@ -73,13 +73,9 @@ const handleLinkAccount = async e => {
       </div>
       <div class="form-group mt-5">
         <label class="form-label">Nickname</label>
-        <AppInput v-model="nickname" :filled="true" />
+        <AppInput v-model="nickname" :filled="true" placeholder="Enter nickname" />
       </div>
-      <AppButton
-        color="primary"
-        type="submit"
-        class="mt-5 w-100"
-        :disabled="!accountData.isValid.value"
+      <AppButton color="primary" type="submit" class="mt-5" :disabled="!accountData.isValid.value"
         >Link Account</AppButton
       >
     </form>
