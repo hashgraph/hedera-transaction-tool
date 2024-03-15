@@ -88,6 +88,7 @@
 .fill-remaining {
   flex: 1 1 auto;
   overflow: auto;
+  overflow-x: hidden;
 }
 
 .flex-column-100 {

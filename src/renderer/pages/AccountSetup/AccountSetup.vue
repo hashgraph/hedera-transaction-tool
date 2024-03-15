@@ -77,11 +77,11 @@ onBeforeMount(() => {
 });
 </script>
 <template>
-  <div class="my-0 mx-auto p-7">
+  <div class="flex-column-100 my-0 mx-auto p-7">
     <Transition name="fade" mode="out-in">
       <template v-if="!isFaqShown">
         <div
-          class="container-dark-border col-12 col-lg-10 col-xl-8 col-xxl-6 bg-modal-surface rounded-4 position-relative p-5 mx-auto"
+          class="container-dark-border flex-column-100 col-12 col-lg-10 col-xl-8 col-xxl-6 bg-modal-surface rounded-4 position-relative p-5 mx-auto"
         >
           <template v-if="stepperItems.map(s => s.name).includes(step.current)">
             <div class="w-100 flex-centered flex-column gap-4">
@@ -89,7 +89,7 @@ onBeforeMount(() => {
               <p class="mt-3 text-main text-secondary text-center">
                 Set your Recovery Phrase and Key Pairs
               </p>
-              <div class="mt-8 w-100">
+              <div class="mt-5 w-100">
                 <AppStepper
                   :items="stepperItems"
                   :active-index="stepperItems.findIndex(s => s.name === step.current)"

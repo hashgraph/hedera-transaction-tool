@@ -91,7 +91,7 @@ watch(words, newWords => {
 </script>
 <template>
   <div>
-    <div class="d-flex flex-wrap row g-12px">
+    <div class="row flex-wrap g-12px">
       <template v-for="(word, index) in words || []" :key="index">
         <AppRecoveryPhraseWord
           class="col-3"

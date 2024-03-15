@@ -33,11 +33,11 @@ onBeforeMount(() => {
 });
 </script>
 <template>
-  <div>
+  <div class="fill-remaining mt-4">
     <AppTabs
       :items="tabItems"
       v-model:activeIndex="activeTabIndex"
-      class="mt-8 w-100"
+      class="w-100"
       nav-item-class="flex-1"
       nav-item-button-class="justify-content-center"
     ></AppTabs>
