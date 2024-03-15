@@ -68,10 +68,6 @@ onBeforeRouteLeave(async to => {
   if (route.query.draftId) {
     try {
       const loadedDraft = await getDraft(route.query.draftId.toString());
-      console.log(loadedDraft);
-      console.log(
-        getTransactionFromBytes(loadedDraft.transactionBytes).toBytes() != transactionBytes,
-      );
 
       if (getTransactionFromBytes(loadedDraft.transactionBytes).toBytes() != transactionBytes) {
         await updateDraft(loadedDraft.id, { transactionBytes: transactionBytes.toString() });

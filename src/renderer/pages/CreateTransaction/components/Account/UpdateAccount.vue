@@ -28,6 +28,7 @@ import KeyField from '@renderer/components/KeyField.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
+import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 
 /* Stores */
 const payerData = useAccountId();
@@ -207,12 +208,22 @@ const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <form @submit="handleCreate">
-    <TransactionHeaderControls
-      :get-transaction-bytes="() => createTransaction().toBytes()"
-      :is-executed="isExecuted"
-      :create-requirements="!accountData.accountId.value || !payerData.isValid.value"
-      heading-text="Update Account Transaction"
-    />
+    <TransactionHeaderControls heading-text="Update Account Transaction">
+      <template #buttons>
+        <SaveDraftButton
+          :get-transaction-bytes="() => createTransaction().toBytes()"
+          :is-executed="isExecuted"
+        />
+        <AppButton
+          color="primary"
+          type="submit"
+          :disabled="!accountData.accountId.value || !payerData.isValid.value"
+        >
+          <span class="bi bi-send"></span>
+          Sign & Submit</AppButton
+        >
+      </template>
+    </TransactionHeaderControls>
 
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"

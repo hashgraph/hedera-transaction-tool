@@ -21,10 +21,12 @@ import {
   stringifyHbar,
 } from '@renderer/utils';
 
+import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransferCard from '@renderer/components/TransferCard.vue';
+import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 
 /* Stores */
 const network = useNetworkStore();
@@ -279,20 +281,29 @@ onMounted(async () => {
 </script>
 <template>
   <form @submit="handleCreate">
-    <TransactionHeaderControls
-      :get-transaction-bytes="() => createTransaction().toBytes()"
-      :handle-draft-added="handleDraftAdded"
-      :handle-draft-updated="handleDraftAdded"
-      :is-executed="isExecuted"
-      :create-requirements="
-        !payerData.accountId.value ||
-        !totalBalance.toBigNumber().isEqualTo(0) ||
-        totalBalanceAdjustments > 10 ||
-        totalBalanceAdjustments === 0
-      "
-      heading-text="Transfer Hbar Transaction"
-      class="flex-1"
-    />
+    <TransactionHeaderControls heading-text="Transfer Hbar Transaction">
+      <template #buttons>
+        <SaveDraftButton
+          :get-transaction-bytes="() => createTransaction().toBytes()"
+          :handle-draft-added="handleDraftAdded"
+          :handle-draft-updated="handleDraftAdded"
+          :is-executed="isExecuted"
+        />
+        <AppButton
+          color="primary"
+          type="submit"
+          :disabled="
+            !payerData.accountId.value ||
+            !totalBalance.toBigNumber().isEqualTo(0) ||
+            totalBalanceAdjustments > 10 ||
+            totalBalanceAdjustments === 0
+          "
+        >
+          <span class="bi bi-send"></span>
+          Sign & Submit</AppButton
+        >
+      </template>
+    </TransactionHeaderControls>
 
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"

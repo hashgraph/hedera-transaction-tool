@@ -150,11 +150,14 @@ const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <form @submit="handleSubmit">
-    <TransactionHeaderControls
-      :create-requirements="!fileId || !payerData.isValid.value"
-      heading-text="Read File Query"
-      button-text="Sign and read"
-    />
+    <TransactionHeaderControls heading-text="Read File Query">
+      <template #buttons>
+        <AppButton color="primary" type="submit" :disabled="!fileId || !payerData.isValid.value">
+          <span class="bi bi-send"></span>
+          Sign & Read</AppButton
+        >
+      </template>
+    </TransactionHeaderControls>
 
     <div class="row mt-6">
       <div class="form-group" :class="[columnClass]">

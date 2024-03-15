@@ -15,9 +15,11 @@ import { isAccountId, isFileId } from '@renderer/utils/validator';
 import { getTransactionFromBytes } from '@renderer/utils/transactions';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
+import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 
 /* Composables */
 const toast = useToast();
@@ -115,12 +117,18 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
 <template>
   <form @submit="handleCreate">
     <!-- :create-requirements to be updated -->
-    <TransactionHeaderControls
-      :get-transaction-bytes="() => createTransaction().toBytes()"
-      :is-executed="isExecuted"
-      :create-requirements="true"
-      heading-text="Freeze Transaction"
-    />
+    <TransactionHeaderControls heading-text="Freeze Transaction">
+      <template #buttons>
+        <SaveDraftButton
+          :get-transaction-bytes="() => createTransaction().toBytes()"
+          :is-executed="isExecuted"
+        />
+        <AppButton color="primary" type="submit" :disabled="true">
+          <span class="bi bi-send"></span>
+          Sign & Submit</AppButton
+        >
+      </template>
+    </TransactionHeaderControls>
 
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"

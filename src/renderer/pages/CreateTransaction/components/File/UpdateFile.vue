@@ -22,10 +22,12 @@ import {
 } from '@renderer/utils/sdk';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
 import KeyField from '@renderer/components/KeyField.vue';
 import FileTransactionProcessor from '@renderer/components/Transaction/FileTransactionProcessor.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
+import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 
 /* Composables */
 const toast = useToast();
@@ -207,12 +209,22 @@ const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <form @submit="handleCreate">
-    <TransactionHeaderControls
-      :get-transaction-bytes="() => createTransaction().toBytes()"
-      :is-executed="isExecuted"
-      :create-requirements="!ownerKey || !payerData.isValid.value || !fileId"
-      heading-text="Update File Transaction"
-    />
+    <TransactionHeaderControls heading-text="Update File Transaction">
+      <template #buttons>
+        <SaveDraftButton
+          :get-transaction-bytes="() => createTransaction().toBytes()"
+          :is-executed="isExecuted"
+        />
+        <AppButton
+          color="primary"
+          type="submit"
+          :disabled="!ownerKey || !payerData.isValid.value || !fileId"
+        >
+          <span class="bi bi-send"></span>
+          Sign & Submit</AppButton
+        >
+      </template>
+    </TransactionHeaderControls>
 
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
