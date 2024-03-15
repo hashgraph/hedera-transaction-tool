@@ -38,11 +38,11 @@ const menuItems = [
   //   title: 'Contact List',
   //   icon: 'bi bi-book',
   // },
-  {
-    link: '/style-guide',
-    title: 'Style Guide',
-    icon: 'bi bi-feather',
-  },
+  // {
+  //   link: '/style-guide',
+  //   title: 'Style Guide',
+  //   icon: 'bi bi-feather',
+  // },
 ];
 </script>
 
