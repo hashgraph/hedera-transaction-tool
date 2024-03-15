@@ -84,14 +84,17 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
         <h1 class="text-title text-semi-bold text-center">Complex Key</h1>
         <div :style="modalContentContainerStyle">
           <div class="text-end">
-            <AppButton type="button" class="text-body" @click="summaryMode = !summaryMode">{{
-              summaryMode ? 'Edit Mode' : 'View Summary'
-            }}</AppButton>
+            <AppButton
+              color="borderless"
+              type="button"
+              class="text-body"
+              @click="summaryMode = !summaryMode"
+              >{{ summaryMode ? 'Edit Mode' : 'View Summary' }}</AppButton
+            >
             <AppButton
               v-if="onSaveComplexKey && !currentKeyInvalid"
               type="button"
               color="primary"
-              :outline="true"
               class="ms-3"
               @click="handleSaveComplexKeyButtonClick"
               >Save Complex Key</AppButton
@@ -130,13 +133,13 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
         <p class="text-center text-small text-secondary mt-3">
           You cannot save key list with invalid structure
         </p>
+
         <hr class="separator my-5" />
-        <div class="row justify-content-center mt-4">
-          <div class="col-6 d-grid">
-            <AppButton type="button" color="secondary" @click="errorModalShow = false"
-              >Close</AppButton
-            >
-          </div>
+
+        <div class="d-grid">
+          <AppButton type="button" color="secondary" @click="errorModalShow = false"
+            >Close</AppButton
+          >
         </div>
       </div>
     </AppModal>

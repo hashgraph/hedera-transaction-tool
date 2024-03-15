@@ -14,9 +14,7 @@ import {
   User,
 } from '@prisma/client';
 
-import { IOrganization } from '@main/shared/interfaces';
-
-import { Theme } from '@main/modules/ipcHandlers/theme';
+import { IOrganization, Theme } from '@main/shared/interfaces';
 
 export const electronAPI = {
   update: {
@@ -43,9 +41,15 @@ export const electronAPI = {
   },
   theme: {
     isDark: (): Promise<boolean> => ipcRenderer.invoke('theme:isDark'),
+    mode: (): Promise<Theme> => ipcRenderer.invoke('theme:mode'),
     toggle: (theme: Theme): Promise<boolean> => ipcRenderer.invoke('theme:toggle', theme),
-    onThemeUpdate: async (callback: (theme: boolean) => void) => {
-      await ipcRenderer.on('theme:update', (_e, isDark: boolean) => callback(isDark));
+    onThemeUpdate: async (
+      callback: (theme: { themeSource: Theme; shouldUseDarkColors: boolean }) => void,
+    ) => {
+      await ipcRenderer.on(
+        'theme:update',
+        (_e, theme: { themeSource: Theme; shouldUseDarkColors: boolean }) => callback(theme),
+      );
     },
   },
   config: {

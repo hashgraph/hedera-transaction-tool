@@ -1,33 +1,24 @@
 /* Buttons */
-@each $color, $value in $theme-colors-button {
-  .btn-#{$color} {
-    @if $color == 'light' {
-      @include button-custom-variant(
-        $value,
-        $value,
-        $hover-background: shade-color($value, $btn-hover-bg-shade-amount),
-        $hover-border: shade-color($value, $btn-hover-border-shade-amount),
-        $active-background: shade-color($value, $btn-active-bg-shade-amount),
-        $active-border: shade-color($value, $btn-active-border-shade-amount)
-      );
-    } @else if $color == 'dark' {
-      @include button-custom-variant(
-        $value,
-        $value,
-        $hover-background: tint-color($value, $btn-hover-bg-tint-amount),
-        $hover-border: tint-color($value, $btn-hover-border-tint-amount),
-        $active-background: tint-color($value, $btn-active-bg-tint-amount),
-        $active-border: tint-color($value, $btn-active-border-tint-amount)
-      );
-    } @else {
-      @include button-custom-variant($value, $value, $btn-color);
-    }
-  }
+.btn {
+  min-width: 156px;
 }
 
-@each $color, $value in $theme-colors-button {
-  .btn-outline-#{$color} {
-    @include button-custom-outline-variant($btn-outline-text-color, $value);
+@each $type in map-keys($buttons) {
+  .btn-#{$type} {
+    @include button-custom-variant(
+      texts-deep-get($buttons, $type, 'color'),
+      texts-deep-get($buttons, $type, 'color-hover'),
+      texts-deep-get($buttons, $type, 'color-active'),
+      texts-deep-get($buttons, $type, 'background-color'),
+      texts-deep-get($buttons, $type, 'background-color-hover'),
+      texts-deep-get($buttons, $type, 'background-color-active'),
+      texts-deep-get($buttons, $type, 'border-color'),
+      texts-deep-get($buttons, $type, 'border-color-hover'),
+      texts-deep-get($buttons, $type, 'border-color-active'),
+      texts-deep-get($buttons, $type, 'shadow-color'),
+      texts-deep-get($buttons, $type, 'shadow-color-hover'),
+      texts-deep-get($buttons, $type, 'shadow-color-active')
+    );
   }
 }
 
@@ -47,6 +38,7 @@
 }
 
 .btn-icon-only {
+  min-width: auto;
   padding: 8px 12px;
 
   i {
@@ -55,6 +47,7 @@
 }
 
 .btn-theme-changer {
+  min-width: auto;
   position: fixed;
   bottom: 32px;
   right: 32px;
@@ -74,7 +67,8 @@
 }
 
 /* Forms */
-.form-control {
+.form-control,
+.form-select {
   &.is-fill {
     background-color: var(--bs-input-fill-bg-color);
   }
@@ -343,11 +337,11 @@
 
 /* Modal Overrides */
 .small-modal {
-  --bs-modal-width: 330px;
+  --bs-modal-width: 356px;
 }
 
 .common-modal {
-  --bs-modal-width: 356px;
+  --bs-modal-width: 386px;
 }
 
 .medium-modal {
@@ -391,6 +385,9 @@
 
 /* Stepper */
 .stepper {
+  margin-top: 25px;
+  margin-bottom: 15px;
+
   .stepper-head {
     .stepper-nav {
       transform: translateY(-50%);
@@ -531,7 +528,8 @@
 
   td,
   th {
-    padding: 12px 16px;
+    padding: 8px 16px;
+    white-space: nowrap;
 
     &:first-of-type {
       border-top-left-radius: 10px;
@@ -555,7 +553,7 @@
   }
 
   th {
-    background-color: var(--#{$prefix}table-header-bg-color);
+    background-color: var(--#{$prefix}card-primary-bg-color);
     font-size: 12px;
     font-weight: 400;
   }
@@ -574,7 +572,7 @@
   height: 1px;
   width: 100%;
   opacity: 1;
-  background-color: var(--#{$prefix}input-border-color);
+  background-color: var(--#{$prefix}separator-bg-color);
 }
 
 /* Borders */
@@ -703,6 +701,7 @@
 /* Pager */
 .pager {
   background-color: var(--#{$prefix}card-primary-bg-color);
+  padding: 8px 16px;
 
   display: flex;
   justify-content: space-between;

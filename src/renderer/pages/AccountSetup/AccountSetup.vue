@@ -77,26 +77,24 @@ onBeforeMount(() => {
 });
 </script>
 <template>
-  <div class="my-0 mx-auto p-7">
+  <div class="flex-column-100 my-0 mx-auto p-7">
     <Transition name="fade" mode="out-in">
       <template v-if="!isFaqShown">
         <div
-          class="col-12 col-lg-10 col-xl-8 col-xxl-6 bg-modal-surface rounded-4 position-relative p-5 mx-auto"
+          class="container-dark-border flex-column-100 col-12 col-lg-10 col-xl-8 col-xxl-6 bg-modal-surface rounded-4 position-relative p-5 mx-auto"
         >
           <template v-if="stepperItems.map(s => s.name).includes(step.current)">
-            <div class="w-100 d-flex flex-column justify-content-center align-items-center gap-4">
-              <div class="col-12 col-md-10 col-xxl-8">
-                <h1 class="mt-3 text-title text-bold text-center">Account Setup</h1>
-                <p class="mt-3 text-main text-secondary text-center">
-                  Set your Recovery Phrase and Key Pairs
-                </p>
-                <div class="mt-8">
-                  <AppStepper
-                    :items="stepperItems"
-                    :active-index="stepperItems.findIndex(s => s.name === step.current)"
-                  >
-                  </AppStepper>
-                </div>
+            <div class="w-100 flex-centered flex-column gap-4">
+              <h1 class="mt-3 text-title text-bold text-center">Account Setup</h1>
+              <p class="mt-3 text-main text-secondary text-center">
+                Set your Recovery Phrase and Key Pairs
+              </p>
+              <div class="mt-5 w-100">
+                <AppStepper
+                  :items="stepperItems"
+                  :active-index="stepperItems.findIndex(s => s.name === step.current)"
+                >
+                </AppStepper>
               </div>
             </div>
           </template>
@@ -140,18 +138,18 @@ onBeforeMount(() => {
                   (user.data.mode === 'organization' && stepperItems[1].name != step.current) ||
                   isFaqShown
                 "
-                color="secondary"
-                class="d-flex align-items-center mt-6"
+                color="borderless"
+                class="flex-centered mt-6"
                 @click="handleBack"
               >
-                <i class="bi bi-arrow-left-short text-headline lh-1"></i> Back</AppButton
+                <i class="bi bi-arrow-left-short text-main"></i> Back</AppButton
               >
             </div>
             <AppButton
               v-if="keyPairs.recoveryPhraseWords.length > 0 && step.current !== 'recoveryPhrase'"
               color="primary"
               @click="handleNext"
-              class="mt-6 ms-3"
+              class="ms-3 mt-6"
               >Next</AppButton
             >
           </div>

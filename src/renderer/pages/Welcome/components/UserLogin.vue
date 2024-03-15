@@ -234,7 +234,7 @@ watch(inputEmail, pass => {
 </script>
 <template>
   <div class="container-dark-border glow-dark-bg p-5">
-    <h4 class="text-title text-bold text-center">
+    <h4 class="text-title text-semi-bold text-center">
       {{ shouldRegister ? 'Register' : 'Sign In' }}
     </h4>
     <p class="text-secondary text-small lh-base text-center mt-3">
@@ -285,14 +285,16 @@ watch(inputEmail, pass => {
         >
       </div>
 
-      <div class="d-grid mt-5">
-        <AppButton
-          color="primary"
-          type="submit"
-          class="w-100"
-          :disabled="inputEmail.length === 0 || inputPassword.length === 0"
-          >Sign in</AppButton
-        >
+      <div class="row justify-content-end mt-5">
+        <div class="d-grid">
+          <AppButton
+            color="primary"
+            type="submit"
+            class="w-100"
+            :disabled="inputEmail.length === 0 || inputPassword.length === 0"
+            >{{ shouldRegister ? 'Next' : 'Sign in' }}</AppButton
+          >
+        </div>
       </div>
     </form>
     <AppModal v-model:show="isResetDataModalShown" class="common-modal">
@@ -308,18 +310,12 @@ watch(inputEmail, pass => {
         <p class="text-center text-small text-secondary mt-4">
           Are you sure you want to reset the app data?
         </p>
+
         <hr class="separator my-5" />
-        <div class="row mt-4">
-          <div class="col-6">
-            <AppButton color="secondary" class="w-100" @click="isResetDataModalShown = false"
-              >Cancel</AppButton
-            >
-          </div>
-          <div class="col-6">
-            <AppButton :outline="true" color="primary" class="w-100" @click="handleResetData"
-              >Reset</AppButton
-            >
-          </div>
+
+        <div class="flex-between-centered gap-4">
+          <AppButton color="borderless" @click="isResetDataModalShown = false">Cancel</AppButton>
+          <AppButton color="danger" @click="handleResetData">Reset</AppButton>
         </div>
       </div>
     </AppModal>

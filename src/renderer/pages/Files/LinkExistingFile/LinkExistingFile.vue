@@ -67,7 +67,7 @@ const handleLinkFile = async e => {
       @click="$router.back()"
       ><i class="bi bi-arrow-left text-subheader me-2"></i> Back</AppButton
     >
-    <form class="mt-5 col-12 col-md-8 col-xl-6 col-xxl-4" @submit="handleLinkFile">
+    <form class="mt-5 col-12 col-md-8 col-lg-6 col-xxl-4" @submit="handleLinkFile">
       <div class="form-group">
         <label class="form-label">Hedera File ID <span class="text-danger">*</span></label>
         <AppInput
@@ -82,13 +82,13 @@ const handleLinkFile = async e => {
       </div>
       <div class="form-group mt-5">
         <label class="form-label">Nickname</label>
-        <AppInput v-model="nickname" :filled="true" />
+        <AppInput v-model="nickname" :filled="true" placeholder="Enter nickname" />
       </div>
       <div class="form-group mt-5">
         <label class="form-label">Description</label>
         <textarea v-model="description" class="form-control is-fill" rows="8"></textarea>
       </div>
-      <AppButton color="primary" type="submit" class="mt-5 w-100" :disabled="!isFileId(fileId)"
+      <AppButton color="primary" type="submit" class="mt-5" :disabled="!isFileId(fileId)"
         >Link File</AppButton
       >
     </form>

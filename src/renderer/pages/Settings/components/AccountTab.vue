@@ -96,15 +96,9 @@ const handleChangePassword = async e => {
           Are you sure you want to change your password
         </p>
         <hr class="separator my-5" />
-        <div class="row mt-4">
-          <div class="col-6">
-            <AppButton class="w-100" @click="isConfirmModalShown = false">Cancel</AppButton>
-          </div>
-          <div class="col-6">
-            <AppButton color="primary" class="w-100" @click="handleChangePassword"
-              >Change</AppButton
-            >
-          </div>
+        <div class="flex-between-centered gap-4">
+          <AppButton color="borderless" @click="isConfirmModalShown = false">Cancel</AppButton>
+          <AppButton color="primary" @click="handleChangePassword">Change</AppButton>
         </div>
       </div>
     </AppModal>

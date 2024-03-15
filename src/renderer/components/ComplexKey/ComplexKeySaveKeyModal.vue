@@ -71,18 +71,16 @@ const handleSaveKeyList = async e => {
             placeholder="Enter Name of Key List"
           />
         </div>
-        <hr class="separator" />
-        <div class="row mt-4">
-          <div class="col-6 d-grid">
-            <AppButton color="secondary" type="button" @click="handleShowUpdate(false)"
-              >Cancel</AppButton
-            >
-          </div>
-          <div class="col-6 d-grid">
-            <AppButton type="submit" color="primary" :disabled="nickname.length === 0"
-              >Save</AppButton
-            >
-          </div>
+
+        <hr class="separator my-5" />
+
+        <div class="flex-between-centered gap-4">
+          <AppButton type="button" color="borderless" @click="handleShowUpdate(false)"
+            >Cancel</AppButton
+          >
+          <AppButton type="submit" color="primary" :disabled="nickname.length === 0"
+            >Save</AppButton
+          >
         </div>
       </form>
     </div>

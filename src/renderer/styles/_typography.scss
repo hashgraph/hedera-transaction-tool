@@ -114,10 +114,6 @@
   &:hover {
     color: var(--#{$prefix}menu-link-color-hover);
     background-color: var(--#{$prefix}menu-link-bg-hover);
-
-    .bi {
-      color: $primary;
-    }
   }
 
   &.active {
@@ -133,10 +129,6 @@
         fill: $primary;
         stroke: $primary;
       }
-    }
-
-    .bi {
-      color: $primary;
     }
   }
 }

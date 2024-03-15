@@ -176,7 +176,7 @@ defineExpose({
 });
 </script>
 <template>
-  <div class="mt-7">
+  <div class="fill-remaining mt-5">
     <!-- <div
       class="mb-5 position-relative"
       v-if="keyPairsStore.keyPairs.some(kp => kp.privateKey === '')"

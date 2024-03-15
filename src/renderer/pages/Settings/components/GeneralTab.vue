@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onBeforeMount, ref } from 'vue';
+
+import { Theme } from '@main/shared/interfaces';
 
 import { useToast } from 'vue-toast-notification';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
+import { isAccountId } from '@renderer/utils/validator';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { isAccountId } from '@renderer/utils/validator';
 
 /* Stores */
 const networkStore = useNetworkStore();
@@ -22,6 +25,8 @@ const consensusNodeEndpoint = ref('127.0.0.1:50211');
 const mirrorNodeGRPCEndpoint = ref('127.0.0.1:5600');
 const mirrorNodeRESTAPIEndpoint = ref('http://localhost:5551/api/v1');
 const nodeAccountId = ref('0.0.3');
+
+const theme = ref<Theme>('light');
 
 /* Handlers */
 const handleSetCustomNetwork = async () => {
@@ -46,8 +51,12 @@ const handleSetCustomNetwork = async () => {
   }
 };
 
+const handleThemeChange = (newTheme: Theme) => {
+  window.electronAPI.theme.toggle(newTheme);
+};
+
 /* Hooks */
-onMounted(() => {
+onBeforeMount(async () => {
   if (networkStore.customNetworkSettings) {
     const firstNodeAccountId = Object.entries(networkStore.customNetworkSettings.nodeAccountIds)[0];
 
@@ -56,16 +65,23 @@ onMounted(() => {
     mirrorNodeGRPCEndpoint.value = networkStore.customNetworkSettings.mirrorNodeGRPCEndpoint;
     mirrorNodeRESTAPIEndpoint.value = networkStore.customNetworkSettings.mirrorNodeRESTAPIEndpoint;
   }
+
+  window.electronAPI.theme.onThemeUpdate(newTheme => {
+    document.body.setAttribute('data-bs-theme', newTheme.shouldUseDarkColors ? 'dark' : 'light');
+    theme.value = newTheme.themeSource;
+  });
+
+  theme.value = await window.electronAPI.theme.mode();
 });
 </script>
 <template>
   <div>
     <!-- Network -->
-    <div class="p-4 border border-2 rounded-3">
+    <div class="fill-remaining border border-2 rounded-3 p-4">
       <p>Network</p>
       <div class="mt-4 btn-group">
         <AppButton
-          color="primary"
+          color="secondary"
           :class="{ active: networkStore.network === 'mainnet' }"
           @click="
             networkStore.setNetwork('mainnet');
@@ -74,7 +90,7 @@ onMounted(() => {
           >Mainnet</AppButton
         >
         <AppButton
-          color="primary"
+          color="secondary"
           :class="{ active: networkStore.network === 'testnet' }"
           @click="
             networkStore.setNetwork('testnet');
@@ -83,7 +99,7 @@ onMounted(() => {
           >Testnet</AppButton
         >
         <AppButton
-          color="primary"
+          color="secondary"
           disabled
           :class="{ active: networkStore.network === 'previewnet' }"
           @click="
@@ -93,7 +109,7 @@ onMounted(() => {
           >Previewnet</AppButton
         >
         <AppButton
-          color="primary"
+          color="secondary"
           :class="{ active: networkStore.network === 'custom' }"
           @click="isCustomSettingsVisible = true"
           >Custom</AppButton
@@ -171,5 +187,27 @@ onMounted(() => {
         </div>
       </div>
     </div> -->
+
+    <!-- Appearance -->
+    <div class="p-4 border border-2 rounded-3 mt-5">
+      <p>Appearance</p>
+      <div class="mt-4 btn-group">
+        <AppButton
+          :color="theme === 'dark' ? 'secondary' : 'borderless'"
+          @click="handleThemeChange('dark')"
+          >Dark</AppButton
+        >
+        <AppButton
+          :color="theme === 'light' ? 'secondary' : 'borderless'"
+          @click="handleThemeChange('light')"
+          >Light</AppButton
+        >
+        <AppButton
+          :color="theme === 'system' ? 'secondary' : 'borderless'"
+          @click="handleThemeChange('system')"
+          >System</AppButton
+        >
+      </div>
+    </div>
   </div>
 </template>

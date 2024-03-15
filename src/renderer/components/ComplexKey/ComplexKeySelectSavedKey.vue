@@ -146,16 +146,14 @@ onBeforeMount(async () => {
             </template>
           </div>
         </div>
+
         <hr class="separator my-5" />
-        <div class="row justify-content-between">
-          <div class="col-4 d-grid">
-            <AppButton color="secondary" type="button" @click="handleShowUpdate(false)"
-              >Cancel</AppButton
-            >
-          </div>
-          <div class="col-4 d-grid">
-            <AppButton color="primary" type="submit" :disabled="!complexKey">Done</AppButton>
-          </div>
+
+        <div class="flex-between-centered gap-4">
+          <AppButton color="borderless" type="button" @click="handleShowUpdate(false)"
+            >Cancel</AppButton
+          >
+          <AppButton color="primary" type="submit" :disabled="!complexKey">Done</AppButton>
         </div>
       </form>
       <AppModal v-model:show="deleteSavedKeyModalShown" class="common-modal">
@@ -174,15 +172,11 @@ onBeforeMount(async () => {
               Are you sure you want to remove this Key List from your Complex Keys List
             </p>
             <hr class="separator my-5" />
-            <div class="row mt-4">
-              <div class="col-6 d-grid">
-                <AppButton type="button" color="secondary" @click="deleteSavedKeyModalShown = false"
-                  >Cancel</AppButton
-                >
-              </div>
-              <div class="col-6 d-grid">
-                <AppButton :outline="true" color="primary" type="submit">Remove</AppButton>
-              </div>
+            <div class="flex-between-centered gap-4">
+              <AppButton type="button" color="borderless" @click="deleteSavedKeyModalShown = false"
+                >Cancel</AppButton
+              >
+              <AppButton color="danger" type="submit">Remove</AppButton>
             </div>
           </form>
         </div>

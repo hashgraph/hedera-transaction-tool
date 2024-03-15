@@ -49,7 +49,7 @@ watch(
 </script>
 
 <template>
-  <select class="form-select" :value="accountId" @change="handleAccountIdChange">
+  <select class="form-select is-fill" :value="accountId" @change="handleAccountIdChange">
     <template v-for="accountId in accoundIds" :key="accountId">
       <option :value="accountId">{{ accountId }}</option>
     </template>

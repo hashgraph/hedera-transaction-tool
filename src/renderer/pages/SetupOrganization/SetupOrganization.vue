@@ -49,9 +49,7 @@ const handleContinue = async (e: Event) => {
 };
 </script>
 <template>
-  <div
-    class="p-10 d-flex flex-column justify-content-center align-items-center flex-1 overflow-hidden"
-  >
+  <div class="p-10 flex-centered flex-column-100 flex-1 overflow-hidden">
     <h1 class="text-huge text-bold text-center">Setup Organization</h1>
     <p class="mt-5">Please Enter Organisation details</p>
     <form

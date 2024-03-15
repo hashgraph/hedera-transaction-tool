@@ -128,7 +128,12 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
       <p class="text-secondary text-small ms-3">of {{ keyList.toArray().length }}</p>
       <div class="border-start border-secondary-subtle ps-4 ms-4">
         <div class="dropdown">
-          <AppButton type="button" color="primary" size="small" data-bs-toggle="dropdown"
+          <AppButton
+            type="button"
+            color="primary"
+            size="small"
+            data-bs-toggle="dropdown"
+            class="min-w-unset"
             ><span class="bi bi-plus-lg"></span> Add</AppButton
           >
           <ul class="dropdown-menu mt-3">

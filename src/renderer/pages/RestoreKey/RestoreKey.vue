@@ -146,11 +146,11 @@ watch(index, () => {
 });
 </script>
 <template>
-  <div class="p-8">
+  <div class="flex-column-100 p-8">
     <div class="position-absolute">
       <AppButton color="secondary" @click="$router.back()">Back</AppButton>
     </div>
-    <div class="d-flex flex-column justify-content-center align-items-center h-100">
+    <div class="flex-centered flex-column-100">
       <Transition name="fade" mode="out-in">
         <!-- Step 1 -->
         <div v-if="step === 0" class="w-100">
@@ -200,7 +200,7 @@ watch(index, () => {
         </form>
 
         <!-- Step 3 -->
-        <form v-else-if="step === 2" @submit="handleFinish">
+        <form v-else-if="step === 2" @submit="handleFinish" class="fill-remaining">
           <h1 class="text-display text-bold text-center">Enter your recovery phrase</h1>
           <div class="mt-8">
             <Import

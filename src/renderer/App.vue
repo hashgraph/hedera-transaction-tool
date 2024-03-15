@@ -8,8 +8,8 @@ import useUserStore from '@renderer/stores/storeUser';
 import AppMenu from '@renderer/components/Menu.vue';
 import AppHeader from '@renderer/components/Header.vue';
 import AppUpdate from '@renderer/components/AppUpdate.vue';
+import ImportantNote from '@renderer/components/ImportantNote.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import ImportantNote from './components/ImportantNote.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -25,8 +25,8 @@ onMounted(async () => {
   const isDark = await window.electronAPI.theme.isDark();
   document.body.setAttribute('data-bs-theme', isDark ? 'dark' : 'light');
 
-  window.electronAPI.theme.onThemeUpdate(isDark =>
-    document.body.setAttribute('data-bs-theme', isDark ? 'dark' : 'light'),
+  window.electronAPI.theme.onThemeUpdate(theme =>
+    document.body.setAttribute('data-bs-theme', theme.shouldUseDarkColors ? 'dark' : 'light'),
   );
 });
 </script>
@@ -51,6 +51,8 @@ onMounted(async () => {
         <component :is="Component" />
       </Transition>
     </RouterView>
+
+    <!-- To be removed -->
     <AppButton class="btn-theme-changer" color="secondary" @click="handleThemeChange">
       <i class="bi bi-sun"></i
     ></AppButton>

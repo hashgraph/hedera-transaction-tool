@@ -102,6 +102,7 @@ $danger: $error-500;
 $warning: $warning-500;
 $info: $light-blue-900;
 $gray: $neutral-200;
+$transparent: transparent;
 
 // Add custom colors to theme-colors map
 $theme-colors: (
@@ -112,11 +113,6 @@ $theme-colors: (
   'warning': $warning,
   'danger': $danger,
   'gray': $gray,
-);
-
-$theme-colors-button: (
-  'primary': $primary,
-  'secondary': $secondary,
 );
 
 // Gradients
@@ -282,6 +278,65 @@ $headings-margin-bottom: 0;
 $headings-font-family: $font-family-primary;
 $headings-font-weight: $font-weight-light;
 
+$buttons: (
+  primary: (
+    color: $neutral-00,
+    color-hover: $neutral-00,
+    color-active: $neutral-00,
+    background-color: $primary,
+    background-color-hover: mix(white, $primary, 15%),
+    background-color-active: mix(black, $primary, 15%),
+    border-color: $primary,
+    border-color-hover: mix(white, $primary, 15%),
+    border-color-active: mix(black, $primary, 15%),
+    shadow-color: $primary,
+    shadow-color-hover: $primary,
+    shadow-color-active: $primary,
+  ),
+  secondary: (
+    color: $neutral-00,
+    color-hover: $neutral-00,
+    color-active: $neutral-00,
+    background-color: $secondary,
+    background-color-hover: mix(white, $secondary, 10%),
+    background-color-active: mix(black, $secondary, 10%),
+    border-color: $secondary,
+    border-color-hover: mix(white, $secondary, 10%),
+    border-color-active: mix(black, $secondary, 10%),
+    shadow-color: $secondary,
+    shadow-color-hover: $secondary,
+    shadow-color-active: $secondary,
+  ),
+  borderless: (
+    color: var(--bs-btn-borderless-color),
+    color-hover: mix(white, $secondary, 10%),
+    color-active: mix(black, $secondary, 10%),
+    background-color: $transparent,
+    background-color-hover: $transparent,
+    background-color-active: $transparent,
+    border-color: $transparent,
+    border-color-hover: mix(white, $secondary, 10%),
+    border-color-active: mix(black, $secondary, 10%),
+    shadow-color: $primary,
+    shadow-color-hover: $primary,
+    shadow-color-active: $primary,
+  ),
+  danger: (
+    color: var(--bs-btn-borderless-color),
+    color-hover: var(--bs-btn-borderless-color),
+    color-active: var(--bs-btn-borderless-color),
+    background-color: $transparent,
+    background-color-hover: rgba($danger, 0.2),
+    background-color-active: rgba($danger, 0.4),
+    border-color: $danger,
+    border-color-hover: mix(white, $danger, 10%),
+    border-color-active: mix(black, $danger, 10%),
+    shadow-color: $primary,
+    shadow-color-hover: $primary,
+    shadow-color-active: $primary,
+  ),
+);
+
 $texts: (
   huge: (
     default: (
@@ -408,12 +463,6 @@ $btn-transition:
   box-shadow 0.15s linear;
 $btn-disabled-opacity: 0.5;
 
-$btn-primary-color: $neutral-00;
-$btn-primary-disabled-background: #232342;
-$btn-primary-outline-color: $neutral-00;
-$btn-outline-text-color: var(--bs-menu-link-color-hover);
-// $btn-primary-outline-border-hover: $blue-neutral-200;
-
 // Forms
 $form-label-font-weight: $font-weight-bold;
 $form-label-font-size: 12px;
@@ -461,6 +510,7 @@ $form-range-thumb-height: 1.5rem;
 // $form-switch-color: $primary-200;
 
 // Modals
+$modal-content-bg: var(--bs-modal-bg-color);
 $modal-header-border-color: $neutral-900;
 $modal-backdrop-opacity: 1;
 $modal-backdrop-bg: rgba(25, 25, 63, 0.3);

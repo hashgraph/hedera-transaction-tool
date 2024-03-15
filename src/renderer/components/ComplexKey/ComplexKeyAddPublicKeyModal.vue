@@ -81,18 +81,16 @@ const handleInsert = (e: Event) => {
             </template>
           </div>
         </div>
+
         <hr class="separator my-5" />
-        <div class="row justify-content-between">
-          <div class="col-4 d-grid">
-            <AppButton color="secondary" type="button" @click="handleShowUpdate(false)"
-              >Cancel</AppButton
-            >
-          </div>
-          <div class="col-4 d-grid">
-            <AppButton color="primary" type="submit" :disabled="!isPublicKey(publicKey)"
-              >Insert</AppButton
-            >
-          </div>
+
+        <div class="flex-between-centered gap-4">
+          <AppButton color="secondary" type="button" @click="handleShowUpdate(false)"
+            >Cancel</AppButton
+          >
+          <AppButton color="primary" type="submit" :disabled="!isPublicKey(publicKey)"
+            >Insert</AppButton
+          >
         </div>
       </form>
     </div>

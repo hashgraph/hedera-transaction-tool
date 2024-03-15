@@ -26,7 +26,7 @@ defineProps<{
                 <i class="bi bi-check-lg"></i>
               </template>
             </div>
-            <span class="stepper-nav-item-title text-small position-absolute mt-3">{{
+            <span class="stepper-nav-item-title text-micro position-absolute mt-3">{{
               item.title
             }}</span>
           </div>

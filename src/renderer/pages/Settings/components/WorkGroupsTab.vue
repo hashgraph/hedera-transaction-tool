@@ -57,37 +57,39 @@ const handleRemoveOrganization = async (serverUrl: string) => {
 };
 </script>
 <template>
-  <form class="p-4 border border-2 rounded-3" @submit="handleAddOrganization">
-    <div class="d-flex align-items-center">
-      <p class="me-4">Organization name:</p>
-      <AppInput :filled="true" class="w-25 py-3" v-model="newOrganizationName" />
-    </div>
-    <div class="mt-4">
-      <label class="form-label">organization server public key:</label>
-      <AppInput :filled="true" class="py-3" v-model="newOrganizationServerPublicKey" />
-    </div>
-    <div class="mt-4 d-flex align-items-end">
-      <div class="flex-1 me-4">
-        <label class="form-label">organization server url:</label>
-        <AppInput :filled="true" class="py-3" v-model="newOrganizationServerUrl" />
+  <div class="flex-column-100">
+    <form class="p-4 border border-2 rounded-3" @submit="handleAddOrganization">
+      <div class="d-flex align-items-center">
+        <p class="me-4">Organization name:</p>
+        <AppInput :filled="true" class="w-25 py-3" v-model="newOrganizationName" />
       </div>
-      <AppButton color="primary" type="submit">Add Organization</AppButton>
-    </div>
-  </form>
-  <div
-    v-for="org in organizationsStore.organizations"
-    :key="org.serverUrl"
-    class="p-4 mt-7 border border-2 rounded-3"
-  >
-    <p>{{ org.name }}</p>
-    <div class="mt-4 d-flex align-items-end">
-      <div class="flex-1 me-4">
-        <label class="form-label">organization server url:</label>
-        <AppInput :filled="true" disabled class="py-3" :value="org.serverUrl" />
+      <div class="mt-4">
+        <label class="form-label">organization server public key:</label>
+        <AppInput :filled="true" class="py-3" v-model="newOrganizationServerPublicKey" />
       </div>
-      <AppButton color="primary" @click="handleRemoveOrganization(org.serverUrl)">
-        Remove
-      </AppButton>
+      <div class="mt-4 d-flex align-items-end">
+        <div class="flex-1 me-4">
+          <label class="form-label">organization server url:</label>
+          <AppInput :filled="true" class="py-3" v-model="newOrganizationServerUrl" />
+        </div>
+        <AppButton color="primary" type="submit">Add Organization</AppButton>
+      </div>
+    </form>
+    <div
+      v-for="org in organizationsStore.organizations"
+      :key="org.serverUrl"
+      class="p-4 mt-7 border border-2 rounded-3"
+    >
+      <p>{{ org.name }}</p>
+      <div class="mt-4 d-flex align-items-end">
+        <div class="flex-1 me-4">
+          <label class="form-label">organization server url:</label>
+          <AppInput :filled="true" disabled class="py-3" :value="org.serverUrl" />
+        </div>
+        <AppButton color="primary" @click="handleRemoveOrganization(org.serverUrl)">
+          Remove
+        </AppButton>
+      </div>
     </div>
   </div>
 </template>

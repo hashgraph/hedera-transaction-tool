@@ -12,6 +12,7 @@ defineProps<{
   items: TabItem[];
   activeIndex: number;
   navClass?: string;
+  contentContainerClass?: string;
   navItemClass?: string;
   navItemButtonClass?: string;
 }>();
@@ -38,7 +39,7 @@ defineEmits(['update:active-index']);
         </AppButton>
       </li>
     </ul>
-    <div class="mt-6">
+    <div class="mt-6" :class="contentContainerClass">
       <slot :name="items[activeIndex].title"></slot>
     </div>
   </div>

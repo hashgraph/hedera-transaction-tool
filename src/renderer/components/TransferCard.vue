@@ -126,12 +126,11 @@ function clearData() {
             ></AppSwitch>
           </div>
         </template>
-        <div>
+        <div class="d-flex flex-wrap gap-4">
           <template v-if="showTransferRest">
             <AppButton
               type="button"
               color="secondary"
-              class="me-4"
               @click="handleAddRest"
               :disabled="!accountData.isValid.value || addRestDisabled"
               >Add Rest</AppButton

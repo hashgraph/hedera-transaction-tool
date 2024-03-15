@@ -23,243 +23,250 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 
 <template>
   <div class="p-5">
-    <h1 class="text-title text-bold">Style Guide</h1>
+    <div class="flex-column-100">
+      <h1 class="text-title text-bold">Style Guide</h1>
 
-    <h2 class="text-display mt-10">Colors</h2>
-    <hr class="mt-3 mb-6" />
+      <div class="fill-remaining">
+        <h2 class="text-display mt-10">Colors</h2>
+        <hr class="mt-3 mb-6" />
 
-    <h3 class="text-headline mb-4">Main</h3>
+        <h3 class="text-headline mb-4">Main</h3>
 
-    <div class="row mb-4">
-      <div class="col-12 col-md-2">
-        <div
-          :style="{ height: '64px', lineHeight: '64px', borderRadius: '2px' }"
-          class="mb-2 bg-primary text-white text-center"
-        >
-          Primary
+        <div class="row mb-4">
+          <div class="col-12 col-md-2">
+            <div
+              :style="{ height: '64px', lineHeight: '64px', borderRadius: '2px' }"
+              class="mb-2 bg-primary text-white text-center"
+            >
+              Primary
+            </div>
+          </div>
+          <div class="col-12 col-md-2">
+            <div
+              :style="{ height: '64px', lineHeight: '64px', borderRadius: '2px' }"
+              class="mb-2 bg-secondary text-white text-center"
+            >
+              Secondary
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="col-12 col-md-2">
-        <div
-          :style="{ height: '64px', lineHeight: '64px', borderRadius: '2px' }"
-          class="mb-2 bg-secondary text-white text-center"
-        >
-          Secondary
+
+        <h3 class="text-headline mb-4">System</h3>
+
+        <div class="row mb-4">
+          <div class="col-12 col-md-2">
+            <div
+              :style="{ height: '64px', lineHeight: '64px', borderRadius: '2px' }"
+              class="mb-2 bg-success text-white text-center"
+            >
+              Success
+            </div>
+          </div>
+          <div class="col-12 col-md-2">
+            <div
+              :style="{ height: '64px', lineHeight: '64px', borderRadius: '2px' }"
+              class="mb-2 bg-danger text-white text-center"
+            >
+              Danger
+            </div>
+          </div>
+          <div class="col-12 col-md-2">
+            <div
+              :style="{ height: '64px', lineHeight: '64px', borderRadius: '2px' }"
+              class="mb-2 bg-warning text-white text-center"
+            >
+              Warning
+            </div>
+          </div>
+          <div class="col-12 col-md-2">
+            <div
+              :style="{ height: '64px', lineHeight: '64px', borderRadius: '2px' }"
+              class="mb-2 bg-info text-white text-center"
+            >
+              Info
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <h3 class="text-headline mb-4">System</h3>
+        <h2 class="text-display mt-10">Typography</h2>
+        <hr class="mt-3 mb-6" />
 
-    <div class="row mb-4">
-      <div class="col-12 col-md-2">
-        <div
-          :style="{ height: '64px', lineHeight: '64px', borderRadius: '2px' }"
-          class="mb-2 bg-success text-white text-center"
-        >
-          Success
+        <div class="mb-4">
+          <div class="row">
+            <div class="col-md-8">
+              <code>.text-huge</code>
+              <h3 class="text-huge mt-3">
+                <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
+              </h3>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="col-12 col-md-2">
-        <div
-          :style="{ height: '64px', lineHeight: '64px', borderRadius: '2px' }"
-          class="mb-2 bg-danger text-white text-center"
-        >
-          Danger
+
+        <hr class="mt-6 mb-6" />
+
+        <div class="mb-4">
+          <div class="row">
+            <div class="col-md-8">
+              <code>.text-display</code>
+              <h3 class="text-display mt-3">
+                <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
+              </h3>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="col-12 col-md-2">
-        <div
-          :style="{ height: '64px', lineHeight: '64px', borderRadius: '2px' }"
-          class="mb-2 bg-warning text-white text-center"
-        >
-          Warning
+
+        <hr class="mt-6 mb-6" />
+
+        <div class="mb-4">
+          <div class="row">
+            <div class="col-md-8">
+              <code>.text-headline</code>
+              <h4 class="text-headline mt-3">
+                <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
+              </h4>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="col-12 col-md-2">
-        <div
-          :style="{ height: '64px', lineHeight: '64px', borderRadius: '2px' }"
-          class="mb-2 bg-info text-white text-center"
-        >
-          Info
+
+        <hr class="mt-6 mb-6" />
+
+        <div class="mb-4">
+          <div class="row">
+            <div class="col-md-8">
+              <code>.text-title</code>
+              <h5 class="text-title mt-3">
+                <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
+              </h5>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <h2 class="text-display mt-10">Typography</h2>
-    <hr class="mt-3 mb-6" />
+        <hr class="mt-6 mb-6" />
 
-    <div class="mb-4">
-      <div class="row">
-        <div class="col-md-8">
-          <code>.text-huge</code>
-          <h3 class="text-huge mt-3">
-            <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
-          </h3>
+        <div class="mb-4">
+          <div class="row">
+            <div class="col-md-8">
+              <code>.text-subheader</code>
+              <h6 class="text-subheader mt-3">
+                <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
+              </h6>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <hr class="mt-6 mb-6" />
+        <hr class="mt-6 mb-6" />
 
-    <div class="mb-4">
-      <div class="row">
-        <div class="col-md-8">
-          <code>.text-display</code>
-          <h3 class="text-display mt-3">
-            <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
-          </h3>
+        <div class="mb-4">
+          <div class="row">
+            <div class="col-md-8">
+              <code>.text-main</code>
+              <p class="text-main mt-3">
+                <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <hr class="mt-6 mb-6" />
+        <hr class="mt-6 mb-6" />
 
-    <div class="mb-4">
-      <div class="row">
-        <div class="col-md-8">
-          <code>.text-headline</code>
-          <h4 class="text-headline mt-3">
-            <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
-          </h4>
+        <div class="mb-4">
+          <div class="row">
+            <div class="col-md-8">
+              <code>.text-small</code>
+              <p class="text-small mt-3">
+                <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <hr class="mt-6 mb-6" />
+        <hr class="mt-6 mb-6" />
 
-    <div class="mb-4">
-      <div class="row">
-        <div class="col-md-8">
-          <code>.text-title</code>
-          <h5 class="text-title mt-3">
-            <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
-          </h5>
+        <div class="mb-4">
+          <div class="row">
+            <div class="col-md-8">
+              <code>.text-micro</code>
+              <p class="text-micro mt-3">
+                <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <hr class="mt-6 mb-6" />
+        <hr class="mt-6 mb-6" />
 
-    <div class="mb-4">
-      <div class="row">
-        <div class="col-md-8">
-          <code>.text-subheader</code>
-          <h6 class="text-subheader mt-3">
-            <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
-          </h6>
+        <div class="mb-4">
+          <div class="row">
+            <div class="col-md-8">
+              <code>.text-footnote</code>
+              <p class="text-footnote mt-3">
+                <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <hr class="mt-6 mb-6" />
+        <hr class="mt-6 mb-6" />
 
-    <div class="mb-4">
-      <div class="row">
-        <div class="col-md-8">
-          <code>.text-main</code>
-          <p class="text-main mt-3">
-            <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
-          </p>
+        <div class="mb-4">
+          <div class="row">
+            <div class="col-md-6">
+              <code>.link-primary</code>
+              <p class="text-main mt-3">
+                <a href="#test" class="link-primary">
+                  The quick brown fox jumps over the lazy dog
+                </a>
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <hr class="mt-6 mb-6" />
+        <hr class="mt-6 mb-6" />
 
-    <div class="mb-4">
-      <div class="row">
-        <div class="col-md-8">
-          <code>.text-small</code>
-          <p class="text-small mt-3">
-            <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
-          </p>
+        <div class="mb-4">
+          <div class="row">
+            <div class="col-md-6">
+              <code>.link-secondary</code>
+              <p class="text-main mt-3">
+                <a href="#test" class="link-secondary">
+                  The quick brown fox jumps over the lazy dog
+                </a>
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <hr class="mt-6 mb-6" />
+        <h2 class="text-display mt-10">UI Elements</h2>
+        <hr class="mt-3 mb-6" />
 
-    <div class="mb-4">
-      <div class="row">
-        <div class="col-md-8">
-          <code>.text-micro</code>
-          <p class="text-micro mt-3">
-            <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
-          </p>
+        <h3 class="text-headline mb-4">Buttons</h3>
+
+        <div class="row mb-4">
+          <div class="col-12 mb-4">
+            <AppButton color="primary" size="small" class="me-3">Primary small</AppButton>
+            <AppButton color="secondary" size="small" class="me-3">Secondary small</AppButton>
+            <AppButton color="borderless" size="small" class="me-3">Borderless small</AppButton>
+            <AppButton color="danger" size="small" class="me-3">Danger small</AppButton>
+          </div>
+          <div class="col-12 mb-4">
+            <AppButton color="primary" class="me-3">Primary</AppButton>
+            <AppButton color="secondary" class="me-3">Secondary</AppButton>
+            <AppButton color="borderless" class="me-3">Borderless</AppButton>
+            <AppButton color="danger" class="me-3">Danger</AppButton>
+          </div>
+          <div class="col-12 mb-4">
+            <AppButton :disabled="true" color="primary" class="me-3">Primary Disabled</AppButton>
+            <AppButton :disabled="true" color="secondary" class="me-3"
+              >Secondary Disabled</AppButton
+            >
+            <AppButton :disabled="true" color="borderless" class="me-3"
+              >Borderless Disabled</AppButton
+            >
+            <AppButton :disabled="true" color="danger" class="me-3">Danger Disabled</AppButton>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <hr class="mt-6 mb-6" />
-
-    <div class="mb-4">
-      <div class="row">
-        <div class="col-md-8">
-          <code>.text-footnote</code>
-          <p class="text-footnote mt-3">
-            <span class="text-bold">The quick brown</span> fox jumps over the lazy dog
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <hr class="mt-6 mb-6" />
-
-    <div class="mb-4">
-      <div class="row">
-        <div class="col-md-6">
-          <code>.link-primary</code>
-          <p class="text-main mt-3">
-            <a href="#test" class="link-primary"> The quick brown fox jumps over the lazy dog </a>
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <hr class="mt-6 mb-6" />
-
-    <div class="mb-4">
-      <div class="row">
-        <div class="col-md-6">
-          <code>.link-secondary</code>
-          <p class="text-main mt-3">
-            <a href="#test" class="link-secondary"> The quick brown fox jumps over the lazy dog </a>
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <h2 class="text-display mt-10">UI Elements</h2>
-    <hr class="mt-3 mb-6" />
-
-    <h3 class="text-headline mb-4">Buttons</h3>
-
-    <div class="row mb-4">
-      <div class="col-12 mb-4">
-        <AppButton color="primary" size="small" class="me-3">Primary small</AppButton>
-        <AppButton color="secondary" size="small" class="me-3">Secondary small</AppButton>
-      </div>
-      <div class="col-12 mb-4">
-        <AppButton color="primary" class="me-3">Primary</AppButton>
-        <AppButton color="secondary" class="me-3">Secondary</AppButton>
-        <AppButton color="primary" :loading="true" class="me-3">Primary</AppButton>
-      </div>
-      <div class="col-12 mb-4">
-        <AppButton color="primary" size="large" class="me-3">Primary Large</AppButton>
-        <AppButton color="secondary" size="large" class="me-3">Secondary Large</AppButton>
-      </div>
-      <div class="col-12 mb-4">
-        <AppButton color="primary" outline class="me-3">Primary outline</AppButton>
-        <AppButton color="secondary" outline class="me-3">Secondary outline</AppButton>
-      </div>
-      <div class="col-12 mb-4">
-        <AppButton color="primary" class="me-3" disabled>Primary disabled</AppButton>
-        <AppButton color="secondary" class="me-3" disabled>Secondary disabled</AppButton>
-      </div>
-    </div>
-
-    <!-- <div class="mb-4 d-flex align-items-center">
+        <!-- <div class="mb-4 d-flex align-items-center">
       <ButtonSelector type="border" selectorText="Select token" />
     </div>
 
@@ -298,94 +305,99 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
       </div>
     </div>-->
 
-    <h3 class="text-headline mb-4">Forms</h3>
+        <h3 class="text-headline mb-4">Forms</h3>
 
-    <div class="row mb-4">
-      <div class="col-lg-3">
-        <div class="form-group mb-5">
-          <label class="form-label">Default input</label>
-          <p class="text-small text-secondary mb-3">Text secondary</p>
-          <AppInput type="email" placeholder="name@example.com" />
-        </div>
-      </div>
-      <div class="col-lg-3">
-        <div class="form-group mb-5">
-          <label class="form-label">Default input invalid</label>
-          <AppInput type="email" class="is-invalid" placeholder="name@example.com" />
-          <div class="invalid-feedback">Invalid e-mail.</div>
-        </div>
-      </div>
-      <div class="col-lg-3">
-        <div class="form-group mb-5">
-          <label class="form-label">Default input disabled</label>
-          <AppInput type="email" disabled placeholder="name@example.com" />
-        </div>
-      </div>
-    </div>
-
-    <div class="row mb-4">
-      <div class="col-lg-3">
-        <div class="form-group mb-5">
-          <label class="form-label">Default input</label>
-          <AppInput :filled="true" type="email" placeholder="name@example.com" />
-        </div>
-      </div>
-      <div class="col-lg-3">
-        <div class="form-group mb-5">
-          <label class="form-label">Default input invalid</label>
-          <AppInput :filled="true" type="email" class="is-invalid" placeholder="name@example.com" />
-          <div class="invalid-feedback">Invalid e-mail.</div>
-        </div>
-      </div>
-      <div class="col-lg-3">
-        <div class="form-group mb-5">
-          <label class="form-label">Default input disabled</label>
-          <AppInput :filled="true" type="email" disabled placeholder="name@example.com" />
-        </div>
-      </div>
-    </div>
-
-    <div class="row mb-4">
-      <div class="col-lg-3">
-        <div class="form-group mb-5">
-          <label class="form-label">Custom select</label>
-          <div class="custom-select-wrapper">
-            <select class="form-select">
-              <option value="1">Option 1</option>
-              <option value="2">Option 2</option>
-              <option value="3">Option 3</option>
-              <option value="4">Option 4</option>
-            </select>
+        <div class="row mb-4">
+          <div class="col-lg-3">
+            <div class="form-group mb-5">
+              <label class="form-label">Default input</label>
+              <p class="text-small text-secondary mb-3">Text secondary</p>
+              <AppInput type="email" placeholder="name@example.com" />
+            </div>
+          </div>
+          <div class="col-lg-3">
+            <div class="form-group mb-5">
+              <label class="form-label">Default input invalid</label>
+              <AppInput type="email" class="is-invalid" placeholder="name@example.com" />
+              <div class="invalid-feedback">Invalid e-mail.</div>
+            </div>
+          </div>
+          <div class="col-lg-3">
+            <div class="form-group mb-5">
+              <label class="form-label">Default input disabled</label>
+              <AppInput type="email" disabled placeholder="name@example.com" />
+            </div>
           </div>
         </div>
-      </div>
-      <div class="col-lg-3">
-        <div class="form-group mb-5">
-          <label class="form-label">Custom select invalid</label>
-          <div class="custom-select-wrapper">
-            <select class="form-select is-invalid">
-              <option value="1">Option 1</option>
-              <option value="2">Option 2</option>
-              <option value="3">Option 3</option>
-              <option value="4">Option 4</option>
-            </select>
+
+        <div class="row mb-4">
+          <div class="col-lg-3">
+            <div class="form-group mb-5">
+              <label class="form-label">Default input</label>
+              <AppInput :filled="true" type="email" placeholder="name@example.com" />
+            </div>
+          </div>
+          <div class="col-lg-3">
+            <div class="form-group mb-5">
+              <label class="form-label">Default input invalid</label>
+              <AppInput
+                :filled="true"
+                type="email"
+                class="is-invalid"
+                placeholder="name@example.com"
+              />
+              <div class="invalid-feedback">Invalid e-mail.</div>
+            </div>
+          </div>
+          <div class="col-lg-3">
+            <div class="form-group mb-5">
+              <label class="form-label">Default input disabled</label>
+              <AppInput :filled="true" type="email" disabled placeholder="name@example.com" />
+            </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <div class="row mb-4">
-      <div class="col-lg-3">
-        <div class="form-group mb-5">
-          <label for="fileUpload" class="form-label">
-            <span for="fileUpload" class="btn btn-primary">File upload</span>
-          </label>
-          <AppInput type="file" id="fileUpload" />
+        <div class="row mb-4">
+          <div class="col-lg-3">
+            <div class="form-group mb-5">
+              <label class="form-label">Custom select</label>
+              <div class="custom-select-wrapper">
+                <select class="form-select">
+                  <option value="1">Option 1</option>
+                  <option value="2">Option 2</option>
+                  <option value="3">Option 3</option>
+                  <option value="4">Option 4</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-3">
+            <div class="form-group mb-5">
+              <label class="form-label">Custom select invalid</label>
+              <div class="custom-select-wrapper">
+                <select class="form-select is-invalid">
+                  <option value="1">Option 1</option>
+                  <option value="2">Option 2</option>
+                  <option value="3">Option 3</option>
+                  <option value="4">Option 4</option>
+                </select>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <!--
+        <div class="row mb-4">
+          <div class="col-lg-3">
+            <div class="form-group mb-5">
+              <label for="fileUpload" class="form-label">
+                <span for="fileUpload" class="btn btn-primary">File upload</span>
+              </label>
+              <AppInput type="file" id="fileUpload" />
+            </div>
+          </div>
+        </div>
+
+        <!--
     <h3 class="text-headline mb-4">Modals</h3>
       <div class="row mb-6">
         <div class="col-lg-6">
@@ -523,5 +535,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
     </div>
 
     <Link class="link-primary" to="/"> Back to home </Link> -->
+      </div>
+    </div>
   </div>
 </template>

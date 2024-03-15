@@ -28,6 +28,7 @@ import KeyField from '@renderer/components/KeyField.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
+import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 
 /* Stores */
 const payerData = useAccountId();
@@ -206,146 +207,158 @@ watch(
 const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
-  <form @submit="handleCreate">
-    <TransactionHeaderControls
-      :get-transaction-bytes="() => createTransaction().toBytes()"
-      :is-executed="isExecuted"
-      :create-requirements="!accountData.accountId.value || !payerData.isValid.value"
-      heading-text="Update Account Transaction"
-    />
+  <div class="flex-column-100 overflow-hidden">
+    <form @submit="handleCreate" class="flex-column-100">
+      <TransactionHeaderControls heading-text="Update Account Transaction">
+        <template #buttons>
+          <SaveDraftButton
+            :get-transaction-bytes="() => createTransaction().toBytes()"
+            :is-executed="isExecuted"
+          />
+          <AppButton
+            color="primary"
+            type="submit"
+            :disabled="!accountData.accountId.value || !payerData.isValid.value"
+          >
+            <span class="bi bi-send"></span>
+            Sign & Submit</AppButton
+          >
+        </template>
+      </TransactionHeaderControls>
 
-    <TransactionIdControls
-      v-model:payer-id="payerData.accountId.value"
-      v-model:valid-start="validStart"
-      v-model:max-transaction-fee="maxTransactionFee as Hbar"
-      class="mt-6"
-    />
+      <hr class="separator my-5" />
 
-    <div class="row mt-6">
-      <div class="form-group" :class="[columnClass]">
-        <label class="form-label">Account ID <span class="text-danger">*</span></label>
+      <TransactionIdControls
+        v-model:payer-id="payerData.accountId.value"
+        v-model:valid-start="validStart"
+        v-model:max-transaction-fee="maxTransactionFee as Hbar"
+      />
 
-        <AppInput
-          :model-value="accountData.accountIdFormatted.value"
-          @update:model-value="v => (accountData.accountId.value = v)"
-          :filled="true"
-          placeholder="Enter Account ID"
-        />
+      <hr class="separator my-5" />
+
+      <div class="fill-remaining">
+        <div class="row">
+          <div class="form-group" :class="[columnClass]">
+            <label class="form-label">Account ID <span class="text-danger">*</span></label>
+
+            <AppInput
+              :model-value="accountData.accountIdFormatted.value"
+              @update:model-value="v => (accountData.accountId.value = v)"
+              :filled="true"
+              placeholder="Enter Account ID"
+            />
+          </div>
+
+          <div class="form-group mt-6" :class="[columnClass]">
+            <AppButton
+              v-if="accountData.key.value"
+              class="text-nowrap"
+              color="secondary"
+              type="button"
+              @click="isKeyStructureModalShown = true"
+              >Show Key</AppButton
+            >
+          </div>
+        </div>
+
+        <div class="row mt-6">
+          <div class="form-group col-8 col-xxxl-6">
+            <KeyField :model-key="newOwnerKey" @update:model-key="key => (newOwnerKey = key)" />
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <AppSwitch
+            v-model:checked="newAccountData.acceptStakingAwards"
+            size="md"
+            name="accept-staking-awards"
+            label="Accept Staking Awards"
+          />
+        </div>
+
+        <div class="row mt-6">
+          <div class="form-group" :class="[columnClass]">
+            <label class="form-label">Staked Account Id</label>
+            <AppInput
+              v-model="newAccountData.stakedAccountId"
+              :disabled="newAccountData.stakedNodeId.length > 0"
+              :filled="true"
+              placeholder="Enter Account Id"
+            />
+          </div>
+          <div class="form-group" :class="[columnClass]">
+            <label class="form-label">Staked Node Id</label>
+            <AppInput
+              v-model="newAccountData.stakedNodeId"
+              type="number"
+              :disabled="
+                Boolean(newAccountData.stakedAccountId && newAccountData.stakedAccountId.length > 0)
+              "
+              :filled="true"
+              placeholder="Enter Node Id Number"
+            />
+          </div>
+        </div>
+
+        <div class="row mt-6">
+          <div class="form-group" :class="[columnClass]">
+            <label class="form-label">Account Memo</label>
+            <AppInput
+              v-model="newAccountData.memo"
+              :filled="true"
+              maxlength="100"
+              placeholder="Enter Memo"
+            />
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <AppSwitch
+            v-model:checked="newAccountData.receiverSignatureRequired"
+            size="md"
+            name="receiver-signature"
+            label="Receiver Signature Required"
+          />
+        </div>
+
+        <div class="row mt-6">
+          <div class="form-group" :class="[columnClass]">
+            <label class="form-label">Max Automatic Token Associations</label>
+            <AppInput
+              v-model="newAccountData.maxAutomaticTokenAssociations"
+              :min="0"
+              :max="5000"
+              :filled="true"
+              type="number"
+              placeholder="Enter Max Token Associations"
+            />
+          </div>
+        </div>
       </div>
+    </form>
 
-      <div class="form-group mt-6" :class="[columnClass]">
-        <AppButton
-          v-if="accountData.key.value"
-          :outline="true"
-          class="text-nowrap"
-          color="primary"
-          type="button"
-          @click="isKeyStructureModalShown = true"
-          >Show Key</AppButton
+    <TransactionProcessor
+      ref="transactionProcessor"
+      :transaction-bytes="transaction?.toBytes() || null"
+      :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
+      :on-executed="() => (isExecuted = true)"
+    >
+      <template #successHeading>Account updated successfully</template>
+      <template #successContent>
+        <p
+          v-if="transactionProcessor?.transactionResult"
+          class="text-small d-flex justify-content-between align-items mt-2"
         >
-      </div>
-    </div>
+          <span class="text-bold text-secondary">Account ID:</span>
+          <span>{{ accountData.accountIdFormatted.value }}</span>
+        </p>
+      </template>
+    </TransactionProcessor>
 
-    <hr class="separator my-6" />
-
-    <div class="row">
-      <div class="form-group col-8 col-xxxl-6">
-        <KeyField :model-key="newOwnerKey" @update:model-key="key => (newOwnerKey = key)" />
-      </div>
-    </div>
-
-    <hr class="separator my-6" />
-
-    <div>
-      <AppSwitch
-        v-model:checked="newAccountData.acceptStakingAwards"
-        size="md"
-        name="accept-staking-awards"
-        label="Accept Staking Awards"
-      />
-    </div>
-
-    <div class="row mt-6">
-      <div class="form-group" :class="[columnClass]">
-        <label class="form-label">Staked Account Id</label>
-        <AppInput
-          v-model="newAccountData.stakedAccountId"
-          :disabled="newAccountData.stakedNodeId.length > 0"
-          :filled="true"
-          placeholder="Enter Account Id"
-        />
-      </div>
-      <div class="form-group" :class="[columnClass]">
-        <label class="form-label">Staked Node Id</label>
-        <AppInput
-          v-model="newAccountData.stakedNodeId"
-          type="number"
-          :disabled="
-            Boolean(newAccountData.stakedAccountId && newAccountData.stakedAccountId.length > 0)
-          "
-          :filled="true"
-          placeholder="Enter Node Id Number"
-        />
-      </div>
-    </div>
-    <div class="row mt-6">
-      <div class="form-group" :class="[columnClass]">
-        <label class="form-label">Account Memo</label>
-        <AppInput
-          v-model="newAccountData.memo"
-          :filled="true"
-          maxlength="100"
-          placeholder="Enter Memo"
-        />
-      </div>
-    </div>
-
-    <hr class="separator my-6" />
-
-    <div>
-      <AppSwitch
-        v-model:checked="newAccountData.receiverSignatureRequired"
-        size="md"
-        name="receiver-signature"
-        label="Receiver Signature Required"
-      />
-    </div>
-    <div class="row mt-6">
-      <div class="form-group" :class="[columnClass]">
-        <label class="form-label">Max Automatic Token Associations</label>
-        <AppInput
-          v-model="newAccountData.maxAutomaticTokenAssociations"
-          :min="0"
-          :max="5000"
-          :filled="true"
-          type="number"
-          placeholder="Enter Max Token Associations"
-        />
-      </div>
-    </div>
-  </form>
-
-  <TransactionProcessor
-    ref="transactionProcessor"
-    :transaction-bytes="transaction?.toBytes() || null"
-    :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
-    :on-executed="() => (isExecuted = true)"
-  >
-    <template #successHeading>Account updated successfully</template>
-    <template #successContent>
-      <p
-        v-if="transactionProcessor?.transactionResult"
-        class="text-small d-flex justify-content-between align-items mt-2"
-      >
-        <span class="text-bold text-secondary">Account ID:</span>
-        <span>{{ accountData.accountIdFormatted.value }}</span>
-      </p>
-    </template>
-  </TransactionProcessor>
-
-  <KeyStructureModal
-    v-if="accountData.isValid.value"
-    v-model:show="isKeyStructureModalShown"
-    :account-key="accountData.key.value"
-  />
+    <KeyStructureModal
+      v-if="accountData.isValid.value"
+      v-model:show="isKeyStructureModalShown"
+      :account-key="accountData.key.value"
+    />
+  </div>
 </template>

@@ -91,7 +91,7 @@ watch(words, newWords => {
 </script>
 <template>
   <div>
-    <div class="d-flex flex-wrap row g-3">
+    <div class="row flex-wrap g-12px">
       <template v-for="(word, index) in words || []" :key="index">
         <AppRecoveryPhraseWord
           class="col-3"
@@ -147,8 +147,7 @@ watch(words, newWords => {
         </AppButton>
         <AppButton
           v-if="words.filter(w => w).length !== 0"
-          :outline="true"
-          color="primary"
+          color="secondary"
           @click="handleCopyRecoveryPhrase"
           class="ms-4"
           ><i class="bi bi-copy"></i> <span>Copy</span></AppButton

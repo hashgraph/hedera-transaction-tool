@@ -60,7 +60,7 @@ const handlePerPageSelect = (newPerPage: number) => {
 };
 </script>
 <template>
-  <div class="pager gap-4 py-4 px-3">
+  <div class="pager gap-4">
     <div class="d-none d-xl-flex align-items-center">
       <div class="pager-per-page">
         <select
