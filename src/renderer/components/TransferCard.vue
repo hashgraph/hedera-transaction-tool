@@ -87,9 +87,9 @@ function clearData() {
 }
 </script>
 <template>
-  <div class="border rounded p-4">
+  <div class="border rounded overflow-hidden p-4">
     <form @submit="handleSubmit">
-      <div class="form-group">
+      <div class="form-group overflow-hidden">
         <label class="form-label mb-0 me-3">{{ accountLabel }}</label>
         <label
           v-if="showBalanceInLabel && accountData.isValid.value"
