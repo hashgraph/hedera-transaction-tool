@@ -167,137 +167,141 @@ watch(fileMeta, () => (content.value = ''));
 const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
-  <form @submit="handleCreate">
-    <TransactionHeaderControls heading-text="Append File Transaction">
-      <template #buttons>
-        <SaveDraftButton
-          :get-transaction-bytes="() => createTransaction().toBytes()"
-          :is-executed="isExecuted"
-        />
-        <AppButton
-          color="primary"
-          type="submit"
-          :disabled="!ownerKey || !payerData.isValid.value || !fileId"
-        >
-          <span class="bi bi-send"></span>
-          Sign & Submit</AppButton
-        >
-      </template>
-    </TransactionHeaderControls>
+  <div class="flex-column-100 overflow-hidden">
+    <form @submit="handleCreate" class="flex-column-100">
+      <TransactionHeaderControls heading-text="Append File Transaction">
+        <template #buttons>
+          <SaveDraftButton
+            :get-transaction-bytes="() => createTransaction().toBytes()"
+            :is-executed="isExecuted"
+          />
+          <AppButton
+            color="primary"
+            type="submit"
+            :disabled="!ownerKey || !payerData.isValid.value || !fileId"
+          >
+            <span class="bi bi-send"></span>
+            Sign & Submit</AppButton
+          >
+        </template>
+      </TransactionHeaderControls>
 
-    <hr class="separator my-5" />
+      <hr class="separator my-5" />
 
-    <TransactionIdControls
-      v-model:payer-id="payerData.accountId.value"
-      v-model:valid-start="validStart"
-      v-model:max-transaction-fee="maxTransactionFee as Hbar"
-    />
-
-    <hr class="separator my-5" />
-
-    <div class="row">
-      <div class="form-group" :class="[columnClass]">
-        <label class="form-label">File ID <span class="text-danger">*</span></label>
-        <AppInput v-model="fileId" :filled="true" placeholder="Enter File ID" />
-      </div>
-    </div>
-
-    <div class="row mt-6">
-      <div class="form-group col-8 col-xxxl-6">
-        <KeyField
-          :model-key="ownerKey"
-          @update:model-key="key => (ownerKey = key)"
-          is-required
-          label="Signature Key"
-        />
-      </div>
-    </div>
-
-    <div class="row mt-6">
-      <div class="form-group" :class="[columnClass]">
-        <label class="form-label">Chunk Size</label>
-        <AppInput
-          v-model="chunkSize"
-          :filled="true"
-          type="number"
-          min="1024"
-          max="6144"
-          placeholder="Enter Chunk Size"
-        />
-      </div>
-    </div>
-
-    <div class="form-group mt-4">
-      <label for="fileUpload" class="form-label">
-        <span for="fileUpload" class="btn btn-primary" :class="{ disabled: content.length > 0 }"
-          >Upload File</span
-        >
-      </label>
-      <AppInput
-        :filled="true"
-        size="small"
-        id="fileUpload"
-        name="fileUpload"
-        type="file"
-        :disabled="content.length > 0"
-        @change="handleFileImport"
+      <TransactionIdControls
+        v-model:payer-id="payerData.accountId.value"
+        v-model:valid-start="validStart"
+        v-model:max-transaction-fee="maxTransactionFee as Hbar"
       />
-      <template v-if="fileMeta">
-        <span v-if="fileMeta" class="ms-3">{{ fileMeta.name }}</span>
-        <span v-if="loadPercentage < 100" class="ms-3">{{ loadPercentage.toFixed(2) }}%</span>
-        <span v-if="fileMeta" class="ms-3 cursor-pointer" @click="handleRemoveFile"
-          ><i class="bi bi-x-lg"></i
-        ></span>
-      </template>
-    </div>
 
-    <div class="row mt-6">
-      <div class="form-group col-12 col-xl-8">
-        <label class="form-label">File Contents</label>
-        <textarea
-          v-model="content"
-          :disabled="Boolean(fileBuffer)"
-          class="form-control is-fill py-3"
-          rows="10"
-        ></textarea>
+      <hr class="separator my-5" />
+
+      <div class="fill-remaining">
+        <div class="row">
+          <div class="form-group" :class="[columnClass]">
+            <label class="form-label">File ID <span class="text-danger">*</span></label>
+            <AppInput v-model="fileId" :filled="true" placeholder="Enter File ID" />
+          </div>
+        </div>
+
+        <div class="row mt-6">
+          <div class="form-group col-8 col-xxxl-6">
+            <KeyField
+              :model-key="ownerKey"
+              @update:model-key="key => (ownerKey = key)"
+              is-required
+              label="Signature Key"
+            />
+          </div>
+        </div>
+
+        <div class="row mt-6">
+          <div class="form-group" :class="[columnClass]">
+            <label class="form-label">Chunk Size</label>
+            <AppInput
+              v-model="chunkSize"
+              :filled="true"
+              type="number"
+              min="1024"
+              max="6144"
+              placeholder="Enter Chunk Size"
+            />
+          </div>
+        </div>
+
+        <div class="form-group mt-4">
+          <label for="fileUpload" class="form-label">
+            <span for="fileUpload" class="btn btn-primary" :class="{ disabled: content.length > 0 }"
+              >Upload File</span
+            >
+          </label>
+          <AppInput
+            :filled="true"
+            size="small"
+            id="fileUpload"
+            name="fileUpload"
+            type="file"
+            :disabled="content.length > 0"
+            @change="handleFileImport"
+          />
+          <template v-if="fileMeta">
+            <span v-if="fileMeta" class="ms-3">{{ fileMeta.name }}</span>
+            <span v-if="loadPercentage < 100" class="ms-3">{{ loadPercentage.toFixed(2) }}%</span>
+            <span v-if="fileMeta" class="ms-3 cursor-pointer" @click="handleRemoveFile"
+              ><i class="bi bi-x-lg"></i
+            ></span>
+          </template>
+        </div>
+
+        <div class="row mt-6">
+          <div class="form-group col-12 col-xl-8">
+            <label class="form-label">File Contents</label>
+            <textarea
+              v-model="content"
+              :disabled="Boolean(fileBuffer)"
+              class="form-control is-fill py-3"
+              rows="10"
+            ></textarea>
+          </div>
+        </div>
       </div>
-    </div>
-  </form>
+    </form>
 
-  <FileTransactionProcessor
-    ref="transactionProcessor"
-    :transaction-bytes="transaction?.toBytes() || null"
-    :on-executed="
-      (_response, _receipt, chunkAmount) => {
-        isExecuted = true;
-        chunksAmount = chunkAmount || null;
-      }
-    "
-    :on-close-success-modal-click="
-      () => {
-        validStart = '';
-        maxTransactionFee = new Hbar(2);
-        fileId = '';
-        ownerKey = null;
-        fileMeta = null;
-        fileBuffer = null;
-        chunkSize = 2048;
-        content = '';
-        chunksAmount = null;
-        transaction = null;
-      }
-    "
-  >
-    <template #successHeading>Appended to file successfully</template>
-    <template #successContent>
-      <p class="text-small d-flex justify-content-between align-items mt-2">
-        <span class="text-bold text-secondary">File ID:</span>
-        <span>{{ fileId }}</span>
-      </p>
-      <p v-if="chunksAmount" class="text-small d-flex justify-content-between align-items mt-2">
-        <span class="text-bold text-secondary">Number of Chunks</span>
-        <span>{{ chunksAmount }}</span>
-      </p>
-    </template>
-  </FileTransactionProcessor>
+    <FileTransactionProcessor
+      ref="transactionProcessor"
+      :transaction-bytes="transaction?.toBytes() || null"
+      :on-executed="
+        (_response, _receipt, chunkAmount) => {
+          isExecuted = true;
+          chunksAmount = chunkAmount || null;
+        }
+      "
+      :on-close-success-modal-click="
+        () => {
+          validStart = '';
+          maxTransactionFee = new Hbar(2);
+          fileId = '';
+          ownerKey = null;
+          fileMeta = null;
+          fileBuffer = null;
+          chunkSize = 2048;
+          content = '';
+          chunksAmount = null;
+          transaction = null;
+        }
+      "
+    >
+      <template #successHeading>Appended to file successfully</template>
+      <template #successContent>
+        <p class="text-small d-flex justify-content-between align-items mt-2">
+          <span class="text-bold text-secondary">File ID:</span>
+          <span>{{ fileId }}</span>
+        </p>
+        <p v-if="chunksAmount" class="text-small d-flex justify-content-between align-items mt-2">
+          <span class="text-bold text-secondary">Number of Chunks</span>
+          <span>{{ chunksAmount }}</span>
+        </p>
+      </template>
+    </FileTransactionProcessor>
+  </div>
 </template>

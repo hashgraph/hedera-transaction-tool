@@ -280,178 +280,182 @@ onMounted(async () => {
 });
 </script>
 <template>
-  <form @submit="handleCreate">
-    <TransactionHeaderControls heading-text="Transfer Hbar Transaction">
-      <template #buttons>
-        <SaveDraftButton
-          :get-transaction-bytes="() => createTransaction().toBytes()"
-          :handle-draft-added="handleDraftAdded"
-          :handle-draft-updated="handleDraftAdded"
-          :is-executed="isExecuted"
-        />
-        <AppButton
-          color="primary"
-          type="submit"
-          :disabled="
-            !payerData.accountId.value ||
-            !totalBalance.toBigNumber().isEqualTo(0) ||
-            totalBalanceAdjustments > 10 ||
-            totalBalanceAdjustments === 0
-          "
-        >
-          <span class="bi bi-send"></span>
-          Sign & Submit</AppButton
-        >
-      </template>
-    </TransactionHeaderControls>
-
-    <hr class="separator my-5" />
-
-    <TransactionIdControls
-      v-model:payer-id="payerData.accountId.value"
-      v-model:valid-start="validStart"
-      v-model:max-transaction-fee="maxTransactionFee as Hbar"
-    />
-
-    <hr class="separator my-5" />
-
-    <div class="border rounded p-5">
-      <div class="row">
-        <div class="col-5 flex-1">
-          <TransferCard
-            account-label="From"
-            @transfer-added="handleAddSenderTransfer"
-            :show-balance="true"
-            :button-disabled="totalBalanceAdjustments >= 10"
-            :clear-on-add-transfer="true"
+  <div class="flex-column-100 overflow-hidden">
+    <form @submit="handleCreate" class="flex-column-100">
+      <TransactionHeaderControls heading-text="Transfer Hbar Transaction">
+        <template #buttons>
+          <SaveDraftButton
+            :get-transaction-bytes="() => createTransaction().toBytes()"
+            :handle-draft-added="handleDraftAdded"
+            :handle-draft-updated="handleDraftAdded"
+            :is-executed="isExecuted"
           />
-        </div>
-        <div class="col-1 align-self-center text-center">
-          <span class="bi bi-arrow-right"></span>
-        </div>
-        <div class="col-5 flex-1">
-          <TransferCard
-            account-label="To"
-            @transfer-added="handleAddReceiverTransfer"
-            @rest-added="handleReceiverRestButtonClick"
-            :button-disabled="totalBalanceAdjustments >= 10"
-            :add-rest-disabled="
-              totalBalance.toBigNumber().isGreaterThanOrEqualTo(0) || totalBalanceAdjustments >= 10
+          <AppButton
+            color="primary"
+            type="submit"
+            :disabled="
+              !payerData.accountId.value ||
+              !totalBalance.toBigNumber().isEqualTo(0) ||
+              totalBalanceAdjustments > 10 ||
+              totalBalanceAdjustments === 0
             "
-            :show-transfer-rest="true"
-            :clear-on-add-transfer="true"
-          />
-        </div>
-      </div>
-
-      <div class="row mt-3">
-        <div class="col-5 flex-1">
-          <div class="mt-3">
-            <template v-for="(debit, i) in transfers" :key="debit.accountId">
-              <div v-if="debit.amount.isNegative()" class="mt-3">
-                <div class="row align-items-center px-3">
-                  <div class="col-4 overflow-hidden">
-                    <p class="text-secondary text-small overflow-hidden">
-                      {{ debit.accountId }} {{ debit.isApproved ? '(Approved)' : '' }}
-                    </p>
-                  </div>
-                  <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
-                    <p class="text-secondary text-small text-bold overflow-hidden">
-                      {{ stringifyHbar(debit.amount as Hbar) }}
-                    </p>
-                  </div>
-                  <div class="col-2 col-lg-1 text-end">
-                    <span
-                      class="bi bi-x-lg text-secondary text-small cursor-pointer"
-                      @click="handleRemoveTransfer(i)"
-                    ></span>
-                  </div>
-                </div>
-                <hr class="separator" />
-              </div>
-            </template>
-          </div>
-        </div>
-        <div class="col-1"></div>
-        <div class="col-5 flex-1">
-          <div class="mt-3">
-            <template v-for="(credit, i) in transfers" :key="credit.accountId">
-              <div v-if="!credit.amount.isNegative()" class="mt-3">
-                <div class="row align-items-center px-3">
-                  <div class="col-4 overflow-hidden">
-                    <p class="text-secondary text-small overflow-hidden">
-                      {{ credit.accountId }}
-                    </p>
-                  </div>
-                  <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
-                    <p class="text-secondary text-small text-bold overflow-hidden">
-                      {{ stringifyHbar(credit.amount as Hbar) }}
-                    </p>
-                  </div>
-                  <div class="col-2 col-lg-1 text-end">
-                    <span
-                      class="bi bi-x-lg text-secondary text-small cursor-pointer"
-                      @click="handleRemoveTransfer(i)"
-                    ></span>
-                  </div>
-                </div>
-                <hr class="separator" />
-              </div>
-            </template>
-          </div>
-        </div>
-      </div>
-
-      <div class="d-flex justify-content-between flex-wrap overflow-hidden gap-3 mt-5">
-        <p class="text-small">
-          <span>{{ totalBalanceAdjustments }}</span>
-          <span class="text-secondary">
-            Adjustment{{ totalBalanceAdjustments != 1 ? 's' : '' }}</span
           >
-        </p>
-        <p class="text-small text-wrap">
-          <span class="text-secondary">Balance</span> <span>{{ stringifyHbar(totalBalance) }}</span>
-        </p>
-      </div>
-    </div>
-  </form>
-
-  <TransactionProcessor
-    ref="transactionProcessor"
-    :transaction-bytes="transaction?.toBytes() || null"
-    :on-close-success-modal-click="
-      () => {
-        transfers = [];
-      }
-    "
-    :on-executed="
-      () => {
-        isExecuted = true;
-        validStart = '';
-        maxTransactionFee = new Hbar(2);
-        transaction = null;
-      }
-    "
-  >
-    <template #successHeading>Hbar transferred successfully</template>
-    <template #successContent>
-      <div class="mt-4">
-        <template
-          v-for="account of Object.entries(balanceAdjustmentsPerAccount)"
-          :key="account.accountId"
-        >
-          <div class="mt-3">
-            <p class="text-small d-flex justify-content-between align-items">
-              <span class="text-bold text-secondary">Account ID:</span>
-              <span>{{ account[0] }}</span>
-            </p>
-            <p class="text-small d-flex justify-content-between align-items">
-              <span class="text-bold text-secondary">Balance:</span>
-              <span>{{ new Hbar(account[1]) }}</span>
-            </p>
-          </div>
+            <span class="bi bi-send"></span>
+            Sign & Submit</AppButton
+          >
         </template>
+      </TransactionHeaderControls>
+
+      <hr class="separator my-5" />
+
+      <TransactionIdControls
+        v-model:payer-id="payerData.accountId.value"
+        v-model:valid-start="validStart"
+        v-model:max-transaction-fee="maxTransactionFee as Hbar"
+      />
+
+      <hr class="separator my-5" />
+
+      <div class="border rounded fill-remaining p-5">
+        <div class="row">
+          <div class="col-5 flex-1">
+            <TransferCard
+              account-label="From"
+              @transfer-added="handleAddSenderTransfer"
+              :show-balance="true"
+              :button-disabled="totalBalanceAdjustments >= 10"
+              :clear-on-add-transfer="true"
+            />
+          </div>
+          <div class="col-1 align-self-center text-center">
+            <span class="bi bi-arrow-right"></span>
+          </div>
+          <div class="col-5 flex-1">
+            <TransferCard
+              account-label="To"
+              @transfer-added="handleAddReceiverTransfer"
+              @rest-added="handleReceiverRestButtonClick"
+              :button-disabled="totalBalanceAdjustments >= 10"
+              :add-rest-disabled="
+                totalBalance.toBigNumber().isGreaterThanOrEqualTo(0) ||
+                totalBalanceAdjustments >= 10
+              "
+              :show-transfer-rest="true"
+              :clear-on-add-transfer="true"
+            />
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-5 flex-1">
+            <div class="mt-3">
+              <template v-for="(debit, i) in transfers" :key="debit.accountId">
+                <div v-if="debit.amount.isNegative()" class="mt-3">
+                  <div class="row align-items-center px-3">
+                    <div class="col-4 overflow-hidden">
+                      <p class="text-secondary text-small overflow-hidden">
+                        {{ debit.accountId }} {{ debit.isApproved ? '(Approved)' : '' }}
+                      </p>
+                    </div>
+                    <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
+                      <p class="text-secondary text-small text-bold overflow-hidden">
+                        {{ stringifyHbar(debit.amount as Hbar) }}
+                      </p>
+                    </div>
+                    <div class="col-2 col-lg-1 text-end">
+                      <span
+                        class="bi bi-x-lg text-secondary text-small cursor-pointer"
+                        @click="handleRemoveTransfer(i)"
+                      ></span>
+                    </div>
+                  </div>
+                  <hr class="separator" />
+                </div>
+              </template>
+            </div>
+          </div>
+          <div class="col-1"></div>
+          <div class="col-5 flex-1">
+            <div class="mt-3">
+              <template v-for="(credit, i) in transfers" :key="credit.accountId">
+                <div v-if="!credit.amount.isNegative()" class="mt-3">
+                  <div class="row align-items-center px-3">
+                    <div class="col-4 overflow-hidden">
+                      <p class="text-secondary text-small overflow-hidden">
+                        {{ credit.accountId }}
+                      </p>
+                    </div>
+                    <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
+                      <p class="text-secondary text-small text-bold overflow-hidden">
+                        {{ stringifyHbar(credit.amount as Hbar) }}
+                      </p>
+                    </div>
+                    <div class="col-2 col-lg-1 text-end">
+                      <span
+                        class="bi bi-x-lg text-secondary text-small cursor-pointer"
+                        @click="handleRemoveTransfer(i)"
+                      ></span>
+                    </div>
+                  </div>
+                  <hr class="separator" />
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between flex-wrap overflow-hidden gap-3 mt-5">
+          <p class="text-small">
+            <span>{{ totalBalanceAdjustments }}</span>
+            <span class="text-secondary">
+              Adjustment{{ totalBalanceAdjustments != 1 ? 's' : '' }}</span
+            >
+          </p>
+          <p class="text-small text-wrap">
+            <span class="text-secondary">Balance</span>
+            <span>{{ stringifyHbar(totalBalance) }}</span>
+          </p>
+        </div>
       </div>
-    </template>
-  </TransactionProcessor>
+    </form>
+
+    <TransactionProcessor
+      ref="transactionProcessor"
+      :transaction-bytes="transaction?.toBytes() || null"
+      :on-close-success-modal-click="
+        () => {
+          transfers = [];
+        }
+      "
+      :on-executed="
+        () => {
+          isExecuted = true;
+          validStart = '';
+          maxTransactionFee = new Hbar(2);
+          transaction = null;
+        }
+      "
+    >
+      <template #successHeading>Hbar transferred successfully</template>
+      <template #successContent>
+        <div class="mt-4">
+          <template
+            v-for="account of Object.entries(balanceAdjustmentsPerAccount)"
+            :key="account.accountId"
+          >
+            <div class="mt-3">
+              <p class="text-small d-flex justify-content-between align-items">
+                <span class="text-bold text-secondary">Account ID:</span>
+                <span>{{ account[0] }}</span>
+              </p>
+              <p class="text-small d-flex justify-content-between align-items">
+                <span class="text-bold text-secondary">Balance:</span>
+                <span>{{ new Hbar(account[1]) }}</span>
+              </p>
+            </div>
+          </template>
+        </div>
+      </template>
+    </TransactionProcessor>
+  </div>
 </template>
