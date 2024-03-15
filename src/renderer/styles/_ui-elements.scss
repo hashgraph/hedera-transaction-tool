@@ -3,35 +3,22 @@
   min-width: 156px;
 }
 
-@each $color, $value in $theme-colors-button {
-  .btn-#{$color} {
-    @if $color == 'light' {
-      @include button-custom-variant(
-        $value,
-        $value,
-        $hover-background: shade-color($value, $btn-hover-bg-shade-amount),
-        $hover-border: shade-color($value, $btn-hover-border-shade-amount),
-        $active-background: shade-color($value, $btn-active-bg-shade-amount),
-        $active-border: shade-color($value, $btn-active-border-shade-amount)
-      );
-    } @else if $color == 'dark' {
-      @include button-custom-variant(
-        $value,
-        $value,
-        $hover-background: tint-color($value, $btn-hover-bg-tint-amount),
-        $hover-border: tint-color($value, $btn-hover-border-tint-amount),
-        $active-background: tint-color($value, $btn-active-bg-tint-amount),
-        $active-border: tint-color($value, $btn-active-border-tint-amount)
-      );
-    } @else {
-      @include button-custom-variant($value, $value, $btn-color);
-    }
-  }
-}
-
-@each $color, $value in $theme-colors-button {
-  .btn-outline-#{$color} {
-    @include button-custom-outline-variant($btn-outline-text-color, $value);
+@each $type in map-keys($buttons) {
+  .btn-#{$type} {
+    @include button-custom-variant(
+      texts-deep-get($buttons, $type, 'color'),
+      texts-deep-get($buttons, $type, 'color-hover'),
+      texts-deep-get($buttons, $type, 'color-active'),
+      texts-deep-get($buttons, $type, 'background-color'),
+      texts-deep-get($buttons, $type, 'background-color-hover'),
+      texts-deep-get($buttons, $type, 'background-color-active'),
+      texts-deep-get($buttons, $type, 'border-color'),
+      texts-deep-get($buttons, $type, 'border-color-hover'),
+      texts-deep-get($buttons, $type, 'border-color-active'),
+      texts-deep-get($buttons, $type, 'shadow-color'),
+      texts-deep-get($buttons, $type, 'shadow-color-hover'),
+      texts-deep-get($buttons, $type, 'shadow-color-active')
+    );
   }
 }
 

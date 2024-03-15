@@ -242,31 +242,28 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
         <h3 class="text-headline mb-4">Buttons</h3>
 
         <div class="row mb-4">
-          <!-- <div class="col-12 mb-4">
-        <AppButton color="primary" size="small" class="me-3">Primary small</AppButton>
-        <AppButton color="secondary" size="small" class="me-3">Secondary small</AppButton>
-        <AppButton color="borderless" size="small" class="me-3">Borderless small</AppButton>
-      </div> -->
+          <div class="col-12 mb-4">
+            <AppButton color="primary" size="small" class="me-3">Primary small</AppButton>
+            <AppButton color="secondary" size="small" class="me-3">Secondary small</AppButton>
+            <AppButton color="borderless" size="small" class="me-3">Borderless small</AppButton>
+            <AppButton color="danger" size="small" class="me-3">Danger small</AppButton>
+          </div>
           <div class="col-12 mb-4">
             <AppButton color="primary" class="me-3">Primary</AppButton>
             <AppButton color="secondary" class="me-3">Secondary</AppButton>
             <AppButton color="borderless" class="me-3">Borderless</AppButton>
-            <AppButton color="danger" outline class="me-3">Danger outline</AppButton>
-            <!-- <AppButton color="primary" :loading="true" class="me-3">Primary</AppButton> -->
+            <AppButton color="danger" class="me-3">Danger</AppButton>
           </div>
-          <!-- <div class="col-12 mb-4">
-        <AppButton color="primary" size="large" class="me-3">Primary Large</AppButton>
-        <AppButton color="secondary" size="large" class="me-3">Secondary Large</AppButton>
-      </div> -->
-          <!-- <div class="col-12 mb-4">
-        <AppButton color="primary" outline class="me-3">Primary outline</AppButton>
-        <AppButton color="secondary" outline class="me-3">Secondary outline</AppButton>
-        <AppButton color="danger" outline class="me-3">Danger outline</AppButton>
-      </div> -->
-          <!-- <div class="col-12 mb-4">
-        <AppButton color="primary" class="me-3" disabled>Primary disabled</AppButton>
-        <AppButton color="secondary" class="me-3" disabled>Secondary disabled</AppButton>
-      </div> -->
+          <div class="col-12 mb-4">
+            <AppButton :disabled="true" color="primary" class="me-3">Primary Disabled</AppButton>
+            <AppButton :disabled="true" color="secondary" class="me-3"
+              >Secondary Disabled</AppButton
+            >
+            <AppButton :disabled="true" color="borderless" class="me-3"
+              >Borderless Disabled</AppButton
+            >
+            <AppButton :disabled="true" color="danger" class="me-3">Danger Disabled</AppButton>
+          </div>
         </div>
 
         <!-- <div class="mb-4 d-flex align-items-center">
