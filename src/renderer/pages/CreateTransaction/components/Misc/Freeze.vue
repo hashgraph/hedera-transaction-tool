@@ -130,14 +130,17 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
       </template>
     </TransactionHeaderControls>
 
+    <hr class="separator my-5" />
+
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
       v-model:valid-start="validStart"
       v-model:max-transaction-fee="maxTransactionfee as Hbar"
-      class="mt-6"
     />
 
-    <div class="row mt-6">
+    <hr class="separator my-5" />
+
+    <div class="row">
       <div :class="[columnClass]">
         <label class="form-label">Freeze Type<span class="text-danger">*</span></label>
         <select class="form-select" v-model="freezeType">

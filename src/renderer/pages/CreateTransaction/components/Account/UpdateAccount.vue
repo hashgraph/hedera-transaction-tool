@@ -225,14 +225,17 @@ const columnClass = 'col-4 col-xxxl-3';
       </template>
     </TransactionHeaderControls>
 
+    <hr class="separator my-5" />
+
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
       v-model:valid-start="validStart"
       v-model:max-transaction-fee="maxTransactionFee as Hbar"
-      class="mt-6"
     />
 
-    <div class="row mt-6">
+    <hr class="separator my-5" />
+
+    <div class="row">
       <div class="form-group" :class="[columnClass]">
         <label class="form-label">Account ID <span class="text-danger">*</span></label>
 

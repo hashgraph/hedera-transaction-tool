@@ -201,14 +201,17 @@ watch(payerData.isValid, isValid => {
       </template>
     </TransactionHeaderControls>
 
+    <hr class="separator my-5" />
+
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
       v-model:valid-start="validStart"
       v-model:max-transaction-fee="maxTransactionFee as Hbar"
-      class="mt-6"
     />
 
-    <div class="row mt-6">
+    <hr class="separator my-5" />
+
+    <div class="row">
       <div class="form-group col-8 col-xxxl-6">
         <KeyField :model-key="ownerKey" @update:model-key="key => (ownerKey = key)" is-required />
       </div>

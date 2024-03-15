@@ -305,14 +305,17 @@ onMounted(async () => {
       </template>
     </TransactionHeaderControls>
 
+    <hr class="separator my-5" />
+
     <TransactionIdControls
       v-model:payer-id="payerData.accountId.value"
       v-model:valid-start="validStart"
       v-model:max-transaction-fee="maxTransactionFee as Hbar"
-      class="mt-6"
     />
 
-    <div class="border rounded p-5 mt-5">
+    <hr class="separator my-5" />
+
+    <div class="border rounded p-5">
       <div class="row">
         <div class="col-5 flex-1">
           <TransferCard

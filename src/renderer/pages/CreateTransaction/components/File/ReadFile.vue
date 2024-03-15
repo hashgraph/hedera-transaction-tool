@@ -159,7 +159,9 @@ const columnClass = 'col-4 col-xxxl-3';
       </template>
     </TransactionHeaderControls>
 
-    <div class="row mt-6">
+    <hr class="separator my-5" />
+
+    <div class="row">
       <div class="form-group" :class="[columnClass]">
         <label class="form-label">Payer ID <span class="text-danger">*</span></label>
         <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
@@ -179,7 +181,9 @@ const columnClass = 'col-4 col-xxxl-3';
       </div>
     </div>
 
-    <div class="row mt-6">
+    <hr class="separator my-5" />
+
+    <div class="row">
       <div class="form-group" :class="[columnClass]">
         <label class="form-label">File ID <span class="text-danger">*</span></label>
         <AppInput v-model="fileId" :filled="true" placeholder="Enter File ID" />
