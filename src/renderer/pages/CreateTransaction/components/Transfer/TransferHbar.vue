@@ -282,6 +282,7 @@ onMounted(async () => {
     <TransactionHeaderControls
       :get-transaction-bytes="() => createTransaction().toBytes()"
       :handle-draft-added="handleDraftAdded"
+      :handle-draft-updated="handleDraftAdded"
       :is-executed="isExecuted"
       :create-requirements="
         !payerData.accountId.value ||
