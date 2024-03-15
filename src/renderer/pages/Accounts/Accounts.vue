@@ -252,7 +252,7 @@ const handleChangeNickname = async () => {
                     </span>
 
                     <span
-                      class="bi bi-pencil-square text-main text-primary ms-1 cursor-pointer"
+                      class="bi bi-pencil-square text-main text-primary ms-3 cursor-pointer"
                       @click="handleStartNicknameEdit"
                     ></span>
                   </p>

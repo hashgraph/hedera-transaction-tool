@@ -344,13 +344,6 @@ watch(files, newFiles => {
                       @click="handleStartNicknameEdit"
                     ></span>
                   </p>
-                  <p class="text-secondary text-small text-semi-bold">
-                    <template v-if="selectedFile.lastRefreshed">
-                      Last Viewed:
-                      <span>{{ selectedFile.lastRefreshed.toDateString() }}</span>
-                    </template>
-                    <template v-else> You haven't read this file yet </template>
-                  </p>
                 </div>
                 <div v-if="selectedFile" class="d-flex gap-3">
                   <AppButton
@@ -403,6 +396,13 @@ watch(files, newFiles => {
                   </div>
                 </div>
               </div>
+              <p class="text-secondary text-small text-semi-bold mt-3">
+                <template v-if="selectedFile.lastRefreshed">
+                  Last Viewed:
+                  <span>{{ selectedFile.lastRefreshed.toDateString() }}</span>
+                </template>
+                <template v-else> You haven't read this file yet </template>
+              </p>
               <hr class="separator my-4" />
               <div class="fill-remaining overflow-x-hidden pe-3">
                 <div class="row">
