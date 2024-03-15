@@ -176,7 +176,7 @@ onBeforeMount(async () => {
               <AppButton type="button" color="borderless" @click="deleteSavedKeyModalShown = false"
                 >Cancel</AppButton
               >
-              <AppButton :outline="true" color="danger" type="submit">Remove</AppButton>
+              <AppButton color="danger" type="submit">Remove</AppButton>
             </div>
           </form>
         </div>

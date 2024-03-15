@@ -510,9 +510,7 @@ const handleChangeNickname = async () => {
                 <AppButton color="borderless" @click="isUnlinkAccountModalShown = false"
                   >Cancel</AppButton
                 >
-                <AppButton :outline="true" color="danger" @click="handleUnlinkAccount"
-                  >Unlink</AppButton
-                >
+                <AppButton color="danger" @click="handleUnlinkAccount">Unlink</AppButton>
               </div>
             </div>
           </AppModal>

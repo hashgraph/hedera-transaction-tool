@@ -254,7 +254,6 @@ watch(isDeleteModalShown, newVal => {
                   <AppButton
                     size="small"
                     color="danger"
-                    :outline="true"
                     @click="handleDeleteModal(keyPair.id)"
                     class="min-w-unset"
                     ><span class="bi bi-trash"></span
@@ -321,7 +320,7 @@ watch(isDeleteModalShown, newVal => {
               go through creating or importing a recovery phrase again. Do you wish to continue?
             </p>
             <div class="d-grid mt-5">
-              <AppButton type="submit" color="danger" :outline="true">Delete</AppButton>
+              <AppButton type="submit" color="danger">Delete</AppButton>
             </div>
           </form>
         </div>

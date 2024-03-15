@@ -315,7 +315,7 @@ watch(inputEmail, pass => {
 
         <div class="flex-between-centered gap-4">
           <AppButton color="borderless" @click="isResetDataModalShown = false">Cancel</AppButton>
-          <AppButton :outline="true" color="danger" @click="handleResetData">Reset</AppButton>
+          <AppButton color="danger" @click="handleResetData">Reset</AppButton>
         </div>
       </div>
     </AppModal>

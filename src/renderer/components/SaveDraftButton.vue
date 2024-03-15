@@ -92,7 +92,6 @@ onBeforeRouteLeave(async to => {
   <div>
     <AppButton
       color="secondary"
-      :outline="true"
       type="button"
       @click="() => (handleSaveDraft ? handleSaveDraft() : saveDraft())"
       v-bind="$attrs"

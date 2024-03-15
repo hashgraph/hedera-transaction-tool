@@ -184,8 +184,7 @@ const columnClass = 'col-4 col-xxxl-3';
 
           <div class="form-group" :class="[columnClass]" v-if="ownerData.key.value">
             <AppButton
-              :outline="true"
-              color="primary"
+              color="secondary"
               type="button"
               @click="
                 isKeyStructureModalShown = true;
@@ -212,8 +211,7 @@ const columnClass = 'col-4 col-xxxl-3';
           </div>
           <div class="form-group" :class="[columnClass]" v-if="spenderData.key.value">
             <AppButton
-              :outline="true"
-              color="primary"
+              color="secondary"
               type="button"
               @click="
                 isKeyStructureModalShown = true;

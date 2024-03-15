@@ -84,14 +84,17 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
         <h1 class="text-title text-semi-bold text-center">Complex Key</h1>
         <div :style="modalContentContainerStyle">
           <div class="text-end">
-            <AppButton type="button" class="text-body" @click="summaryMode = !summaryMode">{{
-              summaryMode ? 'Edit Mode' : 'View Summary'
-            }}</AppButton>
+            <AppButton
+              color="borderless"
+              type="button"
+              class="text-body"
+              @click="summaryMode = !summaryMode"
+              >{{ summaryMode ? 'Edit Mode' : 'View Summary' }}</AppButton
+            >
             <AppButton
               v-if="onSaveComplexKey && !currentKeyInvalid"
               type="button"
               color="primary"
-              :outline="true"
               class="ms-3"
               @click="handleSaveComplexKeyButtonClick"
               >Save Complex Key</AppButton

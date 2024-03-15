@@ -576,7 +576,7 @@ watch(files, newFiles => {
               <AppButton color="borderless" @click="isUnlinkFileModalShown = false"
                 >Cancel</AppButton
               >
-              <AppButton :outline="true" color="danger" @click="handleUnlinkFile">Unlink</AppButton>
+              <AppButton color="danger" @click="handleUnlinkFile">Unlink</AppButton>
             </div>
           </div>
         </AppModal>

@@ -147,8 +147,7 @@ watch(words, newWords => {
         </AppButton>
         <AppButton
           v-if="words.filter(w => w).length !== 0"
-          :outline="true"
-          color="primary"
+          color="secondary"
           @click="handleCopyRecoveryPhrase"
           class="ms-4"
           ><i class="bi bi-copy"></i> <span>Copy</span></AppButton

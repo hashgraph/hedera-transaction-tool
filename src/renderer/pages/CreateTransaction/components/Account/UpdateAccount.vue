@@ -252,9 +252,8 @@ const columnClass = 'col-4 col-xxxl-3';
           <div class="form-group mt-6" :class="[columnClass]">
             <AppButton
               v-if="accountData.key.value"
-              :outline="true"
               class="text-nowrap"
-              color="primary"
+              color="secondary"
               type="button"
               @click="isKeyStructureModalShown = true"
               >Show Key</AppButton
