@@ -94,118 +94,128 @@ watch([currentPage, pageSize], async () => {
 </script>
 
 <template>
-  <template v-if="isLoading">
-    <AppLoader />
-  </template>
-  <template v-else>
-    <template v-if="transactions.length > 0">
-      <table class="table-custom">
-        <thead>
-          <tr>
-            <th>
-              <div
-                class="table-sort-link"
-                @click="
-                  handleSort(
-                    'transaction_id',
-                    sort.field === 'transaction_id' ? getOpositeDirection() : 'asc',
-                  )
-                "
-              >
-                <span>Transaction ID</span>
-                <i
-                  v-if="sort.field === 'transaction_id'"
-                  class="bi text-title"
-                  :class="[generatedClass]"
-                ></i>
-              </div>
-            </th>
-            <th>
-              <div
-                class="table-sort-link"
-                @click="handleSort('type', sort.field === 'type' ? getOpositeDirection() : 'asc')"
-              >
-                <span>Transaction Type</span>
-                <i v-if="sort.field === 'type'" class="bi text-title" :class="[generatedClass]"></i>
-              </div>
-            </th>
-            <th>
-              <div
-                class="table-sort-link"
-                @click="
-                  handleSort(
-                    'status_code',
-                    sort.field === 'status_code' ? getOpositeDirection() : 'asc',
-                  )
-                "
-              >
-                <span>Status</span>
-                <i
-                  v-if="sort.field === 'status_code'"
-                  class="bi text-title"
-                  :class="[generatedClass]"
-                ></i>
-              </div>
-            </th>
-            <th>
-              <div
-                class="table-sort-link"
-                @click="
-                  handleSort(
-                    'created_at',
-                    sort.field === 'created_at' ? getOpositeDirection() : 'asc',
-                  )
-                "
-              >
-                <span>Timestamp</span>
-                <i
-                  v-if="sort.field === 'created_at'"
-                  class="bi text-title"
-                  :class="[generatedClass]"
-                ></i>
-              </div>
-            </th>
-            <th class="text-center">
-              <span>Actions</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <template v-for="transaction in transactions" :key="transaction.created_at.toString()">
-            <tr>
-              <td>{{ getTransactionId(transaction) }}</td>
-              <td>
-                <span class="text-bold">{{ transaction.type }}</span>
-              </td>
-              <td>
-                <span
-                  class="badge bg-success text-break"
-                  :class="{ 'bg-danger': ![0, 22].includes(transaction.status_code) }"
-                  >{{ getTransactionStatus(transaction) }}</span
-                >
-              </td>
-              <td>
-                <span class="text-secondary">
-                  {{ transaction.created_at.toDateString() }}
-                </span>
-              </td>
-              <td class="text-center">
-                <AppButton @click="handleTransactionDetailsClick(transaction)" color="secondary"
-                  >Details</AppButton
-                >
-              </td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
-      <AppPager
-        v-model:current-page="currentPage"
-        v-model:per-page="pageSize"
-        :total-items="totalItems"
-      />
+  <div class="fill-remaining overflow-x-auto">
+    <template v-if="isLoading">
+      <AppLoader />
     </template>
     <template v-else>
-      <EmptyTransactions class="absolute-centered w-100" />
+      <template v-if="transactions.length > 0">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>
+                <div
+                  class="table-sort-link"
+                  @click="
+                    handleSort(
+                      'transaction_id',
+                      sort.field === 'transaction_id' ? getOpositeDirection() : 'asc',
+                    )
+                  "
+                >
+                  <span>Transaction ID</span>
+                  <i
+                    v-if="sort.field === 'transaction_id'"
+                    class="bi text-title"
+                    :class="[generatedClass]"
+                  ></i>
+                </div>
+              </th>
+              <th>
+                <div
+                  class="table-sort-link"
+                  @click="handleSort('type', sort.field === 'type' ? getOpositeDirection() : 'asc')"
+                >
+                  <span>Transaction Type</span>
+                  <i
+                    v-if="sort.field === 'type'"
+                    class="bi text-title"
+                    :class="[generatedClass]"
+                  ></i>
+                </div>
+              </th>
+              <th>
+                <div
+                  class="table-sort-link"
+                  @click="
+                    handleSort(
+                      'status_code',
+                      sort.field === 'status_code' ? getOpositeDirection() : 'asc',
+                    )
+                  "
+                >
+                  <span>Status</span>
+                  <i
+                    v-if="sort.field === 'status_code'"
+                    class="bi text-title"
+                    :class="[generatedClass]"
+                  ></i>
+                </div>
+              </th>
+              <th>
+                <div
+                  class="table-sort-link"
+                  @click="
+                    handleSort(
+                      'created_at',
+                      sort.field === 'created_at' ? getOpositeDirection() : 'asc',
+                    )
+                  "
+                >
+                  <span>Timestamp</span>
+                  <i
+                    v-if="sort.field === 'created_at'"
+                    class="bi text-title"
+                    :class="[generatedClass]"
+                  ></i>
+                </div>
+              </th>
+              <th class="text-center">
+                <span>Actions</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <template v-for="transaction in transactions" :key="transaction.created_at.toString()">
+              <tr>
+                <td>{{ getTransactionId(transaction) }}</td>
+                <td>
+                  <span class="text-bold">{{ transaction.type }}</span>
+                </td>
+                <td>
+                  <span
+                    class="badge bg-success text-break"
+                    :class="{ 'bg-danger': ![0, 22].includes(transaction.status_code) }"
+                    >{{ getTransactionStatus(transaction) }}</span
+                  >
+                </td>
+                <td>
+                  <span class="text-secondary">
+                    {{ transaction.created_at.toDateString() }}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <AppButton @click="handleTransactionDetailsClick(transaction)" color="secondary"
+                    >Details</AppButton
+                  >
+                </td>
+              </tr>
+            </template>
+          </tbody>
+          <tfoot class="d-table-caption">
+            <tr class="d-inline">
+              <AppPager
+                v-model:current-page="currentPage"
+                v-model:per-page="pageSize"
+                :total-items="totalItems"
+              />
+            </tr>
+          </tfoot>
+        </table>
+      </template>
+      <template v-else>
+        <EmptyTransactions class="absolute-centered w-100" />
+      </template>
     </template>
-  </template>
+  </div>
 </template>

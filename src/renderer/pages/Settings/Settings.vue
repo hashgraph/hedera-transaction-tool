@@ -60,24 +60,31 @@ watch(router.currentRoute, newRoute => {
 </script>
 <template>
   <div class="p-5">
-    <div class="d-flex justify-content-between align-items-start">
-      <h1 class="text-title text-bold">Settings</h1>
-      <div
-        v-if="activeTabIndex === tabItems.findIndex(t => t.title === keysTitle)"
-        class="d-flex gap-3"
-      >
-        <AppButton color="borderless" @click="$router.push({ name: 'restoreKey' })">
-          Restore
-        </AppButton>
-        <ImportExternalPrivateKeyDropDown class="min-w-unset" />
+    <div class="flex-column-100 overflow-hidden">
+      <div class="d-flex justify-content-between align-items-start">
+        <h1 class="text-title text-bold">Settings</h1>
+        <div
+          v-if="activeTabIndex === tabItems.findIndex(t => t.title === keysTitle)"
+          class="d-flex gap-3"
+        >
+          <AppButton color="borderless" @click="$router.push({ name: 'restoreKey' })">
+            Restore
+          </AppButton>
+          <ImportExternalPrivateKeyDropDown class="min-w-unset" />
+        </div>
       </div>
-    </div>
-    <div class="mt-7">
-      <AppTabs :items="tabItems" v-model:active-index="activeTabIndex">
-        <template #[activeTabTitle]>
-          <RouterView />
-        </template>
-      </AppTabs>
+      <div class="overflow-hidden mt-7">
+        <AppTabs
+          :items="tabItems"
+          v-model:active-index="activeTabIndex"
+          :content-container-class="'fill-remaining'"
+          class="flex-column-100"
+        >
+          <template #[activeTabTitle]>
+            <RouterView />
+          </template>
+        </AppTabs>
+      </div>
     </div>
   </div>
 </template>

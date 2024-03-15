@@ -25,7 +25,7 @@ const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title
 </script>
 
 <template>
-  <div class="p-5">
+  <div class="flex-column-100 p-5">
     <div class="d-flex justify-content-between">
       <h1 class="text-title text-bold">Transactions</h1>
       <AppButton color="primary" @click="isTransactionSelectionModalShown = true">
@@ -33,7 +33,7 @@ const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title
       </AppButton>
     </div>
 
-    <div class="position-relative h-100 mt-4">
+    <div class="position-relative flex-column-100 overflow-hidden mt-4">
       <AppTabs :items="tabItems" v-model:active-index="activeTabIndex"></AppTabs>
       <!-- <template v-if="activeTabTitle === 'Ready for Review'"></template>
       <template v-if="activeTabTitle === 'Ready to Sign'"> </template>

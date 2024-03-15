@@ -228,7 +228,7 @@ watch(files, newFiles => {
       <div class="d-flex justify-content-between align-items-center">
         <h1 class="text-title text-bold">Files</h1>
       </div>
-      <div class="row g-0 overflow-hidden mt-6">
+      <div class="row g-0 fill-remaining mt-6">
         <div class="col-4 col-xxl-3 flex-column-100 overflow-hidden with-border-end pe-4 ps-0">
           <div class="dropdown">
             <AppButton color="primary" size="large" class="w-100" data-bs-toggle="dropdown"

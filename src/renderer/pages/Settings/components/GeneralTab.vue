@@ -77,7 +77,7 @@ onBeforeMount(async () => {
 <template>
   <div>
     <!-- Network -->
-    <div class="p-4 border border-2 rounded-3">
+    <div class="fill-remaining border border-2 rounded-3 p-4">
       <p>Network</p>
       <div class="mt-4 btn-group">
         <AppButton

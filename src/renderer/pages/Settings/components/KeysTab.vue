@@ -139,186 +139,193 @@ watch(isDeleteModalShown, newVal => {
 });
 </script>
 <template>
-  <div class="d-flex mb-3">
-    <template v-for="tab in Object.values(Tabs)" :key="tab">
-      <AppButton type="button" color="borderless" class="min-w-unset" @click="handleTabChange(tab)">
-        {{ tab }}
-      </AppButton>
-    </template>
-  </div>
-  <div class="mt-4">
-    <div class="overflow-auto">
-      <table class="table-custom">
-        <thead>
-          <tr>
-            <th
-              v-if="currentTab === Tabs.RECOVERY_PHRASE || currentTab === Tabs.ALL"
-              class="w-10 text-end"
-            >
-              Index
-            </th>
-            <th>Nickname</th>
-            <th>Account ID</th>
-            <th>Key Type</th>
-            <th>Public Key</th>
-            <th>Private Key</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody class="text-secondary">
-          <template
-            v-for="keyPair in keyPairsStore.keyPairs.filter(item => {
-              switch (currentTab) {
-                case Tabs.ALL:
-                  return true;
-                case Tabs.RECOVERY_PHRASE:
-                  return item.secret_hash !== null;
-                case Tabs.PRIVATE_KEY:
-                  return item.secret_hash === null;
-              }
-            })"
-            :key="keyPair.public_key"
-          >
+  <div class="flex-column-100">
+    <div class="mb-3">
+      <template v-for="tab in Object.values(Tabs)" :key="tab">
+        <AppButton
+          type="button"
+          color="borderless"
+          class="min-w-unset"
+          @click="handleTabChange(tab)"
+        >
+          {{ tab }}
+        </AppButton>
+      </template>
+    </div>
+    <div class="fill-remaining mt-4">
+      <div class="overflow-auto">
+        <table class="table-custom">
+          <thead>
             <tr>
-              <td
+              <th
                 v-if="currentTab === Tabs.RECOVERY_PHRASE || currentTab === Tabs.ALL"
-                class="text-end"
+                class="w-10 text-end"
               >
-                {{ keyPair.index >= 0 ? keyPair.index : 'N/A' }}
-              </td>
-              <td>
-                {{ keyPair.nickname || 'N/A' }}
-              </td>
-              <td>
-                {{
-                  keyPairsStore.publicKeyToAccounts.find(
-                    acc => acc.publicKey === keyPair.public_key,
-                  )?.accounts[0]?.account || 'N/A'
-                }}
-              </td>
-              <td>
-                {{
-                  PublicKey.fromString(keyPair.public_key)._key._type === 'secp256k1'
-                    ? 'ECDSA'
-                    : 'ED25519'
-                }}
-              </td>
-              <td>
-                <p class="d-flex text-nowrap">
-                  <span class="d-inline-block text-truncate" style="width: 12vw">{{
-                    keyPair.public_key
-                  }}</span>
-                  <span
-                    class="bi bi-copy cursor-pointer ms-3"
-                    @click="handleCopy(keyPair.public_key, 'Public Key copied successfully')"
-                  ></span>
-                </p>
-              </td>
-              <td>
-                <p class="d-flex text-nowrap">
-                  <template v-if="decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)">
+                Index
+              </th>
+              <th>Nickname</th>
+              <th>Account ID</th>
+              <th>Key Type</th>
+              <th>Public Key</th>
+              <th>Private Key</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody class="text-secondary">
+            <template
+              v-for="keyPair in keyPairsStore.keyPairs.filter(item => {
+                switch (currentTab) {
+                  case Tabs.ALL:
+                    return true;
+                  case Tabs.RECOVERY_PHRASE:
+                    return item.secret_hash !== null;
+                  case Tabs.PRIVATE_KEY:
+                    return item.secret_hash === null;
+                }
+              })"
+              :key="keyPair.public_key"
+            >
+              <tr>
+                <td
+                  v-if="currentTab === Tabs.RECOVERY_PHRASE || currentTab === Tabs.ALL"
+                  class="text-end"
+                >
+                  {{ keyPair.index >= 0 ? keyPair.index : 'N/A' }}
+                </td>
+                <td>
+                  {{ keyPair.nickname || 'N/A' }}
+                </td>
+                <td>
+                  {{
+                    keyPairsStore.publicKeyToAccounts.find(
+                      acc => acc.publicKey === keyPair.public_key,
+                    )?.accounts[0]?.account || 'N/A'
+                  }}
+                </td>
+                <td>
+                  {{
+                    PublicKey.fromString(keyPair.public_key)._key._type === 'secp256k1'
+                      ? 'ECDSA'
+                      : 'ED25519'
+                  }}
+                </td>
+                <td>
+                  <p class="d-flex text-nowrap">
                     <span class="d-inline-block text-truncate" style="width: 12vw">{{
-                      decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)?.decrypted
+                      keyPair.public_key
                     }}</span>
                     <span
                       class="bi bi-copy cursor-pointer ms-3"
-                      @click="
-                        handleCopy(
-                          decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)
-                            ?.decrypted || '',
-                          'Private Key copied successfully',
-                        )
-                      "
+                      @click="handleCopy(keyPair.public_key, 'Public Key copied successfully')"
                     ></span>
-                    <span
-                      class="bi bi-eye-slash cursor-pointer ms-3"
-                      @click="handleHideDecryptedKey(keyPair.public_key)"
-                    ></span>
-                  </template>
-                  <template v-else>
-                    {{ '*'.repeat(16) }}
-                    <span
-                      class="bi bi-eye cursor-pointer ms-3"
-                      @click="handleShowDecryptModal(keyPair.public_key)"
-                    ></span>
-                  </template>
-                </p>
-              </td>
-              <td class="text-center">
-                <AppButton
-                  size="small"
-                  color="danger"
-                  :outline="true"
-                  @click="handleDeleteModal(keyPair.id)"
-                  class="min-w-unset"
-                  ><span class="bi bi-trash"></span
-                ></AppButton>
-              </td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
-    </div>
+                  </p>
+                </td>
+                <td>
+                  <p class="d-flex text-nowrap">
+                    <template v-if="decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)">
+                      <span class="d-inline-block text-truncate" style="width: 12vw">{{
+                        decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)?.decrypted
+                      }}</span>
+                      <span
+                        class="bi bi-copy cursor-pointer ms-3"
+                        @click="
+                          handleCopy(
+                            decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)
+                              ?.decrypted || '',
+                            'Private Key copied successfully',
+                          )
+                        "
+                      ></span>
+                      <span
+                        class="bi bi-eye-slash cursor-pointer ms-3"
+                        @click="handleHideDecryptedKey(keyPair.public_key)"
+                      ></span>
+                    </template>
+                    <template v-else>
+                      {{ '*'.repeat(16) }}
+                      <span
+                        class="bi bi-eye cursor-pointer ms-3"
+                        @click="handleShowDecryptModal(keyPair.public_key)"
+                      ></span>
+                    </template>
+                  </p>
+                </td>
+                <td class="text-center">
+                  <AppButton
+                    size="small"
+                    color="danger"
+                    :outline="true"
+                    @click="handleDeleteModal(keyPair.id)"
+                    class="min-w-unset"
+                    ><span class="bi bi-trash"></span
+                  ></AppButton>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
 
-    <AppModal v-model:show="isDecryptedModalShown" class="common-modal">
-      <div class="p-5">
-        <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="isDecryptedModalShown = false"></i>
-        </div>
-        <div class="text-center">
-          <AppCustomIcon :name="'lock'" style="height: 160px" />
-        </div>
-        <form @submit="handleDecrypt">
-          <h3 class="text-center text-title text-bold mt-3">Decrypt private key</h3>
-          <div class="form-group mt-5">
-            <label class="form-label">Enter your password</label>
-            <AppInput
-              v-model="userPassword"
-              :filled="true"
-              type="password"
-              placeholder="Type your password"
-            />
+      <AppModal v-model:show="isDecryptedModalShown" class="common-modal">
+        <div class="p-5">
+          <div>
+            <i class="bi bi-x-lg cursor-pointer" @click="isDecryptedModalShown = false"></i>
           </div>
-          <hr class="separator my-5" />
+          <div class="text-center">
+            <AppCustomIcon :name="'lock'" style="height: 160px" />
+          </div>
+          <form @submit="handleDecrypt">
+            <h3 class="text-center text-title text-bold mt-3">Decrypt private key</h3>
+            <div class="form-group mt-5">
+              <label class="form-label">Enter your password</label>
+              <AppInput
+                v-model="userPassword"
+                :filled="true"
+                type="password"
+                placeholder="Type your password"
+              />
+            </div>
+            <hr class="separator my-5" />
 
-          <div class="d-grid mt-5">
-            <AppButton type="submit" color="primary" :disabled="userPassword.length === 0"
-              >Decrypt</AppButton
+            <div class="d-grid mt-5">
+              <AppButton type="submit" color="primary" :disabled="userPassword.length === 0"
+                >Decrypt</AppButton
+              >
+            </div>
+          </form>
+        </div>
+      </AppModal>
+
+      <AppModal v-model:show="isDeleteModalShown" class="common-modal">
+        <div class="p-5">
+          <div>
+            <i class="bi bi-x-lg cursor-pointer" @click="isDeleteModalShown = false"></i>
+          </div>
+          <div class="text-center">
+            <AppCustomIcon :name="'bin'" style="height: 160px" />
+          </div>
+          <form @submit="handleDelete">
+            <h3 class="text-center text-title text-bold mt-3">Delete key pair</h3>
+            <p
+              v-if="
+                keyPairsStore.keyPairs.filter(item => item.secret_hash != null).length === 1 &&
+                keyPairsStore.keyPairs
+                  .filter(item => item.secret_hash != null)
+                  .map(k => k.id)
+                  .includes(keyPairIdToDelete || '')
+              "
+              class="text-center mt-4"
             >
-          </div>
-        </form>
-      </div>
-    </AppModal>
-
-    <AppModal v-model:show="isDeleteModalShown" class="common-modal">
-      <div class="p-5">
-        <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="isDeleteModalShown = false"></i>
+              You are about the delete the last key pair associated with your recovery phrase you
+              have used to set up the Transaction Tool. If you choose to proceed, you will have to
+              go through creating or importing a recovery phrase again. Do you wish to continue?
+            </p>
+            <div class="d-grid mt-5">
+              <AppButton type="submit" color="danger" :outline="true">Delete</AppButton>
+            </div>
+          </form>
         </div>
-        <div class="text-center">
-          <AppCustomIcon :name="'bin'" style="height: 160px" />
-        </div>
-        <form @submit="handleDelete">
-          <h3 class="text-center text-title text-bold mt-3">Delete key pair</h3>
-          <p
-            v-if="
-              keyPairsStore.keyPairs.filter(item => item.secret_hash != null).length === 1 &&
-              keyPairsStore.keyPairs
-                .filter(item => item.secret_hash != null)
-                .map(k => k.id)
-                .includes(keyPairIdToDelete || '')
-            "
-            class="text-center mt-4"
-          >
-            You are about the delete the last key pair associated with your recovery phrase you have
-            used to set up the Transaction Tool. If you choose to proceed, you will have to go
-            through creating or importing a recovery phrase again. Do you wish to continue?
-          </p>
-          <div class="d-grid mt-5">
-            <AppButton type="submit" color="danger" :outline="true">Delete</AppButton>
-          </div>
-        </form>
-      </div>
-    </AppModal>
+      </AppModal>
+    </div>
   </div>
 </template>
