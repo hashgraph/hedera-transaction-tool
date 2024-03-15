@@ -322,7 +322,7 @@ onMounted(async () => {
             <TransferCard
               account-label="From"
               @transfer-added="handleAddSenderTransfer"
-              :show-balance="true"
+              :show-balance-in-label="true"
               :button-disabled="totalBalanceAdjustments >= 10"
               :clear-on-add-transfer="true"
             />
@@ -413,7 +413,7 @@ onMounted(async () => {
           </p>
           <p class="text-small text-wrap">
             <span class="text-secondary">Balance</span>
-            <span>{{ stringifyHbar(totalBalance) }}</span>
+            <span> {{ ` ${stringifyHbar(totalBalance)}` }}</span>
           </p>
         </div>
       </div>
