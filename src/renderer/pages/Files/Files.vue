@@ -347,8 +347,8 @@ watch(files, newFiles => {
                 </div>
                 <div v-if="selectedFile" class="d-flex gap-3">
                   <AppButton
-                    class="min-w-unset text-danger"
-                    color="borderless"
+                    class="min-w-unset"
+                    color="danger"
                     @click="isUnlinkFileModalShown = true"
                     ><span class="bi bi-trash"></span> Remove</AppButton
                   >

@@ -259,8 +259,8 @@ const handleChangeNickname = async () => {
                 </div>
                 <div class="d-flex gap-3">
                   <AppButton
-                    class="min-w-unset text-danger"
-                    color="borderless"
+                    class="min-w-unset"
+                    color="danger"
                     @click="isUnlinkAccountModalShown = true"
                     ><span class="bi bi-trash"></span> Remove</AppButton
                   >
