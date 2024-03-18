@@ -1,0 +1,16 @@
+### Get comments for Transaction Id
+GET http://localhost:3000/transactions/2/comments
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTc2NTM2MCwiZXhwIjoxNzA5ODAxMzYwfQ.0z1lQbQMf6K8yQb5nwQOtd_ytnl_OyhVW4qhkppersU
+
+### Get comments by Id - for testing only
+GET http://localhost:3000/transactions/comments/2
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTc2NTM2MCwiZXhwIjoxNzA5ODAxMzYwfQ.0z1lQbQMf6K8yQb5nwQOtd_ytnl_OyhVW4qhkppersU
+
+### Create a transaction comment
+POST http://localhost:3000/transactions/1/comments
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTc2NTM2MCwiZXhwIjoxNzA5ODAxMzYwfQ.0z1lQbQMf6K8yQb5nwQOtd_ytnl_OyhVW4qhkppersU
+content-type: application/json
+
+{
+  "message": "third comment"
+}

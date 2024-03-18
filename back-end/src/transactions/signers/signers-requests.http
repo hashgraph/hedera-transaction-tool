@@ -1,0 +1,13 @@
+### Upload a signature for a transaction and key
+POST http://localhost:3000/transactions/1/signers
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTc0OTU5MywiZXhwIjoxNzA5Nzg1NTkzfQ.qUcRvmpL6rXwp9ewieFFKi3zZHXNIwBQUMJjtGMyOgw
+content-type: application/json
+
+{
+  "userKeyId": 1,
+  "signature": "48656c6c6f2c204a6f686e"
+}
+
+### Get all signatures for a transaction
+GET http://localhost:3000/transactions/1/signers
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTc0OTU5MywiZXhwIjoxNzA5Nzg1NTkzfQ.qUcRvmpL6rXwp9ewieFFKi3zZHXNIwBQUMJjtGMyOgw
