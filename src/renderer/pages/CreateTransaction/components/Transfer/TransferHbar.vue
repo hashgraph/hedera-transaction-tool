@@ -2,8 +2,10 @@
 import { ref, onMounted, computed } from 'vue';
 import { Hbar, KeyList, Transaction, TransferTransaction, Transfer } from '@hashgraph/sdk';
 
+import { HederaAccount } from '@prisma/client';
 import { IAccountInfoParsed } from '@main/shared/interfaces';
 
+import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
@@ -13,6 +15,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft, updateDraft } from '@renderer/services/transactionDraftsService';
 import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
+import { getAll } from '@renderer/services/accountsService';
 
 import {
   getDateTimeLocalInputValue,
@@ -29,6 +32,7 @@ import TransferCard from '@renderer/components/TransferCard.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 
 /* Stores */
+const user = useUserStore();
 const network = useNetworkStore();
 
 /* Composables */
@@ -57,6 +61,7 @@ const transfers = ref<Transfer[]>([]);
 const accountInfos = ref<{
   [key: string]: IAccountInfoParsed;
 }>({});
+const linkedAccounts = ref<HederaAccount[]>([]);
 
 const isExecuted = ref(false);
 
@@ -277,6 +282,7 @@ function getRequiredKeys() {
 /* Hooks */
 onMounted(async () => {
   await handleLoadFromDraft();
+  linkedAccounts.value = await getAll(user.data.id);
 });
 </script>
 <template>
@@ -352,10 +358,39 @@ onMounted(async () => {
               <template v-for="(debit, i) in transfers" :key="debit.accountId">
                 <div v-if="debit.amount.isNegative()" class="mt-3">
                   <div class="row align-items-center px-3">
-                    <div class="col-4 overflow-hidden">
-                      <p class="text-secondary text-small overflow-hidden">
-                        {{ debit.accountId }} {{ debit.isApproved ? '(Approved)' : '' }}
-                      </p>
+                    <div
+                      class="col-4 flex-centered justify-content-start flex-wrap overflow-hidden"
+                    >
+                      <template
+                        v-if="
+                          linkedAccounts.find(la => la.account_id === debit.accountId.toString())
+                        "
+                      >
+                        <p v-if="debit.isApproved" class="text-small text-semi-bold me-2">
+                          Approved
+                        </p>
+
+                        <div class="flex-centered justify-content-start flex-wrap">
+                          <p class="text-small text-semi-bold me-2">
+                            {{
+                              linkedAccounts.find(
+                                la => la.account_id === debit.accountId.toString(),
+                              )?.nickname
+                            }}
+                          </p>
+                          <p class="text-secondary text-micro overflow-hidden">
+                            {{ debit.accountId }}
+                          </p>
+                        </div>
+                      </template>
+                      <template v-else>
+                        <p v-if="debit.isApproved" class="text-small text-semi-bold me-2">
+                          Approved
+                        </p>
+                        <p class="text-secondary text-small overflow-hidden">
+                          {{ debit.accountId }}
+                        </p>
+                      </template>
                     </div>
                     <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
                       <p class="text-secondary text-small text-bold overflow-hidden">
@@ -380,10 +415,32 @@ onMounted(async () => {
               <template v-for="(credit, i) in transfers" :key="credit.accountId">
                 <div v-if="!credit.amount.isNegative()" class="mt-3">
                   <div class="row align-items-center px-3">
-                    <div class="col-4 overflow-hidden">
-                      <p class="text-secondary text-small overflow-hidden">
-                        {{ credit.accountId }}
-                      </p>
+                    <div
+                      class="col-4 flex-centered justify-content-start flex-wrap overflow-hidden"
+                    >
+                      <template
+                        v-if="
+                          linkedAccounts.find(la => la.account_id === credit.accountId.toString())
+                        "
+                      >
+                        <div class="flex-centered justify-content-start flex-wrap">
+                          <p class="text-small text-semi-bold me-2">
+                            {{
+                              linkedAccounts.find(
+                                la => la.account_id === credit.accountId.toString(),
+                              )?.nickname
+                            }}
+                          </p>
+                          <p class="text-secondary text-micro overflow-hidden">
+                            {{ credit.accountId }}
+                          </p>
+                        </div>
+                      </template>
+                      <template v-else>
+                        <p class="text-secondary text-small overflow-hidden">
+                          {{ credit.accountId }}
+                        </p>
+                      </template>
                     </div>
                     <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
                       <p class="text-secondary text-small text-bold overflow-hidden">
