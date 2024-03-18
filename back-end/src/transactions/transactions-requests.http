@@ -1,0 +1,36 @@
+### Get transactions created by User
+GET http://localhost:3000/transactions
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTc2NTM2MCwiZXhwIjoxNzA5ODAxMzYwfQ.0z1lQbQMf6K8yQb5nwQOtd_ytnl_OyhVW4qhkppersU
+
+### Get transactions to be signed by User
+GET http://localhost:3000/transactions/sign
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTYyMDkxMCwiZXhwIjoxNzA5NjU2OTEwfQ.FFaRKqnM6pP_Hhpj5KU447GYtxsKH46PZi157vRVPww
+
+### Get transactions to be approved by User
+GET http://localhost:3000/transactions/approve
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTYyMDkxMCwiZXhwIjoxNzA5NjU2OTEwfQ.FFaRKqnM6pP_Hhpj5KU447GYtxsKH46PZi157vRVPww
+
+### Get transactions to be observed by User
+GET http://localhost:3000/transactions/observe
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTYyMDkxMCwiZXhwIjoxNzA5NjU2OTEwfQ.FFaRKqnM6pP_Hhpj5KU447GYtxsKH46PZi157vRVPww
+
+### Get transaction by Id
+GET http://localhost:3000/transactions/2
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTc2NTM2MCwiZXhwIjoxNzA5ODAxMzYwfQ.0z1lQbQMf6K8yQb5nwQOtd_ytnl_OyhVW4qhkppersU
+
+### Create a transaction
+POST http://localhost:3000/transactions
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTc2NTM2MCwiZXhwIjoxNzA5ODAxMzYwfQ.0z1lQbQMf6K8yQb5nwQOtd_ytnl_OyhVW4qhkppersU
+content-type: application/json
+
+{
+  "name": "create1",
+  "type": "TRANSFER",
+  "description": "first create transaction",
+  "body": "asldfnii23oasindf",
+  "status": "NEW",
+  "creatorKeyId": 2,
+  "signature": "asdfln23linasdf",
+  "validStart": "1999-12-11T11:00:00.000Z",
+  "cutoffAt": "1999-12-11T11:00:00.000Z"
+}

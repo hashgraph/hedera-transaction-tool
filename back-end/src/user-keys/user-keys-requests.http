@@ -1,0 +1,16 @@
+### Upload a key
+POST http://localhost:3000/user/keys
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTc2NTM2MCwiZXhwIjoxNzA5ODAxMzYwfQ.0z1lQbQMf6K8yQb5nwQOtd_ytnl_OyhVW4qhkppersU
+content-type: application/json
+
+{
+  "publicKey": "1234567890abcdefghijklmnopqrstuvwxyz"
+}
+
+### Get all keys for a user
+GET http://localhost:3000/user/2/keys
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTc2NTM2MCwiZXhwIjoxNzA5ODAxMzYwfQ.0z1lQbQMf6K8yQb5nwQOtd_ytnl_OyhVW4qhkppersU
+
+### Delete a key
+DELETE http://localhost:3000/user/keys/4
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTYyMDkxMCwiZXhwIjoxNzA5NjU2OTEwfQ.FFaRKqnM6pP_Hhpj5KU447GYtxsKH46PZi157vRVPww
