@@ -27,13 +27,32 @@ const internalPerPage = ref(props.perPage || 10);
 /* Computed */
 const totalPages = computed(() => Math.ceil(props.totalItems / internalPerPage.value));
 const visiblePages = computed(() => {
-  const pages: number[] = [];
+  const pages: (number | string)[] = [];
 
-  const start = Math.max(1, props.currentPage - Math.floor(props.maxPagesInNav / 2));
-  const end = Math.min(totalPages.value, start + props.maxPagesInNav - 1);
+  const start = Math.max(2, props.currentPage - 1);
+  const end = Math.min(totalPages.value - 1, props.currentPage + 1);
 
+  // Always include the first page
+  pages.push(1);
+
+  // Include '...' if there are pages skipped before the current range
+  if (start > 2) {
+    pages.push('...');
+  }
+
+  // Include two pages around the current page
   for (let i = start; i <= end; i++) {
     pages.push(i);
+  }
+
+  // Include '...' if there are pages skipped after the current range
+  if (end < totalPages.value - 1) {
+    pages.push('...');
+  }
+
+  // Always include the last page
+  if (totalPages.value > 1) {
+    pages.push(totalPages.value);
   }
 
   return pages;
@@ -80,14 +99,9 @@ const handlePerPageSelect = (newPerPage: number) => {
 
     <nav class="pager-navigation">
       <ul class="pagination">
-        <li class="page-item" @click="handlePageSelect(1)">
-          <a class="page-link">
-            <span class="bi bi-skip-backward-fill"></span>
-          </a>
-        </li>
         <li class="page-item" @click="handlePageSelect(currentPage - 1)">
-          <a class="page-link">
-            <span class="bi bi-caret-left-fill"></span>
+          <a class="page-link text-body">
+            <span class="bi bi-chevron-left"></span>
           </a>
         </li>
 
@@ -95,20 +109,15 @@ const handlePerPageSelect = (newPerPage: number) => {
           <li
             class="page-item text-main"
             :class="{ active: page === currentPage }"
-            @click="handlePageSelect(page)"
+            @click="typeof page === 'number' ? handlePageSelect(page) : {}"
           >
             <a class="page-link">{{ page }}</a>
           </li>
         </template>
 
         <li class="page-item" @click="handlePageSelect(currentPage + 1)">
-          <a class="page-link">
-            <span class="bi bi-caret-right-fill"></span>
-          </a>
-        </li>
-        <li class="page-item" @click="handlePageSelect(totalPages)">
-          <a class="page-link">
-            <span class="bi bi-skip-forward-fill"></span>
+          <a class="page-link text-body">
+            <span class="bi bi-chevron-right"></span>
           </a>
         </li>
       </ul>
