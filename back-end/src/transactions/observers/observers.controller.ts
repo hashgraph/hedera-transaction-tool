@@ -7,7 +7,6 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt/jwt-auth.guard';
@@ -34,10 +33,7 @@ export class ObserversController {
     @Param('transactionId', ParseIntPipe) transactionId: number,
     @Body() body: CreateTransactionObserverDto,
   ): Promise<TransactionObserver> {
-    return this.observersService.createTransactionObserver(
-      transactionId,
-      body,
-    );
+    return this.observersService.createTransactionObserver(transactionId, body);
   }
 
   @Get()
@@ -48,9 +44,7 @@ export class ObserversController {
   }
 
   @Get('/user')
-  getTransactionObserversByUser(
-    @GetUser() user: User,
-  ): Promise<TransactionObserver[]> {
+  getTransactionObserversByUser(@GetUser() user: User): Promise<TransactionObserver[]> {
     return this.observersService.getTransactionObserversByUserId(user.id);
   }
 
@@ -63,9 +57,7 @@ export class ObserversController {
 
   // Routes with a param need to be listed last
   @Get('/:id')
-  getTransactionObserverById(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<TransactionObserver> {
+  getTransactionObserverById(@Param('id', ParseIntPipe) id: number): Promise<TransactionObserver> {
     return this.observersService.getTransactionObserverById(id);
   }
 

@@ -46,7 +46,7 @@ export class TransactionsService {
     // Add all the keys to the set
     const accountsOrKeys = new Set<string>(userKeys.map((userKey) => userKey.publicKey));
     // For each key, get all associated accounts, adding to the set
-    for (let userKey of userKeys) {
+    for (const userKey of userKeys) {
       // set.addAll(sdk.getAccountsByKey(userKey));
       // https://mainnet-public.mirrornode.hedera.com/api/v1/accounts?account.publickey=userKey.publicKey
       const accountInfo: AccountInfo[] = await this.httpService.axiosRef.get(`https://mainnet-public.mirrornode.hedera.com/api/v1/accounts?account.publickey=${userKey.publicKey}`);

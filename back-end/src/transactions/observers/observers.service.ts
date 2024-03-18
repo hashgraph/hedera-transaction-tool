@@ -2,7 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TransactionObserver } from '../../entities/transaction-observer.entity';
 import { Repository } from 'typeorm';
-import { User } from '../../entities/user.entity';
 import { CreateTransactionObserverDto } from '../dto/create-transaction-observer.dto';
 import { UpdateTransactionObserverDto } from '../dto/update-transaction-observer.dto';
 
@@ -22,9 +21,7 @@ export class ObserversService {
     return this.repo.save(observer);
   }
 
-  getTransactionObserversByUserId(
-    userId: number,
-  ): Promise<TransactionObserver[]> {
+  getTransactionObserversByUserId(userId: number): Promise<TransactionObserver[]> {
     return this.repo
       .createQueryBuilder('observer')
       .leftJoinAndSelect('observer.transaction', 'transaction')
@@ -33,9 +30,7 @@ export class ObserversService {
       .getMany();
   }
 
-  getTransactionObserversByTransactionId(
-    transactionId: number,
-  ): Promise<TransactionObserver[]> {
+  getTransactionObserversByTransactionId(transactionId: number): Promise<TransactionObserver[]> {
     return this.repo
       .createQueryBuilder('observer')
       .leftJoinAndSelect('observer.user', 'user')

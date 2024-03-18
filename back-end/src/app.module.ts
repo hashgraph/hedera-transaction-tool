@@ -4,7 +4,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserKeysModule } from './user-keys/user-keys.module';
 import { AuthModule } from './auth/auth.module';
 import { TransactionsModule } from './transactions/transactions.module';
-import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
