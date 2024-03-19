@@ -1,5 +1,6 @@
 import { proto } from '@hashgraph/proto';
 import {
+  AccountId,
   FileId,
   FileInfo,
   Hbar,
@@ -213,4 +214,20 @@ export function stringifyHbar(hbar: Hbar) {
   }
 
   throw new Error('Invalid Hbar');
+}
+
+export function getNodeNumbersFromNetwork(network: {
+  [key: string]: string | AccountId;
+}): number[] {
+  const nodeNumbers: number[] = [];
+
+  for (const key in network) {
+    const nodeName = key.indexOf('node');
+
+    if (nodeName >= 0) {
+      nodeNumbers.push(Number(key.slice(nodeName + 4, nodeName + 6)));
+    }
+  }
+
+  return nodeNumbers.sort((a, b) => a - b);
 }
