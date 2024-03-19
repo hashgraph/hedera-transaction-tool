@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
-import { FileContentsQuery, FileInfoQuery } from '@hashgraph/sdk';
+import { FileContentsQuery, FileInfoQuery, Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import { HederaFile } from '@prisma/client';
 
@@ -21,6 +21,7 @@ import { isHederaSpecialFileId } from '@renderer/utils/sdk';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
@@ -36,6 +37,7 @@ const payerData = useAccountId();
 const route = useRoute();
 
 /* State */
+const maxQueryFee = ref<Hbar>(new Hbar(2));
 const fileId = ref('');
 const content = ref('');
 const userPassword = ref('');
@@ -69,7 +71,9 @@ const handleRead = async e => {
       keyPair.public_key,
     );
 
-    const query = new FileContentsQuery().setFileId(fileId.value);
+    const query = new FileContentsQuery()
+      .setMaxQueryPayment(maxQueryFee.value as Hbar)
+      .setFileId(fileId.value);
 
     const response = await executeQuery(
       query.toBytes(),
@@ -90,7 +94,9 @@ const handleRead = async e => {
     toast.success('File content read', { position: 'bottom-right' });
 
     if (storedFiles.value.some(f => f.file_id === fileId.value)) {
-      const fileInfoQuery = new FileInfoQuery().setFileId(fileId.value);
+      const fileInfoQuery = new FileInfoQuery()
+        .setMaxQueryPayment(maxQueryFee.value as Hbar)
+        .setFileId(fileId.value);
 
       const infoResponse = await executeQuery(
         fileInfoQuery.toBytes(),
@@ -162,7 +168,7 @@ const columnClass = 'col-4 col-xxxl-3';
 
       <hr class="separator my-5" />
 
-      <div class="row">
+      <div class="row align-items-end">
         <div class="form-group" :class="[columnClass]">
           <label class="form-label">Payer ID <span class="text-danger">*</span></label>
           <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
@@ -182,6 +188,14 @@ const columnClass = 'col-4 col-xxxl-3';
               placeholder="Enter Payer ID"
             />
           </template>
+        </div>
+        <div class="form-group" :class="[columnClass]">
+          <label class="form-label">Max Query Fee {{ HbarUnit.Hbar._symbol }}</label>
+          <AppHbarInput
+            v-model:model-value="maxQueryFee as Hbar"
+            :filled="true"
+            placeholder="Enter Max Transaction Fee"
+          />
         </div>
       </div>
 
