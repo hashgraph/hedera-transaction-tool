@@ -3,9 +3,10 @@ import { onBeforeMount, ref } from 'vue';
 
 import { Theme } from '@main/shared/interfaces';
 
-import { useToast } from 'vue-toast-notification';
+import useNetworkStore, { Network } from '@renderer/stores/storeNetwork';
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
-import useNetworkStore from '@renderer/stores/storeNetwork';
+import { useToast } from 'vue-toast-notification';
 
 import { isAccountId } from '@renderer/utils/validator';
 
@@ -14,6 +15,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Stores */
 const networkStore = useNetworkStore();
+const keyPairsStore = useKeyPairsStore();
 
 /* Composables */
 const toast = useToast();
@@ -29,6 +31,15 @@ const nodeAccountId = ref('0.0.3');
 const theme = ref<Theme>('light');
 
 /* Handlers */
+const handleNetworkChange = async (network: Network) => {
+  networkStore.setNetwork(network);
+  if (network !== 'custom') {
+    isCustomSettingsVisible.value = false;
+  }
+
+  await keyPairsStore.refetch();
+};
+
 const handleSetCustomNetwork = async () => {
   try {
     if (!isAccountId(nodeAccountId.value)) {
@@ -49,6 +60,8 @@ const handleSetCustomNetwork = async () => {
     }
     toast.error(message, { position: 'bottom-right' });
   }
+
+  await keyPairsStore.refetch();
 };
 
 const handleThemeChange = (newTheme: Theme) => {
@@ -83,29 +96,20 @@ onBeforeMount(async () => {
         <AppButton
           color="secondary"
           :class="{ active: networkStore.network === 'mainnet' }"
-          @click="
-            networkStore.setNetwork('mainnet');
-            isCustomSettingsVisible = false;
-          "
+          @click="handleNetworkChange('mainnet')"
           >Mainnet</AppButton
         >
         <AppButton
           color="secondary"
           :class="{ active: networkStore.network === 'testnet' }"
-          @click="
-            networkStore.setNetwork('testnet');
-            isCustomSettingsVisible = false;
-          "
+          @click="handleNetworkChange('testnet')"
           >Testnet</AppButton
         >
         <AppButton
           color="secondary"
           disabled
           :class="{ active: networkStore.network === 'previewnet' }"
-          @click="
-            networkStore.setNetwork('previewnet');
-            isCustomSettingsVisible = false;
-          "
+          @click="handleNetworkChange('previewnet')"
           >Previewnet</AppButton
         >
         <AppButton
