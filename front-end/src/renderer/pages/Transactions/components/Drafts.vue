@@ -67,7 +67,7 @@ const handleUpdateIsTemplate = async (e: Event, id: string) => {
 const handleDeleteDraft = async (id: string) => {
   await deleteDraft(id);
 
-  drafts.value = drafts.value.filter(d => d.id !== id);
+  await fetchDrafts();
 
   toast.success('Draft successfully deleted', { position: 'bottom-right' });
 };
@@ -104,8 +104,8 @@ function createFindArgs(): Prisma.TransactionDraftFindManyArgs {
   };
 }
 
-/* Hooks */
-onBeforeMount(async () => {
+async function fetchDrafts() {
+  isLoading.value = true;
   try {
     totalItems.value = await getDraftsCount(user.data.id);
     drafts.value = await getDrafts(createFindArgs());
@@ -113,17 +113,16 @@ onBeforeMount(async () => {
   } finally {
     isLoading.value = false;
   }
+}
+
+/* Hooks */
+onBeforeMount(async () => {
+  await fetchDrafts();
 });
 
 /* Watchers */
 watch([currentPage, pageSize], async () => {
-  isLoading.value = true;
-  try {
-    drafts.value = await getDrafts(createFindArgs());
-    handleSort(sort.field, sort.direction);
-  } finally {
-    isLoading.value = false;
-  }
+  await fetchDrafts();
 });
 </script>
 
