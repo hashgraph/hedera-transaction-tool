@@ -137,6 +137,7 @@ const handleLoadFromDraft = async () => {
     newAccountData.maxAutomaticTokenAssociations =
       draftTransaction.maxAutomaticTokenAssociations.toNumber();
     newAccountData.memo = draftTransaction.accountMemo || '';
+    transactionMemo.value = draftTransaction.transactionMemo || '';
 
     if (draftTransaction.key) {
       newOwnerKey.value = draftTransaction.key;

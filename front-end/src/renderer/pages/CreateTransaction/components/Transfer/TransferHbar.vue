@@ -130,6 +130,7 @@ const handleLoadFromDraft = async () => {
 
   if (draft) {
     transaction.value = draftTransaction;
+    transactionMemo.value = draftTransaction.transactionMemo || '';
 
     if (draft.details) {
       try {
@@ -497,7 +498,6 @@ onMounted(async () => {
         </div>
       </div>
     </form>
-
     <TransactionProcessor
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"

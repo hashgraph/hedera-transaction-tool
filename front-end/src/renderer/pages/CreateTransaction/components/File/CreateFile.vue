@@ -142,6 +142,7 @@ const handleLoadFromDraft = async () => {
       ? new TextDecoder().decode(draftTransaction.contents)
       : '';
     memo.value = draftTransaction.fileMemo || '';
+    transactionMemo.value = draftTransaction.transactionMemo || '';
 
     if (draftTransaction.expirationTime) {
       const expirationDate = draftTransaction.expirationTime.toDate();

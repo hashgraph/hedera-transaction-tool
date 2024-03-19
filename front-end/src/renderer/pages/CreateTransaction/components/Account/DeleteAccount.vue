@@ -96,6 +96,7 @@ const handleLoadFromDraft = async () => {
 
     accountData.accountId.value = draftTransaction.accountId?.toString() || '';
     transferAccountData.accountId.value = draftTransaction.transferAccountId?.toString() || '';
+    transactionMemo.value = draftTransaction.transactionMemo || '';
   }
 };
 

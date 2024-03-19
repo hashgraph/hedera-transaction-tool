@@ -125,6 +125,7 @@ const handleLoadFromDraft = async () => {
 
   if (draft) {
     transaction.value = draftTransaction;
+    transactionMemo.value = draftTransaction.transactionMemo || '';
 
     if (draftTransaction.fileId) {
       fileId.value = draftTransaction.fileId.toString();

@@ -156,6 +156,7 @@ const handleLoadFromDraft = async () => {
     }
 
     memo.value = draftTransaction.fileMemo || '';
+    transactionMemo.value = draftTransaction.transactionMemo || '';
 
     if (draftTransaction.expirationTime) {
       const expirationDate = draftTransaction.expirationTime.toDate();

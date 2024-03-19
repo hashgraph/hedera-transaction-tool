@@ -161,6 +161,8 @@ const handleLoadFromDraft = async () => {
     if (draftTransaction.key) {
       ownerKey.value = draftTransaction.key;
     }
+
+    transactionMemo.value = draftTransaction.transactionMemo || '';
   }
 };
 

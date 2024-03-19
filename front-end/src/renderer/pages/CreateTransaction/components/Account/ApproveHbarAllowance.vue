@@ -100,6 +100,8 @@ const handleLoadFromDraft = async () => {
       spenderData.accountId.value = hbarApproval.spenderAccountId?.toString() || '';
       amount.value = hbarApproval.amount || new Hbar(0);
     }
+
+    transactionMemo.value = draftTransaction.transactionMemo || '';
   }
 };
 

@@ -69,6 +69,7 @@ const handleLoadFromDraft = async () => {
 
   if (draft) {
     transaction.value = draftTransaction;
+    transactionMemo.value = draftTransaction.transactionMemo || '';
 
     if (draftTransaction.startTimestamp) {
       startTimestamp.value = getDateTimeLocalInputValue(draftTransaction.startTimestamp.toDate());
