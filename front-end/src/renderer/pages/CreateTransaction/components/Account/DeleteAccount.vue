@@ -2,6 +2,8 @@
 import { onMounted, ref } from 'vue';
 import { Hbar, AccountDeleteTransaction, Key, Transaction, KeyList } from '@hashgraph/sdk';
 
+import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -43,6 +45,7 @@ const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref<Hbar>(new Hbar(2));
+const transactionMemo = ref('');
 
 const selectedKey = ref<Key | null>();
 const isKeyStructureModalShown = ref(false);
@@ -128,6 +131,10 @@ function createTransaction() {
 
   if (isAccountId(transferAccountData.accountId.value)) {
     transaction.setTransferAccountId(transferAccountData.accountId.value);
+  }
+
+  if (transactionMemo.value.length > 0 && transactionMemo.value.length <= MEMO_MAX_LENGTH) {
+    transaction.setTransactionMemo(transactionMemo.value);
   }
 
   return transaction;
@@ -258,6 +265,18 @@ const columnClass = 'col-4 col-xxxl-3';
           >
             Account is already deleted!
           </p>
+        </div>
+
+        <div class="row mt-6">
+          <div class="form-group col-8 col-xxxl-6">
+            <label class="form-label">Transaction Memo</label>
+            <AppInput
+              v-model="transactionMemo"
+              :filled="true"
+              maxlength="100"
+              placeholder="Enter Transaction Memo"
+            />
+          </div>
         </div>
       </div>
     </form>
