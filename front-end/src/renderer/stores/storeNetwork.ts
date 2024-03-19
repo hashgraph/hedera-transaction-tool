@@ -8,6 +8,8 @@ import { NetworkExchangeRateSetResponse } from '@main/shared/interfaces';
 import { getExchangeRateSet } from '@renderer/services/mirrorNodeDataService';
 import { setClient } from '@renderer/services/transactionService';
 
+import { getNodeNumbersFromNetwork } from '@renderer/utils';
+
 export type Network = 'mainnet' | 'testnet' | 'previewnet' | 'custom';
 export type CustomNetworkSettings = {
   nodeAccountIds: {
@@ -25,6 +27,7 @@ const useNetworkStore = defineStore('network', () => {
 
   /* Getters */
   const mirrorNodeBaseURL = computed(() => getMirrorNodeLinkByNetwork(network.value));
+
   const client = computed(() => {
     switch (network.value) {
       case 'mainnet':
@@ -44,6 +47,7 @@ const useNetworkStore = defineStore('network', () => {
         throw Error('Network not supported');
     }
   });
+
   const currentRate = computed(() => {
     if (!exchangeRateSet.value) {
       throw new Error('Exchange rate set not found');
@@ -65,6 +69,10 @@ const useNetworkStore = defineStore('network', () => {
     }
 
     return rate;
+  });
+
+  const nodeNumbers = computed(() => {
+    return getNodeNumbersFromNetwork(client.value.network);
   });
 
   /* Actions */
@@ -117,6 +125,7 @@ const useNetworkStore = defineStore('network', () => {
     mirrorNodeBaseURL,
     client,
     currentRate,
+    nodeNumbers,
     setNetwork,
     getMirrorNodeLinkByNetwork,
   };
