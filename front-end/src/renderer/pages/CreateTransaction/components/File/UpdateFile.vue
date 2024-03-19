@@ -2,6 +2,8 @@
 import { ref, watch, onMounted } from 'vue';
 import { FileUpdateTransaction, Hbar, Key, KeyList, Timestamp, Transaction } from '@hashgraph/sdk';
 
+import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
@@ -47,6 +49,7 @@ const expirationTimestamp = ref();
 const chunkSize = ref(2048);
 const ownerKey = ref<Key | null>(null);
 const newOwnerKey = ref<Key | null>(null);
+const transactionMemo = ref('');
 
 const fileMeta = ref<File | null>(null);
 const fileReader = ref<FileReader | null>(null);
@@ -189,6 +192,10 @@ function createTransaction() {
   if (expirationTimestamp.value)
     transaction.setExpirationTime(Timestamp.fromDate(new Date(expirationTimestamp.value)));
 
+  if (transactionMemo.value.length > 0 && transactionMemo.value.length <= MEMO_MAX_LENGTH) {
+    transaction.setTransactionMemo(transactionMemo.value);
+  }
+
   return transaction;
 }
 
@@ -262,6 +269,18 @@ const columnClass = 'col-4 col-xxxl-3';
               :model-key="newOwnerKey"
               @update:model-key="key => (newOwnerKey = key)"
               label="New Key"
+            />
+          </div>
+        </div>
+
+        <div class="row mt-6">
+          <div class="form-group col-8 col-xxxl-6">
+            <label class="form-label">Transaction Memo</label>
+            <AppInput
+              v-model="transactionMemo"
+              :filled="true"
+              maxlength="100"
+              placeholder="Enter Transaction Memo"
             />
           </div>
         </div>
