@@ -111,7 +111,6 @@ const handleExecuted = async () => {
   // Counter mirror node delay
   setTimeout(async () => {
     await keyPairs.refetch();
-    console.log('Refetched');
   }, 5000);
 };
 
