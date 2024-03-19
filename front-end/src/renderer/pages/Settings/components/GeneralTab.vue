@@ -197,17 +197,20 @@ onBeforeMount(async () => {
       <p>Appearance</p>
       <div class="mt-4 btn-group">
         <AppButton
-          :color="theme === 'dark' ? 'secondary' : 'borderless'"
+          :color="'secondary'"
+          :class="{ active: theme === 'dark' }"
           @click="handleThemeChange('dark')"
           >Dark</AppButton
         >
         <AppButton
-          :color="theme === 'light' ? 'secondary' : 'borderless'"
+          :color="'secondary'"
+          :class="{ active: theme === 'light' }"
           @click="handleThemeChange('light')"
           >Light</AppButton
         >
         <AppButton
-          :color="theme === 'system' ? 'secondary' : 'borderless'"
+          :color="'secondary'"
+          :class="{ active: theme === 'system' }"
           @click="handleThemeChange('system')"
           >System</AppButton
         >
