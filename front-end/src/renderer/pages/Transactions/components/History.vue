@@ -70,8 +70,8 @@ function createFindArgs(): Prisma.TransactionFindManyArgs {
   };
 }
 
-/* Hooks */
-onBeforeMount(async () => {
+async function fetchTransactions() {
+  isLoading.value = true;
   try {
     totalItems.value = await getTransactionsCount(user.data.id);
     transactions.value = await getTransactions(createFindArgs());
@@ -79,17 +79,16 @@ onBeforeMount(async () => {
   } finally {
     isLoading.value = false;
   }
+}
+
+/* Hooks */
+onBeforeMount(async () => {
+  await fetchTransactions();
 });
 
 /* Watchers */
 watch([currentPage, pageSize], async () => {
-  isLoading.value = true;
-  try {
-    transactions.value = await getTransactions(createFindArgs());
-    handleSort(sort.field, sort.direction);
-  } finally {
-    isLoading.value = false;
-  }
+  await fetchTransactions();
 });
 </script>
 
