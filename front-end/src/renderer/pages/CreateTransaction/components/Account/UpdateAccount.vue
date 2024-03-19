@@ -9,6 +9,8 @@ import {
   Key,
 } from '@hashgraph/sdk';
 
+import useNetworkStore from '@renderer/stores/storeNetwork';
+
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
@@ -31,12 +33,13 @@ import TransactionIdControls from '@renderer/components/Transaction/TransactionI
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 
 /* Stores */
-const payerData = useAccountId();
-const accountData = useAccountId();
+const network = useNetworkStore();
 
 /* Composables */
 const route = useRoute();
 const toast = useToast();
+const payerData = useAccountId();
+const accountData = useAccountId();
 
 /* State */
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
@@ -49,22 +52,46 @@ const newAccountData = reactive<{
   receiverSignatureRequired: boolean;
   maxAutomaticTokenAssociations: number;
   stakedAccountId: string;
-  stakedNodeId: string;
+  stakedNodeId: number | null;
   acceptStakingAwards: boolean;
   memo: string;
 }>({
   receiverSignatureRequired: false,
   maxAutomaticTokenAssociations: 0,
   stakedAccountId: '',
-  stakedNodeId: '',
+  stakedNodeId: null,
   acceptStakingAwards: false,
   memo: '',
 });
+const stakeType = ref<'Account' | 'Node' | 'None'>('None');
 const newOwnerKey = ref<Key | null>(null);
 const isKeyStructureModalShown = ref(false);
 const isExecuted = ref(false);
 
 /* Handlers */
+const handleStakeTypeChange = (e: Event) => {
+  const selectEl = e.target as HTMLSelectElement;
+  const value = selectEl.value;
+
+  if (value === 'None') {
+    stakeType.value = 'None';
+    newAccountData.stakedNodeId = null;
+    newAccountData.stakedAccountId = '';
+  } else if (value === 'Account' || value === 'Node') {
+    stakeType.value = value;
+  }
+};
+
+const handleNodeNumberChange = (e: Event) => {
+  const selectEl = e.target as HTMLSelectElement;
+  const value = selectEl.value;
+
+  if (value === 'unselected') {
+    newAccountData.stakedNodeId = null;
+  } else if (!isNaN(Number(value))) {
+    newAccountData.stakedNodeId = Number(value);
+  }
+};
 const handleCreate = async e => {
   e.preventDefault();
 
@@ -139,26 +166,24 @@ function createTransaction() {
   isAccountId(accountData.accountId.value) && transaction.setAccountId(accountData.accountId.value);
   newOwnerKey.value && transaction.setKey(newOwnerKey.value);
 
-  if (!newAccountData.stakedAccountId && !newAccountData.stakedNodeId) {
+  if (stakeType.value === 'None') {
     transaction.clearStakedAccountId();
     transaction.clearStakedNodeId();
-  }
-
-  if (
-    isAccountId(newAccountData.stakedAccountId) &&
-    !newAccountData.stakedNodeId &&
-    accountData.accountInfo.value?.stakedAccountId?.toString() !== newAccountData.stakedAccountId
-  ) {
-    transaction.setStakedAccountId(newAccountData.stakedAccountId);
-  }
-
-  if (
-    newAccountData.stakedNodeId &&
-    !newAccountData.stakedAccountId &&
-    accountData.accountInfo.value?.stakedNodeId?.toString() !==
-      newAccountData.stakedNodeId.toString()
-  ) {
-    transaction.setStakedNodeId(Number(newAccountData.stakedNodeId));
+  } else if (stakeType.value === 'Account') {
+    if (
+      !isAccountId(newAccountData.stakedAccountId) ||
+      newAccountData.stakedAccountId === '0.0.0'
+    ) {
+      transaction.clearStakedAccountId();
+    } else if (isAccountId(newAccountData.stakedAccountId)) {
+      transaction.setStakedAccountId(newAccountData.stakedAccountId);
+    }
+  } else if (stakeType.value === 'Node') {
+    if (newAccountData.stakedNodeId === null) {
+      transaction.clearStakedNodeId();
+    } else {
+      transaction.setStakedNodeId(newAccountData.stakedNodeId);
+    }
   }
 
   return transaction;
@@ -179,7 +204,7 @@ watch(accountData.accountInfo, accountInfo => {
     newAccountData.receiverSignatureRequired = false;
     newAccountData.maxAutomaticTokenAssociations = 0;
     newAccountData.stakedAccountId = '';
-    newAccountData.stakedNodeId = '';
+    newAccountData.stakedNodeId = null;
     newAccountData.acceptStakingAwards = false;
     newAccountData.memo = '';
     newOwnerKey.value = null;
@@ -187,8 +212,12 @@ watch(accountData.accountInfo, accountInfo => {
     newAccountData.receiverSignatureRequired = accountInfo.receiverSignatureRequired;
     newAccountData.maxAutomaticTokenAssociations = accountInfo.maxAutomaticTokenAssociations || 0;
     newAccountData.stakedAccountId = accountInfo.stakedAccountId?.toString() || '';
-    newAccountData.stakedNodeId =
-      accountInfo.stakedNodeId === 0 ? '' : accountInfo.stakedNodeId?.toString() || '';
+    newAccountData.stakedNodeId = accountInfo.stakedNodeId;
+    stakeType.value = accountInfo.stakedAccountId
+      ? 'Account'
+      : accountInfo.stakedNodeId
+        ? 'Node'
+        : 'None';
     newAccountData.acceptStakingAwards = !accountInfo.declineReward;
     newAccountData.memo = accountInfo.memo || '';
     newOwnerKey.value = accountInfo.key;
@@ -278,25 +307,42 @@ const columnClass = 'col-4 col-xxxl-3';
 
         <div class="row mt-6">
           <div class="form-group" :class="[columnClass]">
-            <label class="form-label">Staked Account Id</label>
-            <AppInput
-              v-model="newAccountData.stakedAccountId"
-              :disabled="newAccountData.stakedNodeId.length > 0"
-              :filled="true"
-              placeholder="Enter Account Id"
-            />
+            <label class="form-label">Staking</label>
+            <select class="form-select is-fill" name="stake_type" @change="handleStakeTypeChange">
+              <template v-for="stakeEntity in ['None', 'Account', 'Node']" :key="stakeEntity">
+                <option :value="stakeEntity" :selected="stakeType === stakeEntity">
+                  {{ stakeEntity }}
+                </option>
+              </template>
+            </select>
           </div>
-          <div class="form-group" :class="[columnClass]">
-            <label class="form-label">Staked Node Id</label>
-            <AppInput
-              v-model="newAccountData.stakedNodeId"
-              type="number"
-              :disabled="
-                Boolean(newAccountData.stakedAccountId && newAccountData.stakedAccountId.length > 0)
-              "
-              :filled="true"
-              placeholder="Enter Node Id Number"
-            />
+          <div v-if="stakeType" class="form-group" :class="[columnClass]">
+            <template v-if="stakeType === 'Account'">
+              <label class="form-label">Account ID</label>
+              <AppInput
+                v-model="newAccountData.stakedAccountId"
+                :filled="true"
+                placeholder="Enter Account ID"
+              />
+            </template>
+            <template v-else-if="stakeType === 'Node'">
+              <label class="form-label">Node Number</label>
+              <select
+                class="form-select is-fill"
+                name="node_number"
+                @change="handleNodeNumberChange"
+              >
+                <option value="unselected" :selected="!stakeType" default>No node selected</option>
+                <template v-for="nodeNumber in network.nodeNumbers" :key="nodeNumber">
+                  <option
+                    :value="nodeNumber"
+                    :selected="newAccountData.stakedNodeId === nodeNumber"
+                  >
+                    {{ nodeNumber }}
+                  </option>
+                </template>
+              </select>
+            </template>
           </div>
         </div>
 
