@@ -13,12 +13,12 @@ const router = useRouter();
 /* Misc */
 const generalTitle = 'General';
 const keysTitle = 'Keys';
-const accountTitle = 'Account';
+const profileTitle = 'Profile';
 const tabItems: TabItem[] = [
   { title: generalTitle },
   // { title: 'Work Groups' },
   { title: keysTitle },
-  { title: accountTitle },
+  { title: profileTitle },
 ];
 const tabTitles = tabItems.map(t => t.title.toLocaleLowerCase().replaceAll(' ', '-'));
 
