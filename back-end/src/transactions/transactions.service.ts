@@ -57,7 +57,7 @@ export class TransactionsService {
     const receiverAccounts = new Set<string>();
     const keys = new Set<string>();
     // For each key, get all associated accounts, adding to the set
-    for (let userKey of user.keys) {
+    for (const userKey of user.keys) {
       const key = userKey.publicKey;
       // add the user key to the set of keys
       keys.add(key);

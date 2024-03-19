@@ -28,7 +28,7 @@ export default class TransferTransactionModel extends TransactionBaseModel {
     // and find all keys on that transaction for that account and push the transaction. Or could it just
     // get the users for the keys on the updated account and notify the user to pull new data?
     const transaction = this.transaction as TransferTransaction;
-    for (let [key, value] of transaction.hbarTransfers) {
+    for (const [key, value] of transaction.hbarTransfers) {
       if (value.isNegative()) {
         accounts.add(key.toString());
       }
@@ -40,7 +40,7 @@ export default class TransferTransactionModel extends TransactionBaseModel {
     const accounts = new Set<string>();
 
     const transaction = this.transaction as TransferTransaction;
-    for (let [key, value] of transaction.hbarTransfers) {
+    for (const [key, value] of transaction.hbarTransfers) {
       if (!value.isNegative()) {
         accounts.add(key.toString());
       }

@@ -11,7 +11,7 @@ export function flatPublicKeys(...keys: Key[]): Buffer[] {
   if (!keys) {
     return keyBytes;
   }
-  for (let key of keys) {
+  for (const key of keys) {
     if (key instanceof KeyList) { // If the key is a KeyList, recursively call flatPublicKeys for each key in the list.
       keyBytes.concat(flatPublicKeys(...key.toArray()));
     } else if (key instanceof PublicKey) {  // If the key is a PublicKey, get the bytes and add it to the array

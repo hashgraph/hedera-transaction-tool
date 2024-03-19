@@ -7,7 +7,6 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt/jwt-auth.guard';
@@ -42,10 +41,7 @@ export class ObserversController {
     @Param('transactionId', ParseIntPipe) transactionId: number,
     @Body() body: CreateTransactionObserverDto,
   ): Promise<TransactionObserver> {
-    return this.observersService.createTransactionObserver(
-      transactionId,
-      body,
-    );
+    return this.observersService.createTransactionObserver(transactionId, body);
   }
 
   @ApiOperation({
@@ -72,9 +68,7 @@ export class ObserversController {
     type: [TransactionObserverDto],
   })
   @Get('/user')
-  getTransactionObserversByUser(
-    @GetUser() user: User,
-  ): Promise<TransactionObserver[]> {
+  getTransactionObserversByUser(@GetUser() user: User): Promise<TransactionObserver[]> {
     return this.observersService.getTransactionObserversByUserId(user.id);
   }
 
@@ -103,15 +97,14 @@ export class ObserversController {
     type: TransactionObserverDto,
   })
   @Get('/:id')
-  getTransactionObserverById(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<TransactionObserver> {
+  getTransactionObserverById(@Param('id', ParseIntPipe) id: number): Promise<TransactionObserver> {
     return this.observersService.getTransactionObserverById(id);
   }
 
   @ApiOperation({
     summary: 'Update a transaction observer',
-    description: 'Update the transaction observer with the provided information for the given transaction observer id.',
+    description:
+      'Update the transaction observer with the provided information for the given transaction observer id.',
   })
   @ApiResponse({
     status: 201,
