@@ -2,6 +2,8 @@
 import { ref, watch, onMounted } from 'vue';
 import { FileAppendTransaction, Hbar, Key, KeyList, Transaction } from '@hashgraph/sdk';
 
+import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
@@ -41,6 +43,7 @@ const fileBuffer = ref<Uint8Array | null>(null);
 const loadPercentage = ref(0);
 const content = ref('');
 
+const transactionMemo = ref('');
 const chunkSize = ref(2048);
 const chunksAmount = ref<number | null>(null);
 
@@ -122,6 +125,7 @@ const handleLoadFromDraft = async () => {
 
   if (draft) {
     transaction.value = draftTransaction;
+    transactionMemo.value = draftTransaction.transactionMemo || '';
 
     if (draftTransaction.fileId) {
       fileId.value = draftTransaction.fileId.toString();
@@ -146,6 +150,10 @@ function createTransaction() {
 
   if (isAccountId(fileId.value)) {
     transaction.setFileId(fileId.value);
+  }
+
+  if (transactionMemo.value.length > 0 && transactionMemo.value.length <= MEMO_MAX_LENGTH) {
+    transaction.setTransactionMemo(transactionMemo.value);
   }
 
   return transaction;
@@ -211,6 +219,18 @@ const columnClass = 'col-4 col-xxxl-3';
               @update:model-key="key => (ownerKey = key)"
               is-required
               label="Signature Key"
+            />
+          </div>
+        </div>
+
+        <div class="row mt-6">
+          <div class="form-group col-8 col-xxxl-6">
+            <label class="form-label">Transaction Memo</label>
+            <AppInput
+              v-model="transactionMemo"
+              :filled="true"
+              maxlength="100"
+              placeholder="Enter Transaction Memo"
             />
           </div>
         </div>

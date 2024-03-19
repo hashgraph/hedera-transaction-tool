@@ -9,6 +9,8 @@ import {
   Key,
 } from '@hashgraph/sdk';
 
+import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
@@ -64,6 +66,7 @@ const newAccountData = reactive<{
   memo: '',
 });
 const stakeType = ref<'Account' | 'Node' | 'None'>('None');
+const transactionMemo = ref('');
 const newOwnerKey = ref<Key | null>(null);
 const isKeyStructureModalShown = ref(false);
 const isExecuted = ref(false);
@@ -134,6 +137,7 @@ const handleLoadFromDraft = async () => {
     newAccountData.maxAutomaticTokenAssociations =
       draftTransaction.maxAutomaticTokenAssociations.toNumber();
     newAccountData.memo = draftTransaction.accountMemo || '';
+    transactionMemo.value = draftTransaction.transactionMemo || '';
 
     if (draftTransaction.key) {
       newOwnerKey.value = draftTransaction.key;
@@ -184,6 +188,10 @@ function createTransaction() {
     } else {
       transaction.setStakedNodeId(newAccountData.stakedNodeId);
     }
+  }
+
+  if (transactionMemo.value.length > 0 && transactionMemo.value.length <= MEMO_MAX_LENGTH) {
+    transaction.setTransactionMemo(transactionMemo.value);
   }
 
   return transaction;
@@ -293,6 +301,18 @@ const columnClass = 'col-4 col-xxxl-3';
         <div class="row mt-6">
           <div class="form-group col-8 col-xxxl-6">
             <KeyField :model-key="newOwnerKey" @update:model-key="key => (newOwnerKey = key)" />
+          </div>
+        </div>
+
+        <div class="row mt-6">
+          <div class="form-group col-8 col-xxxl-6">
+            <label class="form-label">Transaction Memo</label>
+            <AppInput
+              v-model="transactionMemo"
+              :filled="true"
+              maxlength="100"
+              placeholder="Enter Transaction Memo"
+            />
           </div>
         </div>
 

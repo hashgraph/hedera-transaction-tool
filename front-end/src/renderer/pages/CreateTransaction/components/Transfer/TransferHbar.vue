@@ -2,6 +2,8 @@
 import { ref, onMounted, computed } from 'vue';
 import { Hbar, KeyList, Transaction, TransferTransaction, Transfer } from '@hashgraph/sdk';
 
+import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+
 import { HederaAccount } from '@prisma/client';
 import { IAccountInfoParsed } from '@main/shared/interfaces';
 
@@ -25,6 +27,7 @@ import {
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
@@ -56,6 +59,7 @@ const savedDraft = ref<{
 }>();
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref<Hbar>(new Hbar(2));
+const transactionMemo = ref('');
 
 const transfers = ref<Transfer[]>([]);
 const accountInfos = ref<{
@@ -126,6 +130,7 @@ const handleLoadFromDraft = async () => {
 
   if (draft) {
     transaction.value = draftTransaction;
+    transactionMemo.value = draftTransaction.transactionMemo || '';
 
     if (draft.details) {
       try {
@@ -250,6 +255,10 @@ function createTransaction() {
       : transaction.addHbarTransfer(transfer.accountId.toString(), transfer.amount);
   });
 
+  if (transactionMemo.value.length > 0 && transactionMemo.value.length <= MEMO_MAX_LENGTH) {
+    transaction.setTransactionMemo(transactionMemo.value);
+  }
+
   return transaction;
 }
 
@@ -322,160 +331,173 @@ onMounted(async () => {
 
       <hr class="separator my-5" />
 
-      <div class="border rounded fill-remaining p-5">
-        <div class="row">
-          <div class="col-5 flex-1">
-            <TransferCard
-              account-label="From"
-              @transfer-added="handleAddSenderTransfer"
-              :show-balance-in-label="true"
-              :button-disabled="totalBalanceAdjustments >= 10"
-              :clear-on-add-transfer="true"
-            />
+      <div class="fill-remaining">
+        <div class="border rounded p-5">
+          <div class="row">
+            <div class="col-5 flex-1">
+              <TransferCard
+                account-label="From"
+                @transfer-added="handleAddSenderTransfer"
+                :show-balance-in-label="true"
+                :button-disabled="totalBalanceAdjustments >= 10"
+                :clear-on-add-transfer="true"
+              />
+            </div>
+            <div class="col-1 align-self-center text-center">
+              <span class="bi bi-arrow-right"></span>
+            </div>
+            <div class="col-5 flex-1">
+              <TransferCard
+                account-label="To"
+                @transfer-added="handleAddReceiverTransfer"
+                @rest-added="handleReceiverRestButtonClick"
+                :button-disabled="totalBalanceAdjustments >= 10"
+                :add-rest-disabled="
+                  totalBalance.toBigNumber().isGreaterThanOrEqualTo(0) ||
+                  totalBalanceAdjustments >= 10
+                "
+                :show-transfer-rest="true"
+                :clear-on-add-transfer="true"
+              />
+            </div>
           </div>
-          <div class="col-1 align-self-center text-center">
-            <span class="bi bi-arrow-right"></span>
-          </div>
-          <div class="col-5 flex-1">
-            <TransferCard
-              account-label="To"
-              @transfer-added="handleAddReceiverTransfer"
-              @rest-added="handleReceiverRestButtonClick"
-              :button-disabled="totalBalanceAdjustments >= 10"
-              :add-rest-disabled="
-                totalBalance.toBigNumber().isGreaterThanOrEqualTo(0) ||
-                totalBalanceAdjustments >= 10
-              "
-              :show-transfer-rest="true"
-              :clear-on-add-transfer="true"
-            />
-          </div>
-        </div>
 
-        <div class="row mt-3">
-          <div class="col-5 flex-1">
-            <div class="mt-3">
-              <template v-for="(debit, i) in transfers" :key="debit.accountId">
-                <div v-if="debit.amount.isNegative()" class="mt-3">
-                  <div class="row align-items-center px-3">
-                    <div
-                      class="col-4 flex-centered justify-content-start flex-wrap overflow-hidden"
-                    >
-                      <template
-                        v-if="
-                          linkedAccounts.find(la => la.account_id === debit.accountId.toString())
-                        "
+          <div class="row mt-3">
+            <div class="col-5 flex-1">
+              <div class="mt-3">
+                <template v-for="(debit, i) in transfers" :key="debit.accountId">
+                  <div v-if="debit.amount.isNegative()" class="mt-3">
+                    <div class="row align-items-center px-3">
+                      <div
+                        class="col-4 flex-centered justify-content-start flex-wrap overflow-hidden"
                       >
-                        <p v-if="debit.isApproved" class="text-small text-semi-bold me-2">
-                          Approved
-                        </p>
-
-                        <div class="flex-centered justify-content-start flex-wrap">
-                          <p class="text-small text-semi-bold me-2">
-                            {{
-                              linkedAccounts.find(
-                                la => la.account_id === debit.accountId.toString(),
-                              )?.nickname
-                            }}
+                        <template
+                          v-if="
+                            linkedAccounts.find(la => la.account_id === debit.accountId.toString())
+                          "
+                        >
+                          <p v-if="debit.isApproved" class="text-small text-semi-bold me-2">
+                            Approved
                           </p>
-                          <p class="text-secondary text-micro overflow-hidden">
+
+                          <div class="flex-centered justify-content-start flex-wrap">
+                            <p class="text-small text-semi-bold me-2">
+                              {{
+                                linkedAccounts.find(
+                                  la => la.account_id === debit.accountId.toString(),
+                                )?.nickname
+                              }}
+                            </p>
+                            <p class="text-secondary text-micro overflow-hidden">
+                              {{ debit.accountId }}
+                            </p>
+                          </div>
+                        </template>
+                        <template v-else>
+                          <p v-if="debit.isApproved" class="text-small text-semi-bold me-2">
+                            Approved
+                          </p>
+                          <p class="text-secondary text-small overflow-hidden">
                             {{ debit.accountId }}
                           </p>
-                        </div>
-                      </template>
-                      <template v-else>
-                        <p v-if="debit.isApproved" class="text-small text-semi-bold me-2">
-                          Approved
+                        </template>
+                      </div>
+                      <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
+                        <p class="text-secondary text-small text-bold overflow-hidden">
+                          {{ stringifyHbar(debit.amount as Hbar) }}
                         </p>
-                        <p class="text-secondary text-small overflow-hidden">
-                          {{ debit.accountId }}
-                        </p>
-                      </template>
+                      </div>
+                      <div class="col-2 col-lg-1 text-end">
+                        <span
+                          class="bi bi-x-lg text-secondary text-small cursor-pointer"
+                          @click="handleRemoveTransfer(i)"
+                        ></span>
+                      </div>
                     </div>
-                    <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
-                      <p class="text-secondary text-small text-bold overflow-hidden">
-                        {{ stringifyHbar(debit.amount as Hbar) }}
-                      </p>
-                    </div>
-                    <div class="col-2 col-lg-1 text-end">
-                      <span
-                        class="bi bi-x-lg text-secondary text-small cursor-pointer"
-                        @click="handleRemoveTransfer(i)"
-                      ></span>
-                    </div>
+                    <hr class="separator" />
                   </div>
-                  <hr class="separator" />
-                </div>
-              </template>
+                </template>
+              </div>
             </div>
-          </div>
-          <div class="col-1"></div>
-          <div class="col-5 flex-1">
-            <div class="mt-3">
-              <template v-for="(credit, i) in transfers" :key="credit.accountId">
-                <div v-if="!credit.amount.isNegative()" class="mt-3">
-                  <div class="row align-items-center px-3">
-                    <div
-                      class="col-4 flex-centered justify-content-start flex-wrap overflow-hidden"
-                    >
-                      <template
-                        v-if="
-                          linkedAccounts.find(la => la.account_id === credit.accountId.toString())
-                        "
+            <div class="col-1"></div>
+            <div class="col-5 flex-1">
+              <div class="mt-3">
+                <template v-for="(credit, i) in transfers" :key="credit.accountId">
+                  <div v-if="!credit.amount.isNegative()" class="mt-3">
+                    <div class="row align-items-center px-3">
+                      <div
+                        class="col-4 flex-centered justify-content-start flex-wrap overflow-hidden"
                       >
-                        <div class="flex-centered justify-content-start flex-wrap">
-                          <p class="text-small text-semi-bold me-2">
-                            {{
-                              linkedAccounts.find(
-                                la => la.account_id === credit.accountId.toString(),
-                              )?.nickname
-                            }}
-                          </p>
-                          <p class="text-secondary text-micro overflow-hidden">
+                        <template
+                          v-if="
+                            linkedAccounts.find(la => la.account_id === credit.accountId.toString())
+                          "
+                        >
+                          <div class="flex-centered justify-content-start flex-wrap">
+                            <p class="text-small text-semi-bold me-2">
+                              {{
+                                linkedAccounts.find(
+                                  la => la.account_id === credit.accountId.toString(),
+                                )?.nickname
+                              }}
+                            </p>
+                            <p class="text-secondary text-micro overflow-hidden">
+                              {{ credit.accountId }}
+                            </p>
+                          </div>
+                        </template>
+                        <template v-else>
+                          <p class="text-secondary text-small overflow-hidden">
                             {{ credit.accountId }}
                           </p>
-                        </div>
-                      </template>
-                      <template v-else>
-                        <p class="text-secondary text-small overflow-hidden">
-                          {{ credit.accountId }}
+                        </template>
+                      </div>
+                      <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
+                        <p class="text-secondary text-small text-bold overflow-hidden">
+                          {{ stringifyHbar(credit.amount as Hbar) }}
                         </p>
-                      </template>
+                      </div>
+                      <div class="col-2 col-lg-1 text-end">
+                        <span
+                          class="bi bi-x-lg text-secondary text-small cursor-pointer"
+                          @click="handleRemoveTransfer(i)"
+                        ></span>
+                      </div>
                     </div>
-                    <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
-                      <p class="text-secondary text-small text-bold overflow-hidden">
-                        {{ stringifyHbar(credit.amount as Hbar) }}
-                      </p>
-                    </div>
-                    <div class="col-2 col-lg-1 text-end">
-                      <span
-                        class="bi bi-x-lg text-secondary text-small cursor-pointer"
-                        @click="handleRemoveTransfer(i)"
-                      ></span>
-                    </div>
+                    <hr class="separator" />
                   </div>
-                  <hr class="separator" />
-                </div>
-              </template>
+                </template>
+              </div>
             </div>
+          </div>
+
+          <div class="d-flex justify-content-between flex-wrap overflow-hidden gap-3 mt-5">
+            <p class="text-small">
+              <span>{{ totalBalanceAdjustments }}</span>
+              <span class="text-secondary">
+                Adjustment{{ totalBalanceAdjustments != 1 ? 's' : '' }}</span
+              >
+            </p>
+            <p class="text-small text-wrap">
+              <span class="text-secondary">Balance</span>
+              <span> {{ ` ${stringifyHbar(totalBalance)}` }}</span>
+            </p>
           </div>
         </div>
 
-        <div class="d-flex justify-content-between flex-wrap overflow-hidden gap-3 mt-5">
-          <p class="text-small">
-            <span>{{ totalBalanceAdjustments }}</span>
-            <span class="text-secondary">
-              Adjustment{{ totalBalanceAdjustments != 1 ? 's' : '' }}</span
-            >
-          </p>
-          <p class="text-small text-wrap">
-            <span class="text-secondary">Balance</span>
-            <span> {{ ` ${stringifyHbar(totalBalance)}` }}</span>
-          </p>
+        <div class="row mt-6">
+          <div class="form-group col-8 col-xxxl-6">
+            <label class="form-label">Transaction Memo</label>
+            <AppInput
+              v-model="transactionMemo"
+              :filled="true"
+              maxlength="100"
+              placeholder="Enter Transaction Memo"
+            />
+          </div>
         </div>
       </div>
     </form>
-
     <TransactionProcessor
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"
