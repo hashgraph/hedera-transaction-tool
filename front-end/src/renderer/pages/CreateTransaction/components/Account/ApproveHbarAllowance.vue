@@ -9,6 +9,8 @@ import {
   KeyList,
 } from '@hashgraph/sdk';
 
+import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
@@ -47,6 +49,7 @@ const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref<Hbar>(new Hbar(2));
 
 const amount = ref<Hbar>(new Hbar(0));
+const transactionMemo = ref('');
 const keyStructureComponentKey = ref<Key | null>(null);
 
 const isKeyStructureModalShown = ref(false);
@@ -117,6 +120,11 @@ function createTransaction() {
       amount.value,
     );
   }
+
+  if (transactionMemo.value.length > 0 && transactionMemo.value.length <= MEMO_MAX_LENGTH) {
+    transaction.setTransactionMemo(transactionMemo.value);
+  }
+
   return transaction;
 }
 
@@ -231,6 +239,18 @@ const columnClass = 'col-4 col-xxxl-3';
               v-model:model-value="amount as Hbar"
               placeholder="Enter Amount"
               :filled="true"
+            />
+          </div>
+        </div>
+
+        <div class="row mt-6">
+          <div class="form-group col-8 col-xxxl-6">
+            <label class="form-label">Transaction Memo</label>
+            <AppInput
+              v-model="transactionMemo"
+              :filled="true"
+              maxlength="100"
+              placeholder="Enter Transaction Memo"
             />
           </div>
         </div>
