@@ -62,13 +62,13 @@ const handleSaveKeyList = async e => {
         <i class="bi bi-x-lg cursor-pointer" @click="handleShowUpdate(false)"></i>
       </div>
       <form class="mt-3" @submit="handleSaveKeyList">
-        <h3 class="text-center text-title text-bold">Enter your password</h3>
+        <h3 class="text-center text-title text-bold">Enter the nickname</h3>
         <div class="form-group mt-5 mb-4">
           <label class="form-label">Nickname</label>
           <AppInput
             v-model:model-value="nickname"
             :filled="true"
-            placeholder="Enter Name of Key List"
+            placeholder="Enter name of complex key"
           />
         </div>
 
