@@ -99,7 +99,11 @@ const handlePerPageSelect = (newPerPage: number) => {
 
     <nav class="pager-navigation">
       <ul class="pagination">
-        <li class="page-item" @click="handlePageSelect(currentPage - 1)">
+        <li
+          v-if="visiblePages.length > 1"
+          class="page-item"
+          @click="handlePageSelect(currentPage - 1)"
+        >
           <a class="page-link text-body">
             <span class="bi bi-chevron-left"></span>
           </a>
@@ -115,7 +119,11 @@ const handlePerPageSelect = (newPerPage: number) => {
           </li>
         </template>
 
-        <li class="page-item" @click="handlePageSelect(currentPage + 1)">
+        <li
+          v-if="visiblePages.length > 1"
+          class="page-item"
+          @click="handlePageSelect(currentPage + 1)"
+        >
           <a class="page-link text-body">
             <span class="bi bi-chevron-right"></span>
           </a>
