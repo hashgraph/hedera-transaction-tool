@@ -267,7 +267,7 @@ const handleChangeNickname = async () => {
                   <div class="border-start ps-3">
                     <div class="dropdown" v-if="!accountData.accountInfo.value?.deleted">
                       <AppButton class="min-w-unset" color="borderless" data-bs-toggle="dropdown"
-                        ><span class="bi bi-arrow-repeat"></span> Update</AppButton
+                        ><span class="bi bi-arrow-repeat"></span> Edit</AppButton
                       >
                       <ul class="dropdown-menu mt-3">
                         <li
