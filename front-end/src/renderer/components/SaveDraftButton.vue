@@ -120,7 +120,7 @@ onBeforeRouteLeave(async to => {
 
         <div class="flex-between-centered gap-4">
           <AppButton color="borderless" type="button" @click="routeTo && $router.push(routeTo)"
-            >Cancel</AppButton
+            >Discard</AppButton
           >
           <AppButton color="primary" type="submit">Save</AppButton>
         </div>
