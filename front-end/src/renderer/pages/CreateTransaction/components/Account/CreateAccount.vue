@@ -14,6 +14,7 @@ import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRoute } from 'vue-router';
 
@@ -40,6 +41,7 @@ import KeyField from '@renderer/components/KeyField.vue';
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
@@ -53,21 +55,54 @@ const transaction = ref<Transaction | null>(null);
 const validStart = ref(getDateTimeLocalInputValue(new Date()));
 const maxTransactionFee = ref<Hbar>(new Hbar(2));
 
-const accountData = reactive({
+const accountData = reactive<{
+  accountId: string;
+  receiverSignatureRequired: boolean;
+  maxAutomaticTokenAssociations: 0;
+  initialBalance: Hbar;
+  stakedAccountId: string;
+  stakedNodeId: number | null;
+  acceptStakingRewards: boolean;
+  memo: string;
+}>({
   accountId: '',
   receiverSignatureRequired: false,
   maxAutomaticTokenAssociations: 0,
   initialBalance: new Hbar(0),
   stakedAccountId: '',
-  stakedNodeId: '',
+  stakedNodeId: null,
   acceptStakingRewards: true,
   memo: '',
 });
+const stakeType = ref<'Account' | 'Node' | 'None'>('None');
 const ownerKey = ref<Key | null>(null);
 const isExecuted = ref(false);
 const nickname = ref('');
 
 /* Handlers */
+const handleStakeTypeChange = (e: Event) => {
+  const selectEl = e.target as HTMLSelectElement;
+  const value = selectEl.value;
+
+  if (value === 'None') {
+    stakeType.value = 'None';
+    accountData.stakedNodeId = null;
+    accountData.stakedAccountId = '';
+  } else if (value === 'Account' || value === 'Node') {
+    stakeType.value = value;
+  }
+};
+
+const handleNodeNumberChange = (e: Event) => {
+  const selectEl = e.target as HTMLSelectElement;
+  const value = selectEl.value;
+
+  if (value === 'unselected') {
+    accountData.stakedNodeId = null;
+  } else if (!isNaN(Number(value))) {
+    accountData.stakedNodeId = Number(value);
+  }
+};
 
 const handleCreate = async e => {
   e.preventDefault();
@@ -145,14 +180,15 @@ function createTransaction() {
     transaction.setKey(ownerKey.value);
   }
 
+  if (stakeType.value === 'Account' && isAccountId(accountData.stakedAccountId)) {
+    transaction.setStakedAccountId(AccountId.fromString(accountData.stakedAccountId));
+  } else if (stakeType.value === 'Node' && accountData.stakedNodeId !== null) {
+    transaction.setStakedNodeId(Number(accountData.stakedNodeId));
+  }
+
   if (isAccountId(payerData.accountId.value)) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
   }
-
-  isAccountId(accountData.stakedAccountId) &&
-    transaction.setStakedAccountId(AccountId.fromString(accountData.stakedAccountId));
-  Number(accountData.stakedNodeId) > 0 &&
-    transaction.setStakedNodeId(Number(accountData.stakedNodeId));
 
   return transaction;
 }
@@ -229,36 +265,39 @@ const columnClass = 'col-4 col-xxxl-3';
 
         <div class="row mt-6">
           <div class="form-group" :class="[columnClass]">
-            <label class="form-label">Staked Node Id</label>
-            <AppInput
-              v-model="accountData.stakedNodeId"
-              :disabled="accountData.stakedAccountId.length > 0"
-              :filled="true"
-              type="number"
-              min="0"
-              placeholder="Enter Node Id Number"
-            />
+            <label class="form-label">Staking</label>
+            <select class="form-select is-fill" name="stake_type" @change="handleStakeTypeChange">
+              <template v-for="stakeEntity in ['None', 'Account', 'Node']" :key="stakeEntity">
+                <option :value="stakeEntity" :selected="stakeType === stakeEntity">
+                  {{ stakeEntity }}
+                </option>
+              </template>
+            </select>
           </div>
-          <div class="form-group" :class="[columnClass]">
-            <label class="form-label">Staked Account Id</label>
-            <AppInput
-              v-model="accountData.stakedAccountId"
-              :disabled="Number(accountData.stakedNodeId) > 0"
-              :filled="true"
-              placeholder="Enter Account Id"
-            />
-          </div>
-        </div>
-
-        <div class="row mt-6">
-          <div class="form-group" :class="[columnClass]">
-            <label class="form-label">Account Memo</label>
-            <AppInput
-              v-model="accountData.memo"
-              :filled="true"
-              maxlength="100"
-              placeholder="Enter Memo"
-            />
+          <div v-if="stakeType" class="form-group" :class="[columnClass]">
+            <template v-if="stakeType === 'Account'">
+              <label class="form-label">Account ID</label>
+              <AppInput
+                v-model="accountData.stakedAccountId"
+                :filled="true"
+                placeholder="Enter Account ID"
+              />
+            </template>
+            <template v-else-if="stakeType === 'Node'">
+              <label class="form-label">Node Number</label>
+              <select
+                class="form-select is-fill"
+                name="node_number"
+                @change="handleNodeNumberChange"
+              >
+                <option value="unselected" :selected="!stakeType" default>No node selected</option>
+                <template v-for="nodeNumber in network.nodeNumbers" :key="nodeNumber">
+                  <option :value="nodeNumber" :selected="accountData.stakedNodeId === nodeNumber">
+                    {{ nodeNumber }}
+                  </option>
+                </template>
+              </select>
+            </template>
           </div>
         </div>
 
