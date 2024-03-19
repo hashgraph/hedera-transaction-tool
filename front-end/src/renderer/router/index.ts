@@ -21,7 +21,7 @@ const KeysTab = () => import('@renderer/pages/Settings/components/KeysTab.vue');
 const SetupOrganization = () => import('@renderer/pages/SetupOrganization');
 const RestoreKey = () => import('@renderer/pages/RestoreKey');
 const CreateTransaction = () => import('@renderer/pages/CreateTransaction');
-const AccountTab = () => import('@renderer/pages/Settings/components/AccountTab.vue');
+const ProfileTab = () => import('@renderer/pages/Settings/components/ProfileTab.vue');
 const ForgotPassword = () => import('@renderer/pages/ForgotPassword');
 const LinkExistingAccount = () => import('@renderer/pages/Accounts/LinkExistingAccount');
 const LinkExistingFile = () => import('@renderer/pages/Files/LinkExistingFile');
@@ -69,9 +69,9 @@ const routes: RouteRecordRaw[] = [
         component: KeysTab,
       },
       {
-        path: 'account',
+        path: 'profile',
         name: 'settingsAccount',
-        component: AccountTab,
+        component: ProfileTab,
       },
     ],
   },
