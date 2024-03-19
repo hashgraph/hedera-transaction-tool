@@ -2,6 +2,8 @@
 import { onMounted, ref } from 'vue';
 import { AccountId, Hbar, FreezeTransaction, FileId, Timestamp } from '@hashgraph/sdk';
 
+import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
@@ -38,6 +40,8 @@ const freezeType = ref(-1);
 const startTimestamp = ref(getDateTimeLocalInputValue(new Date()));
 const fileId = ref<string>('');
 const fileHash = ref('');
+
+const transactionMemo = ref('');
 const isExecuted = ref(false);
 
 /* Handlers */
@@ -104,6 +108,11 @@ function createTransaction() {
     transaction.setStartTimestamp(Timestamp.fromDate(startTimestamp.value));
   isFileId(fileId.value) && transaction.setFileId(FileId.fromString(fileId.value));
   fileHash.value.trim().length > 0 && transaction.setFileHash(fileHash.value);
+
+  if (transactionMemo.value.length > 0 && transactionMemo.value.length <= MEMO_MAX_LENGTH) {
+    transaction.setTransactionMemo(transactionMemo.value);
+  }
+
   return transaction;
 }
 
@@ -197,6 +206,18 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
           <div class="form-group col-8 col-xxxl-6">
             <label class="form-label">File Hash</label>
             <AppInput v-model="fileHash" :filled="true" placeholder="Enter File Hash" />
+          </div>
+        </div>
+
+        <div class="row mt-6">
+          <div class="form-group col-8 col-xxxl-6">
+            <label class="form-label">Transaction Memo</label>
+            <AppInput
+              v-model="transactionMemo"
+              :filled="true"
+              maxlength="100"
+              placeholder="Enter Transaction Memo"
+            />
           </div>
         </div>
       </div>
