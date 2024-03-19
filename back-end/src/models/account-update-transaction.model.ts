@@ -3,8 +3,8 @@ import { AccountUpdateTransaction } from '@hashgraph/sdk';
 import { flatPublicKeys } from '../utils/encryption-utils';
 
 export default class AccountUpdateTransactionModel extends TransactionBaseModel {
-  getSigningAccountsOrKeys(): Set<string> {
-    const accounts = super.getSigningAccountsOrKeys();
+  getNewKeys(): Set<string> {
+    const accounts = new Set<string>();
 
     const transaction = this.transaction as AccountUpdateTransaction;
     // Push the accountId to the array, if available
@@ -16,3 +16,4 @@ export default class AccountUpdateTransactionModel extends TransactionBaseModel 
     return accounts;
   }
 }
+// now just putting a key in the database and calling the gettransactionstosign thing

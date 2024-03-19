@@ -27,4 +27,4 @@ content-type: application/json
 
 ### Sing out
 POST http://localhost:3000/auth/signout
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsInVzZXJuYW1lIjoidGVkQHRlc3QuY29tIiwiaWF0IjoxNzA5NTc2NTA4LCJleHAiOjE3MDk2MTI1MDh9.yFLelfLvbG2FS9FVJjptZiJletQ26hV6Rjgw4lwALVY
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcxMDc3NDAzNywiZXhwIjoxNzEwODEwMDM3fQ.h_NwgTMmancbf-ifAlOtH9SuGGqf6MW4COjbryIp14s

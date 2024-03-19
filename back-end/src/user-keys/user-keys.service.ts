@@ -9,35 +9,34 @@ import { UploadUserKeyDto } from './dtos/upload-user-key.dto';
 export class UserKeysService {
   constructor(@InjectRepository(UserKey) private repo: Repository<UserKey>) {}
 
-  findOne(id: number): Promise<UserKey> {
+  // Get the user key for the provided userKeyId.
+  getUserKeyById(id: number): Promise<UserKey> {
     if (!id) {
       return null;
     }
     return this.repo.findOneBy({ id });
   }
 
+  // Upload the provided user key for the provided user.
   async uploadKey(user: User, dto: UploadUserKeyDto): Promise<UserKey> {
     const userKey = await this.repo.create(dto);
     userKey.user = user;
     return this.repo.save(userKey);
   }
 
-  async getKeysById(userId: number): Promise<UserKey[]> {
+  // Get the list of user keys for the provided userId
+  async getUserKeysByUserId(userId: number): Promise<UserKey[]> {
     return this.repo
       .createQueryBuilder('userKey')
       .leftJoinAndSelect('userKey.user', 'user')
       .where('userId = :userId', { userId })
       .getMany();
-    //TODO this doesn't work, though it looks nice. Is there a way to get it to work?
-    // maybe I would have to separately get user? the user.id in the where doesn't do anything.
-    // return this.repo.find({
-    //   relations: ['user'],
-    //   where: { user.id: userId },
-    // });
   }
 
+  // Remove the user key for the provided userKeyId.
+  // This is a soft remove, meaning that the deleted timestamp will be set.
   async removeKey(id: number): Promise<UserKey> {
-    const userKey = await this.findOne(id);
+    const userKey = await this.getUserKeyById(id);
     if (!userKey) {
       throw new NotFoundException('key not found');
     }

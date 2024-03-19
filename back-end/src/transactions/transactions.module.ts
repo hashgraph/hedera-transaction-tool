@@ -15,9 +15,7 @@ import { ApproversController } from './approvers/approvers.controller';
 import { ApproversService } from './approvers/approvers.service';
 import { TransactionApprover } from '../entities/transaction-approver.entity';
 import { TransactionObserver } from '../entities/transaction-observer.entity';
-import { UserKeysService } from '../user-keys/user-keys.service';
 import { HttpModule } from '@nestjs/axios';
-import { UserKey } from '../entities/user-key.entity';
 
 @Module({
   imports: [
@@ -30,7 +28,6 @@ import { UserKey } from '../entities/user-key.entity';
       TransactionSigner,
       TransactionApprover,
       TransactionObserver,
-      UserKey,
     ]),
   ],
   controllers: [
@@ -46,7 +43,6 @@ import { UserKey } from '../entities/user-key.entity';
     SignersService,
     ObserversService,
     ApproversService,
-    UserKeysService,
   ],
 })
 export class TransactionsModule {}

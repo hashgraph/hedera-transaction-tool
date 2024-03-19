@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TransactionObserver } from '../../entities/transaction-observer.entity';
 import { Repository } from 'typeorm';
+import { User } from '../../entities/user.entity';
 import { CreateTransactionObserverDto } from '../dto/create-transaction-observer.dto';
 import { UpdateTransactionObserverDto } from '../dto/update-transaction-observer.dto';
 
@@ -12,6 +13,7 @@ export class ObserversService {
     private repo: Repository<TransactionObserver>,
   ) {}
 
+  // Create a transaction observer for the given transaction id with the provided data.
   async createTransactionObserver(
     transactionId: number,
     dto: CreateTransactionObserverDto,
@@ -21,7 +23,10 @@ export class ObserversService {
     return this.repo.save(observer);
   }
 
-  getTransactionObserversByUserId(userId: number): Promise<TransactionObserver[]> {
+  //TODO How/When would this be used?
+  getTransactionObserversByUserId(
+    userId: number,
+  ): Promise<TransactionObserver[]> {
     return this.repo
       .createQueryBuilder('observer')
       .leftJoinAndSelect('observer.transaction', 'transaction')
@@ -30,7 +35,11 @@ export class ObserversService {
       .getMany();
   }
 
-  getTransactionObserversByTransactionId(transactionId: number): Promise<TransactionObserver[]> {
+  // Get all transaction observers for the given transaction id.
+  // Include the transaction and user information in the response.
+  getTransactionObserversByTransactionId(
+    transactionId: number,
+  ): Promise<TransactionObserver[]> {
     return this.repo
       .createQueryBuilder('observer')
       .leftJoinAndSelect('observer.user', 'user')
@@ -39,6 +48,8 @@ export class ObserversService {
       .getMany();
   }
 
+  // Get the transaction observer for the given transaction observer id.
+  // Include the transaction and user information in the response.
   getTransactionObserverById(id: number): Promise<TransactionObserver> {
     if (!id) {
       return null;
@@ -49,6 +60,7 @@ export class ObserversService {
     });
   }
 
+  // Update a transaction observer with the data provided for the given observer id.
   async updateTransactionObserver(
     id: number,
     dto: UpdateTransactionObserverDto,
@@ -61,6 +73,7 @@ export class ObserversService {
     return this.repo.save(observer);
   }
 
+  // Remove the transaction observer for the given transaction observer id.
   async removeTransactionObserver(id: number): Promise<TransactionObserver> {
     const observer = await this.getTransactionObserverById(id);
     if (!observer) {

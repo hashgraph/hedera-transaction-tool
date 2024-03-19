@@ -3,8 +3,8 @@ import { FileUpdateTransaction } from '@hashgraph/sdk';
 import { flatPublicKeys } from '../utils/encryption-utils';
 
 export default class FileUpdateTransactionModel extends TransactionBaseModel {
-  getSigningAccountsOrKeys(): Set<string> {
-    const accounts = super.getSigningAccountsOrKeys();
+  getNewKeys(): Set<string> {
+    const accounts = new Set<string>();
 
     const transaction = this.transaction as FileUpdateTransaction;
     // Get the new key. Flatten the key into an array of key bytes

@@ -22,7 +22,7 @@ export class ApproversService {
   }
 
   //TODO not sure if this is used, same with approvers, might want to put both of these back into transaction?
-  // becuase the purpose is to return the list of transactions that the user is a part of, not the transactionapprover
+  // because the purpose is to return the list of transactions that the user is a part of, not the transactionapprover
   getTransactionApproversByUserId(
     userId: number,
   ): Promise<TransactionApprover[]> {
@@ -37,7 +37,9 @@ export class ApproversService {
       .getMany();
   }
 
-  //TODO this should probably return the full approver tree/list/thing, not a list of transaction approvers
+  // Get the full list of approvers by transactionId. This will return one approver, a list of approvers, or
+  // a complex list (tree) of approvers.
+  //TODO should this list be sorted such that each node has it's children listed first before the next node? Like a tree.
   getTransactionApproversByTransactionId(
     transactionId: number,
   ): Promise<TransactionApprover[]> {
@@ -45,19 +47,20 @@ export class ApproversService {
       return null;
     }
     return this.repo
-      .createQueryBuilder('approver')
-      .leftJoinAndSelect('approver.transaction', 'transaction')
-      .where('transaction.id = :transactionId', { transactionId })
-      .getMany();
+      .query(`with recursive approverList as ` +
+        `(select * from transaction_approver where transactionId = ${transactionId} ` +
+        `union all ` +
+        `select approver.* from transaction_approver as approver ` +
+          `join approverList on approverList.id = approver.listId) ` +
+        `select * from approverList`);
   }
 
   //TODO this should ensure that the approver row fits someone (root row, or belongs to a list or whatever)
-  async createTransactionApprover(
-    transactionId: number,
-    dto: CreateTransactionApproverDto,
-  ): Promise<TransactionApprover> {
+  async createTransactionApprover(dto: CreateTransactionApproverDto): Promise<TransactionApprover> {
     const approver = await this.repo.create(dto);
-    approver['transaction' as any] = transactionId;
+    approver['user' as any] = dto.userKeyId;
+    approver['list' as any] = dto.listId;
+    approver['transaction' as any] = dto.transactionId;
     return this.repo.save(approver);
   }
 

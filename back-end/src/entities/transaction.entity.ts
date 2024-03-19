@@ -97,28 +97,34 @@ export class Transaction {
   @OneToMany(() => TransactionObserver, (observer) => observer.transaction)
   observers: TransactionObserver[];
 
-  //TODO column with the accounts needed for signing, but does not include
-  // accounts that require sig for receiving. Well, unless that account is part of this org.
-  // If the account is part of this org, and the sig required flag is turned on/off, then
-  // this would need to be updated
-  // THE FLOW: user signs in, server gets all keys for the user, requests all accounts associated with those keys
-  // from mirror node, using those accounts pulls all transactions that require those accounts
-  // this column would only ever be wrong if that receiver was part of the org (therefore notifications are required)
-  // and the receiver flipped the flag
-  // so, then how about all 'interested' accounts are in this list, and not just for required sigs
+  // These three columns are strictly for increasing the search speed.
+  // If the body can be stored in json format and be fast and searchable,
+  // these columns should not be needed.
+  // The issue: as the transaction body is stored in bytes, it is not searchable.
+  // This means that when a user logs in, there is no easy and direct way to use
+  // their keys and find transactions they need to sign. In addition, the keys in
+  // the transaction may not be up-to-date. So, the keys and accounts that will be
+  // stored in these searchable fields will be non-changeable. The keys that are
+  // part of the accounts will be requested from mirror node when needed.
 
-  // Do not include in select, nor any dto
-  // This column is only used for searching.
-  // When a transaction is created or updated, the
-  // accounts (or keys in the case of a transaction like AccountUpdate)
-  // will be gathered and turned into a csv and stored here.
-  // This allows for quick searching of transactions by account/key.
-  // When a user requests transactions to sign, each key the user
-  // owns will be used to get associated accounts, which will then be used
-  // to search transactions for those transactions the user needs to sign.
+  //TODO when using postgres, this may be the data structure to use
+  //@Column('string', { array: true, default: {} })
+  // then search it like this
+  //this.getFindQueryBuilder().where("recipe.tags && ARRAY[:...tags]", {tags: tags})
+  //or maybe
+  //createQueryBuilder().where('newKeys @> ARRAY[:...newKeys], { newKeys })
+  //or even maybe (not sure if this becomes an AND or OR, likely AND, but I want OR)
+  //findBy({ names: ArrayContains([name1,name2]) })
 
-  // ***i might want to prefix accounts with a 'R:' or something to indicate which are receivers, then the search can include/exlude the "R:" as needed
-  // or I would need to save receiver accounts separately
-  @Column({select: false})
-  accountsOrKeys: string;
+  // The list of any keys that are new to the account/file
+  @Column('simple-array', { select: false })
+  newKeys: string[];
+
+  // The list of accounts that will receive funds
+  @Column('simple-array', { select: false })
+  receiverAccounts: string[];
+
+  // The list of accounts that are otherwise involved (and NOT receiver accounts)
+  @Column('simple-array', { select: false })
+  accounts: string[];
 }

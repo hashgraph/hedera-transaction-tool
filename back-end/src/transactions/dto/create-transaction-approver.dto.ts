@@ -4,6 +4,10 @@ import { IsBuffer } from '../../validator/is-buffer.validator';
 export class CreateTransactionApproverDto {
   @IsNumber()
   @IsOptional()
+  transactionId?: number;
+
+  @IsNumber()
+  @IsOptional()
   listId?: number;
 
   @IsNumber()

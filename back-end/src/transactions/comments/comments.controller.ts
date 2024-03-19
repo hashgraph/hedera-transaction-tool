@@ -32,4 +32,6 @@ export class CommentsController {
   getCommentById(@Param('id', ParseIntPipe) id: number) {
     return this.commentsService.getTransactionCommentById(id);
   }
+
+  //TODO add update and remove routes
 }

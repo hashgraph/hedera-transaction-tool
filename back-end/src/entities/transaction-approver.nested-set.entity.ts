@@ -17,7 +17,7 @@ export class TransactionApproverNestedSet {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Transaction, transaction => transaction.approvers)
+  @ManyToOne(() => Transaction, (transaction) => transaction.approvers)
   transaction: Transaction;
 
   @TreeParent()
@@ -26,7 +26,7 @@ export class TransactionApproverNestedSet {
   @Column({ nullable: true })
   threshold?: number;
 
-  @ManyToOne(() => UserKey, userKey => userKey.approvedTransactions, {
+  @ManyToOne(() => UserKey, (userKey) => userKey.approvedTransactions, {
     nullable: true,
   })
   userKey?: UserKey;

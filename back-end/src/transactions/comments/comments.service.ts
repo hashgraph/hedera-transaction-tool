@@ -12,6 +12,7 @@ export class CommentsService {
     private repo: Repository<TransactionComment>,
   ) {}
 
+  // Create a transaction comment for the given transaction with the provided data.
   async createComment(
     user: User,
     transactionId: number,
@@ -23,10 +24,12 @@ export class CommentsService {
     return this.repo.save(comment);
   }
 
+  // Get the transaction comment for the given id.
   getTransactionCommentById(id: number) {
     return this.repo.findOneBy({ id });
   }
 
+  // Get the transaction comments for the given transaction id.
   getTransactionComments(transactionId: number) {
     return this.repo
       .createQueryBuilder('comment')

@@ -1,0 +1,19 @@
+### Get approver tree by transactionId
+GET http://localhost:3000/transactions/1/approvers
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcxMDc4MDYzNSwiZXhwIjoxNzEwODE2NjM1fQ.XK1OUMEYDydqvQgBQE7oXjOiCDjAqlyjF2zen34SHeA
+
+# Should this be able to handle multiple approvers in one go? Probably, not sure how to convert that into an array of DTOs
+# though maybe the dto should just have an array? Same for observer
+### Create an approver
+POST http://localhost:3000/transactions/1/approvers
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcxMDc4MDYzNSwiZXhwIjoxNzEwODE2NjM1fQ.XK1OUMEYDydqvQgBQE7oXjOiCDjAqlyjF2zen34SHeA
+content-type: application/json
+
+{
+  "threshold": 2,
+  "listId": 4
+}
+
+### Delete an approver - if this id is for a list, it needs to delete all children too
+DELETE http://localhost:3000/transactions/approvers/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcxMDc4MDYzNSwiZXhwIjoxNzEwODE2NjM1fQ.XK1OUMEYDydqvQgBQE7oXjOiCDjAqlyjF2zen34SHeA

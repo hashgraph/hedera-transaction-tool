@@ -16,7 +16,7 @@ import { TransactionSignerDto } from '../dto/transaction-signer.dto';
 import { Serialize } from '../../interceptors/serialize.interceptor';
 import { GetUser } from '../../decorators/get-user.decorator';
 import { User } from '../../entities/user.entity';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Transaction Signers')
 @Controller('transactions/:transactionId?/signers')
@@ -25,6 +25,14 @@ import { ApiTags } from '@nestjs/swagger';
 export class SignersController {
   constructor(private signaturesService: SignersService) {}
 
+  @ApiOperation({
+    summary: 'Get a signature',
+    description: 'Get the transaction signature for the given signature id.',
+  })
+  @ApiResponse({
+    status: 201,
+    type: TransactionSignerDto,
+  })
   @Get('/:id')
   getSignatureById(
     @Param('id', ParseIntPipe) id: number,
@@ -32,6 +40,14 @@ export class SignersController {
     return this.signaturesService.getSignatureById(id);
   }
 
+  @ApiOperation({
+    summary: 'Get transaction signatures for a transaction',
+    description: 'Get all transaction signatures for the given transaction id.',
+  })
+  @ApiResponse({
+    status: 201,
+    type: [TransactionSignerDto],
+  })
   @Get()
   getSignaturesByTransactionId(
     @Param('transactionId', ParseIntPipe) transactionId: number,
@@ -39,11 +55,27 @@ export class SignersController {
     return this.signaturesService.getSignaturesByTransactionId(transactionId);
   }
 
+  @ApiOperation({
+    summary: 'Get signatures for user',
+    description: 'Get all transaction signatures for the current user. IS THIS NEEDED?',
+  })
+  @ApiResponse({
+    status: 201,
+    type: [TransactionSignerDto],
+  })
   @Get('/user')
   getSignaturesByUser(@GetUser() user: User): Promise<TransactionSigner[]> {
     return this.signaturesService.getSignaturesByUser(user);
   }
 
+  @ApiOperation({
+    summary: 'Upload a signature',
+    description: 'Upload the signature for the given transaction id.',
+  })
+  @ApiResponse({
+    status: 201,
+    type: TransactionSignerDto,
+  })
   @Post()
   uploadSignature(
     @Param('transactionId', ParseIntPipe) transactionId: number,
@@ -52,8 +84,15 @@ export class SignersController {
     return this.signaturesService.uploadSignature(transactionId, body);
   }
 
+  @ApiOperation({
+    summary: 'Delete a signature',
+    description: 'Delete the signature for the given transaction signature id.',
+  })
+  @ApiResponse({
+    status: 201,
+  })
   @Delete('/:id')
-  deleteSignature(@Param('id', ParseIntPipe) id: number): void {
-    this.signaturesService.deleteSignature(id);
+  removeSignature(@Param('id', ParseIntPipe) id: number): void {
+    this.signaturesService.removeSignature(id);
   }
 }

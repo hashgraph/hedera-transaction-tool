@@ -34,7 +34,8 @@ export class User {
   @DeleteDateColumn()
   deletedAt: Date;
 
-  @OneToMany(() => UserKey, (userKey) => userKey.user)
+  // eagerly load all user keys, allowing the GetUser decorator to have access to the user's keys
+  @OneToMany(() => UserKey, (userKey) => userKey.user, { eager: true })
   keys: UserKey[];
 
   @OneToMany(() => TransactionObserver, (observer) => observer.user)

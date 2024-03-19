@@ -2,9 +2,9 @@ import { TransactionBaseModel } from './transaction.model';
 import { TransferTransaction } from '@hashgraph/sdk';
 
 export default class TransferTransactionModel extends TransactionBaseModel {
-  getSigningAccountsOrKeys(): Set<string> {
+  getSigningAccounts(): Set<string> {
     // Get the Fee Payer
-    const accounts = super.getSigningAccountsOrKeys();
+    const accounts = super.getSigningAccounts();
 
     // Go through all the transfers and add the accounts to the array.
     // All accounts are included, whether it is a receiving account that
@@ -28,8 +28,22 @@ export default class TransferTransactionModel extends TransactionBaseModel {
     // and find all keys on that transaction for that account and push the transaction. Or could it just
     // get the users for the keys on the updated account and notify the user to pull new data?
     const transaction = this.transaction as TransferTransaction;
-    for (const [key, value] of transaction.hbarTransfers) {
-      accounts.add(key.toString());
+    for (let [key, value] of transaction.hbarTransfers) {
+      if (value.isNegative()) {
+        accounts.add(key.toString());
+      }
+    }
+    return accounts;
+  }
+
+  getReceiverAccounts(): Set<string> {
+    const accounts = new Set<string>();
+
+    const transaction = this.transaction as TransferTransaction;
+    for (let [key, value] of transaction.hbarTransfers) {
+      if (!value.isNegative()) {
+        accounts.add(key.toString());
+      }
     }
     return accounts;
   }
