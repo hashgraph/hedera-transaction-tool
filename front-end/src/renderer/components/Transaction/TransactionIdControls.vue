@@ -13,14 +13,16 @@ import { getDraft } from '@renderer/services/transactionDraftsService';
 
 import { getTransactionFromBytes, stringifyHbar } from '@renderer/utils';
 
+import DatePicker from '@vuepic/vue-datepicker';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
+import AppButton from '../ui/AppButton.vue';
 
 /* Props */
 defineProps<{
   payerId: string;
-  validStart: string;
+  validStart: Date;
   maxTransactionFee: Hbar;
 }>();
 
@@ -103,13 +105,35 @@ const columnClass = 'col-4 col-xxxl-3';
     </div>
     <div class="form-group" :class="[columnClass]">
       <label class="form-label">Valid Start Time</label>
-      <AppInput
+      <DatePicker
+        ref="dateTimePicker"
         :model-value="validStart"
         @update:model-value="v => $emit('update:validStart', v)"
-        :filled="true"
-        type="datetime-local"
-        step="1"
-      />
+        :clearable="false"
+        :auto-apply="true"
+        :config="{
+          keepActionRow: true,
+        }"
+        :min-date="new Date()"
+        class="is-fill"
+        menu-class-name="is-fill"
+        calendar-class-name="is-fill"
+        input-class-name="is-fill"
+        calendar-cell-class-name="is-fill"
+      >
+        <template #action-row>
+          <div class="d-grid w-100">
+            <AppButton
+              color="secondary"
+              size="small"
+              type="button"
+              @click="$emit('update:validStart', new Date())"
+            >
+              Now
+            </AppButton>
+          </div>
+        </template>
+      </DatePicker>
     </div>
     <div class="form-group" :class="[columnClass]">
       <label class="form-label">Max Transaction Fee {{ HbarUnit.Hbar._symbol }}</label>
