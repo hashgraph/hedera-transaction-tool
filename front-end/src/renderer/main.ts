@@ -8,6 +8,8 @@ import { addGuards } from '@renderer/router/guards';
 
 import ToastPlugin, { useToast } from 'vue-toast-notification';
 
+import DatePicker from '@vuepic/vue-datepicker';
+
 import App from './App.vue';
 
 const app = createApp(App);
@@ -34,6 +36,9 @@ app.config.errorHandler = (err: any) => {
 
   toast.error(message, { position: 'bottom-right' });
 };
+
+/* Custom Components */
+app.component('DatePicker', DatePicker);
 
 /* App mount */
 app.mount('#app');

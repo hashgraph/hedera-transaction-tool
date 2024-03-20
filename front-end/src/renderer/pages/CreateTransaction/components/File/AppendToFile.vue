@@ -11,9 +11,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
-import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { getTransactionFromBytes } from '@renderer/utils/transactions';
-import { isAccountId } from '@renderer/utils/validator';
+import { getTransactionFromBytes, isAccountId } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -32,7 +30,7 @@ const payerData = useAccountId();
 const transactionProcessor = ref<typeof FileTransactionProcessor | null>(null);
 
 const transaction = ref<Transaction | null>(null);
-const validStart = ref(getDateTimeLocalInputValue(new Date()));
+const validStart = ref(new Date());
 const maxTransactionFee = ref<Hbar>(new Hbar(2));
 const fileId = ref('');
 const ownerKey = ref<Key | null>(null);
@@ -298,7 +296,7 @@ const columnClass = 'col-4 col-xxxl-3';
       "
       :on-close-success-modal-click="
         () => {
-          validStart = '';
+          validStart = new Date();
           maxTransactionFee = new Hbar(2);
           fileId = '';
           ownerKey = null;

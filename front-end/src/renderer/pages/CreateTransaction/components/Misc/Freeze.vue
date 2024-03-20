@@ -12,10 +12,10 @@ import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
 
-import { getDateTimeLocalInputValue } from '@renderer/utils';
 import { isAccountId, isFileId } from '@renderer/utils/validator';
 import { getTransactionFromBytes } from '@renderer/utils/transactions';
 
+import DatePicker from '@vuepic/vue-datepicker';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
@@ -33,11 +33,11 @@ const payerData = useAccountId();
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<FreezeTransaction | null>(null);
-const validStart = ref(getDateTimeLocalInputValue(new Date()));
+const validStart = ref(new Date());
 const maxTransactionfee = ref<Hbar>(new Hbar(2));
 
 const freezeType = ref(-1);
-const startTimestamp = ref(getDateTimeLocalInputValue(new Date()));
+const startTimestamp = ref(new Date());
 const fileId = ref<string>('');
 const fileHash = ref('');
 
@@ -72,7 +72,7 @@ const handleLoadFromDraft = async () => {
     transactionMemo.value = draftTransaction.transactionMemo || '';
 
     if (draftTransaction.startTimestamp) {
-      startTimestamp.value = getDateTimeLocalInputValue(draftTransaction.startTimestamp.toDate());
+      startTimestamp.value = draftTransaction.startTimestamp.toDate();
     }
 
     if (isFileId(draftTransaction.fileId?.toString() || '')) {
@@ -105,8 +105,7 @@ function createTransaction() {
 
   // Set fields based on freeze type later
 
-  startTimestamp.value.length > 0 &&
-    transaction.setStartTimestamp(Timestamp.fromDate(startTimestamp.value));
+  transaction.setStartTimestamp(Timestamp.fromDate(startTimestamp.value));
   isFileId(fileId.value) && transaction.setFileId(FileId.fromString(fileId.value));
   fileHash.value.trim().length > 0 && transaction.setFileHash(fileHash.value);
 
@@ -173,13 +172,36 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
         >
           <div class="form-group" :class="[columnClass]">
             <label class="form-label">Start Time<span class="text-danger">*</span></label>
-            <AppInput
+            <DatePicker
               :model-value="startTimestamp"
               @update:model-value="v => (startTimestamp = v)"
-              :filled="true"
-              type="datetime-local"
-              step="1"
-            />
+              placeholder="Select Start Time"
+              :clearable="false"
+              :auto-apply="true"
+              :config="{
+                keepActionRow: true,
+              }"
+              :teleport="true"
+              :min-date="new Date()"
+              class="is-fill"
+              menu-class-name="is-fill"
+              calendar-class-name="is-fill"
+              input-class-name="is-fill"
+              calendar-cell-class-name="is-fill"
+            >
+              <template #action-row>
+                <div class="d-grid w-100">
+                  <AppButton
+                    color="secondary"
+                    size="small"
+                    type="button"
+                    @click="$emit('update:validStart', new Date())"
+                  >
+                    Now
+                  </AppButton>
+                </div>
+              </template>
+            </DatePicker>
           </div>
         </div>
 
