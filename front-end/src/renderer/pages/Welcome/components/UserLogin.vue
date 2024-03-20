@@ -2,8 +2,6 @@
 import { onMounted, reactive, ref, watch } from 'vue';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
-import { User } from '@prisma/client';
-
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
@@ -76,16 +74,16 @@ const handleOnFormSubmit = async (event: Event) => {
       toast.error('Password too weak', { position: 'bottom-right' });
       return;
     }
-    const userData = await registerLocal(inputEmail.value, inputPassword.value);
-    user.login(userData, []);
+    const { id, email } = await registerLocal(inputEmail.value, inputPassword.value);
+    user.login(id, email, []);
 
     user.data.password = inputPassword.value;
     router.push({ name: 'accountSetup' });
   } else if (!shouldRegister.value) {
-    let userData: User | null = null;
+    let userData: { id: string; email: string } | null = null;
 
     try {
-      userData = await loginLocal(inputEmail.value, inputPassword.value, false);
+      userData = await loginLocal(inputEmail.value, inputPassword.value, true, false);
     } catch (error: any) {
       inputEmailInvalid.value = false;
       inputPasswordInvalid.value = false;
@@ -100,7 +98,7 @@ const handleOnFormSubmit = async (event: Event) => {
 
     if (userData) {
       const secretHashes = await getSecretHashes(userData.id);
-      user.login(userData, secretHashes);
+      user.login(userData.id, userData.email, secretHashes);
 
       if (secretHashes.length === 0) {
         user.data.password = inputPassword.value;

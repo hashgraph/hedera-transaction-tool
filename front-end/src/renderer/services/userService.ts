@@ -2,9 +2,21 @@ import { getMessageFromIPCError } from '@renderer/utils';
 
 /* User Service */
 
-export const loginLocal = async (email: string, password: string, autoRegister = false) => {
+export const loginLocal = async (
+  email: string,
+  password: string,
+  keepLoggedIn = false,
+  autoRegister = false,
+) => {
   try {
-    return await window.electronAPI.localUser.login(email, password, autoRegister);
+    const user = await window.electronAPI.localUser.login(email, password, autoRegister);
+
+    if (keepLoggedIn) {
+      localStorage.setItem('htx_user', JSON.stringify({ userId: user.id, email: user.email }));
+    } else {
+      localStorage.removeItem('htx_user');
+    }
+    return { id: user.id, email: user.email };
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Login failed'));
   }
@@ -12,7 +24,8 @@ export const loginLocal = async (email: string, password: string, autoRegister =
 
 export const registerLocal = async (email: string, password: string) => {
   try {
-    return await window.electronAPI.localUser.register(email, password);
+    const user = await window.electronAPI.localUser.register(email, password);
+    return { id: user.id, email: user.email };
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Registration failed'));
   }
