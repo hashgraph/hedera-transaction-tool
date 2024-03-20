@@ -76,6 +76,11 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
     recoveryPhraseWords.value = [];
   }
 
+  function clearKeyPairs() {
+    keyPairs.value = [];
+    publicKeyToAccounts.value = [];
+  }
+
   async function storeKeyPair(keyPair: Prisma.KeyPairUncheckedCreateInput, password: string) {
     if (!user.data.isLoggedIn) {
       throw Error('Personal user is not logged in!');
@@ -112,6 +117,7 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
     publicKeyToAccounts,
     publicKeys,
     setRecoveryPhrase,
+    clearKeyPairs,
     clearRecoveryPhrase,
     storeKeyPair,
     refetch,

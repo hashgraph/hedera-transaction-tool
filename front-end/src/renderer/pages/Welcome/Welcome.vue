@@ -24,10 +24,10 @@ const checkingForUser = ref(true);
 onBeforeMount(async () => {
   const loggedUser = localStorage.getItem('htx_user');
   if (loggedUser) {
-    const { id, email }: { id: string; email: string } = JSON.parse(loggedUser);
-    const secretHashes = await getSecretHashes(id);
+    const { userId, email }: { userId: string; email: string } = JSON.parse(loggedUser);
+    const secretHashes = await getSecretHashes(userId);
     router.push({ name: 'transactions' });
-    user.login(id, email, secretHashes);
+    user.login(userId, email, secretHashes);
     await keyPairs.refetch();
   }
 
