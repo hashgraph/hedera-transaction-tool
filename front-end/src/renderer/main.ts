@@ -9,7 +9,6 @@ import { addGuards } from '@renderer/router/guards';
 import ToastPlugin, { useToast } from 'vue-toast-notification';
 
 import DatePicker from '@vuepic/vue-datepicker';
-import '@vuepic/vue-datepicker/dist/main.css';
 
 import App from './App.vue';
 
