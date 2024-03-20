@@ -772,6 +772,10 @@
   &.is-fill:not(.is-invalid) {
     // To update
     --dp-border-color: var(--#{$prefix}input-fill-bg-color);
+
+    .dp__input:hover {
+      border-color: var(--#{$prefix}input-fill-bg-color);
+    }
   }
 
   .dp__input {
