@@ -58,7 +58,7 @@ const payerData = useAccountId();
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<Transaction | null>(null);
-const validStart = ref(getDateTimeLocalInputValue(new Date()));
+const validStart = ref(new Date());
 const maxTransactionFee = ref<Hbar>(new Hbar(2));
 
 const memo = ref('');

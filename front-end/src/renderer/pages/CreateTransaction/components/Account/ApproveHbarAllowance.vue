@@ -18,12 +18,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
-import {
-  getDateTimeLocalInputValue,
-  stringifyHbar,
-  isAccountId,
-  getTransactionFromBytes,
-} from '@renderer/utils';
+import { stringifyHbar, isAccountId, getTransactionFromBytes } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -45,7 +40,7 @@ const spenderData = useAccountId();
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<Transaction | null>(null);
-const validStart = ref(getDateTimeLocalInputValue(new Date()));
+const validStart = ref(new Date());
 const maxTransactionFee = ref<Hbar>(new Hbar(2));
 
 const amount = ref<Hbar>(new Hbar(0));
@@ -264,7 +259,7 @@ const columnClass = 'col-4 col-xxxl-3';
       :transaction-bytes="transaction?.toBytes() || null"
       :on-close-success-modal-click="
         () => {
-          validStart = '';
+          validStart = new Date();
           maxTransactionFee = new Hbar(2);
           ownerData.accountId.value = '';
           spenderData.accountId.value = '';

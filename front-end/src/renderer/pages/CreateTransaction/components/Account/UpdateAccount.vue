@@ -20,9 +20,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
-import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { getTransactionFromBytes } from '@renderer/utils/transactions';
-import { isAccountId } from '@renderer/utils/validator';
+import { getTransactionFromBytes, isAccountId } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
@@ -47,7 +45,7 @@ const accountData = useAccountId();
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<Transaction | null>(null);
-const validStart = ref(getDateTimeLocalInputValue(new Date()));
+const validStart = ref(new Date());
 const maxTransactionFee = ref<Hbar>(new Hbar(2));
 
 const newAccountData = reactive<{

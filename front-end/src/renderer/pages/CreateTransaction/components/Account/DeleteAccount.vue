@@ -15,9 +15,7 @@ import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 import { remove } from '@renderer/services/accountsService';
 
-import { getDateTimeLocalInputValue } from '@renderer/utils';
-import { getTransactionFromBytes } from '@renderer/utils/transactions';
-import { isAccountId } from '@renderer/utils/validator';
+import { getTransactionFromBytes, isAccountId } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -43,7 +41,7 @@ const transferAccountData = useAccountId();
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<Transaction | null>(null);
-const validStart = ref(getDateTimeLocalInputValue(new Date()));
+const validStart = ref(new Date());
 const maxTransactionFee = ref<Hbar>(new Hbar(2));
 const transactionMemo = ref('');
 

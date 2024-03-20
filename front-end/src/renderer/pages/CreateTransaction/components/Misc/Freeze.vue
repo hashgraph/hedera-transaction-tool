@@ -33,7 +33,7 @@ const payerData = useAccountId();
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<FreezeTransaction | null>(null);
-const validStart = ref(getDateTimeLocalInputValue(new Date()));
+const validStart = ref(new Date());
 const maxTransactionfee = ref<Hbar>(new Hbar(2));
 
 const freezeType = ref(-1);

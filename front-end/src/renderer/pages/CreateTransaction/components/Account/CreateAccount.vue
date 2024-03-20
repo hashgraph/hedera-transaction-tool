@@ -24,7 +24,6 @@ import { add } from '@renderer/services/accountsService';
 import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
-import { getDateTimeLocalInputValue } from '@renderer/utils';
 import { isAccountId } from '@renderer/utils/validator';
 import {
   getEntityIdFromTransactionReceipt,
@@ -54,7 +53,7 @@ const payerData = useAccountId();
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<Transaction | null>(null);
-const validStart = ref(getDateTimeLocalInputValue(new Date()));
+const validStart = ref(new Date());
 const maxTransactionFee = ref<Hbar>(new Hbar(2));
 
 const accountData = reactive<{

@@ -19,12 +19,7 @@ import { getDraft, updateDraft } from '@renderer/services/transactionDraftsServi
 import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
 import { getAll } from '@renderer/services/accountsService';
 
-import {
-  getDateTimeLocalInputValue,
-  getTransactionFromBytes,
-  isAccountId,
-  stringifyHbar,
-} from '@renderer/utils';
+import { getTransactionFromBytes, isAccountId, stringifyHbar } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -57,7 +52,7 @@ const savedDraft = ref<{
   isTemplate: boolean | null;
   details: string | null;
 }>();
-const validStart = ref(getDateTimeLocalInputValue(new Date()));
+const validStart = ref(new Date());
 const maxTransactionFee = ref<Hbar>(new Hbar(2));
 const transactionMemo = ref('');
 
@@ -509,7 +504,7 @@ onMounted(async () => {
       :on-executed="
         () => {
           isExecuted = true;
-          validStart = '';
+          validStart = new Date();
           maxTransactionFee = new Hbar(2);
           transaction = null;
         }

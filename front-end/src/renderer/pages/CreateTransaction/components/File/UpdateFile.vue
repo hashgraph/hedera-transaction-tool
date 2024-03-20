@@ -40,7 +40,7 @@ const route = useRoute();
 const transactionProcessor = ref<typeof FileTransactionProcessor | null>(null);
 
 const transaction = ref<Transaction | null>(null);
-const validStart = ref(getDateTimeLocalInputValue(new Date()));
+const validStart = ref(new Date());
 const maxTransactionFee = ref<Hbar>(new Hbar(2));
 
 const fileId = ref('');
@@ -378,7 +378,7 @@ const columnClass = 'col-4 col-xxxl-3';
       "
       :on-close-success-modal-click="
         () => {
-          validStart = '';
+          validStart = new Date();
           maxTransactionFee = new Hbar(2);
           fileId = '';
           newOwnerKey = null;
