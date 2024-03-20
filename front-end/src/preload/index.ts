@@ -43,13 +43,15 @@ export const electronAPI = {
     isDark: (): Promise<boolean> => ipcRenderer.invoke('theme:isDark'),
     mode: (): Promise<Theme> => ipcRenderer.invoke('theme:mode'),
     toggle: (theme: Theme): Promise<boolean> => ipcRenderer.invoke('theme:toggle', theme),
-    onThemeUpdate: async (
+    onThemeUpdate: (
       callback: (theme: { themeSource: Theme; shouldUseDarkColors: boolean }) => void,
     ) => {
-      await ipcRenderer.on(
-        'theme:update',
-        (_e, theme: { themeSource: Theme; shouldUseDarkColors: boolean }) => callback(theme),
-      );
+      const subscription = (_e, theme: { themeSource: Theme; shouldUseDarkColors: boolean }) =>
+        callback(theme);
+      ipcRenderer.on('theme:update', subscription);
+      return () => {
+        ipcRenderer.removeListener('theme:update', subscription);
+      };
     },
   },
   config: {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, ref } from 'vue';
+import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
 
 import { Theme } from '@main/shared/interfaces';
 
@@ -29,6 +29,7 @@ const mirrorNodeRESTAPIEndpoint = ref('http://localhost:5551/api/v1');
 const nodeAccountId = ref('0.0.3');
 
 const theme = ref<Theme>('light');
+const onUpdateUnsubscribe = ref<() => void>();
 
 /* Handlers */
 const handleNetworkChange = async (network: Network) => {
@@ -79,12 +80,19 @@ onBeforeMount(async () => {
     mirrorNodeRESTAPIEndpoint.value = networkStore.customNetworkSettings.mirrorNodeRESTAPIEndpoint;
   }
 
-  window.electronAPI.theme.onThemeUpdate(newTheme => {
-    document.body.setAttribute('data-bs-theme', newTheme.shouldUseDarkColors ? 'dark' : 'light');
-    theme.value = newTheme.themeSource;
-  });
-
+  onUpdateUnsubscribe.value = window.electronAPI.theme.onThemeUpdate(
+    (newTheme: { themeSource: Theme; shouldUseDarkColors: boolean }) => {
+      document.body.setAttribute('data-bs-theme', newTheme.shouldUseDarkColors ? 'dark' : 'light');
+      theme.value = newTheme.themeSource;
+    },
+  );
   theme.value = await window.electronAPI.theme.mode();
+});
+
+onBeforeUnmount(() => {
+  if (onUpdateUnsubscribe.value) {
+    onUpdateUnsubscribe.value();
+  }
 });
 </script>
 <template>
