@@ -25,7 +25,6 @@ import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 import { add } from '@renderer/services/filesService';
 
-import { getDateTimeLocalInputValue } from '@renderer/utils';
 import {
   createFileInfo,
   getMinimumExpirationTime,
@@ -37,6 +36,7 @@ import {
 } from '@renderer/utils/transactions';
 import { isAccountId } from '@renderer/utils/validator';
 
+import DatePicker from '@vuepic/vue-datepicker';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import KeyField from '@renderer/components/KeyField.vue';
@@ -147,10 +147,12 @@ const handleLoadFromDraft = async () => {
     if (draftTransaction.expirationTime) {
       const expirationDate = draftTransaction.expirationTime.toDate();
 
-      expirationTimestamp.value =
-        expirationDate > getMinimumExpirationTime() && expirationDate < getMaximumExpirationTime()
-          ? getDateTimeLocalInputValue(draftTransaction.expirationTime.toDate())
-          : '';
+      if (
+        expirationDate > getMinimumExpirationTime() &&
+        expirationDate < getMaximumExpirationTime()
+      ) {
+        expirationTimestamp.value = expirationDate;
+      }
     }
   }
 };
@@ -263,17 +265,44 @@ watch(payerData.isValid, isValid => {
         <div class="row mt-6">
           <div class="form-group col-4 col-xxxl-3">
             <label class="form-label">Expiration Time</label>
-
-            <div class="">
-              <AppInput
-                v-model="expirationTimestamp"
-                type="datetime-local"
-                step="any"
-                :min="getDateTimeLocalInputValue(getMinimumExpirationTime())"
-                :max="getDateTimeLocalInputValue(getMaximumExpirationTime())"
-                :filled="true"
-              />
-            </div>
+            <DatePicker
+              v-model="expirationTimestamp"
+              placeholder="Select Expiration Time"
+              :clearable="false"
+              :auto-apply="true"
+              :config="{
+                keepActionRow:
+                  new Date() >= getMinimumExpirationTime() &&
+                  new Date() <= getMaximumExpirationTime(),
+              }"
+              :teleport="true"
+              :min-date="getMinimumExpirationTime()"
+              :max-date="getMaximumExpirationTime()"
+              class="is-fill"
+              menu-class-name="is-fill"
+              calendar-class-name="is-fill"
+              input-class-name="is-fill"
+              calendar-cell-class-name="is-fill"
+            >
+              <template
+                v-if="
+                  new Date() >= getMinimumExpirationTime() &&
+                  new Date() <= getMaximumExpirationTime()
+                "
+                #action-row
+              >
+                <div class="d-grid w-100">
+                  <AppButton
+                    color="secondary"
+                    size="small"
+                    type="button"
+                    @click="$emit('update:validStart', new Date())"
+                  >
+                    Now
+                  </AppButton>
+                </div>
+              </template>
+            </DatePicker>
           </div>
         </div>
 
