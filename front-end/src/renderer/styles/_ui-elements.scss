@@ -798,6 +798,10 @@
   .dp__overlay_cell_disabled {
     color: var(--dp-disabled-color-text);
   }
+
+  .dp__arrow_top {
+    display: none;
+  }
 }
 
 :root {

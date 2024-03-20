@@ -17,7 +17,7 @@ import DatePicker from '@vuepic/vue-datepicker';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
-import AppButton from '../ui/AppButton.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
 
 /* Props */
 defineProps<{
@@ -106,7 +106,6 @@ const columnClass = 'col-4 col-xxxl-3';
     <div class="form-group" :class="[columnClass]">
       <label class="form-label">Valid Start Time</label>
       <DatePicker
-        ref="dateTimePicker"
         :model-value="validStart"
         @update:model-value="v => $emit('update:validStart', v)"
         :clearable="false"
