@@ -39,7 +39,7 @@ const useUserStore = defineStore('user', () => {
   function login(id: string, email: string, secretHashes: string[]) {
     data.isLoggedIn = true;
     data.email = email;
-    data.id = id;
+    data.id = id && id.length > 0 ? id : '';
     data.secretHashes = secretHashes;
   }
 
