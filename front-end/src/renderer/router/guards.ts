@@ -8,17 +8,13 @@ export function addGuards(router: Router) {
   router.beforeEach(to => {
     const userIsLoggedIn = user.data.isLoggedIn;
 
-    if (
-      userIsLoggedIn === true &&
-      user.data.secretHashes.length === 0 &&
-      to.name !== 'accountSetup'
-    ) {
+    if (userIsLoggedIn && user.data.secretHashes.length === 0 && to.name !== 'accountSetup') {
       return {
         name: 'accountSetup',
       };
     }
 
-    if (userIsLoggedIn === true && to.name === 'login') {
+    if (userIsLoggedIn && to.name === 'login') {
       return router.previousPath ? { path: router.previousPath } : { name: 'transactions' };
     }
 

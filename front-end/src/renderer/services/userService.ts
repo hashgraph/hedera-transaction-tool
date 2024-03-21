@@ -9,14 +9,18 @@ export const loginLocal = async (
   autoRegister = false,
 ) => {
   try {
-    const user = await window.electronAPI.localUser.login(email, password, autoRegister);
+    const { id, email: userEmail } = await window.electronAPI.localUser.login(
+      email,
+      password,
+      autoRegister,
+    );
 
     if (keepLoggedIn) {
-      localStorage.setItem('htx_user', JSON.stringify({ userId: user.id, email: user.email }));
+      localStorage.setItem('htx_user', JSON.stringify({ userId: id, email: userEmail }));
     } else {
       localStorage.removeItem('htx_user');
     }
-    return { id: user.id, email: user.email };
+    return { id, email: userEmail };
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Login failed'));
   }
@@ -24,8 +28,8 @@ export const loginLocal = async (
 
 export const registerLocal = async (email: string, password: string) => {
   try {
-    const user = await window.electronAPI.localUser.register(email, password);
-    return { id: user.id, email: user.email };
+    const { id, email: userEmail } = await window.electronAPI.localUser.register(email, password);
+    return { id: id, email: userEmail };
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Registration failed'));
   }
