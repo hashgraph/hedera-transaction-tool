@@ -21,6 +21,7 @@ export default function useCreateTooltips() {
   /* Hooks */
   onMounted(async () => {
     const loggedUser = localStorage.getItem('htx_user');
+
     if (loggedUser) {
       const { userId, email }: { userId: string; email: string } = JSON.parse(loggedUser);
       const secretHashes = await getSecretHashes(userId);
@@ -31,9 +32,10 @@ export default function useCreateTooltips() {
       checkingForUser.value = false;
 
       router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
+    } else {
+      user.logout();
+      checkingForUser.value = false;
     }
-
-    checkingForUser.value = false;
   });
 
   return checkingForUser;

@@ -23,6 +23,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -50,6 +51,7 @@ const passwordRequirements = reactive({
 });
 const tooltipContent = ref('');
 const shouldRegister = ref(false);
+const keepLoggedIn = ref(false);
 const isResetDataModalShown = ref(false);
 
 /* Handlers */
@@ -74,7 +76,11 @@ const handleOnFormSubmit = async (event: Event) => {
       toast.error('Password too weak', { position: 'bottom-right' });
       return;
     }
-    const { id, email } = await registerLocal(inputEmail.value, inputPassword.value);
+    const { id, email } = await registerLocal(
+      inputEmail.value,
+      inputPassword.value,
+      keepLoggedIn.value,
+    );
     user.login(id, email, []);
 
     user.data.password = inputPassword.value;
@@ -83,7 +89,7 @@ const handleOnFormSubmit = async (event: Event) => {
     let userData: { id: string; email: string } | null = null;
 
     try {
-      userData = await loginLocal(inputEmail.value, inputPassword.value, true, false);
+      userData = await loginLocal(inputEmail.value, inputPassword.value, keepLoggedIn.value, false);
     } catch (error: any) {
       inputEmailInvalid.value = false;
       inputPasswordInvalid.value = false;
@@ -278,8 +284,18 @@ watch(inputEmail, pass => {
           </div>
         </template>
 
-        <div v-if="!shouldRegister" class="mt-3 text-end">
-          <span @click="isResetDataModalShown = true" class="text-small link-primary cursor-pointer"
+        <div class="flex-centered justify-content-between gap-3 mt-3">
+          <div>
+            <AppCheckBox
+              v-model:checked="keepLoggedIn"
+              name="keep_logged_in"
+              label="Keep me logged in"
+            ></AppCheckBox>
+          </div>
+          <span
+            v-if="!shouldRegister"
+            @click="isResetDataModalShown = true"
+            class="text-small link-primary cursor-pointer"
             >Reset account</span
           >
         </div>
