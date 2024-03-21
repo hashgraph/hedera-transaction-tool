@@ -2,7 +2,7 @@ import { reactive } from 'vue';
 import { defineStore } from 'pinia';
 
 export interface UserStore {
-  isLoggedIn: boolean;
+  isLoggedIn: boolean | null;
   id: string;
   email: string;
   password: string;
@@ -18,7 +18,7 @@ export const localServerUrl = '';
 const useUserStore = defineStore('user', () => {
   /* State */
   const data = reactive<UserStore>({
-    isLoggedIn: false,
+    isLoggedIn: null,
     id: '',
     email: '',
     password: '',
