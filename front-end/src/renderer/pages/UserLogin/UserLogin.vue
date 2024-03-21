@@ -231,91 +231,93 @@ watch(inputEmail, pass => {
 });
 </script>
 <template>
-  <div class="container-dark-border glow-dark-bg p-5">
-    <h4 class="text-title text-semi-bold text-center">
-      {{ shouldRegister ? 'Register' : 'Sign In' }}
-    </h4>
-    <p class="text-secondary text-small lh-base text-center mt-3">
-      {{ shouldRegister ? 'Enter e-mail and password' : 'Enter your e-mail and password' }}
-    </p>
+  <div class="p-10 flex-column flex-centered flex-1 overflow-hidden">
+    <div class="container-dark-border glow-dark-bg p-5">
+      <h4 class="text-title text-semi-bold text-center">
+        {{ shouldRegister ? 'Register' : 'Sign In' }}
+      </h4>
+      <p class="text-secondary text-small lh-base text-center mt-3">
+        {{ shouldRegister ? 'Enter e-mail and password' : 'Enter your e-mail and password' }}
+      </p>
 
-    <form @submit="handleOnFormSubmit" class="form-login mt-5 w-100">
-      <label class="form-label">Email</label>
-      <AppInput
-        v-model="inputEmail"
-        :filled="true"
-        :class="{ 'is-invalid': inputEmailInvalid }"
-        placeholder="Enter email"
-      />
-      <div v-if="inputEmailInvalid" class="invalid-feedback">Invalid e-mail.</div>
-      <label class="form-label mt-4">Password</label>
-      <AppInput
-        v-model="inputPassword"
-        :filled="true"
-        type="password"
-        :class="{ 'is-invalid': inputPasswordInvalid }"
-        placeholder="Enter password"
-        :data-bs-toggle="shouldRegister ? 'tooltip' : ''"
-        data-bs-animation="false"
-        data-bs-placement="right"
-        data-bs-custom-class="wide-xl-tooltip text-start"
-        data-bs-html="true"
-        data-bs-title="_"
-      />
-      <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
-      <template v-if="shouldRegister">
-        <label class="form-label mt-4">Confirm password</label>
+      <form @submit="handleOnFormSubmit" class="form-login mt-5 w-100">
+        <label class="form-label">Email</label>
         <AppInput
-          v-model="inputConfirmPassword"
+          v-model="inputEmail"
+          :filled="true"
+          :class="{ 'is-invalid': inputEmailInvalid }"
+          placeholder="Enter email"
+        />
+        <div v-if="inputEmailInvalid" class="invalid-feedback">Invalid e-mail.</div>
+        <label class="form-label mt-4">Password</label>
+        <AppInput
+          v-model="inputPassword"
           :filled="true"
           type="password"
-          :class="{ 'is-invalid': inputConfirmPasswordInvalid }"
-          placeholder="Confirm password"
+          :class="{ 'is-invalid': inputPasswordInvalid }"
+          placeholder="Enter password"
+          :data-bs-toggle="shouldRegister ? 'tooltip' : ''"
+          data-bs-animation="false"
+          data-bs-placement="right"
+          data-bs-custom-class="wide-xl-tooltip text-start"
+          data-bs-html="true"
+          data-bs-title="_"
         />
-        <div v-if="inputConfirmPasswordInvalid" class="invalid-feedback">
-          Password do not match.
-        </div>
-      </template>
+        <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
+        <template v-if="shouldRegister">
+          <label class="form-label mt-4">Confirm password</label>
+          <AppInput
+            v-model="inputConfirmPassword"
+            :filled="true"
+            type="password"
+            :class="{ 'is-invalid': inputConfirmPasswordInvalid }"
+            placeholder="Confirm password"
+          />
+          <div v-if="inputConfirmPasswordInvalid" class="invalid-feedback">
+            Password do not match.
+          </div>
+        </template>
 
-      <div v-if="!shouldRegister" class="mt-3 text-end">
-        <span @click="isResetDataModalShown = true" class="text-small link-primary cursor-pointer"
-          >Reset account</span
-        >
-      </div>
-
-      <div class="row justify-content-end mt-5">
-        <div class="d-grid">
-          <AppButton
-            color="primary"
-            type="submit"
-            class="w-100"
-            :disabled="inputEmail.length === 0 || inputPassword.length === 0"
-            >{{ shouldRegister ? 'Next' : 'Sign in' }}</AppButton
+        <div v-if="!shouldRegister" class="mt-3 text-end">
+          <span @click="isResetDataModalShown = true" class="text-small link-primary cursor-pointer"
+            >Reset account</span
           >
         </div>
-      </div>
-    </form>
-    <AppModal v-model:show="isResetDataModalShown" class="common-modal">
-      <div class="modal-body">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          @click="isResetDataModalShown = false"
-        ></i>
-        <div class="text-center">
-          <AppCustomIcon :name="'bin'" style="height: 160px" />
-        </div>
-        <h3 class="text-center text-title text-bold">Reset Data</h3>
-        <p class="text-center text-small text-secondary mt-4">
-          Are you sure you want to reset the app data?
-        </p>
 
-        <hr class="separator my-5" />
-
-        <div class="flex-between-centered gap-4">
-          <AppButton color="borderless" @click="isResetDataModalShown = false">Cancel</AppButton>
-          <AppButton color="danger" @click="handleResetData">Reset</AppButton>
+        <div class="row justify-content-end mt-5">
+          <div class="d-grid">
+            <AppButton
+              color="primary"
+              type="submit"
+              class="w-100"
+              :disabled="inputEmail.length === 0 || inputPassword.length === 0"
+              >{{ shouldRegister ? 'Next' : 'Sign in' }}</AppButton
+            >
+          </div>
         </div>
-      </div>
-    </AppModal>
+      </form>
+      <AppModal v-model:show="isResetDataModalShown" class="common-modal">
+        <div class="modal-body">
+          <i
+            class="bi bi-x-lg d-inline-block cursor-pointer"
+            @click="isResetDataModalShown = false"
+          ></i>
+          <div class="text-center">
+            <AppCustomIcon :name="'bin'" style="height: 160px" />
+          </div>
+          <h3 class="text-center text-title text-bold">Reset Data</h3>
+          <p class="text-center text-small text-secondary mt-4">
+            Are you sure you want to reset the app data?
+          </p>
+
+          <hr class="separator my-5" />
+
+          <div class="flex-between-centered gap-4">
+            <AppButton color="borderless" @click="isResetDataModalShown = false">Cancel</AppButton>
+            <AppButton color="danger" @click="handleResetData">Reset</AppButton>
+          </div>
+        </div>
+      </AppModal>
+    </div>
   </div>
 </template>

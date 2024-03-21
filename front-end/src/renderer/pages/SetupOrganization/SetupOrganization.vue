@@ -38,7 +38,7 @@ const handleContinue = async (e: Event) => {
     user.data.activeServerURL = serverUrl.value;
 
     toast.error('Organizations Added', { position: 'bottom-right' });
-    router.push({ name: 'welcome' });
+    router.push({ name: 'login' });
   } catch (err: any) {
     let message = 'Failed to add organization';
     if (err.message && typeof err.message === 'string') {

@@ -3,8 +3,8 @@ import { RouteRecordRaw, createRouter, createWebHistory } from 'vue-router';
 import { attachMeta } from './meta';
 
 import Transactions from '@renderer/pages/Transactions';
+import UserLogin from '@renderer/pages/UserLogin';
 
-const Welcome = () => import('@renderer/pages/Welcome');
 const StyleGuide = () => import('@renderer/pages/Styleguide');
 const Accounts = () => import('@renderer/pages/Accounts');
 const Tokens = () => import('@renderer/pages/Tokens');
@@ -29,8 +29,8 @@ const LinkExistingFile = () => import('@renderer/pages/Files/LinkExistingFile');
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    name: 'welcome',
-    component: Welcome,
+    name: 'login',
+    component: UserLogin,
   },
   { path: '/style-guide', name: 'styleGuide', component: StyleGuide },
   { path: '/transactions', name: 'transactions', component: Transactions },

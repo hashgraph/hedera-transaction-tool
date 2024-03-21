@@ -51,7 +51,7 @@ const handleLogout = () => {
   user.logout();
   keyPairsStore.clearKeyPairs();
   keyPairsStore.clearRecoveryPhrase();
-  router.push({ name: 'welcome' });
+  router.push({ name: 'login' });
 };
 </script>
 
@@ -71,7 +71,7 @@ const handleLogout = () => {
       <span class="container-icon">
         <i class="text-icon-main bi bi-three-dots-vertical"></i>
       </span> -->
-      <span class="container-icon" @click="handleLogout">
+      <span v-if="user.data.isLoggedIn" class="container-icon" @click="handleLogout">
         <i class="text-icon-main bi bi-box-arrow-right"></i>
       </span>
       <div class="d-none me-4">
