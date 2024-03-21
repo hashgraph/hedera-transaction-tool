@@ -26,9 +26,14 @@ export const loginLocal = async (
   }
 };
 
-export const registerLocal = async (email: string, password: string) => {
+export const registerLocal = async (email: string, password: string, keepLoggedIn = false) => {
   try {
     const { id, email: userEmail } = await window.electronAPI.localUser.register(email, password);
+
+    if (keepLoggedIn) {
+      localStorage.setItem('htx_user', JSON.stringify({ userId: id, email: userEmail }));
+    }
+
     return { id: id, email: userEmail };
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Registration failed'));
