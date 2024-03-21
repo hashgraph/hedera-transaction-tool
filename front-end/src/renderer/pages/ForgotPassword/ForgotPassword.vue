@@ -18,7 +18,7 @@ const handleFormSubmit = (event: Event) => {
 
   // SEND BACK END PASSWORD RESET REQUEST FOR ENTERED EMAIL
 
-  router.push({ name: 'welcome' });
+  router.push({ name: 'login' });
 };
 </script>
 

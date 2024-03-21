@@ -2,8 +2,6 @@
 import { onMounted, reactive, ref, watch } from 'vue';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
-import { User } from '@prisma/client';
-
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
@@ -25,6 +23,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -52,6 +51,7 @@ const passwordRequirements = reactive({
 });
 const tooltipContent = ref('');
 const shouldRegister = ref(false);
+const keepLoggedIn = ref(false);
 const isResetDataModalShown = ref(false);
 
 /* Handlers */
@@ -76,16 +76,20 @@ const handleOnFormSubmit = async (event: Event) => {
       toast.error('Password too weak', { position: 'bottom-right' });
       return;
     }
-    const userData = await registerLocal(inputEmail.value, inputPassword.value);
-    user.login(userData, []);
+    const { id, email } = await registerLocal(
+      inputEmail.value,
+      inputPassword.value,
+      keepLoggedIn.value,
+    );
+    user.login(id, email, []);
 
     user.data.password = inputPassword.value;
     router.push({ name: 'accountSetup' });
   } else if (!shouldRegister.value) {
-    let userData: User | null = null;
+    let userData: { id: string; email: string } | null = null;
 
     try {
-      userData = await loginLocal(inputEmail.value, inputPassword.value, false);
+      userData = await loginLocal(inputEmail.value, inputPassword.value, keepLoggedIn.value, false);
     } catch (error: any) {
       inputEmailInvalid.value = false;
       inputPasswordInvalid.value = false;
@@ -100,7 +104,7 @@ const handleOnFormSubmit = async (event: Event) => {
 
     if (userData) {
       const secretHashes = await getSecretHashes(userData.id);
-      user.login(userData, secretHashes);
+      user.login(userData.id, userData.email, secretHashes);
 
       if (secretHashes.length === 0) {
         user.data.password = inputPassword.value;
@@ -233,91 +237,103 @@ watch(inputEmail, pass => {
 });
 </script>
 <template>
-  <div class="container-dark-border glow-dark-bg p-5">
-    <h4 class="text-title text-semi-bold text-center">
-      {{ shouldRegister ? 'Register' : 'Sign In' }}
-    </h4>
-    <p class="text-secondary text-small lh-base text-center mt-3">
-      {{ shouldRegister ? 'Enter e-mail and password' : 'Enter your e-mail and password' }}
-    </p>
+  <div class="p-10 flex-column flex-centered flex-1 overflow-hidden">
+    <div class="container-dark-border glow-dark-bg p-5">
+      <h4 class="text-title text-semi-bold text-center">
+        {{ shouldRegister ? 'Register' : 'Sign In' }}
+      </h4>
+      <p class="text-secondary text-small lh-base text-center mt-3">
+        {{ shouldRegister ? 'Enter e-mail and password' : 'Enter your e-mail and password' }}
+      </p>
 
-    <form @submit="handleOnFormSubmit" class="form-login mt-5 w-100">
-      <label class="form-label">Email</label>
-      <AppInput
-        v-model="inputEmail"
-        :filled="true"
-        :class="{ 'is-invalid': inputEmailInvalid }"
-        placeholder="Enter email"
-      />
-      <div v-if="inputEmailInvalid" class="invalid-feedback">Invalid e-mail.</div>
-      <label class="form-label mt-4">Password</label>
-      <AppInput
-        v-model="inputPassword"
-        :filled="true"
-        type="password"
-        :class="{ 'is-invalid': inputPasswordInvalid }"
-        placeholder="Enter password"
-        :data-bs-toggle="shouldRegister ? 'tooltip' : ''"
-        data-bs-animation="false"
-        data-bs-placement="right"
-        data-bs-custom-class="wide-xl-tooltip text-start"
-        data-bs-html="true"
-        data-bs-title="_"
-      />
-      <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
-      <template v-if="shouldRegister">
-        <label class="form-label mt-4">Confirm password</label>
+      <form @submit="handleOnFormSubmit" class="form-login mt-5 w-100">
+        <label class="form-label">Email</label>
         <AppInput
-          v-model="inputConfirmPassword"
+          v-model="inputEmail"
+          :filled="true"
+          :class="{ 'is-invalid': inputEmailInvalid }"
+          placeholder="Enter email"
+        />
+        <div v-if="inputEmailInvalid" class="invalid-feedback">Invalid e-mail.</div>
+        <label class="form-label mt-4">Password</label>
+        <AppInput
+          v-model="inputPassword"
           :filled="true"
           type="password"
-          :class="{ 'is-invalid': inputConfirmPasswordInvalid }"
-          placeholder="Confirm password"
+          :class="{ 'is-invalid': inputPasswordInvalid }"
+          placeholder="Enter password"
+          :data-bs-toggle="shouldRegister ? 'tooltip' : ''"
+          data-bs-animation="false"
+          data-bs-placement="right"
+          data-bs-custom-class="wide-xl-tooltip text-start"
+          data-bs-html="true"
+          data-bs-title="_"
         />
-        <div v-if="inputConfirmPasswordInvalid" class="invalid-feedback">
-          Password do not match.
-        </div>
-      </template>
+        <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
+        <template v-if="shouldRegister">
+          <label class="form-label mt-4">Confirm password</label>
+          <AppInput
+            v-model="inputConfirmPassword"
+            :filled="true"
+            type="password"
+            :class="{ 'is-invalid': inputConfirmPasswordInvalid }"
+            placeholder="Confirm password"
+          />
+          <div v-if="inputConfirmPasswordInvalid" class="invalid-feedback">
+            Password do not match.
+          </div>
+        </template>
 
-      <div v-if="!shouldRegister" class="mt-3 text-end">
-        <span @click="isResetDataModalShown = true" class="text-small link-primary cursor-pointer"
-          >Reset account</span
-        >
-      </div>
-
-      <div class="row justify-content-end mt-5">
-        <div class="d-grid">
-          <AppButton
-            color="primary"
-            type="submit"
-            class="w-100"
-            :disabled="inputEmail.length === 0 || inputPassword.length === 0"
-            >{{ shouldRegister ? 'Next' : 'Sign in' }}</AppButton
+        <div class="flex-centered justify-content-between gap-3 mt-3">
+          <div>
+            <AppCheckBox
+              v-model:checked="keepLoggedIn"
+              name="keep_logged_in"
+              label="Keep me logged in"
+            ></AppCheckBox>
+          </div>
+          <span
+            v-if="!shouldRegister"
+            @click="isResetDataModalShown = true"
+            class="text-small link-primary cursor-pointer"
+            >Reset account</span
           >
         </div>
-      </div>
-    </form>
-    <AppModal v-model:show="isResetDataModalShown" class="common-modal">
-      <div class="modal-body">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          @click="isResetDataModalShown = false"
-        ></i>
-        <div class="text-center">
-          <AppCustomIcon :name="'bin'" style="height: 160px" />
-        </div>
-        <h3 class="text-center text-title text-bold">Reset Data</h3>
-        <p class="text-center text-small text-secondary mt-4">
-          Are you sure you want to reset the app data?
-        </p>
 
-        <hr class="separator my-5" />
-
-        <div class="flex-between-centered gap-4">
-          <AppButton color="borderless" @click="isResetDataModalShown = false">Cancel</AppButton>
-          <AppButton color="danger" @click="handleResetData">Reset</AppButton>
+        <div class="row justify-content-end mt-5">
+          <div class="d-grid">
+            <AppButton
+              color="primary"
+              type="submit"
+              class="w-100"
+              :disabled="inputEmail.length === 0 || inputPassword.length === 0"
+              >{{ shouldRegister ? 'Next' : 'Sign in' }}</AppButton
+            >
+          </div>
         </div>
-      </div>
-    </AppModal>
+      </form>
+      <AppModal v-model:show="isResetDataModalShown" class="common-modal">
+        <div class="modal-body">
+          <i
+            class="bi bi-x-lg d-inline-block cursor-pointer"
+            @click="isResetDataModalShown = false"
+          ></i>
+          <div class="text-center">
+            <AppCustomIcon :name="'bin'" style="height: 160px" />
+          </div>
+          <h3 class="text-center text-title text-bold">Reset Data</h3>
+          <p class="text-center text-small text-secondary mt-4">
+            Are you sure you want to reset the app data?
+          </p>
+
+          <hr class="separator my-5" />
+
+          <div class="flex-between-centered gap-4">
+            <AppButton color="borderless" @click="isResetDataModalShown = false">Cancel</AppButton>
+            <AppButton color="danger" @click="handleResetData">Reset</AppButton>
+          </div>
+        </div>
+      </AppModal>
+    </div>
   </div>
 </template>

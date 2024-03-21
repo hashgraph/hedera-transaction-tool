@@ -1,7 +1,6 @@
 import { RouteRecordRaw } from 'vue-router';
 
 const withoutAuthRoutes = [
-  'welcome',
   'login',
   'styleGuide',
   'settingsGeneral',

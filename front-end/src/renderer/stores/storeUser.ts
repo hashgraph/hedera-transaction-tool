@@ -1,10 +1,8 @@
 import { reactive } from 'vue';
 import { defineStore } from 'pinia';
 
-import { User } from '@prisma/client';
-
 export interface UserStore {
-  isLoggedIn: boolean;
+  isLoggedIn: boolean | null;
   id: string;
   email: string;
   password: string;
@@ -20,7 +18,7 @@ export const localServerUrl = '';
 const useUserStore = defineStore('user', () => {
   /* State */
   const data = reactive<UserStore>({
-    isLoggedIn: false,
+    isLoggedIn: null,
     id: '',
     email: '',
     password: '',
@@ -38,10 +36,10 @@ const useUserStore = defineStore('user', () => {
     }
   }
 
-  function login(user: User, secretHashes: string[]) {
+  function login(id: string, email: string, secretHashes: string[]) {
     data.isLoggedIn = true;
-    data.email = user.email;
-    data.id = user.id;
+    data.email = email;
+    data.id = id && id.length > 0 ? id : '';
     data.secretHashes = secretHashes;
   }
 

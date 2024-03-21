@@ -6,19 +6,24 @@ export function addGuards(router: Router) {
   const user = useUserStore();
 
   router.beforeEach(to => {
-    if (user.data.isLoggedIn && user.data.secretHashes.length === 0 && to.name !== 'accountSetup') {
+    const userIsLoggedIn = user.data.isLoggedIn;
+
+    if (userIsLoggedIn && user.data.secretHashes.length === 0 && to.name !== 'accountSetup') {
       return {
         name: 'accountSetup',
       };
     }
 
-    if (user.data.isLoggedIn && to.name === 'welcome') {
-      return { name: 'transactions' };
+    if (userIsLoggedIn && to.name === 'login') {
+      return router.previousPath ? { path: router.previousPath } : { name: 'transactions' };
     }
 
-    if (!to.meta.withoutAuth && !user.data.isLoggedIn) {
+    if (to.name !== 'login') {
       router.previousPath = to.path;
-      router.push({ name: 'welcome' });
+    }
+
+    if (!to.meta.withoutAuth && userIsLoggedIn === false) {
+      router.push({ name: 'login' });
     }
 
     return true;

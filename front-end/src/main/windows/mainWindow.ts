@@ -25,6 +25,7 @@ async function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: false,
+      partition: 'persist:main',
     },
     show: false,
   });
