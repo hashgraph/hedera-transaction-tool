@@ -136,13 +136,17 @@ export const getAccountAllowances = async (
 };
 
 export const getExchangeRateSet = async (mirrorNodeLink: string, controller?: AbortController) => {
-  const { data } = await axios.get(`${mirrorNodeLink}/network/exchangerate`, {
-    signal: controller?.signal,
-  });
+  try {
+    const { data } = await axios.get(`${mirrorNodeLink}/network/exchangerate`, {
+      signal: controller?.signal,
+    });
 
-  const exchangeRateSet: NetworkExchangeRateSetResponse = data;
+    const exchangeRateSet: NetworkExchangeRateSetResponse = data;
 
-  return exchangeRateSet;
+    return exchangeRateSet;
+  } catch (error) {
+    throw new Error('Failed to fetch exchange rate');
+  }
 };
 
 export const getDollarAmount = (hbarPrice: number, hbarAmount: BigNumber) => {
