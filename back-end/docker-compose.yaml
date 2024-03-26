@@ -1,0 +1,51 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+      target: development
+    command: npm run start:dev api
+    env_file:
+      - ./apps/api/.env
+    ports:
+      - '3000:3000'
+      - '3001:3001'
+    volumes:
+      - .:/usr/src/app
+#  chain:
+#    build:
+#      context: .
+#      dockerfile: ./apps/chain/Dockerfile
+#      target: development
+#    command: npm run start:dev chain
+#    env_file:
+#      - ./apps/chain/.env
+#    ports:
+#      - '3010:3010'
+#    volumes:
+#      - .:/usr/src/app
+  rabbitmq:
+    image: rabbitmq
+    ports:
+      - 5672:5672
+  database:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=postgres
+    container_name: postgres
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    container_name: nest-pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=pgadmin4
+    ports:
+      - '5050:80'
+    depends_on:
+      - database

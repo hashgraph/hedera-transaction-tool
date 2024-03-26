@@ -1,0 +1,30 @@
+### Create user for John
+POST http://localhost:3000/auth/signup
+content-type: application/json
+
+{
+  "email": "john@test.com",
+  "password": "123456789"
+}
+
+### Create user for Ted
+POST http://localhost:3000/auth/signup
+content-type: application/json
+
+{
+"email": "ted@test.com",
+"password": "123456789"
+}
+
+### Log in John
+POST http://localhost:3000/auth/login
+content-type: application/json
+
+{
+  "email": "john@test.com",
+  "password": "123456789"
+}
+
+### Sing out
+POST http://localhost:3000/auth/signout
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcxMDc3NDAzNywiZXhwIjoxNzEwODEwMDM3fQ.h_NwgTMmancbf-ifAlOtH9SuGGqf6MW4COjbryIp14s
