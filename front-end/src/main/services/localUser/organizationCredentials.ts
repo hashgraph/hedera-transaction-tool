@@ -74,11 +74,13 @@ function credentialsValid(credentials?: OrganizationCredentials | null) {
   )
     return false;
 
-  const jwtPayload = jwtDecode(credentials.jwtToken);
-
-  if (!jwtPayload.exp) return false;
-
-  if (new Date(jwtPayload.exp * 1000) < new Date()) return false;
+  try {
+    const jwtPayload = jwtDecode(credentials.jwtToken);
+    if (!jwtPayload.exp) return false;
+    if (new Date(jwtPayload.exp * 1000) < new Date()) return false;
+  } catch (error) {
+    return false;
+  }
 
   return true;
 }
