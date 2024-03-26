@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 const pingPath = '/users';
 
@@ -12,3 +12,9 @@ export const ping = async (serverUrl: string): Promise<boolean> => {
     return false;
   }
 };
+
+export function throwIfNoResponse(error: AxiosError) {
+  if (!error.response) {
+    throw new Error('Failed to connect to the server');
+  }
+}

@@ -1,6 +1,9 @@
 import axios, { AxiosError } from 'axios';
+import { throwIfNoResponse } from './';
 
 /* Authentification service for organization */
+
+const authController = 'auth';
 
 export const login = async (
   serverUrl: string,
@@ -8,7 +11,7 @@ export const login = async (
   password: string,
 ): Promise<string> => {
   try {
-    const response = await axios.post(`${serverUrl}/auth/signin`, {
+    const response = await axios.post(`${serverUrl}/${authController}/signin`, {
       email,
       password,
     });
@@ -26,9 +29,3 @@ export const login = async (
     throw new Error('Failed Sign in Organization');
   }
 };
-
-function throwIfNoResponse(error: AxiosError) {
-  if (!error.response) {
-    throw new Error('Failed to connect to the server');
-  }
-}
