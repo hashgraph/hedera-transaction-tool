@@ -44,6 +44,7 @@ export const addOrganizationCredentials = async (
   user_id: string,
   jwtToken: string,
   encryptPassword: string,
+  updateIfExists: boolean = false,
 ) => {
   try {
     return await window.electronAPI.organizationCredentials.addOrganizationCredentials(
@@ -53,6 +54,7 @@ export const addOrganizationCredentials = async (
       user_id,
       jwtToken,
       encryptPassword,
+      updateIfExists,
     );
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, 'Failed to store organization credentials'));

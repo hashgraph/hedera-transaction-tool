@@ -65,6 +65,36 @@ export const shouldSignInOrganization = async (user_id: string, organization_id:
   }
 };
 
+/* Returns credentials for organization */
+export const getOrganizationCredentials = async (organization_id: string, user_id: string) => {
+  const prisma = getPrismaClient();
+
+  try {
+    return await prisma.organizationCredentials.findFirst({
+      where: { user_id, organization_id },
+    });
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+};
+
+/* Returns whether organization credentials exists */
+export const organizationCredentialsExists = async (organization_id: string, user_id: string) => {
+  const prisma = getPrismaClient();
+
+  try {
+    return (await prisma.organizationCredentials.count({
+      where: { user_id, organization_id },
+    })) > 0
+      ? true
+      : false;
+  } catch (error) {
+    console.log(error);
+    return false;
+  }
+};
+
 /* Adds a new organization credentials to the user */
 export const addOrganizationCredentials = async (
   email: string,
@@ -73,8 +103,25 @@ export const addOrganizationCredentials = async (
   user_id: string,
   jwtToken: string,
   encryptPassword: string,
+  updateIfExists: boolean = false,
 ) => {
   const prisma = getPrismaClient();
+
+  if (updateIfExists) {
+    const exists = await organizationCredentialsExists(organization_id, user_id);
+
+    if (exists) {
+      await updateOrganizationCredentials(
+        organization_id,
+        user_id,
+        email,
+        password,
+        jwtToken,
+        encryptPassword,
+      );
+      return;
+    }
+  }
 
   try {
     password = encrypt(password, encryptPassword);

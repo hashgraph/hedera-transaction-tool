@@ -234,6 +234,7 @@ export const electronAPI = {
       user_id: string,
       jwtToken: string,
       encryptPassword: string,
+      updateIfExists: boolean = false,
     ): Promise<boolean> =>
       ipcRenderer.invoke(
         'organizationCredentials:addOrganizationCredentials',
@@ -243,6 +244,7 @@ export const electronAPI = {
         user_id,
         jwtToken,
         encryptPassword,
+        updateIfExists,
       ),
     updateOrganizationCredentials: (
       organization_id: string,

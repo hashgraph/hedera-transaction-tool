@@ -42,6 +42,7 @@ export default () => {
       user_id: string,
       jwtToken: string,
       encryptPassword: string,
+      updateIfExists: boolean = false,
     ) =>
       addOrganizationCredentials(
         email,
@@ -50,6 +51,7 @@ export default () => {
         user_id,
         jwtToken,
         encryptPassword,
+        updateIfExists,
       ),
   );
 
