@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { ref, onBeforeMount } from 'vue';
+import { ref } from 'vue';
 
 import { Organization } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
-
-import { getOrganizations } from '@renderer/services/organizationsService';
 
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
 import AddOrSelectModal from '@renderer/components/Organization/AddOrSelectModal.vue';
@@ -15,7 +13,6 @@ import SelectOrganizationModal from './Organization/SelectOrganizationModal.vue'
 const user = useUserStore();
 
 /* State */
-const organizations = ref<Organization[]>([]);
 const selectedMode = ref<string>('personal');
 const addOrSelectModalShown = ref(false);
 const addOrganizationModalShown = ref(false);
@@ -32,7 +29,9 @@ const handleUserModeChange = (e: Event) => {
   } else if (newValue === 'personal') {
     user.setActiveOrganization(null);
   } else {
-    user.setActiveOrganization(organizations.value.find(org => org.id === newValue) || null);
+    user.setActiveOrganization(
+      user.data.connectedOrganizations.find(org => org.id === newValue) || null,
+    );
   }
 };
 
@@ -48,14 +47,9 @@ const handleSelectedOrAdd = (value: 'select' | 'add') => {
 
 const handleSelectOrganization = (organization: Organization) => {
   user.setActiveOrganization(organization);
-  organizations.value.push(organization);
+  user.data.connectedOrganizations.push(organization);
   selectedMode.value = organization.id;
 };
-
-/* Hooks */
-onBeforeMount(async () => {
-  organizations.value = await getOrganizations(user.data.id);
-});
 </script>
 <template>
   <div>
@@ -65,7 +59,7 @@ onBeforeMount(async () => {
       @change="handleUserModeChange"
     >
       <option value="personal">Personal User</option>
-      <template v-for="organization in organizations" :key="organization.id">
+      <template v-for="organization in user.data.connectedOrganizations" :key="organization.id">
         <option :value="organization.id">
           {{ organization.nickname }}
         </option>
