@@ -13,6 +13,7 @@ import AppMenu from '@renderer/components/Menu.vue';
 import AppHeader from '@renderer/components/Header.vue';
 import AppUpdate from '@renderer/components/AppUpdate.vue';
 import ImportantNote from '@renderer/components/ImportantNote.vue';
+import AutoLoginInOrganization from './components/Organization/AutoLoginInOrganization.vue';
 // import PingOrganizations from '@renderer/components/Organization/PingOrganizations.vue';
 
 /* Composables */
@@ -82,6 +83,8 @@ watch([isCheckingUserState, () => keyPairs.refetching], ([isChecking, fetching])
       <!-- <PingOrganizations /> -->
     </div>
   </Transition>
+
+  <AutoLoginInOrganization />
 
   <!-- To be removed -->
   <AppButton class="btn-theme-changer" color="secondary" @click="handleThemeChange">

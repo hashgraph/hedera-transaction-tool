@@ -7,7 +7,6 @@ import {
   getConnectedOrganizations,
   getOrganizationsToSignIn,
   shouldSignInOrganization,
-  tryAutoSignIn,
 } from '@renderer/services/organizationCredentials';
 
 export interface UserStore {
@@ -65,7 +64,6 @@ const useUserStore = defineStore('user', () => {
     if (data.isLoggedIn && data.id.length > 0) {
       data.connectedOrganizations = await getConnectedOrganizations(data.id);
       data.organizationsToSignIn = await getOrganizationsToSignIn(data.id);
-      await tryAutoSignIn(data.id, data.password);
     }
   }
 

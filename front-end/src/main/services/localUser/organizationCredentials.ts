@@ -251,11 +251,14 @@ export const tryAutoSignIn = async (user_id: string, decryptPassword: string) =>
         invalidCredential.email,
         password,
         accessToken,
+        decryptPassword,
       );
     } catch (error) {
       failedLogins.push(invalidCredential.organization);
     }
   }
+
+  return failedLogins;
 };
 
 function credentialsValid(credentials?: OrganizationCredentials | null) {
