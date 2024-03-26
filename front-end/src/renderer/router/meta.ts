@@ -3,8 +3,8 @@ import { RouteRecordRaw } from 'vue-router';
 const withoutAuthRoutes = [
   'login',
   'styleGuide',
-  'settingsGeneral',
-  'settingsWorkGroups',
+  // 'settingsGeneral',
+  // 'settingsWorkGroups',
   'help',
   'forgotPassword',
 ];
