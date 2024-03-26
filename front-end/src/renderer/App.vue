@@ -51,7 +51,7 @@ watch([isCheckingUserState, () => keyPairs.refetching], ([isChecking, fetching])
 <template>
   <AppHeader
     :class="{
-      'logged-in': user.data.isLoggedIn,
+      'logged-in': user.data.isLoggedIn && !user.data.isSigningInOrganization,
       'should-setup-account': user.data.secretHashes.length === 0,
     }"
   />
@@ -61,11 +61,17 @@ watch([isCheckingUserState, () => keyPairs.refetching], ([isChecking, fetching])
       v-if="isReady"
       class="container-main"
       :class="{
-        'logged-in': user.data.isLoggedIn,
+        'logged-in': user.data.isLoggedIn && !user.data.isSigningInOrganization,
         'should-setup-account': user.data.secretHashes.length === 0,
       }"
     >
-      <AppMenu v-if="user.data.isLoggedIn && user.data.secretHashes.length > 0" />
+      <AppMenu
+        v-if="
+          user.data.isLoggedIn &&
+          user.data.secretHashes.length > 0 &&
+          !user.data.isSigningInOrganization
+        "
+      />
       <RouterView v-slot="{ Component }" class="flex-1 overflow-hidden container-main-content">
         <Transition name="fade" mode="out-in">
           <component :is="Component" />
