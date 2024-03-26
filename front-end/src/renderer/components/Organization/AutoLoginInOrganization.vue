@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
+import { Organization } from '@prisma/client';
+
 import useUserStore from '@renderer/stores/storeUser';
 
 import {
   getOrganizationsToSignIn,
   tryAutoSignIn,
 } from '@renderer/services/organizationCredentials';
+import { ping } from '@renderer/services/organization';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
-import { Organization } from '@prisma/client';
 
 /* Stores */
 const user = useUserStore();
@@ -42,9 +44,16 @@ const handleSubmitFailedOrganizations = (e: Event) => {
 /* Functions */
 async function openPasswordModalIfRequired() {
   if (user.data.isLoggedIn && user.data.id.length > 0) {
-    const organizationsToSignIn = await getOrganizationsToSignIn(user.data.id);
+    const organizationCredentialsToUpdate = await getOrganizationsToSignIn(user.data.id);
 
-    if (organizationsToSignIn.length > 0) {
+    const activeOrganizations: Organization[] = [];
+
+    for (const cr of organizationCredentialsToUpdate) {
+      const active = await ping(cr.organization.serverUrl);
+      if (active) activeOrganizations.push(cr.organization);
+    }
+
+    if (organizationCredentialsToUpdate.length > 0 && activeOrganizations.length > 0) {
       userPasswordModalShow.value = true;
     }
   }
