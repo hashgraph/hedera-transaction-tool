@@ -42,7 +42,7 @@ const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
     const keyPair: Prisma.KeyPairUncheckedCreateInput = {
       user_id: user.data.id,
       ...generateExternalKeyPairFromString(privateKey, type, nickname || ''),
-      organization_id: null,
+      organization_id: user.data.activeOrganization?.id || null,
       type: type,
       secret_hash: null,
     };

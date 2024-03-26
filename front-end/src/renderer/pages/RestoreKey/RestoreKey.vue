@@ -102,7 +102,7 @@ const handleSaveKey = async e => {
         private_key: restoredKey.value.privateKey,
         public_key: restoredKey.value.publicKey,
         type: 'ED25519',
-        organization_id: null,
+        organization_id: user.data.activeOrganization?.id || null,
         secret_hash: secretHash,
         nickname: nickname.value || null,
       };

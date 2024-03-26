@@ -15,7 +15,7 @@ export const getSecretHashes = async (
     by: ['secret_hash'],
     where: {
       user_id: userId,
-      organization_id: organizationId,
+      organization_id: organizationId ? organizationId : null,
       secret_hash: {
         not: null,
       },
@@ -26,12 +26,16 @@ export const getSecretHashes = async (
 };
 
 //Get stored key pairs
-export const getKeyPairs = async (userId: string, organizationId?: string): Promise<KeyPair[]> => {
+export const getKeyPairs = async (
+  user_id: string,
+  organization_id?: string,
+): Promise<KeyPair[]> => {
   const prisma = getPrismaClient();
 
   return prisma.keyPair.findMany({
     where: {
-      AND: [{ user_id: userId }, { organization_id: organizationId }],
+      user_id,
+      organization_id: organization_id ? organization_id : null,
     },
     orderBy: {
       secret_hash: 'desc',
@@ -118,12 +122,13 @@ export const deleteEncryptedPrivateKeys = async (userId: string, organizationId:
 };
 
 // Clear user's keys
-export const deleteSecretHashes = async (userId: string, organizationId?: string) => {
+export const deleteSecretHashes = async (user_id: string, organization_id?: string) => {
   const prisma = getPrismaClient();
 
   await prisma.keyPair.deleteMany({
     where: {
-      AND: [{ user_id: userId }, { organization_id: organizationId }],
+      user_id,
+      organization_id: organization_id ? organization_id : null,
     },
   });
 };
