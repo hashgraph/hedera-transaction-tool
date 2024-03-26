@@ -174,7 +174,7 @@ const columnClass = 'col-4 col-xxxl-3';
           <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
             >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
           >
-          <template v-if="user.data.mode === 'personal'">
+          <template v-if="!user.data.activeOrganization">
             <AccountIdsSelect
               v-model:account-id="payerData.accountId.value"
               :select-default="true"

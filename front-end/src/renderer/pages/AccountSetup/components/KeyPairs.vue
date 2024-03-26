@@ -260,7 +260,7 @@ defineExpose({
       <label class="form-label">ED25519 Public Key</label>
       <p class="text-break text-secondary">{{ publicKey }}</p>
     </div>
-    <template v-if="user.data.mode === 'organization'">
+    <template v-if="user.data.activeOrganization">
       <hr class="my-6" />
       <div class="alert alert-secondary d-flex align-items-start mb-0" role="alert">
         <i class="bi bi-exclamation-triangle text-warning me-3"></i>

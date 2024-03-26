@@ -69,7 +69,7 @@ const handleNext = async () => {
 
 /* Hooks */
 onBeforeMount(() => {
-  if (user.data.mode === 'personal') {
+  if (!user.data.activeOrganization) {
     step.value.previous = 'recoveryPhrase';
     step.value.current = 'recoveryPhrase';
     stepperItems.value.shift();
@@ -123,9 +123,7 @@ onBeforeMount(() => {
               <KeyPairs
                 ref="keyPairsComponent"
                 v-model:step="step"
-                :encrypt-password="
-                  user.data.mode === 'organization' ? password : user.data.password
-                "
+                :encrypt-password="user.data.activeOrganization ? password : user.data.password"
               />
             </template>
           </Transition>
@@ -135,7 +133,7 @@ onBeforeMount(() => {
               <AppButton
                 v-if="
                   stepperItems[0].name != step.current ||
-                  (user.data.mode === 'organization' && stepperItems[1].name != step.current) ||
+                  (user.data.activeOrganization && stepperItems[1].name != step.current) ||
                   isFaqShown
                 "
                 color="borderless"

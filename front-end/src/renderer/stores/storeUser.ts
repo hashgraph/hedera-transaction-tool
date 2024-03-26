@@ -1,15 +1,15 @@
 import { reactive } from 'vue';
 import { defineStore } from 'pinia';
 
+import { Organization } from '@prisma/client';
+
 export interface UserStore {
   isLoggedIn: boolean | null;
   id: string;
   email: string;
   password: string;
   secretHashes: string[];
-  mode: 'personal' | 'organization';
-  accessTokens: string[];
-  activeServerURL?: string;
+  activeOrganization: Organization | null;
 }
 
 export const localServerUrl = '';
@@ -22,17 +22,12 @@ const useUserStore = defineStore('user', () => {
     email: '',
     password: '',
     secretHashes: [],
-    mode: 'personal',
-    accessTokens: [],
+    activeOrganization: null,
   });
 
   /* Actions */
-  function setMode(mode: 'personal' | 'organization') {
-    data.mode = mode;
-
-    if (mode === 'personal') {
-      data.activeServerURL = undefined;
-    }
+  function setActiveOrganization(organization: Organization | null) {
+    data.activeOrganization = organization;
   }
 
   function login(id: string, email: string, secretHashes: string[]) {
@@ -50,7 +45,7 @@ const useUserStore = defineStore('user', () => {
   }
   return {
     data,
-    setMode,
+    setActiveOrganization,
     login,
     logout,
   };

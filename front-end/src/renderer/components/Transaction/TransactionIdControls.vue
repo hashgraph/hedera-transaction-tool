@@ -86,7 +86,7 @@ const columnClass = 'col-4 col-xxxl-3';
         >Balance:
         {{ stringifyHbar((account.accountInfo.value?.balance as Hbar) || new Hbar(0)) }}</label
       >
-      <template v-if="user.data.mode === 'personal'">
+      <template v-if="!user.data.activeOrganization">
         <AccountIdsSelect :account-id="payerId" @update:account-id="handlePayerChange" />
       </template>
       <template v-else>

@@ -88,7 +88,7 @@ function handleConfirmTransaction(e: Event) {
   if (localPublicKeysReq.value.length > 0) {
     isConfirmShown.value = false;
     isSignModalShown.value = true;
-  } else if (user.data.mode === 'organization') {
+  } else if (user.data.activeOrganization) {
     console.log('Send to back end along with siganture key');
   }
 }
@@ -110,9 +110,9 @@ async function handleSignTransaction(e: Event) {
 
     isSignModalShown.value = false;
 
-    if (user.data.mode === 'personal') {
+    if (!user.data.activeOrganization) {
       await executeTransaction(signedTransactionBytes);
-    } else if (user.data.mode === 'organization') {
+    } else if (user.data.activeOrganization) {
       await sendSignedTransactionToOrganization();
       console.log('Send to back end signed along with required', signatureKey.value);
     }
@@ -149,7 +149,7 @@ async function process(requiredKey: Key) {
     if (
       signatureKey.value &&
       !ableToSign(keyPairs.publicKeys, signatureKey.value) &&
-      user.data.mode === 'personal'
+      !user.data.activeOrganization
     ) {
       throw new Error(
         'Unable to execute, all of the required signatures should be with your keys. You are currently in Personal mode.',

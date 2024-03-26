@@ -18,7 +18,6 @@ const AccountSetup = () => import('@renderer/pages/AccountSetup');
 const GeneralTab = () => import('@renderer/pages/Settings/components/GeneralTab.vue');
 const WorkGroupsTab = () => import('@renderer/pages/Settings/components/WorkGroupsTab.vue');
 const KeysTab = () => import('@renderer/pages/Settings/components/KeysTab.vue');
-const SetupOrganization = () => import('@renderer/pages/SetupOrganization');
 const RestoreKey = () => import('@renderer/pages/RestoreKey');
 const CreateTransaction = () => import('@renderer/pages/CreateTransaction');
 const ProfileTab = () => import('@renderer/pages/Settings/components/ProfileTab.vue');
@@ -44,7 +43,6 @@ const routes: RouteRecordRaw[] = [
   { path: '/contact-list', name: 'contactList', component: ContactList },
   { path: '/help', name: 'help', component: Help },
   { path: '/account-setup', name: 'accountSetup', component: AccountSetup },
-  { path: '/setup-organization', name: 'setupOrganization', component: SetupOrganization },
   { path: '/restore-key', name: 'restoreKey', component: RestoreKey },
   { path: '/create-transaction/:type', name: 'createTransaction', component: CreateTransaction },
   { path: '/forgot-password', name: 'forgotPassword', component: ForgotPassword },

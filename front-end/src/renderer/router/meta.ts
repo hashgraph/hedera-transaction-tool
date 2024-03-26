@@ -6,7 +6,6 @@ const withoutAuthRoutes = [
   'settingsGeneral',
   'settingsWorkGroups',
   'help',
-  'setupOrganization',
   'forgotPassword',
 ];
 
