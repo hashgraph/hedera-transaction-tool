@@ -8,11 +8,12 @@ import useKeyPairs from '@renderer/stores/storeKeyPairs';
 
 import useAutoLogin from '@renderer/composables/useAutoLogin';
 
+import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppMenu from '@renderer/components/Menu.vue';
 import AppHeader from '@renderer/components/Header.vue';
 import AppUpdate from '@renderer/components/AppUpdate.vue';
 import ImportantNote from '@renderer/components/ImportantNote.vue';
-import AppButton from '@renderer/components/ui/AppButton.vue';
+import PingOrganizations from '@renderer/components/Organization/PingOrganizations.vue';
 
 /* Composables */
 const isCheckingUserState = useAutoLogin();
@@ -77,6 +78,8 @@ watch([isCheckingUserState, () => keyPairs.refetching], ([isChecking, fetching])
           <component :is="Component" />
         </Transition>
       </RouterView>
+
+      <PingOrganizations />
     </div>
   </Transition>
 

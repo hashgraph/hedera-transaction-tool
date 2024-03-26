@@ -8,6 +8,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useRouter } from 'vue-router';
 
 import { shouldSignInOrganization } from '@renderer/services/organizationCredentials';
+import { ping } from '@renderer/services/organization';
 
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
 import AddOrSelectModal from '@renderer/components/Organization/AddOrSelectModal.vue';
@@ -20,6 +21,7 @@ const user = useUserStore();
 const router = useRouter();
 
 /* State */
+const selectElRef = ref<HTMLSelectElement | null>(null);
 const selectedMode = ref<string>('personal');
 const addOrSelectModalShown = ref(false);
 const addOrganizationModalShown = ref(false);
@@ -34,10 +36,12 @@ const handleUserModeChange = async (e: Event) => {
     selectEl.value = selectedMode.value;
     addOrSelectModalShown.value = true;
   } else if (newValue === 'personal') {
+    selectedMode.value = newValue;
     user.setActiveOrganization(null);
     user.setIsSigningInOrganization(false);
     router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
   } else {
+    selectedMode.value = newValue;
     user.setActiveOrganization(
       user.data.connectedOrganizations.find(org => org.id === newValue) || null,
     );
@@ -70,6 +74,16 @@ const handleSelectOrganization = async (organization: Organization) => {
 async function routeIfShouldLogin() {
   if (user.data.activeOrganization === null) return;
 
+  const active = await ping(user.data.activeOrganization.serverUrl);
+  if (!active) {
+    user.setActiveOrganization(null);
+    selectedMode.value = 'personal';
+    if (selectElRef.value) {
+      selectElRef.value.value = selectedMode.value;
+    }
+    return;
+  }
+
   const flag = await shouldSignInOrganization(user.data.id, user.data.activeOrganization.id);
 
   if (flag) {
@@ -81,6 +95,7 @@ async function routeIfShouldLogin() {
 <template>
   <div>
     <select
+      ref="selectElRef"
       class="form-select is-fill lh-base"
       :value="selectedMode"
       @change="handleUserModeChange"
