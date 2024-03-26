@@ -47,7 +47,10 @@ const handleSelectedOrAdd = (value: 'select' | 'add') => {
 
 const handleSelectOrganization = (organization: Organization) => {
   user.setActiveOrganization(organization);
-  user.data.connectedOrganizations.push(organization);
+
+  if (!user.data.connectedOrganizations.some(org => org.id === organization.id)) {
+    user.data.connectedOrganizations.push(organization);
+  }
   selectedMode.value = organization.id;
 };
 </script>
@@ -67,13 +70,19 @@ const handleSelectOrganization = (organization: Organization) => {
       <option value="add_organization">Add Organization</option>
     </select>
     <AddOrganizationModal
+      v-if="addOrganizationModalShown"
       v-model:show="addOrganizationModalShown"
       @added="handleSelectOrganization"
     />
     <SelectOrganizationModal
+      v-if="selectOrganizationModalShown"
       v-model:show="selectOrganizationModalShown"
       @on-selected="handleSelectOrganization"
     />
-    <AddOrSelectModal v-model:show="addOrSelectModalShown" @on-selected="handleSelectedOrAdd" />
+    <AddOrSelectModal
+      v-if="addOrSelectModalShown"
+      v-model:show="addOrSelectModalShown"
+      @on-selected="handleSelectedOrAdd"
+    />
   </div>
 </template>
