@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import AppTabs, { TabItem } from '@renderer/components/ui/AppTabs.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -22,17 +22,28 @@ const organizationOnlyTabs: TabItem[] = [
 const sharedTabs: TabItem[] = [{ title: 'Drafts' }, { title: 'History' }];
 
 const activeTabIndex = ref(1);
+const tabItems = ref<TabItem[]>(sharedTabs);
 const isTransactionSelectionModalShown = ref(false);
 
 /* Computed */
-const tabItems = computed<TabItem[]>(() => {
-  if (user.data.activeOrganization) {
-    return [...organizationOnlyTabs, ...sharedTabs];
-  } else {
-    return sharedTabs;
-  }
-});
 const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title);
+
+/* Watchers */
+watch(
+  () => user.data.activeOrganization,
+  activeOrganization => {
+    if (activeOrganization) {
+      const currentTabTitle = activeTabTitle.value;
+      tabItems.value = [...organizationOnlyTabs, ...sharedTabs];
+      const newIndex = tabItems.value.findIndex(tab => tab.title === currentTabTitle);
+      activeTabIndex.value = newIndex >= 0 ? newIndex : 0;
+    } else {
+      const newIndex = sharedTabs.findIndex(tab => tab.title === activeTabTitle.value);
+      activeTabIndex.value = newIndex >= 0 ? newIndex : 0;
+      tabItems.value = sharedTabs;
+    }
+  },
+);
 </script>
 
 <template>
