@@ -7,7 +7,9 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { getOrganizations } from '@renderer/services/organizationsService';
 
-import AddOrganizationModal from '@renderer/components/AddOrganizationModal.vue';
+import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
+import AddOrSelectModal from '@renderer/components/Organization/AddOrSelectModal.vue';
+import SelectOrganizationModal from './Organization/SelectOrganizationModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -15,7 +17,9 @@ const user = useUserStore();
 /* State */
 const organizations = ref<Organization[]>([]);
 const selectedMode = ref<string>('personal');
+const addOrSelectModalShown = ref(false);
 const addOrganizationModalShown = ref(false);
+const selectOrganizationModalShown = ref(false);
 
 /* Handlers */
 const handleUserModeChange = (e: Event) => {
@@ -24,7 +28,7 @@ const handleUserModeChange = (e: Event) => {
 
   if (newValue === 'add_organization') {
     selectEl.value = selectedMode.value;
-    addOrganizationModalShown.value = true;
+    addOrSelectModalShown.value = true;
   } else if (newValue === 'personal') {
     user.setActiveOrganization(null);
   } else {
@@ -32,8 +36,20 @@ const handleUserModeChange = (e: Event) => {
   }
 };
 
-const handleAdded = (organization: Organization) => {
+const handleSelectedOrAdd = (value: 'select' | 'add') => {
+  addOrSelectModalShown.value = false;
+  switch (value) {
+    case 'select':
+      return (selectOrganizationModalShown.value = true);
+    case 'add':
+      return (addOrganizationModalShown.value = true);
+  }
+};
+
+const handleSelectOrganization = (organization: Organization) => {
+  user.setActiveOrganization(organization);
   organizations.value.push(organization);
+  selectedMode.value = organization.id;
 };
 
 /* Hooks */
@@ -56,6 +72,14 @@ onBeforeMount(async () => {
       </template>
       <option value="add_organization">Add Organization</option>
     </select>
-    <AddOrganizationModal v-model:show="addOrganizationModalShown" @added="handleAdded" />
+    <AddOrganizationModal
+      v-model:show="addOrganizationModalShown"
+      @added="handleSelectOrganization"
+    />
+    <SelectOrganizationModal
+      v-model:show="selectOrganizationModalShown"
+      @on-selected="handleSelectOrganization"
+    />
+    <AddOrSelectModal v-model:show="addOrSelectModalShown" @on-selected="handleSelectedOrAdd" />
   </div>
 </template>
