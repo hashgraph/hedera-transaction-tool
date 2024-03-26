@@ -14,7 +14,7 @@ export const getOrganizations = async (user_id: string) => {
 };
 
 /* Adds organizations */
-export const addDraft = async (organization: Prisma.OrganizationCreateInput) => {
+export const addOrganization = async (organization: Prisma.OrganizationCreateInput) => {
   try {
     return await window.electronAPI.organizations.addOrganization(organization);
   } catch (error: any) {
@@ -23,7 +23,7 @@ export const addDraft = async (organization: Prisma.OrganizationCreateInput) => 
 };
 
 /* Updates organizations */
-export const updateDraft = async (
+export const updateOrganization = async (
   id: string,
   organization: Prisma.OrganizationUncheckedUpdateWithoutOrganizationCredentialsInput,
 ) => {
@@ -35,9 +35,9 @@ export const updateDraft = async (
 };
 
 /* Deletes organizations */
-export const deleteDraft = async (id: string) => {
+export const deleteOrganization = async (id: string) => {
   try {
-    return await window.electronAPI.transactionDrafts.deleteDraft(id);
+    return await window.electronAPI.organizations.deleteOrganization(id);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, `Failed to delete transaction with id: ${id}`));
   }

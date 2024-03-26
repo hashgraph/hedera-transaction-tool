@@ -13,7 +13,6 @@ export const getOrganizations = async (user_id?: string) => {
         },
       });
 
-      console.log(orgs);
       return orgs === null ? [] : orgs.map(org => org.organization);
     } else {
       return await prisma.organization.findMany();

@@ -10,7 +10,6 @@ export interface UserStore {
   mode: 'personal' | 'organization';
   accessTokens: string[];
   activeServerURL?: string;
-  activeUserId?: string;
 }
 
 export const localServerUrl = '';

@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import useOrganizationsStore from '@renderer/stores/storeOrganizations';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
 
+import { addOrganization } from '@renderer/services/organizationsService';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Stores */
-const organizationsStore = useOrganizationsStore();
 const user = useUserStore();
 
 /* Composables */
@@ -28,10 +28,10 @@ const handleContinue = async (e: Event) => {
   e.preventDefault();
 
   try {
-    await organizationsStore.addOrganization({
-      name: organizationName.value,
+    await addOrganization({
+      nickname: organizationName.value,
       serverUrl: serverUrl.value,
-      serverPublicKey: serverPublicKey.value,
+      key: serverPublicKey.value,
     });
 
     user.data.mode = 'organization';
