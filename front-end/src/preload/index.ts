@@ -8,6 +8,7 @@ import {
   HederaAccount,
   HederaFile,
   KeyPair,
+  Organization,
   Prisma,
   Transaction,
   TransactionDraft,
@@ -212,6 +213,18 @@ export const electronAPI = {
       ipcRenderer.invoke('transactionDrafts:draftExists', transactionBytes),
     getDraftsCount: (userId: string): Promise<number> =>
       ipcRenderer.invoke('transactionDrafts:getDraftsCount', userId),
+  },
+  organizations: {
+    getOrganizations: (user_id: string): Promise<Organization[]> =>
+      ipcRenderer.invoke('organizations:getOrganizations', user_id),
+    addOrganization: (organization: Prisma.OrganizationCreateInput): Promise<Organization> =>
+      ipcRenderer.invoke('organizations:addOrganization', organization),
+    updateOrganization: (
+      id: string,
+      organization: Prisma.OrganizationUncheckedUpdateWithoutOrganizationCredentialsInput,
+    ): Promise<boolean> => ipcRenderer.invoke('organizations:updateOrganization', id, organization),
+    deleteOrganization: (id: string): Promise<boolean> =>
+      ipcRenderer.invoke('organizations:deleteOrganization', id),
   },
 };
 typeof electronAPI;
