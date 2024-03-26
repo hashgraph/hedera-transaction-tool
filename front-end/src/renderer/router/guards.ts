@@ -10,8 +10,6 @@ export function addGuards(router: Router) {
     const userIsSigningInOrganization = user.data.isSigningInOrganization;
 
     if (userIsSigningInOrganization && to.name !== 'organizationLogin') {
-      console.log('fae');
-
       return false;
     }
 
