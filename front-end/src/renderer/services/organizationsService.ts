@@ -7,7 +7,7 @@ import { getMessageFromIPCError } from '@renderer/utils';
 /* Get organizations */
 export const getOrganizations = async () => {
   try {
-    return await window.electronAPI.organizations.getOrganizations();
+    return await window.electronAPI.local.organizations.getOrganizations();
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, 'Failed to fetch organizations'));
   }
@@ -16,7 +16,7 @@ export const getOrganizations = async () => {
 /* Adds organizations */
 export const addOrganization = async (organization: Prisma.OrganizationCreateInput) => {
   try {
-    return await window.electronAPI.organizations.addOrganization(organization);
+    return await window.electronAPI.local.organizations.addOrganization(organization);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, 'Failed to add organization'));
   }
@@ -28,7 +28,7 @@ export const updateOrganization = async (
   organization: Prisma.OrganizationUncheckedUpdateWithoutOrganizationCredentialsInput,
 ) => {
   try {
-    return await window.electronAPI.organizations.updateOrganization(id, organization);
+    return await window.electronAPI.local.organizations.updateOrganization(id, organization);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, `Failed to update organization with id: ${id}`));
   }
@@ -37,7 +37,7 @@ export const updateOrganization = async (
 /* Deletes organizations */
 export const deleteOrganization = async (id: string) => {
   try {
-    return await window.electronAPI.organizations.deleteOrganization(id);
+    return await window.electronAPI.local.organizations.deleteOrganization(id);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, `Failed to delete transaction with id: ${id}`));
   }

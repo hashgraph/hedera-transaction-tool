@@ -7,7 +7,7 @@ import { encodeKey } from '@renderer/utils/sdk';
 /* Get all complex keys */
 export const getComplexKeys = async (userId: string) => {
   try {
-    return await window.electronAPI.complexKeys.getAll(userId);
+    return await window.electronAPI.local.complexKeys.getAll(userId);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, 'Failed to fetch complex keys'));
   }
@@ -20,7 +20,7 @@ export const addComplexKey = async (
   nickname: string,
 ) => {
   try {
-    return await window.electronAPI.complexKeys.add(userId, encodedKeyList, nickname);
+    return await window.electronAPI.local.complexKeys.add(userId, encodedKeyList, nickname);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, 'Failed to save complex key'));
   }
@@ -30,7 +30,7 @@ export const addComplexKey = async (
 export const getComplexKey = async (userId: string, keyList: KeyList) => {
   try {
     const keyListBytes = encodeKey(keyList);
-    return await window.electronAPI.complexKeys.getComplexKey(userId, keyListBytes);
+    return await window.electronAPI.local.complexKeys.getComplexKey(userId, keyListBytes);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, `Failed to fetch complex key`));
   }
@@ -39,7 +39,7 @@ export const getComplexKey = async (userId: string, keyList: KeyList) => {
 /* Removes complex key */
 export const deleteComplexKey = async (id: string) => {
   try {
-    return await window.electronAPI.complexKeys.delete(id);
+    return await window.electronAPI.local.complexKeys.delete(id);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, `Failed to remove complex key`));
   }
@@ -48,7 +48,7 @@ export const deleteComplexKey = async (id: string) => {
 /* Updates complex key */
 export const updateComplexKey = async (id: string, newKeyListBytes: Uint8Array) => {
   try {
-    return await window.electronAPI.complexKeys.update(id, newKeyListBytes);
+    return await window.electronAPI.local.complexKeys.update(id, newKeyListBytes);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, `Failed to update complex key`));
   }

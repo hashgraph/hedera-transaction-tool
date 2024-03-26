@@ -28,16 +28,16 @@ const isReady = ref(false);
 
 /* Handlers */
 async function handleThemeChange() {
-  const isDark = await window.electronAPI.theme.isDark();
-  window.electronAPI.theme.toggle(isDark ? 'light' : 'dark');
+  const isDark = await window.electronAPI.local.theme.isDark();
+  window.electronAPI.local.theme.toggle(isDark ? 'light' : 'dark');
 }
 
 /* Hooks */
 onMounted(async () => {
-  const isDark = await window.electronAPI.theme.isDark();
+  const isDark = await window.electronAPI.local.theme.isDark();
   document.body.setAttribute('data-bs-theme', isDark ? 'dark' : 'light');
 
-  window.electronAPI.theme.onThemeUpdate(theme =>
+  window.electronAPI.local.theme.onThemeUpdate(theme =>
     document.body.setAttribute('data-bs-theme', theme.shouldUseDarkColors ? 'dark' : 'light'),
   );
 });

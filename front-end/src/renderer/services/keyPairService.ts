@@ -10,7 +10,7 @@ import { getMessageFromIPCError } from '@renderer/utils';
 /* Get stored key pairs */
 export const getKeyPairs = async (userId: string, organizationId?: string) => {
   try {
-    return await window.electronAPI.keyPairs.getAll(userId, organizationId);
+    return await window.electronAPI.local.keyPairs.getAll(userId, organizationId);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, 'Failed to fetch key pairs'));
   }
@@ -19,7 +19,7 @@ export const getKeyPairs = async (userId: string, organizationId?: string) => {
 /* Get stored secret hashes */
 export const getSecretHashes = async (userId: string, organizationId?: string) => {
   try {
-    return await window.electronAPI.keyPairs.getSecretHashes(userId, organizationId);
+    return await window.electronAPI.local.keyPairs.getSecretHashes(userId, organizationId);
   } catch (error) {
     throw Error(getMessageFromIPCError(error, 'Failed to fetch secret hashes'));
   }
@@ -54,7 +54,7 @@ export const storeKeyPair = async (
   password: string,
 ) => {
   try {
-    return await window.electronAPI.keyPairs.store(keyPair, password);
+    return await window.electronAPI.local.keyPairs.store(keyPair, password);
   } catch (error) {
     throw Error(getMessageFromIPCError(error, 'Failed to store key pair'));
   }
@@ -67,7 +67,7 @@ export const changeDecryptionPassword = async (
   newPassword: string,
 ) => {
   try {
-    return await window.electronAPI.keyPairs.changeDecryptionPassword(
+    return await window.electronAPI.local.keyPairs.changeDecryptionPassword(
       userId,
       oldPassword,
       newPassword,
@@ -80,7 +80,7 @@ export const changeDecryptionPassword = async (
 /* Decrypt private key with user's password */
 export const decryptPrivateKey = async (userId: string, password: string, publicKey: string) => {
   try {
-    return await window.electronAPI.keyPairs.decryptPrivateKey(userId, password, publicKey);
+    return await window.electronAPI.local.keyPairs.decryptPrivateKey(userId, password, publicKey);
   } catch (error) {
     throw Error(getMessageFromIPCError(error, 'Failed to decrypt private key/s'));
   }
@@ -89,7 +89,7 @@ export const decryptPrivateKey = async (userId: string, password: string, public
 /* Hash recovery phrase */
 export const hashRecoveryPhrase = async (words: string[]) => {
   try {
-    return await window.electronAPI.utils.hash(words.toString());
+    return await window.electronAPI.local.utils.hash(words.toString());
   } catch (error) {
     throw Error(getMessageFromIPCError(error, 'Failed to hash recovery phrase'));
   }
@@ -98,7 +98,7 @@ export const hashRecoveryPhrase = async (words: string[]) => {
 /* Delete all stored key pairs */
 export const clearKeys = async (userId: string, organizationId?: string) => {
   try {
-    return await window.electronAPI.keyPairs.clear(userId, organizationId);
+    return await window.electronAPI.local.keyPairs.clear(userId, organizationId);
   } catch (error) {
     throw Error(getMessageFromIPCError(error, 'Failed to clear key pairs'));
   }
@@ -107,7 +107,10 @@ export const clearKeys = async (userId: string, organizationId?: string) => {
 /* Delete the encrypted private keys from user's key pairs */
 export const deleteEncryptedPrivateKeys = async (userId: string, organizationId: string) => {
   try {
-    return await window.electronAPI.keyPairs.deleteEncryptedPrivateKeys(userId, organizationId);
+    return await window.electronAPI.local.keyPairs.deleteEncryptedPrivateKeys(
+      userId,
+      organizationId,
+    );
   } catch (error) {
     throw Error(getMessageFromIPCError(error, 'Failed to delete encrypted private keys'));
   }
@@ -127,7 +130,7 @@ export const validateMnemonic = async (words: string[]) => {
 /* Delete Key Pair */
 export const deleteKeyPair = async (keyPairId: string) => {
   try {
-    return await window.electronAPI.keyPairs.deleteKeyPair(keyPairId);
+    return await window.electronAPI.local.keyPairs.deleteKeyPair(keyPairId);
   } catch (error) {
     throw Error(getMessageFromIPCError(error, 'Failed to delete keys pair'));
   }

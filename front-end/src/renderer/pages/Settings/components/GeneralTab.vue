@@ -60,7 +60,7 @@ const handleSetCustomNetwork = async () => {
 };
 
 const handleThemeChange = (newTheme: Theme) => {
-  window.electronAPI.theme.toggle(newTheme);
+  window.electronAPI.local.theme.toggle(newTheme);
 };
 
 /* Hooks */
@@ -74,13 +74,13 @@ onBeforeMount(async () => {
     mirrorNodeRESTAPIEndpoint.value = networkStore.customNetworkSettings.mirrorNodeRESTAPIEndpoint;
   }
 
-  onUpdateUnsubscribe.value = window.electronAPI.theme.onThemeUpdate(
+  onUpdateUnsubscribe.value = window.electronAPI.local.theme.onThemeUpdate(
     (newTheme: { themeSource: Theme; shouldUseDarkColors: boolean }) => {
       document.body.setAttribute('data-bs-theme', newTheme.shouldUseDarkColors ? 'dark' : 'light');
       theme.value = newTheme.themeSource;
     },
   );
-  theme.value = await window.electronAPI.theme.mode();
+  theme.value = await window.electronAPI.local.theme.mode();
 });
 
 onBeforeUnmount(() => {

@@ -31,7 +31,7 @@ export const setClient = async (
     });
   }
 
-  await window.electronAPI.transactions.setClient(network, nodeAccountIds, mirrorNetwork);
+  await window.electronAPI.local.transactions.setClient(network, nodeAccountIds, mirrorNetwork);
 };
 
 /* Crafts transaction id by account id and valid start */
@@ -93,7 +93,7 @@ export const getTransactionSignatures = async (
 /* Freezes the transaction in the main process */
 export const freeze = async (transactionBytes: Uint8Array) => {
   try {
-    return await window.electronAPI.transactions.freezeTransaction(transactionBytes);
+    return await window.electronAPI.local.transactions.freezeTransaction(transactionBytes);
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Freezing the transaction failed'));
   }
@@ -107,7 +107,7 @@ export const signTransaction = async (
   userPassword: string,
 ) => {
   try {
-    return await window.electronAPI.transactions.signTransaction(
+    return await window.electronAPI.local.transactions.signTransaction(
       transactionBytes,
       publicKeys,
       userId,
@@ -122,7 +122,7 @@ export const signTransaction = async (
 export const execute = async (transactionBytes: Uint8Array) => {
   try {
     const executionResult =
-      await window.electronAPI.transactions.executeTransaction(transactionBytes);
+      await window.electronAPI.local.transactions.executeTransaction(transactionBytes);
 
     return {
       response: TransactionResponse.fromJSON(JSON.parse(executionResult.responseJSON)),
@@ -141,7 +141,7 @@ export const executeQuery = async (
   privateKeyType: string,
 ) => {
   try {
-    return await window.electronAPI.transactions.executeQuery(
+    return await window.electronAPI.local.transactions.executeQuery(
       queryBytes,
       accountId,
       privateKey,
@@ -155,7 +155,7 @@ export const executeQuery = async (
 /* Saves transaction info */
 export const storeTransaction = async (transaction: Prisma.TransactionUncheckedCreateInput) => {
   try {
-    return await window.electronAPI.transactions.storeTransaction(transaction);
+    return await window.electronAPI.local.transactions.storeTransaction(transaction);
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Saving transaction Failed'));
   }
@@ -164,7 +164,7 @@ export const storeTransaction = async (transaction: Prisma.TransactionUncheckedC
 /* Returns saved transactions */
 export const getTransactions = async (findArgs: Prisma.TransactionFindManyArgs) => {
   try {
-    return await window.electronAPI.transactions.getTransactions(findArgs);
+    return await window.electronAPI.local.transactions.getTransactions(findArgs);
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Getting transactions Failed'));
   }
@@ -173,7 +173,7 @@ export const getTransactions = async (findArgs: Prisma.TransactionFindManyArgs) 
 /* Returns saved transactions count */
 export const getTransactionsCount = async (userId: string) => {
   try {
-    return await window.electronAPI.transactions.getTransactionsCount(userId);
+    return await window.electronAPI.local.transactions.getTransactionsCount(userId);
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Failed to get transactions count'));
   }
@@ -182,7 +182,7 @@ export const getTransactionsCount = async (userId: string) => {
 /* Encodes a special file's content */
 export const encodeSpecialFileContent = async (content: Uint8Array, fileId: string) => {
   try {
-    return await window.electronAPI.transactions.encodeSpecialFile(content, fileId);
+    return await window.electronAPI.local.transactions.encodeSpecialFile(content, fileId);
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Failed to encode special file'));
   }

@@ -4,7 +4,9 @@ import localUserAPI from './localUser';
 import organizationAPI from './organization';
 
 export const electronAPI = {
-  ...localUserAPI,
+  local: {
+    ...localUserAPI,
+  },
   organization: {
     ...organizationAPI,
   },

@@ -3,7 +3,7 @@ import { getMessageFromIPCError } from '@renderer/utils';
 
 export const getAll = async (userId: string) => {
   try {
-    return await window.electronAPI.files.getAll(userId);
+    return await window.electronAPI.local.files.getAll(userId);
   } catch (error) {
     return [];
   }
@@ -11,7 +11,7 @@ export const getAll = async (userId: string) => {
 
 export const add = async (file: Prisma.HederaFileUncheckedCreateInput) => {
   try {
-    return await window.electronAPI.files.add(file);
+    return await window.electronAPI.local.files.add(file);
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'File link failed'));
   }
@@ -23,7 +23,7 @@ export const update = async (
   file: Prisma.HederaFileUncheckedUpdateInput,
 ) => {
   try {
-    return await window.electronAPI.files.update(fileId, userId, file);
+    return await window.electronAPI.local.files.update(fileId, userId, file);
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'File update failed'));
   }
@@ -31,7 +31,7 @@ export const update = async (
 
 export const remove = async (userId: string, fileId: string) => {
   try {
-    return await window.electronAPI.files.remove(userId, fileId);
+    return await window.electronAPI.local.files.remove(userId, fileId);
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'File unlink failed'));
   }
@@ -39,7 +39,7 @@ export const remove = async (userId: string, fileId: string) => {
 
 export const showContentInTemp = async (userId: string, fileId: string) => {
   try {
-    await window.electronAPI.files.showContentInTemp(userId, fileId);
+    await window.electronAPI.local.files.showContentInTemp(userId, fileId);
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Failed to open file'));
   }

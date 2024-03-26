@@ -5,7 +5,9 @@ import { getMessageFromIPCError } from '@renderer/utils';
 /* Get the connected organizations */
 export const getConnectedOrganizations = async (user_id: string) => {
   try {
-    return await window.electronAPI.organizationCredentials.getConnectedOrganizations(user_id);
+    return await window.electronAPI.local.organizationCredentials.getConnectedOrganizations(
+      user_id,
+    );
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, 'Failed to fetch organizations'));
   }
@@ -14,7 +16,7 @@ export const getConnectedOrganizations = async (user_id: string) => {
 /* Returns the organizations that the user should sign into */
 export const getOrganizationsToSignIn = async (user_id: string) => {
   try {
-    return await window.electronAPI.organizationCredentials.organizationsToSignIn(user_id);
+    return await window.electronAPI.local.organizationCredentials.organizationsToSignIn(user_id);
   } catch (error: any) {
     throw Error(
       getMessageFromIPCError(error, 'Failed to fetch organizations that user should sign in'),
@@ -25,7 +27,7 @@ export const getOrganizationsToSignIn = async (user_id: string) => {
 /* Returns whether the user should sign in a specific organization */
 export const shouldSignInOrganization = async (user_id: string, organization_id: string) => {
   try {
-    return await window.electronAPI.organizationCredentials.shouldSignInOrganization(
+    return await window.electronAPI.local.organizationCredentials.shouldSignInOrganization(
       user_id,
       organization_id,
     );
@@ -47,7 +49,7 @@ export const addOrganizationCredentials = async (
   updateIfExists: boolean = false,
 ) => {
   try {
-    return await window.electronAPI.organizationCredentials.addOrganizationCredentials(
+    return await window.electronAPI.local.organizationCredentials.addOrganizationCredentials(
       email,
       password,
       organization_id,
@@ -71,7 +73,7 @@ export const updateOrganizationCredentials = async (
   encryptPassword?: string,
 ) => {
   try {
-    return await window.electronAPI.organizationCredentials.updateOrganizationCredentials(
+    return await window.electronAPI.local.organizationCredentials.updateOrganizationCredentials(
       organization_id,
       user_id,
       email,
@@ -87,7 +89,7 @@ export const updateOrganizationCredentials = async (
 /* Deletes the organization credentials */
 export const deleteOrganizationCredentials = async (organization_id: string, user_id: string) => {
   try {
-    return await window.electronAPI.organizationCredentials.deleteOrganizationCredentials(
+    return await window.electronAPI.local.organizationCredentials.deleteOrganizationCredentials(
       organization_id,
       user_id,
     );
@@ -99,7 +101,10 @@ export const deleteOrganizationCredentials = async (organization_id: string, use
 /* Try auto sign in */
 export const tryAutoSignIn = async (user_id: string, decryptPassword: string) => {
   try {
-    return await window.electronAPI.organizationCredentials.tryAutoSignIn(user_id, decryptPassword);
+    return await window.electronAPI.local.organizationCredentials.tryAutoSignIn(
+      user_id,
+      decryptPassword,
+    );
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, 'Failed failed to auto sign in to organizations'));
   }
