@@ -28,7 +28,16 @@ const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title
 
 /* Hooks */
 onBeforeMount(() => {
-  user.data.secretHashes.length > 0 && tabItems.value.shift();
+  if (user.data.organizationServerActive) {
+    if (
+      user.data.organizationState?.secretHashes &&
+      user.data.organizationState?.secretHashes.length > 0
+    ) {
+      tabItems.value.shift();
+    }
+  } else {
+    user.data.secretHashes.length > 0 && tabItems.value.shift();
+  }
   activeTabIndex.value = tabItems.value.findIndex(i => i.title === 'Import Existing');
 });
 </script>
