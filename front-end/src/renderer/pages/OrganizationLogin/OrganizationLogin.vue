@@ -6,7 +6,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
-import { login } from '@renderer/services/organization';
+import { getUserState, login } from '@renderer/services/organization';
 import {
   addOrganizationCredentials,
   shouldSignInOrganization,
@@ -74,8 +74,17 @@ const handleLogin = async () => {
     );
 
     user.data.isSigningInOrganization = false;
-    router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
+
     toast.success('Successfully signed in');
+
+    const userState = await getUserState(user.data.activeOrganization.serverUrl, '');
+    user.data.organizationState = userState;
+    if (userState.passwordTemporary || userState.secretHashes.length === 0) {
+      router.push({ name: 'accountSetup' });
+      return;
+    }
+
+    router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
   } catch (error: any) {
     inputEmailInvalid.value = true;
     inputPasswordInvalid.value = true;

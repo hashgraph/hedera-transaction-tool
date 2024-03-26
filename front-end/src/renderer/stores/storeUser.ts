@@ -1,4 +1,4 @@
-import { reactive, watch } from 'vue';
+import { computed, reactive, watch } from 'vue';
 import { defineStore } from 'pinia';
 
 import { Organization } from '@prisma/client';
@@ -21,6 +21,7 @@ export interface UserStore {
   connectedOrganizations: Organization[];
   organizationsToSignIn: { credential_id?: string; email?: string; organization: Organization }[];
   isSigningInOrganization: boolean;
+  organizationState: { passwordTemporary: boolean; secretHashes: string[] } | null;
 }
 
 export const localServerUrl = '';
@@ -38,6 +39,16 @@ const useUserStore = defineStore('user', () => {
     connectedOrganizations: [],
     organizationsToSignIn: [],
     isSigningInOrganization: false,
+    organizationState: null,
+  });
+
+  /* Computed */
+  const shouldSetupForOrganization = computed(() => {
+    return (
+      data.activeOrganization &&
+      (data.organizationState?.passwordTemporary ||
+        data.organizationState?.secretHashes.length === 0)
+    );
   });
 
   /* Actions */
@@ -92,8 +103,10 @@ const useUserStore = defineStore('user', () => {
       }
     },
   );
+
   return {
     data,
+    shouldSetupForOrganization,
     setActiveOrganization,
     login,
     logout,

@@ -8,6 +8,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useRouter } from 'vue-router';
 
 import { shouldSignInOrganization } from '@renderer/services/organizationCredentials';
+import { getUserState } from '@renderer/services/organization';
 
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
 import AddOrSelectModal from '@renderer/components/Organization/AddOrSelectModal.vue';
@@ -78,17 +79,27 @@ async function afterSelectOrganization() {
     return;
   }
 
-  // const { passwordTemporary, secretHashes } = await getUserState(
-  //   user.data.activeOrganization.serverUrl,
-  //   '',
-  // );
+  const userState = await getUserState(user.data.activeOrganization.serverUrl, '');
+  user.data.organizationState = userState;
+  if (userState.passwordTemporary || userState.secretHashes.length === 0) {
+    router.push({ name: 'accountSetup' });
+    return;
+  }
 }
 
 /* Watchers */
 watch(
   () => user.data.organizationServerActive,
   async active => {
-    if (!user.data.activeOrganization) return;
+    if (!user.data.activeOrganization) {
+      if (
+        router.currentRoute.value.name === 'organizationLogin' ||
+        router.currentRoute.value.name === 'accountSetup'
+      ) {
+        router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
+      }
+      return;
+    }
 
     if (!active) {
       // user.setActiveOrganization(null) in PingOrganizations

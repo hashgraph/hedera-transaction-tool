@@ -9,10 +9,12 @@ export function addGuards(router: Router) {
     const userIsLoggedIn = user.data.isLoggedIn;
     const userIsSigningInOrganization = user.data.isSigningInOrganization;
     const organizationServerActive = user.data.organizationServerActive;
+    const shouldSetupForOrganization = user.shouldSetupForOrganization;
 
     if (
       (userIsSigningInOrganization && to.name !== 'organizationLogin') ||
-      (!organizationServerActive && to.name === 'organizationLogin')
+      (!organizationServerActive && to.name === 'organizationLogin') ||
+      (shouldSetupForOrganization && to.name !== 'accountSetup')
     ) {
       return false;
     }
@@ -25,12 +27,16 @@ export function addGuards(router: Router) {
 
     if (
       (userIsLoggedIn && to.name === 'login') ||
-      (!userIsSigningInOrganization && to.name === 'organizationLogin')
+      (!userIsSigningInOrganization && to.name === 'organizationLogin') ||
+      (userIsLoggedIn &&
+        !user.data.activeOrganization &&
+        user.data.secretHashes.length !== 0 &&
+        to.name === 'accountSetup')
     ) {
       return router.previousPath ? { path: router.previousPath } : { name: 'transactions' };
     }
 
-    if (to.name !== 'login' && to.name !== 'organizationLogin') {
+    if (to.name !== 'login' && to.name !== 'organizationLogin' && to.name !== 'accountSetup') {
       router.previousPath = to.path;
     }
 

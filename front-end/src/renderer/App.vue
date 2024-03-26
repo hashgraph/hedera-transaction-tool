@@ -54,7 +54,8 @@ watch([isCheckingUserState, () => keyPairs.refetching], ([isChecking, fetching])
   <AppHeader
     :class="{
       'logged-in': user.data.isLoggedIn && !user.data.isSigningInOrganization,
-      'should-setup-account': user.data.secretHashes.length === 0,
+      'should-setup-account':
+        user.data.secretHashes.length === 0 || user.shouldSetupForOrganization,
     }"
   />
 
@@ -64,14 +65,16 @@ watch([isCheckingUserState, () => keyPairs.refetching], ([isChecking, fetching])
       class="container-main"
       :class="{
         'logged-in': user.data.isLoggedIn && !user.data.isSigningInOrganization,
-        'should-setup-account': user.data.secretHashes.length === 0,
+        'should-setup-account':
+          user.data.secretHashes.length === 0 || user.shouldSetupForOrganization,
       }"
     >
       <AppMenu
         v-if="
           user.data.isLoggedIn &&
           user.data.secretHashes.length > 0 &&
-          !user.data.isSigningInOrganization
+          !user.data.isSigningInOrganization &&
+          !user.shouldSetupForOrganization
         "
       />
       <RouterView v-slot="{ Component }" class="flex-1 overflow-hidden container-main-content">
