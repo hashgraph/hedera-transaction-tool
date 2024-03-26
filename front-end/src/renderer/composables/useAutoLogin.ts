@@ -21,7 +21,6 @@ export default function useCreateTooltips() {
   /* Hooks */
   onMounted(async () => {
     const loggedUser = localStorage.getItem('htx_user');
-
     if (loggedUser) {
       const { userId, email }: { userId: string; email: string } = JSON.parse(loggedUser);
       const secretHashes = await getSecretHashes(userId);
