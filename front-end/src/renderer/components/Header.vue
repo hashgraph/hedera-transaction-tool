@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-
-import useOrganizationsStore from '@renderer/stores/storeOrganizations';
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
@@ -9,48 +6,24 @@ import { useRouter } from 'vue-router';
 
 import Logo from '@renderer/components/Logo.vue';
 import LogoText from '@renderer/components/LogoText.vue';
+import UserModeSelect from './UserModeSelect.vue';
 
 /* Stores */
-const organizationsStore = useOrganizationsStore();
 const user = useUserStore();
 const keyPairsStore = useKeyPairsStore();
 
 /* Composables */
 const router = useRouter();
 
-/* State */
-const organizationsDropDownRef = ref<HTMLSelectElement | null>(null);
-
 /* Handlers */
-async function handleOrganizationChange(e: Event) {
-  const selectElement = e.target as HTMLSelectElement;
-  const selectedOption = selectElement.selectedOptions[0];
-
-  switch (selectedOption.value) {
-    case 'local':
-      user.data.mode = 'personal';
-      user.data.activeServerURL = undefined;
-      break;
-    case 'add-organization':
-      if (organizationsDropDownRef.value) {
-        organizationsDropDownRef.value.value = user.data.activeServerURL || 'local';
-        router.push({ name: 'setupOrganization' });
-      }
-      return;
-    default:
-      user.data.mode = 'organization';
-      user.data.activeServerURL = selectedOption.value;
-      break;
-  }
-
-  await keyPairsStore.refetch();
-}
-
 const handleLogout = () => {
   localStorage.removeItem('htx_user');
+
   user.logout();
+
   keyPairsStore.clearKeyPairs();
   keyPairsStore.clearRecoveryPhrase();
+
   router.push({ name: 'login' });
 };
 </script>
@@ -61,7 +34,7 @@ const handleLogout = () => {
       <Logo />
       <LogoText />
     </div>
-    <div v-if="user.data.isLoggedIn" class="d-flex justify-content-end align-items-center">
+    <div v-if="user.data.isLoggedIn" class="flex-centered justify-content-end">
       <!-- <span class="container-icon">
         <i class="text-icon-main bi bi-search"></i>
       </span>
@@ -71,36 +44,12 @@ const handleLogout = () => {
       <span class="container-icon">
         <i class="text-icon-main bi bi-three-dots-vertical"></i>
       </span> -->
+      <div>
+        <UserModeSelect />
+      </div>
       <span v-if="user.data.isLoggedIn" class="container-icon" @click="handleLogout">
         <i class="text-icon-main bi bi-box-arrow-right"></i>
       </span>
-      <div class="d-none me-4">
-        <select
-          class="form-select form-select-sm"
-          name="serverURL"
-          @change="handleOrganizationChange"
-          ref="organizationsDropDownRef"
-        >
-          <option value="local" :selected="user.data.mode === 'personal'" default>
-            No organization selected
-          </option>
-          <template
-            v-for="organization in organizationsStore.organizations"
-            :key="organization.serverUrl"
-          >
-            <option
-              :value="organization.serverUrl"
-              :selected="
-                user.data.mode === 'organization' &&
-                user.data.activeServerURL === organization.serverUrl
-              "
-            >
-              {{ organization.name }}
-            </option>
-          </template>
-          <option value="add-organization">Add Organization</option>
-        </select>
-      </div>
     </div>
   </div>
 </template>
