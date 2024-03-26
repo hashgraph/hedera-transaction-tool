@@ -227,6 +227,46 @@ export const electronAPI = {
         user_id,
         organization_id,
       ),
+    addOrganizationCredentials: (
+      email: string,
+      password: string,
+      organization_id: string,
+      user_id: string,
+      jwtToken: string,
+      encryptPassword: string,
+    ): Promise<boolean> =>
+      ipcRenderer.invoke(
+        'organizationCredentials:addOrganizationCredentials',
+        email,
+        password,
+        organization_id,
+        user_id,
+        jwtToken,
+        encryptPassword,
+      ),
+    updateOrganizationCredentials: (
+      organization_id: string,
+      user_id: string,
+      email?: string,
+      password?: string,
+      jwtToken?: string,
+      encryptPassword?: string,
+    ): Promise<boolean> =>
+      ipcRenderer.invoke(
+        'organizationCredentials:updateOrganizationCredentials',
+        organization_id,
+        user_id,
+        email,
+        password,
+        jwtToken,
+        encryptPassword,
+      ),
+    deleteOrganizationCredentials: (organization_id: string, user_id: string): Promise<boolean> =>
+      ipcRenderer.invoke(
+        'organizationCredentials:deleteOrganizationCredentials',
+        organization_id,
+        user_id,
+      ),
   },
 };
 typeof electronAPI;

@@ -1,7 +1,9 @@
 import { getPrismaClient } from '@main/db';
 
-import { OrganizationCredentials, Prisma } from '@prisma/client';
+import { OrganizationCredentials } from '@prisma/client';
 import { jwtDecode } from 'jwt-decode';
+
+import { encrypt } from '@main/utils/crypto';
 
 /* Returns the organization that the user is connected to */
 export const getConnectedOrganizations = async (user_id: string) => {
@@ -60,6 +62,96 @@ export const shouldSignInOrganization = async (user_id: string, organization_id:
   } catch (error) {
     console.log(error);
     return false;
+  }
+};
+
+/* Adds a new organization credentials to the user */
+export const addOrganizationCredentials = async (
+  email: string,
+  password: string,
+  organization_id: string,
+  user_id: string,
+  jwtToken: string,
+  encryptPassword: string,
+) => {
+  const prisma = getPrismaClient();
+
+  try {
+    password = encrypt(password, encryptPassword);
+
+    await prisma.organizationCredentials.create({
+      data: {
+        email,
+        password,
+        organization_id,
+        user_id,
+        jwtToken,
+      },
+    });
+
+    return true;
+  } catch (error) {
+    console.log(error);
+    throw new Error('Failed to add organization credentials');
+  }
+};
+
+/* Updates the organization credentials */
+export const updateOrganizationCredentials = async (
+  organization_id: string,
+  user_id: string,
+  email?: string,
+  password?: string,
+  jwtToken?: string,
+  encryptPassword?: string,
+) => {
+  const prisma = getPrismaClient();
+
+  try {
+    if (password) {
+      if (!encryptPassword) {
+        throw new Error('No encryption password provided');
+      }
+      password = encrypt(password, encryptPassword);
+    }
+
+    const credentials = await prisma.organizationCredentials.findFirst({
+      where: { user_id, organization_id },
+    });
+
+    if (!credentials) {
+      throw new Error('User credentials for this organization not found');
+    }
+
+    await prisma.organizationCredentials.update({
+      where: { id: credentials.id },
+      data: {
+        email: email || credentials.email,
+        password: password || credentials.password,
+        jwtToken: jwtToken || credentials.jwtToken,
+      },
+    });
+
+    return true;
+  } catch (error) {
+    console.log(error);
+    throw new Error('Failed to update organization credentials');
+  }
+};
+
+/* Deletes the organization credentials */
+export const deleteOrganizationCredentials = async (organization_id: string, user_id: string) => {
+  const prisma = getPrismaClient();
+
+  try {
+    await prisma.organizationCredentials.deleteMany({
+      where: { user_id, organization_id },
+    });
+
+    return true;
+  } catch (error) {
+    console.log(error);
+    throw new Error('Failed to delete organization credentials');
   }
 };
 

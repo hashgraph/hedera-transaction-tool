@@ -35,3 +35,61 @@ export const shouldSignInOrganization = async (user_id: string, organization_id:
     );
   }
 };
+
+/* Adds a new organization credentials to the user */
+export const addOrganizationCredentials = async (
+  email: string,
+  password: string,
+  organization_id: string,
+  user_id: string,
+  jwtToken: string,
+  encryptPassword: string,
+) => {
+  try {
+    return await window.electronAPI.organizationCredentials.addOrganizationCredentials(
+      email,
+      password,
+      organization_id,
+      user_id,
+      jwtToken,
+      encryptPassword,
+    );
+  } catch (error: any) {
+    throw Error(getMessageFromIPCError(error, 'Failed to store organization credentials'));
+  }
+};
+
+/* Updates the organization credentials */
+export const updateOrganizationCredentials = async (
+  organization_id: string,
+  user_id: string,
+  email?: string,
+  password?: string,
+  jwtToken?: string,
+  encryptPassword?: string,
+) => {
+  try {
+    return await window.electronAPI.organizationCredentials.updateOrganizationCredentials(
+      organization_id,
+      user_id,
+      email,
+      password,
+      jwtToken,
+      encryptPassword,
+    );
+  } catch (error: any) {
+    throw Error(getMessageFromIPCError(error, 'Failed to store organization credentials'));
+  }
+};
+
+/* Deletes the organization credentials */
+export const deleteOrganizationCredentials = async (organization_id: string, user_id: string) => {
+  try {
+    return await window.electronAPI.organizationCredentials.deleteOrganizationCredentials(
+      organization_id,
+      user_id,
+    );
+  } catch (error: any) {
+    throw Error(getMessageFromIPCError(error, 'Failed to delete organization credentials'));
+  }
+};
