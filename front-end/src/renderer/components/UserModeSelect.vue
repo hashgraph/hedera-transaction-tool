@@ -38,7 +38,7 @@ const handleAdded = (organization: Organization) => {
 
 /* Hooks */
 onBeforeMount(async () => {
-  organizations.value = await getOrganizations();
+  organizations.value = await getOrganizations(user.data.id);
 });
 </script>
 <template>

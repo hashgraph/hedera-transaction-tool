@@ -5,9 +5,9 @@ import { getMessageFromIPCError } from '@renderer/utils';
 /* Organizations Service */
 
 /* Get organizations */
-export const getOrganizations = async () => {
+export const getOrganizations = async (user_id?: string) => {
   try {
-    return await window.electronAPI.organizations.getOrganizations();
+    return await window.electronAPI.organizations.getOrganizations(user_id);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, 'Failed to fetch organizations'));
   }
