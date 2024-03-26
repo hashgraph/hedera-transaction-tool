@@ -1,22 +1,11 @@
 import { getPrismaClient } from '@main/db';
 import { Prisma } from '@prisma/client';
 
-export const getOrganizations = async (user_id?: string) => {
+export const getOrganizations = async () => {
   const prisma = getPrismaClient();
 
   try {
-    if (user_id) {
-      const orgs = await prisma.organizationCredentials.findMany({
-        where: { user_id },
-        select: {
-          organization: true,
-        },
-      });
-
-      return orgs === null ? [] : orgs.map(org => org.organization);
-    } else {
-      return await prisma.organization.findMany();
-    }
+    return await prisma.organization.findMany();
   } catch (error) {
     console.log(error);
     return [];

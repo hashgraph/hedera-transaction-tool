@@ -203,8 +203,8 @@ export const electronAPI = {
       ipcRenderer.invoke('transactionDrafts:getDraftsCount', userId),
   },
   organizations: {
-    getOrganizations: (user_id?: string): Promise<Organization[]> =>
-      ipcRenderer.invoke('organizations:getOrganizations', user_id),
+    getOrganizations: (): Promise<Organization[]> =>
+      ipcRenderer.invoke('organizations:getOrganizations'),
     addOrganization: (organization: Prisma.OrganizationCreateInput): Promise<Organization> =>
       ipcRenderer.invoke('organizations:addOrganization', organization),
     updateOrganization: (
@@ -213,6 +213,10 @@ export const electronAPI = {
     ): Promise<boolean> => ipcRenderer.invoke('organizations:updateOrganization', id, organization),
     deleteOrganization: (id: string): Promise<boolean> =>
       ipcRenderer.invoke('organizations:deleteOrganization', id),
+  },
+  organizationCredentials: {
+    getConnectedOrganizations: (user_id: string): Promise<Organization[]> =>
+      ipcRenderer.invoke('organizationCredentials:getConnectedOrganizations', user_id),
   },
 };
 typeof electronAPI;

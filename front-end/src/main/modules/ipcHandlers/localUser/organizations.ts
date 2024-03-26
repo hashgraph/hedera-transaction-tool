@@ -15,9 +15,7 @@ export default () => {
   /* Organizations */
 
   // Get all organizations
-  ipcMain.handle(createChannelName('getOrganizations'), (_e, user_id?: string) =>
-    getOrganizations(user_id),
-  );
+  ipcMain.handle(createChannelName('getOrganizations'), () => getOrganizations());
 
   // Add a organization
   ipcMain.handle(
