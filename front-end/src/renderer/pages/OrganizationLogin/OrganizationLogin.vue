@@ -71,6 +71,7 @@ const handleLogin = async () => {
       true,
     );
 
+    router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
     toast.success('Successfully signed in');
   } catch (error: any) {
     inputEmailInvalid.value = true;
