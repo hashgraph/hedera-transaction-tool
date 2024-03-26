@@ -8,8 +8,12 @@ export function addGuards(router: Router) {
   router.beforeEach(to => {
     const userIsLoggedIn = user.data.isLoggedIn;
     const userIsSigningInOrganization = user.data.isSigningInOrganization;
+    const organizationServerActive = user.data.organizationServerActive;
 
-    if (userIsSigningInOrganization && to.name !== 'organizationLogin') {
+    if (
+      (userIsSigningInOrganization && to.name !== 'organizationLogin') ||
+      (!organizationServerActive && to.name === 'organizationLogin')
+    ) {
       return false;
     }
 

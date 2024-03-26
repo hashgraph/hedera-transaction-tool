@@ -31,7 +31,7 @@ const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title
 
 /* Function */
 function setTabItems() {
-  if (user.data.activeOrganization) {
+  if (user.data.activeOrganization && user.data.organizationServerActive) {
     const currentTabTitle = activeTabTitle.value;
     tabItems.value = [...organizationOnlyTabs, ...sharedTabs];
     const newIndex = tabItems.value.findIndex(tab => tab.title === currentTabTitle);
@@ -50,7 +50,7 @@ onMounted(() => {
 
 /* Watchers */
 watch(
-  () => user.data.activeOrganization,
+  () => user.data.organizationServerActive,
   () => {
     setTabItems();
   },

@@ -8,6 +8,7 @@ import {
   getOrganizationsToSignIn,
   shouldSignInOrganization,
 } from '@renderer/services/organizationCredentials';
+import { ping } from '@renderer/services/organization';
 
 export interface UserStore {
   isLoggedIn: boolean | null;
@@ -16,6 +17,7 @@ export interface UserStore {
   password: string;
   secretHashes: string[];
   activeOrganization: Organization | null;
+  organizationServerActive: boolean | null;
   connectedOrganizations: Organization[];
   organizationsToSignIn: { credential_id?: string; email?: string; organization: Organization }[];
   isSigningInOrganization: boolean;
@@ -32,6 +34,7 @@ const useUserStore = defineStore('user', () => {
     password: '',
     secretHashes: [],
     activeOrganization: null,
+    organizationServerActive: null,
     connectedOrganizations: [],
     organizationsToSignIn: [],
     isSigningInOrganization: false,
@@ -40,10 +43,6 @@ const useUserStore = defineStore('user', () => {
   /* Actions */
   function setActiveOrganization(organization: Organization | null) {
     data.activeOrganization = organization;
-  }
-
-  function setIsSigningInOrganization(flag: boolean) {
-    data.isSigningInOrganization = flag;
   }
 
   function login(id: string, email: string, secretHashes: string[]) {
@@ -83,15 +82,19 @@ const useUserStore = defineStore('user', () => {
         if (
           flag &&
           !data.organizationsToSignIn.find(o => o.organization.id === activeOrganization.id)
-        )
+        ) {
           data.organizationsToSignIn.push({ organization: activeOrganization });
+        }
+
+        data.organizationServerActive = await ping(activeOrganization.serverUrl);
+      } else {
+        data.organizationServerActive = null;
       }
     },
   );
   return {
     data,
     setActiveOrganization,
-    setIsSigningInOrganization,
     login,
     logout,
     fetchConnectedOrganizations,

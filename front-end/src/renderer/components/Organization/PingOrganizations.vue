@@ -5,7 +5,7 @@ import { Organization } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { ping } from '@renderer/services/organization';
+// import { ping } from '@renderer/services/organization';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -31,17 +31,16 @@ const handleSelectedOrganizationNotActiveSubmit = async (e: Event) => {
   inactiveSelectedOrganizationModalShown.value = false;
 };
 
-const checkInactiveServers = async (organizations: Organization[]) => {
-  for (let i = 0; i < organizations.length; i++) {
-    const organization = organizations[i];
-    await adjustInActiveServersArray(organization);
-  }
-};
+// const checkInactiveServers = async (organizations: Organization[]) => {
+//   for (let i = 0; i < organizations.length; i++) {
+//     const organization = organizations[i];
+//     const active = await ping(organization.serverUrl);
+//     adjustInActiveServersArray(organization, active);
+//   }
+// };
 
 /* Functions */
-async function adjustInActiveServersArray(organization) {
-  const active = await ping(organization.serverUrl);
-
+function adjustInActiveServersArray(organization: Organization, active: boolean) {
   if (!active) {
     if (!inactiveServers.value.find(org => org.id === organization.id)) {
       inactiveServers.value.push(organization);
@@ -55,8 +54,7 @@ async function adjustInActiveServersArray(organization) {
 
 /* Hooks */
 onMounted(async () => {
-  await checkInactiveServers(user.data.connectedOrganizations);
-
+  // await checkInactiveServers(user.data.connectedOrganizations);
   // if (inactiveServers.value.length > 0) {
   // inactiveServersModalShown.value = true;
   // }
@@ -64,14 +62,17 @@ onMounted(async () => {
 
 /* Watchers */
 watch(
-  () => user.data.activeOrganization,
-  async activeOrganization => {
-    if (!activeOrganization) return;
-    const active = await adjustInActiveServersArray(activeOrganization);
+  () => user.data.organizationServerActive,
+  active => {
+    if (!user.data.activeOrganization || active === null) return;
+
     if (!active) {
-      inactiveSelectedOrganizationModalShown.value = true;
+      adjustInActiveServersArray(user.data.activeOrganization, active);
+      user.setActiveOrganization(null);
     }
+    inactiveSelectedOrganizationModalShown.value = !active;
   },
+  { immediate: true },
 );
 </script>
 <template>

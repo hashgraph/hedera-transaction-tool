@@ -73,7 +73,7 @@ const handleLogin = async () => {
       true,
     );
 
-    user.setIsSigningInOrganization(false);
+    user.data.isSigningInOrganization = false;
     router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
     toast.success('Successfully signed in');
   } catch (error: any) {
@@ -100,13 +100,13 @@ watch([inputEmail, inputPassword], () => {
 });
 
 watch(
-  () => user.data.activeOrganization,
-  async activeOrganization => {
-    if (activeOrganization) {
-      const flag = await shouldSignInOrganization(user.data.id, activeOrganization.id);
+  () => user.data.organizationServerActive,
+  async active => {
+    if (user.data.activeOrganization && active) {
+      const flag = await shouldSignInOrganization(user.data.id, user.data.activeOrganization.id);
 
       if (!flag) {
-        user.setIsSigningInOrganization(false);
+        user.data.isSigningInOrganization = false;
         router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
       }
     }
