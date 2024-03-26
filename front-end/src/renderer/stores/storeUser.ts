@@ -2,7 +2,12 @@ import { reactive, watch } from 'vue';
 import { defineStore } from 'pinia';
 
 import { Organization } from '@prisma/client';
-import { getConnectedOrganizations } from '@renderer/services/organizationCredentials';
+
+import {
+  getConnectedOrganizations,
+  getOrganizationsToSignIn,
+  shouldSignInOrganization,
+} from '@renderer/services/organizationCredentials';
 
 export interface UserStore {
   isLoggedIn: boolean | null;
@@ -12,6 +17,7 @@ export interface UserStore {
   secretHashes: string[];
   activeOrganization: Organization | null;
   connectedOrganizations: Organization[];
+  organizationsToSignIn: { credential_id?: string; email?: string; organization: Organization }[];
 }
 
 export const localServerUrl = '';
@@ -26,6 +32,7 @@ const useUserStore = defineStore('user', () => {
     secretHashes: [],
     activeOrganization: null,
     connectedOrganizations: [],
+    organizationsToSignIn: [],
   });
 
   /* Actions */
@@ -50,6 +57,7 @@ const useUserStore = defineStore('user', () => {
   async function fetchConnectedOrganizations() {
     if (data.isLoggedIn && data.id.length > 0) {
       data.connectedOrganizations = await getConnectedOrganizations(data.id);
+      data.organizationsToSignIn = await getOrganizationsToSignIn(data.id);
     }
   }
 
@@ -61,6 +69,19 @@ const useUserStore = defineStore('user', () => {
     },
   );
 
+  watch(
+    () => data.activeOrganization,
+    async activeOrganization => {
+      if (activeOrganization) {
+        const flag = await shouldSignInOrganization(data.id, activeOrganization.id);
+        if (
+          flag &&
+          !data.organizationsToSignIn.find(o => o.organization.id === activeOrganization.id)
+        )
+          data.organizationsToSignIn.push({ organization: activeOrganization });
+      }
+    },
+  );
   return {
     data,
     setActiveOrganization,

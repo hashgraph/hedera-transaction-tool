@@ -217,6 +217,16 @@ export const electronAPI = {
   organizationCredentials: {
     getConnectedOrganizations: (user_id: string): Promise<Organization[]> =>
       ipcRenderer.invoke('organizationCredentials:getConnectedOrganizations', user_id),
+    organizationsToSignIn: (
+      user_id: string,
+    ): Promise<{ credential_id?: string; email?: string; organization: Organization }[]> =>
+      ipcRenderer.invoke('organizationCredentials:organizationsToSignIn', user_id),
+    shouldSignInOrganization: (user_id: string, organization_id: string): Promise<boolean> =>
+      ipcRenderer.invoke(
+        'organizationCredentials:shouldSignInOrganization',
+        user_id,
+        organization_id,
+      ),
   },
 };
 typeof electronAPI;
