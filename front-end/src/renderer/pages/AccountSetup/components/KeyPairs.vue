@@ -7,6 +7,7 @@ import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
+import { useRouter } from 'vue-router';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import {
@@ -20,9 +21,7 @@ import { getWidthOfElementWithText } from '@renderer/utils/dom';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 // import AppButton from '@renderer/components/ui/AppButton.vue';
 // import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
-
-/* Props */
-const props = defineProps<{ encryptPassword: string }>();
+import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
 
 /* Stores */
 const keyPairsStore = useKeyPairsStore();
@@ -30,6 +29,7 @@ const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
+const router = useRouter();
 const createTooltips = useCreateTooltips();
 
 /* State */
@@ -46,6 +46,10 @@ const starCount = ref(0);
 const publicKey = ref('');
 
 const keyExists = ref(false);
+
+const userPasswordModalShow = ref(false);
+const saveAfterModalClose = ref(false);
+const userPassword = ref(user.data.password);
 
 /* Misc Functions */
 const validateExistingKey = () => {
@@ -78,6 +82,12 @@ const handleRestoreKey = async () => {
 };
 
 const handleSaveKey = async () => {
+  if (userPassword.value.length === 0) {
+    saveAfterModalClose.value = true;
+    userPasswordModalShow.value = true;
+    return;
+  }
+
   if (privateKey.value) {
     try {
       const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
@@ -93,12 +103,23 @@ const handleSaveKey = async () => {
         nickname: nickname.value || null,
       };
 
-      await keyPairsStore.storeKeyPair(keyPair, props.encryptPassword);
+      await keyPairsStore.storeKeyPair(keyPair, userPassword.value);
       user.data.secretHashes = [...user.data.secretHashes, secretHash];
 
       toast.success('Key Pair saved successfully', {
         position: 'bottom-right',
       });
+
+      //REPLACE WITH REQUEST TO BE
+      if (user.data.activeOrganization) {
+        user.data.organizationState = {
+          secretHashes: [...(user.data.organizationState?.secretHashes || []), secretHash],
+          passwordTemporary: false,
+        };
+      }
+
+      user.data.password = '';
+      router.push({ name: 'settingsKeys' });
     } catch (err: any) {
       let message = 'Failed to store key pair';
       if (err.message && typeof err.message === 'string') {
@@ -106,6 +127,14 @@ const handleSaveKey = async () => {
       }
       toast.error(message, { position: 'bottom-right' });
     }
+  }
+};
+
+const handlePasswordEntered = async (password: string) => {
+  userPassword.value = password;
+
+  if (saveAfterModalClose.value) {
+    await handleSaveKey();
   }
 };
 
@@ -283,5 +312,12 @@ defineExpose({
           >Save Key</AppButton
         >
     </div> -->
+
+    <UserPasswordModal
+      v-model:show="userPasswordModalShow"
+      heading="Enter personal password"
+      subHeading="Credentials will be encrypted with this password"
+      @passwordEntered="handlePasswordEntered"
+    />
   </div>
 </template>

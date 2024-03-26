@@ -4,8 +4,6 @@ import { onBeforeMount, ref } from 'vue';
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
-import { useRouter } from 'vue-router';
-
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppStepper from '@renderer/components/ui/AppStepper.vue';
 
@@ -16,9 +14,6 @@ import NewPassword from './components/NewPassword.vue';
 /* Stores */
 const user = useUserStore();
 const keyPairs = useKeyPairsStore();
-
-/* Composables */
-const router = useRouter();
 
 /* State */
 const keyPairsComponent = ref<typeof KeyPairs | null>(null);
@@ -45,9 +40,6 @@ const handleNext = async () => {
 
   if (currentIndex + 1 === stepperItems.value.length) {
     await keyPairsComponent.value?.handleSaveKey();
-    user.data.password = '';
-
-    router.push({ name: 'settingsKeys' });
   } else {
     step.value.current =
       currentIndex >= 0
