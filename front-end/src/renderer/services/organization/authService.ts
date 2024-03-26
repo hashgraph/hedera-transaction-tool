@@ -1,0 +1,34 @@
+import axios, { AxiosError } from 'axios';
+
+/* Authentification service for organization */
+
+export const login = async (
+  serverUrl: string,
+  email: string,
+  password: string,
+): Promise<string> => {
+  try {
+    const response = await axios.post(`${serverUrl}/auth/signin`, {
+      email,
+      password,
+    });
+
+    return response.data?.accessToken || '';
+  } catch (error: any) {
+    if (error instanceof AxiosError) {
+      throwIfNoResponse(error);
+
+      if ([400, 401].includes(error.response?.status || 0)) {
+        throw new Error('Invalid email or password');
+      }
+    }
+
+    throw new Error('Failed Sign in Organization');
+  }
+};
+
+function throwIfNoResponse(error: AxiosError) {
+  if (!error.response) {
+    throw new Error('Failed to connect to the server');
+  }
+}
