@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios';
-import { throwIfNoResponse } from './';
+import { throwIfNoResponse } from '.';
 
 /* Authentification service for organization */
 

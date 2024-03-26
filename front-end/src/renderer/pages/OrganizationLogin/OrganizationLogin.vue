@@ -6,7 +6,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
-import { login } from '@renderer/services/organization/authService';
+import { login } from '@renderer/services/organization';
 import {
   addOrganizationCredentials,
   shouldSignInOrganization,

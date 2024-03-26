@@ -1,3 +1,6 @@
+export * from './auth';
+export * from './user';
+
 import axios, { AxiosError } from 'axios';
 
 const pingPath = '/users';
