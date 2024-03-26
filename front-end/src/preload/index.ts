@@ -215,7 +215,7 @@ export const electronAPI = {
       ipcRenderer.invoke('transactionDrafts:getDraftsCount', userId),
   },
   organizations: {
-    getOrganizations: (user_id: string): Promise<Organization[]> =>
+    getOrganizations: (user_id?: string): Promise<Organization[]> =>
       ipcRenderer.invoke('organizations:getOrganizations', user_id),
     addOrganization: (organization: Prisma.OrganizationCreateInput): Promise<Organization> =>
       ipcRenderer.invoke('organizations:addOrganization', organization),

@@ -18,6 +18,7 @@ import { getTransactionFromBytes } from '@renderer/utils/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Props */
 const props = defineProps<{
@@ -108,7 +109,7 @@ onBeforeRouteLeave(async to => {
           <i class="bi bi-x-lg cursor-pointer" @click="isSaveDraftModalShown = false"></i>
         </div>
         <div>
-          <img src="/images/draft.png" class="h-100" style="width: 200px" alt="draft" />
+          <AppCustomIcon :name="'lock'" style="height: 160px" />
         </div>
         <h2 class="text-title text-semi-bold mt-3">Save draft?</h2>
         <p class="text-small text-secondary mt-3">
