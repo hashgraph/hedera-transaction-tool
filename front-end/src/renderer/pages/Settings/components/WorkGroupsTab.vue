@@ -3,8 +3,6 @@ import { onBeforeMount, ref } from 'vue';
 
 import { Organization } from '@prisma/client';
 
-import useUserStore from '@renderer/stores/storeUser';
-
 import { useToast } from 'vue-toast-notification';
 
 import {
@@ -15,9 +13,6 @@ import {
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-
-/* Stores */
-const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
@@ -67,7 +62,7 @@ const handleAddOrganization = async e => {
 
 /* Hooks */
 onBeforeMount(async () => {
-  organizations.value = await getOrganizations(user.data.id);
+  organizations.value = await getOrganizations();
 });
 </script>
 <template>

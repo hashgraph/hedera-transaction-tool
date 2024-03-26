@@ -15,7 +15,7 @@ import {
   User,
 } from '@prisma/client';
 
-import { IOrganization, Theme } from '@main/shared/interfaces';
+import { Theme } from '@main/shared/interfaces';
 
 export const electronAPI = {
   update: {
@@ -53,18 +53,6 @@ export const electronAPI = {
       return () => {
         ipcRenderer.removeListener('theme:update', subscription);
       };
-    },
-  },
-  config: {
-    clear: () => ipcRenderer.invoke('configuration:clear'),
-    organizations: {
-      getAll: (): Promise<IOrganization[]> => ipcRenderer.invoke('configuration:organizations:get'),
-      add: async (organization: IOrganization) => {
-        await ipcRenderer.invoke('configuration:organizations:add', organization);
-      },
-      removeByServerURL: async (serverUrl: string) => {
-        await ipcRenderer.invoke('configuration:organizations:remove', serverUrl);
-      },
     },
   },
   keyPairs: {

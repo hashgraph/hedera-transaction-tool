@@ -43,7 +43,7 @@ const handleFormSubmit = async (event: Event) => {
 
   if (!inputNewPasswordInvalid.value && !inputConfirmPasswordInvalid.value) {
     try {
-      if (!user.data.isLoggedIn || !user.data.activeServerURL || !user.data.activeUserId) {
+      if (!user.data.isLoggedIn || !user.data.activeServerURL) {
         throw new Error('User is not logged in');
       }
 
