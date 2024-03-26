@@ -4,7 +4,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { getSecretHashes } from '@renderer/services/keyPairService';
 
-export default function useCreateTooltips() {
+export default function useAutoLogin() {
   /* Stores */
   const user = useUserStore();
 
