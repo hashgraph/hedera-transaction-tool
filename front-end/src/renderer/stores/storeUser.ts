@@ -18,6 +18,7 @@ export interface UserStore {
   activeOrganization: Organization | null;
   connectedOrganizations: Organization[];
   organizationsToSignIn: { credential_id?: string; email?: string; organization: Organization }[];
+  isSigningInOrganization: boolean;
 }
 
 export const localServerUrl = '';
@@ -33,11 +34,16 @@ const useUserStore = defineStore('user', () => {
     activeOrganization: null,
     connectedOrganizations: [],
     organizationsToSignIn: [],
+    isSigningInOrganization: false,
   });
 
   /* Actions */
   function setActiveOrganization(organization: Organization | null) {
     data.activeOrganization = organization;
+  }
+
+  function setIsSigningInOrganization(flag: boolean) {
+    data.isSigningInOrganization = flag;
   }
 
   function login(id: string, email: string, secretHashes: string[]) {
@@ -85,6 +91,7 @@ const useUserStore = defineStore('user', () => {
   return {
     data,
     setActiveOrganization,
+    setIsSigningInOrganization,
     login,
     logout,
     fetchConnectedOrganizations,

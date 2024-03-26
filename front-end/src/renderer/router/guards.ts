@@ -7,6 +7,13 @@ export function addGuards(router: Router) {
 
   router.beforeEach(to => {
     const userIsLoggedIn = user.data.isLoggedIn;
+    const userIsSigningInOrganization = user.data.isSigningInOrganization;
+
+    if (userIsSigningInOrganization && to.name !== 'organizationLogin') {
+      console.log('fae');
+
+      return false;
+    }
 
     if (userIsLoggedIn && user.data.secretHashes.length === 0 && to.name !== 'accountSetup') {
       return {
@@ -14,11 +21,14 @@ export function addGuards(router: Router) {
       };
     }
 
-    if (userIsLoggedIn && to.name === 'login') {
+    if (
+      (userIsLoggedIn && to.name === 'login') ||
+      (!userIsSigningInOrganization && to.name === 'organizationLogin')
+    ) {
       return router.previousPath ? { path: router.previousPath } : { name: 'transactions' };
     }
 
-    if (to.name !== 'login') {
+    if (to.name !== 'login' && to.name !== 'organizationLogin') {
       router.previousPath = to.path;
     }
 
