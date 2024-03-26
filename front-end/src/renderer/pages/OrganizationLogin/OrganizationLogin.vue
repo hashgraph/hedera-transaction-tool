@@ -77,7 +77,7 @@ const handleLogin = async () => {
 
     toast.success('Successfully signed in');
 
-    const userState = await getUserState(user.data.activeOrganization.serverUrl, '');
+    const userState = await getUserState(user.data.activeOrganization.id, user.data.id);
     user.data.organizationState = userState;
     if (userState.passwordTemporary || userState.secretHashes.length === 0) {
       router.push({ name: 'accountSetup' });

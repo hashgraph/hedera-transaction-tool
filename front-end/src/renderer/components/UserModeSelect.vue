@@ -79,7 +79,7 @@ async function afterSelectOrganization() {
     return;
   }
 
-  const userState = await getUserState(user.data.activeOrganization.serverUrl, '');
+  const userState = await getUserState(user.data.activeOrganization.id, user.data.id);
   user.data.organizationState = userState;
   if (userState.passwordTemporary || userState.secretHashes.length === 0) {
     router.push({ name: 'accountSetup' });

@@ -1,30 +1,18 @@
-import axios from 'axios';
+import { getMessageFromIPCError } from '@renderer/utils';
 
 /* User service for organization */
 
-const userController = 'user';
-
+/* Get information about current user */
 export const getUserState = async (
-  serverUrl: string,
-  accessToken: string,
+  organizationId: string,
+  userId: string,
 ): Promise<{
   passwordTemporary: boolean;
   secretHashes: string[];
 }> => {
   try {
-    // const { data } = await axios.get(`${serverUrl}/${userController}/state`, {
-    //   headers: {
-    //     Authorization: `Bearer ${accessToken}`,
-    //   },
-    // });
-
-    // return data;
-
-    return {
-      passwordTemporary: true,
-      secretHashes: [],
-    };
+    return await window.electronAPI.organization.user.me(organizationId, userId);
   } catch (error: any) {
-    throw new Error('Failed get user state');
+    throw Error(getMessageFromIPCError(error, 'Failed to get information about user state'));
   }
 };

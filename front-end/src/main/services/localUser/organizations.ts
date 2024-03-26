@@ -12,6 +12,17 @@ export const getOrganizations = async () => {
   }
 };
 
+export const getOrganization = async (id: string) => {
+  const prisma = getPrismaClient();
+
+  try {
+    return await prisma.organization.findFirst({ where: { id } });
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+};
+
 export const addOrganization = async (organization: Prisma.OrganizationCreateInput) => {
   const prisma = getPrismaClient();
   return await prisma.organization.create({ data: organization });

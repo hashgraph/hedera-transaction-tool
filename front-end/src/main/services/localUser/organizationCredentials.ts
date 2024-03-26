@@ -67,6 +67,24 @@ export const shouldSignInOrganization = async (user_id: string, organization_id:
   }
 };
 
+/* Returns the access token of a user for an organization */
+export const getAccessToken = async (organization_id: string, user_id: string) => {
+  const prisma = getPrismaClient();
+
+  try {
+    const credentials = await prisma.organizationCredentials.findFirst({
+      where: { user_id, organization_id },
+    });
+
+    if (!credentials) return null;
+
+    return credentials.jwtToken;
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+};
+
 /* Returns credentials for organization */
 export const getOrganizationCredentials = async (organization_id: string, user_id: string) => {
   const prisma = getPrismaClient();
