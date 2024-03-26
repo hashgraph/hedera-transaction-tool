@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -11,7 +11,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Props */
-defineProps<{
+const props = defineProps<{
   show: boolean;
   heading?: string;
   subHeading?: string;
@@ -42,6 +42,14 @@ const handlePasswordEntered = async (e: Event) => {
     throw new Error('Incorrect Personal User Password');
   }
 };
+
+/* Watchers */
+watch(
+  () => props.show,
+  () => {
+    password.value = '';
+  },
+);
 </script>
 <template>
   <AppModal
