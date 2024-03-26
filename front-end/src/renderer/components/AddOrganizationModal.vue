@@ -1,0 +1,102 @@
+<script setup lang="ts">
+import { watch, ref } from 'vue';
+
+import { Organization } from '@prisma/client';
+import { useToast } from 'vue-toast-notification';
+
+import { addOrganization } from '@renderer/services/organizationsService';
+
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+
+/* Props */
+const props = defineProps<{
+  show: boolean;
+}>();
+
+/* Emits */
+const emit = defineEmits<{
+  (event: 'update:show', show: boolean): void;
+  (event: 'added', organization: Organization): void;
+}>();
+
+/* Composables */
+const toast = useToast();
+
+/* State */
+const nickname = ref('');
+const serverUrl = ref('');
+
+/* Handlers */
+const handleAdd = async (e: Event) => {
+  e.preventDefault();
+
+  try {
+    const organization = await addOrganization({
+      nickname: nickname.value,
+      serverUrl: serverUrl.value,
+      key: '',
+    });
+
+    toast.success('Organizations Added', { position: 'bottom-right' });
+    emit('added', organization);
+    emit('update:show', false);
+  } catch (err: any) {
+    let message = 'Failed to add organization';
+    if (err.message && typeof err.message === 'string') {
+      message = err.message;
+    }
+    toast.error(message, { position: 'bottom-right' });
+  }
+};
+
+/* Watchers */
+watch(
+  () => props.show,
+  () => {
+    nickname.value = '';
+    serverUrl.value = '';
+  },
+);
+</script>
+<template>
+  <AppModal
+    :show="show"
+    :close-on-click-outside="false"
+    :close-on-escape="false"
+    class="common-modal"
+  >
+    <form class="p-4" @submit="handleAdd">
+      <div class="text-start">
+        <i class="bi bi-x-lg cursor-pointer" @click="$emit('update:show', false)"></i>
+      </div>
+      <div class="text-center">
+        <AppCustomIcon :name="'group'" style="height: 160px" />
+      </div>
+      <h2 class="text-center text-title text-semi-bold mt-3">Setup Organization</h2>
+      <p class="text-center text-small text-secondary mt-3">
+        Please Enter Organisation Nickname and Server URL
+      </p>
+
+      <div class="form-group mt-5">
+        <label class="form-label">Nickname</label>
+        <AppInput size="small" v-model="nickname" :filled="true" placeholder="Enter nickname" />
+      </div>
+      <div class="form-group mt-5">
+        <label class="form-label">Server URL</label>
+        <AppInput size="small" v-model="serverUrl" :filled="true" placeholder="Enter Server URL" />
+      </div>
+
+      <hr class="separator my-5" />
+
+      <div class="flex-between-centered gap-4">
+        <AppButton color="borderless" type="button" @click="$emit('update:show', false)"
+          >Cancel</AppButton
+        >
+        <AppButton color="primary" type="submit">Add</AppButton>
+      </div>
+    </form>
+  </AppModal>
+</template>
