@@ -25,6 +25,8 @@ const ForgotPassword = () => import('@renderer/pages/ForgotPassword');
 const LinkExistingAccount = () => import('@renderer/pages/Accounts/LinkExistingAccount');
 const LinkExistingFile = () => import('@renderer/pages/Files/LinkExistingFile');
 const OrganizationLogin = () => import('@renderer/pages/OrganizationLogin');
+const OrganizationConnectionsTab = () =>
+  import('@renderer/pages/Settings/components/OrganizationConnectionsTab.vue');
 
 const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/transactions' },
@@ -69,6 +71,11 @@ const routes: RouteRecordRaw[] = [
         path: 'profile',
         name: 'settingsAccount',
         component: ProfileTab,
+      },
+      {
+        path: 'organization-connections',
+        name: 'settingsOrganizationConnections',
+        component: OrganizationConnectionsTab,
       },
     ],
   },

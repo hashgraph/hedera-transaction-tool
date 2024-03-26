@@ -13,10 +13,12 @@ const router = useRouter();
 /* Misc */
 const generalTitle = 'General';
 const keysTitle = 'Keys';
+const organizations = 'Organization Connections';
 const profileTitle = 'Profile';
 const tabItems: TabItem[] = [
   { title: generalTitle },
   // { title: 'Work Groups' },
+  { title: organizations },
   { title: keysTitle },
   { title: profileTitle },
 ];
