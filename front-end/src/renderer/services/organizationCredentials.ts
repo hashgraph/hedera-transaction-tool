@@ -95,3 +95,12 @@ export const deleteOrganizationCredentials = async (organization_id: string, use
     throw Error(getMessageFromIPCError(error, 'Failed to delete organization credentials'));
   }
 };
+
+/* Try auto sign in */
+export const tryAutoSignIn = async (user_id: string, decryptPassword: string) => {
+  try {
+    return await window.electronAPI.organizationCredentials.tryAutoSignIn(user_id, decryptPassword);
+  } catch (error: any) {
+    throw Error(getMessageFromIPCError(error, 'Failed failed to auto sign in to organizations'));
+  }
+};

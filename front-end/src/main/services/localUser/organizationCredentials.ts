@@ -1,9 +1,11 @@
 import { getPrismaClient } from '@main/db';
 
-import { OrganizationCredentials } from '@prisma/client';
+import { Organization, OrganizationCredentials } from '@prisma/client';
 import { jwtDecode } from 'jwt-decode';
 
-import { encrypt } from '@main/utils/crypto';
+import { decrypt, encrypt } from '@main/utils/crypto';
+
+import { login } from '@main/services/organization/auth';
 
 /* Returns the organization that the user is connected to */
 export const getConnectedOrganizations = async (user_id: string) => {
@@ -199,6 +201,60 @@ export const deleteOrganizationCredentials = async (organization_id: string, use
   } catch (error) {
     console.log(error);
     throw new Error('Failed to delete organization credentials');
+  }
+};
+
+export const decryptCredentialPassword = async (
+  credentials: OrganizationCredentials,
+  decryptPassword: string,
+) => {
+  try {
+    return decrypt(credentials.password, decryptPassword);
+  } catch (error) {
+    console.log(error);
+    throw new Error('Failed to decrypt credential');
+  }
+};
+
+/* Tries to auto sign in to all organizations that should sign in */
+export const tryAutoSignIn = async (user_id: string, decryptPassword: string) => {
+  const invalidCredentials = await organizationsToSignIn(user_id);
+
+  const failedLogins: Organization[] = [];
+
+  for (let i = 0; i < invalidCredentials.length; i++) {
+    const invalidCredential = invalidCredentials[i];
+
+    const credentials = await getOrganizationCredentials(
+      invalidCredential.organization.id,
+      user_id,
+    );
+    if (!credentials) continue;
+
+    let password = '';
+    try {
+      password = await decryptCredentialPassword(credentials, decryptPassword);
+    } catch (error) {
+      throw new Error('Incorrect decryption password');
+    }
+
+    try {
+      const accessToken = await login(
+        invalidCredential.organization.serverUrl,
+        invalidCredential.email,
+        password,
+      );
+
+      await updateOrganizationCredentials(
+        invalidCredential.organization.id,
+        user_id,
+        invalidCredential.email,
+        password,
+        accessToken,
+      );
+    } catch (error) {
+      failedLogins.push(invalidCredential.organization);
+    }
   }
 };
 

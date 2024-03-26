@@ -269,6 +269,8 @@ export const electronAPI = {
         organization_id,
         user_id,
       ),
+    tryAutoSignIn: (user_id: string, decryptPassword: string): Promise<Organization[]> =>
+      ipcRenderer.invoke('organizationCredentials:tryAutoSignIn', user_id, decryptPassword),
   },
 };
 typeof electronAPI;

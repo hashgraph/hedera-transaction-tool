@@ -7,6 +7,7 @@ import {
   addOrganizationCredentials,
   updateOrganizationCredentials,
   deleteOrganizationCredentials,
+  tryAutoSignIn,
 } from '@main/services/localUser';
 
 const createChannelName = (...props) => ['organizationCredentials', ...props].join(':');
@@ -82,5 +83,11 @@ export default () => {
     createChannelName('deleteOrganizationCredentials'),
     (_e, organization_id: string, user_id: string) =>
       deleteOrganizationCredentials(organization_id, user_id),
+  );
+
+  /* Tries to auto login to all organizations that should sign in */
+  ipcMain.handle(
+    createChannelName('tryAutoSignIn'),
+    (_e, user_id: string, decryptPassword: string) => tryAutoSignIn(user_id, decryptPassword),
   );
 };
