@@ -40,7 +40,7 @@ const handleAdd = async (e: Event) => {
       key: '',
     });
 
-    toast.success('Organizations Added', { position: 'bottom-right' });
+    toast.success('Organization Added', { position: 'bottom-right' });
     emit('added', organization);
     emit('update:show', false);
   } catch (err: any) {
