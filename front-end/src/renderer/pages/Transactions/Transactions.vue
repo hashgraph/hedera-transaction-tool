@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+
+import useUserStore from '@renderer/stores/storeUser';
 
 import AppTabs, { TabItem } from '@renderer/components/ui/AppTabs.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -7,7 +9,6 @@ import TransactionSelectionModal from '@renderer/components/TransactionSelection
 
 import History from './components/History.vue';
 import Drafts from './components/Drafts.vue';
-import useUserStore from '@renderer/stores/storeUser';
 
 /* Stores */
 const user = useUserStore();
@@ -28,20 +29,30 @@ const isTransactionSelectionModalShown = ref(false);
 /* Computed */
 const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title);
 
+/* Function */
+function setTabItems() {
+  if (user.data.activeOrganization) {
+    const currentTabTitle = activeTabTitle.value;
+    tabItems.value = [...organizationOnlyTabs, ...sharedTabs];
+    const newIndex = tabItems.value.findIndex(tab => tab.title === currentTabTitle);
+    activeTabIndex.value = newIndex >= 0 ? newIndex : 0;
+  } else {
+    const newIndex = sharedTabs.findIndex(tab => tab.title === activeTabTitle.value);
+    activeTabIndex.value = newIndex >= 0 ? newIndex : 0;
+    tabItems.value = sharedTabs;
+  }
+}
+
+/* Hooks */
+onMounted(() => {
+  setTabItems();
+});
+
 /* Watchers */
 watch(
   () => user.data.activeOrganization,
-  activeOrganization => {
-    if (activeOrganization) {
-      const currentTabTitle = activeTabTitle.value;
-      tabItems.value = [...organizationOnlyTabs, ...sharedTabs];
-      const newIndex = tabItems.value.findIndex(tab => tab.title === currentTabTitle);
-      activeTabIndex.value = newIndex >= 0 ? newIndex : 0;
-    } else {
-      const newIndex = sharedTabs.findIndex(tab => tab.title === activeTabTitle.value);
-      activeTabIndex.value = newIndex >= 0 ? newIndex : 0;
-      tabItems.value = sharedTabs;
-    }
+  () => {
+    setTabItems();
   },
 );
 </script>

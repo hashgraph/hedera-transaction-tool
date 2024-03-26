@@ -34,18 +34,24 @@ const handleSelectedOrganizationNotActiveSubmit = async (e: Event) => {
 const checkInactiveServers = async (organizations: Organization[]) => {
   for (let i = 0; i < organizations.length; i++) {
     const organization = organizations[i];
-
-    const active = await ping(organization.serverUrl);
-
-    if (!active) {
-      if (!inactiveServers.value.find(org => org.id === organization.id)) {
-        inactiveServers.value.push(organization);
-      }
-    } else {
-      inactiveServers.value = inactiveServers.value.filter(org => org.id !== organization.id);
-    }
+    await adjustInActiveServersArray(organization);
   }
 };
+
+/* Functions */
+async function adjustInActiveServersArray(organization) {
+  const active = await ping(organization.serverUrl);
+
+  if (!active) {
+    if (!inactiveServers.value.find(org => org.id === organization.id)) {
+      inactiveServers.value.push(organization);
+    }
+  } else {
+    inactiveServers.value = inactiveServers.value.filter(org => org.id !== organization.id);
+  }
+
+  return active;
+}
 
 /* Hooks */
 onMounted(async () => {
@@ -61,15 +67,9 @@ watch(
   () => user.data.activeOrganization,
   async activeOrganization => {
     if (!activeOrganization) return;
-    const active = await ping(activeOrganization.serverUrl);
-
+    const active = await adjustInActiveServersArray(activeOrganization);
     if (!active) {
-      if (!inactiveServers.value.find(org => org.id === activeOrganization.id)) {
-        inactiveServers.value.push(activeOrganization);
-      }
       inactiveSelectedOrganizationModalShown.value = true;
-    } else {
-      inactiveServers.value = inactiveServers.value.filter(org => org.id !== activeOrganization.id);
     }
   },
 );
