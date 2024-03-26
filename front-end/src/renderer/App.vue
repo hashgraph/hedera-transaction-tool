@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeyPairs from '@renderer/stores/storeKeyPairs';
 
 import useAutoLogin from '@renderer/composables/useAutoLogin';
 
@@ -18,6 +19,10 @@ const isCheckingUserState = useAutoLogin();
 
 /* Stores */
 const user = useUserStore();
+const keyPairs = useKeyPairs();
+
+/* State */
+const isReady = ref(false);
 
 /* Handlers */
 async function handleThemeChange() {
@@ -34,6 +39,13 @@ onMounted(async () => {
     document.body.setAttribute('data-bs-theme', theme.shouldUseDarkColors ? 'dark' : 'light'),
   );
 });
+
+/* Watchers */
+watch([isCheckingUserState, () => keyPairs.refetching], ([isChecking, fetching]) => {
+  if (!isChecking && !fetching) {
+    isReady.value = true;
+  }
+});
 </script>
 
 <template>
@@ -46,7 +58,7 @@ onMounted(async () => {
 
   <Transition name="fade" mode="out-in">
     <div
-      v-if="!isCheckingUserState"
+      v-if="isReady"
       class="container-main"
       :class="{
         'logged-in': user.data.isLoggedIn,
