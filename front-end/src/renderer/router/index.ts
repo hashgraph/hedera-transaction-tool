@@ -24,13 +24,12 @@ const ProfileTab = () => import('@renderer/pages/Settings/components/ProfileTab.
 const ForgotPassword = () => import('@renderer/pages/ForgotPassword');
 const LinkExistingAccount = () => import('@renderer/pages/Accounts/LinkExistingAccount');
 const LinkExistingFile = () => import('@renderer/pages/Files/LinkExistingFile');
+const OrganizationLogin = () => import('@renderer/pages/OrganizationLogin');
 
 const routes: RouteRecordRaw[] = [
-  {
-    path: '/',
-    name: 'login',
-    component: UserLogin,
-  },
+  { path: '/', redirect: '/transactions' },
+  { path: '/login', name: 'login', component: UserLogin },
+  { path: '/organization-login', name: 'organizationLogin', component: OrganizationLogin },
   { path: '/style-guide', name: 'styleGuide', component: StyleGuide },
   { path: '/transactions', name: 'transactions', component: Transactions },
   { path: '/accounts/link-existing', name: 'linkExistingAccount', component: LinkExistingAccount },
