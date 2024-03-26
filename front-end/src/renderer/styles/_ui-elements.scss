@@ -711,6 +711,7 @@
   .pager-item,
   .page-link {
     border-radius: $border-radius;
+    z-index: 0;
   }
 
   .page-link {
