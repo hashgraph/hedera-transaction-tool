@@ -33,6 +33,7 @@ const inputEmailInvalid = ref(false);
 const inputPasswordInvalid = ref(false);
 
 const userPasswordModalShow = ref(true);
+const loginAfterPassword = ref(false);
 
 /* Handlers */
 const handleOnFormSubmit = async (e: Event) => {
@@ -44,6 +45,7 @@ const handleOnFormSubmit = async (e: Event) => {
 
   if (userPassword.value.length === 0) {
     userPasswordModalShow.value = true;
+    loginAfterPassword.value = true;
   } else {
     await handleLogin();
   }
@@ -71,6 +73,7 @@ const handleLogin = async () => {
       true,
     );
 
+    user.setIsSigningInOrganization(false);
     router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
     toast.success('Successfully signed in');
   } catch (error: any) {
@@ -159,7 +162,14 @@ watch(
         v-model:show="userPasswordModalShow"
         heading="Enter personal password"
         subHeading="Credentials will be encrypted with this password"
-        @passwordEntered="userPassword = $event"
+        @passwordEntered="
+          pass => {
+            userPassword = pass;
+            if (loginAfterPassword) {
+              handleLogin();
+            }
+          }
+        "
       />
     </div>
   </div>
