@@ -8,7 +8,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useRouter } from 'vue-router';
 
 import { shouldSignInOrganization } from '@renderer/services/organizationCredentials';
-import { ping } from '@renderer/services/organization';
+// import { ping } from '@renderer/services/organization';
 
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
 import AddOrSelectModal from '@renderer/components/Organization/AddOrSelectModal.vue';
@@ -74,15 +74,15 @@ const handleSelectOrganization = async (organization: Organization) => {
 async function routeIfShouldLogin() {
   if (user.data.activeOrganization === null) return;
 
-  const active = await ping(user.data.activeOrganization.serverUrl);
-  if (!active) {
-    user.setActiveOrganization(null);
-    selectedMode.value = 'personal';
-    if (selectElRef.value) {
-      selectElRef.value.value = selectedMode.value;
-    }
-    return;
-  }
+  // const active = await ping(user.data.activeOrganization.serverUrl);
+  // if (!active) {
+  //   user.setActiveOrganization(null);
+  //   selectedMode.value = 'personal';
+  //   if (selectElRef.value) {
+  //     selectElRef.value.value = selectedMode.value;
+  //   }
+  //   return;
+  // }
 
   const flag = await shouldSignInOrganization(user.data.id, user.data.activeOrganization.id);
 

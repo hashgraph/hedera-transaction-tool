@@ -13,7 +13,7 @@ import AppMenu from '@renderer/components/Menu.vue';
 import AppHeader from '@renderer/components/Header.vue';
 import AppUpdate from '@renderer/components/AppUpdate.vue';
 import ImportantNote from '@renderer/components/ImportantNote.vue';
-import PingOrganizations from '@renderer/components/Organization/PingOrganizations.vue';
+// import PingOrganizations from '@renderer/components/Organization/PingOrganizations.vue';
 
 /* Composables */
 const isCheckingUserState = useAutoLogin();
@@ -79,7 +79,7 @@ watch([isCheckingUserState, () => keyPairs.refetching], ([isChecking, fetching])
         </Transition>
       </RouterView>
 
-      <PingOrganizations />
+      <!-- <PingOrganizations /> -->
     </div>
   </Transition>
 
