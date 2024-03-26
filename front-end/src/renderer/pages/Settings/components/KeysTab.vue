@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { PublicKey } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -104,8 +104,8 @@ const handleDelete = async e => {
 
     if (keyPairIdToDelete.value) {
       await deleteKeyPair(keyPairIdToDelete.value);
-      isDeleteModalShown.value = false;
       await keyPairsStore.refetch();
+      isDeleteModalShown.value = false;
 
       if (user.data.secretHashes.length === 0) {
         router.push({ name: 'accountSetup' });
@@ -120,11 +120,6 @@ const handleCopy = (text: string, message: string) => {
   navigator.clipboard.writeText(text);
   toast.success(message, { position: 'bottom-right' });
 };
-
-/* Hooks */
-onMounted(async () => {
-  await keyPairsStore.refetch();
-});
 
 /* Watchers */
 watch(isDecryptedModalShown, newVal => {

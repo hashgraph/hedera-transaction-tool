@@ -1,4 +1,4 @@
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairs from '@renderer/stores/storeKeyPairs';
@@ -17,6 +17,7 @@ export default function useCreateTooltips() {
 
   /* State */
   const checkingForUser = ref(true);
+  const hasUser = ref(false);
 
   /* Hooks */
   onMounted(async () => {
@@ -27,16 +28,24 @@ export default function useCreateTooltips() {
       const secretHashes = await getSecretHashes(userId);
 
       user.login(userId, email, secretHashes);
-      await keyPairs.refetch();
-
-      checkingForUser.value = false;
-
-      router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
+      hasUser.value = true;
     } else {
       user.logout();
       checkingForUser.value = false;
     }
   });
 
+  /* Watchers */
+  watch(
+    () => keyPairs.refetching,
+    refetching => {
+      if (!checkingForUser.value) return;
+
+      if (!refetching && hasUser.value) {
+        checkingForUser.value = false;
+        router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
+      }
+    },
+  );
   return checkingForUser;
 }

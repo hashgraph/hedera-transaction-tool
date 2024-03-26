@@ -7,7 +7,6 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import {
   loginLocal,
@@ -27,7 +26,6 @@ import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 
 /* Stores */
 const user = useUserStore();
-const keyPairs = useKeyPairsStore();
 
 /* Composables */
 const toast = useToast();
@@ -111,7 +109,6 @@ const handleOnFormSubmit = async (event: Event) => {
         router.push({ name: 'accountSetup' });
       } else {
         router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
-        await keyPairs.refetch();
       }
     }
   }

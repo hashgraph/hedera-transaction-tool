@@ -134,13 +134,6 @@ const handleSubmit = e => {
 
 /* Hooks */
 onMounted(async () => {
-  await keyPairsStore.refetch();
-
-  const allAccounts = keyPairsStore.publicKeyToAccounts.map(a => a.accounts).flat();
-  if (allAccounts.length > 0 && allAccounts[0].account) {
-    payerData.accountId.value = allAccounts[0].account;
-  }
-
   if (route.query.fileId) {
     fileId.value = route.query.fileId.toString();
   }

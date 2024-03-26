@@ -4,7 +4,6 @@ import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
 import { Theme } from '@main/shared/interfaces';
 
 import useNetworkStore, { Network } from '@renderer/stores/storeNetwork';
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import { useToast } from 'vue-toast-notification';
 
@@ -15,7 +14,6 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Stores */
 const networkStore = useNetworkStore();
-const keyPairsStore = useKeyPairsStore();
 
 /* Composables */
 const toast = useToast();
@@ -37,8 +35,6 @@ const handleNetworkChange = async (network: Network) => {
   if (network !== 'custom') {
     isCustomSettingsVisible.value = false;
   }
-
-  await keyPairsStore.refetch();
 };
 
 const handleSetCustomNetwork = async () => {
@@ -61,8 +57,6 @@ const handleSetCustomNetwork = async () => {
     }
     toast.error(message, { position: 'bottom-right' });
   }
-
-  await keyPairsStore.refetch();
 };
 
 const handleThemeChange = (newTheme: Theme) => {

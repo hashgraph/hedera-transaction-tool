@@ -38,9 +38,7 @@ const handleChangePassword = async e => {
 
     if (currentPassword.value.length > 0 && newPassword.value.length > 0) {
       await changeDecryptionPassword(user.data.id, currentPassword.value, newPassword.value);
-
       await keyPairsStore.refetch();
-
       isSuccessModalShown.value = true;
     }
   } catch (err: any) {

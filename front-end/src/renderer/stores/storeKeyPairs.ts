@@ -1,4 +1,4 @@
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 
 import { KeyPair, Prisma } from '@prisma/client';
@@ -12,13 +12,14 @@ import * as mirrorNodeDataService from '@renderer/services/mirrorNodeDataService
 
 const useKeyPairsStore = defineStore('keyPairs', () => {
   /* Stores */
-  const networkStore = useNetworkStore();
+  const network = useNetworkStore();
   const user = useUserStore();
 
   /* State */
   const recoveryPhraseWords = ref<string[]>([]);
   const keyPairs = ref<KeyPair[]>([]);
   const publicKeyToAccounts = ref<{ publicKey: string; accounts: AccountInfo[] }[]>([]);
+  const refetching = ref(false);
 
   /* Getters */
   const publicKeys = computed(() => keyPairs.value.map(kp => kp.public_key));
@@ -29,7 +30,9 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
       throw Error('Please login to get stored keys!');
     }
 
-    keyPairs.value = (await keyPairService.getKeyPairs(user.data.id)).sort((k1, k2) => {
+    keyPairs.value = (
+      await keyPairService.getKeyPairs(user.data.id, user.data.activeOrganization?.id || undefined)
+    ).sort((k1, k2) => {
       if (k1.index < 0) {
         return 1;
       } else {
@@ -46,23 +49,24 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
       const keyPair = keyPairs.value[i];
 
       const publicKeyPair = publicKeyToAccounts.value.findIndex(
-        acc => acc.publicKey === keyPair.public_key,
+        pkToAcc => pkToAcc.publicKey === keyPair.public_key,
       );
 
       const accounts = await mirrorNodeDataService.getAccountsByPublicKey(
-        networkStore.mirrorNodeBaseURL,
+        network.mirrorNodeBaseURL,
         keyPair.public_key,
       );
 
       if (publicKeyPair >= 0) {
         publicKeyToAccounts.value[publicKeyPair].accounts = accounts;
-        publicKeyToAccounts.value = [...publicKeyToAccounts.value];
       } else {
         publicKeyToAccounts.value.push({
           publicKey: keyPair.public_key,
           accounts: accounts,
         });
       }
+
+      publicKeyToAccounts.value = [...publicKeyToAccounts.value];
     }
   }
 
@@ -104,18 +108,27 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
     return keyPair?.nickname || undefined;
   }
 
-  /* Lifecycle hooks */
-  onMounted(async () => {
-    if (user.data.isLoggedIn) {
-      await refetch();
-    }
-  });
+  /* Watchers */
+  watch(
+    [() => user.data.isLoggedIn, () => user.data.activeOrganization, () => network.network],
+    async () => {
+      if (user.data.isLoggedIn) {
+        try {
+          refetching.value = true;
+          await refetch();
+        } finally {
+          refetching.value = false;
+        }
+      }
+    },
+  );
 
   return {
     recoveryPhraseWords,
     keyPairs,
     publicKeyToAccounts,
     publicKeys,
+    refetching,
     setRecoveryPhrase,
     clearKeyPairs,
     clearRecoveryPhrase,
