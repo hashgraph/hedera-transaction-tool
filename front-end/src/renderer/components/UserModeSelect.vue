@@ -74,13 +74,7 @@ async function routeIfShouldLogin() {
 
   if (flag) {
     user.setIsSigningInOrganization(true);
-
-    router.push({
-      name: 'organizationLogin',
-      params: {
-        organizationId: user.data.activeOrganization.id,
-      },
-    });
+    router.push({ name: 'organizationLogin' });
   }
 }
 </script>
