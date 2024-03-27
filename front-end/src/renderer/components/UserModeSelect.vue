@@ -97,6 +97,8 @@ watch(
         router.currentRoute.value.name === 'accountSetup'
       ) {
         router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
+      } else {
+        selectedMode.value = 'personal';
       }
       return;
     }

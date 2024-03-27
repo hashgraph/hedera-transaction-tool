@@ -18,6 +18,8 @@ const handleDeleteConnection = async (organizationId: string) => {
   await deleteOrganizationCredentials(organizationId, user.data.id);
   await user.fetchConnectedOrganizations();
 
+  user.setActiveOrganization(null);
+
   toast.success('Connection deleted successfully');
 };
 </script>
