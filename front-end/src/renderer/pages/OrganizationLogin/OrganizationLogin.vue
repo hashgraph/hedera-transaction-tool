@@ -77,14 +77,16 @@ const handleLogin = async () => {
 
     toast.success('Successfully signed in');
 
-    const userState = await getUserState(user.data.activeOrganization.id, user.data.id);
-    user.data.organizationState = userState;
-    if (userState.passwordTemporary || userState.secretHashes.length === 0) {
-      router.push({ name: 'accountSetup' });
-      return;
+    try {
+      const userState = await getUserState(user.data.activeOrganization.id, user.data.id);
+      user.data.organizationState = userState;
+      if (userState.passwordTemporary || userState.secretHashes.length === 0) {
+        router.push({ name: 'accountSetup' });
+        return;
+      }
+    } finally {
+      router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
     }
-
-    router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
   } catch (error: any) {
     inputEmailInvalid.value = true;
     inputPasswordInvalid.value = true;
