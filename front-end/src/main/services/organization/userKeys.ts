@@ -9,10 +9,10 @@ const controller = ['user', 'keys'];
 /* Get user keys from organization */
 export const getOwn = async (organizationId: string, userId: string) => {
   try {
-    const { organization, accessToken } = await getRequestMeta(userId, organizationId);
+    const { organization, accessToken, jwtPayload } = await getRequestMeta(userId, organizationId);
 
     const response = await axios.get(
-      `${organization?.serverUrl}/${controller[0]}/${userId}/${controller[1]}`,
+      `${organization?.serverUrl}/${controller[0]}/${jwtPayload.userId}/${controller[1]}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,

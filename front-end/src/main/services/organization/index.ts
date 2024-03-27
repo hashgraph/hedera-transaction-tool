@@ -1,3 +1,5 @@
+import { JwtPayload, jwtDecode } from 'jwt-decode';
+
 import { getAccessToken, getOrganization } from '../localUser';
 
 export * from './auth';
@@ -12,5 +14,7 @@ export const getRequestMeta = async (userId: string, organizationId: string) => 
     throw new Error('Organization or access token not found');
   }
 
-  return { organization, accessToken };
+  const jwtPayload: JwtPayload & { userId: string; email: string } = jwtDecode(accessToken);
+
+  return { organization, accessToken, jwtPayload };
 };
