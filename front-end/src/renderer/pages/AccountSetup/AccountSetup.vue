@@ -56,7 +56,7 @@ onBeforeMount(() => {
     stepperItems.value.shift();
   }
 
-  if (user.data.organizationState?.passwordTemporary) {
+  if (!user.data.organizationState?.passwordTemporary) {
     step.value.previous = 'recoveryPhrase';
     step.value.current = 'recoveryPhrase';
   }
