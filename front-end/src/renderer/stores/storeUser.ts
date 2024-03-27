@@ -2,6 +2,7 @@ import { computed, reactive, watch } from 'vue';
 import { defineStore } from 'pinia';
 
 import { Organization } from '@prisma/client';
+import { IUserKey } from '@main/shared/interfaces';
 
 import {
   getConnectedOrganizations,
@@ -21,7 +22,11 @@ export interface UserStore {
   connectedOrganizations: Organization[];
   organizationsToSignIn: { credential_id?: string; email?: string; organization: Organization }[];
   isSigningInOrganization: boolean;
-  organizationState: { passwordTemporary: boolean; secretHashes: string[] } | null;
+  organizationState: {
+    passwordTemporary: boolean;
+    organizationKeys: IUserKey[];
+    secretHashes: string[];
+  } | null;
 }
 
 export const localServerUrl = '';
