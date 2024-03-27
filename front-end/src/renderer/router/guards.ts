@@ -9,12 +9,10 @@ export function addGuards(router: Router) {
     const userIsLoggedIn = user.data.isLoggedIn;
     const userIsSigningInOrganization = user.data.isSigningInOrganization;
     const organizationServerActive = user.data.organizationServerActive;
-    const shouldSetupForOrganization = user.shouldSetupForOrganization;
 
     if (
       (userIsSigningInOrganization && to.name !== 'organizationLogin') ||
-      (!organizationServerActive && to.name === 'organizationLogin') ||
-      (shouldSetupForOrganization && to.name !== 'accountSetup')
+      (!organizationServerActive && to.name === 'organizationLogin')
     ) {
       return false;
     }

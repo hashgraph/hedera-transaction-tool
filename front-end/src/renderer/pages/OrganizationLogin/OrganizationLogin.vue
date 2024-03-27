@@ -80,11 +80,12 @@ const handleLogin = async () => {
     try {
       const userState = await getUserState(user.data.activeOrganization.id, user.data.id);
       user.data.organizationState = userState;
+
       if (userState.passwordTemporary || userState.secretHashes.length === 0) {
         router.push({ name: 'accountSetup' });
         return;
       }
-    } finally {
+    } catch {
       router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
     }
   } catch (error: any) {
