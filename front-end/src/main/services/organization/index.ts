@@ -2,6 +2,7 @@ import { getAccessToken, getOrganization } from '../localUser';
 
 export * from './auth';
 export * from './user';
+export * from './userKeys';
 
 export const getRequestMeta = async (userId: string, organizationId: string) => {
   const organization = await getOrganization(organizationId);
