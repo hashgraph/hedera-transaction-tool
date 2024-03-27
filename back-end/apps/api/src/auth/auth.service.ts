@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Response } from 'express';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from '../users/dtos/create-user.dto';
@@ -24,21 +23,17 @@ export class AuthService {
     return this.usersService.createUser(dto);
   }
 
-  // The user is already verified, create the token and put it in the cookie for the response.
-  async login(user: User, response: Response) {
+  // The user is already verified, create the token and return it
+  async login(user: User) {
     const payload: JwtPayload = { userId: user.id, email: user.email };
 
     // Get the expiration to set on the cookie
     const expires = new Date();
-    expires.setSeconds(
-    expires.getSeconds() + this.configService.get('JWT_EXPIRATION'),
-    );
+    expires.setSeconds(expires.getSeconds() + this.configService.get('JWT_EXPIRATION'));
 
     const accessToken: string = this.jwtService.sign(payload);
-    response.cookie('Authentication', accessToken, {
-      httpOnly: true,
-      expires,
-    })
+
+    return { accessToken };
   }
 
   signOut() {

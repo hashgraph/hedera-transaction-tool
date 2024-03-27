@@ -1,5 +1,4 @@
-import { Body, Controller, Post, Res, UseGuards } from '@nestjs/common';
-import { Response } from 'express';
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dtos/create-user.dto';
 import { User } from '@entities/user.entity';
@@ -9,7 +8,6 @@ import { GetUser } from '../decorators/get-user.decorator';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UserDto } from '../users/dtos/user.dto';
 import { LocalAuthGuard } from '../guards/local-auth.guard';
-import { MessagePattern } from '@nestjs/microservices';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -40,17 +38,13 @@ export class AuthController {
   })
   @UseGuards(LocalAuthGuard)
   @Post('/login')
-  async login(
-    @GetUser() user: User,
-    @Res({ passthrough: true }) response: Response
-  ) {
-    await this.authService.login(user, response);
-    response.send(user);
+  async login(@GetUser() user: User) {
+    return this.authService.login(user);
   }
 
   @ApiOperation({
     summary: 'Log out',
-    description: 'Log the user out of the organization. This is not yet implemented.'
+    description: 'Log the user out of the organization. This is not yet implemented.',
   })
   @ApiResponse({
     status: 201,
