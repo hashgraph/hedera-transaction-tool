@@ -37,6 +37,7 @@ const handleNextWithValidation = async () => {
 
   if (
     user.data.organizationState?.secretHashes &&
+    user.data.organizationState.secretHashes.length > 0 &&
     !user.data.organizationState.secretHashes.includes(secretHash)
   ) {
     differentSecretHashModalShown.value = true;
