@@ -14,5 +14,7 @@ export default {
       key: { mnemonicHash: string; index?: number; publicKey?: string },
     ): Promise<void> =>
       ipcRenderer.invoke(createChannelName('upload'), organizationId, userId, key),
+    deleteKey: (organizationId: string, userId: string, keyId: number): Promise<void> =>
+      ipcRenderer.invoke(createChannelName('deleteKey'), organizationId, userId, keyId),
   },
 };

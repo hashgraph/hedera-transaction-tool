@@ -50,3 +50,22 @@ export const upload = async (
     throw new Error('Failed to upload user key');
   }
 };
+
+/* Deletes a key from the organization */
+export const deleteKey = async (organizationId: string, userId: string, keyId: number) => {
+  try {
+    const { organization, accessToken } = await getRequestMeta(userId, organizationId);
+
+    await axios.delete(
+      `${organization?.serverUrl}/${controller[0]}/${userId}/${controller[1]}/${keyId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    );
+  } catch (error: any) {
+    console.log(error);
+    throw new Error('Failed to delete user key');
+  }
+};

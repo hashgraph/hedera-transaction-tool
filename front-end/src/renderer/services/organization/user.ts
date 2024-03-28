@@ -60,3 +60,12 @@ export const uploadKey = async (
     throw Error(getMessageFromIPCError(error, 'Failed to upload key to organization'));
   }
 };
+
+/* Deletes a key from the organization */
+export const deleteKey = async (organizationId: string, userId: string, keyId: number) => {
+  try {
+    await window.electronAPI.organization.userKeys.deleteKey(organizationId, userId, keyId);
+  } catch (error: any) {
+    throw Error(getMessageFromIPCError(error, 'Failed to delete key from organization'));
+  }
+};
