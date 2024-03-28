@@ -19,7 +19,7 @@ export default () => {
       _e,
       organizationId: string,
       userId: string,
-      key: { mnemonicHash: string; index?: number; publicKey?: string },
+      key: { publicKey: string; index?: number; mnemonicHash?: string },
     ) => upload(organizationId, userId, key),
   );
 

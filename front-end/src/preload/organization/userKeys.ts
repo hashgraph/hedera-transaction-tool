@@ -11,7 +11,7 @@ export default {
     upload: (
       organizationId: string,
       userId: string,
-      key: { mnemonicHash: string; index?: number; publicKey?: string },
+      key: { publicKey: string; index?: number; mnemonicHash?: string },
     ): Promise<void> =>
       ipcRenderer.invoke(createChannelName('upload'), organizationId, userId, key),
     deleteKey: (organizationId: string, userId: string, keyId: number): Promise<void> =>

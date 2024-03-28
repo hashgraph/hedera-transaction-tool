@@ -49,9 +49,9 @@ export const uploadKey = async (
   organizationId: string,
   userId: string,
   key: {
-    mnemonicHash: string;
+    publicKey: string;
+    mnemonicHash?: string;
     index?: number | undefined;
-    publicKey?: string | undefined;
   },
 ) => {
   try {

@@ -31,7 +31,7 @@ export const getOwn = async (organizationId: string, userId: string) => {
 export const upload = async (
   organizationId: string,
   userId: string,
-  key: { mnemonicHash: string; index?: number; publicKey?: string },
+  key: { publicKey: string; index?: number; mnemonicHash?: string },
 ) => {
   try {
     const { organization, accessToken } = await getRequestMeta(userId, organizationId);
