@@ -1,8 +1,8 @@
 export interface IUserKey {
   id: number;
   userId: number;
-  publicKey: string;
+  mnemonicHash?: string;
   index?: number;
-  recoveryPhraseHash?: string;
-  deletedAt?: Date;
+  publicKey: string;
+  deletedAt?: string;
 }
