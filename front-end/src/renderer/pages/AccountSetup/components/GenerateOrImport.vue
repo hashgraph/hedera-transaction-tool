@@ -5,6 +5,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import { hashRecoveryPhrase } from '@renderer/services/keyPairService';
+import { deleteKey, getUserState } from '@renderer/services/organization';
 
 import AppTabs, { TabItem } from '@renderer/components/ui/AppTabs.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -49,7 +50,17 @@ const handleNextWithValidation = async () => {
 const handleSubmitDifferentSecretHashDecision = async (e: Event) => {
   e.preventDefault();
 
-  //DELETE KEYS IN BACKEND
+  if (!user.data.organizationState || !user.data.activeOrganization) return;
+
+  const organizationKeysToDelete = user.data.organizationState.organizationKeys.filter(
+    k => k.mnemonicHash,
+  );
+  for (let i = 0; i < organizationKeysToDelete.length; i++) {
+    const key = organizationKeysToDelete[i];
+    await deleteKey(user.data.activeOrganization.id, user.data.id, key.id);
+  }
+
+  user.data.organizationState = await getUserState(user.data.activeOrganization.id, user.data.id);
 
   props.handleNext();
 };
