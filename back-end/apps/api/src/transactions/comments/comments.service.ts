@@ -33,7 +33,7 @@ export class CommentsService {
   getTransactionComments(transactionId: number) {
     return this.repo
       .createQueryBuilder('comment')
-      .where('transactionId = :transactionId', { transactionId })
+      .where('comment.transactionId = :transactionId', { transactionId })
       .getMany();
   }
 }

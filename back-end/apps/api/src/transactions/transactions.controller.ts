@@ -6,7 +6,7 @@ import {
   Param,
   ParseIntPipe,
   Patch,
-  Post,
+  Post, Query,
   UseGuards,
 } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
@@ -44,7 +44,7 @@ export class TransactionsController {
     description: 'Get all transactions that were created by the current user.',
   })
   @ApiResponse({
-    status: 201,
+    status: 200,
     type: [TransactionDto],
   })
   @Get()
@@ -57,12 +57,12 @@ export class TransactionsController {
     description: 'Get all transactions to be signed by the current user.',
   })
   @ApiResponse({
-    status: 201,
+    status: 200,
     type: [TransactionDto],
   })
   @Get('/sign')
-  getTransactionsToSign(@GetUser() user: User): Promise<Transaction[]> {
-    return this.transactionsService.getTransactionsToSign(user);
+  getTransactionsToSign(@GetUser() user: User, @Query(ParseIntPipe) { take, skip }): Promise<Transaction[]> {
+    return this.transactionsService.getTransactionsToSign(user, take, skip);
   }
 
   @ApiOperation({
@@ -70,12 +70,12 @@ export class TransactionsController {
     description: 'Get all transactions to be approved by the current user.',
   })
   @ApiResponse({
-    status: 201,
+    status: 200,
     type: [TransactionDto],
   })
   @Get('/approve')
-  getTransactionsToApprove(@GetUser() user: User): Promise<Transaction[]> {
-    return this.transactionsService.getTransactionsToApprove(user);
+  getTransactionsToApprove(@GetUser() user: User, @Query(ParseIntPipe) { take, skip }): Promise<Transaction[]> {
+    return this.transactionsService.getTransactionsToApprove(user, take, skip);
   }
 
   @ApiOperation({
@@ -83,12 +83,12 @@ export class TransactionsController {
     description: 'Get all transactions to be observed by the current user.',
   })
   @ApiResponse({
-    status: 201,
+    status: 200,
     type: [TransactionDto],
   })
   @Get('/observe')
-  getTransactionsToObserve(@GetUser() user: User): Promise<Transaction[]> {
-    return this.transactionsService.getTransactionsToObserve(user);
+  getTransactionsToObserve(@GetUser() user: User, @Query(ParseIntPipe) { take, skip }): Promise<Transaction[]> {
+    return this.transactionsService.getTransactionsToObserve(user, take, skip);
   }
 
   @ApiOperation({
@@ -96,7 +96,7 @@ export class TransactionsController {
     description: 'Get the transaction for the given transaction id.',
   })
   @ApiResponse({
-    status: 201,
+    status: 200,
     type: TransactionDto,
   })
   @Get('/:id')
@@ -111,7 +111,7 @@ export class TransactionsController {
       'WARNING: Updating a transaction that is already approved or signed should not be allowed.',
   })
   @ApiResponse({
-    status: 201,
+    status: 200,
     type: TransactionDto,
   })
   @Patch('/:id')
@@ -130,7 +130,7 @@ export class TransactionsController {
     description: 'Remove the transaction for the given transaction id.',
   })
   @ApiResponse({
-    status: 201,
+    status: 200,
   })
   @Delete('/:id')
   removeTransaction(@Param('id', ParseIntPipe) id: number): void {

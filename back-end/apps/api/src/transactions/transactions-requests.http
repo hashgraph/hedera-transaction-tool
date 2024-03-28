@@ -1,26 +1,20 @@
 ### Get transactions created by User
 GET http://localhost:3000/transactions
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTc2NTM2MCwiZXhwIjoxNzA5ODAxMzYwfQ.0z1lQbQMf6K8yQb5nwQOtd_ytnl_OyhVW4qhkppersU
 
 ### Get transactions to be signed by User
 GET http://localhost:3000/transactions/sign
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTYyMDkxMCwiZXhwIjoxNzA5NjU2OTEwfQ.FFaRKqnM6pP_Hhpj5KU447GYtxsKH46PZi157vRVPww
 
 ### Get transactions to be approved by User
 GET http://localhost:3000/transactions/approve
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcxMDc4MDYzNSwiZXhwIjoxNzEwODE2NjM1fQ.XK1OUMEYDydqvQgBQE7oXjOiCDjAqlyjF2zen34SHeA
 
 ### Get transactions to be observed by User
 GET http://localhost:3000/transactions/observe
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcxMDc4MDYzNSwiZXhwIjoxNzEwODE2NjM1fQ.XK1OUMEYDydqvQgBQE7oXjOiCDjAqlyjF2zen34SHeA
 
 ### Get transaction by Id
 GET http://localhost:3000/transactions/2
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTc2NTM2MCwiZXhwIjoxNzA5ODAxMzYwfQ.0z1lQbQMf6K8yQb5nwQOtd_ytnl_OyhVW4qhkppersU
 
 ### Create a transaction
 POST http://localhost:3000/transactions
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcxMDc3NDAzNywiZXhwIjoxNzEwODEwMDM3fQ.h_NwgTMmancbf-ifAlOtH9SuGGqf6MW4COjbryIp14s
 content-type: application/json
 
 {
@@ -34,7 +28,3 @@ content-type: application/json
   "validStart": "1999-12-11T11:00:00.000Z",
   "cutoffAt": "1999-12-11T11:00:00.000Z"
 }
-
-### Get Transactions to Sign for a User
-GET http://localhost:3000/transactions/sign
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcxMDQ4MDQ1MSwiZXhwIjoxNzEwNTE2NDUxfQ.G992ckNWCr1wY_CaiY0R-NlFEz_ksUjHmRMBs3OpM9M

@@ -54,12 +54,12 @@ export class TransactionApprover {
   createdAt: Date;
 }
 
-// insert into transaction_approver (id, transactionId, listId, threshold, userKeyId, signature, approved) values (1,1,null,2,null,null,null);
-// insert into transaction_approver (id, transactionId, listId, threshold, userKeyId, signature, approved) values (2,1,1,null,1,'1',true);
-// insert into transaction_approver (id, transactionId, listId, threshold, userKeyId, signature, approved) values (3,1,1,null,2,'2',false);
-// insert into transaction_approver (id, transactionId, listId, threshold, userKeyId, signature, approved) values (4,1,1,2,null,null,null);
-// insert into transaction_approver (id, transactionId, listId, threshold, userKeyId, signature, approved) values (5,1,4,null,3,'3',null);
-// insert into transaction_approver (id, transactionId, listId, threshold, userKeyId, signature, approved) values (6,1,4,null,4,'4',null);
-// insert into transaction_approver (id, transactionId, listId, threshold, userKeyId, signature, approved) values (7,1,4,1,null,null,null);
-// insert into transaction_approver (id, transactionId, listId, threshold, userKeyId, signature, approved) values (8,1,7,null,5,'5',true);
-// insert into transaction_approver (id, transactionId, listId, threshold, userKeyId, signature, approved) values (9,1,7,null,6,'6',false);
+// insert into transaction_approver ("id", "transactionId", "listId", "threshold", "userKeyId", "signature", "approved") values (1,1,null,2,null,null,null);
+// insert into transaction_approver ("id", "transactionId", "listId", "threshold", "userKeyId", "signature", "approved") values (2,null,1,null,1,'1',true);
+// insert into transaction_approver ("id", "transactionId", "listId", "threshold", "userKeyId", "signature", "approved") values (3,null,1,null,2,'2',false);
+// insert into transaction_approver ("id", "transactionId", "listId", "threshold", "userKeyId", "signature", "approved") values (4,null,1,2,null,null,null);
+// insert into transaction_approver ("id", "transactionId", "listId", "threshold", "userKeyId", "signature", "approved") values (5,null,4,null,3,'3',null);
+// insert into transaction_approver ("id", "transactionId", "listId", "threshold", "userKeyId", "signature", "approved") values (6,null,4,null,4,'4',null);
+// insert into transaction_approver ("id", "transactionId", "listId", "threshold", "userKeyId", "signature", "approved") values (7,null,4,1,null,null,null);
+// insert into transaction_approver ("id", "transactionId", "listId", "threshold", "userKeyId", "signature", "approved") values (8,null,7,null,5,'5',true);
+// insert into transaction_approver ("id", "transactionId", "listId", "threshold", "userKeyId", "signature", "approved") values (9,null,7,null,6,'6',false);

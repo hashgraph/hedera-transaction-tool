@@ -45,7 +45,7 @@ export class TransactionsService {
   // Include the creator key in the response.
   // This process will require pulling the current account info
   // for each account that each user key for this user.
-  async getTransactionsToSign(user: User): Promise<Transaction[]> {
+  async getTransactionsToSign(user: User, take: number, skip: number): Promise<Transaction[]> {
     // There must be a better way to do this, but for now...
     // All lookup requests will return a promise, put them all into
     // one array to be processed at the end.
@@ -98,6 +98,8 @@ export class TransactionsService {
       .find({
         relations: ['creatorKey'],
         where: whereOptions,
+        take: take,
+        skip: skip,
       });
   }
 
@@ -109,26 +111,31 @@ export class TransactionsService {
 
   // Get all transactions that need to be approved by the user.
   // Include the creator key in the response.
-  getTransactionsToApprove(user: User): Promise<Transaction[]> {
+  //TODO with postgres, there should be a cleaner way to do this
+  getTransactionsToApprove(user: User, take: number, skip: number): Promise<Transaction[]> {
     const userKeys = user.keys.map((userKey) => userKey.id).join(',');
     return this.repo
       .query(`with recursive approverList as ` +
-        `(select * from transaction_approver where userKeyId in (${userKeys}) ` +
+        `(select * from transaction_approver where "userKeyId" in (${userKeys}) ` +
         `union all ` +
         `select approver.* from transaction_approver as approver ` +
-          `join approverList on approverList.listId = approver.id) ` +
-        `select t.*, userKey.* from 'transaction' as t join userKey as userKey on t.creatorKeyId = userKey.id join approverList on t.id = transactionId`);
+          `join approverList on approverList."listId" = approver.id) ` +
+        `select distinct t.*, userKey.* from "transaction" as t ` +
+          `join user_key as userKey on t."creatorKeyId" = userKey.id ` +
+          `join approverList on t.id = "transactionId" LIMIT ${skip}, ${take}`);
   }
 
   // Get all transactions that can be observed by the user.
   // Include the creator key in the response
   //TODO the role of the user as on observer needs to limit the response
-  getTransactionsToObserve(user: User): Promise<Transaction[]> {
+  getTransactionsToObserve(user: User, take: number, skip: number): Promise<Transaction[]> {
     return this.repo
       .createQueryBuilder('transaction') // Find Transactions (and necessary parts)
       .leftJoinAndSelect('transaction.creatorKey', 'creatorKey')
       .leftJoin('transaction.observers', 'observer') // where the list of observer's
       .where('observer.userId = :userId', { userId: user.id }) // has a userId = user.id
+      .take(take)
+      .skip(skip)
       .getMany();
   }
 

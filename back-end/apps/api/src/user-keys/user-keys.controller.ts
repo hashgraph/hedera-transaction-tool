@@ -43,12 +43,12 @@ export class UserKeysController {
     description: 'Get all the user keys for the provided user id.',
   })
   @ApiResponse({
-    status: 201,
+    status: 200,
     type: [UserKeyDto],
   })
   @Get()
-  getUserKeysByUserId(@Param('userId', ParseIntPipe) userId: number): Promise<UserKey[]> {
-    return this.userKeysService.getUserKeysByUserId(userId);
+  getUserKeys(@Param('userId', ParseIntPipe) userId: number): Promise<UserKey[]> {
+    return this.userKeysService.getUserKeys(userId);
   }
 
   @ApiOperation({
@@ -56,7 +56,7 @@ export class UserKeysController {
     description: 'Remove the user key for the provided user key id.',
   })
   @ApiResponse({
-    status: 201,
+    status: 200,
   })
   @Delete('/:id')
   removeKey(@Param('id', ParseIntPipe) id: number): void {

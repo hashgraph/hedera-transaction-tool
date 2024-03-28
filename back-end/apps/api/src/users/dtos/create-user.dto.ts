@@ -1,4 +1,5 @@
-import { IsBoolean, IsEmail, IsOptional, IsStrongPassword } from 'class-validator';
+import { IsBoolean, IsEmail, IsEnum, IsOptional, IsStrongPassword } from 'class-validator';
+import { UserStatus } from '@entities/user.entity';
 
 export class CreateUserDto {
   @IsEmail()
@@ -16,4 +17,8 @@ export class CreateUserDto {
   @IsOptional()
   @IsBoolean()
   admin?: boolean;
+
+  @IsOptional()
+  @IsEnum(UserStatus)
+  status?: UserStatus;
 }

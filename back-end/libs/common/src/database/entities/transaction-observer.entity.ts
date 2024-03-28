@@ -31,3 +31,5 @@ export class TransactionObserver {
   @CreateDateColumn()
   createdAt: Date;
 }
+
+//insert into transaction_observer("id", "role", "createdAt", "userId", "transactionId") values (1,'FULL',now(), 1, 1)

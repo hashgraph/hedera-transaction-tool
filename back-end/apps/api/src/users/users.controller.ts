@@ -45,7 +45,7 @@ export class UsersController {
     description: 'Get all users that are currently a part of the organization.',
   })
   @ApiResponse({
-    status: 201,
+    status: 200,
     type: [UserDto],
   })
   @Get()
@@ -59,12 +59,12 @@ export class UsersController {
     description: 'Get a specific user from the organization for the given user id.',
   })
   @ApiResponse({
-    status: 201,
+    status: 200,
     type: UserDto,
   })
   @Get('/:id')
   getUser(@Param('id', ParseIntPipe) id: number): Promise<User> {
-    return this.usersService.getUserById(id);
+    return this.usersService.getUser({ id });
   }
 
   @ApiOperation({
@@ -72,7 +72,7 @@ export class UsersController {
     description: 'Update the information of the current user.',
   })
   @ApiResponse({
-    status: 201,
+    status: 200,
     type: UserDto,
   })
   @Patch()
@@ -85,7 +85,7 @@ export class UsersController {
     description: 'Remove a user from the organization for the given id.',
   })
   @ApiResponse({
-    status: 201,
+    status: 200,
   })
   @Delete('/:id')
   removeUser(@Param('id', ParseIntPipe) id: number): void {

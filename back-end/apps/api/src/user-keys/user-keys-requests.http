@@ -21,13 +21,11 @@ POST http://localhost:3000/user/keys
 content-type: application/json
 
 {
-  "publicKey": "0x52b59fcd7e9db2633e25a306f8ff46fa7c4c5ab056bab6628dff76d6d83d52b8"
+  "publicKey": "203a50b662455839fb11e778a128896636731c4f495e2b645c7c89412077ab43"
 }
 
 ### Get all keys for a user
-GET http://localhost:3000/user/2/keys
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTc2NTM2MCwiZXhwIjoxNzA5ODAxMzYwfQ.0z1lQbQMf6K8yQb5nwQOtd_ytnl_OyhVW4qhkppersU
+GET http://localhost:3000/user/1/keys
 
 ### Delete a key
 DELETE http://localhost:3000/user/keys/4
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTYyMDkxMCwiZXhwIjoxNzA5NjU2OTEwfQ.FFaRKqnM6pP_Hhpj5KU447GYtxsKH46PZi157vRVPww
