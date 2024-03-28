@@ -98,6 +98,7 @@ watch(
         router.currentRoute.value.name === 'organizationLogin' ||
         router.currentRoute.value.name === 'accountSetup'
       ) {
+        await keyPairs.refetch();
         router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
       } else {
         selectedMode.value = 'personal';
@@ -112,7 +113,6 @@ watch(
         selectElRef.value.value = selectedMode.value;
       }
       user.data.isSigningInOrganization = false;
-      await keyPairs.refetch();
       router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
     } else {
       await afterSelectOrganization();

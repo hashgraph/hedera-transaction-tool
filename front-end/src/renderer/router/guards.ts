@@ -17,7 +17,12 @@ export function addGuards(router: Router) {
       return false;
     }
 
-    if (userIsLoggedIn && user.data.secretHashes.length === 0 && to.name !== 'accountSetup') {
+    if (
+      userIsLoggedIn &&
+      !userIsSigningInOrganization &&
+      user.data.secretHashes.length === 0 &&
+      to.name !== 'accountSetup'
+    ) {
       return {
         name: 'accountSetup',
       };
