@@ -8,6 +8,7 @@ import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
 
+import { deleteKey, getUserState } from '@renderer/services/organization';
 import { decryptPrivateKey, deleteKeyPair } from '@renderer/services/keyPairService';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -103,7 +104,13 @@ const handleDelete = async e => {
     }
 
     if (keyPairIdToDelete.value) {
-      //To delete in server
+      if (user.data.activeOrganization && user.data.organizationState) {
+        const organizationKeyToDelete = getUserKeyToDelete();
+        await deleteKey(user.data.activeOrganization.id, user.data.id, organizationKeyToDelete.id);
+        const userState = await getUserState(user.data.activeOrganization.id, user.data.id);
+        user.data.organizationState = userState;
+      }
+
       await deleteKeyPair(keyPairIdToDelete.value);
       await keyPairsStore.refetch();
       isDeleteModalShown.value = false;
@@ -121,6 +128,28 @@ const handleCopy = (text: string, message: string) => {
   navigator.clipboard.writeText(text);
   toast.success(message, { position: 'bottom-right' });
 };
+
+/* Functions */
+function getUserKeyToDelete() {
+  const localKey = keyPairsStore.keyPairs.find(kp => kp.id === keyPairIdToDelete.value);
+  if (!localKey) {
+    throw Error('Local key not found');
+  }
+
+  const organiationKey = user.data.organizationState?.organizationKeys.find(key => {
+    if (localKey.secret_hash) {
+      return key.mnemonicHash === localKey.secret_hash && key.publicKey === localKey.public_key;
+    } else {
+      return !key.mnemonicHash && key.publicKey === localKey.public_key;
+    }
+  });
+
+  if (!organiationKey) {
+    throw Error('Organization key not found');
+  }
+
+  return organiationKey;
+}
 
 /* Watchers */
 watch(isDecryptedModalShown, newVal => {

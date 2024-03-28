@@ -40,7 +40,10 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
       }
     });
 
-    const secretHashes = await keyPairService.getSecretHashes(user.data.id);
+    const secretHashes = await keyPairService.getSecretHashes(
+      user.data.id,
+      user.data.activeOrganization?.id || undefined,
+    );
     user.data.secretHashes = secretHashes;
 
     publicKeyToAccounts.value = [];
