@@ -79,7 +79,7 @@ export const changePassword = async (userId: string, oldPassword: string, newPas
   const isOldCorrect = await comparePasswords(userId, oldPassword);
 
   if (isOldCorrect) {
-    prisma.user.update({
+    await prisma.user.update({
       where: {
         id: userId,
       },

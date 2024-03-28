@@ -6,7 +6,7 @@ import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import { useToast } from 'vue-toast-notification';
 
-import { changeDecryptionPassword } from '@renderer/services/keyPairService';
+import { changePassword } from '@renderer/services/userService';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -37,7 +37,7 @@ const handleChangePassword = async e => {
     }
 
     if (currentPassword.value.length > 0 && newPassword.value.length > 0) {
-      await changeDecryptionPassword(user.data.id, currentPassword.value, newPassword.value);
+      await changePassword(user.data.id, currentPassword.value, newPassword.value);
       await keyPairsStore.refetch();
       isSuccessModalShown.value = true;
     }
