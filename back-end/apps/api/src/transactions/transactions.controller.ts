@@ -61,7 +61,11 @@ export class TransactionsController {
     type: [TransactionDto],
   })
   @Get('/sign')
-  getTransactionsToSign(@GetUser() user: User, @Query(ParseIntPipe) { take, skip }): Promise<Transaction[]> {
+  getTransactionsToSign(
+    @GetUser() user: User,
+    @Query('take', ParseIntPipe) take: number,
+    @Query('skip', ParseIntPipe) skip: number,
+  ): Promise<Transaction[]> {
     return this.transactionsService.getTransactionsToSign(user, take, skip);
   }
 
@@ -74,7 +78,11 @@ export class TransactionsController {
     type: [TransactionDto],
   })
   @Get('/approve')
-  getTransactionsToApprove(@GetUser() user: User, @Query(ParseIntPipe) { take, skip }): Promise<Transaction[]> {
+  getTransactionsToApprove(
+    @GetUser() user: User,
+    @Query('take', ParseIntPipe) take: number,
+    @Query('skip', ParseIntPipe) skip: number,
+  ): Promise<Transaction[]> {
     return this.transactionsService.getTransactionsToApprove(user, take, skip);
   }
 
@@ -87,7 +95,11 @@ export class TransactionsController {
     type: [TransactionDto],
   })
   @Get('/observe')
-  getTransactionsToObserve(@GetUser() user: User, @Query(ParseIntPipe) { take, skip }): Promise<Transaction[]> {
+  getTransactionsToObserve(
+    @GetUser() user: User,
+    @Query('take', ParseIntPipe) take: number,
+    @Query('skip', ParseIntPipe) skip: number,
+  ): Promise<Transaction[]> {
     return this.transactionsService.getTransactionsToObserve(user, take, skip);
   }
 

@@ -122,7 +122,7 @@ export class TransactionsService {
           `join approverList on approverList."listId" = approver.id) ` +
         `select distinct t.*, userKey.* from "transaction" as t ` +
           `join user_key as userKey on t."creatorKeyId" = userKey.id ` +
-          `join approverList on t.id = "transactionId" LIMIT ${skip}, ${take}`);
+          `join approverList on t.id = "transactionId" LIMIT ${take} OFFSET ${skip}`);
   }
 
   // Get all transactions that can be observed by the user.
