@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUpdated, ref } from 'vue';
+import { onBeforeMount, onUpdated, ref } from 'vue';
 
 import { Prisma } from '@prisma/client';
 
@@ -38,8 +38,7 @@ const privateKeyRef = ref<HTMLSpanElement | null>(null);
 const privateKeyHidden = ref(true);
 const starCount = ref(0);
 
-const publicKeys = ref<string[]>([]);
-const privateKeys = ref<string[]>([]);
+const keys = ref<{ publicKey: string; privateKey: string; index: number }[]>([]);
 
 const userPasswordModalShow = ref(false);
 const saveAfterModalClose = ref(false);
@@ -57,9 +56,11 @@ const addKeyToRestored = async (index: number) => {
       index,
       'ED25519',
     );
-
-    privateKeys.value.push(restoredPrivateKey.toStringRaw());
-    publicKeys.value.push(restoredPrivateKey.publicKey.toStringRaw());
+    keys.value.push({
+      publicKey: restoredPrivateKey.publicKey.toStringRaw(),
+      privateKey: restoredPrivateKey.toStringRaw(),
+      index,
+    });
   } catch {
     toast.error(`Restoring key at index: ${index} failed`, { position: 'bottom-right' });
   }
@@ -89,7 +90,7 @@ const restoreKeys = async () => {
 
 /* Handlers */
 const handleSave = async () => {
-  if (privateKeys.value.length === 0 || publicKeys.value.length === 0) {
+  if (keys.value.length === 0) {
     throw Error('No key pairs to save');
   }
 
@@ -102,15 +103,14 @@ const handleSave = async () => {
   try {
     const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
 
-    for (let i = 0; i < publicKeys.value.length; i++) {
-      const publicKey = publicKeys.value[i];
-      const privateKey = privateKeys.value[i];
+    for (let i = 0; i < keys.value.length; i++) {
+      const key = keys.value[i];
 
       const keyPair: Prisma.KeyPairUncheckedCreateInput = {
         user_id: user.data.id,
-        index: 0,
-        public_key: publicKey,
-        private_key: privateKey,
+        index: key.index,
+        public_key: key.publicKey,
+        private_key: key.privateKey,
         type: 'ED25519',
         organization_id: user.data.activeOrganization?.id || null,
         secret_hash: secretHash,
@@ -120,11 +120,11 @@ const handleSave = async () => {
       if (
         user.data.activeOrganization &&
         user.data.organizationState &&
-        !user.data.organizationState.organizationKeys.some(k => k.publicKey === publicKey)
+        !user.data.organizationState.organizationKeys.some(k => k.publicKey === key.publicKey)
       ) {
         await uploadKey(user.data.activeOrganization.id, user.data.id, {
-          publicKey,
-          index: 0,
+          publicKey: key.publicKey,
+          index: key.index,
           mnemonicHash: secretHash,
         });
         keyPair.nickname = i === 0 ? keyPair.nickname : null;
@@ -139,14 +139,14 @@ const handleSave = async () => {
       user.data.organizationState = userState;
     }
 
-    toast.success(`Key Pair${publicKeys.value.length > 1 ? 's' : ''} saved successfully`, {
+    toast.success(`Key Pair${keys.value.length > 1 ? 's' : ''} saved successfully`, {
       position: 'bottom-right',
     });
 
     user.data.password = '';
     router.push({ name: 'settingsKeys' });
   } catch (err: any) {
-    let message = `Failed to store key pair${publicKeys.value.length > 1 ? 's' : ''}`;
+    let message = `Failed to store key pair${keys.value.length > 1 ? 's' : ''}`;
     if (err.message && typeof err.message === 'string') {
       message = err.message;
     }
@@ -163,11 +163,14 @@ const handlePasswordEntered = async (password: string) => {
 };
 
 /* Hooks */
-onMounted(async () => {
+onBeforeMount(async () => {
   await restoreKeys();
 
   if (privateKeyRef.value) {
-    const privateKeyWidth = getWidthOfElementWithText(privateKeyRef.value, privateKeys.value[0]);
+    const privateKeyWidth = getWidthOfElementWithText(
+      privateKeyRef.value,
+      keys.value[0].privateKey,
+    );
     const starWidth = getWidthOfElementWithText(privateKeyRef.value, '*');
 
     starCount.value = Math.round(privateKeyWidth / starWidth);
@@ -193,25 +196,31 @@ defineExpose({
       <label class="form-label">Key Type</label>
       <AppInput model-value="ED25519" readonly />
     </div>
-    <div class="form-group mt-5">
-      <label class="form-label">ED25519 Private Key</label>
-      <p class="text-break text-secondary">
-        <span ref="privateKeyRef" id="pr">{{
-          !privateKeyHidden ? privateKeys[0] : '*'.repeat(starCount)
-        }}</span>
-        <span class="cursor-pointer ms-3">
-          <i v-if="!privateKeyHidden" class="bi bi-eye-slash" @click="privateKeyHidden = true"></i>
-          <i v-else class="bi bi-eye" @click="privateKeyHidden = false"></i>
-        </span>
-      </p>
-    </div>
-    <div class="form-group mt-4">
-      <label class="form-label">ED25519 Public Key</label>
-      <p class="text-break text-secondary">{{ publicKeys[0] }}</p>
-    </div>
-    <template v-if="publicKeys.length > 1">
+    <template v-if="keys.length > 0">
+      <div class="form-group mt-5">
+        <label class="form-label">ED25519 Private Key</label>
+        <p class="text-break text-secondary">
+          <span ref="privateKeyRef" id="pr">{{
+            !privateKeyHidden ? keys[0].privateKey : '*'.repeat(starCount)
+          }}</span>
+          <span class="cursor-pointer ms-3">
+            <i
+              v-if="!privateKeyHidden"
+              class="bi bi-eye-slash"
+              @click="privateKeyHidden = true"
+            ></i>
+            <i v-else class="bi bi-eye" @click="privateKeyHidden = false"></i>
+          </span>
+        </p>
+      </div>
+      <div class="form-group mt-4">
+        <label class="form-label">ED25519 Public Key</label>
+        <p class="text-break text-secondary">{{ keys[0].publicKey }}</p>
+      </div>
+    </template>
+    <template v-if="keys.length > 1">
       <div class="mt-4">
-        <p>{{ publicKeys.length - 1 }} more will be restored</p>
+        <p>{{ keys.length - 1 }} more will be restored</p>
       </div>
     </template>
     <template v-if="user.data.activeOrganization">

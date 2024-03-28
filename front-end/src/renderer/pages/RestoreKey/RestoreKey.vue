@@ -11,6 +11,7 @@ import { useToast } from 'vue-toast-notification';
 
 import { comparePasswords } from '@renderer/services/userService';
 import { restorePrivateKey, hashRecoveryPhrase } from '@renderer/services/keyPairService';
+import { getUserState, uploadKey } from '@renderer/services/organization';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -106,8 +107,27 @@ const handleSaveKey = async e => {
         secret_hash: secretHash,
         nickname: nickname.value || null,
       };
+
+      if (
+        user.data.activeOrganization &&
+        user.data.organizationState &&
+        !user.data.organizationState.organizationKeys.some(
+          k => k.publicKey === restoredKey.value?.publicKey,
+        )
+      ) {
+        await uploadKey(user.data.activeOrganization.id, user.data.id, {
+          publicKey: restoredKey.value.publicKey,
+          index: keyPair.index,
+          mnemonicHash: secretHash,
+        });
+      }
+
       await keyPairsStore.storeKeyPair(keyPair, password.value);
 
+      if (user.data.activeOrganization) {
+        const userState = await getUserState(user.data.activeOrganization.id, user.data.id);
+        user.data.organizationState = userState;
+      }
       keyPairsStore.clearRecoveryPhrase();
 
       toast.success('Key Pair saved', { position: 'bottom-right' });
