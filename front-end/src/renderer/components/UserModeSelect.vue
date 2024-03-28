@@ -112,6 +112,7 @@ watch(
         selectElRef.value.value = selectedMode.value;
       }
       user.data.isSigningInOrganization = false;
+      await keyPairs.refetch();
       router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
     } else {
       await afterSelectOrganization();
