@@ -74,16 +74,22 @@ const useUserStore = defineStore('user', () => {
   }
 
   /* Getter */
-  const shouldSetupForOrganization = (localKeyPairs: KeyPair[]) =>
-    data.activeOrganization &&
-    data.organizationState &&
-    (data.organizationState.passwordTemporary ||
-      data.organizationState.secretHashes.length === 0 ||
-      !data.organizationState.organizationKeys
-        .filter(k => k.mnemonicHash)
-        .every(key =>
-          localKeyPairs.filter(kp => kp.secret_hash).some(kp => kp.public_key === key.publicKey),
-        ));
+  const shouldSetupAccount = (localKeyPairs: KeyPair[]) => {
+    return (
+      (data.activeOrganization &&
+        data.organizationState &&
+        (data.organizationState.passwordTemporary ||
+          data.organizationState.secretHashes.length === 0 ||
+          !data.organizationState.organizationKeys
+            .filter(k => k.mnemonicHash)
+            .every(key =>
+              localKeyPairs
+                .filter(kp => kp.secret_hash)
+                .some(kp => kp.public_key === key.publicKey),
+            ))) ||
+      data.secretHashes.length === 0
+    );
+  };
 
   /* Watchers */
   watch(
@@ -114,7 +120,7 @@ const useUserStore = defineStore('user', () => {
 
   return {
     data,
-    shouldSetupForOrganization,
+    shouldSetupAccount,
     setActiveOrganization,
     login,
     logout,

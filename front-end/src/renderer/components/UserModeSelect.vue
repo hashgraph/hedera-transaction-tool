@@ -83,7 +83,7 @@ async function afterSelectOrganization() {
 
   const userState = await getUserState(user.data.activeOrganization.id, user.data.id);
   user.data.organizationState = userState;
-  if (user.shouldSetupForOrganization(keyPairs.keyPairs)) {
+  if (user.shouldSetupAccount(keyPairs.keyPairs)) {
     router.push({ name: 'accountSetup' });
     return;
   }

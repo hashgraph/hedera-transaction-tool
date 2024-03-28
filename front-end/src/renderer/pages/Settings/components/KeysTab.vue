@@ -108,7 +108,7 @@ const handleDelete = async e => {
       await keyPairsStore.refetch();
       isDeleteModalShown.value = false;
 
-      if (user.data.secretHashes.length === 0) {
+      if (user.shouldSetupAccount(keyPairsStore.keyPairs)) {
         router.push({ name: 'accountSetup' });
       }
     }

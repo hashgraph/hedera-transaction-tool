@@ -6,6 +6,8 @@ import 'bootstrap/dist/js/bootstrap.bundle.min';
 import useUserStore from '@renderer/stores/storeUser';
 import useKeyPairs from '@renderer/stores/storeKeyPairs';
 
+import { useRouter } from 'vue-router';
+
 import useAutoLogin from '@renderer/composables/useAutoLogin';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -16,12 +18,13 @@ import ImportantNote from '@renderer/components/ImportantNote.vue';
 import AutoLoginInOrganization from './components/Organization/AutoLoginInOrganization.vue';
 import PingOrganizations from '@renderer/components/Organization/PingOrganizations.vue';
 
-/* Composables */
-const isCheckingUserState = useAutoLogin();
-
 /* Stores */
 const user = useUserStore();
 const keyPairs = useKeyPairs();
+
+/* Composables */
+const router = useRouter();
+const isCheckingUserState = useAutoLogin();
 
 /* State */
 const isReady = ref(false);
@@ -46,6 +49,10 @@ onMounted(async () => {
 watch([isCheckingUserState, () => keyPairs.refetching], ([isChecking, fetching]) => {
   if (!isChecking && !fetching) {
     isReady.value = true;
+
+    if (user.data.isLoggedIn && user.shouldSetupAccount(keyPairs.keyPairs)) {
+      router.push({ name: 'accountSetup' });
+    }
   }
 });
 </script>
@@ -54,8 +61,7 @@ watch([isCheckingUserState, () => keyPairs.refetching], ([isChecking, fetching])
   <AppHeader
     :class="{
       'logged-in': user.data.isLoggedIn && !user.data.isSigningInOrganization,
-      'should-setup-account':
-        user.data.secretHashes.length === 0 || user.shouldSetupForOrganization(keyPairs.keyPairs),
+      'should-setup-account': user.shouldSetupAccount(keyPairs.keyPairs),
     }"
   />
 
@@ -65,16 +71,14 @@ watch([isCheckingUserState, () => keyPairs.refetching], ([isChecking, fetching])
       class="container-main"
       :class="{
         'logged-in': user.data.isLoggedIn && !user.data.isSigningInOrganization,
-        'should-setup-account':
-          user.data.secretHashes.length === 0 || user.shouldSetupForOrganization(keyPairs.keyPairs),
+        'should-setup-account': user.shouldSetupAccount(keyPairs.keyPairs),
       }"
     >
       <AppMenu
         v-if="
           user.data.isLoggedIn &&
-          user.data.secretHashes.length > 0 &&
           !user.data.isSigningInOrganization &&
-          !user.shouldSetupForOrganization(keyPairs.keyPairs)
+          !user.shouldSetupAccount(keyPairs.keyPairs)
         "
       />
       <RouterView v-slot="{ Component }" class="flex-1 overflow-hidden container-main-content">
