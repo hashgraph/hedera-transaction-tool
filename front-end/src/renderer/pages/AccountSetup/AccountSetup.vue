@@ -39,7 +39,7 @@ const handleNext = async () => {
   const currentIndex = stepperItems.value.findIndex(i => i.name === step.value.current);
 
   if (currentIndex + 1 === stepperItems.value.length) {
-    await keyPairsComponent.value?.handleSaveKey();
+    await keyPairsComponent.value?.handleSave();
   } else {
     step.value.current =
       currentIndex >= 0
