@@ -21,7 +21,7 @@ POST http://localhost:3000/user/keys
 content-type: application/json
 
 {
-  "publicKey": "203a50b662455839fb11e778a128896636731c4f495e2b645c7c89412077ab43"
+  "publicKey": "10d87140c002057595c672ebfb8d61cf88612bc01f19bde5d3ae8ff2a43a6981"
 }
 
 ### Get all keys for a user

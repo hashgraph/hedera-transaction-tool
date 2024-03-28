@@ -6,7 +6,9 @@ COPY package.json ./
 
 RUN npm install
 
-COPY . .
+COPY apps/api apps/api
+COPY libs libs
+COPY tsconfig.json tsconfig.json
 
 RUN npm run build
 
