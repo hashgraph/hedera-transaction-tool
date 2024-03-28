@@ -127,7 +127,7 @@ const handleSave = async () => {
           index: 0,
           mnemonicHash: secretHash,
         });
-        keyPair.nickname = i > 0 ? keyPair.nickname : null;
+        keyPair.nickname = i === 0 ? keyPair.nickname : null;
       }
 
       await keyPairsStore.storeKeyPair(keyPair, userPassword.value);
