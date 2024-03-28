@@ -24,7 +24,7 @@ export class AuthService {
     return this.usersService.createUser(dto);
   }
 
-  // The user is already verified, create the token and return it
+  // The user is already verified, create the token and put it in the cookie for the response.
   async login(user: User, response: Response) {
     const payload: JwtPayload = { userId: user.id, email: user.email };
 
@@ -36,7 +36,7 @@ export class AuthService {
     response.cookie('Authentication', accessToken, {
       httpOnly: true,
       expires,
-    })
+    });
   }
 
   signOut() {

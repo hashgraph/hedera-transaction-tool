@@ -9,7 +9,4 @@ export class AuthDto {
 
   @Expose()
   createdAt: Date;
-
-  @Expose()
-  accessToken: string;
 }
