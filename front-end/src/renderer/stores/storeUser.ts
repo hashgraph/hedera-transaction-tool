@@ -1,7 +1,7 @@
-import { computed, reactive, watch } from 'vue';
+import { reactive, watch } from 'vue';
 import { defineStore } from 'pinia';
 
-import { Organization } from '@prisma/client';
+import { KeyPair, Organization } from '@prisma/client';
 import { IUserKey } from '@main/shared/interfaces';
 
 import {
@@ -47,15 +47,6 @@ const useUserStore = defineStore('user', () => {
     organizationState: null,
   });
 
-  /* Computed */
-  const shouldSetupForOrganization = computed(() => {
-    return (
-      data.activeOrganization &&
-      (data.organizationState?.passwordTemporary ||
-        data.organizationState?.secretHashes.length === 0)
-    );
-  });
-
   /* Actions */
   function setActiveOrganization(organization: Organization | null) {
     data.activeOrganization = organization;
@@ -81,6 +72,18 @@ const useUserStore = defineStore('user', () => {
       data.organizationsToSignIn = await getOrganizationsToSignIn(data.id);
     }
   }
+
+  /* Getter */
+  const shouldSetupForOrganization = (localKeyPairs: KeyPair[]) =>
+    data.activeOrganization &&
+    data.organizationState &&
+    (data.organizationState.passwordTemporary ||
+      data.organizationState.secretHashes.length === 0 ||
+      !data.organizationState.organizationKeys
+        .filter(k => k.mnemonicHash)
+        .every(key =>
+          localKeyPairs.filter(kp => kp.secret_hash).some(kp => kp.public_key === key.publicKey),
+        ));
 
   /* Watchers */
   watch(

@@ -2,6 +2,7 @@
 import { onMounted, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
@@ -18,6 +19,7 @@ import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
 
 /* Stores */
 const user = useUserStore();
+const keyPairs = useKeyPairsStore();
 
 /* Composables */
 const router = useRouter();
@@ -80,8 +82,7 @@ const handleLogin = async () => {
     try {
       const userState = await getUserState(user.data.activeOrganization.id, user.data.id);
       user.data.organizationState = userState;
-
-      if (userState.passwordTemporary || userState.secretHashes.length === 0) {
+      if (user.shouldSetupForOrganization(keyPairs.keyPairs)) {
         router.push({ name: 'accountSetup' });
         return;
       }

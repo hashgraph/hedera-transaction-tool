@@ -55,7 +55,7 @@ watch([isCheckingUserState, () => keyPairs.refetching], ([isChecking, fetching])
     :class="{
       'logged-in': user.data.isLoggedIn && !user.data.isSigningInOrganization,
       'should-setup-account':
-        user.data.secretHashes.length === 0 || user.shouldSetupForOrganization,
+        user.data.secretHashes.length === 0 || user.shouldSetupForOrganization(keyPairs.keyPairs),
     }"
   />
 
@@ -66,7 +66,7 @@ watch([isCheckingUserState, () => keyPairs.refetching], ([isChecking, fetching])
       :class="{
         'logged-in': user.data.isLoggedIn && !user.data.isSigningInOrganization,
         'should-setup-account':
-          user.data.secretHashes.length === 0 || user.shouldSetupForOrganization,
+          user.data.secretHashes.length === 0 || user.shouldSetupForOrganization(keyPairs.keyPairs),
       }"
     >
       <AppMenu
@@ -74,7 +74,7 @@ watch([isCheckingUserState, () => keyPairs.refetching], ([isChecking, fetching])
           user.data.isLoggedIn &&
           user.data.secretHashes.length > 0 &&
           !user.data.isSigningInOrganization &&
-          !user.shouldSetupForOrganization
+          !user.shouldSetupForOrganization(keyPairs.keyPairs)
         "
       />
       <RouterView v-slot="{ Component }" class="flex-1 overflow-hidden container-main-content">

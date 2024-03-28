@@ -4,6 +4,7 @@ import { ref, watch } from 'vue';
 import { Organization } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import { useRouter } from 'vue-router';
 
@@ -16,6 +17,7 @@ import SelectOrganizationModal from './Organization/SelectOrganizationModal.vue'
 
 /* Stores */
 const user = useUserStore();
+const keyPairs = useKeyPairsStore();
 
 /* Composables */
 const router = useRouter();
@@ -81,7 +83,7 @@ async function afterSelectOrganization() {
 
   const userState = await getUserState(user.data.activeOrganization.id, user.data.id);
   user.data.organizationState = userState;
-  if (userState.passwordTemporary || userState.secretHashes.length === 0) {
+  if (user.shouldSetupForOrganization(keyPairs.keyPairs)) {
     router.push({ name: 'accountSetup' });
     return;
   }

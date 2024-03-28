@@ -103,6 +103,7 @@ const handleDelete = async e => {
     }
 
     if (keyPairIdToDelete.value) {
+      //To delete in server
       await deleteKeyPair(keyPairIdToDelete.value);
       await keyPairsStore.refetch();
       isDeleteModalShown.value = false;
