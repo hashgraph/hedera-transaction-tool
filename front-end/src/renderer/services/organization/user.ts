@@ -21,8 +21,8 @@ export const getUserState = async (
 
     secretHashes.push(
       ...keys.reduce((acc, curr) => {
-        if (curr.recoveryPhraseHash && !acc.includes(curr.recoveryPhraseHash)) {
-          acc.push(curr.recoveryPhraseHash);
+        if (curr.mnemonicHash && !acc.includes(curr.mnemonicHash)) {
+          acc.push(curr.mnemonicHash);
         }
         return acc;
       }, [] as string[]),
