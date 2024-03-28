@@ -17,6 +17,19 @@ If you use another version, please use [n](https://github.com/tj/n) to manage.
 npm install
 ```
 
+Before running the project please create `.env` in `apps/api` or use the example one.
+
+```shell
+cp example.env .env
+```
+
+```
+TCP_PORT = 8888
+HTTP_PORT = 8080
+JWT_SECRET =
+JWT_EXPIRATION = 36000
+```
+
 ### Start developing ⚒️
 
 A service can be run independently in development mode:
@@ -26,10 +39,9 @@ npm run start:dev <service-name>
 ```
 
 As some services are dependent on other services, they must be run together.
-This can be done in docker. Install [Docker Desktop](https://docs.docker.com/desktop/install/mac-install/) 
+This can be done in docker. Install [Docker Desktop](https://docs.docker.com/desktop/install/mac-install/)
 and start it up. From the back-end directory, run:
 
 ```bash
 docker-compose up
 ```
-
