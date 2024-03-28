@@ -24,8 +24,8 @@ cp example.env .env
 ```
 
 ```
-TCP_PORT = 8888
-HTTP_PORT = 8080
+HTTP_PORT = 3000
+TCP_PORT = 3001
 JWT_SECRET =
 JWT_EXPIRATION = 36000
 ```
