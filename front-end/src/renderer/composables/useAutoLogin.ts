@@ -18,7 +18,7 @@ export default function useAutoLogin() {
 
     if (loggedUser) {
       const { userId, email }: { userId: string; email: string } = JSON.parse(loggedUser);
-      const secretHashes = await getSecretHashes(userId);
+      const secretHashes = await getSecretHashes(userId, null);
 
       user.login(userId, email, secretHashes); // Auto-fetch key pairs after login
 

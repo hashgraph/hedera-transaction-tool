@@ -101,7 +101,7 @@ const handleOnFormSubmit = async (event: Event) => {
     }
 
     if (userData) {
-      const secretHashes = await getSecretHashes(userData.id);
+      const secretHashes = await getSecretHashes(userData.id, null);
       user.login(userData.id, userData.email, secretHashes);
 
       if (secretHashes.length === 0) {

@@ -31,7 +31,10 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
     }
 
     keyPairs.value = (
-      await keyPairService.getKeyPairs(user.data.id, user.data.activeOrganization?.id || undefined)
+      await keyPairService.getKeyPairs(
+        user.data.id,
+        user.data.activeOrganization ? user.data.activeOrganization.id : null,
+      )
     ).sort((k1, k2) => {
       if (k1.index < 0) {
         return 1;
@@ -42,7 +45,7 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
 
     const secretHashes = await keyPairService.getSecretHashes(
       user.data.id,
-      user.data.activeOrganization?.id || undefined,
+      user.data.activeOrganization ? user.data.activeOrganization.id : null,
     );
     user.data.secretHashes = secretHashes;
 

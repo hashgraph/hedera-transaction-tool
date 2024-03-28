@@ -6,16 +6,16 @@ import { getPrismaClient } from '@main/db';
 
 //Get all stored secret hash objects
 export const getSecretHashes = async (
-  userId: string,
-  organizationId?: string,
+  user_id: string,
+  organization_id?: string | null,
 ): Promise<string[]> => {
   const prisma = getPrismaClient();
 
   const groups = await prisma.keyPair.groupBy({
     by: ['secret_hash'],
     where: {
-      user_id: userId,
-      organization_id: organizationId ? organizationId : null,
+      user_id,
+      organization_id,
       secret_hash: {
         not: null,
       },
@@ -28,14 +28,14 @@ export const getSecretHashes = async (
 //Get stored key pairs
 export const getKeyPairs = async (
   user_id: string,
-  organization_id?: string,
+  organization_id?: string | null,
 ): Promise<KeyPair[]> => {
   const prisma = getPrismaClient();
 
   return prisma.keyPair.findMany({
     where: {
       user_id,
-      organization_id: organization_id ? organization_id : null,
+      organization_id: organization_id,
     },
     orderBy: {
       secret_hash: 'desc',

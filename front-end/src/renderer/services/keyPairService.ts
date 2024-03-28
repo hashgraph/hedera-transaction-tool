@@ -8,7 +8,7 @@ import { getMessageFromIPCError } from '@renderer/utils';
 /* Key Pairs Service */
 
 /* Get stored key pairs */
-export const getKeyPairs = async (userId: string, organizationId?: string) => {
+export const getKeyPairs = async (userId: string, organizationId?: string | null) => {
   try {
     return await window.electronAPI.local.keyPairs.getAll(userId, organizationId);
   } catch (error: any) {
@@ -17,7 +17,7 @@ export const getKeyPairs = async (userId: string, organizationId?: string) => {
 };
 
 /* Get stored secret hashes */
-export const getSecretHashes = async (userId: string, organizationId?: string) => {
+export const getSecretHashes = async (userId: string, organizationId?: string | null) => {
   try {
     return await window.electronAPI.local.keyPairs.getSecretHashes(userId, organizationId);
   } catch (error) {

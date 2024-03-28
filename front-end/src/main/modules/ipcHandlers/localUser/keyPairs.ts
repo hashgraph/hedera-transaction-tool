@@ -38,14 +38,17 @@ export default () => {
   );
 
   // Get stored stored key pairs
-  ipcMain.handle(createChannelName('getAll'), async (_e, userId: string, organizationId?: string) =>
-    getKeyPairs(userId, organizationId),
+  ipcMain.handle(
+    createChannelName('getAll'),
+    async (_e, userId: string, organizationId?: string | null) =>
+      getKeyPairs(userId, organizationId),
   );
 
   // Get stored keys' secret hashes
   ipcMain.handle(
     createChannelName('getSecretHashes'),
-    async (_e, userId: string, organizationId?: string) => getSecretHashes(userId, organizationId),
+    async (_e, userId: string, organizationId?: string | null) =>
+      getSecretHashes(userId, organizationId),
   );
 
   // Delete encrypted private keys
