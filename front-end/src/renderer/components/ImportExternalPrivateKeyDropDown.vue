@@ -10,6 +10,7 @@ import { useToast } from 'vue-toast-notification';
 
 import { generateExternalKeyPairFromString } from '@renderer/services/keyPairService';
 import { comparePasswords } from '@renderer/services/userService';
+import { getUserState, uploadKey } from '@renderer/services/organization';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -55,14 +56,31 @@ const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
       throw new Error('Incorrect password');
     }
 
+    if (user.data.activeOrganization && user.data.organizationState) {
+      if (
+        user.data.organizationState.organizationKeys.some(k => k.publicKey === keyPair.public_key)
+      ) {
+        throw new Error('Key pair already exists');
+      }
+
+      await uploadKey(user.data.activeOrganization.id, user.data.id, {
+        publicKey: keyPair.public_key,
+      });
+    }
+
     await keyPairsStore.storeKeyPair(keyPair, userPassword.value);
+
+    if (user.data.activeOrganization) {
+      const userState = await getUserState(user.data.activeOrganization.id, user.data.id);
+      user.data.organizationState = userState;
+    }
 
     isImportED25519KeyModalShown.value = false;
     isImportECDSAKeyModalShown.value = false;
 
-    toast.success('ED25519 private key imported successfully', { position: 'bottom-right' });
+    toast.success(`${type} private key imported successfully`, { position: 'bottom-right' });
   } catch (err: any) {
-    toast.error(err.message || 'Failed to import ED25519 private key', {
+    toast.error(err.message || `Failed to import ${type} private key`, {
       position: 'bottom-right',
     });
   }

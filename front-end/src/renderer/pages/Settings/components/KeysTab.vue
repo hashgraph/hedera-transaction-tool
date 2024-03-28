@@ -120,7 +120,7 @@ const handleDelete = async e => {
       }
     }
   } catch (err: any) {
-    toast.error('Failed to delete key pair', { position: 'bottom-right' });
+    toast.error(err.message || 'Failed to delete key pair', { position: 'bottom-right' });
   }
 };
 

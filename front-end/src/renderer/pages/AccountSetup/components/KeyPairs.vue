@@ -117,11 +117,11 @@ const handleSave = async () => {
         nickname: nickname.value || null,
       };
 
-      if (
-        user.data.activeOrganization &&
-        user.data.organizationState &&
-        !user.data.organizationState.organizationKeys.some(k => k.publicKey === key.publicKey)
-      ) {
+      if (user.data.activeOrganization && user.data.organizationState) {
+        if (user.data.organizationState.organizationKeys.some(k => k.publicKey === key.publicKey)) {
+          throw new Error('Key pair already exists');
+        }
+
         await uploadKey(user.data.activeOrganization.id, user.data.id, {
           publicKey: key.publicKey,
           index: key.index,
