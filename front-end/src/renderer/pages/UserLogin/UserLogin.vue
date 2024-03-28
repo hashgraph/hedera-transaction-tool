@@ -254,6 +254,7 @@ watch(inputEmail, pass => {
       <form @submit="handleOnFormSubmit" class="form-login mt-5 w-100">
         <label class="form-label">Email</label>
         <AppInput
+          data-test-id="input-email"
           v-model="inputEmail"
           :filled="true"
           :class="{ 'is-invalid': inputEmailInvalid }"
@@ -273,6 +274,7 @@ watch(inputEmail, pass => {
           data-bs-custom-class="wide-xl-tooltip text-start"
           data-bs-html="true"
           data-bs-title="_"
+          data-test-id="input-password"
         />
         <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
         <template v-if="shouldRegister">
@@ -283,6 +285,7 @@ watch(inputEmail, pass => {
             type="password"
             :class="{ 'is-invalid': inputConfirmPasswordInvalid }"
             placeholder="Confirm password"
+            data-test-id="input-password-confirm"
           />
           <div v-if="inputConfirmPasswordInvalid" class="invalid-feedback">
             Password do not match.
@@ -295,12 +298,14 @@ watch(inputEmail, pass => {
               v-model:checked="keepLoggedIn"
               name="keep_logged_in"
               label="Keep me logged in"
+              data-test-id="checkbox-remember"
             ></AppCheckBox>
           </div>
           <span
             v-if="!shouldRegister"
             @click="isResetDataModalShown = true"
             class="text-small link-primary cursor-pointer"
+            data-test-id="link-reset"
             >Reset account</span
           >
         </div>
@@ -308,6 +313,7 @@ watch(inputEmail, pass => {
         <div class="row justify-content-end mt-5">
           <div class="d-grid">
             <AppButton
+              data-test-id="button-login"
               color="primary"
               type="submit"
               class="w-100"
