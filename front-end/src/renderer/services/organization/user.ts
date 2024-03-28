@@ -43,3 +43,20 @@ export const getUserState = async (
     secretHashes,
   };
 };
+
+/* Uploads a key to the organization */
+export const uploadKey = async (
+  organizationId: string,
+  userId: string,
+  key: {
+    mnemonicHash: string;
+    index?: number | undefined;
+    publicKey?: string | undefined;
+  },
+) => {
+  try {
+    await window.electronAPI.organization.userKeys.upload(organizationId, userId, key);
+  } catch (error: any) {
+    throw Error(getMessageFromIPCError(error, 'Failed to upload key to organization'));
+  }
+};

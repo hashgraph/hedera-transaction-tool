@@ -8,5 +8,11 @@ export default {
   userKeys: {
     getOwn: (organizationId: string, userId: string): Promise<IUserKey[]> =>
       ipcRenderer.invoke(createChannelName('getOwn'), organizationId, userId),
+    upload: (
+      organizationId: string,
+      userId: string,
+      key: { mnemonicHash: string; index?: number; publicKey?: string },
+    ): Promise<void> =>
+      ipcRenderer.invoke(createChannelName('upload'), organizationId, userId, key),
   },
 };

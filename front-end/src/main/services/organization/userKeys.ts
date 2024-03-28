@@ -23,7 +23,30 @@ export const getOwn = async (organizationId: string, userId: string) => {
     return response.data;
   } catch (error: any) {
     console.log(error);
-
     throw new Error('Failed get user keys');
+  }
+};
+
+/* Uploads a key to the organization */
+export const upload = async (
+  organizationId: string,
+  userId: string,
+  key: { mnemonicHash: string; index?: number; publicKey?: string },
+) => {
+  try {
+    const { organization, accessToken } = await getRequestMeta(userId, organizationId);
+
+    await axios.post(
+      `${organization?.serverUrl}/${controller[0]}/${userId}/${controller[1]}`,
+      key,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    );
+  } catch (error: any) {
+    console.log(error);
+    throw new Error('Failed to upload user key');
   }
 };
