@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { onMounted } from 'vue';
 
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useKeyPairs from '@renderer/stores/storeKeyPairs';
-
-import { useRouter } from 'vue-router';
 
 import useAutoLogin from '@renderer/composables/useAutoLogin';
 
@@ -20,14 +17,9 @@ import PingOrganizations from '@renderer/components/Organization/PingOrganizatio
 
 /* Stores */
 const user = useUserStore();
-const keyPairs = useKeyPairs();
 
 /* Composables */
-const router = useRouter();
-const isCheckingUserState = useAutoLogin();
-
-/* State */
-const isReady = ref(false);
+useAutoLogin();
 
 /* Handlers */
 async function handleThemeChange() {
@@ -44,41 +36,30 @@ onMounted(async () => {
     document.body.setAttribute('data-bs-theme', theme.shouldUseDarkColors ? 'dark' : 'light'),
   );
 });
-
-/* Watchers */
-watch([isCheckingUserState, () => keyPairs.refetching], ([isChecking, fetching]) => {
-  if (!isChecking && !fetching) {
-    isReady.value = true;
-
-    if (user.data.isLoggedIn && user.shouldSetupAccount(keyPairs.keyPairs)) {
-      router.push({ name: 'accountSetup' });
-    }
-  }
-});
 </script>
 
 <template>
   <AppHeader
     :class="{
-      'logged-in': user.data.isLoggedIn && !user.data.isSigningInOrganization,
-      'should-setup-account': user.shouldSetupAccount(keyPairs.keyPairs),
+      'logged-in': user.personal?.isLoggedIn && !user.selectedOrganization?.loginRequired,
+      'should-setup-account': user.shouldSetupAccount,
     }"
   />
 
   <Transition name="fade" mode="out-in">
     <div
-      v-if="isReady"
+      v-if="user.personal"
       class="container-main"
       :class="{
-        'logged-in': user.data.isLoggedIn && !user.data.isSigningInOrganization,
-        'should-setup-account': user.shouldSetupAccount(keyPairs.keyPairs),
+        'logged-in': user.personal?.isLoggedIn && !user.selectedOrganization?.loginRequired,
+        'should-setup-account': user.shouldSetupAccount,
       }"
     >
       <AppMenu
         v-if="
-          user.data.isLoggedIn &&
-          !user.data.isSigningInOrganization &&
-          !user.shouldSetupAccount(keyPairs.keyPairs)
+          user.personal?.isLoggedIn &&
+          !user.selectedOrganization?.loginRequired &&
+          !user.shouldSetupAccount
         "
       />
       <RouterView v-slot="{ Component }" class="flex-1 overflow-hidden container-main-content">
