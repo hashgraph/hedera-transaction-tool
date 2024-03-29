@@ -11,10 +11,16 @@ export const login = async (
   password: string,
 ): Promise<string> => {
   try {
-    const response = await axios.post(`${serverUrl}/${authController}/login`, {
-      email,
-      password,
-    });
+    const response = await axios.post(
+      `${serverUrl}/${authController}/login`,
+      {
+        email,
+        password,
+      },
+      {
+        withCredentials: true,
+      },
+    );
 
     return response.data?.accessToken || '';
   } catch (error: any) {
