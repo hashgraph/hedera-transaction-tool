@@ -33,6 +33,15 @@ const useUserStore = defineStore('user', () => {
     ush.accountSetupRequired(selectedOrganization.value, keyPairs, secretHashes.value),
   );
 
+  /* Actions */
+  const login = (userId: string, email: string) => {
+    ush.handleLogin(personal, userId, email);
+  };
+
+  const logout = () => {
+    ush.handleLogout(personal);
+  };
+
   /* Exports */
   const exports = {
     keyPairs,
@@ -44,6 +53,8 @@ const useUserStore = defineStore('user', () => {
     secretHashes,
     publicKeys,
     shouldSetupAccount,
+    login,
+    logout,
   };
 
   return exports;

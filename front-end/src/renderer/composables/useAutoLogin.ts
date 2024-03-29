@@ -1,16 +1,10 @@
-import { onMounted, ref } from 'vue';
+import { onMounted } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
-
-import { getSecretHashes } from '@renderer/services/keyPairService';
 
 export default function useAutoLogin() {
   /* Stores */
   const user = useUserStore();
-
-  /* State */
-  const checkingForUser = ref(true);
-  const hasUser = ref(false);
 
   /* Hooks */
   onMounted(async () => {
@@ -18,17 +12,10 @@ export default function useAutoLogin() {
 
     if (loggedUser) {
       const { userId, email }: { userId: string; email: string } = JSON.parse(loggedUser);
-      const secretHashes = await getSecretHashes(userId, null);
 
-      user.login(userId, email, secretHashes); // Auto-fetch key pairs after login
-
-      hasUser.value = true;
+      user.login(userId, email);
     } else {
       user.logout();
     }
-
-    checkingForUser.value = false;
   });
-
-  return checkingForUser;
 }

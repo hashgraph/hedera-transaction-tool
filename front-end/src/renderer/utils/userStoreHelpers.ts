@@ -1,5 +1,6 @@
+import { Ref } from 'vue';
 import { KeyPair, Organization } from '@prisma/client';
-import { ConnectedOrganization, LoggedInOrganization } from '@renderer/types';
+import { ConnectedOrganization, LoggedInOrganization, PersonalUser } from '@renderer/types';
 
 export const getSecretHashesFromKeys = (keys: KeyPair[]): string[] => {
   const secretHashes: string[] = [];
@@ -39,4 +40,23 @@ export const accountSetupRequired = (
     return true;
 
   return false;
+};
+
+export const handleLogin = (
+  personalUserRef: Ref<PersonalUser | null>,
+  id: string,
+  email: string,
+) => {
+  personalUserRef.value = {
+    isLoggedIn: true,
+    id,
+    email,
+    password: null,
+  };
+};
+
+export const handleLogout = (personalUserRef: Ref<PersonalUser | null>) => {
+  personalUserRef.value = {
+    isLoggedIn: false,
+  };
 };
