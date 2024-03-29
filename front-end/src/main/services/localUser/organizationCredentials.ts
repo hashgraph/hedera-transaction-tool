@@ -1,3 +1,4 @@
+import { session } from 'electron';
 import { getPrismaClient } from '@main/db';
 
 import { Organization, OrganizationCredentials } from '@prisma/client';
@@ -40,11 +41,27 @@ export const organizationsToSignIn = async (user_id: string) => {
 
     credentials = credentials.filter(cr => !credentialsValid(cr));
 
-    return credentials.map(cr => ({
-      organization: cr.organization,
-      credential_id: cr.id,
-      email: cr.email,
-    }));
+    const finalCredentials: typeof credentials = [];
+
+    for (let i = 0; i < credentials.length; i++) {
+      const token = await getAccessToken(credentials[i].organization.serverUrl);
+      if (!token) {
+        finalCredentials.push(credentials[i]);
+        continue;
+      }
+
+      try {
+        const decoded: any = jwtDecode(token);
+        if (decoded.exp * 1000 < Date.now()) {
+          finalCredentials.push(credentials[i]);
+        }
+      } catch (error) {
+        finalCredentials.push(credentials[i]);
+        continue;
+      }
+    }
+
+    return finalCredentials;
   } catch (error) {
     console.log(error);
     return [];
@@ -58,27 +75,46 @@ export const shouldSignInOrganization = async (user_id: string, organization_id:
   try {
     const org = await prisma.organizationCredentials.findFirst({
       where: { user_id, organization_id },
+      include: {
+        organization: true,
+      },
     });
 
-    return !credentialsValid(org);
+    if (!org) {
+      return true;
+    }
+
+    const shouldSign = !credentialsValid(org);
+
+    const token = await getAccessToken(org.organization.serverUrl);
+    if (!token) return true;
+
+    try {
+      const decoded: any = jwtDecode(token);
+      if (decoded.exp * 1000 < Date.now()) return true;
+    } catch (error) {
+      return true;
+    }
+
+    return shouldSign;
   } catch (error) {
-    console.log(error);
-    return false;
+    return true;
   }
 };
 
 /* Returns the access token of a user for an organization */
-export const getAccessToken = async (organization_id: string, user_id: string) => {
-  const prisma = getPrismaClient();
-
+export const getAccessToken = async (organizationServerUrl: string) => {
   try {
-    const credentials = await prisma.organizationCredentials.findFirst({
-      where: { user_id, organization_id },
-    });
+    const url = new URL(organizationServerUrl);
 
-    if (!credentials) return null;
+    const ses = session.fromPartition('persist:main');
+    const authCookies = (
+      await ses.cookies.get({
+        name: 'Authentication',
+      })
+    ).filter(cookie => cookie.domain === url.hostname);
 
-    return credentials.jwtToken;
+    return authCookies.length > 0 ? authCookies[0].value : null;
   } catch (error) {
     console.log(error);
     return null;
@@ -121,7 +157,6 @@ export const addOrganizationCredentials = async (
   password: string,
   organization_id: string,
   user_id: string,
-  jwtToken: string,
   encryptPassword: string,
   updateIfExists: boolean = false,
 ) => {
@@ -136,7 +171,6 @@ export const addOrganizationCredentials = async (
         user_id,
         email,
         password,
-        jwtToken,
         encryptPassword,
       );
       return;
@@ -152,7 +186,6 @@ export const addOrganizationCredentials = async (
         password,
         organization_id,
         user_id,
-        jwtToken,
       },
     });
 
@@ -169,7 +202,6 @@ export const updateOrganizationCredentials = async (
   user_id: string,
   email?: string,
   password?: string,
-  jwtToken?: string,
   encryptPassword?: string,
 ) => {
   const prisma = getPrismaClient();
@@ -195,7 +227,6 @@ export const updateOrganizationCredentials = async (
       data: {
         email: email || credentials.email,
         password: password || credentials.password,
-        jwtToken: jwtToken || credentials.jwtToken,
       },
     });
 
@@ -257,18 +288,13 @@ export const tryAutoSignIn = async (user_id: string, decryptPassword: string) =>
     }
 
     try {
-      const accessToken = await login(
-        invalidCredential.organization.serverUrl,
-        invalidCredential.email,
-        password,
-      );
+      await login(invalidCredential.organization.serverUrl, invalidCredential.email, password);
 
       await updateOrganizationCredentials(
         invalidCredential.organization.id,
         user_id,
         invalidCredential.email,
         password,
-        accessToken,
         decryptPassword,
       );
     } catch (error) {
@@ -282,21 +308,7 @@ export const tryAutoSignIn = async (user_id: string, decryptPassword: string) =>
 function credentialsValid(credentials?: OrganizationCredentials | null) {
   if (!credentials) return false;
 
-  if (
-    credentials.password.length === 0 ||
-    credentials.email.length === 0 ||
-    !credentials.jwtToken ||
-    credentials.jwtToken.length === 0
-  )
-    return false;
-
-  try {
-    const jwtPayload = jwtDecode(credentials.jwtToken);
-    if (!jwtPayload.exp) return false;
-    if (new Date(jwtPayload.exp * 1000) < new Date()) return false;
-  } catch (error) {
-    return false;
-  }
+  if (credentials.password.length === 0 || credentials.email.length === 0) return false;
 
   return true;
 }

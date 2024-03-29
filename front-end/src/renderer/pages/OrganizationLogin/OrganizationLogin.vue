@@ -59,7 +59,7 @@ const handleLogin = async () => {
   }
 
   try {
-    const accessToken = await login(
+    const { id } = await login(
       user.data.activeOrganization.serverUrl,
       inputEmail.value,
       inputPassword.value,
@@ -70,17 +70,17 @@ const handleLogin = async () => {
       inputPassword.value,
       user.data.activeOrganization.id,
       user.data.id,
-      accessToken,
       userPassword.value,
       true,
     );
 
+    user.data.organizationId = id;
     user.data.isSigningInOrganization = false;
 
     toast.success('Successfully signed in');
 
     try {
-      const userState = await getUserState(user.data.activeOrganization.id, user.data.id);
+      const userState = await getUserState(user.data.activeOrganization.serverUrl, id);
       user.data.organizationState = userState;
       if (user.shouldSetupAccount(keyPairs.keyPairs)) {
         router.push({ name: 'accountSetup' });

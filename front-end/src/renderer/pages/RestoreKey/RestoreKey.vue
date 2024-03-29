@@ -108,7 +108,7 @@ const handleSaveKey = async e => {
         nickname: nickname.value || null,
       };
 
-      if (user.data.activeOrganization && user.data.organizationState) {
+      if (user.data.activeOrganization && user.data.organizationState && user.data.organizationId) {
         if (
           user.data.organizationState.organizationKeys.some(
             k => k.publicKey === restoredKey.value?.publicKey,
@@ -117,7 +117,7 @@ const handleSaveKey = async e => {
           throw new Error('Key pair already exists');
         }
 
-        await uploadKey(user.data.activeOrganization.id, user.data.id, {
+        await uploadKey(user.data.activeOrganization.id, user.data.organizationId, {
           publicKey: restoredKey.value.publicKey,
           index: keyPair.index,
           mnemonicHash: secretHash,
@@ -126,8 +126,11 @@ const handleSaveKey = async e => {
 
       await keyPairsStore.storeKeyPair(keyPair, password.value);
 
-      if (user.data.activeOrganization) {
-        const userState = await getUserState(user.data.activeOrganization.id, user.data.id);
+      if (user.data.activeOrganization && user.data.organizationId) {
+        const userState = await getUserState(
+          user.data.activeOrganization.serverUrl,
+          user.data.organizationId,
+        );
         user.data.organizationState = userState;
       }
       keyPairsStore.clearRecoveryPhrase();

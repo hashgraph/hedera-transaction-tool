@@ -56,22 +56,25 @@ const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
       throw new Error('Incorrect password');
     }
 
-    if (user.data.activeOrganization && user.data.organizationState) {
+    if (user.data.activeOrganization && user.data.organizationId && user.data.organizationState) {
       if (
         user.data.organizationState.organizationKeys.some(k => k.publicKey === keyPair.public_key)
       ) {
         throw new Error('Key pair already exists');
       }
 
-      await uploadKey(user.data.activeOrganization.id, user.data.id, {
+      await uploadKey(user.data.activeOrganization.id, user.data.organizationId, {
         publicKey: keyPair.public_key,
       });
     }
 
     await keyPairsStore.storeKeyPair(keyPair, userPassword.value);
 
-    if (user.data.activeOrganization) {
-      const userState = await getUserState(user.data.activeOrganization.id, user.data.id);
+    if (user.data.activeOrganization && user.data.organizationId) {
+      const userState = await getUserState(
+        user.data.activeOrganization.serverUrl,
+        user.data.organizationId,
+      );
       user.data.organizationState = userState;
     }
 

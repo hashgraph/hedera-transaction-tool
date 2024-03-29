@@ -41,7 +41,6 @@ export default () => {
       password: string,
       organization_id: string,
       user_id: string,
-      jwtToken: string,
       encryptPassword: string,
       updateIfExists: boolean = false,
     ) =>
@@ -50,7 +49,6 @@ export default () => {
         password,
         organization_id,
         user_id,
-        jwtToken,
         encryptPassword,
         updateIfExists,
       ),
@@ -65,17 +63,8 @@ export default () => {
       user_id: string,
       email?: string,
       password?: string,
-      jwtToken?: string,
       encryptPassword?: string,
-    ) =>
-      updateOrganizationCredentials(
-        organization_id,
-        user_id,
-        email,
-        password,
-        jwtToken,
-        encryptPassword,
-      ),
+    ) => updateOrganizationCredentials(organization_id, user_id, email, password, encryptPassword),
   );
 
   /* Delete organization credentials */

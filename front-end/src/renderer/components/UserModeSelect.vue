@@ -9,7 +9,7 @@ import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import { useRouter } from 'vue-router';
 
 import { shouldSignInOrganization } from '@renderer/services/organizationCredentials';
-import { getUserState } from '@renderer/services/organization';
+import { getMe, getUserState } from '@renderer/services/organization';
 
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
 import AddOrSelectModal from '@renderer/components/Organization/AddOrSelectModal.vue';
@@ -73,6 +73,10 @@ const handleSelectOrganization = async (organization: Organization) => {
 async function afterSelectOrganization() {
   if (user.data.activeOrganization === null) return;
 
+  if (!user.data.organizationId) {
+    user.data.organizationId = await getMe(user.data.activeOrganization.serverUrl);
+  }
+
   const flag = await shouldSignInOrganization(user.data.id, user.data.activeOrganization.id);
 
   if (flag) {
@@ -81,7 +85,10 @@ async function afterSelectOrganization() {
     return;
   }
 
-  const userState = await getUserState(user.data.activeOrganization.id, user.data.id);
+  const userState = await getUserState(
+    user.data.activeOrganization.serverUrl,
+    user.data.organizationId!,
+  );
   user.data.organizationState = userState;
   if (user.shouldSetupAccount(keyPairs.keyPairs)) {
     router.push({ name: 'accountSetup' });

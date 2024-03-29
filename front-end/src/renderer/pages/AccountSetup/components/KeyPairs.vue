@@ -117,12 +117,12 @@ const handleSave = async () => {
         nickname: nickname.value || null,
       };
 
-      if (user.data.activeOrganization && user.data.organizationState) {
+      if (user.data.activeOrganization && user.data.organizationState && user.data.organizationId) {
         if (user.data.organizationState.organizationKeys.some(k => k.publicKey === key.publicKey)) {
           throw new Error('Key pair already exists');
         }
 
-        await uploadKey(user.data.activeOrganization.id, user.data.id, {
+        await uploadKey(user.data.activeOrganization.id, user.data.organizationId, {
           publicKey: key.publicKey,
           index: key.index,
           mnemonicHash: secretHash,
@@ -134,8 +134,11 @@ const handleSave = async () => {
       user.data.secretHashes.push(secretHash);
     }
 
-    if (user.data.activeOrganization) {
-      const userState = await getUserState(user.data.activeOrganization.id, user.data.id);
+    if (user.data.activeOrganization && user.data.organizationId) {
+      const userState = await getUserState(
+        user.data.activeOrganization.serverUrl,
+        user.data.organizationId,
+      );
       user.data.organizationState = userState;
     }
 

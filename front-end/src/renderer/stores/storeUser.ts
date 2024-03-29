@@ -27,6 +27,7 @@ export interface UserStore {
     organizationKeys: IUserKey[];
     secretHashes: string[];
   } | null;
+  organizationId: number | null;
 }
 
 export const localServerUrl = '';
@@ -45,6 +46,7 @@ const useUserStore = defineStore('user', () => {
     organizationsToSignIn: [],
     isSigningInOrganization: false,
     organizationState: null,
+    organizationId: null,
   });
 
   /* Actions */

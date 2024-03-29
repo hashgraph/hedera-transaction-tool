@@ -50,17 +50,21 @@ const handleNextWithValidation = async () => {
 const handleSubmitDifferentSecretHashDecision = async (e: Event) => {
   e.preventDefault();
 
-  if (!user.data.organizationState || !user.data.activeOrganization) return;
+  if (!user.data.organizationState || !user.data.activeOrganization || !user.data.organizationId)
+    return;
 
   const organizationKeysToDelete = user.data.organizationState.organizationKeys.filter(
     k => k.mnemonicHash,
   );
   for (let i = 0; i < organizationKeysToDelete.length; i++) {
     const key = organizationKeysToDelete[i];
-    await deleteKey(user.data.activeOrganization.id, user.data.id, key.id);
+    await deleteKey(user.data.activeOrganization.id, user.data.organizationId, key.id);
   }
 
-  user.data.organizationState = await getUserState(user.data.activeOrganization.id, user.data.id);
+  user.data.organizationState = await getUserState(
+    user.data.activeOrganization.serverUrl,
+    user.data.organizationId,
+  );
 
   props.handleNext();
 };

@@ -104,10 +104,17 @@ const handleDelete = async e => {
     }
 
     if (keyPairIdToDelete.value) {
-      if (user.data.activeOrganization && user.data.organizationState) {
+      if (user.data.activeOrganization && user.data.organizationState && user.data.organizationId) {
         const organizationKeyToDelete = getUserKeyToDelete();
-        await deleteKey(user.data.activeOrganization.id, user.data.id, organizationKeyToDelete.id);
-        const userState = await getUserState(user.data.activeOrganization.id, user.data.id);
+        await deleteKey(
+          user.data.activeOrganization.id,
+          user.data.organizationId,
+          organizationKeyToDelete.id,
+        );
+        const userState = await getUserState(
+          user.data.activeOrganization.serverUrl,
+          user.data.organizationId,
+        );
         user.data.organizationState = userState;
       }
 
