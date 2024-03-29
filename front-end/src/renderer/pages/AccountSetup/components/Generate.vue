@@ -113,6 +113,7 @@ watch(words, newWords => {
             : 'I understand that if I lose my recovery phrase, I will not be able to create new keys or recover lost keys.'
         "
         name="recoveryPhraseAgreement"
+        data-test-id="checkbox-understand"
       />
     </div>
   </div>
@@ -127,6 +128,7 @@ watch(words, newWords => {
         color="primary"
         class="w-100"
         @click="handleGeneratePhrase"
+        data-test-id="button-next-genereate"
       >
         <span>Generate</span>
       </AppButton>

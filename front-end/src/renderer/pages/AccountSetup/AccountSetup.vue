@@ -129,6 +129,7 @@ onBeforeRouteLeave(async () => {
             color="borderless"
             class="flex-centered mt-6"
             @click="handleBack"
+            data-testid="button-back"
           >
             <i class="bi bi-arrow-left-short text-main"></i> Back</AppButton
           >
@@ -138,6 +139,7 @@ onBeforeRouteLeave(async () => {
           color="primary"
           @click="handleNext"
           class="ms-3 mt-6"
+          data-testid="button-next"
           >Next</AppButton
         >
       </div>
