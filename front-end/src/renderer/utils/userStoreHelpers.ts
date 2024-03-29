@@ -1,17 +1,17 @@
-import { Ref } from 'vue';
 import { KeyPair, Organization } from '@prisma/client';
-import { ConnectedOrganization, LoggedInOrganization, PersonalUser } from '@renderer/types';
+import {
+  ConnectedOrganization,
+  LoggedInOrganization,
+  PersonalUser,
+  PublicKeyAccounts,
+  RecoveryPhrase,
+} from '@renderer/types';
 
-export const getSecretHashesFromKeys = (keys: KeyPair[]): string[] => {
-  const secretHashes: string[] = [];
+import { getKeyPairs, hashRecoveryPhrase } from '@renderer/services/keyPairService';
+import { getAccountsByPublicKey } from '@renderer/services/mirrorNodeDataService';
+import { Mnemonic } from '@hashgraph/sdk';
 
-  keys.forEach(key => {
-    if (key.secret_hash) secretHashes.push(key.secret_hash);
-  });
-
-  return secretHashes;
-};
-
+/* Flags */
 export const isOrganizationActive = (organization: ConnectedOrganization | null): boolean => {
   return organization !== null && organization.isServerActive;
 };
@@ -42,21 +42,93 @@ export const accountSetupRequired = (
   return false;
 };
 
-export const handleLogin = (
-  personalUserRef: Ref<PersonalUser | null>,
-  id: string,
-  email: string,
-) => {
-  personalUserRef.value = {
-    isLoggedIn: true,
-    id,
-    email,
-    password: null,
-  };
+/* Entity creation */
+export const createPersonalUser = (id?: string, email?: string): PersonalUser =>
+  id && email
+    ? {
+        isLoggedIn: true,
+        id,
+        email,
+        password: null,
+      }
+    : { isLoggedIn: false };
+
+export const createRecoveryPhrase = async (words: string[]): Promise<RecoveryPhrase> => {
+  try {
+    const mnemonic = await Mnemonic.fromWords(words);
+    const hash = await hashRecoveryPhrase(words);
+
+    return {
+      mnemonic,
+      words,
+      hash,
+    };
+  } catch {
+    throw Error('Invalid recovery phrase');
+  }
 };
 
-export const handleLogout = (personalUserRef: Ref<PersonalUser | null>) => {
-  personalUserRef.value = {
-    isLoggedIn: false,
-  };
+/* Fetching */
+export const getLocalKeyPairs = async (
+  user: PersonalUser | null,
+  selectedOrganization: ConnectedOrganization | null,
+) => {
+  if (!user?.isLoggedIn) {
+    throw Error('Login to fetch keys');
+  }
+
+  let keyPairs = await getKeyPairs(
+    user.id,
+    selectedOrganization !== null ? selectedOrganization.id : null,
+  );
+  keyPairs = keyPairs.sort((k1, k2) => {
+    if (k1.index < 0) {
+      return 1;
+    } else {
+      return k1.index - k2.index;
+    }
+  });
+
+  return keyPairs;
+};
+
+export const getPublicKeysToAccounts = async (keyPairs: KeyPair[], mirrorNodeBaseURL: string) => {
+  const publicKeyToAccounts: PublicKeyAccounts[] = [];
+
+  for (let i = 0; i < keyPairs.length; i++) {
+    const keyPair = keyPairs[i];
+
+    const publicKeyPair = publicKeyToAccounts.findIndex(
+      pkToAcc => pkToAcc.publicKey === keyPair.public_key,
+    );
+
+    const accounts = await getAccountsByPublicKey(mirrorNodeBaseURL, keyPair.public_key);
+
+    if (publicKeyPair >= 0) {
+      publicKeyToAccounts[publicKeyPair].accounts = accounts;
+    } else {
+      publicKeyToAccounts.push({
+        publicKey: keyPair.public_key,
+        accounts: accounts,
+      });
+    }
+  }
+
+  return publicKeyToAccounts;
+};
+
+/* Computations */
+export const getSecretHashesFromKeys = (keys: KeyPair[]): string[] => {
+  const secretHashes: string[] = [];
+
+  keys.forEach(key => {
+    if (key.secret_hash) secretHashes.push(key.secret_hash);
+  });
+
+  return secretHashes;
+};
+
+export const getNickname = (publicKey: string, keyPairs: KeyPair[]): string | undefined => {
+  const keyPair = keyPairs.find(kp => kp.public_key === publicKey);
+  return keyPair?.nickname || undefined;
 };

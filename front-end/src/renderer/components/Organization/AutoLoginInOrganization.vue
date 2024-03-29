@@ -26,13 +26,17 @@ const loginTriedForOrganizations = ref<Organization[]>([]);
 
 /* Handlers */
 const handleAutoLogin = async (password: string) => {
-  loginFailedForOrganizations.value = await tryAutoSignIn(user.data.id, password);
+  if (!user.personal?.isLoggedIn) {
+    throw new Error('User is not logged in');
+  }
+
+  loginFailedForOrganizations.value = await tryAutoSignIn(user.personal.id, password);
   loginTriedForOrganizations.value = user.data.organizationsToSignIn.map(
     orgCr => orgCr.organization,
   );
 
   loginsSummaryModalShow.value = true;
-  user.data.organizationsToSignIn = await getOrganizationsToSignIn(user.data.id);
+  user.data.organizationsToSignIn = await getOrganizationsToSignIn(user.personal.id);
 };
 
 const handleSubmitFailedOrganizations = (e: Event) => {

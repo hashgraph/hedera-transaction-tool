@@ -14,7 +14,6 @@ import {
 import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
@@ -60,7 +59,6 @@ const props = defineProps<{
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
-const keyPairs = useKeyPairsStore();
 
 /* Composables */
 const toast = useToast();
@@ -93,10 +91,10 @@ const flattenedSignatureKey = computed(() =>
   signatureKey.value ? flattenKeyList(signatureKey.value).map(pk => pk.toStringRaw()) : [],
 );
 const externalPublicKeysReq = computed(() =>
-  flattenedSignatureKey.value.filter(pk => !keyPairs.publicKeys.includes(pk)),
+  flattenedSignatureKey.value.filter(pk => !user.publicKeys.includes(pk)),
 );
 const localPublicKeysReq = computed(() =>
-  flattenedSignatureKey.value.filter(pk => keyPairs.publicKeys.includes(pk)),
+  flattenedSignatureKey.value.filter(pk => user.publicKeys.includes(pk)),
 );
 const type = computed(() => transaction.value && getTransactionType(transaction.value));
 
@@ -116,7 +114,7 @@ function handleConfirmTransaction(e: Event) {
   if (localPublicKeysReq.value.length > 0) {
     isConfirmShown.value = false;
     isSignModalShown.value = true;
-  } else if (user.data.activeOrganization) {
+  } else if (user.selectedOrganization) {
     console.log('Send to back end along with siganture key');
   }
 }
@@ -126,13 +124,17 @@ async function handleSignTransaction(e: Event) {
 
   if (!props.transactionBytes) throw new Error('Transaction not provided');
 
+  if (!user.personal?.isLoggedIn) {
+    throw new Error('User is not logged in');
+  }
+
   try {
     isSigning.value = true;
 
     const signedTransactionBytes = await signTransaction(
       props.transactionBytes,
       localPublicKeysReq.value,
-      user.data.id,
+      user.personal.id,
       userPassword.value,
     );
 
@@ -152,7 +154,7 @@ async function handleSignTransaction(e: Event) {
         const chunks = chunkBuffer(signedTransaction.contents, chunkSize.value);
         isChunkingModalShown.value = false;
 
-        if (!user.data.activeOrganization) {
+        if (!user.selectedOrganization) {
           await executeFileTransactions(signedTransaction, chunks);
         } else {
           const chunkedTransactions = await chunkFileTransactionForOrganization(
@@ -161,7 +163,7 @@ async function handleSignTransaction(e: Event) {
           );
           await sendSignedChunksToOrganization(chunkedTransactions);
         }
-      } else if (!user.data.activeOrganization) {
+      } else if (!user.selectedOrganization) {
         await executeTransaction(signedTransactionBytes);
       } else {
         await sendSignedTransactionToOrganization(signedTransactionBytes);
@@ -183,7 +185,7 @@ async function process(requiredKey: Key, _chunkSize?: number, _chunkInterval?: n
   signatureKey.value = requiredKey;
 
   await nextTick();
-  await keyPairs.refetch();
+  await user.refetchKeys();
 
   validateProcess();
 
@@ -219,14 +221,14 @@ async function process(requiredKey: Key, _chunkSize?: number, _chunkInterval?: n
       throw new Error('Transaction not provided');
     }
 
-    if (!user.data.isLoggedIn) {
+    if (!user.personal?.isLoggedIn) {
       throw new Error('User is not logged in');
     }
 
     if (
       signatureKey.value &&
-      !ableToSign(keyPairs.publicKeys, signatureKey.value) &&
-      !user.data.activeOrganization
+      !ableToSign(user.publicKeys, signatureKey.value) &&
+      !user.selectedOrganization
     ) {
       throw new Error(
         'Unable to execute, all of the required signatures should be with your keys. You are currently in Personal mode.',
@@ -281,6 +283,10 @@ async function executeTransaction(transactionBytes: Uint8Array) {
 
   if (!type.value || !executedTransaction) throw new Error('Cannot save transaction');
 
+  if (!user.personal?.isLoggedIn) {
+    throw new Error('User is not logged in');
+  }
+
   const transactionToStore: Prisma.TransactionUncheckedCreateInput = {
     name: `${type.value} (${executedTransaction.transactionId?.toString()})`,
     type: type.value,
@@ -290,7 +296,7 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     body: executedTransaction.toBytes().toString(),
     status: getStatusFromCode(status),
     status_code: status,
-    user_id: user.data.id,
+    user_id: user.personal.id,
     creator_public_key: null,
     signature: '',
     valid_start: executedTransaction.transactionId?.validStart?.toString() || '',
@@ -310,6 +316,11 @@ async function chunkFileTransactionForOrganization(
   chunks: Uint8Array[],
 ) {
   if (!transaction.contents) return [transaction.toBytes()];
+
+  if (!user.personal?.isLoggedIn) {
+    throw new Error('User is not logged in');
+  }
+
   validateTransaction(transaction);
 
   const transactions: Uint8Array[] = [];
@@ -332,7 +343,7 @@ async function chunkFileTransactionForOrganization(
     transactions[0] = await signTransaction(
       updateTransaction.toBytes(),
       localPublicKeysReq.value,
-      user.data.id,
+      user.personal.id,
       userPassword.value,
     );
 
@@ -363,7 +374,7 @@ async function chunkFileTransactionForOrganization(
       await signTransaction(
         appendTransaction.toBytes(),
         localPublicKeysReq.value,
-        user.data.id,
+        user.personal.id,
         userPassword.value,
       ),
     );
@@ -380,6 +391,10 @@ async function executeFileTransactions(
   transaction: FileUpdateTransaction | FileAppendTransaction,
   chunks: Uint8Array[],
 ) {
+  if (!user.personal?.isLoggedIn) {
+    throw new Error('User is not logged in');
+  }
+
   isExecuting.value = true;
   let firstTransactionResult: {
     response: TransactionResponse;
@@ -438,7 +453,7 @@ async function executeFileTransactions(
       const signedTransactionBytes = await signTransaction(
         chunkTransaction.toBytes(),
         localPublicKeysReq.value,
-        user.data.id,
+        user.personal.id,
         userPassword.value,
       );
 
@@ -481,7 +496,7 @@ async function executeFileTransactions(
       body: chunkTransaction.toBytes().toString(),
       status: getStatusFromCode(status),
       status_code: status,
-      user_id: user.data.id,
+      user_id: user.personal.id,
       creator_public_key: null,
       signature: '',
       valid_start: chunkTransaction.transactionId?.validStart?.toString() || '',

@@ -3,7 +3,6 @@ import { onMounted } from 'vue';
 
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRoute } from 'vue-router';
@@ -30,7 +29,6 @@ defineProps<{
 const emit = defineEmits(['update:payerId', 'update:validStart', 'update:maxTransactionFee']);
 
 /* Stores */
-const keyPairs = useKeyPairsStore();
 const user = useUserStore();
 
 /* Composables */
@@ -67,7 +65,7 @@ onMounted(async () => {
   if (route.query.draftId) {
     await loadFromDraft(route.query.draftId.toString());
   } else {
-    const allAccounts = keyPairs.publicKeyToAccounts.map(a => a.accounts).flat();
+    const allAccounts = user.publicKeyToAccounts.map(a => a.accounts).flat();
     if (allAccounts.length > 0 && allAccounts[0].account) {
       account.accountId.value = allAccounts[0].account;
       emit('update:payerId', allAccounts[0].account);
@@ -86,7 +84,7 @@ const columnClass = 'col-4 col-xxxl-3';
         >Balance:
         {{ stringifyHbar((account.accountInfo.value?.balance as Hbar) || new Hbar(0)) }}</label
       >
-      <template v-if="!user.data.activeOrganization">
+      <template v-if="!user.selectedOrganization">
         <AccountIdsSelect :account-id="payerId" @update:account-id="handlePayerChange" />
       </template>
       <template v-else>

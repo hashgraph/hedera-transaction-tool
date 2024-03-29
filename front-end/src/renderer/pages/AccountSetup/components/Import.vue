@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeMount, ref, watch } from 'vue';
 
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
+import useUserStore from '@renderer/stores/storeUser';
 
 import { hashRecoveryPhrase, validateMnemonic } from '@renderer/services/keyPairService';
 
@@ -13,7 +13,7 @@ const props = defineProps<{
 }>();
 
 /* Stores */
-const keyPairs = useKeyPairsStore();
+const user = useUserStore();
 
 /* State */
 const words = ref<string[]>(Array(24).fill(''));
@@ -69,8 +69,8 @@ const handleClearWords = () => {
 
 /* Hooks */
 onBeforeMount(() => {
-  if (keyPairs.recoveryPhraseWords.length === 24) {
-    words.value = keyPairs.recoveryPhraseWords;
+  if (user.recoveryPhrase) {
+    words.value = user.recoveryPhrase.words;
   }
 });
 
@@ -80,9 +80,9 @@ watch(words, async newWords => {
   await validateMatchingSecretHash();
 
   if (isMnenmonicValid.value && isSecretHashValid.value) {
-    return keyPairs.setRecoveryPhrase(words.value.map(w => w.toLocaleLowerCase()));
+    return await user.setRecoveryPhrase(words.value.map(w => w.toLocaleLowerCase()));
   }
-  keyPairs.clearRecoveryPhrase();
+  user.recoveryPhrase = null;
 });
 
 /* Exposes */

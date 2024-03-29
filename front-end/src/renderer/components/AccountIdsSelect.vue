@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, ref, watch } from 'vue';
+import { HederaAccount } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
-import { HederaAccount } from '@prisma/client';
+
 import { getAll } from '@renderer/services/accountsService';
 
 /* Props */
@@ -17,14 +17,13 @@ const emit = defineEmits(['update:accountId']);
 
 /* Stores */
 const user = useUserStore();
-const keyPairs = useKeyPairsStore();
 
 /* State */
 const linkedAccounts = ref<HederaAccount[]>([]);
 
 /* Computed */
 const accoundIds = computed(() =>
-  keyPairs.publicKeyToAccounts
+  user.publicKeyToAccounts
     .map(a => a.accounts)
     .flat()
     .filter(acc => !acc.deleted && acc.account !== null)
@@ -39,7 +38,11 @@ const handleAccountIdChange = (e: Event) => {
 
 /* Hooks */
 onBeforeMount(async () => {
-  linkedAccounts.value = await getAll(user.data.id);
+  if (!user.personal?.isLoggedIn) {
+    throw new Error('User is not logged in');
+  }
+
+  linkedAccounts.value = await getAll(user.personal.id);
 
   if (props.accountId.length === 0 && props.selectDefault) {
     emit('update:accountId', accoundIds.value[0]);
@@ -48,7 +51,7 @@ onBeforeMount(async () => {
 
 /* Watchers */
 watch(
-  () => keyPairs.publicKeyToAccounts,
+  () => user.publicKeyToAccounts,
   () => {
     if (props.accountId.length === 0 && props.selectDefault) {
       emit('update:accountId', accoundIds.value[0]);

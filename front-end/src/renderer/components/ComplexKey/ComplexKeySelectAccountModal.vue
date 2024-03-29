@@ -6,7 +6,6 @@ import { Key } from '@hashgraph/sdk';
 import { HederaAccount } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import useAccountId from '@renderer/composables/useAccountId';
 
@@ -33,14 +32,13 @@ const selectedAccountData = useAccountId();
 
 /* Stores */
 const user = useUserStore();
-const keyPairs = useKeyPairsStore();
 
 /* State */
 const accounts = ref<HederaAccount[]>([]);
 
 /* Computed */
 const accountIdsList = computed(() => {
-  const keyPairsAccountIds = keyPairs.publicKeyToAccounts
+  const keyPairsAccountIds = user.publicKeyToAccounts
     .map(a => a.accounts)
     .flat()
     .filter(
@@ -72,7 +70,11 @@ const handleInsert = async (e: Event) => {
 
 /* Hooks */
 onMounted(async () => {
-  accounts.value = await getAll(user.data.id);
+  if (!user.personal?.isLoggedIn) {
+    throw new Error('User is not logged in');
+  }
+
+  accounts.value = await getAll(user.personal.id);
 });
 </script>
 <template>

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import useUserStore from '@renderer/stores/storeUser';
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import { useRouter } from 'vue-router';
 
@@ -10,7 +9,6 @@ import UserModeSelect from './UserModeSelect.vue';
 
 /* Stores */
 const user = useUserStore();
-const keyPairsStore = useKeyPairsStore();
 
 /* Composables */
 const router = useRouter();
@@ -21,8 +19,8 @@ const handleLogout = () => {
 
   user.logout();
 
-  keyPairsStore.clearKeyPairs();
-  keyPairsStore.clearRecoveryPhrase();
+  user.keyPairs = [];
+  user.recoveryPhrase = null;
 
   router.push({ name: 'login' });
 };
@@ -34,7 +32,7 @@ const handleLogout = () => {
       <Logo />
       <LogoText />
     </div>
-    <div v-if="user.data.isLoggedIn" class="flex-centered justify-content-end">
+    <div v-if="user.personal && user.personal.isLoggedIn" class="flex-centered justify-content-end">
       <!-- <span class="container-icon">
         <i class="text-icon-main bi bi-search"></i>
       </span>
@@ -47,7 +45,11 @@ const handleLogout = () => {
       <div>
         <UserModeSelect />
       </div>
-      <span v-if="user.data.isLoggedIn" class="container-icon" @click="handleLogout">
+      <span
+        v-if="user.personal && user.personal.isLoggedIn"
+        class="container-icon"
+        @click="handleLogout"
+      >
         <i class="text-icon-main bi bi-box-arrow-right"></i>
       </span>
     </div>

@@ -1,4 +1,4 @@
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 
 import { KeyPair } from '@prisma/client';
@@ -9,9 +9,15 @@ import {
   RecoveryPhrase,
   ConnectedOrganization,
 } from '@renderer/types';
+
+import useNetworkStore from './storeNetwork';
+
 import * as ush from '@renderer/utils/userStoreHelpers';
 
 const useUserStore = defineStore('user', () => {
+  /* Stores */
+  const network = useNetworkStore();
+
   /* State */
   /** Keys */
   const publicKeyToAccounts = ref<PublicKeyAccounts[]>([]);
@@ -34,13 +40,30 @@ const useUserStore = defineStore('user', () => {
   );
 
   /* Actions */
-  const login = (userId: string, email: string) => {
-    ush.handleLogin(personal, userId, email);
+  const login = async (id: string, email: string) => {
+    personal.value = ush.createPersonalUser(id, email);
   };
 
   const logout = () => {
-    ush.handleLogout(personal);
+    personal.value = ush.createPersonalUser();
   };
+
+  const setRecoveryPhrase = async (words: string[]) => {
+    recoveryPhrase.value = await ush.createRecoveryPhrase(words);
+  };
+
+  const refetchKeys = async () => {
+    keyPairs.splice(0, keyPairs.length);
+    if (personal.value?.isLoggedIn) {
+      const newKeys = await ush.getLocalKeyPairs(personal.value, selectedOrganization.value);
+      keyPairs.push(...newKeys);
+    }
+  };
+
+  /* Watchers */
+  watch([personal, selectedOrganization, () => network.network], async () => {
+    await refetchKeys();
+  });
 
   /* Exports */
   const exports = {
@@ -55,6 +78,8 @@ const useUserStore = defineStore('user', () => {
     shouldSetupAccount,
     login,
     logout,
+    setRecoveryPhrase,
+    refetchKeys,
   };
 
   return exports;

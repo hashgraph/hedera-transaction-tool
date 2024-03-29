@@ -53,9 +53,12 @@ const handleTrashClick = (e, id: string) => {
 const handleDeleteSavedKey = async e => {
   e.preventDefault();
 
+  if (!user.personal?.isLoggedIn) {
+    throw new Error('User is not logged in');
+  }
   if (complexKeyToDeleteId.value) {
     await deleteComplexKey(complexKeyToDeleteId.value);
-    keyLists.value = await getComplexKeys(user.data.id);
+    keyLists.value = await getComplexKeys(user.personal.id);
   }
 
   deleteSavedKeyModalShown.value = false;
@@ -73,7 +76,11 @@ const handleDone = (e: Event) => {
 
 /* Hooks */
 onBeforeMount(async () => {
-  keyLists.value = await getComplexKeys(user.data.id);
+  if (!user.personal?.isLoggedIn) {
+    throw new Error('User is not logged in');
+  }
+
+  keyLists.value = await getComplexKeys(user.personal.id);
 });
 </script>
 <template>

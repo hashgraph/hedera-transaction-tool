@@ -41,8 +41,12 @@ const handleShowUpdate = show => emit('update:show', show);
 const handleSaveKeyList = async e => {
   e.preventDefault();
 
+  if (!user.personal?.isLoggedIn) {
+    throw new Error('User is not logged in');
+  }
+
   const keyListBytes = encodeKey(props.keyList);
-  const newKey = await addComplexKey(user.data.id, keyListBytes, nickname.value);
+  const newKey = await addComplexKey(user.personal.id, keyListBytes, nickname.value);
 
   toast.success('Key list saved successfully', { position: 'bottom-right' });
 

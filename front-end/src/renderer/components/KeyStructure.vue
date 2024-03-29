@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { KeyList, Key } from '@hashgraph/sdk';
 
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
+import useUserStore from '@renderer/stores/storeUser';
 
 import { normalizePublicKey } from '@renderer/utils/sdk';
+import * as ush from '@renderer/utils/userStoreHelpers';
 
 /* Props */
 defineProps<{
@@ -14,7 +15,7 @@ defineProps<{
 defineEmits(['update:keyList']);
 
 /* Stores */
-const keyPairs = useKeyPairsStore();
+const user = useUserStore();
 </script>
 <template>
   <div>
@@ -34,8 +35,8 @@ const keyPairs = useKeyPairsStore();
       </template>
       <template v-else-if="item instanceof Key && true">
         <p class="ms-5 my-3">
-          <span v-if="keyPairs.getNickname(normalizePublicKey(item))" class="text-pink"
-            >({{ keyPairs.getNickname(normalizePublicKey(item)) }}) </span
+          <span v-if="ush.getNickname(normalizePublicKey(item), user.keyPairs)" class="text-pink"
+            >({{ ush.getNickname(normalizePublicKey(item), user.keyPairs) }}) </span
           >{{ normalizePublicKey(item) }}
         </p>
       </template>
