@@ -28,9 +28,6 @@ export class TransactionsService {
       .getOne();
   }
 
-  //TODO Notion page says to combine these, but not sure if that is better. It would also require the client to
-  // separate them into the different types (creator,signer,approver,observer), or are they combined?
-
   // Get the transactions created by the user.
   // Include the creator key in the response
   async getTransactions(user: User): Promise<Transaction[]> {

@@ -1,0 +1,43 @@
+steps:
+  # API service
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'build',
+        '-t',
+        '<url to repo / google cloud artifact registry>/production',
+        '-f',
+        'apps/api/Dockerfile',
+        '.'
+      ]
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      ['push', '<url to repo / google cloud artifact registry>/production']
+  # Chain service
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'build',
+        '-t',
+        '<url to repo / google cloud artifact registry>/production',
+        '-f',
+        'apps/chain/Dockerfile',
+        '.'
+      ]
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      ['push', '<url to repo / google cloud artifact registry>/production']
+  # Notifications service
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'build',
+        '-t',
+        '<url to repo / google cloud artifact registry>/production',
+        '-f',
+        'apps/notifications/Dockerfile',
+        '.'
+      ]
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      ['push', '<url to repo / google cloud artifact registry>/production']
