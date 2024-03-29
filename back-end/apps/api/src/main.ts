@@ -14,8 +14,8 @@ async function bootstrap() {
     transport: Transport.TCP,
     options: {
       host: '0.0.0.0',
-      port: configService.get<string>('TCP_PORT')
-    }
+      port: configService.get<string>('TCP_PORT'),
+    },
   });
   app.use(cookieParser());
   app.useGlobalPipes(
@@ -26,9 +26,16 @@ async function bootstrap() {
   );
   app.useLogger(app.get(Logger));
 
+  app.enableCors({
+    origin: true,
+    credentials: true,
+  });
+
   const config = new DocumentBuilder()
     .setTitle('Hedera Transaction Tool Backend API')
-    .setDescription('The Backend API module is used for authorization, authentication, pulling and saving transaction data.')
+    .setDescription(
+      'The Backend API module is used for authorization, authentication, pulling and saving transaction data.',
+    )
     .setVersion('1.0')
     .addServer('http://localhost:3000/', 'Local environment')
     // .addServer('https://staging.yourapi.com/', 'Staging')
