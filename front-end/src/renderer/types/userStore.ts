@@ -8,6 +8,7 @@ type LoggedOutUser = {
 
 type LoggedInUser = {
   isLoggedIn: true;
+  id: string;
   email: string;
   password: string | null;
 };
