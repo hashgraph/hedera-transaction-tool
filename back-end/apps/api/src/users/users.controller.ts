@@ -5,7 +5,8 @@ import {
   Get,
   Param,
   ParseIntPipe,
-  Patch, Post,
+  Patch,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
@@ -51,6 +52,19 @@ export class UsersController {
   @Get()
   getUsers(@GetUser() user: User): Promise<User[]> {
     return this.usersService.getUsers();
+  }
+
+  @ApiOperation({
+    summary: 'Get the current user',
+    description: 'Get the user that is currently a part of the organization.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: [UserDto],
+  })
+  @Get('/me')
+  getMe(@GetUser() user: User): Promise<User> {
+    return this.usersService.getUser({ id: user.id });
   }
 
   //TODO How/when would this be used?
