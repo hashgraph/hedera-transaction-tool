@@ -29,7 +29,7 @@ type LoggedOutOrganization = {
   loginRequired: true;
 };
 
-type LoggedInOrganization = {
+export type LoggedInOrganization = {
   isServerActive: true;
   loginRequired: false;
   userId: number;
