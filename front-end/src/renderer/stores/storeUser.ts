@@ -9,18 +9,17 @@ import {
   RecoveryPhrase,
   ConnectedOrganization,
 } from '@renderer/types';
+import * as ush from '@renderer/utils/userStoreHelpers';
 
 const useUserStore = defineStore('user', () => {
   /* State */
   /** Keys */
-  const keyPairs = ref<KeyPair[]>([]);
   const publicKeyToAccounts = ref<PublicKeyAccounts[]>([]);
   const recoveryPhrase = ref<RecoveryPhrase | null>(null);
+  const keyPairs = reactive<KeyPair[]>([]);
 
   /** Personal */
-  const personal = reactive<PersonalUser>({
-    isLoggedIn: false,
-  });
+  const personal = ref<PersonalUser | null>(null);
 
   /** Organization */
   const selectedOrganization = ref<ConnectedOrganization | null>(null);
@@ -28,10 +27,14 @@ const useUserStore = defineStore('user', () => {
 
   /* Computed */
   /** Keys */
-  const secretHashes = computed(() => keyPairs.value.map(kp => kp.secret_hash).filter(Boolean));
-  const publicKeys = computed(() => keyPairs.value.map(kp => kp.public_key));
+  const secretHashes = computed<string[]>(() => ush.getSecretHashesFromKeys(keyPairs));
+  const publicKeys = computed(() => keyPairs.map(kp => kp.public_key));
+  const shouldSetupAccount = computed(() =>
+    ush.accountSetupRequired(selectedOrganization.value, keyPairs, secretHashes.value),
+  );
 
-  return {
+  /* Exports */
+  const exports = {
     keyPairs,
     publicKeyToAccounts,
     recoveryPhrase,
@@ -40,7 +43,10 @@ const useUserStore = defineStore('user', () => {
     organizations,
     secretHashes,
     publicKeys,
+    shouldSetupAccount,
   };
+
+  return exports;
 });
 
 export default useUserStore;
