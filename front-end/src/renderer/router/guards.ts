@@ -1,26 +1,25 @@
 import { Router } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
+import { isLoggedInOrganization, isOrganizationActive } from '@renderer/utils/userStoreHelpers';
 
 export function addGuards(router: Router) {
   const user = useUserStore();
 
   router.beforeEach(to => {
-    const userIsLoggedIn = user.data.isLoggedIn;
-    const userIsSigningInOrganization = user.data.isSigningInOrganization;
-    const organizationServerActive = user.data.organizationServerActive;
+    const userIsLoggedIn = user.personal?.isLoggedIn;
 
     if (
-      (userIsSigningInOrganization && to.name !== 'organizationLogin') ||
-      (!organizationServerActive && to.name === 'organizationLogin')
+      (isLoggedInOrganization(user.selectedOrganization) && to.name !== 'organizationLogin') ||
+      (!isOrganizationActive(user.selectedOrganization) && to.name === 'organizationLogin')
     ) {
       return false;
     }
 
     if (
       userIsLoggedIn &&
-      !userIsSigningInOrganization &&
-      user.data.secretHashes.length === 0 &&
+      !isLoggedInOrganization(user.selectedOrganization) &&
+      user.secretHashes.length === 0 &&
       to.name !== 'accountSetup'
     ) {
       return {
@@ -31,10 +30,10 @@ export function addGuards(router: Router) {
     if (
       (!userIsLoggedIn && to.name === 'accountSetup') ||
       (userIsLoggedIn && to.name === 'login') ||
-      (!userIsSigningInOrganization && to.name === 'organizationLogin') ||
+      (!isLoggedInOrganization(user.selectedOrganization) && to.name === 'organizationLogin') ||
       (userIsLoggedIn &&
-        !user.data.activeOrganization &&
-        user.data.secretHashes.length !== 0 &&
+        !user.selectedOrganization &&
+        user.secretHashes.length !== 0 &&
         to.name === 'accountSetup')
     ) {
       return router.previousPath ? { path: router.previousPath } : { name: 'transactions' };
