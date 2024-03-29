@@ -68,7 +68,7 @@ watch(
 
     if (!active) {
       adjustInActiveServersArray(user.data.activeOrganization, active);
-      user.setActiveOrganization(null);
+      user.data.activeOrganization = null;
     }
     inactiveSelectedOrganizationModalShown.value = !active;
   },

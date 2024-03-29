@@ -1,8 +1,7 @@
-import { computed, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 
 import { KeyPair, Prisma } from '@prisma/client';
-import { AccountInfo } from '@main/shared/interfaces';
 
 import useNetworkStore from './storeNetwork';
 import useUserStore from './storeUser';
@@ -18,11 +17,7 @@ const useKeyPairsStore = defineStore('keyPairs', () => {
   /* State */
   const recoveryPhraseWords = ref<string[]>([]);
   const keyPairs = ref<KeyPair[]>([]);
-  const publicKeyToAccounts = ref<{ publicKey: string; accounts: AccountInfo[] }[]>([]);
   const refetching = ref(false);
-
-  /* Getters */
-  const publicKeys = computed(() => keyPairs.value.map(kp => kp.public_key));
 
   /* Actions */
   async function refetch() {

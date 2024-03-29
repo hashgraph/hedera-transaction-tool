@@ -39,14 +39,13 @@ const handleUserModeChange = async (e: Event) => {
     addOrSelectModalShown.value = true;
   } else if (newValue === 'personal') {
     selectedMode.value = newValue;
-    user.setActiveOrganization(null);
+    user.data.activeOrganization = null;
     user.data.isSigningInOrganization = false;
     router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
   } else {
     selectedMode.value = newValue;
-    user.setActiveOrganization(
-      user.data.connectedOrganizations.find(org => org.id === newValue) || null,
-    );
+    user.data.activeOrganization =
+      user.data.connectedOrganizations.find(org => org.id === newValue) || null;
   }
 };
 
@@ -61,7 +60,7 @@ const handleSelectedOrAdd = (value: 'select' | 'add') => {
 };
 
 const handleSelectOrganization = async (organization: Organization) => {
-  user.setActiveOrganization(organization);
+  user.data.activeOrganization = organization;
 
   if (!user.data.connectedOrganizations.some(org => org.id === organization.id)) {
     user.data.connectedOrganizations.push(organization);
@@ -114,7 +113,7 @@ watch(
     }
 
     if (!active) {
-      // user.setActiveOrganization(null) in PingOrganizations
+      // user.data.activeOrganization = null in PingOrganizations
       selectedMode.value = 'personal';
       if (selectElRef.value) {
         selectElRef.value.value = selectedMode.value;
