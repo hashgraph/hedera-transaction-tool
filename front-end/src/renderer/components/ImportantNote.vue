@@ -43,7 +43,9 @@ onMounted(() => {
         code in its current form is not recommended and is at your own risk.
       </p>
       <div class="mt-5 text-center">
-        <AppButton color="primary" @click="handleAccept">I Understand and Agree</AppButton>
+        <AppButton data-testid="button-understand-agree" color="primary" @click="handleAccept"
+          >I Understand and Agree</AppButton
+        >
       </div>
     </div>
   </AppModal>

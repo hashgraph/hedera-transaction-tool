@@ -190,7 +190,7 @@ defineExpose({
     <div class="form-group mt-5">
       <label class="form-label">Nickname <span class="fw-normal">- Optional</span></label>
       <AppInput
-        data-test-id="input-nickname"
+        data-testid="input-nickname"
         v-model="nickname"
         :filled="true"
         placeholder="Enter Nickname"
@@ -198,7 +198,7 @@ defineExpose({
     </div>
     <div class="form-group w-25 mt-5">
       <label class="form-label">Key Type</label>
-      <AppInput data-test-id="input-key-type" model-value="ED25519" readonly />
+      <AppInput data-testid="input-key-type" model-value="ED25519" readonly />
     </div>
     <template v-if="keys.length > 0">
       <div class="form-group mt-5">

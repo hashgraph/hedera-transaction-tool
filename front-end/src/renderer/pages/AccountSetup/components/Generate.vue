@@ -113,7 +113,7 @@ watch(words, newWords => {
             : 'I understand that if I lose my recovery phrase, I will not be able to create new keys or recover lost keys.'
         "
         name="recoveryPhraseAgreement"
-        data-test-id="checkbox-understand-backed-up"
+        data-testid="checkbox-understand-backed-up"
       />
     </div>
   </div>
@@ -128,7 +128,7 @@ watch(words, newWords => {
         color="primary"
         class="w-100"
         @click="handleGeneratePhrase"
-        data-test-id="button-next-genereate"
+        data-testid="button-next-genereate"
       >
         <span>Generate</span>
       </AppButton>
@@ -142,7 +142,7 @@ watch(words, newWords => {
     <div class="col-8">
       <div class="d-flex">
         <AppButton
-          data-test-id="button-generate-again"
+          data-testid="button-generate-again"
           :disabled="!checkboxChecked && words.filter(w => w).length === 0"
           color="secondary"
           @click="handleGeneratePhrase"
@@ -152,7 +152,7 @@ watch(words, newWords => {
         <AppButton
           v-if="words.filter(w => w).length !== 0"
           color="secondary"
-          data-test-id="button-copy"
+          data-testid="button-copy"
           @click="handleCopyRecoveryPhrase"
           class="ms-4"
           ><i class="bi bi-copy"></i> <span>Copy</span></AppButton
@@ -164,7 +164,7 @@ watch(words, newWords => {
         :disabled="!checkboxChecked"
         color="primary"
         @click="handleProceedToVerification"
-        data-test-id="button-verfiy"
+        data-testid="button-verfiy"
         class="w-100"
         >Verify</AppButton
       >
@@ -174,7 +174,7 @@ watch(words, newWords => {
   <div v-if="wordsConfirmed" class="row justify-content-end mt-6">
     <div class="col-4">
       <AppButton
-        data-test-id="button-next-generate"
+        data-testid="button-next-generate"
         color="primary"
         class="w-100"
         @click="handleNext"
