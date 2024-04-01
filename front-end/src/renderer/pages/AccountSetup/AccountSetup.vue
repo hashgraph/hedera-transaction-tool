@@ -7,6 +7,8 @@ import useUserStore from '@renderer/stores/storeUser';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppStepper from '@renderer/components/ui/AppStepper.vue';
 
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+
 import GenerateOrImport from './components/GenerateOrImport.vue';
 import KeyPairs from './components/KeyPairs.vue';
 import NewPassword from './components/NewPassword.vue';
@@ -49,11 +51,11 @@ const handleNext = async () => {
 
 /* Hooks */
 onBeforeMount(() => {
-  if (!user.selectedOrganization) {
+  if (!isLoggedInOrganization(user.selectedOrganization)) {
     step.value.previous = 'recoveryPhrase';
     step.value.current = 'recoveryPhrase';
     stepperItems.value.shift();
-  } else if (user.selectedOrganization.loginRequired) {
+  } else if (!user.selectedOrganization.isPasswordTemporary) {
     step.value.previous = 'recoveryPhrase';
     step.value.current = 'recoveryPhrase';
   }

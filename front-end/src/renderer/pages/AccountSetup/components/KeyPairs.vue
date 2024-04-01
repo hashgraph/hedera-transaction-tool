@@ -9,11 +9,8 @@ import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
-import {
-  restorePrivateKey,
-  // getStoredKeyPairs,
-} from '@renderer/services/keyPairService';
-import { uploadKey } from '@renderer/services/organization';
+import { restorePrivateKey } from '@renderer/services/keyPairService';
+import { getUserState, uploadKey } from '@renderer/services/organization';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 import { getWidthOfElementWithText } from '@renderer/utils/dom';
@@ -125,11 +122,10 @@ const handleSave = async () => {
         nickname: nickname.value || null,
       };
 
-      if (isLoggedInOrganization(user.selectedOrganization)) {
-        if (user.selectedOrganization.userKeys.some(k => k.publicKey === key.publicKey)) {
-          throw new Error('Key pair already exists');
-        }
-
+      if (
+        isLoggedInOrganization(user.selectedOrganization) &&
+        !user.selectedOrganization.userKeys.some(k => k.publicKey === key.publicKey)
+      ) {
         await uploadKey(user.selectedOrganization.id, user.selectedOrganization.userId, {
           publicKey: key.publicKey,
           index: key.index,
@@ -142,19 +138,9 @@ const handleSave = async () => {
       user.secretHashes.push(user.recoveryPhrase.hash);
     }
 
-    if (isLoggedInOrganization(user.selectedOrganization)) {
-      // Fetch user state
-      // const userState = await getUserState(
-      //   user.data.activeOrganization.serverUrl,
-      //   user.data.organizationId,
-      // );
-      // user.data.organizationState = userState;
-    }
-
     toast.success(`Key Pair${keys.value.length > 1 ? 's' : ''} saved successfully`, {
       position: 'bottom-right',
     });
-
     user.personal.password = '';
     router.push({ name: 'settingsKeys' });
   } catch (err: any) {
@@ -163,6 +149,16 @@ const handleSave = async () => {
       message = err.message;
     }
     toast.error(message, { position: 'bottom-right' });
+  }
+
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    const { userKeys, secretHashes, passwordTemporary } = await getUserState(
+      user.selectedOrganization.serverUrl,
+      user.selectedOrganization.userId,
+    );
+    user.selectedOrganization.userKeys = userKeys;
+    user.selectedOrganization.secretHashes = secretHashes;
+    user.selectedOrganization.isPasswordTemporary = passwordTemporary;
   }
 };
 

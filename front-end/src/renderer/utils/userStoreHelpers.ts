@@ -115,6 +115,7 @@ export const getLocalKeyPairs = async (
     user.id,
     selectedOrganization !== null ? selectedOrganization.id : null,
   );
+
   keyPairs = keyPairs.sort((k1, k2) => {
     if (k1.index < 0) {
       return 1;
