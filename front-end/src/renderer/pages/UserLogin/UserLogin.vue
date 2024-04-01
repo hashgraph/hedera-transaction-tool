@@ -198,7 +198,7 @@ function setTooltipContent() {
   //       `;
 
   tooltipContent.value = `
-          <div class='d-flex flex-column align-items-start px-3'>
+          <div class='d-flex flex-column align-items-start px-3' data-testid='tooltip-requirements'>
             <div class='${
               passwordRequirements.length ? 'text-success' : 'text-danger'
             }'><i class='bi bi-${
@@ -340,8 +340,15 @@ watch(inputEmail, pass => {
           <hr class="separator my-5" />
 
           <div class="flex-between-centered gap-4">
-            <AppButton color="borderless" @click="isResetDataModalShown = false">Cancel</AppButton>
-            <AppButton color="danger" @click="handleResetData">Reset</AppButton>
+            <AppButton
+              data-testid="button-reset-cancel"
+              color="borderless"
+              @click="isResetDataModalShown = false"
+              >Cancel</AppButton
+            >
+            <AppButton data-testid="button-reset" color="danger" @click="handleResetData"
+              >Reset</AppButton
+            >
           </div>
         </div>
       </AppModal>
