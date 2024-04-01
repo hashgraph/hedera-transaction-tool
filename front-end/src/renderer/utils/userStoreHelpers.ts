@@ -1,3 +1,6 @@
+import { Ref, nextTick } from 'vue';
+import { Router } from 'vue-router';
+
 import { KeyPair, Organization, Prisma } from '@prisma/client';
 import { Mnemonic } from '@hashgraph/sdk';
 
@@ -41,9 +44,8 @@ export const isLoggedInOrganization = (
 export const accountSetupRequired = (
   organization: ConnectedOrganization | null,
   localKeys: KeyPair[],
-  localSecretHashes: string[],
 ) => {
-  if (localSecretHashes.length === 0) return true;
+  if (getSecretHashesFromKeys(localKeys).length === 0) return true;
   if (!organization || !isLoggedInOrganization(organization)) return false;
 
   if (organization.isPasswordTemporary) return true;
@@ -122,6 +124,18 @@ export const getLocalKeyPairs = async (
   });
 
   return keyPairs;
+};
+
+export const updateKeyPairs = async (
+  keyPairsProxy: KeyPair[],
+  user: PersonalUser | null,
+  selectedOrganization: ConnectedOrganization | null,
+) => {
+  keyPairsProxy.splice(0, keyPairsProxy.length);
+  if (user?.isLoggedIn) {
+    const newKeys = await getLocalKeyPairs(user, selectedOrganization);
+    keyPairsProxy.push(...newKeys);
+  }
 };
 
 export const getPublicKeysToAccounts = async (keyPairs: KeyPair[], mirrorNodeBaseURL: string) => {
@@ -216,5 +230,50 @@ export const getSelectedOrganization = async (
     return connectedOrganization;
   } catch (error) {
     return activeloginRequired;
+  }
+};
+
+export const afterOrganizationSelection = async (
+  user: PersonalUser | null,
+  organization: Ref<ConnectedOrganization | null>,
+  keyPairsProxy: KeyPair[],
+  router: Router,
+) => {
+  await updateKeyPairs(keyPairsProxy, user, organization.value);
+  await nextTick();
+
+  if (!organization.value) {
+    navigateToPreviousRoute(router);
+    return;
+  }
+
+  if (!isOrganizationActive(organization.value)) {
+    organization.value = null;
+    await updateKeyPairs(keyPairsProxy, user, organization.value);
+    await nextTick();
+    navigateToPreviousRoute(router);
+    return;
+  }
+
+  if (isLoggedOutOrganization(organization.value)) {
+    router.push({ name: 'organizationLogin' });
+    return;
+  }
+
+  if (
+    isLoggedInOrganization(organization.value) &&
+    accountSetupRequired(organization.value, keyPairsProxy)
+  ) {
+    router.push({ name: 'accountSetup' });
+    return;
+  }
+};
+
+const navigateToPreviousRoute = (router: Router) => {
+  const currentRoute = router.currentRoute.value;
+  if (router.previousPath) {
+    currentRoute.path !== router.previousPath && router.push(router.previousPath);
+  } else {
+    currentRoute.name !== 'transactions' && router.push({ name: 'transactions' });
   }
 };

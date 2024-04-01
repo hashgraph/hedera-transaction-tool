@@ -1,4 +1,4 @@
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, nextTick, reactive, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 
 import { KeyPair, Organization, Prisma } from '@prisma/client';
@@ -10,6 +10,8 @@ import {
   ConnectedOrganization,
 } from '@renderer/types';
 
+import { useRouter } from 'vue-router';
+
 import useNetworkStore from './storeNetwork';
 
 import * as ush from '@renderer/utils/userStoreHelpers';
@@ -17,6 +19,9 @@ import * as ush from '@renderer/utils/userStoreHelpers';
 const useUserStore = defineStore('user', () => {
   /* Stores */
   const network = useNetworkStore();
+
+  /* Composables */
+  const router = useRouter();
 
   /* State */
   /** Keys */
@@ -36,7 +41,7 @@ const useUserStore = defineStore('user', () => {
   const secretHashes = computed<string[]>(() => ush.getSecretHashesFromKeys(keyPairs));
   const publicKeys = computed(() => keyPairs.map(kp => kp.public_key));
   const shouldSetupAccount = computed(() =>
-    ush.accountSetupRequired(selectedOrganization.value, keyPairs, secretHashes.value),
+    ush.accountSetupRequired(selectedOrganization.value, keyPairs),
   );
 
   /* Actions */
@@ -51,6 +56,7 @@ const useUserStore = defineStore('user', () => {
     selectedOrganization.value = null;
     organizations.value.splice(0, organizations.value.length);
     publicKeyToAccounts.value.splice(0, publicKeyToAccounts.value.length);
+    await refetchKeys();
   };
 
   /** Keys */
@@ -58,16 +64,17 @@ const useUserStore = defineStore('user', () => {
     recoveryPhrase.value = await ush.createRecoveryPhrase(words);
   };
 
+  const refetchAccounts = async () => {
+    publicKeyToAccounts.value = await ush.getPublicKeysToAccounts(
+      keyPairs,
+      network.mirrorNodeBaseURL,
+    );
+  };
+
   const refetchKeys = async () => {
-    keyPairs.splice(0, keyPairs.length);
-    if (personal.value?.isLoggedIn) {
-      const newKeys = await ush.getLocalKeyPairs(personal.value, selectedOrganization.value);
-      keyPairs.push(...newKeys);
-      publicKeyToAccounts.value = await ush.getPublicKeysToAccounts(
-        newKeys,
-        network.mirrorNodeBaseURL,
-      );
-    }
+    await ush.updateKeyPairs(keyPairs, personal.value, selectedOrganization.value);
+    await nextTick();
+    await refetchAccounts();
   };
 
   const storeKey = async (keyPair: Prisma.KeyPairUncheckedCreateInput, password: string) => {
@@ -76,15 +83,27 @@ const useUserStore = defineStore('user', () => {
   };
 
   /** Organization */
-  const selectOrganization = async (organization: Organization) => {
-    selectedOrganization.value = await ush.getSelectedOrganization(organization, personal.value);
+  const selectOrganization = async (organization: Organization | null) => {
+    if (!organization) {
+      selectedOrganization.value = null;
+    } else {
+      selectedOrganization.value = await ush.getSelectedOrganization(organization, personal.value);
+    }
+    await nextTick();
+
+    await ush.afterOrganizationSelection(personal.value, selectedOrganization, keyPairs, router);
+    await nextTick();
+
+    await refetchAccounts();
   };
 
   /* Watchers */
-  watch([personal, selectedOrganization, () => network.network], async () => {
-    await refetchKeys();
-  });
-
+  watch(
+    () => network.network,
+    async () => {
+      await refetchAccounts();
+    },
+  );
   /* Exports */
   const exports = {
     keyPairs,
