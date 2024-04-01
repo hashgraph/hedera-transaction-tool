@@ -270,6 +270,19 @@ export const afterOrganizationSelection = async (
   }
 };
 
+export const refetchUserState = async (organization: Ref<ConnectedOrganization | null>) => {
+  if (!organization || !isLoggedInOrganization(organization.value)) return;
+
+  const { userKeys, secretHashes, passwordTemporary } = await getUserState(
+    organization.value.serverUrl,
+    organization.value.userId,
+  );
+
+  organization.value.userKeys = userKeys;
+  organization.value.secretHashes = secretHashes;
+  organization.value.isPasswordTemporary = passwordTemporary;
+};
+
 const navigateToPreviousRoute = (router: Router) => {
   const currentRoute = router.currentRoute.value;
   if (router.previousPath) {

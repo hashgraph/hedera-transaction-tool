@@ -60,11 +60,7 @@ const handleSubmitDifferentSecretHashDecision = async (e: Event) => {
     await deleteKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, key.id);
   }
 
-  // Fetch user state
-  // user.data.organizationState = await getUserState(
-  //   user.data.activeOrganization.serverUrl,
-  //   user.data.organizationId,
-  // );
+  await user.refetchUserState();
 
   props.handleNext();
 };

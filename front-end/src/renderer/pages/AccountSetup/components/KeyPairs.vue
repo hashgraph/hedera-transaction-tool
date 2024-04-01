@@ -10,7 +10,7 @@ import { useRouter } from 'vue-router';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import { restorePrivateKey } from '@renderer/services/keyPairService';
-import { getUserState, uploadKey } from '@renderer/services/organization';
+import { uploadKey } from '@renderer/services/organization';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 import { getWidthOfElementWithText } from '@renderer/utils/dom';
@@ -151,15 +151,7 @@ const handleSave = async () => {
     toast.error(message, { position: 'bottom-right' });
   }
 
-  if (isLoggedInOrganization(user.selectedOrganization)) {
-    const { userKeys, secretHashes, passwordTemporary } = await getUserState(
-      user.selectedOrganization.serverUrl,
-      user.selectedOrganization.userId,
-    );
-    user.selectedOrganization.userKeys = userKeys;
-    user.selectedOrganization.secretHashes = secretHashes;
-    user.selectedOrganization.isPasswordTemporary = passwordTemporary;
-  }
+  await user.refetchUserState();
 };
 
 const handlePasswordEntered = async (password: string) => {

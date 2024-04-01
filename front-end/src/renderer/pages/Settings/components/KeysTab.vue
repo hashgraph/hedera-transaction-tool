@@ -111,16 +111,13 @@ const handleDelete = async e => {
           user.selectedOrganization.userId,
           organizationKeyToDelete.id,
         );
-        // Refetch user state
-        // const userState = await getUserState(
-        //   user.selectedOrganization.serverUrl,
-        //   user.selectedOrganization.userId,
-        // );
-        // user.data.organizationState = userState;
+
+        await user.refetchUserState();
       }
 
       await deleteKeyPair(keyPairIdToDelete.value);
       await user.refetchKeys();
+
       isDeleteModalShown.value = false;
 
       if (user.shouldSetupAccount) {

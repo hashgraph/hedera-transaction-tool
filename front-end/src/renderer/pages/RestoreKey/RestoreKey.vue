@@ -10,7 +10,7 @@ import { useToast } from 'vue-toast-notification';
 
 import { comparePasswords } from '@renderer/services/userService';
 import { restorePrivateKey } from '@renderer/services/keyPairService';
-import { getUserState, uploadKey } from '@renderer/services/organization';
+import { uploadKey } from '@renderer/services/organization';
 
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
@@ -137,18 +137,11 @@ const handleSaveKey = async e => {
         });
       }
 
+      user.recoveryPhrase = null;
+
       await user.storeKey(keyPair, password.value);
 
-      if (isLoggedInOrganization(user.selectedOrganization)) {
-        const userState = await getUserState(
-          user.selectedOrganization.serverUrl,
-          user.selectedOrganization.userId,
-        );
-        user.selectedOrganization.isPasswordTemporary = userState.passwordTemporary;
-        user.selectedOrganization.secretHashes = userState.secretHashes;
-        user.selectedOrganization.userKeys = userState.userKeys;
-      }
-      user.recoveryPhrase = null;
+      await user.refetchUserState();
 
       toast.success('Key Pair saved', { position: 'bottom-right' });
       router.push({ name: 'settingsKeys' });

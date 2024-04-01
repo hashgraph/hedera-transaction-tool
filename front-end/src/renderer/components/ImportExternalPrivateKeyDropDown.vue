@@ -9,7 +9,7 @@ import { useToast } from 'vue-toast-notification';
 
 import { generateExternalKeyPairFromString } from '@renderer/services/keyPairService';
 import { comparePasswords } from '@renderer/services/userService';
-import { getUserState, uploadKey } from '@renderer/services/organization';
+import { uploadKey } from '@renderer/services/organization';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
@@ -71,15 +71,7 @@ const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
 
     await user.storeKey(keyPair, userPassword.value);
 
-    if (isLoggedInOrganization(user.selectedOrganization)) {
-      const { userKeys, secretHashes, passwordTemporary } = await getUserState(
-        user.selectedOrganization.serverUrl,
-        user.selectedOrganization.userId,
-      );
-      user.selectedOrganization.userKeys = userKeys;
-      user.selectedOrganization.secretHashes = secretHashes;
-      user.selectedOrganization.isPasswordTemporary = passwordTemporary;
-    }
+    await user.refetchUserState();
 
     isImportED25519KeyModalShown.value = false;
     isImportECDSAKeyModalShown.value = false;

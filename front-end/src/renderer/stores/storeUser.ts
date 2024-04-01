@@ -97,6 +97,8 @@ const useUserStore = defineStore('user', () => {
     await refetchAccounts();
   };
 
+  const refetchUserState = async () => await ush.refetchUserState(selectedOrganization);
+
   /* Watchers */
   watch(
     () => network.network,
@@ -121,6 +123,7 @@ const useUserStore = defineStore('user', () => {
     refetchKeys,
     storeKey,
     selectOrganization,
+    refetchUserState,
   };
 
   return exports;
