@@ -9,7 +9,7 @@ import { useToast } from 'vue-toast-notification';
 
 import { generateExternalKeyPairFromString } from '@renderer/services/keyPairService';
 import { comparePasswords } from '@renderer/services/userService';
-import { uploadKey } from '@renderer/services/organization';
+import { getUserState, uploadKey } from '@renderer/services/organization';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
@@ -64,7 +64,7 @@ const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
         throw new Error('Key pair already exists');
       }
 
-      await uploadKey(user.selectedOrganization.id, user.selectedOrganization.userId, {
+      await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
         publicKey: keyPair.public_key,
       });
     }
@@ -72,12 +72,13 @@ const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
     await user.storeKey(keyPair, userPassword.value);
 
     if (isLoggedInOrganization(user.selectedOrganization)) {
-      // Refetch user state
-      // const userState = await getUserState(
-      //   user.selectedOrganization.serverUrl,
-      //   user.selectedOrganization.userId,
-      // );
-      // user.data.organizationState = userState;
+      const { userKeys, secretHashes, passwordTemporary } = await getUserState(
+        user.selectedOrganization.serverUrl,
+        user.selectedOrganization.userId,
+      );
+      user.selectedOrganization.userKeys = userKeys;
+      user.selectedOrganization.secretHashes = secretHashes;
+      user.selectedOrganization.isPasswordTemporary = passwordTemporary;
     }
 
     isImportED25519KeyModalShown.value = false;
