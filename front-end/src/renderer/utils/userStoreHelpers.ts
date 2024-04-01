@@ -151,7 +151,8 @@ export const getSecretHashesFromKeys = (keys: KeyPair[]): string[] => {
   const secretHashes: string[] = [];
 
   keys.forEach(key => {
-    if (key.secret_hash) secretHashes.push(key.secret_hash);
+    if (key.secret_hash && !secretHashes.includes(key.secret_hash))
+      secretHashes.push(key.secret_hash);
   });
 
   return secretHashes;

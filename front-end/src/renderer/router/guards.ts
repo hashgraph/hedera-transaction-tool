@@ -16,15 +16,12 @@ export function addGuards(router: Router) {
       return false;
     }
 
-    if (
-      userIsLoggedIn &&
-      !isLoggedInOrganization(user.selectedOrganization) &&
-      user.secretHashes.length === 0 &&
-      to.name !== 'accountSetup'
-    ) {
-      return {
-        name: 'accountSetup',
-      };
+    if (userIsLoggedIn && user.secretHashes.length === 0 && to.name !== 'accountSetup') {
+      console.log('redirecting to account setup');
+      console.log(user.secretHashes);
+      console.log(user.keyPairs);
+
+      return { name: 'accountSetup' };
     }
 
     if (

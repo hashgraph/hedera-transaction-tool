@@ -13,7 +13,9 @@ export default function useAutoLogin() {
     if (loggedUser) {
       const { userId, email }: { userId: string; email: string } = JSON.parse(loggedUser);
 
-      user.login(userId, email);
+      setTimeout(async () => {
+        await user.login(userId, email);
+      }, 100);
     } else {
       user.logout();
     }
