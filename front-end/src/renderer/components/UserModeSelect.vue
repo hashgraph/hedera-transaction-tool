@@ -32,20 +32,20 @@ const handleUserModeChange = async (e: Event) => {
     selectEl.value = selectedMode.value;
     addOrSelectModalShown.value = true;
   } else if (newValue === 'personal') {
+    selectedMode.value = 'personal';
     await user.selectOrganization(null);
-    selectEl.value = selectedMode.value;
   } else {
-    if (!org) {
-      await user.selectOrganization(null);
-      selectEl.value = selectedMode.value;
-    } else {
-      await user.selectOrganization({
-        id: org.id,
-        nickname: org.nickname,
-        serverUrl: org.serverUrl,
-        key: org.key,
-      });
-    }
+    selectedMode.value = org ? org.id : 'personal';
+    await user.selectOrganization(
+      org
+        ? {
+            id: org.id,
+            nickname: org.nickname,
+            serverUrl: org.serverUrl,
+            key: org.key,
+          }
+        : null,
+    );
   }
 };
 
