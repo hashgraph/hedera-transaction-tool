@@ -63,8 +63,8 @@ export class UsersController {
     type: [UserDto],
   })
   @Get('/me')
-  getMe(@GetUser() user: User): Promise<User> {
-    return this.usersService.getUser({ id: user.id });
+  getMe(@GetUser() user: User): User {
+    return user;
   }
 
   //TODO How/when would this be used?
