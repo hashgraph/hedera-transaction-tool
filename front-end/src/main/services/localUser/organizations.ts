@@ -52,6 +52,24 @@ export const addOrganization = async (organization: Prisma.OrganizationCreateInp
 export const removeOrganization = async (id: string) => {
   const prisma = getPrismaClient();
 
+  await prisma.keyPair.deleteMany({
+    where: {
+      organization_id: id,
+    },
+  });
+
+  await prisma.organizationCredentials.deleteMany({
+    where: {
+      organization_id: id,
+    },
+  });
+
+  await prisma.transaction.deleteMany({
+    where: {
+      organization_id: id,
+    },
+  });
+
   await prisma.organization.delete({
     where: {
       id,
