@@ -88,7 +88,7 @@ watch(
       @change="handleUserModeChange"
     >
       <option value="personal">Personal User</option>
-      <template v-for="organization in [...user.organizations]" :key="organization.id">
+      <template v-for="organization in user.organizations" :key="organization.id">
         <option :value="organization.id">
           {{ organization.nickname }}
         </option>

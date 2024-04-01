@@ -3,10 +3,9 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 
-import { deleteOrganizationCredentials } from '@renderer/services/organizationCredentials';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 /* Stores */
 const user = useUserStore();
@@ -20,10 +19,8 @@ const handleDeleteConnection = async (organizationId: string) => {
     throw new Error('User is not logged in');
   }
 
-  await deleteOrganizationCredentials(organizationId, user.personal.id);
-  await user.fetchConnectedOrganizations();
-
-  user.selectedOrganization = null;
+  await user.selectOrganization(null);
+  await user.deleteOrganizationConnection(organizationId);
 
   toast.success('Connection deleted successfully');
 };
@@ -42,7 +39,7 @@ const handleDeleteConnection = async (organizationId: string) => {
             </tr>
           </thead>
           <tbody class="text-secondary">
-            <template v-for="organization in user.connectedOrganizations" :key="organization.id">
+            <template v-for="organization in user.organizations" :key="organization.id">
               <tr>
                 <td>
                   <p>

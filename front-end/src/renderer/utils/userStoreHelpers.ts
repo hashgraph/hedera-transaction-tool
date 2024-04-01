@@ -19,6 +19,8 @@ import { getKeyPairs, hashRecoveryPhrase } from '@renderer/services/keyPairServi
 import { getAccountsByPublicKey } from '@renderer/services/mirrorNodeDataService';
 import { storeKeyPair as storeKey } from '@renderer/services/keyPairService';
 import { shouldSignInOrganization } from '@renderer/services/organizationCredentials';
+import { deleteOrganizationCredentials } from '@renderer/services/organizationCredentials';
+import { getOrganizations } from '@renderer/services/organizationsService';
 
 /* Flags */
 export const isUserLoggedIn = (user: PersonalUser | null): user is LoggedInUser => {
@@ -182,7 +184,7 @@ export const getNickname = (publicKey: string, keyPairs: KeyPair[]): string | un
 };
 
 /* Organization */
-export const getSelectedOrganization = async (
+export const getConnectedOrganization = async (
   organization: Organization,
   user: PersonalUser | null,
 ): Promise<ConnectedOrganization> => {
@@ -281,6 +283,30 @@ export const refetchUserState = async (organization: Ref<ConnectedOrganization |
   organization.value.userKeys = userKeys;
   organization.value.secretHashes = secretHashes;
   organization.value.isPasswordTemporary = passwordTemporary;
+};
+
+export const getConnectedOrganizations = async (user: PersonalUser | null) => {
+  const organizations = await getOrganizations();
+
+  const connectedOrganizations: ConnectedOrganization[] = [];
+
+  for (const organization of organizations) {
+    const connectedOrganization = await getConnectedOrganization(organization, user);
+    connectedOrganizations.push(connectedOrganization);
+  }
+
+  return connectedOrganizations;
+};
+
+export const deleteOrganizationConnection = async (
+  organizationId: string,
+  user: PersonalUser | null,
+) => {
+  if (!isUserLoggedIn(user)) {
+    throw Error('User is not logged in');
+  }
+
+  await deleteOrganizationCredentials(organizationId, user.id);
 };
 
 const navigateToPreviousRoute = (router: Router) => {

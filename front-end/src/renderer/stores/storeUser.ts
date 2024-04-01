@@ -49,6 +49,7 @@ const useUserStore = defineStore('user', () => {
   const login = async (id: string, email: string) => {
     personal.value = ush.createPersonalUser(id, email);
     await refetchKeys();
+    await refetchOrganizations();
   };
 
   const logout = async () => {
@@ -87,7 +88,7 @@ const useUserStore = defineStore('user', () => {
     if (!organization) {
       selectedOrganization.value = null;
     } else {
-      selectedOrganization.value = await ush.getSelectedOrganization(organization, personal.value);
+      selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
     }
     await nextTick();
 
@@ -98,6 +99,15 @@ const useUserStore = defineStore('user', () => {
   };
 
   const refetchUserState = async () => await ush.refetchUserState(selectedOrganization);
+
+  const refetchOrganizations = async () => {
+    organizations.value = await ush.getConnectedOrganizations(personal.value);
+  };
+
+  const deleteOrganizationConnection = async (organizationId: string) => {
+    organizations.value = organizations.value.filter(org => org.id !== organizationId);
+    await ush.deleteOrganizationConnection(organizationId, personal.value);
+  };
 
   /* Watchers */
   watch(
@@ -124,6 +134,8 @@ const useUserStore = defineStore('user', () => {
     storeKey,
     selectOrganization,
     refetchUserState,
+    deleteOrganizationConnection,
+    refetchOrganizations,
   };
 
   return exports;
