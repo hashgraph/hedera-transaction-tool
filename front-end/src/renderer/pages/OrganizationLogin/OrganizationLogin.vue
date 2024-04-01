@@ -77,20 +77,8 @@ const handleLogin = async () => {
 
     toast.success('Successfully signed in');
 
-    // Refetch user state
-    // user.selectedOrganization.loginRequired = false;
-    // user.selectedOrganization.userId = id;
-
-    // try {
-    //   const userState = await getUserState(user.data.activeOrganization.serverUrl, id);
-    //   user.data.organizationState = userState;
-    //   if (user.shouldSetupAccount(keyPairs.keyPairs)) {
-    //     router.push({ name: 'accountSetup' });
-    //     return;
-    //   }
-    // } catch {
-    //   router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
-    // }
+    const { id, serverUrl, nickname, key } = user.selectedOrganization;
+    await user.selectOrganization({ id, serverUrl, nickname, key });
   } catch (error: any) {
     inputEmailInvalid.value = true;
     inputPasswordInvalid.value = true;
