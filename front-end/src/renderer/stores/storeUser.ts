@@ -42,7 +42,6 @@ const useUserStore = defineStore('user', () => {
   /* Actions */
   const login = async (id: string, email: string) => {
     personal.value = ush.createPersonalUser(id, email);
-    // Get secret hashes
   };
 
   const logout = () => {
@@ -58,6 +57,10 @@ const useUserStore = defineStore('user', () => {
     if (personal.value?.isLoggedIn) {
       const newKeys = await ush.getLocalKeyPairs(personal.value, selectedOrganization.value);
       keyPairs.push(...newKeys);
+      publicKeyToAccounts.value = await ush.getPublicKeysToAccounts(
+        newKeys,
+        network.mirrorNodeBaseURL,
+      );
     }
   };
 
