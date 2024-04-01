@@ -134,10 +134,11 @@ export const updateKeyPairs = async (
   user: PersonalUser | null,
   selectedOrganization: ConnectedOrganization | null,
 ) => {
-  keyPairsProxy.splice(0, keyPairsProxy.length);
   if (user?.isLoggedIn) {
     const newKeys = await getLocalKeyPairs(user, selectedOrganization);
-    keyPairsProxy.push(...newKeys);
+    keyPairsProxy.splice(0, keyPairsProxy.length, ...newKeys);
+  } else {
+    keyPairsProxy.splice(0, keyPairsProxy.length);
   }
 };
 
@@ -210,9 +211,7 @@ export const getConnectedOrganization = async (
     return inactiveServer;
   }
 
-  const loginRequired = await shouldSignInOrganization(user.id, organization.id);
-
-  if (loginRequired) {
+  if (await shouldSignInOrganization(user.id, organization.id)) {
     return activeloginRequired;
   }
 
@@ -223,7 +222,7 @@ export const getConnectedOrganization = async (
     const connectedOrganization: ConnectedOrganization = {
       ...organization,
       isServerActive: isActive,
-      loginRequired,
+      loginRequired: false,
       userId: id,
       isPasswordTemporary: state.passwordTemporary,
       secretHashes: state.secretHashes,
