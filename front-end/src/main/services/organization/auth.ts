@@ -2,13 +2,9 @@ import axios from 'axios';
 
 /* Authentification service for organization */
 
-export const login = async (
-  serverUrl: string,
-  email: string,
-  password: string,
-): Promise<string> => {
+export const login = async (serverUrl: string, email: string, password: string) => {
   try {
-    const response = await axios.post(
+    const res = await axios.post(
       `${serverUrl}/auth/login`,
       {
         email,
@@ -19,7 +15,7 @@ export const login = async (
       },
     );
 
-    return response.data?.accessToken || '';
+    return { id: res.data.id, cookie: res.headers['set-cookie'] };
   } catch (error: any) {
     throw new Error('Failed Sign in Organization');
   }

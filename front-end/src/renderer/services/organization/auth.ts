@@ -11,7 +11,7 @@ export const login = async (
   password: string,
 ): Promise<{ id: number }> => {
   try {
-    const res = await axios.post(
+    const { data } = await axios.post(
       `${serverUrl}/${authController}/login`,
       {
         email,
@@ -22,7 +22,7 @@ export const login = async (
       },
     );
 
-    return { id: res.data.id };
+    return { id: data.id };
   } catch (error: any) {
     if (error instanceof AxiosError) {
       throwIfNoResponse(error);

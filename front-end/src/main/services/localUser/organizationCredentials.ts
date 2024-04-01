@@ -1,4 +1,4 @@
-import { session } from 'electron';
+import { session, CookiesSetDetails } from 'electron';
 import { getPrismaClient } from '@main/db';
 
 import { Organization, OrganizationCredentials } from '@prisma/client';
@@ -32,18 +32,22 @@ export const organizationsToSignIn = async (user_id: string) => {
   const prisma = getPrismaClient();
 
   try {
-    let credentials = await prisma.organizationCredentials.findMany({
+    const credentials = await prisma.organizationCredentials.findMany({
       where: { user_id },
       include: {
         organization: true,
       },
     });
 
-    credentials = credentials.filter(cr => !credentialsValid(cr));
-
     const finalCredentials: typeof credentials = [];
 
     for (let i = 0; i < credentials.length; i++) {
+      const shouldSign = !credentialsValid(credentials[i]);
+      if (shouldSign) {
+        finalCredentials.push(credentials[i]);
+        continue;
+      }
+
       const token = await getAccessToken(credentials[i].organization.serverUrl);
       if (!token) {
         finalCredentials.push(credentials[i]);
@@ -267,6 +271,8 @@ export const decryptCredentialPassword = async (
 
 /* Tries to auto sign in to all organizations that should sign in */
 export const tryAutoSignIn = async (user_id: string, decryptPassword: string) => {
+  const ses = session.fromPartition('persist:main');
+
   const invalidCredentials = await organizationsToSignIn(user_id);
 
   const failedLogins: Organization[] = [];
@@ -274,29 +280,23 @@ export const tryAutoSignIn = async (user_id: string, decryptPassword: string) =>
   for (let i = 0; i < invalidCredentials.length; i++) {
     const invalidCredential = invalidCredentials[i];
 
-    const credentials = await getOrganizationCredentials(
-      invalidCredential.organization.id,
-      user_id,
-    );
-    if (!credentials) continue;
-
     let password = '';
     try {
-      password = await decryptCredentialPassword(credentials, decryptPassword);
+      password = await decryptCredentialPassword(invalidCredential, decryptPassword);
     } catch (error) {
       throw new Error('Incorrect decryption password');
     }
 
     try {
-      await login(invalidCredential.organization.serverUrl, invalidCredential.email, password);
-
-      await updateOrganizationCredentials(
-        invalidCredential.organization.id,
-        user_id,
+      const { cookie } = await login(
+        invalidCredential.organization.serverUrl,
         invalidCredential.email,
         password,
-        decryptPassword,
       );
+
+      if (cookie && cookie.length > 0) {
+        ses.cookies.set(parseSetCookie(invalidCredential.organization.serverUrl, cookie[0]));
+      }
     } catch (error) {
       failedLogins.push(invalidCredential.organization);
     }
@@ -311,4 +311,39 @@ function credentialsValid(credentials?: OrganizationCredentials | null) {
   if (credentials.password.length === 0 || credentials.email.length === 0) return false;
 
   return true;
+}
+
+function parseSetCookie(url: string, setCookieString: string) {
+  const parts = setCookieString.split(';').map(part => part.trim());
+
+  const [namePart, ...otherParts] = parts;
+  const [name, value] = namePart.split('=');
+
+  const cookie: CookiesSetDetails = {
+    name,
+    url,
+    value,
+    path: '/',
+    httpOnly: true,
+    sameSite: 'no_restriction',
+  };
+
+  otherParts.forEach(part => {
+    part = part.toLowerCase().trim();
+    if (part.startsWith('path=')) {
+      cookie.path = part.split('=')[1];
+    } else if (part === 'httponly') {
+      cookie.httpOnly = true;
+    } else if (part.startsWith('expires=')) {
+      const expirationDate = new Date(part.split('=')[1]);
+      cookie.expirationDate = expirationDate.getTime() / 1000;
+    } else if (part.startsWith('samesite=')) {
+      const value = part.split('=')[1];
+      cookie.sameSite = value === 'None' ? 'no_restriction' : 'lax';
+    }
+  });
+
+  cookie.secure = cookie.sameSite === 'no_restriction';
+
+  return cookie;
 }

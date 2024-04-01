@@ -5,11 +5,7 @@ import { Organization } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import {
-  getOrganizationsToSignIn,
-  tryAutoSignIn,
-} from '@renderer/services/organizationCredentials';
-import { ping } from '@renderer/services/organization';
+import { tryAutoSignIn } from '@renderer/services/organizationCredentials';
 
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
@@ -21,6 +17,7 @@ import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
 const user = useUserStore();
 
 /* State */
+const checked = ref(false);
 const userPasswordModalShow = ref(false);
 const loginsSummaryModalShow = ref(false);
 const loginFailedForOrganizations = ref<Organization[]>([]);
@@ -33,33 +30,26 @@ const handleAutoLogin = async (password: string) => {
   }
 
   loginFailedForOrganizations.value = await tryAutoSignIn(user.personal.id, password);
-  loginTriedForOrganizations.value = user.data.organizationsToSignIn.map(
-    orgCr => orgCr.organization,
-  );
+  loginTriedForOrganizations.value = user.organizations
+    .filter(org => org.loginRequired)
+    .map(org => ({ id: org.id, nickname: org.nickname, serverUrl: org.serverUrl, key: org.key }));
 
   loginsSummaryModalShow.value = true;
-  user.data.organizationsToSignIn = await getOrganizationsToSignIn(user.personal.id);
+
+  user.refetchOrganizations();
 };
 
 const handleSubmitFailedOrganizations = (e: Event) => {
   e.preventDefault();
-
   loginsSummaryModalShow.value = false;
 };
 
 /* Functions */
 async function openPasswordModalIfRequired() {
   if (isUserLoggedIn(user.personal)) {
-    const organizationCredentialsToUpdate = await getOrganizationsToSignIn(user.personal.id);
+    const organizationToSignIn = user.organizations.filter(org => org.loginRequired);
 
-    const activeOrganizations: Organization[] = [];
-
-    for (const cr of organizationCredentialsToUpdate) {
-      const active = await ping(cr.organization.serverUrl);
-      if (active) activeOrganizations.push(cr.organization);
-    }
-
-    if (organizationCredentialsToUpdate.length > 0 && activeOrganizations.length > 0) {
+    if (organizationToSignIn.length > 0) {
       userPasswordModalShow.value = true;
     }
   }
@@ -67,9 +57,12 @@ async function openPasswordModalIfRequired() {
 
 /* Watchers */
 watch(
-  () => user.personal,
+  () => user.organizations,
   async () => {
-    await openPasswordModalIfRequired();
+    if (!checked.value) {
+      checked.value = true;
+      await openPasswordModalIfRequired();
+    }
   },
 );
 </script>
