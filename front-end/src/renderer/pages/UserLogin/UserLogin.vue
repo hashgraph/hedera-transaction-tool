@@ -252,7 +252,7 @@ watch(inputEmail, pass => {
       </p>
 
       <form @submit="handleOnFormSubmit" class="form-login mt-5 w-100">
-        <label data-test-id="label-email" class="form-label">Email</label>
+        <label data-testid="label-email" class="form-label">Email</label>
         <AppInput
           data-testid="input-email"
           v-model="inputEmail"
@@ -263,7 +263,7 @@ watch(inputEmail, pass => {
         <div v-if="inputEmailInvalid" data-testid="invalid-text-email" class="invalid-feedback">
           Invalid e-mail.
         </div>
-        <label data-test-id="label-password" class="form-label mt-4">Password</label>
+        <label data-testid="label-password" class="form-label mt-4">Password</label>
         <AppInput
           v-model="inputPassword"
           :filled="true"
@@ -286,7 +286,7 @@ watch(inputEmail, pass => {
           Invalid password.
         </div>
         <template v-if="shouldRegister">
-          <label data-test-id="label-password-confirm" class="form-label mt-4"
+          <label data-testid="label-password-confirm" class="form-label mt-4"
             >Confirm password</label
           >
           <AppInput
