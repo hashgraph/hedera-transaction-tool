@@ -3,14 +3,11 @@ import { onMounted, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useRouter } from 'vue-router';
+import { useRouter, onBeforeRouteLeave } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
 import { login } from '@renderer/services/organization';
-import {
-  addOrganizationCredentials,
-  shouldSignInOrganization,
-} from '@renderer/services/organizationCredentials';
+import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
 import {
   isLoggedOutOrganization,
@@ -117,23 +114,16 @@ watch([inputEmail, inputPassword], () => {
   inputPasswordInvalid.value = false;
 });
 
-watch(
-  () => user.selectedOrganization,
-  async () => {
-    if (!isUserLoggedIn(user.personal)) {
-      throw new Error('User is not logged in');
-    }
+/* Guards */
+onBeforeRouteLeave(() => {
+  if (!user.selectedOrganization) return true;
 
-    if (isLoggedOutOrganization(user.selectedOrganization)) {
-      const flag = await shouldSignInOrganization(user.personal.id, user.selectedOrganization.id);
-      // Try auto login if user has credentials and refetch state
-      // if (!flag) {
-      //   user.selectedOrganization.loginRequired = false;
-      //   router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
-      // }
-    }
-  },
-);
+  if (user.selectedOrganization.loginRequired) {
+    return false;
+  }
+
+  return true;
+});
 </script>
 <template>
   <div class="p-10 flex-column flex-centered flex-1 overflow-hidden">
