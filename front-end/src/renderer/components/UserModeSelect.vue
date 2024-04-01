@@ -14,12 +14,9 @@ const user = useUserStore();
 const selectElRef = ref<HTMLSelectElement | null>(null);
 const selectedMode = ref<string>('personal');
 const addOrganizationModalShown = ref(false);
-const newOrganization = ref<Organization | null>(null);
 
 /* Handlers */
 const handleUserModeChange = async (e: Event) => {
-  newOrganization.value = null;
-
   const selectEl = e.target as HTMLSelectElement;
   const newValue = selectEl.value;
   const org = user.organizations.find(org => org.id === newValue);
@@ -45,12 +42,11 @@ const handleUserModeChange = async (e: Event) => {
   }
 };
 
-const handleSelectOrganization = async (organization: Organization) => {
+const handleAddOrganization = async (organization: Organization) => {
+  await user.refetchOrganizations();
   await user.selectOrganization(organization);
 
   if (user.selectedOrganization?.isServerActive) {
-    const org = user.organizations.find(org => org.id === organization.id);
-    if (!org) newOrganization.value = organization;
     selectedMode.value = organization.id;
   }
 };
@@ -80,17 +76,12 @@ watch(
           {{ organization.nickname }}
         </option>
       </template>
-
-      <option v-if="newOrganization" :value="newOrganization.id">
-        {{ newOrganization.nickname }}
-      </option>
-
       <option value="add_organization">Add Organization</option>
     </select>
     <AddOrganizationModal
       v-if="addOrganizationModalShown"
       v-model:show="addOrganizationModalShown"
-      @added="handleSelectOrganization"
+      @added="handleAddOrganization"
     />
   </div>
 </template>

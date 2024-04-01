@@ -20,7 +20,7 @@ import { getAccountsByPublicKey } from '@renderer/services/mirrorNodeDataService
 import { storeKeyPair as storeKey } from '@renderer/services/keyPairService';
 import { shouldSignInOrganization } from '@renderer/services/organizationCredentials';
 import { deleteOrganizationCredentials } from '@renderer/services/organizationCredentials';
-import { getOrganizations } from '@renderer/services/organizationsService';
+import { deleteOrganization, getOrganizations } from '@renderer/services/organizationsService';
 
 /* Flags */
 export const isUserLoggedIn = (user: PersonalUser | null): user is LoggedInUser => {
@@ -306,6 +306,7 @@ export const deleteOrganizationConnection = async (
   }
 
   await deleteOrganizationCredentials(organizationId, user.id);
+  await deleteOrganization(organizationId);
 };
 
 const navigateToPreviousRoute = (router: Router) => {

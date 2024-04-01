@@ -104,7 +104,7 @@ const useUserStore = defineStore('user', () => {
     organizations.value = await ush.getConnectedOrganizations(personal.value);
   };
 
-  const deleteOrganizationConnection = async (organizationId: string) => {
+  const deleteOrganization = async (organizationId: string) => {
     organizations.value = organizations.value.filter(org => org.id !== organizationId);
     await ush.deleteOrganizationConnection(organizationId, personal.value);
   };
@@ -134,7 +134,7 @@ const useUserStore = defineStore('user', () => {
     storeKey,
     selectOrganization,
     refetchUserState,
-    deleteOrganizationConnection,
+    deleteOrganization,
     refetchOrganizations,
   };
 

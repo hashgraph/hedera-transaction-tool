@@ -20,7 +20,7 @@ const handleDeleteConnection = async (organizationId: string) => {
   }
 
   await user.selectOrganization(null);
-  await user.deleteOrganizationConnection(organizationId);
+  await user.deleteOrganization(organizationId);
 
   toast.success('Connection deleted successfully');
 };
