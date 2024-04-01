@@ -102,6 +102,14 @@ const useUserStore = defineStore('user', () => {
 
   const refetchOrganizations = async () => {
     organizations.value = await ush.getConnectedOrganizations(personal.value);
+
+    const updatedSelectedOrganization = organizations.value.find(
+      o => o.id === selectedOrganization.value?.id,
+    );
+
+    if (updatedSelectedOrganization) {
+      await selectOrganization(updatedSelectedOrganization);
+    }
   };
 
   const deleteOrganization = async (organizationId: string) => {
