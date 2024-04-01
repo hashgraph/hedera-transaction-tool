@@ -6,8 +6,6 @@ import { Organization } from '@prisma/client';
 import useUserStore from '@renderer/stores/storeUser';
 
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
-import AddOrSelectModal from '@renderer/components/Organization/AddOrSelectModal.vue';
-import SelectOrganizationModal from './Organization/SelectOrganizationModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -15,9 +13,7 @@ const user = useUserStore();
 /* State */
 const selectElRef = ref<HTMLSelectElement | null>(null);
 const selectedMode = ref<string>('personal');
-const addOrSelectModalShown = ref(false);
 const addOrganizationModalShown = ref(false);
-const selectOrganizationModalShown = ref(false);
 const newOrganization = ref<Organization | null>(null);
 
 /* Handlers */
@@ -30,7 +26,7 @@ const handleUserModeChange = async (e: Event) => {
 
   if (newValue === 'add_organization') {
     selectEl.value = selectedMode.value;
-    addOrSelectModalShown.value = true;
+    addOrganizationModalShown.value = true;
   } else if (newValue === 'personal') {
     selectedMode.value = 'personal';
     await user.selectOrganization(null);
@@ -46,16 +42,6 @@ const handleUserModeChange = async (e: Event) => {
           }
         : null,
     );
-  }
-};
-
-const handleSelectedOrAdd = (value: 'select' | 'add') => {
-  addOrSelectModalShown.value = false;
-  switch (value) {
-    case 'select':
-      return (selectOrganizationModalShown.value = true);
-    case 'add':
-      return (addOrganizationModalShown.value = true);
   }
 };
 
@@ -105,16 +91,6 @@ watch(
       v-if="addOrganizationModalShown"
       v-model:show="addOrganizationModalShown"
       @added="handleSelectOrganization"
-    />
-    <SelectOrganizationModal
-      v-if="selectOrganizationModalShown"
-      v-model:show="selectOrganizationModalShown"
-      @on-selected="handleSelectOrganization"
-    />
-    <AddOrSelectModal
-      v-if="addOrSelectModalShown"
-      v-model:show="addOrSelectModalShown"
-      @on-selected="handleSelectedOrAdd"
     />
   </div>
 </template>
