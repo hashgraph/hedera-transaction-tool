@@ -48,8 +48,8 @@ model KeyPair {
 
 model Organization {
   id        String @id @default(uuid())
-  nickname  String @unique
-  serverUrl String @unique
+  nickname  String
+  serverUrl String
   key       String
 
   keyPairs                KeyPair[]
