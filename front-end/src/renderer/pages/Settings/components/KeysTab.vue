@@ -107,7 +107,7 @@ const handleDelete = async e => {
       if (isLoggedInOrganization(user.selectedOrganization)) {
         const organizationKeyToDelete = getUserKeyToDelete();
         await deleteKey(
-          user.selectedOrganization.id,
+          user.selectedOrganization.serverUrl,
           user.selectedOrganization.userId,
           organizationKeyToDelete.id,
         );

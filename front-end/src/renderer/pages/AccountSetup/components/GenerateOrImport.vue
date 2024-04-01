@@ -57,7 +57,7 @@ const handleSubmitDifferentSecretHashDecision = async (e: Event) => {
 
   for (let i = 0; i < organizationKeysToDelete.length; i++) {
     const key = organizationKeysToDelete[i];
-    await deleteKey(user.selectedOrganization.id, user.selectedOrganization.userId, key.id);
+    await deleteKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, key.id);
   }
 
   // Fetch user state
