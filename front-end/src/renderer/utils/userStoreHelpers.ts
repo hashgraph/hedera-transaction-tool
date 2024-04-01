@@ -251,8 +251,10 @@ export const afterOrganizationSelection = async (
 
   if (!isOrganizationActive(organization.value)) {
     organization.value = null;
+
     await updateKeyPairs(keyPairsProxy, user, organization.value);
     await nextTick();
+
     navigateToPreviousRoute(router);
     return;
   }
@@ -269,6 +271,8 @@ export const afterOrganizationSelection = async (
     router.push({ name: 'accountSetup' });
     return;
   }
+
+  navigateToPreviousRoute(router);
 };
 
 export const refetchUserState = async (organization: Ref<ConnectedOrganization | null>) => {
