@@ -13,6 +13,9 @@ GET http://localhost:3000/users/1
 ### Get all users
 GET http://localhost:3000/users
 
+### Get current user
+GET http://localhost:3000/users/me
+
 ### Update password for John
 PATCH http://localhost:3000/users
 content-type: application/json
