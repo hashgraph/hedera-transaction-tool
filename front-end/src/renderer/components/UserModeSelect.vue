@@ -5,8 +5,6 @@ import { Organization } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useRouter } from 'vue-router';
-
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
 import AddOrSelectModal from '@renderer/components/Organization/AddOrSelectModal.vue';
 import SelectOrganizationModal from './Organization/SelectOrganizationModal.vue';
@@ -14,31 +12,38 @@ import SelectOrganizationModal from './Organization/SelectOrganizationModal.vue'
 /* Stores */
 const user = useUserStore();
 
-/* Composables */
-const router = useRouter();
-
 /* State */
 const selectElRef = ref<HTMLSelectElement | null>(null);
 const selectedMode = ref<string>('personal');
 const addOrSelectModalShown = ref(false);
 const addOrganizationModalShown = ref(false);
 const selectOrganizationModalShown = ref(false);
+const newOrganization = ref<Organization | null>(null);
 
 /* Handlers */
 const handleUserModeChange = async (e: Event) => {
+  newOrganization.value = null;
+
   const selectEl = e.target as HTMLSelectElement;
   const newValue = selectEl.value;
+  const org = user.organizations.find(org => org.id === newValue);
 
   if (newValue === 'add_organization') {
     selectEl.value = selectedMode.value;
     addOrSelectModalShown.value = true;
   } else if (newValue === 'personal') {
-    selectedMode.value = newValue;
-    user.selectedOrganization = null;
-    router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
+    user.selectOrganization(null);
   } else {
-    selectedMode.value = newValue;
-    user.selectedOrganization = user.organizations.find(org => org.id === newValue) || null;
+    if (!org) {
+      user.selectOrganization(null);
+    } else {
+      user.selectOrganization({
+        id: org.id,
+        nickname: org.nickname,
+        serverUrl: org.serverUrl,
+        key: org.key,
+      });
+    }
   }
 };
 
@@ -54,70 +59,19 @@ const handleSelectedOrAdd = (value: 'select' | 'add') => {
 
 const handleSelectOrganization = async (organization: Organization) => {
   user.selectOrganization(organization);
-  // user.selectedOrganization = organization;
-
-  if (!user.organizations.some(org => org.id === organization.id)) {
-    // user.organizations.push(organization);
-  }
+  const org = user.organizations.find(org => org.id === organization.id);
+  if (!org) newOrganization.value = organization;
   selectedMode.value = organization.id;
 };
-
-/* Functions */
-async function afterSelectOrganization() {
-  if (user.selectedOrganization === null) return;
-
-  // if (!user.data.organizationId) {
-  //   user.data.organizationId = await getMe(user.selectedOrganization.serverUrl);
-  // }
-
-  // const flag = await shouldSignInOrganization(user.data.id, user.selectedOrganization.id);
-
-  // if (flag) {
-  //   user.data.isSigningInOrganization = true;
-  //   router.push({ name: 'organizationLogin' });
-  //   return;
-  // }
-
-  // Refetch user state
-  // const userState = await getUserState(
-  //   user.selectedOrganization.serverUrl,
-  //   user.data.organizationId!,
-  // );
-  // user.data.organizationState = userState;
-  // if (user.shouldSetupAccount) {
-  //   router.push({ name: 'accountSetup' });
-  //   return;
-  // }
-}
 
 /* Watchers */
 watch(
   () => user.selectedOrganization,
   async selectedOrganization => {
     if (!selectedOrganization) {
-      if (
-        router.currentRoute.value.name === 'organizationLogin' ||
-        router.currentRoute.value.name === 'accountSetup'
-      ) {
-        await user.refetchKeys();
-        router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
-      } else {
-        selectedMode.value = 'personal';
-      }
-      return;
+      newOrganization.value = null;
+      selectedMode.value = 'personal';
     }
-
-    // if (!active) {
-    //   // user.selectedOrganization = null in PingOrganizations
-    //   selectedMode.value = 'personal';
-    //   if (selectElRef.value) {
-    //     selectElRef.value.value = selectedMode.value;
-    //   }
-    //   user.data.isSigningInOrganization = false;
-    //   router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
-    // } else {
-    //   await afterSelectOrganization();
-    // }
   },
 );
 </script>
@@ -130,11 +84,16 @@ watch(
       @change="handleUserModeChange"
     >
       <option value="personal">Personal User</option>
-      <template v-for="organization in user.organizations" :key="organization.id">
+      <template v-for="organization in [...user.organizations]" :key="organization.id">
         <option :value="organization.id">
           {{ organization.nickname }}
         </option>
       </template>
+
+      <option v-if="newOrganization" :value="newOrganization.id">
+        {{ newOrganization.nickname }}
+      </option>
+
       <option value="add_organization">Add Organization</option>
     </select>
     <AddOrganizationModal
@@ -154,4 +113,3 @@ watch(
     />
   </div>
 </template>
-@renderer/services/organization/user
