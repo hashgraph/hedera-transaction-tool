@@ -23,15 +23,14 @@ const handleSelectedOrganizationNotActiveSubmit = async (e: Event) => {
 /* Watchers */
 watch(
   () => user.selectedOrganization,
-  active => {
-    if (!user.selectedOrganization) return;
+  selectedOrganization => {
+    if (!selectedOrganization) return;
 
-    if (!active) {
+    if (!selectedOrganization.isServerActive) {
+      inactiveSelectedOrganizationModalShown.value = true;
       throw new Error('Organization server is not reachable');
     }
-    inactiveSelectedOrganizationModalShown.value = !active;
   },
-  { immediate: true },
 );
 </script>
 <template>
