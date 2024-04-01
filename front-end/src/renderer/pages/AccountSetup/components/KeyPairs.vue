@@ -3,7 +3,6 @@ import { onBeforeMount, onUpdated, ref } from 'vue';
 
 import { Prisma } from '@prisma/client';
 
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
@@ -12,18 +11,17 @@ import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import {
   restorePrivateKey,
-  hashRecoveryPhrase,
   // getStoredKeyPairs,
 } from '@renderer/services/keyPairService';
+import { uploadKey } from '@renderer/services/organization';
 
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 import { getWidthOfElementWithText } from '@renderer/utils/dom';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
-import { getUserState, uploadKey } from '@renderer/services/organization';
 
 /* Stores */
-const keyPairsStore = useKeyPairsStore();
 const user = useUserStore();
 
 /* Composables */
@@ -42,16 +40,19 @@ const keys = ref<{ publicKey: string; privateKey: string; index: number }[]>([])
 
 const userPasswordModalShow = ref(false);
 const saveAfterModalClose = ref(false);
-const userPassword = ref(user.data.password);
+const userPassword = ref(isUserLoggedIn(user.personal) ? user.personal.password : null);
 
 /* Misc Functions */
-const keyExists = (publicKey: string) =>
-  keyPairsStore.keyPairs.some(kp => kp.public_key === publicKey);
+const keyExists = (publicKey: string) => user.keyPairs.some(kp => kp.public_key === publicKey);
 
 const addKeyToRestored = async (index: number) => {
+  if (!user.recoveryPhrase) {
+    throw new Error('Recovery phrase is not set');
+  }
+
   try {
     const restoredPrivateKey = await restorePrivateKey(
-      keyPairsStore.recoveryPhraseWords,
+      user.recoveryPhrase.words,
       '',
       index,
       'ED25519',
@@ -68,18 +69,19 @@ const addKeyToRestored = async (index: number) => {
 
 const restoreKeys = async () => {
   if (
-    user.data.activeOrganization &&
-    user.data.organizationState &&
-    user.data.organizationState.secretHashes.length > 0
+    isLoggedInOrganization(user.selectedOrganization) &&
+    user.selectedOrganization.secretHashes.length > 0
   ) {
-    const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
+    if (!user.recoveryPhrase) {
+      throw new Error('Recovery phrase is not set');
+    }
 
-    for (let i = 0; i < user.data.organizationState.organizationKeys.length; i++) {
-      const key = user.data.organizationState.organizationKeys[i];
+    for (let i = 0; i < user.selectedOrganization.userKeys.length; i++) {
+      const key = user.selectedOrganization.userKeys[i];
 
       if (keyExists(key.publicKey)) continue;
 
-      if (key.mnemonicHash === secretHash && key.index !== undefined) {
+      if (key.mnemonicHash === user.recoveryPhrase.hash && key.index !== undefined) {
         await addKeyToRestored(key.index);
       }
     }
@@ -94,59 +96,66 @@ const handleSave = async () => {
     throw Error('No key pairs to save');
   }
 
-  if (userPassword.value.length === 0) {
+  if (!isUserLoggedIn(user.personal)) {
+    throw Error('User is logged in');
+  }
+
+  if (!user.recoveryPhrase) {
+    throw Error('Recovery phrase is not set');
+  }
+
+  if (!userPassword.value || userPassword.value === '') {
     saveAfterModalClose.value = true;
     userPasswordModalShow.value = true;
     return;
   }
 
   try {
-    const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
-
     for (let i = 0; i < keys.value.length; i++) {
       const key = keys.value[i];
 
       const keyPair: Prisma.KeyPairUncheckedCreateInput = {
-        user_id: user.data.id,
+        user_id: user.personal.id,
         index: key.index,
         public_key: key.publicKey,
         private_key: key.privateKey,
         type: 'ED25519',
-        organization_id: user.data.activeOrganization?.id || null,
-        secret_hash: secretHash,
+        organization_id: user.selectedOrganization?.id || null,
+        secret_hash: user.recoveryPhrase.hash,
         nickname: nickname.value || null,
       };
 
-      if (user.data.activeOrganization && user.data.organizationState && user.data.organizationId) {
-        if (user.data.organizationState.organizationKeys.some(k => k.publicKey === key.publicKey)) {
+      if (isLoggedInOrganization(user.selectedOrganization)) {
+        if (user.selectedOrganization.userKeys.some(k => k.publicKey === key.publicKey)) {
           throw new Error('Key pair already exists');
         }
 
-        await uploadKey(user.data.activeOrganization.id, user.data.organizationId, {
+        await uploadKey(user.selectedOrganization.id, user.selectedOrganization.userId, {
           publicKey: key.publicKey,
           index: key.index,
-          mnemonicHash: secretHash,
+          mnemonicHash: user.recoveryPhrase.hash,
         });
         keyPair.nickname = i === 0 ? keyPair.nickname : null;
       }
 
-      await keyPairsStore.storeKeyPair(keyPair, userPassword.value);
-      user.data.secretHashes.push(secretHash);
+      await user.storeKey(keyPair, userPassword.value);
+      user.secretHashes.push(user.recoveryPhrase.hash);
     }
 
-    if (user.data.activeOrganization && user.data.organizationId) {
-      const userState = await getUserState(
-        user.data.activeOrganization.serverUrl,
-        user.data.organizationId,
-      );
-      user.data.organizationState = userState;
+    if (isLoggedInOrganization(user.selectedOrganization)) {
+      // Fetch user state
+      // const userState = await getUserState(
+      //   user.data.activeOrganization.serverUrl,
+      //   user.data.organizationId,
+      // );
+      // user.data.organizationState = userState;
     }
 
     toast.success(`Key Pair${keys.value.length > 1 ? 's' : ''} saved successfully`, {
       position: 'bottom-right',
     });
 
-    user.data.password = '';
+    user.personal.password = '';
     router.push({ name: 'settingsKeys' });
   } catch (err: any) {
     let message = `Failed to store key pair${keys.value.length > 1 ? 's' : ''}`;
@@ -226,7 +235,7 @@ defineExpose({
         <p>{{ keys.length - 1 }} more will be restored</p>
       </div>
     </template>
-    <template v-if="user.data.activeOrganization">
+    <template v-if="user.selectedOrganization">
       <hr class="my-6" />
       <div class="alert alert-secondary d-flex align-items-start mb-0" role="alert">
         <i class="bi bi-exclamation-triangle text-warning me-3"></i>

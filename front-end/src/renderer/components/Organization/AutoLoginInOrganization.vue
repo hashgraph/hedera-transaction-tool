@@ -11,6 +11,8 @@ import {
 } from '@renderer/services/organizationCredentials';
 import { ping } from '@renderer/services/organization';
 
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
@@ -26,7 +28,7 @@ const loginTriedForOrganizations = ref<Organization[]>([]);
 
 /* Handlers */
 const handleAutoLogin = async (password: string) => {
-  if (!user.personal?.isLoggedIn) {
+  if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
 
@@ -47,8 +49,8 @@ const handleSubmitFailedOrganizations = (e: Event) => {
 
 /* Functions */
 async function openPasswordModalIfRequired() {
-  if (user.data.isLoggedIn && user.data.id.length > 0) {
-    const organizationCredentialsToUpdate = await getOrganizationsToSignIn(user.data.id);
+  if (isUserLoggedIn(user.personal)) {
+    const organizationCredentialsToUpdate = await getOrganizationsToSignIn(user.personal.id);
 
     const activeOrganizations: Organization[] = [];
 
@@ -65,7 +67,7 @@ async function openPasswordModalIfRequired() {
 
 /* Watchers */
 watch(
-  () => user.data.id,
+  () => user.personal,
   async () => {
     await openPasswordModalIfRequired();
   },

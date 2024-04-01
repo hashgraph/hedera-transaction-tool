@@ -33,7 +33,9 @@ import {
 import { openExternal } from '@renderer/services/electronUtilsService';
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 import { getDraft, deleteDraft } from '@renderer/services/transactionDraftsService';
+import { flattenKeyList } from '@renderer/services/keyPairService';
 
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 import { ableToSign, stringifyHbar } from '@renderer/utils/sdk';
 import { getStatusFromCode, getTransactionType } from '@renderer/utils/transactions';
 
@@ -42,7 +44,6 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
-import { flattenKeyList } from '@renderer/services/keyPairService';
 
 /* Props */
 const props = defineProps<{
@@ -124,7 +125,7 @@ async function handleSignTransaction(e: Event) {
 
   if (!props.transactionBytes) throw new Error('Transaction not provided');
 
-  if (!user.personal?.isLoggedIn) {
+  if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
 
@@ -221,7 +222,7 @@ async function process(requiredKey: Key, _chunkSize?: number, _chunkInterval?: n
       throw new Error('Transaction not provided');
     }
 
-    if (!user.personal?.isLoggedIn) {
+    if (!isUserLoggedIn(user.personal)) {
       throw new Error('User is not logged in');
     }
 
@@ -283,7 +284,7 @@ async function executeTransaction(transactionBytes: Uint8Array) {
 
   if (!type.value || !executedTransaction) throw new Error('Cannot save transaction');
 
-  if (!user.personal?.isLoggedIn) {
+  if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
 
@@ -317,7 +318,7 @@ async function chunkFileTransactionForOrganization(
 ) {
   if (!transaction.contents) return [transaction.toBytes()];
 
-  if (!user.personal?.isLoggedIn) {
+  if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
 
@@ -391,7 +392,7 @@ async function executeFileTransactions(
   transaction: FileUpdateTransaction | FileAppendTransaction,
   chunks: Uint8Array[],
 ) {
-  if (!user.personal?.isLoggedIn) {
+  if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
 

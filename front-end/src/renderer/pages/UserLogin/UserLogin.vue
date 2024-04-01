@@ -14,7 +14,6 @@ import {
   resetDataLocal,
   getUsersCount,
 } from '@renderer/services/userService';
-import { getSecretHashes } from '@renderer/services/keyPairService';
 
 import { isEmail } from '@renderer/utils/validator';
 
@@ -23,6 +22,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 /* Stores */
 const user = useUserStore();
@@ -79,9 +79,12 @@ const handleOnFormSubmit = async (event: Event) => {
       inputPassword.value,
       keepLoggedIn.value,
     );
-    user.login(id, email, []);
+    await user.login(id, email);
 
-    user.data.password = inputPassword.value;
+    if (isUserLoggedIn(user.personal)) {
+      user.personal.password = inputPassword.value;
+    }
+
     router.push({ name: 'accountSetup' });
   } else if (!shouldRegister.value) {
     let userData: { id: string; email: string } | null = null;
@@ -101,11 +104,12 @@ const handleOnFormSubmit = async (event: Event) => {
     }
 
     if (userData) {
-      const secretHashes = await getSecretHashes(userData.id, null);
-      user.login(userData.id, userData.email, secretHashes);
+      await user.login(userData.id, userData.email);
 
-      if (secretHashes.length === 0) {
-        user.data.password = inputPassword.value;
+      if (user.secretHashes.length === 0) {
+        if (isUserLoggedIn(user.personal)) {
+          user.personal.password = inputPassword.value;
+        }
         router.push({ name: 'accountSetup' });
       } else {
         router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
@@ -116,11 +120,15 @@ const handleOnFormSubmit = async (event: Event) => {
 
 const handleResetData = async () => {
   await resetDataLocal();
+
   toast.success('User data has been reset', { position: 'bottom-right' });
+
   inputEmailInvalid.value = false;
   inputPasswordInvalid.value = false;
   inputConfirmPasswordInvalid.value = false;
+
   await checkShouldRegister();
+
   createTooltips();
   setTooltipContent();
   isResetDataModalShown.value = false;

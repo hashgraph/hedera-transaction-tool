@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { Prisma } from '@prisma/client';
+import { FileId } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -10,11 +12,10 @@ import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import { add } from '@renderer/services/filesService';
 
 import { isAccountId, isFileId } from '@renderer/utils/validator';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { Prisma } from '@prisma/client';
-import { FileId } from '@hashgraph/sdk';
 
 /* Stores */
 const user = useUserStore();
@@ -34,8 +35,8 @@ const handleLinkFile = async e => {
 
   if (isAccountId(fileId.value)) {
     try {
-      if (!user.data.isLoggedIn) {
-        throw new Error('User not logged in');
+      if (!isUserLoggedIn(user.personal)) {
+        throw new Error('User is not logged in');
       }
 
       if (!isFileId(fileId.value)) {
@@ -44,7 +45,7 @@ const handleLinkFile = async e => {
 
       const file: Prisma.HederaFileUncheckedCreateInput = {
         file_id: FileId.fromString(fileId.value).toString(),
-        user_id: user.data.id,
+        user_id: user.personal.id,
         nickname: nickname.value,
         description: description.value,
       };

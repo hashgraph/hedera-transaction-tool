@@ -3,6 +3,8 @@ import { computed, onMounted, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
+import { isOrganizationActive } from '@renderer/utils/userStoreHelpers';
+
 import AppTabs, { TabItem } from '@renderer/components/ui/AppTabs.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionSelectionModal from '@renderer/components/TransactionSelectionModal.vue';
@@ -31,7 +33,7 @@ const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title
 
 /* Function */
 function setTabItems() {
-  if (user.data.activeOrganization && user.data.organizationServerActive) {
+  if (isOrganizationActive(user.selectedOrganization)) {
     const currentTabTitle = activeTabTitle.value;
     tabItems.value = [...organizationOnlyTabs, ...sharedTabs];
     const newIndex = tabItems.value.findIndex(tab => tab.title === currentTabTitle);
@@ -50,7 +52,7 @@ onMounted(() => {
 
 /* Watchers */
 watch(
-  () => user.data.organizationServerActive,
+  () => user.selectedOrganization,
   () => {
     setTabItems();
   },

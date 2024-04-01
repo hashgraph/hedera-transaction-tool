@@ -2,7 +2,6 @@
 import { onBeforeMount, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppStepper from '@renderer/components/ui/AppStepper.vue';
@@ -13,7 +12,6 @@ import NewPassword from './components/NewPassword.vue';
 
 /* Stores */
 const user = useUserStore();
-const keyPairs = useKeyPairsStore();
 
 /* State */
 const keyPairsComponent = ref<typeof KeyPairs | null>(null);
@@ -50,13 +48,11 @@ const handleNext = async () => {
 
 /* Hooks */
 onBeforeMount(() => {
-  if (!user.data.activeOrganization) {
+  if (!user.selectedOrganization) {
     step.value.previous = 'recoveryPhrase';
     step.value.current = 'recoveryPhrase';
     stepperItems.value.shift();
-  }
-
-  if (!user.data.organizationState?.passwordTemporary) {
+  } else if (user.selectedOrganization.loginRequired) {
     step.value.previous = 'recoveryPhrase';
     step.value.current = 'recoveryPhrase';
   }
@@ -119,7 +115,7 @@ onBeforeMount(() => {
           >
         </div>
         <AppButton
-          v-if="keyPairs.recoveryPhraseWords.length > 0 && step.current !== 'recoveryPhrase'"
+          v-if="user.recoveryPhrase && step.current !== 'recoveryPhrase'"
           color="primary"
           @click="handleNext"
           class="ms-3 mt-6"

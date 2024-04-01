@@ -13,6 +13,8 @@ import {
   openTransactionInHashscan,
 } from '@renderer/utils/transactions';
 
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
@@ -58,9 +60,13 @@ function getOpositeDirection() {
 }
 
 function createFindArgs(): Prisma.TransactionFindManyArgs {
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
   return {
     where: {
-      user_id: user.data.id,
+      user_id: user.personal.id,
     },
     orderBy: {
       [sort.field]: sort.direction,
@@ -71,9 +77,13 @@ function createFindArgs(): Prisma.TransactionFindManyArgs {
 }
 
 async function fetchTransactions() {
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
   isLoading.value = true;
   try {
-    totalItems.value = await getTransactionsCount(user.data.id);
+    totalItems.value = await getTransactionsCount(user.personal.id);
     transactions.value = await getTransactions(createFindArgs());
     handleSort(sort.field, sort.direction);
   } finally {

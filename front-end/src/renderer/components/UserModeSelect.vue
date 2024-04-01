@@ -4,7 +4,6 @@ import { ref, watch } from 'vue';
 import { Organization } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import { useRouter } from 'vue-router';
 
@@ -17,7 +16,6 @@ import SelectOrganizationModal from './Organization/SelectOrganizationModal.vue'
 
 /* Stores */
 const user = useUserStore();
-const keyPairs = useKeyPairsStore();
 
 /* Composables */
 const router = useRouter();
@@ -84,27 +82,28 @@ async function afterSelectOrganization() {
     return;
   }
 
-  const userState = await getUserState(
-    user.data.activeOrganization.serverUrl,
-    user.data.organizationId!,
-  );
-  user.data.organizationState = userState;
-  if (user.shouldSetupAccount(keyPairs.keyPairs)) {
-    router.push({ name: 'accountSetup' });
-    return;
-  }
+  // Refetch user state
+  // const userState = await getUserState(
+  //   user.data.activeOrganization.serverUrl,
+  //   user.data.organizationId!,
+  // );
+  // user.data.organizationState = userState;
+  // if (user.shouldSetupAccount) {
+  //   router.push({ name: 'accountSetup' });
+  //   return;
+  // }
 }
 
 /* Watchers */
 watch(
-  () => user.data.organizationServerActive,
-  async active => {
-    if (!user.data.activeOrganization) {
+  () => user.selectedOrganization,
+  async selectedOrganization => {
+    if (!selectedOrganization) {
       if (
         router.currentRoute.value.name === 'organizationLogin' ||
         router.currentRoute.value.name === 'accountSetup'
       ) {
-        await keyPairs.refetch();
+        await user.refetchKeys();
         router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
       } else {
         selectedMode.value = 'personal';

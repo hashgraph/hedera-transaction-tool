@@ -12,6 +12,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 import { getAll } from '@renderer/services/accountsService';
 
 import { isAccountId } from '@renderer/utils/validator';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -70,7 +71,7 @@ const handleInsert = async (e: Event) => {
 
 /* Hooks */
 onMounted(async () => {
-  if (!user.personal?.isLoggedIn) {
+  if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
 

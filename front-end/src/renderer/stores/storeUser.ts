@@ -1,7 +1,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 
-import { KeyPair } from '@prisma/client';
+import { KeyPair, Prisma } from '@prisma/client';
 
 import {
   PersonalUser,
@@ -42,6 +42,7 @@ const useUserStore = defineStore('user', () => {
   /* Actions */
   const login = async (id: string, email: string) => {
     personal.value = ush.createPersonalUser(id, email);
+    // Get secret hashes
   };
 
   const logout = () => {
@@ -58,6 +59,11 @@ const useUserStore = defineStore('user', () => {
       const newKeys = await ush.getLocalKeyPairs(personal.value, selectedOrganization.value);
       keyPairs.push(...newKeys);
     }
+  };
+
+  const storeKey = async (keyPair: Prisma.KeyPairUncheckedCreateInput, password: string) => {
+    await ush.storeKeyPair(keyPair, secretHashes.value, password);
+    await refetchKeys();
   };
 
   /* Watchers */
@@ -80,6 +86,7 @@ const useUserStore = defineStore('user', () => {
     logout,
     setRecoveryPhrase,
     refetchKeys,
+    storeKey,
   };
 
   return exports;

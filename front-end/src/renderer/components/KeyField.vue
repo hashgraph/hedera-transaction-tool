@@ -135,7 +135,7 @@ watch(currentTab, tab => {
 });
 
 watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) => {
-  if (!user.personal?.isLoggedIn) {
+  if (!ush.isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
 

@@ -5,6 +5,8 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { comparePasswords } from '@renderer/services/userService';
 
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -32,8 +34,11 @@ const password = ref('');
 /* Handlers */
 const handlePasswordEntered = async (e: Event) => {
   e.preventDefault();
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
 
-  const isPasswordCorrect = await comparePasswords(user.data.id, password.value);
+  const isPasswordCorrect = await comparePasswords(user.personal.id, password.value);
 
   if (isPasswordCorrect) {
     emit('passwordEntered', password.value);

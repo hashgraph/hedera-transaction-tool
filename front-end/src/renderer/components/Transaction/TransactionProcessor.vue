@@ -17,6 +17,7 @@ import { flattenKeyList } from '@renderer/services/keyPairService';
 import { deleteDraft, getDraft } from '@renderer/services/transactionDraftsService';
 
 import { ableToSign, stringifyHbar, getStatusFromCode, getTransactionType } from '@renderer/utils';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -96,7 +97,7 @@ async function handleSignTransaction(e: Event) {
 
   if (!props.transactionBytes) throw new Error('Transaction not provided');
 
-  if (!user.personal?.isLoggedIn) {
+  if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
 
@@ -144,7 +145,7 @@ async function process(requiredKey: Key) {
       throw new Error('Transaction not provided');
     }
 
-    if (!user.personal?.isLoggedIn) {
+    if (!isUserLoggedIn(user.personal)) {
       throw new Error('User is not logged in');
     }
 
@@ -161,7 +162,7 @@ async function process(requiredKey: Key) {
 }
 
 async function executeTransaction(transactionBytes: Uint8Array) {
-  if (!user.personal?.isLoggedIn) {
+  if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
 

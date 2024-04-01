@@ -3,13 +3,14 @@ import { ref, watch } from 'vue';
 import { PublicKey } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
 
-import { deleteKey, getUserState } from '@renderer/services/organization';
+import { deleteKey } from '@renderer/services/organization';
 import { decryptPrivateKey, deleteKeyPair } from '@renderer/services/keyPairService';
+
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -17,7 +18,6 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Stores */
-const keyPairsStore = useKeyPairsStore();
 const user = useUserStore();
 
 /* Composables */
@@ -54,8 +54,8 @@ const handleDecrypt = async e => {
   e.preventDefault();
 
   try {
-    if (!user.data.isLoggedIn) {
-      throw Error('No user selected');
+    if (!isUserLoggedIn(user.personal)) {
+      throw Error('User is not logged in');
     }
 
     const keyFromDecrypted = decryptedKeys.value.find(
@@ -64,7 +64,7 @@ const handleDecrypt = async e => {
 
     if (!keyFromDecrypted) {
       const decryptedKey = await decryptPrivateKey(
-        user.data.id,
+        user.personal.id,
         userPassword.value,
         publicKeysPrivateKeyToDecrypt.value,
       );
@@ -99,30 +99,31 @@ const handleDelete = async e => {
   e.preventDefault();
 
   try {
-    if (!user.data.isLoggedIn) {
-      throw Error('No user selected');
+    if (!isUserLoggedIn(user.personal)) {
+      throw Error('User is not logged in');
     }
 
     if (keyPairIdToDelete.value) {
-      if (user.data.activeOrganization && user.data.organizationState && user.data.organizationId) {
+      if (isLoggedInOrganization(user.selectedOrganization)) {
         const organizationKeyToDelete = getUserKeyToDelete();
         await deleteKey(
-          user.data.activeOrganization.id,
-          user.data.organizationId,
+          user.selectedOrganization.id,
+          user.selectedOrganization.userId,
           organizationKeyToDelete.id,
         );
-        const userState = await getUserState(
-          user.data.activeOrganization.serverUrl,
-          user.data.organizationId,
-        );
-        user.data.organizationState = userState;
+        // Refetch user state
+        // const userState = await getUserState(
+        //   user.selectedOrganization.serverUrl,
+        //   user.selectedOrganization.userId,
+        // );
+        // user.data.organizationState = userState;
       }
 
       await deleteKeyPair(keyPairIdToDelete.value);
-      await keyPairsStore.refetch();
+      await user.refetchKeys();
       isDeleteModalShown.value = false;
 
-      if (user.shouldSetupAccount(keyPairsStore.keyPairs)) {
+      if (user.shouldSetupAccount) {
         router.push({ name: 'accountSetup' });
       }
     }
@@ -138,12 +139,16 @@ const handleCopy = (text: string, message: string) => {
 
 /* Functions */
 function getUserKeyToDelete() {
-  const localKey = keyPairsStore.keyPairs.find(kp => kp.id === keyPairIdToDelete.value);
+  const localKey = user.keyPairs.find(kp => kp.id === keyPairIdToDelete.value);
   if (!localKey) {
     throw Error('Local key not found');
   }
 
-  const organiationKey = user.data.organizationState?.organizationKeys.find(key => {
+  if (!isLoggedInOrganization(user.selectedOrganization)) {
+    throw Error('User is not logged in the organization');
+  }
+
+  const organiationKey = user.selectedOrganization.userKeys.find(key => {
     if (localKey.secret_hash) {
       return key.mnemonicHash === localKey.secret_hash && key.publicKey === localKey.public_key;
     } else {
@@ -205,7 +210,7 @@ watch(isDeleteModalShown, newVal => {
           </thead>
           <tbody class="text-secondary">
             <template
-              v-for="keyPair in keyPairsStore.keyPairs.filter(item => {
+              v-for="keyPair in user.keyPairs.filter(item => {
                 switch (currentTab) {
                   case Tabs.ALL:
                     return true;
@@ -229,9 +234,8 @@ watch(isDeleteModalShown, newVal => {
                 </td>
                 <td>
                   {{
-                    keyPairsStore.publicKeyToAccounts.find(
-                      acc => acc.publicKey === keyPair.public_key,
-                    )?.accounts[0]?.account || 'N/A'
+                    user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.public_key)
+                      ?.accounts[0]?.account || 'N/A'
                   }}
                 </td>
                 <td>
@@ -339,8 +343,8 @@ watch(isDeleteModalShown, newVal => {
             <h3 class="text-center text-title text-bold mt-3">Delete key pair</h3>
             <p
               v-if="
-                keyPairsStore.keyPairs.filter(item => item.secret_hash != null).length === 1 &&
-                keyPairsStore.keyPairs
+                user.keyPairs.filter(item => item.secret_hash != null).length === 1 &&
+                user.keyPairs
                   .filter(item => item.secret_hash != null)
                   .map(k => k.id)
                   .includes(keyPairIdToDelete || '')

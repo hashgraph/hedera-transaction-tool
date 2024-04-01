@@ -15,6 +15,7 @@ import {
 } from '@renderer/services/transactionDraftsService';
 
 import { getTransactionFromBytes } from '@renderer/utils/transactions';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -44,10 +45,13 @@ const isSaveDraftModalShown = ref(false);
 /* Handlers */
 const saveDraft = async () => {
   if (!props.getTransactionBytes) return;
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
 
   const transactionBytes = props.getTransactionBytes();
 
-  const { id } = await addDraft(user.data.id, transactionBytes);
+  const { id } = await addDraft(user.personal.id, transactionBytes);
   props.handleDraftAdded && props.handleDraftAdded(id);
 
   toast.success('Draft saved', { position: 'bottom-right' });

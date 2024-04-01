@@ -2,10 +2,10 @@
 import { computed, onBeforeMount, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
-import { hashRecoveryPhrase } from '@renderer/services/keyPairService';
-import { deleteKey, getUserState } from '@renderer/services/organization';
+import { deleteKey } from '@renderer/services/organization';
+
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppTabs, { TabItem } from '@renderer/components/ui/AppTabs.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -21,7 +21,6 @@ const props = defineProps<{
 
 /* Stores */
 const importRef = ref<InstanceType<typeof Import> | null>(null);
-const keyPairsStore = useKeyPairsStore();
 const user = useUserStore();
 
 /* State */
@@ -34,12 +33,14 @@ const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title
 
 /* Handlers */
 const handleNextWithValidation = async () => {
-  const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
+  if (!user.recoveryPhrase) {
+    throw new Error('Recovery phrase is not set');
+  }
 
   if (
-    user.data.organizationState?.secretHashes &&
-    user.data.organizationState.secretHashes.length > 0 &&
-    !user.data.organizationState.secretHashes.includes(secretHash)
+    isLoggedInOrganization(user.selectedOrganization) &&
+    user.selectedOrganization.secretHashes.length > 0 &&
+    !user.selectedOrganization.secretHashes.includes(user.recoveryPhrase.hash)
   ) {
     differentSecretHashModalShown.value = true;
   } else {
@@ -50,37 +51,32 @@ const handleNextWithValidation = async () => {
 const handleSubmitDifferentSecretHashDecision = async (e: Event) => {
   e.preventDefault();
 
-  if (!user.data.organizationState || !user.data.activeOrganization || !user.data.organizationId)
-    return;
+  if (!isLoggedInOrganization(user.selectedOrganization)) return;
 
-  const organizationKeysToDelete = user.data.organizationState.organizationKeys.filter(
-    k => k.mnemonicHash,
-  );
+  const organizationKeysToDelete = user.selectedOrganization.userKeys.filter(k => k.mnemonicHash);
+
   for (let i = 0; i < organizationKeysToDelete.length; i++) {
     const key = organizationKeysToDelete[i];
-    await deleteKey(user.data.activeOrganization.id, user.data.organizationId, key.id);
+    await deleteKey(user.selectedOrganization.id, user.selectedOrganization.userId, key.id);
   }
 
-  user.data.organizationState = await getUserState(
-    user.data.activeOrganization.serverUrl,
-    user.data.organizationId,
-  );
+  // Fetch user state
+  // user.data.organizationState = await getUserState(
+  //   user.data.activeOrganization.serverUrl,
+  //   user.data.organizationId,
+  // );
 
   props.handleNext();
 };
 
 /* Hooks */
 onBeforeMount(() => {
-  if (user.data.organizationServerActive) {
-    if (
-      user.data.organizationState?.secretHashes &&
-      user.data.organizationState?.secretHashes.length > 0
-    ) {
-      tabItems.value.shift();
-    }
-  } else {
-    user.data.secretHashes.length > 0 && tabItems.value.shift();
+  if (!isLoggedInOrganization(user.selectedOrganization)) {
+    user.secretHashes.length > 0 && tabItems.value.shift();
+  } else if (user.selectedOrganization.secretHashes.length > 0) {
+    tabItems.value.shift();
   }
+
   activeTabIndex.value = tabItems.value.findIndex(i => i.title === 'Import Existing');
 });
 </script>
@@ -97,13 +93,10 @@ onBeforeMount(() => {
       <Generate :handle-next="handleNext" />
     </template>
     <template v-else-if="activeTabTitle === 'Import Existing'">
-      <Import ref="importRef" :secret-hashes="user.data.secretHashes" />
+      <Import ref="importRef" :secret-hashes="user.secretHashes" />
       <div class="flex-between-centered mt-6">
         <AppButton color="borderless" @click="importRef?.clearWords()">Clear</AppButton>
-        <AppButton
-          v-if="keyPairsStore.recoveryPhraseWords.length > 0"
-          color="primary"
-          @click="handleNextWithValidation"
+        <AppButton v-if="user.recoveryPhrase" color="primary" @click="handleNextWithValidation"
           >Next</AppButton
         >
       </div>

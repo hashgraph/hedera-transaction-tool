@@ -8,6 +8,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { deleteComplexKey, getComplexKeys } from '@renderer/services/complexKeysService';
 
 import { decodeKeyList } from '@renderer/utils/sdk';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -53,7 +54,7 @@ const handleTrashClick = (e, id: string) => {
 const handleDeleteSavedKey = async e => {
   e.preventDefault();
 
-  if (!user.personal?.isLoggedIn) {
+  if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
   if (complexKeyToDeleteId.value) {
@@ -76,7 +77,7 @@ const handleDone = (e: Event) => {
 
 /* Hooks */
 onBeforeMount(async () => {
-  if (!user.personal?.isLoggedIn) {
+  if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
 

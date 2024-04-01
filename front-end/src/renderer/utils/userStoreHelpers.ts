@@ -1,7 +1,9 @@
-import { KeyPair, Organization } from '@prisma/client';
+import { KeyPair, Organization, Prisma } from '@prisma/client';
 import {
   ConnectedOrganization,
   LoggedInOrganization,
+  LoggedOutOrganization,
+  LoggedInUser,
   PersonalUser,
   PublicKeyAccounts,
   RecoveryPhrase,
@@ -9,11 +11,22 @@ import {
 
 import { getKeyPairs, hashRecoveryPhrase } from '@renderer/services/keyPairService';
 import { getAccountsByPublicKey } from '@renderer/services/mirrorNodeDataService';
+import { storeKeyPair as storeKey } from '@renderer/services/keyPairService';
 import { Mnemonic } from '@hashgraph/sdk';
 
 /* Flags */
+export const isUserLoggedIn = (user: PersonalUser | null): user is LoggedInUser => {
+  return user !== null && user.isLoggedIn;
+};
+
 export const isOrganizationActive = (organization: ConnectedOrganization | null): boolean => {
   return organization !== null && organization.isServerActive;
+};
+
+export const isLoggedOutOrganization = (
+  organization: ConnectedOrganization | null,
+): organization is Organization & LoggedOutOrganization => {
+  return organization !== null && organization.isServerActive && organization.loginRequired;
 };
 
 export const isLoggedInOrganization = (
@@ -66,6 +79,22 @@ export const createRecoveryPhrase = async (words: string[]): Promise<RecoveryPhr
   } catch {
     throw Error('Invalid recovery phrase');
   }
+};
+
+export const storeKeyPair = async (
+  keyPair: Prisma.KeyPairUncheckedCreateInput,
+  secretHashes: string[],
+  password: string,
+) => {
+  if (
+    secretHashes.length > 0 &&
+    keyPair.secret_hash &&
+    !secretHashes.includes(keyPair.secret_hash)
+  ) {
+    throw Error('Different recovery phrase is used!');
+  }
+
+  await storeKey(keyPair, password);
 };
 
 /* Fetching */

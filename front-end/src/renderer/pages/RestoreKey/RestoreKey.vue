@@ -3,7 +3,6 @@ import { onUnmounted, ref, watch } from 'vue';
 import { Mnemonic } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
@@ -20,7 +19,6 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import Import from '@renderer/pages/AccountSetup/components/Import.vue';
 
 /* Stores */
-const keyPairsStore = useKeyPairsStore();
 const user = useUserStore();
 
 /* Composables */
@@ -139,7 +137,7 @@ const handleSaveKey = async e => {
         });
       }
 
-      await keyPairsStore.storeKeyPair(keyPair, password.value);
+      await user.storeKey(keyPair, password.value);
 
       if (isLoggedInOrganization(user.selectedOrganization)) {
         const userState = await getUserState(

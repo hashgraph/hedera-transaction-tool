@@ -6,6 +6,8 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { getAll } from '@renderer/services/accountsService';
 
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+
 /* Props */
 const props = defineProps<{
   accountId: string;
@@ -38,7 +40,7 @@ const handleAccountIdChange = (e: Event) => {
 
 /* Hooks */
 onBeforeMount(async () => {
-  if (!user.personal?.isLoggedIn) {
+  if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
 

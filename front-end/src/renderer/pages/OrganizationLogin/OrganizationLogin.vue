@@ -2,16 +2,21 @@
 import { onMounted, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
-import { getUserState, login } from '@renderer/services/organization';
+import { login } from '@renderer/services/organization';
 import {
   addOrganizationCredentials,
   shouldSignInOrganization,
 } from '@renderer/services/organizationCredentials';
+
+import {
+  isLoggedOutOrganization,
+  isOrganizationActive,
+  isUserLoggedIn,
+} from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -19,7 +24,6 @@ import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
 
 /* Stores */
 const user = useUserStore();
-const keyPairs = useKeyPairsStore();
 
 /* Composables */
 const router = useRouter();
@@ -41,8 +45,8 @@ const loginAfterPassword = ref(false);
 const handleOnFormSubmit = async (e: Event) => {
   e.preventDefault();
 
-  if (!user.data.activeOrganization) {
-    throw new Error("Active organization doesn't exist.");
+  if (!isOrganizationActive(user.selectedOrganization)) {
+    throw new Error('Please select active organization');
   }
 
   if (userPassword.value.length === 0) {
@@ -54,41 +58,42 @@ const handleOnFormSubmit = async (e: Event) => {
 };
 
 const handleLogin = async () => {
-  if (!user.data.activeOrganization) {
-    throw new Error("Active organization doesn't exist.");
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
+  if (!isLoggedOutOrganization(user.selectedOrganization)) {
+    throw new Error('Please select active organization');
   }
 
   try {
-    const { id } = await login(
-      user.data.activeOrganization.serverUrl,
-      inputEmail.value,
-      inputPassword.value,
-    );
+    await login(user.selectedOrganization.serverUrl, inputEmail.value, inputPassword.value);
 
     await addOrganizationCredentials(
       inputEmail.value,
       inputPassword.value,
-      user.data.activeOrganization.id,
-      user.data.id,
+      user.selectedOrganization.id,
+      user.personal.id,
       userPassword.value,
       true,
     );
 
-    user.data.organizationId = id;
-    user.data.isSigningInOrganization = false;
-
     toast.success('Successfully signed in');
 
-    try {
-      const userState = await getUserState(user.data.activeOrganization.serverUrl, id);
-      user.data.organizationState = userState;
-      if (user.shouldSetupAccount(keyPairs.keyPairs)) {
-        router.push({ name: 'accountSetup' });
-        return;
-      }
-    } catch {
-      router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
-    }
+    // Refetch user state
+    // user.selectedOrganization.loginRequired = false;
+    // user.selectedOrganization.userId = id;
+
+    // try {
+    //   const userState = await getUserState(user.data.activeOrganization.serverUrl, id);
+    //   user.data.organizationState = userState;
+    //   if (user.shouldSetupAccount(keyPairs.keyPairs)) {
+    //     router.push({ name: 'accountSetup' });
+    //     return;
+    //   }
+    // } catch {
+    //   router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
+    // }
   } catch (error: any) {
     inputEmailInvalid.value = true;
     inputPasswordInvalid.value = true;
@@ -101,7 +106,7 @@ const handleForgotPassword = async () => {};
 
 /* Hooks */
 onMounted(() => {
-  if (!user.data.activeOrganization) {
+  if (!user.selectedOrganization) {
     router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
   }
 });
@@ -113,15 +118,19 @@ watch([inputEmail, inputPassword], () => {
 });
 
 watch(
-  () => user.data.organizationServerActive,
-  async active => {
-    if (user.data.activeOrganization && active) {
-      const flag = await shouldSignInOrganization(user.data.id, user.data.activeOrganization.id);
+  () => user.selectedOrganization,
+  async () => {
+    if (!isUserLoggedIn(user.personal)) {
+      throw new Error('User is not logged in');
+    }
 
-      if (!flag) {
-        user.data.isSigningInOrganization = false;
-        router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
-      }
+    if (isLoggedOutOrganization(user.selectedOrganization)) {
+      const flag = await shouldSignInOrganization(user.personal.id, user.selectedOrganization.id);
+      // Try auto login if user has credentials and refetch state
+      // if (!flag) {
+      //   user.selectedOrganization.loginRequired = false;
+      //   router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
+      // }
     }
   },
 );
@@ -131,7 +140,7 @@ watch(
     <div class="container-dark-border glow-dark-bg p-5" style="max-width: 530px">
       <h4 class="text-title text-semi-bold text-center">Sign In</h4>
       <p class="text-secondary text-small text-truncate lh-base text-center mt-3">
-        Organization <span class="text-pink">{{ user.data.activeOrganization?.nickname }}</span>
+        Organization <span class="text-pink">{{ user.selectedOrganization?.nickname }}</span>
       </p>
 
       <form @submit="handleOnFormSubmit" class="form-login mt-5">

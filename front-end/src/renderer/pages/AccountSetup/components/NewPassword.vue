@@ -6,6 +6,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useToast } from 'vue-toast-notification';
 
 // import { deleteEncryptedPrivateKeys } from '@renderer/services/keyPairService';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -41,7 +42,7 @@ const handleFormSubmit = async (event: Event) => {
 
   if (!inputNewPasswordInvalid.value && !inputConfirmPasswordInvalid.value) {
     try {
-      if (!user.data.isLoggedIn || !user.data.activeOrganization) {
+      if (!isUserLoggedIn(user.personal)) {
         throw new Error('User is not logged in');
       }
 

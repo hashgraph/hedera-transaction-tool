@@ -6,7 +6,7 @@ type LoggedOutUser = {
   isLoggedIn: false;
 };
 
-type LoggedInUser = {
+export type LoggedInUser = {
   isLoggedIn: true;
   id: string;
   email: string;
@@ -20,12 +20,12 @@ type OrganizationInactiveServer = {
   loginRequired: false;
 };
 
-type OrganizationActiveServer = {
+export type OrganizationActiveServer = {
   isServerActive: true;
   loginRequired: boolean;
 };
 
-type LoggedOutOrganization = {
+export type LoggedOutOrganization = {
   isServerActive: true;
   loginRequired: true;
 };

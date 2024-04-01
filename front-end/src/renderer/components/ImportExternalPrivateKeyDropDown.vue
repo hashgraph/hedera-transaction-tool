@@ -4,20 +4,20 @@ import { reactive, ref, watch } from 'vue';
 import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import { useToast } from 'vue-toast-notification';
 
 import { generateExternalKeyPairFromString } from '@renderer/services/keyPairService';
 import { comparePasswords } from '@renderer/services/userService';
-import { getUserState, uploadKey } from '@renderer/services/organization';
+import { uploadKey } from '@renderer/services/organization';
+
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Stores */
-const keyPairsStore = useKeyPairsStore();
 const user = useUserStore();
 
 /* Composables */
@@ -36,46 +36,48 @@ const userPassword = ref('');
 
 /* Handlers */
 const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
   try {
     const privateKey = type === 'ED25519' ? ed25519Key.privateKey : ecdsaKey.privateKey;
     const nickname = type === 'ED25519' ? ed25519Key.nickname : ecdsaKey.nickname;
 
     const keyPair: Prisma.KeyPairUncheckedCreateInput = {
-      user_id: user.data.id,
+      user_id: user.personal.id,
       ...generateExternalKeyPairFromString(privateKey, type, nickname || ''),
-      organization_id: user.data.activeOrganization?.id || null,
+      organization_id: user.selectedOrganization?.id || null,
       type: type,
       secret_hash: null,
     };
 
-    if (keyPairsStore.keyPairs.find(kp => kp.public_key === keyPair.public_key)) {
+    if (user.keyPairs.find(kp => kp.public_key === keyPair.public_key)) {
       throw new Error('Key pair already exists');
     }
 
-    if (!(await comparePasswords(user.data.id, userPassword.value))) {
+    if (!(await comparePasswords(user.personal.id, userPassword.value))) {
       throw new Error('Incorrect password');
     }
 
-    if (user.data.activeOrganization && user.data.organizationId && user.data.organizationState) {
-      if (
-        user.data.organizationState.organizationKeys.some(k => k.publicKey === keyPair.public_key)
-      ) {
+    if (isLoggedInOrganization(user.selectedOrganization)) {
+      if (user.selectedOrganization.userKeys.some(k => k.publicKey === keyPair.public_key)) {
         throw new Error('Key pair already exists');
       }
 
-      await uploadKey(user.data.activeOrganization.id, user.data.organizationId, {
+      await uploadKey(user.selectedOrganization.id, user.selectedOrganization.userId, {
         publicKey: keyPair.public_key,
       });
     }
 
-    await keyPairsStore.storeKeyPair(keyPair, userPassword.value);
+    await user.storeKey(keyPair, userPassword.value);
 
-    if (user.data.activeOrganization && user.data.organizationId) {
-      const userState = await getUserState(
-        user.data.activeOrganization.serverUrl,
-        user.data.organizationId,
-      );
-      user.data.organizationState = userState;
+    if (isLoggedInOrganization(user.selectedOrganization)) {
+      // Refetch user state
+      // const userState = await getUserState(
+      //   user.selectedOrganization.serverUrl,
+      //   user.selectedOrganization.userId,
+      // );
+      // user.data.organizationState = userState;
     }
 
     isImportED25519KeyModalShown.value = false;

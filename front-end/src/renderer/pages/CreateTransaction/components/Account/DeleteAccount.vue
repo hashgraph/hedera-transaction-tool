@@ -4,7 +4,6 @@ import { Hbar, AccountDeleteTransaction, Key, Transaction, KeyList } from '@hash
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
 
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRoute } from 'vue-router';
@@ -16,6 +15,7 @@ import { getDraft } from '@renderer/services/transactionDraftsService';
 import { remove } from '@renderer/services/accountsService';
 
 import { getTransactionFromBytes, isAccountId } from '@renderer/utils';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -26,7 +26,6 @@ import TransactionIdControls from '@renderer/components/Transaction/TransactionI
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 
 /* Stores */
-const keyPairs = useKeyPairsStore();
 const user = useUserStore();
 
 /* Composables */
@@ -101,15 +100,19 @@ const handleLoadFromDraft = async () => {
 const handleExecuted = async () => {
   isExecuted.value = true;
 
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
   try {
-    await remove(user.data.id, accountData.accountId.value);
+    await remove(user.personal.id, accountData.accountId.value);
   } catch {
     /* Ignore if not found or error */
   }
 
   // Counter mirror node delay
   setTimeout(async () => {
-    await keyPairs.refetch();
+    await user.refetchKeys();
   }, 5000);
 };
 
