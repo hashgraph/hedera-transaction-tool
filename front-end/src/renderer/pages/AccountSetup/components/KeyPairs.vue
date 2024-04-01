@@ -126,7 +126,7 @@ const handleSave = async () => {
         isLoggedInOrganization(user.selectedOrganization) &&
         !user.selectedOrganization.userKeys.some(k => k.publicKey === key.publicKey)
       ) {
-        await uploadKey(user.selectedOrganization.id, user.selectedOrganization.userId, {
+        await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
           publicKey: key.publicKey,
           index: key.index,
           mnemonicHash: user.recoveryPhrase.hash,
