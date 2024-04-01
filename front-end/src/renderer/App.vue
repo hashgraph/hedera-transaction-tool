@@ -42,6 +42,7 @@ onMounted(async () => {
   );
 });
 
+/* Hooks */
 onMounted(async () => {
   network.exchangeRateSet = await getExchangeRateSet(network.mirrorNodeBaseURL);
   await setClient(network.network);
