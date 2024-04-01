@@ -75,6 +75,7 @@ watch(
   async selectedOrganization => {
     if (!selectedOrganization) {
       selectedMode.value = 'personal';
+      selectElRef.value?.value ? (selectElRef.value.value = selectedMode.value) : {};
     }
   },
 );
