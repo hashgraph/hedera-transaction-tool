@@ -14,10 +14,10 @@ const user = useUserStore();
 const router = useRouter();
 
 /* Handlers */
-const handleLogout = () => {
+const handleLogout = async () => {
   localStorage.removeItem('htx_user');
 
-  user.logout();
+  await user.logout();
 
   user.keyPairs = [];
   user.recoveryPhrase = null;

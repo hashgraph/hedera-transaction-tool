@@ -42,10 +42,14 @@ const useUserStore = defineStore('user', () => {
   /* Actions */
   const login = async (id: string, email: string) => {
     personal.value = ush.createPersonalUser(id, email);
+    await refetchKeys();
   };
 
-  const logout = () => {
+  const logout = async () => {
     personal.value = ush.createPersonalUser();
+    selectedOrganization.value = null;
+    organizations.value.splice(0, organizations.value.length);
+    publicKeyToAccounts.value.splice(0, publicKeyToAccounts.value.length);
   };
 
   const setRecoveryPhrase = async (words: string[]) => {

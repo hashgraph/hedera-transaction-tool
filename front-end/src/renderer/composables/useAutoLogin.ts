@@ -17,7 +17,7 @@ export default function useAutoLogin() {
         await user.login(userId, email);
       }, 100);
     } else {
-      user.logout();
+      await user.logout();
     }
   });
 }
