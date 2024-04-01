@@ -32,12 +32,14 @@ const handleUserModeChange = async (e: Event) => {
     selectEl.value = selectedMode.value;
     addOrSelectModalShown.value = true;
   } else if (newValue === 'personal') {
-    user.selectOrganization(null);
+    await user.selectOrganization(null);
+    selectEl.value = selectedMode.value;
   } else {
     if (!org) {
-      user.selectOrganization(null);
+      await user.selectOrganization(null);
+      selectEl.value = selectedMode.value;
     } else {
-      user.selectOrganization({
+      await user.selectOrganization({
         id: org.id,
         nickname: org.nickname,
         serverUrl: org.serverUrl,
@@ -58,10 +60,13 @@ const handleSelectedOrAdd = (value: 'select' | 'add') => {
 };
 
 const handleSelectOrganization = async (organization: Organization) => {
-  user.selectOrganization(organization);
-  const org = user.organizations.find(org => org.id === organization.id);
-  if (!org) newOrganization.value = organization;
-  selectedMode.value = organization.id;
+  await user.selectOrganization(organization);
+
+  if (user.selectedOrganization?.isServerActive) {
+    const org = user.organizations.find(org => org.id === organization.id);
+    if (!org) newOrganization.value = organization;
+    selectedMode.value = organization.id;
+  }
 };
 
 /* Watchers */
@@ -69,7 +74,6 @@ watch(
   () => user.selectedOrganization,
   async selectedOrganization => {
     if (!selectedOrganization) {
-      newOrganization.value = null;
       selectedMode.value = 'personal';
     }
   },
