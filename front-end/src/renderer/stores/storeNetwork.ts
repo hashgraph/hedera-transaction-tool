@@ -1,4 +1,4 @@
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 
 import { Client, Timestamp } from '@hashgraph/sdk';
@@ -82,24 +82,17 @@ const useNetworkStore = defineStore('network', () => {
         throw Error('Settings for custom network are required');
       }
       customNetworkSettings.value = _customNetworkSettings;
-      setClient(newNetwork, _customNetworkSettings.nodeAccountIds, [
+      await setClient(newNetwork, _customNetworkSettings.nodeAccountIds, [
         _customNetworkSettings.mirrorNodeGRPCEndpoint,
       ]);
     } else {
-      setClient(newNetwork);
+      await setClient(newNetwork);
     }
 
     network.value = newNetwork;
 
     exchangeRateSet.value = await getExchangeRateSet(mirrorNodeBaseURL.value);
   }
-
-  /* Hooks */
-  onMounted(async () => {
-    exchangeRateSet.value = await getExchangeRateSet(mirrorNodeBaseURL.value);
-
-    setClient(network.value);
-  });
 
   /* Helpers */
   function getMirrorNodeLinkByNetwork(network: Network) {

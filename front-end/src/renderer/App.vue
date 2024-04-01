@@ -4,8 +4,12 @@ import { onMounted } from 'vue';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetwork from '@renderer/stores/storeNetwork';
 
 import useAutoLogin from '@renderer/composables/useAutoLogin';
+
+import { getExchangeRateSet } from './services/mirrorNodeDataService';
+import { setClient } from './services/transactionService';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppMenu from '@renderer/components/Menu.vue';
@@ -17,6 +21,7 @@ import OrganizationStatusModal from '@renderer/components/Organization/Organizat
 
 /* Stores */
 const user = useUserStore();
+const network = useNetwork();
 
 /* Composables */
 useAutoLogin();
@@ -35,6 +40,11 @@ onMounted(async () => {
   window.electronAPI.local.theme.onThemeUpdate(theme =>
     document.body.setAttribute('data-bs-theme', theme.shouldUseDarkColors ? 'dark' : 'light'),
   );
+});
+
+onMounted(async () => {
+  network.exchangeRateSet = await getExchangeRateSet(network.mirrorNodeBaseURL);
+  await setClient(network.network);
 });
 </script>
 
