@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeMount, ref } from 'vue';
+import { onBeforeRouteLeave } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -56,6 +57,15 @@ onBeforeMount(() => {
     step.value.previous = 'recoveryPhrase';
     step.value.current = 'recoveryPhrase';
   }
+});
+
+/* Guards */
+onBeforeRouteLeave(() => {
+  if (user.personal?.isLoggedIn && user.shouldSetupAccount) {
+    return false;
+  }
+
+  return true;
 });
 </script>
 <template>
