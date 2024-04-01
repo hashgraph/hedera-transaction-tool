@@ -13,7 +13,7 @@ const router = useRouter();
 /* Misc */
 const generalTitle = 'General';
 const keysTitle = 'Keys';
-const organizations = 'Organization Connections';
+const organizations = 'Organizations';
 const profileTitle = 'Profile';
 const tabItems: TabItem[] = [
   { title: generalTitle },
