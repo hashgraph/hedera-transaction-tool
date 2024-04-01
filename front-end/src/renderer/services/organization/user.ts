@@ -55,8 +55,7 @@ export const getMe = async (
     const response = await axios.get(`${organizationServerUrl}/users/me`, {
       withCredentials: true,
     });
-
-    return response.data.id;
+    return response.data;
   } catch (error: any) {
     console.log(error);
     throw new Error('Failed get user information');
