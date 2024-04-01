@@ -146,7 +146,7 @@ const handleSaveKey = async e => {
         );
         user.selectedOrganization.isPasswordTemporary = userState.passwordTemporary;
         user.selectedOrganization.secretHashes = userState.secretHashes;
-        user.selectedOrganization.userKeys = userState.organizationKeys;
+        user.selectedOrganization.userKeys = userState.userKeys;
       }
       user.recoveryPhrase = null;
 

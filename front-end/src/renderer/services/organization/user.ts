@@ -12,14 +12,14 @@ export const getUserState = async (
   organizationUserId: number,
 ): Promise<{
   passwordTemporary: boolean;
-  organizationKeys: IUserKey[];
+  userKeys: IUserKey[];
   secretHashes: string[];
 }> => {
-  const organizationKeys: IUserKey[] = [];
+  const userKeys: IUserKey[] = [];
   const secretHashes: string[] = [];
 
   const keys = await getOwnKeys(organizationServerUrl, organizationUserId);
-  organizationKeys.push(...keys);
+  userKeys.push(...keys);
 
   secretHashes.push(
     ...keys.reduce((acc, curr) => {
@@ -38,13 +38,19 @@ export const getUserState = async (
 
   return {
     passwordTemporary: false,
-    organizationKeys,
+    userKeys,
     secretHashes,
   };
 };
 
 /* Get information about current user */
-export const getMe = async (organizationServerUrl: string) => {
+export const getMe = async (
+  organizationServerUrl: string,
+): Promise<{
+  id: number;
+  email: string;
+  admin: boolean;
+}> => {
   try {
     const response = await axios.get(`${organizationServerUrl}/users/me`, {
       withCredentials: true,
@@ -53,6 +59,6 @@ export const getMe = async (organizationServerUrl: string) => {
     return response.data.id;
   } catch (error: any) {
     console.log(error);
-    throw new Error('Failed get user keys');
+    throw new Error('Failed get user information');
   }
 };
