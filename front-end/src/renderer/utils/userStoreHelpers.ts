@@ -1,4 +1,6 @@
 import { KeyPair, Organization, Prisma } from '@prisma/client';
+import { Mnemonic } from '@hashgraph/sdk';
+
 import {
   ConnectedOrganization,
   LoggedInOrganization,
@@ -9,10 +11,11 @@ import {
   RecoveryPhrase,
 } from '@renderer/types';
 
+import { getMe, getUserState, ping } from '@renderer/services/organization';
 import { getKeyPairs, hashRecoveryPhrase } from '@renderer/services/keyPairService';
 import { getAccountsByPublicKey } from '@renderer/services/mirrorNodeDataService';
 import { storeKeyPair as storeKey } from '@renderer/services/keyPairService';
-import { Mnemonic } from '@hashgraph/sdk';
+import { shouldSignInOrganization } from '@renderer/services/organizationCredentials';
 
 /* Flags */
 export const isUserLoggedIn = (user: PersonalUser | null): user is LoggedInUser => {
@@ -161,4 +164,57 @@ export const getSecretHashesFromKeys = (keys: KeyPair[]): string[] => {
 export const getNickname = (publicKey: string, keyPairs: KeyPair[]): string | undefined => {
   const keyPair = keyPairs.find(kp => kp.public_key === publicKey);
   return keyPair?.nickname || undefined;
+};
+
+/* Organization */
+export const getSelectedOrganization = async (
+  organization: Organization,
+  user: PersonalUser | null,
+): Promise<ConnectedOrganization> => {
+  if (!isUserLoggedIn(user)) {
+    throw Error('Login to select organization');
+  }
+
+  const isActive = await ping(organization.serverUrl);
+
+  const inactiveServer: ConnectedOrganization = {
+    ...organization,
+    isServerActive: false,
+    loginRequired: false,
+  };
+
+  const activeloginRequired: ConnectedOrganization = {
+    ...organization,
+    isServerActive: true,
+    loginRequired: true,
+  };
+
+  if (!isActive) {
+    return inactiveServer;
+  }
+
+  const loginRequired = await shouldSignInOrganization(user.id, organization.id);
+
+  if (loginRequired) {
+    return activeloginRequired;
+  }
+
+  try {
+    const { id } = await getMe(organization.serverUrl);
+    const state = await getUserState(organization.serverUrl, id);
+
+    const connectedOrganization: ConnectedOrganization = {
+      ...organization,
+      isServerActive: isActive,
+      loginRequired,
+      userId: id,
+      isPasswordTemporary: state.passwordTemporary,
+      secretHashes: state.secretHashes,
+      userKeys: state.userKeys,
+    };
+
+    return connectedOrganization;
+  } catch (error) {
+    return activeloginRequired;
+  }
 };

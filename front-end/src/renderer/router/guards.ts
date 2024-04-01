@@ -17,10 +17,6 @@ export function addGuards(router: Router) {
     }
 
     if (userIsLoggedIn && user.secretHashes.length === 0 && to.name !== 'accountSetup') {
-      console.log('redirecting to account setup');
-      console.log(user.secretHashes);
-      console.log(user.keyPairs);
-
       return { name: 'accountSetup' };
     }
 

@@ -7,9 +7,6 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
 
-import { shouldSignInOrganization } from '@renderer/services/organizationCredentials';
-import { getMe, getUserState } from '@renderer/services/organization';
-
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
 import AddOrSelectModal from '@renderer/components/Organization/AddOrSelectModal.vue';
 import SelectOrganizationModal from './Organization/SelectOrganizationModal.vue';
@@ -37,13 +34,11 @@ const handleUserModeChange = async (e: Event) => {
     addOrSelectModalShown.value = true;
   } else if (newValue === 'personal') {
     selectedMode.value = newValue;
-    user.data.activeOrganization = null;
-    user.data.isSigningInOrganization = false;
+    user.selectedOrganization = null;
     router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
   } else {
     selectedMode.value = newValue;
-    user.data.activeOrganization =
-      user.data.connectedOrganizations.find(org => org.id === newValue) || null;
+    user.selectedOrganization = user.organizations.find(org => org.id === newValue) || null;
   }
 };
 
@@ -58,33 +53,34 @@ const handleSelectedOrAdd = (value: 'select' | 'add') => {
 };
 
 const handleSelectOrganization = async (organization: Organization) => {
-  user.data.activeOrganization = organization;
+  user.selectOrganization(organization);
+  // user.selectedOrganization = organization;
 
-  if (!user.data.connectedOrganizations.some(org => org.id === organization.id)) {
-    user.data.connectedOrganizations.push(organization);
+  if (!user.organizations.some(org => org.id === organization.id)) {
+    // user.organizations.push(organization);
   }
   selectedMode.value = organization.id;
 };
 
 /* Functions */
 async function afterSelectOrganization() {
-  if (user.data.activeOrganization === null) return;
+  if (user.selectedOrganization === null) return;
 
-  if (!user.data.organizationId) {
-    user.data.organizationId = await getMe(user.data.activeOrganization.serverUrl);
-  }
+  // if (!user.data.organizationId) {
+  //   user.data.organizationId = await getMe(user.selectedOrganization.serverUrl);
+  // }
 
-  const flag = await shouldSignInOrganization(user.data.id, user.data.activeOrganization.id);
+  // const flag = await shouldSignInOrganization(user.data.id, user.selectedOrganization.id);
 
-  if (flag) {
-    user.data.isSigningInOrganization = true;
-    router.push({ name: 'organizationLogin' });
-    return;
-  }
+  // if (flag) {
+  //   user.data.isSigningInOrganization = true;
+  //   router.push({ name: 'organizationLogin' });
+  //   return;
+  // }
 
   // Refetch user state
   // const userState = await getUserState(
-  //   user.data.activeOrganization.serverUrl,
+  //   user.selectedOrganization.serverUrl,
   //   user.data.organizationId!,
   // );
   // user.data.organizationState = userState;
@@ -111,17 +107,17 @@ watch(
       return;
     }
 
-    if (!active) {
-      // user.data.activeOrganization = null in PingOrganizations
-      selectedMode.value = 'personal';
-      if (selectElRef.value) {
-        selectElRef.value.value = selectedMode.value;
-      }
-      user.data.isSigningInOrganization = false;
-      router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
-    } else {
-      await afterSelectOrganization();
-    }
+    // if (!active) {
+    //   // user.selectedOrganization = null in PingOrganizations
+    //   selectedMode.value = 'personal';
+    //   if (selectElRef.value) {
+    //     selectElRef.value.value = selectedMode.value;
+    //   }
+    //   user.data.isSigningInOrganization = false;
+    //   router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
+    // } else {
+    //   await afterSelectOrganization();
+    // }
   },
 );
 </script>
@@ -134,7 +130,7 @@ watch(
       @change="handleUserModeChange"
     >
       <option value="personal">Personal User</option>
-      <template v-for="organization in user.data.connectedOrganizations" :key="organization.id">
+      <template v-for="organization in user.organizations" :key="organization.id">
         <option :value="organization.id">
           {{ organization.nickname }}
         </option>

@@ -1,7 +1,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 
-import { KeyPair, Prisma } from '@prisma/client';
+import { KeyPair, Organization, Prisma } from '@prisma/client';
 
 import {
   PersonalUser,
@@ -40,6 +40,7 @@ const useUserStore = defineStore('user', () => {
   );
 
   /* Actions */
+  /** Personal */
   const login = async (id: string, email: string) => {
     personal.value = ush.createPersonalUser(id, email);
     await refetchKeys();
@@ -52,6 +53,7 @@ const useUserStore = defineStore('user', () => {
     publicKeyToAccounts.value.splice(0, publicKeyToAccounts.value.length);
   };
 
+  /** Keys */
   const setRecoveryPhrase = async (words: string[]) => {
     recoveryPhrase.value = await ush.createRecoveryPhrase(words);
   };
@@ -71,6 +73,11 @@ const useUserStore = defineStore('user', () => {
   const storeKey = async (keyPair: Prisma.KeyPairUncheckedCreateInput, password: string) => {
     await ush.storeKeyPair(keyPair, secretHashes.value, password);
     await refetchKeys();
+  };
+
+  /** Organization */
+  const selectOrganization = async (organization: Organization) => {
+    selectedOrganization.value = await ush.getSelectedOrganization(organization, personal.value);
   };
 
   /* Watchers */
@@ -94,6 +101,7 @@ const useUserStore = defineStore('user', () => {
     setRecoveryPhrase,
     refetchKeys,
     storeKey,
+    selectOrganization,
   };
 
   return exports;
