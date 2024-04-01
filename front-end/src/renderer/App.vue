@@ -13,7 +13,7 @@ import AppHeader from '@renderer/components/Header.vue';
 import AppUpdate from '@renderer/components/AppUpdate.vue';
 import ImportantNote from '@renderer/components/ImportantNote.vue';
 import AutoLoginInOrganization from './components/Organization/AutoLoginInOrganization.vue';
-import PingOrganizations from '@renderer/components/Organization/PingOrganizations.vue';
+import OrganizationStatusModal from '@renderer/components/Organization/OrganizationStatusModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -68,7 +68,7 @@ onMounted(async () => {
         </Transition>
       </RouterView>
 
-      <PingOrganizations />
+      <OrganizationStatusModal />
     </div>
   </Transition>
 
