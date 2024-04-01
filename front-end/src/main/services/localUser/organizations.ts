@@ -25,6 +25,27 @@ export const getOrganization = async (id: string) => {
 
 export const addOrganization = async (organization: Prisma.OrganizationCreateInput) => {
   const prisma = getPrismaClient();
+
+  if (
+    (await prisma.organization.count({
+      where: {
+        serverUrl: organization.serverUrl,
+      },
+    })) > 0
+  ) {
+    throw new Error('Organization with this server URL already exists');
+  }
+
+  if (
+    (await prisma.organization.count({
+      where: {
+        nickname: organization.nickname,
+      },
+    })) > 0
+  ) {
+    throw new Error('Organization with this nickname already exists');
+  }
+
   return await prisma.organization.create({ data: organization });
 };
 
