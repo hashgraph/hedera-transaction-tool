@@ -1,8 +1,9 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 import { IUserKey } from '@main/shared/interfaces';
 
 import { getOwnKeys } from './userKeys';
+import { throwIfNoResponse } from '.';
 
 /* User service for organization */
 
@@ -80,8 +81,17 @@ export const changePassword = async (
       },
     );
     return response.data;
-  } catch (error: any) {
-    console.log(error);
-    throw new Error('Failed get user information');
+  } catch (error) {
+    let message = 'Failed change user password';
+
+    if (error instanceof AxiosError) {
+      throwIfNoResponse(error);
+
+      const errorMessage = error.response?.data?.message;
+      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
+        message = errorMessage;
+      }
+    }
+    throw new Error(message);
   }
 };
