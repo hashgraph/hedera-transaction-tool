@@ -26,6 +26,7 @@ defineEmits(['update:active-index']);
     <ul class="nav nav-tabs" :class="[navClass]">
       <li class="nav-item p-0" :class="[navItemClass]" v-for="(item, i) in items" :key="item.title">
         <AppButton
+          :data-testid="`tab-${i}`"
           class="tab-button text-small fw-medium gap-3 w-100"
           :class="[i === activeIndex ? 'active border-main-gradient' : '', navItemButtonClass]"
           @click="$emit('update:active-index', i)"
