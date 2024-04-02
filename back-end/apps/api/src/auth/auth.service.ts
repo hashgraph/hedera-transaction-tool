@@ -2,9 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { Response } from 'express';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
-import { CreateUserDto } from '../users/dtos/create-user.dto';
+import { CreateUserDto } from '../users/dtos';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
-import { User } from '@entities/user.entity';
+import { User } from '@entities/';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()

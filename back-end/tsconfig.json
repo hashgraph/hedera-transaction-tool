@@ -27,8 +27,8 @@
       "@transactionModels/*": [
         "libs/common/src/models/*"
       ],
-      "@entities/*": [
-        "libs/common/src/database/entities/*"
+      "@entities/": [
+        "libs/common/src/database/entities/"
       ]
     }
   }

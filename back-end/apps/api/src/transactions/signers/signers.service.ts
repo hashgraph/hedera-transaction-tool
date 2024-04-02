@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { TransactionSigner } from '@entities/transaction-signer.entity';
+import { TransactionSigner, User } from '@entities/';
 import { Repository } from 'typeorm';
-import { User } from '@entities/user.entity';
 import { UploadSignatureDto } from '../dto/upload-signature.dto';
 
 @Injectable()

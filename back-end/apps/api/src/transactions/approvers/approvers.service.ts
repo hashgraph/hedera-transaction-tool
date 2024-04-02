@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { TransactionApprover } from '@entities/transaction-approver.entity';
+import { TransactionApprover } from '@entities/';
 import { Repository } from 'typeorm';
 import { CreateTransactionApproverDto } from '../dto/create-transaction-approver.dto';
 

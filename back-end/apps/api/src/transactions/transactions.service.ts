@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Transaction } from '@entities/transaction.entity';
+import { Transaction, User } from '@entities/';
 import { Like, Repository } from 'typeorm';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
-import { User } from '@entities/user.entity';
 import TransactionFactory from '../../../../libs/common/src/models/transaction-factory';
 import { HttpService } from '@nestjs/axios';
 import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';

@@ -1,8 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { UserKey } from '@entities/user-key.entity';
 import { FindOptionsRelations, Repository } from 'typeorm';
-import { User } from '@entities/user.entity';
+import { User, UserKey } from '@entities/';
 import { UploadUserKeyDto } from './dtos/upload-user-key.dto';
 import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';
 

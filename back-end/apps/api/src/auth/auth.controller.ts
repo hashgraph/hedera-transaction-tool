@@ -1,13 +1,12 @@
 import { Body, Controller, Post, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
-import { CreateUserDto } from '../users/dtos/create-user.dto';
-import { User } from '@entities/user.entity';
+import { CreateUserDto, UserDto } from '../users/dtos';
+import { User } from '@entities/';
 import { Serialize } from '../interceptors/serialize.interceptor';
 import { AuthDto } from './dto/auth.dto';
 import { GetUser } from '../decorators/get-user.decorator';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { UserDto } from '../users/dtos/user.dto';
 import { LocalAuthGuard } from '../guards/local-auth.guard';
 
 @ApiTags('Authentication')

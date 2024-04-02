@@ -11,9 +11,8 @@ import {
 } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
 import { GetUser } from '../decorators/get-user.decorator';
-import { User } from '@entities/user.entity';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
-import { Transaction } from '@entities/transaction.entity';
+import { Transaction, User } from '@entities/';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { Serialize } from '../interceptors/serialize.interceptor';
 import { TransactionDto } from './dto/transaction.dto';

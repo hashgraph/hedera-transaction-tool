@@ -11,11 +11,10 @@ import {
 import { SignersService } from './signers.service';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { UploadSignatureDto } from '../dto/upload-signature.dto';
-import { TransactionSigner } from '@entities/transaction-signer.entity';
+import { TransactionSigner, User } from '@entities/';
 import { TransactionSignerDto } from '../dto/transaction-signer.dto';
 import { Serialize } from '../../interceptors/serialize.interceptor';
 import { GetUser } from '../../decorators/get-user.decorator';
-import { User } from '@entities/user.entity';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Transaction Signers')
