@@ -119,7 +119,7 @@ const handleSave = async () => {
         type: 'ED25519',
         organization_id: user.selectedOrganization?.id || null,
         secret_hash: user.recoveryPhrase.hash,
-        nickname: nickname.value || null,
+        nickname: i === 0 && nickname.value ? nickname.value : null,
       };
 
       if (
@@ -131,7 +131,6 @@ const handleSave = async () => {
           index: key.index,
           mnemonicHash: user.recoveryPhrase.hash,
         });
-        keyPair.nickname = i === 0 ? keyPair.nickname : null;
       }
 
       await user.storeKey(keyPair, userPassword.value);

@@ -1,4 +1,4 @@
-import { computed, nextTick, reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 
 import { KeyPair, Organization, Prisma } from '@prisma/client';
@@ -74,7 +74,6 @@ const useUserStore = defineStore('user', () => {
 
   const refetchKeys = async () => {
     await ush.updateKeyPairs(keyPairs, personal.value, selectedOrganization.value);
-    await nextTick();
     await refetchAccounts();
   };
 
@@ -90,11 +89,7 @@ const useUserStore = defineStore('user', () => {
     } else {
       selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
     }
-    await nextTick();
-
     await ush.afterOrganizationSelection(personal.value, selectedOrganization, keyPairs, router);
-    await nextTick();
-
     await refetchAccounts();
   };
 
