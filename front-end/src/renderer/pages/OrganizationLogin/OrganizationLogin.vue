@@ -103,7 +103,13 @@ watch([inputEmail, inputPassword], () => {
 });
 
 /* Guards */
-onBeforeRouteLeave(() => {
+onBeforeRouteLeave(async () => {
+  try {
+    await user.refetchUserState();
+  } catch (error) {
+    user.selectOrganization(null);
+  }
+
   if (!user.selectedOrganization) return true;
 
   if (user.selectedOrganization.loginRequired) {

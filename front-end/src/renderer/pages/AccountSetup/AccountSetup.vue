@@ -63,7 +63,13 @@ onBeforeMount(() => {
 });
 
 /* Guards */
-onBeforeRouteLeave(() => {
+onBeforeRouteLeave(async () => {
+  try {
+    await user.refetchUserState();
+  } catch (error) {
+    user.selectOrganization(null);
+  }
+
   if (user.personal?.isLoggedIn && user.shouldSetupAccount) {
     return false;
   }
