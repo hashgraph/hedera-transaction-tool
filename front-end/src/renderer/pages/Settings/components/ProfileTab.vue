@@ -6,7 +6,9 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useToast } from 'vue-toast-notification';
 
 import { changePassword } from '@renderer/services/userService';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { changePassword as organizationChangePassword } from '@renderer/services/organization/user';
+
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -35,13 +37,24 @@ const handleChangePassword = async e => {
       throw new Error('User is not logged in');
     }
 
-    if (currentPassword.value.length > 0 && newPassword.value.length > 0) {
+    if (currentPassword.value.length === 0 || newPassword.value.length === 0) {
+      throw new Error('Password cannot be empty');
+    }
+
+    if (isLoggedInOrganization(user.selectedOrganization)) {
+      await organizationChangePassword(
+        user.selectedOrganization.serverUrl,
+        currentPassword.value,
+        newPassword.value,
+      );
+    } else {
       await changePassword(user.personal.id, currentPassword.value, newPassword.value);
       await user.refetchKeys();
-      isSuccessModalShown.value = true;
     }
+
+    isSuccessModalShown.value = true;
   } catch (err: any) {
-    toast.error('Failed to change password', { position: 'bottom-right' });
+    toast.error(err.message || 'Failed to change password', { position: 'bottom-right' });
   }
 };
 </script>

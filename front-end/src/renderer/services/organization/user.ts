@@ -61,3 +61,27 @@ export const getMe = async (
     throw new Error('Failed get user information');
   }
 };
+
+/* Changes the password */
+export const changePassword = async (
+  organizationServerUrl: string,
+  oldPassword: string,
+  newPassword: string,
+): Promise<void> => {
+  try {
+    const response = await axios.patch(
+      `${organizationServerUrl}/users/change-password`,
+      {
+        oldPassword,
+        newPassword,
+      },
+      {
+        withCredentials: true,
+      },
+    );
+    return response.data;
+  } catch (error: any) {
+    console.log(error);
+    throw new Error('Failed get user information');
+  }
+};
