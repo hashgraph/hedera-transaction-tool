@@ -130,15 +130,15 @@ export const getLocalKeyPairs = async (
 };
 
 export const updateKeyPairs = async (
-  keyPairsProxy: KeyPair[],
+  keyPairs: Ref<KeyPair[]>,
   user: PersonalUser | null,
   selectedOrganization: ConnectedOrganization | null,
 ) => {
   if (user?.isLoggedIn) {
     const newKeys = await getLocalKeyPairs(user, selectedOrganization);
-    keyPairsProxy.splice(0, keyPairsProxy.length, ...newKeys);
+    keyPairs.value = newKeys;
   } else {
-    keyPairsProxy.splice(0, keyPairsProxy.length);
+    keyPairs.value = [];
   }
 };
 
@@ -238,10 +238,10 @@ export const getConnectedOrganization = async (
 export const afterOrganizationSelection = async (
   user: PersonalUser | null,
   organization: Ref<ConnectedOrganization | null>,
-  keyPairsProxy: KeyPair[],
+  keyPairs: Ref<KeyPair[]>,
   router: Router,
 ) => {
-  await updateKeyPairs(keyPairsProxy, user, organization.value);
+  await updateKeyPairs(keyPairs, user, organization.value);
   await nextTick();
 
   if (!organization.value) {
@@ -252,7 +252,7 @@ export const afterOrganizationSelection = async (
   if (!isOrganizationActive(organization.value)) {
     organization.value = null;
 
-    await updateKeyPairs(keyPairsProxy, user, organization.value);
+    await updateKeyPairs(keyPairs, user, organization.value);
     await nextTick();
 
     navigateToPreviousRoute(router);
@@ -266,7 +266,7 @@ export const afterOrganizationSelection = async (
 
   if (
     isLoggedInOrganization(organization.value) &&
-    accountSetupRequired(organization.value, keyPairsProxy)
+    accountSetupRequired(organization.value, keyPairs.value)
   ) {
     router.push({ name: 'accountSetup' });
     return;

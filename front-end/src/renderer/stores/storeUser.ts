@@ -1,4 +1,4 @@
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 
 import { KeyPair, Organization, Prisma } from '@prisma/client';
@@ -27,7 +27,7 @@ const useUserStore = defineStore('user', () => {
   /** Keys */
   const publicKeyToAccounts = ref<PublicKeyAccounts[]>([]);
   const recoveryPhrase = ref<RecoveryPhrase | null>(null);
-  const keyPairs = reactive<KeyPair[]>([]);
+  const keyPairs = ref<KeyPair[]>([]);
 
   /** Personal */
   const personal = ref<PersonalUser | null>(null);
@@ -38,10 +38,10 @@ const useUserStore = defineStore('user', () => {
 
   /* Computed */
   /** Keys */
-  const secretHashes = computed<string[]>(() => ush.getSecretHashesFromKeys(keyPairs));
-  const publicKeys = computed(() => keyPairs.map(kp => kp.public_key));
+  const secretHashes = computed<string[]>(() => ush.getSecretHashesFromKeys(keyPairs.value));
+  const publicKeys = computed(() => keyPairs.value.map(kp => kp.public_key));
   const shouldSetupAccount = computed(() =>
-    ush.accountSetupRequired(selectedOrganization.value, keyPairs),
+    ush.accountSetupRequired(selectedOrganization.value, keyPairs.value),
   );
 
   /* Actions */
@@ -57,7 +57,7 @@ const useUserStore = defineStore('user', () => {
     selectedOrganization.value = null;
     organizations.value.splice(0, organizations.value.length);
     publicKeyToAccounts.value.splice(0, publicKeyToAccounts.value.length);
-    await refetchKeys();
+    keyPairs.value = [];
   };
 
   /** Keys */
@@ -67,7 +67,7 @@ const useUserStore = defineStore('user', () => {
 
   const refetchAccounts = async () => {
     publicKeyToAccounts.value = await ush.getPublicKeysToAccounts(
-      keyPairs,
+      keyPairs.value,
       network.mirrorNodeBaseURL,
     );
   };
