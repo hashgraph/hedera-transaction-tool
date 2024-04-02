@@ -3,7 +3,7 @@ import { ref } from 'vue';
 
 import { PublicKey } from '@hashgraph/sdk';
 
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
+import useUserStore from '@renderer/stores/storeUser';
 
 import { isPublicKey } from '@renderer/utils/validator';
 
@@ -22,7 +22,7 @@ const props = defineProps<{
 const emit = defineEmits(['update:show']);
 
 /* Stores */
-const keyPairs = useKeyPairsStore();
+const user = useUserStore();
 
 /* State */
 const publicKey = ref('');
@@ -61,7 +61,7 @@ const handleInsert = (e: Event) => {
         <div>
           <h3 class="text-small">Recent</h3>
           <div class="mt-4 overflow-auto" :style="{ height: '158px' }">
-            <template v-for="kp in keyPairs.keyPairs" :key="kp.public_key">
+            <template v-for="kp in user.keyPairs" :key="kp.public_key">
               <AppListItem
                 class="mt-3"
                 :selected="publicKey === kp.public_key"

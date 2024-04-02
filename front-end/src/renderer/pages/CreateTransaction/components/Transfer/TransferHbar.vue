@@ -20,6 +20,7 @@ import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
 import { getAll } from '@renderer/services/accountsService';
 
 import { getTransactionFromBytes, isAccountId, stringifyHbar } from '@renderer/utils';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -286,7 +287,12 @@ function getRequiredKeys() {
 /* Hooks */
 onMounted(async () => {
   await handleLoadFromDraft();
-  linkedAccounts.value = await getAll(user.data.id);
+
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
+  linkedAccounts.value = await getAll(user.personal.id);
 });
 </script>
 <template>

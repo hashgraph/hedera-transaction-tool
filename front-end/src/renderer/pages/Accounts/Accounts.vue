@@ -22,6 +22,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 /* Enums */
 // enum Sorting {
@@ -60,11 +61,11 @@ const hbarDollarAmount = computed(() => {
 
 /* Hooks */
 onMounted(async () => {
-  if (!user.data.isLoggedIn) {
-    throw new Error('Please login');
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
   }
 
-  accounts.value = await getAll(user.data.id);
+  accounts.value = await getAll(user.personal.id);
   accountData.accountId.value = accounts.value[0]?.account_id || '';
 });
 
@@ -74,11 +75,11 @@ const handleSelectAccount = (accountId: string) => {
   accountData.accountId.value = accountId;
 };
 const handleUnlinkAccount = async () => {
-  if (!user.data.isLoggedIn) {
-    throw new Error('Please login');
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
   }
 
-  accounts.value = await remove(user.data.id, accountData.accountIdFormatted.value);
+  accounts.value = await remove(user.personal.id, accountData.accountIdFormatted.value);
 
   accountData.accountId.value = accounts.value[0]?.account_id || '';
 
@@ -103,10 +104,14 @@ const handleStartNicknameEdit = () => {
 };
 
 const handleChangeNickname = async () => {
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
   isNicknameInputShown.value = false;
 
   accounts.value = await changeNickname(
-    user.data.id,
+    user.personal.id,
     accountData.accountIdFormatted.value,
     nicknameInputRef.value?.inputRef?.value,
   );

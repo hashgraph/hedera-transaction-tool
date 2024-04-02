@@ -1,165 +1,175 @@
 <script setup lang="ts">
-import { onMounted, onUpdated, ref } from 'vue';
+import { onBeforeMount, onUpdated, ref } from 'vue';
 
 import { Prisma } from '@prisma/client';
 
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
+import { useRouter } from 'vue-router';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
-import {
-  restorePrivateKey,
-  hashRecoveryPhrase,
-  // getStoredKeyPairs,
-} from '@renderer/services/keyPairService';
+import { restorePrivateKey } from '@renderer/services/keyPairService';
+import { uploadKey } from '@renderer/services/organization';
 
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 import { getWidthOfElementWithText } from '@renderer/utils/dom';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
-// import AppButton from '@renderer/components/ui/AppButton.vue';
-// import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
-
-/* Props */
-const props = defineProps<{ encryptPassword: string }>();
+import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
 
 /* Stores */
-const keyPairsStore = useKeyPairsStore();
 const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
+const router = useRouter();
 const createTooltips = useCreateTooltips();
 
 /* State */
 const nickname = ref('');
 
-// const advancedMode = ref(false);
-const index = ref(0);
-const passPhrase = ref('');
-
 const privateKeyRef = ref<HTMLSpanElement | null>(null);
-const privateKey = ref('');
 const privateKeyHidden = ref(true);
 const starCount = ref(0);
-const publicKey = ref('');
 
-const keyExists = ref(false);
+const keys = ref<{ publicKey: string; privateKey: string; index: number }[]>([]);
+
+const userPasswordModalShow = ref(false);
+const saveAfterModalClose = ref(false);
+const userPassword = ref(isUserLoggedIn(user.personal) ? user.personal.password : null);
 
 /* Misc Functions */
-const validateExistingKey = () => {
+const keyExists = (publicKey: string) => user.keyPairs.some(kp => kp.public_key === publicKey);
+
+const addKeyToRestored = async (index: number) => {
+  if (!user.recoveryPhrase) {
+    throw new Error('Recovery phrase is not set');
+  }
+
+  try {
+    const restoredPrivateKey = await restorePrivateKey(
+      user.recoveryPhrase.words,
+      '',
+      index,
+      'ED25519',
+    );
+    keys.value.push({
+      publicKey: restoredPrivateKey.publicKey.toStringRaw(),
+      privateKey: restoredPrivateKey.toStringRaw(),
+      index,
+    });
+  } catch {
+    toast.error(`Restoring key at index: ${index} failed`, { position: 'bottom-right' });
+  }
+};
+
+const restoreKeys = async () => {
   if (
-    keyPairsStore.keyPairs.some(kp => kp.public_key === publicKey.value && kp.private_key !== '')
+    isLoggedInOrganization(user.selectedOrganization) &&
+    user.selectedOrganization.secretHashes.length > 0
   ) {
-    keyExists.value = true;
+    if (!user.recoveryPhrase) {
+      throw new Error('Recovery phrase is not set');
+    }
+
+    for (let i = 0; i < user.selectedOrganization.userKeys.length; i++) {
+      const key = user.selectedOrganization.userKeys[i];
+
+      if (keyExists(key.publicKey)) continue;
+
+      if (key.mnemonicHash === user.recoveryPhrase.hash && key.index !== undefined) {
+        await addKeyToRestored(key.index);
+      }
+    }
   } else {
-    keyExists.value = false;
+    await addKeyToRestored(0);
   }
 };
 
 /* Handlers */
-const handleRestoreKey = async () => {
-  try {
-    const restoredPrivateKey = await restorePrivateKey(
-      keyPairsStore.recoveryPhraseWords,
-      passPhrase.value,
-      index.value,
-      'ED25519',
-    );
-
-    privateKey.value = restoredPrivateKey.toStringRaw();
-    publicKey.value = restoredPrivateKey.publicKey.toStringRaw();
-
-    validateExistingKey();
-  } catch {
-    toast.error('Invalid recovery phrase', { position: 'bottom-right' });
+const handleSave = async () => {
+  if (keys.value.length === 0) {
+    throw Error('No key pairs to save');
   }
-};
 
-const handleSaveKey = async () => {
-  if (privateKey.value) {
-    try {
-      const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
+  if (!isUserLoggedIn(user.personal)) {
+    throw Error('User is logged in');
+  }
+
+  if (!user.recoveryPhrase) {
+    throw Error('Recovery phrase is not set');
+  }
+
+  if (!userPassword.value || userPassword.value === '') {
+    saveAfterModalClose.value = true;
+    userPasswordModalShow.value = true;
+    return;
+  }
+
+  try {
+    for (let i = 0; i < keys.value.length; i++) {
+      const key = keys.value[i];
 
       const keyPair: Prisma.KeyPairUncheckedCreateInput = {
-        user_id: user.data.id,
-        index: index.value,
-        public_key: publicKey.value,
-        private_key: privateKey.value,
+        user_id: user.personal.id,
+        index: key.index,
+        public_key: key.publicKey,
+        private_key: key.privateKey,
         type: 'ED25519',
-        organization_id: null,
-        secret_hash: secretHash,
-        nickname: nickname.value || null,
+        organization_id: user.selectedOrganization?.id || null,
+        secret_hash: user.recoveryPhrase.hash,
+        nickname: i === 0 && nickname.value ? nickname.value : null,
       };
 
-      await keyPairsStore.storeKeyPair(keyPair, props.encryptPassword);
-      user.data.secretHashes = [...user.data.secretHashes, secretHash];
-
-      toast.success('Key Pair saved successfully', {
-        position: 'bottom-right',
-      });
-    } catch (err: any) {
-      let message = 'Failed to store key pair';
-      if (err.message && typeof err.message === 'string') {
-        message = err.message;
+      if (
+        isLoggedInOrganization(user.selectedOrganization) &&
+        !user.selectedOrganization.userKeys.some(k => k.publicKey === key.publicKey)
+      ) {
+        await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
+          publicKey: key.publicKey,
+          index: key.index,
+          mnemonicHash: user.recoveryPhrase.hash,
+        });
       }
-      toast.error(message, { position: 'bottom-right' });
+
+      await user.storeKey(keyPair, userPassword.value);
+      user.secretHashes.push(user.recoveryPhrase.hash);
     }
+
+    toast.success(`Key Pair${keys.value.length > 1 ? 's' : ''} saved successfully`, {
+      position: 'bottom-right',
+    });
+    user.personal.password = '';
+    router.push({ name: 'settingsKeys' });
+  } catch (err: any) {
+    let message = `Failed to store key pair${keys.value.length > 1 ? 's' : ''}`;
+    if (err.message && typeof err.message === 'string') {
+      message = err.message;
+    }
+    toast.error(message, { position: 'bottom-right' });
+  }
+
+  await user.refetchUserState();
+};
+
+const handlePasswordEntered = async (password: string) => {
+  userPassword.value = password;
+
+  if (saveAfterModalClose.value) {
+    await handleSave();
   }
 };
 
-// const handleRestoreExisting = async () => {
-//   try {
-//     if (!user.data.isLoggedIn) {
-//       throw Error('User not logged in!');
-//     }
-
-//     const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
-//     const keyPairsToRestore = (
-//       await getStoredKeyPairs(
-//         user.data.id,
-//         user.data.activeServerURL || '',
-//         user.data.activeUserId || '',
-//       )
-//     ).filter(kp => kp.privateKey === '');
-
-//     await Promise.all(
-//       keyPairsToRestore.map(async kp => {
-//         const restoredPrivateKey = await restorePrivateKey(
-//           keyPairsStore.recoveryPhraseWords,
-//           '',
-//           kp.index,
-//           'ED25519',
-//         );
-
-//         if (kp.publicKey === restoredPrivateKey.publicKey.toStringRaw()) {
-//           kp.privateKey = restoredPrivateKey.toStringRaw();
-//           await keyPairsStore.storeKeyPair(props.encryptPassword, kp, secretHash);
-//         }
-//       }),
-//     );
-
-//     toast.success('Successfully recovered private key/s without passphrase', {
-//       position: 'bottom-right',
-//     });
-
-//     validateExistingKey();
-//   } catch (err: any) {
-//     let message = 'Failed to recover private key/s';
-//     if (err.message && typeof err.message === 'string') {
-//       message = err.message;
-//     }
-//     toast.error(message, { position: 'bottom-right' });
-//   }
-// };
-
 /* Hooks */
-onMounted(async () => {
-  await handleRestoreKey();
+onBeforeMount(async () => {
+  await restoreKeys();
 
   if (privateKeyRef.value) {
-    const privateKeyWidth = getWidthOfElementWithText(privateKeyRef.value, privateKey.value);
+    const privateKeyWidth = getWidthOfElementWithText(
+      privateKeyRef.value,
+      keys.value[0].privateKey,
+    );
     const starWidth = getWidthOfElementWithText(privateKeyRef.value, '*');
 
     starCount.value = Math.round(privateKeyWidth / starWidth);
@@ -172,26 +182,11 @@ onUpdated(() => {
 
 /* Expose */
 defineExpose({
-  handleSaveKey,
+  handleSave,
 });
 </script>
 <template>
   <div class="fill-remaining mt-5">
-    <!-- <div
-      class="mb-5 position-relative"
-      v-if="keyPairsStore.keyPairs.some(kp => kp.privateKey === '')"
-    >
-      <AppButton color="primary" size="small" @click="handleRestoreExisting"
-        >Restore existing key pairs</AppButton
-      >
-      <i
-        class="bi bi-info-circle ms-3"
-        data-bs-toggle="tooltip"
-        data-bs-title="Restore previously saved key pairs with empty passphrase (If you see it after click, you have keys with a passphrase)"
-        data-bs-placement="right"
-        data-bs-container="body"
-      ></i>
-    </div> -->
     <div class="form-group mt-5">
       <label class="form-label">Nickname <span class="fw-normal">- Optional</span></label>
       <AppInput v-model="nickname" :filled="true" placeholder="Enter Nickname" />
@@ -200,67 +195,34 @@ defineExpose({
       <label class="form-label">Key Type</label>
       <AppInput model-value="ED25519" readonly />
     </div>
-    <!-- <AppSwitch
-        v-model:checked="advancedMode"
-        size="md"
-        name="advanced-mode"
-        label="Advanced Option to Restore Key "
-        class="mt-5"
-      />
-      <div v-if="advancedMode" class="mt-5">
-        <div class="d-flex row">
-          <div class="col-3 col-lg-2">
-            <select
-              v-model="index"
-              class="form-control is-fill form-select rounded-4 py-3 h-100"
-              placeholder="Select key index"
-            >
-              <option v-for="index in [...Array(11).keys()]" :key="index" :value="index">
-                {{ index }}
-              </option>
-            </select>
-          </div>
-          <div class="col-9 col-lg-6 position-relative d-flex align-items-center">
-            <input
-              v-model="passPhrase"
-              type="passPhrase"
-              class="form-control is-fill"
-              placeholder="Enter Pass Phrase (optional)"
-            />
+    <template v-if="keys.length > 0">
+      <div class="form-group mt-5">
+        <label class="form-label">ED25519 Private Key</label>
+        <p class="text-break text-secondary">
+          <span ref="privateKeyRef" id="pr">{{
+            !privateKeyHidden ? keys[0].privateKey : '*'.repeat(starCount)
+          }}</span>
+          <span class="cursor-pointer ms-3">
             <i
-              class="bi bi-info-circle position-absolute"
-              style="right: 30px"
-              data-bs-toggle="tooltip"
-              data-bs-title="This is the passphrase for the key itself."
-              data-bs-placement="right"
-              data-bs-container="body"
+              v-if="!privateKeyHidden"
+              class="bi bi-eye-slash"
+              @click="privateKeyHidden = true"
             ></i>
-          </div>
-        </div>
-        <div class="mt-5 d-flex row justify-content-center">
-          <AppButton color="primary" class="rounded-4 col-12 col-lg-6" @click="handleRestoreKey"
-            >Restore Key
-          </AppButton>
-        </div>
-      </div> -->
-
-    <div class="form-group mt-5">
-      <label class="form-label">ED25519 Private Key</label>
-      <p class="text-break text-secondary">
-        <span ref="privateKeyRef" id="pr">{{
-          !privateKeyHidden ? privateKey : '*'.repeat(starCount)
-        }}</span>
-        <span class="cursor-pointer ms-3">
-          <i v-if="!privateKeyHidden" class="bi bi-eye-slash" @click="privateKeyHidden = true"></i>
-          <i v-else class="bi bi-eye" @click="privateKeyHidden = false"></i>
-        </span>
-      </p>
-    </div>
-    <div class="form-group mt-4">
-      <label class="form-label">ED25519 Public Key</label>
-      <p class="text-break text-secondary">{{ publicKey }}</p>
-    </div>
-    <template v-if="user.data.mode === 'organization'">
+            <i v-else class="bi bi-eye" @click="privateKeyHidden = false"></i>
+          </span>
+        </p>
+      </div>
+      <div class="form-group mt-4">
+        <label class="form-label">ED25519 Public Key</label>
+        <p class="text-break text-secondary">{{ keys[0].publicKey }}</p>
+      </div>
+    </template>
+    <template v-if="keys.length > 1">
+      <div class="mt-4">
+        <p>{{ keys.length - 1 }} more will be restored</p>
+      </div>
+    </template>
+    <template v-if="user.selectedOrganization">
       <hr class="my-6" />
       <div class="alert alert-secondary d-flex align-items-start mb-0" role="alert">
         <i class="bi bi-exclamation-triangle text-warning me-3"></i>
@@ -272,16 +234,11 @@ defineExpose({
       </div>
     </template>
 
-    <!-- <p v-if="keyExists" class="mt-3 text-danger">This key is already restored.</p> -->
-    <!-- <div class="d-flex flex-column align-items-center gap-4 mt-8">
-      <AppButton
-          :disabled="!privateKey || keyExists"
-          color="secondary"
-          size="large"
-          class="rounded-4 col-12 col-lg-6"
-          @click="handleSaveKey"
-          >Save Key</AppButton
-        >
-    </div> -->
+    <UserPasswordModal
+      v-model:show="userPasswordModalShow"
+      heading="Enter personal password"
+      subHeading="Credentials will be encrypted with this password"
+      @passwordEntered="handlePasswordEntered"
+    />
   </div>
 </template>

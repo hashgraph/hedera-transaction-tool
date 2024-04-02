@@ -47,7 +47,7 @@ const handleUpdateNotAvailable = () => {
 };
 
 const handleDownloadUpdate = () => {
-  window.electronAPI.update.downloadUpdate();
+  window.electronAPI.local.update.downloadUpdate();
   isUpdateAvailableShown.value = false;
   isDownloadingUpdateShown.value = true;
 };
@@ -62,7 +62,7 @@ const handleUpdateDownloaded = () => {
 };
 
 const handleInstall = () => {
-  window.electronAPI.update.quitAndInstall();
+  window.electronAPI.local.update.quitAndInstall();
 };
 
 const handlerError = (message: string) => {
@@ -77,12 +77,12 @@ const handlerError = (message: string) => {
 
 /* Hooks */
 onBeforeMount(() => {
-  window.electronAPI.update.onCheckingForUpdate(handleCheckingForUpdates);
-  window.electronAPI.update.onError(handlerError);
-  window.electronAPI.update.onUpdateAvailable(handleUpdateAvailable);
-  window.electronAPI.update.onUpdateNotAvailable(handleUpdateNotAvailable);
-  window.electronAPI.update.onDownloadProgess(handleDownloadProgress);
-  window.electronAPI.update.onUpdateDownloaded(handleUpdateDownloaded);
+  window.electronAPI.local.update.onCheckingForUpdate(handleCheckingForUpdates);
+  window.electronAPI.local.update.onError(handlerError);
+  window.electronAPI.local.update.onUpdateAvailable(handleUpdateAvailable);
+  window.electronAPI.local.update.onUpdateNotAvailable(handleUpdateNotAvailable);
+  window.electronAPI.local.update.onDownloadProgess(handleDownloadProgress);
+  window.electronAPI.local.update.onUpdateDownloaded(handleUpdateDownloaded);
 });
 </script>
 <template>

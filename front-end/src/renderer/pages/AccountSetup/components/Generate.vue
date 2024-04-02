@@ -2,14 +2,15 @@
 import { ref, watch } from 'vue';
 import { Mnemonic } from '@hashgraph/sdk';
 
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
+import useUserStore from '@renderer/stores/storeUser';
+
+import { useToast } from 'vue-toast-notification';
 
 import { validateMnemonic } from '@renderer/services/keyPairService';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppRecoveryPhraseWord from '@renderer/components/ui/AppRecoveryPhraseWord.vue';
-import { useToast } from 'vue-toast-notification';
 
 /* Props */
 defineProps<{
@@ -17,7 +18,7 @@ defineProps<{
 }>();
 
 /* Store */
-const keyPairs = useKeyPairsStore();
+const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
@@ -67,7 +68,7 @@ const handleSaveWords = async (words: string[]) => {
   if (!isValid) {
     throw new Error('Invalid Recovery Phrase!');
   } else {
-    keyPairs.setRecoveryPhrase(words);
+    await user.setRecoveryPhrase(words);
     wordsConfirmed.value = true;
   }
 };

@@ -15,12 +15,13 @@ import App from './App.vue';
 const app = createApp(App);
 
 /* App use */
+app.use(router);
+
 app.use(createPinia());
 
-app.use(ToastPlugin);
-
 addGuards(router);
-app.use(router);
+
+app.use(ToastPlugin);
 
 /* App config */
 const toast = useToast();

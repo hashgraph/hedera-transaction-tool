@@ -16,18 +16,18 @@ model Migration {
 }
 
 model User {
-  id               String             @id @default(uuid())
-  email            String             @unique
-  password         String
-  created_at       DateTime           @default(now())
-  updated_at       DateTime           @updatedAt
-  keysPairs        KeyPair[]
-  transactions     Transaction[]
-  organizations    Organization[]
-  HederaAccount    HederaAccount[]
-  HederaFile       HederaFile[]
-  TransactionDraft TransactionDraft[]
-  ComplexKey       ComplexKey[]
+  id                      String                    @id @default(uuid())
+  email                   String                    @unique
+  password                String
+  created_at              DateTime                  @default(now())
+  updated_at              DateTime                  @updatedAt
+  keysPairs               KeyPair[]
+  transactions            Transaction[]
+  organizationCredentials OrganizationCredentials[]
+  HederaAccount           HederaAccount[]
+  HederaFile              HederaFile[]
+  TransactionDraft        TransactionDraft[]
+  ComplexKey              ComplexKey[]
 }
 
 model KeyPair {
@@ -47,17 +47,29 @@ model KeyPair {
 }
 
 model Organization {
-  id       String @id @default(uuid())
-  user_id  String
-  email    String
-  password String
-  user     User   @relation(fields: [user_id], references: [id])
+  id        String @id @default(uuid())
+  nickname  String
+  serverUrl String
+  key       String
 
-  keyPairs KeyPair[]
+  keyPairs                KeyPair[]
+  OrganizationCredentials OrganizationCredentials[]
+  Transaction             Transaction[]
+}
+
+model OrganizationCredentials {
+  id              String       @id @default(uuid())
+  email           String
+  password        String
+  organization_id String
+  user_id         String
+  jwtToken        String?
+  user            User         @relation(fields: [user_id], references: [id])
+  organization    Organization @relation(fields: [organization_id], references: [id])
 }
 
 model Transaction {
-  id                 String   @id @default(uuid())
+  id                 String        @id @default(uuid())
   name               String
   type               String
   description        String
@@ -70,11 +82,13 @@ model Transaction {
   signature          String
   valid_start        String
   executed_at        Int
-  created_at         DateTime @default(now())
-  updated_at         DateTime @updatedAt
+  created_at         DateTime      @default(now())
+  updated_at         DateTime      @updatedAt
   group_id           String?
   creator_public_key String?
-  user               User     @relation(fields: [user_id], references: [id])
+  organization_id    String?
+  user               User          @relation(fields: [user_id], references: [id])
+  organization       Organization? @relation(fields: [organization_id], references: [id])
 }
 
 model TransactionDraft {
@@ -110,11 +124,11 @@ model HederaFile {
 }
 
 model ComplexKey {
-  id        String @id @default(uuid())
-  user_id   String
-  nickname  String
+  id              String   @id @default(uuid())
+  user_id         String
+  nickname        String
   protobufEncoded String
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
-  user      User   @relation(fields: [user_id], references: [id])
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  user            User     @relation(fields: [user_id], references: [id])
 }

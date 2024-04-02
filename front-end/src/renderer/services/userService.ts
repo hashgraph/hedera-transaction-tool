@@ -9,7 +9,7 @@ export const loginLocal = async (
   autoRegister = false,
 ) => {
   try {
-    const { id, email: userEmail } = await window.electronAPI.localUser.login(
+    const { id, email: userEmail } = await window.electronAPI.local.localUser.login(
       email,
       password,
       autoRegister,
@@ -28,7 +28,10 @@ export const loginLocal = async (
 
 export const registerLocal = async (email: string, password: string, keepLoggedIn = false) => {
   try {
-    const { id, email: userEmail } = await window.electronAPI.localUser.register(email, password);
+    const { id, email: userEmail } = await window.electronAPI.local.localUser.register(
+      email,
+      password,
+    );
 
     if (keepLoggedIn) {
       localStorage.setItem('htx_user', JSON.stringify({ userId: id, email: userEmail }));
@@ -42,7 +45,7 @@ export const registerLocal = async (email: string, password: string, keepLoggedI
 
 export const resetDataLocal = async () => {
   try {
-    return await window.electronAPI.localUser.resetData();
+    return await window.electronAPI.local.localUser.resetData();
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Failed to reset user data'));
   }
@@ -50,7 +53,7 @@ export const resetDataLocal = async () => {
 
 export const getUsersCount = async () => {
   try {
-    return await window.electronAPI.localUser.usersCount();
+    return await window.electronAPI.local.localUser.usersCount();
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Failed to check for registered users'));
   }
@@ -58,7 +61,7 @@ export const getUsersCount = async () => {
 
 export const comparePasswords = async (userId: string, password: string) => {
   try {
-    return await window.electronAPI.localUser.comparePasswords(userId, password);
+    return await window.electronAPI.local.localUser.comparePasswords(userId, password);
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'User not exists'));
   }
@@ -66,7 +69,11 @@ export const comparePasswords = async (userId: string, password: string) => {
 
 export const changePassword = async (userId: string, oldPassword: string, newPassword: string) => {
   try {
-    return await window.electronAPI.localUser.changePassword(userId, oldPassword, newPassword);
+    return await window.electronAPI.local.localUser.changePassword(
+      userId,
+      oldPassword,
+      newPassword,
+    );
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Failed to change password'));
   }

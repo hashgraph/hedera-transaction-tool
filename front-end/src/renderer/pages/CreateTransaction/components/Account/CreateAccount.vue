@@ -29,6 +29,7 @@ import {
   getEntityIdFromTransactionReceipt,
   getTransactionFromBytes,
 } from '@renderer/utils/transactions';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
@@ -128,8 +129,13 @@ const handleCreate = async e => {
 
 const handleExecuted = async (_response, receipt: TransactionReceipt) => {
   isExecuted.value = true;
+
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
   const accountId = getEntityIdFromTransactionReceipt(receipt, 'accountId');
-  await add(user.data.id, accountId, nickname.value);
+  await add(user.personal.id, accountId, nickname.value);
   toast.success(`Account ${accountId} linked`, { position: 'bottom-right' });
 };
 

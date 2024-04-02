@@ -11,6 +11,7 @@ import { useToast } from 'vue-toast-notification';
 import { addComplexKey } from '@renderer/services/complexKeysService';
 
 import { encodeKey } from '@renderer/utils/sdk';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -40,9 +41,12 @@ const handleShowUpdate = show => emit('update:show', show);
 
 const handleSaveKeyList = async e => {
   e.preventDefault();
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
 
   const keyListBytes = encodeKey(props.keyList);
-  const newKey = await addComplexKey(user.data.id, keyListBytes, nickname.value);
+  const newKey = await addComplexKey(user.personal.id, keyListBytes, nickname.value);
 
   toast.success('Key list saved successfully', { position: 'bottom-right' });
 

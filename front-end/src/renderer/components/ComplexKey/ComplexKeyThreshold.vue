@@ -3,9 +3,10 @@ import { ref } from 'vue';
 import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
+import useUserStore from '@renderer/stores/storeUser';
 
 import { isPublicKeyInKeyList } from '@renderer/utils/sdk';
+import * as ush from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppPublicKeyInput from '@renderer/components/ui/AppPublicKeyInput.vue';
@@ -23,7 +24,7 @@ const props = defineProps<{
 const emit = defineEmits(['update:keyList']);
 
 /* Stores */
-const keyPairs = useKeyPairsStore();
+const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
@@ -169,7 +170,7 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
                 filled
                 readOnly
                 has-cross-icon
-                :label="keyPairs.getNickname(key.toStringRaw())"
+                :label="ush.getNickname(key.toStringRaw(), user.keyPairs)"
                 :on-cross-icon-click="() => handleRemovePublicKey(key)"
               />
             </div>

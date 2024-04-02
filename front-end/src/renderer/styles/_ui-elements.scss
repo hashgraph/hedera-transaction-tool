@@ -66,6 +66,12 @@
   box-shadow: 1px 1px 1px 0px #00000012 inset;
 }
 
+.btn-group {
+  .btn.active {
+    z-index: 0;
+  }
+}
+
 /* Forms */
 .form-control,
 .form-select {
@@ -711,6 +717,7 @@
   .pager-item,
   .page-link {
     border-radius: $border-radius;
+    z-index: 0;
   }
 
   .page-link {

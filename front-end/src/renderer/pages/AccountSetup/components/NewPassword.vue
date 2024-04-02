@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 
 // import { deleteEncryptedPrivateKeys } from '@renderer/services/keyPairService';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -17,7 +17,6 @@ const props = defineProps<{
 }>();
 
 /* Stores */
-const keyPairsStore = useKeyPairsStore();
 const user = useUserStore();
 
 /* Composables */
@@ -43,17 +42,14 @@ const handleFormSubmit = async (event: Event) => {
 
   if (!inputNewPasswordInvalid.value && !inputConfirmPasswordInvalid.value) {
     try {
-      if (!user.data.isLoggedIn || !user.data.activeServerURL || !user.data.activeUserId) {
+      if (!isUserLoggedIn(user.personal)) {
         throw new Error('User is not logged in');
       }
 
       isLoading.value = true;
 
       //SEND PASSWORD RESET REQUEST
-      // await deleteEncryptedPrivateKeys(
-      //   user.data.id,
-      // );
-      await keyPairsStore.refetch();
+
       props.handleContinue(inputNewPassword.value);
 
       toast.success('Password changed successfully', { position: 'bottom-right' });
@@ -78,14 +74,11 @@ watch(inputConfrimPassword, val => {
 </script>
 
 <template>
-  <div class="new-password-page p-10 d-flex flex-column justify-content-center align-items-center">
+  <div class="fill-remaining flex-centered flex-column mt-4">
     <h1 class="text-display text-bold text-center">New Password</h1>
-    <p class="mt-5 text-main text-center">Please enter new password</p>
-    <form
-      @submit="handleFormSubmit"
-      class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center"
-    >
-      <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
+    <p class="text-main text-center mt-5">Please enter new password</p>
+    <form @submit="handleFormSubmit" class="row justify-content-center w-100 mt-5">
+      <div class="col-12 col-md-8 col-lg-6">
         <AppInput
           v-model="inputNewPassword"
           :filled="true"

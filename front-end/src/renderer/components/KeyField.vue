@@ -5,7 +5,6 @@ import { ComplexKey } from '@prisma/client';
 
 import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
@@ -14,6 +13,7 @@ import { getComplexKey, updateComplexKey } from '@renderer/services/complexKeysS
 
 import { isPublicKey } from '@renderer/utils/validator';
 import { decodeKeyList, encodeKey } from '@renderer/utils/sdk';
+import * as ush from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppPublicKeyInput from '@renderer/components/ui/AppPublicKeyInput.vue';
@@ -45,7 +45,6 @@ enum Tabs {
 }
 
 /* Stores */
-const keyPairs = useKeyPairsStore();
 const user = useUserStore();
 
 /* Composables */
@@ -136,10 +135,14 @@ watch(currentTab, tab => {
 });
 
 watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) => {
+  if (!ush.isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
   if (newKey instanceof PublicKey && newInputRef?.inputRef?.inputRef) {
     newInputRef.inputRef.inputRef.value = newKey.toStringRaw();
   } else if (newKey instanceof KeyList) {
-    selectedComplexKey.value = (await getComplexKey(user.data.id, newKey)) || null;
+    selectedComplexKey.value = (await getComplexKey(user.personal.id, newKey)) || null;
     currentTab.value = Tabs.COMPLEX;
   } else if (newInputRef?.inputRef?.inputRef) {
     newInputRef.inputRef.inputRef.value = '';
@@ -182,7 +185,7 @@ watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) =
             :filled="true"
             :label="
               modelKey instanceof PublicKey
-                ? keyPairs.getNickname(modelKey.toStringRaw())
+                ? ush.getNickname(modelKey.toStringRaw(), user.keyPairs)
                 : 'Public Key'
             "
             @update:model-value="handlePublicKeyChange"

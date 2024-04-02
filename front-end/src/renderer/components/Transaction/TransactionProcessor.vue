@@ -5,7 +5,6 @@ import { Key, KeyList, Transaction, TransactionReceipt, TransactionResponse } fr
 import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
@@ -18,6 +17,7 @@ import { flattenKeyList } from '@renderer/services/keyPairService';
 import { deleteDraft, getDraft } from '@renderer/services/transactionDraftsService';
 
 import { ableToSign, stringifyHbar, getStatusFromCode, getTransactionType } from '@renderer/utils';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -36,7 +36,6 @@ const props = defineProps<{
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
-const keyPairs = useKeyPairsStore();
 
 /* Composables */
 const toast = useToast();
@@ -65,10 +64,10 @@ const flattenedSignatureKey = computed(() =>
   signatureKey.value ? flattenKeyList(signatureKey.value).map(pk => pk.toStringRaw()) : [],
 );
 const externalPublicKeysReq = computed(() =>
-  flattenedSignatureKey.value.filter(pk => !keyPairs.publicKeys.includes(pk)),
+  flattenedSignatureKey.value.filter(pk => !user.publicKeys.includes(pk)),
 );
 const localPublicKeysReq = computed(() =>
-  flattenedSignatureKey.value.filter(pk => keyPairs.publicKeys.includes(pk)),
+  flattenedSignatureKey.value.filter(pk => user.publicKeys.includes(pk)),
 );
 const type = computed(() => transaction.value && getTransactionType(transaction.value));
 
@@ -88,7 +87,7 @@ function handleConfirmTransaction(e: Event) {
   if (localPublicKeysReq.value.length > 0) {
     isConfirmShown.value = false;
     isSignModalShown.value = true;
-  } else if (user.data.mode === 'organization') {
+  } else if (user.selectedOrganization) {
     console.log('Send to back end along with siganture key');
   }
 }
@@ -98,21 +97,25 @@ async function handleSignTransaction(e: Event) {
 
   if (!props.transactionBytes) throw new Error('Transaction not provided');
 
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
   try {
     isSigning.value = true;
 
     const signedTransactionBytes = await signTransaction(
       props.transactionBytes,
       localPublicKeysReq.value,
-      user.data.id,
+      user.personal.id,
       userPassword.value,
     );
 
     isSignModalShown.value = false;
 
-    if (user.data.mode === 'personal') {
+    if (!user.selectedOrganization) {
       await executeTransaction(signedTransactionBytes);
-    } else if (user.data.mode === 'organization') {
+    } else if (user.selectedOrganization) {
       await sendSignedTransactionToOrganization();
       console.log('Send to back end signed along with required', signatureKey.value);
     }
@@ -129,7 +132,7 @@ async function process(requiredKey: Key) {
   signatureKey.value = requiredKey;
 
   await nextTick();
-  await keyPairs.refetch();
+  await user.refetchKeys();
 
   validateProcess();
 
@@ -142,14 +145,14 @@ async function process(requiredKey: Key) {
       throw new Error('Transaction not provided');
     }
 
-    if (!user.data.isLoggedIn) {
+    if (!isUserLoggedIn(user.personal)) {
       throw new Error('User is not logged in');
     }
 
     if (
       signatureKey.value &&
-      !ableToSign(keyPairs.publicKeys, signatureKey.value) &&
-      user.data.mode === 'personal'
+      !ableToSign(user.publicKeys, signatureKey.value) &&
+      !user.selectedOrganization
     ) {
       throw new Error(
         'Unable to execute, all of the required signatures should be with your keys. You are currently in Personal mode.',
@@ -159,6 +162,10 @@ async function process(requiredKey: Key) {
 }
 
 async function executeTransaction(transactionBytes: Uint8Array) {
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
   let status = 0;
 
   try {
@@ -211,7 +218,7 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     body: transactionBytes.toString(),
     status: getStatusFromCode(status),
     status_code: status,
-    user_id: user.data.id,
+    user_id: user.personal.id,
     creator_public_key: null,
     signature: '',
     valid_start: executedTransaction.transactionId.validStart?.toString() || '',

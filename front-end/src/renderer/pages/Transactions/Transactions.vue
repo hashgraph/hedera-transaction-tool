@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+
+import useUserStore from '@renderer/stores/storeUser';
+
+import { isOrganizationActive } from '@renderer/utils/userStoreHelpers';
 
 import AppTabs, { TabItem } from '@renderer/components/ui/AppTabs.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -8,20 +12,51 @@ import TransactionSelectionModal from '@renderer/components/TransactionSelection
 import History from './components/History.vue';
 import Drafts from './components/Drafts.vue';
 
+/* Stores */
+const user = useUserStore();
+
 /* State */
-const tabItems = ref<TabItem[]>([
-  // { title: 'Ready for Review' },
-  // { title: 'Ready to Sign' },
-  // { title: 'In Progress' },
-  // { title: 'Ready for Submission' },
-  { title: 'Drafts' },
-  { title: 'History' },
-]);
+const organizationOnlyTabs: TabItem[] = [
+  { title: 'Ready for Review' },
+  { title: 'Ready to Sign' },
+  { title: 'In Progress' },
+  { title: 'Ready for Submission' },
+];
+const sharedTabs: TabItem[] = [{ title: 'Drafts' }, { title: 'History' }];
+
 const activeTabIndex = ref(1);
+const tabItems = ref<TabItem[]>(sharedTabs);
 const isTransactionSelectionModalShown = ref(false);
 
 /* Computed */
 const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title);
+
+/* Function */
+function setTabItems() {
+  if (isOrganizationActive(user.selectedOrganization)) {
+    const currentTabTitle = activeTabTitle.value;
+    tabItems.value = [...organizationOnlyTabs, ...sharedTabs];
+    const newIndex = tabItems.value.findIndex(tab => tab.title === currentTabTitle);
+    activeTabIndex.value = newIndex >= 0 ? newIndex : 0;
+  } else {
+    const newIndex = sharedTabs.findIndex(tab => tab.title === activeTabTitle.value);
+    activeTabIndex.value = newIndex >= 0 ? newIndex : 0;
+    tabItems.value = sharedTabs;
+  }
+}
+
+/* Hooks */
+onMounted(() => {
+  setTabItems();
+});
+
+/* Watchers */
+watch(
+  () => user.selectedOrganization,
+  () => {
+    setTabItems();
+  },
+);
 </script>
 
 <template>

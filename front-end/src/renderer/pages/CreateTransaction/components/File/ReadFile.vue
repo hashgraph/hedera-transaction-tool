@@ -5,7 +5,6 @@ import { FileContentsQuery, FileInfoQuery, Hbar, HbarUnit } from '@hashgraph/sdk
 import { HederaFile } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
@@ -17,6 +16,7 @@ import { executeQuery } from '@renderer/services/transactionService';
 import { getAll, update } from '@renderer/services/filesService';
 
 import { isHederaSpecialFileId } from '@renderer/utils/sdk';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -28,7 +28,6 @@ import TransactionHeaderControls from '@renderer/components/Transaction/Transact
 
 /* Stores */
 const user = useUserStore();
-const keyPairsStore = useKeyPairsStore();
 const networkStore = useNetworkStore();
 
 /* Composables */
@@ -49,24 +48,24 @@ const storedFiles = ref<HederaFile[]>([]);
 const handleRead = async e => {
   e.preventDefault();
 
-  if (!user.data.isLoggedIn) {
+  if (!isUserLoggedIn(user.personal)) {
     throw Error('User is not logged in');
   }
 
   try {
     isLoading.value = true;
 
-    const publicKey = keyPairsStore.publicKeyToAccounts.find(pa =>
+    const publicKey = user.publicKeyToAccounts.find(pa =>
       pa.accounts.some(acc => acc.account === payerData.accountIdFormatted.value),
     )?.publicKey;
-    const keyPair = keyPairsStore.keyPairs.find(kp => kp.public_key === publicKey);
+    const keyPair = user.keyPairs.find(kp => kp.public_key === publicKey);
 
     if (!keyPair) {
       throw new Error('Unable to execute query, you should use a payer ID with one of your keys');
     }
 
     const privateKey = await decryptPrivateKey(
-      user.data.id,
+      user.personal.id,
       userPassword.value,
       keyPair.public_key,
     );
@@ -105,7 +104,7 @@ const handleRead = async e => {
         keyPair.type,
       );
 
-      await update(fileId.value, user.data.id, {
+      await update(fileId.value, user.personal.id, {
         contentBytes: response.join(','),
         metaBytes: infoResponse.join(','),
         lastRefreshed: new Date(),
@@ -134,18 +133,15 @@ const handleSubmit = e => {
 
 /* Hooks */
 onMounted(async () => {
-  await keyPairsStore.refetch();
-
-  const allAccounts = keyPairsStore.publicKeyToAccounts.map(a => a.accounts).flat();
-  if (allAccounts.length > 0 && allAccounts[0].account) {
-    payerData.accountId.value = allAccounts[0].account;
-  }
-
   if (route.query.fileId) {
     fileId.value = route.query.fileId.toString();
   }
 
-  storedFiles.value = await getAll(user.data.id);
+  if (!isUserLoggedIn(user.personal)) {
+    throw Error('User is not logged in');
+  }
+
+  storedFiles.value = await getAll(user.personal.id);
 });
 
 /* Watchers */
@@ -174,7 +170,7 @@ const columnClass = 'col-4 col-xxxl-3';
           <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
             >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
           >
-          <template v-if="user.data.mode === 'personal'">
+          <template v-if="!user.selectedOrganization">
             <AccountIdsSelect
               v-model:account-id="payerData.accountId.value"
               :select-default="true"

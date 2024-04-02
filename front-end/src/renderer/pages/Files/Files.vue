@@ -18,6 +18,7 @@ import { getUInt8ArrayFromString, convertBytes } from '@renderer/utils';
 import { getFormattedDateFromTimestamp } from '@renderer/utils/transactions';
 
 import { transactionTypeKeys } from '@renderer/pages/CreateTransaction/txTypeComponentMapping';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -38,7 +39,7 @@ const specialFiles: HederaFile[] = [
     id: '0.0.101',
     file_id: '0.0.101',
     nickname: 'Address Book',
-    user_id: user.data.id,
+    user_id: '0x',
     description: null,
     metaBytes: null,
     contentBytes: null,
@@ -48,7 +49,7 @@ const specialFiles: HederaFile[] = [
     id: '0.0.102',
     file_id: '0.0.102',
     nickname: 'Nodes Details',
-    user_id: user.data.id,
+    user_id: '0x',
     description: null,
     metaBytes: null,
     contentBytes: null,
@@ -58,7 +59,7 @@ const specialFiles: HederaFile[] = [
     id: '0.0.111',
     file_id: '0.0.111',
     nickname: 'Fee Schedules',
-    user_id: user.data.id,
+    user_id: '0x',
     description: null,
     metaBytes: null,
     contentBytes: null,
@@ -68,7 +69,7 @@ const specialFiles: HederaFile[] = [
     id: '0.0.112',
     file_id: '0.0.112',
     nickname: 'Exchange Rate Set',
-    user_id: user.data.id,
+    user_id: '0x',
     description: null,
     metaBytes: null,
     contentBytes: null,
@@ -78,7 +79,7 @@ const specialFiles: HederaFile[] = [
     id: '0.0.121',
     file_id: '0.0.121',
     nickname: 'Application Properties',
-    user_id: user.data.id,
+    user_id: '0x',
     description: null,
     metaBytes: null,
     contentBytes: null,
@@ -88,7 +89,7 @@ const specialFiles: HederaFile[] = [
     id: '0.0.122',
     file_id: '0.0.122',
     nickname: 'API Permission Properties',
-    user_id: user.data.id,
+    user_id: '0x',
     description: null,
     metaBytes: null,
     contentBytes: null,
@@ -98,7 +99,7 @@ const specialFiles: HederaFile[] = [
     id: '0.0.123',
     file_id: '0.0.123',
     nickname: 'Throttle Definitions',
-    user_id: user.data.id,
+    user_id: '0x',
     description: null,
     metaBytes: null,
     contentBytes: null,
@@ -138,15 +139,15 @@ const handleFileItemClick = fileId => {
 };
 
 const handleUnlinkFile = async () => {
-  if (!user.data.isLoggedIn) {
-    throw new Error('Please login');
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
   }
 
   if (!selectedFile.value) {
     throw new Error('Please select file first');
   }
 
-  files.value = specialFiles.concat(await remove(user.data.id, selectedFile.value.file_id));
+  files.value = specialFiles.concat(await remove(user.personal.id, selectedFile.value.file_id));
 
   isUnlinkFileModalShown.value = false;
 
@@ -173,9 +174,13 @@ const handleStartNicknameEdit = () => {
 const handleChangeNickname = async () => {
   isNicknameInputShown.value = false;
 
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
   if (selectedFile.value) {
     files.value = specialFiles.concat(
-      await update(selectedFile.value.file_id, user.data.id, {
+      await update(selectedFile.value.file_id, user.personal.id, {
         nickname: nicknameInputRef.value?.inputRef?.value,
       }),
     );
@@ -198,9 +203,14 @@ const handleStartDescriptionEdit = () => {
 
 const handleChangeDescription = async () => {
   isDescriptionInputShown.value = false;
+
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
   if (selectedFile.value) {
     files.value = specialFiles.concat(
-      await update(selectedFile.value.file_id, user.data.id, {
+      await update(selectedFile.value.file_id, user.personal.id, {
         description: descriptionInputRef.value?.value,
       }),
     );
@@ -209,11 +219,11 @@ const handleChangeDescription = async () => {
 
 /* Hooks */
 onMounted(async () => {
-  if (!user.data.isLoggedIn) {
-    throw new Error('Please login');
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
   }
 
-  files.value = files.value.concat(await getAll(user.data.id));
+  files.value = files.value.concat(await getAll(user.personal.id));
 });
 
 /* Watchers */
@@ -449,7 +459,10 @@ watch(files, newFiles => {
                     <AppButton
                       color="primary"
                       size="small"
-                      @click="showContentInTemp(user.data.id, selectedFile.file_id)"
+                      @click="
+                        isUserLoggedIn(user.personal) &&
+                          showContentInTemp(user.personal.id, selectedFile.file_id)
+                      "
                       >View</AppButton
                     >
                   </div>

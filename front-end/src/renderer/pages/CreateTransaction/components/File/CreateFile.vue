@@ -29,12 +29,11 @@ import {
   createFileInfo,
   getMinimumExpirationTime,
   getMaximumExpirationTime,
-} from '@renderer/utils/sdk';
-import {
+  isAccountId,
   getEntityIdFromTransactionReceipt,
   getTransactionFromBytes,
-} from '@renderer/utils/transactions';
-import { isAccountId } from '@renderer/utils/validator';
+} from '@renderer/utils';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import DatePicker from '@vuepic/vue-datepicker';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -97,6 +96,10 @@ const handleCreate = async e => {
 const handleExecuted = async (_response, receipt: TransactionReceipt) => {
   isExecuted.value = true;
 
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
   const fileTransaction = createTransaction();
 
   const newFileId = getEntityIdFromTransactionReceipt(receipt, 'fileId');
@@ -113,7 +116,7 @@ const handleExecuted = async (_response, receipt: TransactionReceipt) => {
 
   const file: Prisma.HederaFileUncheckedCreateInput = {
     file_id: newFileId,
-    user_id: user.data.id,
+    user_id: user.personal.id,
     contentBytes: fileTransaction.contents?.join(','),
     metaBytes: infoBytes.join(','),
     lastRefreshed: new Date(),

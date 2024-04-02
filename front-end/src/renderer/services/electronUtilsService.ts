@@ -4,12 +4,12 @@ import * as HashgraphProto from '@hashgraph/proto';
 /* Electron Utilities Service */
 
 /* Open external URL */
-export const openExternal = (url: string) => window.electronAPI.utils.openExternal(url);
+export const openExternal = (url: string) => window.electronAPI.local.utils.openExternal(url);
 
 /* Decode Protobuff encoded key */
 export const decodeProtobuffKey = async (protobuffKey: string): Promise<Key | undefined> => {
   try {
-    const key = await window.electronAPI.utils.decodeProtobuffKey(protobuffKey);
+    const key = await window.electronAPI.local.utils.decodeProtobuffKey(protobuffKey);
 
     if (key.thresholdKey) {
       return KeyList.__fromProtobufThresoldKey(key.thresholdKey);
@@ -30,7 +30,7 @@ export const decodeProtobuffKey = async (protobuffKey: string): Promise<Key | un
 /* Decode Protobuff encoded key to KeyList or Public key */
 export const decodeProtobuffKeyNormalized = async (protobuffKey: string) => {
   try {
-    const key = await window.electronAPI.utils.decodeProtobuffKey(protobuffKey);
+    const key = await window.electronAPI.local.utils.decodeProtobuffKey(protobuffKey);
 
     return formatKey(key);
   } catch (error) {
@@ -78,7 +78,7 @@ export const decodeProtobuffKeyNormalized = async (protobuffKey: string) => {
 /* Converts Uint8Array to hex string */
 export const uint8ArrayToHex = async (data: Uint8Array) => {
   try {
-    return await window.electronAPI.utils.uint8ArrayToHex(data);
+    return await window.electronAPI.local.utils.uint8ArrayToHex(data);
   } catch (error) {
     throw new Error('Failed to convert UInt8Array to hex string');
   }

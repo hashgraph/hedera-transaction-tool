@@ -2,11 +2,13 @@
 import { ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 
 import { useToast } from 'vue-toast-notification';
 
-import { changeDecryptionPassword } from '@renderer/services/keyPairService';
+import { changePassword } from '@renderer/services/userService';
+import { changePassword as organizationChangePassword } from '@renderer/services/organization/user';
+
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -15,7 +17,6 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Stores */
 const user = useUserStore();
-const keyPairsStore = useKeyPairsStore();
 
 /* Composables */
 const toast = useToast();
@@ -32,19 +33,28 @@ const handleChangePassword = async e => {
   e.preventDefault();
   isConfirmModalShown.value = false;
   try {
-    if (!user.data.isLoggedIn) {
+    if (!isUserLoggedIn(user.personal)) {
       throw new Error('User is not logged in');
     }
 
-    if (currentPassword.value.length > 0 && newPassword.value.length > 0) {
-      await changeDecryptionPassword(user.data.id, currentPassword.value, newPassword.value);
-
-      await keyPairsStore.refetch();
-
-      isSuccessModalShown.value = true;
+    if (currentPassword.value.length === 0 || newPassword.value.length === 0) {
+      throw new Error('Password cannot be empty');
     }
+
+    if (isLoggedInOrganization(user.selectedOrganization)) {
+      await organizationChangePassword(
+        user.selectedOrganization.serverUrl,
+        currentPassword.value,
+        newPassword.value,
+      );
+    } else {
+      await changePassword(user.personal.id, currentPassword.value, newPassword.value);
+      await user.refetchKeys();
+    }
+
+    isSuccessModalShown.value = true;
   } catch (err: any) {
-    toast.error('Failed to change password', { position: 'bottom-right' });
+    toast.error(err.message || 'Failed to change password', { position: 'bottom-right' });
   }
 };
 </script>

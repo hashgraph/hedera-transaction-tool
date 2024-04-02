@@ -1,15 +1,18 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onBeforeMount, ref } from 'vue';
 
-import useOrganizationsStore from '@renderer/stores/storeOrganizations';
+import { Organization } from '@prisma/client';
 
 import { useToast } from 'vue-toast-notification';
 
+import {
+  getOrganizations,
+  // deleteOrganization,
+  addOrganization,
+} from '@renderer/services/organizationsService';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-
-/* Stores */
-const organizationsStore = useOrganizationsStore();
 
 /* Composables */
 const toast = useToast();
@@ -18,6 +21,7 @@ const toast = useToast();
 const newOrganizationName = ref('');
 const newOrganizationServerUrl = ref('');
 const newOrganizationServerPublicKey = ref('');
+const organizations = ref<Organization[]>();
 
 /* Handlers */
 const handleAddOrganization = async e => {
@@ -25,10 +29,10 @@ const handleAddOrganization = async e => {
 
   if (newOrganizationName.value !== '' && newOrganizationServerUrl.value !== '') {
     try {
-      await organizationsStore.addOrganization({
-        name: newOrganizationName.value,
+      await addOrganization({
+        nickname: newOrganizationName.value,
         serverUrl: newOrganizationServerUrl.value,
-        serverPublicKey: newOrganizationServerPublicKey.value,
+        key: newOrganizationServerPublicKey.value,
       });
 
       toast.success('Organization added successfully', { position: 'bottom-right' });
@@ -42,19 +46,24 @@ const handleAddOrganization = async e => {
   }
 };
 
-const handleRemoveOrganization = async (serverUrl: string) => {
-  try {
-    await organizationsStore.removeOrganization(serverUrl);
+// const handleRemoveOrganization = async (id: string) => {
+//   try {
+//     await deleteOrganization(id);
 
-    toast.success('Organization removed successfully', { position: 'bottom-right' });
-  } catch (err: any) {
-    let message = 'Failed to remove organization';
-    if (err.message && typeof err.message === 'string') {
-      message = err.message;
-    }
-    toast.error(message, { position: 'bottom-right' });
-  }
-};
+//     toast.success('Organization removed successfully', { position: 'bottom-right' });
+//   } catch (err: any) {
+//     let message = 'Failed to remove organization';
+//     if (err.message && typeof err.message === 'string') {
+//       message = err.message;
+//     }
+//     toast.error(message, { position: 'bottom-right' });
+//   }
+// };
+
+/* Hooks */
+onBeforeMount(async () => {
+  organizations.value = await getOrganizations();
+});
 </script>
 <template>
   <div class="flex-column-100">
@@ -75,20 +84,14 @@ const handleRemoveOrganization = async (serverUrl: string) => {
         <AppButton color="primary" type="submit">Add Organization</AppButton>
       </div>
     </form>
-    <div
-      v-for="org in organizationsStore.organizations"
-      :key="org.serverUrl"
-      class="p-4 mt-7 border border-2 rounded-3"
-    >
-      <p>{{ org.name }}</p>
+    <div v-for="org in organizations" :key="org.id" class="p-4 mt-7 border border-2 rounded-3">
+      <p>{{ org.nickname }}</p>
       <div class="mt-4 d-flex align-items-end">
         <div class="flex-1 me-4">
           <label class="form-label">organization server url:</label>
           <AppInput :filled="true" disabled class="py-3" :value="org.serverUrl" />
         </div>
-        <AppButton color="primary" @click="handleRemoveOrganization(org.serverUrl)">
-          Remove
-        </AppButton>
+        <!-- <AppButton color="primary" @click="handleRemoveOrganization(org.id)"> Remove </AppButton> -->
       </div>
     </div>
   </div>

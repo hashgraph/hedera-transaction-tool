@@ -15,6 +15,8 @@ import {
   getDraftsCount,
 } from '@renderer/services/transactionDraftsService';
 
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
@@ -92,9 +94,13 @@ function getOpositeDirection() {
 }
 
 function createFindArgs(): Prisma.TransactionDraftFindManyArgs {
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
   return {
     where: {
-      user_id: user.data.id,
+      user_id: user.personal.id,
     },
     orderBy: {
       [sort.field]: sort.direction,
@@ -105,9 +111,13 @@ function createFindArgs(): Prisma.TransactionDraftFindManyArgs {
 }
 
 async function fetchDrafts() {
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
   isLoading.value = true;
   try {
-    totalItems.value = await getDraftsCount(user.data.id);
+    totalItems.value = await getDraftsCount(user.personal.id);
     drafts.value = await getDrafts(createFindArgs());
     handleSort(sort.field, sort.direction);
   } finally {

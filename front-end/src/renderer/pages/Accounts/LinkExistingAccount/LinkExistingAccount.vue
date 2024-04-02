@@ -12,6 +12,7 @@ import { add } from '@renderer/services/accountsService';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 /* Stores */
 const user = useUserStore();
@@ -30,11 +31,11 @@ const handleLinkAccount = async e => {
 
   if (accountData.isValid.value) {
     try {
-      if (!user.data.isLoggedIn) {
+      if (!isUserLoggedIn(user.personal)) {
         throw new Error('User not logged in');
       }
 
-      await add(user.data.id, accountData.accountIdFormatted.value, nickname.value);
+      await add(user.personal.id, accountData.accountIdFormatted.value, nickname.value);
 
       router.push({ name: 'accounts' });
       toast.success('Account linked successfully!', { position: 'bottom-right' });

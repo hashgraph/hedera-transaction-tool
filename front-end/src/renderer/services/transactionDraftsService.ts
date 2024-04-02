@@ -8,7 +8,7 @@ import { getTransactionType } from '@renderer/utils/transactions';
 /* Get raw drafts */
 export const getDrafts = async (findArgs: Prisma.TransactionDraftFindManyArgs) => {
   try {
-    return await window.electronAPI.transactionDrafts.getDrafts(findArgs);
+    return await window.electronAPI.local.transactionDrafts.getDrafts(findArgs);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, 'Failed to fetch transaction drafts'));
   }
@@ -16,7 +16,7 @@ export const getDrafts = async (findArgs: Prisma.TransactionDraftFindManyArgs) =
 
 export const getDraft = async (id: string) => {
   try {
-    return await window.electronAPI.transactionDrafts.getDraft(id);
+    return await window.electronAPI.local.transactionDrafts.getDraft(id);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, `Failed to fetch transaction with id: ${id}`));
   }
@@ -33,7 +33,7 @@ export const addDraft = async (userId: string, transactionBytes: Uint8Array, det
   };
 
   try {
-    return await window.electronAPI.transactionDrafts.addDraft(transactionDraft);
+    return await window.electronAPI.local.transactionDrafts.addDraft(transactionDraft);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, 'Failed to add transaction draft'));
   }
@@ -44,7 +44,7 @@ export const updateDraft = async (
   draft: Prisma.TransactionDraftUncheckedUpdateInput,
 ) => {
   try {
-    return await window.electronAPI.transactionDrafts.updateDraft(id, draft);
+    return await window.electronAPI.local.transactionDrafts.updateDraft(id, draft);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, `Failed to fetch transaction with id: ${draft.id}`));
   }
@@ -52,7 +52,7 @@ export const updateDraft = async (
 
 export const deleteDraft = async (id: string) => {
   try {
-    return await window.electronAPI.transactionDrafts.deleteDraft(id);
+    return await window.electronAPI.local.transactionDrafts.deleteDraft(id);
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, `Failed to delete transaction with id: ${id}`));
   }
@@ -60,7 +60,9 @@ export const deleteDraft = async (id: string) => {
 
 export const draftExists = async (transactionBytes: Uint8Array) => {
   try {
-    return await window.electronAPI.transactionDrafts.draftExists(transactionBytes.toString());
+    return await window.electronAPI.local.transactionDrafts.draftExists(
+      transactionBytes.toString(),
+    );
   } catch (error: any) {
     throw Error(getMessageFromIPCError(error, `Failed to determine if transaction draft exist`));
   }
@@ -69,7 +71,7 @@ export const draftExists = async (transactionBytes: Uint8Array) => {
 /* Returns saved drafts count */
 export const getDraftsCount = async (userId: string) => {
   try {
-    return await window.electronAPI.transactionDrafts.getDraftsCount(userId);
+    return await window.electronAPI.local.transactionDrafts.getDraftsCount(userId);
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Failed to get transactions count'));
   }

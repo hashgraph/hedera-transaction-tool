@@ -3,21 +3,22 @@ import { onUnmounted, ref, watch } from 'vue';
 import { Mnemonic } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 
-import useKeyPairsStore from '@renderer/stores/storeKeyPairs';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
 import { comparePasswords } from '@renderer/services/userService';
-import { restorePrivateKey, hashRecoveryPhrase } from '@renderer/services/keyPairService';
+import { restorePrivateKey } from '@renderer/services/keyPairService';
+import { uploadKey } from '@renderer/services/organization';
+
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import Import from '@renderer/pages/AccountSetup/components/Import.vue';
 
 /* Stores */
-const keyPairsStore = useKeyPairsStore();
 const user = useUserStore();
 
 /* Composables */
@@ -47,26 +48,34 @@ const handleFinish = e => {
 const handleEnterPassword = async e => {
   e.preventDefault();
 
-  if (!(await comparePasswords(user.data.id, password.value))) {
+  if (!user.personal?.isLoggedIn) {
+    throw new Error('User not found');
+  }
+
+  if (!(await comparePasswords(user.personal.id, password.value))) {
     throw new Error('Incorrect password');
   }
 
-  keyPairsStore.recoveryPhraseWords.length === 24 ? (step.value += 2) : step.value++;
+  user.recoveryPhrase ? (step.value += 2) : step.value++;
 };
 
 const handleRestoreKey = async e => {
   e.preventDefault();
 
+  if (!user.recoveryPhrase) {
+    throw new Error('Recovery phrase not found');
+  }
+
   try {
     const privateKey = await restorePrivateKey(
-      keyPairsStore.recoveryPhraseWords,
+      user.recoveryPhrase.words,
       '',
       Number(index.value),
       'ED25519',
     );
 
     if (
-      keyPairsStore.keyPairs.some(
+      user.keyPairs.some(
         kp => kp.public_key === privateKey.publicKey.toStringRaw() && kp.public_key !== '',
       )
     ) {
@@ -93,22 +102,46 @@ const handleRestoreKey = async e => {
 const handleSaveKey = async e => {
   e.preventDefault();
 
+  if (!user.personal?.isLoggedIn) {
+    throw new Error('User not found');
+  }
+
+  if (!user.recoveryPhrase) {
+    throw new Error('Recovery phrase not found');
+  }
+
   if (restoredKey.value) {
     try {
-      const secretHash = await hashRecoveryPhrase(keyPairsStore.recoveryPhraseWords);
       const keyPair: Prisma.KeyPairUncheckedCreateInput = {
-        user_id: user.data.id,
+        user_id: user.personal.id,
         index: Number(index.value),
         private_key: restoredKey.value.privateKey,
         public_key: restoredKey.value.publicKey,
         type: 'ED25519',
-        organization_id: null,
-        secret_hash: secretHash,
+        organization_id: user.selectedOrganization?.id || null,
+        secret_hash: user.recoveryPhrase.hash,
         nickname: nickname.value || null,
       };
-      await keyPairsStore.storeKeyPair(keyPair, password.value);
 
-      keyPairsStore.clearRecoveryPhrase();
+      if (isLoggedInOrganization(user.selectedOrganization)) {
+        if (
+          user.selectedOrganization.userKeys.some(k => k.publicKey === restoredKey.value?.publicKey)
+        ) {
+          throw new Error('Key pair already exists');
+        }
+
+        await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
+          publicKey: restoredKey.value.publicKey,
+          index: keyPair.index,
+          mnemonicHash: user.recoveryPhrase.hash,
+        });
+      }
+
+      user.recoveryPhrase = null;
+
+      await user.storeKey(keyPair, password.value);
+
+      await user.refetchUserState();
 
       toast.success('Key Pair saved', { position: 'bottom-right' });
       router.push({ name: 'settingsKeys' });
@@ -124,7 +157,7 @@ const handleSaveKey = async e => {
 
 /* Hooks */
 onUnmounted(() => {
-  keyPairsStore.clearRecoveryPhrase();
+  user.recoveryPhrase = null;
 });
 
 /* Watchers */
@@ -206,7 +239,7 @@ watch(index, () => {
             <Import
               ref="importRef"
               :handle-continue="handleFinish"
-              :secret-hashes="user.data.secretHashes"
+              :secret-hashes="user.secretHashes"
             />
             <div class="row justify-content-between mt-6">
               <div class="col-4 d-grid">
@@ -214,11 +247,8 @@ watch(index, () => {
                   >Clear</AppButton
                 >
               </div>
-              <div v-if="keyPairsStore.recoveryPhraseWords.length > 0" class="col-4 d-grid">
-                <AppButton
-                  color="primary"
-                  :disabled="keyPairsStore.recoveryPhraseWords.length === 0"
-                  type="submit"
+              <div v-if="user.recoveryPhrase" class="col-4 d-grid">
+                <AppButton color="primary" :disabled="!user.recoveryPhrase" type="submit"
                   >Continue</AppButton
                 >
               </div>
