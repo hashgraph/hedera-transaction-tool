@@ -9,16 +9,19 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { UsersService } from './users.service';
-import { UpdateUserDto } from './dtos/update-user.dto';
-import { Serialize } from '../interceptors/serialize.interceptor';
-import { UserDto } from './dtos/user.dto';
-import { GetUser } from '../decorators/get-user.decorator';
-import { User } from '@entities/user.entity';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { CreateUserDto } from './dtos/create-user.dto';
+
+import { Serialize } from '../interceptors/serialize.interceptor';
+
+import { GetUser } from '../decorators/get-user.decorator';
+
+import { UsersService } from './users.service';
+
 import { AdminGuard } from '../guards/admin.guard';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+
+import { User } from '@entities/user.entity';
+import { ChangePasswordDto, CreateUserDto, UpdateUserDto, UserDto } from './dtos';
 
 @ApiTags('Users')
 @Controller('users')
@@ -65,6 +68,22 @@ export class UsersController {
   @Get('/me')
   getMe(@GetUser() user: User): User {
     return user;
+  }
+
+  @ApiOperation({
+    summary: 'Change password',
+    description: 'Change the password of the current logged in user.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password successfully changed.',
+  })
+  @Patch('/change-password')
+  async changePassword(
+    @GetUser() user: User,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ): Promise<void> {
+    return this.usersService.changePassword(user, changePasswordDto);
   }
 
   //TODO How/when would this be used?

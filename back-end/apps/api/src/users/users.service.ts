@@ -1,10 +1,18 @@
-import { Injectable, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User, UserStatus } from '@entities/user.entity';
+
 import { Repository } from 'typeorm';
-import * as bcrypt from 'bcryptjs'; // if issues with docker, change this to bcryptjs
-import { CreateUserDto } from './dtos/create-user.dto';
 import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';
+
+import * as bcrypt from 'bcryptjs'; // if issues with docker, change this to bcryptjs
+
+import { User, UserStatus } from '@entities/user.entity';
+import { ChangePasswordDto, CreateUserDto } from './dtos';
 
 @Injectable()
 export class UsersService {
@@ -15,9 +23,11 @@ export class UsersService {
   // and a notification sent to the email provided.
   async createUser(dto: CreateUserDto): Promise<User> {
     let user = await this.getUser({ email: dto.email }, true);
-    if (user) { // If the user is found
-      if (!user.deletedAt) { // AND not deleted, throw an error
-        throw new UnprocessableEntityException('Email already exists.')
+    if (user) {
+      // If the user is found
+      if (!user.deletedAt) {
+        // AND not deleted, throw an error
+        throw new UnprocessableEntityException('Email already exists.');
       }
       // Otherwise, restore the user and update it
       await this.repo.restore(user.id);
@@ -43,7 +53,7 @@ export class UsersService {
   }
 
   // Return a user for given values
-  getUser(where: FindOptionsWhere<User>, withDeleted=false): Promise<User> {
+  getUser(where: FindOptionsWhere<User>, withDeleted = false): Promise<User> {
     if (!where) {
       return null;
     }
@@ -93,5 +103,16 @@ export class UsersService {
     const salt = await bcrypt.genSalt();
     const hash = await bcrypt.hash(password, salt);
     return hash;
+  }
+
+  async changePassword(user: User, changePasswordDto: ChangePasswordDto): Promise<void> {
+    const { oldPassword, newPassword } = changePasswordDto;
+
+    const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
+    if (!isOldPasswordValid) {
+      throw new BadRequestException('Invalid old password');
+    }
+
+    await this.updateUser(user.id, { password: newPassword });
   }
 }
