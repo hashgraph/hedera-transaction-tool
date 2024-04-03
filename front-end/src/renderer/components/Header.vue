@@ -29,7 +29,7 @@ const handleLogout = async () => {
 <template>
   <div class="container-header">
     <div class="container-logo">
-      <Logo />
+      <Logo class="me-2" />
       <LogoText />
     </div>
     <div v-if="user.personal && user.personal.isLoggedIn" class="flex-centered justify-content-end">
