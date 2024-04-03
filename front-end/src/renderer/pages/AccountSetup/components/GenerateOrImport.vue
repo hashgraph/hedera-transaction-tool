@@ -91,7 +91,9 @@ onBeforeMount(() => {
     <template v-else-if="activeTabTitle === 'Import Existing'">
       <Import ref="importRef" :secret-hashes="user.secretHashes" />
       <div class="flex-between-centered mt-6">
-        <AppButton color="borderless" @click="importRef?.clearWords()">Clear</AppButton>
+        <AppButton data-testid="button-clear" color="borderless" @click="importRef?.clearWords()"
+          >Clear</AppButton
+        >
         <AppButton
           v-if="user.recoveryPhrase"
           color="primary"
