@@ -12,7 +12,7 @@ import { Serialize } from '../interceptors/serialize.interceptor';
 import { UserKeysService } from './user-keys.service';
 import { UploadUserKeyDto } from './dtos/upload-user-key.dto';
 import { GetUser } from '../decorators/get-user.decorator';
-import { User, UserKey } from '@entities/';
+import { User, UserKey } from '@entities';
 import { UserKeyDto } from './dtos/user-key.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';

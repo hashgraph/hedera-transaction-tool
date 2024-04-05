@@ -1,10 +1,6 @@
-import { IsNotEmpty, IsString, IsStrongPassword } from 'class-validator';
+import { IsStrongPassword } from 'class-validator';
 
-export class ChangePasswordDto {
-  @IsString()
-  @IsNotEmpty()
-  oldPassword: string;
-
+export class NewPasswordDto {
   @IsStrongPassword(
     {
       minLength: 8,
@@ -17,5 +13,5 @@ export class ChangePasswordDto {
       message: 'Password is too weak, must contain at least 8 characters.',
     },
   )
-  newPassword: string;
+  password: string;
 }

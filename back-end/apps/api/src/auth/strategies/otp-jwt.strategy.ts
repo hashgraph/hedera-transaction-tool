@@ -2,29 +2,30 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { JwtPayload } from '../../interfaces/jwt-payload.interface';
 import { UsersService } from '../../users/users.service';
-import { User, UserStatus } from '@entities';
+import { User } from '@entities';
 import { ConfigService } from '@nestjs/config';
+import { OtpPayload } from '../../interfaces/otp-payload.interface';
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
+export class OtpJwtStrategy extends PassportStrategy(Strategy, 'otp-jwt') {
   constructor(private readonly usersService: UsersService,
-              private readonly configService: ConfigService) {
+              private readonly configService: ConfigService,
+              ) {
     super({
       secretOrKey: configService.get('JWT_SECRET'),
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (request: Request) => request?.cookies?.Authentication,
+        (request: Request) => request?.cookies?.['otp']
       ]),
     });
   }
 
-  async validate({ userId }: JwtPayload): Promise<User> {
-    const user = await this.usersService.getUser({ id: userId });
-
-    // If no user is found, or if the user status === new,
-    // the user is not authorized.
-    if (!user || user.status === UserStatus.NEW) {
+  async validate({ email, verified }: OtpPayload): Promise<User> {
+    if (verified) {
+      throw new UnauthorizedException();
+    }
+    const user = await this.usersService.getUser({ email });
+    if (!user) {
       throw new UnauthorizedException();
     }
 

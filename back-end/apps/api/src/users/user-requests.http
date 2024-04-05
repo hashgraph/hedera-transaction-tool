@@ -17,11 +17,12 @@ GET http://localhost:3000/users
 GET http://localhost:3000/users/me
 
 ### Update password for John
-PATCH http://localhost:3000/users
+POST http://localhost:3000/auth/change-password
 content-type: application/json
 
 {
-  "password": "123456789"
+  "oldPassword": "123456789",
+  "newPassword": "asdfascvawesfa"
 }
 
 ### Delete a user

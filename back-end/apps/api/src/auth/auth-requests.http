@@ -25,6 +25,31 @@ content-type: application/json
   "password": "123456789"
 }
 
+### Reset password
+POST http://localhost:3000/auth/reset-password
+content-type: application/json
+
+{
+  "email": "john@test.com"
+}
+
+### Verify reset password
+POST http://localhost:3000/auth/verify-reset
+content-type: application/json
+
+{
+  "token": "700053"
+}
+
+### Change password
+PATCH http://localhost:3000/auth/set-password
+content-type: application/json
+
+{
+  "password": "123456789"
+}
+
+
 ### Sing out
 POST http://localhost:3000/auth/signout
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcxMDc3NDAzNywiZXhwIjoxNzEwODEwMDM3fQ.h_NwgTMmancbf-ifAlOtH9SuGGqf6MW4COjbryIp14s

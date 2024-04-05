@@ -4,19 +4,18 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from '@entities/';
 import { UsersModule } from '../users/users.module';
 import { ConfigService } from '@nestjs/config';
 import { LoggerModule } from '@app/common';
-import { LocalStrategy } from './strategies/local.strategy';
-import { JwtStrategy } from './strategies/jwt.strategy';
+import { JwtStrategy, LocalStrategy, OtpJwtStrategy, OtpLocalStrategy, OtpVerifiedStrategy } from './strategies';
+import { User } from '@entities';
 
 @Module({
   imports: [
     LoggerModule,
     PassportModule.register({}),
     JwtModule.registerAsync({
-      imports: [], // imports is required, but it doesn't appear to require ConfigModule
+      imports: [], // imports is required, but it doesn't appear to require ConfigModule, maybe because it isGlobal?
       useFactory: (configService: ConfigService) => ({
         secret: configService.getOrThrow('JWT_SECRET'),
         signOptions: {
@@ -29,6 +28,6 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     UsersModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
+  providers: [AuthService, LocalStrategy, JwtStrategy, OtpJwtStrategy, OtpLocalStrategy, OtpVerifiedStrategy],
 })
 export class AuthModule {}

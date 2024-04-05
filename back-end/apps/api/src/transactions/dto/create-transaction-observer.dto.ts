@@ -1,5 +1,5 @@
 import { IsEnum, IsNumber } from 'class-validator';
-import { Role } from '@entities/transaction-observer.entity';
+import { Role } from '@entities';
 
 export class CreateTransactionObserverDto {
   @IsNumber()

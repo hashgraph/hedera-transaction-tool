@@ -12,7 +12,7 @@ import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { Serialize } from '../../interceptors/serialize.interceptor';
 import { TransactionApproverDto } from '../dto/transaction-approver.dto';
 import { ApproversService } from './approvers.service';
-import { TransactionApprover, User } from '@entities/';
+import { TransactionApprover, User } from '@entities';
 import { GetUser } from '../../decorators/get-user.decorator';
 import { CreateTransactionApproverDto } from '../dto/create-transaction-approver.dto';
 import { ApiTags } from '@nestjs/swagger';

@@ -1,5 +1,5 @@
 import { Expose, Transform } from 'class-transformer';
-import { Role } from '@entities/transaction-observer.entity';
+import { Role } from '@entities';
 
 export class TransactionObserverDto {
   @Expose()

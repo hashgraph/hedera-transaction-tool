@@ -1,12 +1,10 @@
 import { BadRequestException, Injectable, UnauthorizedException, UnprocessableEntityException, } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import { Repository } from 'typeorm';
 import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';
-
 import * as bcrypt from 'bcryptjs'; // if issues with docker, change this to bcryptjs
 import { ChangePasswordDto, CreateUserDto } from './dtos';
-import { User, UserStatus } from '@entities/';
+import { User, UserStatus } from '@entities';
 
 @Injectable()
 export class UsersService {
@@ -48,7 +46,8 @@ export class UsersService {
 
   // Return a user for given values
   getUser(where: FindOptionsWhere<User>, withDeleted = false): Promise<User> {
-    if (!where) {
+    // If where is null, or all values in where are null, return null
+    if (!where || Object.values(where).every(value => !value)) {
       return null;
     }
     return this.repo.findOne({ where, withDeleted });
@@ -68,15 +67,24 @@ export class UsersService {
       throw new Error('user not found');
     }
 
-    //TODO if the password is changing, I need to mark the user as not new/resetpassword?
-    //maybe if user is 'new/resetpassword' and this supplied password is different than the old one
-    //then I can change status? sounds reasonable
-    if (attrs.password) {
-      attrs.password = await this.getSaltedHash(attrs.password);
-    }
-
     Object.assign(user, attrs);
     return this.repo.save(user);
+  }
+
+  // Change the password for the given user. This method is only accessible to a user that is
+  // logged in and authenticated
+  async changePassword(user: User, { oldPassword, newPassword }: ChangePasswordDto): Promise<void> {
+    const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
+    if (!isOldPasswordValid) {
+      throw new BadRequestException('Invalid old password');
+    }
+    await this.setPassword(user, newPassword);
+  }
+
+  // Set the password for the given user. This method is only accessible to a user that is
+  // logged inn and authenticated, or has verified the email and OTP
+  async setPassword(user: User, newPassword: string): Promise<void> {
+    await this.updateUser(user.id, { password: await this.getSaltedHash(newPassword) });
   }
 
   // Remove a user from the organization.
@@ -95,18 +103,6 @@ export class UsersService {
   // Return the result.
   async getSaltedHash(password: string): Promise<string> {
     const salt = await bcrypt.genSalt();
-    const hash = await bcrypt.hash(password, salt);
-    return hash;
-  }
-
-  async changePassword(user: User, changePasswordDto: ChangePasswordDto): Promise<void> {
-    const { oldPassword, newPassword } = changePasswordDto;
-
-    const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
-    if (!isOldPasswordValid) {
-      throw new BadRequestException('Invalid old password');
-    }
-
-    await this.updateUser(user.id, { password: newPassword });
+    return await bcrypt.hash(password, salt);
   }
 }

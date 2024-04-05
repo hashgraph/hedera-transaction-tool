@@ -1,4 +1,4 @@
-import { TransactionStatus, TransactionType } from '@entities/transaction.entity';
+import { TransactionStatus, TransactionType } from '@entities';
 import { Expose, Transform } from 'class-transformer';
 
 export class TransactionDto {

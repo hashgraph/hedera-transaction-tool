@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { TransactionObserver } from '@entities/';
+import { TransactionObserver } from '@entities';
 import { Repository } from 'typeorm';
 import { CreateTransactionObserverDto } from '../dto/create-transaction-observer.dto';
 import { UpdateTransactionObserverDto } from '../dto/update-transaction-observer.dto';

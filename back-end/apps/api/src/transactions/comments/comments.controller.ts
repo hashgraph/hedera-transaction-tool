@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Post, UseGuards } from '@nestjs/common';
 import { GetUser } from '../../decorators/get-user.decorator';
-import { User } from '@entities/';
+import { User } from '@entities';
 import { CreateCommentDto } from '../dto/create-comment.dto';
 import { CommentsService } from './comments.service';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';

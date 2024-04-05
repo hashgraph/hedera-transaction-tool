@@ -8,7 +8,7 @@ import {
   TransactionComment,
   TransactionObserver,
   TransactionSigner
-} from '@entities/';
+} from '@entities';
 import { CommentsService } from './comments/comments.service';
 import { CommentsController } from './comments/comments.controller';
 import { SignersController } from './signers/signers.controller';

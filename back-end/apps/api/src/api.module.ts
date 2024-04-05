@@ -19,6 +19,8 @@ import { ConfigModule } from '@nestjs/config';
         TCP_PORT: Joi.number().required(),
         JWT_SECRET: Joi.string().required(),
         JWT_EXPIRATION: Joi.number().required(),
+        OTP_SECRET: Joi.string().required(),
+        OTP_EXPIRATION: Joi.number().required(),
       }),
     }),
     UsersModule,

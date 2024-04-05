@@ -16,7 +16,7 @@ import { ObserversService } from './observers.service';
 import { CreateTransactionObserverDto } from '../dto/create-transaction-observer.dto';
 import { GetUser } from '../../decorators/get-user.decorator';
 import { UpdateTransactionObserverDto } from '../dto/update-transaction-observer.dto';
-import { TransactionObserver, User } from '@entities/';
+import { TransactionObserver, User } from '@entities';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Transaction Observers')

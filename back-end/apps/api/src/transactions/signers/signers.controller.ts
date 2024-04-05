@@ -11,7 +11,7 @@ import {
 import { SignersService } from './signers.service';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { UploadSignatureDto } from '../dto/upload-signature.dto';
-import { TransactionSigner, User } from '@entities/';
+import { TransactionSigner, User } from '@entities';
 import { TransactionSignerDto } from '../dto/transaction-signer.dto';
 import { Serialize } from '../../interceptors/serialize.interceptor';
 import { GetUser } from '../../decorators/get-user.decorator';

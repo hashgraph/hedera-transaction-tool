@@ -1,6 +1,6 @@
 import { Expose } from 'class-transformer';
 import { IsEnum } from 'class-validator';
-import { UserStatus } from '@entities/user.entity';
+import { UserStatus } from '@entities';
 
 export class UserDto {
   @Expose()

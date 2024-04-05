@@ -13,9 +13,8 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Serialize } from '../interceptors/serialize.interceptor';
 import { GetUser } from '../decorators/get-user.decorator';
 import { UsersService } from './users.service';
-import { AdminGuard } from '../guards/admin.guard';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { User } from '@entities/';
+import { AdminGuard, JwtAuthGuard } from '../guards';
+import { User } from '@entities';
 import { ChangePasswordDto, CreateUserDto, UpdateUserDto, UserDto } from './dtos';
 
 @ApiTags('Users')

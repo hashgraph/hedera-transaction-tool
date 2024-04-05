@@ -17,3 +17,25 @@ spec:
       containers:
       - image: notsureyet/api/production
         name: api
+        env:
+          - name: HTTP_PORT
+            value: '3000'
+          - name: TCP_PORT
+            value: '3001'
+          - name: JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: jwtSecret
+                key: secretKey
+          - name: JWT_EXPIRATION
+            value: '31536000'
+          - name: OTP_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: otpSecret
+                key: secretKey
+          - name: OTP_EXPIRATION
+            value: '300'
+        ports:
+          - containerPort: 3000
+          - containerPort: 3001
