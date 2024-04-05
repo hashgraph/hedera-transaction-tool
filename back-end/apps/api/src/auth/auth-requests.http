@@ -38,7 +38,7 @@ POST http://localhost:3000/auth/verify-reset
 content-type: application/json
 
 {
-  "token": "700053"
+  "token": "097195"
 }
 
 ### Change password

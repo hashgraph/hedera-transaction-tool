@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Response } from 'express';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
@@ -8,7 +8,9 @@ import { User } from '@entities';
 import { ConfigService } from '@nestjs/config';
 import { totp } from 'otplib';
 import { OtpPayload } from '../interfaces/otp-payload.interface';
-import { OtpDto } from './dto/otp.dto';
+import { OtpDto } from './dto';
+import { NOTIFICATIONS_SERVICE } from '@app/common';
+import { ClientProxy } from '@nestjs/microservices';
 
 totp.options = { step: 60, window: 10 };
 
@@ -21,36 +23,37 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
+    @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
   ) {
     // this.jwtOptions = { secret: configService.get<string>('JWT_SECRET'), expiresIn: configService.get<number>('JWT_EXPIRATION') };
     // this.otpOptions = { secret: configService.get<string>('JWT_SECRET'), expiresIn: configService.get<number>('OTP_EXPIRATION') };
   }
 
   async createOtp(user: User, response: Response): Promise<void> {
-    const secret = this.configService.get<string>('OTP_SECRET');
+    const email = user.email;
+    const secret = this.getOtpSecret(email);
     // If the user exists, create an TOTP for the secret + email
     // const token = totp.generate(secret.concat(email));
     // I'm not sure if I need to add email.
     const token = totp.generate(secret);
     // Send the totp to the email
-    //TODO send to notification stuff
-    // remove this when complete
-    console.log(token);
+    this.notificationsService.emit('notify_email', { email, token });
     // Now that it has been verified, create a jwt that is not 'verified' and
     // set it on the response.
-    const otpPayload: OtpPayload = { email: user.email, verified: false };
+    const otpPayload: OtpPayload = { email, verified: false };
     this.setOtpCookie(response, otpPayload);
   }
 
   verifyOtp(user: User, { token }: OtpDto, response: Response): boolean {
-    const secret = this.configService.get<string>('OTP_SECRET');
+    const email = user.email;
+    const secret = this.getOtpSecret(email);
     try {
       if (!totp.check(token, secret)) {
         throw new UnauthorizedException('Incorrect token');
       }
       // Now that it has been verified, create a new jwt that is 'valid' and
       // set it on the response.
-      const otpPayload: OtpPayload = { email: user.email, verified: true };
+      const otpPayload: OtpPayload = { email, verified: true };
       this.setOtpCookie(response, otpPayload);
 
       return true;
@@ -60,6 +63,13 @@ export class AuthService {
       // - "Invalid input - it is not base32 encoded string" (if 32 is used)
       console.error(err);
     }
+  }
+
+  // Get the otp secret and add the email, making it unique per user.
+  // The other approach would be to create a unique key per user and store
+  // it in the database.
+  private getOtpSecret(email: string): string {
+    return this.configService.get<string>('OTP_SECRET').concat(email);
   }
 
   private setOtpCookie(response: Response, otpPayload: OtpPayload) {

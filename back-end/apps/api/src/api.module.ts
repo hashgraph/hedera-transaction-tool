@@ -4,9 +4,11 @@ import { UserKeysModule } from './user-keys/user-keys.module';
 import { AuthModule } from './auth/auth.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { PingModule } from './ping/ping.module';
-import { DatabaseModule, LoggerModule } from '@app/common';
+import { DatabaseModule, LoggerModule, NOTIFICATIONS_SERVICE } from '@app/common';
 import * as Joi from 'joi';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ClientsModule, Transport } from '@nestjs/microservices';
+import { NotificationsClientsModule } from './modules/notifications-clients.module';
 
 @Module({
   imports: [
@@ -28,6 +30,7 @@ import { ConfigModule } from '@nestjs/config';
     AuthModule,
     TransactionsModule,
     PingModule,
+    NotificationsClientsModule,
   ],
 })
 export class ApiModule {}
