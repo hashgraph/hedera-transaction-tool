@@ -10,8 +10,9 @@ import { LoggerModule } from '@app/common';
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({
-        TCP_PORT: Joi.number().required(),
         RABBITMQ_URI: Joi.string().required(),
+        BREVO_USERNAME: Joi.string().required(),
+        BREVO_PASSWORD: Joi.string().required(),
       })
     }),
     LoggerModule,

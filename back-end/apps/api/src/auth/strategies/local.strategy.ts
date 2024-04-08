@@ -10,6 +10,8 @@ export class LocalStrategy extends PassportStrategy(Strategy, 'local') {
     super({ usernameField: 'email' });
   }
 
+  // In order to a user to sign in, an email and password is supplied. Passport appears to
+  // require both to be present, not null, and not empty.
   async validate(email: string, password: string): Promise<User> {
     try {
       return await this.usersService.getVerifiedUser(email, password);

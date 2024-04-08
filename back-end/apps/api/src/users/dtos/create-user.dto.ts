@@ -4,6 +4,8 @@ export class CreateUserDto {
   @IsEmail()
   email: string;
 
+  //TODO this needs to be removed once the createUser route in auth.controller is removed
+  @IsOptional()
   @IsStrongPassword(
     {
       minLength: 8,
@@ -16,7 +18,7 @@ export class CreateUserDto {
       message: 'Password is too weak, must contain at least 8 characters.',
     },
   )
-  password: string;
+  password?: string;
 
   @IsOptional()
   @IsBoolean()

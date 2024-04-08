@@ -7,8 +7,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from '../users/users.module';
 import { ConfigService } from '@nestjs/config';
 import { LoggerModule } from '@app/common';
-import { JwtStrategy, LocalStrategy, OtpJwtStrategy, OtpLocalStrategy, OtpVerifiedStrategy } from './strategies';
+import { JwtStrategy, LocalStrategy } from './strategies';
 import { User } from '@entities';
+import { Reflector } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -19,7 +20,7 @@ import { User } from '@entities';
       useFactory: (configService: ConfigService) => ({
         secret: configService.getOrThrow('JWT_SECRET'),
         signOptions: {
-          expiresIn: `${configService.getOrThrow('JWT_EXPIRATION')}s`,
+          expiresIn: `${configService.getOrThrow('JWT_EXPIRATION')}d`,
         },
       }),
       inject: [ConfigService],
@@ -28,6 +29,6 @@ import { User } from '@entities';
     UsersModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy, OtpJwtStrategy, OtpLocalStrategy, OtpVerifiedStrategy],
+  providers: [AuthService, LocalStrategy, JwtStrategy, Reflector],
 })
 export class AuthModule {}

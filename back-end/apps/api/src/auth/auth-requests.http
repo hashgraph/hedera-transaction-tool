@@ -12,8 +12,17 @@ POST http://localhost:3000/auth/signup
 content-type: application/json
 
 {
-"email": "ted@test.com",
-"password": "123456789"
+  "email": "ted@test.com",
+  "password": "123456789"
+}
+
+### Create user with real email
+POST http://localhost:3000/auth/signup
+content-type: application/json
+
+{
+  "email": "john.bair@swirldslabs.com",
+  "password": "123456789"
 }
 
 ### Log in John
@@ -21,34 +30,18 @@ POST http://localhost:3000/auth/login
 content-type: application/json
 
 {
-  "email": "john@test.com",
+  "email": "john.bair@swirldslabs.com",
   "password": "123456789"
 }
 
-### Reset password
-POST http://localhost:3000/auth/reset-password
+### Log in Ted
+POST http://localhost:3000/auth/login
 content-type: application/json
 
 {
-  "email": "john@test.com"
-}
-
-### Verify reset password
-POST http://localhost:3000/auth/verify-reset
-content-type: application/json
-
-{
-  "token": "097195"
-}
-
-### Change password
-PATCH http://localhost:3000/auth/set-password
-content-type: application/json
-
-{
+  "email": "ted@test.com",
   "password": "123456789"
 }
-
 
 ### Sing out
 POST http://localhost:3000/auth/signout
