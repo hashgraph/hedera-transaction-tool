@@ -48,6 +48,7 @@ const handleLogout = async () => {
       <span
         v-if="user.personal && user.personal.isLoggedIn"
         class="container-icon"
+        data-testid="button-logout"
         @click="handleLogout"
       >
         <i class="text-icon-main bi bi-box-arrow-right"></i>
