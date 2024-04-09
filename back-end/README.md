@@ -41,3 +41,12 @@ docker-compose up
 
 When deploying to a server, it may be desired to use Kubernetes. More info needed.
 
+### Resetting Local Postgres Data
+
+To reset the local postgres database, do the following:
+
+```bash
+docker-compose down
+rm -rf <back-end base directory>/pgdata
+docker-compose up
+```

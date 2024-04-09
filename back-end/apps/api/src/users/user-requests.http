@@ -25,7 +25,7 @@ content-type: application/json
 }
 
 ### Update the user's admin status
-PATCH http://localhost:3000/users/4
+PATCH http://localhost:3000/users/1
 content-type: application/json
 
 {
