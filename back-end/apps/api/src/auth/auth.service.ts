@@ -4,7 +4,7 @@ import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from '../users/dtos';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
-import { User } from '@entities';
+import { User, UserStatus } from '@entities';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -17,7 +17,9 @@ export class AuthService {
 
   // This method is temporary. SignUp will eventually become just a route for an admin (createUser) in the UsersService
   async signUp(dto: CreateUserDto): Promise<User> {
-    return this.usersService.createUser(dto);
+    const user = await this.usersService.createUser(dto);
+    await this.usersService.updateUser(user, { status: UserStatus.NONE, admin: true });
+    return user;
   }
 
   // The user is already verified, create the token and put it in the cookie for the response.
