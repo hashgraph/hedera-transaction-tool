@@ -1,4 +1,3 @@
-
 # Hedera Transaction Tool Tests
 
 This project contains automated tests for the Hedera Transaction Tool, designed to ensure the reliability and functionality of the application. The tests are written using [Playwright](https://playwright.dev/), a powerful framework for testing web applications across different browsers.
@@ -6,6 +5,7 @@ This project contains automated tests for the Hedera Transaction Tool, designed 
 ## Prerequisites
 
 Before you begin, ensure you have the following installed on your system:
+
 - Node.js: `20.9.0`
 
 Additionally, you should have the Hedera Transaction Tool executable installed and know its path, as it will be required to run the tests.
@@ -13,16 +13,19 @@ Additionally, you should have the Hedera Transaction Tool executable installed a
 ## Setup
 
 1. **Clone the repository** to your local machine using Git:
+
    ```bash
    git clone <repository-url>
    ```
 
 2. **Navigate to the project directory**:
+
    ```bash
    cd hedera-transaction-tool\automation
    ```
 
 3. **Install dependencies** by running:
+
    ```bash
    npm install
    ```
@@ -36,6 +39,7 @@ Additionally, you should have the Hedera Transaction Tool executable installed a
 ## Running Tests
 
 To run all tests, execute the following command from the root of the project:
+
 ```bash
 npx playwright test
 ```

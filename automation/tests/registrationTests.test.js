@@ -1,288 +1,327 @@
-const {test} = require('@playwright/test');
-const {setupApp, resetAppState, closeApp, generateRandomEmail, generateRandomPassword} = require('../utils/util');
+const { test } = require('@playwright/test');
+const {
+  setupApp,
+  resetAppState,
+  closeApp,
+  generateRandomEmail,
+  generateRandomPassword,
+} = require('../utils/util');
 const RegistrationPage = require('../pages/RegistrationPage.js');
-const {expect} = require("playwright/test");
+const { expect } = require('playwright/test');
 
 let app, window;
-let globalCredentials = {email: '', password: ''};
+let globalCredentials = { email: '', password: '' };
 let registrationPage;
 
 //test.describe.configure({ mode: 'parallel' });
 test.describe('Registration tests', () => {
-    test.beforeAll(async () => {
-        ({app, window} = await setupApp());
-        await resetAppState(window);
-        registrationPage = new RegistrationPage(window);
-    });
+  test.beforeAll(async () => {
+    ({ app, window } = await setupApp());
+    await resetAppState(window);
+    registrationPage = new RegistrationPage(window);
+  });
+
+  test.afterAll(async () => {
+    await registrationPage.logoutForReset();
+    await resetAppState(window);
+
+    // Close the app after the final reset
+    await closeApp(app);
+  });
+
+  test.beforeEach(async () => {
+    await registrationPage.logoutForReset();
+    await resetAppState(window);
+  });
+
+  //002
+  test('Verify elements on registration page', async () => {
+    const allElementsAreCorrect = await registrationPage.verifyRegistrationElements();
+    expect(allElementsAreCorrect).toBe(true);
+  });
+
+  //003
+  test('Verify e-mail field - negative', async () => {
+    await registrationPage.typeEmail('wrong.gmail');
+    await registrationPage.typePassword('test');
+    await registrationPage.submitRegistration();
+
+    const errorMessage = (await registrationPage.getEmailErrorMessage()).trim();
+
+    expect(errorMessage).toBe('Invalid e-mail.');
+  });
+
+  //004
+  test('Verify e-mail field - positive', async () => {
+    await registrationPage.typeEmail('test23@test.com');
+    await registrationPage.typePassword('test');
+    await registrationPage.submitRegistration();
+
+    const isErrorMessageVisible = await registrationPage.isEmailErrorMessageVisible();
+
+    expect(isErrorMessageVisible).toBe(false);
+  });
+
+  //005
+  test('Verify password field - negative', async () => {
+    await registrationPage.typeEmail('test@test.com');
+    await registrationPage.typePassword('test');
+    await registrationPage.submitRegistration();
+
+    const errorMessage = (await registrationPage.getPasswordErrorMessage()).trim();
+
+    expect(errorMessage).toBe('Invalid password.');
+  });
+
+  test('Verify confirm password field - negative', async () => {
+    await registrationPage.typeEmail('test@test.com');
+    await registrationPage.typePassword('test');
+    await registrationPage.typeConfirmPassword('notTest');
+
+    await registrationPage.submitRegistration();
+
+    const errorMessage = (await registrationPage.getConfirmPasswordErrorMessage()).trim();
+
+    expect(errorMessage).toBe('Password do not match.');
+  });
+
+  //017
+  test('Verify elements on account setup page', async () => {
+    globalCredentials.email = generateRandomEmail();
+    globalCredentials.password = generateRandomPassword();
+
+    await registrationPage.register(
+      globalCredentials.email,
+      globalCredentials.password,
+      globalCredentials.password,
+    );
+
+    const allElementsAreCorrect = await registrationPage.verifyAccountSetupElements();
+    expect(allElementsAreCorrect).toBe(true);
+  });
+
+  //018
+  test('Verify account setup create new tab elements', async () => {
+    globalCredentials.email = generateRandomEmail();
+    globalCredentials.password = generateRandomPassword();
+
+    await registrationPage.register(
+      globalCredentials.email,
+      globalCredentials.password,
+      globalCredentials.password,
+    );
+    await registrationPage.clickOnCreateNewTab();
+
+    const allTilesArePresent = await registrationPage.verifyAllMnemonicTilesArePresent();
+    expect(allTilesArePresent).toBe(true);
+
+    const isCheckBoxVisible = await registrationPage.isUnderstandCheckboxVisible();
+    expect(isCheckBoxVisible).toBe(true);
+
+    const isGenerateButtonVisible = await registrationPage.isGenerateButtonVisible();
+    expect(isGenerateButtonVisible).toBe(true);
+  });
+
+  //019
+  test('Verify account setup import existing tab elements', async () => {
+    globalCredentials.email = generateRandomEmail();
+    globalCredentials.password = generateRandomPassword();
 
-    test.afterAll(async () => {
-        await registrationPage.logoutForReset();
-        await resetAppState(window);
+    await registrationPage.register(
+      globalCredentials.email,
+      globalCredentials.password,
+      globalCredentials.password,
+    );
 
-        // Close the app after the final reset
-        await closeApp(app);
-    });
+    const allTilesArePresent = await registrationPage.verifyAllMnemonicTilesArePresent();
+    expect(allTilesArePresent).toBe(true);
 
-    test.beforeEach(async () => {
-            await registrationPage.logoutForReset();
-            await resetAppState(window);
-    });
+    const isClearButtonVisible = await registrationPage.isClearButtonVisible();
+    expect(isClearButtonVisible).toBe(true);
 
-    //002
-    test('Verify elements on registration page', async () => {
-        const allElementsAreCorrect = await registrationPage.verifyRegistrationElements();
-        expect(allElementsAreCorrect).toBe(true);
-    });
+    const isCheckBoxVisible = await registrationPage.isUnderstandCheckboxVisible();
+    expect(isCheckBoxVisible).toBe(false);
 
-    //003
-    test('Verify e-mail field - negative', async () => {
-        await registrationPage.typeEmail("wrong.gmail");
-        await registrationPage.typePassword("test");
-        await registrationPage.submitRegistration();
+    const isGenerateButtonVisible = await registrationPage.isGenerateButtonVisible();
+    expect(isGenerateButtonVisible).toBe(false);
+  });
 
-        const errorMessage = (await registrationPage.getEmailErrorMessage()).trim();
+  //021
+  test('Verify re-generate recovery phrase and verify words are changed', async () => {
+    globalCredentials.email = generateRandomEmail();
+    globalCredentials.password = generateRandomPassword();
 
-        expect(errorMessage).toBe("Invalid e-mail.")
-    });
+    await registrationPage.register(
+      globalCredentials.email,
+      globalCredentials.password,
+      globalCredentials.password,
+    );
 
-    //004
-    test('Verify e-mail field - positive', async () => {
-        await registrationPage.typeEmail("test23@test.com");
-        await registrationPage.typePassword("test");
-        await registrationPage.submitRegistration();
+    const isTabVisible = await registrationPage.isCreateNewTabVisible();
+    expect(isTabVisible).toBe(true);
 
-        const isErrorMessageVisible = await registrationPage.isEmailErrorMessageVisible()
+    await registrationPage.clickOnCreateNewTab();
+    await registrationPage.clickOnUnderstandCheckbox();
+    await registrationPage.clickOnGenerateButton();
 
-        expect(isErrorMessageVisible).toBe(false)
-    });
+    await registrationPage.captureRecoveryPhraseWords();
+    const firstSetOfWords = registrationPage.getCopyOfRecoveryPhraseWords();
 
-    //005
-    test('Verify password field - negative', async () => {
-        await registrationPage.typeEmail("test@test.com");
-        await registrationPage.typePassword("test");
-        await registrationPage.submitRegistration();
+    await registrationPage.clickOnGenerateAgainButton();
+    await registrationPage.captureRecoveryPhraseWords();
+    const secondSetOfWords = registrationPage.getCopyOfRecoveryPhraseWords();
 
-        const errorMessage = (await registrationPage.getPasswordErrorMessage()).trim();
+    // Verify that the second set of words is different from the first set
+    const wordsAreChanged = registrationPage.compareWordSets(
+      Object.values(firstSetOfWords),
+      Object.values(secondSetOfWords),
+    );
+    expect(wordsAreChanged).toBe(true);
+  });
 
-        expect(errorMessage).toBe("Invalid password.")
-    });
+  //022
+  test('Verify generate button is not clickable until you select the understand checkbox', async () => {
+    globalCredentials.email = generateRandomEmail();
+    globalCredentials.password = generateRandomPassword();
 
-    test('Verify confirm password field - negative', async () => {
-        await registrationPage.typeEmail("test@test.com");
-        await registrationPage.typePassword("test");
-        await registrationPage.typeConfirmPassword("notTest");
+    await registrationPage.register(
+      globalCredentials.email,
+      globalCredentials.password,
+      globalCredentials.password,
+    );
 
-        await registrationPage.submitRegistration();
+    await registrationPage.clickOnCreateNewTab();
 
-        const errorMessage = (await registrationPage.getConfirmPasswordErrorMessage()).trim();
+    const isGenerateButtonClickable = await registrationPage.isGenerateButtonDisabled();
+    expect(isGenerateButtonClickable).toBe(true);
 
-        expect(errorMessage).toBe("Password do not match.")
-    });
+    await registrationPage.clickOnUnderstandCheckbox();
 
-    //017
-    test('Verify elements on account setup page', async () => {
-        globalCredentials.email = generateRandomEmail();
-        globalCredentials.password = generateRandomPassword();
+    const isGenerateButtonVisibleAfterSelectingCheckbox =
+      await registrationPage.isGenerateButtonDisabled();
+    expect(isGenerateButtonVisibleAfterSelectingCheckbox).toBe(false);
+  });
 
-        await registrationPage.register(globalCredentials.email, globalCredentials.password, globalCredentials.password)
+  //028
+  test('Verify clear button clears the existing mnemonic phrase', async () => {
+    globalCredentials.email = generateRandomEmail();
+    globalCredentials.password = generateRandomPassword();
 
-        const allElementsAreCorrect = await registrationPage.verifyAccountSetupElements();
-        expect(allElementsAreCorrect).toBe(true);
-    });
+    await registrationPage.register(
+      globalCredentials.email,
+      globalCredentials.password,
+      globalCredentials.password,
+    );
 
-    //018
-    test('Verify account setup create new tab elements', async () => {
-        globalCredentials.email = generateRandomEmail();
-        globalCredentials.password = generateRandomPassword();
+    const isTabVisible = await registrationPage.isCreateNewTabVisible();
+    expect(isTabVisible).toBe(true);
 
-        await registrationPage.register(globalCredentials.email, globalCredentials.password, globalCredentials.password)
-        await registrationPage.clickOnCreateNewTab();
+    await registrationPage.clickOnCreateNewTab();
 
-        const allTilesArePresent = await registrationPage.verifyAllMnemonicTilesArePresent();
-        expect(allTilesArePresent).toBe(true);
+    await registrationPage.clickOnUnderstandCheckbox();
+    await registrationPage.clickOnGenerateButton();
+    await registrationPage.captureRecoveryPhraseWords();
 
-        const isCheckBoxVisible = await registrationPage.isUnderstandCheckboxVisible()
-        expect(isCheckBoxVisible).toBe(true);
+    await registrationPage.clickOnImportTab();
 
-        const isGenerateButtonVisible = await registrationPage.isGenerateButtonVisible();
-        expect(isGenerateButtonVisible).toBe(true);
-    });
+    await registrationPage.fillAllMissingRecoveryPhraseWords();
 
-    //019
-    test('Verify account setup import existing tab elements', async () => {
-        globalCredentials.email = generateRandomEmail();
-        globalCredentials.password = generateRandomPassword();
+    await registrationPage.clickOnClearButton();
 
-        await registrationPage.register(globalCredentials.email, globalCredentials.password, globalCredentials.password)
+    const isMnemonicCleared = await registrationPage.verifyAllMnemonicFieldsCleared();
 
-        const allTilesArePresent = await registrationPage.verifyAllMnemonicTilesArePresent();
-        expect(allTilesArePresent).toBe(true);
+    expect(isMnemonicCleared).toBe(true);
+  });
 
-        const isClearButtonVisible = await registrationPage.isClearButtonVisible();
-        expect(isClearButtonVisible).toBe(true);
+  //025
+  test('Verify account setup final step elements', async () => {
+    globalCredentials.email = generateRandomEmail();
+    globalCredentials.password = generateRandomPassword();
 
-        const isCheckBoxVisible = await registrationPage.isUnderstandCheckboxVisible()
-        expect(isCheckBoxVisible).toBe(false);
+    await registrationPage.register(
+      globalCredentials.email,
+      globalCredentials.password,
+      globalCredentials.password,
+    );
 
-        const isGenerateButtonVisible = await registrationPage.isGenerateButtonVisible();
-        expect(isGenerateButtonVisible).toBe(false);
-    });
+    const isTabVisible = await registrationPage.isCreateNewTabVisible();
+    expect(isTabVisible).toBe(true);
 
-    //021
-    test('Verify re-generate recovery phrase and verify words are changed', async () => {
-        globalCredentials.email = generateRandomEmail();
-        globalCredentials.password = generateRandomPassword();
+    await registrationPage.clickOnCreateNewTab();
+    await registrationPage.clickOnUnderstandCheckbox();
+    await registrationPage.clickOnGenerateButton();
 
-        await registrationPage.register(globalCredentials.email, globalCredentials.password, globalCredentials.password)
+    await registrationPage.captureRecoveryPhraseWords();
+    await registrationPage.clickOnUnderstandCheckbox();
+    await registrationPage.clickOnVerifyButton();
 
-        await registrationPage.register(globalCredentials.email, globalCredentials.password, globalCredentials.password)
+    await registrationPage.fillAllMissingRecoveryPhraseWords();
+    await registrationPage.clickOnNextButton();
 
-        const isTabVisible = await registrationPage.isCreateNewTabVisible();
-        expect(isTabVisible).toBe(true);
+    const isAllElementsPresent = await registrationPage.verifyFinalStepAccountSetupElements();
+    expect(isAllElementsPresent).toBe(true);
+  });
 
-        await registrationPage.clickOnCreateNewTab();
-        await registrationPage.clickOnUnderstandCheckbox();
-        await registrationPage.clickOnGenerateButton();
+  //020, 023, 024
+  test('User can register successfully -> create new flow', async () => {
+    globalCredentials.email = generateRandomEmail();
+    globalCredentials.password = generateRandomPassword();
 
-        await registrationPage.captureRecoveryPhraseWords();
-        const firstSetOfWords = registrationPage.getCopyOfRecoveryPhraseWords();
+    await registrationPage.register(
+      globalCredentials.email,
+      globalCredentials.password,
+      globalCredentials.password,
+    );
 
-        await registrationPage.clickOnGenerateAgainButton();
-        await registrationPage.captureRecoveryPhraseWords();
-        const secondSetOfWords = registrationPage.getCopyOfRecoveryPhraseWords();
+    const isTabVisible = await registrationPage.isCreateNewTabVisible();
+    expect(isTabVisible).toBe(true);
 
-        // Verify that the second set of words is different from the first set
-        const wordsAreChanged = registrationPage.compareWordSets(
-            Object.values(firstSetOfWords),
-            Object.values(secondSetOfWords)
-        );
-        expect(wordsAreChanged).toBe(true);
-    });
+    await registrationPage.clickOnCreateNewTab();
+    await registrationPage.clickOnUnderstandCheckbox();
+    await registrationPage.clickOnGenerateButton();
 
-    //022
-    test('Verify generate button is not clickable until you select the understand checkbox', async () => {
-        globalCredentials.email = generateRandomEmail();
-        globalCredentials.password = generateRandomPassword();
+    await registrationPage.captureRecoveryPhraseWords();
+    await registrationPage.clickOnUnderstandCheckbox();
+    await registrationPage.clickOnVerifyButton();
 
-        await registrationPage.register(globalCredentials.email, globalCredentials.password, globalCredentials.password)
+    await registrationPage.fillAllMissingRecoveryPhraseWords();
+    await registrationPage.clickOnNextButton();
 
-        await registrationPage.clickOnCreateNewTab();
+    await registrationPage.clickOnFinalNextButtonWithRetry();
 
-        const isGenerateButtonClickable = await registrationPage.isGenerateButtonDisabled();
-        expect(isGenerateButtonClickable).toBe(true);
+    const toastMessage = await registrationPage.getToastMessage();
+    expect(toastMessage).toBe('Key Pair saved successfully');
+  });
 
-        await registrationPage.clickOnUnderstandCheckbox();
+  //027
+  test('User can register successfully -> import existing flow', async () => {
+    globalCredentials.email = generateRandomEmail();
+    globalCredentials.password = generateRandomPassword();
 
-        const isGenerateButtonVisibleAfterSelectingCheckbox = await registrationPage.isGenerateButtonDisabled();
-        expect(isGenerateButtonVisibleAfterSelectingCheckbox).toBe(false);
-    });
+    await registrationPage.register(
+      globalCredentials.email,
+      globalCredentials.password,
+      globalCredentials.password,
+    );
 
-    //028
-    test('Verify clear button clears the existing mnemonic phrase', async () => {
-        globalCredentials.email = generateRandomEmail();
-        globalCredentials.password = generateRandomPassword();
+    const isTabVisible = await registrationPage.isCreateNewTabVisible();
+    expect(isTabVisible).toBe(true);
 
-        await registrationPage.register(globalCredentials.email, globalCredentials.password, globalCredentials.password)
+    await registrationPage.clickOnCreateNewTab();
 
-        await registrationPage.register(globalCredentials.email, globalCredentials.password, globalCredentials.password)
+    await registrationPage.clickOnUnderstandCheckbox();
+    await registrationPage.clickOnGenerateButton();
+    await registrationPage.captureRecoveryPhraseWords();
 
-        const isTabVisible = await registrationPage.isCreateNewTabVisible();
-        expect(isTabVisible).toBe(true);
+    await registrationPage.clickOnImportTab();
 
-        await registrationPage.clickOnCreateNewTab();
+    await registrationPage.fillAllMissingRecoveryPhraseWords();
+    await registrationPage.scrollToNextImportButton();
+    await registrationPage.clickOnNextImportButton();
 
-        await registrationPage.clickOnUnderstandCheckbox();
-        await registrationPage.clickOnGenerateButton();
-        await registrationPage.captureRecoveryPhraseWords();
+    await registrationPage.clickOnFinalNextButtonWithRetry();
 
-        await registrationPage.clickOnImportTab();
-
-        await registrationPage.fillAllMissingRecoveryPhraseWords();
-
-        await registrationPage.clickOnClearButton();
-
-        const isMnemonicCleared = await registrationPage.verifyAllMnemonicFieldsCleared()
-
-        expect(isMnemonicCleared).toBe(true);
-    });
-
-    //025
-    test('Verify account setup final step elements', async () => {
-        globalCredentials.email = generateRandomEmail();
-        globalCredentials.password = generateRandomPassword();
-
-        await registrationPage.register(globalCredentials.email, globalCredentials.password, globalCredentials.password)
-
-        const isTabVisible = await registrationPage.isCreateNewTabVisible();
-        expect(isTabVisible).toBe(true);
-
-        await registrationPage.clickOnCreateNewTab();
-        await registrationPage.clickOnUnderstandCheckbox();
-        await registrationPage.clickOnGenerateButton();
-
-        await registrationPage.captureRecoveryPhraseWords();
-        await registrationPage.clickOnUnderstandCheckbox();
-        await registrationPage.clickOnVerifyButton();
-
-        await registrationPage.fillAllMissingRecoveryPhraseWords();
-        await registrationPage.clickOnNextButton();
-
-        const isAllElementsPresent = await registrationPage.verifyFinalStepAccountSetupElements()
-        expect(isAllElementsPresent).toBe(true);
-    });
-
-    //020, 023, 024
-    test('User can register successfully -> create new flow', async () => {
-        globalCredentials.email = generateRandomEmail();
-        globalCredentials.password = generateRandomPassword();
-
-        await registrationPage.register(globalCredentials.email, globalCredentials.password, globalCredentials.password)
-
-        const isTabVisible = await registrationPage.isCreateNewTabVisible();
-        expect(isTabVisible).toBe(true);
-
-        await registrationPage.clickOnCreateNewTab();
-        await registrationPage.clickOnUnderstandCheckbox();
-        await registrationPage.clickOnGenerateButton();
-
-        await registrationPage.captureRecoveryPhraseWords();
-        await registrationPage.clickOnUnderstandCheckbox();
-        await registrationPage.clickOnVerifyButton();
-
-        await registrationPage.fillAllMissingRecoveryPhraseWords();
-        await registrationPage.clickOnNextButton();
-
-        await registrationPage.clickOnFinalNextButtonWithRetry();
-
-        const toastMessage = await registrationPage.getToastMessage();
-        expect(toastMessage).toBe("Key Pair saved successfully");
-    });
-
-    //027
-    test('User can register successfully -> import existing flow', async () => {
-        globalCredentials.email = generateRandomEmail();
-        globalCredentials.password = generateRandomPassword();
-
-        await registrationPage.register(globalCredentials.email, globalCredentials.password, globalCredentials.password)
-
-        const isTabVisible = await registrationPage.isCreateNewTabVisible();
-        expect(isTabVisible).toBe(true);
-
-        await registrationPage.clickOnCreateNewTab();
-
-        await registrationPage.clickOnUnderstandCheckbox();
-        await registrationPage.clickOnGenerateButton();
-        await registrationPage.captureRecoveryPhraseWords();
-
-        await registrationPage.clickOnImportTab();
-
-        await registrationPage.fillAllMissingRecoveryPhraseWords();
-        await registrationPage.scrollToNextImportButton();
-        await registrationPage.clickOnNextImportButton();
-
-        await registrationPage.clickOnFinalNextButtonWithRetry();
-
-        const toastMessage = await registrationPage.getToastMessage();
-        expect(toastMessage).toBe("Key Pair saved successfully");
-    });
+    const toastMessage = await registrationPage.getToastMessage();
+    expect(toastMessage).toBe('Key Pair saved successfully');
+  });
 });

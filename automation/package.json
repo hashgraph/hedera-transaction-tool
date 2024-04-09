@@ -5,7 +5,8 @@
     "test": "playwright test"
   },
   "devDependencies": {
-    "playwright": "^1.41.2"
+    "playwright": "^1.41.2",
+    "prettier": "^3.2.5"
   },
   "main": "playwright.config.js",
   "directories": {
