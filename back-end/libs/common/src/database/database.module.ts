@@ -1,28 +1,24 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule, TypeOrmModuleAsyncOptions } from '@nestjs/typeorm';
 import { EntityClassOrSchema } from '@nestjs/typeorm/dist/interfaces/entity-class-or-schema.type';
+import { ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'database',
-      port: 5432,
-      username: 'postgres',
-      password: 'postgres',
-      database: 'postgres',
-      synchronize: true,
-      autoLoadEntities: true,
+    TypeOrmModule.forRootAsync({
+      imports: [],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.getOrThrow('POSTGRES_HOST'),
+        port: configService.getOrThrow('POSTGRES_PORT'),
+        database: configService.getOrThrow('POSTGRES_DATABASE'),
+        username: configService.getOrThrow('POSTGRES_USERNAME'),
+        password: configService.getOrThrow('POSTGRES_PASSWORD'),
+        synchronize: configService.getOrThrow('POSTGRES_SYNCHRONIZE'),
+        autoLoadEntities: true,
+      } as TypeOrmModuleAsyncOptions),
+      inject: [ConfigService],
     })
-    // TypeOrmModule.forRootAsync({
-    //   useFactory: (configService: ConfigService) => ({
-    //     type: 'sqlite',
-    //     database: configService.getOrThrow('DATABASE_NAME'),
-    //     autoLoadEntities: true,
-    //     synchronize: configService.getOrThrow('SYNCHRONIZE'),
-    //   }),
-    //   inject: [ConfigService],
-    // }),
   ],
 })
 export class DatabaseModule {
@@ -30,3 +26,4 @@ export class DatabaseModule {
     return TypeOrmModule.forFeature(entities);
   }
 }
+

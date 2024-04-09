@@ -20,22 +20,36 @@ spec:
         env:
           - name: HTTP_PORT
             value: '3000'
-          - name: TCP_PORT
-            value: '3001'
+          - name: RABBITMQ_URI
+            value: 'amqp://rabbitmq:5672'
+          - name: POSTGRES_HOST
+            value: 'database'
+          - name: POSTGRES_PORT
+            value: '5432'
+          - name: POSTGRES_DATABASE
+            value: 'postgres'
+          - name: POSTGRES_USERNAME
+            value: 'postgres'
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgresSecret
+                key: password
+          - name: POSTGRES_SYNCHRONIZE
+            value: 'false'
           - name: JWT_SECRET
             valueFrom:
               secretKeyRef:
                 name: jwtSecret
                 key: secretKey
           - name: JWT_EXPIRATION
-            value: '31536000'
+            value: '365'
           - name: OTP_SECRET
             valueFrom:
               secretKeyRef:
                 name: otpSecret
                 key: secretKey
           - name: OTP_EXPIRATION
-            value: '300'
+            value: '20'
         ports:
           - containerPort: 3000
-          - containerPort: 3001

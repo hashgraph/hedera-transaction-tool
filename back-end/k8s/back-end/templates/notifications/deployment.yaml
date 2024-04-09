@@ -18,7 +18,15 @@ spec:
       - image: notsureyet/notifications/production
         name: notifications
         env:
-          - name: TCP_PORT
-            value: '3020'
-        ports:
-          - containerPort: 3020
+          - name: RABBITMQ_URI
+            value: 'amqp://rabbitmq:5672'
+          - name: BREVO_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: brevoSecret
+                key: username
+          - name: BREVO_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: brevoSecret
+                key: password
