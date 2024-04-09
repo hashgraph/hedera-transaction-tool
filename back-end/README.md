@@ -9,7 +9,7 @@ and is at your own risk.
 
 - Node version: `20.9.0`
 - pnpm version: `8.15.6`
-- Docker Desktop
+- [Docker Desktop](https://docs.docker.com/desktop/install/mac-install/)
 
 If you use another version, please use [n](https://github.com/tj/n) to manage.
 
@@ -19,25 +19,25 @@ If you use another version, please use [n](https://github.com/tj/n) to manage.
 pnpm install -r
 ```
 
-Before running the project please create `.env` in `apps/api` or use the example one.
+Before running the project please create `.env` in `back-end`, `apps/api`, `apps/chain`, 
+and `apps/notifications`. See the example.env in each location for the required variables. 
+Or copy the existing example.env in each location.
 
 ```shell
 cp example.env .env
 ```
 
-```
-HTTP_PORT = 3000
-TCP_PORT = 3001
-JWT_SECRET =
-JWT_EXPIRATION = 36000
-```
-
 ### Start developing ⚒️
 
 As some services are dependent on other services, they must be run together.
-This can be done in docker. Install [Docker Desktop](https://docs.docker.com/desktop/install/mac-install/)
-and start it up. From the back-end directory, run:
+This can be done in docker. Install and run Docker Desktop. 
+From the back-end directory, run:
 
 ```bash
 docker-compose up
 ```
+
+### Deploy on Kubernetes
+
+When deploying to a server, it may be desired to use Kubernetes. More info needed.
+
