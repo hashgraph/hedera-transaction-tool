@@ -4,10 +4,9 @@ import { UserKeysModule } from './user-keys/user-keys.module';
 import { AuthModule } from './auth/auth.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { PingModule } from './ping/ping.module';
-import { DatabaseModule, LoggerModule, NOTIFICATIONS_SERVICE } from '@app/common';
+import { DatabaseModule, LoggerModule } from '@app/common';
 import * as Joi from 'joi';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ConfigModule } from '@nestjs/config';
 import { NotificationsClientsModule } from './modules/notifications-clients.module';
 
 @Module({
@@ -18,7 +17,6 @@ import { NotificationsClientsModule } from './modules/notifications-clients.modu
       isGlobal: true,
       validationSchema: Joi.object({
         HTTP_PORT: Joi.number().required(),
-        TCP_PORT: Joi.number().required(),
         JWT_SECRET: Joi.string().required(),
         JWT_EXPIRATION: Joi.number().required(),
         OTP_SECRET: Joi.string().required(),
