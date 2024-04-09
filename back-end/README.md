@@ -7,14 +7,16 @@ and is at your own risk.
 
 ## Prerequisites
 
-Node version: `20.9.0`
+- Node version: `20.9.0`
+- pnpm version: `8.15.6`
+- Docker Desktop
 
 If you use another version, please use [n](https://github.com/tj/n) to manage.
 
 ### Install dependencies ⏬
 
 ```bash
-npm install
+pnpm install -r
 ```
 
 Before running the project please create `.env` in `apps/api` or use the example one.
@@ -31,12 +33,6 @@ JWT_EXPIRATION = 36000
 ```
 
 ### Start developing ⚒️
-
-A service can be run independently in development mode:
-
-```bash
-npm run start:dev <service-name>
-```
 
 As some services are dependent on other services, they must be run together.
 This can be done in docker. Install [Docker Desktop](https://docs.docker.com/desktop/install/mac-install/)
