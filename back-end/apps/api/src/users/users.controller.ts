@@ -6,16 +6,30 @@ import {
   Param,
   ParseIntPipe,
   Patch,
-  Post, Res,
+  Post,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Serialize } from '../interceptors/serialize.interceptor';
 import { GetUser, IgnoreControllerGuard } from '../decorators';
 import { UsersService } from './users.service';
-import { AdminGuard, JwtAuthGuard, OtpJwtAuthGuard, OtpLocalAuthGuard, OtpVerifiedAuthGuard } from '../guards';
+import {
+  AdminGuard,
+  JwtAuthGuard,
+  OtpJwtAuthGuard,
+  OtpLocalAuthGuard,
+  OtpVerifiedAuthGuard,
+} from '../guards';
 import { User } from '@entities';
-import { ChangePasswordDto, CreateUserDto, NewPasswordDto, OtpDto, UpdateUserDto, UserDto } from './dtos';
+import {
+  ChangePasswordDto,
+  CreateUserDto,
+  NewPasswordDto,
+  OtpDto,
+  UpdateUserDto,
+  UserDto,
+} from './dtos';
 import { Response } from 'express';
 
 @ApiTags('Users')
@@ -28,7 +42,8 @@ export class UsersController {
   // user can't put in wrong email and get notified that it is wrong, '
   @ApiOperation({
     summary: 'Reset the password',
-    description: 'Begin the process of resetting a users password by creating and emailing an OTP to the user.',
+    description:
+      'Begin the process of resetting a users password by creating and emailing an OTP to the user.',
   })
   @ApiResponse({
     status: 200,
@@ -37,10 +52,7 @@ export class UsersController {
   @IgnoreControllerGuard()
   @UseGuards(OtpLocalAuthGuard)
   @Post('/reset-password')
-  async createOtp(
-    @GetUser() user: User,
-    @Res({ passthrough: true }) response: Response,
-  ) {
+  async createOtp(@GetUser() user: User, @Res({ passthrough: true }) response: Response) {
     await this.usersService.createOtp(user, response);
     return 'success';
   }
@@ -54,7 +66,7 @@ export class UsersController {
     description: 'OTP verified.',
   })
   @IgnoreControllerGuard()
-  @UseGuards(OtpLocalAuthGuard)
+  @UseGuards(OtpJwtAuthGuard)
   @Post('/verify-reset')
   verifyOtp(
     @GetUser() user: User,
@@ -78,7 +90,6 @@ export class UsersController {
     //
     // }
 
-
     return this.usersService.verifyOtp(user, dto, response);
   }
 
@@ -93,10 +104,7 @@ export class UsersController {
   @IgnoreControllerGuard()
   @UseGuards(OtpVerifiedAuthGuard)
   @Patch('/set-password')
-  async setPassword(
-    @GetUser() user: User,
-    @Body() dto: NewPasswordDto,
-  ): Promise<void> {
+  async setPassword(@GetUser() user: User, @Body() dto: NewPasswordDto): Promise<void> {
     return this.usersService.setPassword(user, dto.password);
   }
 
@@ -165,11 +173,7 @@ export class UsersController {
     description: 'Password successfully changed.',
   })
   @Patch('/change-password')
-  async changePassword(
-    @GetUser() user: User,
-    @Body() dto: ChangePasswordDto,
-  ): Promise<void> {
-    console.log('hello');
+  async changePassword(@GetUser() user: User, @Body() dto: ChangePasswordDto): Promise<void> {
     return this.usersService.changePassword(user, dto);
   }
 
