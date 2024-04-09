@@ -3,14 +3,17 @@ FROM node:alpine AS development
 WORKDIR /usr/src/app
 
 COPY package.json ./
-
-RUN npm install
-
-COPY apps/api apps/api
-COPY libs libs
 COPY tsconfig.json tsconfig.json
+COPY nest-cli.json nest-cli.json
 
-RUN npm run build
+COPY apps/chain apps/chain
+COPY libs libs
+
+RUN npm install -g pnpm
+
+RUN pnpm install && cd apps/chain && pnpm install
+
+RUN pnpm run build chain
 
 FROM node:alpine AS production
 
@@ -21,7 +24,7 @@ WORKDIR /usr/src/app
 
 COPY package.json ./
 
-RUN npm install --prod
+RUN pnpm install --prod
 
 COPY --from=development /usr/src/app/dist ./dist
 
