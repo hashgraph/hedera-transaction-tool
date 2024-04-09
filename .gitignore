@@ -143,3 +143,11 @@ dist
 .idea
 
 .DS_Store
+
+# Automation files
+automation/node_modules/
+automation/test-results/
+automation/playwright-report/
+automation/blob-report/
+automation/playwright/.cache/
+automation/.env
