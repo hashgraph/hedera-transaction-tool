@@ -26,9 +26,6 @@ import { Reflector } from '@nestjs/core';
       imports: [],
       useFactory: (configService: ConfigService) => ({
         secret: configService.getOrThrow('JWT_SECRET'),
-        signOptions: {
-          expiresIn: `${configService.getOrThrow('JWT_EXPIRATION')}d`,
-        },
       }),
       inject: [ConfigService],
     }),
