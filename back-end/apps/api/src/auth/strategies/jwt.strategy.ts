@@ -9,7 +9,7 @@ import { User } from '@entities';
 
 import { UsersService } from '../../users/users.service';
 
-import { JwtPayload } from '../../interfaces/jwt-payload.interface';
+import { JwtPayload } from '../../interfaces';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {

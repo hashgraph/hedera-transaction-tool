@@ -5,7 +5,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UsersService } from '../../users/users.service';
 import { User } from '@entities';
 import { ConfigService } from '@nestjs/config';
-import { OtpPayload } from '../../interfaces/otp-payload.interface';
+import { OtpPayload } from '../../interfaces';
 
 @Injectable()
 export class OtpVerifiedStrategy extends PassportStrategy(Strategy, 'otp-verified') {
