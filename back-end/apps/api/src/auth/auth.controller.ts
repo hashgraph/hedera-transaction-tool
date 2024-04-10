@@ -64,10 +64,11 @@ export class AuthController {
   /* User log out */
   @ApiOperation({
     summary: 'Log out',
-    description: 'Log the user out of the organization. This is not yet implemented.',
+    description: 'Log the user out of the organization.',
   })
   @ApiResponse({
-    status: 201,
+    status: 200,
+    description: "The user's authentication token cookie is removed and added in the blacklist.",
   })
   @Post('/logout')
   @HttpCode(200)
@@ -95,7 +96,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Request OTP for password reset',
     description:
-      'Begin the process of resetting a users password by creating and emailing an OTP to the user. A JWT cookie is attached to the response.',
+      "Begin the process of resetting the user's password by creating and emailing an OTP to the user. A JWT cookie is attached to the response. Once the OTP is verified, the JWT cookie will be updated and the user will be able to set his new password.",
   })
   @ApiResponse({
     status: 200,
@@ -116,7 +117,8 @@ export class AuthController {
   })
   @ApiResponse({
     status: 200,
-    description: 'OTP verified.',
+    description:
+      'The OTP verified and the JWT cookie is updated. Now the user is able to set his new password. If the cookie is expired, the user will need to request a new OTP.',
   })
   @Post('/verify-reset')
   @HttpCode(200)
@@ -126,23 +128,6 @@ export class AuthController {
     @Body() dto: OtpDto,
     @Res({ passthrough: true }) response: Response,
   ) {
-    //TODO
-    // handle the incorrect token error,
-    //   furthermore, if a use has a valid token, why would we save the credentials locally at all? its all in the token. so it the saved credentials would only
-    // be used in the case of an expired token (and expired refresh token) - should look into this
-    //
-    // also, I should be able to do something like this in order to get the dynamic guard
-    // export const Verified = (verified: boolean) => SetMetadata('verified', roles);
-    // then
-    // @Verified(true)
-    // then in otp guard
-    // canActivate(context: ExecutionContext): boolean {
-    //   const verified = this.reflector.get<boolean>('verified', context.getHandler());
-    //   but then what? i still need to get to the jwt somehow, then compare jwt to this verified
-    //   and also, need to still do a super.canActivate or something so I can get the strategy.validate stuff
-    //
-    // }
-
     return this.authService.verifyOtp(user, dto, response);
   }
 
