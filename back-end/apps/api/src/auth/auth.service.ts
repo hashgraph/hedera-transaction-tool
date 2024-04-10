@@ -1,19 +1,32 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { ClientProxy } from '@nestjs/microservices';
 
 import { Response } from 'express';
 import * as bcrypt from 'bcryptjs';
+import { totp } from 'otplib';
 
 import { NOTIFICATIONS_SERVICE } from '@app/common';
-import { User } from '@entities';
+import { User, UserStatus } from '@entities';
 
-import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { JwtPayload, OtpPayload } from '../interfaces';
 
 import { UsersService } from '../users/users.service';
 
-import { ChangePasswordDto, SignUpUserDto } from './dtos';
+import { ChangePasswordDto, SignUpUserDto, OtpDto } from './dtos';
+
+totp.options = {
+  digits: 8,
+  step: 60,
+  window: 20,
+};
 
 @Injectable()
 export class AuthService {
@@ -43,12 +56,15 @@ export class AuthService {
   async login(user: User, response: Response) {
     const payload: JwtPayload = { userId: user.id, email: user.email };
 
+    const accessToken: string = this.jwtService.sign(payload, {
+      expiresIn: `${this.configService.get('JWT_EXPIRATION')}d`,
+    });
+
     const expires = new Date();
     expires.setSeconds(
       expires.getSeconds() + this.configService.get<number>('JWT_EXPIRATION') * 24 * 60 * 60,
     );
 
-    const accessToken: string = this.jwtService.sign(payload);
     response.cookie('Authentication', accessToken, {
       httpOnly: true,
       expires,
@@ -77,5 +93,56 @@ export class AuthService {
   private generatePassword() {
     const randomValue = crypto.getRandomValues(new Uint32Array(8));
     return Buffer.from(randomValue).toString('base64');
+  }
+
+  /* Create OTP and send it to the user */
+  async createOtp(user: User, response: Response): Promise<void> {
+    const secret = this.getOtpSecret(user.email);
+    const token = totp.generate(secret);
+
+    this.notificationsService.emit('notify_email', {
+      email: user.email,
+      subject: 'Password Reset token',
+      text: `Hello, your OTP is <b>${token}</b>`,
+    });
+
+    this.setOtpCookie(response, { email: user.email, verified: false });
+  }
+
+  async verifyOtp(user: User, { token }: OtpDto, response: Response): Promise<void> {
+    const secret = this.getOtpSecret(user.email);
+
+    if (!totp.check(token, secret)) throw new UnauthorizedException('Incorrect token');
+
+    try {
+      await this.usersService.updateUser(user, { status: UserStatus.NEW });
+      this.setOtpCookie(response, { email: user.email, verified: true });
+    } catch (err) {
+      throw new InternalServerErrorException('Error while updating user status');
+    }
+  }
+
+  /* Return unique OTP secret for each user */
+  private getOtpSecret(email: string): string {
+    return this.configService.get<string>('OTP_SECRET').concat(email);
+  }
+
+  /* Sets the OTP cookie with the payload */
+  private setOtpCookie(response: Response, otpPayload: OtpPayload) {
+    const expires = new Date();
+    expires.setSeconds(expires.getSeconds() + totp.options.step * (totp.options.window as number));
+
+    const accessToken: string = this.jwtService.sign(otpPayload);
+    response.cookie('otp', accessToken, {
+      httpOnly: true,
+      expires,
+      sameSite: this.configService.get('NODE_ENV') === 'production' ? 'none' : 'lax',
+      secure: this.configService.get('NODE_ENV') === 'production',
+    });
+  }
+
+  /* Set the password for verified user. */
+  async setPassword(user: User, newPassword: string): Promise<void> {
+    await this.usersService.setPassword(user, newPassword);
   }
 }
