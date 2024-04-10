@@ -22,7 +22,7 @@ import { NOTIFICATIONS_SERVICE } from '@app/common';
 
 import { User, UserStatus } from '@entities';
 
-import { CreateUserDto, OtpDto } from './dtos';
+import { OtpDto } from './dtos';
 
 import { OtpPayload } from '../interfaces/otp-payload.interface';
 
@@ -106,30 +106,22 @@ export class UsersService {
     });
   }
 
-  // Create a user for the given email and password. This is temporary,
-  // as the process for creating a new user will include a temporary password,
-  // and a notification sent to the email provided.
-  async createUser(dto: CreateUserDto): Promise<User> {
-    let user = await this.getUser({ email: dto.email }, true);
+  /* Creates a user with a given email and password. */
+  async createUser(email: string, password: string): Promise<User> {
+    let user = await this.getUser({ email }, true);
     if (user) {
-      // If the user is found
-      if (!user.deletedAt) {
-        // AND not deleted, throw an error
-        throw new UnprocessableEntityException('Email already exists.');
-      }
-      // Otherwise, restore the user and update it
+      if (!user.deletedAt) throw new UnprocessableEntityException('Email already exists.');
+
       await this.repo.restore(user.id);
 
-      return this.updateUser(user, { admin: dto.admin, status: UserStatus.NEW });
+      return this.updateUser(user, { email, password, status: UserStatus.NEW });
     }
 
-    //TODO this needs to be removed once the createUser route in auth.controller is removed
-    // as password will not be in the CreateUserDto
-    const password = dto.password ? await this.getSaltedHash(dto.password) : '';
     user = this.repo.create({
-      ...dto,
+      email,
       password,
     });
+
     return await this.repo.save(user);
   }
 

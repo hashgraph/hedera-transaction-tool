@@ -31,7 +31,7 @@ import { Serialize } from '../interceptors/serialize.interceptor';
 
 import { UsersService } from './users.service';
 
-import { CreateUserDto, NewPasswordDto, OtpDto, UpdateUserDto, UserDto } from './dtos';
+import { NewPasswordDto, OtpDto, UpdateUserDto, UserDto } from './dtos';
 
 @ApiTags('Users')
 @Controller('users')
@@ -107,20 +107,6 @@ export class UsersController {
   @Patch('/set-password')
   async setPassword(@GetUser() user: User, @Body() dto: NewPasswordDto): Promise<void> {
     return this.usersService.setPassword(user, dto.password);
-  }
-
-  @ApiOperation({
-    summary: 'Create a user',
-    description: 'Create a user for the organization. This action requires admin privileges.',
-  })
-  @ApiResponse({
-    status: 201,
-    type: [UserDto],
-  })
-  @UseGuards(AdminGuard)
-  @Post()
-  createUser(@Body() dto: CreateUserDto): Promise<User> {
-    return this.usersService.createUser(dto);
   }
 
   @ApiOperation({

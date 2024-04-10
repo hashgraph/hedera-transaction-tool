@@ -28,10 +28,7 @@ export class AuthService {
   async signUpByAdmin(dto: SignUpUserDto): Promise<User> {
     const tempPassword = this.generatePassword();
 
-    const user = await this.usersService.createUser({
-      email: dto.email,
-      password: tempPassword,
-    });
+    const user = await this.usersService.createUser(dto.email, tempPassword);
 
     this.notificationsService.emit('notify_email', {
       subject: 'Hedera Transaction Tool Registration',
@@ -46,9 +43,7 @@ export class AuthService {
   async login(user: User, response: Response) {
     const payload: JwtPayload = { userId: user.id, email: user.email };
 
-    // Get the expiration to set on the cookie
     const expires = new Date();
-    //TODO is there a better way to make the cookie and the JWT expiration to match?
     expires.setSeconds(
       expires.getSeconds() + this.configService.get<number>('JWT_EXPIRATION') * 24 * 60 * 60,
     );
