@@ -9,14 +9,14 @@ import { OtpPayload } from '../../interfaces/otp-payload.interface';
 
 @Injectable()
 export class OtpVerifiedStrategy extends PassportStrategy(Strategy, 'otp-verified') {
-  constructor(private readonly usersService: UsersService,
-              private readonly configService: ConfigService,
-              ) {
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly configService: ConfigService,
+  ) {
     super({
       secretOrKey: configService.get('JWT_SECRET'),
-      jwtFromRequest: ExtractJwt.fromExtractors([
-        (request: Request) => request?.cookies?.['otp']
-      ]),
+      ignoreExpiration: false,
+      jwtFromRequest: ExtractJwt.fromExtractors([(request: Request) => request?.cookies?.['otp']]),
     });
   }
 
