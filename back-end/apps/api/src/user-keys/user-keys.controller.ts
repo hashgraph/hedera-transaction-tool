@@ -8,18 +8,24 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { Serialize } from '../interceptors/serialize.interceptor';
-import { UserKeysService } from './user-keys.service';
-import { UploadUserKeyDto } from './dtos/upload-user-key.dto';
-import { GetUser } from '../decorators/get-user.decorator';
-import { User, UserKey } from '@entities';
-import { UserKeyDto } from './dtos/user-key.dto';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
+import { User, UserKey } from '@entities';
+
+import { JwtAuthGuard, UserSettledGuard } from '../guards';
+
+import { GetUser } from '../decorators/get-user.decorator';
+
+import { Serialize } from '../interceptors/serialize.interceptor';
+
+import { UserKeysService } from './user-keys.service';
+
+import { UploadUserKeyDto } from './dtos/upload-user-key.dto';
+import { UserKeyDto } from './dtos/user-key.dto';
 
 @ApiTags('User Keys')
 @Controller('user/:userId?/keys')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, UserSettledGuard)
 @Serialize(UserKeyDto)
 export class UserKeysController {
   constructor(private userKeysService: UserKeysService) {}

@@ -11,23 +11,31 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Serialize } from '../interceptors/serialize.interceptor';
-import { GetUser, IgnoreControllerGuard } from '../decorators';
-import { UsersService } from './users.service';
+
+import { Response } from 'express';
+
+import { User } from '@entities';
+
 import {
   AdminGuard,
   JwtAuthGuard,
+  UserSettledGuard,
   OtpJwtAuthGuard,
   OtpLocalAuthGuard,
   OtpVerifiedAuthGuard,
 } from '../guards';
-import { User } from '@entities';
+
+import { GetUser, IgnoreControllerGuard } from '../decorators';
+
+import { Serialize } from '../interceptors/serialize.interceptor';
+
+import { UsersService } from './users.service';
+
 import { CreateUserDto, NewPasswordDto, OtpDto, UpdateUserDto, UserDto } from './dtos';
-import { Response } from 'express';
 
 @ApiTags('Users')
 @Controller('users')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, UserSettledGuard)
 @Serialize(UserDto)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -124,7 +132,7 @@ export class UsersController {
     type: [UserDto],
   })
   @Get()
-  getUsers(@GetUser() user: User): Promise<User[]> {
+  getUsers(): Promise<User[]> {
     return this.usersService.getUsers();
   }
 

@@ -1,14 +1,19 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Post, UseGuards } from '@nestjs/common';
-import { GetUser } from '../../decorators/get-user.decorator';
-import { User } from '@entities';
-import { CreateCommentDto } from '../dto/create-comment.dto';
-import { CommentsService } from './comments.service';
-import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { ApiTags } from '@nestjs/swagger';
+
+import { User } from '@entities';
+
+import { JwtAuthGuard, UserSettledGuard } from '../../guards';
+
+import { GetUser } from '../../decorators/get-user.decorator';
+
+import { CommentsService } from './comments.service';
+
+import { CreateCommentDto } from '../dto/create-comment.dto';
 
 @ApiTags('Transaction Comments')
 @Controller('transactions/:transactionId?/comments')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, UserSettledGuard)
 //TODO add serializer
 export class CommentsController {
   constructor(private commentsService: CommentsService) {}
