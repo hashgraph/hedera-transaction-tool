@@ -1,16 +1,22 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
-import { Request } from 'express';
-import { ExtractJwt, Strategy } from 'passport-jwt';
-import { JwtPayload } from '../../interfaces/jwt-payload.interface';
-import { UsersService } from '../../users/users.service';
-import { User, UserStatus } from '@entities';
 import { ConfigService } from '@nestjs/config';
+import { PassportStrategy } from '@nestjs/passport';
+
+import { ExtractJwt, Strategy } from 'passport-jwt';
+import { Request } from 'express';
+
+import { User } from '@entities';
+
+import { UsersService } from '../../users/users.service';
+
+import { JwtPayload } from '../../interfaces/jwt-payload.interface';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private readonly usersService: UsersService,
-              private readonly configService: ConfigService) {
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly configService: ConfigService,
+  ) {
     super({
       secretOrKey: configService.get('JWT_SECRET'),
       jwtFromRequest: ExtractJwt.fromExtractors([
@@ -22,11 +28,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate({ userId }: JwtPayload): Promise<User> {
     const user = await this.usersService.getUser({ id: userId });
 
-    // If no user is found, or if the user status === new,
-    // the user is not authorized.
-    if (!user || user.status === UserStatus.NEW) {
-      throw new UnauthorizedException();
-    }
+    if (!user) throw new UnauthorizedException();
 
     return user;
   }
