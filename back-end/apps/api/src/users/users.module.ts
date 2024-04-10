@@ -4,7 +4,6 @@ import { UsersService } from './users.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '@entities';
 import { DatabaseModule } from '@app/common';
-import { OtpJwtStrategy, OtpLocalStrategy, OtpVerifiedStrategy } from './strategies';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 
@@ -24,7 +23,7 @@ import { ConfigService } from '@nestjs/config';
     }),
   ],
   controllers: [UsersController],
-  providers: [UsersService, OtpJwtStrategy, OtpLocalStrategy, OtpVerifiedStrategy ],
+  providers: [UsersService],
   exports: [UsersService],
 })
 export class UsersModule {}
