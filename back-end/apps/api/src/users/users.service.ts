@@ -2,28 +2,36 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  InternalServerErrorException,
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';
-import * as bcrypt from 'bcryptjs';
-import { ChangePasswordDto, CreateUserDto, OtpDto } from './dtos';
-import { User, UserStatus } from '@entities';
+import { ClientProxy } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { NOTIFICATIONS_SERVICE } from '@app/common';
-import { ClientProxy } from '@nestjs/microservices';
+import { InjectRepository } from '@nestjs/typeorm';
+
+import { Repository } from 'typeorm';
+import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';
+
 import { Response } from 'express';
 import { totp } from 'otplib';
+
+import * as bcrypt from 'bcryptjs';
+
+import { NOTIFICATIONS_SERVICE } from '@app/common';
+
+import { User, UserStatus } from '@entities';
+
+import { ChangePasswordDto, CreateUserDto, OtpDto } from './dtos';
+
 import { OtpPayload } from '../interfaces/otp-payload.interface';
 
 totp.options = {
   digits: 8,
-  step:60,
+  step: 60,
   window: 20,
-}
+};
 
 @Injectable()
 export class UsersService {
@@ -88,7 +96,7 @@ export class UsersService {
   private setOtpCookie(response: Response, otpPayload: OtpPayload) {
     // Get the expiration to set on the cookie
     const expires = new Date();
-    expires.setSeconds(expires.getSeconds() + (totp.options.step*(totp.options.window as number)));
+    expires.setSeconds(expires.getSeconds() + totp.options.step * (totp.options.window as number));
 
     const accessToken: string = this.jwtService.sign(otpPayload);
     response.cookie('otp', accessToken, {
@@ -126,11 +134,17 @@ export class UsersService {
     return await this.repo.save(user);
   }
 
-  // Return the user for the given email and password. The returned user is valid and verified.
+  /* Returns the user for the given email and password. The returned user is valid and verified. */
   async getVerifiedUser(email: string, password: string): Promise<User> {
-    const user = await this.getUser({ email });
+    let user: User;
 
-    if (!(await bcrypt.compare(password, user?.password))) {
+    try {
+      user = await this.getUser({ email });
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to retrieve user.');
+    }
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new UnauthorizedException('Please check your login credentials');
     }
 
@@ -182,7 +196,10 @@ export class UsersService {
   // logged in and authenticated, or has verified the email and OTP
   async setPassword(user: User, newPassword: string): Promise<void> {
     // Get the salted password, and set the status to none (no longer new)
-    await this.updateUser(user, { password: await this.getSaltedHash(newPassword), status: UserStatus.NONE });
+    await this.updateUser(user, {
+      password: await this.getSaltedHash(newPassword),
+      status: UserStatus.NONE,
+    });
   }
 
   // Remove a user from the organization.
