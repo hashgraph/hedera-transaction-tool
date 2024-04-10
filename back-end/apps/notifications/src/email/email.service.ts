@@ -6,7 +6,7 @@ import * as nodemailer from 'nodemailer';
 import { NotifyEmailDto, NotifyTransactionMembersDto } from './dto';
 
 @Injectable()
-export class NotificationsService {
+export class EmailService {
   constructor(private readonly configService: ConfigService) {}
 
   private readonly transporter = nodemailer.createTransport({

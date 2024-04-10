@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { NotificationsModule } from './../src/notifications.module';
+import { NotificationsModule } from '../src/notifications.module';
 
-describe('NotificationsController (e2e)', () => {
+describe('EmailController (e2e)', () => {
   let app: INestApplication;
 
   beforeEach(async () => {

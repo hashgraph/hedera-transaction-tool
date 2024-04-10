@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { NotificationsController } from './notifications.controller';
-import { NotificationsService } from './notifications.service';
 import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi';
 import { LoggerModule } from '@app/common';
+import { EmailModule } from './email/email.module';
+import { WebsocketModule } from './websocket/websocket.module';
 
 @Module({
   imports: [
@@ -15,9 +15,9 @@ import { LoggerModule } from '@app/common';
         BREVO_PASSWORD: Joi.string().required(),
       })
     }),
+    EmailModule,
     LoggerModule,
+    WebsocketModule,
   ],
-  controllers: [NotificationsController],
-  providers: [NotificationsService],
 })
 export class NotificationsModule {}
