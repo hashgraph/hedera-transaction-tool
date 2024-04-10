@@ -6,23 +6,13 @@ import {
   Param,
   ParseIntPipe,
   Patch,
-  Post,
-  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { Response } from 'express';
-
 import { User } from '@entities';
 
-import {
-  AdminGuard,
-  JwtAuthGuard,
-  UserSettledGuard,
-  OtpJwtAuthGuard,
-  OtpVerifiedAuthGuard,
-} from '../guards';
+import { AdminGuard, JwtAuthGuard, UserSettledGuard, OtpVerifiedAuthGuard } from '../guards';
 
 import { AllowNotSettledUser, GetUser, IgnoreControllerGuard } from '../decorators';
 
@@ -38,42 +28,6 @@ import { NewPasswordDto, UpdateUserDto, UserDto } from './dtos';
 @Serialize(UserDto)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
-
-  @ApiOperation({
-    summary: 'Verify password reset',
-    description: 'Verify the user can reset the password by supplying the valid OTP.',
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'OTP verified.',
-  })
-  @IgnoreControllerGuard()
-  @UseGuards(OtpJwtAuthGuard)
-  @Post('/verify-reset')
-  verifyOtp(
-    @GetUser() user: User,
-    @Body() dto: OtpDto,
-    @Res({ passthrough: true }) response: Response,
-  ) {
-    //TODO
-    // handle the incorrect token error,
-    //   furthermore, if a use has a valid token, why would we save the credentials locally at all? its all in the token. so it the saved credentials would only
-    // be used in the case of an expired token (and expired refresh token) - should look into this
-    //
-    // also, I should be able to do something like this in order to get the dynamic guard
-    // export const Verified = (verified: boolean) => SetMetadata('verified', roles);
-    // then
-    // @Verified(true)
-    // then in otp guard
-    // canActivate(context: ExecutionContext): boolean {
-    //   const verified = this.reflector.get<boolean>('verified', context.getHandler());
-    //   but then what? i still need to get to the jwt somehow, then compare jwt to this verified
-    //   and also, need to still do a super.canActivate or something so I can get the strategy.validate stuff
-    //
-    // }
-
-    return this.usersService.verifyOtp(user, dto, response);
-  }
 
   @ApiOperation({
     summary: 'Set the password',
