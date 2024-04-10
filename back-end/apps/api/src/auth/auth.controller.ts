@@ -6,7 +6,7 @@ import { User } from '@entities';
 import { Serialize } from '../interceptors/serialize.interceptor';
 import { GetUser } from '../decorators';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { LocalAuthGuard } from '../guards';
+import { JwtAuthGuard, LocalAuthGuard } from '../guards';
 import { AuthDto } from './dto/auth.dto';
 
 @ApiTags('Authentication')
@@ -35,14 +35,11 @@ export class AuthController {
   })
   @ApiResponse({
     status: 201,
-    description: 'User authenticated.'
+    description: 'User authenticated.',
   })
   @UseGuards(LocalAuthGuard)
   @Post('/login')
-  async login(
-    @GetUser() user: User,
-    @Res({ passthrough: true }) response: Response
-  ) {
+  async login(@GetUser() user: User, @Res({ passthrough: true }) response: Response) {
     await this.authService.login(user, response);
     return user;
   }
@@ -55,6 +52,7 @@ export class AuthController {
     status: 201,
   })
   @Post('/logout')
+  @UseGuards(JwtAuthGuard)
   logout(@GetUser() user: User) {
     console.log(user.id);
     // return this.authService.signOut(req.user['sub']);
