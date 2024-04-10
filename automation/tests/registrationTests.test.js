@@ -13,7 +13,6 @@ let app, window;
 let globalCredentials = { email: '', password: '' };
 let registrationPage;
 
-//test.describe.configure({ mode: 'parallel' });
 test.describe('Registration tests', () => {
   test.beforeAll(async () => {
     ({ app, window } = await setupApp());
@@ -25,7 +24,6 @@ test.describe('Registration tests', () => {
     await registrationPage.logoutForReset();
     await resetAppState(window);
 
-    // Close the app after the final reset
     await closeApp(app);
   });
 
@@ -34,14 +32,12 @@ test.describe('Registration tests', () => {
     await resetAppState(window);
   });
 
-  //002
-  test('Verify elements on registration page', async () => {
+  test('Verify all elements are present on the registration page', async () => {
     const allElementsAreCorrect = await registrationPage.verifyRegistrationElements();
     expect(allElementsAreCorrect).toBe(true);
   });
 
-  //003
-  test('Verify e-mail field - negative', async () => {
+  test('Verify rejection of invalid email format in the registration form', async () => {
     await registrationPage.typeEmail('wrong.gmail');
     await registrationPage.typePassword('test');
     await registrationPage.submitRegistration();
@@ -51,8 +47,7 @@ test.describe('Registration tests', () => {
     expect(errorMessage).toBe('Invalid e-mail.');
   });
 
-  //004
-  test('Verify e-mail field - positive', async () => {
+  test('Verify e-mail field accepts valid format', async () => {
     await registrationPage.typeEmail('test23@test.com');
     await registrationPage.typePassword('test');
     await registrationPage.submitRegistration();
@@ -62,8 +57,7 @@ test.describe('Registration tests', () => {
     expect(isErrorMessageVisible).toBe(false);
   });
 
-  //005
-  test('Verify password field - negative', async () => {
+  test('Verify password field rejects empty password', async () => {
     await registrationPage.typeEmail('test@test.com');
     await registrationPage.typePassword('test');
     await registrationPage.submitRegistration();
@@ -73,7 +67,7 @@ test.describe('Registration tests', () => {
     expect(errorMessage).toBe('Invalid password.');
   });
 
-  test('Verify confirm password field - negative', async () => {
+  test('Verify confirm password field rejects mismatching passwords', async () => {
     await registrationPage.typeEmail('test@test.com');
     await registrationPage.typePassword('test');
     await registrationPage.typeConfirmPassword('notTest');
@@ -85,8 +79,7 @@ test.describe('Registration tests', () => {
     expect(errorMessage).toBe('Password do not match.');
   });
 
-  //017
-  test('Verify elements on account setup page', async () => {
+  test('Verify elements on account setup page are correct', async () => {
     globalCredentials.email = generateRandomEmail();
     globalCredentials.password = generateRandomPassword();
 
@@ -100,8 +93,7 @@ test.describe('Registration tests', () => {
     expect(allElementsAreCorrect).toBe(true);
   });
 
-  //018
-  test('Verify account setup create new tab elements', async () => {
+  test('Verify "Create New" tab elements in account setup are correct', async () => {
     globalCredentials.email = generateRandomEmail();
     globalCredentials.password = generateRandomPassword();
 
@@ -122,8 +114,7 @@ test.describe('Registration tests', () => {
     expect(isGenerateButtonVisible).toBe(true);
   });
 
-  //019
-  test('Verify account setup import existing tab elements', async () => {
+  test('Verify "Import Existing" tab elements in account setup are correct', async () => {
     globalCredentials.email = generateRandomEmail();
     globalCredentials.password = generateRandomPassword();
 
@@ -146,8 +137,7 @@ test.describe('Registration tests', () => {
     expect(isGenerateButtonVisible).toBe(false);
   });
 
-  //021
-  test('Verify re-generate recovery phrase and verify words are changed', async () => {
+  test('Verify re-generate of recovery phrase changes words', async () => {
     globalCredentials.email = generateRandomEmail();
     globalCredentials.password = generateRandomPassword();
 
@@ -179,8 +169,7 @@ test.describe('Registration tests', () => {
     expect(wordsAreChanged).toBe(true);
   });
 
-  //022
-  test('Verify generate button is not clickable until you select the understand checkbox', async () => {
+  test('Verify generate button is disabled until "I Understand" checkbox is selected', async () => {
     globalCredentials.email = generateRandomEmail();
     globalCredentials.password = generateRandomPassword();
 
@@ -202,7 +191,6 @@ test.describe('Registration tests', () => {
     expect(isGenerateButtonVisibleAfterSelectingCheckbox).toBe(false);
   });
 
-  //028
   test('Verify clear button clears the existing mnemonic phrase', async () => {
     globalCredentials.email = generateRandomEmail();
     globalCredentials.password = generateRandomPassword();
@@ -233,8 +221,7 @@ test.describe('Registration tests', () => {
     expect(isMnemonicCleared).toBe(true);
   });
 
-  //025
-  test('Verify account setup final step elements', async () => {
+  test('Verify final step of account setup has all correct elements', async () => {
     globalCredentials.email = generateRandomEmail();
     globalCredentials.password = generateRandomPassword();
 
@@ -262,8 +249,7 @@ test.describe('Registration tests', () => {
     expect(isAllElementsPresent).toBe(true);
   });
 
-  //020, 023, 024
-  test('User can register successfully -> create new flow', async () => {
+  test('Verify successful registration through "Create New" flow', async () => {
     globalCredentials.email = generateRandomEmail();
     globalCredentials.password = generateRandomPassword();
 
@@ -293,8 +279,7 @@ test.describe('Registration tests', () => {
     expect(toastMessage).toBe('Key Pair saved successfully');
   });
 
-  //027
-  test('User can register successfully -> import existing flow', async () => {
+  test('Verify successful registration through "Import Existing" flow', async () => {
     globalCredentials.email = generateRandomEmail();
     globalCredentials.password = generateRandomPassword();
 

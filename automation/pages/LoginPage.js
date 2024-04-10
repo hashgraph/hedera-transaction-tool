@@ -6,19 +6,34 @@ class LoginPage extends BasePage {
     this.window = window;
   }
 
-  // Selectors
+  /* Selectors */
+
+  // Inputs
   emailInputSelector = 'input-email';
   passwordInputSelector = 'input-password';
+
+  // Buttons
   signInButtonSelector = 'button-login';
-  importantNoteModalButton = 'button-understand-agree';
+  importantNoteModalButtonSelector = 'button-understand-agree';
   resetStateButtonSelector = 'link-reset';
   confirmResetStateButtonSelector = 'button-reset';
+  keepLoggedInCheckboxSelector = 'checkbox-remember';
+  logoutButtonSelector = 'button-logout';
+  settingsButtonSelector = 'a[href="/settings/general"].link-menu.mt-2.active';
+
+  // Labels
+  emailLabelSelector = 'label-email';
+  passwordLabelSelector = 'label-password';
+
+  // Messages
   toastMessageSelector = '.v-toast__text';
+  invalidPasswordMessageSelector = 'invalid-text-password';
+  invalidEmailMessageSelector = 'invalid-text-email';
 
   // Method to close the 'Important note' modal if it appears
   async closeImportantNoteModal() {
     // Wait for the button to be visible with a timeout
-    const modalButton = this.window.getByTestId(this.importantNoteModalButton);
+    const modalButton = this.window.getByTestId(this.importantNoteModalButtonSelector);
     await modalButton.waitFor({ state: 'visible', timeout: 500 }).catch(e => {});
 
     // If the modal is visible, then click the button to close the modal
@@ -27,26 +42,38 @@ class LoginPage extends BasePage {
     }
   }
 
-  // Method to fill in the email
-  async typeEmail(email) {
-    await this.window.getByTestId(this.emailInputSelector).fill(email);
+  async resetLoginForm() {
+    await this.window.getByTestId(this.emailInputSelector).fill('');
+    await this.window.getByTestId(this.passwordInputSelector).fill('');
   }
 
-  // Method to fill in the password
-  async typePassword(password) {
-    await this.window.getByTestId(this.passwordInputSelector).fill(password);
+  // specific logout method for the login tests
+  async logout() {
+    const isLogoutButtonVisible = await this.isElementVisible(this.logoutButtonSelector);
+    if (isLogoutButtonVisible) {
+      console.log('Logout button is visible, clicking to logout');
+      await this.clickByTestId(this.logoutButtonSelector);
+      const element = this.window.getByTestId(this.emailInputSelector);
+      await element.waitFor({ state: 'visible', timeout: 1000 });
+    } else {
+      console.log('Logout button not visible, assuming we are on the login page');
+      await this.resetLoginForm();
+    }
   }
 
-  // Method to click the sign in button
-  async clickSignIn() {
-    await this.window.getByTestId(this.signInButtonSelector).click();
+  async verifyLoginElements() {
+    const checks = await Promise.all([
+      this.isElementVisible(this.emailLabelSelector),
+      this.isElementVisible(this.emailInputSelector),
+      this.isElementVisible(this.passwordLabelSelector),
+      this.isElementVisible(this.passwordInputSelector),
+      this.isElementVisible(this.signInButtonSelector),
+      this.isElementVisible(this.resetStateButtonSelector),
+      this.isElementVisibleByIndex(this.keepLoggedInCheckboxSelector),
+    ]);
+    return checks.every(isTrue => isTrue);
   }
 
-  async waitForToastToDisappear() {
-    await this.waitForElementToDisappear(this.toastMessageSelector);
-  }
-
-  // Combined method to log in
   async login(email, password) {
     await this.typeEmail(email);
     await this.typePassword(password);
@@ -72,10 +99,37 @@ class LoginPage extends BasePage {
         await resetButton.click();
         await this.waitForToastToDisappear();
       } catch (e) {
-        // If the waitFor throws an error (e.g., timeout), log the error
         console.log("The 'Reset' modal did not appear within the timeout.");
       }
     }
+  }
+
+  async typeEmail(email) {
+    await this.window.getByTestId(this.emailInputSelector).fill(email);
+  }
+
+  async typePassword(password) {
+    await this.window.getByTestId(this.passwordInputSelector).fill(password);
+  }
+
+  async clickSignIn() {
+    await this.window.getByTestId(this.signInButtonSelector).click();
+  }
+
+  async waitForToastToDisappear() {
+    await this.waitForElementToDisappear(this.toastMessageSelector);
+  }
+
+  async isSettingsButtonVisible() {
+    return await this.isElementVisibleByCssSelector(this.settingsButtonSelector);
+  }
+
+  async getLoginPasswordErrorMessage() {
+    return await this.getTextByTestId(this.invalidPasswordMessageSelector);
+  }
+
+  async getLoginEmailErrorMessage() {
+    return await this.getTextByTestId(this.invalidEmailMessageSelector);
   }
 }
 

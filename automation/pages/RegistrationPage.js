@@ -1,4 +1,5 @@
 const BasePage = require('./BasePage');
+const { expect } = require('playwright/test');
 
 class RegistrationPage extends BasePage {
   constructor(window) {
@@ -168,7 +169,6 @@ class RegistrationPage extends BasePage {
   }
 
   async logoutForReset() {
-    console.log('Checking if logout button is visible');
     const isLogoutButtonVisible = await this.isElementVisible(this.logoutButtonSelector);
     if (isLogoutButtonVisible) {
       console.log('Logout button is visible, clicking to logout');
@@ -234,6 +234,29 @@ class RegistrationPage extends BasePage {
     await this.typePassword(password);
     await this.typeConfirmPassword(confirmPassword);
     await this.submitRegistration();
+  }
+
+  async completeRegistration(email, password) {
+    await this.register(email, password, password);
+
+    const isTabVisible = await this.isCreateNewTabVisible();
+    expect(isTabVisible).toBe(true);
+
+    await this.clickOnCreateNewTab();
+    await this.clickOnUnderstandCheckbox();
+    await this.clickOnGenerateButton();
+
+    await this.captureRecoveryPhraseWords();
+    await this.clickOnUnderstandCheckbox();
+    await this.clickOnVerifyButton();
+
+    await this.fillAllMissingRecoveryPhraseWords();
+    await this.clickOnNextButton();
+
+    await this.clickOnFinalNextButtonWithRetry();
+
+    const toastMessage = await this.getToastMessage();
+    expect(toastMessage).toBe('Key Pair saved successfully');
   }
 
   async typeEmail(email) {
@@ -330,6 +353,10 @@ class RegistrationPage extends BasePage {
 
   async clickOnGenerateAgainButton() {
     await this.clickByTestId(this.generateAgainButtonSelector);
+  }
+
+  async isConfirmPasswordFieldVisible() {
+    return await this.isElementVisible(this.confirmPasswordInputSelector);
   }
 }
 
