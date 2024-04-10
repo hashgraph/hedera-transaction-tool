@@ -42,7 +42,7 @@ export class AuthService {
     return user;
   }
 
-  // The user is already verified, create the token and put it in the cookie for the response.
+  /* The user is already verified, create the token and put it in the cookie for the response. */
   async login(user: User, response: Response) {
     const payload: JwtPayload = { userId: user.id, email: user.email };
 
@@ -62,8 +62,10 @@ export class AuthService {
     });
   }
 
-  signOut() {
-    // Get the token, add it to the blacklist, the user guard will need to compare the token to the blacklist
+  /* Log the user out of the organization, remove his cooke and blacklists his token */
+  logout(response: Response) {
+    response.clearCookie('Authentication');
+    //TODO implement token blacklisting
   }
 
   /* Change the password for the given user */

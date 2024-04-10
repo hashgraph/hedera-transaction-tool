@@ -13,12 +13,10 @@ import { Serialize } from '../interceptors/serialize.interceptor';
 
 import { AuthService } from './auth.service';
 
-import { UserDto } from '../users/dtos';
 import { AuthDto, ChangePasswordDto, SignUpUserDto } from './dtos';
 
 @ApiTags('Authentication')
 @Controller('auth')
-@Serialize(AuthDto)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -30,9 +28,10 @@ export class AuthController {
   })
   @ApiResponse({
     status: 201,
-    type: UserDto,
+    type: AuthDto,
   })
   @Post('/signup')
+  @Serialize(AuthDto)
   @UseGuards(JwtAuthGuard, AdminGuard)
   async signUp(@Body() dto: SignUpUserDto): Promise<User> {
     return this.authService.signUpByAdmin(dto);
@@ -65,9 +64,8 @@ export class AuthController {
   })
   @Post('/logout')
   @UseGuards(JwtAuthGuard)
-  logout(@GetUser() user: User) {
-    console.log(user.id);
-    // return this.authService.signOut(req.user['sub']);
+  logout(@Res({ passthrough: true }) response: Response) {
+    return this.authService.logout(response);
   }
 
   /* Change user's password */
