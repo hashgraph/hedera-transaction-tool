@@ -4,6 +4,6 @@ import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 export class AdminGuard implements CanActivate {
   canActivate(context: ExecutionContext) {
     const { user } = context.switchToHttp().getRequest();
-    return user.admin;
+    return user && user.admin;
   }
 }
