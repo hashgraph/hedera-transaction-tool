@@ -1,13 +1,20 @@
-import { Body, Controller, Post, Res, UseGuards } from '@nestjs/common';
-import { Response } from 'express';
-import { AuthService } from './auth.service';
-import { CreateUserDto, UserDto } from '../users/dtos';
-import { User } from '@entities';
-import { Serialize } from '../interceptors/serialize.interceptor';
-import { GetUser } from '../decorators';
+import { Body, Controller, HttpCode, Post, Res, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard, LocalAuthGuard } from '../guards';
-import { AuthDto } from './dto/auth.dto';
+
+import { Response } from 'express';
+
+import { User } from '@entities';
+
+import { AdminGuard, JwtAuthGuard, LocalAuthGuard } from '../guards';
+
+import { GetUser } from '../decorators';
+
+import { Serialize } from '../interceptors/serialize.interceptor';
+
+import { AuthService } from './auth.service';
+
+import { UserDto } from '../users/dtos';
+import { AuthDto, SignUpUserDto } from './dtos';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -18,15 +25,16 @@ export class AuthController {
   @ApiOperation({
     summary: 'Create a new User',
     description:
-      'TEMPORARY! This method will be an admin-role protected method. It is included now for testing.',
+      "Admins can create a new user by providing an email for the user. The password will be generated and sent to the user's email.",
   })
   @ApiResponse({
     status: 201,
     type: UserDto,
   })
   @Post('/signup')
-  async signUp(@Body() dto: CreateUserDto): Promise<User> {
-    return this.authService.signUp(dto);
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async signUp(@Body() dto: SignUpUserDto): Promise<User> {
+    return this.authService.signUpByAdmin(dto);
   }
 
   @ApiOperation({
@@ -34,10 +42,11 @@ export class AuthController {
     description: 'Using the provided credentials, attempt to log the user into the organization.',
   })
   @ApiResponse({
-    status: 201,
-    description: 'User authenticated.',
+    status: 200,
+    description: 'User is verified and an authentication token in a cookie is attached.',
   })
   @UseGuards(LocalAuthGuard)
+  @HttpCode(200)
   @Post('/login')
   async login(@GetUser() user: User, @Res({ passthrough: true }) response: Response) {
     await this.authService.login(user, response);

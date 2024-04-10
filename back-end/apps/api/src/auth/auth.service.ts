@@ -1,11 +1,18 @@
-import { Injectable } from '@nestjs/common';
-import { Response } from 'express';
-import { UsersService } from '../users/users.service';
-import { JwtService } from '@nestjs/jwt';
-import { CreateUserDto } from '../users/dtos';
-import { JwtPayload } from '../interfaces/jwt-payload.interface';
-import { User, UserStatus } from '@entities';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { ClientProxy } from '@nestjs/microservices';
+
+import { Response } from 'express';
+
+import { NOTIFICATIONS_SERVICE } from '@app/common';
+import { User } from '@entities';
+
+import { JwtPayload } from '../interfaces/jwt-payload.interface';
+
+import { UsersService } from '../users/users.service';
+
+import { SignUpUserDto } from './dtos';
 
 @Injectable()
 export class AuthService {
@@ -13,12 +20,23 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
+    @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
   ) {}
 
-  // This method is temporary. SignUp will eventually become just a route for an admin (createUser) in the UsersService
-  async signUp(dto: CreateUserDto): Promise<User> {
-    const user = await this.usersService.createUser(dto);
-    await this.usersService.updateUser(user, { status: UserStatus.NONE, admin: true });
+  async signUpByAdmin(dto: SignUpUserDto): Promise<User> {
+    const tempPassword = this.generatePassword();
+
+    const user = await this.usersService.createUser({
+      email: dto.email,
+      password: tempPassword,
+    });
+
+    this.notificationsService.emit('notify_email', {
+      subject: 'Hedera Transaction Tool Registration',
+      email: user.email,
+      text: `You have been registered in Hedera Transaction Tool.\nYour temporary password is: <b>${tempPassword}</b>`,
+    });
+
     return user;
   }
 
@@ -29,7 +47,9 @@ export class AuthService {
     // Get the expiration to set on the cookie
     const expires = new Date();
     //TODO is there a better way to make the cookie and the JWT expiration to match?
-    expires.setSeconds(expires.getSeconds() + this.configService.get<number>('JWT_EXPIRATION')*24*60*60);
+    expires.setSeconds(
+      expires.getSeconds() + this.configService.get<number>('JWT_EXPIRATION') * 24 * 60 * 60,
+    );
 
     const accessToken: string = this.jwtService.sign(payload);
     response.cookie('Authentication', accessToken, {
@@ -42,5 +62,10 @@ export class AuthService {
 
   signOut() {
     // Get the token, add it to the blacklist, the user guard will need to compare the token to the blacklist
+  }
+
+  private generatePassword() {
+    const randomValue = crypto.getRandomValues(new Uint32Array(8));
+    return Buffer.from(randomValue).toString('base64');
   }
 }
