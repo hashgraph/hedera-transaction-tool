@@ -5,7 +5,7 @@ import { Response } from 'express';
 
 import { User } from '@entities';
 
-import { AdminGuard, JwtAuthGuard, LocalAuthGuard } from '../guards';
+import { AdminGuard, JwtAuthGuard, LocalAuthGuard, OtpLocalAuthGuard } from '../guards';
 
 import { GetUser } from '../decorators';
 
@@ -82,5 +82,21 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async changePassword(@GetUser() user: User, @Body() dto: ChangePasswordDto): Promise<void> {
     return this.authService.changePassword(user, dto);
+  }
+
+  /* Send OTP to verify password reset */
+  @ApiOperation({
+    summary: 'Request OTP for password reset',
+    description:
+      'Begin the process of resetting a users password by creating and emailing an OTP to the user.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'OTP created and sent.',
+  })
+  @UseGuards(OtpLocalAuthGuard)
+  @Post('/reset-password')
+  async createOtp(@GetUser() user: User, @Res({ passthrough: true }) response: Response) {
+    return this.authService.createOtp(user, response);
   }
 }
