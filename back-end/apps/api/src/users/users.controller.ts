@@ -25,7 +25,7 @@ import {
   OtpVerifiedAuthGuard,
 } from '../guards';
 
-import { GetUser, IgnoreControllerGuard } from '../decorators';
+import { AllowNotSettledUser, GetUser, IgnoreControllerGuard } from '../decorators';
 
 import { Serialize } from '../interceptors/serialize.interceptor';
 
@@ -144,7 +144,7 @@ export class UsersController {
     status: 200,
     type: [UserDto],
   })
-  // @UseGuards(AdminGuard)
+  @AllowNotSettledUser()
   @Get('/me')
   getMe(@GetUser() user: User): User {
     return user;
