@@ -5,7 +5,13 @@ import { Response } from 'express';
 
 import { User } from '@entities';
 
-import { AdminGuard, JwtAuthGuard, LocalAuthGuard, OtpLocalAuthGuard } from '../guards';
+import {
+  AdminGuard,
+  JwtAuthGuard,
+  LocalAuthGuard,
+  OtpLocalAuthGuard,
+  OtpJwtAuthGuard,
+} from '../guards';
 
 import { GetUser } from '../decorators';
 
@@ -13,7 +19,7 @@ import { Serialize } from '../interceptors/serialize.interceptor';
 
 import { AuthService } from './auth.service';
 
-import { AuthDto, ChangePasswordDto, SignUpUserDto } from './dtos';
+import { AuthDto, ChangePasswordDto, OtpDto, SignUpUserDto } from './dtos';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -88,15 +94,54 @@ export class AuthController {
   @ApiOperation({
     summary: 'Request OTP for password reset',
     description:
-      'Begin the process of resetting a users password by creating and emailing an OTP to the user.',
+      'Begin the process of resetting a users password by creating and emailing an OTP to the user. A JWT cookie is attached to the response.',
   })
   @ApiResponse({
     status: 200,
     description: 'OTP created and sent.',
   })
-  @UseGuards(OtpLocalAuthGuard)
   @Post('/reset-password')
+  @HttpCode(200)
+  @UseGuards(OtpLocalAuthGuard)
   async createOtp(@GetUser() user: User, @Res({ passthrough: true }) response: Response) {
     return this.authService.createOtp(user, response);
+  }
+
+  /* Verify OTP for password reset */
+  @ApiOperation({
+    summary: 'Verify password reset',
+    description:
+      'Verify the user can reset the password by supplying the valid OTP. If the OTP is valid the JWT cookie is updated and the user will be able to set his new password',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'OTP verified.',
+  })
+  @Post('/verify-reset')
+  @HttpCode(200)
+  @UseGuards(OtpJwtAuthGuard)
+  verifyOtp(
+    @GetUser() user: User,
+    @Body() dto: OtpDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    //TODO
+    // handle the incorrect token error,
+    //   furthermore, if a use has a valid token, why would we save the credentials locally at all? its all in the token. so it the saved credentials would only
+    // be used in the case of an expired token (and expired refresh token) - should look into this
+    //
+    // also, I should be able to do something like this in order to get the dynamic guard
+    // export const Verified = (verified: boolean) => SetMetadata('verified', roles);
+    // then
+    // @Verified(true)
+    // then in otp guard
+    // canActivate(context: ExecutionContext): boolean {
+    //   const verified = this.reflector.get<boolean>('verified', context.getHandler());
+    //   but then what? i still need to get to the jwt somehow, then compare jwt to this verified
+    //   and also, need to still do a super.canActivate or something so I can get the strategy.validate stuff
+    //
+    // }
+
+    return this.authService.verifyOtp(user, dto, response);
   }
 }
