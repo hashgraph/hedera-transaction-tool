@@ -189,20 +189,25 @@ defineExpose({
   <div class="fill-remaining mt-5">
     <div class="form-group mt-5">
       <label class="form-label">Nickname <span class="fw-normal">- Optional</span></label>
-      <AppInput v-model="nickname" :filled="true" placeholder="Enter Nickname" />
+      <AppInput
+        data-testid="input-nickname"
+        v-model="nickname"
+        :filled="true"
+        placeholder="Enter Nickname"
+      />
     </div>
     <div class="form-group w-25 mt-5">
-      <label class="form-label">Key Type</label>
-      <AppInput model-value="ED25519" readonly />
+      <label data-testid="label-key-type" class="form-label">Key Type</label>
+      <AppInput data-testid="input-key-type" model-value="ED25519" readonly />
     </div>
     <template v-if="keys.length > 0">
       <div class="form-group mt-5">
-        <label class="form-label">ED25519 Private Key</label>
+        <label data-testid="label-private-key" class="form-label">ED25519 Private Key</label>
         <p class="text-break text-secondary">
-          <span ref="privateKeyRef" id="pr">{{
+          <span ref="privateKeyRef" data-testid="span-shown-private-key" id="pr">{{
             !privateKeyHidden ? keys[0].privateKey : '*'.repeat(starCount)
           }}</span>
-          <span class="cursor-pointer ms-3">
+          <span data-testid="button-show-private-key" class="cursor-pointer ms-3">
             <i
               v-if="!privateKeyHidden"
               class="bi bi-eye-slash"
@@ -213,8 +218,10 @@ defineExpose({
         </p>
       </div>
       <div class="form-group mt-4">
-        <label class="form-label">ED25519 Public Key</label>
-        <p class="text-break text-secondary">{{ keys[0].publicKey }}</p>
+        <label data-testid="label-public-key" class="form-label">ED25519 Public Key</label>
+        <p data-testid="p-show-public-key" class="text-break text-secondary">
+          {{ keys[0].publicKey }}
+        </p>
       </div>
     </template>
     <template v-if="keys.length > 1">

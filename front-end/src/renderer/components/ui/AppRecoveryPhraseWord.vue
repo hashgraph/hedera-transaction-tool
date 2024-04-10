@@ -47,6 +47,7 @@ const handldeWordInput = (e: Event) => {
       :readonly="readonly"
       :value="word"
       @input="handldeWordInput"
+      :data-testid="`input-recovery-word-${index}`"
     />
     <Transition name="fade" mode="out-in" v-if="withToggler">
       <i v-if="!isVisible" class="bi bi-eye" @click="handleVisibiltyChange"></i>

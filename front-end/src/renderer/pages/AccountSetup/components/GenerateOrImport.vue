@@ -91,8 +91,14 @@ onBeforeMount(() => {
     <template v-else-if="activeTabTitle === 'Import Existing'">
       <Import ref="importRef" :secret-hashes="user.secretHashes" />
       <div class="flex-between-centered mt-6">
-        <AppButton color="borderless" @click="importRef?.clearWords()">Clear</AppButton>
-        <AppButton v-if="user.recoveryPhrase" color="primary" @click="handleNextWithValidation"
+        <AppButton data-testid="button-clear" color="borderless" @click="importRef?.clearWords()"
+          >Clear</AppButton
+        >
+        <AppButton
+          v-if="user.recoveryPhrase"
+          color="primary"
+          @click="handleNextWithValidation"
+          data-testid="button-next-import"
           >Next</AppButton
         >
       </div>
@@ -124,9 +130,12 @@ onBeforeMount(() => {
               color="borderless"
               type="button"
               @click="differentSecretHashModalShown = false"
+              data-testid="button-delete-cancel"
               >Cancel</AppButton
             >
-            <AppButton color="danger" type="submit">Next</AppButton>
+            <AppButton data-testid="button-delete-next" color="danger" type="submit"
+              >Next</AppButton
+            >
           </div>
         </form>
       </AppModal>

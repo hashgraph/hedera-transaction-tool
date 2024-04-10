@@ -26,9 +26,11 @@ defineProps<{
                 <i class="bi bi-check-lg"></i>
               </template>
             </div>
-            <span class="stepper-nav-item-title text-micro position-absolute mt-3">{{
-              item.title
-            }}</span>
+            <span
+              :data-testid="`stepper-title-${index}`"
+              class="stepper-nav-item-title text-micro position-absolute mt-3"
+              >{{ item.title }}</span
+            >
           </div>
           <hr class="flex-1 m-0" />
         </template>

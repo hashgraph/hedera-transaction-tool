@@ -84,8 +84,13 @@ onBeforeRouteLeave(async () => {
     >
       <template v-if="stepperItems.map(s => s.name).includes(step.current)">
         <div class="w-100 flex-centered flex-column gap-4">
-          <h1 class="mt-3 text-title text-bold text-center">Account Setup</h1>
-          <p class="mt-3 text-main text-secondary text-center">
+          <h1 data-testid="title-account-setup" class="mt-3 text-title text-bold text-center">
+            Account Setup
+          </h1>
+          <p
+            data-testid="text-set-recovery-phrase"
+            class="mt-3 text-main text-secondary text-center"
+          >
             Set your Recovery Phrase and Key Pairs
           </p>
           <div class="mt-5 w-100">
@@ -129,6 +134,7 @@ onBeforeRouteLeave(async () => {
             color="borderless"
             class="flex-centered mt-6"
             @click="handleBack"
+            data-testid="button-back"
           >
             <i class="bi bi-arrow-left-short text-main"></i> Back</AppButton
           >
@@ -138,6 +144,7 @@ onBeforeRouteLeave(async () => {
           color="primary"
           @click="handleNext"
           class="ms-3 mt-6"
+          data-testid="button-next"
           >Next</AppButton
         >
       </div>

@@ -198,7 +198,7 @@ function setTooltipContent() {
   //       `;
 
   tooltipContent.value = `
-          <div class='d-flex flex-column align-items-start px-3'>
+          <div class='d-flex flex-column align-items-start px-3' data-testid='tooltip-requirements'>
             <div class='${
               passwordRequirements.length ? 'text-success' : 'text-danger'
             }'><i class='bi bi-${
@@ -252,15 +252,18 @@ watch(inputEmail, pass => {
       </p>
 
       <form @submit="handleOnFormSubmit" class="form-login mt-5 w-100">
-        <label class="form-label">Email</label>
+        <label data-testid="label-email" class="form-label">Email</label>
         <AppInput
+          data-testid="input-email"
           v-model="inputEmail"
           :filled="true"
           :class="{ 'is-invalid': inputEmailInvalid }"
           placeholder="Enter email"
         />
-        <div v-if="inputEmailInvalid" class="invalid-feedback">Invalid e-mail.</div>
-        <label class="form-label mt-4">Password</label>
+        <div v-if="inputEmailInvalid" data-testid="invalid-text-email" class="invalid-feedback">
+          Invalid e-mail.
+        </div>
+        <label data-testid="label-password" class="form-label mt-4">Password</label>
         <AppInput
           v-model="inputPassword"
           :filled="true"
@@ -273,18 +276,32 @@ watch(inputEmail, pass => {
           data-bs-custom-class="wide-xl-tooltip text-start"
           data-bs-html="true"
           data-bs-title="_"
+          data-testid="input-password"
         />
-        <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
+        <div
+          v-if="inputPasswordInvalid"
+          data-testid="invalid-text-password"
+          class="invalid-feedback"
+        >
+          Invalid password.
+        </div>
         <template v-if="shouldRegister">
-          <label class="form-label mt-4">Confirm password</label>
+          <label data-testid="label-password-confirm" class="form-label mt-4"
+            >Confirm password</label
+          >
           <AppInput
             v-model="inputConfirmPassword"
             :filled="true"
             type="password"
             :class="{ 'is-invalid': inputConfirmPasswordInvalid }"
             placeholder="Confirm password"
+            data-testid="input-password-confirm"
           />
-          <div v-if="inputConfirmPasswordInvalid" class="invalid-feedback">
+          <div
+            v-if="inputConfirmPasswordInvalid"
+            data-testid="invalid-text-password-not-match"
+            class="invalid-feedback"
+          >
             Password do not match.
           </div>
         </template>
@@ -295,12 +312,14 @@ watch(inputEmail, pass => {
               v-model:checked="keepLoggedIn"
               name="keep_logged_in"
               label="Keep me logged in"
+              data-testid="checkbox-remember"
             ></AppCheckBox>
           </div>
           <span
             v-if="!shouldRegister"
             @click="isResetDataModalShown = true"
             class="text-small link-primary cursor-pointer"
+            data-testid="link-reset"
             >Reset account</span
           >
         </div>
@@ -308,6 +327,7 @@ watch(inputEmail, pass => {
         <div class="row justify-content-end mt-5">
           <div class="d-grid">
             <AppButton
+              data-testid="button-login"
               color="primary"
               type="submit"
               class="w-100"
@@ -334,8 +354,15 @@ watch(inputEmail, pass => {
           <hr class="separator my-5" />
 
           <div class="flex-between-centered gap-4">
-            <AppButton color="borderless" @click="isResetDataModalShown = false">Cancel</AppButton>
-            <AppButton color="danger" @click="handleResetData">Reset</AppButton>
+            <AppButton
+              data-testid="button-reset-cancel"
+              color="borderless"
+              @click="isResetDataModalShown = false"
+              >Cancel</AppButton
+            >
+            <AppButton data-testid="button-reset" color="danger" @click="handleResetData"
+              >Reset</AppButton
+            >
           </div>
         </div>
       </AppModal>
