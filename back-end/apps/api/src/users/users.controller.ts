@@ -21,7 +21,6 @@ import {
   JwtAuthGuard,
   UserSettledGuard,
   OtpJwtAuthGuard,
-  OtpLocalAuthGuard,
   OtpVerifiedAuthGuard,
 } from '../guards';
 
@@ -31,7 +30,7 @@ import { Serialize } from '../interceptors/serialize.interceptor';
 
 import { UsersService } from './users.service';
 
-import { NewPasswordDto, OtpDto, UpdateUserDto, UserDto } from './dtos';
+import { NewPasswordDto, UpdateUserDto, UserDto } from './dtos';
 
 @ApiTags('Users')
 @Controller('users')
@@ -39,24 +38,6 @@ import { NewPasswordDto, OtpDto, UpdateUserDto, UserDto } from './dtos';
 @Serialize(UserDto)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
-
-  // user can't put in wrong email and get notified that it is wrong, '
-  @ApiOperation({
-    summary: 'Reset the password',
-    description:
-      'Begin the process of resetting a users password by creating and emailing an OTP to the user.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'OTP created and sent.',
-  })
-  @IgnoreControllerGuard()
-  @UseGuards(OtpLocalAuthGuard)
-  @Post('/reset-password')
-  async createOtp(@GetUser() user: User, @Res({ passthrough: true }) response: Response) {
-    await this.usersService.createOtp(user, response);
-    return 'success';
-  }
 
   @ApiOperation({
     summary: 'Verify password reset',
