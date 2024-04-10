@@ -1,9 +1,10 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { ClientProxy } from '@nestjs/microservices';
 
 import { Response } from 'express';
+import * as bcrypt from 'bcryptjs';
 
 import { NOTIFICATIONS_SERVICE } from '@app/common';
 import { User } from '@entities';
@@ -12,7 +13,7 @@ import { JwtPayload } from '../interfaces/jwt-payload.interface';
 
 import { UsersService } from '../users/users.service';
 
-import { SignUpUserDto } from './dtos';
+import { ChangePasswordDto, SignUpUserDto } from './dtos';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +24,7 @@ export class AuthService {
     @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
   ) {}
 
+  /* Register a new user by admins and send him an email with the temporary password */
   async signUpByAdmin(dto: SignUpUserDto): Promise<User> {
     const tempPassword = this.generatePassword();
 
@@ -62,6 +64,17 @@ export class AuthService {
 
   signOut() {
     // Get the token, add it to the blacklist, the user guard will need to compare the token to the blacklist
+  }
+
+  /* Change the password for the given user */
+  async changePassword(user: User, { oldPassword, newPassword }: ChangePasswordDto): Promise<void> {
+    if (oldPassword === newPassword)
+      throw new BadRequestException('New password should not be the old password');
+
+    const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
+    if (!isOldPasswordValid) throw new BadRequestException('Invalid old password');
+
+    await this.usersService.setPassword(user, newPassword);
   }
 
   private generatePassword() {

@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -23,7 +22,7 @@ import { NOTIFICATIONS_SERVICE } from '@app/common';
 
 import { User, UserStatus } from '@entities';
 
-import { ChangePasswordDto, CreateUserDto, OtpDto } from './dtos';
+import { CreateUserDto, OtpDto } from './dtos';
 
 import { OtpPayload } from '../interfaces/otp-payload.interface';
 
@@ -180,16 +179,6 @@ export class UsersService {
   async updateUser(user: User, attrs: Partial<User>): Promise<User> {
     Object.assign(user, attrs);
     return this.repo.save(user);
-  }
-
-  // Change the password for the given user. This method is only accessible to a user that is
-  // logged in and authenticated
-  async changePassword(user: User, { oldPassword, newPassword }: ChangePasswordDto): Promise<void> {
-    const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
-    if (!isOldPasswordValid) {
-      throw new BadRequestException('Invalid old password');
-    }
-    await this.setPassword(user, newPassword);
   }
 
   // Set the password for the given user. This method is only accessible to a user that is

@@ -22,14 +22,7 @@ import {
   OtpVerifiedAuthGuard,
 } from '../guards';
 import { User } from '@entities';
-import {
-  ChangePasswordDto,
-  CreateUserDto,
-  NewPasswordDto,
-  OtpDto,
-  UpdateUserDto,
-  UserDto,
-} from './dtos';
+import { CreateUserDto, NewPasswordDto, OtpDto, UpdateUserDto, UserDto } from './dtos';
 import { Response } from 'express';
 
 @ApiTags('Users')
@@ -161,20 +154,6 @@ export class UsersController {
   @Get('/:id')
   getUser(@Param('id', ParseIntPipe) id: number): Promise<User> {
     return this.usersService.getUser({ id });
-  }
-
-  // what did I do?????
-  @ApiOperation({
-    summary: 'Change password',
-    description: 'Change the password of the current logged in user.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Password successfully changed.',
-  })
-  @Patch('/change-password')
-  async changePassword(@GetUser() user: User, @Body() dto: ChangePasswordDto): Promise<void> {
-    return this.usersService.changePassword(user, dto);
   }
 
   //TODO If roles is to be used instead of just an admin flag, this is where it should be
