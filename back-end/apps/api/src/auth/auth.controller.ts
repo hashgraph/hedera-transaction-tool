@@ -63,6 +63,7 @@ export class AuthController {
     status: 201,
   })
   @Post('/logout')
+  @HttpCode(200)
   @UseGuards(JwtAuthGuard)
   logout(@Res({ passthrough: true }) response: Response) {
     return this.authService.logout(response);
