@@ -11,6 +11,7 @@ import {
   LocalAuthGuard,
   OtpLocalAuthGuard,
   OtpJwtAuthGuard,
+  OtpVerifiedAuthGuard,
 } from '../guards';
 
 import { GetUser } from '../decorators';
@@ -19,7 +20,7 @@ import { Serialize } from '../interceptors/serialize.interceptor';
 
 import { AuthService } from './auth.service';
 
-import { AuthDto, ChangePasswordDto, OtpDto, SignUpUserDto } from './dtos';
+import { AuthDto, ChangePasswordDto, NewPasswordDto, OtpDto, SignUpUserDto } from './dtos';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -143,5 +144,25 @@ export class AuthController {
     // }
 
     return this.authService.verifyOtp(user, dto, response);
+  }
+
+  /* Set the password for the user if the email has been verified */
+  @ApiOperation({
+    summary: 'Set the password',
+    description: 'Set the password for the verified email.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password successfully set.',
+  })
+  @UseGuards(OtpVerifiedAuthGuard)
+  @Patch('/set-password')
+  async setPassword(
+    @GetUser() user: User,
+    @Body() dto: NewPasswordDto,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<void> {
+    await this.authService.setPassword(user, dto.password);
+    response.clearCookie('otp');
   }
 }

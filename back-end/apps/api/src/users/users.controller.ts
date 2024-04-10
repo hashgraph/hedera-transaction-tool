@@ -12,15 +12,15 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { User } from '@entities';
 
-import { AdminGuard, JwtAuthGuard, UserSettledGuard, OtpVerifiedAuthGuard } from '../guards';
+import { AdminGuard, JwtAuthGuard, UserSettledGuard } from '../guards';
 
-import { AllowNotSettledUser, GetUser, IgnoreControllerGuard } from '../decorators';
+import { AllowNotSettledUser, GetUser } from '../decorators';
 
 import { Serialize } from '../interceptors/serialize.interceptor';
 
 import { UsersService } from './users.service';
 
-import { NewPasswordDto, UpdateUserDto, UserDto } from './dtos';
+import { UpdateUserDto, UserDto } from './dtos';
 
 @ApiTags('Users')
 @Controller('users')
@@ -28,21 +28,6 @@ import { NewPasswordDto, UpdateUserDto, UserDto } from './dtos';
 @Serialize(UserDto)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
-
-  @ApiOperation({
-    summary: 'Set the password',
-    description: 'Set the password for the verified email.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Password successfully set.',
-  })
-  @IgnoreControllerGuard()
-  @UseGuards(OtpVerifiedAuthGuard)
-  @Patch('/set-password')
-  async setPassword(@GetUser() user: User, @Body() dto: NewPasswordDto): Promise<void> {
-    return this.usersService.setPassword(user, dto.password);
-  }
 
   @ApiOperation({
     summary: 'Get all users',
