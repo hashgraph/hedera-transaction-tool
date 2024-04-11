@@ -12,6 +12,7 @@ export class UserDto {
   @Expose()
   admin: boolean;
 
+  @Expose()
   @IsEnum(UserStatus)
   status: UserStatus;
 
