@@ -18,6 +18,7 @@ import {
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
+import ForgotPasswordModal from '@renderer/components/ForgotPasswordModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -37,6 +38,8 @@ const inputPasswordInvalid = ref(false);
 
 const userPasswordModalShow = ref(true);
 const loginAfterPassword = ref(false);
+
+const forgotPasswordModalShown = ref(false);
 
 /* Handlers */
 const handleOnFormSubmit = async (e: Event) => {
@@ -87,7 +90,13 @@ const handleLogin = async () => {
   }
 };
 
-const handleForgotPassword = async () => {};
+const handleForgotPassword = () => {
+  if (userPassword.value.length === 0) {
+    userPasswordModalShow.value = true;
+  } else {
+    forgotPasswordModalShown.value = true;
+  }
+};
 
 /* Hooks */
 onMounted(() => {
@@ -168,12 +177,23 @@ onBeforeRouteLeave(async () => {
         v-model:show="userPasswordModalShow"
         heading="Enter personal password"
         subHeading="Credentials will be encrypted with this password"
+        required
         @passwordEntered="
           pass => {
             userPassword = pass;
             if (loginAfterPassword) {
               handleLogin();
             }
+          }
+        "
+      />
+
+      <ForgotPasswordModal
+        v-model:show="forgotPasswordModalShown"
+        :personalPassword="userPassword"
+        @passwordChanged="
+          password => {
+            console.log(password);
           }
         "
       />
