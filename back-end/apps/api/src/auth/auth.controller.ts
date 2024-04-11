@@ -1,5 +1,5 @@
 import { Body, Controller, HttpCode, Patch, Post, Res, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { Response } from 'express';
 
@@ -20,7 +20,14 @@ import { Serialize } from '../interceptors/serialize.interceptor';
 
 import { AuthService } from './auth.service';
 
-import { AuthDto, ChangePasswordDto, NewPasswordDto, OtpDto, SignUpUserDto } from './dtos';
+import {
+  AuthDto,
+  ChangePasswordDto,
+  LoginDto,
+  NewPasswordDto,
+  OtpDto,
+  SignUpUserDto,
+} from './dtos';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -48,6 +55,9 @@ export class AuthController {
   @ApiOperation({
     summary: 'Login in',
     description: 'Using the provided credentials, attempt to log the user into the organization.',
+  })
+  @ApiBody({
+    type: LoginDto,
   })
   @ApiResponse({
     status: 200,
