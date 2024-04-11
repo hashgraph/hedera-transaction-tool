@@ -16,8 +16,9 @@ let registrationPage;
 test.describe('Registration tests', () => {
   test.beforeAll(async () => {
     ({ app, window } = await setupApp());
-    await resetAppState(window);
     registrationPage = new RegistrationPage(window);
+    await registrationPage.logoutForReset();
+    await resetAppState(window);
   });
 
   test.afterAll(async () => {

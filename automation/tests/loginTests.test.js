@@ -18,8 +18,9 @@ let loginPage;
 test.describe('Login tests', () => {
   test.beforeAll(async () => {
     ({ app, window } = await setupApp());
-    await resetAppState(window);
     loginPage = new LoginPage(window);
+    await loginPage.logout();
+    await resetAppState(window);
     registrationPage = new RegistrationPage(window);
 
     // Generate credentials and store them globally
