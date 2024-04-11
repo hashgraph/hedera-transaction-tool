@@ -108,6 +108,9 @@ export class AuthController {
     description:
       "Begin the process of resetting the user's password by creating and emailing an OTP to the user. A JWT cookie is attached to the response. Once the OTP is verified, the JWT cookie will be updated and the user will be able to set his new password.",
   })
+  @ApiBody({
+    type: SignUpUserDto,
+  })
   @ApiResponse({
     status: 200,
     description: 'OTP created and sent.',
