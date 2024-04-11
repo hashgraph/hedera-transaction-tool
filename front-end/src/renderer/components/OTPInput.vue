@@ -102,8 +102,6 @@ function getOTP() {
 
 function focus() {
   const input = otpContainerRef.value?.querySelector('input') as HTMLInputElement;
-  console.log(input);
-
   if (input) input.focus();
 }
 
