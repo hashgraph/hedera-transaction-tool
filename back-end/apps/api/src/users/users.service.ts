@@ -20,11 +20,14 @@ export class UsersService {
   /* Creates a user with a given email and password. */
   async createUser(email: string, password: string): Promise<User> {
     let user = await this.getUser({ email }, true);
+    password = await this.getSaltedHash(password);
+
     if (user) {
       if (!user.deletedAt) throw new UnprocessableEntityException('Email already exists.');
 
       await this.repo.restore(user.id);
 
+      password = await this.getSaltedHash(password);
       return this.updateUser(user, { email, password, status: UserStatus.NEW });
     }
 
