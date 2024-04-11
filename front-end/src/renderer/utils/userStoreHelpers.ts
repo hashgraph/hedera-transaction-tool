@@ -14,7 +14,7 @@ import {
   RecoveryPhrase,
 } from '@renderer/types';
 
-import { getMe, getUserState, ping } from '@renderer/services/organization';
+import { getUserState, ping } from '@renderer/services/organization';
 import { getKeyPairs, hashRecoveryPhrase } from '@renderer/services/keyPairService';
 import { getAccountsByPublicKey } from '@renderer/services/mirrorNodeDataService';
 import { storeKeyPair as storeKey } from '@renderer/services/keyPairService';
@@ -216,17 +216,18 @@ export const getConnectedOrganization = async (
   }
 
   try {
-    const { id } = await getMe(organization.serverUrl);
-    const state = await getUserState(organization.serverUrl, id);
+    const { id, passwordTemporary, secretHashes, userKeys } = await getUserState(
+      organization.serverUrl,
+    );
 
     const connectedOrganization: ConnectedOrganization = {
       ...organization,
       isServerActive: isActive,
       loginRequired: false,
       userId: id,
-      isPasswordTemporary: state.passwordTemporary,
-      secretHashes: state.secretHashes,
-      userKeys: state.userKeys,
+      isPasswordTemporary: passwordTemporary,
+      secretHashes,
+      userKeys,
     };
 
     return connectedOrganization;
@@ -278,14 +279,26 @@ export const afterOrganizationSelection = async (
 export const refetchUserState = async (organization: Ref<ConnectedOrganization | null>) => {
   if (!organization || !isLoggedInOrganization(organization.value)) return;
 
-  const { userKeys, secretHashes, passwordTemporary } = await getUserState(
-    organization.value.serverUrl,
-    organization.value.userId,
-  );
+  try {
+    const { id, userKeys, secretHashes, passwordTemporary } = await getUserState(
+      organization.value.serverUrl,
+    );
 
-  organization.value.userKeys = userKeys;
-  organization.value.secretHashes = secretHashes;
-  organization.value.isPasswordTemporary = passwordTemporary;
+    organization.value.userId = id;
+    organization.value.userKeys = userKeys;
+    organization.value.secretHashes = secretHashes;
+    organization.value.isPasswordTemporary = passwordTemporary;
+  } catch (error) {
+    const activeloginRequired: ConnectedOrganization = {
+      id: organization.value.id,
+      nickname: organization.value.nickname,
+      serverUrl: organization.value.serverUrl,
+      key: organization.value.key,
+      isServerActive: true,
+      loginRequired: true,
+    };
+    organization.value = activeloginRequired;
+  }
 };
 
 export const getConnectedOrganizations = async (user: PersonalUser | null) => {
