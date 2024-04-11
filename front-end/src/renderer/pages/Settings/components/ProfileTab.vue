@@ -6,7 +6,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useToast } from 'vue-toast-notification';
 
 import { changePassword } from '@renderer/services/userService';
-import { changePassword as organizationChangePassword } from '@renderer/services/organization/user';
+import { changePassword as organizationChangePassword } from '@renderer/services/organization/auth';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
