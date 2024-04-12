@@ -61,7 +61,6 @@ const handleInputChange = (e: KeyboardEvent) => {
   return true;
 };
 
-/* Handle Paste */
 const handlePaste = async (e: ClipboardEvent) => {
   e.preventDefault();
 
@@ -77,6 +76,19 @@ const handlePaste = async (e: ClipboardEvent) => {
 
     emit('otpChanged', getOTP());
   }
+};
+
+const handleSetOTP = (otp: string) => {
+  const inputs = otpContainerRef.value?.querySelectorAll('input');
+  if (!inputs) return;
+
+  inputs.forEach((input, index) => {
+    if (otp[index]) {
+      input.value = otp[index];
+    }
+  });
+
+  emit('otpChanged', getOTP());
 };
 
 /* Misc */
@@ -116,6 +128,7 @@ const sizes: {
 /* Exposes */
 defineExpose({
   getOTP,
+  setOTP: handleSetOTP,
   focus,
 });
 </script>
