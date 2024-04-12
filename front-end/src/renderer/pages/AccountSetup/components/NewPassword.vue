@@ -1,21 +1,27 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { inject, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 import { changePassword } from '@renderer/services/organization/auth';
 import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
+import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+
+import {
+  isLoggedInOrganization,
+  isLoggedInWithPassword,
+  isUserLoggedIn,
+} from '@renderer/utils/userStoreHelpers';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
 
 /* Props */
 const props = defineProps<{
-  handleContinue: (password: string) => void;
+  handleContinue: () => void;
 }>();
 
 /* Stores */
@@ -24,8 +30,10 @@ const user = useUserStore();
 /* Composables */
 const toast = useToast();
 
+/* Injected */
+const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
+
 /* State */
-const personalPassword = ref('');
 const currentPassword = ref('');
 const newPassword = ref('');
 const confirmPassword = ref('');
@@ -34,26 +42,28 @@ const currentPasswordInvalid = ref(false);
 const newPasswordInvalid = ref(false);
 const inputConfirmPasswordInvalid = ref(false);
 
-const userPasswordModalShow = ref(true);
-const loginAfterPassword = ref(false);
-
 const isLoading = ref(false);
 
 /* Handlers */
 const handleFormSubmit = async (event: Event) => {
   event.preventDefault();
 
-  if (personalPassword.value.length === 0) {
-    userPasswordModalShow.value = true;
-    loginAfterPassword.value = true;
-  } else {
-    await handleLogin();
-  }
+  await handleLogin();
 };
 
 const handleLogin = async () => {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
+  }
+
+  if (!isLoggedInWithPassword(user.personal)) {
+    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+    userPasswordModalRef.value?.open(
+      'Enter personal password',
+      'New password will be encrypted with this password',
+      handleLogin,
+    );
+    return;
   }
 
   if (!isLoggedInOrganization(user.selectedOrganization)) {
@@ -83,12 +93,12 @@ const handleLogin = async () => {
         user.personal.id,
         undefined,
         newPassword.value,
-        personalPassword.value,
+        user.personal.password,
       );
 
       await user.refetchUserState();
 
-      props.handleContinue(newPassword.value);
+      props.handleContinue();
 
       toast.success('Password changed successfully', { position: 'bottom-right' });
     } catch (err: any) {
@@ -158,18 +168,5 @@ watch(confirmPassword, val => {
         >
       </div>
     </form>
-    <UserPasswordModal
-      v-model:show="userPasswordModalShow"
-      heading="Enter personal password"
-      subHeading="New password will be encrypted with this password"
-      @passwordEntered="
-        pass => {
-          personalPassword = pass;
-          if (loginAfterPassword) {
-            handleLogin();
-          }
-        }
-      "
-    />
   </div>
 </template>
