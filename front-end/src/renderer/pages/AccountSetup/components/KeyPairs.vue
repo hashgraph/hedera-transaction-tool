@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, onUpdated, ref } from 'vue';
+import { inject, onBeforeMount, onUpdated, ref } from 'vue';
 
 import { Prisma } from '@prisma/client';
 
@@ -12,11 +12,16 @@ import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import { restorePrivateKey } from '@renderer/services/keyPairService';
 import { uploadKey } from '@renderer/services/organization';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+
+import {
+  isLoggedInOrganization,
+  isLoggedInWithPassword,
+  isUserLoggedIn,
+} from '@renderer/utils/userStoreHelpers';
 import { getWidthOfElementWithText } from '@renderer/utils/dom';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -26,6 +31,9 @@ const toast = useToast();
 const router = useRouter();
 const createTooltips = useCreateTooltips();
 
+/* Injected */
+const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
+
 /* State */
 const nickname = ref('');
 
@@ -34,10 +42,6 @@ const privateKeyHidden = ref(true);
 const starCount = ref(0);
 
 const keys = ref<{ publicKey: string; privateKey: string; index: number }[]>([]);
-
-const userPasswordModalShow = ref(false);
-const saveAfterModalClose = ref(false);
-const userPassword = ref(isUserLoggedIn(user.personal) ? user.personal.password : null);
 
 /* Misc Functions */
 const keyExists = (publicKey: string) => user.keyPairs.some(kp => kp.public_key === publicKey);
@@ -89,23 +93,19 @@ const restoreKeys = async () => {
 
 /* Handlers */
 const handleSave = async () => {
-  if (keys.value.length === 0) {
-    throw Error('No key pairs to save');
-  }
+  if (keys.value.length === 0) throw Error('No key pairs to save');
 
-  if (!isUserLoggedIn(user.personal)) {
-    throw Error('User is logged in');
-  }
-
-  if (!user.recoveryPhrase) {
-    throw Error('Recovery phrase is not set');
-  }
-
-  if (!userPassword.value || userPassword.value === '') {
-    saveAfterModalClose.value = true;
-    userPasswordModalShow.value = true;
+  if (!isUserLoggedIn(user.personal)) throw Error('User is logged in');
+  if (!isLoggedInWithPassword(user.personal)) {
+    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+    userPasswordModalRef.value?.open(
+      'Enter personal password',
+      'Credentials will be encrypted with this password',
+      handleSave,
+    );
     return;
   }
+  if (!user.recoveryPhrase) throw Error('Recovery phrase is not set');
 
   try {
     for (let i = 0; i < keys.value.length; i++) {
@@ -133,7 +133,7 @@ const handleSave = async () => {
         });
       }
 
-      await user.storeKey(keyPair, userPassword.value);
+      await user.storeKey(keyPair, user.personal.password);
       user.secretHashes.push(user.recoveryPhrase.hash);
     }
 
@@ -151,14 +151,6 @@ const handleSave = async () => {
   }
 
   await user.refetchUserState();
-};
-
-const handlePasswordEntered = async (password: string) => {
-  userPassword.value = password;
-
-  if (saveAfterModalClose.value) {
-    await handleSave();
-  }
 };
 
 /* Hooks */
@@ -240,12 +232,5 @@ defineExpose({
         </div>
       </div>
     </template>
-
-    <UserPasswordModal
-      v-model:show="userPasswordModalShow"
-      heading="Enter personal password"
-      subHeading="Credentials will be encrypted with this password"
-      @passwordEntered="handlePasswordEntered"
-    />
   </div>
 </template>
