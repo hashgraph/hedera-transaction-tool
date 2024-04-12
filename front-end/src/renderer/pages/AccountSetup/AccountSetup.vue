@@ -83,7 +83,6 @@ onBeforeMount(() => {
   } else {
     const requiredParts = accountSetupRequiredParts(user.selectedOrganization, user.keyPairs);
     if (requiredParts.length === 0) router.push({ name: 'transactions' });
-    console.log(requiredParts);
 
     if (!requiredParts.includes('password')) {
       setInitialStep('recoveryPhrase');
