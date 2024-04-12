@@ -1,3 +1,4 @@
+import * as path from 'path';
 import { app, BrowserWindow, session } from 'electron';
 import { optimizer, is } from '@electron-toolkit/utils';
 
@@ -5,6 +6,7 @@ import initDatabase from '@main/db';
 
 import initLogger from '@main/modules/logger';
 import createMenu from '@main/modules/menu';
+import handleDeepLink, { PROTOCOL_NAME } from '@main/modules/deepLink';
 import registerIpcListeners from '@main/modules/ipcHandlers';
 
 import { restoreOrCreateWindow } from '@main/windows/mainWindow';
@@ -24,6 +26,7 @@ async function run() {
 }
 
 attachAppEvents();
+setupDeepLink();
 
 function attachAppEvents() {
   app.on('ready', async () => {
@@ -72,6 +75,11 @@ function attachAppEvents() {
       app.quit();
     }
   });
+
+  app.on('open-url', (event, url) => {
+    if (mainWindow === null) return;
+    handleDeepLink(mainWindow, event, url);
+  });
 }
 
 async function initMainWindow() {
@@ -82,4 +90,16 @@ async function initMainWindow() {
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+}
+
+function setupDeepLink() {
+  if (process.defaultApp) {
+    if (process.argv.length >= 2) {
+      app.setAsDefaultProtocolClient(PROTOCOL_NAME, process.execPath, [
+        path.resolve(process.argv[1]),
+      ]);
+    }
+  } else {
+    app.setAsDefaultProtocolClient(PROTOCOL_NAME);
+  }
 }
