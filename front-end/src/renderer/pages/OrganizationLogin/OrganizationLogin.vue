@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { inject, onMounted, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -10,34 +10,33 @@ import { login } from '@renderer/services/organization';
 import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
 import {
+  isLoggedInWithPassword,
   isLoggedOutOrganization,
-  isOrganizationActive,
   isUserLoggedIn,
 } from '@renderer/utils/userStoreHelpers';
 
+import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
 import ForgotPasswordModal from '@renderer/components/ForgotPasswordModal.vue';
 
 /* Stores */
 const user = useUserStore();
+
+/* Injected */
+const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
 
 /* Composables */
 const router = useRouter();
 const toast = useToast();
 
 /* State */
-const userPassword = ref('');
-
 const inputEmail = ref('');
 const inputPassword = ref('');
 
 const inputEmailInvalid = ref(false);
 const inputPasswordInvalid = ref(false);
-
-const userPasswordModalShow = ref(true);
-const loginAfterPassword = ref(false);
 
 const forgotPasswordModalShown = ref(false);
 
@@ -45,26 +44,20 @@ const forgotPasswordModalShown = ref(false);
 const handleOnFormSubmit = async (e: Event) => {
   e.preventDefault();
 
-  if (!isOrganizationActive(user.selectedOrganization)) {
-    throw new Error('Please select active organization');
-  }
-
-  if (userPassword.value.length === 0) {
-    userPasswordModalShow.value = true;
-    loginAfterPassword.value = true;
-  } else {
-    await handleLogin();
-  }
+  handleLogin();
 };
 
 const handleLogin = async () => {
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
+  if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+
+  if (!isLoggedInWithPassword(user.personal)) {
+    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+    userPasswordModalRef.value?.open(null, null, handleLogin);
+    return;
   }
 
-  if (!isLoggedOutOrganization(user.selectedOrganization)) {
+  if (!isLoggedOutOrganization(user.selectedOrganization))
     throw new Error('Please select active organization');
-  }
 
   try {
     await login(user.selectedOrganization.serverUrl, inputEmail.value, inputPassword.value);
@@ -74,7 +67,7 @@ const handleLogin = async () => {
       inputPassword.value,
       user.selectedOrganization.id,
       user.personal.id,
-      userPassword.value,
+      user.personal.password,
       true,
     );
 
@@ -91,8 +84,9 @@ const handleLogin = async () => {
 };
 
 const handleForgotPassword = () => {
-  if (userPassword.value.length === 0) {
-    userPasswordModalShow.value = true;
+  if (!isLoggedInWithPassword(user.personal)) {
+    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+    userPasswordModalRef.value?.open(null, null, handleForgotPassword);
   } else {
     forgotPasswordModalShown.value = true;
   }
@@ -173,30 +167,7 @@ onBeforeRouteLeave(async () => {
         </div>
       </form>
 
-      <UserPasswordModal
-        v-model:show="userPasswordModalShow"
-        heading="Enter personal password"
-        subHeading="Credentials will be encrypted with this password"
-        required
-        @passwordEntered="
-          pass => {
-            userPassword = pass;
-            if (loginAfterPassword) {
-              handleLogin();
-            }
-          }
-        "
-      />
-
-      <ForgotPasswordModal
-        v-model:show="forgotPasswordModalShown"
-        :personalPassword="userPassword"
-        @passwordChanged="
-          password => {
-            console.log(password);
-          }
-        "
-      />
+      <ForgotPasswordModal v-model:show="forgotPasswordModalShown" />
     </div>
   </div>
 </template>
