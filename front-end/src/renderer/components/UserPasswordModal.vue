@@ -35,10 +35,9 @@ const handlePasswordEntered = async (e: Event) => {
     user.personal.password = password.value;
 
     const currentCallback = callback.value;
-
     handleClose();
 
-    await currentCallback?.(password.value);
+    await currentCallback?.(user.personal.password);
   } else {
     throw new Error('Incorrect Personal User Password');
   }

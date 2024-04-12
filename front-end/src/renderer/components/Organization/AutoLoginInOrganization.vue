@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { inject, ref, watch } from 'vue';
 
 import { Organization } from '@prisma/client';
 
@@ -7,27 +7,28 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { tryAutoSignIn } from '@renderer/services/organizationCredentials';
 
+import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
 
 /* Stores */
 const user = useUserStore();
 
+/* Injected */
+const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
+
 /* State */
 const checked = ref(false);
-const userPasswordModalShow = ref(false);
 const loginsSummaryModalShow = ref(false);
 const loginFailedForOrganizations = ref<Organization[]>([]);
 const loginTriedForOrganizations = ref<Organization[]>([]);
 
 /* Handlers */
 const handleAutoLogin = async (password: string) => {
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
+  if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
 
   loginFailedForOrganizations.value = await tryAutoSignIn(user.personal.id, password);
   loginTriedForOrganizations.value = user.organizations
@@ -50,7 +51,12 @@ async function openPasswordModalIfRequired() {
     const organizationToSignIn = user.organizations.filter(org => org.loginRequired);
 
     if (organizationToSignIn.length > 0) {
-      userPasswordModalShow.value = true;
+      if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+      userPasswordModalRef.value?.open(
+        null,
+        'Sign in to your organizations with expired token',
+        handleAutoLogin,
+      );
     }
   }
 }
@@ -67,11 +73,6 @@ watch(
 );
 </script>
 <template>
-  <UserPasswordModal
-    subHeading="Sign in to your organizations with expired token"
-    v-model:show="userPasswordModalShow"
-    @passwordEntered="handleAutoLogin"
-  />
   <AppModal
     v-model:show="loginsSummaryModalShow"
     class="common-modal"
