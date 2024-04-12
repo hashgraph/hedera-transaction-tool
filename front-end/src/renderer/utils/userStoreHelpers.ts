@@ -69,6 +69,29 @@ export const accountSetupRequired = (
   return false;
 };
 
+export type AccountSetupPart = 'password' | 'keys';
+
+export const accountSetupRequiredParts = (
+  organization: ConnectedOrganization | null,
+  localKeys: KeyPair[],
+): AccountSetupPart[] => {
+  if (getSecretHashesFromKeys(localKeys).length === 0) return ['keys'];
+  if (!organization || !isLoggedInOrganization(organization)) return [];
+
+  const parts: AccountSetupPart[] = [];
+
+  if (organization.isPasswordTemporary) parts.push('password');
+  if (organization.secretHashes.length === 0) parts.push('keys');
+  if (
+    !organization.userKeys
+      .filter(key => key.mnemonicHash)
+      .every(key => localKeys.some(k => k.public_key === key.publicKey))
+  )
+    parts.push('keys');
+
+  return parts;
+};
+
 /* Entity creation */
 export const createPersonalUser = (id?: string, email?: string): PersonalUser =>
   id && email
