@@ -75,21 +75,21 @@ export const accountSetupRequiredParts = (
   organization: ConnectedOrganization | null,
   localKeys: KeyPair[],
 ): AccountSetupPart[] => {
-  if (getSecretHashesFromKeys(localKeys).length === 0) return ['keys'];
-  if (!organization || !isLoggedInOrganization(organization)) return [];
+  const parts = new Set<AccountSetupPart>();
 
-  const parts: AccountSetupPart[] = [];
+  if (getSecretHashesFromKeys(localKeys).length === 0) parts.add('keys');
+  if (!organization || !isLoggedInOrganization(organization)) return [...parts];
 
-  if (organization.isPasswordTemporary) parts.push('password');
-  if (organization.secretHashes.length === 0) parts.push('keys');
+  if (organization.isPasswordTemporary) parts.add('password');
+  if (organization.secretHashes.length === 0) parts.add('keys');
   if (
     !organization.userKeys
       .filter(key => key.mnemonicHash)
       .every(key => localKeys.some(k => k.public_key === key.publicKey))
   )
-    parts.push('keys');
+    parts.add('keys');
 
-  return parts;
+  return [...parts];
 };
 
 /* Entity creation */
