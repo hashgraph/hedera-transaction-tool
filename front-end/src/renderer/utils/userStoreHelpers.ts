@@ -27,6 +27,10 @@ export const isUserLoggedIn = (user: PersonalUser | null): user is LoggedInUser 
   return user !== null && user.isLoggedIn;
 };
 
+export const isPersonalPasswordEmpty = (user: LoggedInUser): boolean => {
+  return user.password === null || user.password === '';
+};
+
 export const isOrganizationActive = (organization: ConnectedOrganization | null): boolean => {
   return organization !== null && organization.isServerActive;
 };
