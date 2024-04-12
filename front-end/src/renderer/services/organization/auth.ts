@@ -5,6 +5,7 @@ import { throwIfNoResponse } from '.';
 
 const authController = 'auth';
 
+/* Login the user */
 export const login = async (
   serverUrl: string,
   email: string,
@@ -33,6 +34,23 @@ export const login = async (
     }
 
     throw new Error('Failed Sign in Organization');
+  }
+};
+
+/* Logout the user */
+export const logout = async (serverUrl: string): Promise<{ id: number }> => {
+  try {
+    const { data } = await axios.post(
+      `${serverUrl}/${authController}/logout`,
+      {},
+      {
+        withCredentials: true,
+      },
+    );
+
+    return { id: data.id };
+  } catch (error: any) {
+    throw new Error('Failed log out of Organization');
   }
 };
 

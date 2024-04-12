@@ -3,6 +3,8 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
 
+import { logout } from '@renderer/services/organization';
+
 import Logo from '@renderer/components/Logo.vue';
 import LogoText from '@renderer/components/LogoText.vue';
 import UserModeSelect from './UserModeSelect.vue';
@@ -15,14 +17,21 @@ const router = useRouter();
 
 /* Handlers */
 const handleLogout = async () => {
-  localStorage.removeItem('htx_user');
+  if (user.selectedOrganization) {
+    const { id, nickname, serverUrl, key } = user.selectedOrganization;
+    await logout(serverUrl);
+    await user.selectOrganization(null);
+    await user.selectOrganization({ id, nickname, serverUrl, key });
+  } else {
+    localStorage.removeItem('htx_user');
 
-  await user.logout();
+    await user.logout();
 
-  user.keyPairs = [];
-  user.recoveryPhrase = null;
+    user.keyPairs = [];
+    user.recoveryPhrase = null;
 
-  router.push({ name: 'login' });
+    router.push({ name: 'login' });
+  }
 };
 </script>
 
@@ -46,7 +55,10 @@ const handleLogout = async () => {
         <UserModeSelect />
       </div>
       <span
-        v-if="user.personal && user.personal.isLoggedIn"
+        v-if="
+          (user.personal && user.personal.isLoggedIn && !user.selectedOrganization) ||
+          (user.selectedOrganization && !user.selectedOrganization.loginRequired)
+        "
         class="container-icon"
         data-testid="button-logout"
         @click="handleLogout"

@@ -6,10 +6,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useToast } from 'vue-toast-notification';
 
 import { resetPassword, setPassword, verifyReset } from '@renderer/services/organization';
-import {
-  addOrganizationCredentials,
-  updateOrganizationCredentials,
-} from '@renderer/services/organizationCredentials';
+import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
 import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
