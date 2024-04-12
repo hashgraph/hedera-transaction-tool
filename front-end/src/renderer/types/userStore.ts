@@ -13,7 +13,14 @@ export type LoggedInUser = {
   password: string | null;
 };
 
-export type PersonalUser = LoggedOutUser | LoggedInUser;
+export type LoggedInUserWithPassword = {
+  isLoggedIn: true;
+  id: string;
+  email: string;
+  password: string;
+};
+
+export type PersonalUser = LoggedOutUser | LoggedInUser | LoggedInUserWithPassword;
 
 type OrganizationInactiveServer = {
   isServerActive: false;
