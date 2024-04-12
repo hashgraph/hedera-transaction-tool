@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, ref, watch } from 'vue';
+import { inject, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -58,6 +58,8 @@ const inputConfirmPasswordInvalid = ref(false);
 
 const shouldEnterToken = ref(false);
 const shouldSetNewPassword = ref(false);
+
+const onOTPReceivedUnsubscribe = ref<() => void>();
 
 /* Handlers */
 const handleSubmit = async (e: Event) => {
@@ -136,6 +138,19 @@ async function handleNewPassword() {
   }
 }
 
+/* Hooks */
+onBeforeMount(async () => {
+  onOTPReceivedUnsubscribe.value = window.electronAPI.local.deepLink.onOTPReceived(
+    (token: string) => {
+      otpInputRef.value?.setOTP(token);
+    },
+  );
+});
+
+onBeforeUnmount(() => {
+  if (onOTPReceivedUnsubscribe.value) onOTPReceivedUnsubscribe.value();
+});
+
 /* Watchers */
 watch(
   () => props.show,
@@ -170,17 +185,18 @@ watch(
       <form class="mt-3" @submit="handleSubmit">
         <h3 class="text-center text-title text-bold">Forgot password</h3>
 
-        <p class="text-center text-small text-secondary mt-4">
-          Enter email to recover your password
-        </p>
-
-        <div class="form-group mt-5 mb-4">
-          <label class="form-label">Email</label>
-          <AppInput v-model="email" size="small" type="email" :filled="true" />
-        </div>
-
         <Transition name="fade" mode="out-in">
-          <div v-if="shouldEnterToken" class="mb-4">
+          <div v-if="!shouldEnterToken && !shouldSetNewPassword">
+            <p class="text-center text-small text-secondary mt-4">
+              Enter email to recover your password
+            </p>
+            <div class="form-group mt-5 mb-4">
+              <label class="form-label">Email</label>
+              <AppInput v-model="email" size="small" type="email" :filled="true" />
+            </div>
+          </div>
+
+          <div v-else-if="shouldEnterToken" class="my-4">
             <p class="text-center text-small text-secondary mb-4">
               Please enter the one time password, received on your email
             </p>
@@ -193,8 +209,6 @@ watch(
           </div>
 
           <div v-else-if="shouldSetNewPassword">
-            <hr class="separator my-5" />
-
             <AppInput
               v-model="newPassword"
               :filled="true"
