@@ -13,7 +13,7 @@ import { Response } from 'express';
 import * as bcrypt from 'bcryptjs';
 import { totp } from 'otplib';
 
-import { NOTIFICATIONS_SERVICE } from '@app/common';
+import { ELECTRON_APP_PROTOCOL_PREFIX, NOTIFICATIONS_SERVICE } from '@app/common';
 import { User, UserStatus } from '@entities';
 
 import { JwtPayload, OtpPayload } from '../interfaces';
@@ -103,7 +103,13 @@ export class AuthService {
     this.notificationsService.emit('notify_email', {
       email: user.email,
       subject: 'Password Reset token',
-      text: `Hello, your OTP is <b>${token}</b>`,
+      text: `
+      <div>
+        <h1 style="margin: 0">Hedera Transaction Tool</h1>
+        <p style="margin: 0">Use the following token to reset your password: <b>${token}</b></p>
+        <a href="${ELECTRON_APP_PROTOCOL_PREFIX}token=${token}" style="text-decoration: none; color: white; background-color: #6600cc; padding: 8px 22px; border-radius: 6px;">Verify</a>
+      </div>
+      `,
     });
 
     this.setOtpCookie(response, { email: user.email, verified: false });
