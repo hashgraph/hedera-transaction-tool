@@ -12,6 +12,7 @@ import {
   PersonalUser,
   PublicKeyAccounts,
   RecoveryPhrase,
+  LoggedInUserWithPassword,
 } from '@renderer/types';
 
 import { getUserState, ping } from '@renderer/services/organization';
@@ -27,8 +28,10 @@ export const isUserLoggedIn = (user: PersonalUser | null): user is LoggedInUser 
   return user !== null && user.isLoggedIn;
 };
 
-export const isPersonalPasswordEmpty = (user: LoggedInUser): boolean => {
-  return user.password === null || user.password === '';
+export const isLoggedInWithPassword = (
+  user: PersonalUser | null,
+): user is LoggedInUserWithPassword => {
+  return isUserLoggedIn(user) && user.password !== null && user.password.trim() !== '';
 };
 
 export const isOrganizationActive = (organization: ConnectedOrganization | null): boolean => {
