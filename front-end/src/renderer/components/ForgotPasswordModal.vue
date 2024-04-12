@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { inject, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -8,19 +8,20 @@ import { useToast } from 'vue-toast-notification';
 import { resetPassword, setPassword, verifyReset } from '@renderer/services/organization';
 import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
+import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+
 import { isEmail } from '@renderer/utils';
+import { isLoggedInWithPassword, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import OTPInput from '@renderer/components/OTPInput.vue';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 /* Props */
 const props = defineProps<{
   show: boolean;
-  personalPassword: string;
 }>();
 
 /* Emits */
@@ -33,6 +34,9 @@ const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
+
+/* Injected */
+const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
 
 /* State */
 const email = ref('');
@@ -94,6 +98,11 @@ async function handleTokenEnter() {
 
 async function handleNewPassword() {
   if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+  if (!isLoggedInWithPassword(user.personal)) {
+    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+    userPasswordModalRef.value?.open(null, null, handleNewPassword);
+    return;
+  }
   if (!user.selectedOrganization) throw new Error('Please select organization');
 
   newPasswordInvalid.value = newPassword.value.trim().length < 8;
@@ -110,7 +119,7 @@ async function handleNewPassword() {
       user.personal.id,
       undefined,
       newPassword.value,
-      props.personalPassword,
+      user.personal.password,
     );
 
     emit('update:show', false);

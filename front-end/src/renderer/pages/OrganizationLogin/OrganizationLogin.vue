@@ -24,12 +24,12 @@ import ForgotPasswordModal from '@renderer/components/ForgotPasswordModal.vue';
 /* Stores */
 const user = useUserStore();
 
-/* Injected */
-const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
-
 /* Composables */
 const router = useRouter();
 const toast = useToast();
+
+/* Injected */
+const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
 
 /* State */
 const inputEmail = ref('');
