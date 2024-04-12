@@ -6,12 +6,19 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useToast } from 'vue-toast-notification';
 
 import { resetPassword, setPassword, verifyReset } from '@renderer/services/organization';
-import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
+import {
+  addOrganizationCredentials,
+  updateOrganizationCredentials,
+} from '@renderer/services/organizationCredentials';
 
 import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
 import { isEmail } from '@renderer/utils';
-import { isLoggedInWithPassword, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import {
+  isLoggedInWithPassword,
+  isLoggedOutOrganization,
+  isUserLoggedIn,
+} from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -103,7 +110,8 @@ async function handleNewPassword() {
     userPasswordModalRef.value?.open(null, null, handleNewPassword);
     return;
   }
-  if (!user.selectedOrganization) throw new Error('Please select organization');
+  if (!isLoggedOutOrganization(user.selectedOrganization))
+    throw new Error('Please select organization');
 
   newPasswordInvalid.value = newPassword.value.trim().length < 8;
   inputConfirmPasswordInvalid.value = newPassword.value !== confirmPassword.value;
@@ -114,12 +122,13 @@ async function handleNewPassword() {
   try {
     await setPassword(user.selectedOrganization.serverUrl, newPassword.value);
 
-    await updateOrganizationCredentials(
+    await addOrganizationCredentials(
+      email.value,
+      newPassword.value,
       user.selectedOrganization.id,
       user.personal.id,
-      undefined,
-      newPassword.value,
       user.personal.password,
+      true,
     );
 
     emit('update:show', false);
