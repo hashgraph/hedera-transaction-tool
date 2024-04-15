@@ -75,7 +75,11 @@ export class AuthService {
 
   /* Log the user out of the organization, remove his cooke and blacklists his token */
   logout(response: Response) {
-    response.clearCookie('Authentication');
+    response.clearCookie('Authentication', {
+      httpOnly: true,
+      sameSite: this.configService.get('NODE_ENV') === 'production' ? 'none' : 'lax',
+      secure: this.configService.get('NODE_ENV') === 'production',
+    });
     //TODO implement token blacklisting
   }
 
@@ -91,8 +95,8 @@ export class AuthService {
   }
 
   private generatePassword() {
-    const randomValue = crypto.getRandomValues(new Uint32Array(8));
-    return Buffer.from(randomValue).toString('base64');
+    const randomValue = crypto.getRandomValues(new Uint32Array(12));
+    return Buffer.from(randomValue).toString('base64').replaceAll('=', '');
   }
 
   /* Create OTP and send it to the user */
