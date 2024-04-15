@@ -246,7 +246,7 @@ export const getConnectedOrganization = async (
   }
 
   try {
-    const { id, passwordTemporary, secretHashes, userKeys } = await getUserState(
+    const { id, email, passwordTemporary, secretHashes, userKeys } = await getUserState(
       organization.serverUrl,
     );
 
@@ -255,6 +255,7 @@ export const getConnectedOrganization = async (
       isServerActive: isActive,
       loginRequired: false,
       userId: id,
+      email,
       isPasswordTemporary: passwordTemporary,
       secretHashes,
       userKeys,

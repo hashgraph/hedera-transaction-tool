@@ -8,15 +8,17 @@ import { getOwnKeys } from './userKeys';
 
 /* Get information about current user */
 export const getUserState = async (organizationServerUrl: string) => {
-  const { id, status } = await getMe(organizationServerUrl);
+  const { id, status, email } = await getMe(organizationServerUrl);
 
   const user: {
     id: number;
+    email: string;
     passwordTemporary: boolean;
     userKeys: IUserKey[];
     secretHashes: string[];
   } = {
     id,
+    email,
     passwordTemporary: status === 'NEW',
     userKeys: [],
     secretHashes: [],

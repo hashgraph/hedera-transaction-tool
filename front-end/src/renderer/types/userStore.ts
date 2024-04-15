@@ -41,6 +41,7 @@ export type LoggedInOrganization = {
   isServerActive: true;
   loginRequired: false;
   userId: number;
+  email: string;
   isPasswordTemporary: boolean;
   userKeys: IUserKey[];
   secretHashes: string[];
