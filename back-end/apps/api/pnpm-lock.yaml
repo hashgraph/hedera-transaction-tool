@@ -11,9 +11,6 @@ dependencies:
   '@nestjs/passport':
     specifier: ^10.0.3
     version: 10.0.3(@nestjs/common@10.3.7)(passport@0.7.0)
-  bcryptjs:
-    specifier: ^2.4.3
-    version: 2.4.3
   otplib:
     specifier: ^12.0.1
     version: 12.0.1
@@ -228,10 +225,6 @@ packages:
       '@types/node': 20.12.6
       '@types/send': 0.17.4
     dev: true
-
-  /bcryptjs@2.4.3:
-    resolution: {integrity: sha512-V/Hy/X9Vt7f3BbPJEi8BdVFMByHi+jNXrYkW3huaybV/kQ0KJg0Y6PkEMbn+zeT+i+SiKZ/HMqJGIIt4LZDqNQ==}
-    dev: false
 
   /buffer-equal-constant-time@1.0.1:
     resolution: {integrity: sha512-zRpUiDwd/xk6ADqPMATG8vc9VPrkck7T07OIx0gnjmJAnHnTVXNQG3vfvWNuiZIkwu9KrKdA1iJKfsfTVxE6NA==}
