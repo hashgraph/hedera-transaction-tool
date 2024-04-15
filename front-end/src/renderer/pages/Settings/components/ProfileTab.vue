@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { inject, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -8,18 +8,28 @@ import { useToast } from 'vue-toast-notification';
 import { changePassword } from '@renderer/services/userService';
 import { changePassword as organizationChangePassword } from '@renderer/services/organization/auth';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+
+import {
+  isLoggedInOrganization,
+  isLoggedInWithPassword,
+  isUserLoggedIn,
+} from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
 /* Stores */
 const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
+
+/* Injected */
+const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
 
 /* State */
 const currentPassword = ref('');
@@ -29,8 +39,7 @@ const isConfirmModalShown = ref(false);
 const isSuccessModalShown = ref(false);
 
 /* Handlers */
-const handleChangePassword = async e => {
-  e.preventDefault();
+const handleChangePassword = async () => {
   isConfirmModalShown.value = false;
   try {
     if (!isUserLoggedIn(user.personal)) {
@@ -42,10 +51,29 @@ const handleChangePassword = async e => {
     }
 
     if (isLoggedInOrganization(user.selectedOrganization)) {
+      if (!isLoggedInWithPassword(user.personal)) {
+        if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+        userPasswordModalRef.value?.open(
+          null,
+          'Enter your password to encrpyt you credentials',
+          handleChangePassword,
+        );
+        return;
+      }
+
       await organizationChangePassword(
         user.selectedOrganization.serverUrl,
         currentPassword.value,
         newPassword.value,
+      );
+
+      await addOrganizationCredentials(
+        user.selectedOrganization.email,
+        newPassword.value,
+        user.selectedOrganization.id,
+        user.personal.id,
+        user.personal.password,
+        true,
       );
     } else {
       await changePassword(user.personal.id, currentPassword.value, newPassword.value);
