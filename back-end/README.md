@@ -37,6 +37,25 @@ From the back-end directory, run:
 docker-compose up
 ```
 
+### Start developing on HTTPS
+
+1. First you need to create self-signed certificate
+
+   ```bash
+   mkdir -p cert # if you don't have the cert directory
+   mkcert -install
+   mkcert -key-file ./cert/key.pem -cert-file ./cert/cert.pem localhost
+   ```
+
+2. Next, set the `NODE_ENV` to `production`, you can set it in the root `.env`
+
+3. Now, open api's [main.ts](./apps/api/src/main.ts) and uncomment the code that initializes the Nest application with https options and comment the other one
+
+4. Run
+   ```bash
+   docker-compose up
+   ```
+
 ### Deploy on Kubernetes
 
 When deploying to a server, it may be desired to use Kubernetes. More info needed.

@@ -1,14 +1,28 @@
+// import * as fs from 'fs';
+// import * as path from 'path';
+
 import { NestFactory } from '@nestjs/core';
-import { ApiModule } from './api.module';
+import { Transport } from '@nestjs/microservices';
+import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+
 import { Logger } from 'nestjs-pino';
-import { ConfigService } from '@nestjs/config';
+
+import { ApiModule } from './api.module';
+
 import * as cookieParser from 'cookie-parser';
-import { Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
   const app = await NestFactory.create(ApiModule);
+
+  // const app = await NestFactory.create(ApiModule, {
+  //   httpsOptions: {
+  //     key: fs.readFileSync(path.resolve(__dirname, '../../../cert/key.pem')),
+  //     cert: fs.readFileSync(path.resolve(__dirname, '../../../cert/cert.pem')),
+  //   },
+  // });
+
   const configService = app.get(ConfigService);
   app.connectMicroservice({
     transport: Transport.RMQ,
