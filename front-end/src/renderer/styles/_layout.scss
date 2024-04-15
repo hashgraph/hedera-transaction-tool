@@ -54,7 +54,7 @@ input[type='file'] {
 .container-header {
   height: 80px;
   padding: 18px 24px;
-  background-color: var(--#{$prefix}contrainer-main-bg-color);
+  background-color: var(--#{$prefix}container-main-bg-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -108,7 +108,7 @@ input[type='file'] {
 }
 
 .container-main-content {
-  background-color: var(--#{$prefix}contrainer-main-bg-color);
+  background-color: var(--#{$prefix}container-main-bg-color);
   height: calc(100vh - 80px);
 
   .logged-in:not(.should-setup-account) & {
