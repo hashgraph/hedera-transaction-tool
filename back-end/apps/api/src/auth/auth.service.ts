@@ -147,6 +147,14 @@ export class AuthService {
     });
   }
 
+  clearOtpCookie(response: Response) {
+    response.clearCookie('otp', {
+      httpOnly: true,
+      sameSite: this.configService.get('NODE_ENV') === 'production' ? 'none' : 'lax',
+      secure: this.configService.get('NODE_ENV') === 'production',
+    });
+  }
+
   /* Set the password for verified user. */
   async setPassword(user: User, newPassword: string): Promise<void> {
     await this.usersService.setPassword(user, newPassword);

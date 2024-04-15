@@ -161,6 +161,6 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response,
   ): Promise<void> {
     await this.authService.setPassword(user, dto.password);
-    response.clearCookie('otp');
+    this.authService.clearOtpCookie(response);
   }
 }
