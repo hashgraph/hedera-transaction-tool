@@ -157,6 +157,7 @@ watch(
   () => {
     email.value = '';
     shouldEnterToken.value = false;
+    shouldSetNewPassword.value = false;
     otp.value = null;
     newPassword.value = '';
     confirmPassword.value = '';
