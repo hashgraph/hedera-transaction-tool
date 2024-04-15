@@ -20,7 +20,6 @@ const handleLogout = async () => {
   if (user.selectedOrganization) {
     const { id, nickname, serverUrl, key } = user.selectedOrganization;
     await logout(serverUrl);
-    await user.selectOrganization(null);
     await user.selectOrganization({ id, nickname, serverUrl, key });
   } else {
     localStorage.removeItem('htx_user');
