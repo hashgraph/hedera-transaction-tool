@@ -54,8 +54,8 @@ const handleChangePassword = async () => {
       if (!isLoggedInWithPassword(user.personal)) {
         if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
         userPasswordModalRef.value?.open(
-          null,
-          'Enter your password to encrpyt you credentials',
+          'Enter your personal account password',
+          'Enter your personal account password to encrpyt your organization credentials',
           handleChangePassword,
         );
         return;

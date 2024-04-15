@@ -184,7 +184,9 @@ watch(
         <AppCustomIcon :name="'contact'" style="height: 160px" />
       </div>
       <form class="mt-3" @submit="handleSubmit">
-        <h3 class="text-center text-title text-bold">Forgot password</h3>
+        <h3 class="text-center text-title text-bold">
+          {{ shouldSetNewPassword ? 'Set new password' : 'Forgot password' }}
+        </h3>
 
         <Transition name="fade" mode="out-in">
           <div v-if="!shouldEnterToken && !shouldSetNewPassword">
