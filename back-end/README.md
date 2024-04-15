@@ -19,8 +19,8 @@ If you use another version, please use [n](https://github.com/tj/n) to manage.
 pnpm install -r
 ```
 
-Before running the project please create `.env` in `back-end`, `apps/api`, `apps/chain`, 
-and `apps/notifications`. See the example.env in each location for the required variables. 
+Before running the project please create `.env` in `back-end`, `apps/api`, `apps/chain`,
+and `apps/notifications`. See the example.env in each location for the required variables.
 Or copy the existing example.env in each location.
 
 ```shell
@@ -30,7 +30,7 @@ cp example.env .env
 ### Start developing ⚒️
 
 As some services are dependent on other services, they must be run together.
-This can be done in docker. Install and run Docker Desktop. 
+This can be done in docker. Install and run Docker Desktop.
 From the back-end directory, run:
 
 ```bash
@@ -50,3 +50,9 @@ docker-compose down
 rm -rf <back-end base directory>/pgdata
 docker-compose up
 ```
+
+### Create Admin
+
+1. Make sure at least the database is running or just `docker compose up`
+2. Create `.env` file inside `scripts` folder
+3. Run `npm run create-admin` and follow the steps
