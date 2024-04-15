@@ -1,5 +1,6 @@
 const BasePage = require('./BasePage');
 const { expect } = require('playwright/test');
+const { queryDatabase } = require('../utils/databaseUtil');
 
 class RegistrationPage extends BasePage {
   constructor(window) {
@@ -162,10 +163,9 @@ class RegistrationPage extends BasePage {
     return allFieldsCleared;
   }
 
-  async resetRegistrationForm() {
-    await this.window.getByTestId(this.emailInputSelector).fill('');
-    await this.window.getByTestId(this.passwordInputSelector).fill('');
-    await this.window.getByTestId(this.confirmPasswordInputSelector).fill('');
+  async resetForm() {
+    await this.fillByTestId(this.emailInputSelector, '');
+    await this.fillByTestId(this.passwordInputSelector, '');
   }
 
   async logoutForReset() {
@@ -176,8 +176,16 @@ class RegistrationPage extends BasePage {
       const element = this.window.getByTestId(this.emailInputSelector);
       await element.waitFor({ state: 'visible', timeout: 1000 });
     } else {
-      console.log('Logout button not visible, assuming we are on the registration page');
-      await this.resetRegistrationForm();
+      console.log('Logout button not visible, resetting the form');
+      const isSecondPasswordVisible = await this.isElementVisible(
+        this.confirmPasswordInputSelector,
+      );
+      if (isSecondPasswordVisible) {
+        await this.resetForm();
+        await this.fillByTestId(this.confirmPasswordInputSelector, '');
+      } else {
+        await this.resetForm();
+      }
     }
   }
 
@@ -257,6 +265,65 @@ class RegistrationPage extends BasePage {
 
     const toastMessage = await this.getToastMessage();
     expect(toastMessage).toBe('Key Pair saved successfully');
+  }
+
+  async verifyUserExists(email) {
+    const query = `
+        SELECT *
+        FROM User
+        WHERE email = ?`;
+    const user = await queryDatabase(query, [email]);
+    return user !== undefined;
+  }
+
+  async getPublicKeyByEmail(email) {
+    const query = `
+        SELECT kp.public_key
+        FROM KeyPair kp
+                 JOIN User u ON u.id = kp.user_id
+        WHERE u.email = ?`;
+
+    try {
+      const row = await queryDatabase(query, [email]);
+      return row ? row.public_key : null;
+    } catch (error) {
+      console.error('Error fetching public key:', error);
+      return null;
+    }
+  }
+
+  async verifyPrivateKeyExistsByEmail(email) {
+    const query = `
+        SELECT kp.private_key
+        FROM KeyPair kp
+                 JOIN User u ON u.id = kp.user_id
+        WHERE u.email = ?
+          AND kp.private_key IS NOT NULL`;
+
+    try {
+      const row = await queryDatabase(query, [email]);
+      return row !== undefined;
+    } catch (error) {
+      console.error('Error checking for private key:', error);
+      return false;
+    }
+  }
+
+  async verifyPublicKeyExistsByEmail(email) {
+    const query = `
+        SELECT kp.public_key
+        FROM KeyPair kp
+                 JOIN User u ON u.id = kp.user_id
+        WHERE u.email = ?
+          AND kp.private_key IS NOT NULL`;
+
+    try {
+      const row = await queryDatabase(query, [email]);
+      return row !== undefined;
+    } catch (error) {
+      console.error('Error checking for private key:', error);
+      return false;
+    }
   }
 
   async typeEmail(email) {
@@ -357,6 +424,14 @@ class RegistrationPage extends BasePage {
 
   async isConfirmPasswordFieldVisible() {
     return await this.isElementVisible(this.confirmPasswordInputSelector);
+  }
+
+  async getPublicKey() {
+    return await this.getTextByTestId(this.publicKeySpanSelector);
+  }
+
+  async getPrivateKey() {
+    return await this.getTextByTestId(this.privateKeySpanSelector);
   }
 }
 
