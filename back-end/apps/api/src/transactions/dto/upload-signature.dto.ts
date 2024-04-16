@@ -1,11 +1,11 @@
-import { IsNotEmpty, IsNumber } from 'class-validator';
-import { TransformBuffer } from '@app/common';
+import { IsDefined, IsNotEmpty, IsNotEmptyObject, IsObject } from 'class-validator';
 
 export class UploadSignatureDto {
-  @IsNumber()
-  userKeyId: number;
-
   @IsNotEmpty()
-  @TransformBuffer()
-  signature: Buffer;
+  publicKey: string;
+
+  @IsDefined()
+  @IsNotEmptyObject()
+  @IsObject()
+  signatures: { [key: string]: Buffer };
 }
