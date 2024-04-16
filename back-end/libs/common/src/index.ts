@@ -3,3 +3,4 @@ export * from './database';
 export * from './logger';
 export * from './utils';
 export * from './transformers';
+export * from './mirrorNode';
