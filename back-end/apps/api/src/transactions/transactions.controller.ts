@@ -24,8 +24,7 @@ import { JwtAuthGuard, UserSettledGuard, HasKeyGuard } from '../guards';
 
 import { TransactionsService } from './transactions.service';
 
-import { CreateTransactionDto } from './dto/create-transaction.dto';
-import { TransactionDto } from './dto/transaction.dto';
+import { CreateTransactionDto, TransactionDto } from './dto';
 
 @ApiTags('Transactions')
 @Controller('transactions')
@@ -49,6 +48,7 @@ export class TransactionsController {
     return this.transactionsService.createTransaction(body, user);
   }
 
+  /* Get all transactions created by the user */
   @ApiOperation({
     summary: 'Get created transactions',
     description: 'Get all transactions that were created by the current user.',
@@ -62,6 +62,7 @@ export class TransactionsController {
     return this.transactionsService.getTransactions(user);
   }
 
+  /* Get all transactions to be signed by the user */
   @ApiOperation({
     summary: 'Get transactions to sign',
     description: 'Get all transactions to be signed by the current user.',
@@ -79,6 +80,7 @@ export class TransactionsController {
     return this.transactionsService.getTransactionsToSign(user, take, skip);
   }
 
+  /* Get all transactions to be approved by the user */
   @ApiOperation({
     summary: 'Get transactions to approve',
     description: 'Get all transactions to be approved by the current user.',
@@ -96,6 +98,7 @@ export class TransactionsController {
     return this.transactionsService.getTransactionsToApprove(user, take, skip);
   }
 
+  /* Get all transactions to be observed by the user */
   @ApiOperation({
     summary: 'Get transactions to observe',
     description: 'Get all transactions to be observed by the current user.',
