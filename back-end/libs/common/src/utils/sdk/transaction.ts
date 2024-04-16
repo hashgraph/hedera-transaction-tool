@@ -1,6 +1,8 @@
-import { Transaction } from '@hashgraph/sdk';
+import { AccountId, PublicKey, Transaction } from '@hashgraph/sdk';
+import { proto } from '@hashgraph/proto';
 
 import { TransactionType } from '@app/common/database/entities';
+import { decode } from '@app/common/utils';
 
 export const isExpired = (transaction: Transaction) => {
   if (!transaction.transactionId?.validStart) {
@@ -47,5 +49,39 @@ export const getTransactionTypeEnumValue = (transaction: Transaction): Transacti
       return TransactionType.TRANSFER;
     default:
       throw new Error(`Unsupported transaction type: ${sdkType}`);
+  }
+};
+
+export const validateSignature = (
+  _transaction: string | Buffer,
+  _nodeAccountId: string | AccountId,
+  _signature: string | Buffer,
+  _publicKey: string | PublicKey,
+) => {
+  /* Deserialize Transaction */
+  const transaction = Transaction.fromBytes(
+    _transaction instanceof Buffer ? _transaction : decode(_transaction),
+  );
+
+  /* Deserialize Node Account Id */
+  const nodeAccountId =
+    _nodeAccountId instanceof AccountId ? _nodeAccountId : AccountId.fromString(_nodeAccountId);
+
+  /* Deserialize Public Key */
+  const publicKey = _publicKey instanceof PublicKey ? _publicKey : PublicKey.fromString(_publicKey);
+
+  /* Deserialize Signature */
+  const signature = _signature instanceof Buffer ? _signature : decode(_signature);
+
+  // @ts-expect-error - _makeTransactionBody is a private method
+  const transactionBody = transaction._makeTransactionBody(nodeAccountId);
+  const bodyBytes = proto.TransactionBody.encode(transactionBody).finish();
+
+  try {
+    return publicKey.verify(bodyBytes, signature);
+  } catch (err) {
+    console.log(err);
+
+    return false;
   }
 };
