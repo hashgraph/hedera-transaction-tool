@@ -1,4 +1,5 @@
 import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
+import { proto } from '@hashgraph/proto';
 
 export function flattenKeyList(keyList: Key): PublicKey[] {
   if (keyList instanceof PublicKey) {
@@ -26,3 +27,10 @@ export function flattenKeyList(keyList: Key): PublicKey[] {
 
   return keys;
 }
+
+export const decodeProtobuffKey = (protobuffEncodedKey: string) => {
+  const buffer = Buffer.from(protobuffEncodedKey, 'hex');
+  const protoKey = proto.Key.decode(buffer);
+
+  return Key._fromProtobufKey(protoKey);
+};
