@@ -1,16 +1,16 @@
-import { TransactionBaseModel } from './transaction.model';
 import { FileUpdateTransaction } from '@hashgraph/sdk';
-import { flatPublicKeys } from '../../../../apps/api/src/utils/encryption-utils';
+import { flattenKeyList } from '@app/common';
 
-export default class FileUpdateTransactionModel extends TransactionBaseModel {
+import { TransactionBaseModel } from './transaction.model';
+
+export default class FileUpdateTransactionModel extends TransactionBaseModel<FileUpdateTransaction> {
   getNewKeys(): Set<string> {
-    const accounts = new Set<string>();
+    const set = new Set<string>();
 
-    const transaction = this.transaction as FileUpdateTransaction;
-    // Get the new key. Flatten the key into an array of key bytes
-    const publicKeys = new Set(flatPublicKeys(...transaction.keys).map((key) => key.toString('hex')));
-    // Add them to the set
-    publicKeys.forEach(accounts.add, accounts);
-    return accounts;
+    this.transaction.keys.forEach(key => {
+      flattenKeyList(key).map(key => set.add(key.toStringRaw()));
+    });
+
+    return set;
   }
 }
