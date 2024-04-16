@@ -48,7 +48,7 @@ export class User {
   @OneToMany(() => UserKey, userKey => userKey.user, { eager: true })
   keys: UserKey[];
 
-  @OneToMany(() => TransactionSigner, transactionSigner => transactionSigner.user, { eager: true })
+  @OneToMany(() => TransactionSigner, transactionSigner => transactionSigner.user)
   signerForTransactions: UserKey[];
 
   @OneToMany(() => TransactionObserver, observer => observer.user)
