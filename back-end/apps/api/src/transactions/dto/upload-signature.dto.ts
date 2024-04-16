@@ -1,8 +1,8 @@
-import { IsDefined, IsNotEmpty, IsNotEmptyObject, IsObject } from 'class-validator';
+import { IsDefined, IsNotEmptyObject, IsNumber, IsObject } from 'class-validator';
 
 export class UploadSignatureDto {
-  @IsNotEmpty()
-  publicKey: string;
+  @IsNumber()
+  signaturePublicKeyId: number;
 
   @IsDefined()
   @IsNotEmptyObject()
