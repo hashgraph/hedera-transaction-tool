@@ -11,6 +11,8 @@ import {
 } from '@entities';
 import { HttpModule } from '@nestjs/axios';
 
+import { MirrorNodeModule } from '@app/common';
+
 import { CommentsService } from './comments/comments.service';
 import { CommentsController } from './comments/comments.controller';
 
@@ -38,6 +40,7 @@ import { UserKeysModule } from '../user-keys/user-keys.module';
       TransactionObserver,
     ]),
     UserKeysModule,
+    MirrorNodeModule,
   ],
   controllers: [
     TransactionsController,
