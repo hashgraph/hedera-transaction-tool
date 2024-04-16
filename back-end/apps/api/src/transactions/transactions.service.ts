@@ -4,9 +4,9 @@ import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 
-import { PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Key, PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
-import { Like, Repository, FindOptionsWhere } from 'typeorm';
+import { Repository } from 'typeorm';
 
 import { Transaction, TransactionStatus, User } from '@entities';
 
@@ -57,75 +57,17 @@ export class TransactionsService {
       .getMany();
   }
 
-  // Get all transactions that need to be signed by the user.
-  // Include the creator key in the response.
-  // This process will require pulling the current account info
-  // for each account that each user key for this user.
   async getTransactionsToSign(user: User, take: number, skip: number): Promise<Transaction[]> {
-    // There must be a better way to do this, but for now...
-    // All lookup requests will return a promise, put them all into
-    // one array to be processed at the end.
-    const accountRequests: Promise<any>[] = [];
-    // Sets for:
-    // the accounts for all the keys,
-    // receiver accounts that require a signature on transfers,
-    // and for each key of the user
-    const accounts = new Set<string>();
-    const receiverAccounts = new Set<string>();
-    const keys = new Set<string>();
-    // For each key, get all associated accounts, adding to the set
-    for (const userKey of user.keys) {
-      const key = userKey.publicKey;
-      // add the user key to the set of keys
-      keys.add(key);
-      // request the accounts associated with this public key
-      const promise = this.httpService.axiosRef.get(
-        `https://mainnet-public.mirrornode.hedera.com/api/v1/accounts?account.publickey=${key}`,
-      );
-      // when a response is received, add each account to the accounts set
-      // then, if the account requires a signature for receiving tokens, add it to the receiver set
-      promise.then(response => {
-        const accountsForKey = response.data['accounts'];
-        if (accountsForKey) {
-          for (const account of accountsForKey) {
-            const accountId = account.account;
-            accounts.add(accountId);
-            if (account['receiver_sig_required']) {
-              receiverAccounts.add(accountId);
-            }
-          }
-        }
-      });
+    const userKeys = await this.userKeysService.getUserKeys(user.id);
 
-      // push the promise into the requests array
-      accountRequests.push(promise);
-    }
-    // await for all requests to finish
-    await Promise.all(accountRequests);
+    const accountIdToKey: { [key: string]: Key } = {};
 
-    // build the where options for the query, each item in each set will need one.
-    const whereOptions = [];
-    this.buildWhereOptions('accounts', accounts, whereOptions);
-    this.buildWhereOptions('accounts', receiverAccounts, whereOptions);
-    this.buildWhereOptions('newKeys', keys, whereOptions);
-
-    // return the transactions found along with the creator info
-    return this.repo.find({
-      relations: ['creatorKey'],
-      where: whereOptions,
-      take: take,
-      skip: skip,
+    /* To add filter for expired transactions */
+    const transactions = await this.repo.find({
+      where: { status: TransactionStatus.WAITING_FOR_SIGNATURES },
     });
-  }
 
-  private buildWhereOptions(
-    fieldName: string,
-    values: Set<string>,
-    whereOptions: FindOptionsWhere<any>[],
-  ) {
-    for (const value of values) {
-      whereOptions.push({ [fieldName]: Like('%' + value + '%') });
-    }
+    throw new Error('Not implemented');
   }
 
   // Get all transactions that need to be approved by the user.
@@ -190,7 +132,7 @@ export class TransactionsService {
       transactionId: sdkTransaction.transactionId.toString(),
       transactionHash: encodeUint8Array(await sdkTransaction.getTransactionHash()),
       body: sdkTransaction.toBytes(),
-      status: TransactionStatus.WAITING_FOR_EXECUTION,
+      status: TransactionStatus.WAITING_FOR_SIGNATURES,
       creatorKey,
       signature: dto.signature,
       validStart: sdkTransaction.transactionId.validStart.toDate(),
@@ -242,6 +184,7 @@ export class TransactionsService {
     // Join the list and return
     try {
       const transactionModel = TransactionFactory.fromBytes(transaction.body);
+
       transaction.accounts = [...transactionModel.getSigningAccounts()];
       transaction.receiverAccounts = [...transactionModel.getReceiverAccounts()];
       transaction.newKeys = [...transactionModel.getNewKeys()];
