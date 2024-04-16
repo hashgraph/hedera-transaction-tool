@@ -7,13 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from '../users/users.module';
 import { ConfigService } from '@nestjs/config';
 import { LoggerModule } from '@app/common';
-import {
-  JwtStrategy,
-  LocalStrategy,
-  OtpJwtStrategy,
-  OtpLocalStrategy,
-  OtpVerifiedStrategy,
-} from './strategies';
+import { JwtStrategy, LocalStrategy, OtpJwtStrategy, OtpVerifiedStrategy } from './strategies';
 
 import { User } from '@entities';
 import { Reflector } from '@nestjs/core';
@@ -38,7 +32,6 @@ import { Reflector } from '@nestjs/core';
     LocalStrategy,
     JwtStrategy,
     OtpJwtStrategy,
-    OtpLocalStrategy,
     OtpVerifiedStrategy,
     Reflector,
   ],

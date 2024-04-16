@@ -9,7 +9,6 @@ import {
   AdminGuard,
   JwtAuthGuard,
   LocalAuthGuard,
-  OtpLocalAuthGuard,
   OtpJwtAuthGuard,
   OtpVerifiedAuthGuard,
 } from '../guards';
@@ -26,6 +25,7 @@ import {
   LoginDto,
   NewPasswordDto,
   OtpDto,
+  OtpLocalDto,
   SignUpUserDto,
 } from './dtos';
 
@@ -117,9 +117,8 @@ export class AuthController {
   })
   @Post('/reset-password')
   @HttpCode(200)
-  @UseGuards(OtpLocalAuthGuard)
-  async createOtp(@GetUser() user: User, @Res({ passthrough: true }) response: Response) {
-    return this.authService.createOtp(user, response);
+  async createOtp(@Body() { email }: OtpLocalDto, @Res({ passthrough: true }) response: Response) {
+    return this.authService.createOtp(email, response);
   }
 
   /* Verify OTP for password reset */

@@ -100,7 +100,11 @@ export class AuthService {
   }
 
   /* Create OTP and send it to the user */
-  async createOtp(user: User, response: Response): Promise<void> {
+  async createOtp(email: string, response: Response): Promise<void> {
+    const user = await this.usersService.getUser({ email });
+
+    if (!user) return;
+
     const secret = this.getOtpSecret(user.email);
     const token = totp.generate(secret);
 
