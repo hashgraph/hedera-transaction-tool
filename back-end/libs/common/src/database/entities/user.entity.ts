@@ -10,11 +10,12 @@ import {
 import { UserKey } from './user-key.entity';
 import { TransactionComment } from './transaction-comment.entity';
 import { TransactionObserver } from './transaction-observer.entity';
+import { TransactionSigner } from './transaction-signer.entity';
 
 export enum UserStatus {
   NEW = 'NEW',
   RESET_PASSWORD = 'RESET_PASSWORD',
-  NONE = 'NONE'
+  NONE = 'NONE',
 }
 
 @Entity()
@@ -44,12 +45,15 @@ export class User {
   deletedAt: Date;
 
   // eagerly load all user keys, allowing the GetUser decorator to have access to the user's keys
-  @OneToMany(() => UserKey, (userKey) => userKey.user, { eager: true })
+  @OneToMany(() => UserKey, userKey => userKey.user, { eager: true })
   keys: UserKey[];
 
-  @OneToMany(() => TransactionObserver, (observer) => observer.user)
+  @OneToMany(() => TransactionSigner, transactionSigner => transactionSigner.user, { eager: true })
+  signerForTransactions: UserKey[];
+
+  @OneToMany(() => TransactionObserver, observer => observer.user)
   observableTransactions: TransactionObserver[];
 
-  @OneToMany(() => TransactionComment, (comment) => comment.user)
+  @OneToMany(() => TransactionComment, comment => comment.user)
   comments: TransactionComment[];
 }
