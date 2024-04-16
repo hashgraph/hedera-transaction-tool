@@ -7,17 +7,23 @@ import {
   TransactionApprover,
   TransactionComment,
   TransactionObserver,
-  TransactionSigner
+  TransactionSigner,
 } from '@entities';
+import { HttpModule } from '@nestjs/axios';
+
 import { CommentsService } from './comments/comments.service';
 import { CommentsController } from './comments/comments.controller';
+
 import { SignersController } from './signers/signers.controller';
 import { SignersService } from './signers/signers.service';
+
 import { ObserversController } from './observers/observers.controller';
 import { ObserversService } from './observers/observers.service';
+
 import { ApproversController } from './approvers/approvers.controller';
 import { ApproversService } from './approvers/approvers.service';
-import { HttpModule } from '@nestjs/axios';
+
+import { UserKeysModule } from '../user-keys/user-keys.module';
 
 @Module({
   imports: [
@@ -31,6 +37,7 @@ import { HttpModule } from '@nestjs/axios';
       TransactionApprover,
       TransactionObserver,
     ]),
+    UserKeysModule,
   ],
   controllers: [
     TransactionsController,
