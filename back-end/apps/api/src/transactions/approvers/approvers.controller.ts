@@ -12,7 +12,7 @@ import { ApiTags } from '@nestjs/swagger';
 
 import { TransactionApprover, User } from '@entities';
 
-import { JwtAuthGuard, UserSettledGuard } from '../../guards';
+import { JwtAuthGuard, VerifiedUserGuard } from '../../guards';
 
 import { GetUser } from '../../decorators/get-user.decorator';
 
@@ -25,7 +25,7 @@ import { ApproversService } from './approvers.service';
 
 @ApiTags('Transaction Approvers')
 @Controller('transactions/:transactionId?/approvers')
-@UseGuards(JwtAuthGuard, UserSettledGuard)
+@UseGuards(JwtAuthGuard, VerifiedUserGuard)
 @Serialize(TransactionApproverDto)
 export class ApproversController {
   constructor(private approversService: ApproversService) {}

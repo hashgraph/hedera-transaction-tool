@@ -12,7 +12,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { TransactionSigner, User } from '@entities';
 
-import { JwtAuthGuard, UserSettledGuard } from '../../guards';
+import { JwtAuthGuard, VerifiedUserGuard } from '../../guards';
 
 import { GetUser } from '../../decorators/get-user.decorator';
 
@@ -25,7 +25,7 @@ import { TransactionSignerDto } from '../dto/transaction-signer.dto';
 
 @ApiTags('Transaction Signers')
 @Controller('transactions/:transactionId?/signers')
-@UseGuards(JwtAuthGuard, UserSettledGuard)
+@UseGuards(JwtAuthGuard, VerifiedUserGuard)
 @Serialize(TransactionSignerDto)
 export class SignersController {
   constructor(private signaturesService: SignersService) {}

@@ -14,7 +14,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { Transaction, User } from '@entities';
 
-import { JwtAuthGuard, UserSettledGuard } from '../guards';
+import { JwtAuthGuard, VerifiedUserGuard } from '../guards';
 
 import { GetUser } from '../decorators/get-user.decorator';
 
@@ -27,7 +27,7 @@ import { TransactionDto } from './dto/transaction.dto';
 
 @ApiTags('Transactions')
 @Controller('transactions')
-@UseGuards(JwtAuthGuard, UserSettledGuard)
+@UseGuards(JwtAuthGuard, VerifiedUserGuard)
 @Serialize(TransactionDto)
 export class TransactionsController {
   constructor(private transactionsService: TransactionsService) {}

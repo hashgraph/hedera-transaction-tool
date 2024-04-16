@@ -13,7 +13,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { TransactionObserver, User } from '@entities';
 
-import { JwtAuthGuard, UserSettledGuard } from '../../guards';
+import { JwtAuthGuard, VerifiedUserGuard } from '../../guards';
 
 import { GetUser } from '../../decorators/get-user.decorator';
 
@@ -27,7 +27,7 @@ import { UpdateTransactionObserverDto } from '../dto/update-transaction-observer
 
 @ApiTags('Transaction Observers')
 @Controller('transactions/:transactionId?/observers')
-@UseGuards(JwtAuthGuard, UserSettledGuard)
+@UseGuards(JwtAuthGuard, VerifiedUserGuard)
 @Serialize(TransactionObserverDto)
 export class ObserversController {
   constructor(private observersService: ObserversService) {}

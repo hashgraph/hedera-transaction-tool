@@ -12,7 +12,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { User } from '@entities';
 
-import { AdminGuard, JwtAuthGuard, UserSettledGuard } from '../guards';
+import { AdminGuard, JwtAuthGuard, VerifiedUserGuard } from '../guards';
 
 import { AllowNotSettledUser, GetUser } from '../decorators';
 
@@ -24,7 +24,7 @@ import { UpdateUserDto, UserDto } from './dtos';
 
 @ApiTags('Users')
 @Controller('users')
-@UseGuards(JwtAuthGuard, UserSettledGuard)
+@UseGuards(JwtAuthGuard, VerifiedUserGuard)
 @Serialize(UserDto)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
