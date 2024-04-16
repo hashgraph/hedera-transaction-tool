@@ -5,7 +5,7 @@ import { ClientProxy } from '@nestjs/microservices';
 
 import { Key, KeyList, PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
-import { Repository } from 'typeorm';
+import { DeepPartial, Repository } from 'typeorm';
 
 import { Transaction, TransactionStatus, User } from '@entities';
 
@@ -238,15 +238,21 @@ export class TransactionsService {
     return transaction;
   }
 
-  // Update the transaction for the given transaction id with the provided information.
-  async updateTransaction(id: number, attrs: Partial<Transaction>): Promise<Transaction> {
-    const transaction = await this.getTransactionById(id);
-
-    if (!transaction) {
-      throw new Error('transaction not found');
+  /* Update the transaction for the given transaction id with the provided information */
+  async updateTransaction(
+    transaction: number | Transaction,
+    attrs: DeepPartial<Transaction>,
+  ): Promise<Transaction> {
+    if (!(transaction instanceof Transaction)) {
+      transaction = await this.getTransactionById(transaction);
     }
 
+    if (!transaction) throw new Error('Transaction not found');
+
     Object.assign(transaction, attrs);
+
+    await this.repo.save(transaction);
+
     return transaction;
   }
 
