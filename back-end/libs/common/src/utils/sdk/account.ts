@@ -45,15 +45,20 @@ export function parseAccountProperty(
   accountInfo: AccountInfo,
   property: 'decline_reward' | 'deleted' | 'receiver_sig_required',
 ): boolean;
-export function parseAccountProperty(
-  accountInfo: AccountInfo,
-  property: 'ethereum_nonce' | 'max_automatic_token_associations' | 'auto_renew_period',
-): number;
 export function parseAccountProperty(accountInfo: AccountInfo, property: 'evm_address'): EvmAddress;
 export function parseAccountProperty(
   accountInfo: AccountInfo,
-  property: 'staked_node_id',
+  property:
+    | 'staked_node_id'
+    | 'ethereum_nonce'
+    | 'max_automatic_token_associations'
+    | 'auto_renew_period',
 ): number | null;
+export function parseAccountProperty(accountInfo: AccountInfo, property: 'memo' | 'alias'): string;
+export function parseAccountProperty(
+  accountInfo: AccountInfo,
+  property: 'stake_period_start',
+): string | null;
 export function parseAccountProperty(accountInfo: AccountInfo, property: keyof AccountInfo) {
   switch (property) {
     case 'account':
@@ -77,10 +82,9 @@ export function parseAccountProperty(accountInfo: AccountInfo, property: keyof A
     case 'decline_reward':
       return Boolean(accountInfo.decline_reward);
     case 'deleted':
-      return Boolean(accountInfo.decline_reward);
-
+      return Boolean(accountInfo.deleted);
     case 'ethereum_nonce':
-      return Number(accountInfo.ethereum_nonce);
+      return accountInfo.ethereum_nonce ? Number(accountInfo.ethereum_nonce) : null;
     case 'evm_address':
       return EvmAddress.fromString(accountInfo.evm_address || '');
     case 'key':
@@ -94,7 +98,9 @@ export function parseAccountProperty(accountInfo: AccountInfo, property: keyof A
           return null;
       }
     case 'max_automatic_token_associations':
-      return Number(accountInfo.max_automatic_token_associations);
+      return accountInfo.max_automatic_token_associations
+        ? Number(accountInfo.max_automatic_token_associations)
+        : null;
     case 'pending_reward':
       return Hbar.from(accountInfo.pending_reward || 0, HbarUnit.Tinybar);
     case 'receiver_sig_required':
@@ -106,7 +112,13 @@ export function parseAccountProperty(accountInfo: AccountInfo, property: keyof A
     case 'staked_node_id':
       return accountInfo.staked_node_id ? Number(accountInfo.staked_node_id) : null;
     case 'auto_renew_period':
-      return Number(accountInfo.auto_renew_period);
+      return accountInfo.auto_renew_period ? Number(accountInfo.auto_renew_period) : null;
+    case 'memo':
+      return accountInfo.memo;
+    case 'alias':
+      return accountInfo.alias;
+    case 'stake_period_start':
+      return accountInfo.stake_period_start;
     default:
       throw new Error(`Unknown account info  property: ${property}`);
   }
