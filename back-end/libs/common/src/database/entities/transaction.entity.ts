@@ -51,7 +51,13 @@ export class Transaction {
   @Column()
   description: string;
 
-  @Column({ type: 'bytea'})
+  @Column()
+  transactionId: string;
+
+  @Column()
+  transactionHash: string;
+
+  @Column({ type: 'bytea' })
   body: Buffer;
 
   @Column({ type: 'bytea', nullable: true })
@@ -65,12 +71,12 @@ export class Transaction {
   responseCode?: string;
 
   @ApiProperty({
-    description: "The id of the user key used by the creator",
+    description: 'The id of the user key used by the creator',
   })
-  @ManyToOne(() => UserKey, (userKey) => userKey.createdTransactions)
+  @ManyToOne(() => UserKey, userKey => userKey.createdTransactions)
   creatorKey: UserKey;
 
-  @Column({ type: 'bytea'})
+  @Column({ type: 'bytea' })
   signature: Buffer;
 
   @Column()
@@ -89,16 +95,16 @@ export class Transaction {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @OneToMany(() => TransactionComment, (comment) => comment.transaction)
+  @OneToMany(() => TransactionComment, comment => comment.transaction)
   comments: TransactionComment[];
 
-  @OneToMany(() => TransactionSigner, (signer) => signer.transaction)
+  @OneToMany(() => TransactionSigner, signer => signer.transaction)
   signers: TransactionSigner[];
 
-  @OneToMany(() => TransactionApprover, (approver) => approver.transaction)
+  @OneToMany(() => TransactionApprover, approver => approver.transaction)
   approvers: TransactionApprover[];
 
-  @OneToMany(() => TransactionObserver, (observer) => observer.transaction)
+  @OneToMany(() => TransactionObserver, observer => observer.transaction)
   observers: TransactionObserver[];
 
   // These three columns are strictly for increasing the search speed.
