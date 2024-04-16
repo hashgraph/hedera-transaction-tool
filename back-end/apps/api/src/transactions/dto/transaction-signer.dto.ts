@@ -12,12 +12,7 @@ export class TransactionSignerDto {
   @Expose()
   userKeyId: number;
 
-  @Transform(({ obj }) =>
-    obj.signature ? obj.signature.toString('hex') : undefined,
-  )
-  @Expose()
-  signature: string;
-
+  @Transform(({ obj }) => (obj.signature ? obj.signature.toString('hex') : undefined))
   @Expose()
   createdAt: Date;
 }
