@@ -1,6 +1,14 @@
-import { KeyList, PublicKey } from '@hashgraph/sdk';
+import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 
-export function flattenKeyList(keyList: KeyList): PublicKey[] {
+export function flattenKeyList(keyList: Key): PublicKey[] {
+  if (keyList instanceof PublicKey) {
+    return [keyList];
+  }
+
+  if (!(keyList instanceof KeyList)) {
+    throw new Error('Invalid key list');
+  }
+
   const keys: PublicKey[] = [];
 
   keyList.toArray().forEach(key => {
