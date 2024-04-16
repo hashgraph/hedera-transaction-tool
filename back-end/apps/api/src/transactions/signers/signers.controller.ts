@@ -1,14 +1,14 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
+  HttpCode,
   Param,
   ParseIntPipe,
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { TransactionSigner, User } from '@entities';
 
@@ -29,19 +29,6 @@ import { TransactionSignerDto } from '../dto/transaction-signer.dto';
 @Serialize(TransactionSignerDto)
 export class SignersController {
   constructor(private signaturesService: SignersService) {}
-
-  @ApiOperation({
-    summary: 'Get a signature',
-    description: 'Get the transaction signature for the given signature id.',
-  })
-  @ApiResponse({
-    status: 201,
-    type: TransactionSignerDto,
-  })
-  @Get('/:id')
-  getSignatureById(@Param('id', ParseIntPipe) id: number): Promise<TransactionSigner> {
-    return this.signaturesService.getSignatureById(id);
-  }
 
   @ApiOperation({
     summary: 'Get transaction signatures for a transaction',
@@ -71,31 +58,26 @@ export class SignersController {
     return this.signaturesService.getSignaturesByUser(user);
   }
 
+  /* Uploads a signature for particular transaction */
   @ApiOperation({
-    summary: 'Upload a signature',
-    description: 'Upload the signature for the given transaction id.',
+    summary: 'Upload a signature map for a transaction',
+    description:
+      'Upload a siganture map and user key id with which the transaction is signed. The signature map must be an object containing node account ids for which the signature is valid',
+  })
+  @ApiBody({
+    type: UploadSignatureDto,
   })
   @ApiResponse({
     status: 201,
     type: TransactionSignerDto,
   })
   @Post()
+  @HttpCode(201)
   uploadSignature(
     @Param('transactionId', ParseIntPipe) transactionId: number,
     @Body() body: UploadSignatureDto,
+    @GetUser() user: User,
   ): Promise<TransactionSigner> {
-    return this.signaturesService.uploadSignature(transactionId, body);
-  }
-
-  @ApiOperation({
-    summary: 'Delete a signature',
-    description: 'Delete the signature for the given transaction signature id.',
-  })
-  @ApiResponse({
-    status: 201,
-  })
-  @Delete('/:id')
-  removeSignature(@Param('id', ParseIntPipe) id: number): void {
-    this.signaturesService.removeSignature(id);
+    return this.signaturesService.uploadSignature(transactionId, body, user);
   }
 }
