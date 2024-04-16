@@ -1,10 +1,10 @@
-import { MirrorNodeBaseURL } from '@app/common';
-
-import { Key } from '@hashgraph/sdk';
-
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
+
+import { AxiosResponse } from 'axios';
+
+import { AccountInfo, MirrorNodeBaseURL } from '@app/common';
 
 @Injectable()
 export class MirrorNodeService {
@@ -17,7 +17,7 @@ export class MirrorNodeService {
     this.mirrorNodeBaseURL = MirrorNodeBaseURL.fromName(this.configService.get('HEDERA_NETWORK'));
   }
 
-  async getKey(accountId: string): Promise<Key> {
-    throw new Error('Not implemented');
+  async getAccountInfo(accountId: string): Promise<AxiosResponse<AccountInfo>> {
+    return this.httpService.axiosRef.get(`${this.mirrorNodeBaseURL}/accounts/${accountId}`);
   }
 }
