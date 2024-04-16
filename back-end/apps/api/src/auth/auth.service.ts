@@ -147,7 +147,7 @@ export class AuthService {
     expires.setSeconds(expires.getSeconds() + totp.options.step * (totp.options.window as number));
 
     const accessToken: string = this.jwtService.sign(otpPayload, {
-      expiresIn: `${this.configService.get('20')}m`,
+      expiresIn: `${this.configService.get('OTP_EXPIRATION')}m`,
     });
     response.cookie('otp', accessToken, {
       httpOnly: true,
