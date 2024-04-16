@@ -53,15 +53,16 @@ export const getTransactionTypeEnumValue = (transaction: Transaction): Transacti
 };
 
 export const validateSignature = (
-  _transaction: string | Buffer,
+  _transaction: string | Buffer | Transaction,
   _nodeAccountId: string | AccountId,
   _signature: string | Buffer,
   _publicKey: string | PublicKey,
 ) => {
   /* Deserialize Transaction */
-  const transaction = Transaction.fromBytes(
-    _transaction instanceof Buffer ? _transaction : decode(_transaction),
-  );
+  const transaction =
+    _transaction instanceof Transaction
+      ? _transaction
+      : Transaction.fromBytes(_transaction instanceof Buffer ? _transaction : decode(_transaction));
 
   /* Deserialize Node Account Id */
   const nodeAccountId =
