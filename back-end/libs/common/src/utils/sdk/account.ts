@@ -122,3 +122,12 @@ export function parseAccountProperty(accountInfo: AccountInfo, property: keyof A
       throw new Error(`Unknown account info  property: ${property}`);
   }
 }
+
+export const isAccountId = (accountId: string) => {
+  try {
+    AccountId.fromString(accountId);
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
