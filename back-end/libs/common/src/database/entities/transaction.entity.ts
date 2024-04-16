@@ -51,13 +51,13 @@ export class Transaction {
   @Column()
   description: string;
 
-  @Column()
+  @Column({ unique: true })
   transactionId: string;
 
   @Column()
   transactionHash: string;
 
-  @Column({ type: 'bytea' })
+  @Column({ type: 'bytea', unique: true })
   body: Buffer;
 
   @Column({ type: 'bytea', nullable: true })
