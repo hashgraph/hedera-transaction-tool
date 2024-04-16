@@ -59,6 +59,7 @@ export class TransactionsService {
       .getMany();
   }
 
+  /* Get the transactions that a user needs to sign */
   async getTransactionsToSign(user: User, take: number, skip: number): Promise<Transaction[]> {
     const userKeys = await this.userKeysService.getUserKeys(user.id);
 
@@ -69,6 +70,9 @@ export class TransactionsService {
     });
 
     for (const transaction of transactions) {
+      /* Stop if necessary number of transactions are found */
+      if (result.length === take + skip) break;
+
       const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
 
       /* Ignore if expired */
@@ -123,7 +127,7 @@ export class TransactionsService {
         }
       }
     }
-    return result;
+    return result.slice(skip, take + skip);
   }
 
   // Get all transactions that need to be approved by the user.
@@ -162,17 +166,21 @@ export class TransactionsService {
     const userKeys = await this.userKeysService.getUserKeys(user.id);
     const creatorKey = userKeys.find(key => key.id === dto.creatorKeyId);
 
+    /* Check if the key belongs to the user */
     if (!userKeys.some(key => key.id === dto.creatorKeyId))
       throw new BadRequestException("Creator key doesn't belong to the user");
     const publicKey = PublicKey.fromString(creatorKey.publicKey);
 
+    /* Verify the signature matches the transaction */
     const validSignature = publicKey.verify(dto.body, dto.signature);
     if (!validSignature)
       throw new BadRequestException('The signature does not match the public key');
 
+    /* Check if the transaction is expired */
     const sdkTransaction = SDKTransaction.fromBytes(dto.body);
     if (isExpired(sdkTransaction)) throw new BadRequestException('Transaction is expired');
 
+    /* Check if the transaction already exists */
     const countExisting = await this.repo.count({
       where: [{ transactionId: sdkTransaction.transactionId.toString() }, { body: dto.body }],
     });
@@ -195,8 +203,6 @@ export class TransactionsService {
       cutoffAt: dto.cutoffAt,
     });
     client.close();
-
-    this.setSearchableFields(transaction);
 
     try {
       await this.repo.save(transaction);
@@ -264,6 +270,7 @@ export class TransactionsService {
       transaction.receiverAccounts = [...transactionModel.getReceiverAccounts()];
       transaction.newKeys = [...transactionModel.getNewKeys()];
     } catch (err) {
+      console.log(err);
       //TODO handle this error
       transaction.accounts = [];
       transaction.receiverAccounts = [];

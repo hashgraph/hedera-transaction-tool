@@ -34,6 +34,7 @@ import { TransactionDto } from './dto/transaction.dto';
 export class TransactionsController {
   constructor(private transactionsService: TransactionsService) {}
 
+  /* Submit a transaction */
   @ApiOperation({
     summary: 'Create a transaction',
     description: 'Create a transaction for the organization to approve, sign, and execute.',
