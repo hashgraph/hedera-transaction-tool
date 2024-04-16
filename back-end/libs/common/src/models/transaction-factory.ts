@@ -10,7 +10,10 @@ import FileAppendTransactionModel from './file-append-transaction.model';
 export default class TransactionFactory {
   static fromBytes(bytes: Buffer) {
     const transaction = Transaction.fromBytes(bytes);
+    return this.fromTransaction(transaction);
+  }
 
+  static fromTransaction(transaction: Transaction) {
     const transactionModelMap = {
       TransferTransaction: TransferTransactionModel,
       AccountCreateTransaction: AccountCreateTransactionModel,
