@@ -164,3 +164,12 @@ export const isSignatureMap = value => {
   }
   return true;
 };
+
+export const isAlreadySigned = (transaction: Transaction, publicKey: string | PublicKey) => {
+  publicKey =
+    publicKey instanceof PublicKey
+      ? publicKey.toStringRaw()
+      : PublicKey.fromString(publicKey).toStringRaw();
+
+  return transaction._signerPublicKeys.has(publicKey);
+};
