@@ -3,6 +3,10 @@ import { Transaction } from '@hashgraph/sdk';
 import { TransactionType } from '@app/common/database/entities';
 
 export const isExpired = (transaction: Transaction) => {
+  if (!transaction.transactionId?.validStart) {
+    return true;
+  }
+
   const validStart = transaction.transactionId.validStart.toDate();
   const duration = transaction.transactionValidDuration;
 
