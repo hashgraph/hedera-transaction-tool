@@ -4,3 +4,5 @@ export * from './logger';
 export * from './utils';
 export * from './transformers';
 export * from './mirrorNode';
+export * from './schemas';
+export * from './types';
