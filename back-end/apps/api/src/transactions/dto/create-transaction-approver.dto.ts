@@ -1,5 +1,5 @@
-import { IsBoolean, IsNumber, IsOptional } from 'class-validator';
-import { IsBuffer } from '../../validator/is-buffer.validator';
+import { IsBoolean, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import { TransformBuffer } from '@app/common';
 
 export class CreateTransactionApproverDto {
   @IsNumber()
@@ -18,7 +18,8 @@ export class CreateTransactionApproverDto {
   @IsOptional()
   userKeyId?: number;
 
-  @IsBuffer(false)
+  @IsNotEmpty()
+  @TransformBuffer()
   signature?: Buffer;
 
   @IsBoolean()
