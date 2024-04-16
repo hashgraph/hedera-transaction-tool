@@ -152,8 +152,14 @@ export const isSignatureMap = value => {
   if (!value || typeof value !== 'object') return false;
 
   for (const key in value) {
-    if (!isAccountId(key) || !value[key] || typeof value[key] !== 'string') return false;
+    if (
+      !isAccountId(key) ||
+      !value[key] ||
+      (typeof value[key] !== 'string' && !(value[key] instanceof Buffer))
+    )
+      return false;
 
+    if (value[key] instanceof Buffer) continue;
     value[key] = decode(value[key]);
   }
   return true;

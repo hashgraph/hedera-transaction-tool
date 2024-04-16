@@ -228,8 +228,6 @@ export class TransactionsService {
     try {
       await this.repo.save(transaction);
     } catch (error) {
-      console.log(error);
-
       throw new BadRequestException('Failed to save transaction');
     }
 
