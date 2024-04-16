@@ -54,10 +54,9 @@ export function parseAccountProperty(
     | 'max_automatic_token_associations'
     | 'auto_renew_period',
 ): number | null;
-export function parseAccountProperty(accountInfo: AccountInfo, property: 'memo' | 'alias'): string;
 export function parseAccountProperty(
   accountInfo: AccountInfo,
-  property: 'stake_period_start',
+  property: 'stake_period_start' | 'memo' | 'alias',
 ): string | null;
 export function parseAccountProperty(accountInfo: AccountInfo, property: keyof AccountInfo) {
   switch (property) {
