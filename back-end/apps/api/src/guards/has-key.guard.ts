@@ -11,19 +11,18 @@ export class HasKeyGuard implements CanActivate {
       return false;
     }
 
+    let keysCount = 0;
     try {
-      const keysCount = await this.userKeysService.getUserKeysCount(req.user.id);
-      console.log(keysCount);
-
-      if (keysCount > 0) {
-        return true;
-      } else {
-        throw new UnauthorizedException('You should have at least one key to perform this action.');
-      }
+      keysCount = await this.userKeysService.getUserKeysCount(req.user.id);
     } catch (error) {
       console.log(error);
-
       return false;
+    }
+
+    if (keysCount > 0) {
+      return true;
+    } else {
+      throw new UnauthorizedException('You should have at least one key to perform this action.');
     }
   }
 }
