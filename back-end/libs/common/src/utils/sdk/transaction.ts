@@ -2,7 +2,7 @@ import { AccountId, PublicKey, Transaction } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
 import { TransactionType } from '@app/common/database/entities';
-import { decode } from '@app/common/utils';
+import { decode, isAccountId } from '@app/common/utils';
 
 export const isExpired = (transaction: Transaction) => {
   if (!transaction.transactionId?.validStart) {
@@ -53,26 +53,26 @@ export const getTransactionTypeEnumValue = (transaction: Transaction): Transacti
 };
 
 export const validateSignature = (
-  _transaction: string | Buffer | Transaction,
-  _nodeAccountId: string | AccountId,
-  _signature: string | Buffer,
-  _publicKey: string | PublicKey,
+  transaction: string | Buffer | Transaction,
+  nodeAccountId: string | AccountId,
+  signature: string | Buffer,
+  publicKey: string | PublicKey,
 ) => {
   /* Deserialize Transaction */
-  const transaction =
-    _transaction instanceof Transaction
-      ? _transaction
-      : Transaction.fromBytes(_transaction instanceof Buffer ? _transaction : decode(_transaction));
+  transaction =
+    transaction instanceof Transaction
+      ? transaction
+      : Transaction.fromBytes(transaction instanceof Buffer ? transaction : decode(transaction));
 
   /* Deserialize Node Account Id */
-  const nodeAccountId =
-    _nodeAccountId instanceof AccountId ? _nodeAccountId : AccountId.fromString(_nodeAccountId);
+  nodeAccountId =
+    nodeAccountId instanceof AccountId ? nodeAccountId : AccountId.fromString(nodeAccountId);
 
   /* Deserialize Public Key */
-  const publicKey = _publicKey instanceof PublicKey ? _publicKey : PublicKey.fromString(_publicKey);
+  publicKey = publicKey instanceof PublicKey ? publicKey : PublicKey.fromString(publicKey);
 
   /* Deserialize Signature */
-  const signature = _signature instanceof Buffer ? _signature : decode(_signature);
+  signature = signature instanceof Buffer ? signature : decode(signature);
 
   // @ts-expect-error - _makeTransactionBody is a private method
   const transactionBody = transaction._makeTransactionBody(nodeAccountId);
@@ -85,4 +85,76 @@ export const validateSignature = (
 
     return false;
   }
+};
+
+export const addTransactionSignatures = (
+  transaction: string | Buffer | Transaction,
+  signatures: { [key: string]: Buffer },
+  publicKey: string | PublicKey,
+) => {
+  /* Deserialize Transaction */
+  transaction =
+    transaction instanceof Transaction
+      ? transaction
+      : Transaction.fromBytes(transaction instanceof Buffer ? transaction : decode(transaction));
+
+  /* Deserialize Public Key */
+  publicKey = publicKey instanceof PublicKey ? publicKey : PublicKey.fromString(publicKey);
+
+  /* Validates the signature map */
+  if (!isSignatureMap(signatures)) throw new Error('Invalid Signature Map');
+
+  /* Checks the length of the signatures */
+  if (Object.values(signatures).length === 0) return;
+
+  /* Freeze the transaction if not frozen */
+  if (!transaction.isFrozen()) transaction.freeze();
+
+  const publicKeyHex = publicKey.toStringRaw();
+
+  /* Check if the signature is already added */
+  if (transaction._signerPublicKeys.has(publicKeyHex)) return;
+
+  /* Lock the transaction properties */
+  // @ts-expect-error - _transactionIds is private property
+  transaction._transactionIds.setLocked();
+  transaction._nodeAccountIds.setLocked();
+  transaction._signedTransactions.setLocked();
+
+  /* Add the signature to each transaction copy for each node */
+  for (const subTransaction of transaction._signedTransactions.list) {
+    const { nodeAccountID } = proto.TransactionBody.decode(subTransaction.bodyBytes);
+    const nodeAccountId = AccountId._fromProtobuf(nodeAccountID);
+
+    let signature = signatures[nodeAccountId.toString()];
+
+    if (!signature) {
+      throw new Error(`Signature for Node with Account ID ${nodeAccountId.toString()} Not Found`);
+    }
+    /* Deserialize Signature */
+    signature = signature instanceof Buffer ? signature : decode(signature);
+
+    if (subTransaction.sigMap == null) subTransaction.sigMap = {};
+
+    if (subTransaction.sigMap.sigPair == null) subTransaction.sigMap.sigPair = [];
+
+    subTransaction.sigMap.sigPair.push(publicKey._toProtobufSignature(signature));
+  }
+
+  transaction._signerPublicKeys.add(publicKeyHex);
+  //@ts-expect-error - _publicKeys is a private property
+  transaction._publicKeys.push(publicKey);
+  //@ts-expect-error - _transactionSigners is a private property
+  transaction._transactionSigners.push(null);
+};
+
+export const isSignatureMap = value => {
+  if (!value || typeof value !== 'object') return false;
+
+  for (const key in value) {
+    if (!isAccountId(key) || !value[key] || typeof value[key] !== 'string') return false;
+
+    value[key] = decode(value[key]);
+  }
+  return true;
 };
