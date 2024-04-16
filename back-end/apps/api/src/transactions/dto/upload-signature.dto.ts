@@ -4,7 +4,7 @@ import { IsSignatureMap } from '@app/common';
 
 export class UploadSignatureDto {
   @IsNumber()
-  signaturePublicKeyId: number;
+  publicKeyId: number;
 
   @ApiProperty({
     type: 'object',
