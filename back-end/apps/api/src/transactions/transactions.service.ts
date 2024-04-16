@@ -36,17 +36,36 @@ export class TransactionsService {
     private readonly mirrorNodeService: MirrorNodeService,
   ) {}
 
-  // Get the transaction for the provided transaction id.
-  // Include the creator key information in the response.
+  /* Get the transaction for the provided id in the DATABASE */
   getTransactionById(id: number): Promise<Transaction> {
-    if (!id) {
-      return null;
-    }
-    return this.repo
-      .createQueryBuilder('transaction')
-      .leftJoinAndSelect('transaction.creatorKey', 'creatorKey')
-      .where('transaction.id = :id', { id })
-      .getOne();
+    if (!id) return null;
+
+    return this.repo.findOne({
+      where: { id },
+      relations: {
+        creatorKey: true,
+        approvers: true,
+        observers: true,
+        comments: true,
+        signers: true,
+      },
+    });
+  }
+
+  /* Get the transaction for the provided transaction id OF THE TRANSACTION */
+  getTransactionId(id: string): Promise<Transaction> {
+    if (!id) return null;
+
+    return this.repo.findOne({
+      where: { transactionId: id },
+      relations: {
+        creatorKey: true,
+        approvers: true,
+        observers: true,
+        comments: true,
+        signers: true,
+      },
+    });
   }
 
   // Get the transactions created by the user.
