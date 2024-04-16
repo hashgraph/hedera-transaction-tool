@@ -4,22 +4,36 @@ import { onBeforeRouteLeave } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 
+import { useRouter } from 'vue-router';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppStepper from '@renderer/components/ui/AppStepper.vue';
 
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+import {
+  accountSetupRequiredParts,
+  isLoggedInOrganization,
+} from '@renderer/utils/userStoreHelpers';
 
 import GenerateOrImport from './components/GenerateOrImport.vue';
 import KeyPairs from './components/KeyPairs.vue';
 import NewPassword from './components/NewPassword.vue';
 
+/* Types */
+type StepName = 'newPassword' | 'recoveryPhrase' | 'keyPairs';
+
 /* Stores */
 const user = useUserStore();
 
+/* Composables */
+const router = useRouter();
+
 /* State */
-const keyPairsComponent = ref<typeof KeyPairs | null>(null);
-const step = ref({ previous: 'newPassword', current: 'newPassword' });
-const stepperItems = ref([
+const keyPairsComponent = ref<InstanceType<typeof KeyPairs> | null>(null);
+const step = ref<{ previous: StepName; current: StepName }>({
+  previous: 'newPassword',
+  current: 'newPassword',
+});
+const stepperItems = ref<{ title: string; name: StepName }[]>([
   { title: 'New Password', name: 'newPassword' },
   { title: 'Recovery Phrase', name: 'recoveryPhrase' },
   { title: 'Key Pairs', name: 'keyPairs' },
@@ -36,6 +50,9 @@ const handleBack = () => {
 };
 
 const handleNext = async () => {
+  const requiredParts = accountSetupRequiredParts(user.selectedOrganization, user.keyPairs);
+  if (requiredParts.length === 0) router.push({ name: 'transactions' });
+
   step.value.previous = step.value.current;
   const currentIndex = stepperItems.value.findIndex(i => i.name === step.value.current);
 
@@ -51,14 +68,32 @@ const handleNext = async () => {
 
 /* Hooks */
 onBeforeMount(() => {
+  const removeStep = (name: string) => {
+    const index = stepperItems.value.findIndex(i => i.name === name);
+    if (index > -1) stepperItems.value.splice(index, 1);
+  };
+  const setInitialStep = (stepName: StepName) => {
+    step.value.previous = stepName;
+    step.value.current = stepName;
+  };
+
   if (!isLoggedInOrganization(user.selectedOrganization)) {
-    step.value.previous = 'recoveryPhrase';
-    step.value.current = 'recoveryPhrase';
-    stepperItems.value.shift();
-  } else if (!user.selectedOrganization.isPasswordTemporary) {
+    setInitialStep('recoveryPhrase');
+    removeStep('newPassword');
+  } else {
+    const requiredParts = accountSetupRequiredParts(user.selectedOrganization, user.keyPairs);
+    if (requiredParts.length === 0) router.push({ name: 'transactions' });
+
+    if (!requiredParts.includes('password')) {
+      setInitialStep('recoveryPhrase');
+      removeStep('newPassword');
+    } else if (!requiredParts.includes('keys')) {
+      setInitialStep('newPassword');
+      removeStep('recoveryPhrase');
+      removeStep('keyPairs');
+    }
+
     user.recoveryPhrase = null;
-    step.value.previous = 'recoveryPhrase';
-    step.value.current = 'recoveryPhrase';
   }
 });
 
@@ -106,14 +141,7 @@ onBeforeRouteLeave(async () => {
       <Transition name="fade" mode="out-in">
         <!-- Step 1 -->
         <template v-if="step.current === 'newPassword'">
-          <NewPassword
-            :handle-continue="
-              () => {
-                step.previous = step.current;
-                step.current = 'recoveryPhrase';
-              }
-            "
-          />
+          <NewPassword :handle-continue="handleNext" />
         </template>
 
         <!-- Step 2 -->

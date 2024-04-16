@@ -1,5 +1,9 @@
 appId: com.electron.app
 productName: Hedera Transaction Tool
+protocols:
+  name: Hedera Transaction Tool
+  schemes:
+    - hedera-transaction-tool
 directories:
   buildResources: build
   output: 'release'

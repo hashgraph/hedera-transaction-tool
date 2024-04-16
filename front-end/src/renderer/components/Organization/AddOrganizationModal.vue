@@ -77,7 +77,7 @@ watch(
       </div>
       <h2 class="text-center text-title text-semi-bold mt-3">Setup Organization</h2>
       <p class="text-center text-small text-secondary mt-3">
-        Please Enter Organisation Nickname and Server URL
+        Please Enter Organization Nickname and Server URL
       </p>
 
       <div class="form-group mt-5">

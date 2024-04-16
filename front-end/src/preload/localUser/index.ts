@@ -10,6 +10,7 @@ import transactionsAPI from './transactions';
 import transactionDraftsAPI from './transactionDrafts';
 import organizationsAPI from './organizations';
 import organizationCredentialsAPI from './organizationCredentials';
+import deepLinkAPI from './deepLink';
 
 export default {
   ...updateAPI,
@@ -24,4 +25,5 @@ export default {
   ...transactionDraftsAPI,
   ...organizationsAPI,
   ...organizationCredentialsAPI,
+  ...deepLinkAPI,
 };

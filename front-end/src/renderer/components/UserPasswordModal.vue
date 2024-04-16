@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -12,24 +12,15 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
-/* Props */
-const props = defineProps<{
-  show: boolean;
-  heading?: string;
-  subHeading?: string;
-}>();
-
-/* Emits */
-const emit = defineEmits<{
-  (event: 'update:show', show: boolean): void;
-  (event: 'passwordEntered', password: string): void;
-}>();
-
 /* Stores */
 const user = useUserStore();
 
 /* State */
+const show = ref(false);
+const heading = ref<string | null>(null);
+const subHeading = ref<string | null>(null);
 const password = ref('');
+const callback = ref<((password: string) => void) | null>(null);
 
 /* Handlers */
 const handlePasswordEntered = async (e: Event) => {
@@ -41,20 +32,41 @@ const handlePasswordEntered = async (e: Event) => {
   const isPasswordCorrect = await comparePasswords(user.personal.id, password.value);
 
   if (isPasswordCorrect) {
-    emit('passwordEntered', password.value);
-    emit('update:show', false);
+    user.personal.password = password.value;
+
+    const currentCallback = callback.value;
+    handleClose();
+
+    await currentCallback?.(user.personal.password);
   } else {
     throw new Error('Incorrect Personal User Password');
   }
 };
 
-/* Watchers */
-watch(
-  () => props.show,
-  () => {
-    password.value = '';
-  },
-);
+const handleClose = () => {
+  callback.value = null;
+  password.value = '';
+  heading.value = '';
+  subHeading.value = '';
+  show.value = false;
+};
+
+const handleOpen = (
+  _heading: string | null,
+  _subHeading: string | null,
+  _callback: (password: string) => void,
+) => {
+  heading.value = _heading;
+  subHeading.value = _subHeading;
+  callback.value = _callback;
+  show.value = true;
+};
+
+/* Exposes */
+defineExpose({
+  open: handleOpen,
+  close: handleClose,
+});
 </script>
 <template>
   <AppModal
@@ -65,7 +77,7 @@ watch(
   >
     <div class="p-5">
       <div>
-        <i class="bi bi-x-lg cursor-pointer" @click="emit('update:show', false)"></i>
+        <i class="bi bi-x-lg cursor-pointer" @click="handleClose"></i>
       </div>
       <div class="text-center">
         <AppCustomIcon :name="'lock'" style="height: 160px" />
@@ -81,9 +93,7 @@ watch(
         </div>
         <hr class="separator my-5" />
         <div class="flex-between-centered gap-4">
-          <AppButton color="borderless" type="button" @click="emit('update:show', false)"
-            >Cancel</AppButton
-          >
+          <AppButton color="borderless" type="button" @click="handleClose">Cancel</AppButton>
           <AppButton color="primary" :disabled="password.length === 0" type="submit"
             >Continue</AppButton
           >

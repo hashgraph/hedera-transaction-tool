@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 
@@ -11,12 +11,15 @@ import useAutoLogin from '@renderer/composables/useAutoLogin';
 import { getExchangeRateSet } from './services/mirrorNodeDataService';
 import { setClient } from './services/transactionService';
 
+import { provideUserModalRef } from '@renderer/providers';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppMenu from '@renderer/components/Menu.vue';
 import AppHeader from '@renderer/components/Header.vue';
 import AppUpdate from '@renderer/components/AppUpdate.vue';
 import ImportantNote from '@renderer/components/ImportantNote.vue';
-import AutoLoginInOrganization from './components/Organization/AutoLoginInOrganization.vue';
+import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
+import AutoLoginInOrganization from '@renderer/components/Organization/AutoLoginInOrganization.vue';
 import OrganizationStatusModal from '@renderer/components/Organization/OrganizationStatusModal.vue';
 
 /* Stores */
@@ -25,6 +28,9 @@ const network = useNetwork();
 
 /* Composables */
 useAutoLogin();
+
+/* State */
+const userPasswordModalRef = ref<InstanceType<typeof UserPasswordModal> | null>(null);
 
 /* Handlers */
 async function handleThemeChange() {
@@ -47,6 +53,9 @@ onMounted(async () => {
   network.exchangeRateSet = await getExchangeRateSet(network.mirrorNodeBaseURL);
   await setClient(network.network);
 });
+
+/* Providers */
+provideUserModalRef(userPasswordModalRef);
 </script>
 
 <template>
@@ -80,6 +89,7 @@ onMounted(async () => {
       </RouterView>
 
       <OrganizationStatusModal />
+      <UserPasswordModal ref="userPasswordModalRef" />
     </div>
   </Transition>
 

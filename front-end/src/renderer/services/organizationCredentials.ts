@@ -67,7 +67,6 @@ export const updateOrganizationCredentials = async (
   user_id: string,
   email?: string,
   password?: string,
-  jwtToken?: string,
   encryptPassword?: string,
 ) => {
   try {
@@ -76,7 +75,6 @@ export const updateOrganizationCredentials = async (
       user_id,
       email,
       password,
-      jwtToken,
       encryptPassword,
     );
   } catch (error: any) {
