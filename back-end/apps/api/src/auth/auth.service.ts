@@ -10,8 +10,8 @@ import { JwtService } from '@nestjs/jwt';
 import { ClientProxy } from '@nestjs/microservices';
 
 import { Response } from 'express';
-import * as bcrypt from 'bcryptjs';
 import { totp } from 'otplib';
+import * as bcrypt from 'bcryptjs';
 
 import { ELECTRON_APP_PROTOCOL_PREFIX, NOTIFICATIONS_SERVICE } from '@app/common';
 import { User, UserStatus } from '@entities';
@@ -94,11 +94,6 @@ export class AuthService {
     await this.usersService.setPassword(user, newPassword);
   }
 
-  private generatePassword() {
-    const randomValue = crypto.getRandomValues(new Uint32Array(12));
-    return Buffer.from(randomValue).toString('base64').replaceAll('=', '');
-  }
-
   /* Create OTP and send it to the user */
   async createOtp(email: string, response: Response): Promise<void> {
     const user = await this.usersService.getUser({ email });
@@ -157,6 +152,7 @@ export class AuthService {
     });
   }
 
+  /* Clear the OTP cookie */
   clearOtpCookie(response: Response) {
     response.clearCookie('otp', {
       httpOnly: true,
@@ -168,5 +164,11 @@ export class AuthService {
   /* Set the password for verified user. */
   async setPassword(user: User, newPassword: string): Promise<void> {
     await this.usersService.setPassword(user, newPassword);
+  }
+
+  /* Generate a random password */
+  private generatePassword() {
+    const randomValue = crypto.getRandomValues(new Uint32Array(12));
+    return Buffer.from(randomValue).toString('base64').replaceAll('=', '');
   }
 }
