@@ -34,3 +34,17 @@ export const decodeProtobuffKey = (protobuffEncodedKey: string) => {
 
   return Key._fromProtobufKey(protoKey);
 };
+
+export function isPublicKeyInKeyList(publicKey: PublicKey | string, keyList: KeyList) {
+  publicKey = publicKey instanceof PublicKey ? publicKey.toStringRaw() : publicKey;
+
+  const keys = keyList.toArray();
+  return keys.some(key => {
+    if (key instanceof PublicKey) {
+      return key.toStringRaw() === publicKey;
+    } else if (key instanceof KeyList) {
+      return isPublicKeyInKeyList(publicKey, key);
+    }
+    return false;
+  });
+}
