@@ -97,18 +97,21 @@ onBeforeUnmount(() => {
       <div class="mt-4 btn-group">
         <AppButton
           color="secondary"
+          data-testid="tab-network-mainnet"
           :class="{ active: networkStore.network === 'mainnet' }"
           @click="handleNetworkChange('mainnet')"
           >Mainnet</AppButton
         >
         <AppButton
           color="secondary"
+          data-testid="tab-network-testnet"
           :class="{ active: networkStore.network === 'testnet' }"
           @click="handleNetworkChange('testnet')"
           >Testnet</AppButton
         >
         <AppButton
           color="secondary"
+          data-testid="tab-network-previewnet"
           disabled
           :class="{ active: networkStore.network === 'previewnet' }"
           @click="handleNetworkChange('previewnet')"
@@ -116,6 +119,7 @@ onBeforeUnmount(() => {
         >
         <AppButton
           color="secondary"
+          data-testid="tab-network-custom"
           :class="{ active: networkStore.network === 'custom' }"
           @click="isCustomSettingsVisible = true"
           >Custom</AppButton
@@ -200,18 +204,21 @@ onBeforeUnmount(() => {
       <div class="mt-4 btn-group">
         <AppButton
           :color="'secondary'"
+          data-testid="tab-appearance-dark"
           :class="{ active: theme === 'dark' }"
           @click="handleThemeChange('dark')"
           >Dark</AppButton
         >
         <AppButton
           :color="'secondary'"
+          data-testid="tab-appearance-light"
           :class="{ active: theme === 'light' }"
           @click="handleThemeChange('light')"
           >Light</AppButton
         >
         <AppButton
           :color="'secondary'"
+          data-testid="tab-appearance-system"
           :class="{ active: theme === 'system' }"
           @click="handleThemeChange('system')"
           >System</AppButton
