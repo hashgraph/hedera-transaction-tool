@@ -76,7 +76,7 @@ export class TransactionsService {
       const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
 
       /* Ignore if expired */
-      /* if (isExpired(sdkTransaction)) continue; */
+      if (isExpired(sdkTransaction)) continue;
 
       /* Get signature entities */
       const { newKeys, accounts, receiverAccounts } = this.getSignatureEntities(sdkTransaction);
@@ -178,7 +178,7 @@ export class TransactionsService {
 
     /* Check if the transaction is expired */
     const sdkTransaction = SDKTransaction.fromBytes(dto.body);
-    if (isExpired(sdkTransaction)) throw new BadRequestException('Transaction is expired');
+    // if (isExpired(sdkTransaction)) throw new BadRequestException('Transaction is expired');
 
     /* Check if the transaction already exists */
     const countExisting = await this.repo.count({
@@ -204,9 +204,13 @@ export class TransactionsService {
     });
     client.close();
 
+    this.setSearchableFields(transaction);
+
     try {
       await this.repo.save(transaction);
     } catch (error) {
+      console.log(error);
+
       throw new BadRequestException('Failed to save transaction');
     }
 
