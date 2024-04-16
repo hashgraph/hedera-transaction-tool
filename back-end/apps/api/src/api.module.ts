@@ -28,6 +28,7 @@ import { NotificationsClientsModule } from './modules/notifications-clients.modu
         JWT_EXPIRATION: Joi.number().required(),
         OTP_SECRET: Joi.string().required(),
         OTP_EXPIRATION: Joi.number().required(),
+        HEDERA_NETWORK: Joi.string().required(),
       }),
     }),
     UsersModule,
