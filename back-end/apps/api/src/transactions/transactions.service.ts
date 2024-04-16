@@ -1,16 +1,36 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Transaction, User } from '@entities';
-import { Like, Repository } from 'typeorm';
-import { CreateTransactionDto } from './dto/create-transaction.dto';
-import TransactionFactory from '../../../../libs/common/src/models/transaction-factory';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
-import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';
+import { InjectRepository } from '@nestjs/typeorm';
+import { ClientProxy } from '@nestjs/microservices';
+
+import { PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
+
+import { Like, Repository, FindOptionsWhere } from 'typeorm';
+
+import { Transaction, TransactionStatus, User } from '@entities';
+
+import {
+  NOTIFICATIONS_SERVICE,
+  encodeUint8Array,
+  getClientFromConfig,
+  getTransactionTypeEnumValue,
+  isExpired,
+} from '@app/common';
+import TransactionFactory from '@app/common/models/transaction-factory';
+
+import { UserDto } from '../users/dtos';
+import { CreateTransactionDto } from './dto/create-transaction.dto';
+
+import { UserKeysService } from '../user-keys/user-keys.service';
 
 @Injectable()
 export class TransactionsService {
   constructor(
     @InjectRepository(Transaction) private repo: Repository<Transaction>,
+    @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
+    private readonly configService: ConfigService,
+    private readonly userKeysService: UserKeysService,
     private readonly httpService: HttpService,
   ) {}
 
@@ -64,7 +84,7 @@ export class TransactionsService {
       );
       // when a response is received, add each account to the accounts set
       // then, if the account requires a signature for receiving tokens, add it to the receiver set
-      promise.then((response) => {
+      promise.then(response => {
         const accountsForKey = response.data['accounts'];
         if (accountsForKey) {
           for (const account of accountsForKey) {
@@ -90,16 +110,19 @@ export class TransactionsService {
     this.buildWhereOptions('newKeys', keys, whereOptions);
 
     // return the transactions found along with the creator info
-    return this.repo
-      .find({
-        relations: ['creatorKey'],
-        where: whereOptions,
-        take: take,
-        skip: skip,
-      });
+    return this.repo.find({
+      relations: ['creatorKey'],
+      where: whereOptions,
+      take: take,
+      skip: skip,
+    });
   }
 
-  private buildWhereOptions(fieldName: string, values: Set<string>, whereOptions: FindOptionsWhere<any>[]) {
+  private buildWhereOptions(
+    fieldName: string,
+    values: Set<string>,
+    whereOptions: FindOptionsWhere<any>[],
+  ) {
     for (const value of values) {
       whereOptions.push({ [fieldName]: Like('%' + value + '%') });
     }
@@ -109,16 +132,17 @@ export class TransactionsService {
   // Include the creator key in the response.
   //TODO with postgres, there should be a cleaner way to do this
   getTransactionsToApprove(user: User, take: number, skip: number): Promise<Transaction[]> {
-    const userKeys = user.keys.map((userKey) => userKey.id).join(',');
-    return this.repo
-      .query(`with recursive approverList as ` +
+    const userKeys = user.keys.map(userKey => userKey.id).join(',');
+    return this.repo.query(
+      `with recursive approverList as ` +
         `(select * from transaction_approver where "userKeyId" in (${userKeys}) ` +
         `union all ` +
         `select approver.* from transaction_approver as approver ` +
-          `join approverList on approverList."listId" = approver.id) ` +
+        `join approverList on approverList."listId" = approver.id) ` +
         `select distinct t.*, userKey.* from "transaction" as t ` +
-          `join user_key as userKey on t."creatorKeyId" = userKey.id ` +
-          `join approverList on t.id = "transactionId" LIMIT ${take} OFFSET ${skip}`);
+        `join user_key as userKey on t."creatorKeyId" = userKey.id ` +
+        `join approverList on t.id = "transactionId" LIMIT ${take} OFFSET ${skip}`,
+    );
   }
 
   // Get all transactions that can be observed by the user.
@@ -136,18 +160,59 @@ export class TransactionsService {
   }
 
   // Create a transaction for the provided information
-  createTransaction(dto: CreateTransactionDto): Promise<Transaction> {
-    const transaction = this.repo.create(dto);
-    transaction['creatorKey' as any] = dto.creatorKeyId;
+  async createTransaction(dto: CreateTransactionDto, user: UserDto): Promise<Transaction> {
+    const userKeys = await this.userKeysService.getUserKeys(user.id);
+    const creatorKey = userKeys.find(key => key.id === dto.creatorKeyId);
+
+    if (!userKeys.some(key => key.id === dto.creatorKeyId))
+      throw new BadRequestException("Creator key doesn't belong to the user");
+    const publicKey = PublicKey.fromString(creatorKey.publicKey);
+
+    const validSignature = publicKey.verify(dto.body, dto.signature);
+    if (!validSignature)
+      throw new BadRequestException('The signature does not match the public key');
+
+    const sdkTransaction = SDKTransaction.fromBytes(dto.body);
+    if (isExpired(sdkTransaction)) throw new BadRequestException('Transaction is expired');
+
+    const countExisting = await this.repo.count({
+      where: [{ transactionId: sdkTransaction.transactionId.toString() }, { body: dto.body }],
+    });
+    if (countExisting > 0) throw new BadRequestException('Transaction already exists');
+
+    const client = getClientFromConfig(this.configService);
+    sdkTransaction.freezeWith(client);
+
+    const transaction = this.repo.create({
+      name: dto.name,
+      type: getTransactionTypeEnumValue(sdkTransaction),
+      description: dto.description,
+      transactionId: sdkTransaction.transactionId.toString(),
+      transactionHash: encodeUint8Array(await sdkTransaction.getTransactionHash()),
+      body: sdkTransaction.toBytes(),
+      status: TransactionStatus.WAITING_FOR_EXECUTION,
+      creatorKey,
+      signature: dto.signature,
+      validStart: sdkTransaction.transactionId.validStart.toDate(),
+      cutoffAt: dto.cutoffAt,
+    });
+    client.close();
+
     this.setSearchableFields(transaction);
-    return this.repo.save(transaction);
+
+    try {
+      await this.repo.save(transaction);
+    } catch (error) {
+      throw new BadRequestException('Failed to save transaction');
+    }
+
+    this.notificationsService.emit('notify_transaction_members', transaction);
+
+    return transaction;
   }
 
   // Update the transaction for the given transaction id with the provided information.
-  async updateTransaction(
-    id: number,
-    attrs: Partial<Transaction>,
-  ): Promise<Transaction> {
+  async updateTransaction(id: number, attrs: Partial<Transaction>): Promise<Transaction> {
     const transaction = await this.getTransactionById(id);
 
     if (!transaction) {

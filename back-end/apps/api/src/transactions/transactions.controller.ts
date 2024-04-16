@@ -20,6 +20,8 @@ import { GetUser } from '../decorators/get-user.decorator';
 
 import { Serialize } from '../interceptors/serialize.interceptor';
 
+import { JwtAuthGuard, UserSettledGuard, HasKeyGuard } from '../guards';
+
 import { TransactionsService } from './transactions.service';
 
 import { CreateTransactionDto } from './dto/create-transaction.dto';
@@ -34,15 +36,16 @@ export class TransactionsController {
 
   @ApiOperation({
     summary: 'Create a transaction',
-    description: 'Create a transaction for the organization for the given information.',
+    description: 'Create a transaction for the organization to approve, sign, and execute.',
   })
   @ApiResponse({
     status: 201,
     type: TransactionDto,
   })
+  @UseGuards(HasKeyGuard)
   @Post()
-  createTransaction(@Body() body: CreateTransactionDto): Promise<Transaction> {
-    return this.transactionsService.createTransaction(body);
+  createTransaction(@Body() body: CreateTransactionDto, @GetUser() user): Promise<Transaction> {
+    return this.transactionsService.createTransaction(body, user);
   }
 
   @ApiOperation({
