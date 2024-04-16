@@ -6,7 +6,7 @@ export const isExpired = (transaction: Transaction) => {
   const validStart = transaction.transactionId.validStart.toDate();
   const duration = transaction.transactionValidDuration;
 
-  return new Date().getTime() >= validStart.getTime() + duration;
+  return new Date().getTime() >= validStart.getTime() + duration * 1_000;
 };
 
 export const getTransactionTypeEnumValue = (transaction: Transaction): TransactionType => {
