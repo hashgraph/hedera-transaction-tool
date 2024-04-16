@@ -9,7 +9,6 @@ import {
   TransactionObserver,
   TransactionSigner,
 } from '@entities';
-import { HttpModule } from '@nestjs/axios';
 
 import { MirrorNodeModule } from '@app/common';
 
@@ -29,9 +28,6 @@ import { UserKeysModule } from '../user-keys/user-keys.module';
 
 @Module({
   imports: [
-    HttpModule.register({
-      timeout: 5000,
-    }),
     TypeOrmModule.forFeature([
       Transaction,
       TransactionComment,
