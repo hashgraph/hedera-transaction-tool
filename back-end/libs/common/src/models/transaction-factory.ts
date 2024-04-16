@@ -6,6 +6,7 @@ import SystemDeleteTransactionModel from './system-delete-transaction.model';
 import FileUpdateTransactionModel from './file-update-transaction.model';
 import FreezeTransactionModel from './freeze-transaction.model';
 import FileAppendTransactionModel from './file-append-transaction.model';
+import { TransactionBaseModel } from './transaction.model';
 
 export default class TransactionFactory {
   static fromBytes(bytes: Buffer) {
@@ -13,7 +14,7 @@ export default class TransactionFactory {
     return this.fromTransaction(transaction);
   }
 
-  static fromTransaction(transaction: Transaction) {
+  static fromTransaction(transaction: Transaction): TransactionBaseModel<Transaction> {
     const transactionModelMap = {
       TransferTransaction: TransferTransactionModel,
       AccountCreateTransaction: AccountCreateTransactionModel,
@@ -24,7 +25,9 @@ export default class TransactionFactory {
       FileAppendTransaction: FileAppendTransactionModel,
     };
 
-    const transactionType = transaction.constructor.name;
+    const transactionType = transaction.constructor.name.slice(
+      transaction.constructor.name.startsWith('_') ? 1 : 0,
+    );
 
     if (transactionModelMap[transactionType]) {
       return new transactionModelMap[transactionType](transaction);
