@@ -8,33 +8,35 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
-import { Serialize } from '../../interceptors/serialize.interceptor';
-import { TransactionApproverDto } from '../dto/transaction-approver.dto';
-import { ApproversService } from './approvers.service';
-import { TransactionApprover, User } from '@entities';
-import { GetUser } from '../../decorators/get-user.decorator';
-import { CreateTransactionApproverDto } from '../dto/create-transaction-approver.dto';
 import { ApiTags } from '@nestjs/swagger';
+
+import { TransactionApprover, User } from '@entities';
+
+import { JwtAuthGuard, VerifiedUserGuard } from '../../guards';
+
+import { GetUser } from '../../decorators/get-user.decorator';
+
+import { Serialize } from '../../interceptors/serialize.interceptor';
+
+import { TransactionApproverDto } from '../dto/transaction-approver.dto';
+import { CreateTransactionApproverDto } from '../dto/create-transaction-approver.dto';
+
+import { ApproversService } from './approvers.service';
 
 @ApiTags('Transaction Approvers')
 @Controller('transactions/:transactionId?/approvers')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, VerifiedUserGuard)
 @Serialize(TransactionApproverDto)
 export class ApproversController {
   constructor(private approversService: ApproversService) {}
 
   @Get('/:id')
-  getTransactionApproverById(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<TransactionApprover> {
+  getTransactionApproverById(@Param('id', ParseIntPipe) id: number): Promise<TransactionApprover> {
     return this.approversService.getTransactionApproverById(id);
   }
 
   @Get('/user')
-  getTransactionApproversByUser(
-    @GetUser() user: User,
-  ): Promise<TransactionApprover[]> {
+  getTransactionApproversByUser(@GetUser() user: User): Promise<TransactionApprover[]> {
     return this.approversService.getTransactionApproversByUserId(user.id);
   }
 
@@ -62,13 +64,13 @@ export class ApproversController {
   getTransactionApproversByTransactionId(
     @Param('transactionId', ParseIntPipe) transactionId: number,
   ): Promise<TransactionApprover[]> {
-    return this.approversService.getTransactionApproversByTransactionId(
-      transactionId,
-    );
+    return this.approversService.getTransactionApproversByTransactionId(transactionId);
   }
 
   @Post()
-  createTransactionApprover(@Body() body: CreateTransactionApproverDto): Promise<TransactionApprover> {
+  createTransactionApprover(
+    @Body() body: CreateTransactionApproverDto,
+  ): Promise<TransactionApprover> {
     return this.approversService.createTransactionApprover(body);
   }
 

@@ -9,19 +9,25 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
-import { Serialize } from '../../interceptors/serialize.interceptor';
-import { TransactionObserverDto } from '../dto/transaction-observer.dto';
-import { ObserversService } from './observers.service';
-import { CreateTransactionObserverDto } from '../dto/create-transaction-observer.dto';
-import { GetUser } from '../../decorators/get-user.decorator';
-import { UpdateTransactionObserverDto } from '../dto/update-transaction-observer.dto';
-import { TransactionObserver, User } from '@entities';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
+import { TransactionObserver, User } from '@entities';
+
+import { JwtAuthGuard, VerifiedUserGuard } from '../../guards';
+
+import { GetUser } from '../../decorators/get-user.decorator';
+
+import { Serialize } from '../../interceptors/serialize.interceptor';
+
+import { ObserversService } from './observers.service';
+
+import { TransactionObserverDto } from '../dto/transaction-observer.dto';
+import { CreateTransactionObserverDto } from '../dto/create-transaction-observer.dto';
+import { UpdateTransactionObserverDto } from '../dto/update-transaction-observer.dto';
 
 @ApiTags('Transaction Observers')
 @Controller('transactions/:transactionId?/observers')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, VerifiedUserGuard)
 @Serialize(TransactionObserverDto)
 export class ObserversController {
   constructor(private observersService: ObserversService) {}

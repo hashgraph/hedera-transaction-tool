@@ -6,21 +6,28 @@ import {
   Param,
   ParseIntPipe,
   Patch,
-  Post, Query,
+  Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
-import { TransactionsService } from './transactions.service';
-import { GetUser } from '../decorators/get-user.decorator';
-import { CreateTransactionDto } from './dto/create-transaction.dto';
-import { Transaction, User } from '@entities';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { Serialize } from '../interceptors/serialize.interceptor';
-import { TransactionDto } from './dto/transaction.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
+import { Transaction, User } from '@entities';
+
+import { JwtAuthGuard, VerifiedUserGuard } from '../guards';
+
+import { GetUser } from '../decorators/get-user.decorator';
+
+import { Serialize } from '../interceptors/serialize.interceptor';
+
+import { TransactionsService } from './transactions.service';
+
+import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { TransactionDto } from './dto/transaction.dto';
 
 @ApiTags('Transactions')
 @Controller('transactions')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, VerifiedUserGuard)
 @Serialize(TransactionDto)
 export class TransactionsController {
   constructor(private transactionsService: TransactionsService) {}
@@ -118,7 +125,8 @@ export class TransactionsController {
 
   @ApiOperation({
     summary: 'Update a transaction',
-    description: 'Update the transaction for the given transaction id. ' +
+    description:
+      'Update the transaction for the given transaction id. ' +
       'WARNING: Updating a transaction that is already approved or signed should not be allowed.',
   })
   @ApiResponse({

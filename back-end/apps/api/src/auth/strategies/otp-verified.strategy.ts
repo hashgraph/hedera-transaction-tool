@@ -5,18 +5,18 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UsersService } from '../../users/users.service';
 import { User } from '@entities';
 import { ConfigService } from '@nestjs/config';
-import { OtpPayload } from '../../interfaces/otp-payload.interface';
+import { OtpPayload } from '../../interfaces';
 
 @Injectable()
 export class OtpVerifiedStrategy extends PassportStrategy(Strategy, 'otp-verified') {
-  constructor(private readonly usersService: UsersService,
-              private readonly configService: ConfigService,
-              ) {
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly configService: ConfigService,
+  ) {
     super({
       secretOrKey: configService.get('JWT_SECRET'),
-      jwtFromRequest: ExtractJwt.fromExtractors([
-        (request: Request) => request?.cookies?.['otp']
-      ]),
+      ignoreExpiration: false,
+      jwtFromRequest: ExtractJwt.fromExtractors([(request: Request) => request?.cookies?.['otp']]),
     });
   }
 

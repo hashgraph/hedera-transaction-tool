@@ -1,136 +1,55 @@
 import {
-  BadRequestException,
-  Inject,
   Injectable,
+  InternalServerErrorException,
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
 import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';
-import * as bcrypt from 'bcryptjs';
-import { ChangePasswordDto, CreateUserDto, OtpDto } from './dtos';
-import { User, UserStatus } from '@entities';
-import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
-import { NOTIFICATIONS_SERVICE } from '@app/common';
-import { ClientProxy } from '@nestjs/microservices';
-import { Response } from 'express';
-import { totp } from 'otplib';
-import { OtpPayload } from '../interfaces/otp-payload.interface';
 
-totp.options = {
-  digits: 8,
-  step:60,
-  window: 20,
-}
+import * as bcrypt from 'bcryptjs';
+
+import { User, UserStatus } from '@entities';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectRepository(User) private repo: Repository<User>,
-    private readonly configService: ConfigService,
-    private readonly jwtService: JwtService,
-    @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
-  ) {}
+  constructor(@InjectRepository(User) private repo: Repository<User>) {}
 
-  async createOtp(user: User, response: Response): Promise<void> {
-    const email = user.email;
-    const secret = this.getOtpSecret(email);
-    // If the user exists, create an TOTP for the secret + email
-    // const token = totp.generate(secret.concat(email));
-    // I'm not sure if I need to add email.
-    const token = totp.generate(secret);
-    // Send the totp to the email
-    this.notificationsService.emit('notify_email', {
-      email,
-      subject: 'Password Reset',
-      text: `Hello, your OTP is ${token}`,
-    });
-    // Now that it has been verified, create a jwt that is not 'verified' and
-    // set it on the response.
-    const otpPayload: OtpPayload = { email, verified: false };
-    this.setOtpCookie(response, otpPayload);
-  }
+  /* Creates a user with a given email and password. */
+  async createUser(email: string, password: string): Promise<User> {
+    let user = await this.getUser({ email }, true);
+    password = await this.getSaltedHash(password);
 
-  async verifyOtp(user: User, { token }: OtpDto, response: Response): Promise<boolean> {
-    const email = user.email;
-    const secret = this.getOtpSecret(email);
-    try {
-      if (!totp.check(token, secret)) {
-        throw new UnauthorizedException('Incorrect token');
-      }
-      // Now that it has been verified, create a new jwt that is 'valid' and
-      // set it on the response.
-      const otpPayload: OtpPayload = { email, verified: true };
-      this.setOtpCookie(response, otpPayload);
-
-      // Change the user status to 'NEW'. For a new user, this is no change.
-      // For a current user, this locks them from the organization data until a new password is set.
-      await this.updateUser(user, { status: UserStatus.NEW });
-
-      return true;
-    } catch (err) {
-      // Possible errors
-      // - options validation
-      // - "Invalid input - it is not base32 encoded string" (if 32 is used)
-      console.error(err);
-    }
-  }
-
-  // Get the otp secret and add the email, making it unique per user.
-  // The other approach would be to create a unique key per user and store
-  // it in the database.
-  private getOtpSecret(email: string): string {
-    return this.configService.get<string>('OTP_SECRET').concat(email);
-  }
-
-  private setOtpCookie(response: Response, otpPayload: OtpPayload) {
-    // Get the expiration to set on the cookie
-    const expires = new Date();
-    expires.setSeconds(expires.getSeconds() + (totp.options.step*(totp.options.window as number)));
-
-    const accessToken: string = this.jwtService.sign(otpPayload);
-    response.cookie('otp', accessToken, {
-      httpOnly: true,
-      expires,
-      sameSite: this.configService.get('NODE_ENV') === 'production' ? 'none' : 'lax',
-      secure: this.configService.get('NODE_ENV') === 'production',
-    });
-  }
-
-  // Create a user for the given email and password. This is temporary,
-  // as the process for creating a new user will include a temporary password,
-  // and a notification sent to the email provided.
-  async createUser(dto: CreateUserDto): Promise<User> {
-    let user = await this.getUser({ email: dto.email }, true);
     if (user) {
-      // If the user is found
-      if (!user.deletedAt) {
-        // AND not deleted, throw an error
-        throw new UnprocessableEntityException('Email already exists.');
-      }
-      // Otherwise, restore the user and update it
+      if (!user.deletedAt) throw new UnprocessableEntityException('Email already exists.');
+
       await this.repo.restore(user.id);
 
-      return this.updateUser(user, { admin: dto.admin, status: UserStatus.NEW });
+      password = await this.getSaltedHash(password);
+      return this.updateUser(user, { email, password, status: UserStatus.NEW });
     }
 
-    //TODO this needs to be removed once the createUser route in auth.controller is removed
-    // as password will not be in the CreateUserDto
-    const password = dto.password ? await this.getSaltedHash(dto.password) : '';
     user = this.repo.create({
-      ...dto,
+      email,
       password,
     });
+
     return await this.repo.save(user);
   }
 
-  // Return the user for the given email and password. The returned user is valid and verified.
+  /* Returns the user for the given email and password. The returned user is valid and verified. */
   async getVerifiedUser(email: string, password: string): Promise<User> {
-    const user = await this.getUser({ email });
+    let user: User;
 
-    if (!(await bcrypt.compare(password, user?.password))) {
+    try {
+      user = await this.getUser({ email });
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to retrieve user.');
+    }
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new UnauthorizedException('Please check your login credentials');
     }
 
@@ -168,21 +87,14 @@ export class UsersService {
     return this.repo.save(user);
   }
 
-  // Change the password for the given user. This method is only accessible to a user that is
-  // logged in and authenticated
-  async changePassword(user: User, { oldPassword, newPassword }: ChangePasswordDto): Promise<void> {
-    const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
-    if (!isOldPasswordValid) {
-      throw new BadRequestException('Invalid old password');
-    }
-    await this.setPassword(user, newPassword);
-  }
-
   // Set the password for the given user. This method is only accessible to a user that is
   // logged in and authenticated, or has verified the email and OTP
   async setPassword(user: User, newPassword: string): Promise<void> {
     // Get the salted password, and set the status to none (no longer new)
-    await this.updateUser(user, { password: await this.getSaltedHash(newPassword), status: UserStatus.NONE });
+    await this.updateUser(user, {
+      password: await this.getSaltedHash(newPassword),
+      status: UserStatus.NONE,
+    });
   }
 
   // Remove a user from the organization.

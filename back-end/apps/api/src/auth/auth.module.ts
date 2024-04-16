@@ -7,7 +7,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from '../users/users.module';
 import { ConfigService } from '@nestjs/config';
 import { LoggerModule } from '@app/common';
-import { JwtStrategy, LocalStrategy } from './strategies';
+import { JwtStrategy, LocalStrategy, OtpJwtStrategy, OtpVerifiedStrategy } from './strategies';
+
 import { User } from '@entities';
 import { Reflector } from '@nestjs/core';
 
@@ -16,12 +17,9 @@ import { Reflector } from '@nestjs/core';
     LoggerModule,
     PassportModule.register({}),
     JwtModule.registerAsync({
-      imports: [], // imports is required, but it doesn't appear to require ConfigModule, maybe because it isGlobal?
+      imports: [],
       useFactory: (configService: ConfigService) => ({
         secret: configService.getOrThrow('JWT_SECRET'),
-        signOptions: {
-          expiresIn: `${configService.getOrThrow('JWT_EXPIRATION')}d`,
-        },
       }),
       inject: [ConfigService],
     }),
@@ -29,6 +27,13 @@ import { Reflector } from '@nestjs/core';
     UsersModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy, Reflector],
+  providers: [
+    AuthService,
+    LocalStrategy,
+    JwtStrategy,
+    OtpJwtStrategy,
+    OtpVerifiedStrategy,
+    Reflector,
+  ],
 })
 export class AuthModule {}

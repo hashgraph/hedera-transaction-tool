@@ -8,18 +8,24 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { SignersService } from './signers.service';
-import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
-import { UploadSignatureDto } from '../dto/upload-signature.dto';
-import { TransactionSigner, User } from '@entities';
-import { TransactionSignerDto } from '../dto/transaction-signer.dto';
-import { Serialize } from '../../interceptors/serialize.interceptor';
-import { GetUser } from '../../decorators/get-user.decorator';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
+import { TransactionSigner, User } from '@entities';
+
+import { JwtAuthGuard, VerifiedUserGuard } from '../../guards';
+
+import { GetUser } from '../../decorators/get-user.decorator';
+
+import { Serialize } from '../../interceptors/serialize.interceptor';
+
+import { SignersService } from './signers.service';
+
+import { UploadSignatureDto } from '../dto/upload-signature.dto';
+import { TransactionSignerDto } from '../dto/transaction-signer.dto';
 
 @ApiTags('Transaction Signers')
 @Controller('transactions/:transactionId?/signers')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, VerifiedUserGuard)
 @Serialize(TransactionSignerDto)
 export class SignersController {
   constructor(private signaturesService: SignersService) {}
@@ -33,9 +39,7 @@ export class SignersController {
     type: TransactionSignerDto,
   })
   @Get('/:id')
-  getSignatureById(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<TransactionSigner> {
+  getSignatureById(@Param('id', ParseIntPipe) id: number): Promise<TransactionSigner> {
     return this.signaturesService.getSignatureById(id);
   }
 
