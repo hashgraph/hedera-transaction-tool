@@ -63,6 +63,7 @@ export class UserKeysService {
     return this.repo.softRemove(userKey);
   }
 
+  /* Returns the count of the user keys for the provided user */
   async getUserKeysCount(userId: number): Promise<number> {
     return this.repo.count({ where: { user: { id: userId } } });
   }
