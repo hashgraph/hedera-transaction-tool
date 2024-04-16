@@ -1,10 +1,9 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 
-import { Key, PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Key, KeyList, PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import { Repository } from 'typeorm';
 
@@ -12,10 +11,13 @@ import { Transaction, TransactionStatus, User } from '@entities';
 
 import {
   NOTIFICATIONS_SERVICE,
+  MirrorNodeService,
   encodeUint8Array,
   getClientFromConfig,
   getTransactionTypeEnumValue,
   isExpired,
+  isPublicKeyInKeyList,
+  parseAccountProperty,
 } from '@app/common';
 import TransactionFactory from '@app/common/models/transaction-factory';
 
@@ -31,7 +33,7 @@ export class TransactionsService {
     @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
     private readonly configService: ConfigService,
     private readonly userKeysService: UserKeysService,
-    private readonly httpService: HttpService,
+    private readonly mirrorNodeService: MirrorNodeService,
   ) {}
 
   // Get the transaction for the provided transaction id.
@@ -60,14 +62,68 @@ export class TransactionsService {
   async getTransactionsToSign(user: User, take: number, skip: number): Promise<Transaction[]> {
     const userKeys = await this.userKeysService.getUserKeys(user.id);
 
-    const accountIdToKey: { [key: string]: Key } = {};
+    const result: Transaction[] = [];
 
-    /* To add filter for expired transactions */
     const transactions = await this.repo.find({
       where: { status: TransactionStatus.WAITING_FOR_SIGNATURES },
     });
 
-    throw new Error('Not implemented');
+    for (const transaction of transactions) {
+      const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
+
+      /* Ignore if expired */
+      /* if (isExpired(sdkTransaction)) continue; */
+
+      /* Get signature entities */
+      const { newKeys, accounts, receiverAccounts } = this.getSignatureEntities(sdkTransaction);
+
+      /* Check if the user has a key that is required to sign */
+      const userKeysIncludedInTransaction = userKeys.filter(userKey =>
+        newKeys.includes(userKey.publicKey),
+      );
+      if (userKeysIncludedInTransaction.length > 0) {
+        result.push(transaction);
+        continue;
+      }
+
+      const someUserKeyInOrIsKey = (key: Key) =>
+        (key instanceof PublicKey &&
+          userKeys.some(userKey => userKey.publicKey === key.toStringRaw())) ||
+        (key instanceof KeyList &&
+          userKeys.some(userKey => isPublicKeyInKeyList(userKey.publicKey, key)));
+
+      /* Check if a key of the user is inside the key of some account required to sign */
+      let added = false;
+      for (const accountId of accounts) {
+        const accountInfo = await this.mirrorNodeService.getAccountInfo(accountId);
+        const key = parseAccountProperty(accountInfo, 'key');
+        if (!key) continue;
+
+        if (someUserKeyInOrIsKey(key)) {
+          result.push(transaction);
+          added = true;
+          break;
+        }
+      }
+      if (added) continue;
+
+      /* Check if user has a key included in a receiver account that required signature */
+      for (const accountId of receiverAccounts) {
+        const accountInfo = await this.mirrorNodeService.getAccountInfo(accountId);
+        const receiverSigRequired = parseAccountProperty(accountInfo, 'receiver_sig_required');
+        if (!receiverSigRequired) continue;
+
+        const key = parseAccountProperty(accountInfo, 'key');
+        if (!key) continue;
+
+        if (someUserKeyInOrIsKey(key)) {
+          result.push(transaction);
+          added = true;
+          break;
+        }
+      }
+    }
+    return result;
   }
 
   // Get all transactions that need to be approved by the user.
@@ -101,7 +157,7 @@ export class TransactionsService {
       .getMany();
   }
 
-  // Create a transaction for the provided information
+  /* Create a new transaction with the provided information */
   async createTransaction(dto: CreateTransactionDto, user: UserDto): Promise<Transaction> {
     const userKeys = await this.userKeysService.getUserKeys(user.id);
     const creatorKey = userKeys.find(key => key.id === dto.creatorKeyId);
@@ -176,12 +232,31 @@ export class TransactionsService {
     return this.repo.remove(transaction);
   }
 
-  // For the given transaction, the three searchable fields will need to be set.
-  // The transaction will need to be parsed from the transaction body, then the
-  // accounts and keys to be added to the search fields need to be determined.
+  /* Gets the keys and potential accounts that are required to sign the transaction */
+  private getSignatureEntities(transaction: SDKTransaction) {
+    try {
+      const transactionModel = TransactionFactory.fromTransaction(transaction);
+
+      const result = {
+        accounts: [...transactionModel.getSigningAccounts()],
+        receiverAccounts: [...transactionModel.getReceiverAccounts()],
+        newKeys: [...transactionModel.getNewKeys()],
+      };
+
+      /* To get keys for files */
+
+      return result;
+    } catch (err) {
+      console.log(err);
+      return {
+        accounts: [],
+        receiverAccounts: [],
+        newKeys: [],
+      };
+    }
+  }
+
   private setSearchableFields(transaction: Transaction): void {
-    // Get the list of accounts or keys required to sign the transaction
-    // Join the list and return
     try {
       const transactionModel = TransactionFactory.fromBytes(transaction.body);
 
