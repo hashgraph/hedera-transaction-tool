@@ -14,7 +14,7 @@ import { User } from '@entities';
 
 import { AdminGuard, JwtAuthGuard, VerifiedUserGuard } from '../guards';
 
-import { AllowNoneVerifiedUser, GetUser } from '../decorators';
+import { AllowNonVerifiedUser, GetUser } from '../decorators';
 
 import { Serialize } from '../interceptors/serialize.interceptor';
 
@@ -50,7 +50,7 @@ export class UsersController {
     status: 200,
     type: [UserDto],
   })
-  @AllowNoneVerifiedUser()
+  @AllowNonVerifiedUser()
   @Get('/me')
   getMe(@GetUser() user: User): User {
     return user;
