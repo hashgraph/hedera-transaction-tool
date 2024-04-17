@@ -15,7 +15,7 @@ spec:
         app: notifications
     spec:
       containers:
-      - image: notsureyet/notifications/production
+      - image: us-south1-docker.pkg.dev/transaction-tool-dev/notifications/development
         name: notifications
         env:
           - name: RABBITMQ_URI
@@ -23,10 +23,10 @@ spec:
           - name: BREVO_USERNAME
             valueFrom:
               secretKeyRef:
-                name: brevoSecret
+                name: brevo
                 key: username
           - name: BREVO_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: brevoSecret
+                name: brevo
                 key: password
