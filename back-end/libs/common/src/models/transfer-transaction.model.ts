@@ -27,9 +27,9 @@ export default class TransferTransactionModel extends TransactionBaseModel<Trans
     // new transactions. If the server pushes, it would need to go through each transaction for the updated account
     // and find all keys on that transaction for that account and push the transaction. Or could it just
     // get the users for the keys on the updated account and notify the user to pull new data?
-    for (const [key, value] of this.transaction.hbarTransfers) {
-      if (value.isNegative()) {
-        accounts.add(key.toString());
+    for (const transfer of this.transaction.hbarTransfersList) {
+      if (transfer.amount.isNegative() && !transfer.isApproved) {
+        accounts.add(transfer.accountId.toString());
       }
     }
     return accounts;
@@ -38,9 +38,9 @@ export default class TransferTransactionModel extends TransactionBaseModel<Trans
   getReceiverAccounts(): Set<string> {
     const accounts = new Set<string>();
 
-    for (const [key, value] of this.transaction.hbarTransfers) {
-      if (!value.isNegative()) {
-        accounts.add(key.toString());
+    for (const transfer of this.transaction.hbarTransfersList) {
+      if (!transfer.amount.isNegative()) {
+        accounts.add(transfer.accountId.toString());
       }
     }
     return accounts;

@@ -48,6 +48,6 @@ async function bootstrap() {
   SwaggerModule.setup('api-docs', app, document);
 
   await app.startAllMicroservices();
-  await app.listen(configService.getOrThrow('HTTP_PORT'));
+  await app.listen(configService.getOrThrow<number>('HTTP_PORT'));
 }
 bootstrap();
