@@ -53,48 +53,49 @@ test.describe('Settings tests', () => {
     expect(allElementsVisible).toBe(true);
   });
 
-
   test('Verify that all elements on Custom tab are visible and correct', async () => {
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnCustomTab();
 
     const consensusNodeEndpoint = await settingsPage.getConsensusNodeEndpointText();
-    expect(consensusNodeEndpoint).toBe("127.0.0.1:50211");
+    expect(consensusNodeEndpoint).toBe('127.0.0.1:50211');
 
     const mirrorNodeGrpcEndpoint = await settingsPage.getMirrorNodeGrpcEndpointText();
-    expect(mirrorNodeGrpcEndpoint).toBe("127.0.0.1:5600");
+    expect(mirrorNodeGrpcEndpoint).toBe('127.0.0.1:5600');
 
     const mirrorNodeRestEndpoint = await settingsPage.getMirrorNodeRestEndpointText();
-    expect(mirrorNodeRestEndpoint).toBe("http://localhost:5551/api/v1");
+    expect(mirrorNodeRestEndpoint).toBe('http://localhost:5551/api/v1');
 
     const nodeAccountId = await settingsPage.getNodeAccountIdInputText();
-    expect(nodeAccountId).toBe("0.0.3");
+    expect(nodeAccountId).toBe('0.0.3');
 
     const isSetButtonVisible = await settingsPage.isSetButtonVisible();
     expect(isSetButtonVisible).toBe(true);
   });
 
   test('Verify user can restore key', async () => {
-    await loginPage.waitForToastToDisappear();
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
 
     await settingsPage.clickOnRestoreButton();
     await settingsPage.clickOnContinueButton();
 
-    await settingsPage.fillInPassword(globalCredentials.password)
+    await settingsPage.fillInPassword(globalCredentials.password);
     await settingsPage.clickOnPasswordContinueButton();
 
-    const isMnemonicRequired = settingsPage.isElementVisible(registrationPage.getRecoveryWordSelector(1))
-    if(isMnemonicRequired){
+    const isMnemonicRequired = settingsPage.isElementVisible(
+      registrationPage.getRecoveryWordSelector(1),
+    );
+    if (isMnemonicRequired) {
       await registrationPage.fillAllMissingRecoveryPhraseWords();
       await settingsPage.clickOnContinuePhraseButton();
     }
 
-    await settingsPage.fillInIndex(settingsPage.currentIndex)
+    await settingsPage.fillInIndex(settingsPage.currentIndex);
     await settingsPage.clickOnIndexContinueButton();
 
-    await settingsPage.fillInNickname("testNickname" + settingsPage.currentIndex);
+    await loginPage.waitForToastToDisappear();
+    await settingsPage.fillInNickname('testNickname' + settingsPage.currentIndex);
     await settingsPage.clickOnNicknameContinueButton();
 
     const toastMessage = await registrationPage.getToastMessage();
@@ -108,23 +109,27 @@ test.describe('Settings tests', () => {
     await settingsPage.clickOnRestoreButton();
     await settingsPage.clickOnContinueButton();
 
-    await settingsPage.fillInPassword(globalCredentials.password)
+    await settingsPage.fillInPassword(globalCredentials.password);
     await settingsPage.clickOnPasswordContinueButton();
 
-    const isMnemonicRequired = settingsPage.isElementVisible(registrationPage.getRecoveryWordSelector(1))
-    if(isMnemonicRequired){
+    const isMnemonicRequired = settingsPage.isElementVisible(
+      registrationPage.getRecoveryWordSelector(1),
+    );
+    if (isMnemonicRequired) {
       await registrationPage.fillAllMissingRecoveryPhraseWords();
       await settingsPage.clickOnContinuePhraseButton();
     }
     const currentIndex = settingsPage.currentIndex;
-    await settingsPage.fillInIndex(settingsPage.currentIndex)
+    await settingsPage.fillInIndex(settingsPage.currentIndex);
     await settingsPage.clickOnIndexContinueButton();
 
-    await settingsPage.fillInNickname("testNickname" + settingsPage.currentIndex);
+    await settingsPage.fillInNickname('testNickname' + settingsPage.currentIndex);
     await settingsPage.clickOnNicknameContinueButton();
 
-    const toastMessage = await settingsPage.verifyKeysExistByIndexAndEmail(globalCredentials.email, currentIndex);
-    expect(toastMessage).toBe('Key Pair saved');
+    const isKeyPairSavedInDatabase = await settingsPage.verifyKeysExistByIndexAndEmail(
+      globalCredentials.email,
+      currentIndex,
+    );
+    expect(isKeyPairSavedInDatabase).toBe(true);
   });
-
 });

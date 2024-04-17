@@ -5,7 +5,7 @@ class SettingsPage extends BasePage {
   constructor(window) {
     super(window);
     this.window = window;
-    this.currentIndex = "1";
+    this.currentIndex = '1';
   }
 
   settingsButtonSelector = 'button-menu-settings';
@@ -35,6 +35,7 @@ class SettingsPage extends BasePage {
   nicknameInputSelector = 'input-nickname';
   continueNicknameButtonSelector = 'button-continue-nickname';
   continuePhraseButtonSelector = 'button-continue-phrase';
+  importButtonSelector = 'button-restore-dropdown'
 
   async verifySettingsElements() {
     const checks = await Promise.all([
@@ -71,7 +72,7 @@ class SettingsPage extends BasePage {
     try {
       const row = await queryDatabase(query, [email, index]);
       // Check if the row is not empty and both public_key and private_key are not null
-      return row===!undefined && row.public_key && row.private_key;
+      return (row !== undefined) && (row.public_key!==undefined) && (row.private_key!==undefined);
     } catch (error) {
       console.error('Error verifying keys for index:', error);
       return false;
@@ -102,7 +103,7 @@ class SettingsPage extends BasePage {
     await this.clickByTestId(this.continuePasswordButtonSelector);
   }
 
-  async fillInIndex(index=1) {
+  async fillInIndex(index = 1) {
     await this.fillByTestId(this.indexInputSelector, index);
   }
 
@@ -127,23 +128,23 @@ class SettingsPage extends BasePage {
     await this.clickByTestId(this.customTabButtonSelector);
   }
 
-  async getConsensusNodeEndpointText(){
+  async getConsensusNodeEndpointText() {
     return await this.getTextFromInputFieldByTestId(this.consensusNodeEndpointInputSelector);
   }
 
-  async getMirrorNodeGrpcEndpointText(){
+  async getMirrorNodeGrpcEndpointText() {
     return await this.getTextFromInputFieldByTestId(this.mirrorNodeGrpcEndpointSelector);
   }
 
-  async getMirrorNodeRestEndpointText(){
+  async getMirrorNodeRestEndpointText() {
     return await this.getTextFromInputFieldByTestId(this.mirrorNodeRestEndpointSelector);
   }
 
-  async getNodeAccountIdInputText(){
+  async getNodeAccountIdInputText() {
     return await this.getTextFromInputFieldByTestId(this.nodeAccountidInputSelector);
   }
 
-  async isSetButtonVisible(){
+  async isSetButtonVisible() {
     return await this.isElementVisible(this.setButtonSelector);
   }
 }
