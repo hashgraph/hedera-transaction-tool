@@ -7,3 +7,4 @@ export * from './mirrorNode';
 export * from './schemas';
 export * from './types';
 export * from './decorators';
+export * from './modules';
