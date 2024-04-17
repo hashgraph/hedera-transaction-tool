@@ -1,18 +1,20 @@
-import { Expose, Transform } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
+
+import { TransactionDto } from './transaction.dto';
+import { UserKeyCoreDto } from '../../user-keys/dtos';
 
 export class TransactionSignerDto {
   @Expose()
   id: number;
 
-  @Transform(({ obj }) => (obj.transaction ? obj.transaction.id : undefined))
   @Expose()
-  transactionId: number;
+  @Type(() => TransactionDto)
+  transaction: TransactionDto;
 
-  @Transform(({ obj }) => (obj.userKey ? obj.userKey.id : undefined))
   @Expose()
-  userKeyId: number;
+  @Type(() => UserKeyCoreDto)
+  userKey: UserKeyCoreDto;
 
-  @Transform(({ obj }) => (obj.signature ? obj.signature.toString('hex') : undefined))
   @Expose()
   createdAt: Date;
 }
