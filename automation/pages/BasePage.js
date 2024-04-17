@@ -33,6 +33,13 @@ class BasePage {
     return element.textContent();
   }
 
+  async getTextFromInputFieldByTestId(testId, timeout = this.DEFAULT_TIMEOUT) {
+    console.log(`Getting text for element with testId: ${testId}`);
+    const element = this.window.getByTestId(testId);
+    await element.waitFor({ state: 'visible', timeout: timeout });
+    return element.inputValue();
+  }
+
   async getTextByCssSelector(selector, timeout = this.DEFAULT_TIMEOUT) {
     console.log(`Getting text for element with CSS selector: ${selector}`);
     const element = this.window.locator(selector);
