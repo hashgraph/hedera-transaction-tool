@@ -49,7 +49,7 @@ export class User {
   keys: UserKey[];
 
   @OneToMany(() => TransactionSigner, transactionSigner => transactionSigner.user)
-  signerForTransactions: UserKey[];
+  signerForTransactions: TransactionSigner[];
 
   @OneToMany(() => TransactionObserver, observer => observer.user)
   observableTransactions: TransactionObserver[];

@@ -15,7 +15,7 @@ export class TransactionSigner {
   userKey: UserKey;
 
   @ManyToOne(() => User, user => user.signerForTransactions)
-  user: UserKey;
+  user: User;
 
   @CreateDateColumn()
   createdAt: Date;
