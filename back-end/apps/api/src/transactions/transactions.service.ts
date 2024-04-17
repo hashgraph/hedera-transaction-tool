@@ -75,14 +75,22 @@ export class TransactionsService {
     });
   }
 
-  // Get the transactions created by the user.
-  // Include the creator key in the response
-  async getTransactions(user: User): Promise<Transaction[]> {
-    return this.repo
-      .createQueryBuilder('transaction') // Find Transactions
-      .leftJoinAndSelect('transaction.creatorKey', 'creatorKey') // where the creator key
-      .where('creatorKey.userId = :userId', { userId: user.id }) // has a userId = user.id
-      .getMany();
+  /* Get the transactions created by the user */
+  async getTransactions(user: User, take: number = 10, skip: number = 0): Promise<Transaction[]> {
+    return this.repo.find({
+      where: {
+        creatorKey: {
+          user: {
+            id: user.id,
+          },
+        },
+      },
+      relations: {
+        creatorKey: true,
+      },
+      skip,
+      take,
+    });
   }
 
   /* Get the transactions that a user needs to sign */

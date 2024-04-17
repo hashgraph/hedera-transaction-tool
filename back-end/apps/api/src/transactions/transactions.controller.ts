@@ -56,8 +56,12 @@ export class TransactionsController {
     type: [TransactionDto],
   })
   @Get()
-  getTransactions(@GetUser() user: User): Promise<Transaction[]> {
-    return this.transactionsService.getTransactions(user);
+  getTransactions(
+    @GetUser() user: User,
+    @Query('take', ParseIntPipe) take: number,
+    @Query('skip', ParseIntPipe) skip: number,
+  ): Promise<Transaction[]> {
+    return this.transactionsService.getTransactions(user, take, skip);
   }
 
   /* Get all transactions to be signed by the user */
