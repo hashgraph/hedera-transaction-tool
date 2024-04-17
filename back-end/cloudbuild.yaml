@@ -5,39 +5,39 @@ steps:
       [
         'build',
         '-t',
-        '<url to repo / google cloud artifact registry>/production',
+        'us-south1-docker.pkg.dev/transaction-tool-dev/api/development',
         '-f',
         'apps/api/Dockerfile',
         '.'
       ]
   - name: 'gcr.io/cloud-builders/docker'
     args:
-      ['push', '<url to repo / google cloud artifact registry>/production']
+      ['push', 'us-south1-docker.pkg.dev/transaction-tool-dev/api/development']
   # Chain service
   - name: 'gcr.io/cloud-builders/docker'
     args:
       [
         'build',
         '-t',
-        '<url to repo / google cloud artifact registry>/production',
+        'us-south1-docker.pkg.dev/transaction-tool-dev/chain/development',
         '-f',
         'apps/chain/Dockerfile',
         '.'
       ]
   - name: 'gcr.io/cloud-builders/docker'
     args:
-      ['push', '<url to repo / google cloud artifact registry>/production']
+      ['push', 'us-south1-docker.pkg.dev/transaction-tool-dev/chain/development']
   # Notifications service
   - name: 'gcr.io/cloud-builders/docker'
     args:
       [
         'build',
         '-t',
-        '<url to repo / google cloud artifact registry>/production',
+        'us-south1-docker.pkg.dev/transaction-tool-dev/notifications/development',
         '-f',
         'apps/notifications/Dockerfile',
         '.'
       ]
   - name: 'gcr.io/cloud-builders/docker'
     args:
-      ['push', '<url to repo / google cloud artifact registry>/production']
+      ['push', 'us-south1-docker.pkg.dev/transaction-tool-dev/notifications/development']

@@ -15,7 +15,7 @@ spec:
         app: api
     spec:
       containers:
-      - image: notsureyet/api/production
+      - image: us-south1-docker.pkg.dev/transaction-tool-dev/api/development
         name: api
         env:
           - name: HTTP_PORT
@@ -33,22 +33,22 @@ spec:
           - name: POSTGRES_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: postgresSecret
+                name: postgres
                 key: password
           - name: POSTGRES_SYNCHRONIZE
             value: 'false'
           - name: JWT_SECRET
             valueFrom:
               secretKeyRef:
-                name: jwtSecret
-                key: secretKey
+                name: jwt
+                key: key
           - name: JWT_EXPIRATION
             value: '365'
           - name: OTP_SECRET
             valueFrom:
               secretKeyRef:
-                name: otpSecret
-                key: secretKey
+                name: otp
+                key: key
           - name: OTP_EXPIRATION
             value: '20'
         ports:
