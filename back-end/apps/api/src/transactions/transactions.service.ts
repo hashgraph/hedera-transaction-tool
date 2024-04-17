@@ -27,7 +27,6 @@ import {
   parseAccountProperty,
   getSignatureEntities,
 } from '@app/common';
-import TransactionFactory from '@app/common/models/transaction-factory';
 
 import { UserDto } from '../users/dtos';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
@@ -110,7 +109,12 @@ export class TransactionsService {
 
       /* Check if the user has a key that is required to sign */
       const userKeysIncludedInTransaction = userKeys.filter(userKey =>
-        newKeys.includes(userKey.publicKey),
+        newKeys.some(key =>
+          isPublicKeyInKeyList(
+            userKey.publicKey,
+            key instanceof KeyList ? key : new KeyList([key]),
+          ),
+        ),
       );
       if (userKeysIncludedInTransaction.length > 0) {
         result.push(transaction);
@@ -236,8 +240,6 @@ export class TransactionsService {
     });
     client.close();
 
-    this.setSearchableFields(transaction);
-
     try {
       await this.repo.save(transaction);
     } catch (error) {
@@ -276,21 +278,5 @@ export class TransactionsService {
     }
 
     return this.repo.remove(transaction);
-  }
-
-  private setSearchableFields(transaction: Transaction): void {
-    try {
-      const transactionModel = TransactionFactory.fromBytes(transaction.body);
-
-      transaction.accounts = [...transactionModel.getSigningAccounts()];
-      transaction.receiverAccounts = [...transactionModel.getReceiverAccounts()];
-      transaction.newKeys = [...transactionModel.getNewKeys()];
-    } catch (err) {
-      console.log(err);
-      //TODO handle this error
-      transaction.accounts = [];
-      transaction.receiverAccounts = [];
-      transaction.newKeys = [];
-    }
   }
 }
