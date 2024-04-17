@@ -1,14 +1,13 @@
 import { AccountUpdateTransaction } from '@hashgraph/sdk';
-import { flattenKeyList } from '@app/common';
 
 import { TransactionBaseModel } from './transaction.model';
 
 export default class AccountUpdateTransactionModel extends TransactionBaseModel<AccountUpdateTransaction> {
-  getNewKeys(): Set<string> {
+  getNewKeys() {
     if (this.transaction.key != null) {
-      return new Set(flattenKeyList(this.transaction.key).map(key => key.toStringRaw()));
+      return [this.transaction.key];
     }
-    return new Set();
+    return [];
   }
 
   getSigningAccounts(): Set<string> {

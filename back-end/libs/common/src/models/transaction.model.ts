@@ -1,4 +1,4 @@
-import { Transaction } from '@hashgraph/sdk';
+import { Key, Transaction } from '@hashgraph/sdk';
 
 export abstract class TransactionBaseModel<T extends Transaction> {
   constructor(protected transaction: T) {}
@@ -23,7 +23,7 @@ export abstract class TransactionBaseModel<T extends Transaction> {
     return new Set<string>();
   }
 
-  getNewKeys(): Set<string> {
-    return new Set<string>();
+  getNewKeys(): Key[] {
+    return [];
   }
 }
