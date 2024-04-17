@@ -24,8 +24,6 @@ export class ExecuteController {
   @HttpCode(HttpStatus.OK)
   @Serialize(TranasctionExecutedDto)
   async index(@Param('transactionId', ParseIntPipe) transactionId: number) {
-    console.log(await this.executeService.executeTransaction(transactionId));
-
     return this.executeService.executeTransaction(transactionId);
   }
 }
