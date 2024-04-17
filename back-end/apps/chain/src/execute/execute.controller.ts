@@ -1,6 +1,9 @@
 import { Controller, Get, HttpCode, HttpStatus, Param, ParseIntPipe } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+
 import { ExecuteService } from './execute.service';
+
+import { TranasctionExecutedDto } from './dtos';
 
 @Controller('execute')
 export class ExecuteController {
@@ -13,6 +16,7 @@ export class ExecuteController {
   })
   @ApiResponse({
     status: 200,
+    type: TranasctionExecutedDto,
   })
   @Get(':transactionId')
   @HttpCode(HttpStatus.OK)

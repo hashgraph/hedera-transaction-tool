@@ -41,6 +41,9 @@ export class ExecuteService {
       },
       relations: {
         signers: true,
+        approvers: true,
+        observers: true,
+        creatorKey: true,
       },
     });
 
