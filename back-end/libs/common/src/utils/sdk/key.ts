@@ -28,6 +28,27 @@ export function flattenKeyList(keyList: Key): PublicKey[] {
   return keys;
 }
 
+export const ableToSign = (publicKeys: string[], key: Key) => {
+  if (key instanceof KeyList) {
+    const keys = key.toArray();
+    let currentThreshold = 0;
+
+    keys.forEach(key => {
+      if (ableToSign(publicKeys, key)) {
+        currentThreshold++;
+      }
+    });
+
+    return currentThreshold >= (key.threshold || keys.length);
+  } else if (key instanceof PublicKey) {
+    if (publicKeys.includes(key.toStringRaw())) {
+      return true;
+    } else {
+      return false;
+    }
+  } else throw new Error(`Invalid key type`);
+};
+
 export const decodeProtobuffKey = (protobuffEncodedKey: string) => {
   const buffer = Buffer.from(protobuffEncodedKey, 'hex');
   const protoKey = proto.Key.decode(buffer);
