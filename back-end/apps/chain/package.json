@@ -1,0 +1,17 @@
+{
+  "name": "@back-end/chain",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "main": "index.js",
+  "license": "ISC",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@nestjs/schedule": "^4.0.2"
+  }
+}
