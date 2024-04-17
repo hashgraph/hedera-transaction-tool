@@ -83,6 +83,7 @@ export class ExecuteService {
       const receipt = await response.getReceipt(client);
 
       result.response = JSON.stringify(response.toJSON());
+      result.receipt = JSON.stringify(receipt.toJSON());
       result.receiptBytes = Buffer.from(receipt.toBytes());
     } catch (error) {
       statusCode = error.status?._code || 21;

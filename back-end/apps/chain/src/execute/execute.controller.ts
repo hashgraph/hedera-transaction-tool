@@ -1,6 +1,8 @@
 import { Controller, Get, HttpCode, HttpStatus, Param, ParseIntPipe } from '@nestjs/common';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 
+import { Serialize } from '@app/common';
+
 import { ExecuteService } from './execute.service';
 
 import { TranasctionExecutedDto } from './dtos';
@@ -20,7 +22,10 @@ export class ExecuteController {
   })
   @Get(':transactionId')
   @HttpCode(HttpStatus.OK)
+  @Serialize(TranasctionExecutedDto)
   async index(@Param('transactionId', ParseIntPipe) transactionId: number) {
+    console.log(await this.executeService.executeTransaction(transactionId));
+
     return this.executeService.executeTransaction(transactionId);
   }
 }

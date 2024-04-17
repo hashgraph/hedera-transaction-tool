@@ -3,6 +3,8 @@ import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { Response } from 'express';
 
+import { Serialize } from '@app/common';
+
 import { User } from '@entities';
 
 import {
@@ -14,8 +16,6 @@ import {
 } from '../guards';
 
 import { GetUser } from '../decorators';
-
-import { Serialize } from '../interceptors/serialize.interceptor';
 
 import { AuthService } from './auth.service';
 

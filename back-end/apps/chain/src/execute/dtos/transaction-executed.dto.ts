@@ -8,7 +8,7 @@ export class TranasctionExecutedDto {
   receipt?: string;
 
   @Expose()
-  @Transform(({ obj }) => obj.body.toString('hex'))
+  @Transform(({ obj }) => obj.receiptBytes.toString('hex'))
   receiptBytes?: Buffer;
 
   @Expose()

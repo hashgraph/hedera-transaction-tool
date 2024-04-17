@@ -8,3 +8,4 @@ export * from './schemas';
 export * from './types';
 export * from './decorators';
 export * from './modules';
+export * from './interceptors';
