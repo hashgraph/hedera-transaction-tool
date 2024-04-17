@@ -11,18 +11,18 @@ services:
       - '3000:3000'
     volumes:
       - .:/usr/src/app
-#  chain:
-#    build:
-#      context: .
-#      dockerfile: ./apps/chain/Dockerfile
-#      target: development
-#    command: npm run start:dev chain
-#    env_file:
-#      - ./apps/chain/.env
-#    ports:
-#      - '3010:3010'
-#    volumes:
-#      - .:/usr/src/app
+  chain:
+    build:
+      context: .
+      dockerfile: ./apps/chain/Dockerfile
+      target: development
+    command: npm run start:dev chain
+    env_file:
+      - ./apps/chain/.env
+    ports:
+      - '3010:3010'
+    volumes:
+      - .:/usr/src/app
   notifications:
     build:
       context: .
@@ -48,8 +48,8 @@ services:
     # for development, allow postgres to be accessible
     ports:
       - '5432:5432'
-#    expose:
-#      - '5432'
+  #    expose:
+  #      - '5432'
   pgadmin:
     image: dpage/pgadmin4
     restart: always
