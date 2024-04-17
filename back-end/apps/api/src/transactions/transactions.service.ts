@@ -3,7 +3,14 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 
-import { Key, KeyList, PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import {
+  FileAppendTransaction,
+  FileUpdateTransaction,
+  Key,
+  KeyList,
+  PublicKey,
+  Transaction as SDKTransaction,
+} from '@hashgraph/sdk';
 
 import { DeepPartial, Repository } from 'typeorm';
 
@@ -18,6 +25,7 @@ import {
   isExpired,
   isPublicKeyInKeyList,
   parseAccountProperty,
+  getSignatureEntities,
 } from '@app/common';
 import TransactionFactory from '@app/common/models/transaction-factory';
 
@@ -98,7 +106,7 @@ export class TransactionsService {
       if (isExpired(sdkTransaction)) continue;
 
       /* Get signature entities */
-      const { newKeys, accounts, receiverAccounts } = this.getSignatureEntities(sdkTransaction);
+      const { newKeys, accounts, receiverAccounts } = getSignatureEntities(sdkTransaction);
 
       /* Check if the user has a key that is required to sign */
       const userKeysIncludedInTransaction = userKeys.filter(userKey =>
@@ -197,6 +205,11 @@ export class TransactionsService {
 
     /* Check if the transaction is expired */
     const sdkTransaction = SDKTransaction.fromBytes(dto.body);
+    if (
+      sdkTransaction instanceof FileUpdateTransaction ||
+      sdkTransaction instanceof FileAppendTransaction
+    )
+      throw new BadRequestException('File Update/Append transactions are not currently supported');
     if (isExpired(sdkTransaction)) throw new BadRequestException('Transaction is expired');
 
     /* Check if the transaction already exists */
@@ -263,30 +276,6 @@ export class TransactionsService {
     }
 
     return this.repo.remove(transaction);
-  }
-
-  /* Gets the keys and potential accounts that are required to sign the transaction */
-  private getSignatureEntities(transaction: SDKTransaction) {
-    try {
-      const transactionModel = TransactionFactory.fromTransaction(transaction);
-
-      const result = {
-        accounts: [...transactionModel.getSigningAccounts()],
-        receiverAccounts: [...transactionModel.getReceiverAccounts()],
-        newKeys: [...transactionModel.getNewKeys()],
-      };
-
-      /* To get keys for files */
-
-      return result;
-    } catch (err) {
-      console.log(err);
-      return {
-        accounts: [],
-        receiverAccounts: [],
-        newKeys: [],
-      };
-    }
   }
 
   private setSearchableFields(transaction: Transaction): void {
