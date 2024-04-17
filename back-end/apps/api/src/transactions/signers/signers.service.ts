@@ -25,39 +25,56 @@ export class SignersService {
     private transactionService: TransactionsService,
   ) {}
 
-  // Get the signature for the given signature id.
-  //TODO How/When would this get used?
+  /* Get the signature for the given signature id */
   getSignatureById(id: number): Promise<TransactionSigner> {
     if (!id) {
       return null;
     }
-    return this.repo.findOneBy({ id });
+    return this.repo.findOne({
+      where: { id },
+    });
   }
 
-  //TODO How/When would this get used?
-  getSignaturesByUser(user: User): Promise<TransactionSigner[]> {
-    if (!user) {
-      return null;
-    }
-    return this.repo
-      .createQueryBuilder('signer')
-      .leftJoinAndSelect('signer.transaction', 'transaction')
-      .leftJoinAndSelect('signer.userKey', 'userKey')
-      .where('userKey.user = :user', { user })
-      .getMany();
+  /* Get the signatures that a user has given */
+  getSignaturesByUser(
+    user: User,
+    take: number = 10,
+    skip: number = 0,
+  ): Promise<TransactionSigner[]> {
+    if (!user) return null;
+
+    return this.repo.find({
+      where: {
+        user: {
+          id: user.id,
+        },
+      },
+      select: {
+        id: true,
+        transactionId: true,
+        userKeyId: true,
+        createdAt: true,
+      },
+      skip,
+      take,
+    });
   }
 
-  // Get all signatures for the given transactionId.
+  /* Get the signatures for the given transaction id */
   getSignaturesByTransactionId(transactionId: number): Promise<TransactionSigner[]> {
     if (!transactionId) {
       return null;
     }
-    return this.repo
-      .createQueryBuilder('signer')
-      .leftJoinAndSelect('signer.transaction', 'transaction')
-      .leftJoinAndSelect('signer.userKey', 'userKey')
-      .where('transaction.id = :transactionId', { transactionId })
-      .getMany();
+    return this.repo.find({
+      where: {
+        transaction: {
+          id: transactionId,
+        },
+      },
+      relations: {
+        userKey: true,
+      },
+    });
   }
 
   /* Upload a signature for the given transaction id */
