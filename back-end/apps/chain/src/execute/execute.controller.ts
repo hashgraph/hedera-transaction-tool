@@ -21,6 +21,6 @@ export class ExecuteController {
   @Get(':transactionId')
   @HttpCode(HttpStatus.OK)
   async index(@Param('transactionId', ParseIntPipe) transactionId: number) {
-    return this, this.executeService.executeTransaction(transactionId);
+    return this.executeService.executeTransaction(transactionId);
   }
 }

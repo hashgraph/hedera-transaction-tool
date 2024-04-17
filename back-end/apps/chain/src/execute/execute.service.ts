@@ -76,7 +76,7 @@ export class ExecuteService {
     transaction.executedAt = new Date();
     transaction.status = TransactionStatus.EXECUTED;
 
-    const result: TranasctionExecutedDto = { transaction };
+    const result: TranasctionExecutedDto = {};
 
     try {
       const response = await sdkTransaction.execute(client);
@@ -90,10 +90,10 @@ export class ExecuteService {
       transaction.status = TransactionStatus.FAILED;
       transaction.statusCode = statusCode;
       result.error = error.message;
-      result.transaction = transaction;
     } finally {
       await this.transactionsRepo.save(transaction);
     }
+    return result;
   }
 
   /* Throws if the transaction is not in a valid state */

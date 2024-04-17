@@ -1,11 +1,6 @@
-import { Transaction } from '@entities';
-import { Expose, Transform, Type } from 'class-transformer';
+import { Expose, Transform } from 'class-transformer';
 
 export class TranasctionExecutedDto {
-  @Expose()
-  @Type(() => Transaction)
-  transaction: Transaction;
-
   @Expose()
   response?: string;
 
