@@ -10,13 +10,13 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+import { Serialize } from '@app/common';
+
 import { User } from '@entities';
 
 import { AdminGuard, JwtAuthGuard, VerifiedUserGuard } from '../guards';
 
 import { AllowNonVerifiedUser, GetUser } from '../decorators';
-
-import { Serialize } from '../interceptors/serialize.interceptor';
 
 import { UsersService } from './users.service';
 

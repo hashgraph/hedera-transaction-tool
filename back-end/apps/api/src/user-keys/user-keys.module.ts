@@ -8,5 +8,6 @@ import { UserKey } from '@entities';
   imports: [TypeOrmModule.forFeature([UserKey])],
   controllers: [UserKeysController],
   providers: [UserKeysService],
+  exports: [UserKeysService],
 })
 export class UserKeysModule {}

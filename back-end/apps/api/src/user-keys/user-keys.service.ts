@@ -10,7 +10,10 @@ export class UserKeysService {
   constructor(@InjectRepository(UserKey) private repo: Repository<UserKey>) {}
 
   // Get the user key for the provided userKeyId.
-  getUserKey(where: FindOptionsWhere<UserKey>, relations?: FindOptionsRelations<UserKey>): Promise<UserKey> {
+  getUserKey(
+    where: FindOptionsWhere<UserKey>,
+    relations?: FindOptionsRelations<UserKey>,
+  ): Promise<UserKey> {
     if (!where) {
       return null;
     }
@@ -26,9 +29,11 @@ export class UserKeysService {
       // or if the userKey has a non null hash or index that doesn't
       // match the hash or index provided
       // throw an error.
-      if (userKey.user !== user
-        || (userKey.mnemonicHash && userKey.mnemonicHash !== dto.mnemonicHash)
-        || (userKey.index && userKey.index !== dto.index)) {
+      if (
+        userKey.user !== user ||
+        (userKey.mnemonicHash && userKey.mnemonicHash !== dto.mnemonicHash) ||
+        (userKey.index && userKey.index !== dto.index)
+      ) {
         throw new Error('Public Key in use.');
       }
       // Set the hash and/or index (only if the current value is null)
@@ -56,5 +61,10 @@ export class UserKeysService {
       throw new NotFoundException('key not found');
     }
     return this.repo.softRemove(userKey);
+  }
+
+  /* Returns the count of the user keys for the provided user */
+  async getUserKeysCount(userId: number): Promise<number> {
+    return this.repo.count({ where: { user: { id: userId } } });
   }
 }

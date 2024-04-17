@@ -7,23 +7,27 @@ import {
   TransactionApprover,
   TransactionComment,
   TransactionObserver,
-  TransactionSigner
+  TransactionSigner,
 } from '@entities';
+
+import { MirrorNodeModule } from '@app/common';
+
 import { CommentsService } from './comments/comments.service';
 import { CommentsController } from './comments/comments.controller';
+
 import { SignersController } from './signers/signers.controller';
 import { SignersService } from './signers/signers.service';
+
 import { ObserversController } from './observers/observers.controller';
 import { ObserversService } from './observers/observers.service';
+
 import { ApproversController } from './approvers/approvers.controller';
 import { ApproversService } from './approvers/approvers.service';
-import { HttpModule } from '@nestjs/axios';
+
+import { UserKeysModule } from '../user-keys/user-keys.module';
 
 @Module({
   imports: [
-    HttpModule.register({
-      timeout: 5000,
-    }),
     TypeOrmModule.forFeature([
       Transaction,
       TransactionComment,
@@ -31,6 +35,8 @@ import { HttpModule } from '@nestjs/axios';
       TransactionApprover,
       TransactionObserver,
     ]),
+    UserKeysModule,
+    MirrorNodeModule,
   ],
   controllers: [
     TransactionsController,

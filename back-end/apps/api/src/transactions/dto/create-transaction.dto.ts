@@ -1,13 +1,6 @@
-import { TransactionStatus, TransactionType } from '@entities';
-import {
-  IsDate,
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+import { IsDate, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
-import { IsBuffer } from '../../validator/is-buffer.validator';
+import { TransformBuffer } from '@app/common';
 
 //TODO approvers and observers can be added to this dto, validatenested,
 // also adding cascade to the transaction relations to enable single saves
@@ -15,28 +8,19 @@ export class CreateTransactionDto {
   @IsString()
   name: string;
 
-  @IsEnum(TransactionType)
-  type: TransactionType;
-
   @IsString()
   description: string;
 
-  @IsBuffer()
+  @IsNotEmpty()
+  @TransformBuffer()
   body: Buffer;
-
-  @IsEnum(TransactionStatus)
-  status: TransactionStatus;
-  // responseCode: string;
 
   @IsNumber()
   creatorKeyId: number;
 
-  @IsBuffer()
+  @IsNotEmpty()
+  @TransformBuffer()
   signature: Buffer;
-
-  @Type(() => Date)
-  @IsDate()
-  validStart: Date;
 
   @Type(() => Date)
   @IsDate()

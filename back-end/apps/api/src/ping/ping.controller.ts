@@ -1,7 +1,8 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { Serialize } from '../interceptors/serialize.interceptor';
+import { Serialize } from '@app/common';
+
 import { ServerStatusDto } from './dtos/server-status.dto';
 
 @ApiTags('Ping')

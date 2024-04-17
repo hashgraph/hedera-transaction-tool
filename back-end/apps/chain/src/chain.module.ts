@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
-import { ChainController } from './chain.controller';
-import { ChainService } from './chain.service';
-import { DatabaseModule, LoggerModule } from '@app/common';
 import { ConfigModule } from '@nestjs/config';
-import Joi from 'joi';
+
+import * as Joi from 'joi';
+
+import { DatabaseModule, LoggerModule } from '@app/common';
+
+import { ExecuteModule } from './execute';
 
 @Module({
   imports: [
@@ -13,10 +15,15 @@ import Joi from 'joi';
       isGlobal: true,
       validationSchema: Joi.object({
         HTTP_PORT: Joi.number().required(),
+        POSTGRES_HOST: Joi.string().required(),
+        POSTGRES_PORT: Joi.number().required(),
+        POSTGRES_DATABASE: Joi.string().required(),
+        POSTGRES_USERNAME: Joi.string().required(),
+        POSTGRES_PASSWORD: Joi.string().required(),
+        POSTGRES_SYNCHRONIZE: Joi.boolean().required(),
       }),
     }),
+    ExecuteModule,
   ],
-  controllers: [ChainController],
-  providers: [ChainService],
 })
 export class ChainModule {}

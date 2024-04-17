@@ -12,18 +12,17 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+import { Serialize } from '@app/common';
+
 import { Transaction, User } from '@entities';
 
-import { JwtAuthGuard, VerifiedUserGuard } from '../guards';
+import { JwtAuthGuard, VerifiedUserGuard, HasKeyGuard } from '../guards';
 
 import { GetUser } from '../decorators/get-user.decorator';
 
-import { Serialize } from '../interceptors/serialize.interceptor';
-
 import { TransactionsService } from './transactions.service';
 
-import { CreateTransactionDto } from './dto/create-transaction.dto';
-import { TransactionDto } from './dto/transaction.dto';
+import { CreateTransactionDto, TransactionDto } from './dto';
 
 @ApiTags('Transactions')
 @Controller('transactions')
@@ -32,19 +31,22 @@ import { TransactionDto } from './dto/transaction.dto';
 export class TransactionsController {
   constructor(private transactionsService: TransactionsService) {}
 
+  /* Submit a transaction */
   @ApiOperation({
     summary: 'Create a transaction',
-    description: 'Create a transaction for the organization for the given information.',
+    description: 'Create a transaction for the organization to approve, sign, and execute.',
   })
   @ApiResponse({
     status: 201,
     type: TransactionDto,
   })
+  @UseGuards(HasKeyGuard)
   @Post()
-  createTransaction(@Body() body: CreateTransactionDto): Promise<Transaction> {
-    return this.transactionsService.createTransaction(body);
+  createTransaction(@Body() body: CreateTransactionDto, @GetUser() user): Promise<Transaction> {
+    return this.transactionsService.createTransaction(body, user);
   }
 
+  /* Get all transactions created by the user */
   @ApiOperation({
     summary: 'Get created transactions',
     description: 'Get all transactions that were created by the current user.',
@@ -54,10 +56,15 @@ export class TransactionsController {
     type: [TransactionDto],
   })
   @Get()
-  getTransactions(@GetUser() user: User): Promise<Transaction[]> {
-    return this.transactionsService.getTransactions(user);
+  getTransactions(
+    @GetUser() user: User,
+    @Query('take', ParseIntPipe) take: number,
+    @Query('skip', ParseIntPipe) skip: number,
+  ): Promise<Transaction[]> {
+    return this.transactionsService.getTransactions(user, take, skip);
   }
 
+  /* Get all transactions to be signed by the user */
   @ApiOperation({
     summary: 'Get transactions to sign',
     description: 'Get all transactions to be signed by the current user.',
@@ -75,6 +82,7 @@ export class TransactionsController {
     return this.transactionsService.getTransactionsToSign(user, take, skip);
   }
 
+  /* Get all transactions to be approved by the user */
   @ApiOperation({
     summary: 'Get transactions to approve',
     description: 'Get all transactions to be approved by the current user.',
@@ -92,6 +100,7 @@ export class TransactionsController {
     return this.transactionsService.getTransactionsToApprove(user, take, skip);
   }
 
+  /* Get all transactions to be observed by the user */
   @ApiOperation({
     summary: 'Get transactions to observe',
     description: 'Get all transactions to be observed by the current user.',

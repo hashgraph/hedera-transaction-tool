@@ -21,7 +21,8 @@
     "create-admin": "npx ts-node ./scripts/create-admin.ts"
   },
   "dependencies": {
-    "@hashgraph/sdk": "^2.42.0",
+    "@hashgraph/sdk": "2.44.0",
+    "@hashgraph/proto": "2.14.0-beta.5",
     "@nestjs/axios": "^3.0.2",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.2.0",

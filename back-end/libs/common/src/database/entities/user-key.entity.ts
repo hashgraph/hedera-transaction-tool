@@ -16,7 +16,7 @@ export class UserKey {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => User, (user) => user.keys)
+  @ManyToOne(() => User, user => user.keys)
   user: User;
 
   @Column({ nullable: true })
@@ -31,12 +31,12 @@ export class UserKey {
   @DeleteDateColumn()
   deletedAt: Date;
 
-  @OneToMany(() => Transaction, (transaction) => transaction.creatorKey)
+  @OneToMany(() => Transaction, transaction => transaction.creatorKey)
   createdTransactions: Transaction[];
 
-  @OneToMany(() => TransactionApprover, (approver) => approver.userKey)
+  @OneToMany(() => TransactionApprover, approver => approver.userKey)
   approvedTransactions: TransactionApprover[];
 
-  @OneToMany(() => TransactionSigner, (signer) => signer.userKey)
+  @OneToMany(() => TransactionSigner, signer => signer.userKey)
   signedTransactions: TransactionSigner[];
 }

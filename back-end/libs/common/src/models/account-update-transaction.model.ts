@@ -1,19 +1,18 @@
-import { TransactionBaseModel } from './transaction.model';
 import { AccountUpdateTransaction } from '@hashgraph/sdk';
-import { flatPublicKeys } from '../../../../apps/api/src/utils/encryption-utils';
 
-export default class AccountUpdateTransactionModel extends TransactionBaseModel {
-  getNewKeys(): Set<string> {
-    const accounts = new Set<string>();
+import { TransactionBaseModel } from './transaction.model';
 
-    const transaction = this.transaction as AccountUpdateTransaction;
-    // Push the accountId to the array, if available
-    accounts.add(transaction.accountId?.toString());
-    // Get the new key. Flatten the key into an array of key bytes
-    const publicKeys = new Set(flatPublicKeys(transaction.key).map((key) => key.toString('hex')));
-    // Add them to the set
-    publicKeys.forEach(accounts.add, accounts);
-    return accounts;
+export default class AccountUpdateTransactionModel extends TransactionBaseModel<AccountUpdateTransaction> {
+  getNewKeys() {
+    if (this.transaction.key != null) {
+      return [this.transaction.key];
+    }
+    return [];
+  }
+
+  getSigningAccounts(): Set<string> {
+    const set = super.getSigningAccounts();
+    set.add(this.transaction.accountId.toString());
+    return set;
   }
 }
-// now just putting a key in the database and calling the gettransactionstosign thing

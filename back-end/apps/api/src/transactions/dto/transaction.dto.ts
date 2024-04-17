@@ -22,7 +22,7 @@ export class TransactionDto {
   status: TransactionStatus;
 
   @Expose()
-  responseCode?: string;
+  statusCode?: number;
 
   @Transform(({ obj }) => obj.signature.toString('hex'))
   @Expose()

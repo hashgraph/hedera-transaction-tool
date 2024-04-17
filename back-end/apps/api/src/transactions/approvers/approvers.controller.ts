@@ -10,13 +10,13 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
+import { Serialize } from '@app/common';
+
 import { TransactionApprover, User } from '@entities';
 
 import { JwtAuthGuard, VerifiedUserGuard } from '../../guards';
 
 import { GetUser } from '../../decorators/get-user.decorator';
-
-import { Serialize } from '../../interceptors/serialize.interceptor';
 
 import { TransactionApproverDto } from '../dto/transaction-approver.dto';
 import { CreateTransactionApproverDto } from '../dto/create-transaction-approver.dto';
