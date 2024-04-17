@@ -8,10 +8,10 @@ export class TransactionSigner {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Transaction, transaction => transaction.signers)
+  @ManyToOne(() => Transaction, transaction => transaction.signers, { eager: true })
   transaction: Transaction;
 
-  @ManyToOne(() => UserKey, userKey => userKey.signedTransactions)
+  @ManyToOne(() => UserKey, userKey => userKey.signedTransactions, { eager: true })
   userKey: UserKey;
 
   @ManyToOne(() => User, user => user.signerForTransactions)
