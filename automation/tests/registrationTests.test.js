@@ -310,4 +310,85 @@ test.describe('Registration tests', () => {
     const toastMessage = await registrationPage.getToastMessage();
     expect(toastMessage).toBe('Key Pair saved successfully');
   });
+
+  test('Verify user is stored in the database after registration', async () => {
+    globalCredentials.email = generateRandomEmail();
+    globalCredentials.password = generateRandomPassword();
+
+    await registrationPage.completeRegistration(
+      globalCredentials.email,
+      globalCredentials.password,
+    );
+
+    const userExists = await registrationPage.verifyUserExists(globalCredentials.email);
+    expect(userExists).toBe(true);
+  });
+
+  test('Verify user public key is stored in the database after registration', async () => {
+    globalCredentials.email = generateRandomEmail();
+    globalCredentials.password = generateRandomPassword();
+
+    await registrationPage.register(
+      globalCredentials.email,
+      globalCredentials.password,
+      globalCredentials.password,
+    );
+
+    const isTabVisible = await registrationPage.isCreateNewTabVisible();
+    expect(isTabVisible).toBe(true);
+
+    await registrationPage.clickOnCreateNewTab();
+    await registrationPage.clickOnUnderstandCheckbox();
+    await registrationPage.clickOnGenerateButton();
+
+    await registrationPage.captureRecoveryPhraseWords();
+    await registrationPage.clickOnUnderstandCheckbox();
+    await registrationPage.clickOnVerifyButton();
+
+    await registrationPage.fillAllMissingRecoveryPhraseWords();
+    await registrationPage.clickOnNextButton();
+
+    const publicKeyFromApp = await registrationPage.getPublicKey();
+
+    await registrationPage.clickOnFinalNextButtonWithRetry();
+
+    const publicKeyFromDb = await registrationPage.getPublicKeyByEmail(globalCredentials.email);
+
+    expect(publicKeyFromApp).toBe(publicKeyFromDb);
+  });
+
+  test('Verify user private key is stored in the database after registration', async () => {
+    globalCredentials.email = generateRandomEmail();
+    globalCredentials.password = generateRandomPassword();
+
+    await registrationPage.completeRegistration(
+      globalCredentials.email,
+      globalCredentials.password,
+    );
+
+    const privateKeyExists = await registrationPage.verifyPrivateKeyExistsByEmail(
+      globalCredentials.email,
+    );
+
+    expect(privateKeyExists).toBe(true);
+  });
+
+  test('Verify user is deleted from the database after resetting account', async () => {
+    // BeforeEach executes logout and reset account state, so we just verify it's no longer existing
+    const userExists = await registrationPage.verifyUserExists(globalCredentials.email);
+    expect(userExists).toBe(false);
+  });
+
+  test('Verify user key pair is deleted from the database after resetting account', async () => {
+    // BeforeEach executes logout and reset account state, so we just verify it's no longer existing
+    const publicKeyExists = await registrationPage.verifyPublicKeyExistsByEmail(
+      globalCredentials.email,
+    );
+    expect(publicKeyExists).toBe(false);
+
+    const privateKeyExists = await registrationPage.verifyPrivateKeyExistsByEmail(
+      globalCredentials.email,
+    );
+    expect(privateKeyExists).toBe(false);
+  });
 });

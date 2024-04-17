@@ -42,9 +42,9 @@ class LoginPage extends BasePage {
     }
   }
 
-  async resetLoginForm() {
-    await this.window.getByTestId(this.emailInputSelector).fill('');
-    await this.window.getByTestId(this.passwordInputSelector).fill('');
+  async resetForm() {
+    await this.fillByTestId(this.emailInputSelector, '');
+    await this.fillByTestId(this.passwordInputSelector, '');
   }
 
   // specific logout method for the login tests
@@ -56,8 +56,8 @@ class LoginPage extends BasePage {
       const element = this.window.getByTestId(this.emailInputSelector);
       await element.waitFor({ state: 'visible', timeout: 1000 });
     } else {
-      console.log('Logout button not visible, assuming we are on the login page');
-      await this.resetLoginForm();
+      console.log('Logout button is not visible, resetting the form');
+      await this.resetForm();
     }
   }
 
