@@ -9,7 +9,7 @@ export class MirrorNodeService {
   mirrorNodeBaseURL: string;
 
   /* Temporary manual cache */
-  private cacheExpirationMs = 5 * 1_000;
+  private cacheExpirationMs = 5 * 60 * 1_000;
   private accountInfoCache: {
     [accountId: string]: {
       lastUpdated: number;
