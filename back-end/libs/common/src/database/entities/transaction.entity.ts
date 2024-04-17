@@ -66,9 +66,8 @@ export class Transaction {
   @Column()
   status: TransactionStatus;
 
-  //TODO This might be a string? It is an enum, so not sure how it will come back
   @Column({ nullable: true })
-  responseCode?: string;
+  statusCode?: number;
 
   @ApiProperty({
     description: 'The id of the user key used by the creator',
