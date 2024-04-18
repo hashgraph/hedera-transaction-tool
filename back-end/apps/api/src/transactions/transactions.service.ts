@@ -133,6 +133,30 @@ export class TransactionsService {
     return result.slice(skip, take + skip);
   }
 
+  /* Get the count of transactions that a user needs to sign */
+  async getTransactionsToSignCount(user: User): Promise<number> {
+    let count = 0;
+
+    /* Ensures the user keys are passed */
+    if (user.keys.length === 0) {
+      user.keys = await this.userKeysService.getUserKeys(user.id);
+      if (user.keys.length === 0) return count;
+    }
+
+    const transactions = await this.repo.find({
+      where: { status: TransactionStatus.WAITING_FOR_SIGNATURES },
+    });
+
+    for (const transaction of transactions) {
+      /* Check if the user should sign the transaction */
+      const keysToSign = await this.userKeysRequiredToSign(transaction, user);
+
+      if (keysToSign.length > 0) count++;
+    }
+
+    return count;
+  }
+
   /* Returns wheter a user should sign the transaction */
   async userKeysRequiredToSign(transaction: Transaction, user: User): Promise<number[]> {
     const userKeyIdsRequired: Set<number> = new Set<number>();

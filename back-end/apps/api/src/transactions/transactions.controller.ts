@@ -65,6 +65,21 @@ export class TransactionsController {
     return this.transactionsService.getTransactions(user, take, skip);
   }
 
+  /* Get the count of all transactions to be signed by the user */
+  @ApiOperation({
+    summary: 'Get transactions to sign',
+    description: 'Get all transactions to be signed by the current user.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: [TransactionToSignDto],
+  })
+  @Get('/sign/count')
+  @Serialize(TransactionToSignDto)
+  getTransactionsToSignCount(@GetUser() user: User) {
+    return this.transactionsService.getTransactionsToSignCount(user);
+  }
+
   /* Get all transactions to be signed by the user */
   @ApiOperation({
     summary: 'Get transactions to sign',
