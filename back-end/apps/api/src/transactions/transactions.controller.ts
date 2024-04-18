@@ -22,12 +22,11 @@ import { GetUser } from '../decorators/get-user.decorator';
 
 import { TransactionsService } from './transactions.service';
 
-import { CreateTransactionDto, TransactionDto } from './dto';
+import { CreateTransactionDto, TransactionDto, TransactionToSignDto } from './dto';
 
 @ApiTags('Transactions')
 @Controller('transactions')
 @UseGuards(JwtAuthGuard, VerifiedUserGuard)
-@Serialize(TransactionDto)
 export class TransactionsController {
   constructor(private transactionsService: TransactionsService) {}
 
@@ -42,6 +41,7 @@ export class TransactionsController {
   })
   @UseGuards(HasKeyGuard)
   @Post()
+  @Serialize(TransactionDto)
   createTransaction(@Body() body: CreateTransactionDto, @GetUser() user): Promise<Transaction> {
     return this.transactionsService.createTransaction(body, user);
   }
@@ -56,6 +56,7 @@ export class TransactionsController {
     type: [TransactionDto],
   })
   @Get()
+  @Serialize(TransactionDto)
   getTransactions(
     @GetUser() user: User,
     @Query('take', ParseIntPipe) take: number,
@@ -71,14 +72,15 @@ export class TransactionsController {
   })
   @ApiResponse({
     status: 200,
-    type: [TransactionDto],
+    type: [TransactionToSignDto],
   })
   @Get('/sign')
+  @Serialize(TransactionToSignDto)
   getTransactionsToSign(
     @GetUser() user: User,
     @Query('take', ParseIntPipe) take: number,
     @Query('skip', ParseIntPipe) skip: number,
-  ): Promise<Transaction[]> {
+  ) {
     return this.transactionsService.getTransactionsToSign(user, take, skip);
   }
 
@@ -89,15 +91,15 @@ export class TransactionsController {
   })
   @ApiResponse({
     status: 200,
-    type: Boolean,
+    type: [Number],
   })
   @Get('/sign/:transactionId')
   async shouldSignTransaction(
     @GetUser() user: User,
     @Param('transactionId', ParseIntPipe) transactionId: number,
-  ): Promise<boolean> {
+  ): Promise<number[]> {
     const transaction = await this.transactionsService.getTransactionById(transactionId);
-    return this.transactionsService.shouldSignTransaction(transaction, user);
+    return this.transactionsService.userKeysRequiredToSign(transaction, user);
   }
 
   /* Get all transactions to be approved by the user */

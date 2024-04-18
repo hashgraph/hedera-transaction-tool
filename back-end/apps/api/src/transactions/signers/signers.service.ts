@@ -4,9 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
-import { TransactionSigner, TransactionStatus, User } from '@entities';
-
-import { TransactionsService } from '../transactions.service';
+import { Transaction, TransactionSigner, TransactionStatus, User } from '@entities';
 
 import { UploadSignatureDto } from '../dto/upload-signature.dto';
 import {
@@ -21,8 +19,9 @@ export class SignersService {
   constructor(
     @InjectRepository(TransactionSigner)
     private repo: Repository<TransactionSigner>,
+    @InjectRepository(Transaction)
+    private transactionRepo: Repository<Transaction>,
     private dataSource: DataSource,
-    private transactionService: TransactionsService,
   ) {}
 
   /* Get the signature for the given signature id */
@@ -77,6 +76,26 @@ export class SignersService {
     });
   }
 
+  /* Get the signature for the given transaction id and user id */
+  getSignatureByTransactionIdAndUserId(
+    transactionId: number,
+    userId: number,
+  ): Promise<TransactionSigner[]> {
+    if (!transactionId || !userId) {
+      return null;
+    }
+    return this.repo.find({
+      where: {
+        transaction: {
+          id: transactionId,
+        },
+        user: {
+          id: userId,
+        },
+      },
+    });
+  }
+
   /* Upload a signature for the given transaction id */
   async uploadSignature(
     transactionId: number,
@@ -88,7 +107,7 @@ export class SignersService {
     if (!userKey) throw new BadRequestException('Transaction can be signed only with your own key');
 
     /* Verify that the transaction exists */
-    const transaction = await this.transactionService.getTransactionById(transactionId);
+    const transaction = await this.transactionRepo.findOneBy({ id: transactionId });
     if (!transaction) throw new BadRequestException('Transaction not found');
     if (transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES)
       throw new BadRequestException('Transaction is not waiting for signatures');
@@ -121,9 +140,10 @@ export class SignersService {
 
     /* Update the transaction */
     try {
-      await this.transactionService.updateTransaction(transaction, {
+      Object.assign(transaction, {
         body: sdkTransaction.toBytes(),
       });
+      await this.transactionRepo.save(transaction);
     } catch (error) {
       await queryRunner.rollbackTransaction();
       await queryRunner.release();
