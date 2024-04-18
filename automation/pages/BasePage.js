@@ -128,6 +128,10 @@ class BasePage {
     await element.waitFor({ state: 'visible', timeout: timeout });
     return await element.isDisabled();
   }
+
+  async countElementsByTestId(testIdPrefix) {
+    return await this.window.locator(`[data-testid^="${testIdPrefix}"]`).count();
+  }
 }
 
 module.exports = BasePage;

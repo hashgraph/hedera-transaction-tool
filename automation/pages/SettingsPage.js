@@ -35,7 +35,22 @@ class SettingsPage extends BasePage {
   nicknameInputSelector = 'input-nickname';
   continueNicknameButtonSelector = 'button-continue-nickname';
   continuePhraseButtonSelector = 'button-continue-phrase';
-  importButtonSelector = 'button-restore-dropdown'
+  importButtonSelector = 'button-restore-dropdown';
+  ed25519ImportLinkSelector = 'link-import-ed25519-key';
+  ecdsaImportLinkSelector = 'link-import-ecdsa-key';
+  ed25519PrivateKeyInputSelector = 'input-ed25519-private-key';
+  ed25519PNicknameInputSelector = 'input-ed25519-private-key-nickname';
+  ed25519PasswordInputSelector = 'input-ed25519-private-key-password';
+  ed25519ImportButtonSelector = 'button-ed25519-private-key-import';
+  ecdsaPrivateKeyInputSelector = 'input-ecdsa-private-key';
+  ecdsaNicknameInputSelector = 'input-ecdsa-private-key-nickname';
+  ecdsaPasswordInputSelector = 'input-ecdsa-private-key-password';
+  ecdsaImportButtonSelector = 'button-ecdsa-private-key-import';
+  indexCellSelectorPrefix = 'cell-index-';
+  nicknameCellSelectorPrefix = 'cell-nickname-';
+  accountIdCellSelectorPrefix = 'cell-account-';
+  keyTypeCellSelectorPrefix = 'cell-key-type-';
+  publicKeyCellSelectorPrefix = 'span-public-key-';
 
   async verifySettingsElements() {
     const checks = await Promise.all([
@@ -71,12 +86,25 @@ class SettingsPage extends BasePage {
 
     try {
       const row = await queryDatabase(query, [email, index]);
-      // Check if the row is not empty and both public_key and private_key are not null
-      return (row !== undefined) && (row.public_key!==undefined) && (row.private_key!==undefined);
+      return row !== undefined && row.public_key !== undefined && row.private_key !== undefined;
     } catch (error) {
       console.error('Error verifying keys for index:', error);
       return false;
     }
+  }
+
+  async getKeyRowCount() {
+    return await this.countElementsByTestId(this.indexCellSelectorPrefix);
+  }
+
+  async getRowDataByIndex(index) {
+    return {
+      index: await this.getTextByTestId(this.indexCellSelectorPrefix + index),
+      nickname: await this.getTextByTestId(this.nicknameCellSelectorPrefix + index),
+      accountID: await this.getTextByTestId(this.accountIdCellSelectorPrefix + index),
+      keyType: await this.getTextByTestId(this.keyTypeCellSelectorPrefix + index),
+      publicKey: await this.getTextByTestId(this.publicKeyCellSelectorPrefix + index),
+    };
   }
 
   async clickOnSettingsButton() {
@@ -146,6 +174,50 @@ class SettingsPage extends BasePage {
 
   async isSetButtonVisible() {
     return await this.isElementVisible(this.setButtonSelector);
+  }
+
+  async clickOnImportButton() {
+    await this.clickByTestId(this.importButtonSelector);
+  }
+
+  async clickOnECDSADropDown() {
+    await this.clickByTestId(this.ecdsaImportLinkSelector);
+  }
+
+  async clickOnED25519DropDown() {
+    await this.clickByTestId(this.ed25519ImportLinkSelector);
+  }
+
+  async fillInECDSAPrivateKey(ecdsaPrivateKey) {
+    await this.fillByTestId(this.ecdsaPrivateKeyInputSelector, ecdsaPrivateKey);
+  }
+
+  async fillInED25519PrivateKey(ecdsaPrivateKey) {
+    await this.fillByTestId(this.ed25519PrivateKeyInputSelector, ecdsaPrivateKey);
+  }
+
+  async fillInECDSANickname(ecdsaNickname) {
+    await this.fillByTestId(this.ecdsaNicknameInputSelector, ecdsaNickname);
+  }
+
+  async fillInED25519Nickname(ecdsaNickname) {
+    await this.fillByTestId(this.ed25519PNicknameInputSelector, ecdsaNickname);
+  }
+
+  async fillInECDSAPassword(password) {
+    await this.fillByTestId(this.ecdsaPasswordInputSelector, password);
+  }
+
+  async fillInED25519Password(password) {
+    await this.fillByTestId(this.ed25519PasswordInputSelector, password);
+  }
+
+  async clickOnECDSAImportButton() {
+    await this.clickByTestId(this.ecdsaImportButtonSelector);
+  }
+
+  async clickOnED25519ImportButton() {
+    await this.clickByTestId(this.ed25519ImportButtonSelector);
   }
 }
 module.exports = SettingsPage;

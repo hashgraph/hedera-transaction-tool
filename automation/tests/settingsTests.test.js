@@ -6,6 +6,7 @@ const {
   generateRandomEmail,
   generateRandomPassword,
 } = require('../utils/util');
+const { getPrivateKey, generateEd25519KeyPair } = require('../utils/keyUtil');
 const RegistrationPage = require('../pages/RegistrationPage.js');
 const { expect } = require('playwright/test');
 const LoginPage = require('../pages/LoginPage');
@@ -102,7 +103,7 @@ test.describe('Settings tests', () => {
     expect(toastMessage).toBe('Key Pair saved');
   });
 
-  test('Verify user rested key pair is saved in the local database', async () => {
+  test('Verify user restored key pair is saved in the local database', async () => {
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
 
@@ -131,5 +132,65 @@ test.describe('Settings tests', () => {
       currentIndex,
     );
     expect(isKeyPairSavedInDatabase).toBe(true);
+  });
+
+  test('Verify user can import ECDSA key', async () => {
+    await settingsPage.clickOnSettingsButton();
+    await settingsPage.clickOnKeysTab();
+
+    await settingsPage.clickOnImportButton();
+    await settingsPage.clickOnECDSADropDown();
+
+    const privateKey = getPrivateKey();
+
+    await settingsPage.fillInECDSAPrivateKey(privateKey);
+    await settingsPage.fillInECDSANickname('Test-ECDSA-Import');
+    await settingsPage.fillInECDSAPassword(globalCredentials.password);
+    await loginPage.waitForToastToDisappear();
+    await settingsPage.clickOnECDSAImportButton();
+
+    const toastMessage = await registrationPage.getToastMessage();
+    expect(toastMessage).toBe('ECDSA private key imported successfully');
+
+    const rowCount = await settingsPage.getKeyRowCount();
+    const lastRowIndex = rowCount - 1;
+
+    const { index, nickname, accountID, keyType, publicKey } =
+      await settingsPage.getRowDataByIndex(lastRowIndex);
+    expect(index).toBe('N/A');
+    expect(nickname).toBe('Test-ECDSA-Import');
+    expect(accountID).toBeTruthy();
+    expect(keyType).toBe('ECDSA');
+    expect(publicKey).toBeTruthy();
+  });
+
+  test('Verify user can import ED25519 keys', async () => {
+    await settingsPage.clickOnSettingsButton();
+    await settingsPage.clickOnKeysTab();
+
+    await settingsPage.clickOnImportButton();
+    await settingsPage.clickOnED25519DropDown();
+
+    const privateKey = generateEd25519KeyPair();
+
+    await settingsPage.fillInED25519PrivateKey(privateKey);
+    await settingsPage.fillInED25519Nickname('Test-ED25519-Import');
+    await settingsPage.fillInED25519Password(globalCredentials.password);
+    await loginPage.waitForToastToDisappear();
+    await settingsPage.clickOnED25519ImportButton();
+
+    const toastMessage = await registrationPage.getToastMessage();
+    expect(toastMessage).toBe('ED25519 private key imported successfully');
+
+    const rowCount = await settingsPage.getKeyRowCount();
+    const lastRowIndex = rowCount - 1;
+
+    const { index, nickname, accountID, keyType, publicKey } =
+      await settingsPage.getRowDataByIndex(lastRowIndex);
+    expect(index).toBe('N/A');
+    expect(nickname).toBe('Test-ED25519-Import');
+    expect(accountID).toBeTruthy();
+    expect(keyType).toBe('ED25519');
+    expect(publicKey).toBeTruthy();
   });
 });
