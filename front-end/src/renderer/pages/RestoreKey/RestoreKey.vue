@@ -192,11 +192,17 @@ watch(index, () => {
             class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
           >
             <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
-              <AppButton size="large" color="primary" class="d-block w-100" @click="step++"
+              <AppButton
+                size="large"
+                data-testid="button-continue"
+                color="primary"
+                class="d-block w-100"
+                @click="step++"
                 >Continue</AppButton
               >
               <AppButton
                 size="large"
+                data-testid="button-cancel"
                 color="secondary"
                 class="mt-4 d-block w-100"
                 @click="$router.back()"
@@ -217,11 +223,13 @@ watch(index, () => {
               <AppInput
                 v-model="password"
                 :filled="true"
+                data-testid="input-password"
                 type="password"
                 placeholder="Enter password"
               />
               <AppButton
                 size="large"
+                data-testid="button-continue-password"
                 type="submit"
                 color="primary"
                 class="mt-5 d-block w-100"
@@ -248,7 +256,11 @@ watch(index, () => {
                 >
               </div>
               <div v-if="user.recoveryPhrase" class="col-4 d-grid">
-                <AppButton color="primary" :disabled="!user.recoveryPhrase" type="submit"
+                <AppButton
+                  color="primary"
+                  data-testid="button-continue-phrase"
+                  :disabled="!user.recoveryPhrase"
+                  type="submit"
                   >Continue</AppButton
                 >
               </div>
@@ -267,6 +279,7 @@ watch(index, () => {
               <AppInput
                 v-model="index"
                 :filled="true"
+                data-testid="input-index"
                 type="number"
                 :class="{ 'is-invalid': inputIndexInvalid }"
                 placeholder="Enter key index"
@@ -276,6 +289,7 @@ watch(index, () => {
               </div>
               <AppButton
                 type="submit"
+                data-testid="button-continue-index"
                 color="primary"
                 class="mt-4 d-block w-100"
                 :disabled="index < 0"
@@ -293,8 +307,17 @@ watch(index, () => {
             class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
           >
             <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
-              <AppInput v-model="nickname" :filled="true" placeholder="Enter nickname" />
-              <AppButton type="submit" color="primary" class="mt-4 d-block w-100"
+              <AppInput
+                v-model="nickname"
+                :filled="true"
+                data-testid="input-nickname"
+                placeholder="Enter nickname"
+              />
+              <AppButton
+                type="submit"
+                data-testid="button-continue-nickname"
+                color="primary"
+                class="mt-4 d-block w-100"
                 >Continue</AppButton
               >
             </div>

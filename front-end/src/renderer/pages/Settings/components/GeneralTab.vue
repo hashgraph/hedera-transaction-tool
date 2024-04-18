@@ -129,21 +129,51 @@ onBeforeUnmount(() => {
         <div v-if="isCustomSettingsVisible" class="mt-4">
           <div>
             <label class="form-label">Consensus Node Endpoint</label>
-            <AppInput type="text" :filled="true" size="small" v-model="consensusNodeEndpoint" />
+            <AppInput
+              type="text"
+              :filled="true"
+              size="small"
+              data-testid="input-consensus-endpoint"
+              v-model="consensusNodeEndpoint"
+            />
           </div>
           <div class="mt-4">
             <label class="form-label">Mirror Node GRPC Endpoint</label>
-            <AppInput type="text" :filled="true" size="small" v-model="mirrorNodeGRPCEndpoint" />
+            <AppInput
+              type="text"
+              :filled="true"
+              size="small"
+              data-testid="input-mirror-grpc-endpoint"
+              v-model="mirrorNodeGRPCEndpoint"
+            />
           </div>
           <div class="mt-4">
             <label class="form-label">Mirror Node REST API Endpoint</label>
-            <AppInput type="text" :filled="true" size="small" v-model="mirrorNodeRESTAPIEndpoint" />
+            <AppInput
+              type="text"
+              :filled="true"
+              size="small"
+              data-testid="input-mirror-rest-endpoint"
+              v-model="mirrorNodeRESTAPIEndpoint"
+            />
           </div>
           <div class="mt-4">
             <label class="form-label">Node Account Id</label>
-            <AppInput type="text" :filled="true" size="small" v-model="nodeAccountId" />
+            <AppInput
+              type="text"
+              :filled="true"
+              size="small"
+              data-testid="input-node-accountid"
+              v-model="nodeAccountId"
+            />
           </div>
-          <AppButton color="primary" class="mt-4" @click="handleSetCustomNetwork">Set</AppButton>
+          <AppButton
+            color="primary"
+            class="mt-4"
+            data-testid="button-set"
+            @click="handleSetCustomNetwork"
+            >Set</AppButton
+          >
         </div>
       </Transition>
     </div>
