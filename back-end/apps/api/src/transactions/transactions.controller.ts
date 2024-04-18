@@ -82,6 +82,24 @@ export class TransactionsController {
     return this.transactionsService.getTransactionsToSign(user, take, skip);
   }
 
+  /* Returns a flag whether a user should sign a transaction with id */
+  @ApiOperation({
+    summary: 'Check if the current user should sign the transaction with the provided id',
+    description: 'Check if the current user should sign the transaction with the provided id.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: Boolean,
+  })
+  @Get('/sign/:transactionId')
+  async shouldSignTransaction(
+    @GetUser() user: User,
+    @Param('transactionId', ParseIntPipe) transactionId: number,
+  ): Promise<boolean> {
+    const transaction = await this.transactionsService.getTransactionById(transactionId);
+    return this.transactionsService.shouldSignTransaction(transaction, user);
+  }
+
   /* Get all transactions to be approved by the user */
   @ApiOperation({
     summary: 'Get transactions to approve',
