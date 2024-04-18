@@ -8,3 +8,4 @@ export * from './transaction-signer.dto';
 export * from './transaction.dto';
 export * from './update-transaction-observer.dto';
 export * from './upload-signature.dto';
+export * from './transaction-to-sign.dto';

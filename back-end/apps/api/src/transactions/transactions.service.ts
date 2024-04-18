@@ -32,6 +32,7 @@ import { UserDto } from '../users/dtos';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 
 import { UserKeysService } from '../user-keys/user-keys.service';
+import { SignersService } from './signers/signers.service';
 
 @Injectable()
 export class TransactionsService {
@@ -40,6 +41,7 @@ export class TransactionsService {
     @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
     private readonly configService: ConfigService,
     private readonly userKeysService: UserKeysService,
+    private readonly signersService: SignersService,
     private readonly mirrorNodeService: MirrorNodeService,
   ) {}
 
@@ -94,8 +96,20 @@ export class TransactionsService {
   }
 
   /* Get the transactions that a user needs to sign */
-  async getTransactionsToSign(user: User, take: number, skip: number): Promise<Transaction[]> {
-    const result: Transaction[] = [];
+  async getTransactionsToSign(
+    user: User,
+    take: number,
+    skip: number,
+  ): Promise<
+    {
+      transaction: Transaction;
+      keysToSign: number[];
+    }[]
+  > {
+    const result: {
+      transaction: Transaction;
+      keysToSign: number[];
+    }[] = [];
 
     /* Ensures the user keys are passed */
     if (user.keys.length === 0) {
@@ -112,47 +126,67 @@ export class TransactionsService {
       if (result.length === take + skip) break;
 
       /* Check if the user should sign the transaction */
-      const shouldSign = await this.shouldSignTransaction(transaction, user);
+      const keysToSign = await this.userKeysRequiredToSign(transaction, user);
 
-      if (shouldSign) result.push(transaction);
+      if (keysToSign.length > 0) result.push({ transaction, keysToSign });
     }
     return result.slice(skip, take + skip);
   }
 
   /* Returns wheter a user should sign the transaction */
-  async shouldSignTransaction(transaction: Transaction, user: User): Promise<boolean> {
+  async userKeysRequiredToSign(transaction: Transaction, user: User): Promise<number[]> {
+    const userKeyIdsRequired: Set<number> = new Set<number>();
+
     if (!transaction || transaction.status != TransactionStatus.WAITING_FOR_SIGNATURES) {
-      return false;
+      return [];
     }
 
     /* Ensures the user keys are passed */
     if (user.keys.length === 0) {
       user.keys = await this.userKeysService.getUserKeys(user.id);
-      if (user.keys.length === 0) return false;
+      if (user.keys.length === 0) return [];
     }
+
+    /* Gets the user signatures for this transaction */
+    const signatures = await this.signersService.getSignatureByTransactionIdAndUserId(
+      transaction.id,
+      user.id,
+    );
 
     /* Deserialize the transaction */
     const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
 
     /* Ignore if expired */
-    if (isExpired(sdkTransaction)) return false;
+    if (isExpired(sdkTransaction)) return [];
 
     /* Get signature entities */
     const { newKeys, accounts, receiverAccounts } = getSignatureEntities(sdkTransaction);
 
     /* Check if the user has a key that is required to sign */
-    const userKeysIncludedInTransaction = user.keys.filter(userKey =>
-      newKeys.some(key =>
-        isPublicKeyInKeyList(userKey.publicKey, key instanceof KeyList ? key : new KeyList([key])),
-      ),
+    const userKeysIncludedInTransaction = user.keys.filter(
+      userKey =>
+        newKeys.some(key =>
+          isPublicKeyInKeyList(
+            userKey.publicKey,
+            key instanceof KeyList ? key : new KeyList([key]),
+          ),
+        ) && !signatures.some(s => s.userKey.id === userKey.id),
     );
-    if (userKeysIncludedInTransaction.length > 0) return true;
+    userKeysIncludedInTransaction.forEach(userKey => userKeyIdsRequired.add(userKey.id));
 
-    const someUserKeyInOrIsKey = (key: Key) =>
+    const userKeyInKeyOrIsKey = (key: Key) =>
       (key instanceof PublicKey &&
-        user.keys.some(userKey => userKey.publicKey === key.toStringRaw())) ||
+        user.keys.filter(
+          userKey =>
+            userKey.publicKey === key.toStringRaw() &&
+            !signatures.some(s => s.userKeyId === userKey.id),
+        )) ||
       (key instanceof KeyList &&
-        user.keys.some(userKey => isPublicKeyInKeyList(userKey.publicKey, key)));
+        user.keys.filter(
+          userKey =>
+            isPublicKeyInKeyList(userKey.publicKey, key) &&
+            !signatures.some(s => s.userKeyId === userKey.id),
+        ));
 
     /* Check if a key of the user is inside the key of some account required to sign */
     for (const accountId of accounts) {
@@ -160,7 +194,7 @@ export class TransactionsService {
       const key = parseAccountProperty(accountInfo, 'key');
       if (!key) continue;
 
-      if (someUserKeyInOrIsKey(key)) return true;
+      userKeyInKeyOrIsKey(key).forEach(userKey => userKeyIdsRequired.add(userKey.id));
     }
 
     /* Check if user has a key included in a receiver account that required signature */
@@ -172,8 +206,10 @@ export class TransactionsService {
       const key = parseAccountProperty(accountInfo, 'key');
       if (!key) continue;
 
-      if (someUserKeyInOrIsKey(key)) return true;
+      userKeyInKeyOrIsKey(key).forEach(userKey => userKeyIdsRequired.add(userKey.id));
     }
+
+    return [...userKeyIdsRequired];
   }
 
   // Get all transactions that need to be approved by the user.
