@@ -19,7 +19,7 @@ class LoginPage extends BasePage {
   confirmResetStateButtonSelector = 'button-reset';
   keepLoggedInCheckboxSelector = 'checkbox-remember';
   logoutButtonSelector = 'button-logout';
-  settingsButtonSelector = 'a[href="/settings/general"].link-menu.mt-2.active';
+  settingsButtonSelector = 'button-menu-settings';
 
   // Labels
   emailLabelSelector = 'label-email';
@@ -121,7 +121,7 @@ class LoginPage extends BasePage {
   }
 
   async isSettingsButtonVisible() {
-    return await this.isElementVisibleByCssSelector(this.settingsButtonSelector);
+    return await this.isElementVisible(this.settingsButtonSelector);
   }
 
   async getLoginPasswordErrorMessage() {
