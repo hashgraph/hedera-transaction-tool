@@ -22,7 +22,12 @@ import { GetUser } from '../decorators/get-user.decorator';
 
 import { TransactionsService } from './transactions.service';
 
-import { CreateTransactionDto, TransactionDto, TransactionToSignDto } from './dto';
+import {
+  CreateTransactionDto,
+  TransactionDto,
+  TransactionFullDto,
+  TransactionToSignDto,
+} from './dto';
 
 @ApiTags('Transactions')
 @Controller('transactions')
@@ -163,6 +168,7 @@ export class TransactionsController {
   })
   @Get('/:id')
   //TODO @UseGuards(ensure user can access this transaction)
+  @Serialize(TransactionFullDto)
   getTransaction(@Param('id', ParseIntPipe) id: number): Promise<Transaction> {
     return this.transactionsService.getTransactionById(id);
   }

@@ -1,5 +1,10 @@
+import { Expose, Transform, Type } from 'class-transformer';
+
 import { TransactionStatus, TransactionType } from '@entities';
-import { Expose, Transform } from 'class-transformer';
+
+import { TransactionSignerUserKeyDto } from './transaction-signer.dto';
+import { TransactionApproverDto } from './transaction-approver.dto';
+import { TransactionObserverDto } from './transaction-observer.dto';
 
 export class TransactionDto {
   @Expose()
@@ -46,4 +51,22 @@ export class TransactionDto {
   @Transform(({ obj }) => (obj.creatorKey ? obj.creatorKey.id : undefined))
   @Expose()
   creatorKeyId: number;
+}
+
+export class TransactionFullDto extends TransactionDto {
+  // @Expose()
+  // @Type(() => TransactionCommentDto)
+  // comments: TransactionCommentDto[];
+
+  @Expose()
+  @Type(() => TransactionSignerUserKeyDto)
+  signers: TransactionSignerUserKeyDto[];
+
+  @Expose()
+  @Type(() => TransactionApproverDto)
+  approvers: TransactionApproverDto[];
+
+  @Expose()
+  @Type(() => TransactionObserverDto)
+  observers: TransactionObserverDto[];
 }
