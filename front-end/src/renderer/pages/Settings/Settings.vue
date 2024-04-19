@@ -69,7 +69,11 @@ watch(router.currentRoute, newRoute => {
           v-if="activeTabIndex === tabItems.findIndex(t => t.title === keysTitle)"
           class="d-flex gap-3"
         >
-          <AppButton color="borderless" @click="$router.push({ name: 'restoreKey' })">
+          <AppButton
+            data-testid="button-restore"
+            color="borderless"
+            @click="$router.push({ name: 'restoreKey' })"
+          >
             Restore
           </AppButton>
           <ImportExternalPrivateKeyDropDown class="min-w-unset" />

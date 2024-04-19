@@ -177,6 +177,7 @@ watch(isDeleteModalShown, newVal => {
     <div class="mb-3">
       <template v-for="tab in Object.values(Tabs)" :key="tab">
         <AppButton
+          :data-testid="`tab-${tab}`"
           type="button"
           color="borderless"
           class="min-w-unset"
@@ -207,7 +208,7 @@ watch(isDeleteModalShown, newVal => {
           </thead>
           <tbody class="text-secondary">
             <template
-              v-for="keyPair in user.keyPairs.filter(item => {
+              v-for="(keyPair, index) in user.keyPairs.filter(item => {
                 switch (currentTab) {
                   case Tabs.ALL:
                     return true;
@@ -221,21 +222,22 @@ watch(isDeleteModalShown, newVal => {
             >
               <tr>
                 <td
+                  :data-testid="`cell-index-${index}`"
                   v-if="currentTab === Tabs.RECOVERY_PHRASE || currentTab === Tabs.ALL"
                   class="text-end"
                 >
                   {{ keyPair.index >= 0 ? keyPair.index : 'N/A' }}
                 </td>
-                <td>
+                <td :data-testid="`cell-nickname-${index}`">
                   {{ keyPair.nickname || 'N/A' }}
                 </td>
-                <td>
+                <td :data-testid="`cell-account-${index}`">
                   {{
                     user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.public_key)
                       ?.accounts[0]?.account || 'N/A'
                   }}
                 </td>
-                <td>
+                <td :data-testid="`cell-key-type-${index}`">
                   {{
                     PublicKey.fromString(keyPair.public_key)._key._type === 'secp256k1'
                       ? 'ECDSA'
@@ -244,10 +246,14 @@ watch(isDeleteModalShown, newVal => {
                 </td>
                 <td>
                   <p class="d-flex text-nowrap">
-                    <span class="d-inline-block text-truncate" style="width: 12vw">{{
-                      keyPair.public_key
-                    }}</span>
                     <span
+                      :data-testid="`span-public-key-${index}`"
+                      class="d-inline-block text-truncate"
+                      style="width: 12vw"
+                      >{{ keyPair.public_key }}</span
+                    >
+                    <span
+                      :data-testid="`span-copy-public-key-${index}`"
                       class="bi bi-copy cursor-pointer ms-3"
                       @click="handleCopy(keyPair.public_key, 'Public Key copied successfully')"
                     ></span>
@@ -256,10 +262,16 @@ watch(isDeleteModalShown, newVal => {
                 <td>
                   <p class="d-flex text-nowrap">
                     <template v-if="decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)">
-                      <span class="d-inline-block text-truncate" style="width: 12vw">{{
-                        decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)?.decrypted
-                      }}</span>
                       <span
+                        :data-testid="`span-private-key-${index}`"
+                        class="d-inline-block text-truncate"
+                        style="width: 12vw"
+                        >{{
+                          decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)?.decrypted
+                        }}</span
+                      >
+                      <span
+                        :data-testid="`span-copy-private-key-${index}`"
                         class="bi bi-copy cursor-pointer ms-3"
                         @click="
                           handleCopy(
@@ -270,6 +282,7 @@ watch(isDeleteModalShown, newVal => {
                         "
                       ></span>
                       <span
+                        :data-testid="`span-hide-private-key-${index}`"
                         class="bi bi-eye-slash cursor-pointer ms-3"
                         @click="handleHideDecryptedKey(keyPair.public_key)"
                       ></span>
@@ -277,6 +290,7 @@ watch(isDeleteModalShown, newVal => {
                     <template v-else>
                       {{ '*'.repeat(16) }}
                       <span
+                        :data-testid="`span-show-modal-${index}`"
                         class="bi bi-eye cursor-pointer ms-3"
                         @click="handleShowDecryptModal(keyPair.public_key)"
                       ></span>
@@ -287,6 +301,7 @@ watch(isDeleteModalShown, newVal => {
                   <AppButton
                     size="small"
                     color="danger"
+                    :data-testid="`button-delete-key-${index}`"
                     @click="handleDeleteModal(keyPair.id)"
                     class="min-w-unset"
                     ><span class="bi bi-trash"></span
@@ -312,6 +327,7 @@ watch(isDeleteModalShown, newVal => {
               <label class="form-label">Enter your password</label>
               <AppInput
                 v-model="userPassword"
+                data-testid="input-decrypt-password"
                 :filled="true"
                 type="password"
                 placeholder="Type your password"
@@ -320,7 +336,11 @@ watch(isDeleteModalShown, newVal => {
             <hr class="separator my-5" />
 
             <div class="d-grid mt-5">
-              <AppButton type="submit" color="primary" :disabled="userPassword.length === 0"
+              <AppButton
+                type="submit"
+                data-testid="button-decrypt"
+                color="primary"
+                :disabled="userPassword.length === 0"
                 >Decrypt</AppButton
               >
             </div>
@@ -353,7 +373,9 @@ watch(isDeleteModalShown, newVal => {
               go through creating or importing a recovery phrase again. Do you wish to continue?
             </p>
             <div class="d-grid mt-5">
-              <AppButton type="submit" color="danger">Delete</AppButton>
+              <AppButton type="submit" data-testid="button-delete-keypair" color="danger"
+                >Delete</AppButton
+              >
             </div>
           </form>
         </div>

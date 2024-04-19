@@ -98,16 +98,25 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
     <div class="dropdown">
       <AppButton
         color="primary"
+        data-testid="button-restore-dropdown"
         class="w-100 d-flex align-items-center justify-content-center"
         data-bs-toggle="dropdown"
         v-bind="$attrs"
         ><i class="bi bi-plus text-main me-2"></i> Import</AppButton
       >
       <ul class="dropdown-menu w-100 mt-3">
-        <li class="dropdown-item cursor-pointer" @click="isImportED25519KeyModalShown = true">
+        <li
+          data-testid="link-import-ed25519-key"
+          class="dropdown-item cursor-pointer"
+          @click="isImportED25519KeyModalShown = true"
+        >
           <span class="text-small">ED25519 Key</span>
         </li>
-        <li class="dropdown-item cursor-pointer mt-3" @click="isImportECDSAKeyModalShown = true">
+        <li
+          data-testid="link-import-ecdsa-key"
+          class="dropdown-item cursor-pointer mt-3"
+          @click="isImportECDSAKeyModalShown = true"
+        >
           <span class="text-small">ECDSA Key</span>
         </li>
       </ul>
@@ -129,6 +138,7 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
           <div class="form-group mt-4">
             <label class="form-label">Enter ECDSA Private key</label>
             <AppInput
+              data-testid="input-ecdsa-private-key"
               v-model="ecdsaKey.privateKey"
               :filled="true"
               size="small"
@@ -139,6 +149,7 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
           <div class="form-group mt-4">
             <label class="form-label">Enter nickname (optional)</label>
             <AppInput
+              data-testid="input-ecdsa-private-key-nickname"
               v-model="ecdsaKey.nickname"
               :filled="true"
               size="small"
@@ -150,6 +161,7 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
           <div class="form-group mt-4">
             <label class="form-label">Enter your password</label>
             <AppInput
+              data-testid="input-ecdsa-private-key-password"
               v-model="userPassword"
               type="password"
               :filled="true"
@@ -160,7 +172,9 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
           <hr class="separator my-5" />
 
           <div class="d-grid">
-            <AppButton type="submit" color="primary">Import</AppButton>
+            <AppButton data-testid="button-ecdsa-private-key-import" type="submit" color="primary"
+              >Import</AppButton
+            >
           </div>
         </form>
       </div>
@@ -183,6 +197,7 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
           <div class="form-group mt-4">
             <label class="form-label">Enter ED25519 Private key</label>
             <AppInput
+              data-testid="input-ed25519-private-key"
               v-model="ed25519Key.privateKey"
               :filled="true"
               size="small"
@@ -193,6 +208,7 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
           <div class="form-group mt-4">
             <label class="form-label">Enter nickname (optional)</label>
             <AppInput
+              data-testid="input-ed25519-private-key-nickname"
               v-model="ed25519Key.nickname"
               :filled="true"
               size="small"
@@ -203,6 +219,7 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
           <div class="form-group mt-4">
             <label class="form-label">Enter your password</label>
             <AppInput
+              data-testid="input-ed25519-private-key-password"
               v-model="userPassword"
               type="password"
               :filled="true"
@@ -213,7 +230,9 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
           <hr class="separator my-5" />
 
           <div class="d-grid">
-            <AppButton type="submit" color="primary">Import</AppButton>
+            <AppButton data-testid="button-ed25519-private-key-import" type="submit" color="primary"
+              >Import</AppButton
+            >
           </div>
         </form>
       </div>

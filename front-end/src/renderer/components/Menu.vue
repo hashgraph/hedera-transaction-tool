@@ -58,6 +58,7 @@ const menuItems = [
 
     <div>
       <RouterLink
+        data-testid="button-menu-settings"
         class="link-menu mt-2"
         to="/settings/general"
         :class="{ active: $route.path.startsWith('/settings') }"
