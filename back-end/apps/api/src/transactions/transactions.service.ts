@@ -51,13 +51,7 @@ export class TransactionsService {
 
     return this.repo.findOne({
       where: { id },
-      relations: {
-        creatorKey: true,
-        approvers: true,
-        observers: true,
-        comments: true,
-        signers: true,
-      },
+      relations: ['creatorKey', 'approvers', 'observers', 'comments', 'signers', 'signers.userKey'],
     });
   }
 
@@ -67,13 +61,7 @@ export class TransactionsService {
 
     return this.repo.findOne({
       where: { transactionId: id },
-      relations: {
-        creatorKey: true,
-        approvers: true,
-        observers: true,
-        comments: true,
-        signers: true,
-      },
+      relations: ['creatorKey', 'approvers', 'observers', 'comments', 'signers', 'signers.userKey'],
     });
   }
 
