@@ -327,6 +327,7 @@ watch(isDeleteModalShown, newVal => {
               <label class="form-label">Enter your password</label>
               <AppInput
                 v-model="userPassword"
+                data-testid="input-decrypt-password"
                 :filled="true"
                 type="password"
                 placeholder="Type your password"
@@ -335,7 +336,11 @@ watch(isDeleteModalShown, newVal => {
             <hr class="separator my-5" />
 
             <div class="d-grid mt-5">
-              <AppButton type="submit" color="primary" :disabled="userPassword.length === 0"
+              <AppButton
+                type="submit"
+                data-testid="button-decrypt"
+                color="primary"
+                :disabled="userPassword.length === 0"
                 >Decrypt</AppButton
               >
             </div>
@@ -368,7 +373,9 @@ watch(isDeleteModalShown, newVal => {
               go through creating or importing a recovery phrase again. Do you wish to continue?
             </p>
             <div class="d-grid mt-5">
-              <AppButton type="submit" color="danger">Delete</AppButton>
+              <AppButton type="submit" data-testid="button-delete-keypair" color="danger"
+                >Delete</AppButton
+              >
             </div>
           </form>
         </div>

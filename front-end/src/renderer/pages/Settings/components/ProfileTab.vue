@@ -102,6 +102,7 @@ const handleChangePassword = async () => {
         <label class="form-label">Current Password <span class="text-danger">*</span></label>
         <AppInput
           v-model="currentPassword"
+          data-testid="input-current-password"
           type="password"
           placeholder="Enter Current Password"
           :filled="true"
@@ -111,13 +112,16 @@ const handleChangePassword = async () => {
         <label class="form-label">New Password <span class="text-danger">*</span></label>
         <AppInput
           v-model="newPassword"
+          data-testid="input-new-password"
           type="password"
           placeholder="Enter New Password"
           :filled="true"
         />
       </div>
       <div class="d-grid">
-        <AppButton color="primary" type="submit" class="mt-4">Change Password</AppButton>
+        <AppButton color="primary" data-testid="button-change-password" type="submit" class="mt-4"
+          >Change Password</AppButton
+        >
       </div>
     </form>
     <AppModal v-model:show="isConfirmModalShown" class="common-modal">
@@ -136,7 +140,12 @@ const handleChangePassword = async () => {
         <hr class="separator my-5" />
         <div class="flex-between-centered gap-4">
           <AppButton color="borderless" @click="isConfirmModalShown = false">Cancel</AppButton>
-          <AppButton color="primary" @click="handleChangePassword">Change</AppButton>
+          <AppButton
+            color="primary"
+            data-testid="button-confirm-change-password"
+            @click="handleChangePassword"
+            >Change</AppButton
+          >
         </div>
       </div>
     </AppModal>
@@ -160,7 +169,7 @@ const handleChangePassword = async () => {
 
         <h3 class="text-center text-title text-bold mt-3">Password Changed Successfully</h3>
         <div class="d-grid mt-5">
-          <AppButton color="primary" type="submit">Close</AppButton>
+          <AppButton color="primary" data-testid="button-close" type="submit">Close</AppButton>
         </div>
       </form>
     </AppModal>
