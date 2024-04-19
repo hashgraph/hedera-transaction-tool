@@ -12,7 +12,7 @@ import {
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
-import { DeepPartial, Repository } from 'typeorm';
+import { DeepPartial, Repository, MoreThan } from 'typeorm';
 
 import { Transaction, TransactionStatus, User } from '@entities';
 
@@ -106,7 +106,10 @@ export class TransactionsService {
     }
 
     const transactions = await this.repo.find({
-      where: { status: TransactionStatus.WAITING_FOR_SIGNATURES },
+      where: {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        validStart: MoreThan(new Date(new Date().getTime() + 180 * 1_000)),
+      },
     });
 
     for (const transaction of transactions) {
@@ -132,7 +135,10 @@ export class TransactionsService {
     }
 
     const transactions = await this.repo.find({
-      where: { status: TransactionStatus.WAITING_FOR_SIGNATURES },
+      where: {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        validStart: MoreThan(new Date(new Date().getTime() + 180 * 1_000)),
+      },
     });
 
     for (const transaction of transactions) {
@@ -341,5 +347,38 @@ export class TransactionsService {
     }
 
     return this.repo.remove(transaction);
+  }
+
+  /* Gets the transaction with a status that are not expired */
+  getTransactionsForUserWithStatus(
+    user: User,
+    status: TransactionStatus,
+    take: number,
+    skip: number,
+  ) {
+    return this.repo.find({
+      where: {
+        signers: {
+          userId: user.id,
+        },
+        status,
+        validStart: MoreThan(new Date(new Date().getTime() + 180 * 1_000)),
+      },
+      take,
+      skip,
+    });
+  }
+
+  /* Gets the count of transactions with a status that are not expired */
+  getTransactionsForUserWithStatusCount(user: User, status: TransactionStatus) {
+    return this.repo.count({
+      where: {
+        signers: {
+          userId: user.id,
+        },
+        status,
+        validStart: MoreThan(new Date(new Date().getTime() + 180 * 1_000)),
+      },
+    });
   }
 }
