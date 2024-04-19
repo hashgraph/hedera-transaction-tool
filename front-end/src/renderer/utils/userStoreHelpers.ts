@@ -150,6 +150,13 @@ export const getLocalKeyPairs = async (
 
   keyPairs = keyPairs.sort((k1, k2) => {
     if (k1.index < 0) {
+      if (k2.index < 0) {
+        return k1.nickname && k2.nickname
+          ? k1.nickname.localeCompare(k2.nickname)
+          : k1.nickname
+            ? -1
+            : 1;
+      }
       return 1;
     } else {
       return k1.index - k2.index;
