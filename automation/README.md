@@ -37,8 +37,10 @@ to run the tests.
    the Hedera Transaction Tool executable. For example:
    ```env
    EXECUTABLE_PATH='/path/to/Hedera Transaction Tool'
+   PRIVATE_KEY='your_private_key_here'
    ```
    Replace `/path/to/Hedera Transaction Tool` with the actual path to your Hedera Transaction Tool executable.
+   Replace `your_private_key_here` with the private key(ECDSA) required for tests that involve key import functionality.
 
 ## Running Tests
 

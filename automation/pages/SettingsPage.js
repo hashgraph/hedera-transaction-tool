@@ -51,6 +51,18 @@ class SettingsPage extends BasePage {
   accountIdCellSelectorPrefix = 'cell-account-';
   keyTypeCellSelectorPrefix = 'cell-key-type-';
   publicKeyCellSelectorPrefix = 'span-public-key-';
+  decryptMainPrivateKeySelector = 'span-show-modal-0';
+  decryptedPrivateKeySelector = 'span-private-key-0';
+  decryptPasswordInputSelector = 'input-decrypt-password';
+  decryptPasswordButtonSelector = 'button-decrypt';
+  tabImportedFromPrivateKeySelector = 'tab-Imported from Private Key';
+  deleteKeyButtonPrefix = 'button-delete-key-';
+  deleteKeyPairButton = 'button-delete-keypair';
+  currentPasswordInputSelector = 'input-current-password';
+  newPasswordInputSelector = 'input-new-password';
+  changePasswordButtonSelector = 'button-change-password';
+  confirmChangePasswordButtonSelector = 'button-confirm-change-password';
+  closeButtonSelector = 'button-close';
 
   async verifySettingsElements() {
     const checks = await Promise.all([
@@ -73,6 +85,12 @@ class SettingsPage extends BasePage {
   async incrementIndex() {
     let numericValue = parseInt(this.currentIndex);
     numericValue++;
+    this.currentIndex = numericValue.toString();
+  }
+
+  async decrementIndex() {
+    let numericValue = parseInt(this.currentIndex);
+    numericValue--;
     this.currentIndex = numericValue.toString();
   }
 
@@ -115,6 +133,10 @@ class SettingsPage extends BasePage {
     await this.clickByTestId(this.keysTabButtonSelector);
   }
 
+  async clickOnProfileTab() {
+    await this.clickByTestId(this.profileTabButtonSelector);
+  }
+
   async clickOnRestoreButton() {
     await this.clickByTestId(this.restoreButtonSelector);
   }
@@ -145,7 +167,6 @@ class SettingsPage extends BasePage {
 
   async clickOnNicknameContinueButton() {
     await this.clickByTestId(this.continueNicknameButtonSelector);
-    await this.incrementIndex();
   }
 
   async clickOnContinuePhraseButton() {
@@ -218,6 +239,50 @@ class SettingsPage extends BasePage {
 
   async clickOnED25519ImportButton() {
     await this.clickByTestId(this.ed25519ImportButtonSelector);
+  }
+
+  async clickOnEyeDecryptIcon() {
+    await this.clickByTestId(this.decryptMainPrivateKeySelector);
+  }
+
+  async fillInDecryptPassword(password) {
+    await this.fillByTestId(this.decryptPasswordInputSelector, password);
+  }
+
+  async clickOnDecryptButton() {
+    await this.clickByTestId(this.decryptPasswordButtonSelector);
+  }
+
+  async getPrivateKeyText() {
+    return await this.getTextByTestId(this.decryptedPrivateKeySelector);
+  }
+
+  async clickOnDeleteButtonAtIndex(index) {
+    await this.clickByTestId(this.deleteKeyButtonPrefix + index);
+  }
+
+  async clickOnDeleteKeyPairButton() {
+    await this.clickByTestId(this.deleteKeyPairButton);
+  }
+
+  async fillInCurrentPassword(password) {
+    await this.fillByTestId(this.currentPasswordInputSelector, password);
+  }
+
+  async fillInNewPassword(password) {
+    await this.fillByTestId(this.newPasswordInputSelector, password);
+  }
+
+  async clickOnChangePasswordButton() {
+    await this.clickByTestId(this.changePasswordButtonSelector);
+  }
+
+  async clickOnConfirmChangePassword() {
+    await this.clickByTestId(this.confirmChangePasswordButtonSelector);
+  }
+
+  async clickOnCloseButton() {
+    await this.clickByTestId(this.closeButtonSelector);
   }
 }
 module.exports = SettingsPage;

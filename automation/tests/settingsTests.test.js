@@ -74,6 +74,18 @@ test.describe('Settings tests', () => {
     expect(isSetButtonVisible).toBe(true);
   });
 
+  test('Verify user can decrypt private key', async () => {
+    await settingsPage.clickOnSettingsButton();
+    await settingsPage.clickOnKeysTab();
+
+    await settingsPage.clickOnEyeDecryptIcon();
+    await settingsPage.fillInDecryptPassword(globalCredentials.password);
+    await settingsPage.clickOnDecryptButton();
+    const decryptedPrivateKey = await settingsPage.getPrivateKeyText();
+
+    expect(decryptedPrivateKey).toBeTruthy();
+  });
+
   test('Verify user can restore key', async () => {
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
@@ -101,6 +113,9 @@ test.describe('Settings tests', () => {
 
     const toastMessage = await registrationPage.getToastMessage();
     expect(toastMessage).toBe('Key Pair saved');
+
+    // key pair was successfully restored, so we increment the index
+    await settingsPage.incrementIndex();
   });
 
   test('Verify user restored key pair is saved in the local database', async () => {
@@ -132,6 +147,59 @@ test.describe('Settings tests', () => {
       currentIndex,
     );
     expect(isKeyPairSavedInDatabase).toBe(true);
+
+    // key pair was successfully restored, so we increment the index
+    await settingsPage.incrementIndex();
+  });
+
+  test('Verify user can delete key', async () => {
+    await settingsPage.clickOnSettingsButton();
+    await settingsPage.clickOnKeysTab();
+
+    const rowCountBeforeRestore = await settingsPage.getKeyRowCount();
+
+    await settingsPage.clickOnRestoreButton();
+    await settingsPage.clickOnContinueButton();
+
+    await settingsPage.fillInPassword(globalCredentials.password);
+    await settingsPage.clickOnPasswordContinueButton();
+
+    const isMnemonicRequired = settingsPage.isElementVisible(
+      registrationPage.getRecoveryWordSelector(1),
+    );
+    if (isMnemonicRequired) {
+      await registrationPage.fillAllMissingRecoveryPhraseWords();
+      await settingsPage.clickOnContinuePhraseButton();
+    }
+
+    await settingsPage.fillInIndex(settingsPage.currentIndex);
+    await settingsPage.clickOnIndexContinueButton();
+
+    await loginPage.waitForToastToDisappear();
+    await settingsPage.fillInNickname('testNickname' + settingsPage.currentIndex);
+    await settingsPage.clickOnNicknameContinueButton();
+
+    const toastMessage = await registrationPage.getToastMessage();
+    expect(toastMessage).toBe('Key Pair saved');
+
+    // key pair was successfully restored, so we increment the index
+    await settingsPage.incrementIndex();
+
+    // deleting the key pair
+    await settingsPage.clickOnDeleteButtonAtIndex(rowCountBeforeRestore.toString());
+    await settingsPage.clickOnDeleteKeyPairButton();
+
+    // going back and forth as delete is quick, and it does not pick the change
+    await settingsPage.clickOnProfileTab();
+    await settingsPage.clickOnKeysTab();
+
+    const rowCountAfterDelete = await settingsPage.getKeyRowCount();
+
+    // verifying that key pair before the recovery is the same after the deletion
+    expect(rowCountBeforeRestore).toBe(rowCountAfterDelete);
+
+    // key pair was successfully deleted, so we decrease the index
+    await settingsPage.decrementIndex();
   });
 
   test('Verify user can import ECDSA key', async () => {
@@ -192,5 +260,25 @@ test.describe('Settings tests', () => {
     expect(accountID).toBeTruthy();
     expect(keyType).toBe('ED25519');
     expect(publicKey).toBeTruthy();
+  });
+
+  test('Verify user can change password', async () => {
+    await settingsPage.clickOnSettingsButton();
+    await settingsPage.clickOnProfileTab();
+
+    await settingsPage.fillInCurrentPassword(globalCredentials.password);
+    const newPassword = generateRandomPassword();
+    await settingsPage.fillInNewPassword(newPassword);
+    await settingsPage.clickOnChangePasswordButton();
+    await settingsPage.clickOnConfirmChangePassword();
+    await settingsPage.clickOnCloseButton();
+    globalCredentials.password = newPassword;
+    await loginPage.logout();
+
+    // verify that the settings button is visible(indicating he's logged in successfully in the app)
+    await loginPage.login(globalCredentials.email, globalCredentials.password);
+    const isButtonVisible = await loginPage.isSettingsButtonVisible();
+
+    expect(isButtonVisible).toBe(true);
   });
 });
