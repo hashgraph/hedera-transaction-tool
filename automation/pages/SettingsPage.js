@@ -8,6 +8,27 @@ class SettingsPage extends BasePage {
     this.currentIndex = '1';
   }
 
+  /* Selectors */
+
+  // Inputs
+  consensusNodeEndpointInputSelector = 'input-consensus-endpoint';
+  mirrorNodeGrpcEndpointInputSelector = 'input-mirror-grpc-endpoint';
+  mirrorNodeRestEndpointInputSelector = 'input-mirror-rest-endpoint';
+  nodeAccountidInputSelector = 'input-node-accountid';
+  passwordInputSelector = 'input-password';
+  indexInputSelector = 'input-index';
+  nicknameInputSelector = 'input-nickname';
+  ed25519PrivateKeyInputSelector = 'input-ed25519-private-key';
+  ed25519PNicknameInputSelector = 'input-ed25519-private-key-nickname';
+  ed25519PasswordInputSelector = 'input-ed25519-private-key-password';
+  ecdsaPrivateKeyInputSelector = 'input-ecdsa-private-key';
+  ecdsaNicknameInputSelector = 'input-ecdsa-private-key-nickname';
+  ecdsaPasswordInputSelector = 'input-ecdsa-private-key-password';
+  decryptPasswordInputSelector = 'input-decrypt-password';
+  currentPasswordInputSelector = 'input-current-password';
+  newPasswordInputSelector = 'input-new-password';
+
+  // Buttons
   settingsButtonSelector = 'button-menu-settings';
   generalTabButtonSelector = 'tab-0';
   organisationsTabButtonSelector = 'tab-1';
@@ -20,49 +41,36 @@ class SettingsPage extends BasePage {
   darkTabButtonSelector = 'tab-appearance-dark';
   lightTabButtonSelector = 'tab-appearance-light';
   systemTabButtonSelector = 'tab-appearance-system';
-  consensusNodeEndpointInputSelector = 'input-consensus-endpoint';
-  mirrorNodeGrpcEndpointSelector = 'input-mirror-grpc-endpoint';
-  mirrorNodeRestEndpointSelector = 'input-mirror-rest-endpoint';
-  nodeAccountidInputSelector = 'input-node-accountid';
   setButtonSelector = 'button-set';
   restoreButtonSelector = 'button-restore';
   continueButtonSelector = 'button-continue';
-  cancelButtonSelector = 'button-cancel';
-  passwordInputSelector = 'input-password';
   continuePasswordButtonSelector = 'button-continue-password';
-  indexInputSelector = 'input-index';
   continueIndexButtonSelector = 'button-continue-index';
-  nicknameInputSelector = 'input-nickname';
   continueNicknameButtonSelector = 'button-continue-nickname';
   continuePhraseButtonSelector = 'button-continue-phrase';
   importButtonSelector = 'button-restore-dropdown';
   ed25519ImportLinkSelector = 'link-import-ed25519-key';
   ecdsaImportLinkSelector = 'link-import-ecdsa-key';
-  ed25519PrivateKeyInputSelector = 'input-ed25519-private-key';
-  ed25519PNicknameInputSelector = 'input-ed25519-private-key-nickname';
-  ed25519PasswordInputSelector = 'input-ed25519-private-key-password';
   ed25519ImportButtonSelector = 'button-ed25519-private-key-import';
-  ecdsaPrivateKeyInputSelector = 'input-ecdsa-private-key';
-  ecdsaNicknameInputSelector = 'input-ecdsa-private-key-nickname';
-  ecdsaPasswordInputSelector = 'input-ecdsa-private-key-password';
   ecdsaImportButtonSelector = 'button-ecdsa-private-key-import';
+  decryptMainPrivateKeyButtonSelector = 'span-show-modal-0';
+  decryptPasswordButtonSelector = 'button-decrypt';
+  deleteKeyPairButton = 'button-delete-keypair';
+  deleteKeyButtonPrefix = 'button-delete-key-';
+  changePasswordButtonSelector = 'button-change-password';
+  confirmChangePasswordButtonSelector = 'button-confirm-change-password';
+  closeButtonSelector = 'button-close';
+
+  // Text
+  decryptedPrivateKeySelector = 'span-private-key-0';
+
+  // Prefixes
   indexCellSelectorPrefix = 'cell-index-';
   nicknameCellSelectorPrefix = 'cell-nickname-';
   accountIdCellSelectorPrefix = 'cell-account-';
   keyTypeCellSelectorPrefix = 'cell-key-type-';
   publicKeyCellSelectorPrefix = 'span-public-key-';
-  decryptMainPrivateKeySelector = 'span-show-modal-0';
-  decryptedPrivateKeySelector = 'span-private-key-0';
-  decryptPasswordInputSelector = 'input-decrypt-password';
-  decryptPasswordButtonSelector = 'button-decrypt';
-  tabImportedFromPrivateKeySelector = 'tab-Imported from Private Key';
-  deleteKeyButtonPrefix = 'button-delete-key-';
-  deleteKeyPairButton = 'button-delete-keypair';
-  currentPasswordInputSelector = 'input-current-password';
-  newPasswordInputSelector = 'input-new-password';
-  changePasswordButtonSelector = 'button-change-password';
-  confirmChangePasswordButtonSelector = 'button-confirm-change-password';
-  closeButtonSelector = 'button-close';
+
 
   async verifySettingsElements() {
     const checks = await Promise.all([
@@ -182,11 +190,11 @@ class SettingsPage extends BasePage {
   }
 
   async getMirrorNodeGrpcEndpointText() {
-    return await this.getTextFromInputFieldByTestId(this.mirrorNodeGrpcEndpointSelector);
+    return await this.getTextFromInputFieldByTestId(this.mirrorNodeGrpcEndpointInputSelector);
   }
 
   async getMirrorNodeRestEndpointText() {
-    return await this.getTextFromInputFieldByTestId(this.mirrorNodeRestEndpointSelector);
+    return await this.getTextFromInputFieldByTestId(this.mirrorNodeRestEndpointInputSelector);
   }
 
   async getNodeAccountIdInputText() {
@@ -242,7 +250,7 @@ class SettingsPage extends BasePage {
   }
 
   async clickOnEyeDecryptIcon() {
-    await this.clickByTestId(this.decryptMainPrivateKeySelector);
+    await this.clickByTestId(this.decryptMainPrivateKeyButtonSelector);
   }
 
   async fillInDecryptPassword(password) {
