@@ -118,7 +118,8 @@ const handleSaveKey = async e => {
         private_key: restoredKey.value.privateKey,
         public_key: restoredKey.value.publicKey,
         type: 'ED25519',
-        organization_id: user.selectedOrganization?.id || null,
+        organization_id: null,
+        organization_user_id: null,
         secret_hash: user.recoveryPhrase.hash,
         nickname: nickname.value || null,
       };
@@ -129,6 +130,9 @@ const handleSaveKey = async e => {
         ) {
           throw new Error('Key pair already exists');
         }
+
+        keyPair.organization_id = user.selectedOrganization.id;
+        keyPair.organization_user_id = user.selectedOrganization.userId;
 
         await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
           publicKey: restoredKey.value.publicKey,

@@ -46,7 +46,8 @@ const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
     const keyPair: Prisma.KeyPairUncheckedCreateInput = {
       user_id: user.personal.id,
       ...generateExternalKeyPairFromString(privateKey, type, nickname || ''),
-      organization_id: user.selectedOrganization?.id || null,
+      organization_id: null,
+      organization_user_id: null,
       type: type,
       secret_hash: null,
     };
@@ -63,6 +64,9 @@ const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
       if (user.selectedOrganization.userKeys.some(k => k.publicKey === keyPair.public_key)) {
         throw new Error('Key pair already exists');
       }
+
+      keyPair.organization_id = user.selectedOrganization.id;
+      keyPair.organization_user_id = user.selectedOrganization.userId;
 
       await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
         publicKey: keyPair.public_key,

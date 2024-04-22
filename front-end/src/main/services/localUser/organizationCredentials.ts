@@ -125,6 +125,19 @@ export const getAccessToken = async (organizationServerUrl: string) => {
   }
 };
 
+/* Returns the current user of an organization */
+export const getCurrentUser = async (organizationServerUrl: string) => {
+  const token = await getAccessToken(organizationServerUrl);
+  if (!token) return null;
+
+  try {
+    const decoded: any = jwtDecode(token);
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+};
+
 /* Returns credentials for organization */
 export const getOrganizationCredentials = async (organization_id: string, user_id: string) => {
   const prisma = getPrismaClient();

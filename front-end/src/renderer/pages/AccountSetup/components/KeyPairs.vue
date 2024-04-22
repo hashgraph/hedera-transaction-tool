@@ -117,20 +117,23 @@ const handleSave = async () => {
         public_key: key.publicKey,
         private_key: key.privateKey,
         type: 'ED25519',
-        organization_id: user.selectedOrganization?.id || null,
+        organization_id: null,
+        organization_user_id: null,
         secret_hash: user.recoveryPhrase.hash,
         nickname: i === 0 && nickname.value ? nickname.value : null,
       };
 
-      if (
-        isLoggedInOrganization(user.selectedOrganization) &&
-        !user.selectedOrganization.userKeys.some(k => k.publicKey === key.publicKey)
-      ) {
-        await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
-          publicKey: key.publicKey,
-          index: key.index,
-          mnemonicHash: user.recoveryPhrase.hash,
-        });
+      if (isLoggedInOrganization(user.selectedOrganization)) {
+        keyPair.organization_id = user.selectedOrganization.id;
+        keyPair.organization_user_id = user.selectedOrganization.userId;
+
+        if (!user.selectedOrganization.userKeys.some(k => k.publicKey === key.publicKey)) {
+          await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
+            publicKey: key.publicKey,
+            index: key.index,
+            mnemonicHash: user.recoveryPhrase.hash,
+          });
+        }
       }
 
       await user.storeKey(keyPair, user.personal.password);
