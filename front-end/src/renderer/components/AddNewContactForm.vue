@@ -16,6 +16,7 @@ const emit = defineEmits(['hideAddNew', 'update:addedContact']);
 /* State */
 const contact = ref({
   keyName: '',
+  email: '',
   publicKey: '',
   organization: '',
   associatedAccounts: new Array<string>(),
@@ -31,9 +32,11 @@ async function handleAddContact() {
     await contactsStore.add(
       userStore.personal?.id,
       contact.value.keyName,
-      contact.value.publicKey,
-      contact.value.organization,
+      contact.value.email,
+      null,
+      null,
       contact.value.associatedAccounts,
+      [contact.value.publicKey],
     );
     contactsStore.fetch();
     emit('update:addedContact');
@@ -61,19 +64,14 @@ function onUpdateAccountId() {
     </div>
     <label class="form-label mt-5">Key Name</label>
     <AppInput v-model="contact.keyName" :filled="true" type="string" placeholder="Enter Key Name" />
+    <label class="form-label mt-5">Email</label>
+    <AppInput v-model="contact.email" :filled="true" type="string" placeholder="Enter Key Name" />
     <label class="form-label mt-5">Public Key</label>
     <AppInput
       v-model="contact.publicKey"
       :filled="true"
       type="string"
       placeholder="Enter Public Key"
-    />
-    <label class="form-label mt-5">Organization</label>
-    <AppInput
-      v-model="contact.organization"
-      :filled="true"
-      type="string"
-      placeholder="Enter Organization Name"
     />
     <div v-if="contact.associatedAccounts.length > 0" class="mt-5">
       <ul v-for="accountId in contact.associatedAccounts" :key="accountId" class="mt-3 d-flex">

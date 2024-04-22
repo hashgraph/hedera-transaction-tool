@@ -1,14 +1,16 @@
 import { getPrismaClient } from '@main/db';
-import { AssociatedAccount, Contact, Prisma } from '@prisma/client';
+import { AssociatedAccount, Contact, ContactPublicKey, Prisma } from '@prisma/client';
 import { createAssociatedAccount } from './associatedAccounts';
+import { createContactPublicKey } from './contactPublicKeys';
 
-export const getContacts = async (userId: string) => {
+export const getPersonalContacts = async (userId: string) => {
   const prisma = getPrismaClient();
 
   try {
     return await prisma.contact.findMany({
       where: {
         user_id: userId,
+        organization: null,
       },
     });
   } catch (error) {
@@ -17,16 +19,36 @@ export const getContacts = async (userId: string) => {
   }
 };
 
-export const addContact = async (contact: Contact, associatedAccounts: AssociatedAccount[]) => {
+export async function getOrganizationContacts(userId: string, organization: string) {
   const prisma = getPrismaClient();
 
-  // const newContact =
+  try {
+    return await prisma.contact.findMany({
+      where: {
+        user_id: userId,
+        organization: organization,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    return [];
+  }
+}
+
+export const addContact = async (
+  contact: Contact,
+  associatedAccounts: AssociatedAccount[],
+  publicKeys: ContactPublicKey[],
+) => {
+  const prisma = getPrismaClient();
+
   const newContact = await prisma.contact.create({
     data: {
       user_id: contact.user_id,
       key_name: contact.key_name,
-      public_key: contact.public_key,
+      email: contact.email,
       organization: contact.organization,
+      organization_user_id: contact.organization_user_id,
     },
   });
 
@@ -35,7 +57,12 @@ export const addContact = async (contact: Contact, associatedAccounts: Associate
     await createAssociatedAccount(associatedAccount.account_id, newContact.id);
   }
 
-  return await getContacts(contact.user_id);
+  for (const publicKey of publicKeys) {
+    console.log(publicKey.public_key);
+    await createContactPublicKey(publicKey.public_key, newContact.id);
+  }
+
+  return newContact;
 };
 
 export const updateContact = async (
@@ -55,14 +82,10 @@ export const updateContact = async (
       user_id: userId,
     },
   });
-
-  return await getContacts(userId);
 };
 
-export const removeContact = async (userId: string, contactId: string) => {
+export const removeContact = async (contacts: Contact[], userId: string, contactId: string) => {
   const prisma = getPrismaClient();
-
-  const contacts = await getContacts(userId);
 
   if (!contacts.some(con => con.id === contactId)) {
     throw new Error(`Contact not found!`);
@@ -76,6 +99,4 @@ export const removeContact = async (userId: string, contactId: string) => {
       user_id: userId,
     },
   });
-
-  return await getContacts(userId);
 };

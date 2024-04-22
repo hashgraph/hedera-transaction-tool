@@ -135,19 +135,28 @@ model ComplexKey {
   user            User     @relation(fields: [user_id], references: [id])
 }
 model Contact {
-  id                  String @id @default(uuid())
-  user_id             String
-  key_name            String
-  public_key          String
-  organization        String
-  user                User   @relation(fields: [user_id], references: [id])
+  id                   String @id @default(uuid())
+  user_id              String
+  key_name             String
+  email                String
+  organization         String?
+  organization_user_id String?
+  user                 User   @relation(fields: [user_id], references: [id])
 
-  associated_accounts AssociatedAccount[]
+  associated_accounts  AssociatedAccount[]
+  public_key           ContactPublicKey[]
 }
 
 model AssociatedAccount {
   id         String @id @default(uuid())
   contact_id String
   account_id String
+  contact    Contact @relation(fields: [contact_id], references: [id], onDelete: Cascade)
+}
+
+model ContactPublicKey {
+  id         String @id @default(uuid())
+  contact_id String
+  public_key String
   contact    Contact @relation(fields: [contact_id], references: [id], onDelete: Cascade)
 }

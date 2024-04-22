@@ -8,7 +8,7 @@ import useThemeStore from '@renderer/stores/storeTheme';
 
 /* Props */
 const props = defineProps<{
-  contact: Contact;
+  contact: Contact | undefined;
 }>();
 
 /* Stores */
@@ -20,7 +20,7 @@ const theme = useThemeStore();
 const isDeleteContactModalShown = ref(false);
 
 /* Emits */
-const emit = defineEmits(['update:remove']);
+const emit = defineEmits(['update:remove', 'edit']);
 
 /* Handlers */
 async function handleRemove() {
@@ -31,7 +31,12 @@ async function handleDeleteContact() {
   if (userStore.personal?.isLoggedIn) {
     await contactStore.remove(userStore.personal.id, props.contact.id);
     emit('update:remove');
+    contactStore.fetch();
   }
+}
+
+async function handleEdit() {
+  emit('edit');
 }
 </script>
 
@@ -41,14 +46,21 @@ async function handleDeleteContact() {
       <div class="col-4">User Nickname</div>
       <div class="col">{{ contact?.key_name }}</div>
     </div>
-    <div class="mt-5 row col-11">
-      <div class="col-4">Public Key</div>
-      <div class="col">
-        <div>
-          {{ contact?.public_key.slice(0, 32) }}
+    <div v-if="contact != undefined && contact.public_keys.length > 0">
+      <div
+        class="mt-5 row col-11"
+        v-for="(publicKey, index) in contact.public_keys"
+        :key="publicKey.public_key"
+      >
+        <div class="col-4" v-if="index == 0">Public Key</div>
+        <div class="col-4" v-else></div>
+        <div class="col">
+          <div>
+            {{ publicKey.public_key.slice(0, 32) }}
+          </div>
+          <div>{{ publicKey.public_key.slice(32) }}</div>
+          <div style="color: #ff66ff">ED25519</div>
         </div>
-        <div>{{ contact?.public_key.slice(32) }}</div>
-        <div style="color: #ff66ff">ED25519</div>
       </div>
     </div>
     <div class="row mt-3 border-bottom col-11" style="height: 136px">
@@ -82,9 +94,13 @@ async function handleDeleteContact() {
         outline
         class="w-100"
         style="color: red; border-color: red"
+        :disabled="
+          userStore.selectedOrganization?.isServerActive &&
+          !userStore.selectedOrganization.loginRequired
+        "
         >Remove</AppButton
       >
-      <AppButton type="button" color="primary" class="w-100" disabled>Edit</AppButton>
+      <AppButton type="button" color="primary" class="w-100" @click="handleEdit">Edit</AppButton>
     </div>
     <DeleteContact v-model:show="isDeleteContactModalShown" @update:delete="handleDeleteContact" />
   </div>
