@@ -7,6 +7,8 @@ import listenForTransactionDraftsEvents from './transactionDrafts';
 import listenForComplexKeyEvents from './complexKeys';
 import listenForOrganizationEvents from './organizations';
 import listenForOrganizationCredentialsEvents from './organizationCredentials';
+import listenForContactEvents from './contacts';
+import listenForAssociatedAccountEvents from './associatedAccounts';
 
 export default () => {
   listenForKeyPairEvents();
@@ -18,4 +20,6 @@ export default () => {
   listenForComplexKeyEvents();
   listenForOrganizationEvents();
   listenForOrganizationCredentialsEvents();
+  listenForContactEvents();
+  listenForAssociatedAccountEvents();
 };

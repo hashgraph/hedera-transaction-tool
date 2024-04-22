@@ -28,6 +28,7 @@ model User {
   HederaFile              HederaFile[]
   TransactionDraft        TransactionDraft[]
   ComplexKey              ComplexKey[]
+  Contact                 Contact[]
 }
 
 model KeyPair {
@@ -132,4 +133,21 @@ model ComplexKey {
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
   user            User     @relation(fields: [user_id], references: [id])
+}
+model Contact {
+  id                  String @id @default(uuid())
+  user_id             String
+  key_name            String
+  public_key          String
+  organization        String
+  user                User   @relation(fields: [user_id], references: [id])
+
+  associated_accounts AssociatedAccount[]
+}
+
+model AssociatedAccount {
+  id         String @id @default(uuid())
+  contact_id String
+  account_id String
+  contact    Contact @relation(fields: [contact_id], references: [id], onDelete: Cascade)
 }
