@@ -304,8 +304,7 @@ async function sendSignedTransactionToOrganization() {
   toast.success('Transaction submitted successfully');
   props.onSubmitted && props.onSubmitted(id, body);
 
-  const bodyBytesString = await hexToUint8Array(body);
-  const bodyBytes = Uint8Array.from(bodyBytesString.split(',').map(b => Number(b)));
+  const bodyBytes = await hexToUint8Array(body);
 
   /* Delete if draft and not template */
   if (route.query.draftId) {
