@@ -53,14 +53,14 @@ const newAccountData = reactive<{
   maxAutomaticTokenAssociations: number;
   stakedAccountId: string;
   stakedNodeId: number | null;
-  acceptStakingAwards: boolean;
+  acceptStakingRewards: boolean;
   memo: string;
 }>({
   receiverSignatureRequired: false,
   maxAutomaticTokenAssociations: 0,
   stakedAccountId: '',
   stakedNodeId: null,
-  acceptStakingAwards: false,
+  acceptStakingRewards: false,
   memo: '',
 });
 const stakeType = ref<'Account' | 'Node' | 'None'>('None');
@@ -131,7 +131,7 @@ const handleLoadFromDraft = async () => {
     accountData.accountId.value = draftTransaction.accountId?.toString() || '';
 
     newAccountData.receiverSignatureRequired = draftTransaction.receiverSignatureRequired;
-    newAccountData.acceptStakingAwards = !draftTransaction.declineStakingRewards;
+    newAccountData.acceptStakingRewards = !draftTransaction.declineStakingRewards;
 
     newAccountData.maxAutomaticTokenAssociations =
       draftTransaction.maxAutomaticTokenAssociations.toNumber();
@@ -168,7 +168,7 @@ function createTransaction() {
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(maxTransactionFee.value)
     .setReceiverSignatureRequired(newAccountData.receiverSignatureRequired)
-    .setDeclineStakingReward(!newAccountData.acceptStakingAwards)
+    .setDeclineStakingReward(!newAccountData.acceptStakingRewards)
     .setMaxAutomaticTokenAssociations(Number(newAccountData.maxAutomaticTokenAssociations))
     .setAccountMemo(newAccountData.memo || '');
 
@@ -222,7 +222,7 @@ watch(accountData.accountInfo, accountInfo => {
     newAccountData.maxAutomaticTokenAssociations = 0;
     newAccountData.stakedAccountId = '';
     newAccountData.stakedNodeId = null;
-    newAccountData.acceptStakingAwards = false;
+    newAccountData.acceptStakingRewards = false;
     newAccountData.memo = '';
     newOwnerKey.value = null;
   } else if (!router.currentRoute.value.query.draftId) {
@@ -235,7 +235,7 @@ watch(accountData.accountInfo, accountInfo => {
       : accountInfo.stakedNodeId
         ? 'Node'
         : 'None';
-    newAccountData.acceptStakingAwards = !accountInfo.declineReward;
+    newAccountData.acceptStakingRewards = !accountInfo.declineReward;
     newAccountData.memo = accountInfo.memo || '';
     newOwnerKey.value = accountInfo.key;
   }
@@ -327,10 +327,10 @@ const columnClass = 'col-4 col-xxxl-3';
 
         <div class="mt-6">
           <AppSwitch
-            v-model:checked="newAccountData.acceptStakingAwards"
+            v-model:checked="newAccountData.acceptStakingRewards"
             size="md"
-            name="accept-staking-awards"
-            label="Accept Staking Awards"
+            name="accept-staking-rewards"
+            label="Accept Staking Rewards"
           />
         </div>
 
