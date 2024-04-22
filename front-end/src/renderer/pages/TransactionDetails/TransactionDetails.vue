@@ -123,7 +123,7 @@ watch(
 const sectionHeadingClass = 'text-title text-dark-blue';
 const detailItemLabelClass = 'text-micro text-semi-bold text-dark-blue';
 const detailItemValueClass = 'text-small mt-1';
-const commonColClass = 'col-6 col-md-4 col-lg-3 col-xxl-2';
+const commonColClass = 'col-6 col-md-5 col-lg-4 col-xl-3 py-2';
 const stepperItems = [
   { title: 'Transaction Created', name: 'Transaction Created' },
   { title: 'Collecting Signatures', name: 'Collecting Signatures' },
@@ -195,11 +195,6 @@ const stepperItems = [
                   <AppStepper :items="stepperItems" :active-index="stepperActiveIndex" />
                 </div>
               </div>
-
-              <!-- Reviewers -->
-              <!-- <div class="mt-5">
-              <h4 :class="detailItemLabelClass">Reviewers</h4>
-            </div> -->
 
               <hr class="separator my-5" />
 
