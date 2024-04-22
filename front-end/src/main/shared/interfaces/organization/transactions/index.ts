@@ -1,3 +1,5 @@
+import { ITransactionSignerUserKeyDto } from '../signers';
+
 export enum BackEndTransactionType {
   ACCOUNT_CREATE = 'ACCOUNT CREATE',
   ACCOUNT_UPDATE = 'ACCOUNT UPDATE',
@@ -36,4 +38,10 @@ export interface ITransaction {
   executedAt?: string;
   updatedAt: string;
   creatorKeyId: number;
+}
+
+export interface ITransactionFull extends ITransaction {
+  signers: ITransactionSignerUserKeyDto[];
+  // approvers: TransactionApproverDto[];
+  // observers: TransactionObserverDto[];
 }
