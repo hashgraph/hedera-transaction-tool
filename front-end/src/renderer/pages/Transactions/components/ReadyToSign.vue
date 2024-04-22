@@ -7,8 +7,9 @@ import { ITransaction } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { getTransactionsToSign, getTransactionsToSignCount } from '@renderer/services/organization';
+import { useRouter } from 'vue-router';
 
+import { getTransactionsToSign, getTransactionsToSignCount } from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
 import {
@@ -26,6 +27,9 @@ import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 /* Stores */
 const user = useUserStore();
 
+/* Composables */
+const router = useRouter();
+
 /* State */
 const transactions = ref<
   {
@@ -40,7 +44,12 @@ const pageSize = ref(10);
 const isLoading = ref(true);
 
 /* Handlers */
-const handleSign = async (transactionIndex: number) => {};
+const handleSign = async (id: number) => {
+  router.push({
+    name: 'transactionSignDetails',
+    params: { id },
+  });
+};
 
 /* Functions */
 function createFindArgs() {
@@ -123,7 +132,7 @@ watch([currentPage, pageSize], async () => {
             </tr>
           </thead>
           <tbody>
-            <template v-for="(tx, i) in transactions" :key="tx.transactionRaw.id">
+            <template v-for="tx in transactions" :key="tx.transactionRaw.id">
               <tr>
                 <td>
                   {{
@@ -145,7 +154,9 @@ watch([currentPage, pageSize], async () => {
                   }}
                 </td>
                 <td class="text-center">
-                  <AppButton @click="handleSign(i)" color="secondary">Sign</AppButton>
+                  <AppButton @click="handleSign(tx.transactionRaw.id)" color="secondary"
+                    >Sign</AppButton
+                  >
                 </td>
               </tr>
             </template>
