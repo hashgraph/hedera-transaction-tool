@@ -1,4 +1,5 @@
 import AccountDetails from './compontents/AccountDetails.vue';
+import TransferDetails from './compontents/TransferDetails.vue';
 
 export const transactionTypeKeys = {
   createFile: 'FileCreateTransaction',
@@ -23,7 +24,7 @@ const txTypeComponentMapping = {
   [transactionTypeKeys.updateAccount]: AccountDetails,
   // [transactionTypeKeys.deleteAccount]: DeleteAccount,
   // [transactionTypeKeys.accountInfo]: AccountInfoVue,
-  // [transactionTypeKeys.transfer]: TransferHbar,
+  [transactionTypeKeys.transfer]: TransferDetails,
   // [transactionTypeKeys.approveAllowance]: ApproveHbarAllowanceVue,
   // [transactionTypeKeys.freeze]: FreezeVue,
 };
