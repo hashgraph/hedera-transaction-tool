@@ -9,6 +9,7 @@ import {
   KeyList,
   LedgerId,
   Long,
+  PrivateKey,
   PublicKey,
   Timestamp,
 } from '@hashgraph/sdk';
@@ -231,3 +232,19 @@ export function getNodeNumbersFromNetwork(network: {
 
   return nodeNumbers.sort((a, b) => a - b);
 }
+
+export const getPrivateKey = (
+  publicKey: string | PublicKey,
+  privateKeyString: string,
+): PrivateKey => {
+  publicKey = publicKey instanceof PublicKey ? publicKey : PublicKey.fromString(publicKey);
+
+  const startsWithHex = privateKeyString.startsWith('0x');
+
+  const privateKey =
+    publicKey._key._type === 'secp256k1'
+      ? PrivateKey.fromStringECDSA(`${startsWithHex ? '' : '0x'}${privateKeyString}`)
+      : PrivateKey.fromStringED25519(privateKeyString);
+
+  return privateKey;
+};
