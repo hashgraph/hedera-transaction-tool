@@ -1,6 +1,7 @@
 import {
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   ManyToOne,
   OneToMany,
@@ -93,6 +94,9 @@ export class Transaction {
   @ApiHideProperty()
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt: Date;
 
   @OneToMany(() => TransactionComment, comment => comment.transaction)
   comments: TransactionComment[];
