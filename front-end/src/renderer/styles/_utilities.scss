@@ -109,3 +109,8 @@
 .d-table-caption {
   display: table-caption;
 }
+
+/* Text Color */
+.text-dark-blue {
+  color: var(--#{$prefix}text-dark-blue);
+}

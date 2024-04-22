@@ -36,6 +36,8 @@
   --#{$prefix}modal-bg-color: #{$neutral-00};
 
   --#{$prefix}separator-bg-color: #{$dark-blue-100};
+
+  --#{$prefix}text-dark-blue: #{$dark-blue-500};
 }
 
 @if $enable-dark-mode {
@@ -78,5 +80,7 @@
     --#{$prefix}modal-bg-color: #{$dark-blue-950};
 
     --#{$prefix}separator-bg-color: #{$dark-blue-700};
+
+    --#{$prefix}text-dark-blue: #{$dark-blue-200};
   }
 }
