@@ -1,0 +1,25 @@
+import { Transaction } from '@hashgraph/sdk';
+
+export const getTransactionDate = (transaction: Transaction) =>
+  transaction.transactionId?.validStart?.toDate().toDateString() || null;
+
+export const getTransactionId = (transaction: Transaction) => {
+  if (!transaction.transactionId?.accountId || !transaction.transactionId?.validStart) {
+    return null;
+  }
+
+  return `${transaction.transactionId.accountId.toString()}@${transaction.transactionId.validStart.seconds.toString()}`;
+};
+
+export const getTransactionPayerId = (transaction: Transaction) =>
+  transaction.transactionId?.accountId?.toString() || null;
+
+export const getTransactionValidStart = (transaction: Transaction) =>
+  transaction.transactionId?.validStart?.toDate() || null;
+
+export const getTransactionType = (transaction: Transaction) => {
+  return transaction.constructor.name
+    .slice(transaction.constructor.name.startsWith('_') ? 1 : 0)
+    .split(/(?=[A-Z])/)
+    .join(' ');
+};

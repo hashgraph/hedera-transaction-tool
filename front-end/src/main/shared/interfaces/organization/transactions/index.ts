@@ -1,4 +1,4 @@
-export enum TransactionType {
+export enum BackEndTransactionType {
   ACCOUNT_CREATE = 'ACCOUNT CREATE',
   ACCOUNT_UPDATE = 'ACCOUNT UPDATE',
   ACCOUNT_DELETE = 'ACCOUNT DELETE',
@@ -24,7 +24,7 @@ export enum TransactionStatus {
 export interface ITransaction {
   id: number;
   name: string;
-  type: TransactionType;
+  type: BackEndTransactionType;
   description: string;
   body: string;
   status: TransactionStatus;
