@@ -11,6 +11,7 @@ import TransactionSelectionModal from '@renderer/components/TransactionSelection
 
 import History from './components/History.vue';
 import Drafts from './components/Drafts.vue';
+import ReadyToSign from './components/ReadyToSign.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -70,10 +71,10 @@ watch(
 
     <div class="position-relative flex-column-100 overflow-hidden mt-4">
       <AppTabs :items="tabItems" v-model:active-index="activeTabIndex"></AppTabs>
-      <!-- <template v-if="activeTabTitle === 'Ready for Review'"></template>
-      <template v-if="activeTabTitle === 'Ready to Sign'"> </template>
+      <template v-if="activeTabTitle === 'Ready for Review'"></template>
+      <template v-if="activeTabTitle === 'Ready to Sign'"> <ReadyToSign /> </template>
       <template v-if="activeTabTitle === 'In Progress'"></template>
-      <template v-if="activeTabTitle === 'Ready for Submission'"></template> -->
+      <template v-if="activeTabTitle === 'Ready for Submission'"></template>
       <template v-if="activeTabTitle === 'Drafts'"><Drafts /></template>
       <template v-if="activeTabTitle === 'History'"><History /></template>
     </div>

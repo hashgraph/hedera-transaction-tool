@@ -40,9 +40,7 @@ const pageSize = ref(10);
 const isLoading = ref(true);
 
 /* Handlers */
-const handleSign = (transactionIndex: number) => {
-  console.log('click', transactionIndex);
-};
+const handleSign = async (transactionIndex: number) => {};
 
 /* Functions */
 function createFindArgs() {
@@ -125,21 +123,26 @@ watch([currentPage, pageSize], async () => {
             </tr>
           </thead>
           <tbody>
-            <template
-              v-for="({ transaction }, i) in transactions"
-              :key="transaction.created_at.toString()"
-            >
+            <template v-for="(tx, i) in transactions" :key="tx.transactionRaw.id">
               <tr>
                 <td>
-                  {{ transaction instanceof Transaction ? getTransactionId(transaction) : 'N/A' }}
+                  {{
+                    tx.transaction instanceof Transaction ? getTransactionId(tx.transaction) : 'N/A'
+                  }}
                 </td>
                 <td>
                   <span class="text-bold">{{
-                    transaction instanceof Transaction ? getTransactionType(transaction) : 'N/A'
+                    tx.transaction instanceof Transaction
+                      ? getTransactionType(tx.transaction)
+                      : 'N/A'
                   }}</span>
                 </td>
                 <td>
-                  {{ transaction instanceof Transaction ? getTransactionDate(transaction) : 'N/A' }}
+                  {{
+                    tx.transaction instanceof Transaction
+                      ? getTransactionDate(tx.transaction)
+                      : 'N/A'
+                  }}
                 </td>
                 <td class="text-center">
                   <AppButton @click="handleSign(i)" color="secondary">Sign</AppButton>
