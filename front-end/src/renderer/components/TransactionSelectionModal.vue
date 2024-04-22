@@ -82,6 +82,7 @@ watch(
         <div class="col-5">
           <template v-for="(group, i) in transactionGroups" :key="group.groupTitle">
             <a
+              :data-testid="`menu-link-${i}`"
               class="link-menu cursor-pointer fw-bold mt-2"
               :class="{ active: activeGroupIndex === i }"
               @click="activeGroupIndex = i"
@@ -92,8 +93,12 @@ watch(
         </div>
         <div class="col-7">
           <div class="border-start ps-2">
-            <template v-for="item in transactionGroups[activeGroupIndex].items" :key="item.name">
+            <template
+              v-for="(item, i) in transactionGroups[activeGroupIndex].items"
+              :key="item.name"
+            >
               <a
+                :data-testid="`menu-sublink-${i}`"
                 class="link-menu cursor-pointer"
                 @click="$router.push({ name: 'createTransaction', params: { type: item.name } })"
               >
