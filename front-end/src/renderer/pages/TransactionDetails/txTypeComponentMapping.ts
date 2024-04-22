@@ -1,4 +1,4 @@
-import AccountCreateDetails from './compontents/AccountCreateDetails.vue';
+import AccountDetails from './compontents/AccountDetails.vue';
 
 export const transactionTypeKeys = {
   createFile: 'FileCreateTransaction',
@@ -15,12 +15,12 @@ export const transactionTypeKeys = {
 };
 
 const txTypeComponentMapping = {
-  // [transactionTypeKeys.createFile]: AccountCreateDetails,
+  // [transactionTypeKeys.createFile]: AccountDetails,
   // [transactionTypeKeys.readFile]: ReadFile,
   // [transactionTypeKeys.updateFile]: UpdateFile,
   // [transactionTypeKeys.appendToFile]: AppendToFileVue,
-  [transactionTypeKeys.createAccount]: AccountCreateDetails,
-  // [transactionTypeKeys.updateAccount]: UpdateAccount,
+  [transactionTypeKeys.createAccount]: AccountDetails,
+  [transactionTypeKeys.updateAccount]: AccountDetails,
   // [transactionTypeKeys.deleteAccount]: DeleteAccount,
   // [transactionTypeKeys.accountInfo]: AccountInfoVue,
   // [transactionTypeKeys.transfer]: TransferHbar,

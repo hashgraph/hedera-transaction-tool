@@ -26,6 +26,8 @@ import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppStepper from '@renderer/components/ui/AppStepper.vue';
 import KeyStructureSignatureStatus from '@renderer/components/KeyStructureSignatureStatus.vue';
 
+import txTypeComponentMapping from './txTypeComponentMapping';
+
 /* Stores */
 const user = useUserStore();
 const network = useNetwork();
@@ -123,7 +125,7 @@ watch(
 const sectionHeadingClass = 'text-title text-dark-blue';
 const detailItemLabelClass = 'text-micro text-semi-bold text-dark-blue';
 const detailItemValueClass = 'text-small mt-1';
-const commonColClass = 'col-6 col-md-5 col-lg-4 col-xl-3 py-2';
+const commonColClass = 'col-6 col-md-5 col-lg-4 col-xl-3 py-3';
 const stepperItems = [
   { title: 'Transaction Created', name: 'Transaction Created' },
   { title: 'Collecting Signatures', name: 'Collecting Signatures' },
@@ -244,6 +246,12 @@ const stepperItems = [
 
               <!-- TRANSACTION SPECIFIC DETAILS -->
               <h2 :class="sectionHeadingClass">{{ transactionSpecificLabel }}</h2>
+
+              <!-- Transaction Specific Component -->
+              <Component
+                :is="txTypeComponentMapping[getTransactionType(sdkTransaction, true)]"
+                :transaction="sdkTransaction"
+              />
 
               <hr class="separator my-5" />
 
