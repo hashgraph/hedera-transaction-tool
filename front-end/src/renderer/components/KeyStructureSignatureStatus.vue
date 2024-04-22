@@ -25,7 +25,7 @@ defineEmits(['update:keyList']);
     <div>
       <span
         v-if="publicKeysSigned.includes(publicKeysInKeyListRaw[0])"
-        class="bi bi-check-lg text-success me-2"
+        class="bi bi-check-lg text-success"
       ></span>
       <span>{{ publicKeysInKeyListRaw[0] }}</span>
     </div>
@@ -35,7 +35,7 @@ defineEmits(['update:keyList']);
       <p>
         <span
           v-if="ableToSign(publicKeysSigned, keyList)"
-          class="bi bi-check-lg text-success me-2"
+          class="bi bi-check-lg text-success"
         ></span>
         Threshold ({{
           !keyList.threshold || keyList.threshold === keyList.toArray().length
@@ -54,7 +54,7 @@ defineEmits(['update:keyList']);
           <p class="ms-5 my-3">
             <span
               v-if="publicKeysSigned.includes(item.toStringRaw())"
-              class="bi bi-check-lg text-success me-2"
+              class="bi bi-check-lg text-success"
             ></span>
             {{ item.toStringRaw() }}
           </p>
