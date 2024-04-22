@@ -11,11 +11,15 @@ import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
 
 import { execute, signTransaction, storeTransaction } from '@renderer/services/transactionService';
-import { openExternal, uint8ArrayToHex } from '@renderer/services/electronUtilsService';
+import {
+  hexToUint8Array,
+  openExternal,
+  uint8ArrayToHex,
+} from '@renderer/services/electronUtilsService';
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 import { decryptPrivateKey, flattenKeyList } from '@renderer/services/keyPairService';
 import { deleteDraft, getDraft } from '@renderer/services/transactionDraftsService';
-import { submitTransaction } from '@renderer/services/organization';
+import { fullUploadSignatures, submitTransaction } from '@renderer/services/organization';
 
 import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
@@ -26,6 +30,7 @@ import {
   getTransactionType,
   getPrivateKey,
 } from '@renderer/utils';
+import { shouldSignTransaction } from '@renderer/utils/transactionSignatureModels';
 import {
   isLoggedInOrganization,
   isLoggedInWithPassword,
@@ -299,6 +304,9 @@ async function sendSignedTransactionToOrganization() {
   toast.success('Transaction submitted successfully');
   props.onSubmitted && props.onSubmitted(id, body);
 
+  const bodyBytesString = await hexToUint8Array(body);
+  const bodyBytes = Uint8Array.from(bodyBytesString.split(',').map(b => Number(b)));
+
   /* Delete if draft and not template */
   if (route.query.draftId) {
     try {
@@ -308,6 +316,27 @@ async function sendSignedTransactionToOrganization() {
       console.log(error);
     }
   }
+
+  /* Deserialize the transaction */
+  const sdkTransaction = Transaction.fromBytes(bodyBytes);
+
+  /* Check if should sign */
+  const publicKeysRequired = await shouldSignTransaction(
+    sdkTransaction,
+    user.selectedOrganization.userKeys,
+    network.mirrorNodeBaseURL,
+  );
+  if (publicKeysRequired.length === 0) return;
+
+  await fullUploadSignatures(
+    user.personal,
+    user.selectedOrganization,
+    publicKeysRequired,
+    sdkTransaction,
+    id,
+  );
+
+  toast.success('Transaction signed successfully');
 }
 
 function resetData() {

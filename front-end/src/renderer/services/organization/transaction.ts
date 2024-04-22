@@ -1,5 +1,10 @@
 import axios, { AxiosError } from 'axios';
 import { throwIfNoResponse } from '.';
+import { decryptPrivateKey } from '../keyPairService';
+import { getPrivateKey, getSignatures } from '@renderer/utils';
+import { Transaction } from '@hashgraph/sdk';
+import { LoggedInOrganization, LoggedInUserWithPassword } from '@renderer/types';
+import { Organization } from '@prisma/client';
 
 const controller = 'transactions';
 
@@ -27,8 +32,6 @@ export const submitTransaction = async (
       },
     );
 
-    console.log(data);
-
     return { id: data.id, body: data.body };
   } catch (error: any) {
     let message = 'Failed submit transaction';
@@ -53,7 +56,7 @@ export const uploadSignature = async (
   signatures: { [key: string]: string },
 ): Promise<void> => {
   try {
-    const { data } = await axios.post(
+    await axios.post(
       `${serverUrl}/${controller}/${transactionId}/signers`,
       {
         publicKeyId,
@@ -63,7 +66,6 @@ export const uploadSignature = async (
         withCredentials: true,
       },
     );
-    console.log(data);
   } catch (error: any) {
     let message = 'Failed submit transaction';
 
@@ -76,5 +78,29 @@ export const uploadSignature = async (
       }
     }
     throw new Error(message);
+  }
+};
+
+/* Decrypt, sign, upload signatures to the backend */
+export const fullUploadSignatures = async (
+  user: LoggedInUserWithPassword,
+  organization: LoggedInOrganization & Organization,
+  publicKeys: string[],
+  transaction: Transaction,
+  transactionId: number,
+) => {
+  for (const publicKey of publicKeys) {
+    const privateKeyRaw = await decryptPrivateKey(user.id, user.password, publicKey);
+    const privateKey = getPrivateKey(publicKey, privateKeyRaw);
+
+    const signatures = await getSignatures(privateKey, transaction);
+
+    /* Upload the signature */
+    await uploadSignature(
+      organization.serverUrl,
+      transactionId,
+      organization.userKeys.find(k => k.publicKey === publicKey)?.id || -1,
+      signatures,
+    );
   }
 };
