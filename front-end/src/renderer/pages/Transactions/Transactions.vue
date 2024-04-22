@@ -77,7 +77,11 @@ watch(
   <div class="flex-column-100 p-5">
     <div class="d-flex justify-content-between">
       <h1 class="text-title text-bold">Transactions</h1>
-      <AppButton color="primary" @click="isTransactionSelectionModalShown = true">
+      <AppButton
+        color="primary"
+        data-testid="button-create-new"
+        @click="isTransactionSelectionModalShown = true"
+      >
         <i class="bi bi-plus-lg"></i> <span>Create New</span>
       </AppButton>
     </div>

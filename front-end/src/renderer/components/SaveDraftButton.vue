@@ -99,6 +99,7 @@ onBeforeRouteLeave(async to => {
     <AppButton
       color="secondary"
       type="button"
+      data-testid="button-save-draft"
       @click="() => (handleSaveDraft ? handleSaveDraft() : saveDraft())"
       v-bind="$attrs"
       ><i class="bi bi-save"></i> Save Draft</AppButton
