@@ -33,11 +33,11 @@ const menuItems = [
   //   icon: 'bi bi-shield-check',
   // },
 
-  // {
-  //   link: '/contact-list',
-  //   title: 'Contact List',
-  //   icon: 'bi bi-book',
-  // },
+  {
+    link: '/contact-list',
+    title: 'Contact List',
+    icon: 'bi bi-book',
+  },
   // {
   //   link: '/style-guide',
   //   title: 'Style Guide',

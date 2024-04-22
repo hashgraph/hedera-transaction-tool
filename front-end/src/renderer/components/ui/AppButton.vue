@@ -1,9 +1,10 @@
 <script setup lang="ts">
 /* Props */
 const props = defineProps<{
-  color?: 'primary' | 'secondary' | 'borderless' | 'danger';
+  color?: 'primary' | 'secondary' | 'borderless' | 'danger' | 'alternate';
   loading?: boolean;
   loadingText?: string;
+  disabled?: boolean;
   size?: 'small' | 'large' | 'default';
   outline?: boolean;
 }>();
@@ -25,8 +26,9 @@ const colorMapping = {
 </script>
 <template>
   <button
-    :disabled="loading"
+    :disabled="loading || disabled"
     :class="['btn', color ? colorMapping[color] : '', sizeMapping[size || 'default']]"
+    :style="color == 'alternate' ? 'background-color: #dcdfff' : ''"
   >
     <template v-if="loading">
       <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span
