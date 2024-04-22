@@ -28,6 +28,10 @@ function handleRemove() {
 function handleAddedContact() {
   selectedIndex.value = null;
 }
+
+function handleHideAddNew() {
+  addNew.value = false;
+}
 </script>
 
 <template>
@@ -55,13 +59,16 @@ function handleAddedContact() {
             @click="handleSelectContact(contactsStore.contacts!.indexOf(contact))"
           >
             <div class="d-flex justify-content-between">
-              <p class="text-small text-semi-bold">{{ contact?.key_name }}</p>
-              <p class="text-small py-1 px-3" style="background-color: #e5ccff; border-radius: 4px">
+              <p class="text-small text-semi-bold text-truncate">{{ contact?.key_name }}</p>
+              <p
+                class="text-small py-1 px-3 text-truncate"
+                style="background-color: #e5ccff; border-radius: 4px; color: black"
+              >
                 {{ contact?.organization }}
               </p>
             </div>
             <div class="d-flex justify-content-between align-items-center">
-              <p class="text-micro text-secondary mt-2">
+              <p class="text-micro text-secondary mt-2 text-truncate">
                 {{ contact?.associated_accounts[0]?.account_id }}
               </p>
             </div>
@@ -69,9 +76,14 @@ function handleAddedContact() {
         </div>
       </div>
       <div class="col flex-grow-1 mt-3">
-        <div v-if="addNew">
-          <AddNewContactForm v-model:add-new="addNew" @update:added-contact="handleAddedContact" />
-        </div>
+        <Transition name="fade" mode="out-in">
+          <div v-if="addNew">
+            <AddNewContactForm
+              @hide-add-new="handleHideAddNew"
+              @update:added-contact="handleAddedContact"
+            />
+          </div>
+        </Transition>
         <div v-if="selectedIndex != null && contactsStore.contacts">
           <ContactDetails
             :contact="contactsStore.contacts[selectedIndex]"

@@ -5,11 +5,17 @@ import AppButton from './ui/AppButton.vue';
 import useContactsStore from '@renderer/stores/storeContacts';
 import AddAssociatedAccountModal from './AddAssociatedAccountModal.vue';
 import useUserStore from '@renderer/stores/storeUser';
+import useThemeStore from '@renderer/stores/storeTheme';
 
-const isAddAccountModalShown = ref(false);
+/* Stores */
+const theme = useThemeStore();
+const contactsStore = useContactsStore();
+const userStore = useUserStore();
 
-const emit = defineEmits(['update:addNew', 'update:addedContact']);
+/* Emits */
+const emit = defineEmits(['hideAddNew', 'update:addedContact']);
 
+/* State */
 const contact = ref({
   keyName: '',
   publicKey: '',
@@ -17,23 +23,26 @@ const contact = ref({
   associatedAccounts: new Array<string>(),
 });
 
-const contactsStore = useContactsStore();
-const userStore = useUserStore();
+const isAddAccountModalShown = ref(false);
 
 const accountId = ref('');
 
+/* Handlers */
 async function handleAddContact() {
-  await contactsStore.add(
-    userStore.data.id,
-    contact.value.keyName,
-    contact.value.publicKey,
-    contact.value.organization,
-    contact.value.associatedAccounts,
-  );
-  contactsStore.fetch();
-  emit('update:addedContact');
+  console.log(contact.value.associatedAccounts);
+  if (userStore.personal?.isLoggedIn) {
+    await contactsStore.add(
+      userStore.personal?.id,
+      contact.value.keyName,
+      contact.value.publicKey,
+      contact.value.organization,
+      contact.value.associatedAccounts,
+    );
+    contactsStore.fetch();
+    emit('update:addedContact');
+  }
 }
-//30582e1e39be8c11c584dfe99ebe959e1c5f475b4c9390b21ce5b81e43821849
+
 function onUpdateAccountId() {
   contact.value.associatedAccounts.push(accountId.value);
 }
@@ -44,7 +53,7 @@ function onUpdateAccountId() {
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
       <div class="d-flex align-items-center">
         <AppButton
-          @click="emit('update:addNew', false)"
+          @click="emit('hideAddNew', false)"
           type="button"
           color="alternate"
           class="btn-icon-only me-4"
@@ -90,11 +99,12 @@ function onUpdateAccountId() {
     <div class="mt-5 d-flex gap-4">
       <AppButton type="submit" color="primary" class="w-100">Save</AppButton>
       <AppButton
-        @click="emit('update:addNew', false)"
+        @click="emit('hideAddNew', false)"
         type="button"
         color="primary"
         outline
         class="w-100"
+        :style="theme.isDark ? 'color: white' : ''"
         >Cancel</AppButton
       >
     </div>

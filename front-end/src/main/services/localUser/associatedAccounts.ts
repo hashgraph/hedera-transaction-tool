@@ -20,7 +20,7 @@ export const createAssociatedAccount = async (accountId: string, contactId: stri
 
   const associatedAccounts = await getAssociatedAccounts(contactId);
 
-  if (associatedAccounts.some(aa => aa.account_id === aa.account_id)) {
+  if (associatedAccounts.some(aa => aa.account_id === accountId)) {
     throw new Error('Account ID already exists!');
   }
 
@@ -31,19 +31,3 @@ export const createAssociatedAccount = async (accountId: string, contactId: stri
     },
   });
 };
-
-// export const removeAssociatedAccounts = async (contactId: string) => {
-//   const prisma = getPrismaClient();
-
-//   const associatedAccounts = await getAssociatedAccounts(contactId);
-
-//   if (!associatedAccounts.some(aa => aa.contact_id === contactId)) {
-//     throw new Error(`AssociatedAccounts not found!`);
-//   }
-
-//   await prisma.associatedAccount.deleteMany({
-//     where: {
-//       id: contactId,
-//     },
-//   });
-// };

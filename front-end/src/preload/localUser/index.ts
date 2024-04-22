@@ -11,6 +11,8 @@ import transactionDraftsAPI from './transactionDrafts';
 import organizationsAPI from './organizations';
 import organizationCredentialsAPI from './organizationCredentials';
 import deepLinkAPI from './deepLink';
+import contactsAPI from './contacts';
+import associatedAccountsAPI from './associatedAccounts';
 
 export default {
   ...updateAPI,
@@ -26,4 +28,6 @@ export default {
   ...organizationsAPI,
   ...organizationCredentialsAPI,
   ...deepLinkAPI,
+  ...contactsAPI,
+  ...associatedAccountsAPI,
 };
