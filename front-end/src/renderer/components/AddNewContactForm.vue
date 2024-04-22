@@ -79,9 +79,9 @@ function onUpdateAccountId() {
       placeholder="Enter Organization Name"
     />
     <div v-if="contact.associatedAccounts.length > 0" class="mt-5">
-      <ul v-for="accountId in contact.associatedAccounts" :key="accountId" class="mt-3">
+      <ul v-for="accountId in contact.associatedAccounts" :key="accountId" class="mt-3 d-flex">
         <li
-          class="col-4 py-2 px-3 text-center"
+          class="py-2 px-3 text-center flex-shrink-1"
           style="background-color: #edefff; border-radius: 6px; font-weight: 600"
         >
           {{ accountId }}

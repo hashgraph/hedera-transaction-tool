@@ -35,9 +35,9 @@ function handleHideAddNew() {
 </script>
 
 <template>
-  <div>
-    <div class="d-flex justify-content-between p-4">
-      <h1 class="text-title fw-semibold mb-3">Contact List</h1>
+  <div style="padding: 24px 44px">
+    <div class="d-flex justify-content-between">
+      <h1 class="text-title fw-semibold">Contact List</h1>
       <div class="d-flex align-items-center gap-4">
         <div class="px-5">Export Contact List</div>
         <div class="border py-3 ps-4" style="width: 205px">
@@ -45,10 +45,12 @@ function handleHideAddNew() {
         </div>
       </div>
     </div>
-    <div class="mt-5 d-flex h-100">
-      <div class="col-3 px-4 pt-4 border-end">
-        <div class="pb-4 border-bottom">
-          <AppButton color="primary" class="w-100" @click="handleAddNew"> Add New </AppButton>
+    <div class="d-flex h-100">
+      <div class="col-4 pe-4 pt-4 border-end">
+        <div class="pb-5 border-bottom">
+          <AppButton color="primary" size="large" class="w-100" @click="handleAddNew">
+            Add New
+          </AppButton>
         </div>
         <div v-for="contact in contactsStore.contacts" :key="contact.id">
           <div
