@@ -253,6 +253,7 @@ const columnClass = 'col-4 col-xxxl-3';
           />
           <AppButton
             color="primary"
+            data-testid="button-sign-and-submit"
             type="submit"
             :disabled="!ownerKey || !payerData.isValid.value"
           >
