@@ -13,12 +13,14 @@ import {
 import { useRouter } from 'vue-router';
 
 import useNetworkStore from './storeNetwork';
+import useContactsStore from './storeContacts';
 
 import * as ush from '@renderer/utils/userStoreHelpers';
 
 const useUserStore = defineStore('user', () => {
   /* Stores */
   const network = useNetworkStore();
+  const contacts = useContactsStore();
 
   /* Composables */
   const router = useRouter();
@@ -91,6 +93,7 @@ const useUserStore = defineStore('user', () => {
     }
     await ush.afterOrganizationSelection(personal.value, selectedOrganization, keyPairs, router);
     await refetchAccounts();
+    await contacts.fetch();
   };
 
   const refetchUserState = async () => await ush.refetchUserState(selectedOrganization);

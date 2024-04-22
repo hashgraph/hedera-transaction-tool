@@ -1,21 +1,39 @@
 import { ipcMain } from 'electron';
 
-import { addContact, getContacts, removeContact, updateContact } from '@main/services/localUser';
-import { AssociatedAccount, Contact, Prisma } from '@prisma/client';
+import {
+  addContact,
+  getPersonalContacts,
+  getOrganizationContacts,
+  removeContact,
+  updateContact,
+} from '@main/services/localUser';
+import { AssociatedAccount, Contact, ContactPublicKey, Prisma } from '@prisma/client';
 
 const createChannelName = (...props) => ['contacts', ...props].join(':');
 
 export default () => {
   /* Contacts */
 
-  // Get contacts
-  ipcMain.handle(createChannelName('getContacts'), (_e, userId: string) => getContacts(userId));
+  // Get Personal contacts
+  ipcMain.handle(createChannelName('getPersonalContacts'), (_e, userId: string) =>
+    getPersonalContacts(userId),
+  );
+
+  // Get Organization contacts
+  ipcMain.handle(
+    createChannelName('getOrganizationContacts'),
+    (_e, userId: string, organization: string) => getOrganizationContacts(userId, organization),
+  );
 
   // Add
   ipcMain.handle(
     createChannelName('addContact'),
-    (_e, contact: Contact, associatedAccounts: AssociatedAccount[]) =>
-      addContact(contact, associatedAccounts),
+    (
+      _e,
+      contact: Contact,
+      associatedAccounts: AssociatedAccount[],
+      publicKeys: ContactPublicKey[],
+    ) => addContact(contact, associatedAccounts, publicKeys),
   );
 
   // Update
@@ -26,7 +44,9 @@ export default () => {
   );
 
   // Remove
-  ipcMain.handle(createChannelName('removeContact'), (_e, userId: string, contactId: string) =>
-    removeContact(userId, contactId),
+  ipcMain.handle(
+    createChannelName('removeContact'),
+    (_e, contacts: Contact[], userId: string, contactId: string) =>
+      removeContact(contacts, userId, contactId),
   );
 };
