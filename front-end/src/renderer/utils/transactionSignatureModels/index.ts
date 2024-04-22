@@ -40,7 +40,7 @@ export const getSignatureEntities = (transaction: Transaction) => {
   }
 };
 
-/* Returns wheter a user should sign the transaction */
+/* Returns whether a user should sign the transaction */
 export const shouldSignTransaction = async (
   transaction: Transaction,
   userKeys: IUserKey[],
