@@ -4,14 +4,18 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from './ui/AppCustomIcon.vue';
 import AppButton from './ui/AppButton.vue';
 
+/* Props */
 const props = defineProps<{
   show: boolean;
 }>();
 
+/* Emits */
 const emit = defineEmits(['update:show', 'update:delete']);
 
+/* State */
 const show = ref(props.show);
 
+/* Watchers */
 watch(
   () => props.show,
   value => {
@@ -19,6 +23,7 @@ watch(
   },
 );
 
+/* Handlers */
 async function handleDeleteAccount() {
   emit('update:delete');
   emit('update:show', false);
@@ -37,7 +42,7 @@ async function handleDeleteAccount() {
       <hr class="separator my-5" />
       <div class="row mt-4">
         <div class="col-6">
-          <AppButton color="primary" outline class="w-100" @click="emit('update:show', false)"
+          <AppButton color="borderless" class="w-100" @click="emit('update:show', false)"
             >Cancel</AppButton
           >
         </div>

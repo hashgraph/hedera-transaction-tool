@@ -4,25 +4,34 @@ import DeleteContact from './DeleteContact.vue';
 import AppButton from './ui/AppButton.vue';
 import useUserStore from '@renderer/stores/storeUser';
 import { ref } from 'vue';
+import useThemeStore from '@renderer/stores/storeTheme';
 
+/* Props */
 const props = defineProps<{
   contact: Contact;
 }>();
 
-const isDeleteContactModalShown = ref(false);
-
-const emit = defineEmits(['update:remove']);
-
+/* Stores */
 const contactStore = useContactsStore();
 const userStore = useUserStore();
+const theme = useThemeStore();
 
+/* State */
+const isDeleteContactModalShown = ref(false);
+
+/* Emits */
+const emit = defineEmits(['update:remove']);
+
+/* Handlers */
 async function handleRemove() {
   isDeleteContactModalShown.value = true;
 }
 
 async function handleDeleteContact() {
-  await contactStore.remove(userStore.data.id, props.contact.id);
-  emit('update:remove');
+  if (userStore.personal?.isLoggedIn) {
+    await contactStore.remove(userStore.personal.id, props.contact.id);
+    emit('update:remove');
+  }
 }
 </script>
 
@@ -51,7 +60,13 @@ async function handleDeleteContact() {
         >
           <li
             class="col-5 py-2 px-3 text-center flex-shrink-1"
-            style="background-color: #edefff; border-radius: 6px; font-weight: 600"
+            :class="
+              associated_account.account_id != contact.associated_accounts[0].account_id
+                ? 'mt-3'
+                : ''
+            "
+            style="border-radius: 6px; font-weight: 600"
+            :style="theme.isDark ? 'background-color: #333666' : 'background-color: #edefff'"
           >
             {{ associated_account.account_id }}
           </li>

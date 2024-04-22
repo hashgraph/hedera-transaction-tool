@@ -4,15 +4,19 @@ import AppInput from './ui/AppInput.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from './ui/AppButton.vue';
 
+/* Props */
 const props = defineProps<{
   show: boolean;
 }>();
 
+/* Emits */
 const emit = defineEmits(['update:show', 'update:account']);
 
+/* State */
 const show = ref(props.show);
 const accountId = ref('');
 
+/* Watches */
 watch(
   () => props.show,
   value => {
@@ -20,9 +24,11 @@ watch(
   },
 );
 
+/* Handlers */
 function handleAddAccount() {
   emit('update:account', accountId.value);
   emit('update:show', false);
+  accountId.value = '';
 }
 </script>
 <template>
@@ -42,8 +48,7 @@ function handleAddAccount() {
         <div class="d-flex pt-5 border-top">
           <AppButton
             type="button"
-            color="primary"
-            outline
+            color="borderless"
             class="w-100"
             @click="emit('update:show', false)"
             >Cancel</AppButton

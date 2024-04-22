@@ -1,6 +1,6 @@
 import { getPrismaClient } from '@main/db';
 import { AssociatedAccount, Contact, Prisma } from '@prisma/client';
-import { createAssociatedAccount, removeAssociatedAccounts } from './associatedAccounts';
+import { createAssociatedAccount } from './associatedAccounts';
 
 export const getContacts = async (userId: string) => {
   const prisma = getPrismaClient();
@@ -20,12 +20,6 @@ export const getContacts = async (userId: string) => {
 export const addContact = async (contact: Contact, associatedAccounts: AssociatedAccount[]) => {
   const prisma = getPrismaClient();
 
-  const contacts = await getContacts(contact.user_id);
-
-  if (contacts.some(con => con.key_name === contact.key_name)) {
-    throw new Error('Key Name already exists!');
-  }
-
   // const newContact =
   const newContact = await prisma.contact.create({
     data: {
@@ -37,10 +31,9 @@ export const addContact = async (contact: Contact, associatedAccounts: Associate
   });
 
   for (const associatedAccount of associatedAccounts) {
+    console.log(associatedAccount.account_id);
     await createAssociatedAccount(associatedAccount.account_id, newContact.id);
   }
-
-  console.log('finished contacts?');
 
   return await getContacts(contact.user_id);
 };

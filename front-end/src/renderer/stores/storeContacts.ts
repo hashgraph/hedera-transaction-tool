@@ -1,4 +1,4 @@
-import { onMounted, reactive, ref } from 'vue';
+import { ref } from 'vue';
 import { defineStore } from 'pinia';
 import { getContacts, addContact, removeContact } from '@renderer/services/contactsService';
 import { getAssociatedAccounts } from '@renderer/services/associatedAccountsService';
@@ -28,11 +28,13 @@ const useContactsStore = defineStore('contacts', () => {
   /* Actions */
   async function fetch() {
     contacts.value = [];
-    const apiContacts = await getContacts(user.data.id);
-    let associatedAccounts = new Array<AssociatedAccount>();
-    for (const contact of apiContacts) {
-      associatedAccounts = await getAssociatedAccounts(contact.id);
-      contacts.value.push({ ...contact, associated_accounts: associatedAccounts });
+    if (user.personal?.isLoggedIn) {
+      const apiContacts = await getContacts(user.personal.id);
+      let associatedAccounts = new Array<AssociatedAccount>();
+      for (const contact of apiContacts) {
+        associatedAccounts = await getAssociatedAccounts(contact.id);
+        contacts.value.push({ ...contact, associated_accounts: associatedAccounts });
+      }
     }
   }
 
