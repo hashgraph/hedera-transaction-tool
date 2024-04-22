@@ -296,8 +296,8 @@ const columnClass = 'col-4 col-xxxl-3';
           <AppSwitch
             v-model:checked="accountData.acceptStakingRewards"
             size="md"
-            name="accept-staking-awards"
-            label="Accept Staking Awards"
+            name="accept-staking-rewards"
+            label="Accept Staking Rewards"
           />
         </div>
 
