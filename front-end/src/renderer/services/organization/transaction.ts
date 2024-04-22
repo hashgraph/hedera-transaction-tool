@@ -6,7 +6,7 @@ import { Organization } from '@prisma/client';
 import { LoggedInOrganization, LoggedInUserWithPassword } from '@renderer/types';
 
 import { getPrivateKey, getSignatures } from '@renderer/utils';
-import { ITransaction, ITransactionFull } from '@main/shared/interfaces';
+import { ITransaction, ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
 
 import { decryptPrivateKey } from '../keyPairService';
 
@@ -179,6 +179,85 @@ export const getTransactionById = async (
     return data;
   } catch (error: any) {
     let message = `Failed to get transaction with id ${id}`;
+
+    if (error instanceof AxiosError) {
+      throwIfNoResponse(error);
+
+      const errorMessage = error.response?.data?.message;
+      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
+        message = errorMessage;
+      }
+    }
+    throw new Error(message);
+  }
+};
+
+/* Get transactions for user with specific status */
+export const getTransactionsForUser = async (
+  serverUrl: string,
+  status: TransactionStatus,
+  skip: number,
+  take: number,
+): Promise<ITransaction[]> => {
+  let endpoint: string = '';
+
+  switch (status) {
+    case TransactionStatus.WAITING_FOR_EXECUTION:
+      endpoint = 'ready-to-execute';
+      break;
+    case TransactionStatus.WAITING_FOR_SIGNATURES:
+      endpoint = 'in-progress';
+      break;
+  }
+
+  try {
+    const { data } = await axios.get(
+      `${serverUrl}/${controller}/${endpoint}?skip=${skip}&take=${take}`,
+      {
+        withCredentials: true,
+      },
+    );
+
+    return data;
+  } catch (error: any) {
+    let message = 'Failed to get transactions';
+
+    if (error instanceof AxiosError) {
+      throwIfNoResponse(error);
+
+      const errorMessage = error.response?.data?.message;
+      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
+        message = errorMessage;
+      }
+    }
+    throw new Error(message);
+  }
+};
+
+/* Get the count of transactions for user with specific status */
+export const getTransactionsForUserCount = async (
+  serverUrl: string,
+  status: TransactionStatus,
+): Promise<number> => {
+  let endpoint: string = '';
+
+  switch (status) {
+    case TransactionStatus.WAITING_FOR_EXECUTION:
+      endpoint = 'ready-to-execute/count';
+      break;
+    case TransactionStatus.WAITING_FOR_SIGNATURES:
+      endpoint = 'in-progress/count';
+      break;
+  }
+
+  try {
+    const { data } = await axios.get(`${serverUrl}/${controller}/${endpoint}`, {
+      withCredentials: true,
+    });
+
+    return data;
+  } catch (error: any) {
+    let message = 'Failed to get transactions';
 
     if (error instanceof AxiosError) {
       throwIfNoResponse(error);
