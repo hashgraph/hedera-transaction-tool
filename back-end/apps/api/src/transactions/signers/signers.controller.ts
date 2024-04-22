@@ -48,7 +48,7 @@ export class SignersController {
   getSignaturesByTransactionId(
     @Param('transactionId', ParseIntPipe) transactionId: number,
   ): Promise<TransactionSigner[]> {
-    return this.signaturesService.getSignaturesByTransactionId(transactionId);
+    return this.signaturesService.getSignaturesByTransactionId(transactionId, true);
   }
 
   /* Returns all signatures for a particular user for the transaction */
@@ -69,7 +69,7 @@ export class SignersController {
     @Query('take', ParseIntPipe) take: number,
     @Query('skip', ParseIntPipe) skip: number,
   ): Promise<TransactionSigner[]> {
-    return this.signaturesService.getSignaturesByUser(user, take, skip);
+    return this.signaturesService.getSignaturesByUser(user, take, skip, true);
   }
 
   /* Uploads a signature for particular transaction */

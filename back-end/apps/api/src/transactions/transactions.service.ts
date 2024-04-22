@@ -46,23 +46,37 @@ export class TransactionsService {
   ) {}
 
   /* Get the transaction for the provided id in the DATABASE */
-  getTransactionById(id: number): Promise<Transaction> {
+  async getTransactionById(id: number): Promise<Transaction> {
     if (!id) return null;
 
-    return this.repo.findOne({
+    const transaction = await this.repo.findOne({
       where: { id },
       relations: ['creatorKey', 'approvers', 'observers', 'comments', 'signers', 'signers.userKey'],
     });
+
+    transaction.signers = await this.signersService.getSignaturesByTransactionId(
+      transaction.id,
+      true,
+    );
+
+    return transaction;
   }
 
   /* Get the transaction for the provided transaction id OF THE TRANSACTION */
-  getTransactionId(id: string): Promise<Transaction> {
+  async getTransactionId(id: string): Promise<Transaction> {
     if (!id) return null;
 
-    return this.repo.findOne({
+    const transaction = await this.repo.findOne({
       where: { transactionId: id },
       relations: ['creatorKey', 'approvers', 'observers', 'comments', 'signers', 'signers.userKey'],
     });
+
+    transaction.signers = await this.signersService.getSignaturesByTransactionId(
+      transaction.id,
+      true,
+    );
+
+    return transaction;
   }
 
   /* Get the transactions created by the user */
