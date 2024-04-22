@@ -132,7 +132,7 @@ export class TransactionsService {
     const transactions = await this.repo.find({
       where: {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
-        validStart: MoreThan(new Date(new Date().getTime() + 180 * 1_000)),
+        validStart: MoreThan(new Date(new Date().getTime() - 180 * 1_000)),
       },
     });
 
@@ -193,6 +193,7 @@ export class TransactionsService {
     const signatures = await this.signersService.getSignatureByTransactionIdAndUserId(
       transaction.id,
       user.id,
+      true,
     );
 
     /* Deserialize the transaction */
@@ -212,7 +213,7 @@ export class TransactionsService {
             userKey.publicKey,
             key instanceof KeyList ? key : new KeyList([key]),
           ),
-        ) && !signatures.some(s => s.userKeyId === userKey.id),
+        ) && !signatures.some(s => s.userKey.publicKey === userKey.publicKey),
     );
     userKeysIncludedInTransaction.forEach(userKey => userKeyIdsRequired.add(userKey.id));
 
@@ -221,13 +222,13 @@ export class TransactionsService {
         user.keys.filter(
           userKey =>
             userKey.publicKey === key.toStringRaw() &&
-            !signatures.some(s => s.userKeyId === userKey.id),
+            !signatures.some(s => s.userKey.publicKey === userKey.publicKey),
         )) ||
       (key instanceof KeyList &&
         user.keys.filter(
           userKey =>
             isPublicKeyInKeyList(userKey.publicKey, key) &&
-            !signatures.some(s => s.userKeyId === userKey.id),
+            !signatures.some(s => s.userKey.publicKey === userKey.publicKey),
         ));
 
     /* Check if a key of the user is inside the key of some account required to sign */
