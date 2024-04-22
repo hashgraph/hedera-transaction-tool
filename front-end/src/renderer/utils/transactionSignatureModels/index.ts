@@ -45,12 +45,14 @@ export const shouldSignTransaction = async (
   transaction: Transaction,
   userKeys: IUserKey[],
   mirrorNodeLink: string,
-): Promise<boolean> => {
+): Promise<string[]> => {
+  const publicKeysRequired: Set<string> = new Set<string>();
+
   /* Ensures the user keys are passed */
-  if (userKeys.length === 0) return false;
+  if (userKeys.length === 0) return [];
 
   /* Ignore if expired */
-  if (isExpired(transaction)) return false;
+  if (isExpired(transaction)) return [];
 
   /* Get signature entities */
   const { newKeys, accounts, receiverAccounts } = getSignatureEntities(transaction);
@@ -61,20 +63,23 @@ export const shouldSignTransaction = async (
       isPublicKeyInKeyList(userKey.publicKey, key instanceof KeyList ? key : new KeyList([key])),
     ),
   );
-  if (userKeysIncludedInTransaction.length > 0) return true;
+  userKeysIncludedInTransaction.forEach(userKey => publicKeysRequired.add(userKey.publicKey));
 
-  const someUserKeyInOrIsKey = (key: Key) =>
-    (key instanceof PublicKey &&
-      userKeys.some(userKey => userKey.publicKey === key.toStringRaw())) ||
-    (key instanceof KeyList &&
-      userKeys.some(userKey => isPublicKeyInKeyList(userKey.publicKey, key)));
+  const userKeyInKeyOrIsKey = (key: Key) =>
+    key instanceof PublicKey
+      ? userKeys.filter(userKey => userKey.publicKey === key.toStringRaw())
+      : key instanceof KeyList
+        ? userKeys.filter(userKey => isPublicKeyInKeyList(userKey.publicKey, key))
+        : [];
 
   /* Check if a key of the user is inside the key of some account required to sign */
   for (const accountId of accounts) {
     const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
     if (!accountInfo.key) continue;
 
-    if (someUserKeyInOrIsKey(accountInfo.key)) return true;
+    userKeyInKeyOrIsKey(accountInfo.key).forEach(userKey =>
+      publicKeysRequired.add(userKey.publicKey),
+    );
   }
 
   /* Check if user has a key included in a receiver account that required signature */
@@ -84,8 +89,10 @@ export const shouldSignTransaction = async (
 
     if (!accountInfo.key) continue;
 
-    if (someUserKeyInOrIsKey(accountInfo.key)) return true;
+    userKeyInKeyOrIsKey(accountInfo.key).forEach(userKey =>
+      publicKeysRequired.add(userKey.publicKey),
+    );
   }
 
-  return false;
+  return [...publicKeysRequired];
 };
