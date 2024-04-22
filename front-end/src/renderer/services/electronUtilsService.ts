@@ -83,3 +83,12 @@ export const uint8ArrayToHex = async (data: Uint8Array) => {
     throw new Error('Failed to convert UInt8Array to hex string');
   }
 };
+
+/* Converts Hex string to Uint8Array string */
+export const hexToUint8Array = async (data: string) => {
+  try {
+    return await window.electronAPI.local.utils.hexToUint8Array(data);
+  } catch (error) {
+    throw new Error('Failed to convert hex to UInt8Array string');
+  }
+};
