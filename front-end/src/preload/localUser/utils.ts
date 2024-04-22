@@ -12,5 +12,7 @@ export default {
       ipcRenderer.invoke('utils:uint8ArrayToHex', data),
     hexToUint8Array: (hexString: string): Promise<string> =>
       ipcRenderer.invoke('utils:hexToUint8Array', hexString),
+    hexToUint8ArrayBatch: (hexStrings: string[]): Promise<string[]> =>
+      ipcRenderer.invoke('utils:hexToUint8ArrayBatch', hexStrings),
   },
 };

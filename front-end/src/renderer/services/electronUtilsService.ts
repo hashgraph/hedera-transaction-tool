@@ -87,8 +87,22 @@ export const uint8ArrayToHex = async (data: Uint8Array) => {
 /* Converts Hex string to Uint8Array string */
 export const hexToUint8Array = async (data: string) => {
   try {
-    return await window.electronAPI.local.utils.hexToUint8Array(data);
+    const bytesString = await window.electronAPI.local.utils.hexToUint8Array(data);
+
+    return Uint8Array.from(bytesString.split(',').map(b => Number(b)));
   } catch (error) {
     throw new Error('Failed to convert hex to UInt8Array string');
+  }
+};
+
+/* Converts Hex string to Uint8Array string */
+export const hexToUint8ArrayBatch = async (data: string[]) => {
+  try {
+    const bytesArray = await window.electronAPI.local.utils.hexToUint8ArrayBatch(data);
+    return bytesArray.map(bytesString =>
+      Uint8Array.from(bytesString.split(',').map(b => Number(b))),
+    );
+  } catch (error) {
+    throw new Error('Failed to convert hexes to UInt8Array string');
   }
 };
