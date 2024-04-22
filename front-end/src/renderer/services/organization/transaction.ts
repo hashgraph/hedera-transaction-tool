@@ -1,10 +1,16 @@
 import axios, { AxiosError } from 'axios';
-import { throwIfNoResponse } from '.';
-import { decryptPrivateKey } from '../keyPairService';
-import { getPrivateKey, getSignatures } from '@renderer/utils';
+
 import { Transaction } from '@hashgraph/sdk';
-import { LoggedInOrganization, LoggedInUserWithPassword } from '@renderer/types';
 import { Organization } from '@prisma/client';
+
+import { LoggedInOrganization, LoggedInUserWithPassword } from '@renderer/types';
+
+import { getPrivateKey, getSignatures } from '@renderer/utils';
+import { ITransaction } from '@main/shared/interfaces';
+
+import { decryptPrivateKey } from '../keyPairService';
+
+import { throwIfNoResponse } from '.';
 
 const controller = 'transactions';
 
@@ -102,5 +108,58 @@ export const fullUploadSignatures = async (
       organization.userKeys.find(k => k.publicKey === publicKey)?.id || -1,
       signatures,
     );
+  }
+};
+
+/* Get transactions to sign */
+export const getTransactionsToSign = async (
+  serverUrl: string,
+): Promise<
+  {
+    transaction: ITransaction;
+    keysToSign: number[];
+  }[]
+> => {
+  try {
+    const { data } = await axios.get(`${serverUrl}/${controller}/sign`, {
+      withCredentials: true,
+    });
+
+    return data;
+  } catch (error: any) {
+    let message = 'Failed to get transactions to sign';
+
+    if (error instanceof AxiosError) {
+      throwIfNoResponse(error);
+
+      const errorMessage = error.response?.data?.message;
+      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
+        message = errorMessage;
+      }
+    }
+    throw new Error(message);
+  }
+};
+
+/* Get the count of the transactions to sign */
+export const getTransactionsToSignCount = async (serverUrl: string): Promise<number> => {
+  try {
+    const { data } = await axios.get(`${serverUrl}/${controller}/sign/count`, {
+      withCredentials: true,
+    });
+
+    return Number(data);
+  } catch (error: any) {
+    let message = 'Failed to get transactions to sign';
+
+    if (error instanceof AxiosError) {
+      throwIfNoResponse(error);
+
+      const errorMessage = error.response?.data?.message;
+      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
+        message = errorMessage;
+      }
+    }
+    throw new Error(message);
   }
 };
