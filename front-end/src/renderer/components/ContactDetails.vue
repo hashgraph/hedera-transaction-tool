@@ -57,9 +57,10 @@ async function handleDeleteContact() {
         <ul
           v-for="associated_account in contact?.associated_accounts"
           :key="associated_account.account_id"
+          class="d-flex"
         >
           <li
-            class="col-5 py-2 px-3 text-center flex-shrink-1"
+            class="py-2 px-3 text-center"
             :class="
               associated_account.account_id != contact.associated_accounts[0].account_id
                 ? 'mt-3'
