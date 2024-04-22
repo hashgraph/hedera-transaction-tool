@@ -1,5 +1,10 @@
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
+
+import { AssociatedAccount, Contact, ContactPublicKey } from '@main/shared/interfaces';
+
+import useUserStore from './storeUser';
+
 import {
   getOrganizationContacts,
   getPersonalContacts,
@@ -7,8 +12,6 @@ import {
   removeContact,
   updateContact,
 } from '@renderer/services/contactsService';
-import { getAssociatedAccounts } from '@renderer/services/associatedAccountsService';
-import useUserStore from './storeUser';
 import {
   getBackendContactPublicKeys,
   getBackendOrganizationContacts,
@@ -17,7 +20,9 @@ import {
   getContactPublicKeys,
   addContactPublicKey,
 } from '@renderer/services/contactPublicKeysService';
-import { AssociatedAccount, Contact, ContactPublicKey } from '@main/shared/interfaces';
+import { getAssociatedAccounts } from '@renderer/services/associatedAccountsService';
+
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 const useContactsStore = defineStore('contacts', () => {
   const user = useUserStore();
@@ -28,8 +33,9 @@ const useContactsStore = defineStore('contacts', () => {
   /* Actions */
   async function fetch() {
     await new Promise(r => setTimeout(r, 2000));
-    if (user.personal?.isLoggedIn) {
-      if (user.selectedOrganization?.isServerActive && !user.selectedOrganization.loginRequired) {
+
+    if (isUserLoggedIn(user.personal)) {
+      if (isLoggedInOrganization(user.selectedOrganization)) {
         const backendContacts = await getBackendOrganizationContacts(
           user.selectedOrganization.serverUrl,
         );
