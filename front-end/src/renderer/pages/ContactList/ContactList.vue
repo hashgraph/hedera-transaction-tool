@@ -39,11 +39,11 @@ function handleHideAddNew() {
     <div class="container-fluid flex-column-100">
       <div class="d-flex justify-content-between">
         <h1 class="text-title text-bold">Contact List</h1>
-        <div class="d-flex align-items-center gap-4">
-          <div class="px-5">Export Contact List</div>
-          <div class="border py-3 ps-4" style="width: 205px">
-            <div>Search Accounts</div>
-          </div>
+        <div class="d-flex align-items-center justify-content-end gap-4">
+          <span class="px-5 link-primary text-small cursor-pointer ws-no-wrap"
+            >Export Contact List</span
+          >
+          <input class="form-control" placeholder="Search Accounts" />
         </div>
       </div>
 

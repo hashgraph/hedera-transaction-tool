@@ -5,10 +5,8 @@ import AppButton from './ui/AppButton.vue';
 import useContactsStore from '@renderer/stores/storeContacts';
 import AddAssociatedAccountModal from './AddAssociatedAccountModal.vue';
 import useUserStore from '@renderer/stores/storeUser';
-import useThemeStore from '@renderer/stores/storeTheme';
 
 /* Stores */
-const theme = useThemeStore();
 const contactsStore = useContactsStore();
 const userStore = useUserStore();
 
@@ -29,7 +27,6 @@ const accountId = ref('');
 
 /* Handlers */
 async function handleAddContact() {
-  console.log(contact.value.associatedAccounts);
   if (userStore.personal?.isLoggedIn) {
     await contactsStore.add(
       userStore.personal?.id,
@@ -80,33 +77,24 @@ function onUpdateAccountId() {
     />
     <div v-if="contact.associatedAccounts.length > 0" class="mt-5">
       <ul v-for="accountId in contact.associatedAccounts" :key="accountId" class="mt-3 d-flex">
-        <li
-          class="py-2 px-3 text-center flex-shrink-1"
-          style="background-color: #edefff; border-radius: 6px; font-weight: 600"
-        >
+        <li class="py-2 px-3 text-center flex-shrink-1 badge text-bg-secondary">
           {{ accountId }}
         </li>
       </ul>
     </div>
     <div class="py-5 border-bottom">
       <AppButton
+        color="borderless"
         @click="isAddAccountModalShown = !isAddAccountModalShown"
-        type="button"
-        style="color: #777abb; padding: 0; border: none; font-weight: 700"
+        size="small"
         >+ Add Associated Accounts</AppButton
       >
     </div>
     <div class="mt-5 d-flex gap-4">
-      <AppButton type="submit" color="primary" class="w-100">Save</AppButton>
-      <AppButton
-        @click="emit('hideAddNew', false)"
-        type="button"
-        color="primary"
-        outline
-        class="w-100"
-        :style="theme.isDark ? 'color: white' : ''"
+      <AppButton @click="emit('hideAddNew', false)" color="borderless" outline class="w-100"
         >Cancel</AppButton
       >
+      <AppButton type="submit" color="secondary" class="w-100">Save</AppButton>
     </div>
   </form>
   <AddAssociatedAccountModal
