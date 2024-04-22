@@ -4,6 +4,8 @@ import { encrypt, decrypt } from '@main/utils/crypto';
 
 import { getPrismaClient } from '@main/db';
 
+import { getCurrentUser, getOrganization } from '.';
+
 //Get all stored secret hash objects
 export const getSecretHashes = async (
   user_id: string,
@@ -11,15 +13,18 @@ export const getSecretHashes = async (
 ): Promise<string[]> => {
   const prisma = getPrismaClient();
 
+  const where: Prisma.KeyPairWhereInput = {
+    user_id,
+    secret_hash: {
+      not: null,
+    },
+  };
+
+  await extendWhere(where, organization_id);
+
   const groups = await prisma.keyPair.groupBy({
     by: ['secret_hash'],
-    where: {
-      user_id,
-      organization_id,
-      secret_hash: {
-        not: null,
-      },
-    },
+    where,
   });
 
   return groups.map(gr => gr.secret_hash).filter(sh => sh !== null) as string[];
@@ -32,11 +37,14 @@ export const getKeyPairs = async (
 ): Promise<KeyPair[]> => {
   const prisma = getPrismaClient();
 
+  const where: Prisma.KeyPairWhereInput = {
+    user_id,
+  };
+
+  await extendWhere(where, organization_id);
+
   return prisma.keyPair.findMany({
-    where: {
-      user_id,
-      organization_id: organization_id,
-    },
+    where,
     orderBy: {
       secret_hash: 'desc',
     },
@@ -91,13 +99,13 @@ export const changeDecryptionPassword = async (
 };
 
 // Decrypt user's private key
-export const decryptPrivateKey = async (userId: string, password: string, publicKey: string) => {
+export const decryptPrivateKey = async (user_id: string, password: string, public_key: string) => {
   const prisma = getPrismaClient();
 
   const keyPair = await prisma.keyPair.findFirst({
     where: {
-      user_id: userId,
-      public_key: publicKey,
+      user_id,
+      public_key,
     },
     select: {
       private_key: true,
@@ -108,13 +116,20 @@ export const decryptPrivateKey = async (userId: string, password: string, public
 };
 
 // Delete encrypted private keys
-export const deleteEncryptedPrivateKeys = async (userId: string, organizationId: string) => {
+export const deleteEncryptedPrivateKeys = async (
+  user_id: string,
+  organization_id?: string | null,
+) => {
   const prisma = getPrismaClient();
 
+  const where: Prisma.KeyPairWhereInput = {
+    user_id,
+  };
+
+  await extendWhere(where, organization_id);
+
   await prisma.keyPair.updateMany({
-    where: {
-      AND: [{ user_id: userId }, { organization_id: organizationId }],
-    },
+    where,
     data: {
       private_key: '',
     },
@@ -122,14 +137,17 @@ export const deleteEncryptedPrivateKeys = async (userId: string, organizationId:
 };
 
 // Clear user's keys
-export const deleteSecretHashes = async (user_id: string, organization_id?: string) => {
+export const deleteSecretHashes = async (user_id: string, organization_id?: string | null) => {
   const prisma = getPrismaClient();
 
+  const where: Prisma.KeyPairWhereInput = {
+    user_id,
+  };
+
+  await extendWhere(where, organization_id);
+
   await prisma.keyPair.deleteMany({
-    where: {
-      user_id,
-      organization_id: organization_id ? organization_id : null,
-    },
+    where,
   });
 };
 
@@ -143,3 +161,24 @@ export const deleteKeyPair = async (keyPairId: string) => {
     },
   });
 };
+
+async function extendWhere(where: Prisma.KeyPairWhereInput, organization_id?: string | null) {
+  if (organization_id !== undefined) {
+    if (organization_id === null) {
+      where.organization_id = null;
+      return;
+    }
+
+    const organization = await getOrganization(organization_id);
+
+    if (organization) {
+      const tokenPayload = await getCurrentUser(organization.serverUrl);
+
+      where.organization_id = organization.id;
+
+      if (tokenPayload && tokenPayload.userId && !isNaN(tokenPayload.userId)) {
+        where.organization_user_id = parseInt(tokenPayload.userId);
+      } else where.organization_id = null;
+    } else where.organization_id = null;
+  }
+}
