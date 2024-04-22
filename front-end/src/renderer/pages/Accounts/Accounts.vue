@@ -14,6 +14,7 @@ import { getKeyListLevels } from '@renderer/services/keyPairService';
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 
 import { stringifyHbar, getFormattedDateFromTimestamp } from '@renderer/utils';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import { transactionTypeKeys } from '../CreateTransaction/txTypeComponentMapping';
 
@@ -22,7 +23,6 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 /* Enums */
 // enum Sorting {
