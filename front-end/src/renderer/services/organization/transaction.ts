@@ -199,20 +199,9 @@ export const getTransactionsForUser = async (
   skip: number,
   take: number,
 ): Promise<ITransaction[]> => {
-  let endpoint: string = '';
-
-  switch (status) {
-    case TransactionStatus.WAITING_FOR_EXECUTION:
-      endpoint = 'ready-to-execute';
-      break;
-    case TransactionStatus.WAITING_FOR_SIGNATURES:
-      endpoint = 'in-progress';
-      break;
-  }
-
   try {
     const { data } = await axios.get(
-      `${serverUrl}/${controller}/${endpoint}?skip=${skip}&take=${take}`,
+      `${serverUrl}/${controller}?skip=${skip}&take=${take}&status=${status}`,
       {
         withCredentials: true,
       },
@@ -239,19 +228,8 @@ export const getTransactionsForUserCount = async (
   serverUrl: string,
   status: TransactionStatus,
 ): Promise<number> => {
-  let endpoint: string = '';
-
-  switch (status) {
-    case TransactionStatus.WAITING_FOR_EXECUTION:
-      endpoint = 'ready-to-execute/count';
-      break;
-    case TransactionStatus.WAITING_FOR_SIGNATURES:
-      endpoint = 'in-progress/count';
-      break;
-  }
-
   try {
-    const { data } = await axios.get(`${serverUrl}/${controller}/${endpoint}`, {
+    const { data } = await axios.get(`${serverUrl}/${controller}/count?status=${status}`, {
       withCredentials: true,
     });
 
