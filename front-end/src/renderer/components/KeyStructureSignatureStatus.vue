@@ -27,7 +27,7 @@ defineEmits(['update:keyList']);
         v-if="publicKeysSigned.includes(publicKeysInKeyListRaw[0])"
         class="bi bi-check-lg text-success"
       ></span>
-      <span>{{ publicKeysInKeyListRaw[0] }}</span>
+      {{ publicKeysInKeyListRaw[0] }}
     </div>
   </template>
   <template v-else>
