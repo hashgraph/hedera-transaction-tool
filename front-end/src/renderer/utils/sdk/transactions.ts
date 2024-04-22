@@ -3,6 +3,13 @@ import { Transaction } from '@hashgraph/sdk';
 export const getTransactionDate = (transaction: Transaction) =>
   transaction.transactionId?.validStart?.toDate().toDateString() || null;
 
+export const getTransactionDateExtended = (transaction: Transaction) => {
+  const validStart = transaction.transactionId?.validStart;
+  if (!validStart) return null;
+
+  return `${validStart.toDate().toDateString()} ${validStart.toDate().toLocaleTimeString()}`;
+};
+
 export const getTransactionId = (transaction: Transaction) => {
   if (!transaction.transactionId?.accountId || !transaction.transactionId?.validStart) {
     return null;
