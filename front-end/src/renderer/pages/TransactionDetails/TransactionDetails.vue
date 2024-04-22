@@ -54,6 +54,7 @@ const stepperActiveIndex = computed(() => {
       return -1;
   }
 });
+
 const transactionSpecificLabel = computed(() => {
   if (!sdkTransaction.value || !(sdkTransaction.value instanceof Transaction))
     return 'Transaction Specific Details';
@@ -71,6 +72,12 @@ const transactionSpecificLabel = computed(() => {
   if (type.includes('transfer')) return 'Transfer Info';
 
   return 'Transaction Specific Details';
+});
+
+const signersPublicKeys = computed(() => {
+  if (!transaction.value || !transaction.value.signers) return [];
+
+  return transaction.value.signers.map(signer => signer.userKey.publicKey);
 });
 
 /* Handlers */
@@ -247,7 +254,10 @@ const stepperItems = [
             <!-- SIGNATURES COLLECTED -->
             <h2 :class="sectionHeadingClass">Signatures Collected</h2>
             <div v-if="signatureKey" class="text-small mt-5">
-              <KeyStructureSignatureStatus :keyList="signatureKey" :public-keys-signed="[]" />
+              <KeyStructureSignatureStatus
+                :keyList="signatureKey"
+                :public-keys-signed="signersPublicKeys"
+              />
             </div>
           </form>
         </template>
