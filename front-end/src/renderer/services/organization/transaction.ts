@@ -114,6 +114,8 @@ export const fullUploadSignatures = async (
 /* Get transactions to sign */
 export const getTransactionsToSign = async (
   serverUrl: string,
+  skip: number,
+  take: number,
 ): Promise<
   {
     transaction: ITransaction;
@@ -121,7 +123,7 @@ export const getTransactionsToSign = async (
   }[]
 > => {
   try {
-    const { data } = await axios.get(`${serverUrl}/${controller}/sign`, {
+    const { data } = await axios.get(`${serverUrl}/${controller}/sign?skip=${skip}&take=${take}`, {
       withCredentials: true,
     });
 
