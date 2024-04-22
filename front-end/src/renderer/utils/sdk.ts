@@ -12,6 +12,7 @@ import {
   PrivateKey,
   PublicKey,
   Timestamp,
+  Transaction,
 } from '@hashgraph/sdk';
 import { HederaSpecialFileId } from '@main/shared/interfaces';
 
@@ -118,7 +119,9 @@ export function getMaximumExpirationTime() {
   return now;
 }
 
-export function isPublicKeyInKeyList(publicKey: PublicKey, keyList: KeyList) {
+export function isPublicKeyInKeyList(publicKey: string | PublicKey, keyList: KeyList) {
+  publicKey = publicKey instanceof PublicKey ? publicKey : PublicKey.fromString(publicKey);
+
   const keys = keyList.toArray();
   return keys.some(key => {
     if (key instanceof PublicKey) {
@@ -247,4 +250,15 @@ export const getPrivateKey = (
       : PrivateKey.fromStringED25519(privateKeyString);
 
   return privateKey;
+};
+
+export const isExpired = (transaction: Transaction) => {
+  if (!transaction.transactionId?.validStart) {
+    return true;
+  }
+
+  const validStart = transaction.transactionId.validStart.toDate();
+  const duration = transaction.transactionValidDuration;
+
+  return new Date().getTime() >= validStart.getTime() + duration * 1_000;
 };
