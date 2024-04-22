@@ -175,89 +175,91 @@ const stepperItems = [
               </div>
             </div>
 
-            <!-- Name -->
-            <div class="mt-5">
-              <h4 :class="detailItemLabelClass">Name</h4>
-              <p :class="detailItemValueClass">{{ transaction.name }}</p>
-            </div>
-
-            <!-- Description -->
-            <div v-if="transaction.description" class="mt-5">
-              <h4 :class="detailItemLabelClass">Description</h4>
-              <p :class="detailItemValueClass">{{ transaction.description }}</p>
-            </div>
-
-            <!-- Transaction Status -->
-            <div class="mt-5">
-              <h4 :class="detailItemLabelClass">Transaction Status</h4>
-              <div class="col-xxl-7">
-                <AppStepper :items="stepperItems" :active-index="stepperActiveIndex" />
+            <div class="fill-remaining mt-5">
+              <!-- Name -->
+              <div>
+                <h4 :class="detailItemLabelClass">Name</h4>
+                <p :class="detailItemValueClass">{{ transaction.name }}</p>
               </div>
-            </div>
 
-            <!-- Reviewers -->
-            <!-- <div class="mt-5">
+              <!-- Description -->
+              <div v-if="transaction.description" class="mt-5">
+                <h4 :class="detailItemLabelClass">Description</h4>
+                <p :class="detailItemValueClass">{{ transaction.description }}</p>
+              </div>
+
+              <!-- Transaction Status -->
+              <div class="mt-5">
+                <h4 :class="detailItemLabelClass">Transaction Status</h4>
+                <div class="col-xxl-7">
+                  <AppStepper :items="stepperItems" :active-index="stepperActiveIndex" />
+                </div>
+              </div>
+
+              <!-- Reviewers -->
+              <!-- <div class="mt-5">
               <h4 :class="detailItemLabelClass">Reviewers</h4>
             </div> -->
 
-            <hr class="separator my-5" />
+              <hr class="separator my-5" />
 
-            <!-- TRANSACTION GENERAL DETAILS -->
-            <h2 :class="sectionHeadingClass">Transaction Details</h2>
+              <!-- TRANSACTION GENERAL DETAILS -->
+              <h2 :class="sectionHeadingClass">Transaction Details</h2>
 
-            <!-- General Transaction Information -->
-            <div class="mt-5 row flex-wrap">
-              <!-- Transaction Type -->
-              <div :class="commonColClass">
-                <h4 :class="detailItemLabelClass">Type</h4>
-                <p :class="detailItemValueClass">{{ getTransactionType(sdkTransaction) }}</p>
+              <!-- General Transaction Information -->
+              <div class="mt-5 row flex-wrap">
+                <!-- Transaction Type -->
+                <div :class="commonColClass">
+                  <h4 :class="detailItemLabelClass">Type</h4>
+                  <p :class="detailItemValueClass">{{ getTransactionType(sdkTransaction) }}</p>
+                </div>
+
+                <!-- Transaction Type -->
+                <div :class="commonColClass">
+                  <h4 :class="detailItemLabelClass">Transaction ID</h4>
+                  <p :class="detailItemValueClass">{{ getTransactionId(sdkTransaction) }}</p>
+                </div>
+
+                <!-- Transaction Valid Start -->
+                <div :class="commonColClass">
+                  <h4 :class="detailItemLabelClass">Valid Start</h4>
+                  <p :class="detailItemValueClass">
+                    {{ getTransactionDateExtended(sdkTransaction) }}
+                  </p>
+                </div>
+
+                <!-- Transaction Fee Payer -->
+                <div :class="commonColClass">
+                  <h4 :class="detailItemLabelClass">Fee Payer</h4>
+                  <p :class="detailItemValueClass">
+                    {{ getTransactionPayerId(sdkTransaction) }}
+                  </p>
+                </div>
               </div>
 
-              <!-- Transaction Type -->
-              <div :class="commonColClass">
-                <h4 :class="detailItemLabelClass">Transaction ID</h4>
-                <p :class="detailItemValueClass">{{ getTransactionId(sdkTransaction) }}</p>
-              </div>
-
-              <!-- Transaction Valid Start -->
-              <div :class="commonColClass">
-                <h4 :class="detailItemLabelClass">Valid Start</h4>
+              <!-- Transaction Memo -->
+              <div v-if="sdkTransaction.transactionMemo" class="mt-5">
+                <h4 :class="detailItemLabelClass">Transaction Memo</h4>
                 <p :class="detailItemValueClass">
-                  {{ getTransactionDateExtended(sdkTransaction) }}
+                  {{ sdkTransaction.transactionMemo }}
                 </p>
               </div>
 
-              <!-- Transaction Fee Payer -->
-              <div :class="commonColClass">
-                <h4 :class="detailItemLabelClass">Fee Payer</h4>
-                <p :class="detailItemValueClass">
-                  {{ getTransactionPayerId(sdkTransaction) }}
-                </p>
+              <hr class="separator my-5" />
+
+              <!-- TRANSACTION SPECIFIC DETAILS -->
+              <h2 :class="sectionHeadingClass">{{ transactionSpecificLabel }}</h2>
+
+              <hr class="separator my-5" />
+
+              <!-- SIGNATURES COLLECTED -->
+              <h2 :class="sectionHeadingClass">Signatures Collected</h2>
+              <div v-if="signatureKey" class="text-small mt-5">
+                <KeyStructureSignatureStatus
+                  :keyList="signatureKey"
+                  :public-keys-signed="signersPublicKeys"
+                />
               </div>
-            </div>
-
-            <!-- Transaction Memo -->
-            <div v-if="sdkTransaction.transactionMemo" class="mt-5">
-              <h4 :class="detailItemLabelClass">Transaction Memo</h4>
-              <p :class="detailItemValueClass">
-                {{ sdkTransaction.transactionMemo }}
-              </p>
-            </div>
-
-            <hr class="separator my-5" />
-
-            <!-- TRANSACTION SPECIFIC DETAILS -->
-            <h2 :class="sectionHeadingClass">{{ transactionSpecificLabel }}</h2>
-
-            <hr class="separator my-5" />
-
-            <!-- SIGNATURES COLLECTED -->
-            <h2 :class="sectionHeadingClass">Signatures Collected</h2>
-            <div v-if="signatureKey" class="text-small mt-5">
-              <KeyStructureSignatureStatus
-                :keyList="signatureKey"
-                :public-keys-signed="signersPublicKeys"
-              />
             </div>
           </form>
         </template>
