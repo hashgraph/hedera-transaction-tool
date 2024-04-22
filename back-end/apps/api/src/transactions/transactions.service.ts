@@ -46,23 +46,47 @@ export class TransactionsService {
   ) {}
 
   /* Get the transaction for the provided id in the DATABASE */
-  getTransactionById(id: number): Promise<Transaction> {
+  async getTransactionById(id: number): Promise<Transaction> {
     if (!id) return null;
 
-    return this.repo.findOne({
+    const transaction = await this.repo.findOne({
       where: { id },
-      relations: ['creatorKey', 'approvers', 'observers', 'comments', 'signers', 'signers.userKey'],
+      relations: [
+        'creatorKey',
+        'creatorKey.user',
+        'approvers',
+        'observers',
+        'comments',
+        'signers',
+        'signers.userKey',
+      ],
     });
+
+    if (!transaction) return null;
+
+    transaction.signers = await this.signersService.getSignaturesByTransactionId(
+      transaction.id,
+      true,
+    );
+
+    return transaction;
   }
 
   /* Get the transaction for the provided transaction id OF THE TRANSACTION */
-  getTransactionId(id: string): Promise<Transaction> {
+  async getTransactionId(id: string): Promise<Transaction> {
     if (!id) return null;
 
-    return this.repo.findOne({
+    const transaction = await this.repo.findOne({
       where: { transactionId: id },
       relations: ['creatorKey', 'approvers', 'observers', 'comments', 'signers', 'signers.userKey'],
     });
+
+    transaction.signers = await this.signersService.getSignaturesByTransactionId(
+      transaction.id,
+      true,
+    );
+
+    return transaction;
   }
 
   /* Get the transactions created by the user */
@@ -108,7 +132,7 @@ export class TransactionsService {
     const transactions = await this.repo.find({
       where: {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
-        validStart: MoreThan(new Date(new Date().getTime() + 180 * 1_000)),
+        validStart: MoreThan(new Date(new Date().getTime() - 180 * 1_000)),
       },
     });
 
@@ -169,6 +193,7 @@ export class TransactionsService {
     const signatures = await this.signersService.getSignatureByTransactionIdAndUserId(
       transaction.id,
       user.id,
+      true,
     );
 
     /* Deserialize the transaction */
@@ -188,7 +213,7 @@ export class TransactionsService {
             userKey.publicKey,
             key instanceof KeyList ? key : new KeyList([key]),
           ),
-        ) && !signatures.some(s => s.userKeyId === userKey.id),
+        ) && !signatures.some(s => s.userKey.publicKey === userKey.publicKey),
     );
     userKeysIncludedInTransaction.forEach(userKey => userKeyIdsRequired.add(userKey.id));
 
@@ -197,13 +222,13 @@ export class TransactionsService {
         user.keys.filter(
           userKey =>
             userKey.publicKey === key.toStringRaw() &&
-            !signatures.some(s => s.userKeyId === userKey.id),
+            !signatures.some(s => s.userKey.publicKey === userKey.publicKey),
         )) ||
       (key instanceof KeyList &&
         user.keys.filter(
           userKey =>
             isPublicKeyInKeyList(userKey.publicKey, key) &&
-            !signatures.some(s => s.userKeyId === userKey.id),
+            !signatures.some(s => s.userKey.publicKey === userKey.publicKey),
         ));
 
     /* Check if a key of the user is inside the key of some account required to sign */
@@ -338,15 +363,21 @@ export class TransactionsService {
     return transaction;
   }
 
-  // Remove the transaction for the given transaction id.
-  async removeTransaction(id: number): Promise<Transaction> {
+  /* Remove the transaction for the given transaction id. */
+  async removeTransaction(id: number, user: UserDto): Promise<boolean> {
     const transaction = await this.getTransactionById(id);
 
     if (!transaction) {
-      throw new Error('transaction not found');
+      throw new BadRequestException('Transaction not found');
     }
 
-    return this.repo.remove(transaction);
+    if (transaction.creatorKey?.user?.id !== user.id) {
+      throw new BadRequestException('Only the creator of the transaction is able to delete it');
+    }
+
+    await this.repo.softRemove(transaction);
+
+    return true;
   }
 
   /* Gets the transaction with a status that are not expired */

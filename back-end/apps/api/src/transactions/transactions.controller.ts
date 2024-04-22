@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseEnumPipe,
+  ParseIntPipe,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { Serialize } from '@app/common';
@@ -42,8 +53,9 @@ export class TransactionsController {
 
   /* Get all transactions created by the user */
   @ApiOperation({
-    summary: 'Get created transactions',
-    description: 'Get all transactions that were created by the current user.',
+    summary: 'Get created transactions by user or transactions with specific status',
+    description:
+      'Get all transactions that were created by the current user or all transactions that are with the provided status.',
   })
   @ApiResponse({
     status: 200,
@@ -55,8 +67,38 @@ export class TransactionsController {
     @GetUser() user: User,
     @Query('take', ParseIntPipe) take: number,
     @Query('skip', ParseIntPipe) skip: number,
+    @Query(
+      'status',
+      new ParseEnumPipe(TransactionStatus, {
+        optional: true,
+      }),
+    )
+    status?: TransactionStatus,
   ): Promise<Transaction[]> {
+    if (status) {
+      return this.transactionsService.getTransactionsForUserWithStatus(user, status, take, skip);
+    }
+
     return this.transactionsService.getTransactions(user, take, skip);
+  }
+
+  /* Get the count of transactions that the user is part of with specific status */
+  @ApiOperation({
+    summary: 'Get the count of transactions that are with specific state',
+    description:
+      'Get transactions that the user is part of with the provided status. If no status is provided',
+  })
+  @ApiResponse({
+    status: 200,
+    type: Number,
+  })
+  @Get('/count')
+  getTransactionsForUserCount(
+    @GetUser() user: User,
+    @Query('status', new ParseEnumPipe(TransactionStatus))
+    status: TransactionStatus,
+  ) {
+    return this.transactionsService.getTransactionsForUserWithStatusCount(user, status);
   }
 
   /* Get the count of all transactions to be signed by the user */
@@ -147,92 +189,6 @@ export class TransactionsController {
     return this.transactionsService.getTransactionsToObserve(user, take, skip);
   }
 
-  /* Get all transactions that the user is part of and has signed */
-  @ApiOperation({
-    summary: 'Get transactions that are in progress',
-    description:
-      'Get transactions that has been signed by the user and are waiting for other signatures',
-  })
-  @ApiResponse({
-    status: 200,
-    type: [TransactionDto],
-  })
-  @Get('/in-progress')
-  @Serialize(TransactionDto)
-  getTransactionsInProgressForUser(
-    @GetUser() user: User,
-    @Query('take', ParseIntPipe) take: number,
-    @Query('skip', ParseIntPipe) skip: number,
-  ) {
-    return this.transactionsService.getTransactionsForUserWithStatus(
-      user,
-      TransactionStatus.WAITING_FOR_SIGNATURES,
-      take,
-      skip,
-    );
-  }
-
-  /* Get the count of transactions that the user is part of and has signed */
-  @ApiOperation({
-    summary: 'Get the count of transactions that are in progress and user has signed',
-    description:
-      'Get transactions that has been signed by the user and are waiting for other signatures',
-  })
-  @ApiResponse({
-    status: 200,
-    type: Number,
-  })
-  @Get('/in-progress/count')
-  getTransactionsInProgressForUserCount(@GetUser() user: User) {
-    return this.transactionsService.getTransactionsForUserWithStatusCount(
-      user,
-      TransactionStatus.WAITING_FOR_SIGNATURES,
-    );
-  }
-
-  /* Get all transactions that the user is part of user and are ready to execute */
-  @ApiOperation({
-    summary: 'Get transactions that are ready to execute',
-    description:
-      'Get transactions that has been signed by the user and are waiting for other signatures',
-  })
-  @ApiResponse({
-    status: 200,
-    type: [TransactionDto],
-  })
-  @Get('/ready-to-execute')
-  @Serialize(TransactionDto)
-  getTransactionsReadyToExecuteForUser(
-    @GetUser() user: User,
-    @Query('take', ParseIntPipe) take: number,
-    @Query('skip', ParseIntPipe) skip: number,
-  ) {
-    return this.transactionsService.getTransactionsForUserWithStatus(
-      user,
-      TransactionStatus.WAITING_FOR_EXECUTION,
-      take,
-      skip,
-    );
-  }
-
-  /* Get the count of transactions that the user is part of user and are ready to execute */
-  @ApiOperation({
-    summary: 'Get the count of transactions that are ready to execute and user has signed',
-    description:
-      'Get transactions that has been signed by the user and are waiting for other signatures',
-  })
-  @ApiResponse({
-    status: 200,
-    type: Number,
-  })
-  @Get('/ready-to-execute/count')
-  getTransactionsReadyToExecuteForUserCount(@GetUser() user: User) {
-    return this.transactionsService.getTransactionsForUserWithStatusCount(
-      user,
-      TransactionStatus.WAITING_FOR_EXECUTION,
-    );
-  }
-
   @ApiOperation({
     summary: 'Get a transaction',
     description: 'Get the transaction for the given transaction id.',
@@ -245,5 +201,17 @@ export class TransactionsController {
   @Serialize(TransactionFullDto)
   getTransaction(@Param('id', ParseIntPipe) id: number): Promise<Transaction> {
     return this.transactionsService.getTransactionById(id);
+  }
+
+  @ApiOperation({
+    summary: 'Deletes a transaction',
+    description: 'Deletes the transaction for the given transaction id.',
+  })
+  @ApiResponse({
+    status: 200,
+  })
+  @Delete('/:id')
+  deleteTransaction(@GetUser() user, @Param('id', ParseIntPipe) id: number): Promise<boolean> {
+    return this.transactionsService.removeTransaction(id, user);
   }
 }

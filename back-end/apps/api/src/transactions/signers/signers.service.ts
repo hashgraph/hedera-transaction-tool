@@ -31,6 +31,7 @@ export class SignersService {
     }
     return this.repo.findOne({
       where: { id },
+      withDeleted: true,
     });
   }
 
@@ -39,6 +40,7 @@ export class SignersService {
     user: User,
     take: number = 10,
     skip: number = 0,
+    withDeleted: boolean = false,
   ): Promise<TransactionSigner[]> {
     if (!user) return null;
 
@@ -54,13 +56,17 @@ export class SignersService {
         userKeyId: true,
         createdAt: true,
       },
+      withDeleted,
       skip,
       take,
     });
   }
 
   /* Get the signatures for the given transaction id */
-  getSignaturesByTransactionId(transactionId: number): Promise<TransactionSigner[]> {
+  getSignaturesByTransactionId(
+    transactionId: number,
+    withDeleted: boolean = false,
+  ): Promise<TransactionSigner[]> {
     if (!transactionId) {
       return null;
     }
@@ -73,6 +79,7 @@ export class SignersService {
       relations: {
         userKey: true,
       },
+      withDeleted,
     });
   }
 
@@ -80,6 +87,7 @@ export class SignersService {
   getSignatureByTransactionIdAndUserId(
     transactionId: number,
     userId: number,
+    withDeleted: boolean = false,
   ): Promise<TransactionSigner[]> {
     if (!transactionId || !userId) {
       return null;
@@ -93,6 +101,10 @@ export class SignersService {
           id: userId,
         },
       },
+      relations: {
+        userKey: true,
+      },
+      withDeleted,
     });
   }
 
@@ -173,9 +185,8 @@ export class SignersService {
     }
   }
 
-  // Remove the signature for the given id.
-  async removeSignature(id: number): Promise<TransactionSigner> {
-    const signer = await this.getSignatureById(id);
-    return this.repo.remove(signer);
+  /* Remove the signature for the given id */
+  removeSignature(id: number) {
+    return this.repo.softDelete(id);
   }
 }
