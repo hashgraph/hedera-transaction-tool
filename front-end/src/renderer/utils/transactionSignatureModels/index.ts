@@ -96,3 +96,33 @@ export const shouldSignTransaction = async (
 
   return [...publicKeysRequired];
 };
+
+/* Computes the signature key for the transaction */
+export const computeSignatureKey = async (transaction: Transaction, mirrorNodeLink: string) => {
+  /* Get the accounts, receiver accounts and new keys from the transaction */
+  const { accounts, receiverAccounts, newKeys } = getSignatureEntities(transaction);
+
+  /* Create a new key list */
+  const sigantureKey = new KeyList();
+
+  /* Add keys to the signature key list */
+  newKeys.forEach(key => sigantureKey.push(key));
+
+  /* Add the keys of the account ids to the signature key list */
+  for (const accountId of accounts) {
+    const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
+    if (!accountInfo.key) continue;
+
+    sigantureKey.push(accountInfo.key);
+  }
+
+  /* Check if there is a receiver account that required signature, if so add it to the key list */
+  for (const accountId of receiverAccounts) {
+    const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
+    if (!accountInfo.receiverSignatureRequired || !accountInfo.key) continue;
+
+    sigantureKey.push(accountInfo.key);
+  }
+
+  return sigantureKey;
+};

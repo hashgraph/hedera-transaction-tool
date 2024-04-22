@@ -24,9 +24,9 @@ export const getTransactionPayerId = (transaction: Transaction) =>
 export const getTransactionValidStart = (transaction: Transaction) =>
   transaction.transactionId?.validStart?.toDate() || null;
 
-export const getTransactionType = (transaction: Transaction) => {
+export const getTransactionType = (transaction: Transaction, short = false) => {
   return transaction.constructor.name
     .slice(transaction.constructor.name.startsWith('_') ? 1 : 0)
     .split(/(?=[A-Z])/)
-    .join(' ');
+    .join(short ? '' : ' ');
 };
