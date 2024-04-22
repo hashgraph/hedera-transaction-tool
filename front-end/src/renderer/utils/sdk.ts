@@ -1,4 +1,3 @@
-import { proto } from '@hashgraph/proto';
 import {
   AccountId,
   FileId,
@@ -14,7 +13,11 @@ import {
   Timestamp,
   Transaction,
 } from '@hashgraph/sdk';
+import { proto } from '@hashgraph/proto';
+
 import { HederaSpecialFileId } from '@main/shared/interfaces';
+
+import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
 
 export const createFileInfo = (props: {
   fileId: FileId | string;
@@ -261,4 +264,23 @@ export const isExpired = (transaction: Transaction) => {
   const duration = transaction.transactionValidDuration;
 
   return new Date().getTime() >= validStart.getTime() + duration * 1_000;
+};
+
+export const getSignatures = async (privateKey: PrivateKey, transaction: Transaction) => {
+  const signatures: {
+    [key: string]: string;
+  } = {};
+
+  for (const { bodyBytes } of transaction._signedTransactions.list) {
+    if (!bodyBytes) continue;
+    const { nodeAccountID } = proto.TransactionBody.decode(bodyBytes);
+
+    if (!nodeAccountID) continue;
+    const nodeAccountId = AccountId._fromProtobuf(nodeAccountID);
+
+    const signature = privateKey.sign(bodyBytes);
+    signatures[nodeAccountId.toString()] = await uint8ArrayToHex(signature);
+  }
+
+  return signatures;
 };

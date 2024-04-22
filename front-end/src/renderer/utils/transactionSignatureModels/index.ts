@@ -2,7 +2,6 @@ import { Key, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
 
 import { IUserKey } from '@main/shared/interfaces';
 
-import { hexToUint8Array } from '@renderer/services/electronUtilsService';
 import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
 
 import { isExpired, isPublicKeyInKeyList } from '../sdk';
@@ -43,24 +42,18 @@ export const getSignatureEntities = (transaction: Transaction) => {
 
 /* Returns wheter a user should sign the transaction */
 export const shouldSignTransaction = async (
-  body: string,
+  transaction: Transaction,
   userKeys: IUserKey[],
   mirrorNodeLink: string,
 ): Promise<boolean> => {
   /* Ensures the user keys are passed */
   if (userKeys.length === 0) return false;
 
-  const bodyBytesString = await hexToUint8Array(body);
-  const bodyBytes = Uint8Array.from(bodyBytesString.split(',').map(b => Number(b)));
-
-  /* Deserialize the transaction */
-  const sdkTransaction = Transaction.fromBytes(bodyBytes);
-
   /* Ignore if expired */
-  if (isExpired(sdkTransaction)) return false;
+  if (isExpired(transaction)) return false;
 
   /* Get signature entities */
-  const { newKeys, accounts, receiverAccounts } = getSignatureEntities(sdkTransaction);
+  const { newKeys, accounts, receiverAccounts } = getSignatureEntities(transaction);
 
   /* Check if the user has a key that is required to sign */
   const userKeysIncludedInTransaction = userKeys.filter(userKey =>
