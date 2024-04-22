@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseEnumPipe,
@@ -200,5 +201,17 @@ export class TransactionsController {
   @Serialize(TransactionFullDto)
   getTransaction(@Param('id', ParseIntPipe) id: number): Promise<Transaction> {
     return this.transactionsService.getTransactionById(id);
+  }
+
+  @ApiOperation({
+    summary: 'Deletes a transaction',
+    description: 'Deletes the transaction for the given transaction id.',
+  })
+  @ApiResponse({
+    status: 200,
+  })
+  @Delete('/:id')
+  deleteTransaction(@GetUser() user, @Param('id', ParseIntPipe) id: number): Promise<boolean> {
+    return this.transactionsService.removeTransaction(id, user);
   }
 }

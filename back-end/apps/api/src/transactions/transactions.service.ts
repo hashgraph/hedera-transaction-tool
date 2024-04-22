@@ -51,8 +51,18 @@ export class TransactionsService {
 
     const transaction = await this.repo.findOne({
       where: { id },
-      relations: ['creatorKey', 'approvers', 'observers', 'comments', 'signers', 'signers.userKey'],
+      relations: [
+        'creatorKey',
+        'creatorKey.user',
+        'approvers',
+        'observers',
+        'comments',
+        'signers',
+        'signers.userKey',
+      ],
     });
+
+    if (!transaction) return null;
 
     transaction.signers = await this.signersService.getSignaturesByTransactionId(
       transaction.id,
@@ -352,15 +362,21 @@ export class TransactionsService {
     return transaction;
   }
 
-  // Remove the transaction for the given transaction id.
-  async removeTransaction(id: number): Promise<Transaction> {
+  /* Remove the transaction for the given transaction id. */
+  async removeTransaction(id: number, user: UserDto): Promise<boolean> {
     const transaction = await this.getTransactionById(id);
 
     if (!transaction) {
-      throw new Error('transaction not found');
+      throw new BadRequestException('Transaction not found');
     }
 
-    return this.repo.remove(transaction);
+    if (transaction.creatorKey?.user?.id !== user.id) {
+      throw new BadRequestException('Only the creator of the transaction is able to delete it');
+    }
+
+    await this.repo.softRemove(transaction);
+
+    return true;
   }
 
   /* Gets the transaction with a status that are not expired */
