@@ -188,7 +188,7 @@ export class TransactionsService {
             userKey.publicKey,
             key instanceof KeyList ? key : new KeyList([key]),
           ),
-        ) && !signatures.some(s => s.userKey.id === userKey.id),
+        ) && !signatures.some(s => s.userKeyId === userKey.id),
     );
     userKeysIncludedInTransaction.forEach(userKey => userKeyIdsRequired.add(userKey.id));
 
@@ -362,7 +362,7 @@ export class TransactionsService {
           userId: user.id,
         },
         status,
-        validStart: MoreThan(new Date(new Date().getTime() + 180 * 1_000)),
+        validStart: MoreThan(new Date(new Date().getTime() - 180 * 1_000)),
       },
       take,
       skip,
@@ -377,7 +377,7 @@ export class TransactionsService {
           userId: user.id,
         },
         status,
-        validStart: MoreThan(new Date(new Date().getTime() + 180 * 1_000)),
+        validStart: MoreThan(new Date(new Date().getTime() - 180 * 1_000)),
       },
     });
   }
