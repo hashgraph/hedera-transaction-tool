@@ -35,62 +35,70 @@ function handleHideAddNew() {
 </script>
 
 <template>
-  <div style="padding: 24px 44px">
-    <div class="d-flex justify-content-between">
-      <h1 class="text-title fw-semibold">Contact List</h1>
-      <div class="d-flex align-items-center gap-4">
-        <div class="px-5">Export Contact List</div>
-        <div class="border py-3 ps-4" style="width: 205px">
-          <div>Search Accounts</div>
-        </div>
-      </div>
-    </div>
-    <div class="d-flex h-100">
-      <div class="col-4 pe-4 pt-4 border-end">
-        <div class="pb-5 border-bottom">
-          <AppButton color="primary" size="large" class="w-100" @click="handleAddNew">
-            Add New
-          </AppButton>
-        </div>
-        <div v-for="contact in contactsStore.contacts" :key="contact.id">
-          <div
-            class="container-card-account p-4 mt-3"
-            :class="{
-              'is-selected': selectedIndex === contactsStore.contacts?.indexOf(contact),
-            }"
-            @click="handleSelectContact(contactsStore.contacts!.indexOf(contact))"
-          >
-            <div class="d-flex justify-content-between">
-              <p class="text-small text-semi-bold text-truncate">{{ contact?.key_name }}</p>
-              <p
-                class="text-small py-1 px-3 text-truncate"
-                style="background-color: #e5ccff; border-radius: 4px; color: black"
-              >
-                {{ contact?.organization }}
-              </p>
-            </div>
-            <div class="d-flex justify-content-between align-items-center">
-              <p class="text-micro text-secondary mt-2 text-truncate">
-                {{ contact?.associated_accounts[0]?.account_id }}
-              </p>
-            </div>
+  <div class="px-6 py-5">
+    <div class="container-fluid flex-column-100">
+      <div class="d-flex justify-content-between">
+        <h1 class="text-title text-bold">Contact List</h1>
+        <div class="d-flex align-items-center gap-4">
+          <div class="px-5">Export Contact List</div>
+          <div class="border py-3 ps-4" style="width: 205px">
+            <div>Search Accounts</div>
           </div>
         </div>
       </div>
-      <div class="col flex-grow-1 mt-3">
-        <Transition name="fade" mode="out-in">
-          <div v-if="addNew">
-            <AddNewContactForm
-              @hide-add-new="handleHideAddNew"
-              @update:added-contact="handleAddedContact"
+
+      <div class="row g-0 fill-remaining mt-6">
+        <div class="col-4 col-xxl-3 flex-column-100 overflow-hidden with-border-end pe-4 ps-0">
+          <div class="pb-5">
+            <AppButton color="primary" size="large" class="w-100" @click="handleAddNew">
+              Add New
+            </AppButton>
+          </div>
+
+          <hr class="separator my-5" />
+          <div class="fill-remaining pe-3">
+            <div v-for="contact in contactsStore.contacts" :key="contact.id">
+              <div
+                class="container-card-account p-4 mt-3"
+                :class="{
+                  'is-selected': selectedIndex === contactsStore.contacts?.indexOf(contact),
+                }"
+                @click="handleSelectContact(contactsStore.contacts!.indexOf(contact))"
+              >
+                <div class="d-flex justify-content-between">
+                  <p class="text-small text-semi-bold text-truncate">{{ contact?.key_name }}</p>
+                  <p
+                    class="text-small py-1 px-3 text-truncate"
+                    style="background-color: #e5ccff; border-radius: 4px; color: black"
+                  >
+                    {{ contact?.organization }}
+                  </p>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                  <p class="text-micro text-secondary mt-2 text-truncate">
+                    {{ contact?.associated_accounts[0]?.account_id }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-8 col-xxl-9 flex-column-100 ps-4">
+          <Transition name="fade" mode="out-in">
+            <div v-if="addNew">
+              <AddNewContactForm
+                @hide-add-new="handleHideAddNew"
+                @update:added-contact="handleAddedContact"
+              />
+            </div>
+          </Transition>
+          <div v-if="selectedIndex != null && contactsStore.contacts">
+            <ContactDetails
+              :contact="contactsStore.contacts[selectedIndex]"
+              @update:remove="handleRemove"
             />
           </div>
-        </Transition>
-        <div v-if="selectedIndex != null && contactsStore.contacts">
-          <ContactDetails
-            :contact="contactsStore.contacts[selectedIndex]"
-            @update:remove="handleRemove"
-          />
         </div>
       </div>
     </div>
