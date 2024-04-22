@@ -1,0 +1,257 @@
+<script setup lang="ts">
+import { computed, onBeforeMount, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
+
+import { KeyList, Transaction } from '@hashgraph/sdk';
+
+import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
+
+import useUserStore from '@renderer/stores/storeUser';
+import useNetwork from '@renderer/stores/storeNetwork';
+
+import { getTransactionById } from '@renderer/services/organization';
+import { hexToUint8Array } from '@renderer/services/electronUtilsService';
+
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+import {
+  getTransactionDateExtended,
+  getTransactionId,
+  getTransactionPayerId,
+  getTransactionType,
+} from '@renderer/utils/sdk/transactions';
+import { computeSignatureKey } from '@renderer/utils/transactionSignatureModels';
+
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppLoader from '@renderer/components/ui/AppLoader.vue';
+import AppStepper from '@renderer/components/ui/AppStepper.vue';
+import KeyStructureSignatureStatus from '@renderer/components/KeyStructureSignatureStatus.vue';
+
+/* Stores */
+const user = useUserStore();
+const network = useNetwork();
+
+/* Composables */
+const router = useRouter();
+
+/* State */
+const transaction = ref<ITransactionFull | null>(null);
+const sdkTransaction = ref<Transaction | null>(null);
+const signatureKey = ref<KeyList | null>(null);
+
+/* Computed */
+const stepperActiveIndex = computed(() => {
+  switch (transaction.value?.status) {
+    case TransactionStatus.NEW:
+      return 0;
+    case TransactionStatus.WAITING_FOR_SIGNATURES:
+      return 1;
+    case TransactionStatus.WAITING_FOR_EXECUTION:
+      return 2;
+    case TransactionStatus.EXECUTED:
+    case TransactionStatus.FAILED:
+      return 3;
+    default:
+      return -1;
+  }
+});
+const transactionSpecificLabel = computed(() => {
+  if (!sdkTransaction.value || !(sdkTransaction.value instanceof Transaction))
+    return 'Transaction Specific Details';
+
+  const type = getTransactionType(sdkTransaction.value, true).toLocaleLowerCase();
+
+  if (type.includes('accountcreate')) return 'Account Creation Info';
+  if (type.includes('accountupdate')) return 'Account Changes';
+  if (type.includes('accountdelete')) return 'Account Deletion Info';
+  if (type.includes('accountallowanceapprove')) return 'Allowance Approval Info';
+  if (type.includes('fileappend')) return 'File Append Info';
+  if (type.includes('filecreate')) return 'File Creation Info';
+  if (type.includes('fileupdate')) return 'File Changes';
+  if (type.includes('freeze')) return 'Freeze Information';
+  if (type.includes('transfer')) return 'Transfer Info';
+
+  return 'Transaction Specific Details';
+});
+
+/* Handlers */
+const handleSubmit = async e => {
+  e.preventDefault();
+};
+
+/* Hooks */
+onBeforeMount(async () => {
+  const id = Number(router.currentRoute.value.params.id);
+
+  if (!id || isNaN(id) || !isLoggedInOrganization(user.selectedOrganization)) {
+    router.back();
+    return;
+  }
+
+  transaction.value = await getTransactionById(user.selectedOrganization?.serverUrl || '', id);
+
+  try {
+    const transactionBytes = await hexToUint8Array(transaction.value.body);
+    sdkTransaction.value = Transaction.fromBytes(transactionBytes);
+  } catch (error) {
+    throw new Error('Failed to deserialize transaction');
+  }
+
+  if (!sdkTransaction.value || !(sdkTransaction.value instanceof Transaction)) {
+    router.back();
+    return;
+  }
+
+  signatureKey.value = await computeSignatureKey(sdkTransaction.value, network.mirrorNodeBaseURL);
+});
+
+/* Watchers */
+watch(
+  () => user.selectedOrganization,
+  org => {
+    if (!org) router.back();
+  },
+);
+
+/* Misc */
+const sectionHeadingClass = 'text-title text-dark-blue';
+const detailItemLabelClass = 'text-micro text-semi-bold text-dark-blue';
+const detailItemValueClass = 'text-small mt-1';
+const commonColClass = 'col-6 col-md-4 col-lg-3 col-xxl-2';
+const stepperItems = [
+  { title: 'Transaction Created', name: 'Transaction Created' },
+  { title: 'Collecting Signatures', name: 'Collecting Signatures' },
+  { title: 'Awaiting Execution', name: 'Awaiting Execution' },
+  { title: 'Executed', name: 'Executed' },
+];
+</script>
+<template>
+  <div class="p-5">
+    <div class="flex-column-100 overflow-hidden">
+      <Transition name="fade" mode="out-in">
+        <template
+          v-if="!transaction || !sdkTransaction || !(sdkTransaction instanceof Transaction)"
+        >
+          <div class="flex-column-100 justify-content-center">
+            <div>
+              <AppButton
+                color="secondary"
+                class="min-w-unset"
+                @click="$router.back()"
+                data-testid="button-back"
+              >
+                <i class="bi bi-arrow-left-short text-main"></i> Back</AppButton
+              >
+            </div>
+            <div class="flex-column-100 justify-content-center">
+              <AppLoader class="mb-7" />
+            </div>
+          </div>
+        </template>
+        <template v-else>
+          <form @submit="handleSubmit" class="flex-column-100">
+            <!-- Header -->
+            <div class="flex-centered justify-content-between flex-wrap gap-4">
+              <div class="d-flex align-items-center">
+                <AppButton
+                  type="button"
+                  color="secondary"
+                  class="btn-icon-only me-4"
+                  @click="$router.back()"
+                >
+                  <i class="bi bi-arrow-left"></i>
+                </AppButton>
+
+                <h2 class="text-title text-bold">Transaction Details</h2>
+              </div>
+              <div v-if="$route.query.sign">
+                <AppButton color="primary" type="submit">Sign</AppButton>
+              </div>
+            </div>
+
+            <!-- Name -->
+            <div class="mt-5">
+              <h4 :class="detailItemLabelClass">Name</h4>
+              <p :class="detailItemValueClass">{{ transaction.name }}</p>
+            </div>
+
+            <!-- Description -->
+            <div v-if="transaction.description" class="mt-5">
+              <h4 :class="detailItemLabelClass">Description</h4>
+              <p :class="detailItemValueClass">{{ transaction.description }}</p>
+            </div>
+
+            <!-- Transaction Status -->
+            <div class="mt-5">
+              <h4 :class="detailItemLabelClass">Transaction Status</h4>
+              <div class="col-xxl-7">
+                <AppStepper :items="stepperItems" :active-index="stepperActiveIndex" />
+              </div>
+            </div>
+
+            <!-- Reviewers -->
+            <!-- <div class="mt-5">
+              <h4 :class="detailItemLabelClass">Reviewers</h4>
+            </div> -->
+
+            <hr class="separator my-5" />
+
+            <!-- TRANSACTION GENERAL DETAILS -->
+            <h2 :class="sectionHeadingClass">Transaction Details</h2>
+
+            <!-- General Transaction Information -->
+            <div class="mt-5 row flex-wrap">
+              <!-- Transaction Type -->
+              <div :class="commonColClass">
+                <h4 :class="detailItemLabelClass">Type</h4>
+                <p :class="detailItemValueClass">{{ getTransactionType(sdkTransaction) }}</p>
+              </div>
+
+              <!-- Transaction Type -->
+              <div :class="commonColClass">
+                <h4 :class="detailItemLabelClass">Transaction ID</h4>
+                <p :class="detailItemValueClass">{{ getTransactionId(sdkTransaction) }}</p>
+              </div>
+
+              <!-- Transaction Valid Start -->
+              <div :class="commonColClass">
+                <h4 :class="detailItemLabelClass">Valid Start</h4>
+                <p :class="detailItemValueClass">
+                  {{ getTransactionDateExtended(sdkTransaction) }}
+                </p>
+              </div>
+
+              <!-- Transaction Fee Payer -->
+              <div :class="commonColClass">
+                <h4 :class="detailItemLabelClass">Fee Payer</h4>
+                <p :class="detailItemValueClass">
+                  {{ getTransactionPayerId(sdkTransaction) }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Transaction Memo -->
+            <div v-if="sdkTransaction.transactionMemo" class="mt-5">
+              <h4 :class="detailItemLabelClass">Transaction Memo</h4>
+              <p :class="detailItemValueClass">
+                {{ sdkTransaction.transactionMemo }}
+              </p>
+            </div>
+
+            <hr class="separator my-5" />
+
+            <!-- TRANSACTION SPECIFIC DETAILS -->
+            <h2 :class="sectionHeadingClass">{{ transactionSpecificLabel }}</h2>
+
+            <hr class="separator my-5" />
+
+            <!-- SIGNATURES COLLECTED -->
+            <h2 :class="sectionHeadingClass">Signatures Collected</h2>
+            <div v-if="signatureKey" class="text-small mt-5">
+              <KeyStructureSignatureStatus :keyList="signatureKey" :public-keys-signed="[]" />
+            </div>
+          </form>
+        </template>
+      </Transition>
+    </div>
+  </div>
+</template>

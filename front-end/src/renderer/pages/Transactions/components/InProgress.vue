@@ -3,13 +3,16 @@ import { onBeforeMount, ref, watch } from 'vue';
 
 import { Transaction } from '@hashgraph/sdk';
 
-import { ITransaction } from '@main/shared/interfaces';
+import { ITransaction, TransactionStatus } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
 
-import { getTransactionsToSign, getTransactionsToSignCount } from '@renderer/services/organization';
+import {
+  getTransactionsForUser,
+  getTransactionsForUserCount,
+} from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
 import {
@@ -35,7 +38,6 @@ const transactions = ref<
   {
     transactionRaw: ITransaction;
     transaction: Transaction;
-    keysToSign: number[];
   }[]
 >([]);
 const totalItems = ref(0);
@@ -44,13 +46,10 @@ const pageSize = ref(10);
 const isLoading = ref(true);
 
 /* Handlers */
-const handleSign = async (id: number) => {
+const handleDetails = async (id: number) => {
   router.push({
     name: 'transactionDetails',
     params: { id },
-    query: {
-      sign: 'true',
-    },
   });
 };
 
@@ -74,19 +73,20 @@ async function fetchTransactions() {
   isLoading.value = true;
   try {
     const { skip, take } = createFindArgs();
-    totalItems.value = await getTransactionsToSignCount(user.selectedOrganization.serverUrl);
-    const rawTransactions = await getTransactionsToSign(
+    totalItems.value = await getTransactionsForUserCount(
       user.selectedOrganization.serverUrl,
+      TransactionStatus.WAITING_FOR_SIGNATURES,
+    );
+    const rawTransactions = await getTransactionsForUser(
+      user.selectedOrganization.serverUrl,
+      TransactionStatus.WAITING_FOR_SIGNATURES,
       skip,
       take,
     );
-    const transactionsBytes = await hexToUint8ArrayBatch(
-      rawTransactions.map(t => t.transaction.body),
-    );
+    const transactionsBytes = await hexToUint8ArrayBatch(rawTransactions.map(t => t.body));
     transactions.value = rawTransactions.map((transaction, i) => ({
-      transactionRaw: transaction.transaction,
+      transactionRaw: transaction,
       transaction: Transaction.fromBytes(transactionsBytes[i]),
-      keysToSign: transaction.keysToSign,
     }));
   } finally {
     isLoading.value = false;
@@ -157,8 +157,8 @@ watch([currentPage, pageSize], async () => {
                   }}
                 </td>
                 <td class="text-center">
-                  <AppButton @click="handleSign(tx.transactionRaw.id)" color="secondary"
-                    >Sign</AppButton
+                  <AppButton @click="handleDetails(tx.transactionRaw.id)" color="secondary"
+                    >Details</AppButton
                   >
                 </td>
               </tr>

@@ -26,7 +26,7 @@ const LinkExistingAccount = () => import('@renderer/pages/Accounts/LinkExistingA
 const LinkExistingFile = () => import('@renderer/pages/Files/LinkExistingFile');
 const OrganizationLogin = () => import('@renderer/pages/OrganizationLogin');
 const OrganizationsTab = () => import('@renderer/pages/Settings/components/OrganizationsTab.vue');
-const TransactionSignDetails = () => import('@renderer/pages/TransactionSignDetails');
+const TransactionDetails = () => import('@renderer/pages/TransactionDetails');
 
 const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/transactions' },
@@ -48,9 +48,9 @@ const routes: RouteRecordRaw[] = [
   { path: '/create-transaction/:type', name: 'createTransaction', component: CreateTransaction },
   { path: '/forgot-password', name: 'forgotPassword', component: ForgotPassword },
   {
-    path: '/transaction/sign/:id',
-    name: 'transactionSignDetails',
-    component: TransactionSignDetails,
+    path: '/transaction/:id',
+    name: 'transactionDetails',
+    component: TransactionDetails,
   },
   {
     path: '/settings',
