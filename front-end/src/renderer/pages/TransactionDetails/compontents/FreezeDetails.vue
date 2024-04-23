@@ -2,8 +2,11 @@
 import { onBeforeMount, ref } from 'vue';
 
 import { Transaction, FreezeTransaction } from '@hashgraph/sdk';
-import { getDateStringExtended } from '@renderer/utils';
+
 import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
+
+import { getDateStringExtended } from '@renderer/utils';
+import { getFreezeTypeString } from '@renderer/utils/sdk/transactions';
 
 /* Props */
 const props = defineProps<{
@@ -37,7 +40,7 @@ const commonColClass = 'col-6 col-md-5 col-lg-4 col-xl-3 py-3';
     <div v-if="transaction.freezeType" :class="commonColClass">
       <h4 :class="detailItemLabelClass">Freeze Type</h4>
       <p :class="detailItemValueClass">
-        {{ transaction.freezeType.toString() }}
+        {{ getFreezeTypeString(transaction.freezeType) }}
       </p>
     </div>
 

@@ -96,12 +96,14 @@ onMounted(async () => {
 
 /* Functions */
 function createTransaction() {
-  const type = FreezeType._fromCode(Number(freezeType.value));
-
   const transaction = new FreezeTransaction()
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(maxTransactionfee.value)
-    .setFreezeType(type);
+    .setMaxTransactionFee(maxTransactionfee.value);
+
+  if (freezeType.value <= 0 || freezeType.value > 6) return transaction;
+
+  const type = FreezeType._fromCode(Number(freezeType.value));
+  transaction.setFreezeType(type);
 
   if (isAccountId(payerData.accountId.value)) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));

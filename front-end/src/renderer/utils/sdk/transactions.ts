@@ -1,4 +1,4 @@
-import { Transaction } from '@hashgraph/sdk';
+import { FreezeType, Transaction } from '@hashgraph/sdk';
 import { getDateStringExtended } from '..';
 
 export const getTransactionDate = (transaction: Transaction) =>
@@ -30,4 +30,21 @@ export const getTransactionType = (transaction: Transaction, short = false) => {
     .slice(transaction.constructor.name.startsWith('_') ? 1 : 0)
     .split(/(?=[A-Z])/)
     .join(short ? '' : ' ');
+};
+
+export const getFreezeTypeString = (freezeType: FreezeType) => {
+  switch (freezeType) {
+    case FreezeType.FreezeOnly:
+      return 'Freeze Only';
+    case FreezeType.PrepareUpgrade:
+      return 'Prepare Upgrade';
+    case FreezeType.FreezeUpgrade:
+      return 'Freeze Upgrade';
+    case FreezeType.FreezeAbort:
+      return 'Freeze Abort';
+    case FreezeType.TelemetryUpgrade:
+      return 'Telemetry Upgrade';
+    default:
+      return 'Unknown';
+  }
 };
