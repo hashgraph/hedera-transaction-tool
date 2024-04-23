@@ -346,6 +346,7 @@ watch(payerData.isValid, isValid => {
       :transaction-bytes="transaction?.toBytes() || null"
       :on-close-success-modal-click="() => $router.push({ name: 'files' })"
       :on-executed="handleExecuted"
+      :on-submitted="() => (isSubmitted = true)"
     >
       <template #successHeading>File created successfully</template>
       <template #successContent>

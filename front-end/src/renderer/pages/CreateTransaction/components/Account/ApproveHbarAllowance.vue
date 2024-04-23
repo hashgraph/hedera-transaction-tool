@@ -269,6 +269,7 @@ const columnClass = 'col-4 col-xxxl-3';
         }
       "
       :on-executed="() => (isExecuted = true)"
+      :on-submitted="() => (isSubmitted = true)"
     >
       <template #successHeading>Allowance Approved Successfully</template>
       <template #successContent>

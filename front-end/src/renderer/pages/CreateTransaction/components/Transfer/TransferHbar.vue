@@ -516,6 +516,7 @@ onMounted(async () => {
           transaction = null;
         }
       "
+      :on-submitted="() => (isSubmitted = true)"
     >
       <template #successHeading>Hbar transferred successfully</template>
       <template #successContent>
