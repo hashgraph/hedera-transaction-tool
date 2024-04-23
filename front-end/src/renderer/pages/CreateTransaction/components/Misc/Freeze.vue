@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { AccountId, Hbar, FreezeTransaction, FileId, Timestamp } from '@hashgraph/sdk';
+import { onMounted, ref, watch } from 'vue';
+import { Hbar, FreezeTransaction, FileId, Timestamp, FreezeType, AccountId } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
 
@@ -96,25 +96,60 @@ onMounted(async () => {
 
 /* Functions */
 function createTransaction() {
+  const type = FreezeType._fromCode(Number(freezeType.value));
+
   const transaction = new FreezeTransaction()
-    .setTransactionId(createTransactionId(payerData.accountId.value, validStart.value))
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(maxTransactionfee.value)
-    .setNodeAccountIds([new AccountId(3)]);
-  // .setFreezeType(FreezeType._fromCode(Number(freezeType.value)))
+    .setFreezeType(type);
 
-  // Set fields based on freeze type later
-
-  transaction.setStartTimestamp(Timestamp.fromDate(startTimestamp.value));
-  isFileId(fileId.value) && transaction.setFileId(FileId.fromString(fileId.value));
-  fileHash.value.trim().length > 0 && transaction.setFileHash(fileHash.value);
+  if (isAccountId(payerData.accountId.value)) {
+    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
+  }
 
   if (transactionMemo.value.length > 0 && transactionMemo.value.length <= MEMO_MAX_LENGTH) {
     transaction.setTransactionMemo(transactionMemo.value);
   }
 
+  const setProps = (
+    _startTimestamp: boolean = false,
+    _fileId: boolean = false,
+    _fileHash: boolean = false,
+  ) => {
+    if (_startTimestamp) {
+      transaction.setStartTimestamp(Timestamp.fromDate(startTimestamp.value));
+    }
+
+    if (_fileId && isFileId(fileId.value) && fileId.value !== '0.0.0') {
+      transaction.setFileId(FileId.fromString(fileId.value));
+    }
+
+    if (_fileHash && fileHash.value.trim().length > 0) {
+      transaction.setFileHash(fileHash.value);
+    }
+  };
+
+  switch (type) {
+    case FreezeType.FreezeOnly:
+      setProps(true);
+      break;
+    case FreezeType.PrepareUpgrade:
+      setProps(false, true, true);
+      break;
+    case FreezeType.FreezeUpgrade:
+      setProps(true, true, true);
+      break;
+  }
+
   return transaction;
 }
+
+/* Watchers */
+watch(fileId, id => {
+  if (isAccountId(id) && id !== '0') {
+    fileId.value = AccountId.fromString(id).toString();
+  }
+});
 
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
@@ -133,7 +168,7 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
             :get-transaction-bytes="() => createTransaction().toBytes()"
             :is-executed="isExecuted"
           />
-          <AppButton color="primary" type="submit" :disabled="true">
+          <AppButton color="primary" type="submit" :disabled="!payerData.isValid.value">
             <span class="bi bi-send"></span>
             Sign & Submit</AppButton
           >
