@@ -13,6 +13,7 @@ import History from './components/History.vue';
 import Drafts from './components/Drafts.vue';
 import ReadyToSign from './components/ReadyToSign.vue';
 import InProgress from './components/InProgress.vue';
+import ReadyForSubmission from './components/ReadyForSubmission.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -75,7 +76,7 @@ watch(
       <template v-if="activeTabTitle === 'Ready for Review'"></template>
       <template v-if="activeTabTitle === 'Ready to Sign'"> <ReadyToSign /> </template>
       <template v-if="activeTabTitle === 'In Progress'"><InProgress /></template>
-      <template v-if="activeTabTitle === 'Ready for Submission'"></template>
+      <template v-if="activeTabTitle === 'Ready for Submission'"><ReadyForSubmission /></template>
       <template v-if="activeTabTitle === 'Drafts'"><Drafts /></template>
       <template v-if="activeTabTitle === 'History'"><History /></template>
     </div>
