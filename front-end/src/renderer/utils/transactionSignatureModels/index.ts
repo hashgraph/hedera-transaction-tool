@@ -44,7 +44,7 @@ export const getSignatureEntities = (transaction: Transaction) => {
 };
 
 /* Returns whether a user should sign the transaction */
-export const shouldSignTransaction = async (
+export const publicRequiredToSign = async (
   transaction: Transaction,
   userKeys: IUserKey[],
   mirrorNodeLink: string,
@@ -57,22 +57,37 @@ export const shouldSignTransaction = async (
   /* Ignore if expired */
   if (isExpired(transaction)) return [];
 
+  /* Transaction signers' public keys */
+  const signerPublicKeys = [...transaction._signerPublicKeys];
+
   /* Get signature entities */
   const { newKeys, accounts, receiverAccounts } = getSignatureEntities(transaction);
 
   /* Check if the user has a key that is required to sign */
   const userKeysIncludedInTransaction = userKeys.filter(userKey =>
-    newKeys.some(key =>
-      isPublicKeyInKeyList(userKey.publicKey, key instanceof KeyList ? key : new KeyList([key])),
+    newKeys.some(
+      key =>
+        isPublicKeyInKeyList(
+          userKey.publicKey,
+          key instanceof KeyList ? key : new KeyList([key]),
+        ) && !signerPublicKeys.includes(userKey.publicKey),
     ),
   );
   userKeysIncludedInTransaction.forEach(userKey => publicKeysRequired.add(userKey.publicKey));
 
   const userKeyInKeyOrIsKey = (key: Key) =>
     key instanceof PublicKey
-      ? userKeys.filter(userKey => userKey.publicKey === key.toStringRaw())
+      ? userKeys.filter(
+          userKey =>
+            userKey.publicKey === key.toStringRaw() &&
+            !signerPublicKeys.includes(userKey.publicKey),
+        )
       : key instanceof KeyList
-        ? userKeys.filter(userKey => isPublicKeyInKeyList(userKey.publicKey, key))
+        ? userKeys.filter(
+            userKey =>
+              isPublicKeyInKeyList(userKey.publicKey, key) &&
+              !signerPublicKeys.includes(userKey.publicKey),
+          )
         : [];
 
   /* Check if a key of the user is inside the key of some account required to sign */

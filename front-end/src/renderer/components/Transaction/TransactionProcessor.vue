@@ -30,7 +30,7 @@ import {
   getTransactionType,
   getPrivateKey,
 } from '@renderer/utils';
-import { shouldSignTransaction } from '@renderer/utils/transactionSignatureModels';
+import { publicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
 import {
   isLoggedInOrganization,
   isLoggedInWithPassword,
@@ -320,7 +320,7 @@ async function sendSignedTransactionToOrganization() {
   const sdkTransaction = Transaction.fromBytes(bodyBytes);
 
   /* Check if should sign */
-  const publicKeysRequired = await shouldSignTransaction(
+  const publicKeysRequired = await publicRequiredToSign(
     sdkTransaction,
     user.selectedOrganization.userKeys,
     network.mirrorNodeBaseURL,
