@@ -47,7 +47,7 @@ const totalItems = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
 const isLoading = ref(true);
-const loadingButtonIndexes = ref<number[]>([]);
+const executingIndex = ref<number | null>(null);
 
 /* Handlers */
 const handleDetails = async (id: number) => {
@@ -62,20 +62,21 @@ const handleExecute = async (id: number, btnIndex: number) => {
     throw new Error('Please login in an organization');
   }
 
-  loadingButtonIndexes.value.push(btnIndex);
+  executingIndex.value = btnIndex;
 
   try {
     await execute(user.selectedOrganization.serverUrl, id);
     toast.success('Transaction executed successfully');
 
     router.push({
-      name: 'transactions',
+      name: 'transactionDetails',
+      params: { id },
     });
   } catch (error) {
+    executingIndex.value = null;
+
     await fetchTransactions();
     toast.error('Internal server error');
-  } finally {
-    loadingButtonIndexes.value = loadingButtonIndexes.value.filter(i => i !== btnIndex);
   }
 };
 
@@ -195,8 +196,8 @@ watch([currentPage, pageSize], async () => {
                     @click="handleExecute(tx.transactionRaw.id, i)"
                     color="secondary"
                     class="min-w-unset ms-3"
-                    :loading="loadingButtonIndexes.includes(i)"
-                    :disabled="loadingButtonIndexes.includes(i)"
+                    :loading="executingIndex === i"
+                    :disabled="executingIndex !== null"
                     >Execute</AppButton
                   >
                 </td>
