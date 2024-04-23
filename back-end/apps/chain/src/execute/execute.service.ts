@@ -9,6 +9,7 @@ import {
   FileUpdateTransaction,
   KeyList,
   Transaction as SDKTransaction,
+  Status,
 } from '@hashgraph/sdk';
 
 import { Transaction, TransactionStatus } from '@entities';
@@ -85,6 +86,7 @@ export class ExecuteService {
       result.response = JSON.stringify(response.toJSON());
       result.receipt = JSON.stringify(receipt.toJSON());
       result.receiptBytes = Buffer.from(receipt.toBytes());
+      transaction.statusCode = receipt.status._code || Status.Ok._code;
     } catch (error) {
       statusCode = error.status?._code || 21;
       if (!error.status) statusCode = getStatusCodeFromMessage(error.message);
