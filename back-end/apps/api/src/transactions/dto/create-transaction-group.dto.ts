@@ -22,5 +22,5 @@ export class CreateTransactionGroupDto {
   @IsNotEmpty()
   @ValidateNested({ each: true })
   @Type(() => CreateTransactionGroupItemDto)
-  items: CreateTransactionGroupItemDto[];
+  groupItems: CreateTransactionGroupItemDto[];
 }

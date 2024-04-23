@@ -13,6 +13,6 @@ export class TransactionGroupItem {
   @JoinColumn()
   transaction: Transaction;
 
-  @ManyToOne(() => TransactionGroup, group => group.items)
+  @ManyToOne(() => TransactionGroup, group => group.groupItems)
   group: TransactionGroup;
 }

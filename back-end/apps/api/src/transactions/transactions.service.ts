@@ -45,10 +45,12 @@ import {
 } from '@app/common';
 
 import { UserDto } from '../users/dtos';
-import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { CreateTransactionDto } from './dto';
 
+import { UserKeysService } from '../user-keys/user-keys.service';
 import { ApproversService } from './approvers/approvers.service';
 import { userKeysRequiredToSign } from '../utils';
+import { SignersService } from './signers';
 
 @Injectable()
 export class TransactionsService {
@@ -56,6 +58,8 @@ export class TransactionsService {
     @InjectRepository(Transaction) private repo: Repository<Transaction>,
     @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
     private readonly configService: ConfigService,
+    private readonly userKeysService: UserKeysService,
+    private readonly signersService: SignersService,
     private readonly approversService: ApproversService,
     private readonly mirrorNodeService: MirrorNodeService,
     @InjectEntityManager() private entityManager: EntityManager,
@@ -118,9 +122,11 @@ export class TransactionsService {
     const findOptions: FindManyOptions<Transaction> = {
       where: whereForUser,
       order,
-      relations: {
-        creatorKey: true,
-      },
+      relations: [
+        'creatorKey',
+        'groupItem',
+        'groupItem.group',
+      ],
       skip: offset,
       take: limit,
     };
