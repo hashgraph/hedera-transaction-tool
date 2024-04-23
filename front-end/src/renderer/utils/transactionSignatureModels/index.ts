@@ -10,6 +10,9 @@ import TransactionFactory from './transaction-factory';
 
 export * from './account-create-transaction.model';
 export * from './account-update-transaction.model';
+export * from './account-delete-transaction.model';
+export * from './approve-allowance-transaction.model';
+export * from './file-create-transaction.model';
 export * from './file-append-transaction.model';
 export * from './file-update-transaction.model';
 export * from './freeze-transaction.model';
