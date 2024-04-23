@@ -255,7 +255,14 @@ const stepperItems = [
               <div class="mt-5">
                 <h4 :class="detailItemLabelClass">Transaction Status</h4>
                 <div class="col-xxl-7">
-                  <AppStepper :items="stepperItems" :active-index="stepperActiveIndex" />
+                  <AppStepper
+                    :items="stepperItems"
+                    :active-index="
+                      stepperActiveIndex === stepperItems.length - 1
+                        ? stepperActiveIndex + 1
+                        : stepperActiveIndex
+                    "
+                  />
                 </div>
               </div>
 
