@@ -29,10 +29,10 @@ import {
 } from '@app/common';
 
 import { UserDto } from '../users/dtos';
-import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { CreateTransactionDto } from './dto';
 
 import { UserKeysService } from '../user-keys/user-keys.service';
-import { SignersService } from './signers/signers.service';
+import { SignersService } from './signers';
 
 @Injectable()
 export class TransactionsService {
@@ -99,9 +99,11 @@ export class TransactionsService {
           },
         },
       },
-      relations: {
-        creatorKey: true,
-      },
+      relations: [
+        'creatorKey',
+        'groupItem',
+        'groupItem.group',
+      ],
       skip,
       take,
     });
@@ -266,9 +268,11 @@ export class TransactionsService {
         `union all ` +
         `select approver.* from transaction_approver as approver ` +
         `join approverList on approverList."listId" = approver.id) ` +
-        `select distinct t.*, userKey.* from "transaction" as t ` +
+        `select distinct t.*, userKey.*, item.*, group.* from "transaction" as t ` +
         `join user_key as userKey on t."creatorKeyId" = userKey.id ` +
-        `join approverList on t.id = "transactionId" LIMIT ${take} OFFSET ${skip}`,
+        `join approverList on t.id = "transactionId" ` +
+        `left join transaction_group_item as item on t.id = item."transactionId" ` +
+        `left join transaction_group as group on item."groupId" = group.id LIMIT ${take} OFFSET ${skip}`,
     );
   }
 
@@ -279,6 +283,8 @@ export class TransactionsService {
     return this.repo
       .createQueryBuilder('transaction') // Find Transactions (and necessary parts)
       .leftJoinAndSelect('transaction.creatorKey', 'creatorKey')
+      .leftJoinAndSelect('transaction.groupItem', 'groupItem')
+      .leftJoinAndSelect('groupItem.group', 'group')
       .leftJoin('transaction.observers', 'observer') // where the list of observer's
       .where('observer.userId = :userId', { userId: user.id }) // has a userId = user.id
       .take(take)
