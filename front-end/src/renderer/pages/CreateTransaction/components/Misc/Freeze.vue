@@ -43,6 +43,7 @@ const fileHash = ref('');
 
 const transactionMemo = ref('');
 const isExecuted = ref(false);
+const isSubmitted = ref(false);
 
 /* Handlers */
 const handleCreate = async e => {
@@ -168,7 +169,7 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
         <template #buttons>
           <SaveDraftButton
             :get-transaction-bytes="() => createTransaction().toBytes()"
-            :is-executed="isExecuted"
+            :is-executed="isExecuted || isSubmitted"
           />
           <AppButton color="primary" type="submit" :disabled="!payerData.isValid.value">
             <span class="bi bi-send"></span>

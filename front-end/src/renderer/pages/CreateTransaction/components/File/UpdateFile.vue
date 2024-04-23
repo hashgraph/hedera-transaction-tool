@@ -59,6 +59,7 @@ const content = ref('');
 const chunksAmount = ref<number | null>(null);
 
 const isExecuted = ref(false);
+const isSubmitted = ref(false);
 
 /* Handlers */
 const handleRemoveFile = async () => {
@@ -224,7 +225,7 @@ const columnClass = 'col-4 col-xxxl-3';
         <template #buttons>
           <SaveDraftButton
             :get-transaction-bytes="() => createTransaction().toBytes()"
-            :is-executed="isExecuted"
+            :is-executed="isExecuted || isSubmitted"
           />
           <AppButton
             color="primary"

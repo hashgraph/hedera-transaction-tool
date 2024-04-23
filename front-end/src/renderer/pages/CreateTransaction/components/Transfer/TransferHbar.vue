@@ -64,6 +64,7 @@ const accountInfos = ref<{
 const linkedAccounts = ref<HederaAccount[]>([]);
 
 const isExecuted = ref(false);
+const isSubmitted = ref(false);
 
 /* Computed */
 const totalBalance = computed(() => {
@@ -304,7 +305,7 @@ onMounted(async () => {
             :get-transaction-bytes="() => createTransaction().toBytes()"
             :handle-draft-added="handleDraftAdded"
             :handle-draft-updated="handleDraftAdded"
-            :is-executed="isExecuted"
+            :is-executed="isExecuted || isSubmitted"
           />
           <AppButton
             color="primary"

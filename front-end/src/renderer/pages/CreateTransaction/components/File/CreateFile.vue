@@ -69,6 +69,7 @@ const description = ref('');
 const transactionMemo = ref('');
 
 const isExecuted = ref(false);
+const isSubmitted = ref(false);
 
 /* Handlers */
 
@@ -206,7 +207,7 @@ watch(payerData.isValid, isValid => {
         <template #buttons>
           <SaveDraftButton
             :get-transaction-bytes="() => createTransaction().toBytes()"
-            :is-executed="isExecuted"
+            :is-executed="isExecuted || isSubmitted"
           />
           <AppButton
             color="primary"

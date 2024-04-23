@@ -79,6 +79,7 @@ const accountData = reactive<{
 const stakeType = ref<'Account' | 'Node' | 'None'>('None');
 const ownerKey = ref<Key | null>(null);
 const isExecuted = ref(false);
+const isSubmitted = ref(false);
 const nickname = ref('');
 const transactionMemo = ref('');
 
@@ -238,7 +239,7 @@ const columnClass = 'col-4 col-xxxl-3';
         <template #buttons>
           <SaveDraftButton
             :get-transaction-bytes="() => createTransaction().toBytes()"
-            :is-executed="isExecuted"
+            :is-executed="isExecuted || isSubmitted"
           />
           <AppButton
             color="primary"
@@ -385,6 +386,7 @@ const columnClass = 'col-4 col-xxxl-3';
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"
       :on-executed="handleExecuted"
+      :on-submitted="() => (isSubmitted = true)"
       :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
     >
       <template #successHeading>Account created successfully</template>
