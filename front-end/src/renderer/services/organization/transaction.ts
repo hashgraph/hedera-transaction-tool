@@ -195,13 +195,13 @@ export const getTransactionById = async (
 /* Get transactions for user with specific status */
 export const getTransactionsForUser = async (
   serverUrl: string,
-  status: TransactionStatus,
+  status: TransactionStatus[],
   skip: number,
   take: number,
 ): Promise<ITransaction[]> => {
   try {
     const { data } = await axios.get(
-      `${serverUrl}/${controller}?skip=${skip}&take=${take}&status=${status}`,
+      `${serverUrl}/${controller}?skip=${skip}&take=${take}&${status.map(s => `status=${s}`).join('&')}`,
       {
         withCredentials: true,
       },
@@ -226,12 +226,15 @@ export const getTransactionsForUser = async (
 /* Get the count of transactions for user with specific status */
 export const getTransactionsForUserCount = async (
   serverUrl: string,
-  status: TransactionStatus,
+  status: TransactionStatus[],
 ): Promise<number> => {
   try {
-    const { data } = await axios.get(`${serverUrl}/${controller}/count?status=${status}`, {
-      withCredentials: true,
-    });
+    const { data } = await axios.get(
+      `${serverUrl}/${controller}/count?${status.map(s => `status=${s}`).join('&')}`,
+      {
+        withCredentials: true,
+      },
+    );
 
     return data;
   } catch (error: any) {

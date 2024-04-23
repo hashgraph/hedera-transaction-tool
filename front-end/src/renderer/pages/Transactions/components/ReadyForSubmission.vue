@@ -100,13 +100,12 @@ async function fetchTransactions() {
   isLoading.value = true;
   try {
     const { skip, take } = createFindArgs();
-    totalItems.value = await getTransactionsForUserCount(
-      user.selectedOrganization.serverUrl,
+    totalItems.value = await getTransactionsForUserCount(user.selectedOrganization.serverUrl, [
       TransactionStatus.WAITING_FOR_EXECUTION,
-    );
+    ]);
     const rawTransactions = await getTransactionsForUser(
       user.selectedOrganization.serverUrl,
-      TransactionStatus.WAITING_FOR_EXECUTION,
+      [TransactionStatus.WAITING_FOR_EXECUTION],
       skip,
       take,
     );
