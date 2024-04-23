@@ -23,7 +23,7 @@ const organizationOnlyTabs: TabItem[] = [
   { title: 'Ready for Review' },
   { title: 'Ready to Sign' },
   { title: 'In Progress' },
-  { title: 'Ready for Submission' },
+  { title: 'Ready for Execution' },
 ];
 const sharedTabs: TabItem[] = [{ title: 'Drafts' }, { title: 'History' }];
 
