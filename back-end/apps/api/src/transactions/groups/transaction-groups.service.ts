@@ -23,10 +23,10 @@ export class TransactionGroupsService {
     const transactions: Transaction[] = [];
     const groupItems: TransactionGroupItem[] = [];
 
-    for (const item of dto.items) {
-      const transaction = await this.transactionsService.createTransaction(item.transaction, user);
+    for (const groupItemDto of dto.groupItems) {
+      const transaction = await this.transactionsService.createTransaction(groupItemDto.transaction, user);
       transactions.push(transaction);
-      const groupItem = this.itemRepo.create(item);
+      const groupItem = this.itemRepo.create(groupItemDto);
       groupItem.transaction = transaction;
       groupItem.group = group;
       groupItems.push(await this.itemRepo.save(groupItem));
@@ -50,10 +50,10 @@ export class TransactionGroupsService {
     if (!group) {
       throw new Error('group not found');
     }
-    const items = await this.itemRepo.findBy({ group });
-    await this.itemRepo.remove(items);
-    for (const item of items) {
-      await this.transactionsService.removeTransaction(item.transactionId);
+    const groupItems = await this.itemRepo.findBy({ group });
+    await this.itemRepo.remove(groupItems);
+    for (const groupItem of groupItems) {
+      await this.transactionsService.removeTransaction(groupItem.transactionId);
     }
     return this.repo.remove(group);
   }

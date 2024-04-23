@@ -15,6 +15,6 @@ export class TransactionGroup {
   @CreateDateColumn()
   createdAt: Date;
 
-  @OneToMany(() => TransactionGroupItem, item => item.group)
-  items: TransactionGroupItem[];
+  @OneToMany(() => TransactionGroupItem, groupItem => groupItem.group)
+  groupItems: TransactionGroupItem[];
 }
