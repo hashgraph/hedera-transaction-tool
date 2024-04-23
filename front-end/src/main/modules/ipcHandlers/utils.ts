@@ -1,9 +1,11 @@
-import { ipcMain, shell } from 'electron';
+import path from 'path';
+import { app, ipcMain, shell } from 'electron';
 
 import { Key, KeyList } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
 import { hash } from '@main/utils/crypto';
+import { getNumberArrayFromString, saveContentToPath } from '@main/utils';
 
 const createChannelName = (...props: string[]) => ['utils', ...props].join(':');
 
@@ -46,6 +48,26 @@ export default () => {
           Buffer.from(hexString.startsWith('0x') ? hexString.slice(2) : hexString, 'hex'),
         ).toString(),
       );
+    },
+  );
+
+  ipcMain.handle(
+    createChannelName('openBufferInTempFile'),
+    async (_e, name: string, uint8ArrayString: string) => {
+      const filePath = path.join(app.getPath('temp'), 'electronHederaFiles', `${name}.txt`);
+      const content = Buffer.from(getNumberArrayFromString(uint8ArrayString));
+
+      try {
+        const saved = await saveContentToPath(filePath, content);
+
+        if (saved) {
+          shell.showItemInFolder(filePath);
+          shell.openPath(filePath);
+        }
+      } catch (error) {
+        console.log(error);
+        throw new Error('Failed to open file content');
+      }
     },
   );
 };

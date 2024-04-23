@@ -106,3 +106,12 @@ export const hexToUint8ArrayBatch = async (data: string[]) => {
     throw new Error('Failed to convert hexes to UInt8Array string');
   }
 };
+
+/* Opens a buffer in a temp file */
+export const openBufferInTempFile = async (name: string, data: Uint8Array) => {
+  try {
+    await window.electronAPI.local.utils.openBufferInTempFile(name, data.join(','));
+  } catch (error) {
+    throw new Error('Failed to open the content in a temp file');
+  }
+};
