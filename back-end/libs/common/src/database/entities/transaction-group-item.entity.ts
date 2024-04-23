@@ -10,8 +10,6 @@ export class TransactionGroupItem {
   transactionId: number;
 
   @OneToOne(() => Transaction, transaction => transaction.groupItem)
-  //I see one guy did this one, then in the otherside did the above (longer version)
-  // @OneToOne(() => Transaction)
   @JoinColumn()
   transaction: Transaction;
 
