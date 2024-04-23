@@ -13,7 +13,7 @@ import { getTransactionsToSign, getTransactionsToSignCount } from '@renderer/ser
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
 import {
-  getTransactionDate,
+  getTransactionDateExtended,
   getTransactionId,
   getTransactionType,
 } from '@renderer/utils/sdk/transactions';
@@ -152,7 +152,7 @@ watch([currentPage, pageSize], async () => {
                 <td>
                   {{
                     tx.transaction instanceof Transaction
-                      ? getTransactionDate(tx.transaction)
+                      ? getTransactionDateExtended(tx.transaction)
                       : 'N/A'
                   }}
                 </td>
