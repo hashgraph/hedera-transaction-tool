@@ -30,7 +30,7 @@ const commonColClass = 'col-6 col-md-5 col-lg-4 col-xl-3 py-3';
       </p>
     </div>
 
-    <!-- Account ID -->
+    <!-- Transfer account ID -->
     <div v-if="transaction.transferAccountId" :class="commonColClass">
       <h4 :class="detailItemLabelClass">Transfer Account ID</h4>
       <p :class="detailItemValueClass">

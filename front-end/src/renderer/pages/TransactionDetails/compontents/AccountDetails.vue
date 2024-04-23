@@ -130,7 +130,7 @@ const commonColClass = 'col-6 col-md-5 col-lg-4 col-xl-3 my-3';
       </p>
     </div>
 
-    <!-- Initial balance -->
+    <!-- Max automatic token associations -->
     <div v-if="transaction.maxAutomaticTokenAssociations" :class="commonColClass">
       <h4 :class="detailItemLabelClass">Max Automatic Token Associations</h4>
       <p :class="detailItemValueClass">

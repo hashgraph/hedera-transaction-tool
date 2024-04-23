@@ -1,3 +1,4 @@
+import AccountApproveAllowanceDetails from './compontents/AccountApproveAllowanceDetails.vue';
 import AccountDetails from './compontents/AccountDetails.vue';
 import DeleteAccountDetails from './compontents/DeleteAccountDetails.vue';
 import TransferDetails from './compontents/TransferDetails.vue';
@@ -24,7 +25,7 @@ const txTypeComponentMapping = {
   [transactionTypeKeys.updateAccount]: AccountDetails,
   [transactionTypeKeys.deleteAccount]: DeleteAccountDetails,
   [transactionTypeKeys.transfer]: TransferDetails,
-  // [transactionTypeKeys.approveAllowance]: ApproveHbarAllowanceVue,
+  [transactionTypeKeys.approveAllowance]: AccountApproveAllowanceDetails,
   // [transactionTypeKeys.freeze]: FreezeVue,
 };
 
