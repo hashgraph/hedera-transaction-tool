@@ -4,16 +4,19 @@ import { RouterLink } from 'vue-router';
 const menuItems = [
   {
     link: '/transactions',
+    testid: 'button-menu-transactions',
     title: 'Transactions',
     icon: 'bi bi-arrow-left-right',
   },
   {
     link: '/accounts',
+    testid: 'button-menu-accounts',
     title: 'Accounts',
     icon: 'bi bi-person',
   },
   {
     link: '/files',
+    testid: 'button-menu-files',
     title: 'Files',
     icon: 'bi bi-file-text',
   },
@@ -50,7 +53,7 @@ const menuItems = [
   <div class="container-menu">
     <div>
       <template v-for="(item, _index) in menuItems" :key="_index">
-        <RouterLink class="link-menu mt-2" :to="item.link">
+        <RouterLink class="link-menu mt-2" :to="item.link" :data-testid="item.testid">
           <i :class="item.icon"></i><span>{{ item.title }}</span></RouterLink
         >
       </template>

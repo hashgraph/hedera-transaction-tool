@@ -160,6 +160,7 @@ watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) =
           <AppButton
             :color="currentTab === tab ? 'primary' : undefined"
             type="button"
+            :data-testid="'tab-' + tab.toLowerCase()"
             :class="{
               active: tab === currentTab,
               'text-body': tab !== currentTab,
@@ -176,12 +177,13 @@ watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) =
       <template v-if="currentTab === Tabs.SIGNLE">
         <div class="mt-5">
           <p class="text-purple text-small cursor-pointer" @click="addPublicKeyModalShown = true">
-            <span class="bi bi-plus-lg"></span><span>Select Key</span>
+            <span class="bi bi-plus-lg" data-testid="span-select-key"></span><span>Select Key</span>
           </p>
         </div>
         <div class="mt-5">
           <AppPublicKeyInput
             ref="publicKeyInputRef"
+            data-testid="input_public_key"
             :filled="true"
             :label="
               modelKey instanceof PublicKey
