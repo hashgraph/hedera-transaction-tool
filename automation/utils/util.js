@@ -1,6 +1,7 @@
 const { expect } = require('@playwright/test');
 const { launchHederaTransactionTool } = require('./electronAppLauncher');
 const LoginPage = require('../pages/LoginPage.js');
+const SettingsPage = require('../pages/SettingsPage');
 
 async function setupApp() {
   const app = await launchHederaTransactionTool();
@@ -18,6 +19,31 @@ async function resetAppState(window) {
 
 async function closeApp(app) {
   await app.close();
+}
+
+async function setupEnvironmentForTransactions(window, password) {
+  if (process.env.ENVIRONMENT.toUpperCase() === 'LOCALNET') {
+    const settingsPage = new SettingsPage(window);
+    await settingsPage.clickOnSettingsButton();
+    await settingsPage.clickOnCustomTab();
+    await settingsPage.clickOnSetButton();
+    await settingsPage.clickOnKeysTab();
+    await settingsPage.clickOnImportButton();
+    await settingsPage.clickOnECDSADropDown();
+    await settingsPage.fillInECDSAPrivateKey(process.env.PRIVATE_KEY);
+    await settingsPage.fillInECDSANickname('Payer Account');
+    await settingsPage.fillInECDSAPassword(password);
+    await settingsPage.clickOnECDSAImportButton();
+  } else {
+    const settingsPage = new SettingsPage(window);
+    await settingsPage.clickOnKeysTab();
+    await settingsPage.clickOnImportButton();
+    await settingsPage.clickOnECDSADropDown();
+    await settingsPage.fillInECDSAPrivateKey(process.env.PRIVATE_KEY);
+    await settingsPage.fillInECDSANickname('Payer Account');
+    await settingsPage.fillInECDSAPassword(password);
+    await settingsPage.clickOnECDSAImportButton();
+  }
 }
 
 const generateRandomEmail = (domain = 'test.com') => {
@@ -41,4 +67,5 @@ module.exports = {
   closeApp,
   generateRandomEmail,
   generateRandomPassword,
+  setupEnvironmentForTransactions,
 };

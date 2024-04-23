@@ -116,6 +116,26 @@ class BasePage {
     }
   }
 
+  async waitForElementToBeVisible(selector, timeout = this.LONG_TIMEOUT) {
+    console.log(`Waiting for element with selector: ${selector} to become visible`);
+    try {
+      await this.window.waitForFunction(
+        sel => {
+          const element = document.querySelector(sel);
+          return element && getComputedStyle(element).display === 'block';
+        },
+        `[data-testid="${selector}"]`,
+        { timeout: timeout },
+      );
+      console.log(`Element with selector ${selector} is now visible.`);
+    } catch (error) {
+      console.error(
+        `Element with selector ${selector} did not become visible within the timeout: ${timeout}`,
+        error,
+      );
+    }
+  }
+
   async scrollIntoViewByTestId(testId) {
     console.log(`Scrolling element with testId: ${testId} into view`);
     const element = this.window.getByTestId(testId);
