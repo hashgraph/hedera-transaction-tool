@@ -248,3 +248,26 @@ export const getTransactionsForUserCount = async (
     throw new Error(message);
   }
 };
+
+/* Get the count of transactions for user with specific status */
+export const execute = async (serverUrl: string, transactionId: number) => {
+  try {
+    const { data } = await axios.get(`${serverUrl}/${controller}/execute/${transactionId}`, {
+      withCredentials: true,
+    });
+
+    return data;
+  } catch (error: any) {
+    let message = 'Failed to get transactions';
+
+    if (error instanceof AxiosError) {
+      throwIfNoResponse(error);
+
+      const errorMessage = error.response?.data?.message;
+      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
+        message = errorMessage;
+      }
+    }
+    throw new Error(message);
+  }
+};
