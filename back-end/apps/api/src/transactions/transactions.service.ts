@@ -12,7 +12,7 @@ import {
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
-import { DeepPartial, Repository, MoreThan } from 'typeorm';
+import { DeepPartial, Repository, MoreThan, In } from 'typeorm';
 
 import { Transaction, TransactionStatus, User } from '@entities';
 
@@ -383,10 +383,12 @@ export class TransactionsService {
   /* Gets the transaction with a status that are not expired */
   getTransactionsForUserWithStatus(
     user: User,
-    status: TransactionStatus,
+    status: TransactionStatus[],
     take: number,
     skip: number,
   ) {
+    const withValidStart =
+      !status.includes(TransactionStatus.EXECUTED) && !status.includes(TransactionStatus.FAILED);
     return this.repo.find({
       where: {
         signers: {
@@ -397,8 +399,10 @@ export class TransactionsService {
             id: user.id,
           },
         },
-        status,
-        validStart: MoreThan(new Date(new Date().getTime() - 180 * 1_000)),
+        status: Array.isArray(status) ? In(status) : In([status]),
+        validStart: withValidStart
+          ? MoreThan(new Date(new Date().getTime() - 180 * 1_000))
+          : undefined,
       },
       take,
       skip,
@@ -406,7 +410,9 @@ export class TransactionsService {
   }
 
   /* Gets the count of transactions with a status that are not expired */
-  getTransactionsForUserWithStatusCount(user: User, status: TransactionStatus) {
+  getTransactionsForUserWithStatusCount(user: User, status: TransactionStatus[]) {
+    const withValidStart =
+      !status.includes(TransactionStatus.EXECUTED) && !status.includes(TransactionStatus.FAILED);
     return this.repo.count({
       where: {
         signers: {
@@ -417,8 +423,10 @@ export class TransactionsService {
             id: user.id,
           },
         },
-        status,
-        validStart: MoreThan(new Date(new Date().getTime() - 180 * 1_000)),
+        status: Array.isArray(status) ? In(status) : In([status]),
+        validStart: withValidStart
+          ? MoreThan(new Date(new Date().getTime() - 180 * 1_000))
+          : undefined,
       },
     });
   }

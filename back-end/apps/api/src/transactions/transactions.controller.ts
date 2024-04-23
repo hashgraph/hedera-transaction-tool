@@ -5,7 +5,6 @@ import {
   Get,
   Inject,
   Param,
-  ParseEnumPipe,
   ParseIntPipe,
   Post,
   Query,
@@ -73,13 +72,8 @@ export class TransactionsController {
     @GetUser() user: User,
     @Query('take', ParseIntPipe) take: number,
     @Query('skip', ParseIntPipe) skip: number,
-    @Query(
-      'status',
-      new ParseEnumPipe(TransactionStatus, {
-        optional: true,
-      }),
-    )
-    status?: TransactionStatus,
+    @Query('status')
+    status?: TransactionStatus[],
   ): Promise<Transaction[]> {
     if (status) {
       return this.transactionsService.getTransactionsForUserWithStatus(user, status, take, skip);
@@ -101,8 +95,8 @@ export class TransactionsController {
   @Get('/count')
   getTransactionsForUserCount(
     @GetUser() user: User,
-    @Query('status', new ParseEnumPipe(TransactionStatus))
-    status: TransactionStatus,
+    @Query('status')
+    status: TransactionStatus[],
   ) {
     return this.transactionsService.getTransactionsForUserWithStatusCount(user, status);
   }
