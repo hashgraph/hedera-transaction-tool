@@ -211,7 +211,7 @@ const stepperItems = [
                   <p :class="detailItemValueClass">{{ getTransactionType(sdkTransaction) }}</p>
                 </div>
 
-                <!-- Transaction Type -->
+                <!-- Transaction ID -->
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Transaction ID</h4>
                   <p :class="detailItemValueClass">{{ getTransactionId(sdkTransaction) }}</p>

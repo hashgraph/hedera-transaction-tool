@@ -82,10 +82,13 @@ const commonColClass = 'col-6 col-md-5 col-lg-4 col-xl-3 my-3';
     </div>
 
     <!-- Memo -->
-    <div class="col-12 my-3">
+    <div
+      v-if="transaction.accountMemo && transaction.accountMemo.trim().length > 0"
+      class="col-12 my-3"
+    >
       <h4 :class="detailItemLabelClass">Memo</h4>
       <p :class="detailItemValueClass">
-        {{ transaction.accountMemo || 'sadasdasdas' }}
+        {{ transaction.accountMemo }}
       </p>
     </div>
 

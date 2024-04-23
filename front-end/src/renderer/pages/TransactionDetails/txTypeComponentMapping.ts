@@ -1,6 +1,7 @@
 import AccountApproveAllowanceDetails from './compontents/AccountApproveAllowanceDetails.vue';
 import AccountDetails from './compontents/AccountDetails.vue';
 import DeleteAccountDetails from './compontents/DeleteAccountDetails.vue';
+import FileDetails from './compontents/FileDetails.vue';
 import TransferDetails from './compontents/TransferDetails.vue';
 
 export const transactionTypeKeys = {
@@ -18,7 +19,7 @@ export const transactionTypeKeys = {
 };
 
 const txTypeComponentMapping = {
-  // [transactionTypeKeys.createFile]: AccountDetails,
+  [transactionTypeKeys.createFile]: FileDetails,
   // [transactionTypeKeys.updateFile]: UpdateFile,
   // [transactionTypeKeys.appendToFile]: AppendToFileVue,
   [transactionTypeKeys.createAccount]: AccountDetails,
