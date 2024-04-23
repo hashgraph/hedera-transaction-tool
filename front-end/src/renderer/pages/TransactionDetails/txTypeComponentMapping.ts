@@ -2,6 +2,7 @@ import AccountApproveAllowanceDetails from './compontents/AccountApproveAllowanc
 import AccountDetails from './compontents/AccountDetails.vue';
 import DeleteAccountDetails from './compontents/DeleteAccountDetails.vue';
 import FileDetails from './compontents/FileDetails.vue';
+import FreezeDetails from './compontents/FreezeDetails.vue';
 import TransferDetails from './compontents/TransferDetails.vue';
 
 export const transactionTypeKeys = {
@@ -27,7 +28,7 @@ const txTypeComponentMapping = {
   [transactionTypeKeys.deleteAccount]: DeleteAccountDetails,
   [transactionTypeKeys.transfer]: TransferDetails,
   [transactionTypeKeys.approveAllowance]: AccountApproveAllowanceDetails,
-  // [transactionTypeKeys.freeze]: FreezeVue,
+  [transactionTypeKeys.freeze]: FreezeDetails,
 };
 
 export default txTypeComponentMapping;
