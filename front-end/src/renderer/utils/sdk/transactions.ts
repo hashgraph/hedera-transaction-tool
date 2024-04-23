@@ -1,4 +1,5 @@
 import { Transaction } from '@hashgraph/sdk';
+import { getDateStringExtended } from '..';
 
 export const getTransactionDate = (transaction: Transaction) =>
   transaction.transactionId?.validStart?.toDate().toDateString() || null;
@@ -7,7 +8,7 @@ export const getTransactionDateExtended = (transaction: Transaction) => {
   const validStart = transaction.transactionId?.validStart;
   if (!validStart) return null;
 
-  return `${validStart.toDate().toDateString()} ${validStart.toDate().toLocaleTimeString()}`;
+  return getDateStringExtended(validStart.toDate());
 };
 
 export const getTransactionId = (transaction: Transaction) => {
