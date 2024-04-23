@@ -1,18 +1,21 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { DataSource, Repository } from 'typeorm';
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
-import { Transaction, TransactionSigner, TransactionStatus, User } from '@entities';
-
-import { UploadSignatureDto } from '../dto/upload-signature.dto';
 import {
+  CHAIN_SERVICE,
   addTransactionSignatures,
   isAlreadySigned,
   isExpired,
   validateSignature,
 } from '@app/common';
+
+import { Transaction, TransactionSigner, TransactionStatus, User } from '@entities';
+
+import { UploadSignatureDto } from '../dto/upload-signature.dto';
 
 @Injectable()
 export class SignersService {
@@ -22,6 +25,7 @@ export class SignersService {
     @InjectRepository(Transaction)
     private transactionRepo: Repository<Transaction>,
     private dataSource: DataSource,
+    @Inject(CHAIN_SERVICE) private readonly chainService: ClientProxy,
   ) {}
 
   /* Get the signature for the given signature id */
@@ -175,7 +179,7 @@ export class SignersService {
       await queryRunner.commitTransaction();
 
       /* Check if ready to execute */
-      // Notify the chain service to check for execution
+      this.chainService.emit('update-transaction-status', { id: transactionId });
 
       return signer;
     } catch (error) {
