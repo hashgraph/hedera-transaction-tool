@@ -1,5 +1,3 @@
-import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
-
 import {
   Column,
   CreateDateColumn,
@@ -7,15 +5,21 @@ import {
   Entity,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
-import { UserKey } from './user-key.entity';
-import { TransactionComment } from './transaction-comment.entity';
-import { TransactionSigner } from './transaction-signer.entity';
-import { TransactionApprover } from './transaction-approver.entity';
-import { TransactionObserver } from './transaction-observer.entity';
+import {
+  UserKey,
+  TransactionComment,
+  TransactionSigner,
+  TransactionApprover,
+  TransactionObserver,
+  TransactionGroupItem,
+} from './';
+
+import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 
 export enum TransactionType {
   ACCOUNT_CREATE = 'ACCOUNT CREATE',
@@ -112,6 +116,9 @@ export class Transaction {
 
   @OneToMany(() => TransactionObserver, observer => observer.transaction)
   observers: TransactionObserver[];
+
+  @OneToOne(() => TransactionGroupItem, groupItem => groupItem.transaction)
+  groupItem: TransactionGroupItem;
 }
 
 export const transactionProperties: (keyof Transaction)[] = [
