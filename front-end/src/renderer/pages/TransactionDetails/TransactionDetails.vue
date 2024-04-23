@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, ref, watch } from 'vue';
+import { computed, inject, onBeforeMount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { KeyList, Transaction } from '@hashgraph/sdk';
@@ -9,17 +9,28 @@ import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 
-import { getTransactionById } from '@renderer/services/organization';
+import { useToast } from 'vue-toast-notification';
+
+import { fullUploadSignatures, getTransactionById } from '@renderer/services/organization';
 import { hexToUint8Array } from '@renderer/services/electronUtilsService';
 
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+
+import {
+  isLoggedInOrganization,
+  isLoggedInWithPassword,
+  isUserLoggedIn,
+} from '@renderer/utils/userStoreHelpers';
 import {
   getTransactionDateExtended,
   getTransactionId,
   getTransactionPayerId,
   getTransactionType,
 } from '@renderer/utils/sdk/transactions';
-import { computeSignatureKey } from '@renderer/utils/transactionSignatureModels';
+import {
+  computeSignatureKey,
+  publicRequiredToSign,
+} from '@renderer/utils/transactionSignatureModels';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -34,6 +45,10 @@ const network = useNetwork();
 
 /* Composables */
 const router = useRouter();
+const toast = useToast();
+
+/* Injected */
+const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
 
 /* State */
 const transaction = ref<ITransactionFull | null>(null);
@@ -83,8 +98,54 @@ const signersPublicKeys = computed(() => {
 });
 
 /* Handlers */
+const handleSign = async () => {
+  if (
+    !sdkTransaction.value ||
+    !(sdkTransaction.value instanceof Transaction) ||
+    !transaction.value
+  ) {
+    throw new Error('Transaction is not available');
+  }
+
+  if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in organization');
+  }
+
+  if (!isLoggedInWithPassword(user.personal)) {
+    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+    userPasswordModalRef.value?.open(
+      'Enter your personal account password',
+      'Enter your personal account password to decrypt your private key',
+      handleSign,
+    );
+    return;
+  }
+
+  const publicKeysRequired = await publicRequiredToSign(
+    sdkTransaction.value,
+    user.selectedOrganization.userKeys,
+    network.mirrorNodeBaseURL,
+  );
+
+  await fullUploadSignatures(
+    user.personal,
+    user.selectedOrganization,
+    publicKeysRequired,
+    sdkTransaction.value,
+    transaction.value.id,
+  );
+
+  toast.success('Transaction signed successfully');
+
+  router.push({
+    name: 'transactions',
+  });
+};
+
 const handleSubmit = async e => {
   e.preventDefault();
+
+  await handleSign();
 };
 
 /* Hooks */
