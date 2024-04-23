@@ -1,5 +1,7 @@
 import path from 'path';
-import { app, ipcMain, shell } from 'electron';
+import fs from 'fs/promises';
+
+import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
 
 import { Key, KeyList } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
@@ -70,4 +72,27 @@ export default () => {
       }
     },
   );
+
+  ipcMain.handle(createChannelName('saveFile'), async (_e, uint8ArrayString: string) => {
+    const windows = BrowserWindow.getAllWindows();
+    if (windows.length === 0) return;
+
+    const content = Buffer.from(getNumberArrayFromString(uint8ArrayString));
+
+    try {
+      const { filePath, canceled } = await dialog.showSaveDialog(windows[0], {
+        defaultPath: app.getPath('documents'),
+      });
+      if (filePath === undefined || canceled) return;
+
+      try {
+        await fs.writeFile(filePath, content);
+      } catch (error: any) {
+        dialog.showErrorBox('Failed to save file', error?.message || 'Unknown error');
+        console.log(error);
+      }
+    } catch (error: any) {
+      dialog.showErrorBox('Failed to save file', error?.message || 'Unknown error');
+    }
+  });
 };

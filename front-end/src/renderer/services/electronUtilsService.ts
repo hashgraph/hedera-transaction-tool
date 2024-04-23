@@ -115,3 +115,12 @@ export const openBufferInTempFile = async (name: string, data: Uint8Array) => {
     throw new Error('Failed to open the content in a temp file');
   }
 };
+
+/* Opens a buffer in a temp file */
+export const saveFile = async (data: Uint8Array) => {
+  try {
+    await window.electronAPI.local.utils.saveFile(data.join(','));
+  } catch (error) {
+    throw new Error('Failed to save file');
+  }
+};

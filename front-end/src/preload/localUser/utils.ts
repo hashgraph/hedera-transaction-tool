@@ -16,5 +16,7 @@ export default {
       ipcRenderer.invoke('utils:hexToUint8ArrayBatch', hexStrings),
     openBufferInTempFile: (name: string, uint8ArrayString: string): Promise<void> =>
       ipcRenderer.invoke('utils:openBufferInTempFile', name, uint8ArrayString),
+    saveFile: (uint8ArrayString: string): Promise<void> =>
+      ipcRenderer.invoke('utils:saveFile', uint8ArrayString),
   },
 };
