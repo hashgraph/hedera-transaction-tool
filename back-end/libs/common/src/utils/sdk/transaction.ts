@@ -31,6 +31,8 @@ export const getTransactionTypeEnumValue = (transaction: Transaction): Transacti
       return TransactionType.ACCOUNT_UPDATE;
     case TransactionType.ACCOUNT_DELETE:
       return TransactionType.ACCOUNT_DELETE;
+    case TransactionType.ACCOUNT_ALLOWANCE_APPROVE:
+      return TransactionType.ACCOUNT_ALLOWANCE_APPROVE;
     case TransactionType.FILE_CREATE:
       return TransactionType.FILE_CREATE;
     case TransactionType.FILE_APPEND:
