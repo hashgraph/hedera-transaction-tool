@@ -6,31 +6,28 @@ import {
   Transaction,
   TransactionApprover,
   TransactionComment,
+  TransactionGroup,
+  TransactionGroupItem,
   TransactionObserver,
   TransactionSigner,
 } from '@entities';
 
 import { ChainClientsModule, MirrorNodeModule } from '@app/common';
 
-import { CommentsService } from './comments/comments.service';
-import { CommentsController } from './comments/comments.controller';
-
-import { SignersController } from './signers/signers.controller';
-import { SignersService } from './signers/signers.service';
-
-import { ObserversController } from './observers/observers.controller';
-import { ObserversService } from './observers/observers.service';
-
-import { ApproversController } from './approvers/approvers.controller';
-import { ApproversService } from './approvers/approvers.service';
-
 import { UserKeysModule } from '../user-keys/user-keys.module';
+import { TransactionGroupsController, TransactionGroupsService } from './groups';
+import { CommentsController, CommentsService } from './comments';
+import { SignersController, SignersService } from './signers';
+import { ObserversController, ObserversService } from './observers';
+import { ApproversController, ApproversService } from './approvers';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       Transaction,
       TransactionComment,
+      TransactionGroup,
+      TransactionGroupItem,
       TransactionSigner,
       TransactionApprover,
       TransactionObserver,
@@ -45,6 +42,7 @@ import { UserKeysModule } from '../user-keys/user-keys.module';
     SignersController,
     ObserversController,
     ApproversController,
+    TransactionGroupsController,
   ],
   providers: [
     TransactionsService,
@@ -52,6 +50,7 @@ import { UserKeysModule } from '../user-keys/user-keys.module';
     SignersService,
     ObserversService,
     ApproversService,
+    TransactionGroupsService,
   ],
 })
 export class TransactionsModule {}
