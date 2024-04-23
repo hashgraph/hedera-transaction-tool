@@ -284,6 +284,7 @@ const columnClass = 'col-4 col-xxxl-3';
           <div class="form-group col-8 col-xxxl-6">
             <label class="form-label">Transaction Memo</label>
             <AppInput
+              data-testid="input-transaction-memo"
               v-model="transactionMemo"
               :filled="true"
               maxlength="100"
@@ -295,6 +296,7 @@ const columnClass = 'col-4 col-xxxl-3';
         <div class="form-group mt-6">
           <AppSwitch
             v-model:checked="accountData.acceptStakingRewards"
+            data-testid="switch-accept-staking-rewards"
             size="md"
             name="accept-staking-rewards"
             label="Accept Staking Rewards"
@@ -304,9 +306,18 @@ const columnClass = 'col-4 col-xxxl-3';
         <div class="row mt-6">
           <div class="form-group" :class="[columnClass]">
             <label class="form-label">Staking</label>
-            <select class="form-select is-fill" name="stake_type" @change="handleStakeTypeChange">
+            <select
+              class="form-select is-fill"
+              data-testid="dropdown-staking-account"
+              name="stake_type"
+              @change="handleStakeTypeChange"
+            >
               <template v-for="stakeEntity in ['None', 'Account', 'Node']" :key="stakeEntity">
-                <option :value="stakeEntity" :selected="stakeType === stakeEntity">
+                <option
+                  :value="stakeEntity"
+                  :selected="stakeType === stakeEntity"
+                  :data-testid="'option-' + stakeEntity.toLowerCase()"
+                >
                   {{ stakeEntity }}
                 </option>
               </template>
@@ -316,6 +327,7 @@ const columnClass = 'col-4 col-xxxl-3';
             <template v-if="stakeType === 'Account'">
               <label class="form-label">Account ID</label>
               <AppInput
+                data-testid="input-stake-accountid"
                 v-model="accountData.stakedAccountId"
                 :filled="true"
                 placeholder="Enter Account ID"
@@ -328,9 +340,20 @@ const columnClass = 'col-4 col-xxxl-3';
                 name="node_number"
                 @change="handleNodeNumberChange"
               >
-                <option value="unselected" :selected="!stakeType" default>No node selected</option>
+                <option
+                  value="unselected"
+                  :selected="!stakeType"
+                  default
+                  data-testid="option-no-node-selected"
+                >
+                  No node selected
+                </option>
                 <template v-for="nodeNumber in network.nodeNumbers" :key="nodeNumber">
-                  <option :value="nodeNumber" :selected="accountData.stakedNodeId === nodeNumber">
+                  <option
+                    :value="nodeNumber"
+                    :selected="accountData.stakedNodeId === nodeNumber"
+                    :data-testid="'option-node-' + nodeNumber"
+                  >
                     {{ nodeNumber }}
                   </option>
                 </template>
@@ -342,6 +365,7 @@ const columnClass = 'col-4 col-xxxl-3';
         <div class="mt-6">
           <AppSwitch
             v-model:checked="accountData.receiverSignatureRequired"
+            data-testid="switch-receiver-sig-required"
             size="md"
             name="receiver-signature"
             label="Receiver Signature Required"
@@ -352,6 +376,7 @@ const columnClass = 'col-4 col-xxxl-3';
           <div class="form-group" :class="[columnClass]">
             <label class="form-label">Initial Balance {{ HbarUnit.Hbar._symbol }}</label>
             <AppHbarInput
+              data-testid="input-initial-balance-amount"
               v-model:model-value="accountData.initialBalance as Hbar"
               placeholder="Enter Amount"
               :filled="true"
@@ -361,6 +386,7 @@ const columnClass = 'col-4 col-xxxl-3';
             <label class="form-label">Max Automatic Token Associations</label>
             <AppInput
               v-model="accountData.maxAutomaticTokenAssociations"
+              data-testid="input-max-auto-associations"
               :min="0"
               :max="5000"
               :filled="true"
@@ -374,6 +400,7 @@ const columnClass = 'col-4 col-xxxl-3';
           <div class="form-group col-8 col-xxxl-6">
             <label class="form-label">Account Memo</label>
             <AppInput
+              data-testid="input-account-memo"
               v-model="accountData.memo"
               :filled="true"
               maxlength="100"
@@ -386,7 +413,12 @@ const columnClass = 'col-4 col-xxxl-3';
           <div class="form-group" :class="[columnClass]">
             <label class="form-label">Nickname</label>
             <div class="">
-              <AppInput v-model="nickname" :filled="true" placeholder="Enter Nickname" />
+              <AppInput
+                v-model="nickname"
+                :filled="true"
+                data-testid="input-nickname"
+                placeholder="Enter Nickname"
+              />
             </div>
           </div>
         </div>
@@ -407,7 +439,7 @@ const columnClass = 'col-4 col-xxxl-3';
           class="text-small d-flex justify-content-between align-items mt-2"
         >
           <span class="text-bold text-secondary">Account ID:</span>
-          <span>{{
+          <span data-testid="p-new-crated-account-id">{{
             getEntityIdFromTransactionReceipt(
               transactionProcessor?.transactionResult.receipt,
               'accountId',

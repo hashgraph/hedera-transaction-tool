@@ -64,7 +64,12 @@ watch(
 </script>
 
 <template>
-  <select class="form-select is-fill" :value="accountId" @change="handleAccountIdChange">
+  <select
+    class="form-select is-fill"
+    data-testid="dropdown-payer"
+    :value="accountId"
+    @change="handleAccountIdChange"
+  >
     <template v-for="accountId in accoundIds" :key="accountId">
       <option :value="accountId">
         {{ accountId }}
