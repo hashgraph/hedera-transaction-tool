@@ -392,6 +392,11 @@ export class TransactionsService {
         signers: {
           userId: user.id,
         },
+        creatorKey: {
+          user: {
+            id: user.id,
+          },
+        },
         status,
         validStart: MoreThan(new Date(new Date().getTime() - 180 * 1_000)),
       },
@@ -406,6 +411,11 @@ export class TransactionsService {
       where: {
         signers: {
           userId: user.id,
+        },
+        creatorKey: {
+          user: {
+            id: user.id,
+          },
         },
         status,
         validStart: MoreThan(new Date(new Date().getTime() - 180 * 1_000)),
