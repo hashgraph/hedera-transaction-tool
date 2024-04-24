@@ -260,7 +260,7 @@ watch(
                   </td>
                   <td>
                     <span class="text-secondary">
-                      {{ transaction.created_at.toDateString() }}
+                      {{ getDateStringExtended(transaction.created_at) }}
                     </span>
                   </td>
                   <td class="text-center">
