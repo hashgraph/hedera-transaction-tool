@@ -7,7 +7,6 @@ import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 import { ITransaction, TransactionStatus } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRouter } from 'vue-router';
 
@@ -21,7 +20,6 @@ import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 import {
   getTransactionStatus,
   getTransactionId,
-  openTransactionInHashscan,
   getStatusFromCode,
 } from '@renderer/utils/transactions';
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
@@ -35,7 +33,6 @@ import { getDateStringExtended } from '@renderer/utils';
 
 /* Stores */
 const user = useUserStore();
-const network = useNetworkStore();
 
 /* Composables */
 const router = useRouter();
@@ -72,15 +69,11 @@ const handleSort = async (
   transactions.value = await getTransactions(createFindArgs());
 };
 
-const handleTransactionDetailsClick = (transaction: Transaction | number) => {
-  if (typeof transaction === 'number') {
-    router.push({
-      name: 'transactionDetails',
-      params: { id: transaction },
-    });
-  } else {
-    openTransactionInHashscan(transaction.transaction_id, network.network);
-  }
+const handleTransactionDetailsClick = id => {
+  router.push({
+    name: 'transactionDetails',
+    params: { id },
+  });
 };
 
 /* Functions */
@@ -271,7 +264,9 @@ watch(
                     </span>
                   </td>
                   <td class="text-center">
-                    <AppButton @click="handleTransactionDetailsClick(transaction)" color="secondary"
+                    <AppButton
+                      @click="handleTransactionDetailsClick(transaction.id)"
+                      color="secondary"
                       >Details</AppButton
                     >
                   </td>

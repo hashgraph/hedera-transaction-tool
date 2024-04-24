@@ -2,7 +2,8 @@
 import { computed, inject, onBeforeMount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { KeyList, Transaction } from '@hashgraph/sdk';
+import { KeyList, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Transaction } from '@prisma/client';
 
 import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
 
@@ -12,6 +13,7 @@ import useNetwork from '@renderer/stores/storeNetwork';
 import { useToast } from 'vue-toast-notification';
 
 import { fullUploadSignatures, getTransactionById } from '@renderer/services/organization';
+import { getTransaction } from '@renderer/services/transactionService';
 import { hexToUint8Array } from '@renderer/services/electronUtilsService';
 
 import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
@@ -31,6 +33,7 @@ import {
   computeSignatureKey,
   publicRequiredToSign,
 } from '@renderer/utils/transactionSignatureModels';
+import { getUInt8ArrayFromString } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -51,13 +54,14 @@ const toast = useToast();
 const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
 
 /* State */
-const transaction = ref<ITransactionFull | null>(null);
-const sdkTransaction = ref<Transaction | null>(null);
+const orgTransaction = ref<ITransactionFull | null>(null);
+const localTransaction = ref<Transaction | null>(null);
+const sdkTransaction = ref<SDKTransaction | null>(null);
 const signatureKey = ref<KeyList | null>(null);
 
 /* Computed */
 const stepperActiveIndex = computed(() => {
-  switch (transaction.value?.status) {
+  switch (orgTransaction.value?.status) {
     case TransactionStatus.NEW:
       return 0;
     case TransactionStatus.WAITING_FOR_SIGNATURES:
@@ -73,7 +77,7 @@ const stepperActiveIndex = computed(() => {
 });
 
 const transactionSpecificLabel = computed(() => {
-  if (!sdkTransaction.value || !(sdkTransaction.value instanceof Transaction))
+  if (!sdkTransaction.value || !(sdkTransaction.value instanceof SDKTransaction))
     return 'Transaction Specific Details';
 
   const type = getTransactionType(sdkTransaction.value, true).toLocaleLowerCase();
@@ -92,17 +96,17 @@ const transactionSpecificLabel = computed(() => {
 });
 
 const signersPublicKeys = computed(() => {
-  if (!transaction.value || !transaction.value.signers) return [];
+  if (!orgTransaction.value || !orgTransaction.value.signers) return [];
 
-  return transaction.value.signers.map(signer => signer.userKey.publicKey);
+  return orgTransaction.value.signers.map(signer => signer.userKey.publicKey);
 });
 
 /* Handlers */
 const handleSign = async () => {
   if (
     !sdkTransaction.value ||
-    !(sdkTransaction.value instanceof Transaction) ||
-    !transaction.value
+    !(sdkTransaction.value instanceof SDKTransaction) ||
+    !orgTransaction.value
   ) {
     throw new Error('Transaction is not available');
   }
@@ -132,7 +136,7 @@ const handleSign = async () => {
     user.selectedOrganization,
     publicKeysRequired,
     sdkTransaction.value,
-    transaction.value.id,
+    orgTransaction.value.id,
   );
 
   toast.success('Transaction signed successfully');
@@ -145,33 +149,45 @@ const handleSign = async () => {
 const handleSubmit = async e => {
   e.preventDefault();
 
+  if (!isLoggedInOrganization(user.selectedOrganization)) return;
+
   await handleSign();
 };
 
 /* Hooks */
 onBeforeMount(async () => {
-  const id = Number(router.currentRoute.value.params.id);
-
-  if (!id || isNaN(id) || !isLoggedInOrganization(user.selectedOrganization)) {
+  const id = router.currentRoute.value.params.id;
+  if (!id) {
     router.back();
     return;
   }
 
-  transaction.value = await getTransactionById(user.selectedOrganization?.serverUrl || '', id);
+  let transactionBytes: Uint8Array;
+  if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
+    orgTransaction.value = await getTransactionById(
+      user.selectedOrganization?.serverUrl || '',
+      Number(id),
+    );
+    transactionBytes = await hexToUint8Array(orgTransaction.value.body);
+  } else {
+    localTransaction.value = await getTransaction(id);
+    transactionBytes = getUInt8ArrayFromString(localTransaction.value.body);
+  }
 
   try {
-    const transactionBytes = await hexToUint8Array(transaction.value.body);
-    sdkTransaction.value = Transaction.fromBytes(transactionBytes);
+    sdkTransaction.value = SDKTransaction.fromBytes(transactionBytes);
   } catch (error) {
     throw new Error('Failed to deserialize transaction');
   }
 
-  if (!sdkTransaction.value || !(sdkTransaction.value instanceof Transaction)) {
+  if (!sdkTransaction.value || !(sdkTransaction.value instanceof SDKTransaction)) {
     router.back();
     return;
   }
 
-  signatureKey.value = await computeSignatureKey(sdkTransaction.value, network.mirrorNodeBaseURL);
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    signatureKey.value = await computeSignatureKey(sdkTransaction.value, network.mirrorNodeBaseURL);
+  }
 });
 
 /* Watchers */
@@ -199,7 +215,11 @@ const stepperItems = [
     <div class="flex-column-100 overflow-hidden">
       <Transition name="fade" mode="out-in">
         <template
-          v-if="!transaction || !sdkTransaction || !(sdkTransaction instanceof Transaction)"
+          v-if="
+            (!orgTransaction && !localTransaction) ||
+            !sdkTransaction ||
+            !(sdkTransaction instanceof SDKTransaction)
+          "
         >
           <div class="flex-column-100 justify-content-center">
             <div>
@@ -240,19 +260,33 @@ const stepperItems = [
 
             <div class="fill-remaining mt-5">
               <!-- Name -->
-              <div>
+              <div
+                v-if="
+                  (orgTransaction?.name.trim() || localTransaction?.name.trim() || '').length > 0
+                "
+              >
                 <h4 :class="detailItemLabelClass">Name</h4>
-                <p :class="detailItemValueClass">{{ transaction.name }}</p>
+                <p :class="detailItemValueClass">
+                  {{ orgTransaction?.name || localTransaction?.name }}
+                </p>
               </div>
 
               <!-- Description -->
-              <div v-if="transaction.description" class="mt-5">
+              <div
+                v-if="
+                  (orgTransaction?.description.trim() || localTransaction?.description.trim() || '')
+                    .length > 0
+                "
+                class="mt-5"
+              >
                 <h4 :class="detailItemLabelClass">Description</h4>
-                <p :class="detailItemValueClass">{{ transaction.description }}</p>
+                <p :class="detailItemValueClass">
+                  {{ orgTransaction?.description || localTransaction?.description }}
+                </p>
               </div>
 
               <!-- Transaction Status -->
-              <div class="mt-5">
+              <div v-if="orgTransaction" class="mt-5">
                 <h4 :class="detailItemLabelClass">Transaction Status</h4>
                 <div class="col-xxl-7">
                   <AppStepper
@@ -324,7 +358,7 @@ const stepperItems = [
               <hr class="separator my-5" />
 
               <!-- SIGNATURES COLLECTED -->
-              <h2 :class="sectionHeadingClass">Signatures Collected</h2>
+              <h2 v-if="signatureKey" :class="sectionHeadingClass">Signatures Collected</h2>
               <div v-if="signatureKey" class="text-small mt-5">
                 <KeyStructureSignatureStatus
                   :keyList="signatureKey"
