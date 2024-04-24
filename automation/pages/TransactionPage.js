@@ -147,8 +147,16 @@ class TransactionPage extends BasePage {
     );
   }
 
-  async clickOnSaveDraftButton() {
-    await this.clickByTestId(this.saveDraftButtonSelector);
+  async clickOnStakingDropDown() {
+    await this.clickByTestId(this.stakingDropdownSelector);
+  }
+
+  async clickOnStakingOptionNode() {
+    await this.clickByTestId(this.nodeStakingOptionSelector);
+  }
+
+  async clickOnReceiverSigRequiredSwitch() {
+    await this.toggleSwitchByTestId(this.receiverSigRequiredSwitchSelector);
   }
 
   async fillInMemo(memo) {

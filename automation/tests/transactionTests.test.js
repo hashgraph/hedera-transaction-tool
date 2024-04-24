@@ -87,6 +87,7 @@ test.describe('Transaction tests', () => {
     await transactionPage.waitForSuccessModalToAppear();
     const newAccountId = await transactionPage.getNewAccountIdText();
     await transactionPage.clickOnCloseButtonForCompletedTransaction();
+
     const accountDetails = await transactionPage.mirrorGetAccountResponse(newAccountId);
     const createdTimestamp = accountDetails.accounts[0].created_timestamp;
     expect(createdTimestamp).toBeTruthy();
@@ -98,6 +99,27 @@ test.describe('Transaction tests', () => {
 
     const memoText = 'test memo';
     await transactionPage.fillInMemo(memoText);
+
+    await transactionPage.clickOnSignAndSubmitButton();
+    await transactionPage.clickSignTransactionButton();
+    await transactionPage.fillInPassword(globalCredentials.password);
+    await transactionPage.clickOnPasswordContinue();
+
+    await transactionPage.waitForSuccessModalToAppear();
+    const newAccountId = await transactionPage.getNewAccountIdText();
+    await transactionPage.clickOnCloseButtonForCompletedTransaction();
+
+    const accountDetails = await transactionPage.mirrorGetAccountResponse(newAccountId);
+    const memoFromAPI = accountDetails.accounts[0].memo;
+    expect(memoFromAPI).toBe(memoText);
+  });
+
+  test('Verify user can create account with receiver sig required', async () => {
+    await transactionPage.clickOnCreateNewTransactionButton();
+    await transactionPage.clickOnCreateAccountTransaction();
+
+    await transactionPage.clickOnReceiverSigRequiredSwitch();
+
     await transactionPage.clickOnSignAndSubmitButton();
     await transactionPage.clickSignTransactionButton();
     await transactionPage.fillInPassword(globalCredentials.password);
@@ -107,7 +129,7 @@ test.describe('Transaction tests', () => {
     const newAccountId = await transactionPage.getNewAccountIdText();
     await transactionPage.clickOnCloseButtonForCompletedTransaction();
     const accountDetails = await transactionPage.mirrorGetAccountResponse(newAccountId);
-    const memoFromAPI = accountDetails.accounts[0].memo;
-    expect(memoFromAPI).toBe(memoText);
+    const memoFromAPI = accountDetails.accounts[0].receiver_sig_required;
+    expect(memoFromAPI).toBe(true);
   });
 });
