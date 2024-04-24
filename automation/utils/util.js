@@ -29,11 +29,11 @@ async function setupEnvironmentForTransactions(window, password) {
     await settingsPage.clickOnSetButton();
     await settingsPage.clickOnKeysTab();
     await settingsPage.clickOnImportButton();
-    await settingsPage.clickOnECDSADropDown();
-    await settingsPage.fillInECDSAPrivateKey(process.env.PRIVATE_KEY);
-    await settingsPage.fillInECDSANickname('Payer Account');
-    await settingsPage.fillInECDSAPassword(password);
-    await settingsPage.clickOnECDSAImportButton();
+    await settingsPage.clickOnED25519DropDown();
+    await settingsPage.fillInED25519PrivateKey(process.env.PRIVATE_KEY);
+    await settingsPage.fillInED25519Nickname('Payer Account');
+    await settingsPage.fillInED25519Password(password);
+    await settingsPage.clickOnED25519ImportButton();
   } else {
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnKeysTab();

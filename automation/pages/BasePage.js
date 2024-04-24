@@ -73,17 +73,6 @@ class BasePage {
     }
   }
 
-  async isElementVisibleByCssSelector(selector, timeout = this.DEFAULT_TIMEOUT) {
-    console.log(`Checking if element with testId: ${selector} is visible`);
-    try {
-      const element = this.window.locator(selector);
-      await element.waitFor({ state: 'visible', timeout: timeout });
-      return await element.isVisible();
-    } catch (error) {
-      return false;
-    }
-  }
-
   async isElementEditable(testId, timeout = this.DEFAULT_TIMEOUT) {
     console.log(`Checking if element with testId: ${testId} is editable`);
     const element = this.window.getByTestId(testId);

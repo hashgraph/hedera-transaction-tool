@@ -11,10 +11,10 @@ const getBaseURL = () => {
 const apiCall = async (endpoint, params) => {
   const baseURL = getBaseURL();
   const fullURL = `${baseURL}/${endpoint}`;
-  console.log(`Executing API Call: ${fullURL} with params:`, params); // Log the full URL and parameters
+  console.log(`Executing API Call: ${fullURL} with params:`, params);
   try {
     const response = await axios.get(fullURL, { params });
-    console.log(`API Call successful: ${fullURL}`); // Success log
+    console.log(`API Call successful: ${fullURL}`);
     return response.data;
   } catch (error) {
     console.error(`Failed to fetch data from ${endpoint}:`, error);
@@ -58,7 +58,7 @@ const pollWithRetry = async (
       console.log(`Fetching data from ${endpoint}`);
       const result = await apiCall(endpoint, params);
       if (validateResult(result)) {
-        console.log(`Validation successful for data from ${endpoint}`); // Log successful validation
+        console.log(`Validation successful for data from ${endpoint}`);
         return result;
       }
       throw new Error('Data not ready or condition not met');

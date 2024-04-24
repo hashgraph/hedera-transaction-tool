@@ -96,6 +96,15 @@ class TransactionPage extends BasePage {
     return accountDetails;
   }
 
+  async closeCompletedTransaction() {
+    const isCompletedTxModalVisible = await this.isElementVisible(
+      this.modalTransactionSuccessSelector,
+    );
+    if (isCompletedTxModalVisible) {
+      await this.clickOnCloseButtonForCompletedTransaction();
+    }
+  }
+
   async clickOnTransactionsMenuButton() {
     await this.clickByTestId(this.transactionsMenuButtonSelector);
   }
@@ -104,12 +113,46 @@ class TransactionPage extends BasePage {
     await this.clickByTestId(this.createNewTransactionButtonSelector);
   }
 
+
+  /**
+   * Attempts to click on the 'Create Account Transaction' link by testing different indices of the same test ID.
+   * This method is designed to handle scenarios where the same test ID may be used for multiple elements and only
+   * one of them is the correct target at any given time.
+   *
+   * The function iterates through possible indices of the test ID, attempting to click each and then checking if
+   * this action leads to the expected page transition by verifying the visibility of a specific element on the
+   * subsequent page (e.g., 'Sign and Submit' button).
+   *
+   * @throws {Error} Throws an error if unable to navigate to the Create Account Transaction page after multiple attempts.
+   */
   async clickOnCreateAccountTransaction() {
-    await this.clickByTestIdWithIndex(this.createAccountSublinkSelector);
+    console.log('Attempting to click on Create Account Transaction link');
+    const maxAttempts = 10; // Maximum number of attempts to find the correct element
+    for (let index = 0; index < maxAttempts; index++) {
+      try {
+        await this.clickByTestIdWithIndex(this.createAccountSublinkSelector, index);
+        // Check if the next page element that should appear is visible
+        if (await this.isElementVisible(this.signAndSubmitButtonSelector)) {
+          console.log('Successfully navigated to the Create Account Transaction page.');
+          return;
+        }
+      } catch (error) {
+        console.log(
+          `Attempt ${index + 1}: Failed to find or click on the correct element, retrying...`,
+        );
+      }
+    }
+    throw new Error(
+      'Failed to navigate to the Create Account Transaction page after multiple attempts',
+    );
   }
 
   async clickOnSaveDraftButton() {
     await this.clickByTestId(this.saveDraftButtonSelector);
+  }
+
+  async fillInMemo(memo) {
+    await this.fillByTestId(this.accountMemoInputSelector, memo);
   }
 
   async clickOnSignAndSubmitButton() {
@@ -137,7 +180,7 @@ class TransactionPage extends BasePage {
   }
 
   async waitForSuccessModalToAppear() {
-    await this.waitForElementToBeVisible(this.modalTransactionSuccessSelector);
+    await this.waitForElementToBeVisible(this.modalTransactionSuccessSelector, 30000);
   }
 
   async getNewAccountIdText() {
