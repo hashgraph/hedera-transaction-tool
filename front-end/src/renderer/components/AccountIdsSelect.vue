@@ -29,7 +29,8 @@ const accoundIds = computed(() =>
     .map(a => a.accounts)
     .flat()
     .filter(acc => !acc.deleted && acc.account !== null)
-    .map(account => account.account),
+    .map(acc => acc.account || '')
+    .filter(acc => acc !== null),
 );
 
 /* Handlers */
