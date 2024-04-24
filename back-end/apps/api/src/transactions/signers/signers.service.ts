@@ -281,6 +281,7 @@ export class SignersService {
       }
       /* Commit the database transaction */
       await queryRunner.commitTransaction();
+      await queryRunner.release();
 
       /* Check if ready to execute */
       this.chainService.emit('update-transaction-status', { id: transactionId });
