@@ -5,7 +5,7 @@ import { FileAppendTransaction, Hbar, Key, KeyList, Transaction } from '@hashgra
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
 
 import { useToast } from 'vue-toast-notification';
-import { useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
@@ -23,7 +23,7 @@ import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 
 /* Composables */
 const toast = useToast();
-const route = useRoute();
+const router = useRouter();
 const payerData = useAccountId();
 
 /* State */
@@ -117,9 +117,9 @@ const handleCreate = async e => {
 };
 
 const handleLoadFromDraft = async () => {
-  if (!route.query.draftId) return;
+  if (!router.currentRoute.value.query.draftId) return;
 
-  const draft = await getDraft(route.query.draftId?.toString() || '');
+  const draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
   const draftTransaction = getTransactionFromBytes<FileAppendTransaction>(draft.transactionBytes);
 
   if (draft) {
@@ -134,6 +134,16 @@ const handleLoadFromDraft = async () => {
       chunkSize.value = draftTransaction.chunkSize;
     }
   }
+};
+
+const handleSubmit = async () => {
+  isSubmitted.value = true;
+  router.push({
+    name: 'transactions',
+    query: {
+      tab: 'Ready for Execution',
+    },
+  });
 };
 
 /* Functions */
@@ -160,8 +170,8 @@ function createTransaction() {
 
 /* Hooks */
 onMounted(async () => {
-  if (route.query.fileId) {
-    fileId.value = route.query.fileId.toString();
+  if (router.currentRoute.value.query.fileId) {
+    fileId.value = router.currentRoute.value.query.fileId.toString();
   }
 
   await handleLoadFromDraft();

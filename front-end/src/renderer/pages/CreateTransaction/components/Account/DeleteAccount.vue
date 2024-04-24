@@ -6,7 +6,7 @@ import { MEMO_MAX_LENGTH } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
@@ -29,7 +29,7 @@ import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 const user = useUserStore();
 
 /* Composables */
-const route = useRoute();
+const router = useRouter();
 const toast = useToast();
 
 const payerData = useAccountId();
@@ -82,9 +82,9 @@ const handleCreate = async e => {
 };
 
 const handleLoadFromDraft = async () => {
-  if (!route.query.draftId) return;
+  if (!router.currentRoute.value.query.draftId) return;
 
-  const draft = await getDraft(route.query.draftId?.toString() || '');
+  const draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
   const draftTransaction = getTransactionFromBytes<AccountDeleteTransaction>(
     draft.transactionBytes,
   );
@@ -117,6 +117,16 @@ const handleExecuted = async () => {
   }, 5000);
 };
 
+const handleSubmit = async () => {
+  isSubmitted.value = true;
+  router.push({
+    name: 'transactions',
+    query: {
+      tab: 'Ready for Execution',
+    },
+  });
+};
+
 /* Functions */
 function createTransaction() {
   const transaction = new AccountDeleteTransaction()
@@ -144,8 +154,8 @@ function createTransaction() {
 
 /* Hooks */
 onMounted(async () => {
-  if (route.query.accountId) {
-    accountData.accountId.value = route.query.accountId.toString();
+  if (router.currentRoute.value.query.accountId) {
+    accountData.accountId.value = router.currentRoute.value.query.accountId.toString();
   }
 
   await handleLoadFromDraft();
@@ -288,7 +298,7 @@ const columnClass = 'col-4 col-xxxl-3';
       :transaction-bytes="transaction?.toBytes() || null"
       :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
       :on-executed="handleExecuted"
-      :on-submitted="() => (isSubmitted = true)"
+      :on-submitted="handleSubmit"
     >
       <template #successHeading>Account deleted successfully</template>
       <template #successContent>

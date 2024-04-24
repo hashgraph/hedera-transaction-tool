@@ -11,7 +11,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
-import { useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
@@ -36,7 +36,7 @@ const network = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
-const route = useRoute();
+const router = useRouter();
 const payerData = useAccountId();
 
 /* State */
@@ -119,9 +119,9 @@ const handleDraftAdded = async (id: string) => {
 };
 
 const handleLoadFromDraft = async () => {
-  if (!route.query.draftId) return;
+  if (!router.currentRoute.value.query.draftId) return;
 
-  const draft = await getDraft(route.query.draftId?.toString() || '');
+  const draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
   const draftTransaction = getTransactionFromBytes<TransferTransaction>(draft.transactionBytes);
   savedDraft.value = draft;
 
@@ -234,6 +234,16 @@ const handleAddReceiverTransfer = async (accountId: string, amount: Hbar) => {
 const handleRemoveTransfer = async (index: number) => {
   transfers.value.splice(index, 1);
   transfers.value = [...transfers.value];
+};
+
+const handleSubmit = async () => {
+  isSubmitted.value = true;
+  router.push({
+    name: 'transactions',
+    query: {
+      tab: 'Ready for Execution',
+    },
+  });
 };
 
 /* Functions */
@@ -516,7 +526,7 @@ onMounted(async () => {
           transaction = null;
         }
       "
-      :on-submitted="() => (isSubmitted = true)"
+      :on-submitted="handleSubmit"
     >
       <template #successHeading>Hbar transferred successfully</template>
       <template #successContent>

@@ -5,7 +5,7 @@ import { Hbar, FreezeTransaction, FileId, Timestamp, FreezeType, AccountId } fro
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
 
 import { useToast } from 'vue-toast-notification';
-import { useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
@@ -25,7 +25,7 @@ import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 
 /* Composables */
 const toast = useToast();
-const route = useRoute();
+const router = useRouter();
 
 const payerData = useAccountId();
 
@@ -63,9 +63,9 @@ const handleCreate = async e => {
 };
 
 const handleLoadFromDraft = async () => {
-  if (!route.query.draftId) return;
+  if (!router.currentRoute.value.query.draftId) return;
 
-  const draft = await getDraft(route.query.draftId.toString());
+  const draft = await getDraft(router.currentRoute.value.query.draftId.toString());
   const draftTransaction = getTransactionFromBytes<FreezeTransaction>(draft.transactionBytes);
 
   if (draft) {
@@ -90,6 +90,16 @@ const handleExecuted = () => {
   isExecuted.value = true;
 };
 
+const handleSubmit = async () => {
+  isSubmitted.value = true;
+  router.push({
+    name: 'transactions',
+    query: {
+      tab: 'Ready for Execution',
+    },
+  });
+};
+
 /* Hooks */
 onMounted(async () => {
   await handleLoadFromDraft();
@@ -101,14 +111,14 @@ function createTransaction() {
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(maxTransactionfee.value);
 
+  if (isAccountId(payerData.accountId.value)) {
+    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
+  }
+
   if (freezeType.value <= 0 || freezeType.value > 6) return transaction;
 
   const type = FreezeType._fromCode(Number(freezeType.value));
   transaction.setFreezeType(type);
-
-  if (isAccountId(payerData.accountId.value)) {
-    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
-  }
 
   if (transactionMemo.value.length > 0 && transactionMemo.value.length <= MEMO_MAX_LENGTH) {
     transaction.setTransactionMemo(transactionMemo.value);
@@ -287,6 +297,7 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
     <TransactionProcessor
       ref="transactionProcessor"
       :on-executed="handleExecuted"
+      :on-submitted="handleSubmit"
       :transaction-bytes="transaction?.toBytes() || null"
     >
       <template #successHeading>Freeze executed successfully</template>

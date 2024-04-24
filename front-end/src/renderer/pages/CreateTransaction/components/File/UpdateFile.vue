@@ -5,7 +5,7 @@ import { FileUpdateTransaction, Hbar, Key, KeyList, Timestamp, Transaction } fro
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
 
 import { useToast } from 'vue-toast-notification';
-import { useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import {
@@ -34,7 +34,7 @@ import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 /* Composables */
 const toast = useToast();
 const payerData = useAccountId();
-const route = useRoute();
+const router = useRouter();
 
 /* State */
 const transactionProcessor = ref<typeof FileTransactionProcessor | null>(null);
@@ -140,9 +140,9 @@ const handleCreate = async e => {
 };
 
 const handleLoadFromDraft = async () => {
-  if (!route.query.draftId) return;
+  if (!router.currentRoute.value.query.draftId) return;
 
-  const draft = await getDraft(route.query.draftId?.toString() || '');
+  const draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
   const draftTransaction = getTransactionFromBytes<FileUpdateTransaction>(draft.transactionBytes);
 
   if (draft) {
@@ -170,6 +170,16 @@ const handleLoadFromDraft = async () => {
       }
     }
   }
+};
+
+const handleSubmit = async () => {
+  isSubmitted.value = true;
+  router.push({
+    name: 'transactions',
+    query: {
+      tab: 'Ready for Execution',
+    },
+  });
 };
 
 /* Functions */
@@ -205,8 +215,8 @@ function createTransaction() {
 
 /* Hooks */
 onMounted(async () => {
-  if (route.query.fileId) {
-    fileId.value = route.query.fileId.toString();
+  if (router.currentRoute.value.query.fileId) {
+    fileId.value = router.currentRoute.value.query.fileId.toString();
   }
 
   await handleLoadFromDraft();
