@@ -33,7 +33,7 @@ import {
   computeSignatureKey,
   publicRequiredToSign,
 } from '@renderer/utils/transactionSignatureModels';
-import { getUInt8ArrayFromString } from '@renderer/utils';
+import { getUInt8ArrayFromString, openTransactionInHashscan } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -303,7 +303,20 @@ const stepperItems = [
               <hr class="separator my-5" />
 
               <!-- TRANSACTION GENERAL DETAILS -->
-              <h2 :class="sectionHeadingClass">Transaction Details</h2>
+              <h2 :class="sectionHeadingClass">
+                Transaction Details
+                <span
+                  v-if="localTransaction || stepperActiveIndex === stepperItems.length - 1"
+                  class="text-micro text-pink cursor-pointer"
+                  @click="
+                    openTransactionInHashscan(
+                      sdkTransaction.transactionId?.toString() || '',
+                      network.network,
+                    )
+                  "
+                  >view in hashscan</span
+                >
+              </h2>
 
               <!-- General Transaction Information -->
               <div class="mt-5 row flex-wrap">
