@@ -172,15 +172,15 @@ const handleLoadFromDraft = async () => {
   }
 };
 
-const handleSubmit = async () => {
-  isSubmitted.value = true;
-  router.push({
-    name: 'transactions',
-    query: {
-      tab: 'Ready for Execution',
-    },
-  });
-};
+// const handleSubmit = async () => {
+//   isSubmitted.value = true;
+//   router.push({
+//     name: 'transactions',
+//     query: {
+//       tab: 'Ready for Execution',
+//     },
+//   });
+// };
 
 /* Functions */
 function createTransaction() {
