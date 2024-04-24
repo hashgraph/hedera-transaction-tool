@@ -860,3 +860,58 @@
   ); /*Timing on menu appear animation*/
   --dp-transition-timing: ease-out; /*Timing on slide animations*/
 }
+
+/* Autocomplete */
+.autocomplete-custom {
+  --max-height: 30vh;
+  --offset: 10px;
+
+  width: 100%;
+
+  padding: 5px 5px;
+  margin-top: var(--offset);
+
+  overflow: hidden;
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+
+  z-index: 9999;
+
+  border-radius: $border-radius;
+
+  transition: all 0.1s ease-in;
+
+  background-color: var(--#{$prefix}input-fill-bg-color);
+
+  input:focus ~ & {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  > div {
+    max-height: var(--max-height);
+    overflow: auto;
+  }
+
+  .autocomplete-item-custom {
+    margin: 5px 0px;
+    padding: 5px 12px;
+
+    cursor: pointer;
+
+    font-size: $input-font-size;
+    font-weight: $input-font-weight;
+
+    border-radius: $border-radius;
+
+    &.selected,
+    &:hover {
+      background-color: var(--#{$prefix}input-fill-focus-bg-color);
+    }
+
+    &:first-child {
+      margin: 0;
+    }
+  }
+}
