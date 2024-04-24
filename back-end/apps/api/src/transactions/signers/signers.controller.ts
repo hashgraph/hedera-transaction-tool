@@ -26,6 +26,7 @@ import {
   TransactionSignerDto,
   TransactionSignerUserKeyDto,
   TransactionSignerFullDto,
+  UploadSignatureArrayDto,
 } from '../dto';
 
 @ApiTags('Transaction Signers')
@@ -94,5 +95,29 @@ export class SignersController {
     @GetUser() user: User,
   ): Promise<TransactionSigner> {
     return this.signaturesService.uploadSignature(transactionId, body, user);
+  }
+
+  /* Uploads signatures for many public keys for particular transaction */
+  @ApiOperation({
+    summary: 'Upload a signature map for a transaction',
+    description:
+      'Upload a siganture map and user key id with which the transaction is signed. The signature map must be an object containing node account ids for which the signature is valid',
+  })
+  @ApiBody({
+    type: UploadSignatureArrayDto,
+  })
+  @ApiResponse({
+    status: 201,
+    type: TransactionSignerFullDto,
+  })
+  @Post('/many')
+  @HttpCode(201)
+  @Serialize(TransactionSignerFullDto)
+  uploadSignatures(
+    @Param('transactionId', ParseIntPipe) transactionId: number,
+    @Body() body: UploadSignatureArrayDto,
+    @GetUser() user: User,
+  ): Promise<TransactionSigner[]> {
+    return this.signaturesService.uploadSignatures(transactionId, body, user);
   }
 }
