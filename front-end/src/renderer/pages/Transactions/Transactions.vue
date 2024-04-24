@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+
+import { useRoute } from 'vue-router';
 
 import { isOrganizationActive } from '@renderer/utils/userStoreHelpers';
 
@@ -17,6 +19,9 @@ import ReadyForExecution from './components/ReadyForExecution.vue';
 
 /* Stores */
 const user = useUserStore();
+
+/* Composables */
+const route = useRoute();
 
 /* State */
 const organizationOnlyTabs: TabItem[] = [
@@ -49,8 +54,14 @@ function setTabItems() {
 }
 
 /* Hooks */
-onMounted(() => {
+onBeforeMount(() => {
   setTabItems();
+
+  const tab = route.query.tab?.toString();
+  if (tab) {
+    const newIndex = tabItems.value.findIndex(t => t.title === tab);
+    activeTabIndex.value = newIndex >= 0 ? newIndex : activeTabIndex.value;
+  }
 });
 
 /* Watchers */
