@@ -95,19 +95,42 @@ export const fullUploadSignatures = async (
   transaction: Transaction,
   transactionId: number,
 ) => {
+  const signaturesArray: { publicKeyId: number; signatures: { [key: string]: string } }[] = [];
+
   for (const publicKey of publicKeys) {
     const privateKeyRaw = await decryptPrivateKey(user.id, user.password, publicKey);
     const privateKey = getPrivateKey(publicKey, privateKeyRaw);
 
     const signatures = await getSignatures(privateKey, transaction);
 
-    /* Upload the signature */
-    await uploadSignature(
-      organization.serverUrl,
-      transactionId,
-      organization.userKeys.find(k => k.publicKey === publicKey)?.id || -1,
+    signaturesArray.push({
+      publicKeyId: organization.userKeys.find(k => k.publicKey === publicKey)?.id || -1,
       signatures,
+    });
+  }
+
+  try {
+    await axios.post(
+      `${organization.serverUrl}/${controller}/${transactionId}/signers/many`,
+      {
+        signatures: signaturesArray,
+      },
+      {
+        withCredentials: true,
+      },
     );
+  } catch (error: any) {
+    let message = 'Failed upload signatures';
+
+    if (error instanceof AxiosError) {
+      throwIfNoResponse(error);
+
+      const errorMessage = error.response?.data?.message;
+      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
+        message = errorMessage;
+      }
+    }
+    throw new Error(message);
   }
 };
 
