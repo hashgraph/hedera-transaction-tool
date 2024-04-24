@@ -48,6 +48,8 @@ export default {
     ): Promise<Transaction[]> => ipcRenderer.invoke('transactions:storeTransaction', transaction),
     getTransactions: (findArgs: Prisma.TransactionFindManyArgs): Promise<Transaction[]> =>
       ipcRenderer.invoke('transactions:getTransactions', findArgs),
+    getTransaction: (id: string): Promise<Transaction> =>
+      ipcRenderer.invoke('transactions:getTransaction', id),
     getTransactionsCount: (userId: string): Promise<number> =>
       ipcRenderer.invoke('transactions:getTransactionsCount', userId),
     encodeSpecialFile: (content: Uint8Array, fileId: string) =>

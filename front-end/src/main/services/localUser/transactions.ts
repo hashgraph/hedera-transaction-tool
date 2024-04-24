@@ -208,6 +208,7 @@ export const getTransactions = async (findArgs: Prisma.TransactionFindManyArgs) 
   }
 };
 
+// Get stored transactions count
 export const getTransactionsCount = async (userId: string) => {
   const prisma = getPrismaClient();
 
@@ -221,6 +222,27 @@ export const getTransactionsCount = async (userId: string) => {
     return count;
   } catch (error: any) {
     throw new Error(error.message || 'Failed to get transactions count');
+  }
+};
+
+// Get stored transaction by id
+export const getTransaction = async (id: string) => {
+  const prisma = getPrismaClient();
+
+  try {
+    const transaction = await prisma.transaction.findFirst({
+      where: {
+        id,
+      },
+    });
+
+    if (!transaction) throw new Error('Transaction not found');
+
+    transaction.body = Uint8Array.from(Buffer.from(transaction.body, 'hex')).toString();
+
+    return transaction;
+  } catch (error: any) {
+    throw new Error(error.message || `Failed to fetch transaction with id: ${id}`);
   }
 };
 

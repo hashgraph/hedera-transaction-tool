@@ -58,7 +58,7 @@ export const getFormattedDateFromTimestamp = (timestamp: Timestamp): string => {
   return new Date(timestamp.seconds.multiply(1000).toNumber()).toDateString();
 };
 
-export const openTransactionInHashscan = (transactionId, network: Network) => {
+export const openTransactionInHashscan = (transactionId: string, network: Network) => {
   network !== 'custom' &&
     openExternal(`https://hashscan.io/${network}/transaction/${transactionId}`);
 };
