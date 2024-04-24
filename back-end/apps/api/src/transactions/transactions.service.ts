@@ -410,7 +410,11 @@ export class TransactionsService {
   }
 
   /* Gets the count of transactions with a status that are not expired */
-  getTransactionsForUserWithStatusCount(user: User, status: TransactionStatus[]) {
+  getTransactionsForUserWithStatusCount(
+    user: User,
+    status: TransactionStatus[] | TransactionStatus,
+  ) {
+    status = Array.isArray(status) ? status : [status];
     const withValidStart =
       !status.includes(TransactionStatus.EXECUTED) && !status.includes(TransactionStatus.FAILED);
     return this.repo.count({
