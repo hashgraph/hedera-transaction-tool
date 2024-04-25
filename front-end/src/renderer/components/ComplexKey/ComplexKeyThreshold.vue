@@ -16,8 +16,8 @@ import ComplexKeySelectAccountModal from '@renderer/components/ComplexKey/Comple
 /* Props */
 const props = defineProps<{
   keyList: KeyList;
-  isTop: boolean;
   onRemoveKeyList: () => void;
+  depth?: string;
 }>();
 
 /* Emits */
@@ -95,7 +95,10 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
 }
 </script>
 <template>
-  <div class="key-node d-flex justify-content-between key-threshhold-bg rounded py-3 px-4">
+  <div
+    class="key-node d-flex justify-content-between key-threshhold-bg rounded py-3 px-4"
+    :data-test-id="depth"
+  >
     <div class="d-flex align-items-center">
       <Transition name="fade" mode="out-in">
         <span
@@ -180,9 +183,9 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
           <div class="key-node-container">
             <ComplexKeyThreshold
               :key-list="key"
-              :is-top="false"
               @update:key-list="newKeyList => handleKeyListUpdate(i, newKeyList)"
               :on-remove-key-list="() => handleRemoveThreshold(i)"
+              :depth="`${depth || 0}.${i}`"
             />
           </div>
         </template>
