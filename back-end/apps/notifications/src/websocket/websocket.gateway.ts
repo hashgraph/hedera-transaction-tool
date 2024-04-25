@@ -1,13 +1,14 @@
 import {
   ConnectedSocket,
   MessageBody,
-  OnGatewayConnection, OnGatewayDisconnect,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
   OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Inject } from '@nestjs/common';
+import { Inject, Logger } from '@nestjs/common';
 import { NotifyClientDto } from './dtos/notify-client.dto';
 import { Server, Socket } from 'socket.io';
 import { AuthWebsocket, AuthWebsocketMiddleware } from './middlewares/auth-websocket.middleware';
@@ -20,6 +21,8 @@ import { ClientProxy } from '@nestjs/microservices';
   connectionStateRecovery: { maxDisconnectionDuration: 2*60*1000 },
 })
 export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+  private readonly logger = new Logger(WebsocketGateway.name);
+
   constructor(@Inject(API_SERVICE) private readonly apiService: ClientProxy) {}
 
   @WebSocketServer()
@@ -30,17 +33,16 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   }
 
   handleConnection(client: Socket, ...args): any {
-    console.log(`client connected ${client.id}`);
+    this.logger.log(`client connected ${client.id}`);
   }
 
   handleDisconnect(client: Socket): any {
-    console.log(`client disconnected ${client.id}`);
+    this.logger.log(`client disconnected ${client.id}`);
   }
 
   //TODO check with the team to see how they want the data delivered
   @SubscribeMessage('test')
   async onMessage(@ConnectedSocket() socket: AuthWebsocket, @MessageBody() body: any): Promise<any> {
-    console.log(body);
     const dto: NotifyClientDto = { message: 'test', content: body };
     this.notifyClient(dto);
     // Return doesn't appear to do anything, as far as the client goes?
