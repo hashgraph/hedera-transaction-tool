@@ -38,5 +38,6 @@ onMounted(() => {
     @update:key-list="handleKeyListChange"
     :is-top="false"
     :on-remove-key-list="handleKeyListRemove"
+    :depth="'0'"
   />
 </template>
