@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 
 import * as nodemailer from 'nodemailer';
 
-import { NotifyEmailDto, NotifyTransactionMembersDto } from './dto';
+import { NotifyEmailDto, NotifyTransactionMembersDto } from './dtos';
 
 @Injectable()
 export class EmailService {
@@ -16,7 +16,7 @@ export class EmailService {
     auth: {
       user: this.configService.getOrThrow<string>('BREVO_USERNAME'),
       pass: this.configService.getOrThrow<string>('BREVO_PASSWORD'),
-    },
+    }
   });
 
   async notifyEmail({ email, subject, text }: NotifyEmailDto) {
