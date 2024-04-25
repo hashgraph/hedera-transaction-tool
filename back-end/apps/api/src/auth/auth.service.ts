@@ -171,4 +171,18 @@ export class AuthService {
     const randomValue = crypto.getRandomValues(new Uint32Array(12));
     return Buffer.from(randomValue).toString('base64').replaceAll('=', '');
   }
+
+  /* The user is already verified, create a short-lived token and return it. */
+  async getWebsocketToken(user: User) {
+    const payload: JwtPayload = { userId: user.id, email: user.email };
+
+    return this.jwtService.sign(payload, {
+      expiresIn: `30s`,
+    });
+  }
+
+  /* Attempt to authenticate the token. */
+  authenticateWebsocketToken(accessToken: string): Promise<object> {
+    return this.jwtService.verifyAsync(accessToken);
+  }
 }
