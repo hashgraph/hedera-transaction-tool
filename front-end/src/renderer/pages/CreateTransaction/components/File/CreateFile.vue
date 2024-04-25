@@ -17,9 +17,10 @@ import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useTransactionGroupStore, { GroupItem } from '@renderer/stores/storeTransactionGroup';
 
 import { useToast } from 'vue-toast-notification';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
@@ -48,10 +49,12 @@ import TransactionIdControls from '@renderer/components/Transaction/TransactionI
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
+import { TransactionDraft } from '@prisma/client';
 
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const transactionGroup = useTransactionGroupStore();
 
 /* Composables */
 const toast = useToast();
@@ -195,12 +198,17 @@ const handleExecuted = async (success: boolean, _response?, receipt?: Transactio
 };
 
 const handleLoadFromDraft = async () => {
-  if (!router.currentRoute.value.query.draftId) return;
+  if (!router.currentRoute.value.query.draftId && !route.query.groupIndex) return;
 
-  const draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
-  const draftTransaction = getTransactionFromBytes<FileCreateTransaction>(draft.transactionBytes);
+  let draft: TransactionDraft | GroupItem | null = null;
+  if (!route.query.group) {
+    draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
+  } else if (route.query.groupIndex) {
+    draft = transactionGroup.groupItems[Number(route.query.groupIndex)];
+  }
 
   if (draft) {
+    const draftTransaction = getTransactionFromBytes<FileCreateTransaction>(draft.transactionBytes);
     transaction.value = draftTransaction;
 
     if (draftTransaction.keys) {
@@ -238,6 +246,16 @@ const handleLocalStored = (id: string) => {
   toast.success('File Create Transaction Executed', { position: 'bottom-right' });
   redirectToDetails(id);
 };
+
+function handleAddToGroup() {
+  const transactionBytes = createTransaction().toBytes();
+  transactionGroup.addGroupItem({
+    transactionBytes: transactionBytes.toString(),
+    type: 'FileCreateTransaction',
+    accountId: '',
+  });
+  router.push({ name: 'createTransactionGroup' });
+}
 
 /* Functions */
 function createTransaction() {
@@ -297,25 +315,36 @@ watch(payerData.isValid, isValid => {
     <form @submit="handleCreate" class="flex-column-100">
       <TransactionHeaderControls heading-text="Create File Transaction">
         <template #buttons>
-          <SaveDraftButton
-            :get-transaction-bytes="() => createTransaction().toBytes()"
-            :is-executed="isExecuted || isSubmitted"
-          />
-          <AppButton
-            color="primary"
-            type="submit"
-            data-testid="button-sign-and-submit-file-create"
-            :disabled="!ownerKey || !payerData.isValid.value"
+          <div
+            v-if="!(route.query.group === 'true')"
+            class="flex-centered justify-content-end flex-wrap gap-3 mt-3"
           >
-            <span class="bi bi-send"></span>
-            {{
-              getPropagationButtonLabel(
-                transactionKey,
-                user.keyPairs,
-                Boolean(user.selectedOrganization),
-              )
-            }}</AppButton
-          >
+            <SaveDraftButton
+              :get-transaction-bytes="() => createTransaction().toBytes()"
+              :is-executed="isExecuted || isSubmitted"
+            />
+            <AppButton
+              color="primary"
+              type="submit"
+              data-testid="button-sign-and-submit-file-create"
+              :disabled="!ownerKey || !payerData.isValid.value"
+            >
+              <span class="bi bi-send"></span>
+              {{
+                getPropagationButtonLabel(
+                  transactionKey,
+                  user.keyPairs,
+                  Boolean(user.selectedOrganization),
+                )
+              }}</AppButton
+            >
+          </div>
+          <div v-else>
+            <AppButton color="primary" type="button" @click="handleAddToGroup">
+              <span class="bi bi-plus-lg" />
+              Add to Group
+            </AppButton>
+          </div>
         </template>
       </TransactionHeaderControls>
 

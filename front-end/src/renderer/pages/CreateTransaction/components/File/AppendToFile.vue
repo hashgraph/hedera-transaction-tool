@@ -236,6 +236,10 @@ const columnClass = 'col-4 col-xxxl-3';
               )
             }}</AppButton
           >
+          <AppButton color="primary" type="button" @click="$router.push({ name: 'transactions' })">
+            <span class="bi bi-plus-lg" />
+            Add to Group
+          </AppButton>
         </template>
       </TransactionHeaderControls>
 

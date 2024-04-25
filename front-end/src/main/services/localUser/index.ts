@@ -4,6 +4,7 @@ export * from './accounts';
 export * from './files';
 export * from './transactions';
 export * from './transactionDrafts';
+export * from './transactionGroups';
 export * from './complexKeys';
 export * from './organizations';
 export * from './organizationCredentials';

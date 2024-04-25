@@ -86,13 +86,30 @@ watch(
   <div class="flex-column-100 p-5">
     <div class="d-flex justify-content-between">
       <h1 class="text-title text-bold">Transactions</h1>
-      <AppButton
-        color="primary"
-        data-testid="button-create-new"
-        @click="isTransactionSelectionModalShown = true"
-      >
+      <div class="dropdown">
+        <AppButton
+          color="primary"
+          data-testid="button-create-new"
+          size="large"
+          class="w-100 d-flex align-items-center justify-content-center"
+          data-bs-toggle="dropdown"
+          ><i class="bi bi-plus-lg"></i> <span>Create New</span></AppButton
+        >
+        <ul class="dropdown-menu w-100 mt-3">
+          <li class="dropdown-item cursor-pointer" @click="isTransactionSelectionModalShown = true">
+            <span class="text-small text-bold">Transaction</span>
+          </li>
+          <li
+            class="dropdown-item cursor-pointer mt-3"
+            @click="$router.push('create-transaction-group')"
+          >
+            <span class="text-small text-bold">Transaction Group</span>
+          </li>
+        </ul>
+      </div>
+      <!-- <AppButton color="primary" @click="isTransactionSelectionModalShown = true">
         <i class="bi bi-plus-lg"></i> <span>Create New</span>
-      </AppButton>
+      </AppButton> -->
     </div>
 
     <div class="position-relative flex-column-100 overflow-hidden mt-4">
@@ -107,6 +124,6 @@ watch(
       <template v-if="activeTabTitle === 'History'"><History /></template>
     </div>
 
-    <TransactionSelectionModal v-model:show="isTransactionSelectionModalShown" />
+    <TransactionSelectionModal v-model:show="isTransactionSelectionModalShown" :group="false" />
   </div>
 </template>

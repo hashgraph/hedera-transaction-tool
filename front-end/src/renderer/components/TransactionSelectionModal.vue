@@ -11,6 +11,7 @@ import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 /* Props */
 const props = defineProps<{
   show: boolean;
+  group?: boolean;
 }>();
 
 /* Emits */
@@ -93,6 +94,7 @@ watch(
           style="line-height: 16px"
           @click="$emit('update:show', false)"
         ></i>
+        {{ group }}
         <h3 class="text-subheader fw-medium flex-1">Select type of Transaction</h3>
       </div>
       <div class="row mt-5">
@@ -117,7 +119,13 @@ watch(
               <a
                 :data-testid="`menu-sublink-${i}`"
                 class="link-menu cursor-pointer"
-                @click="$router.push({ name: 'createTransaction', params: { type: item.name } })"
+                @click="
+                  $router.push({
+                    name: 'createTransaction',
+                    params: { type: item.name },
+                    query: { group: `${group}` },
+                  })
+                "
               >
                 {{ item.label }}
               </a>

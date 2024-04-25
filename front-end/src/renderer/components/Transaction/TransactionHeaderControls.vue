@@ -7,7 +7,7 @@ defineProps<{
 }>();
 </script>
 <template>
-  <div>
+  <div class="d-flex justify-content-between">
     <div class="d-flex align-items-center">
       <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="$router.back()">
         <i class="bi bi-arrow-left"></i>
