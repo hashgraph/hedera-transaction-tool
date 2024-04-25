@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: api
+  name: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+      - image: us-south1-docker.pkg.dev/transaction-tool-dev/api/development
+        name: api
+        env:
+          - name: HTTP_PORT
+            value: '3000'
+          - name: RABBITMQ_URI
+            value: 'amqp://rabbitmq:5672'
+          - name: POSTGRES_HOST
+            value: 'database'
+          - name: POSTGRES_PORT
+            value: '5432'
+          - name: POSTGRES_DATABASE
+            value: 'postgres'
+          - name: POSTGRES_USERNAME
+            value: 'postgres'
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgres
+                key: password
+          - name: POSTGRES_SYNCHRONIZE
+            value: 'false'
+          - name: JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: jwt
+                key: key
+          - name: JWT_EXPIRATION
+            value: '365'
+          - name: OTP_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: otp
+                key: key
+          - name: OTP_EXPIRATION
+            value: '20'
+        ports:
+          - containerPort: 3000

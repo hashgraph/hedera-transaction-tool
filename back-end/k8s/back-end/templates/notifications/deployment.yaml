@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: notifications
+  name: notifications
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notifications
+  template:
+    metadata:
+      labels:
+        app: notifications
+    spec:
+      containers:
+      - image: us-south1-docker.pkg.dev/transaction-tool-dev/notifications/development
+        name: notifications
+        env:
+          - name: RABBITMQ_URI
+            value: 'amqp://rabbitmq:5672'
+          - name: BREVO_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: brevo
+                key: username
+          - name: BREVO_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: brevo
+                key: password

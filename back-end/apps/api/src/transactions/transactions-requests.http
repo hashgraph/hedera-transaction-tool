@@ -1,0 +1,30 @@
+### Get transactions created by User
+GET http://localhost:3000/transactions
+
+### Get transactions to be signed by User
+GET http://localhost:3000/transactions/sign?take=10&skip=0
+
+### Get transactions to be approved by User
+GET http://localhost:3000/transactions/approve?take=10&skip=0
+
+### Get transactions to be observed by User
+GET http://localhost:3000/transactions/observe?take=10&skip=0
+
+### Get transaction by Id
+GET http://localhost:3000/transactions/2
+
+### Create a transaction
+POST http://localhost:3000/transactions
+content-type: application/json
+
+{
+  "name": "create1",
+  "type": "TRANSFER",
+  "description": "first create transaction",
+  "body": "asldfnii23oasindf",
+  "status": "NEW",
+  "creatorKeyId": 1,
+  "signature": "asdfln23linasdf",
+  "validStart": "1999-12-11T11:00:00.000Z",
+  "cutoffAt": "1999-12-11T11:00:00.000Z"
+}
