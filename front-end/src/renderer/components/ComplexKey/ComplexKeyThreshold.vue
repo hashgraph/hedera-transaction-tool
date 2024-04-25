@@ -97,7 +97,7 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
 <template>
   <div
     class="key-node d-flex justify-content-between key-threshhold-bg rounded py-3 px-4"
-    :data-test-id="depth"
+    :path="depth"
   >
     <div class="d-flex align-items-center">
       <Transition name="fade" mode="out-in">
@@ -118,6 +118,7 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
           class="form-select is-fill"
           :value="keyList.threshold || keyList.toArray().length"
           @change="handleThresholdChange"
+          :data-testid="`select-complex-key-threshold-${depth}`"
         >
           <template
             v-for="num in Array.from(Array(keyList.toArray().length).keys())"
@@ -137,6 +138,7 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
             color="primary"
             size="small"
             data-bs-toggle="dropdown"
+            :data-testid="`button-complex-key-add-element-${depth}`"
             class="min-w-unset"
             ><span class="bi bi-plus-lg"></span> Add</AppButton
           >
@@ -166,7 +168,7 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
       <template v-for="(key, i) in keyList.toArray()" :key="key.toString()">
         <template v-if="key instanceof PublicKey && true">
           <div class="key-node-wrapper">
-            <div class="key-node" :data-test-id="depth">
+            <div class="key-node" :path="`${depth || 0}.${i}`">
               <AppPublicKeyInput
                 class="text-semi-bold"
                 :model-value="key.toStringRaw()"
@@ -175,6 +177,7 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
                 has-cross-icon
                 :label="ush.getNickname(key.toStringRaw(), user.keyPairs)"
                 :on-cross-icon-click="() => handleRemovePublicKey(key)"
+                :data-test-id="`input-complex-key-public-key-${depth || 0}.${i}`"
               />
             </div>
           </div>

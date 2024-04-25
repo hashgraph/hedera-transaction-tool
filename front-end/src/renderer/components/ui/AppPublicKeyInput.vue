@@ -11,6 +11,7 @@ const props = withDefaults(
     label?: string;
     hasCrossIcon?: boolean;
     onCrossIconClick?: () => void;
+    dataTestId?: string;
   }>(),
   {
     label: 'Public key',
@@ -86,6 +87,7 @@ defineExpose({
       :size="size"
       :filled="filled"
       @update:model-value="handleUpdateModelValue"
+      :data-testid="dataTestId"
       v-bind="$attrs"
     />
 
