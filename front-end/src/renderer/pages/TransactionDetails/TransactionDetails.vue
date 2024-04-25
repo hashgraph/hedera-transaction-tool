@@ -199,7 +199,7 @@ watch(
 );
 
 /* Misc */
-const sectionHeadingClass = 'text-title text-dark-blue';
+const sectionHeadingClass = 'd-flex justify-content-between align-items-center';
 const detailItemLabelClass = 'text-micro text-semi-bold text-dark-blue';
 const detailItemValueClass = 'text-small mt-1';
 const commonColClass = 'col-6 col-md-5 col-lg-4 col-xl-3 py-3';
@@ -288,23 +288,21 @@ const stepperItems = [
               <!-- Transaction Status -->
               <div v-if="orgTransaction" class="mt-5">
                 <h4 :class="detailItemLabelClass">Transaction Status</h4>
-                <div class="col-xxl-7">
-                  <AppStepper
-                    :items="stepperItems"
-                    :active-index="
-                      stepperActiveIndex === stepperItems.length - 1
-                        ? stepperActiveIndex + 1
-                        : stepperActiveIndex
-                    "
-                  />
-                </div>
+                <AppStepper
+                  :items="stepperItems"
+                  :active-index="
+                    stepperActiveIndex === stepperItems.length - 1
+                      ? stepperActiveIndex + 1
+                      : stepperActiveIndex
+                  "
+                />
               </div>
 
               <hr class="separator my-5" />
 
               <!-- TRANSACTION GENERAL DETAILS -->
-              <h2 :class="sectionHeadingClass">
-                Transaction Details
+              <div :class="sectionHeadingClass">
+                <h2 class="text-title text-semi-bold">Transaction Details</h2>
                 <span
                   v-if="localTransaction || stepperActiveIndex === stepperItems.length - 1"
                   class="text-micro text-pink cursor-pointer"
@@ -314,9 +312,9 @@ const stepperItems = [
                       network.network,
                     )
                   "
-                  >view in hashscan</span
+                  >View in hashscan</span
                 >
-              </h2>
+              </div>
 
               <!-- General Transaction Information -->
               <div class="mt-5 row flex-wrap">
