@@ -15,7 +15,7 @@ spec:
         app: notifications
     spec:
       containers:
-      - image: us-south1-docker.pkg.dev/transaction-tool-dev/notifications/development
+      - image: gcr.io/transaction-tool-dev/notifications
         name: notifications
         env:
           - name: RABBITMQ_URI

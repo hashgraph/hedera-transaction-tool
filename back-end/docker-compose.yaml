@@ -31,6 +31,8 @@ services:
     command: npm run start:dev notifications
     env_file:
       - ./apps/notifications/.env
+    ports:
+      - '3020:3020'
     volumes:
       - .:/usr/src/app
   rabbitmq:
