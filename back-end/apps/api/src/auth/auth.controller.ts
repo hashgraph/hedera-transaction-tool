@@ -167,15 +167,6 @@ export class AuthController {
     this.authService.clearOtpCookie(response);
   }
 
-  // can't guard it like this, might need to move the jwt.strategy stuff out? no, that's
-  // built in, so then what? just replciate it?yuck, maybe move it to libs and use it in
-  // both services?
-  @UseGuards(JwtAuthGuard)
-  @Get('/websocket-token')
-  async getWebsocketToken(@GetUser() user: User) {
-    return this.authService.getWebsocketToken(user);
-  }
-
   @MessagePattern('authenticate-websocket-token')
   async authenticateWebsocketToken(@Payload() payload: AuthenticateWebsocketTokenDto) {
     return this.authService.authenticateWebsocketToken(payload.jwt);
