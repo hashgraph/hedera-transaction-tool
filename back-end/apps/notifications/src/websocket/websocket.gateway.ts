@@ -1,7 +1,7 @@
 import {
   ConnectedSocket,
   MessageBody,
-  OnGatewayConnection,
+  OnGatewayConnection, OnGatewayDisconnect,
   OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
@@ -16,10 +16,10 @@ import { ClientProxy } from '@nestjs/microservices';
 
 //TODO WebTransport vs Websockets - by default transports = polling and websocket, not webtransport
 @WebSocketGateway({
-  cors: { origin: '*', methods: ['GET', 'POST'], credentials: true },
+  cors: { origin: true, methods: ['GET', 'POST'], credentials: true },
   connectionStateRecovery: { maxDisconnectionDuration: 2*60*1000 },
 })
-export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection {
+export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   constructor(@Inject(API_SERVICE) private readonly apiService: ClientProxy) {}
 
   @WebSocketServer()
@@ -33,6 +33,11 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection {
     console.log(`client connected ${client.id}`);
   }
 
+  handleDisconnect(client: Socket): any {
+    console.log(`client disconnected ${client.id}`);
+  }
+
+  //TODO check with the team to see how they want the data delivered
   @SubscribeMessage('test')
   async onMessage(@ConnectedSocket() socket: AuthWebsocket, @MessageBody() body: any): Promise<any> {
     console.log(body);
