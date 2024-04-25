@@ -166,7 +166,7 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
       <template v-for="(key, i) in keyList.toArray()" :key="key.toString()">
         <template v-if="key instanceof PublicKey && true">
           <div class="key-node-wrapper">
-            <div class="key-node">
+            <div class="key-node" :data-test-id="depth">
               <AppPublicKeyInput
                 class="text-semi-bold"
                 :model-value="key.toStringRaw()"
