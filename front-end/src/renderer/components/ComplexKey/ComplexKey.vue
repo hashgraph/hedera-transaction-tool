@@ -36,7 +36,6 @@ onMounted(() => {
   <ComplexKeyThreshold
     v-model:key-list="keyList"
     @update:key-list="handleKeyListChange"
-    :is-top="false"
     :on-remove-key-list="handleKeyListRemove"
     :depth="'0'"
   />
