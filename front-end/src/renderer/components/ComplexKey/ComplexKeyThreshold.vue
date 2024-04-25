@@ -143,13 +143,25 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
             ><span class="bi bi-plus-lg"></span> Add</AppButton
           >
           <ul class="dropdown-menu mt-3">
-            <li class="dropdown-item cursor-pointer" @click="selectAccountModalShown = true">
+            <li
+              class="dropdown-item cursor-pointer"
+              @click="selectAccountModalShown = true"
+              :data-testid="`button-complex-key-add-element-account-${depth}`"
+            >
               <span class="text-small">Account</span>
             </li>
-            <li class="dropdown-item cursor-pointer mt-3" @click="addPublicKeyModalShown = true">
+            <li
+              class="dropdown-item cursor-pointer mt-3"
+              @click="addPublicKeyModalShown = true"
+              :data-testid="`button-complex-key-add-element-public-key-${depth}`"
+            >
               <span class="text-small">Public Key</span>
             </li>
-            <li class="dropdown-item cursor-pointer mt-3" @click="handleAddThreshold">
+            <li
+              class="dropdown-item cursor-pointer mt-3"
+              @click="handleAddThreshold"
+              :data-testid="`button-complex-key-add-element-threshold-${depth}`"
+            >
               <span class="text-small">Threshold</span>
             </li>
           </ul>
@@ -159,7 +171,11 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
 
     <div class="d-flex align-items-center">
       <div class="text-small">
-        <span class="bi bi-x-lg cursor-pointer" @click="onRemoveKeyList"></span>
+        <span
+          class="bi bi-x-lg cursor-pointer"
+          @click="onRemoveKeyList"
+          :data-testid="`button-complex-key-remove-element-${depth}`"
+        ></span>
       </div>
     </div>
   </div>
@@ -168,7 +184,7 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
       <template v-for="(key, i) in keyList.toArray()" :key="key.toString()">
         <template v-if="key instanceof PublicKey && true">
           <div class="key-node-wrapper">
-            <div class="key-node" :path="`${depth || 0}.${i}`">
+            <div class="key-node" :path="`${depth || 0}-${i}`">
               <AppPublicKeyInput
                 class="text-semi-bold"
                 :model-value="key.toStringRaw()"
@@ -177,7 +193,8 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
                 has-cross-icon
                 :label="ush.getNickname(key.toStringRaw(), user.keyPairs)"
                 :on-cross-icon-click="() => handleRemovePublicKey(key)"
-                :data-test-id="`input-complex-key-public-key-${depth || 0}.${i}`"
+                :input-data-test-id="`input-complex-key-public-key-${depth || 0}-${i}`"
+                :remove-data-test-id="`input-complex-key-remove-${depth || 0}-${i}`"
               />
             </div>
           </div>
@@ -188,7 +205,7 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
               :key-list="key"
               @update:key-list="newKeyList => handleKeyListUpdate(i, newKeyList)"
               :on-remove-key-list="() => handleRemoveThreshold(i)"
-              :depth="`${depth || 0}.${i}`"
+              :depth="`${depth || 0}-${i}`"
             />
           </div>
         </template>

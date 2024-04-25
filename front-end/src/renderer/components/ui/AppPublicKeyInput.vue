@@ -11,7 +11,8 @@ const props = withDefaults(
     label?: string;
     hasCrossIcon?: boolean;
     onCrossIconClick?: () => void;
-    dataTestId?: string;
+    inputDataTestId?: string;
+    removeDataTestId?: string;
   }>(),
   {
     label: 'Public key',
@@ -87,7 +88,7 @@ defineExpose({
       :size="size"
       :filled="filled"
       @update:model-value="handleUpdateModelValue"
-      :data-testid="dataTestId"
+      :data-testid="inputDataTestId"
       v-bind="$attrs"
     />
 
@@ -96,7 +97,12 @@ defineExpose({
       ref="afterItemRef"
       class="public-key-input-after text-small border-start px-4"
     >
-      <span class="bi bi-x-lg cursor-pointer" @click="onCrossIconClick"> </span>
+      <span
+        class="bi bi-x-lg cursor-pointer"
+        @click="onCrossIconClick"
+        :data-testid="removeDataTestId"
+      >
+      </span>
     </div>
   </div>
 </template>
