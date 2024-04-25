@@ -1,0 +1,86 @@
+:root,
+[data-bs-theme='light'] {
+  --#{$prefix}text-secondary-color: #{$dark-blue-600};
+  --#{$prefix}link-primary-color: #{$purple-600};
+  --#{$prefix}link-primary-hover-color: #{$purple-700};
+  --#{$prefix}link-secondary-color: #{$purple-500};
+  --#{$prefix}link-secondary-hover-color: #{$purple-400};
+
+  --#{$prefix}menu-link-color: #{$neutral-800};
+  --#{$prefix}menu-link-color-hover: #{$neutral-900};
+  --#{$prefix}menu-link-bg-hover: #{$light-blue-50};
+
+  --#{$prefix}input-border-color: #{$dark-blue-200};
+  --#{$prefix}input-focus-border-color: #{$dark-blue-400};
+  --#{$prefix}input-fill-bg-color: #{$light-blue-300};
+  --#{$prefix}input-fill-focus-bg-color: #{$light-blue-500};
+
+  --#{$prefix}card-primary-bg-color: #{$light-blue-300};
+  --#{$prefix}toast-bg-color: #{$dark-blue-700};
+  --#{$prefix}toast-color: #{$light-blue-200};
+
+  --#{$prefix}contrainer-dark-bg-color: #{$neutral-00};
+  --#{$prefix}contrainer-dark-border-color: #{$neutral-100};
+
+  --#{$prefix}container-main-bg-color: #f9fafe; // to check in tokens
+  --#{$prefix}table-header-bg-color: #{$light-blue-300};
+
+  --#{$prefix}container-dropdown-menu-item-hover-color: #{$light-blue-300};
+
+  --#{$prefix}btn-secondary-bg-color: #{$light-blue-500};
+  --#{$prefix}btn-borderless-color: #{$dark-blue-950};
+
+  --#{$prefix}btn-group-container-bg-color: #{$light-blue-200};
+  --#{$prefix}container-threshhold-key: #{$light-blue-300};
+
+  --#{$prefix}modal-bg-color: #{$neutral-00};
+
+  --#{$prefix}separator-bg-color: #{$dark-blue-100};
+
+  --#{$prefix}text-dark-blue: #{$dark-blue-500};
+}
+
+@if $enable-dark-mode {
+  @include color-mode(dark, true) {
+    color-scheme: dark;
+
+    --#{$prefix}text-secondary-color: #{$dark-blue-200};
+    --#{$prefix}link-primary-color: #{$purple-500};
+    --#{$prefix}link-primary-hover-color: #{$dark-blue-400};
+    --#{$prefix}link-secondary-color: #{$purple-400};
+    --#{$prefix}link-secondary-hover-color: #{$dark-blue-300};
+
+    --#{$prefix}menu-link-color: #{$dark-blue-200};
+    --#{$prefix}menu-link-color-hover: #{$neutral-00};
+    --#{$prefix}menu-link-bg-hover: #{$dark-blue-600};
+
+    --#{$prefix}input-border-color: #{$dark-blue-600};
+    --#{$prefix}input-focus-border-color: #{$dark-blue-400};
+    --#{$prefix}input-fill-bg-color: #{$dark-blue-700};
+    --#{$prefix}input-fill-focus-bg-color: #{$dark-blue-500};
+
+    --#{$prefix}card-primary-bg-color: #{$dark-blue-700};
+    --#{$prefix}toast-bg-color: #{$light-blue-200};
+    --#{$prefix}toast-color: #{$dark-blue-700};
+
+    --#{$prefix}contrainer-dark-bg-color: #{$dark-blue-950};
+    --#{$prefix}contrainer-dark-border-color: #{$dark-blue-950};
+
+    --#{$prefix}container-main-bg-color: #{$dark-blue-900};
+    --#{$prefix}table-header-bg-color: #{$dark-blue-600};
+
+    --#{$prefix}container-dropdown-menu-item-hover-color: #{$dark-blue-600};
+
+    --#{$prefix}btn-secondary-bg-color: #{$dark-blue-600};
+    --#{$prefix}btn-borderless-color: #{$neutral-00};
+
+    --#{$prefix}btn-group-container-bg-color: #{$dark-blue-700};
+    --#{$prefix}container-threshhold-key: #{$dark-blue-600};
+
+    --#{$prefix}modal-bg-color: #{$dark-blue-950};
+
+    --#{$prefix}separator-bg-color: #{$dark-blue-700};
+
+    --#{$prefix}text-dark-blue: #{$dark-blue-200};
+  }
+}

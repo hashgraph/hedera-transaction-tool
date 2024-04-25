@@ -1,0 +1,97 @@
+<script setup lang="ts">
+import { ref } from 'vue';
+import { Prisma } from '@prisma/client';
+import { FileId } from '@hashgraph/sdk';
+
+import useUserStore from '@renderer/stores/storeUser';
+
+import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toast-notification';
+import useCreateTooltips from '@renderer/composables/useCreateTooltips';
+
+import { add } from '@renderer/services/filesService';
+
+import { isAccountId, isFileId } from '@renderer/utils/validator';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
+
+/* Stores */
+const user = useUserStore();
+
+/* Composables */
+const router = useRouter();
+const toast = useToast();
+useCreateTooltips();
+
+/* State */
+const fileId = ref('');
+const nickname = ref('');
+const description = ref('');
+
+const handleLinkFile = async e => {
+  e.preventDefault();
+
+  if (isAccountId(fileId.value)) {
+    try {
+      if (!isUserLoggedIn(user.personal)) {
+        throw new Error('User is not logged in');
+      }
+
+      if (!isFileId(fileId.value)) {
+        throw new Error('Invalid File ID');
+      }
+
+      const file: Prisma.HederaFileUncheckedCreateInput = {
+        file_id: FileId.fromString(fileId.value).toString(),
+        user_id: user.personal.id,
+        nickname: nickname.value,
+        description: description.value,
+      };
+
+      await add(file);
+
+      router.push({ name: 'files' });
+      toast.success('File linked successfully!', { position: 'bottom-right' });
+    } catch (error: any) {
+      toast.error(error.message || 'File link failed', { position: 'bottom-right' });
+    }
+  }
+};
+</script>
+<template>
+  <div class="p-5">
+    <AppButton
+      color="primary"
+      class="d-flex align-items-center justify-content-center"
+      @click="$router.back()"
+      ><i class="bi bi-arrow-left text-subheader me-2"></i> Back</AppButton
+    >
+    <form class="mt-5 col-12 col-md-8 col-lg-6 col-xxl-4" @submit="handleLinkFile">
+      <div class="form-group">
+        <label class="form-label">Hedera File ID <span class="text-danger">*</span></label>
+        <AppInput
+          v-model="fileId"
+          :filled="true"
+          data-bs-toggle="tooltip"
+          data-bs-placement="right"
+          data-bs-custom-class="wide-tooltip"
+          data-bs-title="The File ID of the file you would like to link on the Hedera network."
+          placeholder="0.0.4124"
+        />
+      </div>
+      <div class="form-group mt-5">
+        <label class="form-label">Nickname</label>
+        <AppInput v-model="nickname" :filled="true" placeholder="Enter nickname" />
+      </div>
+      <div class="form-group mt-5">
+        <label class="form-label">Description</label>
+        <textarea v-model="description" class="form-control is-fill" rows="8"></textarea>
+      </div>
+      <AppButton color="primary" type="submit" class="mt-5" :disabled="!isFileId(fileId)"
+        >Link File</AppButton
+      >
+    </form>
+  </div>
+</template>

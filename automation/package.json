@@ -1,0 +1,26 @@
+{
+  "name": "hedera-transaction-tool-tests",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "playwright": "^1.41.2",
+    "prettier": "^3.2.5"
+  },
+  "main": "playwright.config.js",
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.41.2",
+    "fsevents": "^2.3.2",
+    "playwright-core": "^1.41.2",
+    "dotenv": "16.4.5",
+    "sqlite3": "5.1.7"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}

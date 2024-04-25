@@ -1,0 +1,92 @@
+<script setup lang="ts">
+import { ref } from 'vue';
+
+import { KeyList } from '@hashgraph/sdk';
+import { ComplexKey } from '@prisma/client';
+
+import useUserStore from '@renderer/stores/storeUser';
+
+import { useToast } from 'vue-toast-notification';
+
+import { addComplexKey } from '@renderer/services/complexKeysService';
+
+import { encodeKey } from '@renderer/utils/sdk';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
+
+/* Props */
+const props = defineProps<{
+  show: boolean;
+  keyList: KeyList;
+  onComplexKeySave: (complexKey: ComplexKey) => void;
+}>();
+
+/* Emits */
+const emit = defineEmits(['update:show']);
+
+/* Stores */
+const user = useUserStore();
+
+/* Composables */
+const toast = useToast();
+
+/* State */
+const nickname = ref('');
+
+/* Handlers */
+const handleShowUpdate = show => emit('update:show', show);
+
+const handleSaveKeyList = async e => {
+  e.preventDefault();
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
+  const keyListBytes = encodeKey(props.keyList);
+  const newKey = await addComplexKey(user.personal.id, keyListBytes, nickname.value);
+
+  toast.success('Key list saved successfully', { position: 'bottom-right' });
+
+  props.onComplexKeySave(newKey);
+};
+</script>
+<template>
+  <AppModal
+    :show="show"
+    @update:show="handleShowUpdate"
+    class="common-modal"
+    :close-on-click-outside="false"
+    :close-on-escape="false"
+  >
+    <div class="p-5">
+      <div>
+        <i class="bi bi-x-lg cursor-pointer" @click="handleShowUpdate(false)"></i>
+      </div>
+      <form class="mt-3" @submit="handleSaveKeyList">
+        <h3 class="text-center text-title text-bold">Enter the nickname</h3>
+        <div class="form-group mt-5 mb-4">
+          <label class="form-label">Nickname</label>
+          <AppInput
+            v-model:model-value="nickname"
+            :filled="true"
+            placeholder="Enter name of complex key"
+          />
+        </div>
+
+        <hr class="separator my-5" />
+
+        <div class="flex-between-centered gap-4">
+          <AppButton type="button" color="borderless" @click="handleShowUpdate(false)"
+            >Cancel</AppButton
+          >
+          <AppButton type="submit" color="primary" :disabled="nickname.length === 0"
+            >Save</AppButton
+          >
+        </div>
+      </form>
+    </div>
+  </AppModal>
+</template>

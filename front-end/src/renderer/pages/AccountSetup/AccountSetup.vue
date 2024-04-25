@@ -1,0 +1,181 @@
+<script setup lang="ts">
+import { onBeforeMount, ref } from 'vue';
+import { onBeforeRouteLeave } from 'vue-router';
+
+import useUserStore from '@renderer/stores/storeUser';
+
+import { useRouter } from 'vue-router';
+
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppStepper from '@renderer/components/ui/AppStepper.vue';
+
+import {
+  accountSetupRequiredParts,
+  isLoggedInOrganization,
+} from '@renderer/utils/userStoreHelpers';
+
+import GenerateOrImport from './components/GenerateOrImport.vue';
+import KeyPairs from './components/KeyPairs.vue';
+import NewPassword from './components/NewPassword.vue';
+
+/* Types */
+type StepName = 'newPassword' | 'recoveryPhrase' | 'keyPairs';
+
+/* Stores */
+const user = useUserStore();
+
+/* Composables */
+const router = useRouter();
+
+/* State */
+const keyPairsComponent = ref<InstanceType<typeof KeyPairs> | null>(null);
+const step = ref<{ previous: StepName; current: StepName }>({
+  previous: 'newPassword',
+  current: 'newPassword',
+});
+const stepperItems = ref<{ title: string; name: StepName }[]>([
+  { title: 'New Password', name: 'newPassword' },
+  { title: 'Recovery Phrase', name: 'recoveryPhrase' },
+  { title: 'Key Pairs', name: 'keyPairs' },
+]);
+
+/* Handlers */
+const handleBack = () => {
+  step.value.current = step.value.previous;
+  const currentPrevIndex = stepperItems.value.findIndex(i => i.name === step.value.previous);
+  step.value.previous =
+    currentPrevIndex > 0
+      ? (step.value.previous = stepperItems.value[currentPrevIndex - 1].name)
+      : stepperItems.value[0].name;
+};
+
+const handleNext = async () => {
+  const requiredParts = accountSetupRequiredParts(user.selectedOrganization, user.keyPairs);
+  if (requiredParts.length === 0) router.push({ name: 'transactions' });
+
+  step.value.previous = step.value.current;
+  const currentIndex = stepperItems.value.findIndex(i => i.name === step.value.current);
+
+  if (currentIndex + 1 === stepperItems.value.length) {
+    await keyPairsComponent.value?.handleSave();
+  } else {
+    step.value.current =
+      currentIndex >= 0
+        ? (step.value.current = stepperItems.value[currentIndex + 1].name)
+        : stepperItems.value[0].name;
+  }
+};
+
+/* Hooks */
+onBeforeMount(() => {
+  const removeStep = (name: string) => {
+    const index = stepperItems.value.findIndex(i => i.name === name);
+    if (index > -1) stepperItems.value.splice(index, 1);
+  };
+  const setInitialStep = (stepName: StepName) => {
+    step.value.previous = stepName;
+    step.value.current = stepName;
+  };
+
+  if (!isLoggedInOrganization(user.selectedOrganization)) {
+    setInitialStep('recoveryPhrase');
+    removeStep('newPassword');
+  } else {
+    const requiredParts = accountSetupRequiredParts(user.selectedOrganization, user.keyPairs);
+    if (requiredParts.length === 0) router.push({ name: 'transactions' });
+
+    if (!requiredParts.includes('password')) {
+      setInitialStep('recoveryPhrase');
+      removeStep('newPassword');
+    } else if (!requiredParts.includes('keys')) {
+      setInitialStep('newPassword');
+      removeStep('recoveryPhrase');
+      removeStep('keyPairs');
+    }
+
+    user.recoveryPhrase = null;
+  }
+});
+
+/* Guards */
+onBeforeRouteLeave(async () => {
+  try {
+    await user.refetchUserState();
+  } catch (error) {
+    user.selectOrganization(null);
+  }
+
+  if (user.personal?.isLoggedIn && user.shouldSetupAccount) {
+    return false;
+  }
+
+  return true;
+});
+</script>
+<template>
+  <div class="flex-column-100 my-0 mx-auto p-7">
+    <div
+      class="container-dark-border flex-column-100 col-12 col-lg-10 col-xl-8 col-xxl-6 bg-modal-surface rounded-4 position-relative p-5 mx-auto"
+    >
+      <template v-if="stepperItems.map(s => s.name).includes(step.current)">
+        <div class="w-100 flex-centered flex-column gap-4">
+          <h1 data-testid="title-account-setup" class="mt-3 text-title text-bold text-center">
+            Account Setup
+          </h1>
+          <p
+            data-testid="text-set-recovery-phrase"
+            class="mt-3 text-main text-secondary text-center"
+          >
+            Set your Recovery Phrase and Key Pairs
+          </p>
+          <div class="mt-5 w-100">
+            <AppStepper
+              :items="stepperItems"
+              :active-index="stepperItems.findIndex(s => s.name === step.current)"
+            >
+            </AppStepper>
+          </div>
+        </div>
+      </template>
+
+      <Transition name="fade" mode="out-in">
+        <!-- Step 1 -->
+        <template v-if="step.current === 'newPassword'">
+          <NewPassword :handle-continue="handleNext" />
+        </template>
+
+        <!-- Step 2 -->
+        <template v-else-if="step.current === 'recoveryPhrase'">
+          <GenerateOrImport :handle-next="handleNext" />
+        </template>
+
+        <!--Step 3 -->
+        <template v-else-if="step.current === 'keyPairs'">
+          <KeyPairs ref="keyPairsComponent" v-model:step="step" />
+        </template>
+      </Transition>
+
+      <div class="d-flex justify-content-between">
+        <div class="d-flex">
+          <AppButton
+            v-if="![stepperItems[0].name, stepperItems[1].name].includes(step.current)"
+            color="borderless"
+            class="flex-centered mt-6"
+            @click="handleBack"
+            data-testid="button-back"
+          >
+            <i class="bi bi-arrow-left-short text-main"></i> Back</AppButton
+          >
+        </div>
+        <AppButton
+          v-if="user.recoveryPhrase && step.current !== 'recoveryPhrase'"
+          color="primary"
+          @click="handleNext"
+          class="ms-3 mt-6"
+          data-testid="button-next"
+          >Next</AppButton
+        >
+      </div>
+    </div>
+  </div>
+</template>

@@ -1,0 +1,121 @@
+// Base & resets
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body {
+  min-height: 100vh;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+strong {
+  font-weight: 700;
+}
+
+input[type='file'] {
+  display: none;
+}
+
+// Helpers
+.text-overflow {
+  @include text-overflow;
+}
+
+.ws-no-wrap {
+  white-space: nowrap;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.height-100 {
+  height: 100%;
+}
+
+// Containers
+.container {
+  padding-left: 16px;
+  padding-right: 16px;
+
+  @include media-breakpoint-up(sm) {
+    padding: 0;
+  }
+}
+
+.container-header {
+  height: 80px;
+  padding: 18px 24px;
+  background-color: var(--#{$prefix}container-main-bg-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  left: 0;
+  z-index: 1;
+
+  &.logged-in:not(&.should-setup-account) {
+    background-color: var(--#{$prefix}body-bg);
+  }
+}
+
+@include color-mode(light) {
+  .container-logo {
+    path {
+      fill: $neutral-900;
+    }
+  }
+}
+
+@include color-mode(dark) {
+  .container-logo {
+    path {
+      fill: $neutral-00;
+    }
+  }
+}
+
+.container-main {
+  display: flex;
+  top: 80px;
+  position: relative;
+  min-height: calc(100vh - 80px);
+
+  &.logged-in:not(&.should-setup-account) {
+    margin-left: 260px;
+  }
+}
+
+.container-menu {
+  position: fixed;
+  left: 0;
+  height: calc(100% - 80px);
+  width: 260px;
+  padding: 8px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.container-main-content {
+  background-color: var(--#{$prefix}container-main-bg-color);
+  height: calc(100vh - 80px);
+
+  .logged-in:not(.should-setup-account) & {
+    border-top-left-radius: 16px;
+  }
+}
+
+.container-page {
+  min-height: calc(100vh - 80px);
+}

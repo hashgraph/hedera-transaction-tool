@@ -1,3 +1,5 @@
+*.sqlite
+
 # Logs
 logs
 *.log
@@ -50,6 +52,14 @@ web_modules/
 
 # Optional npm cache directory
 .npm
+
+# Build
+dist
+dist-ssr
+dist-electron
+release
+out
+.vite
 
 # Optional eslint cache
 .eslintcache
@@ -128,3 +138,16 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Intellij files
+.idea
+
+.DS_Store
+
+# Automation files
+automation/node_modules/
+automation/test-results/
+automation/playwright-report/
+automation/blob-report/
+automation/playwright/.cache/
+automation/.env

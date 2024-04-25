@@ -1,0 +1,17 @@
+{
+  "extends": "@electron-toolkit/tsconfig/tsconfig.node.json",
+  "include": ["vite.config.*", "src/main", "src/preload/", "src/tests/main"],
+  "compilerOptions": {
+    "composite": true,
+    "noImplicitAny": false,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["vitest/globals"],
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@main/*": [
+        "src/main/*"
+      ]
+    }
+  }
+}

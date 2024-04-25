@@ -1,0 +1,38 @@
+### Create an observer
+POST http://localhost:3000/transactions/1/observers
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTgyODk5NiwiZXhwIjoxNzA5ODY0OTk2fQ.xT13lcNREeHlkCdy7tJbQE9I5GeMPEj0gB7jiMJOuTU
+content-type: application/json
+
+{
+  "userId": 1,
+  "role": "APPROVER"
+}
+
+### Get observer for user
+GET http://localhost:3000/transactions/1/observers/user
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTgzOTA4MSwiZXhwIjoxNzA5ODc1MDgxfQ.7IbBDtC4naKvdRQEwF63nBwrTAq6wKl5gAV09kMrfgU
+
+### Get observer by user id
+GET http://localhost:3000/transactions/1/observers/user/2
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTgzOTA4MSwiZXhwIjoxNzA5ODc1MDgxfQ.7IbBDtC4naKvdRQEwF63nBwrTAq6wKl5gAV09kMrfgU
+
+### Get observer by transaction id
+GET http://localhost:3000/transactions/1/observers
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTgzOTA4MSwiZXhwIjoxNzA5ODc1MDgxfQ.7IbBDtC4naKvdRQEwF63nBwrTAq6wKl5gAV09kMrfgU
+
+### Get observer by id
+GET http://localhost:3000/transactions/1/observers/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTgyODk5NiwiZXhwIjoxNzA5ODY0OTk2fQ.xT13lcNREeHlkCdy7tJbQE9I5GeMPEj0gB7jiMJOuTU
+
+### Update observer role
+PATCH http://localhost:3000/transactions/1/observers/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTgyODk5NiwiZXhwIjoxNzA5ODY0OTk2fQ.xT13lcNREeHlkCdy7tJbQE9I5GeMPEj0gB7jiMJOuTU
+content-type: application/json
+
+{
+  "role": "FULL"
+}
+
+### Delete observer
+DELETE http://localhost:3000/transactions/1/observers/2
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcwOTgzOTA4MSwiZXhwIjoxNzA5ODc1MDgxfQ.7IbBDtC4naKvdRQEwF63nBwrTAq6wKl5gAV09kMrfgU
