@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+
+import { useRoute } from 'vue-router';
 
 import { isOrganizationActive } from '@renderer/utils/userStoreHelpers';
 
@@ -11,16 +13,22 @@ import TransactionSelectionModal from '@renderer/components/TransactionSelection
 
 import History from './components/History.vue';
 import Drafts from './components/Drafts.vue';
+import ReadyToSign from './components/ReadyToSign.vue';
+import InProgress from './components/InProgress.vue';
+import ReadyForExecution from './components/ReadyForExecution.vue';
 
 /* Stores */
 const user = useUserStore();
+
+/* Composables */
+const route = useRoute();
 
 /* State */
 const organizationOnlyTabs: TabItem[] = [
   { title: 'Ready for Review' },
   { title: 'Ready to Sign' },
   { title: 'In Progress' },
-  { title: 'Ready for Submission' },
+  { title: 'Ready for Execution' },
 ];
 const sharedTabs: TabItem[] = [{ title: 'Drafts' }, { title: 'History' }];
 
@@ -46,8 +54,14 @@ function setTabItems() {
 }
 
 /* Hooks */
-onMounted(() => {
+onBeforeMount(() => {
   setTabItems();
+
+  const tab = route.query.tab?.toString();
+  if (tab) {
+    const newIndex = tabItems.value.findIndex(t => t.title === tab);
+    activeTabIndex.value = newIndex >= 0 ? newIndex : activeTabIndex.value;
+  }
 });
 
 /* Watchers */
@@ -70,10 +84,10 @@ watch(
 
     <div class="position-relative flex-column-100 overflow-hidden mt-4">
       <AppTabs :items="tabItems" v-model:active-index="activeTabIndex"></AppTabs>
-      <!-- <template v-if="activeTabTitle === 'Ready for Review'"></template>
-      <template v-if="activeTabTitle === 'Ready to Sign'"> </template>
-      <template v-if="activeTabTitle === 'In Progress'"></template>
-      <template v-if="activeTabTitle === 'Ready for Submission'"></template> -->
+      <template v-if="activeTabTitle === 'Ready for Review'"></template>
+      <template v-if="activeTabTitle === 'Ready to Sign'"> <ReadyToSign /> </template>
+      <template v-if="activeTabTitle === 'In Progress'"><InProgress /></template>
+      <template v-if="activeTabTitle === 'Ready for Execution'"><ReadyForExecution /></template>
       <template v-if="activeTabTitle === 'Drafts'"><Drafts /></template>
       <template v-if="activeTabTitle === 'History'"><History /></template>
     </div>

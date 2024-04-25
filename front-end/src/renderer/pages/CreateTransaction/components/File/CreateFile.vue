@@ -18,7 +18,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
-import { useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
@@ -50,7 +50,7 @@ const network = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
-const route = useRoute();
+const router = useRouter();
 const payerData = useAccountId();
 
 /* State */
@@ -69,6 +69,7 @@ const description = ref('');
 const transactionMemo = ref('');
 
 const isExecuted = ref(false);
+const isSubmitted = ref(false);
 
 /* Handlers */
 
@@ -129,9 +130,9 @@ const handleExecuted = async (_response, receipt: TransactionReceipt) => {
 };
 
 const handleLoadFromDraft = async () => {
-  if (!route.query.draftId) return;
+  if (!router.currentRoute.value.query.draftId) return;
 
-  const draft = await getDraft(route.query.draftId?.toString() || '');
+  const draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
   const draftTransaction = getTransactionFromBytes<FileCreateTransaction>(draft.transactionBytes);
 
   if (draft) {
@@ -158,6 +159,16 @@ const handleLoadFromDraft = async () => {
       }
     }
   }
+};
+
+const handleSubmit = async () => {
+  isSubmitted.value = true;
+  router.push({
+    name: 'transactions',
+    query: {
+      tab: 'Ready for Execution',
+    },
+  });
 };
 
 /* Functions */
@@ -206,7 +217,7 @@ watch(payerData.isValid, isValid => {
         <template #buttons>
           <SaveDraftButton
             :get-transaction-bytes="() => createTransaction().toBytes()"
-            :is-executed="isExecuted"
+            :is-executed="isExecuted || isSubmitted"
           />
           <AppButton
             color="primary"
@@ -345,6 +356,7 @@ watch(payerData.isValid, isValid => {
       :transaction-bytes="transaction?.toBytes() || null"
       :on-close-success-modal-click="() => $router.push({ name: 'files' })"
       :on-executed="handleExecuted"
+      :on-submitted="handleSubmit"
     >
       <template #successHeading>File created successfully</template>
       <template #successContent>

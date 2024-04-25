@@ -1,4 +1,3 @@
-import { proto } from '@hashgraph/proto';
 import {
   AccountId,
   FileId,
@@ -9,10 +8,16 @@ import {
   KeyList,
   LedgerId,
   Long,
+  PrivateKey,
   PublicKey,
   Timestamp,
+  Transaction,
 } from '@hashgraph/sdk';
+import { proto } from '@hashgraph/proto';
+
 import { HederaSpecialFileId } from '@main/shared/interfaces';
+
+import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
 
 export const createFileInfo = (props: {
   fileId: FileId | string;
@@ -117,7 +122,9 @@ export function getMaximumExpirationTime() {
   return now;
 }
 
-export function isPublicKeyInKeyList(publicKey: PublicKey, keyList: KeyList) {
+export function isPublicKeyInKeyList(publicKey: string | PublicKey, keyList: KeyList) {
+  publicKey = publicKey instanceof PublicKey ? publicKey : PublicKey.fromString(publicKey);
+
   const keys = keyList.toArray();
   return keys.some(key => {
     if (key instanceof PublicKey) {
@@ -231,3 +238,49 @@ export function getNodeNumbersFromNetwork(network: {
 
   return nodeNumbers.sort((a, b) => a - b);
 }
+
+export const getPrivateKey = (
+  publicKey: string | PublicKey,
+  privateKeyString: string,
+): PrivateKey => {
+  publicKey = publicKey instanceof PublicKey ? publicKey : PublicKey.fromString(publicKey);
+
+  const startsWithHex = privateKeyString.startsWith('0x');
+
+  const privateKey =
+    publicKey._key._type === 'secp256k1'
+      ? PrivateKey.fromStringECDSA(`${startsWithHex ? '' : '0x'}${privateKeyString}`)
+      : PrivateKey.fromStringED25519(privateKeyString);
+
+  return privateKey;
+};
+
+export const isExpired = (transaction: Transaction) => {
+  if (!transaction.transactionId?.validStart) {
+    return true;
+  }
+
+  const validStart = transaction.transactionId.validStart.toDate();
+  const duration = transaction.transactionValidDuration;
+
+  return new Date().getTime() >= validStart.getTime() + duration * 1_000;
+};
+
+export const getSignatures = async (privateKey: PrivateKey, transaction: Transaction) => {
+  const signatures: {
+    [key: string]: string;
+  } = {};
+
+  for (const { bodyBytes } of transaction._signedTransactions.list) {
+    if (!bodyBytes) continue;
+    const { nodeAccountID } = proto.TransactionBody.decode(bodyBytes);
+
+    if (!nodeAccountID) continue;
+    const nodeAccountId = AccountId._fromProtobuf(nodeAccountID);
+
+    const signature = privateKey.sign(bodyBytes);
+    signatures[nodeAccountId.toString()] = await uint8ArrayToHex(signature);
+  }
+
+  return signatures;
+};

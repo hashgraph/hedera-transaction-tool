@@ -78,8 +78,49 @@ export const decodeProtobuffKeyNormalized = async (protobuffKey: string) => {
 /* Converts Uint8Array to hex string */
 export const uint8ArrayToHex = async (data: Uint8Array) => {
   try {
-    return await window.electronAPI.local.utils.uint8ArrayToHex(data);
+    return await window.electronAPI.local.utils.uint8ArrayToHex(data.join(','));
   } catch (error) {
     throw new Error('Failed to convert UInt8Array to hex string');
+  }
+};
+
+/* Converts Hex string to Uint8Array string */
+export const hexToUint8Array = async (data: string) => {
+  try {
+    const bytesString = await window.electronAPI.local.utils.hexToUint8Array(data);
+
+    return Uint8Array.from(bytesString.split(',').map(b => Number(b)));
+  } catch (error) {
+    throw new Error('Failed to convert hex to UInt8Array string');
+  }
+};
+
+/* Converts Hex string to Uint8Array string */
+export const hexToUint8ArrayBatch = async (data: string[]) => {
+  try {
+    const bytesArray = await window.electronAPI.local.utils.hexToUint8ArrayBatch(data);
+    return bytesArray.map(bytesString =>
+      Uint8Array.from(bytesString.split(',').map(b => Number(b))),
+    );
+  } catch (error) {
+    throw new Error('Failed to convert hexes to UInt8Array string');
+  }
+};
+
+/* Opens a buffer in a temp file */
+export const openBufferInTempFile = async (name: string, data: Uint8Array) => {
+  try {
+    await window.electronAPI.local.utils.openBufferInTempFile(name, data.join(','));
+  } catch (error) {
+    throw new Error('Failed to open the content in a temp file');
+  }
+};
+
+/* Opens a buffer in a temp file */
+export const saveFile = async (data: Uint8Array) => {
+  try {
+    await window.electronAPI.local.utils.saveFile(data.join(','));
+  } catch (error) {
+    throw new Error('Failed to save file');
   }
 };

@@ -1,0 +1,135 @@
+<script setup lang="ts">
+import { onBeforeMount, ref } from 'vue';
+
+import { TransferTransaction, Transaction } from '@hashgraph/sdk';
+
+import { HederaAccount } from '@prisma/client';
+
+import useUserStore from '@renderer/stores/storeUser';
+
+import { getAll } from '@renderer/services/accountsService';
+
+import { stringifyHbar } from '@renderer/utils';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+
+/* Props */
+const props = defineProps<{
+  transaction: Transaction;
+}>();
+
+/* Stores */
+const user = useUserStore();
+
+/* State */
+const linkedAccounts = ref<HederaAccount[]>([]);
+
+/* Hooks */
+onBeforeMount(async () => {
+  if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+  if (!(props.transaction instanceof TransferTransaction)) {
+    throw new Error('Transaction is not Transfer Transaction');
+  }
+
+  linkedAccounts.value = await getAll(user.personal.id);
+});
+</script>
+<template>
+  <div v-if="transaction instanceof TransferTransaction && true" class="mt-5">
+    <!-- Hbar transfers -->
+    <div class="row">
+      <div class="col-6">
+        <div class="mt-3">
+          <template v-for="debit in transaction.hbarTransfersList" :key="debit.accountId">
+            <div v-if="debit.amount.isNegative()" class="mt-3">
+              <div class="row align-items-center px-3">
+                <div
+                  class="col-6 col-lg-5 flex-centered justify-content-start flex-wrap overflow-hidden"
+                >
+                  <template
+                    v-if="
+                      (
+                        linkedAccounts.find(la => la.account_id === debit.accountId.toString())
+                          ?.nickname || ''
+                      ).length > 0
+                    "
+                  >
+                    <p v-if="debit.isApproved" class="text-small text-semi-bold me-2">Approved</p>
+
+                    <div class="flex-centered justify-content-start flex-wrap">
+                      <p class="text-small text-semi-bold me-2">
+                        {{
+                          linkedAccounts.find(la => la.account_id === debit.accountId.toString())
+                            ?.nickname
+                        }}
+                      </p>
+                      <p class="text-secondary text-micro overflow-hidden">
+                        {{ debit.accountId }}
+                      </p>
+                    </div>
+                  </template>
+                  <template v-else>
+                    <p v-if="debit.isApproved" class="text-small text-semi-bold me-2">Approved</p>
+                    <p class="text-secondary text-small overflow-hidden">
+                      {{ debit.accountId }}
+                    </p>
+                  </template>
+                </div>
+                <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
+                  <p class="text-secondary text-small text-bold overflow-hidden">
+                    {{ stringifyHbar(debit.amount) }}
+                  </p>
+                </div>
+              </div>
+              <hr class="separator" />
+            </div>
+          </template>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="mt-3">
+          <template v-for="credit in transaction.hbarTransfersList" :key="credit.accountId">
+            <div v-if="!credit.amount.isNegative()" class="mt-3">
+              <div class="row align-items-center px-3">
+                <div
+                  class="col-6 col-lg-5 flex-centered justify-content-start flex-wrap overflow-hidden"
+                >
+                  <template
+                    v-if="
+                      (
+                        linkedAccounts.find(la => la.account_id === credit.accountId.toString())
+                          ?.nickname || ''
+                      ).length > 0
+                    "
+                  >
+                    <div class="flex-centered justify-content-start flex-wrap">
+                      <p class="text-small text-semi-bold me-2">
+                        {{
+                          linkedAccounts.find(la => la.account_id === credit.accountId.toString())
+                            ?.nickname
+                        }}
+                      </p>
+                      <p class="text-secondary text-micro overflow-hidden">
+                        {{ credit.accountId }}
+                      </p>
+                    </div>
+                  </template>
+                  <template v-else>
+                    <p class="text-secondary text-small overflow-hidden">
+                      {{ credit.accountId }}
+                    </p>
+                  </template>
+                </div>
+                <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
+                  <p class="text-secondary text-small text-bold overflow-hidden">
+                    {{ stringifyHbar(credit.amount) }}
+                  </p>
+                </div>
+              </div>
+              <hr class="separator" />
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

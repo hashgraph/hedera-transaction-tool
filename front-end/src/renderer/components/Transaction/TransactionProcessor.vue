@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, inject } from 'vue';
 
 import { Key, KeyList, Transaction, TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
@@ -11,13 +11,31 @@ import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
 
 import { execute, signTransaction, storeTransaction } from '@renderer/services/transactionService';
-import { openExternal } from '@renderer/services/electronUtilsService';
+import {
+  hexToUint8Array,
+  openExternal,
+  uint8ArrayToHex,
+} from '@renderer/services/electronUtilsService';
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
-import { flattenKeyList } from '@renderer/services/keyPairService';
+import { decryptPrivateKey, flattenKeyList } from '@renderer/services/keyPairService';
 import { deleteDraft, getDraft } from '@renderer/services/transactionDraftsService';
+import { fullUploadSignatures, submitTransaction } from '@renderer/services/organization';
 
-import { ableToSign, stringifyHbar, getStatusFromCode, getTransactionType } from '@renderer/utils';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+
+import {
+  ableToSign,
+  stringifyHbar,
+  getStatusFromCode,
+  getTransactionType,
+  getPrivateKey,
+} from '@renderer/utils';
+import { publicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
+import {
+  isLoggedInOrganization,
+  isLoggedInWithPassword,
+  isUserLoggedIn,
+} from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -29,6 +47,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 const props = defineProps<{
   transactionBytes: Uint8Array | null;
   onExecuted?: (response: TransactionResponse, receipt: TransactionReceipt) => void;
+  onSubmitted?: (id: number, body: string) => void;
   onCloseSuccessModalClick?: () => void;
   watchExecutedModalShown?: (shown: boolean) => void;
 }>();
@@ -40,6 +59,9 @@ const network = useNetworkStore();
 /* Composables */
 const toast = useToast();
 const route = useRoute();
+
+/* Injected */
+const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
 
 /* State */
 const transactionResult = ref<{
@@ -63,16 +85,13 @@ const transaction = computed(() =>
 const flattenedSignatureKey = computed(() =>
   signatureKey.value ? flattenKeyList(signatureKey.value).map(pk => pk.toStringRaw()) : [],
 );
-const externalPublicKeysReq = computed(() =>
-  flattenedSignatureKey.value.filter(pk => !user.publicKeys.includes(pk)),
-);
 const localPublicKeysReq = computed(() =>
   flattenedSignatureKey.value.filter(pk => user.publicKeys.includes(pk)),
 );
 const type = computed(() => transaction.value && getTransactionType(transaction.value));
 
 /* Handlers */
-function handleConfirmTransaction(e: Event) {
+async function handleConfirmTransaction(e: Event) {
   e.preventDefault();
 
   // Personal user:
@@ -80,15 +99,19 @@ function handleConfirmTransaction(e: Event) {
   //  with local and external -> FAIL
   //  without local keys but external -> FAIL
   // Organization user:
-  //  with all local -> Execute
+  //  with all local -> SIGN AND SEND
   //  with local and external -> SIGN AND SEND
   //  without local but external -> SEND
 
-  if (localPublicKeysReq.value.length > 0) {
+  if (user.selectedOrganization) {
+    await sendSignedTransactionToOrganization();
+  } else if (localPublicKeysReq.value.length > 0) {
     isConfirmShown.value = false;
     isSignModalShown.value = true;
-  } else if (user.selectedOrganization) {
-    console.log('Send to back end along with siganture key');
+  } else {
+    throw new Error(
+      'Unable to execute, all of the required signatures should be with your keys. You are currently in Personal mode.',
+    );
   }
 }
 
@@ -99,6 +122,12 @@ async function handleSignTransaction(e: Event) {
 
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
+  }
+
+  if (user.selectedOrganization) {
+    throw new Error(
+      "User is in organization mode, shouldn't be able to sign before submitting to organization",
+    );
   }
 
   try {
@@ -113,12 +142,7 @@ async function handleSignTransaction(e: Event) {
 
     isSignModalShown.value = false;
 
-    if (!user.selectedOrganization) {
-      await executeTransaction(signedTransactionBytes);
-    } else if (user.selectedOrganization) {
-      await sendSignedTransactionToOrganization();
-      console.log('Send to back end signed along with required', signatureKey.value);
-    }
+    await executeTransaction(signedTransactionBytes);
   } catch (err: any) {
     toast.error(err.message || 'Transaction signing failed', { position: 'bottom-right' });
   } finally {
@@ -230,7 +254,88 @@ async function executeTransaction(transactionBytes: Uint8Array) {
 }
 
 async function sendSignedTransactionToOrganization() {
-  console.log('Send to back end signed along with required', externalPublicKeysReq.value);
+  isConfirmShown.value = false;
+
+  /* Verifies the user is logged in organization */
+  if (!isLoggedInOrganization(user.selectedOrganization)) {
+    throw new Error('Please select an organization');
+  }
+
+  /* Verifies the user has entered his password */
+  if (!isLoggedInWithPassword(user.personal)) {
+    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+    userPasswordModalRef.value?.open(
+      'Enter your personal account password',
+      'Enter your personal to sign as a creator',
+      sendSignedTransactionToOrganization,
+    );
+    return;
+  }
+
+  /* Verifies there is actual transaction to process */
+  if (!props.transactionBytes) throw new Error('Transaction not provided');
+
+  /* User Serializes the Transaction */
+  const hexTransactionBytes = await uint8ArrayToHex(props.transactionBytes);
+
+  /* Signs the unfrozen transaction */
+  const keyToSignWith = user.keyPairs[0].public_key;
+
+  const privateKeyRaw = await decryptPrivateKey(
+    user.personal.id,
+    user.personal.password,
+    keyToSignWith,
+  );
+  const privateKey = getPrivateKey(keyToSignWith, privateKeyRaw);
+
+  const signature = privateKey.sign(props.transactionBytes);
+  const signatureHex = await uint8ArrayToHex(signature);
+
+  /* Submit the transaction to the back end */
+  const { id, body } = await submitTransaction(
+    user.selectedOrganization.serverUrl,
+    transaction.value?.transactionMemo || `New ${type.value}`,
+    transaction.value?.transactionMemo || '',
+    hexTransactionBytes,
+    signatureHex,
+    user.selectedOrganization.userKeys.find(k => k.publicKey === keyToSignWith)?.id || -1,
+  );
+
+  toast.success('Transaction submitted successfully');
+  props.onSubmitted && props.onSubmitted(id, body);
+
+  const bodyBytes = await hexToUint8Array(body);
+
+  /* Delete if draft and not template */
+  if (route.query.draftId) {
+    try {
+      const draft = await getDraft(route.query.draftId.toString());
+      if (!draft.isTemplate) await deleteDraft(route.query.draftId.toString());
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  /* Deserialize the transaction */
+  const sdkTransaction = Transaction.fromBytes(bodyBytes);
+
+  /* Check if should sign */
+  const publicKeysRequired = await publicRequiredToSign(
+    sdkTransaction,
+    user.selectedOrganization.userKeys,
+    network.mirrorNodeBaseURL,
+  );
+  if (publicKeysRequired.length === 0) return;
+
+  await fullUploadSignatures(
+    user.personal,
+    user.selectedOrganization,
+    publicKeysRequired,
+    sdkTransaction,
+    id,
+  );
+
+  toast.success('Transaction signed successfully');
 }
 
 function resetData() {

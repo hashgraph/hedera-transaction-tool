@@ -2,29 +2,48 @@
 import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 import { Prisma, Transaction } from '@prisma/client';
 
+import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+
+import { ITransaction, TransactionStatus } from '@main/shared/interfaces';
+
 import useUserStore from '@renderer/stores/storeUser';
-import useNetworkStore from '@renderer/stores/storeNetwork';
+
+import { useRouter } from 'vue-router';
 
 import { getTransactions, getTransactionsCount } from '@renderer/services/transactionService';
+import {
+  getTransactionsForUser,
+  getTransactionsForUserCount,
+} from '@renderer/services/organization';
+import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
 import {
   getTransactionStatus,
   getTransactionId,
-  openTransactionInHashscan,
+  getStatusFromCode,
 } from '@renderer/utils/transactions';
-
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import * as sdkTransactionUtils from '@renderer/utils/sdk/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
+import { getDateStringExtended } from '@renderer/utils';
 
 /* Stores */
 const user = useUserStore();
-const network = useNetworkStore();
+
+/* Composables */
+const router = useRouter();
 
 /* State */
+const organizationTransactions = ref<
+  {
+    transactionRaw: ITransaction;
+    transaction: SDKTransaction;
+  }[]
+>([]);
 const transactions = ref<Transaction[]>([]);
 const sort = reactive<{ field: Prisma.TransactionScalarFieldEnum; direction: Prisma.SortOrder }>({
   field: 'created_at',
@@ -50,8 +69,11 @@ const handleSort = async (
   transactions.value = await getTransactions(createFindArgs());
 };
 
-const handleTransactionDetailsClick = (transaction: Transaction) => {
-  openTransactionInHashscan(transaction.transaction_id, network.network);
+const handleTransactionDetailsClick = id => {
+  router.push({
+    name: 'transactionDetails',
+    params: { id },
+  });
 };
 
 /* Functions */
@@ -59,7 +81,7 @@ function getOpositeDirection() {
   return sort.direction === 'asc' ? 'desc' : 'asc';
 }
 
-function createFindArgs(): Prisma.TransactionFindManyArgs {
+function createFindArgs() {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
@@ -83,9 +105,30 @@ async function fetchTransactions() {
 
   isLoading.value = true;
   try {
-    totalItems.value = await getTransactionsCount(user.personal.id);
-    transactions.value = await getTransactions(createFindArgs());
-    handleSort(sort.field, sort.direction);
+    const args = createFindArgs();
+
+    if (isLoggedInOrganization(user.selectedOrganization)) {
+      totalItems.value = await getTransactionsForUserCount(user.selectedOrganization.serverUrl, [
+        TransactionStatus.EXECUTED,
+        TransactionStatus.FAILED,
+      ]);
+      const rawTransactions = await getTransactionsForUser(
+        user.selectedOrganization.serverUrl,
+        [TransactionStatus.EXECUTED, TransactionStatus.FAILED],
+        args.skip,
+        args.take,
+      );
+
+      const transactionsBytes = await hexToUint8ArrayBatch(rawTransactions.map(t => t.body));
+      organizationTransactions.value = rawTransactions.map((transaction, i) => ({
+        transactionRaw: transaction,
+        transaction: SDKTransaction.fromBytes(transactionsBytes[i]),
+      }));
+    } else {
+      totalItems.value = await getTransactionsCount(user.personal.id);
+      transactions.value = await getTransactions(args);
+      handleSort(sort.field, sort.direction);
+    }
   } finally {
     isLoading.value = false;
   }
@@ -100,6 +143,13 @@ onBeforeMount(async () => {
 watch([currentPage, pageSize], async () => {
   await fetchTransactions();
 });
+
+watch(
+  () => user.selectedOrganization,
+  async () => {
+    await fetchTransactions();
+  },
+);
 </script>
 
 <template>
@@ -108,7 +158,13 @@ watch([currentPage, pageSize], async () => {
       <AppLoader />
     </template>
     <template v-else>
-      <template v-if="transactions.length > 0">
+      <template
+        v-if="
+          (isLoggedInOrganization(user.selectedOrganization) &&
+            organizationTransactions.length > 0) ||
+          transactions.length > 0
+        "
+      >
         <table class="table-custom">
           <thead>
             <tr>
@@ -124,7 +180,7 @@ watch([currentPage, pageSize], async () => {
                 >
                   <span>Transaction ID</span>
                   <i
-                    v-if="sort.field === 'transaction_id'"
+                    v-if="!user.selectedOrganization && sort.field === 'transaction_id'"
                     class="bi text-title"
                     :class="[generatedClass]"
                   ></i>
@@ -137,7 +193,7 @@ watch([currentPage, pageSize], async () => {
                 >
                   <span>Transaction Type</span>
                   <i
-                    v-if="sort.field === 'type'"
+                    v-if="!user.selectedOrganization && sort.field === 'type'"
                     class="bi text-title"
                     :class="[generatedClass]"
                   ></i>
@@ -155,7 +211,7 @@ watch([currentPage, pageSize], async () => {
                 >
                   <span>Status</span>
                   <i
-                    v-if="sort.field === 'status_code'"
+                    v-if="!user.selectedOrganization && sort.field === 'status_code'"
                     class="bi text-title"
                     :class="[generatedClass]"
                   ></i>
@@ -173,7 +229,7 @@ watch([currentPage, pageSize], async () => {
                 >
                   <span>Timestamp</span>
                   <i
-                    v-if="sort.field === 'created_at'"
+                    v-if="!user.selectedOrganization && sort.field === 'created_at'"
                     class="bi text-title"
                     :class="[generatedClass]"
                   ></i>
@@ -185,30 +241,72 @@ watch([currentPage, pageSize], async () => {
             </tr>
           </thead>
           <tbody>
-            <template v-for="transaction in transactions" :key="transaction.created_at.toString()">
-              <tr>
-                <td>{{ getTransactionId(transaction) }}</td>
-                <td>
-                  <span class="text-bold">{{ transaction.type }}</span>
-                </td>
-                <td>
-                  <span
-                    class="badge bg-success text-break"
-                    :class="{ 'bg-danger': ![0, 22].includes(transaction.status_code) }"
-                    >{{ getTransactionStatus(transaction) }}</span
-                  >
-                </td>
-                <td>
-                  <span class="text-secondary">
-                    {{ transaction.created_at.toDateString() }}
-                  </span>
-                </td>
-                <td class="text-center">
-                  <AppButton @click="handleTransactionDetailsClick(transaction)" color="secondary"
-                    >Details</AppButton
-                  >
-                </td>
-              </tr>
+            <template v-if="!user.selectedOrganization">
+              <template
+                v-for="transaction in transactions"
+                :key="transaction.created_at.toString()"
+              >
+                <tr>
+                  <td>{{ getTransactionId(transaction) }}</td>
+                  <td>
+                    <span class="text-bold">{{ transaction.type }}</span>
+                  </td>
+                  <td>
+                    <span
+                      class="badge bg-success text-break"
+                      :class="{ 'bg-danger': ![0, 22].includes(transaction.status_code) }"
+                      >{{ getTransactionStatus(transaction) }}</span
+                    >
+                  </td>
+                  <td>
+                    <span class="text-secondary">
+                      {{ getDateStringExtended(transaction.created_at) }}
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <AppButton
+                      @click="handleTransactionDetailsClick(transaction.id)"
+                      color="secondary"
+                      >Details</AppButton
+                    >
+                  </td>
+                </tr>
+              </template>
+            </template>
+            <template v-else-if="isLoggedInOrganization(user.selectedOrganization)">
+              <template
+                v-for="{ transaction, transactionRaw } in organizationTransactions"
+                :key="transactionRaw.id"
+              >
+                <tr v-if="transaction instanceof SDKTransaction && true">
+                  <td>{{ sdkTransactionUtils.getTransactionId(transaction) }}</td>
+                  <td>
+                    <span class="text-bold">{{
+                      sdkTransactionUtils.getTransactionType(transaction)
+                    }}</span>
+                  </td>
+                  <td>
+                    <span
+                      v-if="transactionRaw.statusCode"
+                      class="badge bg-success text-break"
+                      :class="{ 'bg-danger': ![0, 22].includes(transactionRaw.statusCode) }"
+                      >{{ getStatusFromCode(transactionRaw.statusCode) }}</span
+                    >
+                  </td>
+                  <td>
+                    <span class="text-secondary">
+                      {{ getDateStringExtended(new Date(transactionRaw.createdAt)) }}
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <AppButton
+                      @click="handleTransactionDetailsClick(transactionRaw.id)"
+                      color="secondary"
+                      >Details</AppButton
+                    >
+                  </td>
+                </tr>
+              </template>
             </template>
           </tbody>
           <tfoot class="d-table-caption">

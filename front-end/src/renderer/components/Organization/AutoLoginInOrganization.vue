@@ -37,7 +37,7 @@ const handleAutoLogin = async (password: string) => {
 
   loginsSummaryModalShow.value = true;
 
-  user.refetchOrganizations();
+  await user.refetchOrganizations();
 };
 
 const handleSubmitFailedOrganizations = (e: Event) => {

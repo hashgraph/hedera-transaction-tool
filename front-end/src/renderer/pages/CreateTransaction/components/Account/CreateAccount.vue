@@ -18,7 +18,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 
 import { add } from '@renderer/services/accountsService';
 import { createTransactionId } from '@renderer/services/transactionService';
@@ -47,7 +47,7 @@ const network = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
-const route = useRoute();
+const router = useRouter();
 const payerData = useAccountId();
 
 /* State */
@@ -79,6 +79,7 @@ const accountData = reactive<{
 const stakeType = ref<'Account' | 'Node' | 'None'>('None');
 const ownerKey = ref<Key | null>(null);
 const isExecuted = ref(false);
+const isSubmitted = ref(false);
 const nickname = ref('');
 const transactionMemo = ref('');
 
@@ -140,9 +141,9 @@ const handleExecuted = async (_response, receipt: TransactionReceipt) => {
 };
 
 const handleLoadFromDraft = async () => {
-  if (!route.query.draftId) return;
+  if (!router.currentRoute.value.query.draftId) return;
 
-  const draft = await getDraft(route.query.draftId.toString());
+  const draft = await getDraft(router.currentRoute.value.query.draftId.toString());
   const draftTransaction = getTransactionFromBytes<AccountCreateTransaction>(
     draft.transactionBytes,
   );
@@ -173,6 +174,16 @@ const handleLoadFromDraft = async () => {
 
 const handleOwnerKeyUpdate = key => {
   ownerKey.value = key;
+};
+
+const handleSubmit = async () => {
+  isSubmitted.value = true;
+  router.push({
+    name: 'transactions',
+    query: {
+      tab: 'Ready for Execution',
+    },
+  });
 };
 
 /* Functions */
@@ -238,7 +249,7 @@ const columnClass = 'col-4 col-xxxl-3';
         <template #buttons>
           <SaveDraftButton
             :get-transaction-bytes="() => createTransaction().toBytes()"
-            :is-executed="isExecuted"
+            :is-executed="isExecuted || isSubmitted"
           />
           <AppButton
             color="primary"
@@ -385,6 +396,7 @@ const columnClass = 'col-4 col-xxxl-3';
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"
       :on-executed="handleExecuted"
+      :on-submitted="handleSubmit"
       :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
     >
       <template #successHeading>Account created successfully</template>

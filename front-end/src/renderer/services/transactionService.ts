@@ -170,6 +170,15 @@ export const getTransactions = async (findArgs: Prisma.TransactionFindManyArgs) 
   }
 };
 
+/* Returns saved transaction by id */
+export const getTransaction = async id => {
+  try {
+    return await window.electronAPI.local.transactions.getTransaction(id);
+  } catch (err: any) {
+    throw Error(getMessageFromIPCError(err, `Failed to get transaction with id: ${id}`));
+  }
+};
+
 /* Returns saved transactions count */
 export const getTransactionsCount = async (userId: string) => {
   try {

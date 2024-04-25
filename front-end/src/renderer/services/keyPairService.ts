@@ -137,42 +137,28 @@ export const deleteKeyPair = async (keyPairId: string) => {
 };
 
 /* Flattens a key list to public keys*/
-export const flattenKeyList = (keyList: Key): PublicKey[] => {
-  const protobufKey = keyList._toProtobufKey();
-
-  const keys: PublicKey[] = [];
-  const keysString: string[] = [];
-
-  formatKey(protobufKey);
-
-  function formatKey(key: proto.Key) {
-    if (key.thresholdKey) {
-      key.thresholdKey.keys?.keys?.forEach((key: proto.Key) => {
-        formatKey(key);
-      });
-    } else if (key.keyList) {
-      key.keyList.keys?.forEach((k: proto.Key) => {
-        formatKey(k);
-      });
-    } else {
-      let publicKey: PublicKey;
-
-      if (key.ed25519) {
-        publicKey = PublicKey.fromBytesED25519(key.ed25519);
-      } else if (key.ECDSASecp256k1) {
-        publicKey = PublicKey.fromBytesECDSA(key.ECDSASecp256k1);
-      } else {
-        throw new Error('Unsupported key type');
-      }
-
-      if (publicKey && !keysString.includes(publicKey.toStringRaw())) {
-        keys.push(publicKey);
-        keysString.push(publicKey.toStringRaw());
-      }
-    }
+export function flattenKeyList(keyList: Key): PublicKey[] {
+  if (keyList instanceof PublicKey) {
+    return [keyList];
   }
-  return keys;
-};
+
+  if (!(keyList instanceof KeyList)) {
+    throw new Error('Invalid key list');
+  }
+
+  const keys: Set<string> = new Set<string>();
+
+  keyList.toArray().forEach(key => {
+    if (key instanceof PublicKey) {
+      keys.add(key.toStringRaw());
+    } else if (key instanceof KeyList) {
+      const pks = flattenKeyList(key);
+      pks.forEach(pk => keys.add(pk.toStringRaw()));
+    }
+  });
+
+  return [...keys].map(k => PublicKey.fromString(k));
+}
 
 export const getKeyListLevels = (keyList: KeyList) => {
   const result: { key: proto.Key; level: number }[] = [];

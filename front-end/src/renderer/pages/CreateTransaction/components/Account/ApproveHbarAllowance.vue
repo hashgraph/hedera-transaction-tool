@@ -12,7 +12,7 @@ import {
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
 
 import { useToast } from 'vue-toast-notification';
-import { useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
@@ -31,7 +31,7 @@ import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 
 /* Composables */
 const toast = useToast();
-const route = useRoute();
+const router = useRouter();
 const payerData = useAccountId();
 const ownerData = useAccountId();
 const spenderData = useAccountId();
@@ -50,6 +50,7 @@ const keyStructureComponentKey = ref<Key | null>(null);
 const isKeyStructureModalShown = ref(false);
 
 const isExecuted = ref(false);
+const isSubmitted = ref(false);
 
 /* Handlers */
 const handleCreate = async e => {
@@ -78,9 +79,9 @@ const handleCreate = async e => {
 };
 
 const handleLoadFromDraft = async () => {
-  if (!route.query.draftId) return;
+  if (!router.currentRoute.value.query.draftId) return;
 
-  const draft = await getDraft(route.query.draftId?.toString() || '');
+  const draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
   const draftTransaction = getTransactionFromBytes<AccountAllowanceApproveTransaction>(
     draft.transactionBytes,
   );
@@ -98,6 +99,16 @@ const handleLoadFromDraft = async () => {
 
     transactionMemo.value = draftTransaction.transactionMemo || '';
   }
+};
+
+const handleSubmit = async () => {
+  isSubmitted.value = true;
+  router.push({
+    name: 'transactions',
+    query: {
+      tab: 'Ready for Execution',
+    },
+  });
 };
 
 /* Functions */
@@ -140,7 +151,7 @@ const columnClass = 'col-4 col-xxxl-3';
         <template #buttons>
           <SaveDraftButton
             :get-transaction-bytes="() => createTransaction().toBytes()"
-            :is-executed="isExecuted"
+            :is-executed="isExecuted || isSubmitted"
           />
           <AppButton
             color="primary"
@@ -268,6 +279,7 @@ const columnClass = 'col-4 col-xxxl-3';
         }
       "
       :on-executed="() => (isExecuted = true)"
+      :on-submitted="handleSubmit"
     >
       <template #successHeading>Allowance Approved Successfully</template>
       <template #successContent>

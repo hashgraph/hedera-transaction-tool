@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
 
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
@@ -13,7 +13,7 @@ import { getDraft } from '@renderer/services/transactionDraftsService';
 import { getTransactionFromBytes, stringifyHbar } from '@renderer/utils';
 
 import DatePicker from '@vuepic/vue-datepicker';
-import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -34,6 +34,16 @@ const user = useUserStore();
 /* Composables */
 const route = useRoute();
 const account = useAccountId();
+
+/* Computed */
+const accoundIds = computed<string[]>(() =>
+  user.publicKeyToAccounts
+    .map(a => a.accounts)
+    .flat()
+    .filter(acc => !acc.deleted && acc.account !== null)
+    .map(acc => acc.account || '')
+    .filter(acc => acc !== null),
+);
 
 /* Handlers */
 const handlePayerChange = payerId => {
@@ -88,17 +98,20 @@ const columnClass = 'col-4 col-xxxl-3';
         <AccountIdsSelect :account-id="payerId" @update:account-id="handlePayerChange" />
       </template>
       <template v-else>
-        <AppInput
-          :model-value="account.isValid.value ? account.accountIdFormatted.value : payerId"
-          @update:model-value="
-            v => {
-              $emit('update:payerId', v);
-              account.accountId.value = v;
-            }
-          "
-          :filled="true"
-          placeholder="Enter Payer ID"
-        />
+        <div class="position-relative">
+          <AppAutoComplete
+            :model-value="account.isValid.value ? account.accountIdFormatted.value : payerId"
+            @update:model-value="
+              v => {
+                $emit('update:payerId', v);
+                account.accountId.value = v;
+              }
+            "
+            :filled="true"
+            :items="accoundIds"
+            placeholder="Enter Payer ID"
+          />
+        </div>
       </template>
     </div>
     <div class="form-group" :class="[columnClass]">

@@ -66,7 +66,8 @@ const handleModalSaveDraftSubmit = (e: Event) => {
 
 /* Hooks */
 onBeforeRouteLeave(async to => {
-  if (!props.getTransactionBytes) return true;
+  if (!props.getTransactionBytes || to.name?.toString().toLocaleLowerCase().includes('login'))
+    return true;
 
   const transactionBytes = props.getTransactionBytes();
 

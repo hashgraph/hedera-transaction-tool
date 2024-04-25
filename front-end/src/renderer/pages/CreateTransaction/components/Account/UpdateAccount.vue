@@ -14,7 +14,7 @@ import { MEMO_MAX_LENGTH } from '@main/shared/constants';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
-import { useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
@@ -36,7 +36,7 @@ import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 const network = useNetworkStore();
 
 /* Composables */
-const route = useRoute();
+const router = useRouter();
 const toast = useToast();
 const payerData = useAccountId();
 const accountData = useAccountId();
@@ -68,6 +68,7 @@ const transactionMemo = ref('');
 const newOwnerKey = ref<Key | null>(null);
 const isKeyStructureModalShown = ref(false);
 const isExecuted = ref(false);
+const isSubmitted = ref(false);
 
 /* Handlers */
 const handleStakeTypeChange = (e: Event) => {
@@ -117,9 +118,9 @@ const handleCreate = async e => {
 };
 
 const handleLoadFromDraft = async () => {
-  if (!route.query.draftId) return;
+  if (!router.currentRoute.value.query.draftId) return;
 
-  const draft = await getDraft(route.query.draftId?.toString() || '');
+  const draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
   const draftTransaction = await getTransactionFromBytes<AccountUpdateTransaction>(
     draft.transactionBytes,
   );
@@ -149,6 +150,16 @@ const handleLoadFromDraft = async () => {
       newAccountData.stakedNodeId = draftTransaction.stakedNodeId.toNumber() || '';
     }
   }
+};
+
+const handleSubmit = async () => {
+  isSubmitted.value = true;
+  router.push({
+    name: 'transactions',
+    query: {
+      tab: 'Ready for Execution',
+    },
+  });
 };
 
 /* Functions */
@@ -197,10 +208,10 @@ function createTransaction() {
 
 /* Hooks */
 onMounted(async () => {
-  if (route.query.draftId) {
+  if (router.currentRoute.value.query.draftId) {
     await handleLoadFromDraft();
-  } else if (route.query.accountId) {
-    accountData.accountId.value = route.query.accountId.toString();
+  } else if (router.currentRoute.value.query.accountId) {
+    accountData.accountId.value = router.currentRoute.value.query.accountId.toString();
   }
 });
 
@@ -214,7 +225,7 @@ watch(accountData.accountInfo, accountInfo => {
     newAccountData.acceptStakingAwards = false;
     newAccountData.memo = '';
     newOwnerKey.value = null;
-  } else if (!route.query.draftId) {
+  } else if (!router.currentRoute.value.query.draftId) {
     newAccountData.receiverSignatureRequired = accountInfo.receiverSignatureRequired;
     newAccountData.maxAutomaticTokenAssociations = accountInfo.maxAutomaticTokenAssociations || 0;
     newAccountData.stakedAccountId = accountInfo.stakedAccountId?.toString() || '';
@@ -248,7 +259,7 @@ const columnClass = 'col-4 col-xxxl-3';
         <template #buttons>
           <SaveDraftButton
             :get-transaction-bytes="() => createTransaction().toBytes()"
-            :is-executed="isExecuted"
+            :is-executed="isExecuted || isSubmitted"
           />
           <AppButton
             color="primary"
@@ -406,6 +417,7 @@ const columnClass = 'col-4 col-xxxl-3';
       :transaction-bytes="transaction?.toBytes() || null"
       :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
       :on-executed="() => (isExecuted = true)"
+      :on-submitted="handleSubmit"
     >
       <template #successHeading>Account updated successfully</template>
       <template #successContent>

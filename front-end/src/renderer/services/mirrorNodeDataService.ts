@@ -135,6 +135,7 @@ export const getAccountAllowances = async (
   return allowances;
 };
 
+/* Gets the exchange rate set */
 export const getExchangeRateSet = async (mirrorNodeLink: string, controller?: AbortController) => {
   try {
     const { data } = await axios.get(`${mirrorNodeLink}/network/exchangerate`, {
@@ -149,6 +150,7 @@ export const getExchangeRateSet = async (mirrorNodeLink: string, controller?: Ab
   }
 };
 
+/* Gets the dollar value for given hbars */
 export const getDollarAmount = (hbarPrice: number, hbarAmount: BigNumber) => {
   const fractionDigits = 5;
 

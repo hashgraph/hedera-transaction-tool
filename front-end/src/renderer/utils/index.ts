@@ -63,3 +63,7 @@ export const getUInt8ArrayFromString = (bytes: string) => {
 
   return Uint8Array.from(numberArray);
 };
+
+export const getDateStringExtended = (date: Date) => {
+  return `${date.toDateString()} ${date.toLocaleTimeString()}`;
+};
