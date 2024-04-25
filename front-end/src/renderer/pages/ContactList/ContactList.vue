@@ -37,7 +37,9 @@ async function handleRemove() {
 
 async function handleAddedContact() {
   selectedIndex.value = null;
+  addNew.value = false;
   await contactsStore.fetch();
+  
 }
 
 function handleHideAddNew() {
@@ -97,10 +99,11 @@ async function handleHideEdit() {
                 <div class="d-flex justify-content-between">
                   <p class="text-small text-semi-bold text-truncate">{{ contact?.key_name }}</p>
                   <p
+                    v-if="contact.organization"
                     class="text-small py-1 px-3 text-truncate"
                     style="background-color: #e5ccff; border-radius: 4px; color: black"
                   >
-                    {{ contact?.organization }}
+                    {{ contact.organization }}
                   </p>
                 </div>
                 <div class="d-flex justify-content-between align-items-center">

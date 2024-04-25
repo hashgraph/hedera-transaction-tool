@@ -44,9 +44,7 @@ export default () => {
   );
 
   // Remove
-  ipcMain.handle(
-    createChannelName('removeContact'),
-    (_e, contacts: Contact[], userId: string, contactId: string) =>
-      removeContact(contacts, userId, contactId),
+  ipcMain.handle(createChannelName('removeContact'), (_e, userId: string, contactId: string) =>
+    removeContact(userId, contactId),
   );
 };

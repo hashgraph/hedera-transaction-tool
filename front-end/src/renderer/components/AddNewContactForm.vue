@@ -38,7 +38,6 @@ async function handleAddContact() {
       contact.value.associatedAccounts,
       [contact.value.publicKey],
     );
-    contactsStore.fetch();
     emit('update:addedContact');
   }
 }
@@ -83,6 +82,7 @@ function onUpdateAccountId() {
     <div class="py-5 border-bottom">
       <AppButton
         color="borderless"
+        type="button"
         @click="isAddAccountModalShown = !isAddAccountModalShown"
         size="small"
         >+ Add Associated Accounts</AppButton

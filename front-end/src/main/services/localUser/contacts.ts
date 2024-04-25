@@ -84,12 +84,8 @@ export const updateContact = async (
   });
 };
 
-export const removeContact = async (contacts: Contact[], userId: string, contactId: string) => {
+export const removeContact = async (userId: string, contactId: string) => {
   const prisma = getPrismaClient();
-
-  if (!contacts.some(con => con.id === contactId)) {
-    throw new Error(`Contact not found!`);
-  }
 
   // await removeAssociatedAccounts(contactId);
 
