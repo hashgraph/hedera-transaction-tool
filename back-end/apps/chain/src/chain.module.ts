@@ -6,6 +6,7 @@ import * as Joi from 'joi';
 import { DatabaseModule, LoggerModule } from '@app/common';
 
 import { ExecuteModule } from './execute';
+import { TransactionStatusModule } from './transaction-status/transaction-status.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ExecuteModule } from './execute';
       }),
     }),
     ExecuteModule,
+    TransactionStatusModule,
   ],
 })
 export class ChainModule {}

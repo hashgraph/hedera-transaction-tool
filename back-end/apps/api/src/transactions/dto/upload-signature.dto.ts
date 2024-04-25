@@ -1,5 +1,8 @@
-import { IsNumber } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+
+import { IsNumber, IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
 import { IsSignatureMap } from '@app/common';
 
 export class UploadSignatureDto {
@@ -19,4 +22,11 @@ export class UploadSignatureDto {
   })
   @IsSignatureMap()
   signatures: { [key: string]: Buffer };
+}
+
+export class UploadSignatureArrayDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UploadSignatureDto)
+  signatures: UploadSignatureDto[];
 }

@@ -1,5 +1,5 @@
 import { ConfigService } from '@nestjs/config';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
@@ -9,6 +9,7 @@ import {
   FileUpdateTransaction,
   KeyList,
   Transaction as SDKTransaction,
+  Status,
 } from '@hashgraph/sdk';
 
 import { Transaction, TransactionStatus } from '@entities';
@@ -48,7 +49,7 @@ export class ExecuteService {
     });
 
     /* Throws an error if the transaction is not found or in incorrect state */
-    if (!transaction) throw new BadRequestException('Transaction not found');
+    if (!transaction) throw new Error('Transaction not found');
     this.validateTransactionStatus(transaction);
 
     /* Gets the SDK transaction from the transaction body */
@@ -59,14 +60,14 @@ export class ExecuteService {
       sdkTransaction instanceof FileUpdateTransaction ||
       sdkTransaction instanceof FileAppendTransaction
     )
-      throw new BadRequestException('File transactions are not currently supported for execution.');
+      throw new Error('File transactions are not currently supported for execution.');
 
     /* Gets the signature key */
     const sigantureKey = await this.computeSignatureKey(sdkTransaction);
 
     /* Checks if the transaction has valid siganture */
     if (!ableToSign([...sdkTransaction._signerPublicKeys], sigantureKey))
-      throw new BadRequestException('Transaction has invalid signature.');
+      throw new Error('Transaction has invalid signature.');
 
     /* Execute the transaction */
     const client = getClientFromConfig(this.configService);
@@ -85,6 +86,7 @@ export class ExecuteService {
       result.response = JSON.stringify(response.toJSON());
       result.receipt = JSON.stringify(receipt.toJSON());
       result.receiptBytes = Buffer.from(receipt.toBytes());
+      transaction.statusCode = receipt.status._code || Status.Ok._code;
     } catch (error) {
       statusCode = error.status?._code || 21;
       if (!error.status) statusCode = getStatusCodeFromMessage(error.message);
@@ -101,13 +103,13 @@ export class ExecuteService {
   private validateTransactionStatus(transaction: Transaction) {
     switch (transaction.status) {
       case TransactionStatus.NEW:
-        throw new BadRequestException('Transaction is new and has not been signed yet.');
+        throw new Error('Transaction is new and has not been signed yet.');
       case TransactionStatus.FAILED:
-        throw new BadRequestException('Transaction has already been executed, but failed.');
+        throw new Error('Transaction has already been executed, but failed.');
       case TransactionStatus.EXECUTED:
-        throw new BadRequestException('Transaction has already been executed.');
+        throw new Error('Transaction has already been executed.');
       case TransactionStatus.REJECTED:
-        throw new BadRequestException('Transaction has already been rejected.');
+        throw new Error('Transaction has already been rejected.');
     }
   }
 

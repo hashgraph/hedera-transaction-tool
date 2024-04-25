@@ -10,7 +10,7 @@ import {
   TransactionSigner,
 } from '@entities';
 
-import { MirrorNodeModule } from '@app/common';
+import { ChainClientsModule, MirrorNodeModule } from '@app/common';
 
 import { CommentsService } from './comments/comments.service';
 import { CommentsController } from './comments/comments.controller';
@@ -37,6 +37,7 @@ import { UserKeysModule } from '../user-keys/user-keys.module';
     ]),
     UserKeysModule,
     MirrorNodeModule,
+    ChainClientsModule,
   ],
   controllers: [
     TransactionsController,
