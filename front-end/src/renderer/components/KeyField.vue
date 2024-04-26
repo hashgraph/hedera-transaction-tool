@@ -215,7 +215,8 @@ watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) =
         </ComplexKeyModal>
         <div class="d-flex mt-5">
           <p class="text-purple cursor-pointer text-small" @click="handleCreateNew">
-            <span class="bi bi-plus-lg"></span><span>Create new</span>
+            <span class="bi bi-plus-lg" data-testid="span-create-new-complex-key"></span
+            ><span>Create new</span>
           </p>
           <p class="text-small cursor-pointer ms-3" @click="selectSavedKeyModalShown = true">
             Add Existing

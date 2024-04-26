@@ -512,6 +512,7 @@ defineExpose({
         >
           <span class="text-bold text-secondary">Transaction ID:</span>
           <a
+            data-testid="a-transaction-id"
             class="link-primary cursor-pointer"
             @click="
               network.network !== 'custom' &&
