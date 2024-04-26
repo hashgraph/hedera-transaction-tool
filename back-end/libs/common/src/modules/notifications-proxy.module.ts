@@ -22,4 +22,4 @@ import { ConfigService } from '@nestjs/config';
   ],
   exports: [ClientsModule],
 })
-export class NotificationsClientsModule {}
+export class NotificationsProxyModule {}

@@ -3,7 +3,7 @@ import { Module } from '@nestjs/common';
 
 import * as Joi from 'joi';
 
-import { DatabaseModule, LoggerModule, NotificationsClientsModule } from '@app/common';
+import { DatabaseModule, LoggerModule, NotificationsProxyModule } from '@app/common';
 
 import { AuthModule } from './auth/auth.module';
 import { PingModule } from './ping/ping.module';
@@ -25,6 +25,7 @@ import { UsersModule } from './users/users.module';
         POSTGRES_USERNAME: Joi.string().required(),
         POSTGRES_PASSWORD: Joi.string().required(),
         POSTGRES_SYNCHRONIZE: Joi.boolean().required(),
+        RABBITMQ_URI: Joi.string().required(),
         JWT_SECRET: Joi.string().required(),
         JWT_EXPIRATION: Joi.number().required(),
         OTP_SECRET: Joi.string().required(),
@@ -36,7 +37,7 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     TransactionsModule,
     PingModule,
-    NotificationsClientsModule,
+    NotificationsProxyModule,
   ],
 })
 export class ApiModule {}

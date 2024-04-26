@@ -171,4 +171,9 @@ export class AuthService {
     const randomValue = crypto.getRandomValues(new Uint32Array(12));
     return Buffer.from(randomValue).toString('base64').replaceAll('=', '');
   }
+
+  /* Attempt to authenticate the token. */
+  authenticateWebsocketToken(accessToken: string): Promise<object> {
+    return this.jwtService.verifyAsync(accessToken);
+  }
 }

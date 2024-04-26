@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Patch, Post, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Patch, Post, Res, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { Response } from 'express';
@@ -28,6 +28,9 @@ import {
   OtpLocalDto,
   SignUpUserDto,
 } from './dtos';
+import { UserDto } from '../users/dtos';
+import { MessagePattern, Payload } from '@nestjs/microservices';
+import { AuthenticateWebsocketTokenDto } from './dtos/authenticate-websocket-token.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -66,6 +69,7 @@ export class AuthController {
   @Post('/login')
   @HttpCode(200)
   @UseGuards(LocalAuthGuard)
+  @Serialize(UserDto)
   async login(@GetUser() user: User, @Res({ passthrough: true }) response: Response) {
     await this.authService.login(user, response);
     return user;
@@ -161,5 +165,10 @@ export class AuthController {
   ): Promise<void> {
     await this.authService.setPassword(user, dto.password);
     this.authService.clearOtpCookie(response);
+  }
+
+  @MessagePattern('authenticate-websocket-token')
+  async authenticateWebsocketToken(@Payload() payload: AuthenticateWebsocketTokenDto) {
+    return this.authService.authenticateWebsocketToken(payload.jwt);
   }
 }

@@ -12,6 +12,7 @@ import { Logger } from 'nestjs-pino';
 import { ApiModule } from './api.module';
 
 import * as cookieParser from 'cookie-parser';
+import { API_SERVICE } from '@app/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(ApiModule);
@@ -28,7 +29,7 @@ async function bootstrap() {
     transport: Transport.RMQ,
     options: {
       urls: [configService.getOrThrow<string>('RABBITMQ_URI')],
-      queue: 'api',
+      queue: API_SERVICE,
     },
   });
   app.use(cookieParser());

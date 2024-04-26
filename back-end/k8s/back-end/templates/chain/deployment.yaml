@@ -2,24 +2,22 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: api
-  name: api
+    app: chain
+  name: chain
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: api
+      app: chain
   template:
     metadata:
       labels:
-        app: api
+        app: chain
     spec:
       containers:
-      - image: gcr.io/transaction-tool-dev/api
-        name: api
+      - image: gcr.io/transaction-tool-dev/chain
+        name: chain
         env:
-          - name: HTTP_PORT
-            value: '3000'
           - name: RABBITMQ_URI
             value: 'amqp://rabbitmq:5672'
           - name: POSTGRES_HOST
@@ -37,19 +35,3 @@ spec:
                 key: password
           - name: POSTGRES_SYNCHRONIZE
             value: 'false'
-          - name: JWT_SECRET
-            valueFrom:
-              secretKeyRef:
-                name: jwt
-                key: key
-          - name: JWT_EXPIRATION
-            value: '365'
-          - name: OTP_SECRET
-            valueFrom:
-              secretKeyRef:
-                name: otp
-                key: key
-          - name: OTP_EXPIRATION
-            value: '20'
-        ports:
-          - containerPort: 3000
