@@ -1,11 +1,13 @@
 const BasePage = require('./BasePage');
 const { getAccountDetails, pollForAccountDetails } = require('../utils/mirrorNodeAPI');
 const { queryDatabase } = require('../utils/databaseUtil');
+const { decodeAndFlattenKeys } = require('../utils/keyUtil');
 
 class TransactionPage extends BasePage {
   constructor(window) {
     super(window);
     this.window = window;
+    this.generatedPublicKeys = []; // Store generated public keys
   }
 
   transactionsMenuButtonSelector = 'button-menu-transactions';
@@ -51,6 +53,7 @@ class TransactionPage extends BasePage {
   publicKeyComplexInputSelector = 'input-complex-public-key';
   insertPublicKeyButtonSelector = 'button-insert-public-key';
   spanCreateNewComplexKeyButtonSelector = 'span-create-new-complex-key';
+  doneComplexKeyButtonSelector = 'button-complex-key-done';
 
   // Method to close the 'Save Draft' modal if it appears
   async closeDraftModal() {
@@ -185,6 +188,70 @@ class TransactionPage extends BasePage {
     }
   }
 
+  async addPublicKeyAtDepth(depth) {
+    await this.clickAddButton(depth);
+    await this.selectPublicKeyOption(depth);
+    const publicKey = await this.generateRandomPublicKey();
+    await this.fillInPublicKeyField(publicKey);
+    await this.clickInsertPublicKey();
+  }
+
+  async addThresholdKeyAtDepth(depth) {
+    await this.clickAddButton(depth);
+    await this.selectThreshold(depth);
+  }
+
+  async createComplexKeyStructure() {
+    let currentDepth = '0';
+
+    await this.addThresholdKeyAtDepth(currentDepth, '0');
+
+    await this.addPublicKeyAtDepth(`${currentDepth}-0`);
+    await this.addPublicKeyAtDepth(`${currentDepth}-0`);
+
+    await this.addThresholdKeyAtDepth(currentDepth, '0');
+
+    await this.addPublicKeyAtDepth(`${currentDepth}-1`);
+    await this.addPublicKeyAtDepth(`${currentDepth}-1`);
+
+    currentDepth = `${currentDepth}-0`;
+    await this.addThresholdKeyAtDepth(currentDepth);
+
+    await this.addPublicKeyAtDepth(`0-0-2`);
+    await this.addPublicKeyAtDepth(`0-0-2`);
+  }
+
+  async decodeByteCode(bytecode) {
+    return decodeAndFlattenKeys(bytecode);
+  }
+
+  getAllGeneratedPublicKeys() {
+    return this.generatedPublicKeys;
+  }
+
+  async keysMatch(decodedKeys, generatedKeys) {
+    const sortedDecodedKeys = decodedKeys.map(key => key.toLowerCase()).sort();
+    const sortedGeneratedKeys = generatedKeys.map(key => key.toLowerCase()).sort();
+
+    if (sortedDecodedKeys.length !== sortedGeneratedKeys.length) {
+      return false;
+    }
+
+    return sortedDecodedKeys.every((value, index) => value === sortedGeneratedKeys[index]);
+  }
+
+  async generateRandomPublicKey() {
+    const header = '302a300506032b6570032100';
+    const hexChars = '0123456789ABCDEF';
+    let publicKey = '';
+    for (let i = 0; i < 64; i++) {
+      publicKey += hexChars.charAt(Math.floor(Math.random() * hexChars.length));
+    }
+    const publicKeyWithPrefix = header + publicKey;
+    this.generatedPublicKeys.push(publicKeyWithPrefix); // Store the generated public key
+    return publicKey;
+  }
+
   async clickOnStakingDropDown() {
     await this.clickByTestId(this.stakingDropdownSelector);
   }
@@ -245,16 +312,6 @@ class TransactionPage extends BasePage {
     return await this.getTextByTestId(this.newlyCreatedTransactionIdSelector);
   }
 
-  async generateRandomPublicKey() {
-    // A simple mock-up function to generate a random hex string that looks like a public key.
-    const hexChars = '0123456789ABCDEF';
-    let publicKey = '';
-    for (let i = 0; i < 64; i++) {
-      publicKey += hexChars.charAt(Math.floor(Math.random() * hexChars.length));
-    }
-    return publicKey;
-  }
-
   async clickAddButton(depth) {
     await this.clickByTestId(this.addComplexButtonIndex + depth);
   }
@@ -286,55 +343,8 @@ class TransactionPage extends BasePage {
     await this.clickByTestId(this.complexTabSelector);
   }
 
-  async addPublicKeyAtDepth(depth) {
-    // Click the add button at the current depth to bring up options
-    await this.clickAddButton(depth);
-
-    // Select the "Public Key" option
-    await this.selectPublicKeyOption(depth);
-
-    // Generate a random public key
-    const publicKey = await this.generateRandomPublicKey();
-
-    // Fill in the public key in the modal
-    await this.fillInPublicKeyField(publicKey);
-
-    // Click the button to insert the public key
-    await this.clickInsertPublicKey();
-  }
-
-  async addThresholdKeyAtDepth(depth) {
-    // Click the add button at the current depth to bring up options
-    await this.clickAddButton(depth);
-
-    // Select the "Threshold" option
-    await this.selectThreshold(depth);
-  }
-
-  async createComplexKeyStructure() {
-    // Define the depth to start with
-    for (let i = 0; i < 3; i++) {
-      let currentDepth = '0';
-
-      // Add a threshold key at the root
-      await this.addThresholdKeyAtDepth(currentDepth, '0');
-
-      // Add a public key under the root threshold
-      await this.addPublicKeyAtDepth(`${currentDepth}-0`);
-      await this.addPublicKeyAtDepth(`${currentDepth}-0`);
-
-      await this.addThresholdKeyAtDepth(currentDepth, '0');
-
-      await this.addPublicKeyAtDepth(`${currentDepth}-1`);
-      await this.addPublicKeyAtDepth(`${currentDepth}-1`);
-
-      currentDepth = `${currentDepth}-0`;
-      await this.addThresholdKeyAtDepth(currentDepth);
-
-      // Add public keys under the new threshold
-      await this.addPublicKeyAtDepth(`0-0-2`);
-      await this.addPublicKeyAtDepth(`0-0-2`);
-    }
+  async clickOnDoneButton() {
+    await this.clickByTestId(this.doneComplexKeyButtonSelector);
   }
 }
 

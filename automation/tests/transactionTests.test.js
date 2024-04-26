@@ -217,6 +217,8 @@ test.describe('Transaction tests', () => {
     await transactionPage.clickOnComplexTab();
     await transactionPage.clickOnCreateNewComplexKeyButton();
     await transactionPage.createComplexKeyStructure();
+    await transactionPage.clickOnDoneButton();
+    const allGeneratedKeys = transactionPage.getAllGeneratedPublicKeys();
 
     await transactionPage.clickOnSignAndSubmitButton();
     await transactionPage.clickSignTransactionButton();
@@ -227,8 +229,10 @@ test.describe('Transaction tests', () => {
     const newAccountId = await transactionPage.getNewAccountIdText();
     await transactionPage.clickOnCloseButtonForCompletedTransaction();
 
-    const isTxExistingInDb = await transactionPage.verifyAccountExists(newAccountId);
-
-    expect(isTxExistingInDb).toBe(true);
+    const accountDetails = await transactionPage.mirrorGetAccountResponse(newAccountId);
+    const protoBufEncodedBytes = accountDetails.accounts[0]?.key?.key;
+    const decodedKeys = await transactionPage.decodeByteCode(protoBufEncodedBytes);
+    const keysMatch = await transactionPage.keysMatch(decodedKeys, allGeneratedKeys);
+    expect(keysMatch).toBe(true);
   });
 });
