@@ -159,14 +159,13 @@ class BasePage {
     } catch (error) {
       console.error(`Failed to click on the switch using direct method. Error: ${error.message}`);
       // Attempt clicking via JavaScript as a fallback
-      await this.window.evaluate((selector) => {
+      await this.window.evaluate(selector => {
         const element = document.querySelector(selector);
-        element.click();  // JavaScript click
+        element.click(); // JavaScript click
       }, selector);
       console.log(`Clicked on switch using JavaScript.`);
     }
   }
-
 }
 
 module.exports = BasePage;

@@ -1,5 +1,6 @@
 const BasePage = require('./BasePage');
 const { getAccountDetails, pollForAccountDetails } = require('../utils/mirrorNodeAPI');
+const { queryDatabase } = require('../utils/databaseUtil');
 
 class TransactionPage extends BasePage {
   constructor(window) {
@@ -25,7 +26,7 @@ class TransactionPage extends BasePage {
   nodeStakingOptionSelector = 'option-node';
   receiverSigRequiredSwitchSelector = 'switch-receiver-sig-required';
   initialBalanceInputSelector = 'input-initial-balance-amount';
-  maxAutoAssociations = 'input-max-auto-associations';
+  maxAutoAssociationsInputSelector = 'input-max-auto-associations';
   accountMemoInputSelector = 'input-account-memo';
   nicknameInputSelector = 'input-nickname';
   discardModalDraftButtonSelector = 'button-discard-draft-modal';
@@ -42,6 +43,14 @@ class TransactionPage extends BasePage {
   successCheckMarkIconSelector = 'icon-success-checkmark';
   modalTransactionSuccessSelector = 'modal-transaction-success';
   newlyCreatedAccountIdSelector = 'p-new-crated-account-id';
+  newlyCreatedTransactionIdSelector = 'a-transaction-id';
+  addComplexButtonIndex = 'button-complex-key-add-element-';
+  selectThresholdNumberIndex = 'button-complex-key-add-element-threshold-';
+  publicKeyInputTextIndex = 'input-complex-key-public-key-';
+  addPublicKeyButtonIndex = 'button-complex-key-add-element-public-key-';
+  publicKeyComplexInputSelector = 'input-complex-public-key';
+  insertPublicKeyButtonSelector = 'button-insert-public-key';
+  spanCreateNewComplexKeyButtonSelector = 'span-create-new-complex-key';
 
   // Method to close the 'Save Draft' modal if it appears
   async closeDraftModal() {
@@ -64,7 +73,7 @@ class TransactionPage extends BasePage {
       this.isElementVisible(this.signAndSubmitButtonSelector),
       this.isElementVisible(this.payerDropdownSelector),
       this.isElementVisible(this.initialBalanceInputSelector),
-      this.isElementVisible(this.maxAutoAssociations),
+      this.isElementVisible(this.maxAutoAssociationsInputSelector),
       this.isElementVisible(this.accountMemoInputSelector),
       this.isElementVisible(this.nicknameInputSelector),
     ]);
@@ -113,7 +122,6 @@ class TransactionPage extends BasePage {
     await this.clickByTestId(this.createNewTransactionButtonSelector);
   }
 
-
   /**
    * Attempts to click on the 'Create Account Transaction' link by testing different indices of the same test ID.
    * This method is designed to handle scenarios where the same test ID may be used for multiple elements and only
@@ -147,6 +155,36 @@ class TransactionPage extends BasePage {
     );
   }
 
+  async verifyTransactionExists(transactionId, transactionType) {
+    const query = `
+    SELECT COUNT(*) AS count
+    FROM "Transaction"
+    WHERE transaction_id = ? AND type = ?`;
+
+    try {
+      const row = await queryDatabase(query, [transactionId, transactionType]);
+      return row ? row.count > 0 : false;
+    } catch (error) {
+      console.error('Error verifying transaction:', error);
+      return false;
+    }
+  }
+
+  async verifyAccountExists(accountId) {
+    const query = `
+    SELECT COUNT(*) AS count
+    FROM HederaAccount
+    WHERE account_id = ?`;
+
+    try {
+      const row = await queryDatabase(query, [accountId]);
+      return row ? row.count > 0 : false;
+    } catch (error) {
+      console.error('Error verifying account:', error);
+      return false;
+    }
+  }
+
   async clickOnStakingDropDown() {
     await this.clickByTestId(this.stakingDropdownSelector);
   }
@@ -161,6 +199,14 @@ class TransactionPage extends BasePage {
 
   async fillInMemo(memo) {
     await this.fillByTestId(this.accountMemoInputSelector, memo);
+  }
+
+  async fillInInitialFunds(amount) {
+    await this.fillByTestId(this.initialBalanceInputSelector, amount);
+  }
+
+  async fillInMaxAccountAssociations(amount) {
+    await this.fillByTestId(this.maxAutoAssociationsInputSelector, amount);
   }
 
   async clickOnSignAndSubmitButton() {
@@ -193,6 +239,102 @@ class TransactionPage extends BasePage {
 
   async getNewAccountIdText() {
     return await this.getTextByTestId(this.newlyCreatedAccountIdSelector);
+  }
+
+  async getNewTransactionIdText() {
+    return await this.getTextByTestId(this.newlyCreatedTransactionIdSelector);
+  }
+
+  async generateRandomPublicKey() {
+    // A simple mock-up function to generate a random hex string that looks like a public key.
+    const hexChars = '0123456789ABCDEF';
+    let publicKey = '';
+    for (let i = 0; i < 64; i++) {
+      publicKey += hexChars.charAt(Math.floor(Math.random() * hexChars.length));
+    }
+    return publicKey;
+  }
+
+  async clickAddButton(depth) {
+    await this.clickByTestId(this.addComplexButtonIndex + depth);
+  }
+
+  async selectPublicKeyOption(depth) {
+    await this.clickByTestId(this.addPublicKeyButtonIndex + depth);
+  }
+
+  async selectThreshold(depth) {
+    await this.clickByTestId(this.selectThresholdNumberIndex + depth);
+  }
+
+  async getPublicKeyTextByDepth(depth) {
+    await this.clickByTestId(this.publicKeyInputTextIndex + depth);
+  }
+
+  async fillInPublicKeyField(publicKey) {
+    await this.fillByTestId(this.publicKeyComplexInputSelector, publicKey);
+  }
+  async clickInsertPublicKey() {
+    await this.clickByTestId(this.insertPublicKeyButtonSelector);
+  }
+
+  async clickOnCreateNewComplexKeyButton() {
+    await this.clickByTestId(this.spanCreateNewComplexKeyButtonSelector);
+  }
+
+  async clickOnComplexTab() {
+    await this.clickByTestId(this.complexTabSelector);
+  }
+
+  async addPublicKeyAtDepth(depth) {
+    // Click the add button at the current depth to bring up options
+    await this.clickAddButton(depth);
+
+    // Select the "Public Key" option
+    await this.selectPublicKeyOption(depth);
+
+    // Generate a random public key
+    const publicKey = await this.generateRandomPublicKey();
+
+    // Fill in the public key in the modal
+    await this.fillInPublicKeyField(publicKey);
+
+    // Click the button to insert the public key
+    await this.clickInsertPublicKey();
+  }
+
+  async addThresholdKeyAtDepth(depth) {
+    // Click the add button at the current depth to bring up options
+    await this.clickAddButton(depth);
+
+    // Select the "Threshold" option
+    await this.selectThreshold(depth);
+  }
+
+  async createComplexKeyStructure() {
+    // Define the depth to start with
+    for (let i = 0; i < 3; i++) {
+      let currentDepth = '0';
+
+      // Add a threshold key at the root
+      await this.addThresholdKeyAtDepth(currentDepth, '0');
+
+      // Add a public key under the root threshold
+      await this.addPublicKeyAtDepth(`${currentDepth}-0`);
+      await this.addPublicKeyAtDepth(`${currentDepth}-0`);
+
+      await this.addThresholdKeyAtDepth(currentDepth, '0');
+
+      await this.addPublicKeyAtDepth(`${currentDepth}-1`);
+      await this.addPublicKeyAtDepth(`${currentDepth}-1`);
+
+      currentDepth = `${currentDepth}-0`;
+      await this.addThresholdKeyAtDepth(currentDepth);
+
+      // Add public keys under the new threshold
+      await this.addPublicKeyAtDepth(`0-0-2`);
+      await this.addPublicKeyAtDepth(`0-0-2`);
+    }
   }
 }
 
