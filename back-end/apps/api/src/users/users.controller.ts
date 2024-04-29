@@ -56,7 +56,6 @@ export class UsersController {
     return user;
   }
 
-  //TODO How/when would this be used?
   @ApiOperation({
     summary: 'Get a specific user',
     description: 'Get a specific user from the organization for the given user id.',
@@ -92,6 +91,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
   })
+  @UseGuards(AdminGuard)
   @Delete('/:id')
   removeUser(@Param('id', ParseIntPipe) id: number): void {
     this.usersService.removeUser(id);
