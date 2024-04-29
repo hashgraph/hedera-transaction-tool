@@ -30,5 +30,6 @@ import { MirrorNodeModule } from '@app/common';
   ],
   controllers: [ExecuteController],
   providers: [ExecuteService],
+  exports: [ExecuteService],
 })
 export class ExecuteModule {}
