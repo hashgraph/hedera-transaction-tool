@@ -404,6 +404,9 @@ export class TransactionsService {
           ? MoreThan(new Date(new Date().getTime() - 180 * 1_000))
           : undefined,
       },
+      order: {
+        updatedAt: 'DESC',
+      },
       take,
       skip,
     });

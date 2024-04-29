@@ -84,7 +84,7 @@ export class TransactionStatusService {
     await this.updateTransactions(this.getThreeMinutesLater(), this.getTenMinutesLater());
   }
 
-  /* For transactions with valid start between 5 minutes and 10 minutes */
+  /* For transactions with valid start, started 3 minutes */
   @Cron(CronExpression.EVERY_10_SECONDS, {
     name: 'status_update_between_ten_minutes_and_one_hour',
   })
@@ -136,16 +136,18 @@ export class TransactionStatusService {
         ? TransactionStatus.WAITING_FOR_EXECUTION
         : TransactionStatus.WAITING_FOR_SIGNATURES;
 
-      await this.transactionRepo.update(
-        {
-          id: transaction.id,
-        },
-        {
-          status: newStatus,
-        },
-      );
+      if (transaction.status !== newStatus) {
+        await this.transactionRepo.update(
+          {
+            id: transaction.id,
+          },
+          {
+            status: newStatus,
+          },
+        );
 
-      transaction.status = newStatus;
+        transaction.status = newStatus;
+      }
     }
 
     return transactions;
