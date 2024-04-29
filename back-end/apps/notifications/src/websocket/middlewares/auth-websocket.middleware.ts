@@ -11,7 +11,7 @@ export interface AuthWebsocket extends Socket {
 
 export type SocketIOMiddleware = {
   (client: Socket, next: (err?: Error) => void);
-}
+};
 
 /* This middleware will intercept connection requests during the handshake enabling authentication to
  * occur before the connection is established.
@@ -29,10 +29,10 @@ export const AuthWebsocketMiddleware = (apiService: ClientProxy): SocketIOMiddle
         socket.user = user;
         next();
       } else {
-        next({name: 'Unauthorized', message: 'Unauthorized'});
+        next({ name: 'Unauthorized', message: 'Unauthorized' });
       }
     } catch (error) {
-      next({name: 'Unauthorized', message: 'Unauthorized'});
+      next({ name: 'Unauthorized', message: 'Unauthorized' });
     }
   };
 };
