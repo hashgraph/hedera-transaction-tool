@@ -5,3 +5,4 @@ export * from './otp.dto';
 export * from './new-password.dto';
 export * from './login.dto';
 export * from './otp-local.dto';
+export * from './authenticate-websocket-token.dto';

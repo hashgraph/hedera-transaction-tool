@@ -1,7 +1,8 @@
 import { Global, Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { API_SERVICE } from '@app/common';
 import { ConfigService } from '@nestjs/config';
+
+import { API_SERVICE } from '@app/common';
 
 @Global()
 @Module({

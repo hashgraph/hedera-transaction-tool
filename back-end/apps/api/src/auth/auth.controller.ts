@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, Patch, Post, Res, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 
 import { Response } from 'express';
 
@@ -19,6 +20,7 @@ import { GetUser } from '../decorators';
 
 import { AuthService } from './auth.service';
 
+import { UserDto } from '../users/dtos';
 import {
   AuthDto,
   ChangePasswordDto,
@@ -27,10 +29,8 @@ import {
   OtpDto,
   OtpLocalDto,
   SignUpUserDto,
+  AuthenticateWebsocketTokenDto,
 } from './dtos';
-import { UserDto } from '../users/dtos';
-import { MessagePattern, Payload } from '@nestjs/microservices';
-import { AuthenticateWebsocketTokenDto } from './dtos/authenticate-websocket-token.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')

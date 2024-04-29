@@ -1,7 +1,8 @@
 import { Global, Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { CHAIN_SERVICE } from '@app/common';
 import { ConfigService } from '@nestjs/config';
+
+import { CHAIN_SERVICE } from '@app/common';
 
 @Global()
 @Module({
@@ -13,7 +14,7 @@ import { ConfigService } from '@nestjs/config';
           transport: Transport.RMQ,
           options: {
             urls: [configService.getOrThrow<string>('RABBITMQ_URI')],
-            queue: 'chain',
+            queue: CHAIN_SERVICE,
           },
         }),
         inject: [ConfigService],
@@ -22,4 +23,4 @@ import { ConfigService } from '@nestjs/config';
   ],
   exports: [ClientsModule],
 })
-export class ChainClientsModule {}
+export class ChainProxyModule {}
