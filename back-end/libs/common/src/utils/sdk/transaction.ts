@@ -1,8 +1,9 @@
-import { AccountId, PublicKey, Transaction } from '@hashgraph/sdk';
+import { AccountId, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
 import { TransactionType } from '@app/common/database/entities';
-import { decode, isAccountId } from '@app/common/utils';
+import { MirrorNodeService } from '@app/common/mirrorNode';
+import { decode, getSignatureEntities, isAccountId, parseAccountProperty } from '@app/common/utils';
 
 export const isExpired = (transaction: Transaction) => {
   if (!transaction.transactionId?.validStart) {
@@ -182,4 +183,42 @@ export const getStatusCodeFromMessage = (message: string) => {
   } else {
     return 21;
   }
+};
+
+/* Computes the signature key for the transaction */
+export const computeSignatureKey = async (
+  transaction: Transaction,
+  mirrorNodeService: MirrorNodeService,
+) => {
+  /* Get the accounts, receiver accounts and new keys from the transaction */
+  const { accounts, receiverAccounts, newKeys } = getSignatureEntities(transaction);
+
+  /* Create a new key list */
+  const sigantureKey = new KeyList();
+
+  /* Add keys to the signature key list */
+  newKeys.forEach(key => sigantureKey.push(key));
+
+  /* Add the keys of the account ids to the signature key list */
+  for (const accountId of accounts) {
+    const accountInfo = await mirrorNodeService.getAccountInfo(accountId);
+    const key = parseAccountProperty(accountInfo, 'key');
+    if (!key) continue;
+
+    sigantureKey.push(key);
+  }
+
+  /* Check if there is a receiver account that required signature, if so add it to the key list */
+  for (const accountId of receiverAccounts) {
+    const accountInfo = await mirrorNodeService.getAccountInfo(accountId);
+    const receiverSigRequired = parseAccountProperty(accountInfo, 'receiver_sig_required');
+    if (!receiverSigRequired) continue;
+
+    const key = parseAccountProperty(accountInfo, 'key');
+    if (!key) continue;
+
+    sigantureKey.push(key);
+  }
+
+  return sigantureKey;
 };
