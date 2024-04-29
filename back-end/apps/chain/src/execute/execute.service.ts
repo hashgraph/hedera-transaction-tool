@@ -75,7 +75,9 @@ export class ExecuteService {
     transaction.executedAt = new Date();
     transaction.status = TransactionStatus.EXECUTED;
 
-    const result: TranasctionExecutedDto = {};
+    const result: TranasctionExecutedDto = {
+      status: transaction.status,
+    };
 
     try {
       const response = await sdkTransaction.execute(client);
@@ -92,7 +94,17 @@ export class ExecuteService {
       transaction.statusCode = statusCode;
       result.error = error.message;
     } finally {
-      await this.transactionsRepo.save(transaction);
+      result.status = transaction.status;
+      await this.transactionsRepo.update(
+        {
+          id: transaction.id,
+        },
+        {
+          status: transaction.status,
+          executedAt: transaction.executedAt,
+          statusCode: transaction.statusCode,
+        },
+      );
     }
     return result;
   }
