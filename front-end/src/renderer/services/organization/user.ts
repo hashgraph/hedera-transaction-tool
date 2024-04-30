@@ -2,9 +2,10 @@ import axios from 'axios';
 
 import { IUserKey } from '@main/shared/interfaces';
 
-import { getOwnKeys } from './userKeys';
+import { getUserKeys } from './userKeys';
 
 /* User service for organization */
+const controller = 'users';
 
 /* Get information about current user */
 export const getUserState = async (organizationServerUrl: string) => {
@@ -26,7 +27,7 @@ export const getUserState = async (organizationServerUrl: string) => {
 
   if (user.passwordTemporary) return user;
 
-  const keys = await getOwnKeys(organizationServerUrl, id);
+  const keys = await getUserKeys(organizationServerUrl, id);
 
   user.userKeys.push(...keys);
   user.secretHashes.push(
@@ -51,7 +52,7 @@ export const getMe = async (
   admin: boolean;
 }> => {
   try {
-    const response = await axios.get(`${organizationServerUrl}/users/me`, {
+    const response = await axios.get(`${organizationServerUrl}/${controller}/me`, {
       withCredentials: true,
     });
     return response.data;
@@ -60,3 +61,36 @@ export const getMe = async (
     throw new Error('Failed get user information');
   }
 };
+
+/* Get information about organization users */
+export async function getUsers(organizationServerUrl: string): Promise<
+  {
+    id: number;
+    email: string;
+    status: 'NEW' | 'NONE';
+    admin: boolean;
+  }[]
+> {
+  try {
+    const response = await axios.get(`${organizationServerUrl}/${controller}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    console.log(error);
+    throw new Error('Failed to get organization users');
+  }
+}
+
+/* ADMIN ONLY: Delete a user */
+export async function deleteUser(organizationServerUrl: string, id) {
+  try {
+    const response = await axios.delete(`${organizationServerUrl}/${controller}/${id}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    console.log(error);
+    throw new Error('Failed to delete user');
+  }
+}
