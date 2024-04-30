@@ -390,20 +390,28 @@ export class TransactionsService {
     const withValidStart =
       !status.includes(TransactionStatus.EXECUTED) && !status.includes(TransactionStatus.FAILED);
     return this.repo.find({
-      where: {
-        signers: {
-          userId: user.id,
-        },
-        creatorKey: {
-          user: {
-            id: user.id,
+      where: [
+        {
+          signers: {
+            userId: user.id,
           },
+          status: Array.isArray(status) ? In(status) : In([status]),
+          validStart: withValidStart
+            ? MoreThan(new Date(new Date().getTime() - 180 * 1_000))
+            : undefined,
         },
-        status: Array.isArray(status) ? In(status) : In([status]),
-        validStart: withValidStart
-          ? MoreThan(new Date(new Date().getTime() - 180 * 1_000))
-          : undefined,
-      },
+        {
+          creatorKey: {
+            user: {
+              id: user.id,
+            },
+          },
+          status: Array.isArray(status) ? In(status) : In([status]),
+          validStart: withValidStart
+            ? MoreThan(new Date(new Date().getTime() - 180 * 1_000))
+            : undefined,
+        },
+      ],
       order: {
         updatedAt: 'DESC',
       },
@@ -421,20 +429,28 @@ export class TransactionsService {
     const withValidStart =
       !status.includes(TransactionStatus.EXECUTED) && !status.includes(TransactionStatus.FAILED);
     return this.repo.count({
-      where: {
-        signers: {
-          userId: user.id,
-        },
-        creatorKey: {
-          user: {
-            id: user.id,
+      where: [
+        {
+          signers: {
+            userId: user.id,
           },
+          status: Array.isArray(status) ? In(status) : In([status]),
+          validStart: withValidStart
+            ? MoreThan(new Date(new Date().getTime() - 180 * 1_000))
+            : undefined,
         },
-        status: Array.isArray(status) ? In(status) : In([status]),
-        validStart: withValidStart
-          ? MoreThan(new Date(new Date().getTime() - 180 * 1_000))
-          : undefined,
-      },
+        {
+          creatorKey: {
+            user: {
+              id: user.id,
+            },
+          },
+          status: Array.isArray(status) ? In(status) : In([status]),
+          validStart: withValidStart
+            ? MoreThan(new Date(new Date().getTime() - 180 * 1_000))
+            : undefined,
+        },
+      ],
     });
   }
 }
