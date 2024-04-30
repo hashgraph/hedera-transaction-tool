@@ -253,7 +253,7 @@ export const getConnectedOrganization = async (
   }
 
   try {
-    const { id, email, passwordTemporary, secretHashes, userKeys } = await getUserState(
+    const { id, email, admin, passwordTemporary, secretHashes, userKeys } = await getUserState(
       organization.serverUrl,
     );
 
@@ -263,6 +263,7 @@ export const getConnectedOrganization = async (
       loginRequired: false,
       userId: id,
       email,
+      admin,
       isPasswordTemporary: passwordTemporary,
       secretHashes,
       userKeys,
@@ -318,11 +319,13 @@ export const refetchUserState = async (organization: Ref<ConnectedOrganization |
   if (!organization || !isLoggedInOrganization(organization.value)) return;
 
   try {
-    const { id, userKeys, secretHashes, passwordTemporary } = await getUserState(
+    const { id, email, admin, userKeys, secretHashes, passwordTemporary } = await getUserState(
       organization.value.serverUrl,
     );
 
     organization.value.userId = id;
+    organization.value.email = email;
+    organization.value.admin = admin;
     organization.value.userKeys = userKeys;
     organization.value.secretHashes = secretHashes;
     organization.value.isPasswordTemporary = passwordTemporary;

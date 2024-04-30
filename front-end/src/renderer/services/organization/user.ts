@@ -9,17 +9,19 @@ const controller = 'users';
 
 /* Get information about current user */
 export const getUserState = async (organizationServerUrl: string) => {
-  const { id, status, email } = await getMe(organizationServerUrl);
+  const { id, status, email, admin } = await getMe(organizationServerUrl);
 
   const user: {
     id: number;
     email: string;
+    admin: boolean;
     passwordTemporary: boolean;
     userKeys: IUserKey[];
     secretHashes: string[];
   } = {
     id,
     email,
+    admin,
     passwordTemporary: status === 'NEW',
     userKeys: [],
     secretHashes: [],
