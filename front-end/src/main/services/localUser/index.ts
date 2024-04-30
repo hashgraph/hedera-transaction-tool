@@ -9,7 +9,7 @@ export * from './organizations';
 export * from './organizationCredentials';
 export * from './contacts';
 export * from './associatedAccounts';
-export * from './contactPublicKeys';
+export * from './publicKeyLinked';
 
 import initDatabase, { createPrismaClient, deleteDatabase, setPrismaClient } from '../../db';
 

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import { IUserKey } from '@main/shared/interfaces';
+import { IUser, IUserKey } from '@main/shared/interfaces';
 
 import { getUserKeys } from './userKeys';
 
@@ -43,14 +43,7 @@ export const getUserState = async (organizationServerUrl: string) => {
 };
 
 /* Get information about current user */
-export const getMe = async (
-  organizationServerUrl: string,
-): Promise<{
-  id: number;
-  email: string;
-  status: 'NEW' | 'NONE';
-  admin: boolean;
-}> => {
+export const getMe = async (organizationServerUrl: string): Promise<IUser> => {
   try {
     const response = await axios.get(`${organizationServerUrl}/${controller}/me`, {
       withCredentials: true,
@@ -63,14 +56,7 @@ export const getMe = async (
 };
 
 /* Get information about organization users */
-export async function getUsers(organizationServerUrl: string): Promise<
-  {
-    id: number;
-    email: string;
-    status: 'NEW' | 'NONE';
-    admin: boolean;
-  }[]
-> {
+export async function getUsers(organizationServerUrl: string): Promise<IUser[]> {
   try {
     const response = await axios.get(`${organizationServerUrl}/${controller}`, {
       withCredentials: true,

@@ -1,19 +1,22 @@
 import { ipcRenderer } from 'electron';
 
-import { Contact, AssociatedAccount, Prisma, ContactPublicKey } from '@prisma/client';
+import { Contact, Prisma } from '@prisma/client';
 
 export default {
   contacts: {
-    getPersonalContacts: (userId: string): Promise<Contact[]> =>
-      ipcRenderer.invoke('contacts:getPersonalContacts', userId),
-    getOrganizationContacts: (userId: string, organization: string): Promise<Contact[]> =>
-      ipcRenderer.invoke('contacts:getOrganizationContacts', userId, organization),
-    addContact: (
-      contact: Contact,
-      associatedAccounts: AssociatedAccount[],
-      publicKeys: ContactPublicKey[],
-    ): Promise<Contact> =>
-      ipcRenderer.invoke('contacts:addContact', contact, associatedAccounts, publicKeys),
+    getOrganizationContacts: (
+      userId: string,
+      organizationId: string,
+      organizationUserIdOwner: number,
+    ): Promise<Contact[]> =>
+      ipcRenderer.invoke(
+        'contacts:getOrganizationContacts',
+        userId,
+        organizationId,
+        organizationUserIdOwner,
+      ),
+    addContact: (contact: Prisma.ContactUncheckedCreateInput): Promise<Contact> =>
+      ipcRenderer.invoke('contacts:addContact', contact),
     updateContact: (
       contactId: string,
       userId: string,

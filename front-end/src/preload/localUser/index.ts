@@ -13,7 +13,7 @@ import organizationCredentialsAPI from './organizationCredentials';
 import deepLinkAPI from './deepLink';
 import contactsAPI from './contacts';
 import associatedAccountsAPI from './associatedAccounts';
-import contactPublicKeys from './contactPublicKeys';
+import contactPublicKeys from './linkedPublicKeys';
 
 export default {
   ...updateAPI,

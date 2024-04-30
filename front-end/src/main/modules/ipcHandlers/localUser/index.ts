@@ -9,7 +9,7 @@ import listenForOrganizationEvents from './organizations';
 import listenForOrganizationCredentialsEvents from './organizationCredentials';
 import listenForContactEvents from './contacts';
 import listenForAssociatedAccountEvents from './associatedAccounts';
-import listenForContactPublicKeyEvents from './contactPublicKeys';
+import listenForPublicKeyLinkedEvents from './publicKeyLinked';
 
 export default () => {
   listenForKeyPairEvents();
@@ -23,5 +23,5 @@ export default () => {
   listenForOrganizationCredentialsEvents();
   listenForContactEvents();
   listenForAssociatedAccountEvents();
-  listenForContactPublicKeyEvents();
+  listenForPublicKeyLinkedEvents();
 };

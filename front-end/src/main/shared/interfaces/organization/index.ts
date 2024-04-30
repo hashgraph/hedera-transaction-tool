@@ -1,4 +1,5 @@
 export * from './userKeys';
+export * from './user';
 export * from './transactions';
 
 export type PaginatedResourceDto<T> = {

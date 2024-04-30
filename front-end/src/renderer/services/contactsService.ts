@@ -1,34 +1,25 @@
-import { Contact } from '@main/shared/interfaces';
-import { Prisma, AssociatedAccount, ContactPublicKey } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { getMessageFromIPCError } from '@renderer/utils';
 
-export const getPersonalContacts = async (userId: string) => {
-  try {
-    return await window.electronAPI.local.contacts.getPersonalContacts(userId);
-  } catch (err: any) {
-    throw Error(getMessageFromIPCError(err, 'Failed to get linked contacts'));
-  }
-};
-
-export const getOrganizationContacts = async (userId: string, organization: string) => {
-  try {
-    return await window.electronAPI.local.contacts.getOrganizationContacts(userId, organization);
-  } catch (err: any) {
-    throw Error(getMessageFromIPCError(err, 'Failed to get linked contacts'));
-  }
-};
-
-export const addContact = async (
-  contact: Contact,
-  associatedAccounts: AssociatedAccount[],
-  publicKeys: ContactPublicKey[],
+export const getOrganizationContacts = async (
+  userId: string,
+  organizationId: string,
+  organizationUserIdOwner: number,
 ) => {
   try {
-    return await window.electronAPI.local.contacts.addContact(
-      contact,
-      associatedAccounts,
-      publicKeys,
+    return await window.electronAPI.local.contacts.getOrganizationContacts(
+      userId,
+      organizationId,
+      organizationUserIdOwner,
     );
+  } catch (err: any) {
+    throw Error(getMessageFromIPCError(err, 'Failed to get linked contacts'));
+  }
+};
+
+export const addContact = async (contact: Prisma.ContactUncheckedCreateInput) => {
+  try {
+    return await window.electronAPI.local.contacts.addContact(contact);
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Contact add failed'));
   }

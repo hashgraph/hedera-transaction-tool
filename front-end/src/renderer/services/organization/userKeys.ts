@@ -1,3 +1,4 @@
+import { IUserKey } from '@main/shared/interfaces';
 import axios from 'axios';
 
 /* User keys service for organization */
@@ -5,7 +6,10 @@ import axios from 'axios';
 const controller = ['user', 'keys'];
 
 /* Get keys for a user from organization */
-export const getUserKeys = async (organizationServerUrl: string, organizationUserId: number) => {
+export const getUserKeys = async (
+  organizationServerUrl: string,
+  organizationUserId: number,
+): Promise<IUserKey[]> => {
   try {
     const response = await axios.get(
       `${organizationServerUrl}/${controller[0]}/${organizationUserId}/${controller[1]}`,
