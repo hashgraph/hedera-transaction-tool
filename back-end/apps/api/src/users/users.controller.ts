@@ -69,7 +69,6 @@ export class UsersController {
     return this.usersService.getUser({ id });
   }
 
-  //TODO If roles is to be used instead of just an admin flag, this is where it should be
   @ApiOperation({
     summary: 'Update user information',
     description: 'Update the admin state of a user.',
@@ -93,7 +92,7 @@ export class UsersController {
   })
   @UseGuards(AdminGuard)
   @Delete('/:id')
-  removeUser(@Param('id', ParseIntPipe) id: number): void {
-    this.usersService.removeUser(id);
+  removeUser(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.removeUser(id);
   }
 }
