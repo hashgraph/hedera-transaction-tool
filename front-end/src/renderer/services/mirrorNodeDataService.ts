@@ -54,6 +54,41 @@ export const getAccountsByPublicKey = async (
   }
 };
 
+/* Get accounts by public keys */
+export const getAccountsByPublicKeys = async (
+  mirrorNodeURL: string,
+  publicKeys: string[],
+): Promise<{ [key: string]: AccountInfo[] }> => {
+  try {
+    const accountsByPublicKeys: { [key: string]: AccountInfo[] } = {};
+
+    for (const publicKey of publicKeys) {
+      let accounts: AccountInfo[] = [];
+      let nextUrl: string | null =
+        `${mirrorNodeURL}/accounts/?account.publickey=${publicKey}&limit=25&order=asc`;
+
+      while (nextUrl) {
+        const { data } = await axios.get(nextUrl);
+
+        accounts = accounts.concat(data.accounts);
+
+        if (data.links?.next) {
+          nextUrl = `${mirrorNodeURL}${data.links.next.slice(data.links.next.indexOf('/accounts'))}`;
+        } else {
+          nextUrl = null;
+        }
+      }
+
+      accountsByPublicKeys[publicKey] = accounts;
+    }
+
+    return accountsByPublicKeys;
+  } catch (error) {
+    console.log(error);
+    return {};
+  }
+};
+
 /* Gets the account information by account id */
 export const getAccountInfo = async (
   accountId: string,
