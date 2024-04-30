@@ -56,7 +56,6 @@ export class UsersController {
     return user;
   }
 
-  //TODO How/when would this be used?
   @ApiOperation({
     summary: 'Get a specific user',
     description: 'Get a specific user from the organization for the given user id.',
@@ -70,7 +69,6 @@ export class UsersController {
     return this.usersService.getUser({ id });
   }
 
-  //TODO If roles is to be used instead of just an admin flag, this is where it should be
   @ApiOperation({
     summary: 'Update user information',
     description: 'Update the admin state of a user.',
@@ -92,8 +90,9 @@ export class UsersController {
   @ApiResponse({
     status: 200,
   })
+  @UseGuards(AdminGuard)
   @Delete('/:id')
-  removeUser(@Param('id', ParseIntPipe) id: number): void {
-    this.usersService.removeUser(id);
+  removeUser(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.removeUser(id);
   }
 }

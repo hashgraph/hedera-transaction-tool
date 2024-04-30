@@ -1,7 +1,8 @@
 import { Global, Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { NOTIFICATIONS_SERVICE } from '@app/common';
 import { ConfigService } from '@nestjs/config';
+
+import { NOTIFICATIONS_SERVICE } from '@app/common';
 
 @Global()
 @Module({

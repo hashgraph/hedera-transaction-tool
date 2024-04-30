@@ -7,7 +7,6 @@ import { Repository } from 'typeorm';
 import {
   FileAppendTransaction,
   FileUpdateTransaction,
-  KeyList,
   Transaction as SDKTransaction,
   Status,
 } from '@hashgraph/sdk';
@@ -17,10 +16,9 @@ import { Transaction, TransactionStatus } from '@entities';
 import {
   MirrorNodeService,
   ableToSign,
+  computeSignatureKey,
   getClientFromConfig,
-  getSignatureEntities,
   getStatusCodeFromMessage,
-  parseAccountProperty,
 } from '@app/common';
 
 import { TranasctionExecutedDto } from './dtos';
@@ -63,7 +61,7 @@ export class ExecuteService {
       throw new Error('File transactions are not currently supported for execution.');
 
     /* Gets the signature key */
-    const sigantureKey = await this.computeSignatureKey(sdkTransaction);
+    const sigantureKey = await computeSignatureKey(sdkTransaction, this.mirrorNodeService);
 
     /* Checks if the transaction has valid siganture */
     if (!ableToSign([...sdkTransaction._signerPublicKeys], sigantureKey))
@@ -77,7 +75,9 @@ export class ExecuteService {
     transaction.executedAt = new Date();
     transaction.status = TransactionStatus.EXECUTED;
 
-    const result: TranasctionExecutedDto = {};
+    const result: TranasctionExecutedDto = {
+      status: transaction.status,
+    };
 
     try {
       const response = await sdkTransaction.execute(client);
@@ -94,7 +94,17 @@ export class ExecuteService {
       transaction.statusCode = statusCode;
       result.error = error.message;
     } finally {
-      await this.transactionsRepo.save(transaction);
+      result.status = transaction.status;
+      await this.transactionsRepo.update(
+        {
+          id: transaction.id,
+        },
+        {
+          status: transaction.status,
+          executedAt: transaction.executedAt,
+          statusCode: transaction.statusCode,
+        },
+      );
     }
     return result;
   }
@@ -111,40 +121,5 @@ export class ExecuteService {
       case TransactionStatus.REJECTED:
         throw new Error('Transaction has already been rejected.');
     }
-  }
-
-  /* Computes the signature key for the transaction */
-  private async computeSignatureKey(transaction: SDKTransaction) {
-    /* Get the accounts, receiver accounts and new keys from the transaction */
-    const { accounts, receiverAccounts, newKeys } = getSignatureEntities(transaction);
-
-    /* Create a new key list */
-    const sigantureKey = new KeyList();
-
-    /* Add keys to the signature key list */
-    newKeys.forEach(key => sigantureKey.push(key));
-
-    /* Add the keys of the account ids to the signature key list */
-    for (const accountId of accounts) {
-      const accountInfo = await this.mirrorNodeService.getAccountInfo(accountId);
-      const key = parseAccountProperty(accountInfo, 'key');
-      if (!key) continue;
-
-      sigantureKey.push(key);
-    }
-
-    /* Check if there is a receiver account that required signature, if so add it to the key list */
-    for (const accountId of receiverAccounts) {
-      const accountInfo = await this.mirrorNodeService.getAccountInfo(accountId);
-      const receiverSigRequired = parseAccountProperty(accountInfo, 'receiver_sig_required');
-      if (!receiverSigRequired) continue;
-
-      const key = parseAccountProperty(accountInfo, 'key');
-      if (!key) continue;
-
-      sigantureKey.push(key);
-    }
-
-    return sigantureKey;
   }
 }

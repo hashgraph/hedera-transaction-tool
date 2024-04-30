@@ -1,32 +1,159 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 
-import { Repository } from 'typeorm';
+import { In, Between, MoreThan, Repository } from 'typeorm';
 import {
   FileAppendTransaction,
   FileUpdateTransaction,
-  KeyList,
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
+
+import { MirrorNodeService, ableToSign, computeSignatureKey } from '@app/common';
 
 import { Transaction, TransactionStatus } from '@entities';
 
 import { UpdateTransactionStatusDto } from './dto';
-import {
-  MirrorNodeService,
-  ableToSign,
-  getSignatureEntities,
-  parseAccountProperty,
-} from '@app/common';
+import { ExecuteService } from '../execute';
 
 @Injectable()
 export class TransactionStatusService {
   constructor(
     @InjectRepository(Transaction) private transactionRepo: Repository<Transaction>,
+    private schedulerRegistry: SchedulerRegistry,
+    private readonly executeService: ExecuteService,
     private readonly mirrorNodeService: MirrorNodeService,
   ) {}
 
-  /* Checks if the signers are enough to sign the transaction */
+  /* UPDATES THE TRANSACTIONS STATUSES */
+
+  /* On app start for every transaction */
+  @Cron(new Date(Date.now() + 1 * 1000), {
+    name: 'initial_status_update',
+  })
+  async handleInitialTransactionStatusUpdate() {
+    /* Valid start now minus 180 seconds */
+    const transactions = await this.updateTransactions(this.getValidStartNowMinus180Seconds());
+
+    for (const transaction of transactions.filter(
+      t =>
+        this.isValidStartExecutable(t.validStart) &&
+        t.status === TransactionStatus.WAITING_FOR_EXECUTION,
+    )) {
+      this.addExecutionTimeout(transaction);
+    }
+  }
+
+  /* For transactions with valid start after 1 week */
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, {
+    name: 'status_update_after_one_week',
+  })
+  async handleTransactionsAfterOneWeek() {
+    await this.updateTransactions(this.getOneWeekLater());
+  }
+
+  /* For transactions with valid start between 1 day and 1 week */
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, {
+    name: 'status_update_between_one_day_and_one_week',
+  })
+  async handleTransactionsBetweenOneDayAndOneWeek() {
+    await this.updateTransactions(this.getOneDayLater(), this.getOneWeekLater());
+  }
+
+  /* For transactions with valid start between 1 hour and 1 day */
+  @Cron(CronExpression.EVERY_30_MINUTES, {
+    name: 'status_update_between_one_hour_and_one_day',
+  })
+  async handleTransactionsBetweenOneHourAndOneDay() {
+    await this.updateTransactions(this.getOneHourLater(), this.getOneDayLater());
+  }
+
+  /* For transactions with valid start between 10 minutes and 1 hour */
+  @Cron(CronExpression.EVERY_10_MINUTES, {
+    name: 'status_update_between_ten_minutes_and_one_hour',
+  })
+  async handleTransactionsBetweenTenMinutesAndOneHour() {
+    await this.updateTransactions(this.getTenMinutesLater(), this.getOneHourLater());
+  }
+
+  /* For transactions with valid start between 3 minutes and 10 minutes */
+  @Cron(CronExpression.EVERY_30_SECONDS, {
+    name: 'status_update_between_three_minutes_and_10_minutes',
+  })
+  async handleTransactionsBetweenThreeMinutesAndTenMinutes() {
+    await this.updateTransactions(this.getThreeMinutesLater(), this.getTenMinutesLater());
+  }
+
+  /* For transactions with valid start, started 3 minutes */
+  @Cron(CronExpression.EVERY_10_SECONDS, {
+    name: 'status_update_between_ten_minutes_and_one_hour',
+  })
+  async handleTransactionsBetweenNowAndAfterThreeMinutes() {
+    const transactions = await this.updateTransactions(
+      this.getValidStartNowMinus180Seconds(),
+      this.getThreeMinutesLater(),
+    );
+
+    for (const transaction of transactions.filter(
+      t =>
+        t.status === TransactionStatus.WAITING_FOR_EXECUTION &&
+        this.isValidStartExecutable(t.validStart),
+    )) {
+      this.addExecutionTimeout(transaction);
+    }
+  }
+
+  /* Checks if the signers are enough to sign the transactions and update their statuses */
+  async updateTransactions(from: Date, to?: Date) {
+    const transactions = await this.transactionRepo.find({
+      where: {
+        status: In([
+          TransactionStatus.WAITING_FOR_SIGNATURES,
+          TransactionStatus.WAITING_FOR_EXECUTION,
+        ]),
+        validStart: to ? Between(from, to) : MoreThan(from),
+      },
+    });
+
+    for (const transaction of transactions) {
+      /* Gets the SDK transaction from the transaction body */
+      const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
+
+      /* Throws an error if the transaction is a file update/append transaction */
+      if (
+        sdkTransaction instanceof FileUpdateTransaction ||
+        sdkTransaction instanceof FileAppendTransaction
+      )
+        continue;
+
+      /* Gets the signature key */
+      const sigantureKey = await computeSignatureKey(sdkTransaction, this.mirrorNodeService);
+
+      /* Checks if the transaction has valid siganture */
+      const isAbleToSign = ableToSign([...sdkTransaction._signerPublicKeys], sigantureKey);
+
+      const newStatus = isAbleToSign
+        ? TransactionStatus.WAITING_FOR_EXECUTION
+        : TransactionStatus.WAITING_FOR_SIGNATURES;
+
+      if (transaction.status !== newStatus) {
+        await this.transactionRepo.update(
+          {
+            id: transaction.id,
+          },
+          {
+            status: newStatus,
+          },
+        );
+
+        transaction.status = newStatus;
+      }
+    }
+
+    return transactions;
+  }
+
+  /* Checks if the signers are enough to sign the transaction and update its status */
   async updateTransactionStatus({ id }: UpdateTransactionStatusDto) {
     const transaction = await this.transactionRepo.findOne({ where: { id } });
 
@@ -44,47 +171,65 @@ export class TransactionStatusService {
       return;
 
     /* Gets the signature key */
-    const sigantureKey = await this.computeSignatureKey(sdkTransaction);
+    const sigantureKey = await computeSignatureKey(sdkTransaction, this.mirrorNodeService);
 
     /* Checks if the transaction has valid siganture */
-    if (!ableToSign([...sdkTransaction._signerPublicKeys], sigantureKey)) return;
+    const isAbleToSign = ableToSign([...sdkTransaction._signerPublicKeys], sigantureKey);
 
-    transaction.status = TransactionStatus.WAITING_FOR_EXECUTION;
-    await this.transactionRepo.save(transaction);
+    await this.transactionRepo.update(
+      {
+        id,
+      },
+      {
+        status: isAbleToSign
+          ? TransactionStatus.WAITING_FOR_EXECUTION
+          : TransactionStatus.WAITING_FOR_SIGNATURES,
+      },
+    );
   }
 
-  /* Computes the signature key for the transaction */
-  private async computeSignatureKey(transaction: SDKTransaction) {
-    /* Get the accounts, receiver accounts and new keys from the transaction */
-    const { accounts, receiverAccounts, newKeys } = getSignatureEntities(transaction);
+  addExecutionTimeout(transaction: Transaction) {
+    const name = `execution_timeout_${transaction.id}`;
 
-    /* Create a new key list */
-    const sigantureKey = new KeyList();
+    if (this.schedulerRegistry.doesExist('timeout', name)) return;
 
-    /* Add keys to the signature key list */
-    newKeys.forEach(key => sigantureKey.push(key));
+    const timeToValidStart = transaction.validStart.getTime() - Date.now();
 
-    /* Add the keys of the account ids to the signature key list */
-    for (const accountId of accounts) {
-      const accountInfo = await this.mirrorNodeService.getAccountInfo(accountId);
-      const key = parseAccountProperty(accountInfo, 'key');
-      if (!key) continue;
+    const callback = async () => {
+      await this.executeService.executeTransaction(transaction.id);
+      this.schedulerRegistry.deleteTimeout(name);
+    };
 
-      sigantureKey.push(key);
-    }
+    const timeout = setTimeout(callback, timeToValidStart + 5 * 1_000);
+    this.schedulerRegistry.addTimeout(name, timeout);
+  }
 
-    /* Check if there is a receiver account that required signature, if so add it to the key list */
-    for (const accountId of receiverAccounts) {
-      const accountInfo = await this.mirrorNodeService.getAccountInfo(accountId);
-      const receiverSigRequired = parseAccountProperty(accountInfo, 'receiver_sig_required');
-      if (!receiverSigRequired) continue;
+  private getOneWeekLater() {
+    return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  }
 
-      const key = parseAccountProperty(accountInfo, 'key');
-      if (!key) continue;
+  private getOneDayLater() {
+    return new Date(Date.now() + 1 * 24 * 60 * 60 * 1000);
+  }
 
-      sigantureKey.push(key);
-    }
+  private getOneHourLater() {
+    return new Date(Date.now() + 1 * 60 * 60 * 1000);
+  }
 
-    return sigantureKey;
+  private getTenMinutesLater() {
+    return new Date(Date.now() + 10 * 60 * 1000);
+  }
+
+  private getThreeMinutesLater() {
+    return new Date(Date.now() + 3 * 60 * 1000);
+  }
+
+  private getValidStartNowMinus180Seconds() {
+    return new Date(new Date().getTime() - 180 * 1_000);
+  }
+
+  private isValidStartExecutable(validStart: Date) {
+    const time = validStart.getTime();
+    return time < Date.now() && time + 180 * 1_000 > Date.now();
   }
 }

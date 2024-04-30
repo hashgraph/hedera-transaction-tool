@@ -11,6 +11,8 @@ import {
 
 import { MirrorNodeModule } from '@app/common';
 
+import { ExecuteModule } from '../execute';
+
 import { TransactionStatusService } from './transaction-status.service';
 import { TransactionStatusController } from './transaction-status.controller';
 
@@ -23,6 +25,7 @@ import { TransactionStatusController } from './transaction-status.controller';
       TransactionApprover,
       TransactionObserver,
     ]),
+    ExecuteModule,
     MirrorNodeModule,
   ],
   providers: [TransactionStatusService],

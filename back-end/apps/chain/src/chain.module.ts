@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import * as Joi from 'joi';
 
@@ -24,6 +25,7 @@ import { TransactionStatusModule } from './transaction-status/transaction-status
         POSTGRES_SYNCHRONIZE: Joi.boolean().required(),
       }),
     }),
+    ScheduleModule.forRoot(),
     ExecuteModule,
     TransactionStatusModule,
   ],

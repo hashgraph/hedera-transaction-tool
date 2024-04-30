@@ -18,7 +18,7 @@ import { ClientProxy } from '@nestjs/microservices';
 //TODO WebTransport vs Websockets - by default transports = polling and websocket, not webtransport
 @WebSocketGateway({
   cors: { origin: true, methods: ['GET', 'POST'], credentials: true },
-  connectionStateRecovery: { maxDisconnectionDuration: 2*60*1000 },
+  connectionStateRecovery: { maxDisconnectionDuration: 2 * 60 * 1000 },
 })
 export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(WebsocketGateway.name);
@@ -42,7 +42,10 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
 
   //TODO check with the team to see how they want the data delivered
   @SubscribeMessage('test')
-  async onMessage(@ConnectedSocket() socket: AuthWebsocket, @MessageBody() body: any): Promise<any> {
+  async onMessage(
+    @ConnectedSocket() socket: AuthWebsocket,
+    @MessageBody() body: any,
+  ): Promise<any> {
     const dto: NotifyClientDto = { message: 'test', content: body };
     this.notifyClient(dto);
     // Return doesn't appear to do anything, as far as the client goes?

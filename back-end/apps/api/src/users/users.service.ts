@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
@@ -74,7 +75,7 @@ export class UsersService {
     const user = await this.getUser({ id });
 
     if (!user) {
-      throw new Error('user not found');
+      throw new BadRequestException('User not found');
     }
 
     return this.updateUser(user, attrs);
@@ -103,7 +104,7 @@ export class UsersService {
     const user = await this.getUser({ id });
 
     if (!user) {
-      throw new Error('user not found');
+      throw new BadRequestException('User not found');
     }
 
     return this.repo.softRemove(user);
