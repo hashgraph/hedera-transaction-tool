@@ -29,6 +29,7 @@ model User {
   TransactionDraft        TransactionDraft[]
   ComplexKey              ComplexKey[]
   Contact                 Contact[]
+  PublicKeyLinked         PublicKeyLinked[]
 }
 
 model KeyPair {
@@ -55,6 +56,7 @@ model Organization {
   keyPairs                KeyPair[]
   OrganizationCredentials OrganizationCredentials[]
   Transaction             Transaction[]
+  Contact                 Contact[]
 }
 
 model OrganizationCredentials {
@@ -65,7 +67,7 @@ model OrganizationCredentials {
   organization_user_id Int?
   user_id              String
   jwtToken             String?
-  updated_at           DateTime?     @updatedAt
+  updated_at           DateTime?    @updatedAt
   user                 User         @relation(fields: [user_id], references: [id])
   organization         Organization @relation(fields: [organization_id], references: [id])
 }
@@ -134,29 +136,22 @@ model ComplexKey {
   updated_at      DateTime @updatedAt
   user            User     @relation(fields: [user_id], references: [id])
 }
+
 model Contact {
-  id                   String @id @default(uuid())
-  user_id              String
-  key_name             String
-  email                String
-  organization         String?
-  organization_user_id String?
-  user                 User   @relation(fields: [user_id], references: [id])
-
-  associated_accounts  AssociatedAccount[]
-  public_key           ContactPublicKey[]
+  id                         String       @id @default(uuid())
+  user_id                    String
+  organization_user_id_owner Int
+  organization_user_id       Int
+  organization_id            String
+  nickname                   String
+  user                       User         @relation(fields: [user_id], references: [id])
+  organization               Organization @relation(fields: [organization_id], references: [id])
 }
 
-model AssociatedAccount {
-  id         String @id @default(uuid())
-  contact_id String
-  account_id String
-  contact    Contact @relation(fields: [contact_id], references: [id], onDelete: Cascade)
-}
-
-model ContactPublicKey {
-  id         String @id @default(uuid())
-  contact_id String
-  public_key String
-  contact    Contact @relation(fields: [contact_id], references: [id], onDelete: Cascade)
+model PublicKeyLinked {
+  id        String @id @default(uuid())
+  user_id   String
+  publicKey String
+  nickname  String
+  user      User   @relation(fields: [user_id], references: [id])
 }
