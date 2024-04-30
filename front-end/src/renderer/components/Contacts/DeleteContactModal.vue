@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import AppCustomIcon from './ui/AppCustomIcon.vue';
-import AppButton from './ui/AppButton.vue';
 
 /* Props */
 const props = defineProps<{
@@ -24,7 +25,7 @@ watch(
 );
 
 /* Handlers */
-async function handleDeleteAccount() {
+function handleDeleteAccount() {
   emit('update:delete');
   emit('update:show', false);
 }
@@ -46,15 +47,8 @@ async function handleDeleteAccount() {
             >Cancel</AppButton
           >
         </div>
-        <div class="col-6">
-          <AppButton
-            :outline="true"
-            color="primary"
-            class="w-100"
-            style="color: red; border-color: red"
-            @click="handleDeleteAccount"
-            >Remove</AppButton
-          >
+        <div class="col-6 d-grid">
+          <AppButton color="danger" @click="handleDeleteAccount">Remove</AppButton>
         </div>
       </div>
     </div>

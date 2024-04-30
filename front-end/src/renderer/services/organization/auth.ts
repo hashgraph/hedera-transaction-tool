@@ -179,7 +179,14 @@ export const setPassword = async (
 };
 
 /* ADMIN ONLY: Signs a user to the organization */
-export async function signUp(organizationServerUrl: string, email: string) {
+export async function signUp(
+  organizationServerUrl: string,
+  email: string,
+): Promise<{
+  id: number;
+  email: string;
+  createdAt: string;
+}> {
   try {
     const response = await axios.post(
       `${organizationServerUrl}/${authController}/signup`,

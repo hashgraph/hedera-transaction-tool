@@ -1,59 +1,80 @@
 <script setup lang="ts">
-import AppButton from '@renderer/components/ui/AppButton.vue';
-import { onBeforeMount, ref } from 'vue';
-import AddNewContactForm from '@renderer/components/AddNewContactForm.vue';
-import ContactDetails from '@renderer/components/ContactDetails.vue';
-import useContactsStore from '@renderer/stores/storeContacts';
+import { computed, onBeforeMount, ref, watch } from 'vue';
+
+import { HederaAccount } from '@prisma/client';
+
+import { Contact } from '@main/shared/interfaces';
+
 import useUserStore from '@renderer/stores/storeUser';
-import EditContactForm from '@renderer/components/EditContactForm.vue';
+import useContactsStore from '@renderer/stores/storeContacts';
+
+import { useToast } from 'vue-toast-notification';
+import { useRouter } from 'vue-router';
+
+import { deleteUser } from '@renderer/services/organization';
+import { removeContact } from '@renderer/services/contactsService';
+import { getAll } from '@renderer/services/accountsService';
+
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import ContactDetails from '@renderer/components/Contacts/ContactDetails.vue';
+import DeleteContactModal from '@renderer/components/Contacts/DeleteContactModal.vue';
 
 /* Stores */
-const contactsStore = useContactsStore();
-const userStore = useUserStore();
+const user = useUserStore();
+const contacts = useContactsStore();
+
+/* Composables */
+const toast = useToast();
+const router = useRouter();
 
 /* State */
-onBeforeMount(async () => {
-  await contactsStore.fetch();
-});
-const addNew = ref(false);
-const edit = ref(false);
-const selectedIndex = ref();
+const selectedIndex = ref<number>(0);
+const isDeleteContactModalShown = ref(false);
+const linkedAccounts = ref<HederaAccount[]>([]);
+
+/* Computed */
+const contact = computed<Contact | null>(() => contacts.contacts[selectedIndex.value] || null);
 
 /* Handlers */
-async function handleAddNew() {
-  addNew.value = true;
-  selectedIndex.value = null;
-}
-
 function handleSelectContact(index: number) {
   selectedIndex.value = index;
-  addNew.value = false;
 }
 
 async function handleRemove() {
-  selectedIndex.value = null;
-  await contactsStore.fetch();
+  if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+  if (!contact.value) throw new Error('Contact is not selected');
+
+  if (isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin) {
+    await deleteUser(user.selectedOrganization.serverUrl, contact.value.user.id);
+    contact.value.nicknameId && (await removeContact(user.personal.id, contact.value.nicknameId));
+  }
+
+  toast.success('User removed successfully');
+
+  selectedIndex.value = 0;
+  await contacts.fetch();
 }
 
-async function handleAddedContact() {
-  selectedIndex.value = null;
-  addNew.value = false;
-  await contactsStore.fetch();
-  
-}
+/* Hooks */
+onBeforeMount(async () => {
+  await contacts.fetch();
 
-function handleHideAddNew() {
-  addNew.value = false;
-}
+  if (isUserLoggedIn(user.personal)) {
+    linkedAccounts.value = await getAll(user.personal.id);
+  }
+});
 
-function handleEdit() {
-  edit.value = true;
-}
-
-async function handleHideEdit() {
-  edit.value = false;
-  await contactsStore.fetch();
-}
+/* Watchers */
+watch(
+  () => user.selectedOrganization,
+  () => {
+    if (!isLoggedInOrganization(user.selectedOrganization)) {
+      router.push({ name: 'transactions' });
+    }
+  },
+);
 </script>
 
 <template>
@@ -61,54 +82,35 @@ async function handleHideEdit() {
     <div class="container-fluid flex-column-100">
       <div class="d-flex justify-content-between">
         <h1 class="text-title text-bold">Contact List</h1>
-        <!-- <div class="d-flex align-items-center justify-content-end gap-4">
-          <span class="px-5 link-primary text-small cursor-pointer ws-no-wrap"
-            >Export Contact List</span
-          >
-          <input class="form-control" placeholder="Search Accounts" />
-        </div> -->
       </div>
 
       <div class="row g-0 fill-remaining mt-6">
         <div class="col-4 col-xxl-3 flex-column-100 overflow-hidden with-border-end pe-4 ps-0">
-          <div class="pb-5">
-            <AppButton
-              color="primary"
-              size="large"
-              class="w-100"
-              @click="handleAddNew"
-              :disabled="
-                userStore.selectedOrganization?.isServerActive &&
-                !userStore.selectedOrganization.loginRequired
-              "
-            >
-              Add New
-            </AppButton>
-          </div>
+          <AppButton
+            color="primary"
+            size="large"
+            class="w-100"
+            :disabled="
+              !isLoggedInOrganization(user.selectedOrganization) || !user.selectedOrganization.admin
+            "
+            @click="$router.push({ name: 'signUpUser' })"
+          >
+            Add New
+          </AppButton>
 
           <hr class="separator my-5" />
-          <div class="fill-remaining pe-3" v-if="contactsStore.contacts">
-            <div v-for="contact in contactsStore.contacts" :key="contact.id">
+          <div class="fill-remaining pe-3">
+            <div v-for="(contact, i) in contacts.contacts" :key="contact.user.id">
               <div
                 class="container-card-account p-4 mt-3"
                 :class="{
-                  'is-selected': selectedIndex === contactsStore.contacts?.indexOf(contact),
+                  'is-selected': selectedIndex === i,
                 }"
-                @click="handleSelectContact(contactsStore.contacts!.indexOf(contact))"
+                @click="handleSelectContact(i)"
               >
                 <div class="d-flex justify-content-between">
-                  <p class="text-small text-semi-bold text-truncate">{{ contact?.key_name }}</p>
-                  <p
-                    v-if="contact.organization"
-                    class="text-small py-1 px-3 text-truncate"
-                    style="background-color: #e5ccff; border-radius: 4px; color: black"
-                  >
-                    {{ contact.organization }}
-                  </p>
-                </div>
-                <div class="d-flex justify-content-between align-items-center">
-                  <p class="text-micro text-secondary mt-2 text-truncate">
-                    {{ contact?.associated_accounts[0]?.account_id }}
+                  <p class="text-small text-semi-bold text-truncate">
+                    {{ contact.nickname.trim() || contact.user.email }}
                   </p>
                 </div>
               </div>
@@ -118,27 +120,21 @@ async function handleHideEdit() {
 
         <div class="col-8 col-xxl-9 flex-column-100 ps-4">
           <Transition name="fade" mode="out-in">
-            <div v-if="addNew">
-              <AddNewContactForm
-                @hide-add-new="handleHideAddNew"
-                @update:added-contact="handleAddedContact"
+            <div v-if="contact" class="container-fluid flex-column-100 position-relative">
+              <ContactDetails
+                :contact="contact"
+                :linked-accounts="linkedAccounts"
+                @update:remove="isDeleteContactModalShown = true"
               />
             </div>
           </Transition>
-          <div v-if="selectedIndex != null && contactsStore.contacts && !edit">
-            <ContactDetails
-              :contact="contactsStore.contacts[selectedIndex]"
-              @update:remove="handleRemove"
-              @edit="handleEdit"
-            />
-          </div>
-          <div v-if="selectedIndex != null && contactsStore.contacts && edit">
-            <EditContactForm
-              :contact="contactsStore.contacts[selectedIndex]"
-              @hide-edit="handleHideEdit"
-            />
-          </div>
         </div>
+
+        <DeleteContactModal
+          v-model:show="isDeleteContactModalShown"
+          @update:delete="handleRemove"
+          :contact="contact"
+        />
       </div>
     </div>
   </div>

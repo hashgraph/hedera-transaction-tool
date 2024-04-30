@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, watch } from 'vue';
-import { RouterLink, useRouter } from 'vue-router';
+import { RouterLink } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -8,9 +7,6 @@ import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 /* Store */
 const user = useUserStore();
-
-/* Composables */
-const router = useRouter();
 
 /* Misc */
 const menuItems = [
@@ -58,26 +54,6 @@ const menuItems = [
 ];
 
 const organizationOnly = ['/contact-list'];
-
-const validateRoute = () => {
-  if (
-    !isLoggedInOrganization(user.selectedOrganization) &&
-    organizationOnly.includes(router.currentRoute.value.path)
-  ) {
-    router.back();
-  }
-};
-
-/* Hooks */
-onBeforeMount(() => validateRoute());
-
-/* Watchers */
-watch(
-  () => user.selectedOrganization,
-  () => {
-    validateRoute();
-  },
-);
 </script>
 
 <template>

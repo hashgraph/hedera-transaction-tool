@@ -9,10 +9,15 @@ const withoutAuthRoutes = [
   'forgotPassword',
 ];
 
+const onlyAdminRoutes = ['signUpUser'];
+
 export function attachMeta(routes: RouteRecordRaw[]) {
-  // Without Auth routes, attach withoutAuth meta
   routes.forEach(route => {
+    // Without Auth routes, attach withoutAuth meta
     setMetaIf(route, withoutAuthRoutes, 'withoutAuth', true);
+
+    // Only Admin routes, attach onlyAdmin meta
+    setMetaIf(route, onlyAdminRoutes, 'onlyAdmin', true);
   });
 }
 
