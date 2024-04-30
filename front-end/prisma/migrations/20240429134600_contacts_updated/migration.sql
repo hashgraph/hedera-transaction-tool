@@ -8,17 +8,17 @@
 */
 -- DropTable
 PRAGMA foreign_keys=off;
-DROP TABLE "AssociatedAccount";
+DROP TABLE IF EXISTS "AssociatedAccount";
 PRAGMA foreign_keys=on;
 
 -- DropTable
 PRAGMA foreign_keys=off;
-DROP TABLE "Contact";
+DROP TABLE IF EXISTS "Contact";
 PRAGMA foreign_keys=on;
 
 -- DropTable
 PRAGMA foreign_keys=off;
-DROP TABLE "ContactPublicKey";
+DROP TABLE IF EXISTS "ContactPublicKey";
 PRAGMA foreign_keys=on;
 
 -- CreateTable
