@@ -1,6 +1,18 @@
 <script setup lang="ts">
-import { RouterLink } from 'vue-router';
+import { onBeforeMount, watch } from 'vue';
+import { RouterLink, useRouter } from 'vue-router';
 
+import useUserStore from '@renderer/stores/storeUser';
+
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+
+/* Store */
+const user = useUserStore();
+
+/* Composables */
+const router = useRouter();
+
+/* Misc */
 const menuItems = [
   {
     link: '/transactions',
@@ -44,12 +56,40 @@ const menuItems = [
   //   icon: 'bi bi-feather',
   // },
 ];
+
+const organizationOnly = ['/contact-list'];
+
+const validateRoute = () => {
+  if (
+    !isLoggedInOrganization(user.selectedOrganization) &&
+    organizationOnly.includes(router.currentRoute.value.path)
+  ) {
+    router.back();
+  }
+};
+
+/* Hooks */
+onBeforeMount(() => validateRoute());
+
+/* Watchers */
+watch(
+  () => user.selectedOrganization,
+  () => {
+    validateRoute();
+  },
+);
 </script>
 
 <template>
   <div class="container-menu">
     <div>
-      <template v-for="(item, _index) in menuItems" :key="_index">
+      <template
+        v-for="(item, _index) in menuItems.filter(
+          i =>
+            !organizationOnly.includes(i.link) || isLoggedInOrganization(user.selectedOrganization),
+        )"
+        :key="_index"
+      >
         <RouterLink class="link-menu mt-2" :to="item.link">
           <i :class="item.icon"></i><span>{{ item.title }}</span></RouterLink
         >
