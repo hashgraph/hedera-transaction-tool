@@ -1,34 +1,27 @@
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
 
-import { IUser, IUserKey } from '@main/shared/interfaces/organization';
-
 import useUserStore from './storeUser';
 
 import { getUserKeys, getUsers } from '@renderer/services/organization';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 import { getOrganizationContacts } from '@renderer/services/contactsService';
+import { Contact } from '@main/shared/interfaces';
 
 const useContactsStore = defineStore('contacts', () => {
   const user = useUserStore();
 
   /* State */
-  const contacts = ref<
-    {
-      user: IUser;
-      userKeys: IUserKey[];
-      nickname: string;
-    }[]
-  >([]);
+  const contacts = ref<Contact[]>([]);
 
   /* Actions */
   async function fetch() {
+    contacts.value = [];
+
     if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
 
     if (isLoggedInOrganization(user.selectedOrganization)) {
-      contacts.value = [];
-
       const users = await getUsers(user.selectedOrganization.serverUrl);
 
       const orgContacts = await getOrganizationContacts(
@@ -43,6 +36,7 @@ const useContactsStore = defineStore('contacts', () => {
           user: orgUser,
           userKeys: userKeys,
           nickname: orgContacts.find(c => c.organization_user_id === orgUser.id)?.nickname || '',
+          nicknameId: orgContacts.find(c => c.organization_user_id === orgUser.id)?.id || null,
         });
       }
     }
