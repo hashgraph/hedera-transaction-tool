@@ -13,9 +13,26 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { CHAIN_SERVICE, Serialize } from '@app/common';
+import {
+  CHAIN_SERVICE,
+  Filtering,
+  FilteringParams,
+  PaginatedResourceDto,
+  Pagination,
+  PaginationParams,
+  Serialize,
+  Sorting,
+  SortingParams,
+  withPaginatedResponse,
+} from '@app/common';
 
-import { Transaction, TransactionStatus, User } from '@entities';
+import {
+  Transaction,
+  TransactionStatus,
+  User,
+  transactionDateProperties,
+  transactionProperties,
+} from '@entities';
 
 import { JwtAuthGuard, VerifiedUserGuard, HasKeyGuard } from '../guards';
 
@@ -67,19 +84,18 @@ export class TransactionsController {
     type: [TransactionDto],
   })
   @Get()
-  @Serialize(TransactionDto)
+  @Serialize(withPaginatedResponse(TransactionDto))
   getTransactions(
     @GetUser() user: User,
-    @Query('take', ParseIntPipe) take: number,
-    @Query('skip', ParseIntPipe) skip: number,
-    @Query('status')
-    status?: TransactionStatus[],
-  ): Promise<Transaction[]> {
-    if (status) {
-      return this.transactionsService.getTransactionsForUserWithStatus(user, status, take, skip);
-    }
-
-    return this.transactionsService.getTransactions(user, take, skip);
+    @PaginationParams() paginationParams: Pagination,
+    @SortingParams(transactionProperties) sort?: Sorting[],
+    @FilteringParams({
+      validProperties: transactionProperties,
+      dateProperties: transactionDateProperties,
+    })
+    filter?: Filtering[][],
+  ): Promise<PaginatedResourceDto<Transaction>> {
+    return this.transactionsService.getTransactions(user, paginationParams, sort, filter);
   }
 
   /* Get the count of transactions that the user is part of with specific status */

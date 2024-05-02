@@ -26,6 +26,12 @@ import {
   isPublicKeyInKeyList,
   parseAccountProperty,
   getSignatureEntities,
+  Pagination,
+  Sorting,
+  Filtering,
+  getWhere,
+  getOrder,
+  PaginatedResourceDto,
 } from '@app/common';
 
 import { UserDto } from '../users/dtos';
@@ -90,21 +96,31 @@ export class TransactionsService {
   }
 
   /* Get the transactions created by the user */
-  async getTransactions(user: User, take: number = 10, skip: number = 0): Promise<Transaction[]> {
-    return this.repo.find({
-      where: {
-        creatorKey: {
-          user: {
-            id: user.id,
-          },
-        },
-      },
+  async getTransactions(
+    user: User,
+    { page, limit, size, offset }: Pagination,
+    sort?: Sorting[],
+    filter?: Filtering[][],
+  ): Promise<PaginatedResourceDto<Transaction>> {
+    const where = getWhere(filter);
+    const order = getOrder(sort);
+
+    const [transactions, total] = await this.repo.findAndCount({
+      where,
+      order,
       relations: {
         creatorKey: true,
       },
-      skip,
-      take,
+      skip: offset,
+      take: limit,
     });
+
+    return {
+      totalItems: total,
+      items: transactions,
+      page,
+      size,
+    };
   }
 
   /* Get the transactions that a user needs to sign */
