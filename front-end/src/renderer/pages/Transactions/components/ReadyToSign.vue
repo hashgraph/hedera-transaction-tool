@@ -9,7 +9,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
 
-import { getTransactionsToSign, getTransactionsToSignCount } from '@renderer/services/organization';
+import { getTransactionsToSign } from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
 import {
@@ -17,7 +17,7 @@ import {
   getTransactionId,
   getTransactionType,
 } from '@renderer/utils/sdk/transactions';
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -55,17 +55,6 @@ const handleSign = async (id: number) => {
 };
 
 /* Functions */
-function createFindArgs() {
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
-
-  return {
-    skip: (currentPage.value - 1) * pageSize.value,
-    take: pageSize.value,
-  };
-}
-
 async function fetchTransactions() {
   if (!isLoggedInOrganization(user.selectedOrganization)) {
     throw new Error('Please login in an organization');
@@ -73,13 +62,12 @@ async function fetchTransactions() {
 
   isLoading.value = true;
   try {
-    const { skip, take } = createFindArgs();
-    totalItems.value = await getTransactionsToSignCount(user.selectedOrganization.serverUrl);
-    const rawTransactions = await getTransactionsToSign(
+    const { items: rawTransactions } = await getTransactionsToSign(
       user.selectedOrganization.serverUrl,
-      skip,
-      take,
+      currentPage.value,
+      pageSize.value,
     );
+    totalItems.value = rawTransactions.length;
     const transactionsBytes = await hexToUint8ArrayBatch(
       rawTransactions.map(t => t.transaction.body),
     );

@@ -9,10 +9,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
 
-import {
-  getTransactionsForUser,
-  getTransactionsForUserCount,
-} from '@renderer/services/organization';
+import { getTransactionsForUser } from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
 import {
@@ -20,7 +17,7 @@ import {
   getTransactionId,
   getTransactionType,
 } from '@renderer/utils/sdk/transactions';
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -54,17 +51,6 @@ const handleDetails = async (id: number) => {
 };
 
 /* Functions */
-function createFindArgs() {
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
-
-  return {
-    skip: (currentPage.value - 1) * pageSize.value,
-    take: pageSize.value,
-  };
-}
-
 async function fetchTransactions() {
   if (!isLoggedInOrganization(user.selectedOrganization)) {
     throw new Error('Please login in an organization');
@@ -72,17 +58,13 @@ async function fetchTransactions() {
 
   isLoading.value = true;
   try {
-    const { skip, take } = createFindArgs();
-    totalItems.value = await getTransactionsForUserCount(user.selectedOrganization.serverUrl, [
-      TransactionStatus.WAITING_FOR_EXECUTION,
-    ]);
-    const rawTransactions = await getTransactionsForUser(
+    const { totalItems: totalItemsCount, items: rawTransactions } = await getTransactionsForUser(
       user.selectedOrganization.serverUrl,
       [TransactionStatus.WAITING_FOR_EXECUTION],
-      skip,
-      take,
+      currentPage.value,
+      pageSize.value,
     );
-
+    totalItems.value = totalItemsCount;
     const transactionsBytes = await hexToUint8ArrayBatch(rawTransactions.map(t => t.body));
     transactions.value = rawTransactions.map((transaction, i) => ({
       transactionRaw: transaction,

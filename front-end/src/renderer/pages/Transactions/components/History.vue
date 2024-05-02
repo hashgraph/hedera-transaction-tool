@@ -11,10 +11,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useRouter } from 'vue-router';
 
 import { getTransactions, getTransactionsCount } from '@renderer/services/transactionService';
-import {
-  getTransactionsForUser,
-  getTransactionsForUserCount,
-} from '@renderer/services/organization';
+import { getTransactionsForUser } from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
 import {
@@ -105,20 +102,14 @@ async function fetchTransactions() {
 
   isLoading.value = true;
   try {
-    const args = createFindArgs();
-
     if (isLoggedInOrganization(user.selectedOrganization)) {
-      totalItems.value = await getTransactionsForUserCount(user.selectedOrganization.serverUrl, [
-        TransactionStatus.EXECUTED,
-        TransactionStatus.FAILED,
-      ]);
-      const rawTransactions = await getTransactionsForUser(
+      const { totalItems: totalItemsCount, items: rawTransactions } = await getTransactionsForUser(
         user.selectedOrganization.serverUrl,
         [TransactionStatus.EXECUTED, TransactionStatus.FAILED],
-        args.skip,
-        args.take,
+        currentPage.value,
+        pageSize.value,
       );
-
+      totalItems.value = totalItemsCount;
       const transactionsBytes = await hexToUint8ArrayBatch(rawTransactions.map(t => t.body));
       organizationTransactions.value = rawTransactions.map((transaction, i) => ({
         transactionRaw: transaction,
@@ -126,7 +117,7 @@ async function fetchTransactions() {
       }));
     } else {
       totalItems.value = await getTransactionsCount(user.personal.id);
-      transactions.value = await getTransactions(args);
+      transactions.value = await getTransactions(createFindArgs());
       handleSort(sort.field, sort.direction);
     }
   } finally {

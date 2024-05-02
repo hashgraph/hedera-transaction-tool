@@ -6,7 +6,12 @@ import { Organization } from '@prisma/client';
 import { LoggedInOrganization, LoggedInUserWithPassword } from '@renderer/types';
 
 import { getPrivateKey, getSignatures } from '@renderer/utils';
-import { ITransaction, ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
+import {
+  ITransaction,
+  ITransactionFull,
+  PaginatedResourceDto,
+  TransactionStatus,
+} from '@main/shared/interfaces';
 
 import { decryptPrivateKey } from '../keyPairService';
 
@@ -137,43 +142,20 @@ export const fullUploadSignatures = async (
 /* Get transactions to sign */
 export const getTransactionsToSign = async (
   serverUrl: string,
-  skip: number,
-  take: number,
+  page: number,
+  size: number,
 ): Promise<
-  {
+  PaginatedResourceDto<{
     transaction: ITransaction;
     keysToSign: number[];
-  }[]
+  }>
 > => {
   try {
-    const { data } = await axios.get(`${serverUrl}/${controller}/sign?skip=${skip}&take=${take}`, {
+    const { data } = await axios.get(`${serverUrl}/${controller}/sign?page=${page}&size=${size}`, {
       withCredentials: true,
     });
 
     return data;
-  } catch (error: any) {
-    let message = 'Failed to get transactions to sign';
-
-    if (error instanceof AxiosError) {
-      throwIfNoResponse(error);
-
-      const errorMessage = error.response?.data?.message;
-      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
-        message = errorMessage;
-      }
-    }
-    throw new Error(message);
-  }
-};
-
-/* Get the count of the transactions to sign */
-export const getTransactionsToSignCount = async (serverUrl: string): Promise<number> => {
-  try {
-    const { data } = await axios.get(`${serverUrl}/${controller}/sign/count`, {
-      withCredentials: true,
-    });
-
-    return Number(data);
   } catch (error: any) {
     let message = 'Failed to get transactions to sign';
 
@@ -219,41 +201,16 @@ export const getTransactionById = async (
 export const getTransactionsForUser = async (
   serverUrl: string,
   status: TransactionStatus[],
-  skip: number,
-  take: number,
-): Promise<ITransaction[]> => {
+  page: number,
+  size: number,
+): Promise<PaginatedResourceDto<ITransaction>> => {
   try {
+    const withValidStart =
+      !status.includes(TransactionStatus.EXECUTED) && !status.includes(TransactionStatus.FAILED);
+    const validStartTimestamp = new Date(Date.now() - 180 * 1_000).getTime();
+
     const { data } = await axios.get(
-      `${serverUrl}/${controller}?skip=${skip}&take=${take}&${status.map(s => `status=${s}`).join('&')}`,
-      {
-        withCredentials: true,
-      },
-    );
-
-    return data;
-  } catch (error: any) {
-    let message = 'Failed to get transactions';
-
-    if (error instanceof AxiosError) {
-      throwIfNoResponse(error);
-
-      const errorMessage = error.response?.data?.message;
-      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
-        message = errorMessage;
-      }
-    }
-    throw new Error(message);
-  }
-};
-
-/* Get the count of transactions for user with specific status */
-export const getTransactionsForUserCount = async (
-  serverUrl: string,
-  status: TransactionStatus[],
-): Promise<number> => {
-  try {
-    const { data } = await axios.get(
-      `${serverUrl}/${controller}/count?${status.map(s => `status=${s}`).join('&')}`,
+      `${serverUrl}/${controller}?page=${page}&size=${size}&filter=status:in:${status.join(',')}${withValidStart ? `&filter=validStart:gte:${validStartTimestamp}` : ''}`,
       {
         withCredentials: true,
       },
