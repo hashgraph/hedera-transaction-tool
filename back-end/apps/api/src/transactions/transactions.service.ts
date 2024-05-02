@@ -12,7 +12,7 @@ import {
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
-import { DeepPartial, Repository, MoreThan, In } from 'typeorm';
+import { DeepPartial, Repository, MoreThan } from 'typeorm';
 
 import { Transaction, TransactionStatus, User } from '@entities';
 
@@ -100,13 +100,25 @@ export class TransactionsService {
     user: User,
     { page, limit, size, offset }: Pagination,
     sort?: Sorting[],
-    filter?: Filtering[][],
+    filter?: Filtering[],
   ): Promise<PaginatedResourceDto<Transaction>> {
-    const where = getWhere(filter);
+    const where = getWhere<Transaction>(filter);
     const order = getOrder(sort);
 
+    const whereForUser = [
+      { ...where, signers: { userId: user.id } },
+      {
+        ...where,
+        creatorKey: {
+          user: {
+            id: user.id,
+          },
+        },
+      },
+    ];
+
     const [transactions, total] = await this.repo.findAndCount({
-      where,
+      where: whereForUser,
       order,
       relations: {
         creatorKey: true,
@@ -126,13 +138,14 @@ export class TransactionsService {
   /* Get the transactions that a user needs to sign */
   async getTransactionsToSign(
     user: User,
-    take: number,
-    skip: number,
+    { page, limit, size, offset }: Pagination,
   ): Promise<
-    {
-      transaction: Transaction;
-      keysToSign: number[];
-    }[]
+    Promise<
+      PaginatedResourceDto<{
+        transaction: Transaction;
+        keysToSign: number[];
+      }>
+    >
   > {
     const result: {
       transaction: Transaction;
@@ -142,7 +155,13 @@ export class TransactionsService {
     /* Ensures the user keys are passed */
     if (user.keys.length === 0) {
       user.keys = await this.userKeysService.getUserKeys(user.id);
-      if (user.keys.length === 0) return [];
+      if (user.keys.length === 0)
+        return {
+          totalItems: 0,
+          items: [],
+          page,
+          size,
+        };
     }
 
     const transactions = await this.repo.find({
@@ -153,42 +172,17 @@ export class TransactionsService {
     });
 
     for (const transaction of transactions) {
-      /* Stop if necessary number of transactions are found */
-      if (result.length === take + skip) break;
-
       /* Check if the user should sign the transaction */
       const keysToSign = await this.userKeysRequiredToSign(transaction, user);
 
       if (keysToSign.length > 0) result.push({ transaction, keysToSign });
     }
-    return result.slice(skip, take + skip);
-  }
-
-  /* Get the count of transactions that a user needs to sign */
-  async getTransactionsToSignCount(user: User): Promise<number> {
-    let count = 0;
-
-    /* Ensures the user keys are passed */
-    if (user.keys.length === 0) {
-      user.keys = await this.userKeysService.getUserKeys(user.id);
-      if (user.keys.length === 0) return count;
-    }
-
-    const transactions = await this.repo.find({
-      where: {
-        status: TransactionStatus.WAITING_FOR_SIGNATURES,
-        validStart: MoreThan(new Date(new Date().getTime() + 180 * 1_000)),
-      },
-    });
-
-    for (const transaction of transactions) {
-      /* Check if the user should sign the transaction */
-      const keysToSign = await this.userKeysRequiredToSign(transaction, user);
-
-      if (keysToSign.length > 0) count++;
-    }
-
-    return count;
+    return {
+      totalItems: result.length,
+      items: result.slice(offset, offset + limit),
+      page,
+      size,
+    };
   }
 
   /* Returns wheter a user should sign the transaction */
@@ -394,79 +388,5 @@ export class TransactionsService {
     await this.repo.softRemove(transaction);
 
     return true;
-  }
-
-  /* Gets the transaction with a status that are not expired */
-  getTransactionsForUserWithStatus(
-    user: User,
-    status: TransactionStatus[],
-    take: number,
-    skip: number,
-  ) {
-    const withValidStart =
-      !status.includes(TransactionStatus.EXECUTED) && !status.includes(TransactionStatus.FAILED);
-    return this.repo.find({
-      where: [
-        {
-          signers: {
-            userId: user.id,
-          },
-          status: Array.isArray(status) ? In(status) : In([status]),
-          validStart: withValidStart
-            ? MoreThan(new Date(new Date().getTime() - 180 * 1_000))
-            : undefined,
-        },
-        {
-          creatorKey: {
-            user: {
-              id: user.id,
-            },
-          },
-          status: Array.isArray(status) ? In(status) : In([status]),
-          validStart: withValidStart
-            ? MoreThan(new Date(new Date().getTime() - 180 * 1_000))
-            : undefined,
-        },
-      ],
-      order: {
-        updatedAt: 'DESC',
-      },
-      take,
-      skip,
-    });
-  }
-
-  /* Gets the count of transactions with a status that are not expired */
-  getTransactionsForUserWithStatusCount(
-    user: User,
-    status: TransactionStatus[] | TransactionStatus,
-  ) {
-    status = Array.isArray(status) ? status : [status];
-    const withValidStart =
-      !status.includes(TransactionStatus.EXECUTED) && !status.includes(TransactionStatus.FAILED);
-    return this.repo.count({
-      where: [
-        {
-          signers: {
-            userId: user.id,
-          },
-          status: Array.isArray(status) ? In(status) : In([status]),
-          validStart: withValidStart
-            ? MoreThan(new Date(new Date().getTime() - 180 * 1_000))
-            : undefined,
-        },
-        {
-          creatorKey: {
-            user: {
-              id: user.id,
-            },
-          },
-          status: Array.isArray(status) ? In(status) : In([status]),
-          validStart: withValidStart
-            ? MoreThan(new Date(new Date().getTime() - 180 * 1_000))
-            : undefined,
-        },
-      ],
-    });
   }
 }

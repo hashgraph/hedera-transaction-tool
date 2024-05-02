@@ -26,13 +26,7 @@ import {
   withPaginatedResponse,
 } from '@app/common';
 
-import {
-  Transaction,
-  TransactionStatus,
-  User,
-  transactionDateProperties,
-  transactionProperties,
-} from '@entities';
+import { Transaction, User, transactionDateProperties, transactionProperties } from '@entities';
 
 import { JwtAuthGuard, VerifiedUserGuard, HasKeyGuard } from '../guards';
 
@@ -81,7 +75,6 @@ export class TransactionsController {
   })
   @ApiResponse({
     status: 200,
-    type: [TransactionDto],
   })
   @Get()
   @Serialize(withPaginatedResponse(TransactionDto))
@@ -93,43 +86,9 @@ export class TransactionsController {
       validProperties: transactionProperties,
       dateProperties: transactionDateProperties,
     })
-    filter?: Filtering[][],
+    filter?: Filtering[],
   ): Promise<PaginatedResourceDto<Transaction>> {
     return this.transactionsService.getTransactions(user, paginationParams, sort, filter);
-  }
-
-  /* Get the count of transactions that the user is part of with specific status */
-  @ApiOperation({
-    summary: 'Get the count of transactions that are with specific state',
-    description:
-      'Get transactions that the user is part of with the provided status. If no status is provided',
-  })
-  @ApiResponse({
-    status: 200,
-    type: Number,
-  })
-  @Get('/count')
-  getTransactionsForUserCount(
-    @GetUser() user: User,
-    @Query('status')
-    status: TransactionStatus[],
-  ) {
-    return this.transactionsService.getTransactionsForUserWithStatusCount(user, status);
-  }
-
-  /* Get the count of all transactions to be signed by the user */
-  @ApiOperation({
-    summary: 'Get transactions to sign',
-    description: 'Get all transactions to be signed by the current user.',
-  })
-  @ApiResponse({
-    status: 200,
-    type: Number,
-  })
-  @Get('/sign/count')
-  @Serialize(TransactionToSignDto)
-  getTransactionsToSignCount(@GetUser() user: User) {
-    return this.transactionsService.getTransactionsToSignCount(user);
   }
 
   /* Get all transactions to be signed by the user */
@@ -139,16 +98,11 @@ export class TransactionsController {
   })
   @ApiResponse({
     status: 200,
-    type: [TransactionToSignDto],
   })
   @Get('/sign')
-  @Serialize(TransactionToSignDto)
-  getTransactionsToSign(
-    @GetUser() user: User,
-    @Query('take', ParseIntPipe) take: number,
-    @Query('skip', ParseIntPipe) skip: number,
-  ) {
-    return this.transactionsService.getTransactionsToSign(user, take, skip);
+  @Serialize(withPaginatedResponse(TransactionToSignDto))
+  getTransactionsToSign(@GetUser() user: User, @PaginationParams() paginationParams: Pagination) {
+    return this.transactionsService.getTransactionsToSign(user, paginationParams);
   }
 
   /* Returns a flag whether a user should sign a transaction with id */
