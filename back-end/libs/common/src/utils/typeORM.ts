@@ -15,6 +15,8 @@ import { FilterRule, Filtering } from '../decorators/filtering-params.decorator'
 export const getOrder = (sort: Sorting[]) => {
   const order = {};
 
+  if (!sort || !sort.length) return order;
+
   sort.forEach(s => {
     order[s.property] = s.direction;
   });
@@ -43,7 +45,11 @@ export const getWhere = (filter: Filtering[][]) => {
 function getFiltering(filter: Filtering) {
   if (!filter) return {};
 
-  const value = filter.isDate ? new Date(Number(filter.value)) : filter.value;
+  const value = filter.isDate
+    ? new Date(Number(decodeURIComponent(filter.value)))
+    : decodeURIComponent(filter.value);
+
+  console.log(decodeURIComponent(filter.value).split(','));
 
   if (filter.rule == FilterRule.IS_NULL) return { [filter.property]: IsNull() };
   if (filter.rule == FilterRule.IS_NOT_NULL) return { [filter.property]: Not(IsNull()) };
@@ -61,7 +67,8 @@ function getFiltering(filter: Filtering) {
     };
   if (filter.rule == FilterRule.LIKE) return { [filter.property]: ILike(`%${value}%`) };
   if (filter.rule == FilterRule.NOT_LIKE) return { [filter.property]: Not(ILike(`%${value}%`)) };
-  if (filter.rule == FilterRule.IN) return { [filter.property]: In(filter.value.split(',')) };
+  if (filter.rule == FilterRule.IN)
+    return { [filter.property]: In(decodeURIComponent(filter.value).split(',')) };
   if (filter.rule == FilterRule.NOT_IN)
-    return { [filter.property]: Not(In(filter.value.split(','))) };
+    return { [filter.property]: Not(In(decodeURIComponent(filter.value).split(','))) };
 }

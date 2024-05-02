@@ -13,7 +13,7 @@ export const PaginationParams = createParamDecorator((data, ctx: ExecutionContex
   const page = parseInt(req.query.page as string);
   const size = parseInt(req.query.size as string);
 
-  if (isNaN(page) || page < 0 || isNaN(size) || size < 0) {
+  if (isNaN(page) || page <= 0 || isNaN(size) || size < 0) {
     throw new BadRequestException('Invalid pagination params');
   }
 
@@ -23,6 +23,6 @@ export const PaginationParams = createParamDecorator((data, ctx: ExecutionContex
 
   // calculate pagination parameters
   const limit = size;
-  const offset = page * limit;
+  const offset = (page - 1) * limit;
   return { page, limit, size, offset };
 });
