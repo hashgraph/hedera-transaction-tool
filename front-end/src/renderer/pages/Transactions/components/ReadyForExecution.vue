@@ -8,10 +8,8 @@ import { ITransaction, TransactionStatus } from '@main/shared/interfaces';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
 
 import {
-  execute,
   getTransactionsForUser,
   getTransactionsForUserCount,
 } from '@renderer/services/organization';
@@ -34,7 +32,6 @@ const user = useUserStore();
 
 /* Composables */
 const router = useRouter();
-const toast = useToast();
 
 /* State */
 const transactions = ref<
@@ -47,7 +44,6 @@ const totalItems = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
 const isLoading = ref(true);
-const executingIndex = ref<number | null>(null);
 
 /* Handlers */
 const handleDetails = async (id: number) => {
@@ -55,29 +51,6 @@ const handleDetails = async (id: number) => {
     name: 'transactionDetails',
     params: { id },
   });
-};
-
-const handleExecute = async (id: number, btnIndex: number) => {
-  if (!isLoggedInOrganization(user.selectedOrganization)) {
-    throw new Error('Please login in an organization');
-  }
-
-  executingIndex.value = btnIndex;
-
-  try {
-    await execute(user.selectedOrganization.serverUrl, id);
-    toast.success('Transaction executed successfully');
-
-    router.push({
-      name: 'transactionDetails',
-      params: { id },
-    });
-  } catch (error) {
-    executingIndex.value = null;
-
-    await fetchTransactions();
-    toast.error('Internal server error');
-  }
 };
 
 /* Functions */
@@ -162,7 +135,7 @@ watch([currentPage, pageSize], async () => {
             </tr>
           </thead>
           <tbody>
-            <template v-for="(tx, i) in transactions" :key="tx.transactionRaw.id">
+            <template v-for="tx in transactions" :key="tx.transactionRaw.id">
               <tr>
                 <td>
                   {{
@@ -189,15 +162,6 @@ watch([currentPage, pageSize], async () => {
                     color="borderless"
                     class="min-w-unset"
                     >Details</AppButton
-                  >
-                  <AppButton
-                    v-if="new Date(tx.transactionRaw.validStart) <= new Date()"
-                    @click="handleExecute(tx.transactionRaw.id, i)"
-                    color="secondary"
-                    class="min-w-unset ms-3"
-                    :loading="executingIndex === i"
-                    :disabled="executingIndex !== null"
-                    >Execute</AppButton
                   >
                 </td>
               </tr>
