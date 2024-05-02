@@ -1,1 +1,1 @@
-export * from './paginated-item.dto';
+export * from './paginated-resource.dto';
