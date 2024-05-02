@@ -5,9 +5,10 @@ export interface Filtering {
   property: string;
   rule: string;
   value: string;
+  isDate?: boolean;
 }
+[];
 
-// valid filter rules
 export enum FilterRule {
   EQUALS = 'eq',
   NOT_EQUALS = 'neq',
@@ -24,27 +25,60 @@ export enum FilterRule {
 }
 
 export const FilteringParams = createParamDecorator(
-  (validProperties, ctx: ExecutionContext): Filtering => {
+  (
+    { validProperties, dateProperties }: { validProperties: string[]; dateProperties: string[] },
+    ctx: ExecutionContext,
+  ): Filtering[][] => {
     const req: Request = ctx.switchToHttp().getRequest();
-    const filter = req.query.filter as string;
-    if (!filter) return null;
 
-    if (Array.isArray(validProperties)) throw new BadRequestException('Invalid filter parameter');
+    if (!req.query.filter) return null;
 
-    if (
-      !filter.match(/^[a-zA-Z0-9_]+:(eq|neq|gt|gte|lt|lte|like|nlike|in|nin):[a-zA-Z0-9_,]+$/) &&
-      !filter.match(/^[a-zA-Z0-9_]+:(isnull|isnotnull)$/)
-    ) {
-      throw new BadRequestException('Invalid filter parameter');
+    const filtersOR: string[] = Array.isArray(req.query.filter)
+      ? req.query.filter.map(f => f?.toString())
+      : [req.query.filter?.toString()];
+
+    if (!Array.isArray(validProperties)) throw new BadRequestException('Invalid filter parameter');
+
+    const filteringOR: Filtering[][] = [];
+
+    for (const filtersAND of filtersOR) {
+      const filters = filtersAND.split('|');
+      const filteringAND: Filtering[] = [];
+
+      for (const filter of filters) {
+        filteringAND.push(parseFilter(filter, validProperties, dateProperties));
+      }
+
+      filteringOR.push(filteringAND);
     }
 
-    // extract the parameters and validate if the rule and the property are valid
-    const [property, rule, value] = filter.split(':');
-    if (!validProperties.includes(property))
-      throw new BadRequestException(`Invalid filter property: ${property}`);
-    if (!Object.values(FilterRule).includes(rule as FilterRule))
-      throw new BadRequestException(`Invalid filter rule: ${rule}`);
-
-    return { property, rule, value };
+    return filteringOR;
   },
 );
+
+function parseFilter(
+  rawFilter: string,
+  validProperties: string[],
+  dateProperties: string[],
+): Filtering {
+  if (
+    !rawFilter.match(/^[a-zA-Z0-9_]+:(eq|neq|gt|gte|lt|lte|like|nlike|in|nin):[a-zA-Z0-9_, ]+$/) &&
+    !rawFilter.match(/^[a-zA-Z0-9_]+:(isnull|isnotnull)$/)
+  ) {
+    throw new BadRequestException('Invalid filter parameter');
+  }
+
+  const [property, rule, value] = rawFilter.split(':');
+  if (!validProperties.includes(property))
+    throw new BadRequestException(`Invalid filter property: ${property}`);
+  if (!Object.values(FilterRule).includes(rule as FilterRule))
+    throw new BadRequestException(`Invalid filter rule: ${rule}`);
+
+  const filtering: Filtering = { property, rule, value };
+
+  if (dateProperties.includes(property)) {
+    filtering.isDate = true;
+  }
+
+  return filtering;
+}
