@@ -28,31 +28,24 @@ export const FilteringParams = createParamDecorator(
   (
     { validProperties, dateProperties }: { validProperties: string[]; dateProperties: string[] },
     ctx: ExecutionContext,
-  ): Filtering[][] => {
+  ): Filtering[] => {
     const req: Request = ctx.switchToHttp().getRequest();
 
     if (!req.query.filter) return null;
 
-    const filtersOR: string[] = Array.isArray(req.query.filter)
+    const filters: string[] = Array.isArray(req.query.filter)
       ? req.query.filter.map(f => f?.toString())
       : [req.query.filter?.toString()];
 
     if (!Array.isArray(validProperties)) throw new BadRequestException('Invalid filter parameter');
 
-    const filteringOR: Filtering[][] = [];
+    const filtering: Filtering[] = [];
 
-    for (const filtersAND of filtersOR) {
-      const filters = filtersAND.split('|');
-      const filteringAND: Filtering[] = [];
-
-      for (const filter of filters) {
-        filteringAND.push(parseFilter(filter, validProperties, dateProperties));
-      }
-
-      filteringOR.push(filteringAND);
+    for (const filter of filters) {
+      filtering.push(parseFilter(filter, validProperties, dateProperties));
     }
 
-    return filteringOR;
+    return filtering;
   },
 );
 

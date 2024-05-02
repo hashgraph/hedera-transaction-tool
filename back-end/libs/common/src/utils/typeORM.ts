@@ -7,6 +7,7 @@ import {
   MoreThanOrEqual,
   ILike,
   In,
+  FindOptionsWhere,
 } from 'typeorm';
 
 import { Sorting } from '../decorators/sorting-params.decorator';
@@ -24,19 +25,13 @@ export const getOrder = (sort: Sorting[]) => {
   return order;
 };
 
-export const getWhere = (filter: Filtering[][]) => {
-  const where = [];
+export const getWhere = <T>(filters: Filtering[]): FindOptionsWhere<T> => {
+  const where: FindOptionsWhere<T> = {};
 
-  if (!filter || !filter.length) return where;
+  if (!filters || !filters.length) return where;
 
-  for (const filterAND of filter) {
-    const filteringAND = {};
-
-    for (const filter of filterAND) {
-      Object.assign(filteringAND, getFiltering(filter));
-    }
-
-    where.push(filteringAND);
+  for (const filter of filters) {
+    Object.assign(where, getFiltering(filter));
   }
 
   return where;
