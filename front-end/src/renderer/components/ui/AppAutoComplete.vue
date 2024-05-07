@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import AppInput from './AppInput.vue';
 
 /* Props */
@@ -14,6 +14,8 @@ const props = defineProps<{
 const emit = defineEmits(['update:modelValue']);
 
 /* State */
+const inputRef = ref<InstanceType<typeof AppInput> | null>(null);
+const dropdownRef = ref<HTMLDivElement | null>(null);
 const hoveredIndex = ref<number>(-1);
 const itemRefs = ref<HTMLElement[]>([]);
 
@@ -60,11 +62,28 @@ const handleKeyDown = (e: KeyboardEvent) => {
     });
   }
 };
+
+const handleResize = () => {
+  if (!inputRef.value?.inputRef || !dropdownRef.value) return;
+  dropdownRef.value.style.width = `${inputRef.value.inputRef.offsetWidth}px`;
+};
+
+/* Hooks */
+onMounted(() => {
+  handleResize();
+
+  window.addEventListener('resize', handleResize);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize);
+});
 </script>
 
 <template>
   <div>
     <AppInput
+      ref="inputRef"
       :model-value="modelValue"
       @update:model-value="$emit('update:modelValue', $event)"
       :filled="filled"
@@ -72,7 +91,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
       v-bind="$attrs"
       @keydown="handleKeyDown"
     />
-    <div v-if="filteredItems.length > 0" class="autocomplete-custom w-100">
+    <div v-if="filteredItems.length > 0" ref="dropdownRef" class="autocomplete-custom">
       <div>
         <template v-for="(item, i) in filteredItems" :key="item">
           <div
