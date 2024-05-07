@@ -123,6 +123,7 @@ export const transactionProperties: (keyof Transaction)[] = [
   'validStart',
   'transactionHash',
   'status',
+  'statusCode',
   'createdAt',
   'executedAt',
   'updatedAt',
