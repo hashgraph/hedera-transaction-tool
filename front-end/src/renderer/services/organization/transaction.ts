@@ -144,6 +144,7 @@ export const getTransactionsToSign = async (
   serverUrl: string,
   page: number,
   size: number,
+  sort?: { property: string; direction: 'asc' | 'desc' }[],
 ): Promise<
   PaginatedResourceDto<{
     transaction: ITransaction;
@@ -151,9 +152,14 @@ export const getTransactionsToSign = async (
   }>
 > => {
   try {
-    const { data } = await axios.get(`${serverUrl}/${controller}/sign?page=${page}&size=${size}`, {
-      withCredentials: true,
-    });
+    const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
+
+    const { data } = await axios.get(
+      `${serverUrl}/${controller}/sign?page=${page}&size=${size}${sorting}`,
+      {
+        withCredentials: true,
+      },
+    );
 
     return data;
   } catch (error: any) {
@@ -203,14 +209,18 @@ export const getTransactionsForUser = async (
   status: TransactionStatus[],
   page: number,
   size: number,
+  sort?: { property: string; direction: 'asc' | 'desc' }[],
 ): Promise<PaginatedResourceDto<ITransaction>> => {
   try {
     const withValidStart =
       !status.includes(TransactionStatus.EXECUTED) && !status.includes(TransactionStatus.FAILED);
     const validStartTimestamp = new Date(Date.now() - 180 * 1_000).getTime();
 
+    const filtering = `&filter=status:in:${status.join(',')}${withValidStart ? `&filter=validStart:gte:${validStartTimestamp}` : ''}`;
+    const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
+
     const { data } = await axios.get(
-      `${serverUrl}/${controller}?page=${page}&size=${size}&filter=status:in:${status.join(',')}${withValidStart ? `&filter=validStart:gte:${validStartTimestamp}` : ''}`,
+      `${serverUrl}/${controller}?page=${page}&size=${size}${filtering}${sorting}`,
       {
         withCredentials: true,
       },
