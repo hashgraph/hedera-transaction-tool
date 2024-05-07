@@ -30,16 +30,18 @@ const toast = useToast();
 const router = useRouter();
 
 /* State */
-const selectedIndex = ref<number>(0);
+const selectedId = ref<number | null>(null);
 const isDeleteContactModalShown = ref(false);
 const linkedAccounts = ref<HederaAccount[]>([]);
 
 /* Computed */
-const contact = computed<Contact | null>(() => contacts.contacts[selectedIndex.value] || null);
+const contact = computed<Contact | null>(
+  () => contacts.contacts.find(c => c.user.id === selectedId.value) || null,
+);
 
 /* Handlers */
-function handleSelectContact(index: number) {
-  selectedIndex.value = index;
+function handleSelectContact(id: number) {
+  selectedId.value = id;
 }
 
 async function handleRemove() {
@@ -53,7 +55,7 @@ async function handleRemove() {
 
   toast.success('User removed successfully');
 
-  selectedIndex.value = 0;
+  selectedId.value = null;
   await contacts.fetch();
 }
 
@@ -100,17 +102,17 @@ watch(
 
           <hr class="separator my-5" />
           <div class="fill-remaining pe-3">
-            <div v-for="(contact, i) in contacts.contacts" :key="contact.user.id">
+            <div v-for="c in contacts.contacts.filter(c => !c.user.admin)" :key="c.user.id">
               <div
                 class="container-card-account p-4 mt-3"
                 :class="{
-                  'is-selected': selectedIndex === i,
+                  'is-selected': selectedId === c.user.id,
                 }"
-                @click="handleSelectContact(i)"
+                @click="handleSelectContact(c.user.id)"
               >
                 <div class="d-flex justify-content-between">
                   <p class="text-small text-semi-bold text-truncate">
-                    {{ contact.nickname.trim() || contact.user.email }}
+                    {{ c.nickname.trim() || c.user.email }}
                   </p>
                 </div>
               </div>
