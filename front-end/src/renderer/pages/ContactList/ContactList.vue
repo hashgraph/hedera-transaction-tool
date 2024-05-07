@@ -102,7 +102,14 @@ watch(
 
           <hr class="separator my-5" />
           <div class="fill-remaining pe-3">
-            <div v-for="c in contacts.contacts.filter(c => !c.user.admin)" :key="c.user.id">
+            <div
+              v-for="c in contacts.contacts.filter(c =>
+                isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin
+                  ? true
+                  : !c.user.admin && c.userKeys.length > 0,
+              )"
+              :key="c.user.id"
+            >
               <div
                 class="container-card-account p-4 mt-3"
                 :class="{
