@@ -210,7 +210,7 @@ const handleChangeNickname = async () => {
         </div> -->
           <hr class="separator my-5" />
           <div class="fill-remaining pe-3">
-            <template v-for="account in accounts" :key="account.accountId">
+            <template v-for="(account, index) in accounts" :key="account.accountId">
               <div
                 class="container-card-account overflow-hidden p-4 mt-3"
                 :class="{
@@ -220,7 +220,9 @@ const handleChangeNickname = async () => {
               >
                 <p class="text-small text-semi-bold overflow-hidden">{{ account.nickname }}</p>
                 <div class="d-flex justify-content-between align-items-center">
-                  <p class="text-micro text-secondary mt-2">{{ account.account_id }}</p>
+                  <p class="text-micro text-secondary mt-2" :data-testid="'p-account-id-' + index">
+                    {{ account.account_id }}
+                  </p>
                   <!-- <p class="text-micro text-success text-bold">
                   {{ accountData.accountInfo.value?.balance }}
                 </p> -->
@@ -267,6 +269,7 @@ const handleChangeNickname = async () => {
                   <AppButton
                     class="min-w-unset"
                     color="danger"
+                    data-testid="button-remove-account-card"
                     @click="isUnlinkAccountModalShown = true"
                     ><span class="bi bi-trash"></span> Remove</AppButton
                   >
