@@ -26,6 +26,7 @@ export enum TransactionStatus {
 export interface ITransaction {
   id: number;
   name: string;
+  transactionId: string;
   type: BackEndTransactionType;
   description: string;
   body: string;
