@@ -6,13 +6,11 @@ import { ClientProxy } from '@nestjs/microservices';
 import {
   FileAppendTransaction,
   FileUpdateTransaction,
-  Key,
-  KeyList,
   PublicKey,
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
-import { DeepPartial, Repository, MoreThan, In } from 'typeorm';
+import { DeepPartial, Repository, MoreThan } from 'typeorm';
 
 import { Transaction, TransactionStatus, User } from '@entities';
 
@@ -23,9 +21,12 @@ import {
   getClientFromConfig,
   getTransactionTypeEnumValue,
   isExpired,
-  isPublicKeyInKeyList,
-  parseAccountProperty,
-  getSignatureEntities,
+  Pagination,
+  Sorting,
+  Filtering,
+  getWhere,
+  getOrder,
+  PaginatedResourceDto,
 } from '@app/common';
 
 import { UserDto } from '../users/dtos';
@@ -33,6 +34,7 @@ import { CreateTransactionDto } from './dto/create-transaction.dto';
 
 import { UserKeysService } from '../user-keys/user-keys.service';
 import { SignersService } from './signers/signers.service';
+import { userKeysRequiredToSign } from '../utils';
 
 @Injectable()
 export class TransactionsService {
@@ -90,35 +92,57 @@ export class TransactionsService {
   }
 
   /* Get the transactions created by the user */
-  async getTransactions(user: User, take: number = 10, skip: number = 0): Promise<Transaction[]> {
-    return this.repo.find({
-      where: {
+  async getTransactions(
+    user: User,
+    { page, limit, size, offset }: Pagination,
+    sort?: Sorting[],
+    filter?: Filtering[],
+  ): Promise<PaginatedResourceDto<Transaction>> {
+    const where = getWhere<Transaction>(filter);
+    const order = getOrder(sort);
+
+    const whereForUser = [
+      { ...where, signers: { userId: user.id } },
+      {
+        ...where,
         creatorKey: {
           user: {
             id: user.id,
           },
         },
       },
+    ];
+
+    const [transactions, total] = await this.repo.findAndCount({
+      where: whereForUser,
+      order,
       relations: {
         creatorKey: true,
       },
-      skip,
-      take,
+      skip: offset,
+      take: limit,
     });
+
+    return {
+      totalItems: total,
+      items: transactions,
+      page,
+      size,
+    };
   }
 
   /* Get the transactions that a user needs to sign */
   async getTransactionsToSign(
     user: User,
-    take: number,
-    skip: number,
+    { page, limit, size, offset }: Pagination,
+    sort?: Sorting[],
   ): Promise<
-    {
+    PaginatedResourceDto<{
       transaction: Transaction;
       keysToSign: number[];
-    }[]
+    }>
   > {
-    const result: {
+    let result: {
       transaction: Transaction;
       keysToSign: number[];
     }[] = [];
@@ -126,7 +150,13 @@ export class TransactionsService {
     /* Ensures the user keys are passed */
     if (user.keys.length === 0) {
       user.keys = await this.userKeysService.getUserKeys(user.id);
-      if (user.keys.length === 0) return [];
+      if (user.keys.length === 0)
+        return {
+          totalItems: 0,
+          items: [],
+          page,
+          size,
+        };
     }
 
     const transactions = await this.repo.find({
@@ -137,122 +167,46 @@ export class TransactionsService {
     });
 
     for (const transaction of transactions) {
-      /* Stop if necessary number of transactions are found */
-      if (result.length === take + skip) break;
-
       /* Check if the user should sign the transaction */
-      const keysToSign = await this.userKeysRequiredToSign(transaction, user);
+      const keysToSign = await userKeysRequiredToSign(
+        transaction,
+        user,
+        this.userKeysService,
+        this.signersService,
+        this.mirrorNodeService,
+      );
 
       if (keysToSign.length > 0) result.push({ transaction, keysToSign });
     }
-    return result.slice(skip, take + skip);
+
+    if (sort && sort.length) {
+      result = result.sort((a, b) => {
+        for (const { property, direction } of sort) {
+          if (a.transaction[property] < b.transaction[property])
+            return direction === 'asc' ? -1 : 1;
+          if (a.transaction[property] > b.transaction[property])
+            return direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    return {
+      totalItems: result.length,
+      items: result.slice(offset, offset + limit),
+      page,
+      size,
+    };
   }
 
-  /* Get the count of transactions that a user needs to sign */
-  async getTransactionsToSignCount(user: User): Promise<number> {
-    let count = 0;
-
-    /* Ensures the user keys are passed */
-    if (user.keys.length === 0) {
-      user.keys = await this.userKeysService.getUserKeys(user.id);
-      if (user.keys.length === 0) return count;
-    }
-
-    const transactions = await this.repo.find({
-      where: {
-        status: TransactionStatus.WAITING_FOR_SIGNATURES,
-        validStart: MoreThan(new Date(new Date().getTime() + 180 * 1_000)),
-      },
-    });
-
-    for (const transaction of transactions) {
-      /* Check if the user should sign the transaction */
-      const keysToSign = await this.userKeysRequiredToSign(transaction, user);
-
-      if (keysToSign.length > 0) count++;
-    }
-
-    return count;
-  }
-
-  /* Returns wheter a user should sign the transaction */
-  async userKeysRequiredToSign(transaction: Transaction, user: User): Promise<number[]> {
-    const userKeyIdsRequired: Set<number> = new Set<number>();
-
-    if (!transaction || transaction.status != TransactionStatus.WAITING_FOR_SIGNATURES) {
-      return [];
-    }
-
-    /* Ensures the user keys are passed */
-    if (user.keys.length === 0) {
-      user.keys = await this.userKeysService.getUserKeys(user.id);
-      if (user.keys.length === 0) return [];
-    }
-
-    /* Gets the user signatures for this transaction */
-    const signatures = await this.signersService.getSignatureByTransactionIdAndUserId(
-      transaction.id,
-      user.id,
-      true,
+  async userKeysToSign(transaction: Transaction, user: User): Promise<number[]> {
+    return userKeysRequiredToSign(
+      transaction,
+      user,
+      this.userKeysService,
+      this.signersService,
+      this.mirrorNodeService,
     );
-
-    /* Deserialize the transaction */
-    const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
-
-    /* Ignore if expired */
-    if (isExpired(sdkTransaction)) return [];
-
-    /* Get signature entities */
-    const { newKeys, accounts, receiverAccounts } = getSignatureEntities(sdkTransaction);
-
-    /* Check if the user has a key that is required to sign */
-    const userKeysIncludedInTransaction = user.keys.filter(
-      userKey =>
-        newKeys.some(key =>
-          isPublicKeyInKeyList(
-            userKey.publicKey,
-            key instanceof KeyList ? key : new KeyList([key]),
-          ),
-        ) && !signatures.some(s => s.userKey.publicKey === userKey.publicKey),
-    );
-    userKeysIncludedInTransaction.forEach(userKey => userKeyIdsRequired.add(userKey.id));
-
-    const userKeyInKeyOrIsKey = (key: Key) =>
-      (key instanceof PublicKey &&
-        user.keys.filter(
-          userKey =>
-            userKey.publicKey === key.toStringRaw() &&
-            !signatures.some(s => s.userKey.publicKey === userKey.publicKey),
-        )) ||
-      (key instanceof KeyList &&
-        user.keys.filter(
-          userKey =>
-            isPublicKeyInKeyList(userKey.publicKey, key) &&
-            !signatures.some(s => s.userKey.publicKey === userKey.publicKey),
-        ));
-
-    /* Check if a key of the user is inside the key of some account required to sign */
-    for (const accountId of accounts) {
-      const accountInfo = await this.mirrorNodeService.getAccountInfo(accountId);
-      const key = parseAccountProperty(accountInfo, 'key');
-      if (!key) continue;
-
-      userKeyInKeyOrIsKey(key).forEach(userKey => userKeyIdsRequired.add(userKey.id));
-    }
-
-    /* Check if user has a key included in a receiver account that required signature */
-    for (const accountId of receiverAccounts) {
-      const accountInfo = await this.mirrorNodeService.getAccountInfo(accountId);
-      const receiverSigRequired = parseAccountProperty(accountInfo, 'receiver_sig_required');
-      if (!receiverSigRequired) continue;
-
-      const key = parseAccountProperty(accountInfo, 'key');
-      if (!key) continue;
-
-      userKeyInKeyOrIsKey(key).forEach(userKey => userKeyIdsRequired.add(userKey.id));
-    }
-
-    return [...userKeyIdsRequired];
   }
 
   // Get all transactions that need to be approved by the user.
@@ -378,79 +332,5 @@ export class TransactionsService {
     await this.repo.softRemove(transaction);
 
     return true;
-  }
-
-  /* Gets the transaction with a status that are not expired */
-  getTransactionsForUserWithStatus(
-    user: User,
-    status: TransactionStatus[],
-    take: number,
-    skip: number,
-  ) {
-    const withValidStart =
-      !status.includes(TransactionStatus.EXECUTED) && !status.includes(TransactionStatus.FAILED);
-    return this.repo.find({
-      where: [
-        {
-          signers: {
-            userId: user.id,
-          },
-          status: Array.isArray(status) ? In(status) : In([status]),
-          validStart: withValidStart
-            ? MoreThan(new Date(new Date().getTime() - 180 * 1_000))
-            : undefined,
-        },
-        {
-          creatorKey: {
-            user: {
-              id: user.id,
-            },
-          },
-          status: Array.isArray(status) ? In(status) : In([status]),
-          validStart: withValidStart
-            ? MoreThan(new Date(new Date().getTime() - 180 * 1_000))
-            : undefined,
-        },
-      ],
-      order: {
-        updatedAt: 'DESC',
-      },
-      take,
-      skip,
-    });
-  }
-
-  /* Gets the count of transactions with a status that are not expired */
-  getTransactionsForUserWithStatusCount(
-    user: User,
-    status: TransactionStatus[] | TransactionStatus,
-  ) {
-    status = Array.isArray(status) ? status : [status];
-    const withValidStart =
-      !status.includes(TransactionStatus.EXECUTED) && !status.includes(TransactionStatus.FAILED);
-    return this.repo.count({
-      where: [
-        {
-          signers: {
-            userId: user.id,
-          },
-          status: Array.isArray(status) ? In(status) : In([status]),
-          validStart: withValidStart
-            ? MoreThan(new Date(new Date().getTime() - 180 * 1_000))
-            : undefined,
-        },
-        {
-          creatorKey: {
-            user: {
-              id: user.id,
-            },
-          },
-          status: Array.isArray(status) ? In(status) : In([status]),
-          validStart: withValidStart
-            ? MoreThan(new Date(new Date().getTime() - 180 * 1_000))
-            : undefined,
-        },
-      ],
-    });
   }
 }

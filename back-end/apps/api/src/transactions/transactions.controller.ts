@@ -13,9 +13,20 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { CHAIN_SERVICE, Serialize } from '@app/common';
+import {
+  CHAIN_SERVICE,
+  Filtering,
+  FilteringParams,
+  PaginatedResourceDto,
+  Pagination,
+  PaginationParams,
+  Serialize,
+  Sorting,
+  SortingParams,
+  withPaginatedResponse,
+} from '@app/common';
 
-import { Transaction, TransactionStatus, User } from '@entities';
+import { Transaction, User, transactionDateProperties, transactionProperties } from '@entities';
 
 import { JwtAuthGuard, VerifiedUserGuard, HasKeyGuard } from '../guards';
 
@@ -64,56 +75,20 @@ export class TransactionsController {
   })
   @ApiResponse({
     status: 200,
-    type: [TransactionDto],
   })
   @Get()
-  @Serialize(TransactionDto)
+  @Serialize(withPaginatedResponse(TransactionDto))
   getTransactions(
     @GetUser() user: User,
-    @Query('take', ParseIntPipe) take: number,
-    @Query('skip', ParseIntPipe) skip: number,
-    @Query('status')
-    status?: TransactionStatus[],
-  ): Promise<Transaction[]> {
-    if (status) {
-      return this.transactionsService.getTransactionsForUserWithStatus(user, status, take, skip);
-    }
-
-    return this.transactionsService.getTransactions(user, take, skip);
-  }
-
-  /* Get the count of transactions that the user is part of with specific status */
-  @ApiOperation({
-    summary: 'Get the count of transactions that are with specific state',
-    description:
-      'Get transactions that the user is part of with the provided status. If no status is provided',
-  })
-  @ApiResponse({
-    status: 200,
-    type: Number,
-  })
-  @Get('/count')
-  getTransactionsForUserCount(
-    @GetUser() user: User,
-    @Query('status')
-    status: TransactionStatus[],
-  ) {
-    return this.transactionsService.getTransactionsForUserWithStatusCount(user, status);
-  }
-
-  /* Get the count of all transactions to be signed by the user */
-  @ApiOperation({
-    summary: 'Get transactions to sign',
-    description: 'Get all transactions to be signed by the current user.',
-  })
-  @ApiResponse({
-    status: 200,
-    type: Number,
-  })
-  @Get('/sign/count')
-  @Serialize(TransactionToSignDto)
-  getTransactionsToSignCount(@GetUser() user: User) {
-    return this.transactionsService.getTransactionsToSignCount(user);
+    @PaginationParams() paginationParams: Pagination,
+    @SortingParams(transactionProperties) sort?: Sorting[],
+    @FilteringParams({
+      validProperties: transactionProperties,
+      dateProperties: transactionDateProperties,
+    })
+    filter?: Filtering[],
+  ): Promise<PaginatedResourceDto<Transaction>> {
+    return this.transactionsService.getTransactions(user, paginationParams, sort, filter);
   }
 
   /* Get all transactions to be signed by the user */
@@ -123,16 +98,15 @@ export class TransactionsController {
   })
   @ApiResponse({
     status: 200,
-    type: [TransactionToSignDto],
   })
   @Get('/sign')
-  @Serialize(TransactionToSignDto)
+  @Serialize(withPaginatedResponse(TransactionToSignDto))
   getTransactionsToSign(
     @GetUser() user: User,
-    @Query('take', ParseIntPipe) take: number,
-    @Query('skip', ParseIntPipe) skip: number,
+    @PaginationParams() paginationParams: Pagination,
+    @SortingParams(transactionProperties) sort?: Sorting[],
   ) {
-    return this.transactionsService.getTransactionsToSign(user, take, skip);
+    return this.transactionsService.getTransactionsToSign(user, paginationParams, sort);
   }
 
   /* Returns a flag whether a user should sign a transaction with id */
@@ -150,7 +124,7 @@ export class TransactionsController {
     @Param('transactionId', ParseIntPipe) transactionId: number,
   ): Promise<number[]> {
     const transaction = await this.transactionsService.getTransactionById(transactionId);
-    return this.transactionsService.userKeysRequiredToSign(transaction, user);
+    return this.transactionsService.userKeysToSign(transaction, user);
   }
 
   /* Get all transactions to be approved by the user */

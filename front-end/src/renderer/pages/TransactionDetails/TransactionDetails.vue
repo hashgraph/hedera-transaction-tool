@@ -302,7 +302,7 @@ const stepperItems = [
 
               <!-- TRANSACTION GENERAL DETAILS -->
               <div :class="sectionHeadingClass">
-                <h2 class="text-title text-semi-bold">Transaction Details</h2>
+                <h2 :class="sectionHeadingClass">Transaction Details</h2>
                 <span
                   v-if="localTransaction || stepperActiveIndex === stepperItems.length - 1"
                   class="text-micro text-pink cursor-pointer"

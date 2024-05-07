@@ -6,12 +6,17 @@ import {
   Param,
   ParseIntPipe,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { Serialize } from '@app/common';
+import {
+  PaginatedResourceDto,
+  Pagination,
+  PaginationParams,
+  Serialize,
+  withPaginatedResponse,
+} from '@app/common';
 
 import { TransactionSigner, User } from '@entities';
 
@@ -64,13 +69,12 @@ export class SignersController {
   })
   @Get('/user')
   @HttpCode(200)
-  @Serialize(TransactionSignerDto)
+  @Serialize(withPaginatedResponse(TransactionSignerDto))
   async getSignaturesByUser(
     @GetUser() user: User,
-    @Query('take', ParseIntPipe) take: number,
-    @Query('skip', ParseIntPipe) skip: number,
-  ): Promise<TransactionSigner[]> {
-    return this.signaturesService.getSignaturesByUser(user, take, skip, true);
+    @PaginationParams() pagination: Pagination,
+  ): Promise<PaginatedResourceDto<TransactionSigner>> {
+    return this.signaturesService.getSignaturesByUser(user, pagination, true);
   }
 
   /* Uploads a signature for particular transaction */

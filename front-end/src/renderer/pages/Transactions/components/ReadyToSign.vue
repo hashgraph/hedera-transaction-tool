@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, ref, watch } from 'vue';
+import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 
 import { Transaction } from '@hashgraph/sdk';
 
@@ -9,7 +9,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
 
-import { getTransactionsToSign, getTransactionsToSignCount } from '@renderer/services/organization';
+import { getTransactionsToSign } from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
 import {
@@ -17,7 +17,7 @@ import {
   getTransactionId,
   getTransactionType,
 } from '@renderer/utils/sdk/transactions';
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -43,6 +43,19 @@ const currentPage = ref(1);
 const pageSize = ref(10);
 const isLoading = ref(true);
 
+const sort = reactive<{
+  field: keyof ITransaction;
+  direction: 'asc' | 'desc';
+}>({
+  field: 'createdAt',
+  direction: 'desc',
+});
+
+/* Computed */
+const generatedClass = computed(() => {
+  return sort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
+});
+
 /* Handlers */
 const handleSign = async (id: number) => {
   router.push({
@@ -54,18 +67,13 @@ const handleSign = async (id: number) => {
   });
 };
 
+const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') => {
+  sort.field = field;
+  sort.direction = direction;
+  await fetchTransactions();
+};
+
 /* Functions */
-function createFindArgs() {
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
-
-  return {
-    skip: (currentPage.value - 1) * pageSize.value,
-    take: pageSize.value,
-  };
-}
-
 async function fetchTransactions() {
   if (!isLoggedInOrganization(user.selectedOrganization)) {
     throw new Error('Please login in an organization');
@@ -73,13 +81,13 @@ async function fetchTransactions() {
 
   isLoading.value = true;
   try {
-    const { skip, take } = createFindArgs();
-    totalItems.value = await getTransactionsToSignCount(user.selectedOrganization.serverUrl);
-    const rawTransactions = await getTransactionsToSign(
+    const { items: rawTransactions } = await getTransactionsToSign(
       user.selectedOrganization.serverUrl,
-      skip,
-      take,
+      currentPage.value,
+      pageSize.value,
+      [{ property: sort.field, direction: sort.direction }],
     );
+    totalItems.value = rawTransactions.length;
     const transactionsBytes = await hexToUint8ArrayBatch(
       rawTransactions.map(t => t.transaction.body),
     );
@@ -91,6 +99,10 @@ async function fetchTransactions() {
   } finally {
     isLoading.value = false;
   }
+}
+
+function getOpositeDirection() {
+  return sort.direction === 'asc' ? 'desc' : 'asc';
 }
 
 /* Hooks */
@@ -115,18 +127,52 @@ watch([currentPage, pageSize], async () => {
           <thead>
             <tr>
               <th>
-                <div class="table-sort-link">
+                <div
+                  class="table-sort-link"
+                  @click="
+                    handleSort(
+                      'transactionId',
+                      sort.field === 'transactionId' ? getOpositeDirection() : 'asc',
+                    )
+                  "
+                >
                   <span>Transaction ID</span>
+                  <i
+                    v-if="sort.field === 'transactionId'"
+                    class="bi text-title"
+                    :class="[generatedClass]"
+                  ></i>
                 </div>
               </th>
               <th>
-                <div class="table-sort-link">
+                <div
+                  class="table-sort-link"
+                  @click="handleSort('type', sort.field === 'type' ? getOpositeDirection() : 'asc')"
+                >
                   <span>Transaction Type</span>
+                  <i
+                    v-if="sort.field === 'type'"
+                    class="bi text-title"
+                    :class="[generatedClass]"
+                  ></i>
                 </div>
               </th>
               <th>
-                <div class="table-sort-link">
+                <div
+                  class="table-sort-link"
+                  @click="
+                    handleSort(
+                      'validStart',
+                      sort.field === 'validStart' ? getOpositeDirection() : 'asc',
+                    )
+                  "
+                >
                   <span>Valid Start</span>
+                  <i
+                    v-if="sort.field === 'validStart'"
+                    class="bi text-title"
+                    :class="[generatedClass]"
+                  ></i>
                 </div>
               </th>
               <th class="text-center">

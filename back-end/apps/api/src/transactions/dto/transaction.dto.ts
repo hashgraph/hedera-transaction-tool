@@ -17,6 +17,9 @@ export class TransactionDto {
   type: TransactionType;
 
   @Expose()
+  transactionId: string;
+
+  @Expose()
   description: string;
 
   @Transform(({ obj }) => obj.body.toString('hex'))
