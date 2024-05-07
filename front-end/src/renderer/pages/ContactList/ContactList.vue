@@ -39,6 +39,14 @@ const contact = computed<Contact | null>(
   () => contacts.contacts.find(c => c.user.id === selectedId.value) || null,
 );
 
+const contactList = computed(() =>
+  contacts.contacts.filter(c =>
+    isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin
+      ? true
+      : !c.user.admin && c.userKeys.length > 0,
+  ),
+);
+
 /* Handlers */
 function handleSelectContact(id: number) {
   selectedId.value = id;
@@ -65,6 +73,7 @@ onBeforeMount(async () => {
 
   if (isUserLoggedIn(user.personal)) {
     linkedAccounts.value = await getAll(user.personal.id);
+    selectedId.value = contactList.value[0]?.user?.id || null;
   }
 });
 
@@ -102,28 +111,20 @@ watch(
 
           <hr class="separator my-5" />
           <div class="fill-remaining pe-3">
-            <div
-              v-for="c in contacts.contacts.filter(c =>
-                isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin
-                  ? true
-                  : !c.user.admin && c.userKeys.length > 0,
-              )"
-              :key="c.user.id"
-            >
+            <template v-for="c in contactList" :key="c.user.id">
               <div
-                class="container-card-account p-4 mt-3"
+                class="container-card-account overflow-hidden p-4 mt-3"
                 :class="{
-                  'is-selected': selectedId === c.user.id,
+                  'is-selected': c.user.id === selectedId,
                 }"
                 @click="handleSelectContact(c.user.id)"
               >
-                <div class="d-flex justify-content-between">
-                  <p class="text-small text-semi-bold text-truncate">
-                    {{ c.nickname.trim() || c.user.email }}
-                  </p>
+                <p class="text-small text-semi-bold overflow-hidden">{{ c.nickname }}</p>
+                <div class="d-flex justify-content-between align-items-center">
+                  <p class="text-micro text-secondary overflow-hidden mt-2">{{ c.user.email }}</p>
                 </div>
               </div>
-            </div>
+            </template>
           </div>
         </div>
 

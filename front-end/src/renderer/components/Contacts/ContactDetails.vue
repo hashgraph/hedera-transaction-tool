@@ -110,7 +110,7 @@ watch(
         class="text-title text-semi-bold py-3"
         @dblclick="handleStartNicknameEdit"
       >
-        {{ contact.nickname || contact.user.email }}
+        {{ contact.nickname || 'None' }}
 
         <span
           class="bi bi-pencil-square text-primary text-main cursor-pointer ms-1"
