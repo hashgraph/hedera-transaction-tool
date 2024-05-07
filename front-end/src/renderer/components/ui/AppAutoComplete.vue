@@ -70,7 +70,9 @@ const handleResize = () => {
 
 /* Hooks */
 onMounted(() => {
-  handleResize();
+  setTimeout(() => {
+    handleResize();
+  }, 100);
 
   window.addEventListener('resize', handleResize);
 });
