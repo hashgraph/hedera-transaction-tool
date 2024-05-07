@@ -292,7 +292,7 @@ watch(
                     >
                   </td>
                   <td>
-                    <span class="text-secondary">
+                    <span class="text-small text-secondary">
                       {{ getDateStringExtended(transaction.created_at) }}
                     </span>
                   </td>
@@ -327,12 +327,12 @@ watch(
                     >
                   </td>
                   <td>
-                    <span class="text-secondary">
+                    <span class="text-small text-secondary">
                       {{ getDateStringExtended(new Date(transactionRaw.createdAt)) }}
                     </span>
                   </td>
                   <td>
-                    <span class="text-secondary">
+                    <span class="text-small text-secondary">
                       {{
                         transactionRaw.executedAt
                           ? getDateStringExtended(new Date(transactionRaw.executedAt))
