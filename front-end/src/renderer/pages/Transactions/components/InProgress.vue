@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, ref, watch } from 'vue';
+import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 
 import { Transaction } from '@hashgraph/sdk';
 
@@ -42,12 +42,31 @@ const currentPage = ref(1);
 const pageSize = ref(10);
 const isLoading = ref(true);
 
+const sort = reactive<{
+  field: keyof ITransaction;
+  direction: 'asc' | 'desc';
+}>({
+  field: 'createdAt',
+  direction: 'desc',
+});
+
+/* Computed */
+const generatedClass = computed(() => {
+  return sort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
+});
+
 /* Handlers */
 const handleDetails = async (id: number) => {
   router.push({
     name: 'transactionDetails',
     params: { id },
   });
+};
+
+const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') => {
+  sort.field = field;
+  sort.direction = direction;
+  await fetchTransactions();
 };
 
 /* Functions */
@@ -63,6 +82,7 @@ async function fetchTransactions() {
       [TransactionStatus.WAITING_FOR_SIGNATURES],
       currentPage.value,
       pageSize.value,
+      [{ property: sort.field, direction: sort.direction }],
     );
     totalItems.value = totalItemsCount;
     const transactionsBytes = await hexToUint8ArrayBatch(rawTransactions.map(t => t.body));
@@ -73,6 +93,10 @@ async function fetchTransactions() {
   } finally {
     isLoading.value = false;
   }
+}
+
+function getOpositeDirection() {
+  return sort.direction === 'asc' ? 'desc' : 'asc';
 }
 
 /* Hooks */
@@ -97,18 +121,52 @@ watch([currentPage, pageSize], async () => {
           <thead>
             <tr>
               <th>
-                <div class="table-sort-link">
+                <div
+                  class="table-sort-link"
+                  @click="
+                    handleSort(
+                      'transactionId',
+                      sort.field === 'transactionId' ? getOpositeDirection() : 'asc',
+                    )
+                  "
+                >
                   <span>Transaction ID</span>
+                  <i
+                    v-if="sort.field === 'transactionId'"
+                    class="bi text-title"
+                    :class="[generatedClass]"
+                  ></i>
                 </div>
               </th>
               <th>
-                <div class="table-sort-link">
+                <div
+                  class="table-sort-link"
+                  @click="handleSort('type', sort.field === 'type' ? getOpositeDirection() : 'asc')"
+                >
                   <span>Transaction Type</span>
+                  <i
+                    v-if="sort.field === 'type'"
+                    class="bi text-title"
+                    :class="[generatedClass]"
+                  ></i>
                 </div>
               </th>
               <th>
-                <div class="table-sort-link">
+                <div
+                  class="table-sort-link"
+                  @click="
+                    handleSort(
+                      'validStart',
+                      sort.field === 'validStart' ? getOpositeDirection() : 'asc',
+                    )
+                  "
+                >
                   <span>Valid Start</span>
+                  <i
+                    v-if="sort.field === 'validStart'"
+                    class="bi text-title"
+                    :class="[generatedClass]"
+                  ></i>
                 </div>
               </th>
               <th class="text-center">

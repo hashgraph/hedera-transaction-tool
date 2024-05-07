@@ -42,8 +42,18 @@ const organizationTransactions = ref<
   }[]
 >([]);
 const transactions = ref<Transaction[]>([]);
-const sort = reactive<{ field: Prisma.TransactionScalarFieldEnum; direction: Prisma.SortOrder }>({
+const localSort = reactive<{
+  field: Prisma.TransactionScalarFieldEnum;
+  direction: Prisma.SortOrder;
+}>({
   field: 'created_at',
+  direction: 'desc',
+});
+const orgSort = reactive<{
+  field: keyof ITransaction;
+  direction: 'asc' | 'desc';
+}>({
+  field: 'createdAt',
   direction: 'desc',
 });
 const totalItems = ref(0);
@@ -53,17 +63,21 @@ const isLoading = ref(true);
 
 /* Computed */
 const generatedClass = computed(() => {
-  return sort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
+  return localSort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
 });
 
 /* Handlers */
 const handleSort = async (
   field: Prisma.TransactionScalarFieldEnum,
   direction: Prisma.SortOrder,
+  organizationField: keyof ITransaction,
 ) => {
-  sort.field = field;
-  sort.direction = direction;
-  transactions.value = await getTransactions(createFindArgs());
+  localSort.field = field;
+  localSort.direction = direction;
+  orgSort.field = organizationField;
+  orgSort.direction = direction;
+
+  await fetchTransactions();
 };
 
 const handleTransactionDetailsClick = id => {
@@ -75,7 +89,7 @@ const handleTransactionDetailsClick = id => {
 
 /* Functions */
 function getOpositeDirection() {
-  return sort.direction === 'asc' ? 'desc' : 'asc';
+  return localSort.direction === 'asc' ? 'desc' : 'asc';
 }
 
 function createFindArgs() {
@@ -88,7 +102,7 @@ function createFindArgs() {
       user_id: user.personal.id,
     },
     orderBy: {
-      [sort.field]: sort.direction,
+      [localSort.field]: localSort.direction,
     },
     skip: (currentPage.value - 1) * pageSize.value,
     take: pageSize.value,
@@ -108,6 +122,7 @@ async function fetchTransactions() {
         [TransactionStatus.EXECUTED, TransactionStatus.FAILED],
         currentPage.value,
         pageSize.value,
+        [{ property: orgSort.field, direction: orgSort.direction }],
       );
       totalItems.value = totalItemsCount;
       const transactionsBytes = await hexToUint8ArrayBatch(rawTransactions.map(t => t.body));
@@ -118,7 +133,6 @@ async function fetchTransactions() {
     } else {
       totalItems.value = await getTransactionsCount(user.personal.id);
       transactions.value = await getTransactions(createFindArgs());
-      handleSort(sort.field, sort.direction);
     }
   } finally {
     isLoading.value = false;
@@ -165,13 +179,14 @@ watch(
                   @click="
                     handleSort(
                       'transaction_id',
-                      sort.field === 'transaction_id' ? getOpositeDirection() : 'asc',
+                      localSort.field === 'transaction_id' ? getOpositeDirection() : 'asc',
+                      'transactionId',
                     )
                   "
                 >
                   <span>Transaction ID</span>
                   <i
-                    v-if="!user.selectedOrganization && sort.field === 'transaction_id'"
+                    v-if="localSort.field === 'transaction_id'"
                     class="bi text-title"
                     :class="[generatedClass]"
                   ></i>
@@ -180,11 +195,17 @@ watch(
               <th>
                 <div
                   class="table-sort-link"
-                  @click="handleSort('type', sort.field === 'type' ? getOpositeDirection() : 'asc')"
+                  @click="
+                    handleSort(
+                      'type',
+                      localSort.field === 'type' ? getOpositeDirection() : 'asc',
+                      'type',
+                    )
+                  "
                 >
                   <span>Transaction Type</span>
                   <i
-                    v-if="!user.selectedOrganization && sort.field === 'type'"
+                    v-if="localSort.field === 'type'"
                     class="bi text-title"
                     :class="[generatedClass]"
                   ></i>
@@ -196,13 +217,14 @@ watch(
                   @click="
                     handleSort(
                       'status_code',
-                      sort.field === 'status_code' ? getOpositeDirection() : 'asc',
+                      localSort.field === 'status_code' ? getOpositeDirection() : 'asc',
+                      'statusCode',
                     )
                   "
                 >
                   <span>Status</span>
                   <i
-                    v-if="!user.selectedOrganization && sort.field === 'status_code'"
+                    v-if="localSort.field === 'status_code'"
                     class="bi text-title"
                     :class="[generatedClass]"
                   ></i>
@@ -214,13 +236,14 @@ watch(
                   @click="
                     handleSort(
                       'created_at',
-                      sort.field === 'created_at' ? getOpositeDirection() : 'asc',
+                      localSort.field === 'created_at' ? getOpositeDirection() : 'asc',
+                      'createdAt',
                     )
                   "
                 >
                   <span>Timestamp</span>
                   <i
-                    v-if="!user.selectedOrganization && sort.field === 'created_at'"
+                    v-if="localSort.field === 'created_at'"
                     class="bi text-title"
                     :class="[generatedClass]"
                   ></i>
