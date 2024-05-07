@@ -141,12 +141,10 @@ export class TransactionsService {
     { page, limit, size, offset }: Pagination,
     sort?: Sorting[],
   ): Promise<
-    Promise<
-      PaginatedResourceDto<{
-        transaction: Transaction;
-        keysToSign: number[];
-      }>
-    >
+    PaginatedResourceDto<{
+      transaction: Transaction;
+      keysToSign: number[];
+    }>
   > {
     let result: {
       transaction: Transaction;

@@ -10,7 +10,13 @@ import {
 } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { Pagination, PaginationParams, Serialize } from '@app/common';
+import {
+  PaginatedResourceDto,
+  Pagination,
+  PaginationParams,
+  Serialize,
+  withPaginatedResponse,
+} from '@app/common';
 
 import { TransactionSigner, User } from '@entities';
 
@@ -63,11 +69,11 @@ export class SignersController {
   })
   @Get('/user')
   @HttpCode(200)
-  @Serialize(TransactionSignerDto)
+  @Serialize(withPaginatedResponse(TransactionSignerDto))
   async getSignaturesByUser(
     @GetUser() user: User,
     @PaginationParams() pagination: Pagination,
-  ): Promise<TransactionSigner[]> {
+  ): Promise<PaginatedResourceDto<TransactionSigner>> {
     return this.signaturesService.getSignaturesByUser(user, pagination, true);
   }
 

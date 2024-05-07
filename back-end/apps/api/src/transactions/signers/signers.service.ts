@@ -7,6 +7,7 @@ import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
   CHAIN_SERVICE,
+  PaginatedResourceDto,
   Pagination,
   addTransactionSignatures,
   isAlreadySigned,
@@ -41,15 +42,15 @@ export class SignersService {
   }
 
   /* Get the signatures that a user has given */
-  getSignaturesByUser(
+  async getSignaturesByUser(
     user: User,
-    { limit, offset }: Pagination,
+    { limit, offset, page, size }: Pagination,
 
     withDeleted: boolean = false,
-  ): Promise<TransactionSigner[]> {
+  ): Promise<PaginatedResourceDto<TransactionSigner>> {
     if (!user) return null;
 
-    return this.repo.find({
+    const [items, totalItems] = await this.repo.findAndCount({
       where: {
         user: {
           id: user.id,
@@ -65,6 +66,13 @@ export class SignersService {
       skip: offset,
       take: limit,
     });
+
+    return {
+      totalItems,
+      items,
+      page,
+      size,
+    };
   }
 
   /* Get the signatures for the given transaction id */
