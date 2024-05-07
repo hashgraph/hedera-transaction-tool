@@ -139,6 +139,7 @@ export class TransactionsService {
   async getTransactionsToSign(
     user: User,
     { page, limit, size, offset }: Pagination,
+    sort?: Sorting[],
   ): Promise<
     Promise<
       PaginatedResourceDto<{
@@ -147,7 +148,7 @@ export class TransactionsService {
       }>
     >
   > {
-    const result: {
+    let result: {
       transaction: Transaction;
       keysToSign: number[];
     }[] = [];
@@ -177,6 +178,19 @@ export class TransactionsService {
 
       if (keysToSign.length > 0) result.push({ transaction, keysToSign });
     }
+
+    if (sort && sort.length) {
+      result = result.sort((a, b) => {
+        for (const { property, direction } of sort) {
+          if (a.transaction[property] < b.transaction[property])
+            return direction === 'asc' ? -1 : 1;
+          if (a.transaction[property] > b.transaction[property])
+            return direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
     return {
       totalItems: result.length,
       items: result.slice(offset, offset + limit),

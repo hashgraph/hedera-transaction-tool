@@ -101,8 +101,12 @@ export class TransactionsController {
   })
   @Get('/sign')
   @Serialize(withPaginatedResponse(TransactionToSignDto))
-  getTransactionsToSign(@GetUser() user: User, @PaginationParams() paginationParams: Pagination) {
-    return this.transactionsService.getTransactionsToSign(user, paginationParams);
+  getTransactionsToSign(
+    @GetUser() user: User,
+    @PaginationParams() paginationParams: Pagination,
+    @SortingParams(transactionProperties) sort?: Sorting[],
+  ) {
+    return this.transactionsService.getTransactionsToSign(user, paginationParams, sort);
   }
 
   /* Returns a flag whether a user should sign a transaction with id */
