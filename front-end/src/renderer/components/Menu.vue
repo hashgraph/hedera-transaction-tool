@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
 
+import useUserStore from '@renderer/stores/storeUser';
+
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+
+/* Store */
+const user = useUserStore();
+
+/* Misc */
 const menuItems = [
   {
     link: '/transactions',
@@ -33,23 +41,31 @@ const menuItems = [
   //   icon: 'bi bi-shield-check',
   // },
 
-  // {
-  //   link: '/contact-list',
-  //   title: 'Contact List',
-  //   icon: 'bi bi-book',
-  // },
+  {
+    link: '/contact-list',
+    title: 'Contact List',
+    icon: 'bi bi-book',
+  },
   // {
   //   link: '/style-guide',
   //   title: 'Style Guide',
   //   icon: 'bi bi-feather',
   // },
 ];
+
+const organizationOnly = ['/contact-list'];
 </script>
 
 <template>
   <div class="container-menu">
     <div>
-      <template v-for="(item, _index) in menuItems" :key="_index">
+      <template
+        v-for="(item, _index) in menuItems.filter(
+          i =>
+            !organizationOnly.includes(i.link) || isLoggedInOrganization(user.selectedOrganization),
+        )"
+        :key="_index"
+      >
         <RouterLink class="link-menu mt-2" :to="item.link">
           <i :class="item.icon"></i><span>{{ item.title }}</span></RouterLink
         >

@@ -14,6 +14,7 @@ const SmartContracts = () => import('@renderer/pages/SmartContracts');
 const ConsensusService = () => import('@renderer/pages/ConsensusService');
 const Files = () => import('@renderer/pages/Files');
 const ContactList = () => import('@renderer/pages/ContactList');
+const SignUpUser = () => import('@renderer/pages/ContactList/SignUpUser');
 const AccountSetup = () => import('@renderer/pages/AccountSetup');
 const GeneralTab = () => import('@renderer/pages/Settings/components/GeneralTab.vue');
 const WorkGroupsTab = () => import('@renderer/pages/Settings/components/WorkGroupsTab.vue');
@@ -41,6 +42,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/consensus-service', name: 'consensusService', component: ConsensusService },
   { path: '/files', name: 'files', component: Files },
   { path: '/files/link-existing', name: 'linkExistingFile', component: LinkExistingFile },
+  { path: '/contact-list/create', name: 'signUpUser', component: SignUpUser },
   { path: '/contact-list', name: 'contactList', component: ContactList },
   { path: '/help', name: 'help', component: Help },
   { path: '/account-setup', name: 'accountSetup', component: AccountSetup },

@@ -9,6 +9,12 @@ export function addGuards(router: Router) {
 
   router.beforeEach(to => {
     const userIsLoggedIn = user.personal?.isLoggedIn;
+    const userIsAdmin =
+      isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin;
+
+    if (to.meta.onlyAdmin && !userIsAdmin) {
+      return { name: 'transactions' };
+    }
 
     if (
       (!userIsLoggedIn && to.name === 'accountSetup') ||

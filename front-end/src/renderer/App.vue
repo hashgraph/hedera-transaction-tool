@@ -5,6 +5,7 @@ import 'bootstrap/dist/js/bootstrap.bundle.min';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
+import useThemeStore from '@renderer/stores/storeTheme';
 
 import useAutoLogin from '@renderer/composables/useAutoLogin';
 
@@ -25,6 +26,7 @@ import OrganizationStatusModal from '@renderer/components/Organization/Organizat
 /* Stores */
 const user = useUserStore();
 const network = useNetwork();
+const theme = useThemeStore();
 
 /* Composables */
 useAutoLogin();
@@ -36,6 +38,7 @@ const userPasswordModalRef = ref<InstanceType<typeof UserPasswordModal> | null>(
 async function handleThemeChange() {
   const isDark = await window.electronAPI.local.theme.isDark();
   window.electronAPI.local.theme.toggle(isDark ? 'light' : 'dark');
+  theme.changeThemeDark(!isDark);
 }
 
 /* Hooks */

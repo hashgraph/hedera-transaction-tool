@@ -1,16 +1,23 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onBeforeMount, ref } from 'vue';
 
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
+import { HederaAccount } from '@prisma/client';
+
+import useUserStore from '@renderer/stores/storeUser';
+
 import useAccountId from '@renderer/composables/useAccountId';
 
+import { getAll } from '@renderer/services/accountsService';
+
 import { stringifyHbar } from '@renderer/utils';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
-import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
+import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 
 /* Props */
 const props = withDefaults(
@@ -36,12 +43,16 @@ const emit = defineEmits<{
   (event: 'restAdded', accountId: string, isApproved: boolean): void;
 }>();
 
+/* Stores */
+const user = useUserStore();
+
 /* Composables */
 const accountData = useAccountId();
 
 /* State */
 const amount = ref<Hbar>(new Hbar(0));
 const isApprovedTransfer = ref(false);
+const accoundIds = ref<HederaAccount[]>([]);
 
 /* Handlers */
 const handleSubmit = (e: Event) => {
@@ -85,11 +96,18 @@ function clearData() {
   amount.value = new Hbar(0);
   isApprovedTransfer.value = false;
 }
+
+/* Hooks */
+onBeforeMount(async () => {
+  if (isUserLoggedIn(user.personal)) {
+    accoundIds.value = await getAll(user.personal.id);
+  }
+});
 </script>
 <template>
   <div class="border rounded overflow-hidden p-4">
     <form @submit="handleSubmit">
-      <div class="form-group overflow-hidden">
+      <div class="form-group overflow-hidden position-relative">
         <label class="form-label mb-0 me-3">{{ accountLabel }}</label>
         <label
           v-if="showBalanceInLabel && accountData.isValid.value"
@@ -99,10 +117,11 @@ function clearData() {
             stringifyHbar((accountData.accountInfo.value?.balance as Hbar) || new Hbar(0))
           }}</label
         >
-        <AppInput
+        <AppAutoComplete
           :model-value="accountData.accountIdFormatted.value"
           @update:model-value="v => (accountData.accountId.value = v)"
           :filled="true"
+          :items="accoundIds.map(a => a.account_id)"
           placeholder="Enter Account ID"
         />
       </div>

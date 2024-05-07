@@ -635,10 +635,6 @@
 }
 
 /* Complex Key Structure */
-.key-threshhold-bg {
-  background-color: var(--#{$prefix}container-threshhold-key);
-}
-
 .key-node-wrapper {
   padding-top: 20px;
   border-left: 2px solid $body-bg;
@@ -874,7 +870,7 @@
   overflow: hidden;
   visibility: hidden;
   opacity: 0;
-  position: absolute;
+  position: fixed;
 
   z-index: 9999;
 
@@ -914,4 +910,10 @@
       margin: 0;
     }
   }
+}
+
+/* Misc */
+.key-threshhold-bg,
+.associated-account-badge-bg {
+  background-color: var(--#{$prefix}container-threshhold-key);
 }

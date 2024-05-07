@@ -62,7 +62,7 @@ export const changePassword = async (
 ): Promise<void> => {
   try {
     const response = await axios.patch(
-      `${organizationServerUrl}/auth/change-password`,
+      `${organizationServerUrl}/${authController}/change-password`,
       {
         oldPassword,
         newPassword,
@@ -94,7 +94,7 @@ export const resetPassword = async (
 ): Promise<void> => {
   try {
     const response = await axios.post(
-      `${organizationServerUrl}/auth/reset-password`,
+      `${organizationServerUrl}/${authController}/reset-password`,
       {
         email,
       },
@@ -122,7 +122,7 @@ export const resetPassword = async (
 export const verifyReset = async (organizationServerUrl: string, otp: string): Promise<void> => {
   try {
     const response = await axios.post(
-      `${organizationServerUrl}/auth/verify-reset`,
+      `${organizationServerUrl}/${authController}/verify-reset`,
       {
         token: otp,
       },
@@ -153,7 +153,7 @@ export const setPassword = async (
 ): Promise<void> => {
   try {
     const response = await axios.patch(
-      `${organizationServerUrl}/auth/set-password`,
+      `${organizationServerUrl}/${authController}/set-password`,
       {
         password,
       },
@@ -177,3 +177,29 @@ export const setPassword = async (
     throw new Error(message);
   }
 };
+
+/* ADMIN ONLY: Signs a user to the organization */
+export async function signUp(
+  organizationServerUrl: string,
+  email: string,
+): Promise<{
+  id: number;
+  email: string;
+  createdAt: string;
+}> {
+  try {
+    const response = await axios.post(
+      `${organizationServerUrl}/${authController}/signup`,
+      {
+        email,
+      },
+      {
+        withCredentials: true,
+      },
+    );
+    return response.data;
+  } catch (error: any) {
+    console.log(error);
+    throw new Error('Failed to sign up the user');
+  }
+}
