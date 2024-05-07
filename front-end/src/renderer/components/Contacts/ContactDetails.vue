@@ -130,6 +130,16 @@ watch(
   </div>
   <hr class="separator my-4" />
   <div class="fill-remaining overflow-x-hidden pe-3">
+    <div class="mt-4 row">
+      <div class="col-5">
+        <p class="text-small text-semi-bold">Email</p>
+      </div>
+      <div class="col-7">
+        <p class="text-small overflow-hidden">
+          {{ contact.user.email }}
+        </p>
+      </div>
+    </div>
     <template v-for="key in contact.userKeys" :key="key.publicKey">
       <div class="mt-4 row">
         <div class="col-5">
