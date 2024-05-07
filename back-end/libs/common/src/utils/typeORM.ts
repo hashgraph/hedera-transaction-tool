@@ -44,24 +44,30 @@ function getFiltering(filter: Filtering) {
     ? new Date(Number(decodeURIComponent(filter.value)))
     : decodeURIComponent(filter.value);
 
-  if (filter.rule == FilterRule.IS_NULL) return { [filter.property]: IsNull() };
-  if (filter.rule == FilterRule.IS_NOT_NULL) return { [filter.property]: Not(IsNull()) };
-  if (filter.rule == FilterRule.EQUALS) return { [filter.property]: value };
-  if (filter.rule == FilterRule.NOT_EQUALS) return { [filter.property]: Not(value) };
-  if (filter.rule == FilterRule.GREATER_THAN) return { [filter.property]: MoreThan(value) };
-  if (filter.rule == FilterRule.GREATER_THAN_OR_EQUALS)
-    return {
-      [filter.property]: MoreThanOrEqual(value),
-    };
-  if (filter.rule == FilterRule.LESS_THAN) return { [filter.property]: LessThan(value) };
-  if (filter.rule == FilterRule.LESS_THAN_OR_EQUALS)
-    return {
-      [filter.property]: LessThanOrEqual(value),
-    };
-  if (filter.rule == FilterRule.LIKE) return { [filter.property]: ILike(`%${value}%`) };
-  if (filter.rule == FilterRule.NOT_LIKE) return { [filter.property]: Not(ILike(`%${value}%`)) };
-  if (filter.rule == FilterRule.IN)
-    return { [filter.property]: In(decodeURIComponent(filter.value).split(',')) };
-  if (filter.rule == FilterRule.NOT_IN)
-    return { [filter.property]: Not(In(decodeURIComponent(filter.value).split(','))) };
+  switch (filter.rule) {
+    case FilterRule.IS_NULL:
+      return { [filter.property]: IsNull() };
+    case FilterRule.IS_NOT_NULL:
+      return { [filter.property]: Not(IsNull()) };
+    case FilterRule.EQUALS:
+      return { [filter.property]: value };
+    case FilterRule.NOT_EQUALS:
+      return { [filter.property]: Not(value) };
+    case FilterRule.GREATER_THAN:
+      return { [filter.property]: MoreThan(value) };
+    case FilterRule.GREATER_THAN_OR_EQUALS:
+      return { [filter.property]: MoreThanOrEqual(value) };
+    case FilterRule.LESS_THAN:
+      return { [filter.property]: LessThan(value) };
+    case FilterRule.LESS_THAN_OR_EQUALS:
+      return { [filter.property]: LessThanOrEqual(value) };
+    case FilterRule.LIKE:
+      return { [filter.property]: ILike(`%${value}%`) };
+    case FilterRule.NOT_LIKE:
+      return { [filter.property]: Not(ILike(`%${value}%`)) };
+    case FilterRule.IN:
+      return { [filter.property]: In(decodeURIComponent(filter.value).split(',')) };
+    case FilterRule.NOT_IN:
+      return { [filter.property]: Not(In(decodeURIComponent(filter.value).split(','))) };
+  }
 }
