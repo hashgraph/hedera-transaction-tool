@@ -7,6 +7,7 @@ import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
   CHAIN_SERVICE,
+  Pagination,
   addTransactionSignatures,
   isAlreadySigned,
   isExpired,
@@ -42,8 +43,8 @@ export class SignersService {
   /* Get the signatures that a user has given */
   getSignaturesByUser(
     user: User,
-    take: number = 10,
-    skip: number = 0,
+    { limit, offset }: Pagination,
+
     withDeleted: boolean = false,
   ): Promise<TransactionSigner[]> {
     if (!user) return null;
@@ -61,8 +62,8 @@ export class SignersService {
         createdAt: true,
       },
       withDeleted,
-      skip,
-      take,
+      skip: offset,
+      take: limit,
     });
   }
 

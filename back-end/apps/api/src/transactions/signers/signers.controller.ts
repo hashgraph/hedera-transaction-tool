@@ -6,12 +6,11 @@ import {
   Param,
   ParseIntPipe,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { Serialize } from '@app/common';
+import { Pagination, PaginationParams, Serialize } from '@app/common';
 
 import { TransactionSigner, User } from '@entities';
 
@@ -67,10 +66,9 @@ export class SignersController {
   @Serialize(TransactionSignerDto)
   async getSignaturesByUser(
     @GetUser() user: User,
-    @Query('take', ParseIntPipe) take: number,
-    @Query('skip', ParseIntPipe) skip: number,
+    @PaginationParams() pagination: Pagination,
   ): Promise<TransactionSigner[]> {
-    return this.signaturesService.getSignaturesByUser(user, take, skip, true);
+    return this.signaturesService.getSignaturesByUser(user, pagination, true);
   }
 
   /* Uploads a signature for particular transaction */
