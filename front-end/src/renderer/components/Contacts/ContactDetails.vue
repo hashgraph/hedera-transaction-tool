@@ -45,7 +45,7 @@ const handleStartNicknameEdit = () => {
   setTimeout(() => {
     if (nicknameInputRef.value) {
       if (nicknameInputRef.value.inputRef) {
-        nicknameInputRef.value.inputRef.value = props.contact.nickname || '';
+        nicknameInputRef.value.inputRef.value = props.contact.nickname || props.contact.user.email;
       }
       nicknameInputRef.value?.inputRef?.focus();
     }
@@ -72,6 +72,7 @@ const handleChangeNickname = async () => {
   } else {
     await addContact(contactData);
   }
+
   await contacts.fetch();
 };
 
@@ -160,7 +161,14 @@ watch(
                 <li class="text-center associated-account-badge-bg rounded py-2 px-3">
                   <p>
                     {{ account.account }}
-                    <span v-if="linkedAccounts.find(a => a.account_id === account.account)"
+                    <span
+                      v-if="
+                        (
+                          linkedAccounts
+                            .find(a => a.account_id === account.account)
+                            ?.nickname?.trim() || ''
+                        ).length > 0
+                      "
                       >({{
                         linkedAccounts.find(a => a.account_id === account.account)?.nickname
                       }})</span
