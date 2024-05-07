@@ -44,8 +44,6 @@ function getFiltering(filter: Filtering) {
     ? new Date(Number(decodeURIComponent(filter.value)))
     : decodeURIComponent(filter.value);
 
-  console.log(decodeURIComponent(filter.value).split(','));
-
   if (filter.rule == FilterRule.IS_NULL) return { [filter.property]: IsNull() };
   if (filter.rule == FilterRule.IS_NOT_NULL) return { [filter.property]: Not(IsNull()) };
   if (filter.rule == FilterRule.EQUALS) return { [filter.property]: value };
