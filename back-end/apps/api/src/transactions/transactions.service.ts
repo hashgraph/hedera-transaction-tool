@@ -6,8 +6,6 @@ import { ClientProxy } from '@nestjs/microservices';
 import {
   FileAppendTransaction,
   FileUpdateTransaction,
-  Key,
-  KeyList,
   PublicKey,
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
@@ -23,9 +21,6 @@ import {
   getClientFromConfig,
   getTransactionTypeEnumValue,
   isExpired,
-  isPublicKeyInKeyList,
-  parseAccountProperty,
-  getSignatureEntities,
   Pagination,
   Sorting,
   Filtering,
@@ -39,6 +34,7 @@ import { CreateTransactionDto } from './dto/create-transaction.dto';
 
 import { UserKeysService } from '../user-keys/user-keys.service';
 import { SignersService } from './signers/signers.service';
+import { userKeysRequiredToSign } from '../utils';
 
 @Injectable()
 export class TransactionsService {
@@ -172,7 +168,13 @@ export class TransactionsService {
 
     for (const transaction of transactions) {
       /* Check if the user should sign the transaction */
-      const keysToSign = await this.userKeysRequiredToSign(transaction, user);
+      const keysToSign = await userKeysRequiredToSign(
+        transaction,
+        user,
+        this.userKeysService,
+        this.signersService,
+        this.mirrorNodeService,
+      );
 
       if (keysToSign.length > 0) result.push({ transaction, keysToSign });
     }
@@ -197,84 +199,14 @@ export class TransactionsService {
     };
   }
 
-  /* Returns wheter a user should sign the transaction */
-  async userKeysRequiredToSign(transaction: Transaction, user: User): Promise<number[]> {
-    const userKeyIdsRequired: Set<number> = new Set<number>();
-
-    if (!transaction || transaction.status != TransactionStatus.WAITING_FOR_SIGNATURES) {
-      return [];
-    }
-
-    /* Ensures the user keys are passed */
-    if (user.keys.length === 0) {
-      user.keys = await this.userKeysService.getUserKeys(user.id);
-      if (user.keys.length === 0) return [];
-    }
-
-    /* Gets the user signatures for this transaction */
-    const signatures = await this.signersService.getSignatureByTransactionIdAndUserId(
-      transaction.id,
-      user.id,
-      true,
+  async userKeysToSign(transaction: Transaction, user: User): Promise<number[]> {
+    return userKeysRequiredToSign(
+      transaction,
+      user,
+      this.userKeysService,
+      this.signersService,
+      this.mirrorNodeService,
     );
-
-    /* Deserialize the transaction */
-    const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
-
-    /* Ignore if expired */
-    if (isExpired(sdkTransaction)) return [];
-
-    /* Get signature entities */
-    const { newKeys, accounts, receiverAccounts } = getSignatureEntities(sdkTransaction);
-
-    /* Check if the user has a key that is required to sign */
-    const userKeysIncludedInTransaction = user.keys.filter(
-      userKey =>
-        newKeys.some(key =>
-          isPublicKeyInKeyList(
-            userKey.publicKey,
-            key instanceof KeyList ? key : new KeyList([key]),
-          ),
-        ) && !signatures.some(s => s.userKey.publicKey === userKey.publicKey),
-    );
-    userKeysIncludedInTransaction.forEach(userKey => userKeyIdsRequired.add(userKey.id));
-
-    const userKeyInKeyOrIsKey = (key: Key) =>
-      (key instanceof PublicKey &&
-        user.keys.filter(
-          userKey =>
-            userKey.publicKey === key.toStringRaw() &&
-            !signatures.some(s => s.userKey.publicKey === userKey.publicKey),
-        )) ||
-      (key instanceof KeyList &&
-        user.keys.filter(
-          userKey =>
-            isPublicKeyInKeyList(userKey.publicKey, key) &&
-            !signatures.some(s => s.userKey.publicKey === userKey.publicKey),
-        ));
-
-    /* Check if a key of the user is inside the key of some account required to sign */
-    for (const accountId of accounts) {
-      const accountInfo = await this.mirrorNodeService.getAccountInfo(accountId);
-      const key = parseAccountProperty(accountInfo, 'key');
-      if (!key) continue;
-
-      userKeyInKeyOrIsKey(key).forEach(userKey => userKeyIdsRequired.add(userKey.id));
-    }
-
-    /* Check if user has a key included in a receiver account that required signature */
-    for (const accountId of receiverAccounts) {
-      const accountInfo = await this.mirrorNodeService.getAccountInfo(accountId);
-      const receiverSigRequired = parseAccountProperty(accountInfo, 'receiver_sig_required');
-      if (!receiverSigRequired) continue;
-
-      const key = parseAccountProperty(accountInfo, 'key');
-      if (!key) continue;
-
-      userKeyInKeyOrIsKey(key).forEach(userKey => userKeyIdsRequired.add(userKey.id));
-    }
-
-    return [...userKeyIdsRequired];
   }
 
   // Get all transactions that need to be approved by the user.

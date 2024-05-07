@@ -7,6 +7,7 @@ import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
   CHAIN_SERVICE,
+  MirrorNodeService,
   PaginatedResourceDto,
   Pagination,
   addTransactionSignatures,
@@ -16,6 +17,10 @@ import {
 } from '@app/common';
 
 import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
+
+import { userKeysRequiredToSign } from '../../utils';
+
+import { UserKeysService } from '../../user-keys/user-keys.service';
 
 import { UploadSignatureArrayDto, UploadSignatureDto } from '../dto/upload-signature.dto';
 
@@ -28,6 +33,8 @@ export class SignersService {
     private transactionRepo: Repository<Transaction>,
     private dataSource: DataSource,
     @Inject(CHAIN_SERVICE) private readonly chainService: ClientProxy,
+    private readonly userKeysService: UserKeysService,
+    private readonly mirrorNodeService: MirrorNodeService,
   ) {}
 
   /* Get the signature for the given signature id */
@@ -151,6 +158,18 @@ export class SignersService {
     if (isAlreadySigned(sdkTransaction, userKey.publicKey))
       throw new BadRequestException('Signature already added');
 
+    const keysIds = await userKeysRequiredToSign(
+      transaction,
+      user,
+      this.userKeysService,
+      this,
+      this.mirrorNodeService,
+    );
+
+    if (!keysIds.includes(userKey.id)) {
+      throw new BadRequestException('This key is not required to sign this transaction');
+    }
+
     try {
       addTransactionSignatures(sdkTransaction, signatures, userKey.publicKey);
     } catch (error) {
@@ -168,7 +187,7 @@ export class SignersService {
       Object.assign(transaction, {
         body: sdkTransaction.toBytes(),
       });
-      await this.transactionRepo.save(transaction);
+      await this.transactionRepo.update({ id: transactionId }, transaction);
     } catch (error) {
       await queryRunner.rollbackTransaction();
       await queryRunner.release();
