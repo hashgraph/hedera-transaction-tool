@@ -241,9 +241,28 @@ watch(
                     )
                   "
                 >
-                  <span>Timestamp</span>
+                  <span>Created At</span>
                   <i
                     v-if="localSort.field === 'created_at'"
+                    class="bi text-title"
+                    :class="[generatedClass]"
+                  ></i>
+                </div>
+              </th>
+              <th v-if="user.selectedOrganization">
+                <div
+                  class="table-sort-link"
+                  @click="
+                    handleSort(
+                      'executed_at',
+                      localSort.field === 'executed_at' ? getOpositeDirection() : 'asc',
+                      'executedAt',
+                    )
+                  "
+                >
+                  <span>Executed At</span>
+                  <i
+                    v-if="localSort.field === 'executed_at'"
                     class="bi text-title"
                     :class="[generatedClass]"
                   ></i>
@@ -310,6 +329,15 @@ watch(
                   <td>
                     <span class="text-secondary">
                       {{ getDateStringExtended(new Date(transactionRaw.createdAt)) }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="text-secondary">
+                      {{
+                        transactionRaw.executedAt
+                          ? getDateStringExtended(new Date(transactionRaw.executedAt))
+                          : 'N/A'
+                      }}
                     </span>
                   </td>
                   <td class="text-center">
