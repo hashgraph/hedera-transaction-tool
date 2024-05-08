@@ -235,4 +235,23 @@ test.describe('Transaction tests', () => {
     const keysMatch = await transactionPage.keysMatch(decodedKeys, allGeneratedKeys);
     expect(keysMatch).toBe(true);
   });
+
+  test('Verify account is displayed in the account card section', async () => {
+    await transactionPage.clickOnCreateNewTransactionButton();
+    await transactionPage.clickOnCreateAccountTransaction();
+
+    await transactionPage.clickOnSignAndSubmitButton();
+    await transactionPage.clickSignTransactionButton();
+    await transactionPage.fillInPassword(globalCredentials.password);
+    await transactionPage.clickOnPasswordContinue();
+
+    await transactionPage.waitForSuccessModalToAppear();
+    const newAccountId = await transactionPage.getNewAccountIdText();
+    await transactionPage.clickOnCloseButtonForCompletedTransaction();
+
+    await transactionPage.clickOnAccountsMenuButton();
+    const isAccountVisible = await transactionPage.isAccountCardVisible(newAccountId);
+
+    expect(isAccountVisible).toBe(true);
+  });
 });

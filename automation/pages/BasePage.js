@@ -20,12 +20,6 @@ class BasePage {
     await element.click();
   }
 
-  async getToastMessageByText(toastText) {
-    console.log(`Getting toast message by text: ${toastText}`);
-    await this.window.waitForSelector(toastText, { state: 'visible' });
-    return this.window.locator(toastText).textContent();
-  }
-
   async getTextByTestId(testId, timeout = this.DEFAULT_TIMEOUT) {
     console.log(`Getting text for element with testId: ${testId}`);
     const element = this.window.getByTestId(testId);
@@ -105,21 +99,19 @@ class BasePage {
     }
   }
 
-  async waitForElementToBeVisible(selector, timeout = this.LONG_TIMEOUT) {
-    console.log(`Waiting for element with selector: ${selector} to become visible`);
+  /**
+   * Waits for an element with a specified testId to become visible within the DOM.
+   * @param {string} testId The testId of the element to wait for.
+   * @param {number} [timeout=this.LONG_TIMEOUT] Optional timeout to wait for the element to be actionable.
+   */
+  async waitForElementToBeVisible(testId, timeout = this.LONG_TIMEOUT) {
+    console.log(`Waiting for element with testId: ${testId} to become visible`);
     try {
-      await this.window.waitForFunction(
-        sel => {
-          const element = document.querySelector(sel);
-          return element && getComputedStyle(element).display === 'block';
-        },
-        `[data-testid="${selector}"]`,
-        { timeout: timeout },
-      );
-      console.log(`Element with selector ${selector} is now visible.`);
+      await this.window.waitForSelector(`[data-testid="${testId}"]`, { state: 'visible', timeout });
+      console.log(`Element with testId ${testId} is now visible.`);
     } catch (error) {
       console.error(
-        `Element with selector ${selector} did not become visible within the timeout: ${timeout}`,
+        `Element with testId ${testId} did not become visible within the timeout: ${timeout}`,
         error,
       );
     }
@@ -139,7 +131,11 @@ class BasePage {
   }
 
   async countElementsByTestId(testIdPrefix) {
-    return await this.window.locator(`[data-testid^="${testIdPrefix}"]`).count();
+    console.log(`Looking for elements with prefix: ${testIdPrefix}`);
+    const elements = this.window.locator(`[data-testid^="${testIdPrefix}"]`);
+    const count = await elements.count();
+    console.log(`Found ${count} elements with prefix: ${testIdPrefix}`);
+    return count;
   }
 
   /**

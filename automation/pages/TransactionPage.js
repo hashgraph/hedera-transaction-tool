@@ -11,6 +11,7 @@ class TransactionPage extends BasePage {
   }
 
   transactionsMenuButtonSelector = 'button-menu-transactions';
+  accountsMenuButtonSelector = 'button-menu-accounts';
   createNewTransactionButtonSelector = 'button-create-new';
   createAccountSublinkSelector = 'menu-sublink-1';
   saveDraftButtonSelector = 'button-save-draft';
@@ -54,6 +55,8 @@ class TransactionPage extends BasePage {
   insertPublicKeyButtonSelector = 'button-insert-public-key';
   spanCreateNewComplexKeyButtonSelector = 'span-create-new-complex-key';
   doneComplexKeyButtonSelector = 'button-complex-key-done';
+  accountIdPrefixSelector = 'p-account-id-';
+  confirmTransactionModalSelector = 'modal-confirm-transaction';
 
   // Method to close the 'Save Draft' modal if it appears
   async closeDraftModal() {
@@ -86,6 +89,10 @@ class TransactionPage extends BasePage {
   }
 
   async verifyConfirmTransactionInformation(typeTransaction) {
+    await this.window.waitForSelector(
+      '[data-testid="modal-confirm-transaction"][style*="display: block"]',
+      { state: 'visible', timeout: 5000 },
+    );
     const regex = /^\d+\.\d+\.\d+@\d+\.\d+$/;
     const transactionId = await this.getTextByTestId(this.textTransactionIdSelector);
     const txType = await this.getTextByTestId(this.textTypeTransactionSelector);
@@ -119,6 +126,10 @@ class TransactionPage extends BasePage {
 
   async clickOnTransactionsMenuButton() {
     await this.clickByTestId(this.transactionsMenuButtonSelector);
+  }
+
+  async clickOnAccountsMenuButton() {
+    await this.clickByTestId(this.accountsMenuButtonSelector);
   }
 
   async clickOnCreateNewTransactionButton() {
@@ -252,6 +263,31 @@ class TransactionPage extends BasePage {
     return publicKey;
   }
 
+  /**
+   * Finds the index of the element containing the specified account ID.
+   * @param {string} accountId - The account ID to search for.
+   * @returns {number} The index of the element with the specified account ID, or -1 if not found.
+   */
+  async findAccountIndexById(accountId) {
+    const count = await this.countElementsByTestId(this.accountIdPrefixSelector);
+    if (count === 0) {
+      return 0;
+    } else {
+      for (let i = 0; i < count; i++) {
+        const idText = await this.getTextByTestId(this.accountIdPrefixSelector + i);
+        if (idText === accountId) {
+          return i;
+        }
+      }
+      return -1; // Return -1 if the account ID is not found
+    }
+  }
+
+  async isAccountCardVisible(accountId) {
+    const index = await this.findAccountIndexById(accountId);
+    return await this.isElementVisible(this.accountIdPrefixSelector + index);
+  }
+
   async clickOnStakingDropDown() {
     await this.clickByTestId(this.stakingDropdownSelector);
   }
@@ -281,7 +317,19 @@ class TransactionPage extends BasePage {
   }
 
   async clickSignTransactionButton() {
-    await this.clickByTestId(this.buttonSignTransactionSelector);
+    // Construct the selector for the confirm transaction modal that is visible and in a displayed state
+    const modalSelector = `[data-testid="${this.confirmTransactionModalSelector}"][style*="display: block"]`;
+    await this.window.waitForSelector(modalSelector, { state: 'visible', timeout: 5000 });
+
+    // Construct the selector for the enabled sign button within the visible modal
+    const signButtonSelector = `${modalSelector} [data-testid="${this.buttonSignTransactionSelector}"]:enabled`;
+
+    // Wait for the sign button to be visible and enabled, then attempt to click it
+    await this.window.waitForSelector(signButtonSelector, { state: 'visible', timeout: 5000 });
+    await this.window.click(signButtonSelector);
+
+    // After clicking the sign button, wait for the password input to become visible
+    await this.waitForElementToBeVisible(this.passwordSignTransactionInputSelector);
   }
 
   async clickOnPasswordContinue() {
@@ -301,7 +349,7 @@ class TransactionPage extends BasePage {
   }
 
   async waitForSuccessModalToAppear() {
-    await this.waitForElementToBeVisible(this.modalTransactionSuccessSelector, 30000);
+    await this.waitForElementToBeVisible(this.successCheckMarkIconSelector, 15000);
   }
 
   async getNewAccountIdText() {

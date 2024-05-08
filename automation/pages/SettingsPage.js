@@ -293,6 +293,7 @@ class SettingsPage extends BasePage {
   }
 
   async clickOnCloseButton() {
+    await this.waitForElementToBeVisible(this.closeButtonSelector);
     await this.clickByTestId(this.closeButtonSelector);
   }
 }
