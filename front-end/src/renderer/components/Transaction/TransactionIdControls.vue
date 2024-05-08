@@ -95,7 +95,11 @@ const columnClass = 'col-4 col-xxxl-3';
         {{ stringifyHbar((account.accountInfo.value?.balance as Hbar) || new Hbar(0)) }}</label
       >
       <template v-if="!user.selectedOrganization">
-        <AccountIdsSelect :account-id="payerId" @update:account-id="handlePayerChange" />
+        <AccountIdsSelect
+          :account-id="payerId || ''"
+          @update:account-id="handlePayerChange"
+          :select-default="true"
+        />
       </template>
       <template v-else>
         <div class="position-relative">
