@@ -8,7 +8,6 @@ import listenForComplexKeyEvents from './complexKeys';
 import listenForOrganizationEvents from './organizations';
 import listenForOrganizationCredentialsEvents from './organizationCredentials';
 import listenForContactEvents from './contacts';
-import listenForAssociatedAccountEvents from './associatedAccounts';
 import listenForPublicKeyLinkedEvents from './publicKeyLinked';
 
 export default () => {
@@ -22,6 +21,5 @@ export default () => {
   listenForOrganizationEvents();
   listenForOrganizationCredentialsEvents();
   listenForContactEvents();
-  listenForAssociatedAccountEvents();
   listenForPublicKeyLinkedEvents();
 };
