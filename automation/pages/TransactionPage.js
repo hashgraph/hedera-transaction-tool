@@ -10,6 +10,18 @@ class TransactionPage extends BasePage {
     this.generatedPublicKeys = []; // Store generated public keys
   }
 
+  /* Selectors */
+
+  //Inputs
+  initialBalanceInputSelector = 'input-initial-balance-amount';
+  maxAutoAssociationsInputSelector = 'input-max-auto-associations';
+  accountMemoInputSelector = 'input-account-memo';
+  nicknameInputSelector = 'input-nickname';
+  passwordSignTransactionInputSelector = 'input-password-transaction';
+  publicKeyInputTextIndex = 'input-complex-key-public-key-';
+  publicKeyComplexInputSelector = 'input-complex-public-key';
+
+  //Buttons
   transactionsMenuButtonSelector = 'button-menu-transactions';
   accountsMenuButtonSelector = 'button-menu-accounts';
   createNewTransactionButtonSelector = 'button-create-new';
@@ -19,44 +31,33 @@ class TransactionPage extends BasePage {
   payerDropdownSelector = 'dropdown-payer';
   singleTabSelector = 'tab-single';
   complexTabSelector = 'tab-complex';
-  selectKeySpanSelector = 'span-select-key';
-  publicKeyInputSelector = 'input_public_key';
-  transactionMemoInputSelector = 'input-transaction-memo';
-  acceptStakingRewardsSwitchSelector = 'switch-accept-staking-rewards';
   stakingDropdownSelector = 'dropdown-staking-account';
-  noneStakingOptionSelector = 'option-none';
-  accountStakingOptionSelector = 'option-account';
   nodeStakingOptionSelector = 'option-node';
   receiverSigRequiredSwitchSelector = 'switch-receiver-sig-required';
-  initialBalanceInputSelector = 'input-initial-balance-amount';
-  maxAutoAssociationsInputSelector = 'input-max-auto-associations';
-  accountMemoInputSelector = 'input-account-memo';
-  nicknameInputSelector = 'input-nickname';
   discardModalDraftButtonSelector = 'button-discard-draft-modal';
-  saveModalDraftButtonSelector = 'button-save-draft-modal';
+  buttonSignTransactionSelector = 'button-sign-transaction';
+  buttonCancelTransactionSelector = 'button-cancel-transaction';
+  passwordContinueButtonSelector = 'button-password-continue';
+  closeCompletedTxButtonSelector = 'button-close-completed-tx';
+  addComplexButtonIndex = 'button-complex-key-add-element-';
+  selectThresholdNumberIndex = 'button-complex-key-add-element-threshold-';
+  addPublicKeyButtonIndex = 'button-complex-key-add-element-public-key-';
+  insertPublicKeyButtonSelector = 'button-insert-public-key';
+  doneComplexKeyButtonSelector = 'button-complex-key-done';
+
+  //Other
+  successCheckMarkIconSelector = 'icon-success-checkmark';
+  modalTransactionSuccessSelector = 'modal-transaction-success';
+  confirmTransactionModalSelector = 'modal-confirm-transaction';
+  spanCreateNewComplexKeyButtonSelector = 'span-create-new-complex-key';
+
+  //Messages
   textTypeTransactionSelector = 'p-type-transaction';
   textTransactionIdSelector = 'p-transaction-id';
   textMaxTxFeeSelector = 'p-max-tx-fee';
-  buttonSignTransactionSelector = 'button-sign-transaction';
-  buttonCancelTransactionSelector = 'button-cancel-transaction';
-  passwordSignTransactionInputSelector = 'input-password-transaction';
-  passwordContinueButtonSelector = 'button-password-continue';
-  closeCompletedTxButtonSelector = 'button-close-completed-tx';
-  loaderDivSelector = 'div-loader';
-  successCheckMarkIconSelector = 'icon-success-checkmark';
-  modalTransactionSuccessSelector = 'modal-transaction-success';
-  newlyCreatedAccountIdSelector = 'p-new-crated-account-id';
   newlyCreatedTransactionIdSelector = 'a-transaction-id';
-  addComplexButtonIndex = 'button-complex-key-add-element-';
-  selectThresholdNumberIndex = 'button-complex-key-add-element-threshold-';
-  publicKeyInputTextIndex = 'input-complex-key-public-key-';
-  addPublicKeyButtonIndex = 'button-complex-key-add-element-public-key-';
-  publicKeyComplexInputSelector = 'input-complex-public-key';
-  insertPublicKeyButtonSelector = 'button-insert-public-key';
-  spanCreateNewComplexKeyButtonSelector = 'span-create-new-complex-key';
-  doneComplexKeyButtonSelector = 'button-complex-key-done';
+  newlyCreatedAccountIdSelector = 'p-new-crated-account-id';
   accountIdPrefixSelector = 'p-account-id-';
-  confirmTransactionModalSelector = 'modal-confirm-transaction';
 
   // Method to close the 'Save Draft' modal if it appears
   async closeDraftModal() {
