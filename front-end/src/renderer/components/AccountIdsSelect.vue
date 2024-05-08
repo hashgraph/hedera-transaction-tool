@@ -56,7 +56,7 @@ onBeforeMount(async () => {
 watch(
   () => user.publicKeyToAccounts,
   () => {
-    if (props.accountId.length === 0 && props.selectDefault) {
+    if ((!props.accountId || props.accountId?.length === 0) && props.selectDefault) {
       emit('update:accountId', accoundIds.value[0]);
     }
   },

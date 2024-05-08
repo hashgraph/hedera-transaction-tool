@@ -8,15 +8,16 @@ export * from './complexKeys';
 export * from './organizations';
 export * from './organizationCredentials';
 export * from './contacts';
-export * from './associatedAccounts';
 export * from './publicKeyLinked';
 
+import { session } from 'electron';
 import initDatabase, { createPrismaClient, deleteDatabase, setPrismaClient } from '../../db';
 
 export const userStorageFolderName = 'User Storage';
 export const getUserStorageFolderPath = (email: string) => `User Storage/${email}`;
 
 export const resetData = async () => {
+  await session.fromPartition('persist:main')?.clearStorageData();
   await deleteDatabase();
   setPrismaClient(createPrismaClient());
   await initDatabase();
