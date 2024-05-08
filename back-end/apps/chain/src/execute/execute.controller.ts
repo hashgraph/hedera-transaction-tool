@@ -1,10 +1,9 @@
 import { Controller } from '@nestjs/common';
 
-import { Serialize } from '@app/common';
+import { Serialize, TransactionExecutedDto } from '@app/common';
 
 import { ExecuteService } from './execute.service';
 
-import { TransactionExecutedDto } from './dtos';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 
 @Controller('execute')

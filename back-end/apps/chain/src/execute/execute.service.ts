@@ -15,13 +15,12 @@ import { Transaction, TransactionStatus } from '@entities';
 
 import {
   MirrorNodeService,
+  TransactionExecutedDto,
   ableToSign,
   computeSignatureKey,
   getClientFromConfig,
   getStatusCodeFromMessage,
 } from '@app/common';
-
-import { TransactionExecutedDto } from './dtos';
 
 @Injectable()
 export class ExecuteService {
