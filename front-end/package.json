@@ -1,6 +1,6 @@
 {
   "name": "hedera-transaction-tool",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "Transaction tool application",
   "author": {
     "name": "LimeChain",
