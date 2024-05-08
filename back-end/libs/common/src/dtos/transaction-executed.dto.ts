@@ -1,6 +1,6 @@
 import { Expose, Transform } from 'class-transformer';
 
-import { TransactionStatus } from '@app/common/database/entities';
+import { TransactionStatus } from '@entities';
 
 export class TransactionExecutedDto {
   @Expose()
