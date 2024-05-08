@@ -50,6 +50,7 @@ onBeforeUnmount(() => {
     class="modal fade show"
     aria-labelledby="exampleModalLabel"
     aria-hidden="true"
+    data-testid="modal-confirm-transaction"
     :style="{ display: show ? 'block' : 'none' }"
   >
     <div class="modal-dialog modal-dialog-centered" ref="modalRef">
