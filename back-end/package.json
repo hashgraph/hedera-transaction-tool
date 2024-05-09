@@ -21,9 +21,10 @@
     "create-admin": "npx ts-node ./scripts/create-admin.ts"
   },
   "dependencies": {
-    "@hashgraph/sdk": "2.44.0",
     "@hashgraph/proto": "2.14.0-beta.5",
+    "@hashgraph/sdk": "2.44.0",
     "@nestjs/axios": "^3.0.2",
+    "@nestjs/cache-manager": "^2.2.2",
     "@nestjs/common": "^10.3.7",
     "@nestjs/config": "^3.2.2",
     "@nestjs/core": "^10.3.7",
@@ -37,6 +38,7 @@
     "amqplib": "^0.10.4",
     "axios": "^1.6.8",
     "bcryptjs": "^2.4.3",
+    "cache-manager": "^5.5.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "cookie-parser": "^1.4.6",
