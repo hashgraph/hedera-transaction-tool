@@ -19,8 +19,8 @@ export default () => {
   // Store key pair
   ipcMain.handle(
     createChannelName('store'),
-    async (_e, keyPair: Prisma.KeyPairUncheckedCreateInput, password: string) =>
-      storeKeyPair(keyPair, password),
+    async (_e, keyPair: Prisma.KeyPairUncheckedCreateInput, password: string, encrypted: boolean) =>
+      storeKeyPair(keyPair, password, encrypted),
   );
 
   // Change Decryption Password

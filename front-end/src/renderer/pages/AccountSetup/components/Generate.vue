@@ -119,7 +119,7 @@ watch(words, newWords => {
   </div>
 
   <div
-    class="row justify-content-center mt-6"
+    class="row justify-content-center mt-5"
     v-if="!wordsConfirmed && !toVerify && words.filter(w => w).length === 0"
   >
     <div class="col-6">
@@ -136,7 +136,7 @@ watch(words, newWords => {
   </div>
 
   <div
-    class="row justify-content-between mt-6"
+    class="row justify-content-between mt-5"
     v-if="!wordsConfirmed && !toVerify && words.filter(w => w).length !== 0"
   >
     <div class="col-8">
@@ -171,7 +171,7 @@ watch(words, newWords => {
     </div>
   </div>
 
-  <div v-if="wordsConfirmed" class="row justify-content-end mt-6">
+  <div v-if="wordsConfirmed" class="row justify-content-end mt-5">
     <div class="col-4">
       <AppButton
         data-testid="button-next-generate"

@@ -55,11 +55,14 @@ export const getKeyPairs = async (
 export const storeKeyPair = async (
   keyPair: Prisma.KeyPairUncheckedCreateInput,
   password: string,
+  encrypted: boolean,
 ) => {
   const prisma = getPrismaClient();
 
   try {
-    keyPair.private_key = encrypt(keyPair.private_key, password);
+    if (!encrypted) {
+      keyPair.private_key = encrypt(keyPair.private_key, password);
+    }
     await prisma.keyPair.create({
       data: keyPair,
     });

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsRelations, Repository } from 'typeorm';
 import { User, UserKey } from '@entities';
@@ -34,7 +34,7 @@ export class UserKeysService {
         (userKey.mnemonicHash && userKey.mnemonicHash !== dto.mnemonicHash) ||
         (userKey.index && userKey.index !== dto.index)
       ) {
-        throw new Error('Public Key in use.');
+        throw new BadRequestException('Public Key in use.');
       }
       // Set the hash and/or index (only if the current value is null)
       Object.assign(userKey, dto);

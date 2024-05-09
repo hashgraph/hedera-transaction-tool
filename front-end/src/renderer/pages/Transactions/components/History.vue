@@ -117,6 +117,8 @@ async function fetchTransactions() {
   isLoading.value = true;
   try {
     if (isLoggedInOrganization(user.selectedOrganization)) {
+      if (user.selectedOrganization.isPasswordTemporary) return;
+
       const { totalItems: totalItemsCount, items: rawTransactions } = await getTransactionsForUser(
         user.selectedOrganization.serverUrl,
         [TransactionStatus.EXECUTED, TransactionStatus.FAILED],

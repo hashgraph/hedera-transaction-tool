@@ -2,6 +2,8 @@
 import { onBeforeMount, ref } from 'vue';
 import { onBeforeRouteLeave } from 'vue-router';
 
+import { KeyPair } from '@prisma/client';
+
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
@@ -38,6 +40,7 @@ const stepperItems = ref<{ title: string; name: StepName }[]>([
   { title: 'Recovery Phrase', name: 'recoveryPhrase' },
   { title: 'Key Pairs', name: 'keyPairs' },
 ]);
+const selectedPersonalKeyPair = ref<KeyPair | null>(null);
 
 /* Handlers */
 const handleBack = () => {
@@ -146,19 +149,26 @@ onBeforeRouteLeave(async () => {
 
         <!-- Step 2 -->
         <template v-else-if="step.current === 'recoveryPhrase'">
-          <GenerateOrImport :handle-next="handleNext" />
+          <GenerateOrImport
+            v-model:selectedPersonalKeyPair="selectedPersonalKeyPair"
+            :handle-next="handleNext"
+          />
         </template>
 
         <!--Step 3 -->
         <template v-else-if="step.current === 'keyPairs'">
-          <KeyPairs ref="keyPairsComponent" v-model:step="step" />
+          <KeyPairs
+            ref="keyPairsComponent"
+            v-model:step="step"
+            :selected-personal-key-pair="selectedPersonalKeyPair"
+          />
         </template>
       </Transition>
 
       <div class="d-flex justify-content-between">
         <div class="d-flex">
           <AppButton
-            v-if="![stepperItems[0].name, stepperItems[1].name].includes(step.current)"
+            v-if="['keyPairs'].includes(step.current)"
             color="borderless"
             class="flex-centered mt-6"
             @click="handleBack"
@@ -168,7 +178,10 @@ onBeforeRouteLeave(async () => {
           >
         </div>
         <AppButton
-          v-if="user.recoveryPhrase && step.current !== 'recoveryPhrase'"
+          v-if="
+            (user.recoveryPhrase && step.current !== 'recoveryPhrase') ||
+            (isLoggedInOrganization(user.selectedOrganization) && selectedPersonalKeyPair !== null)
+          "
           color="primary"
           @click="handleNext"
           class="ms-3 mt-6"

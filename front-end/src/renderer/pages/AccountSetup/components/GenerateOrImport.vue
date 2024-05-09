@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, ref } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
+
+import { KeyPair } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -13,18 +15,32 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import Generate from './Generate.vue';
 import Import from './Import.vue';
+import UseExistingKey from './UseExistingKey.vue';
 
 /* Props */
 const props = defineProps<{
+  selectedPersonalKeyPair: KeyPair | null;
   handleNext: () => void;
 }>();
+
+/* Emits */
+const emit = defineEmits(['update:selectedPersonalKeyPair']);
 
 /* Stores */
 const importRef = ref<InstanceType<typeof Import> | null>(null);
 const user = useUserStore();
 
+/* Constants */
+const createNewTitle = 'Create New';
+const importExistingTitle = 'Import Existing';
+const useExistingKeyTitle = 'Use Existing Key';
+
 /* State */
-const tabItems = ref<TabItem[]>([{ title: 'Create New' }, { title: 'Import Existing' }]);
+const tabItems = ref<TabItem[]>([
+  { title: createNewTitle },
+  { title: importExistingTitle },
+  { title: useExistingKeyTitle },
+]);
 const activeTabIndex = ref(1);
 const differentSecretHashModalShown = ref(false);
 
@@ -69,15 +85,24 @@ const handleSubmitDifferentSecretHashDecision = async (e: Event) => {
 onBeforeMount(() => {
   if (!isLoggedInOrganization(user.selectedOrganization)) {
     user.secretHashes.length > 0 && tabItems.value.shift();
-  } else if (user.selectedOrganization.secretHashes.length > 0) {
-    tabItems.value.shift();
+    tabItems.value.pop();
+  } else {
+    user.selectedOrganization.secretHashes.length > 0 && tabItems.value.shift();
+    user.selectedOrganization.userKeys.length > 0 && tabItems.value.pop();
   }
 
-  activeTabIndex.value = tabItems.value.findIndex(i => i.title === 'Import Existing');
+  activeTabIndex.value = tabItems.value.findIndex(i => i.title === importExistingTitle);
+});
+
+/* Watchers */
+watch(activeTabTitle, newTitle => {
+  if (newTitle !== useExistingKeyTitle) {
+    emit('update:selectedPersonalKeyPair', null);
+  }
 });
 </script>
 <template>
-  <div class="fill-remaining mt-4">
+  <div class="flex-column-100 overflow-hidden mt-4">
     <AppTabs
       :items="tabItems"
       v-model:activeIndex="activeTabIndex"
@@ -85,60 +110,71 @@ onBeforeMount(() => {
       nav-item-class="flex-1"
       nav-item-button-class="justify-content-center"
     ></AppTabs>
-    <template v-if="activeTabTitle === 'Create New'">
-      <Generate :handle-next="handleNext" />
-    </template>
-    <template v-else-if="activeTabTitle === 'Import Existing'">
-      <Import ref="importRef" :secret-hashes="user.secretHashes" />
-      <div class="flex-between-centered mt-6">
-        <AppButton data-testid="button-clear" color="borderless" @click="importRef?.clearWords()"
-          >Clear</AppButton
+    <div class="fill-remaining overflow-x-auto">
+      <template v-if="activeTabTitle === createNewTitle">
+        <Generate :handle-next="handleNext" />
+      </template>
+      <template v-else-if="activeTabTitle === importExistingTitle">
+        <Import ref="importRef" :secret-hashes="user.secretHashes" />
+        <div class="flex-between-centered mt-6">
+          <AppButton data-testid="button-clear" color="borderless" @click="importRef?.clearWords()"
+            >Clear</AppButton
+          >
+          <AppButton
+            v-if="user.recoveryPhrase"
+            color="primary"
+            @click="handleNextWithValidation"
+            data-testid="button-next-import"
+            >Next</AppButton
+          >
+        </div>
+        <AppModal
+          v-model:show="differentSecretHashModalShown"
+          :close-on-click-outside="false"
+          :close-on-escape="false"
+          class="common-modal"
         >
-        <AppButton
-          v-if="user.recoveryPhrase"
-          color="primary"
-          @click="handleNextWithValidation"
-          data-testid="button-next-import"
-          >Next</AppButton
-        >
-      </div>
-      <AppModal
-        v-model:show="differentSecretHashModalShown"
-        :close-on-click-outside="false"
-        :close-on-escape="false"
-        class="common-modal"
-      >
-        <form class="p-4" @submit="handleSubmitDifferentSecretHashDecision">
-          <div class="text-start">
-            <i class="bi bi-x-lg cursor-pointer" @click="differentSecretHashModalShown = false"></i>
-          </div>
-          <div class="text-center">
-            <AppCustomIcon :name="'bin'" style="height: 160px" />
-          </div>
-          <h2 class="text-center text-title text-semi-bold mt-3">
-            Delete Existing Organization Keys
-          </h2>
-          <p class="text-center text-small text-secondary mt-3">
-            The recovery phrase you entered is not the same as the one used in the organization. If
-            you wish to proceed, the existing keys will be deleted.
-          </p>
+          <form class="p-4" @submit="handleSubmitDifferentSecretHashDecision">
+            <div class="text-start">
+              <i
+                class="bi bi-x-lg cursor-pointer"
+                @click="differentSecretHashModalShown = false"
+              ></i>
+            </div>
+            <div class="text-center">
+              <AppCustomIcon :name="'bin'" style="height: 160px" />
+            </div>
+            <h2 class="text-center text-title text-semi-bold mt-3">
+              Delete Existing Organization Keys
+            </h2>
+            <p class="text-center text-small text-secondary mt-3">
+              The recovery phrase you entered is not the same as the one used in the organization.
+              If you wish to proceed, the existing keys will be deleted.
+            </p>
 
-          <hr class="separator my-5" />
+            <hr class="separator my-5" />
 
-          <div class="flex-between-centered gap-4">
-            <AppButton
-              color="borderless"
-              type="button"
-              @click="differentSecretHashModalShown = false"
-              data-testid="button-delete-cancel"
-              >Cancel</AppButton
-            >
-            <AppButton data-testid="button-delete-next" color="danger" type="submit"
-              >Next</AppButton
-            >
-          </div>
-        </form>
-      </AppModal>
-    </template>
+            <div class="flex-between-centered gap-4">
+              <AppButton
+                color="borderless"
+                type="button"
+                @click="differentSecretHashModalShown = false"
+                data-testid="button-delete-cancel"
+                >Cancel</AppButton
+              >
+              <AppButton data-testid="button-delete-next" color="danger" type="submit"
+                >Next</AppButton
+              >
+            </div>
+          </form>
+        </AppModal>
+      </template>
+      <template v-else-if="activeTabTitle === useExistingKeyTitle">
+        <UseExistingKey
+          :selected-personal-key-pair="selectedPersonalKeyPair"
+          @update:selected-personal-key-pair="emit('update:selectedPersonalKeyPair', $event)"
+        />
+      </template>
+    </div>
   </div>
 </template>

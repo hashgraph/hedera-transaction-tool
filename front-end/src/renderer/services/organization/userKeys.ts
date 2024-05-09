@@ -1,5 +1,6 @@
 import { IUserKey } from '@main/shared/interfaces';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
+import { throwIfNoResponse } from '.';
 
 /* User keys service for organization */
 
@@ -20,8 +21,17 @@ export const getUserKeys = async (
 
     return response.data;
   } catch (error: any) {
-    console.log(error);
-    throw new Error('Failed get user keys');
+    let message = 'Failed to get user keys';
+
+    if (error instanceof AxiosError) {
+      throwIfNoResponse(error);
+
+      const errorMessage = error.response?.data?.message;
+      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
+        message = errorMessage;
+      }
+    }
+    throw new Error(message);
   }
 };
 
@@ -40,8 +50,17 @@ export const uploadKey = async (
       },
     );
   } catch (error: any) {
-    console.log(error);
-    throw new Error('Failed to upload user key');
+    let message = 'Failed to upload user key';
+
+    if (error instanceof AxiosError) {
+      throwIfNoResponse(error);
+
+      const errorMessage = error.response?.data?.message;
+      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
+        message = errorMessage;
+      }
+    }
+    throw new Error(message);
   }
 };
 
@@ -59,7 +78,16 @@ export const deleteKey = async (
       },
     );
   } catch (error: any) {
-    console.log(error);
-    throw new Error('Failed to delete user key');
+    let message = 'Failed to delete user key';
+
+    if (error instanceof AxiosError) {
+      throwIfNoResponse(error);
+
+      const errorMessage = error.response?.data?.message;
+      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
+        message = errorMessage;
+      }
+    }
+    throw new Error(message);
   }
 };

@@ -79,8 +79,12 @@ const useUserStore = defineStore('user', () => {
     await refetchAccounts();
   };
 
-  const storeKey = async (keyPair: Prisma.KeyPairUncheckedCreateInput, password: string) => {
-    await ush.storeKeyPair(keyPair, secretHashes.value, password);
+  const storeKey = async (
+    keyPair: Prisma.KeyPairUncheckedCreateInput,
+    password: string,
+    encrypted: boolean,
+  ) => {
+    await ush.storeKeyPair(keyPair, secretHashes.value, password, encrypted);
     await refetchKeys();
   };
 
@@ -88,6 +92,7 @@ const useUserStore = defineStore('user', () => {
   const selectOrganization = async (organization: Organization | null) => {
     if (!organization) {
       selectedOrganization.value = null;
+      await contacts.fetch();
     } else {
       selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
     }
