@@ -13,6 +13,7 @@ import * as redisStore from 'cache-manager-redis-store';
       port: process.env.REDIS_PORT,
       username: process.env.REDIS_USERNAME,
       password: process.env.REDIS_PASSWORD,
+      no_ready_check: true,
     }),
   ],
 })
