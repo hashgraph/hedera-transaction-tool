@@ -85,8 +85,10 @@ const handleSubmitDifferentSecretHashDecision = async (e: Event) => {
 onBeforeMount(() => {
   if (!isLoggedInOrganization(user.selectedOrganization)) {
     user.secretHashes.length > 0 && tabItems.value.shift();
-  } else if (user.selectedOrganization.secretHashes.length > 0) {
-    tabItems.value.shift();
+    tabItems.value.pop();
+  } else {
+    user.selectedOrganization.secretHashes.length > 0 && tabItems.value.shift();
+    user.selectedOrganization.userKeys.length > 0 && tabItems.value.pop();
   }
 
   activeTabIndex.value = tabItems.value.findIndex(i => i.title === importExistingTitle);
