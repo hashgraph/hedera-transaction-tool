@@ -157,14 +157,18 @@ onBeforeRouteLeave(async () => {
 
         <!--Step 3 -->
         <template v-else-if="step.current === 'keyPairs'">
-          <KeyPairs ref="keyPairsComponent" v-model:step="step" />
+          <KeyPairs
+            ref="keyPairsComponent"
+            v-model:step="step"
+            :selected-personal-key-pair="selectedPersonalKeyPair"
+          />
         </template>
       </Transition>
 
       <div class="d-flex justify-content-between">
         <div class="d-flex">
           <AppButton
-            v-if="![stepperItems[0].name, stepperItems[1].name].includes(step.current)"
+            v-if="['keyPairs'].includes(step.current)"
             color="borderless"
             class="flex-centered mt-6"
             @click="handleBack"

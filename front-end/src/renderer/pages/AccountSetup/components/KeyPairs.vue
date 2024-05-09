@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { inject, onBeforeMount, onUpdated, ref } from 'vue';
 
-import { Prisma } from '@prisma/client';
+import { KeyPair, Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -23,6 +23,11 @@ import { getWidthOfElementWithText } from '@renderer/utils/dom';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 
+/* Props */
+const props = defineProps<{
+  selectedPersonalKeyPair: KeyPair | null;
+}>();
+
 /* Stores */
 const user = useUserStore();
 
@@ -41,28 +46,40 @@ const privateKeyRef = ref<HTMLSpanElement | null>(null);
 const privateKeyHidden = ref(true);
 const starCount = ref(0);
 
-const keys = ref<{ publicKey: string; privateKey: string; index: number }[]>([]);
+const keys = ref<{ publicKey: string; privateKey: string; index: number; encrypted: boolean }[]>(
+  [],
+);
 
 /* Misc Functions */
 const keyExists = (publicKey: string) => user.keyPairs.some(kp => kp.public_key === publicKey);
 
 const addKeyToRestored = async (index: number) => {
-  if (!user.recoveryPhrase) {
-    throw new Error('Recovery phrase is not set');
+  if (!user.recoveryPhrase && !props.selectedPersonalKeyPair) {
+    throw new Error('Recovery phrase is not set or personal key pair is not selected');
   }
 
   try {
-    const restoredPrivateKey = await restorePrivateKey(
-      user.recoveryPhrase.words,
-      '',
-      index,
-      'ED25519',
-    );
-    keys.value.push({
-      publicKey: restoredPrivateKey.publicKey.toStringRaw(),
-      privateKey: restoredPrivateKey.toStringRaw(),
-      index,
-    });
+    if (user.recoveryPhrase) {
+      const restoredPrivateKey = await restorePrivateKey(
+        user.recoveryPhrase.words,
+        '',
+        index,
+        'ED25519',
+      );
+      keys.value.push({
+        publicKey: restoredPrivateKey.publicKey.toStringRaw(),
+        privateKey: restoredPrivateKey.toStringRaw(),
+        index,
+        encrypted: false,
+      });
+    } else if (props.selectedPersonalKeyPair) {
+      keys.value.push({
+        publicKey: props.selectedPersonalKeyPair.public_key,
+        privateKey: props.selectedPersonalKeyPair.private_key,
+        index,
+        encrypted: true,
+      });
+    }
   } catch {
     toast.error(`Restoring key at index: ${index} failed`, { position: 'bottom-right' });
   }
@@ -80,14 +97,16 @@ const restoreKeys = async () => {
     for (let i = 0; i < user.selectedOrganization.userKeys.length; i++) {
       const key = user.selectedOrganization.userKeys[i];
 
-      if (keyExists(key.publicKey)) continue;
+      if (keyExists(key.publicKey) || key.index === undefined || key.index === null) continue;
 
-      if (key.mnemonicHash === user.recoveryPhrase.hash && key.index !== undefined) {
-        await addKeyToRestored(key.index);
-      }
+      await addKeyToRestored(key.index);
     }
   } else {
-    await addKeyToRestored(0);
+    if (props.selectedPersonalKeyPair) {
+      await addKeyToRestored(props.selectedPersonalKeyPair.index);
+    } else {
+      await addKeyToRestored(0);
+    }
   }
 };
 
@@ -100,12 +119,14 @@ const handleSave = async () => {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     userPasswordModalRef.value?.open(
       'Enter personal password',
-      'Credentials will be encrypted with this password',
+      'Private key/s will be encrypted with this password',
       handleSave,
     );
     return;
   }
-  if (!user.recoveryPhrase) throw Error('Recovery phrase is not set');
+  if (!user.recoveryPhrase && !props.selectedPersonalKeyPair) {
+    throw new Error('Recovery phrase is not set or personal key pair is not selected');
+  }
 
   try {
     for (let i = 0; i < keys.value.length; i++) {
@@ -119,7 +140,7 @@ const handleSave = async () => {
         type: 'ED25519',
         organization_id: null,
         organization_user_id: null,
-        secret_hash: user.recoveryPhrase.hash,
+        secret_hash: user.recoveryPhrase?.hash || props.selectedPersonalKeyPair?.secret_hash,
         nickname: i === 0 && nickname.value ? nickname.value : null,
       };
 
@@ -131,13 +152,16 @@ const handleSave = async () => {
           await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
             publicKey: key.publicKey,
             index: key.index,
-            mnemonicHash: user.recoveryPhrase.hash,
+            mnemonicHash:
+              user.recoveryPhrase?.hash || props.selectedPersonalKeyPair?.secret_hash || '',
           });
         }
       }
 
-      await user.storeKey(keyPair, user.personal.password);
-      user.secretHashes.push(user.recoveryPhrase.hash);
+      await user.storeKey(keyPair, user.personal.password, Boolean(props.selectedPersonalKeyPair));
+      user.secretHashes.push(
+        user.recoveryPhrase?.hash || props.selectedPersonalKeyPair?.secret_hash || '',
+      );
     }
 
     toast.success(`Key Pair${keys.value.length > 1 ? 's' : ''} saved successfully`, {
@@ -197,7 +221,10 @@ defineExpose({
     </div>
     <template v-if="keys.length > 0">
       <div class="form-group mt-5">
-        <label data-testid="label-private-key" class="form-label">ED25519 Private Key</label>
+        <label data-testid="label-private-key" class="form-label"
+          >ED25519 Private Key
+          <span v-if="selectedPersonalKeyPair" class="text-pink">Encrypted</span></label
+        >
         <p class="text-break text-secondary">
           <span ref="privateKeyRef" data-testid="span-shown-private-key" id="pr">{{
             !privateKeyHidden ? keys[0].privateKey : '*'.repeat(starCount)
