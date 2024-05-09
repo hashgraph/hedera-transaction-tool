@@ -8,6 +8,7 @@ import { DatabaseModule, LoggerModule } from '@app/common';
 
 import { ExecuteModule } from './execute';
 import { TransactionStatusModule } from './transaction-status/transaction-status.module';
+import { HealthModule } from '@app/common/health';
 
 @Module({
   imports: [
@@ -23,12 +24,15 @@ import { TransactionStatusModule } from './transaction-status/transaction-status
         POSTGRES_USERNAME: Joi.string().required(),
         POSTGRES_PASSWORD: Joi.string().required(),
         POSTGRES_SYNCHRONIZE: Joi.boolean().required(),
+        RABBITMQ_URI: Joi.string().required(),
         REDIS_URL: Joi.string().required(),
+        HEDERA_NETWORK: Joi.string().required(),
       }),
     }),
     ScheduleModule.forRoot(),
     ExecuteModule,
     TransactionStatusModule,
+    HealthModule,
   ],
 })
 export class ChainModule {}
