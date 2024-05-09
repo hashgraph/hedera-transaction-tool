@@ -1,6 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+
+import { Cache } from 'cache-manager';
 
 import { AccountInfo, MirrorNodeBaseURL } from '@app/common';
 
@@ -10,52 +13,27 @@ export class MirrorNodeService {
 
   /* Temporary manual cache */
   private cacheExpirationMs = 5 * 60 * 1_000;
-  private accountInfoCache: {
-    [accountId: string]: {
-      lastUpdated: number;
-      accountInfo: AccountInfo;
-    };
-  } = {};
 
   constructor(
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
+    @Inject(CACHE_MANAGER) private cacheService: Cache,
   ) {
     this.mirrorNodeBaseURL = MirrorNodeBaseURL.fromName(this.configService.get('HEDERA_NETWORK'));
-
-    setInterval(this.clearCache, this.cacheExpirationMs);
   }
 
   /* Get the account inforamtion for accountId */
   async getAccountInfo(accountId: string): Promise<AccountInfo> {
-    if (this.accountInfoCache[accountId] && !this.isCacheExpired(accountId)) {
-      return this.accountInfoCache[accountId].accountInfo;
-    }
+    const cachedData = await this.cacheService.get<AccountInfo>(accountId);
+
+    if (cachedData) return cachedData;
+
     const { data } = await this.httpService.axiosRef.get<AccountInfo>(
       `${this.mirrorNodeBaseURL}/accounts/${accountId}`,
     );
 
-    this.accountInfoCache[accountId] = {
-      lastUpdated: new Date().getTime(),
-      accountInfo: data,
-    };
+    await this.cacheService.set(accountId, data, this.cacheExpirationMs);
 
     return data;
-  }
-
-  /* Clear the cache */
-  clearCache() {
-    this.accountInfoCache = {};
-    for (const accountId in this.accountInfoCache) {
-      this.isCacheExpired(accountId) && delete this.accountInfoCache[accountId];
-    }
-  }
-
-  /* Getter for whether the cache for an account is expired */
-  private isCacheExpired(accountId: string): boolean {
-    return (
-      !this.accountInfoCache[accountId] ||
-      this.accountInfoCache[accountId].lastUpdated + this.cacheExpirationMs < new Date().getTime()
-    );
   }
 }
