@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MurLock } from 'murlock';
 import {
+  AccountUpdateTransaction,
   FileAppendTransaction,
   FileUpdateTransaction,
   Transaction as SDKTransaction,
@@ -105,6 +106,7 @@ export class ExecuteService {
           statusCode: transaction.statusCode,
         },
       );
+      this.sideEffect(sdkTransaction);
     }
     return result;
   }
@@ -120,6 +122,14 @@ export class ExecuteService {
         throw new Error('Transaction has already been executed.');
       case TransactionStatus.REJECTED:
         throw new Error('Transaction has already been rejected.');
+    }
+  }
+
+  private sideEffect(sdkTransaction: SDKTransaction) {
+    if (sdkTransaction instanceof AccountUpdateTransaction) {
+      setTimeout(async () => {
+        await this.mirrorNodeService.updateAccountInfo(sdkTransaction.accountId.toString());
+      }, 5 * 1_000);
     }
   }
 }
