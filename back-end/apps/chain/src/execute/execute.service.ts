@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
-
+import { MurLock } from 'murlock';
 import {
   FileAppendTransaction,
   FileUpdateTransaction,
@@ -31,6 +31,7 @@ export class ExecuteService {
   ) {}
 
   /* Tries to execute a transaction */
+  @MurLock(5000, 'transactionId')
   async executeTransaction(transactionId: number) {
     /* Gets the transaction from the database */
     const transaction = await this.transactionsRepo.findOne({

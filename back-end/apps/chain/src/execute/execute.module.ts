@@ -11,9 +11,10 @@ import {
   UserKey,
 } from '@entities';
 
+import { MirrorNodeModule, RedisMurlockModule } from '@app/common';
+
 import { ExecuteController } from './execute.controller';
 import { ExecuteService } from './execute.service';
-import { MirrorNodeModule } from '@app/common';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { MirrorNodeModule } from '@app/common';
       TransactionComment,
     ]),
     MirrorNodeModule,
+    RedisMurlockModule,
   ],
   controllers: [ExecuteController],
   providers: [ExecuteService],
