@@ -23,6 +23,7 @@ import {
   Serialize,
   Sorting,
   SortingParams,
+  TransactionExecutedDto,
   withPaginatedResponse,
 } from '@app/common';
 
@@ -30,11 +31,10 @@ import { Transaction, User, transactionDateProperties, transactionProperties } f
 
 import { JwtAuthGuard, VerifiedUserGuard, HasKeyGuard } from '../guards';
 
-import { GetUser } from '../decorators/get-user.decorator';
+import { GetUser } from '../decorators';
 
 import { TransactionsService } from './transactions.service';
 
-import { TranasctionExecutedDto } from 'apps/chain/src/execute/dtos';
 import {
   CreateTransactionDto,
   TransactionDto,
@@ -170,10 +170,10 @@ export class TransactionsController {
   })
   @ApiResponse({
     status: 200,
-    type: TranasctionExecutedDto,
+    type: TransactionExecutedDto,
   })
   @Get('execute/:id')
-  async emitExecute(@Param('id', ParseIntPipe) id: number): Promise<TranasctionExecutedDto> {
+  async emitExecute(@Param('id', ParseIntPipe) id: number): Promise<TransactionExecutedDto> {
     return await this.chainService.send('execute', id).toPromise();
   }
 

@@ -14,15 +14,16 @@ import { TransactionStatusModule } from './transaction-status/transaction-status
     DatabaseModule,
     LoggerModule,
     ConfigModule.forRoot({
+      envFilePath: ['.env', 'apps/chain/.env'],
       isGlobal: true,
       validationSchema: Joi.object({
-        HTTP_PORT: Joi.number().required(),
         POSTGRES_HOST: Joi.string().required(),
         POSTGRES_PORT: Joi.number().required(),
         POSTGRES_DATABASE: Joi.string().required(),
         POSTGRES_USERNAME: Joi.string().required(),
         POSTGRES_PASSWORD: Joi.string().required(),
         POSTGRES_SYNCHRONIZE: Joi.boolean().required(),
+        REDIS_URL: Joi.string().required(),
       }),
     }),
     ScheduleModule.forRoot(),

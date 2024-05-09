@@ -1,4 +1,5 @@
 export * from './constants';
+export * from './redis';
 export * from './database';
 export * from './logger';
 export * from './utils';

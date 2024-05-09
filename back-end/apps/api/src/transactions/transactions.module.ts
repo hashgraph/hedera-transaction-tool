@@ -35,8 +35,8 @@ import { UserKeysModule } from '../user-keys/user-keys.module';
       TransactionApprover,
       TransactionObserver,
     ]),
-    UserKeysModule,
     MirrorNodeModule,
+    UserKeysModule,
     ChainProxyModule,
   ],
   controllers: [

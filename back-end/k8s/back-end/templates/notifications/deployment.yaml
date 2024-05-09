@@ -30,3 +30,19 @@ spec:
               secretKeyRef:
                 name: brevo
                 key: password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: notifications
+  name: notifications
+spec:
+  ports:
+    - name: '3020'
+      port: 3020
+      protocol: TCP
+      targetPort: 3020
+  selector:
+    app: notifications
+  type: ClusterIP

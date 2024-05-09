@@ -34,7 +34,6 @@ export class TransactionStatusService {
   async handleInitialTransactionStatusUpdate() {
     /* Valid start now minus 180 seconds */
     const transactions = await this.updateTransactions(this.getValidStartNowMinus180Seconds());
-    console.log('updated initiallt');
 
     for (const transaction of transactions.filter(
       t =>
@@ -94,7 +93,6 @@ export class TransactionStatusService {
       this.getValidStartNowMinus180Seconds(),
       this.getThreeMinutesLater(),
     );
-    console.log(transactions);
 
     for (const transaction of transactions.filter(
       t =>

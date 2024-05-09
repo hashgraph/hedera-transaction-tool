@@ -16,6 +16,7 @@ import { UsersModule } from './users/users.module';
     DatabaseModule,
     LoggerModule,
     ConfigModule.forRoot({
+      envFilePath: ['.env', 'apps/api/.env'],
       isGlobal: true,
       validationSchema: Joi.object({
         HTTP_PORT: Joi.number().required(),
@@ -30,6 +31,8 @@ import { UsersModule } from './users/users.module';
         JWT_EXPIRATION: Joi.number().required(),
         OTP_SECRET: Joi.string().required(),
         OTP_EXPIRATION: Joi.number().required(),
+        HEDERA_NETWORK: Joi.string().required(),
+        REDIS_URL: Joi.string().required(),
       }),
     }),
     UsersModule,

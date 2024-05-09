@@ -3,8 +3,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
-
+import { MurLock } from 'murlock';
 import {
+  AccountUpdateTransaction,
   FileAppendTransaction,
   FileUpdateTransaction,
   Transaction as SDKTransaction,
@@ -15,13 +16,12 @@ import { Transaction, TransactionStatus } from '@entities';
 
 import {
   MirrorNodeService,
+  TransactionExecutedDto,
   ableToSign,
   computeSignatureKey,
   getClientFromConfig,
   getStatusCodeFromMessage,
 } from '@app/common';
-
-import { TranasctionExecutedDto } from './dtos';
 
 @Injectable()
 export class ExecuteService {
@@ -32,6 +32,7 @@ export class ExecuteService {
   ) {}
 
   /* Tries to execute a transaction */
+  @MurLock(5000, 'transactionId')
   async executeTransaction(transactionId: number) {
     /* Gets the transaction from the database */
     const transaction = await this.transactionsRepo.findOne({
@@ -75,7 +76,7 @@ export class ExecuteService {
     transaction.executedAt = new Date();
     transaction.status = TransactionStatus.EXECUTED;
 
-    const result: TranasctionExecutedDto = {
+    const result: TransactionExecutedDto = {
       status: transaction.status,
     };
 
@@ -105,6 +106,7 @@ export class ExecuteService {
           statusCode: transaction.statusCode,
         },
       );
+      this.sideEffect(sdkTransaction);
     }
     return result;
   }
@@ -120,6 +122,14 @@ export class ExecuteService {
         throw new Error('Transaction has already been executed.');
       case TransactionStatus.REJECTED:
         throw new Error('Transaction has already been rejected.');
+    }
+  }
+
+  private sideEffect(sdkTransaction: SDKTransaction) {
+    if (sdkTransaction instanceof AccountUpdateTransaction) {
+      setTimeout(async () => {
+        await this.mirrorNodeService.updateAccountInfo(sdkTransaction.accountId.toString());
+      }, 5 * 1_000);
     }
   }
 }

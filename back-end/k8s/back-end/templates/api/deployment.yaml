@@ -1,55 +1,70 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  labels:
-    app: api
-  name: api
+  name: api-deployment
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: api
+      app: api-deployment
   template:
     metadata:
       labels:
-        app: api
+        app: api-deployment
     spec:
       containers:
-      - image: gcr.io/transaction-tool-dev/api
-        name: api
-        env:
-          - name: HTTP_PORT
-            value: '3000'
-          - name: RABBITMQ_URI
-            value: 'amqp://rabbitmq:5672'
-          - name: POSTGRES_HOST
-            value: 'database'
-          - name: POSTGRES_PORT
-            value: '5432'
-          - name: POSTGRES_DATABASE
-            value: 'postgres'
-          - name: POSTGRES_USERNAME
-            value: 'postgres'
-          - name: POSTGRES_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: postgres
-                key: password
-          - name: POSTGRES_SYNCHRONIZE
-            value: 'false'
-          - name: JWT_SECRET
-            valueFrom:
-              secretKeyRef:
-                name: jwt
-                key: key
-          - name: JWT_EXPIRATION
-            value: '365'
-          - name: OTP_SECRET
-            valueFrom:
-              secretKeyRef:
-                name: otp
-                key: key
-          - name: OTP_EXPIRATION
-            value: '20'
-        ports:
-          - containerPort: 3000
+        - name: api
+          image: gcr.io/transaction-tool-dev/api
+          env:
+            - name: HTTP_PORT
+              value: '3000'
+            - name: RABBITMQ_URI
+              value: 'amqp://rabbitmq:5672'
+            - name: POSTGRES_HOST
+              value: 'postgres'
+            - name: POSTGRES_PORT
+              value: '5432'
+            - name: POSTGRES_DATABASE
+              value: 'postgres'
+            - name: POSTGRES_USERNAME
+              value: 'postgres'
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: password
+            - name: POSTGRES_SYNCHRONIZE
+              value: 'false'
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jwt
+                  key: key
+            - name: JWT_EXPIRATION
+              value: '365'
+            - name: OTP_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: otp
+                  key: key
+            - name: OTP_EXPIRATION
+              value: '20'
+            - name: HEDERA_NETWORK
+              value: 'testnet'
+          ports:
+            - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-service
+spec:
+  selector:
+    app: api-deployment
+  ports:
+    - name: 'http'
+      port: 3000
+      protocol: TCP
+      targetPort: 3000
+  type: NodePort

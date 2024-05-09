@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 
-import { LoggerModule } from '@app/common';
+import { LoggerModule, RedisCacheModule } from '@app/common';
 
 import { MirrorNodeService } from './mirror-node.service';
 
@@ -11,6 +11,7 @@ import { MirrorNodeService } from './mirror-node.service';
       timeout: 5000,
     }),
     LoggerModule,
+    RedisCacheModule,
   ],
   providers: [MirrorNodeService],
   exports: [MirrorNodeService],
