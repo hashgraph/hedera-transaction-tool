@@ -569,6 +569,17 @@
     font-size: 14px;
     padding: 16px;
   }
+
+  tbody {
+    tr[hoverable] {
+      &[selected],
+      &:hover {
+        td {
+          background-color: var(--#{$prefix}input-fill-focus-bg-color);
+        }
+      }
+    }
+  }
 }
 
 /* Separators */
