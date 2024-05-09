@@ -3,6 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres-deployment
+  namespace: hedera-transaction-tool
 spec:
   selector:
     matchLabels:
@@ -18,11 +19,20 @@ spec:
           image: postgres:latest
           env:
             - name: POSTGRES_USER
-              value: "postgres"
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: username
             - name: POSTGRES_PASSWORD
-              value: "postgres"
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: password
             - name: POSTGRES_DB
-              value: "postgres"
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: database
             - name: PGDATA
               value: "/var/lib/postgresql/data/pgdata"
           ports:
@@ -38,7 +48,8 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: postgres
+  name: postgres-service
+  namespace: hedera-transaction-tool
 spec:
   selector:
     app: postgres-deployment
@@ -53,6 +64,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: postgres-pvc
+  namespace: hedera-transaction-tool
 spec:
   accessModes:
     - ReadWriteOnce
