@@ -36,4 +36,14 @@ export class MirrorNodeService {
 
     return data;
   }
+
+  async updateAccountInfo(accountId: string): Promise<AccountInfo> {
+    const { data } = await this.httpService.axiosRef.get<AccountInfo>(
+      `${this.mirrorNodeBaseURL}/accounts/${accountId}`,
+    );
+
+    await this.cacheService.set(accountId, data, this.cacheExpirationMs);
+
+    return data;
+  }
 }
