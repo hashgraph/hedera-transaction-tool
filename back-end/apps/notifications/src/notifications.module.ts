@@ -8,6 +8,7 @@ import { ApiProxyModule } from '@app/common/modules/api-proxy.module';
 
 import { WebsocketModule } from './websocket/websocket.module';
 import { EmailModule } from './email/email.module';
+import { HealthModule } from '@app/common/health';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { EmailModule } from './email/email.module';
     LoggerModule,
     WebsocketModule,
     ApiProxyModule,
+    HealthModule,
   ],
 })
 export class NotificationsModule {}
