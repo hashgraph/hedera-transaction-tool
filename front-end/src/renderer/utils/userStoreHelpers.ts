@@ -122,6 +122,7 @@ export const storeKeyPair = async (
   keyPair: Prisma.KeyPairUncheckedCreateInput,
   secretHashes: string[],
   password: string,
+  encrypted: boolean,
 ) => {
   if (
     secretHashes.length > 0 &&
@@ -131,7 +132,7 @@ export const storeKeyPair = async (
     throw Error('Different recovery phrase is used!');
   }
 
-  await storeKey(keyPair, password);
+  await storeKey(keyPair, password, encrypted);
 };
 
 /* Fetching */

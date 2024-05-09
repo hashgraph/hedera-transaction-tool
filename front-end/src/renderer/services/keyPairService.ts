@@ -52,9 +52,10 @@ export const restorePrivateKey = async (
 export const storeKeyPair = async (
   keyPair: Prisma.KeyPairUncheckedCreateInput,
   password: string,
+  encrypted: boolean,
 ) => {
   try {
-    return await window.electronAPI.local.keyPairs.store(keyPair, password);
+    return await window.electronAPI.local.keyPairs.store(keyPair, password, encrypted);
   } catch (error) {
     throw Error(getMessageFromIPCError(error, 'Failed to store key pair'));
   }

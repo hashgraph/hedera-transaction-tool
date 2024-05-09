@@ -8,8 +8,11 @@ export default {
       ipcRenderer.invoke('keyPairs:getAll', userId, organizationId),
     getSecretHashes: (userId: string, organizationId?: string | null): Promise<string[]> =>
       ipcRenderer.invoke('keyPairs:getSecretHashes', userId, organizationId),
-    store: (keyPair: Prisma.KeyPairUncheckedCreateInput, password: string): Promise<void> =>
-      ipcRenderer.invoke('keyPairs:store', keyPair, password),
+    store: (
+      keyPair: Prisma.KeyPairUncheckedCreateInput,
+      password: string,
+      encrypted: boolean,
+    ): Promise<void> => ipcRenderer.invoke('keyPairs:store', keyPair, password, encrypted),
     changeDecryptionPassword: (
       userId: string,
       oldPassword: string,
