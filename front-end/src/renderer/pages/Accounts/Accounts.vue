@@ -159,6 +159,7 @@ const handleChangeNickname = async () => {
             <AppButton
               color="primary"
               size="large"
+              data-testid="button-add-new-account"
               class="w-100 d-flex align-items-center justify-content-center"
               data-bs-toggle="dropdown"
               >Add new</AppButton
