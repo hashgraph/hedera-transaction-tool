@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -21,7 +22,7 @@ spec:
           - name: RABBITMQ_URI
             value: 'amqp://rabbitmq:5672'
           - name: POSTGRES_HOST
-            value: 'database'
+            value: 'postgres'
           - name: POSTGRES_PORT
             value: '5432'
           - name: POSTGRES_DATABASE
@@ -35,3 +36,19 @@ spec:
                 key: password
           - name: POSTGRES_SYNCHRONIZE
             value: 'false'
+---
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  labels:
+#    app: notifications
+#  name: notifications
+#spec:
+#  ports:
+#    - name: '3020'
+#      port: 3020
+#      protocol: TCP
+#      targetPort: 3020
+#  selector:
+#    app: notifications
+#  type: ClusterIP

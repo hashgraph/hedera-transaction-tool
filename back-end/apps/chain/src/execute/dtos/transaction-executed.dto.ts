@@ -2,7 +2,7 @@ import { Expose, Transform } from 'class-transformer';
 
 import { TransactionStatus } from '@app/common/database/entities';
 
-export class TranasctionExecutedDto {
+export class TransactionExecutedDto {
   @Expose()
   status: TransactionStatus;
 

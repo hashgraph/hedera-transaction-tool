@@ -14,6 +14,7 @@ import { TransactionStatusModule } from './transaction-status/transaction-status
     DatabaseModule,
     LoggerModule,
     ConfigModule.forRoot({
+      envFilePath: ['.env', 'apps/chain/.env'],
       isGlobal: true,
       validationSchema: Joi.object({
         HTTP_PORT: Joi.number().required(),

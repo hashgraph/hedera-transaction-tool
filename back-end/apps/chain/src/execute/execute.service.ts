@@ -21,7 +21,7 @@ import {
   getStatusCodeFromMessage,
 } from '@app/common';
 
-import { TranasctionExecutedDto } from './dtos';
+import { TransactionExecutedDto } from './dtos';
 
 @Injectable()
 export class ExecuteService {
@@ -75,7 +75,7 @@ export class ExecuteService {
     transaction.executedAt = new Date();
     transaction.status = TransactionStatus.EXECUTED;
 
-    const result: TranasctionExecutedDto = {
+    const result: TransactionExecutedDto = {
       status: transaction.status,
     };
 
