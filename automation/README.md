@@ -35,12 +35,23 @@ to run the tests.
 
 4. **Configure the environment variables** by creating a `.env` file in the root of the project and setting the path to
    the Hedera Transaction Tool executable. For example:
+
    ```env
    EXECUTABLE_PATH='/path/to/Hedera Transaction Tool'
    PRIVATE_KEY='your_private_key_here'
+   ENVIRONMENT='TESTNET'
    ```
+
    Replace `/path/to/Hedera Transaction Tool` with the actual path to your Hedera Transaction Tool executable.
-   Replace `your_private_key_here` with the private key(ECDSA) required for tests that involve key import functionality.
+
+   Replace `your_private_key_here` with the appropriate private key.
+
+   Replace `ENVIRONMENT` with variable that can be set to `TESTNET` or `LOCALNET`.
+
+   Depending on the environment selected:
+
+   - TESTNET: Use your ECDSA private key.
+   - LOCALNET: Use your ED25519 private key.
 
 ## Running Tests
 

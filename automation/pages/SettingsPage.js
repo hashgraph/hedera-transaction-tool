@@ -71,7 +71,6 @@ class SettingsPage extends BasePage {
   keyTypeCellSelectorPrefix = 'cell-key-type-';
   publicKeyCellSelectorPrefix = 'span-public-key-';
 
-
   async verifySettingsElements() {
     const checks = await Promise.all([
       this.isElementVisible(this.generalTabButtonSelector),
@@ -205,6 +204,10 @@ class SettingsPage extends BasePage {
     return await this.isElementVisible(this.setButtonSelector);
   }
 
+  async clickOnSetButton() {
+    await this.clickByTestId(this.setButtonSelector);
+  }
+
   async clickOnImportButton() {
     await this.clickByTestId(this.importButtonSelector);
   }
@@ -290,6 +293,7 @@ class SettingsPage extends BasePage {
   }
 
   async clickOnCloseButton() {
+    await this.waitForElementToBeVisible(this.closeButtonSelector);
     await this.clickByTestId(this.closeButtonSelector);
   }
 }
