@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: back-end
+  namespace: hedera-transaction-tool
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /ws/*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: notifications
+                port:
+                  number: 3020
+          - path: /*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: api
+                port:
+                  number: 3000
