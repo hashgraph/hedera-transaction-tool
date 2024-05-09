@@ -44,6 +44,7 @@ class TransactionPage extends BasePage {
   addPublicKeyButtonIndex = 'button-complex-key-add-element-public-key-';
   insertPublicKeyButtonSelector = 'button-insert-public-key';
   doneComplexKeyButtonSelector = 'button-complex-key-done';
+  addNewAccountButtonSelector = 'button-add-new-account';
 
   //Other
   successCheckMarkIconSelector = 'icon-success-checkmark';
@@ -285,6 +286,7 @@ class TransactionPage extends BasePage {
   }
 
   async isAccountCardVisible(accountId) {
+    await this.waitForElementToBeVisible(this.addNewAccountButtonSelector);
     const index = await this.findAccountIndexById(accountId);
     return await this.isElementVisible(this.accountIdPrefixSelector + index);
   }
