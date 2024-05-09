@@ -18,6 +18,9 @@ export type SocketIOMiddleware = {
  */
 export const AuthWebsocketMiddleware = (apiService: ClientProxy): SocketIOMiddleware => {
   return async (socket: AuthWebsocket, next) => {
+    //TODO this should be a rest call in order to allow for fast fails
+    // but notifications is rabbitmq - probably not a big deal, but makes more sense
+    // Need to make sure that Rabbitmq is sending this out to all of them, not just one
     try {
       // Get the cookie from the header. This is the httponly cookie which contains the Authentication jwt.
       const { Authentication: jwt } = cookie.parse(socket.handshake.headers.cookie);
