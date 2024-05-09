@@ -22,6 +22,8 @@ const useContactsStore = defineStore('contacts', () => {
     if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
 
     if (isLoggedInOrganization(user.selectedOrganization)) {
+      if (user.selectedOrganization.isPasswordTemporary) return;
+
       const users = await getUsers(user.selectedOrganization.serverUrl);
 
       const orgContacts = await getOrganizationContacts(

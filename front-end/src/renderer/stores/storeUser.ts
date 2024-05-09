@@ -88,6 +88,7 @@ const useUserStore = defineStore('user', () => {
   const selectOrganization = async (organization: Organization | null) => {
     if (!organization) {
       selectedOrganization.value = null;
+      await contacts.fetch();
     } else {
       selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
     }

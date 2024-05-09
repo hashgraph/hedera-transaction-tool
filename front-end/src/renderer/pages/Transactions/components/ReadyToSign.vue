@@ -79,6 +79,8 @@ async function fetchTransactions() {
     throw new Error('Please login in an organization');
   }
 
+  if (user.selectedOrganization.isPasswordTemporary) return;
+
   isLoading.value = true;
   try {
     const { items: rawTransactions } = await getTransactionsToSign(

@@ -2,6 +2,7 @@
 import { inject, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useContactsStore from '@renderer/stores/storeContacts';
 
 import { useToast } from 'vue-toast-notification';
 
@@ -26,6 +27,7 @@ const props = defineProps<{
 
 /* Stores */
 const user = useUserStore();
+const contacts = useContactsStore();
 
 /* Composables */
 const toast = useToast();
@@ -48,10 +50,10 @@ const isLoading = ref(false);
 const handleFormSubmit = async (event: Event) => {
   event.preventDefault();
 
-  await handleLogin();
+  await handleChangePassword();
 };
 
-const handleLogin = async () => {
+const handleChangePassword = async () => {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
@@ -61,7 +63,7 @@ const handleLogin = async () => {
     userPasswordModalRef.value?.open(
       'Enter personal password',
       'New password will be encrypted with this password',
-      handleLogin,
+      handleChangePassword,
     );
     return;
   }
@@ -97,6 +99,7 @@ const handleLogin = async () => {
       );
 
       await user.refetchUserState();
+      await contacts.fetch();
 
       props.handleContinue();
 
