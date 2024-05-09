@@ -1,9 +1,9 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  labels:
-    app: notifications
   name: notifications
+  namespace: hedera-transaction-tool
 spec:
   replicas: 1
   selector:
@@ -15,34 +15,39 @@ spec:
         app: notifications
     spec:
       containers:
-      - image: gcr.io/transaction-tool-dev/notifications
-        name: notifications
-        env:
-          - name: RABBITMQ_URI
-            value: 'amqp://rabbitmq:5672'
-          - name: BREVO_USERNAME
-            valueFrom:
-              secretKeyRef:
-                name: brevo
-                key: username
-          - name: BREVO_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: brevo
-                key: password
+        - name: notifications
+          image: gcr.io/transaction-tool-dev/notifications
+          env:
+            - name: HTTP_PORT
+              value: '3020'
+            - name: RABBITMQ_USERNAME
+              value: 'tool-back-end'
+            - name: RABBITMQ_PASSWORD
+              value: 'plainpass'
+            - name: RABBITMQ_URI
+              value: 'amqp://$(RABBITMQ_USERNAME):$(RABBITMQ_PASSWORD)@rabbitmq:5672'
+            - name: BREVO_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: brevo-secret
+                  key: username
+            - name: BREVO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: brevo-secret
+                  key: password
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  labels:
-    app: notifications
   name: notifications
+  namespace: hedera-transaction-tool
 spec:
   ports:
-    - name: '3020'
+    - name: 'http'
       port: 3020
       protocol: TCP
       targetPort: 3020
   selector:
     app: notifications
-  type: ClusterIP
+  type: NodePort
