@@ -99,6 +99,7 @@ onBeforeRouteLeave(async to => {
     <AppButton
       color="secondary"
       type="button"
+      data-testid="button-save-draft"
       @click="() => (handleSaveDraft ? handleSaveDraft() : saveDraft())"
       v-bind="$attrs"
       ><i class="bi bi-save"></i> Save Draft</AppButton
@@ -125,10 +126,16 @@ onBeforeRouteLeave(async to => {
         <hr class="separator my-5" />
 
         <div class="flex-between-centered gap-4">
-          <AppButton color="borderless" type="button" @click="routeTo && $router.push(routeTo)"
+          <AppButton
+            color="borderless"
+            data-testid="button-discard-draft-modal"
+            type="button"
+            @click="routeTo && $router.push(routeTo)"
             >Discard</AppButton
           >
-          <AppButton color="primary" type="submit">Save</AppButton>
+          <AppButton color="primary" data-testid="button-save-draft-modal" type="submit"
+            >Save</AppButton
+          >
         </div>
       </form>
     </AppModal>

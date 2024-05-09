@@ -16,8 +16,8 @@ import ComplexKeySelectAccountModal from '@renderer/components/ComplexKey/Comple
 /* Props */
 const props = defineProps<{
   keyList: KeyList;
-  isTop: boolean;
   onRemoveKeyList: () => void;
+  depth?: string;
 }>();
 
 /* Emits */
@@ -95,7 +95,10 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
 }
 </script>
 <template>
-  <div class="key-node d-flex justify-content-between key-threshhold-bg rounded py-3 px-4">
+  <div
+    class="key-node d-flex justify-content-between key-threshhold-bg rounded py-3 px-4"
+    :path="depth"
+  >
     <div class="d-flex align-items-center">
       <Transition name="fade" mode="out-in">
         <span
@@ -115,6 +118,7 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
           class="form-select is-fill"
           :value="keyList.threshold || keyList.toArray().length"
           @change="handleThresholdChange"
+          :data-testid="`select-complex-key-threshold-${depth}`"
         >
           <template
             v-for="num in Array.from(Array(keyList.toArray().length).keys())"
@@ -134,17 +138,30 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
             color="primary"
             size="small"
             data-bs-toggle="dropdown"
+            :data-testid="`button-complex-key-add-element-${depth}`"
             class="min-w-unset"
             ><span class="bi bi-plus-lg"></span> Add</AppButton
           >
           <ul class="dropdown-menu mt-3">
-            <li class="dropdown-item cursor-pointer" @click="selectAccountModalShown = true">
+            <li
+              class="dropdown-item cursor-pointer"
+              @click="selectAccountModalShown = true"
+              :data-testid="`button-complex-key-add-element-account-${depth}`"
+            >
               <span class="text-small">Account</span>
             </li>
-            <li class="dropdown-item cursor-pointer mt-3" @click="addPublicKeyModalShown = true">
+            <li
+              class="dropdown-item cursor-pointer mt-3"
+              @click="addPublicKeyModalShown = true"
+              :data-testid="`button-complex-key-add-element-public-key-${depth}`"
+            >
               <span class="text-small">Public Key</span>
             </li>
-            <li class="dropdown-item cursor-pointer mt-3" @click="handleAddThreshold">
+            <li
+              class="dropdown-item cursor-pointer mt-3"
+              @click="handleAddThreshold"
+              :data-testid="`button-complex-key-add-element-threshold-${depth}`"
+            >
               <span class="text-small">Threshold</span>
             </li>
           </ul>
@@ -154,7 +171,11 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
 
     <div class="d-flex align-items-center">
       <div class="text-small">
-        <span class="bi bi-x-lg cursor-pointer" @click="onRemoveKeyList"></span>
+        <span
+          class="bi bi-x-lg cursor-pointer"
+          @click="onRemoveKeyList"
+          :data-testid="`button-complex-key-remove-element-${depth}`"
+        ></span>
       </div>
     </div>
   </div>
@@ -163,7 +184,7 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
       <template v-for="(key, i) in keyList.toArray()" :key="key.toString()">
         <template v-if="key instanceof PublicKey && true">
           <div class="key-node-wrapper">
-            <div class="key-node">
+            <div class="key-node" :path="`${depth || 0}-${i}`">
               <AppPublicKeyInput
                 class="text-semi-bold"
                 :model-value="key.toStringRaw()"
@@ -172,6 +193,8 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
                 has-cross-icon
                 :label="ush.getNickname(key.toStringRaw(), user.keyPairs)"
                 :on-cross-icon-click="() => handleRemovePublicKey(key)"
+                :input-data-test-id="`input-complex-key-public-key-${depth || 0}-${i}`"
+                :remove-data-test-id="`input-complex-key-remove-${depth || 0}-${i}`"
               />
             </div>
           </div>
@@ -180,9 +203,9 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
           <div class="key-node-container">
             <ComplexKeyThreshold
               :key-list="key"
-              :is-top="false"
               @update:key-list="newKeyList => handleKeyListUpdate(i, newKeyList)"
               :on-remove-key-list="() => handleRemoveThreshold(i)"
+              :depth="`${depth || 0}-${i}`"
             />
           </div>
         </template>

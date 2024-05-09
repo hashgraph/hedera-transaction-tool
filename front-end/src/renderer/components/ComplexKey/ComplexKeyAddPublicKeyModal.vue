@@ -52,6 +52,7 @@ const handleInsert = (e: Event) => {
         <div class="mt-5">
           <AppInput
             v-model:model-value="publicKey"
+            data-testid="input-complex-public-key"
             filled
             type="text"
             placeholder="Enter Public Key"
@@ -88,7 +89,11 @@ const handleInsert = (e: Event) => {
           <AppButton color="secondary" type="button" @click="handleShowUpdate(false)"
             >Cancel</AppButton
           >
-          <AppButton color="primary" type="submit" :disabled="!isPublicKey(publicKey)"
+          <AppButton
+            color="primary"
+            data-testid="button-insert-public-key"
+            type="submit"
+            :disabled="!isPublicKey(publicKey)"
             >Insert</AppButton
           >
         </div>

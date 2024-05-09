@@ -379,11 +379,13 @@ defineExpose({
           <div class="container-main-bg text-small p-4 mt-5">
             <div class="d-flex justify-content-between p-3">
               <p>Type of Transaction</p>
-              <p>{{ type }}</p>
+              <p data-testid="p-type-transaction">{{ type }}</p>
             </div>
             <div class="d-flex justify-content-between p-3 mt-3">
               <p>Transaction ID</p>
-              <p class="text-secondary">{{ transaction?.transactionId }}</p>
+              <p class="text-secondary" data-testid="p-transaction-id">
+                {{ transaction?.transactionId }}
+              </p>
             </div>
             <div class="d-flex justify-content-between p-3 mt-3">
               <p>Valid Start</p>
@@ -396,7 +398,7 @@ defineExpose({
               class="d-flex justify-content-between p-3 mt-3"
             >
               <p>Max Transaction Fee</p>
-              <p class="">
+              <p class="" data-testid="p-max-tx-fee">
                 {{ stringifyHbar(transaction.maxTransactionFee) }} ({{
                   getDollarAmount(network.currentRate, transaction.maxTransactionFee.toBigNumber())
                 }})
@@ -407,10 +409,16 @@ defineExpose({
           <hr class="separator my-5" />
 
           <div class="flex-between-centered gap-4">
-            <AppButton type="button" color="borderless" @click="isConfirmShown = false"
+            <AppButton
+              type="button"
+              color="borderless"
+              data-testid="button-cancel-transaction"
+              @click="isConfirmShown = false"
               >Cancel</AppButton
             >
-            <AppButton color="primary" type="submit">Sign</AppButton>
+            <AppButton color="primary" type="submit" data-testid="button-sign-transaction"
+              >Sign</AppButton
+            >
           </div>
         </form>
       </div>
@@ -433,7 +441,13 @@ defineExpose({
           <h3 class="text-center text-title text-bold">Enter your password</h3>
           <div class="form-group mt-5 mb-4">
             <label class="form-label">Password</label>
-            <AppInput v-model="userPassword" size="small" type="password" :filled="true" />
+            <AppInput
+              v-model="userPassword"
+              size="small"
+              data-testid="input-password-transaction"
+              type="password"
+              :filled="true"
+            />
           </div>
           <hr class="separator my-5" />
           <div class="flex-between-centered gap-4">
@@ -442,6 +456,7 @@ defineExpose({
             >
             <AppButton
               color="primary"
+              data-testid="button-password-continue"
               :loading="isSigning"
               :disabled="userPassword.length === 0 || isSigning"
               type="submit"
@@ -479,6 +494,7 @@ defineExpose({
     <!-- Executed modal -->
     <AppModal
       v-model:show="isExecutedModalShown"
+      data-testid="modal-transaction-success"
       class="transaction-success-modal"
       :close-on-click-outside="false"
       :close-on-escape="false"
@@ -488,7 +504,7 @@ defineExpose({
           <i class="bi bi-x-lg cursor-pointer" @click="isExecutedModalShown = false"></i>
         </div>
         <div class="text-center">
-          <i class="bi bi-check-lg large-icon"></i>
+          <i class="bi bi-check-lg large-icon" data-testid="icon-success-checkmark"></i>
         </div>
         <h3 class="text-center text-title text-bold mt-5"><slot name="successHeading"></slot></h3>
         <p
@@ -496,6 +512,7 @@ defineExpose({
         >
           <span class="text-bold text-secondary">Transaction ID:</span>
           <a
+            data-testid="a-transaction-id"
             class="link-primary cursor-pointer"
             @click="
               network.network !== 'custom' &&
@@ -512,6 +529,7 @@ defineExpose({
         <div class="d-grid">
           <AppButton
             color="primary"
+            data-testid="button-close-completed-tx"
             @click="
               () => {
                 isExecutedModalShown = false;

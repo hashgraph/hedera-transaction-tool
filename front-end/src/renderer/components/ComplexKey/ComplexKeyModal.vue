@@ -97,9 +97,16 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
               color="primary"
               class="ms-3"
               @click="handleSaveComplexKeyButtonClick"
+              data-testid="button-complex-key-save"
               >Save Complex Key</AppButton
             >
-            <AppButton type="submit" color="primary" class="ms-3">Done</AppButton>
+            <AppButton
+              type="submit"
+              color="primary"
+              class="ms-3"
+              data-testid="button-complex-key-done"
+              >Done</AppButton
+            >
           </div>
           <div v-if="show" class="mt-5 h-100 overflow-auto">
             <Transition name="fade" :mode="'out-in'">
