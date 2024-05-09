@@ -23,6 +23,7 @@ import {
   Serialize,
   Sorting,
   SortingParams,
+  TransactionExecutedDto,
   withPaginatedResponse,
 } from '@app/common';
 
@@ -34,7 +35,6 @@ import { GetUser } from '../decorators';
 
 import { TransactionsService } from './transactions.service';
 
-import { TransactionExecutedDto } from 'apps/chain/src/execute/dtos';
 import {
   CreateTransactionDto,
   TransactionDto,
