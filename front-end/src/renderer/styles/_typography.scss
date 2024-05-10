@@ -56,6 +56,14 @@
   color: var(--#{$prefix}text-secondary-color) !important;
 }
 
+.text-mainnet {
+  color: $color-mainnet;
+}
+
+.text-testnet {
+  color: $color-testnet;
+}
+
 .text-code {
   font-family: 'Courier New', Courier, monospace;
 }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRouter } from 'vue-router';
 
@@ -9,8 +10,25 @@ import Logo from '@renderer/components/Logo.vue';
 import LogoText from '@renderer/components/LogoText.vue';
 import UserModeSelect from './UserModeSelect.vue';
 
+/* Mappings */
+const networkMapping = {
+  testnet: {
+    label: 'TESTNET',
+    className: 'text-testnet',
+  },
+  mainnet: {
+    label: 'MAINNET',
+    className: 'text-mainnet',
+  },
+  custom: {
+    label: 'CUSTOM',
+    className: 'text-info',
+  },
+};
+
 /* Stores */
 const user = useUserStore();
+const networkStore = useNetworkStore();
 
 /* Composables */
 const router = useRouter();
@@ -50,6 +68,11 @@ const handleLogout = async () => {
       <span class="container-icon">
         <i class="text-icon-main bi bi-three-dots-vertical"></i>
       </span> -->
+      <div class="me-5">
+        <span class="text-bold" :class="networkMapping[networkStore.network].className">{{
+          networkMapping[networkStore.network].label
+        }}</span>
+      </div>
       <div>
         <UserModeSelect />
       </div>
