@@ -100,14 +100,19 @@ Until then, use the following commands once connected to a cluster:
    kubectl apply -f ./rabbitmq-definition.yaml
    ```
 
-4. Apply the required secrets:
+4. Install the helm chart for redis:
+   ```bash
+   helm install redis bitnami/redis --namespace hedera-transaction-tool --set auth.enabled=false
+   ```
+
+5. Apply the required secrets:
    ```bash
    kubectl apply -f ./jwt-secret.yaml
    kubectl apply -f ./otp-secret.yaml
    kubectl apply -f ./brevo-secret.yaml
    ```
    
-5. Deploy the services:
+6. Deploy the services:
    ```bash
    # Until migration is properly in place, 
    # the first time the api service is deployed,
@@ -117,12 +122,12 @@ Until then, use the following commands once connected to a cluster:
    kubectl apply -f ./notifications/deployment.yaml
    ```
    
-6. Deploy the ingress:
+7. Deploy the ingress:
    ```bash
    kubectl apply -f ./ingress.yaml
    ```
    
-7. Using the actual name of the Postgres pod, connect to Postgres to create the admin user:
+8. Using the actual name of the Postgres pod, connect to Postgres to create the admin user:
    ```bash   
    kubectl exec -it <podname> -- psql -h localhost -U postgres --password -p 5432
    ```
