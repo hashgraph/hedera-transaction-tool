@@ -20,6 +20,7 @@ import { UsersModule } from './users/users.module';
       isGlobal: true,
       validationSchema: Joi.object({
         HTTP_PORT: Joi.number().required(),
+        TCP_PORT: Joi.number().required(),
         POSTGRES_HOST: Joi.string().required(),
         POSTGRES_PORT: Joi.number().required(),
         POSTGRES_DATABASE: Joi.string().required(),

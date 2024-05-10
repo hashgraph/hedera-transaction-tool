@@ -12,7 +12,7 @@ import { Inject, Logger } from '@nestjs/common';
 import { NotifyClientDto } from './dtos/notify-client.dto';
 import { Server, Socket } from 'socket.io';
 import { AuthWebsocket, AuthWebsocketMiddleware } from './middlewares/auth-websocket.middleware';
-import { API_SERVICE } from '@app/common';
+import { AUTH_SERVICE } from '@app/common';
 import { ClientProxy } from '@nestjs/microservices';
 
 //TODO WebTransport vs Websockets - by default transports = polling and websocket, not webtransport
@@ -23,13 +23,13 @@ import { ClientProxy } from '@nestjs/microservices';
 export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(WebsocketGateway.name);
 
-  constructor(@Inject(API_SERVICE) private readonly apiService: ClientProxy) {}
+  constructor(@Inject(AUTH_SERVICE) private readonly authService: ClientProxy) {}
 
   @WebSocketServer()
   private server: Server;
 
   afterInit(server: Server): any {
-    server.use(AuthWebsocketMiddleware(this.apiService));
+    server.use(AuthWebsocketMiddleware(this.authService));
   }
 
   handleConnection(client: Socket, ...args): any {
