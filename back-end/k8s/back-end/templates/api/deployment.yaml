@@ -20,6 +20,8 @@ spec:
           env:
             - name: HTTP_PORT
               value: '3000'
+            - name: TCP_PORT
+              value: '3001'
             - name: RABBITMQ_USERNAME
               value: 'tool-back-end'
             - name: RABBITMQ_PASSWORD
@@ -63,8 +65,25 @@ spec:
               value: '20'
             - name: HEDERA_NETWORK
               value: 'testnet'
+            - name: REDIS_URL
+              value: 'redis://redis-master:6379'
           ports:
             - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth
+  namespace: hedera-transaction-tool
+spec:
+  selector:
+    app: api
+  ports:
+    - name: 'tcp'
+      port: 3001
+      protocol: TCP
+      targetPort: 3001
+  type: ClusterIP
 ---
 apiVersion: v1
 kind: Service

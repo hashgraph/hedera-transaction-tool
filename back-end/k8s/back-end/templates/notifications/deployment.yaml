@@ -20,6 +20,10 @@ spec:
           env:
             - name: HTTP_PORT
               value: '3020'
+            - name: AUTH_HOST
+              value: '3001'
+            - name: AUTH_PORT
+              value: '3001'
             - name: RABBITMQ_USERNAME
               value: 'tool-back-end'
             - name: RABBITMQ_PASSWORD
