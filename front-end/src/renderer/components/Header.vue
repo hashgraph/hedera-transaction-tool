@@ -69,9 +69,11 @@ const handleLogout = async () => {
         <i class="text-icon-main bi bi-three-dots-vertical"></i>
       </span> -->
       <div class="me-5">
-        <span class="text-bold" :class="networkMapping[networkStore.network].className">{{
-          networkMapping[networkStore.network].label
-        }}</span>
+        <span
+          class="text-bold text-small"
+          :class="networkMapping[networkStore.network].className"
+          >{{ networkMapping[networkStore.network].label }}</span
+        >
       </div>
       <div>
         <UserModeSelect />
