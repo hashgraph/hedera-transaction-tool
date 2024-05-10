@@ -10,6 +10,7 @@ import { PingModule } from './ping/ping.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { UserKeysModule } from './user-keys/user-keys.module';
 import { UsersModule } from './users/users.module';
+import { HealthModule } from '@app/common/health';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { UsersModule } from './users/users.module';
     TransactionsModule,
     PingModule,
     NotificationsProxyModule,
+    HealthModule,
   ],
 })
 export class ApiModule {}
