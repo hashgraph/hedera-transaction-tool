@@ -10,6 +10,7 @@ import { PingModule } from './ping/ping.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { UserKeysModule } from './user-keys/user-keys.module';
 import { UsersModule } from './users/users.module';
+import { HealthModule } from '@app/common/health';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { UsersModule } from './users/users.module';
       isGlobal: true,
       validationSchema: Joi.object({
         HTTP_PORT: Joi.number().required(),
+        TCP_PORT: Joi.number().required(),
         POSTGRES_HOST: Joi.string().required(),
         POSTGRES_PORT: Joi.number().required(),
         POSTGRES_DATABASE: Joi.string().required(),
@@ -41,6 +43,7 @@ import { UsersModule } from './users/users.module';
     TransactionsModule,
     PingModule,
     NotificationsProxyModule,
+    HealthModule,
   ],
 })
 export class ApiModule {}

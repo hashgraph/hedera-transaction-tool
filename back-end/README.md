@@ -37,6 +37,22 @@ From the back-end directory, run:
 docker-compose up
 ```
 
+### Resetting Local Postgres Data
+
+To reset the local postgres database, do the following:
+
+```bash
+docker-compose down
+rm -rf <back-end base directory>/pgdata
+docker-compose up
+```
+
+### Create Admin
+
+1. Make sure at least the database is running or just `docker compose up`
+2. Create `.env` file inside `scripts` folder
+3. Run `npm run create-admin` and follow the steps
+
 ### Start developing on HTTPS
 
 1. First you need to create self-signed certificate
@@ -58,20 +74,60 @@ docker-compose up
 
 ### Deploy on Kubernetes
 
-When deploying to a server, it may be desired to use Kubernetes. More info needed.
+When deploying to a server, it may be desired to use Kubernetes. 
+The docker images are currently private. They must be created and pushed 
+to an accessible location. Update the deployment files as needed.
 
-### Resetting Local Postgres Data
+A helm chart is forthcoming. 
+Until then, use the following commands once connected to a cluster:
 
-To reset the local postgres database, do the following:
+1. Create the namespace:
+   ```bash
+   kubectl create -f ./namespace.yaml
+   ```
 
-```bash
-docker-compose down
-rm -rf <back-end base directory>/pgdata
-docker-compose up
-```
+2. Setup postgres:
+   ```bash
+   kubectl apply -f ./postgres-secret.yaml
+   kubectl apply -f ./postgres-deployment.yaml
+   ```
 
-### Create Admin
+3. Install the helm chart and apply the rabbitmq definition:
+   ```bash 
+   helm repo add bitnami https://charts.bitnami.com/bitnami
+   helm install back-end bitnami/rabbitmq-cluster-operator --namespace hedera-transaction-tool
+      
+   kubectl apply -f ./rabbitmq-definition.yaml
+   ```
 
-1. Make sure at least the database is running or just `docker compose up`
-2. Create `.env` file inside `scripts` folder
-3. Run `npm run create-admin` and follow the steps
+4. Install the helm chart for redis:
+   ```bash
+   helm install redis bitnami/redis --namespace hedera-transaction-tool --set auth.enabled=false
+   ```
+
+5. Apply the required secrets:
+   ```bash
+   kubectl apply -f ./jwt-secret.yaml
+   kubectl apply -f ./otp-secret.yaml
+   kubectl apply -f ./brevo-secret.yaml
+   ```
+   
+6. Deploy the services:
+   ```bash
+   # Until migration is properly in place, 
+   # the first time the api service is deployed,
+   # ensure that POSTGRES_SYNCHRONIZE is set to true in the yaml
+   kubectl apply -f ./api/deployment.yaml
+   kubectl apply -f ./chain/deployment.yaml
+   kubectl apply -f ./notifications/deployment.yaml
+   ```
+   
+7. Deploy the ingress:
+   ```bash
+   kubectl apply -f ./ingress.yaml
+   ```
+   
+8. Using the actual name of the Postgres pod, connect to Postgres to create the admin user:
+   ```bash   
+   kubectl exec -it <podname> -- psql -h localhost -U postgres --password -p 5432
+   ```

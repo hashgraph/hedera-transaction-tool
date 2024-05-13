@@ -2,9 +2,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  labels:
-    app: chain
   name: chain
+  namespace: hedera-transaction-tool
 spec:
   replicas: 1
   selector:
@@ -16,39 +15,37 @@ spec:
         app: chain
     spec:
       containers:
-      - image: gcr.io/transaction-tool-dev/chain
-        name: chain
-        env:
-          - name: RABBITMQ_URI
-            value: 'amqp://rabbitmq:5672'
-          - name: POSTGRES_HOST
-            value: 'postgres'
-          - name: POSTGRES_PORT
-            value: '5432'
-          - name: POSTGRES_DATABASE
-            value: 'postgres'
-          - name: POSTGRES_USERNAME
-            value: 'postgres'
-          - name: POSTGRES_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: postgres
-                key: password
-          - name: POSTGRES_SYNCHRONIZE
-            value: 'false'
----
-#apiVersion: v1
-#kind: Service
-#metadata:
-#  labels:
-#    app: notifications
-#  name: notifications
-#spec:
-#  ports:
-#    - name: '3020'
-#      port: 3020
-#      protocol: TCP
-#      targetPort: 3020
-#  selector:
-#    app: notifications
-#  type: ClusterIP
+        - name: chain
+          image: gcr.io/transaction-tool-dev/chain
+          env:
+            - name: RABBITMQ_USERNAME
+              value: 'tool-back-end'
+            - name: RABBITMQ_PASSWORD
+              value: 'plainpass'
+            - name: RABBITMQ_URI
+              value: 'amqp://$(RABBITMQ_USERNAME):$(RABBITMQ_PASSWORD)@rabbitmq:5672'
+            - name: POSTGRES_HOST
+              value: 'postgres-service'
+            - name: POSTGRES_PORT
+              value: '5432'
+            - name: POSTGRES_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: database
+            - name: POSTGRES_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: password
+            - name: POSTGRES_SYNCHRONIZE
+              value: 'false'
+            - name: HEDERA_NETWORK
+              value: 'testnet'
+            - name: REDIS_URL
+              value: 'redis://redis-master:6379'

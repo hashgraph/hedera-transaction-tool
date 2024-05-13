@@ -6,6 +6,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { Logger } from 'nestjs-pino';
 
 import { ChainModule } from './chain.module';
+import { CHAIN_SERVICE } from '@app/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(ChainModule);
@@ -16,7 +17,7 @@ async function bootstrap() {
     transport: Transport.RMQ,
     options: {
       urls: [configService.getOrThrow<string>('RABBITMQ_URI')],
-      queue: 'chain',
+      queue: CHAIN_SERVICE,
     },
   });
 
