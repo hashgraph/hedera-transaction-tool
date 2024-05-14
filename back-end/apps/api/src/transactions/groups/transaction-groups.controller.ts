@@ -45,7 +45,7 @@ export class TransactionGroupsController {
     status: 200,
   })
   @Delete('/:id')
-  removeTransactionGroup(@Param('id', ParseIntPipe) groupId: number): void {
-    this.transactionGroupsService.removeTransactionGroup(groupId);
+  removeTransactionGroup(@GetUser() user: User, @Param('id', ParseIntPipe) groupId: number, ): void {
+    this.transactionGroupsService.removeTransactionGroup(user, groupId);
   }
 }
