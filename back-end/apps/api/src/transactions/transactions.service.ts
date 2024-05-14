@@ -324,7 +324,7 @@ export class TransactionsService {
   }
 
   /* Remove the transaction for the given transaction id. */
-  async removeTransaction(id: number, user: UserDto): Promise<boolean> {
+  async removeTransaction(user: UserDto, id: number, softRemove: boolean = true): Promise<boolean> {
     const transaction = await this.getTransactionById(id);
 
     if (!transaction) {
@@ -335,7 +335,11 @@ export class TransactionsService {
       throw new BadRequestException('Only the creator of the transaction is able to delete it');
     }
 
-    await this.repo.softRemove(transaction);
+    if (softRemove) {
+      await this.repo.softRemove(transaction);
+    } else {
+      await this.repo.remove(transaction);
+    }
 
     return true;
   }
