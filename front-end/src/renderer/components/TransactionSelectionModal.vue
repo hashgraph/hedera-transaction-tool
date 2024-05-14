@@ -22,9 +22,9 @@ const transactionGroups = [
   {
     groupTitle: 'Crypto Service',
     items: [
-      { label: 'Transfer Tokens', name: transactionTypeKeys.transfer },
       { label: 'Create Account', name: transactionTypeKeys.createAccount },
       { label: 'Update Account', name: transactionTypeKeys.updateAccount },
+      { label: 'Transfer Tokens', name: transactionTypeKeys.transfer },
       { label: 'Delete Account', name: transactionTypeKeys.deleteAccount },
       { label: 'Approve Allowance', name: transactionTypeKeys.approveAllowance },
       // { label: 'Account Info', name: transactionTypeKeys.accountInfo },
