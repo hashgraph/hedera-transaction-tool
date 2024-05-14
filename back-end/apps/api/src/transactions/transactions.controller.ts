@@ -200,6 +200,6 @@ export class TransactionsController {
   })
   @Delete('/:id')
   deleteTransaction(@GetUser() user, @Param('id', ParseIntPipe) id: number): Promise<boolean> {
-    return this.transactionsService.removeTransaction(id, user);
+    return this.transactionsService.removeTransaction(user, id);
   }
 }
