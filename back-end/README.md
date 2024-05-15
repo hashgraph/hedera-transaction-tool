@@ -12,10 +12,15 @@ Functions as a chain processor that is responsible for monitoring the Hedera mai
 
 ## Prerequisites
 
-- Node version: >=`20.9.0`
-- pnpm version: >=`8.15.6`
+- [Node](https://nodejs.org/en/download/package-manager) version: >=`20.9.0`
+- [pnpm](https://pnpm.io/installation) version: >=`8.15.6`
 - [Docker Desktop](https://docs.docker.com/desktop/install/mac-install/)
 - [Brevo](https://www.brevo.com/pricing/?utm_source=adwords_brand&utm_medium=lastclick&utm_content=SendinBlue&utm_extension=sitelinks&utm_term=brevo&utm_matchtype=e&utm_campaign=20011980161&utm_network=g&km_adid=683810310625&km_adposition=&km_device=c&utm_adgroupid=151171466311&gad_source=1&gclid=CjwKCAjwupGyBhBBEiwA0UcqaJ5UFQ8uNznjz1kUfokSV1JhaWfwqFgXrNfRrB2jqE0g4LCLaKNxpBoCsw8QAvD_BwE) username and password
+- SQLite for Node JS
+
+  *`--npm install better-sqlite3`
+
+  
 
 If you use another version, please use [n](https://github.com/tj/n) to manage.
 
@@ -35,6 +40,8 @@ cp example.env .env
 
 `back-end/.env`
 - Update the `HEDERA_NETWORK` in the .env file to the network of choice
+
+Example:
 ```Bash
 # Hedera Hashgraph settings
 HEDERA_NETWORK=testnet
@@ -48,11 +55,13 @@ Example:
   # One time password settings
    OTP_SECRET=test
 ```
+
 `apps/chain/.env`
 - No changes required to the .env file
 
 `apps/notifications`
 - You will need to update the `BREVO_USERNAME` and `BREVO_PASSWORD` fields with the username and password for your Brevo account
+
 Example:
 ```Bash
 # Brevo mailer settings
