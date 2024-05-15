@@ -182,6 +182,7 @@ const columnClass = 'col-4 col-xxxl-3';
           <AppButton
             color="primary"
             type="submit"
+            data-testid="button-sign-and-submit-delete"
             :disabled="
               !accountData.isValid.value ||
               !transferAccountData.isValid.value ||
@@ -216,6 +217,7 @@ const columnClass = 'col-4 col-xxxl-3';
               :model-value="accountData.accountIdFormatted.value"
               @update:model-value="v => (accountData.accountId.value = v)"
               :filled="true"
+              data-testid="input-delete-account-id"
               placeholder="Enter Account ID"
             />
           </div>
@@ -256,6 +258,7 @@ const columnClass = 'col-4 col-xxxl-3';
               :model-value="transferAccountData.accountIdFormatted.value"
               @update:model-value="v => (transferAccountData.accountId.value = v)"
               :filled="true"
+              data-testid="input-transfer-account-id"
               placeholder="Enter Account ID"
             />
           </div>

@@ -274,7 +274,10 @@ const columnClass = 'col-4 col-xxxl-3';
           <AppButton
             color="primary"
             type="submit"
-            :disabled="!accountData.accountId.value || !payerData.isValid.value"
+            data-testid="button-sign-and-submit-update"
+            :disabled="
+              !accountData.accountId.value || !payerData.isValid.value || !accountData.isValid.value
+            "
           >
             <span class="bi bi-send"></span>
             Sign & Submit</AppButton
@@ -296,13 +299,14 @@ const columnClass = 'col-4 col-xxxl-3';
         <div class="row">
           <div class="form-group" :class="[columnClass]">
             <label class="form-label">Account ID <span class="text-danger">*</span></label>
-
             <AppInput
               :model-value="accountData.accountIdFormatted.value"
               @update:model-value="v => (accountData.accountId.value = v)"
               :filled="true"
+              data-testid="input-account-id-for-update"
               placeholder="Enter Account ID"
             />
+            <div v-if="accountData.isValid.value" data-testid="div-account-info-fetched"></div>
           </div>
 
           <div class="form-group mt-6" :class="[columnClass]">
@@ -340,6 +344,7 @@ const columnClass = 'col-4 col-xxxl-3';
             v-model:checked="newAccountData.acceptStakingRewards"
             size="md"
             name="accept-staking-rewards"
+            data-testid="switch-accept-staking-rewards"
             label="Accept Staking Rewards"
           />
         </div>
@@ -392,6 +397,7 @@ const columnClass = 'col-4 col-xxxl-3';
               v-model="newAccountData.memo"
               :filled="true"
               maxlength="100"
+              data-testid="input-memo-update"
               placeholder="Enter Memo"
             />
           </div>
@@ -415,6 +421,7 @@ const columnClass = 'col-4 col-xxxl-3';
               :max="5000"
               :filled="true"
               type="number"
+              data-testid="input-max-auto-token-associations"
               placeholder="Enter Max Token Associations"
             />
           </div>
