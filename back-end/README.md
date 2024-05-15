@@ -1,15 +1,21 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 # Hedera Transaction Tool Backend
+The `back-end` directory contains the following microservices.
 
-The Hedera Transaction Tool application is a demo application that allows a user to generate keys, create, sign, and submit transactions to a Hedera network. This software is designed for use solely by the Hedera Council and staff. The software is being released as open source as example code only, and is not intended or suitable for use in its current form by anyone other than members of the Hedera Council and Hedera personnel. If you are not a Hedera Council member or staff member, use of this application or of the code in its current form is not recommended
-and is at your own risk.
+### API
+The first module should serve as the main API responsible for handling user requests, managing user authentication and authorization, and handling database operations. This module will handle tasks such as user management, authentication, transaction creation, transaction operations, notifications, and all other user-required methods.
+
+### Chain
+Functions as a chain processor that is responsible for monitoring the Hedera mainnet, executing transactions, and updating the transaction statuses in real time. This module will listen for events on the Hedera mainnet, execute transactions according to the user's actions, and update the transaction statuses based on the response from the Hedera network.
+
 
 ## Prerequisites
 
-- Node version: `20.9.0`
-- pnpm version: `8.15.6`
+- Node version: >=`20.9.0`
+- pnpm version: >=`8.15.6`
 - [Docker Desktop](https://docs.docker.com/desktop/install/mac-install/)
+- [Brevo](https://www.brevo.com/pricing/?utm_source=adwords_brand&utm_medium=lastclick&utm_content=SendinBlue&utm_extension=sitelinks&utm_term=brevo&utm_matchtype=e&utm_campaign=20011980161&utm_network=g&km_adid=683810310625&km_adposition=&km_device=c&utm_adgroupid=151171466311&gad_source=1&gclid=CjwKCAjwupGyBhBBEiwA0UcqaJ5UFQ8uNznjz1kUfokSV1JhaWfwqFgXrNfRrB2jqE0g4LCLaKNxpBoCsw8QAvD_BwE) username and password
 
 If you use another version, please use [n](https://github.com/tj/n) to manage.
 
@@ -19,13 +25,42 @@ If you use another version, please use [n](https://github.com/tj/n) to manage.
 pnpm install -r
 ```
 
-Before running the project please create `.env` in `back-end`, `apps/api`, `apps/chain`,
-and `apps/notifications`. See the example.env in each location for the required variables.
-Or copy the existing example.env in each location.
+
+Before running the project please create `.env` in the following directories. Rename the example.env to .env in each location for the required variables.
+Or copy the existing example.env in each location and rename to .env.
 
 ```shell
 cp example.env .env
 ```
+
+`back-end/.env`
+- Update the `HEDERA_NETWORK` in the .env file to the network of choice
+```Bash
+# Hedera Hashgraph settings
+HEDERA_NETWORK=testnet
+```
+
+`apps/api/.env`
+- Update the `OTP_SECRET` in the .env file with a secret of your choice
+  
+Example:
+```Bash
+  # One time password settings
+   OTP_SECRET=test
+```
+`apps/chain/.env`
+- No changes required to the .env file
+
+`apps/notifications`
+- You will need to update the `BREVO_USERNAME` and `BREVO_PASSWORD` fields with the username and password for your Brevo account
+Example:
+```Bash
+# Brevo mailer settings
+BREVO_USERNAME=test@outlook.com
+BREVO_PASSWORD=test
+```
+
+
 
 ### Start developing ⚒️
 
@@ -47,7 +82,7 @@ rm -rf <back-end base directory>/pgdata
 docker-compose up
 ```
 
-### Create Admin
+### Create Admin User
 
 1. Make sure at least the database is running or just `docker compose up`
 2. Create `.env` file inside `scripts` folder
