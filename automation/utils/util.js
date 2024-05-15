@@ -62,6 +62,33 @@ const generateRandomPassword = (length = 10) => {
   return result;
 };
 
+/**
+ * Formats the transaction ID from one format to another.
+ * Converts from: 0.0.1509@1715260863.080000000
+ * To: 0.0.1509-1715260863-080000000
+ * Specifically converts '@' to '-' and only the first dot after the '@' to '-' without affecting initial '0.0'.
+ * @param {string} transactionId - The transaction ID in the original format.
+ * @returns {string} The formatted transaction ID.
+ */
+function formatTransactionId(transactionId) {
+  // Replace '@' with '-'
+  let formattedId = transactionId.replace('@', '-');
+
+  // Regex to find the first dot after a sequence of digits that follows the '-' replacing '@'
+  // This regex specifically avoids changing any dots before the '-'
+  formattedId = formattedId.replace(/-(\d+)\.(\d+)/, '-$1-$2');
+
+  return formattedId;
+}
+
+/**
+ * Utility function to pause execution for a given duration.
+ * @param {number} ms - The number of milliseconds to delay.
+ */
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 const asciiArt =
   '\n' +
   ' ________ __    __        ________ ______   ______  __               ______  __    __ ________ ______  __       __  ______  ________ ______  ______  __    __ \n' +
@@ -81,4 +108,6 @@ module.exports = {
   generateRandomEmail,
   generateRandomPassword,
   setupEnvironmentForTransactions,
+  formatTransactionId,
+  delay,
 };

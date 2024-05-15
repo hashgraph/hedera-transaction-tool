@@ -162,6 +162,33 @@ class BasePage {
       console.log(`Clicked on switch using JavaScript.`);
     }
   }
+
+  /**
+   * Checks if a button is enabled based on its selector.
+   * @param {string} testId - The selector for the button to check.
+   * @returns {Promise<boolean>} - True if the button is enabled, false otherwise.
+   */
+  async isButtonEnabled(testId) {
+    const button = await this.window.waitForSelector(`[data-testid="${testId}"]`, {
+      state: 'attached',
+    });
+    return !(await button.isDisabled());
+  }
+
+  async waitForElementPresentInDOM(testId, timeout = this.LONG_TIMEOUT) {
+    try {
+      await this.window.waitForSelector(`[data-testid="${testId}"]`, {
+        state: 'attached',
+        timeout: timeout,
+      });
+      console.log(`Element with selector "${testId}" is present in the DOM.`);
+    } catch (error) {
+      console.error(
+        `Element with selector "${testId}" did not appear in the DOM within ${timeout} ms.`,
+      );
+      throw error;
+    }
+  }
 }
 
 module.exports = BasePage;

@@ -76,17 +76,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can execute create account transaction with single key', async () => {
-    await transactionPage.clickOnCreateNewTransactionButton();
-    await transactionPage.clickOnCreateAccountTransaction();
-
-    await transactionPage.clickOnSignAndSubmitButton();
-    await transactionPage.clickSignTransactionButton();
-    await transactionPage.fillInPassword(globalCredentials.password);
-    await transactionPage.clickOnPasswordContinue();
-
-    await transactionPage.waitForSuccessModalToAppear();
-    const newAccountId = await transactionPage.getNewAccountIdText();
-    await transactionPage.clickOnCloseButtonForCompletedTransaction();
+    const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password);
 
     const accountDetails = await transactionPage.mirrorGetAccountResponse(newAccountId);
     const createdTimestamp = accountDetails.accounts[0]?.created_timestamp;
@@ -94,20 +84,11 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can create account with memo', async () => {
-    await transactionPage.clickOnCreateNewTransactionButton();
-    await transactionPage.clickOnCreateAccountTransaction();
-
     const memoText = 'test memo';
-    await transactionPage.fillInMemo(memoText);
 
-    await transactionPage.clickOnSignAndSubmitButton();
-    await transactionPage.clickSignTransactionButton();
-    await transactionPage.fillInPassword(globalCredentials.password);
-    await transactionPage.clickOnPasswordContinue();
-
-    await transactionPage.waitForSuccessModalToAppear();
-    const newAccountId = await transactionPage.getNewAccountIdText();
-    await transactionPage.clickOnCloseButtonForCompletedTransaction();
+    const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password, {
+      memo: memoText,
+    });
 
     const accountDetails = await transactionPage.mirrorGetAccountResponse(newAccountId);
     const memoFromAPI = accountDetails.accounts[0]?.memo;
@@ -115,75 +96,41 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can create account with receiver sig required', async () => {
-    await transactionPage.clickOnCreateNewTransactionButton();
-    await transactionPage.clickOnCreateAccountTransaction();
+    const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password, {
+      isReceiverSigRequired: true,
+    });
 
-    await transactionPage.clickOnReceiverSigRequiredSwitch();
-
-    await transactionPage.clickOnSignAndSubmitButton();
-    await transactionPage.clickSignTransactionButton();
-    await transactionPage.fillInPassword(globalCredentials.password);
-    await transactionPage.clickOnPasswordContinue();
-
-    await transactionPage.waitForSuccessModalToAppear();
-    const newAccountId = await transactionPage.getNewAccountIdText();
-    await transactionPage.clickOnCloseButtonForCompletedTransaction();
     const accountDetails = await transactionPage.mirrorGetAccountResponse(newAccountId);
     const isReceiverSigRequired = accountDetails.accounts[0]?.receiver_sig_required;
     expect(isReceiverSigRequired).toBe(true);
   });
 
   test('Verify user can create account with initial funds', async () => {
-    await transactionPage.clickOnCreateNewTransactionButton();
-    await transactionPage.clickOnCreateAccountTransaction();
+    const initialHbarFunds = '1';
 
-    await transactionPage.fillInInitialFunds('1');
+    const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password, {
+      initialFunds: initialHbarFunds,
+    });
 
-    await transactionPage.clickOnSignAndSubmitButton();
-    await transactionPage.clickSignTransactionButton();
-    await transactionPage.fillInPassword(globalCredentials.password);
-    await transactionPage.clickOnPasswordContinue();
-
-    await transactionPage.waitForSuccessModalToAppear();
-    const newAccountId = await transactionPage.getNewAccountIdText();
-    await transactionPage.clickOnCloseButtonForCompletedTransaction();
     const accountDetails = await transactionPage.mirrorGetAccountResponse(newAccountId);
     const balanceFromAPI = accountDetails.accounts[0]?.balance?.balance;
-    expect(balanceFromAPI).toBe(100000000);
+    expect(balanceFromAPI).toBe(initialHbarFunds * 100000000);
   });
 
   test('Verify user can create account with max account associations', async () => {
-    await transactionPage.clickOnCreateNewTransactionButton();
-    await transactionPage.clickOnCreateAccountTransaction();
-
     const maxAutoAssociations = 10;
-    await transactionPage.fillInMaxAccountAssociations(maxAutoAssociations.toString());
 
-    await transactionPage.clickOnSignAndSubmitButton();
-    await transactionPage.clickSignTransactionButton();
-    await transactionPage.fillInPassword(globalCredentials.password);
-    await transactionPage.clickOnPasswordContinue();
+    const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password, {
+      maxAutoAssociations,
+    });
 
-    await transactionPage.waitForSuccessModalToAppear();
-    const newAccountId = await transactionPage.getNewAccountIdText();
-    await transactionPage.clickOnCloseButtonForCompletedTransaction();
     const accountDetails = await transactionPage.mirrorGetAccountResponse(newAccountId);
     const maxAutoAssociationsFromAPI = accountDetails.accounts[0]?.max_automatic_token_associations;
     expect(maxAutoAssociationsFromAPI).toBe(maxAutoAssociations);
   });
 
   test('Verify transaction is stored in the local database for account create tx', async () => {
-    await transactionPage.clickOnCreateNewTransactionButton();
-    await transactionPage.clickOnCreateAccountTransaction();
-
-    await transactionPage.clickOnSignAndSubmitButton();
-    await transactionPage.clickSignTransactionButton();
-    await transactionPage.fillInPassword(globalCredentials.password);
-    await transactionPage.clickOnPasswordContinue();
-
-    await transactionPage.waitForSuccessModalToAppear();
-    const newTransactionId = await transactionPage.getNewTransactionIdText();
-    await transactionPage.clickOnCloseButtonForCompletedTransaction();
+    const { newTransactionId } = await transactionPage.createNewAccount(globalCredentials.password);
 
     const isTxExistingInDb = await transactionPage.verifyTransactionExists(
       newTransactionId,
@@ -194,17 +141,8 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify account is stored in the local database for account create tx', async () => {
-    await transactionPage.clickOnCreateNewTransactionButton();
-    await transactionPage.clickOnCreateAccountTransaction();
-
-    await transactionPage.clickOnSignAndSubmitButton();
-    await transactionPage.clickSignTransactionButton();
-    await transactionPage.fillInPassword(globalCredentials.password);
-    await transactionPage.clickOnPasswordContinue();
-
-    await transactionPage.waitForSuccessModalToAppear();
-    const newAccountId = await transactionPage.getNewAccountIdText();
-    await transactionPage.clickOnCloseButtonForCompletedTransaction();
+    const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password);
+    await transactionPage.clickOnAccountsMenuButton();
 
     const isTxExistingInDb = await transactionPage.verifyAccountExists(newAccountId);
 
@@ -212,22 +150,10 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can execute Account Create tx with complex key', async () => {
-    await transactionPage.clickOnCreateNewTransactionButton();
-    await transactionPage.clickOnCreateAccountTransaction();
-    await transactionPage.clickOnComplexTab();
-    await transactionPage.clickOnCreateNewComplexKeyButton();
-    await transactionPage.createComplexKeyStructure();
-    await transactionPage.clickOnDoneButton();
+    const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password, {
+      isComplex: true,
+    });
     const allGeneratedKeys = transactionPage.getAllGeneratedPublicKeys();
-
-    await transactionPage.clickOnSignAndSubmitButton();
-    await transactionPage.clickSignTransactionButton();
-    await transactionPage.fillInPassword(globalCredentials.password);
-    await transactionPage.clickOnPasswordContinue();
-
-    await transactionPage.waitForSuccessModalToAppear();
-    const newAccountId = await transactionPage.getNewAccountIdText();
-    await transactionPage.clickOnCloseButtonForCompletedTransaction();
 
     const accountDetails = await transactionPage.mirrorGetAccountResponse(newAccountId);
     const protoBufEncodedBytes = accountDetails.accounts[0]?.key?.key;
@@ -237,21 +163,80 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify account is displayed in the account card section', async () => {
-    await transactionPage.clickOnCreateNewTransactionButton();
-    await transactionPage.clickOnCreateAccountTransaction();
-
-    await transactionPage.clickOnSignAndSubmitButton();
-    await transactionPage.clickSignTransactionButton();
-    await transactionPage.fillInPassword(globalCredentials.password);
-    await transactionPage.clickOnPasswordContinue();
-
-    await transactionPage.waitForSuccessModalToAppear();
-    const newAccountId = await transactionPage.getNewAccountIdText();
-    await transactionPage.clickOnCloseButtonForCompletedTransaction();
+    const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password);
 
     await transactionPage.clickOnAccountsMenuButton();
     const isAccountVisible = await transactionPage.isAccountCardVisible(newAccountId);
 
     expect(isAccountVisible).toBe(true);
+  });
+
+  test('Verify user can execute account delete tx', async () => {
+    await transactionPage.ensureAccountExists(globalCredentials.password);
+    const accountFromList = await transactionPage.getFirstAccountFromList();
+    const transactionId = await transactionPage.deleteAccount(
+      accountFromList,
+      globalCredentials.password,
+    );
+
+    const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
+    const transactionType = transactionDetails.transactions[0]?.name;
+    const deletedAccount = transactionDetails.transactions[0]?.entity_id;
+    const result = transactionDetails.transactions[0]?.result;
+
+    expect(transactionType).toBe('CRYPTODELETE');
+    expect(deletedAccount).toBe(accountFromList);
+    expect(result).toBe('SUCCESS');
+  });
+
+  test('Verify account is deleted from the db after account delete tx', async () => {
+    await transactionPage.ensureAccountExists(globalCredentials.password);
+    const accountFromList = await transactionPage.getFirstAccountFromList();
+    await transactionPage.deleteAccount(accountFromList, globalCredentials.password);
+
+    const isTxExistingInDb = await transactionPage.verifyAccountExists(accountFromList);
+    expect(isTxExistingInDb).toBe(false);
+  });
+
+  test('Verify account id is removed from the account cards after account delete tx', async () => {
+    await transactionPage.ensureAccountExists(globalCredentials.password);
+    const accountFromList = await transactionPage.getFirstAccountFromList();
+    await transactionPage.deleteAccount(accountFromList, globalCredentials.password);
+
+    const isAccountVisible = await transactionPage.isAccountCardVisible(accountFromList);
+    expect(isAccountVisible).toBe(false);
+  });
+
+  test('Verify that account is updated after we execute an account update tx', async () => {
+    await transactionPage.ensureAccountExists(globalCredentials.password);
+    const accountFromList = await transactionPage.getFirstAccountFromList();
+    const updatedMemoText = 'Updated memo';
+    const maxAutoAssociationsNumber = '44';
+    const transactionId = await transactionPage.updateAccount(
+      accountFromList,
+      globalCredentials.password,
+      maxAutoAssociationsNumber,
+      updatedMemoText,
+    );
+
+    const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
+
+    const transactionType = transactionDetails.transactions[0]?.name;
+    const updatedAccount = transactionDetails.transactions[0]?.entity_id;
+    const result = transactionDetails.transactions[0]?.result;
+    expect(transactionType).toBe('CRYPTOUPDATEACCOUNT');
+    expect(updatedAccount).toBe(accountFromList);
+    expect(result).toBe('SUCCESS');
+
+    const accountDetails = await transactionPage.mirrorGetAccountResponse(accountFromList);
+
+    const memoFromResponse = accountDetails.accounts[0]?.memo;
+    expect(memoFromResponse).toBe(updatedMemoText);
+
+    const maxAutoAssocFromResponse = accountDetails.accounts[0]?.max_automatic_token_associations;
+    expect(maxAutoAssocFromResponse.toString()).toBe(maxAutoAssociationsNumber);
+
+    const acceptStakingRewardsFromResponse = accountDetails.accounts[0]?.decline_reward;
+    expect(acceptStakingRewardsFromResponse).toBe(true);
   });
 });

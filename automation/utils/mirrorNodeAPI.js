@@ -1,5 +1,6 @@
 const axios = require('axios');
 const retry = require('async-retry');
+const { formatTransactionId } = require('./util');
 
 const getBaseURL = () => {
   const env = process.env.ENVIRONMENT;
@@ -17,7 +18,6 @@ const apiCall = async (endpoint, params) => {
     console.log(`API Call successful: ${fullURL}`);
     return response.data;
   } catch (error) {
-    console.error(`Failed to fetch data from ${endpoint}:`, error);
     throw new Error(`API call failed: ${error.message}`);
   }
 };
@@ -82,6 +82,16 @@ const getAccountDetails = async accountId => {
   );
 };
 
+const getTransactionDetails = async transactionId => {
+  const formatedTransactionId = formatTransactionId(transactionId);
+  return pollWithRetry(
+    `transactions/${formatedTransactionId}`,
+    {},
+    result => result && result.transactions && result.transactions.length > 0,
+  );
+};
+
 module.exports = {
   getAccountDetails,
+  getTransactionDetails,
 };
