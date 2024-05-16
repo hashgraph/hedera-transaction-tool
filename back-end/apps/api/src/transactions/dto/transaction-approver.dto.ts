@@ -1,4 +1,4 @@
-import { Expose, Transform } from 'class-transformer';
+import { Expose, Transform, Type } from 'class-transformer';
 
 export class TransactionApproverDto {
   @Expose()
@@ -28,4 +28,8 @@ export class TransactionApproverDto {
 
   @Expose()
   createdAt: Date;
+
+  @Expose()
+  @Type(() => TransactionApproverDto)
+  approvers?: TransactionApproverDto[];
 }
