@@ -193,21 +193,72 @@ export class TransactionsService {
     };
   }
 
-  // Get all transactions that need to be approved by the user.
-  // Include the creator key in the response.
-  //TODO with postgres, there should be a cleaner way to do this
-  getTransactionsToApprove(user: User, take: number, skip: number): Promise<Transaction[]> {
-    const userKeys = user.keys.map(userKey => userKey.id).join(',');
-    return this.repo.query(
-      `with recursive approverList as ` +
-        `(select * from transaction_approver where "userKeyId" in (${userKeys}) ` +
-        `union all ` +
-        `select approver.* from transaction_approver as approver ` +
-        `join approverList on approverList."listId" = approver.id) ` +
-        `select distinct t.*, userKey.* from "transaction" as t ` +
-        `join user_key as userKey on t."creatorKeyId" = userKey.id ` +
-        `join approverList on t.id = "transactionId" LIMIT ${take} OFFSET ${skip}`,
-    );
+  /* Get the transactions that need to be approved by the user. */
+  async getTransactionsToApprove(
+    user: User,
+    { page, limit, size, offset }: Pagination,
+    sort?: Sorting[],
+    // filter?: Filtering[],
+  ): Promise<PaginatedResourceDto<Transaction>> {
+    // const where = getWhere<Transaction>(filter);
+    const order = getOrder(sort);
+
+    const commonQueryPart = `
+      where (
+      with recursive "approverList" as
+              (
+                select * from "transaction_approver"
+                where "transaction_approver"."transactionId" = "transaction"."id" 
+                  union all
+                    select "approver".* from "transaction_approver" as "approver"
+                    join "approverList" on "approverList"."id" = "approver"."listId"
+              )
+            select count(*) from "approverList"
+            where "approverList"."deletedAt" is null and "approverList"."userId" = $1
+      ) > 0
+    `;
+
+    /* SQL Injection not possible because of sorting params validation */
+    const orderPart = `${
+      order
+        ? `order by ${Object.entries(order)
+            .map(o => `"transaction"."${o[0]}" ${o[1]}`)
+            .join(', ')}`
+        : ''
+    }`;
+
+    try {
+      return await this.entityManager.transaction(async transactionalEntityManager => {
+        const totalItemsResult = await transactionalEntityManager.query(
+          `
+            select count(*) from "transaction"
+            ${commonQueryPart}
+          `,
+          [user.id],
+        );
+
+        const items = await transactionalEntityManager.query(
+          `
+            select * from "transaction"
+            join "user_key" on "transaction"."creatorKeyId" = "user_key"."id"
+            ${commonQueryPart}
+            ${orderPart}
+            offset $2
+            limit $3
+          `,
+          [user.id, offset, limit],
+        );
+
+        return {
+          totalItems: Number(totalItemsResult[0].count),
+          items,
+          page,
+          size,
+        };
+      });
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
   }
 
   /* Create a new transaction with the provided information */

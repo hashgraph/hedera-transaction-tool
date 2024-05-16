@@ -6,7 +6,6 @@ import {
   Param,
   ParseIntPipe,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -129,13 +128,19 @@ export class TransactionsController {
     status: 200,
     type: [TransactionDto],
   })
+  @Serialize(withPaginatedResponse(TransactionDto))
   @Get('/approve')
   getTransactionsToApprove(
     @GetUser() user: User,
-    @Query('take', ParseIntPipe) take: number,
-    @Query('skip', ParseIntPipe) skip: number,
-  ): Promise<Transaction[]> {
-    return this.transactionsService.getTransactionsToApprove(user, take, skip);
+    @PaginationParams() paginationParams: Pagination,
+    @SortingParams(transactionProperties) sort?: Sorting[],
+    // @FilteringParams({
+    //   validProperties: transactionProperties,
+    //   dateProperties: transactionDateProperties,
+    // })
+    // filter?: Filtering[],
+  ) {
+    return this.transactionsService.getTransactionsToApprove(user, paginationParams, sort);
   }
 
   @ApiOperation({
