@@ -11,3 +11,10 @@ export interface ITransactionApprover extends IBaseTransactionApprover {
   signature?: string;
   approved?: boolean;
 }
+
+export interface TransactionApproverDto {
+  listId?: number;
+  threshold?: number;
+  userId?: number;
+  approvers?: TransactionApproverDto[];
+}
