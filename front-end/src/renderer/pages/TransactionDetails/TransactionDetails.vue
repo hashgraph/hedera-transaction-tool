@@ -5,8 +5,6 @@ import { useRouter } from 'vue-router';
 import { KeyList, Transaction as SDKTransaction } from '@hashgraph/sdk';
 import { Transaction } from '@prisma/client';
 
-import { getDateStringExtended } from '../../utils/index';
-
 import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -21,6 +19,7 @@ import {
 } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
 import { hexToUint8Array } from '@renderer/services/electronUtilsService';
+import { decryptPrivateKey } from '@renderer/services/keyPairService';
 
 import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
@@ -40,6 +39,7 @@ import {
   publicRequiredToSign,
 } from '@renderer/utils/transactionSignatureModels';
 import {
+  getDateStringExtended,
   getPrivateKey,
   getTransactionBodySignatureWithoutNodeAccountId,
   getUInt8ArrayFromString,
@@ -53,7 +53,7 @@ import KeyStructureSignatureStatus from '@renderer/components/KeyStructureSignat
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 
 import txTypeComponentMapping from './txTypeComponentMapping';
-import { decryptPrivateKey } from '@renderer/services/keyPairService';
+import ReadOnlyApproversList from '@renderer/components/Approvers/ReadOnlyApproversList.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -472,13 +472,25 @@ const approve = 'Approve';
               <hr v-if="orgTransaction?.observers" class="separator my-5" />
 
               <!-- Observers -->
-              <div v-if="orgTransaction?.observers" class="mt-5">
+              <div
+                v-if="orgTransaction?.observers && orgTransaction.observers.length > 0"
+                class="mt-5"
+              >
                 <h4 class="text-title text-bold">Observers</h4>
                 <UsersGroup
                   :addable="false"
                   :editable="false"
                   :userIds="orgTransaction.observers.map(o => o.userId)"
                 />
+              </div>
+
+              <!-- Approvers -->
+              <div
+                v-if="orgTransaction?.approvers && orgTransaction?.approvers.length > 0"
+                class="mt-5"
+              >
+                <h4 class="text-title text-bold">Approvers</h4>
+                <ReadOnlyApproversList :approvers="orgTransaction?.approvers" />
               </div>
             </div>
           </form>
