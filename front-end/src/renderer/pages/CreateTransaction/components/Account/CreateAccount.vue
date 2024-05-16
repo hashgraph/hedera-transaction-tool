@@ -271,6 +271,20 @@ const columnClass = 'col-4 col-xxxl-3';
 
       <hr class="separator my-5" />
 
+      <div class="row mb-6">
+        <div class="form-group" :class="[columnClass]">
+          <label class="form-label">Nickname</label>
+          <div class="">
+            <AppInput
+              v-model="nickname"
+              :filled="true"
+              data-testid="input-nickname"
+              placeholder="Enter Nickname"
+            />
+          </div>
+        </div>
+      </div>
+
       <TransactionIdControls
         v-model:payer-id="payerData.accountId.value"
         v-model:valid-start="validStart"
@@ -412,20 +426,6 @@ const columnClass = 'col-4 col-xxxl-3';
               maxlength="100"
               placeholder="Enter Account Memo"
             />
-          </div>
-        </div>
-
-        <div class="row mt-6">
-          <div class="form-group" :class="[columnClass]">
-            <label class="form-label">Nickname</label>
-            <div class="">
-              <AppInput
-                v-model="nickname"
-                :filled="true"
-                data-testid="input-nickname"
-                placeholder="Enter Nickname"
-              />
-            </div>
           </div>
         </div>
 
