@@ -39,6 +39,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppStepper from '@renderer/components/ui/AppStepper.vue';
 import KeyStructureSignatureStatus from '@renderer/components/KeyStructureSignatureStatus.vue';
+import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 
 import txTypeComponentMapping from './txTypeComponentMapping';
 
@@ -295,6 +296,16 @@ const stepperItems = [
                       ? stepperActiveIndex + 1
                       : stepperActiveIndex
                   "
+                />
+              </div>
+
+              <!-- Observers -->
+              <div v-if="orgTransaction?.observers" class="mt-5">
+                <h4 :class="detailItemLabelClass">Observers</h4>
+                <UsersGroup
+                  :addable="false"
+                  :editable="false"
+                  :userIds="orgTransaction.observers.map(o => o.userId)"
                 />
               </div>
 
