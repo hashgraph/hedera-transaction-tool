@@ -42,7 +42,7 @@ const accoundIds = computed<string[]>(() => flattenAccountIds(user.publicKeyToAc
 /* Handlers */
 const handlePayerChange = payerId => {
   account.accountId.value = payerId;
-  emit('update:payerId', payerId);
+  emit('update:payerId', payerId || '');
 };
 
 /* Functions */
@@ -72,7 +72,7 @@ onMounted(async () => {
     const allAccounts = user.publicKeyToAccounts.map(a => a.accounts).flat();
     if (allAccounts.length > 0 && allAccounts[0].account) {
       account.accountId.value = allAccounts[0].account;
-      emit('update:payerId', allAccounts[0].account);
+      emit('update:payerId', allAccounts[0].account || '');
     }
   }
 });
