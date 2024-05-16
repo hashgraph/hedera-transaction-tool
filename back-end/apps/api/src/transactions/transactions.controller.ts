@@ -3,18 +3,15 @@ import {
   Controller,
   Delete,
   Get,
-  Inject,
   Param,
   ParseIntPipe,
   Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import {
-  CHAIN_SERVICE,
   Filtering,
   FilteringParams,
   PaginatedResourceDto,
@@ -23,7 +20,6 @@ import {
   Serialize,
   Sorting,
   SortingParams,
-  TransactionExecutedDto,
   withPaginatedResponse,
 } from '@app/common';
 
@@ -46,10 +42,7 @@ import {
 @Controller('transactions')
 @UseGuards(JwtAuthGuard, VerifiedUserGuard)
 export class TransactionsController {
-  constructor(
-    private transactionsService: TransactionsService,
-    @Inject(CHAIN_SERVICE) private readonly chainService: ClientProxy,
-  ) {}
+  constructor(private transactionsService: TransactionsService) {}
 
   /* Submit a transaction */
   @ApiOperation({
@@ -161,20 +154,6 @@ export class TransactionsController {
     @Query('skip', ParseIntPipe) skip: number,
   ): Promise<Transaction[]> {
     return this.transactionsService.getTransactionsToObserve(user, take, skip);
-  }
-
-  /* TEMPORARY: EMIT EVENT TO EXECUTE TRANSACTION */
-  @ApiOperation({
-    summary: 'Execute a transaction',
-    description: 'Emit an event to execute a transaction.',
-  })
-  @ApiResponse({
-    status: 200,
-    type: TransactionExecutedDto,
-  })
-  @Get('execute/:id')
-  async emitExecute(@Param('id', ParseIntPipe) id: number): Promise<TransactionExecutedDto> {
-    return await this.chainService.send('execute', id).toPromise();
   }
 
   @ApiOperation({
