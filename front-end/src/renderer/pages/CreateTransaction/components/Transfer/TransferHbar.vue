@@ -107,7 +107,7 @@ const handleCreate = async e => {
 
     transaction.value = createTransaction();
 
-    await transactionProcessor.value?.process(getRequiredKeys());
+    await transactionProcessor.value?.process(await getRequiredKeys());
   } catch (err: any) {
     console.log(err);
 
@@ -272,7 +272,7 @@ function createTransaction() {
   return transaction;
 }
 
-function getRequiredKeys() {
+async function getRequiredKeys() {
   if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
     throw Error('Invalid Payer ID');
   }
@@ -282,6 +282,12 @@ function getRequiredKeys() {
   const addedKeysForAccountIds: string[] = [];
   for (const transfer of transfers.value.filter(t => !t.isApproved)) {
     const accountId = transfer.accountId.toString();
+
+    if (!accountInfos.value[accountId]) {
+      accountInfos.value[accountId] = await getAccountInfo(accountId, network.mirrorNodeBaseURL);
+      accountInfos.value = { ...accountInfos.value };
+    }
+
     const key = accountInfos.value[accountId].key;
     const receiverSigRequired = accountInfos.value[accountId].receiverSignatureRequired;
 
