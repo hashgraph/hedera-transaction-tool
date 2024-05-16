@@ -1,65 +1,74 @@
 import {
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { Transaction } from './transaction.entity';
 import { UserKey } from './user-key.entity';
+import { User } from './user.entity';
 
 @Entity()
 export class TransactionApprover {
   @PrimaryGeneratedColumn()
   id: number;
 
-  // Only the base approver(s) should have a transactionId.
-  // If the approver has a listId, then transactionId should be null
-  @ManyToOne(() => Transaction, (transaction) => transaction.approvers)
+  /* If the approver has a listId, then transactionId should be null */
+  @ManyToOne(() => Transaction, transaction => transaction.approvers, {
+    nullable: true,
+  })
+  @JoinColumn({ name: 'transactionId' })
   transaction?: Transaction;
 
-  // The parent list, if applicable
-  @ManyToOne(
-    () => TransactionApprover,
-    (approverList) => approverList.approvers,
-    { nullable: true },
-  )
+  @Column({ nullable: true })
+  transactionId?: number;
+
+  @ManyToOne(() => TransactionApprover, approverList => approverList.approvers, {
+    nullable: true,
+  })
+  @JoinColumn({ name: 'listId' })
   list?: TransactionApprover;
 
-  // The threshold of this list, if applicable
+  @Column({ nullable: true })
+  listId?: number;
+
   @Column({ nullable: true })
   threshold?: number;
 
-  // The user key of this approver, if applicable
-  @ManyToOne(
-    () => UserKey,
-    (userKey) => userKey.approvedTransactions,
-    { nullable: true },
-  )
+  @ManyToOne(() => UserKey, userKey => userKey.approvedTransactions, { nullable: true })
+  @JoinColumn({ name: 'userKeyId' })
   userKey?: UserKey;
 
-  // The signature created by the user key, if applicable
+  @Column({ nullable: true })
+  userKeyId?: number;
+
   @Column({ type: 'bytea', nullable: true })
   signature?: Buffer;
 
-  // The status of approval, if applicable
+  @ManyToOne(() => User, user => user.approvableTransactions, { nullable: true })
+  @JoinColumn({ name: 'userId' })
+  user?: User;
+
+  @Column({ nullable: true })
+  userId?: number;
+
   @Column({ nullable: true })
   approved?: boolean;
 
-  @OneToMany(() => TransactionApprover, (approver) => approver.list)
+  @OneToMany(() => TransactionApprover, approver => approver.list)
   approvers: TransactionApprover[];
 
   @CreateDateColumn()
   createdAt: Date;
-}
 
-// insert into transaction_approver ("id", "transactionId", "listId", "threshold", "userKeyId", "signature", "approved") values (1,1,null,2,null,null,null);
-// insert into transaction_approver ("id", "transactionId", "listId", "threshold", "userKeyId", "signature", "approved") values (2,null,1,null,1,'1',true);
-// insert into transaction_approver ("id", "transactionId", "listId", "threshold", "userKeyId", "signature", "approved") values (3,null,1,null,2,'2',false);
-// insert into transaction_approver ("id", "transactionId", "listId", "threshold", "userKeyId", "signature", "approved") values (4,null,1,2,null,null,null);
-// insert into transaction_approver ("id", "transactionId", "listId", "threshold", "userKeyId", "signature", "approved") values (5,null,4,null,3,'3',null);
-// insert into transaction_approver ("id", "transactionId", "listId", "threshold", "userKeyId", "signature", "approved") values (6,null,4,null,4,'4',null);
-// insert into transaction_approver ("id", "transactionId", "listId", "threshold", "userKeyId", "signature", "approved") values (7,null,4,1,null,null,null);
-// insert into transaction_approver ("id", "transactionId", "listId", "threshold", "userKeyId", "signature", "approved") values (8,null,7,null,5,'5',true);
-// insert into transaction_approver ("id", "transactionId", "listId", "threshold", "userKeyId", "signature", "approved") values (9,null,7,null,6,'6',false);
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt: Date;
+}
