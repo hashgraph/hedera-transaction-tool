@@ -274,8 +274,8 @@ const handleChangeNickname = async () => {
                     @click="isUnlinkAccountModalShown = true"
                     ><span class="bi bi-trash"></span> Remove</AppButton
                   >
-                  <div class="border-start ps-3">
-                    <div class="dropdown" v-if="!accountData.accountInfo.value?.deleted">
+                  <div v-if="!accountData.accountInfo.value?.deleted" class="border-start ps-3">
+                    <div class="dropdown">
                       <AppButton class="min-w-unset" color="borderless" data-bs-toggle="dropdown"
                         ><span class="bi bi-arrow-repeat"></span> Edit</AppButton
                       >
