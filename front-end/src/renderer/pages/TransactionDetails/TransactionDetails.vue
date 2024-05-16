@@ -14,7 +14,11 @@ import useNetwork from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
 
-import { fullUploadSignatures, getTransactionById } from '@renderer/services/organization';
+import {
+  fullUploadSignatures,
+  getTransactionById,
+  sendApproverChoice,
+} from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
 import { hexToUint8Array } from '@renderer/services/electronUtilsService';
 
@@ -35,7 +39,12 @@ import {
   computeSignatureKey,
   publicRequiredToSign,
 } from '@renderer/utils/transactionSignatureModels';
-import { getUInt8ArrayFromString, openTransactionInHashscan } from '@renderer/utils';
+import {
+  getPrivateKey,
+  getTransactionBodySignatureWithoutNodeAccountId,
+  getUInt8ArrayFromString,
+  openTransactionInHashscan,
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -44,6 +53,7 @@ import KeyStructureSignatureStatus from '@renderer/components/KeyStructureSignat
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 
 import txTypeComponentMapping from './txTypeComponentMapping';
+import { decryptPrivateKey } from '@renderer/services/keyPairService';
 
 /* Stores */
 const user = useUserStore();
@@ -149,12 +159,71 @@ const handleSign = async () => {
   });
 };
 
+const handleApprove = async (approved: boolean) => {
+  const callback = async () => {
+    if (
+      !sdkTransaction.value ||
+      !(sdkTransaction.value instanceof SDKTransaction) ||
+      !orgTransaction.value
+    ) {
+      throw new Error('Transaction is not available');
+    }
+
+    if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
+      throw new Error('User is not logged in organization');
+    }
+
+    if (!isLoggedInWithPassword(user.personal)) {
+      if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+      userPasswordModalRef.value?.open(
+        'Enter your personal account password',
+        'Enter your personal account password to decrypt your private key',
+        callback,
+      );
+      return;
+    }
+
+    const publicKey = user.selectedOrganization.userKeys[0].publicKey;
+    const privateKeyRaw = await decryptPrivateKey(
+      user.personal.id,
+      user.personal.password,
+      publicKey,
+    );
+    const privateKey = getPrivateKey(publicKey, privateKeyRaw);
+
+    const signature = await getTransactionBodySignatureWithoutNodeAccountId(
+      privateKey,
+      sdkTransaction.value,
+    );
+
+    await sendApproverChoice(
+      user.selectedOrganization.serverUrl,
+      orgTransaction.value.id,
+      user.selectedOrganization.userKeys[0].id,
+      signature,
+      approved,
+    );
+    toast.success(`Transaction ${approved ? 'approved' : 'disapproved'} successfully`);
+
+    router.push({
+      name: 'transactions',
+    });
+  };
+
+  await callback();
+};
+
 const handleSubmit = async e => {
   e.preventDefault();
 
   if (!isLoggedInOrganization(user.selectedOrganization)) return;
 
-  await handleSign();
+  if (router.currentRoute.value.query.approve) {
+    const choice = e.submitter?.textContent;
+    await handleApprove(choice === approve);
+  } else if (router.currentRoute.value.query.sign) {
+    await handleSign();
+  }
 };
 
 /* Hooks */
@@ -212,6 +281,8 @@ const stepperItems = [
   { title: 'Awaiting Execution', name: 'Awaiting Execution' },
   { title: 'Executed', name: 'Executed' },
 ];
+const disapprove = 'Disapprove';
+const approve = 'Approve';
 </script>
 <template>
   <div class="p-5">
@@ -258,6 +329,10 @@ const stepperItems = [
               </div>
               <div v-if="$route.query.sign">
                 <AppButton color="primary" type="submit">Sign</AppButton>
+              </div>
+              <div v-if="$route.query.approve">
+                <AppButton color="secondary" type="submit" class="me-3">{{ disapprove }}</AppButton>
+                <AppButton color="primary" type="submit">{{ approve }}</AppButton>
               </div>
             </div>
 
