@@ -9,6 +9,7 @@ import { getPrivateKey, getSignatures } from '@renderer/utils';
 import {
   ITransaction,
   ITransactionFull,
+  ObserverRole,
   PaginatedResourceDto,
   TransactionStatus,
 } from '@main/shared/interfaces';
@@ -242,16 +243,86 @@ export const getTransactionsForUser = async (
   }
 };
 
-/* Get the count of transactions for user with specific status */
-export const execute = async (serverUrl: string, transactionId: number) => {
+/* Adds an observer */
+export const addObservers = async (serverUrl: string, transactionId: number, userIds: number[]) => {
   try {
-    const { data } = await axios.get(`${serverUrl}/${controller}/execute/${transactionId}`, {
-      withCredentials: true,
-    });
+    const { data } = await axios.post(
+      `${serverUrl}/${controller}/${transactionId}/observers`,
+      {
+        userIds,
+      },
+      {
+        withCredentials: true,
+      },
+    );
 
     return data;
   } catch (error: any) {
-    let message = 'Failed to get transactions';
+    let message = 'Failed to add obsersers to transaction';
+
+    if (error instanceof AxiosError) {
+      throwIfNoResponse(error);
+
+      const errorMessage = error.response?.data?.message;
+      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
+        message = errorMessage;
+      }
+    }
+    throw new Error(message);
+  }
+};
+
+/* Adds an observer */
+export const removeObserver = async (
+  serverUrl: string,
+  transactionId: number,
+  observerId: number,
+) => {
+  try {
+    const { data } = await axios.delete(
+      `${serverUrl}/${controller}/${transactionId}/observers/${observerId}`,
+      {
+        withCredentials: true,
+      },
+    );
+
+    return data;
+  } catch (error: any) {
+    let message = 'Failed to remove obserser';
+
+    if (error instanceof AxiosError) {
+      throwIfNoResponse(error);
+
+      const errorMessage = error.response?.data?.message;
+      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
+        message = errorMessage;
+      }
+    }
+    throw new Error(message);
+  }
+};
+
+/* Adds an observer */
+export const updateObserverRole = async (
+  serverUrl: string,
+  transactionId: number,
+  observerId: number,
+  role: ObserverRole,
+) => {
+  try {
+    const { data } = await axios.patch(
+      `${serverUrl}/${controller}/${transactionId}/observers/${observerId}`,
+      {
+        role,
+      },
+      {
+        withCredentials: true,
+      },
+    );
+
+    return data;
+  } catch (error: any) {
+    let message = "Failed to update obserser's role";
 
     if (error instanceof AxiosError) {
       throwIfNoResponse(error);
