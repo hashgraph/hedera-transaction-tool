@@ -58,14 +58,7 @@ export class TransactionsService {
 
     const transaction = await this.repo.findOne({
       where: { id },
-      relations: [
-        'creatorKey',
-        'creatorKey.user',
-        'approvers',
-        'observers',
-        'observers.user',
-        'comments',
-      ],
+      relations: ['creatorKey', 'creatorKey.user', 'observers', 'observers.user', 'comments'],
     });
 
     if (!transaction) return null;
@@ -356,21 +349,26 @@ export class TransactionsService {
   async getTransactionWithVerifiedAccess(transactionId: number, user: User) {
     const transaction = await this.repo.findOne({
       where: { id: transactionId },
-      relations: [
-        'creatorKey',
-        'creatorKey.user',
-        'observers',
-        'signers',
-        'signers.userKey',
-        'signers.userKey.user',
-      ],
+      relations: ['creatorKey', 'creatorKey.user', 'observers'],
     });
 
     if (!transaction) throw new NotFoundException('Transaction not found');
 
+    transaction.signers = await this.entityManager.find(TransactionSigner, {
+      where: {
+        transaction: {
+          id: transaction.id,
+        },
+      },
+      relations: ['userKey', 'userKey.user'],
+      withDeleted: true,
+    });
+
     const userKeysToSign = await this.userKeysToSign(transaction, user);
 
     const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
+
+    transaction.approvers = this.approversService.getTreeStructure(approvers);
 
     if (
       userKeysToSign.length === 0 &&
