@@ -352,7 +352,7 @@ export class TransactionsService {
     if (!transaction) throw new NotFoundException('Transaction not found');
 
     if (
-      !transaction.observers.some(o => o.userId === user.id) ||
+      !transaction.observers.some(o => o.userId === user.id) &&
       transaction.creatorKey?.user?.id !== user.id
       // || transaction.approvers.some(a => a. === user.id
     )
