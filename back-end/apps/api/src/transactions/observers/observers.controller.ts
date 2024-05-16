@@ -21,9 +21,11 @@ import { GetUser } from '../../decorators/get-user.decorator';
 
 import { ObserversService } from './observers.service';
 
-import { TransactionObserverDto } from '../dto/transaction-observer.dto';
-import { CreateTransactionObserverDto } from '../dto/create-transaction-observer.dto';
-import { UpdateTransactionObserverDto } from '../dto/update-transaction-observer.dto';
+import {
+  TransactionObserverDto,
+  CreateTransactionObserversDto,
+  UpdateTransactionObserverDto,
+} from '../dto/';
 
 @ApiTags('Transaction Observers')
 @Controller('transactions/:transactionId?/observers')
@@ -32,9 +34,10 @@ import { UpdateTransactionObserverDto } from '../dto/update-transaction-observer
 export class ObserversController {
   constructor(private observersService: ObserversService) {}
 
+  /* Create transaction observers for the given transaction id with the user ids */
   @ApiOperation({
-    summary: 'Create a transaction observer',
-    description: 'Create a transaction observer for the given transaction with the provided data.',
+    summary: 'Creates transaction observers',
+    description: 'Create transaction observers for the given transaction with the provided data.',
   })
   @ApiResponse({
     status: 201,
@@ -44,11 +47,12 @@ export class ObserversController {
   createTransactionObserver(
     @GetUser() user: User,
     @Param('transactionId', ParseIntPipe) transactionId: number,
-    @Body() body: CreateTransactionObserverDto,
-  ): Promise<TransactionObserver> {
-    return this.observersService.createTransactionObserver(transactionId, body);
+    @Body() body: CreateTransactionObserversDto,
+  ): Promise<TransactionObserver[]> {
+    return this.observersService.createTransactionObservers(user, transactionId, body);
   }
 
+  /* Get all transaction observers for the given transaction id. */
   @ApiOperation({
     summary: 'Get transaction observers for a transaction',
     description: 'Get all transaction observers for the given transaction id.',
@@ -59,53 +63,13 @@ export class ObserversController {
   })
   @Get()
   getTransactionObserversByTransactionId(
+    @GetUser() user: User,
     @Param('transactionId', ParseIntPipe) id: number,
   ): Promise<TransactionObserver[]> {
-    return this.observersService.getTransactionObserversByTransactionId(id);
+    return this.observersService.getTransactionObserversByTransactionId(id, user);
   }
 
-  @ApiOperation({
-    summary: 'Get transaction observers for current user',
-    description: 'Get all transaction observers for the current user. IS THIS NEEDED?',
-  })
-  @ApiResponse({
-    status: 201,
-    type: [TransactionObserverDto],
-  })
-  @Get('/user')
-  getTransactionObserversByUser(@GetUser() user: User): Promise<TransactionObserver[]> {
-    return this.observersService.getTransactionObserversByUserId(user.id);
-  }
-
-  @ApiOperation({
-    summary: 'Get transaction observers for user',
-    description: 'Get all transaction observers for the given user id. IS THIS NEEDED?',
-  })
-  @ApiResponse({
-    status: 201,
-    type: [TransactionObserverDto],
-  })
-  @Get('/user/:userId')
-  getTransactionObserversByUserId(
-    @Param('userId', ParseIntPipe) userId: number,
-  ): Promise<TransactionObserver[]> {
-    return this.observersService.getTransactionObserversByUserId(userId);
-  }
-
-  // Routes with a param need to be listed last
-  @ApiOperation({
-    summary: 'Get a transaction observer',
-    description: 'Get the transaction observer for the given transaction observer id.',
-  })
-  @ApiResponse({
-    status: 201,
-    type: TransactionObserverDto,
-  })
-  @Get('/:id')
-  getTransactionObserverById(@Param('id', ParseIntPipe) id: number): Promise<TransactionObserver> {
-    return this.observersService.getTransactionObserverById(id);
-  }
-
+  /* Updates the transaction observer. */
   @ApiOperation({
     summary: 'Update a transaction observer',
     description:
@@ -117,12 +81,14 @@ export class ObserversController {
   })
   @Patch('/:id')
   updateTransactionObserver(
+    @GetUser() user: User,
     @Param('id', ParseIntPipe) id: number,
     @Body() body: UpdateTransactionObserverDto,
   ): Promise<TransactionObserver> {
-    return this.observersService.updateTransactionObserver(id, body);
+    return this.observersService.updateTransactionObserver(id, body, user);
   }
 
+  /* Delete a transaction observer. */
   @ApiOperation({
     summary: 'Delete a transaction observer',
     description: 'Delete the transaction observer for the given transaction observer id.',
@@ -131,7 +97,7 @@ export class ObserversController {
     status: 201,
   })
   @Delete('/:id')
-  removeTransactionObserver(@Param('id', ParseIntPipe) id: number): void {
-    this.observersService.removeTransactionObserver(id);
+  removeTransactionObserver(@GetUser() user: User, @Param('id', ParseIntPipe) id: number) {
+    return this.observersService.removeTransactionObserver(id, user);
   }
 }
