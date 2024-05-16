@@ -1,4 +1,5 @@
-import { ITransactionSignerUserKeyDto } from '../signers';
+import { ITransactionObserverUserId } from '../observers';
+import { ITransactionSignerUserKey } from '../signers';
 
 export enum BackEndTransactionType {
   ACCOUNT_CREATE = 'ACCOUNT CREATE',
@@ -42,7 +43,7 @@ export interface ITransaction {
 }
 
 export interface ITransactionFull extends ITransaction {
-  signers: ITransactionSignerUserKeyDto[];
+  signers: ITransactionSignerUserKey[];
   // approvers: TransactionApproverDto[];
-  // observers: TransactionObserverDto[];
+  observers: ITransactionObserverUserId[];
 }

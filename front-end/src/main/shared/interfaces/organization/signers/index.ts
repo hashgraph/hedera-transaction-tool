@@ -5,19 +5,19 @@ interface IBaseTransactionSigner {
   id: number;
 }
 
-export interface ITransactionSignerDto extends IBaseTransactionSigner {
+export interface ITransactionSigner extends IBaseTransactionSigner {
   transactionId: number;
   userKeyId: number;
   createdAt: string | Date;
 }
 
-export interface ITransactionSignerUserKeyDto extends IBaseTransactionSigner {
+export interface ITransactionSignerUserKey extends IBaseTransactionSigner {
   transactionId: number;
   userKey: IUserKey;
   createdAt: string | Date;
 }
 
-export interface ITransactionSignerFullDto extends IBaseTransactionSigner {
+export interface ITransactionSignerFull extends IBaseTransactionSigner {
   transaction: ITransaction;
   userKey: IUserKey;
   createdAt: string | Date;
