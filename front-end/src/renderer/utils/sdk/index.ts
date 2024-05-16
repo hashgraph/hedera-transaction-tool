@@ -284,3 +284,15 @@ export const getSignatures = async (privateKey: PrivateKey, transaction: Transac
 
   return signatures;
 };
+
+export const getTransactionBodySignatureWithoutNodeAccountId = async (
+  privateKey: PrivateKey,
+  transaction: Transaction,
+) => {
+  // @ts-expect-error - _makeTransactionBody is a private method
+  const transactionBody = transaction._makeTransactionBody(null);
+  const bodyBytes = proto.TransactionBody.encode(transactionBody).finish();
+
+  const signature = privateKey.sign(bodyBytes);
+  return await uint8ArrayToHex(signature);
+};
