@@ -648,4 +648,26 @@ export class ApproversService {
     const count = await this.repo.count(find);
     return count > 0 && typeof approver.userId === 'number' ? true : false;
   }
+
+  getTreeStructure(approvers: TransactionApprover[]): TransactionApprover[] {
+    const approverMap = new Map(approvers.map(approver => [approver.id, { ...approver }]));
+
+    approverMap.forEach(approver => {
+      if (approver.listId) {
+        const parentApprover = approverMap.get(approver.listId);
+        if (parentApprover) {
+          if (!parentApprover.approvers) {
+            parentApprover.approvers = [];
+          }
+          parentApprover.approvers.push(approver);
+        }
+      }
+    });
+
+    const rootApprovers = Array.from(approverMap.values()).filter(
+      approver => approver.listId === null,
+    );
+
+    return rootApprovers;
+  }
 }
