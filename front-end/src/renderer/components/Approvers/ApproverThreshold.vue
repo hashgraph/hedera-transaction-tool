@@ -193,9 +193,10 @@ function emitThresholdUpdate(newApprovers: TransactionApproverDto[], newThreshol
               :path="`${depth || 0}-${i}`"
             >
               <div>
-                <span v-if="contacts.getNickname(app.userId).trim().length > 0"
-                  >({{ contacts.getNickname(app.userId) }}) </span
-                >{{ contacts.getContact(app.userId)?.user.email || `User: ${app.userId}` }}
+                {{ contacts.getContact(app.userId)?.user.email || `User: ${app.userId}` }}
+                <span v-if="contacts.getNickname(app.userId).trim().length > 0">
+                  ({{ contacts.getNickname(app.userId) }})
+                </span>
               </div>
 
               <div class="d-flex align-items-center">

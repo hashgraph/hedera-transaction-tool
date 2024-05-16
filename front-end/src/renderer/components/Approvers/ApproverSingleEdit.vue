@@ -44,11 +44,12 @@ const handleRemoveUser = () => {
       class="key-threshhold-bg d-flex justify-content-between rounded py-3 px-4 mt-5"
     >
       <div>
-        <span v-if="contacts.getNickname(modelApprover.userId).trim().length > 0"
-          >({{ contacts.getNickname(modelApprover.userId) }}) </span
-        >{{
+        {{
           contacts.getContact(modelApprover.userId)?.user.email || `User: ${modelApprover.userId}`
         }}
+        <span v-if="contacts.getNickname(modelApprover.userId).trim().length > 0">
+          ({{ contacts.getNickname(modelApprover.userId) }})
+        </span>
       </div>
       <div class="text-small">
         <span

@@ -35,9 +35,10 @@ const contacts = useContactsStore();
         <p class="ms-5 my-3">
           <span v-if="isApproved(item) === true" class="bi bi-check-lg text-success me-2"></span>
           <span v-if="isApproved(item) === false" class="bi bi-x-lg text-danger me-2"></span>
-          <span v-if="contacts.getNickname(item.userId).trim().length > 0"
-            >({{ contacts.getNickname(item.userId) }}) </span
-          >{{ contacts.getContact(item.userId)?.user.email || `User: ${item.userId}` }}
+          {{ contacts.getContact(item.userId)?.user.email || `User: ${item.userId}` }}
+          <span v-if="contacts.getNickname(item.userId).trim().length > 0">
+            ({{ contacts.getNickname(item.userId) }})
+          </span>
         </p>
       </template>
     </template>

@@ -44,11 +44,10 @@ const handleViewSummary = (index: number) => {
           >
             <p class="text-small text-nowrap">
               <template v-if="approver.userId">
+                {{ contacts.getContact(approver.userId)?.user.email || `User: ${approver.userId}` }}
                 <span v-if="contacts.getNickname(approver.userId).trim().length > 0"
-                  >({{ contacts.getNickname(approver.userId) }}) </span
-                >{{
-                  contacts.getContact(approver.userId)?.user.email || `User: ${approver.userId}`
-                }}
+                  >({{ contacts.getNickname(approver.userId) }})
+                </span>
               </template>
               <template v-else>
                 <span

@@ -25,18 +25,20 @@ const contacts = useContactsStore();
       </template>
       <template v-else-if="item.userId">
         <p class="ms-5">
+          {{ contacts.getContact(item.userId)?.user.email || `User: ${item.userId}` }}
           <span v-if="contacts.getNickname(item.userId).trim().length > 0" class="text-pink"
-            >({{ contacts.getNickname(item.userId) }}) </span
-          >{{ contacts.getContact(item.userId)?.user.email || `User: ${item.userId}` }}
+            >({{ contacts.getNickname(item.userId) }})
+          </span>
         </p>
       </template>
     </template>
   </div>
   <div v-else-if="approver.userId">
     <p class="ms-5">
-      <span v-if="contacts.getNickname(approver.userId).trim().length > 0" class="text-pink"
-        >({{ contacts.getNickname(approver.userId) }}) </span
-      >{{ contacts.getContact(approver.userId)?.user.email || `User: ${approver.userId}` }}
+      {{ contacts.getContact(approver.userId)?.user.email || `User: ${approver.userId}` }}
+      <span v-if="contacts.getNickname(approver.userId).trim().length > 0" class="text-pink">
+        ({{ contacts.getNickname(approver.userId) }})
+      </span>
     </p>
   </div>
 </template>
