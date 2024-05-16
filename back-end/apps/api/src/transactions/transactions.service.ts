@@ -240,7 +240,6 @@ export class TransactionsService {
         const items = await transactionalEntityManager.query(
           `
             select * from "transaction"
-            join "user_key" on "transaction"."creatorKeyId" = "user_key"."id"
             ${commonQueryPart}
             ${orderPart}
             offset $2
