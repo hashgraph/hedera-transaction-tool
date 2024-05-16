@@ -203,10 +203,13 @@ const handleApprove = async (approved: boolean) => {
       signature,
       approved,
     );
-    toast.success(`Transaction ${approved ? 'approved' : 'disapproved'} successfully`);
+    toast.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`);
 
     router.push({
       name: 'transactions',
+      query: {
+        tab: 'In Progress',
+      },
     });
   };
 
@@ -281,7 +284,7 @@ const stepperItems = [
   { title: 'Awaiting Execution', name: 'Awaiting Execution' },
   { title: 'Executed', name: 'Executed' },
 ];
-const disapprove = 'Disapprove';
+const reject = 'Reject';
 const approve = 'Approve';
 </script>
 <template>
@@ -331,7 +334,7 @@ const approve = 'Approve';
                 <AppButton color="primary" type="submit">Sign</AppButton>
               </div>
               <div v-if="$route.query.approve">
-                <AppButton color="secondary" type="submit" class="me-3">{{ disapprove }}</AppButton>
+                <AppButton color="secondary" type="submit" class="me-3">{{ reject }}</AppButton>
                 <AppButton color="primary" type="submit">{{ approve }}</AppButton>
               </div>
             </div>
