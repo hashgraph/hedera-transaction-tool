@@ -2,10 +2,12 @@
 import { computed, ref } from 'vue';
 
 import useContactsStore from '@renderer/stores/storeContacts';
+import useUserStore from '@renderer/stores/storeUser';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppListItem from '@renderer/components/ui/AppListItem.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 /* Props */
 const props = defineProps<{
@@ -20,6 +22,7 @@ const emit = defineEmits<{
 }>();
 
 /* Stores */
+const user = useUserStore();
 const contacts = useContactsStore();
 
 /* State */
@@ -27,9 +30,14 @@ const userId = ref<number | null>(null);
 
 /* Computed */
 const listedContacts = computed(() =>
-  props.alreadyAdded && props.alreadyAdded.length > 0
+  (props.alreadyAdded && props.alreadyAdded.length > 0
     ? contacts.contacts.filter(c => !props.alreadyAdded?.includes(c.user.id))
-    : contacts.contacts,
+    : contacts.contacts
+  ).filter(c =>
+    isLoggedInOrganization(user.selectedOrganization)
+      ? c.user.id !== user.selectedOrganization.userId
+      : true,
+  ),
 );
 
 /* Handlers */
