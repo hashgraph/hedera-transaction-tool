@@ -4,6 +4,8 @@ import { Hbar, FreezeTransaction, FileId, Timestamp, FreezeType, AccountId } fro
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
 
+import useUserStore from '@renderer/stores/storeUser';
+
 import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
@@ -14,6 +16,7 @@ import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
 
 import { isAccountId, isFileId } from '@renderer/utils/validator';
 import { getTransactionFromBytes } from '@renderer/utils/transactions';
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import DatePicker from '@vuepic/vue-datepicker';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -22,6 +25,10 @@ import TransactionProcessor from '@renderer/components/Transaction/TransactionPr
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
+import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
+
+/* Stores */
+const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
@@ -42,6 +49,9 @@ const fileId = ref<string>('');
 const fileHash = ref('');
 
 const transactionMemo = ref('');
+
+const observers = ref<number[]>([]);
+
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
 
@@ -90,7 +100,7 @@ const handleExecuted = () => {
   isExecuted.value = true;
 };
 
-const handleSubmit = async () => {
+const handleSubmit = () => {
   isSubmitted.value = true;
   router.push({
     name: 'transactions',
@@ -291,6 +301,13 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
             />
           </div>
         </div>
+
+        <div v-if="isLoggedInOrganization(user.selectedOrganization)" class="row mt-6">
+          <div class="form-group col-12 col-xxxl-8">
+            <label class="form-label">Observers</label>
+            <UsersGroup v-model:userIds="observers" :addable="true" :editable="true" />
+          </div>
+        </div>
       </div>
     </form>
 
@@ -299,6 +316,7 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"
       :transaction-bytes="transaction?.toBytes() || null"
+      :observers="observers"
     >
       <template #successHeading>Freeze executed successfully</template>
       <template #successContent>

@@ -20,7 +20,7 @@ import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
 import { getAll } from '@renderer/services/accountsService';
 
 import { getTransactionFromBytes, isAccountId, stringifyHbar } from '@renderer/utils';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -29,6 +29,7 @@ import TransactionIdControls from '@renderer/components/Transaction/TransactionI
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransferCard from '@renderer/components/TransferCard.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
+import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -62,6 +63,8 @@ const accountInfos = ref<{
   [key: string]: IAccountInfoParsed;
 }>({});
 const linkedAccounts = ref<HederaAccount[]>([]);
+
+const observers = ref<number[]>([]);
 
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
@@ -236,7 +239,7 @@ const handleRemoveTransfer = async (index: number) => {
   transfers.value = [...transfers.value];
 };
 
-const handleSubmit = async () => {
+const handleSubmit = () => {
   isSubmitted.value = true;
   router.push({
     name: 'transactions',
@@ -508,11 +511,19 @@ onMounted(async () => {
             />
           </div>
         </div>
+
+        <div v-if="isLoggedInOrganization(user.selectedOrganization)" class="row mt-6">
+          <div class="form-group col-12 col-xxxl-8">
+            <label class="form-label">Observers</label>
+            <UsersGroup v-model:userIds="observers" :addable="true" :editable="true" />
+          </div>
+        </div>
       </div>
     </form>
     <TransactionProcessor
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"
+      :observers="observers"
       :on-close-success-modal-click="
         () => {
           transfers = [];

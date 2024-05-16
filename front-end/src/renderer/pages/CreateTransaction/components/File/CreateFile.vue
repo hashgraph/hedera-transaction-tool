@@ -33,7 +33,7 @@ import {
   getEntityIdFromTransactionReceipt,
   getTransactionFromBytes,
 } from '@renderer/utils';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import DatePicker from '@vuepic/vue-datepicker';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -43,6 +43,7 @@ import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
+import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -67,6 +68,8 @@ const ownerKey = ref<Key | null>(null);
 const fileName = ref('');
 const description = ref('');
 const transactionMemo = ref('');
+
+const observers = ref<number[]>([]);
 
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
@@ -348,12 +351,20 @@ watch(payerData.isValid, isValid => {
             ></textarea>
           </div>
         </div>
+
+        <div v-if="isLoggedInOrganization(user.selectedOrganization)" class="row mt-6">
+          <div class="form-group col-12 col-xxxl-8">
+            <label class="form-label">Observers</label>
+            <UsersGroup v-model:userIds="observers" :addable="true" :editable="true" />
+          </div>
+        </div>
       </div>
     </form>
 
     <TransactionProcessor
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"
+      :observers="observers"
       :on-close-success-modal-click="() => $router.push({ name: 'files' })"
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"
