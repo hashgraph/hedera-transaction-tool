@@ -1,6 +1,6 @@
 export * from './create-comment.dto';
 export * from './create-transaction-approver.dto';
-export * from './create-transaction-observer.dto';
+export * from './create-transaction-observers.dto';
 export * from './create-transaction.dto';
 export * from './transaction-approver.dto';
 export * from './transaction-observer.dto';
