@@ -1,5 +1,7 @@
 import { KeyList, Key, PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
+import { EntityManager } from 'typeorm';
+
 import {
   isExpired,
   getSignatureEntities,
@@ -7,16 +9,13 @@ import {
   parseAccountProperty,
   MirrorNodeService,
 } from '@app/common';
-import { User, Transaction, TransactionStatus } from '@entities';
-import { UserKeysService } from '../user-keys/user-keys.service';
-import { SignersService } from '../transactions/signers/signers.service';
+import { User, Transaction, TransactionStatus, UserKey, TransactionSigner } from '@entities';
 
 export const userKeysRequiredToSign = async (
   transaction: Transaction,
   user: User,
-  userKeysService: UserKeysService,
-  signersService: SignersService,
   mirrorNodeService: MirrorNodeService,
+  entityManager: EntityManager,
 ): Promise<number[]> => {
   const userKeyIdsRequired: Set<number> = new Set<number>();
 
@@ -26,16 +25,25 @@ export const userKeysRequiredToSign = async (
 
   /* Ensures the user keys are passed */
   if (user.keys.length === 0) {
-    user.keys = await userKeysService.getUserKeys(user.id);
+    user.keys = await entityManager.find(UserKey, { where: { user: { id: user.id } } });
     if (user.keys.length === 0) return [];
   }
 
   /* Gets the user signatures for this transaction */
-  const signatures = await signersService.getSignatureByTransactionIdAndUserId(
-    transaction.id,
-    user.id,
-    true,
-  );
+  const signatures = await entityManager.find(TransactionSigner, {
+    where: {
+      transaction: {
+        id: transaction.id,
+      },
+      user: {
+        id: user.id,
+      },
+    },
+    relations: {
+      userKey: true,
+    },
+    withDeleted: true,
+  });
 
   /* Deserialize the transaction */
   const sdkTransaction = SDKTransaction.fromBytes(transaction.body);

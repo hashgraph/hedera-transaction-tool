@@ -1,6 +1,6 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
 import { DataSource, Repository } from 'typeorm';
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
@@ -20,8 +20,6 @@ import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from
 
 import { userKeysRequiredToSign } from '../../utils';
 
-import { UserKeysService } from '../../user-keys/user-keys.service';
-
 import { UploadSignatureArrayDto, UploadSignatureDto } from '../dto/upload-signature.dto';
 
 @Injectable()
@@ -29,11 +27,8 @@ export class SignersService {
   constructor(
     @InjectRepository(TransactionSigner)
     private repo: Repository<TransactionSigner>,
-    @InjectRepository(Transaction)
-    private transactionRepo: Repository<Transaction>,
-    private dataSource: DataSource,
+    @InjectDataSource() private dataSource: DataSource,
     @Inject(CHAIN_SERVICE) private readonly chainService: ClientProxy,
-    private readonly userKeysService: UserKeysService,
     private readonly mirrorNodeService: MirrorNodeService,
   ) {}
 
@@ -103,31 +98,6 @@ export class SignersService {
     });
   }
 
-  /* Get the signature for the given transaction id and user id */
-  getSignatureByTransactionIdAndUserId(
-    transactionId: number,
-    userId: number,
-    withDeleted: boolean = false,
-  ): Promise<TransactionSigner[]> {
-    if (!transactionId || !userId) {
-      return null;
-    }
-    return this.repo.find({
-      where: {
-        transaction: {
-          id: transactionId,
-        },
-        user: {
-          id: userId,
-        },
-      },
-      relations: {
-        userKey: true,
-      },
-      withDeleted,
-    });
-  }
-
   /* Upload a signature for the given transaction id */
   async uploadSignature(
     transactionId: number,
@@ -139,7 +109,7 @@ export class SignersService {
     if (!userKey) throw new BadRequestException('Transaction can be signed only with your own key');
 
     /* Verify that the transaction exists */
-    const transaction = await this.transactionRepo.findOneBy({ id: transactionId });
+    const transaction = await this.dataSource.manager.findOneBy(Transaction, { id: transactionId });
     if (!transaction) throw new BadRequestException('Transaction not found');
     if (transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES)
       throw new BadRequestException('Transaction is not waiting for signatures');
@@ -161,9 +131,8 @@ export class SignersService {
     const keysIds = await userKeysRequiredToSign(
       transaction,
       user,
-      this.userKeysService,
-      this,
       this.mirrorNodeService,
+      this.dataSource.manager,
     );
 
     if (!keysIds.includes(userKey.id)) {
@@ -187,7 +156,7 @@ export class SignersService {
       Object.assign(transaction, {
         body: sdkTransaction.toBytes(),
       });
-      await this.transactionRepo.update({ id: transactionId }, transaction);
+      await this.dataSource.manager.update(Transaction, { id: transactionId }, transaction);
     } catch (error) {
       await queryRunner.rollbackTransaction();
       await queryRunner.release();
@@ -231,7 +200,7 @@ export class SignersService {
       throw new BadRequestException('Transaction can be signed only with your own keys');
 
     /* Verify that the transaction exists */
-    const transaction = await this.transactionRepo.findOneBy({ id: transactionId });
+    const transaction = await this.dataSource.manager.findOneBy(Transaction, { id: transactionId });
     if (!transaction) throw new BadRequestException('Transaction not found');
     if (transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES)
       throw new BadRequestException('Transaction is not waiting for signatures');
@@ -287,7 +256,7 @@ export class SignersService {
       Object.assign(transaction, {
         body: sdkTransaction.toBytes(),
       });
-      await this.transactionRepo.save(transaction);
+      await this.dataSource.manager.save(Transaction, transaction);
     } catch (error) {
       await queryRunner.rollbackTransaction();
       await queryRunner.release();

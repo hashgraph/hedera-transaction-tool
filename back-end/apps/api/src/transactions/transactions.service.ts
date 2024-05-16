@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 
 import {
@@ -16,9 +16,9 @@ import {
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
-import { Repository, MoreThan } from 'typeorm';
+import { Repository, MoreThan, EntityManager } from 'typeorm';
 
-import { Transaction, TransactionStatus, User } from '@entities';
+import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
 
 import {
   NOTIFICATIONS_SERVICE,
@@ -38,8 +38,7 @@ import {
 import { UserDto } from '../users/dtos';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 
-import { UserKeysService } from '../user-keys/user-keys.service';
-import { SignersService } from './signers/signers.service';
+import { ApproversService } from './approvers/approvers.service';
 import { userKeysRequiredToSign } from '../utils';
 
 @Injectable()
@@ -48,9 +47,9 @@ export class TransactionsService {
     @InjectRepository(Transaction) private repo: Repository<Transaction>,
     @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
     private readonly configService: ConfigService,
-    private readonly userKeysService: UserKeysService,
-    private readonly signersService: SignersService,
+    private readonly approversService: ApproversService,
     private readonly mirrorNodeService: MirrorNodeService,
+    @InjectEntityManager() private entityManager: EntityManager,
   ) {}
 
   /* Get the transaction for the provided id in the DATABASE */
@@ -66,17 +65,22 @@ export class TransactionsService {
         'observers',
         'observers.user',
         'comments',
-        'signers',
-        'signers.userKey',
       ],
     });
 
     if (!transaction) return null;
 
-    transaction.signers = await this.signersService.getSignaturesByTransactionId(
-      transaction.id,
-      true,
-    );
+    transaction.signers = await this.entityManager.find(TransactionSigner, {
+      where: {
+        transaction: {
+          id: transaction.id,
+        },
+      },
+      relations: {
+        userKey: true,
+      },
+      withDeleted: true,
+    });
 
     return transaction;
   }
@@ -145,7 +149,7 @@ export class TransactionsService {
 
     /* Ensures the user keys are passed */
     if (user.keys.length === 0) {
-      user.keys = await this.userKeysService.getUserKeys(user.id);
+      user.keys = await this.entityManager.find(UserKey, { where: { user: { id: user.id } } });
       if (user.keys.length === 0)
         return {
           totalItems: 0,
@@ -164,13 +168,7 @@ export class TransactionsService {
 
     for (const transaction of transactions) {
       /* Check if the user should sign the transaction */
-      const keysToSign = await userKeysRequiredToSign(
-        transaction,
-        user,
-        this.userKeysService,
-        this.signersService,
-        this.mirrorNodeService,
-      );
+      const keysToSign = await this.userKeysToSign(transaction, user);
 
       if (keysToSign.length > 0) result.push({ transaction, keysToSign });
     }
@@ -195,16 +193,6 @@ export class TransactionsService {
     };
   }
 
-  async userKeysToSign(transaction: Transaction, user: User): Promise<number[]> {
-    return userKeysRequiredToSign(
-      transaction,
-      user,
-      this.userKeysService,
-      this.signersService,
-      this.mirrorNodeService,
-    );
-  }
-
   // Get all transactions that need to be approved by the user.
   // Include the creator key in the response.
   //TODO with postgres, there should be a cleaner way to do this
@@ -224,7 +212,7 @@ export class TransactionsService {
 
   /* Create a new transaction with the provided information */
   async createTransaction(dto: CreateTransactionDto, user: UserDto): Promise<Transaction> {
-    const userKeys = await this.userKeysService.getUserKeys(user.id);
+    const userKeys = await this.entityManager.find(UserKey, { where: { user: { id: user.id } } });
     const creatorKey = userKeys.find(key => key.id === dto.creatorKeyId);
 
     /* Check if the key belongs to the user */
@@ -298,6 +286,7 @@ export class TransactionsService {
     return true;
   }
 
+  /* Get the transaction with the provided id if user has access */
   async getTransactionWithVerifiedAccess(transactionId: number, user: User) {
     const transaction = await this.repo.findOne({
       where: { id: transactionId },
@@ -305,7 +294,6 @@ export class TransactionsService {
         'creatorKey',
         'creatorKey.user',
         'observers',
-        'approvers',
         'signers',
         'signers.userKey',
         'signers.userKey.user',
@@ -314,17 +302,24 @@ export class TransactionsService {
 
     if (!transaction) throw new NotFoundException('Transaction not found');
 
-    const userKeys = await this.userKeysToSign(transaction, user);
+    const userKeysToSign = await this.userKeysToSign(transaction, user);
+
+    const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
 
     if (
-      !transaction.observers.some(o => o.userId === user.id) &&
+      userKeysToSign.length === 0 &&
       transaction.creatorKey?.user?.id !== user.id &&
-      userKeys.length === 0 &&
-      !transaction.signers.some(s => s.userKey.user.id === user.id)
-      // && !transaction.approvers.some(async a => a.userKey === user.id
+      !transaction.observers.some(o => o.userId === user.id) &&
+      !transaction.signers.some(s => s.userKey.user.id === user.id) &&
+      !approvers.some(a => a.userId === user.id)
     )
       throw new UnauthorizedException("You don't have permission to view this transaction");
 
     return transaction;
+  }
+
+  /* Get the user keys that are required for a given transaction */
+  userKeysToSign(transaction: Transaction, user: User) {
+    return userKeysRequiredToSign(transaction, user, this.mirrorNodeService, this.entityManager);
   }
 }

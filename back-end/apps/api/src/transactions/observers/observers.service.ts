@@ -4,11 +4,17 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 
 import { Role, Transaction, TransactionObserver, User } from '@entities';
+
+import { MirrorNodeService } from '@app/common';
+
+import { userKeysRequiredToSign } from '../../utils';
+
+import { ApproversService } from '../approvers/approvers.service';
 
 import { CreateTransactionObserversDto, UpdateTransactionObserverDto } from '../dto';
 
@@ -17,7 +23,9 @@ export class ObserversService {
   constructor(
     @InjectRepository(TransactionObserver)
     private repo: Repository<TransactionObserver>,
-    @InjectRepository(Transaction) private transactionRepo: Repository<Transaction>,
+    @InjectEntityManager() private entityManager: EntityManager,
+    private readonly approversService: ApproversService,
+    private readonly mirrorNodeService: MirrorNodeService,
   ) {}
 
   /* Create transaction observers for the given transaction id with the user ids */
@@ -26,7 +34,7 @@ export class ObserversService {
     transactionId: number,
     dto: CreateTransactionObserversDto,
   ): Promise<TransactionObserver[]> {
-    const transaction = await this.transactionRepo.findOne({
+    const transaction = await this.entityManager.findOne(Transaction, {
       where: { id: transactionId },
       relations: ['creatorKey', 'creatorKey.user'],
     });
@@ -55,17 +63,35 @@ export class ObserversService {
     transactionId: number,
     user: User,
   ): Promise<TransactionObserver[]> {
-    const transaction = await this.transactionRepo.findOne({
+    const transaction = await this.entityManager.findOne(Transaction, {
       where: { id: transactionId },
-      relations: ['creatorKey', 'creatorKey.user', 'observers', 'approvers'],
+      relations: [
+        'creatorKey',
+        'creatorKey.user',
+        'observers',
+        'signers',
+        'signers.userKey',
+        'signers.userKey.user',
+      ],
     });
 
     if (!transaction) throw new NotFoundException('Transaction not found');
 
+    const userKeysToSign = await userKeysRequiredToSign(
+      transaction,
+      user,
+      this.mirrorNodeService,
+      this.entityManager,
+    );
+
+    const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
+
     if (
+      userKeysToSign.length === 0 &&
+      transaction.creatorKey?.user?.id !== user.id &&
       !transaction.observers.some(o => o.userId === user.id) &&
-      transaction.creatorKey?.user?.id !== user.id
-      // || transaction.approvers.some(a => a. === user.id
+      !transaction.signers.some(s => s.userKey.user.id === user.id) &&
+      !approvers.some(a => a.userId === user.id)
     )
       throw new UnauthorizedException("You don't have permission to view this transaction");
 
@@ -97,7 +123,7 @@ export class ObserversService {
 
     if (!observer) throw new NotFoundException('Transaction observer not found');
 
-    const transaction = await this.transactionRepo.findOne({
+    const transaction = await this.entityManager.findOne(Transaction, {
       where: { id: observer.transactionId },
       relations: ['creatorKey', 'creatorKey.user'],
     });
