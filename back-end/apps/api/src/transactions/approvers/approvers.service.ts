@@ -24,6 +24,7 @@ import { userKeysRequiredToSign } from '../../utils';
 import {
   ApproverChoiceDto,
   CreateTransactionApproverDto,
+  CreateTransactionApproversArrayDto,
   UpdateTransactionApproverDto,
 } from '../dto';
 import { MirrorNodeService, verifyTransactionBodyWithoutNodeAccountIdSignature } from '@app/common';
@@ -219,7 +220,7 @@ export class ApproversService {
   async createTransactionApprovers(
     user: User,
     transactionId: number,
-    dto: CreateTransactionApproverDto,
+    dto: CreateTransactionApproversArrayDto,
   ): Promise<TransactionApprover[]> {
     await this.getCreatorsTransaction(transactionId, user);
 
@@ -279,7 +280,10 @@ export class ApproversService {
             throw new Error(this.THRESHOLD_REQUIRED);
 
           /* Check if the approver has children when there is threshold */
-          if (typeof dto.threshold === 'number' && (!dto.approvers || dto.approvers.length === 0))
+          if (
+            typeof dtoApprover.threshold === 'number' &&
+            (!dtoApprover.approvers || dtoApprover.approvers.length === 0)
+          )
             throw new Error(this.CHILDREN_REQUIRED);
 
           /* Check if the approver threshold is less or equal to the number of approvers */
@@ -333,7 +337,9 @@ export class ApproversService {
           }
         };
 
-        await createApprover(dto);
+        for (const approver of dto.approversArray) {
+          await createApprover(approver);
+        }
       });
     } catch (error) {
       throw new BadRequestException(error.message);

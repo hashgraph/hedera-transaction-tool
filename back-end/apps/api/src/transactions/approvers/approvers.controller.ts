@@ -23,7 +23,7 @@ import { ApproversService } from './approvers.service';
 
 import {
   ApproverChoiceDto,
-  CreateTransactionApproverDto,
+  CreateTransactionApproversArrayDto,
   TransactionApproverDto,
   UpdateTransactionApproverDto,
 } from '../dto';
@@ -48,7 +48,7 @@ export class ApproversController {
   createTransactionApprovers(
     @GetUser() user: User,
     @Param('transactionId', ParseIntPipe) transactionId: number,
-    @Body() body: CreateTransactionApproverDto,
+    @Body() body: CreateTransactionApproversArrayDto,
   ): Promise<TransactionApprover[]> {
     return this.approversService.createTransactionApprovers(user, transactionId, body);
   }
