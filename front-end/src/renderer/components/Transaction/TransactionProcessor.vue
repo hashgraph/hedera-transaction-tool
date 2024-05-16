@@ -4,6 +4,8 @@ import { computed, nextTick, onBeforeUnmount, ref, inject } from 'vue';
 import { Key, KeyList, Transaction, TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 
+import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
@@ -20,6 +22,7 @@ import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 import { decryptPrivateKey, flattenKeyList } from '@renderer/services/keyPairService';
 import { deleteDraft, getDraft } from '@renderer/services/transactionDraftsService';
 import {
+  addApprovers,
   addObservers,
   fullUploadSignatures,
   submitTransaction,
@@ -51,6 +54,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 const props = defineProps<{
   transactionBytes: Uint8Array | null;
   observers?: number[];
+  approvers?: TransactionApproverDto[];
   onExecuted?: (response: TransactionResponse, receipt: TransactionReceipt) => void;
   onSubmitted?: (id: number, body: string) => void;
   onCloseSuccessModalClick?: () => void;
@@ -312,6 +316,7 @@ async function sendSignedTransactionToOrganization() {
   const results = await Promise.allSettled([
     uploadSignatures(body, id),
     uploadObservers(id),
+    uploadApprovers(id),
     deleteDraftIfNotTemplate(),
   ]);
 
@@ -374,6 +379,15 @@ async function uploadObservers(transactionId: number) {
     throw new Error('User is not logged in organization');
 
   await addObservers(user.selectedOrganization.serverUrl, transactionId, props.observers);
+}
+
+async function uploadApprovers(transactionId: number) {
+  if (!props.approvers || props.approvers.length === 0) return;
+
+  if (!isLoggedInOrganization(user.selectedOrganization))
+    throw new Error('User is not logged in organization');
+
+  await addApprovers(user.selectedOrganization.serverUrl, transactionId, props.approvers);
 }
 
 async function deleteDraftIfNotTemplate() {
