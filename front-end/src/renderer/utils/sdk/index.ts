@@ -298,15 +298,23 @@ export const getTransactionBodySignatureWithoutNodeAccountId = async (
   return await uint8ArrayToHex(signature);
 };
 
-export const isApproved = (approver: ITransactionApprover) => {
-  if (approver.approved) {
+export const isApproved = (approver: ITransactionApprover): boolean | null => {
+  if (approver.approved === false) {
     return false;
   }
 
-  if (approver.approvers) {
-    const approvals = approver.approvers.filter(isApproved);
-    return approvals.length >= (approver.threshold || approvals.length);
+  if (approver.approved === true) {
+    return true;
   }
 
-  return true;
+  if (approver.approvers) {
+    const approvals = approver.approvers.filter(approver => isApproved(approver) === true);
+    const rejections = approver.approvers.filter(approver => isApproved(approver) === false);
+    if (approvals.length >= (approver.threshold || approvals.length)) {
+      return true;
+    }
+    return rejections.length >= (approver.threshold || rejections.length) ? false : null;
+  }
+
+  return null;
 };
