@@ -12,7 +12,10 @@ import {
   PaginatedResourceDto,
   TransactionStatus,
 } from '@main/shared/interfaces';
-import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+import {
+  ITransactionApprover,
+  TransactionApproverDto,
+} from '@main/shared/interfaces/organization/approvers';
 
 import { decryptPrivateKey } from '../keyPairService';
 
@@ -200,6 +203,32 @@ export const getTransactionsToApprove = async (
     return data;
   } catch (error: any) {
     let message = 'Failed to get transactions to approve';
+
+    if (error instanceof AxiosError) {
+      throwIfNoResponse(error);
+
+      const errorMessage = error.response?.data?.message;
+      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
+        message = errorMessage;
+      }
+    }
+    throw new Error(message);
+  }
+};
+
+/* Get transaction to approvers */
+export const getTransactionApprovers = async (
+  serverUrl: string,
+  transactionId: number,
+): Promise<ITransactionApprover[]> => {
+  try {
+    const { data } = await axios.get(`${serverUrl}/${controller}/${transactionId}/approvers`, {
+      withCredentials: true,
+    });
+
+    return data;
+  } catch (error: any) {
+    let message = 'Failed to get transaction approvers';
 
     if (error instanceof AxiosError) {
       throwIfNoResponse(error);
