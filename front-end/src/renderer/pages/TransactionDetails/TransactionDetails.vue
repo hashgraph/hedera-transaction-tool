@@ -383,7 +383,7 @@ const stepperItems = [
                 :transaction="sdkTransaction"
               />
 
-              <hr class="separator my-5" />
+              <hr v-if="signatureKey" class="separator my-5" />
 
               <!-- SIGNATURES COLLECTED -->
               <h2 v-if="signatureKey" class="text-title text-bold">Signatures Collected</h2>
@@ -394,7 +394,7 @@ const stepperItems = [
                 />
               </div>
 
-              <hr class="separator my-5" />
+              <hr v-if="orgTransaction?.observers" class="separator my-5" />
 
               <!-- Observers -->
               <div v-if="orgTransaction?.observers" class="mt-5">
