@@ -304,7 +304,7 @@ export class SignersService {
           transaction,
           userKey,
         });
-        await this.repo.save(signer);
+        await queryRunner.manager.insert(TransactionSigner, signer);
         signers.push(signer);
       }
       /* Commit the database transaction */

@@ -16,7 +16,7 @@ import {
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
-import { DeepPartial, Repository, MoreThan } from 'typeorm';
+import { Repository, MoreThan } from 'typeorm';
 
 import { Transaction, TransactionStatus, User } from '@entities';
 
@@ -62,33 +62,6 @@ export class TransactionsService {
       relations: [
         'creatorKey',
         'creatorKey.user',
-        'approvers',
-        'observers',
-        'observers.user',
-        'comments',
-        'signers',
-        'signers.userKey',
-      ],
-    });
-
-    if (!transaction) return null;
-
-    transaction.signers = await this.signersService.getSignaturesByTransactionId(
-      transaction.id,
-      true,
-    );
-
-    return transaction;
-  }
-
-  /* Get the transaction for the provided transaction id OF THE TRANSACTION */
-  async getTransactionId(id: string): Promise<Transaction> {
-    if (!id) return null;
-
-    const transaction = await this.repo.findOne({
-      where: { transactionId: id },
-      relations: [
-        'creatorKey',
         'approvers',
         'observers',
         'observers.user',
@@ -308,24 +281,6 @@ export class TransactionsService {
     return transaction;
   }
 
-  /* Update the transaction for the given transaction id with the provided information */
-  async updateTransaction(
-    transaction: number | Transaction,
-    attrs: DeepPartial<Transaction>,
-  ): Promise<Transaction> {
-    if (!(transaction instanceof Transaction)) {
-      transaction = await this.getTransactionById(transaction);
-    }
-
-    if (!transaction) throw new Error('Transaction not found');
-
-    Object.assign(transaction, attrs);
-
-    await this.repo.save(transaction);
-
-    return transaction;
-  }
-
   /* Remove the transaction for the given transaction id. */
   async removeTransaction(id: number, user: UserDto): Promise<boolean> {
     const transaction = await this.getTransactionById(id);
@@ -343,19 +298,33 @@ export class TransactionsService {
     return true;
   }
 
-  async verifyAccess(transactionId: number, user: User) {
+  async getTransactionWithVerifiedAccess(transactionId: number, user: User) {
     const transaction = await this.repo.findOne({
       where: { id: transactionId },
-      relations: ['creatorKey', 'creatorKey.user', 'observers', 'approvers'],
+      relations: [
+        'creatorKey',
+        'creatorKey.user',
+        'observers',
+        'approvers',
+        'signers',
+        'signers.userKey',
+        'signers.userKey.user',
+      ],
     });
 
     if (!transaction) throw new NotFoundException('Transaction not found');
 
+    const userKeys = await this.userKeysToSign(transaction, user);
+
     if (
       !transaction.observers.some(o => o.userId === user.id) &&
-      transaction.creatorKey?.user?.id !== user.id
-      // || transaction.approvers.some(a => a. === user.id
+      transaction.creatorKey?.user?.id !== user.id &&
+      userKeys.length === 0 &&
+      !transaction.signers.some(s => s.userKey.user.id === user.id)
+      // && !transaction.approvers.some(async a => a.userKey === user.id
     )
       throw new UnauthorizedException("You don't have permission to view this transaction");
+
+    return transaction;
   }
 }

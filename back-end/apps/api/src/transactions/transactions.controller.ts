@@ -152,8 +152,7 @@ export class TransactionsController {
     @GetUser() user,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<Transaction> {
-    await this.transactionsService.verifyAccess(id, user);
-    return this.transactionsService.getTransactionById(id);
+    return this.transactionsService.getTransactionWithVerifiedAccess(id, user);
   }
 
   @ApiOperation({
