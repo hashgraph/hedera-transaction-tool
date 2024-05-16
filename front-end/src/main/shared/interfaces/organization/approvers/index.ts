@@ -10,6 +10,7 @@ export interface ITransactionApprover extends IBaseTransactionApprover {
   userKeyId?: number;
   signature?: string;
   approved?: boolean;
+  approvers?: ITransactionApprover[];
 }
 
 export interface TransactionApproverDto {
