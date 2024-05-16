@@ -11,6 +11,7 @@ import { UserKey } from './user-key.entity';
 import { TransactionComment } from './transaction-comment.entity';
 import { TransactionObserver } from './transaction-observer.entity';
 import { TransactionSigner } from './transaction-signer.entity';
+import { TransactionApprover } from './transaction-approver.entity';
 
 export enum UserStatus {
   NEW = 'NEW',
@@ -52,6 +53,9 @@ export class User {
 
   @OneToMany(() => TransactionObserver, observer => observer.user)
   observableTransactions: TransactionObserver[];
+
+  @OneToMany(() => TransactionApprover, approver => approver.user)
+  approvableTransactions: TransactionApprover[];
 
   @OneToMany(() => TransactionComment, comment => comment.user)
   comments: TransactionComment[];
