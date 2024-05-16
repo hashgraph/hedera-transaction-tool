@@ -17,6 +17,14 @@ If you use another version, please use [n](https://github.com/tj/n) to manage.
 npm install
 ```
 
+### Prebuild binaries
+
+Replace the `--arch` argument with your architecture
+
+```bash
+npm run postinstall -- --arch arm64
+```
+
 ### Run the following command to start Vue devtools
 
 ```bash
