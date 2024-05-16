@@ -33,11 +33,19 @@ const listedContacts = computed(() =>
   (props.alreadyAdded && props.alreadyAdded.length > 0
     ? contacts.contacts.filter(c => !props.alreadyAdded?.includes(c.user.id))
     : contacts.contacts
-  ).filter(c =>
-    isLoggedInOrganization(user.selectedOrganization)
-      ? c.user.id !== user.selectedOrganization.userId
-      : true,
-  ),
+  )
+    .filter(c =>
+      isLoggedInOrganization(user.selectedOrganization)
+        ? c.user.id !== user.selectedOrganization.userId
+        : true,
+    )
+    .filter(c =>
+      isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin
+        ? true
+        : c.user.admin
+          ? false
+          : true,
+    ),
 );
 
 /* Handlers */
