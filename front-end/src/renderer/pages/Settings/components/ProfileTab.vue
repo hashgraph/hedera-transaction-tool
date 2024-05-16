@@ -77,6 +77,7 @@ const handleChangePassword = async () => {
       );
     } else {
       await changePassword(user.personal.id, currentPassword.value, newPassword.value);
+      user.personal.password = newPassword.value;
       await user.refetchKeys();
     }
 
