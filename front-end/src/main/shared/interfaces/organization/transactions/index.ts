@@ -1,3 +1,4 @@
+import { ITransactionApprover } from '../approvers';
 import { ITransactionObserverUserId } from '../observers';
 import { ITransactionSignerUserKey } from '../signers';
 
@@ -44,6 +45,6 @@ export interface ITransaction {
 
 export interface ITransactionFull extends ITransaction {
   signers: ITransactionSignerUserKey[];
-  // approvers: TransactionApproverDto[];
+  approvers: ITransactionApprover[];
   observers: ITransactionObserverUserId[];
 }
