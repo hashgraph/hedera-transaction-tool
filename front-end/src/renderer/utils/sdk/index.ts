@@ -18,6 +18,7 @@ import { proto } from '@hashgraph/proto';
 import { HederaSpecialFileId } from '@main/shared/interfaces';
 
 import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
+import { ITransactionApprover } from '@main/shared/interfaces/organization/approvers';
 
 export const createFileInfo = (props: {
   fileId: FileId | string;
@@ -295,4 +296,17 @@ export const getTransactionBodySignatureWithoutNodeAccountId = async (
 
   const signature = privateKey.sign(bodyBytes);
   return await uint8ArrayToHex(signature);
+};
+
+export const isApproved = (approver: ITransactionApprover) => {
+  if (approver.approved) {
+    return false;
+  }
+
+  if (approver.approvers) {
+    const approvals = approver.approvers.filter(isApproved);
+    return approvals.length >= (approver.threshold || approvals.length);
+  }
+
+  return true;
 };
