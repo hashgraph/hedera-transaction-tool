@@ -12,7 +12,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 import { getAll } from '@renderer/services/accountsService';
 
 import { stringifyHbar } from '@renderer/utils';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { flattenAccountIds, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
@@ -121,7 +121,9 @@ onBeforeMount(async () => {
           :model-value="accountData.accountIdFormatted.value"
           @update:model-value="v => (accountData.accountId.value = v)"
           :filled="true"
-          :items="accoundIds.map(a => a.account_id)"
+          :items="
+            accoundIds.map(a => a.account_id).concat(flattenAccountIds(user.publicKeyToAccounts))
+          "
           placeholder="Enter Account ID"
         />
       </div>
