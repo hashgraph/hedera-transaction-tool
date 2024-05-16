@@ -6,6 +6,7 @@ import { Hbar, HbarUnit } from '@hashgraph/sdk';
 import { HederaAccount } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import useAccountId from '@renderer/composables/useAccountId';
 
@@ -45,6 +46,7 @@ const emit = defineEmits<{
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 
 /* Composables */
 const accountData = useAccountId();
@@ -100,7 +102,12 @@ function clearData() {
 /* Hooks */
 onBeforeMount(async () => {
   if (isUserLoggedIn(user.personal)) {
-    accoundIds.value = await getAll(user.personal.id);
+    accoundIds.value = await getAll({
+      where: {
+        user_id: user.personal.id,
+        network: network.network,
+      },
+    });
   }
 });
 </script>

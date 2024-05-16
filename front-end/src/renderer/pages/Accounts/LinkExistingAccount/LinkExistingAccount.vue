@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
@@ -16,6 +17,7 @@ import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 
 /* Composables */
 const router = useRouter();
@@ -35,7 +37,12 @@ const handleLinkAccount = async e => {
         throw new Error('User not logged in');
       }
 
-      await add(user.personal.id, accountData.accountIdFormatted.value, nickname.value);
+      await add(
+        user.personal.id,
+        accountData.accountIdFormatted.value,
+        network.network,
+        nickname.value,
+      );
 
       router.push({ name: 'accounts' });
       toast.success('Account linked successfully!', { position: 'bottom-right' });

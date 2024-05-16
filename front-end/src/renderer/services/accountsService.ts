@@ -1,16 +1,23 @@
+import { Prisma } from '@prisma/client';
+
 import { getMessageFromIPCError } from '@renderer/utils';
 
-export const getAll = async (userId: string) => {
+export const getAll = async (findArgs: Prisma.HederaAccountFindManyArgs) => {
   try {
-    return await window.electronAPI.local.accounts.getAll(userId);
+    return await window.electronAPI.local.accounts.getAll(findArgs);
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Failed to get linked acccounts'));
   }
 };
 
-export const add = async (userId: string, accountId: string, nickname: string = '') => {
+export const add = async (
+  userId: string,
+  accountId: string,
+  network: 'mainnet' | 'testnet' | 'previewnet' | 'custom',
+  nickname: string = '',
+) => {
   try {
-    return await window.electronAPI.local.accounts.add(userId, accountId, nickname);
+    return await window.electronAPI.local.accounts.add(userId, accountId, network, nickname);
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Account link failed'));
   }

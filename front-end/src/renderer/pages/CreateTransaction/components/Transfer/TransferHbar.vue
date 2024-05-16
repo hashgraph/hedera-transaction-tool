@@ -315,7 +315,12 @@ onMounted(async () => {
     throw new Error('User is not logged in');
   }
 
-  linkedAccounts.value = await getAll(user.personal.id);
+  linkedAccounts.value = await getAll({
+    where: {
+      user_id: user.personal.id,
+      network: network.network,
+    },
+  });
 });
 </script>
 <template>

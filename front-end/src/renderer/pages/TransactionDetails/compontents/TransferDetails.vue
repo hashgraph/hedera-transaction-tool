@@ -6,6 +6,7 @@ import { TransferTransaction, Transaction } from '@hashgraph/sdk';
 import { HederaAccount } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getAll } from '@renderer/services/accountsService';
 
@@ -19,6 +20,7 @@ const props = defineProps<{
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 
 /* State */
 const linkedAccounts = ref<HederaAccount[]>([]);
@@ -30,7 +32,12 @@ onBeforeMount(async () => {
     throw new Error('Transaction is not Transfer Transaction');
   }
 
-  linkedAccounts.value = await getAll(user.personal.id);
+  linkedAccounts.value = await getAll({
+    where: {
+      user_id: user.personal.id,
+      network: network.network,
+    },
+  });
 });
 </script>
 <template>

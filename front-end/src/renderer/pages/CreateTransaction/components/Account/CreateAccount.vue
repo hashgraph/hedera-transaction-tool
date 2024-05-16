@@ -142,7 +142,7 @@ const handleExecuted = async (_response, receipt: TransactionReceipt) => {
   }
 
   const accountId = getEntityIdFromTransactionReceipt(receipt, 'accountId');
-  await add(user.personal.id, accountId, nickname.value);
+  await add(user.personal.id, accountId, network.network, nickname.value);
   toast.success(`Account ${accountId} linked`, { position: 'bottom-right' });
 };
 

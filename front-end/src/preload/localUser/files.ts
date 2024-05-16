@@ -4,7 +4,8 @@ import { HederaFile, Prisma } from '@prisma/client';
 
 export default {
   files: {
-    getAll: (userId: string): Promise<HederaFile[]> => ipcRenderer.invoke('files:getAll', userId),
+    getAll: (findArgs: Prisma.HederaFileFindManyArgs): Promise<HederaFile[]> =>
+      ipcRenderer.invoke('files:getAll', findArgs),
     add: (file: Prisma.HederaFileUncheckedCreateInput): Promise<HederaFile[]> =>
       ipcRenderer.invoke('files:add', file),
     update: (

@@ -129,6 +129,7 @@ const handleExecuted = async (_response, receipt: TransactionReceipt) => {
     lastRefreshed: new Date(),
     nickname: fileName.value,
     description: description.value,
+    network: network.network,
   };
 
   await add(file);

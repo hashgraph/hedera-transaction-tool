@@ -34,82 +34,90 @@ const network = useNetworkStore();
 const createTooltips = useCreateTooltips();
 
 // TODO: Replace with real data from SQLite (temp solution) or BE DB
-const specialFiles: HederaFile[] = [
-  {
-    id: '0.0.101',
-    file_id: '0.0.101',
-    nickname: 'Address Book',
-    user_id: '0x',
-    description: null,
-    metaBytes: null,
-    contentBytes: null,
-    lastRefreshed: null,
-  },
-  {
-    id: '0.0.102',
-    file_id: '0.0.102',
-    nickname: 'Nodes Details',
-    user_id: '0x',
-    description: null,
-    metaBytes: null,
-    contentBytes: null,
-    lastRefreshed: null,
-  },
-  {
-    id: '0.0.111',
-    file_id: '0.0.111',
-    nickname: 'Fee Schedules',
-    user_id: '0x',
-    description: null,
-    metaBytes: null,
-    contentBytes: null,
-    lastRefreshed: null,
-  },
-  {
-    id: '0.0.112',
-    file_id: '0.0.112',
-    nickname: 'Exchange Rate Set',
-    user_id: '0x',
-    description: null,
-    metaBytes: null,
-    contentBytes: null,
-    lastRefreshed: null,
-  },
-  {
-    id: '0.0.121',
-    file_id: '0.0.121',
-    nickname: 'Application Properties',
-    user_id: '0x',
-    description: null,
-    metaBytes: null,
-    contentBytes: null,
-    lastRefreshed: null,
-  },
-  {
-    id: '0.0.122',
-    file_id: '0.0.122',
-    nickname: 'API Permission Properties',
-    user_id: '0x',
-    description: null,
-    metaBytes: null,
-    contentBytes: null,
-    lastRefreshed: null,
-  },
-  {
-    id: '0.0.123',
-    file_id: '0.0.123',
-    nickname: 'Throttle Definitions',
-    user_id: '0x',
-    description: null,
-    metaBytes: null,
-    contentBytes: null,
-    lastRefreshed: null,
-  },
-];
-const specialFilesIds = specialFiles.map(f => f.file_id);
+// const specialFiles: HederaFile[] = [
+//   {
+//     id: '0.0.101',
+//     file_id: '0.0.101',
+//     nickname: 'Address Book',
+//     user_id: '0x',
+//     description: null,
+//     metaBytes: null,
+//     contentBytes: null,
+//     lastRefreshed: null,
+//     network: 'testnet',
+//   },
+//   {
+//     id: '0.0.102',
+//     file_id: '0.0.102',
+//     nickname: 'Nodes Details',
+//     user_id: '0x',
+//     description: null,
+//     metaBytes: null,
+//     contentBytes: null,
+//     lastRefreshed: null,
+//     network: 'testnet',
+//   },
+//   {
+//     id: '0.0.111',
+//     file_id: '0.0.111',
+//     nickname: 'Fee Schedules',
+//     user_id: '0x',
+//     description: null,
+//     metaBytes: null,
+//     contentBytes: null,
+//     lastRefreshed: null,
+//     network: 'testnet',
+//   },
+//   {
+//     id: '0.0.112',
+//     file_id: '0.0.112',
+//     nickname: 'Exchange Rate Set',
+//     user_id: '0x',
+//     description: null,
+//     metaBytes: null,
+//     contentBytes: null,
+//     lastRefreshed: null,
+//     network: 'testnet',
+//   },
+//   {
+//     id: '0.0.121',
+//     file_id: '0.0.121',
+//     nickname: 'Application Properties',
+//     user_id: '0x',
+//     description: null,
+//     metaBytes: null,
+//     contentBytes: null,
+//     lastRefreshed: null,
+//     network: 'testnet',
+//   },
+//   {
+//     id: '0.0.122',
+//     file_id: '0.0.122',
+//     nickname: 'API Permission Properties',
+//     user_id: '0x',
+//     description: null,
+//     metaBytes: null,
+//     contentBytes: null,
+//     lastRefreshed: null,
+//     network: 'testnet',
+//   },
+//   {
+//     id: '0.0.123',
+//     file_id: '0.0.123',
+//     nickname: 'Throttle Definitions',
+//     user_id: '0x',
+//     description: null,
+//     metaBytes: null,
+//     contentBytes: null,
+//     lastRefreshed: null,
+//     network: 'testnet',
+//   },
+// ];
+// const specialFilesIds = specialFiles.map(f => f.file_id);
 
 /* State */
-const files = ref<HederaFile[]>(specialFiles);
+// const files = ref<HederaFile[]>(specialFiles);
+const files = ref<HederaFile[]>([]);
 const selectedFile = ref<HederaFile | null>(null);
 const isUnlinkFileModalShown = ref(false);
 const isKeyStructureModalShown = ref(false);
@@ -147,7 +155,8 @@ const handleUnlinkFile = async () => {
     throw new Error('Please select file first');
   }
 
-  files.value = specialFiles.concat(await remove(user.personal.id, selectedFile.value.file_id));
+  // files.value = specialFiles.concat(await remove(user.personal.id, selectedFile.value.file_id));
+  files.value = await remove(user.personal.id, selectedFile.value.file_id);
 
   isUnlinkFileModalShown.value = false;
 
@@ -155,7 +164,8 @@ const handleUnlinkFile = async () => {
 };
 
 const handleStartNicknameEdit = () => {
-  if (!selectedFile.value || specialFilesIds.includes(selectedFile.value.id)) return;
+  // if (!selectedFile.value || specialFilesIds.includes(selectedFile.value.id)) return;
+  if (!selectedFile.value) return;
 
   isNicknameInputShown.value = true;
   descriptionInputRef.value?.blur();
@@ -179,16 +189,20 @@ const handleChangeNickname = async () => {
   }
 
   if (selectedFile.value) {
-    files.value = specialFiles.concat(
-      await update(selectedFile.value.file_id, user.personal.id, {
-        nickname: nicknameInputRef.value?.inputRef?.value,
-      }),
-    );
+    // files.value = specialFiles.concat(
+    //   await update(selectedFile.value.file_id, user.personal.id, {
+    //     nickname: nicknameInputRef.value?.inputRef?.value,
+    //   }),
+    // );
+    files.value = await update(selectedFile.value.file_id, user.personal.id, {
+      nickname: nicknameInputRef.value?.inputRef?.value,
+    });
   }
 };
 
 const handleStartDescriptionEdit = () => {
-  if (!selectedFile.value || specialFilesIds.includes(selectedFile.value.id)) return;
+  // if (!selectedFile.value || specialFilesIds.includes(selectedFile.value.id)) return;
+  if (!selectedFile.value) return;
 
   isDescriptionInputShown.value = true;
   nicknameInputRef.value?.inputRef?.blur();
@@ -209,11 +223,14 @@ const handleChangeDescription = async () => {
   }
 
   if (selectedFile.value) {
-    files.value = specialFiles.concat(
-      await update(selectedFile.value.file_id, user.personal.id, {
-        description: descriptionInputRef.value?.value,
-      }),
-    );
+    // files.value = specialFiles.concat(
+    //   await update(selectedFile.value.file_id, user.personal.id, {
+    //     description: descriptionInputRef.value?.value,
+    //   }),
+    // );
+    files.value = await update(selectedFile.value.file_id, user.personal.id, {
+      description: descriptionInputRef.value?.value,
+    });
   }
 };
 
@@ -223,7 +240,14 @@ onMounted(async () => {
     throw new Error('User is not logged in');
   }
 
-  files.value = files.value.concat(await getAll(user.personal.id));
+  files.value = files.value.concat(
+    await getAll({
+      where: {
+        user_id: user.personal.id,
+        network: network.network,
+      },
+    }),
+  );
 });
 
 /* Watchers */
@@ -348,8 +372,12 @@ watch(files, newFiles => {
                   >
                     {{ selectedFile?.nickname || 'None' }}
 
-                    <span
+                    <!-- <span
                       v-if="!specialFilesIds.includes(selectedFile.file_id)"
+                      class="bi bi-pencil-square text-primary text-main cursor-pointer ms-1"
+                      @click="handleStartNicknameEdit"
+                    ></span> -->
+                    <span
                       class="bi bi-pencil-square text-primary text-main cursor-pointer ms-1"
                       @click="handleStartNicknameEdit"
                     ></span>
@@ -556,8 +584,12 @@ watch(files, newFiles => {
                     >
                       {{ selectedFile?.description || 'None' }}
 
-                      <span
+                      <!-- <span
                         v-if="!specialFilesIds.includes(selectedFile.file_id)"
+                        class="bi bi-pencil-square text-primary ms-1 cursor-pointer"
+                        @click="handleStartDescriptionEdit"
+                      ></span> -->
+                      <span
                         class="bi bi-pencil-square text-primary ms-1 cursor-pointer"
                         @click="handleStartDescriptionEdit"
                       ></span>

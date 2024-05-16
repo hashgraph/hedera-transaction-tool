@@ -34,7 +34,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Stores */
 const user = useUserStore();
-const networkStore = useNetworkStore();
+const network = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
@@ -53,10 +53,7 @@ const hbarDollarAmount = computed(() => {
     return 0;
   }
 
-  return getDollarAmount(
-    networkStore.currentRate,
-    accountData.accountInfo.value.balance.toBigNumber(),
-  );
+  return getDollarAmount(network.currentRate, accountData.accountInfo.value.balance.toBigNumber());
 });
 
 /* Hooks */
@@ -65,7 +62,12 @@ onMounted(async () => {
     throw new Error('User is not logged in');
   }
 
-  accounts.value = await getAll(user.personal.id);
+  accounts.value = await getAll({
+    where: {
+      user_id: user.personal.id,
+      network: network.network,
+    },
+  });
   accountData.accountId.value = accounts.value[0]?.account_id || '';
 });
 

@@ -1,5 +1,7 @@
 import { ipcMain } from 'electron';
 
+import { Prisma } from '@prisma/client';
+
 import {
   addAccount,
   changeAccountNickname,
@@ -13,13 +15,20 @@ export default () => {
   /* Accounts */
 
   // Get all
-  ipcMain.handle(createChannelName('getAll'), (_e, userId: string) => getAccounts(userId));
+  ipcMain.handle(createChannelName('getAll'), (_e, findArgs: Prisma.HederaAccountFindManyArgs) =>
+    getAccounts(findArgs),
+  );
 
   // Add
   ipcMain.handle(
     createChannelName('add'),
-    (_e, userId: string, accountId: string, nickname: string = '') =>
-      addAccount(userId, accountId, nickname),
+    (
+      _e,
+      userId: string,
+      accountId: string,
+      network: 'mainnet' | 'testnet' | 'previewnet' | 'custom',
+      nickname: string = '',
+    ) => addAccount(userId, accountId, network, nickname),
   );
 
   // Remove

@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { FileId } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
@@ -19,6 +20,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 
 /* Composables */
 const router = useRouter();
@@ -48,6 +50,7 @@ const handleLinkFile = async e => {
         user_id: user.personal.id,
         nickname: nickname.value,
         description: description.value,
+        network: network.network,
       };
 
       await add(file);

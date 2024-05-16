@@ -7,6 +7,7 @@ import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 import { ITransaction, TransactionStatus } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRouter } from 'vue-router';
 
@@ -20,16 +21,17 @@ import {
   getStatusFromCode,
 } from '@renderer/utils/transactions';
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { getDateStringExtended } from '@renderer/utils';
 import * as sdkTransactionUtils from '@renderer/utils/sdk/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
-import { getDateStringExtended } from '@renderer/utils';
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 
 /* Composables */
 const router = useRouter();
@@ -92,7 +94,7 @@ function getOpositeDirection() {
   return localSort.direction === 'asc' ? 'desc' : 'asc';
 }
 
-function createFindArgs() {
+function createFindArgs(): Prisma.TransactionFindManyArgs {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
@@ -100,6 +102,7 @@ function createFindArgs() {
   return {
     where: {
       user_id: user.personal.id,
+      network: network.network,
     },
     orderBy: {
       [localSort.field]: localSort.direction,
