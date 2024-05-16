@@ -1,9 +1,10 @@
 import { Prisma } from '@prisma/client';
+
 import { getMessageFromIPCError } from '@renderer/utils';
 
-export const getAll = async (userId: string) => {
+export const getAll = async (findArgs: Prisma.HederaFileFindManyArgs) => {
   try {
-    return await window.electronAPI.local.files.getAll(userId);
+    return await window.electronAPI.local.files.getAll(findArgs);
   } catch (error) {
     return [];
   }

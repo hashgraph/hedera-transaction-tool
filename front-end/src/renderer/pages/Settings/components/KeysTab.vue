@@ -3,6 +3,7 @@ import { ref, watch } from 'vue';
 import { PublicKey } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
@@ -19,6 +20,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
@@ -232,10 +234,23 @@ watch(isDeleteModalShown, newVal => {
                   {{ keyPair.nickname || 'N/A' }}
                 </td>
                 <td :data-testid="`cell-account-${index}`">
-                  {{
-                    user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.public_key)
-                      ?.accounts[0]?.account || 'N/A'
-                  }}
+                  <span
+                    v-if="
+                      user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.public_key)
+                        ?.accounts[0]?.account
+                    "
+                    :class="{
+                      'text-mainnet': network.network === 'mainnet',
+                      'text-testnet': network.network === 'testnet',
+                      'text-previewnet': network.network === 'previewnet',
+                    }"
+                  >
+                    {{
+                      user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.public_key)
+                        ?.accounts[0]?.account
+                    }}
+                  </span>
+                  <span v-else>N/A</span>
                 </td>
                 <td :data-testid="`cell-key-type-${index}`">
                   {{

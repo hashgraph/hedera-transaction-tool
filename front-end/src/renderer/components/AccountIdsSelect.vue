@@ -3,6 +3,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue';
 import { HederaAccount } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getAll } from '@renderer/services/accountsService';
 
@@ -19,6 +20,7 @@ const emit = defineEmits(['update:accountId']);
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 
 /* State */
 const linkedAccounts = ref<HederaAccount[]>([]);
@@ -38,7 +40,12 @@ onBeforeMount(async () => {
     throw new Error('User is not logged in');
   }
 
-  linkedAccounts.value = await getAll(user.personal.id);
+  linkedAccounts.value = await getAll({
+    where: {
+      user_id: user.personal.id,
+      network: network.network,
+    },
+  });
 
   if (props.accountId.length === 0 && props.selectDefault) {
     emit('update:accountId', accoundIds.value[0]);

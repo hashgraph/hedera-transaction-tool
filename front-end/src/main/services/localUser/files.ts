@@ -6,15 +6,11 @@ import { HederaFile, Prisma } from '@prisma/client';
 import { getPrismaClient } from '@main/db';
 import { deleteDirectory, getNumberArrayFromString, saveContentToPath } from '@main/utils';
 
-export const getFiles = async (userId: string) => {
+export const getFiles = async (findArgs: Prisma.HederaFileFindManyArgs) => {
   const prisma = getPrismaClient();
 
   try {
-    return await prisma.hederaFile.findMany({
-      where: {
-        user_id: userId,
-      },
-    });
+    return await prisma.hederaFile.findMany(findArgs);
   } catch (error) {
     console.log(error);
     return [];
@@ -24,7 +20,11 @@ export const getFiles = async (userId: string) => {
 export const addFile = async (file: Prisma.HederaFileUncheckedCreateInput) => {
   const prisma = getPrismaClient();
 
-  const files = await getFiles(file.user_id);
+  const files = await getFiles({
+    where: {
+      user_id: file.user_id,
+    },
+  });
 
   if (files.some(acc => acc.file_id === file.file_id)) {
     throw new Error('File ID already exists!');
@@ -34,47 +34,61 @@ export const addFile = async (file: Prisma.HederaFileUncheckedCreateInput) => {
     data: file,
   });
 
-  return await getFiles(file.user_id);
+  return await getFiles({
+    where: {
+      user_id: file.user_id,
+    },
+  });
 };
 
-export const removeFile = async (userId: string, fileId: string) => {
+export const removeFile = async (user_id: string, file_id: string) => {
   const prisma = getPrismaClient();
 
-  const files = await getFiles(userId);
+  const findArgs = {
+    where: {
+      user_id,
+    },
+  };
 
-  if (!files.some(acc => acc.file_id === fileId)) {
+  const files = await getFiles(findArgs);
+
+  if (!files.some(acc => acc.file_id === file_id)) {
     throw new Error(`File ID not found!`);
   }
 
   await prisma.hederaFile.deleteMany({
     where: {
-      user_id: userId,
-      file_id: fileId,
+      user_id,
+      file_id,
     },
   });
 
-  return await getFiles(userId);
+  return await getFiles(findArgs);
 };
 
 export const updateFile = async (
-  fileId: string,
-  userId: string,
+  file_id: string,
+  user_id: string,
   file: Prisma.HederaFileUncheckedUpdateInput,
 ) => {
   const prisma = getPrismaClient();
 
   await prisma.hederaFile.updateMany({
     where: {
-      file_id: fileId,
-      user_id: userId,
+      file_id,
+      user_id,
     },
     data: {
       ...file,
-      user_id: userId,
+      user_id,
     },
   });
 
-  return await getFiles(userId);
+  return await getFiles({
+    where: {
+      user_id,
+    },
+  });
 };
 
 export const showContentInTemp = async (userId: string, fileId: string) => {

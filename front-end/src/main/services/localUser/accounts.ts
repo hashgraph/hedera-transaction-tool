@@ -1,24 +1,33 @@
+import { Prisma } from '@prisma/client';
+
 import { getPrismaClient } from '@main/db';
 
-export const getAccounts = (userId: string) => {
+export const getAccounts = (findArgs: Prisma.HederaAccountFindManyArgs) => {
   const prisma = getPrismaClient();
 
   try {
-    return prisma.hederaAccount.findMany({
-      where: {
-        user_id: userId,
-      },
-    });
+    return prisma.hederaAccount.findMany(findArgs);
   } catch (error) {
     console.log(error);
     return [];
   }
 };
 
-export const addAccount = async (userId: string, accountId: string, nickname: string = '') => {
+export const addAccount = async (
+  userId: string,
+  accountId: string,
+  network: 'mainnet' | 'testnet' | 'previewnet' | 'custom',
+  nickname: string = '',
+) => {
   const prisma = getPrismaClient();
 
-  const accounts = await getAccounts(userId);
+  const findArgs = {
+    where: {
+      user_id: userId,
+    },
+  };
+
+  const accounts = await getAccounts(findArgs);
 
   if (
     accounts.some(acc => acc.account_id === accountId || (nickname && acc.nickname === nickname))
@@ -30,17 +39,24 @@ export const addAccount = async (userId: string, accountId: string, nickname: st
     data: {
       user_id: userId,
       account_id: accountId,
+      network: network,
       nickname: nickname,
     },
   });
 
-  return await getAccounts(userId);
+  return await getAccounts(findArgs);
 };
 
 export const removeAccount = async (userId: string, accountId: string, nickname?: string) => {
   const prisma = getPrismaClient();
 
-  const accounts = await getAccounts(userId);
+  const findArgs = {
+    where: {
+      user_id: userId,
+    },
+  };
+
+  const accounts = await getAccounts(findArgs);
 
   if (
     !accounts.some(acc => acc.account_id === accountId || (nickname && acc.nickname === nickname))
@@ -55,7 +71,7 @@ export const removeAccount = async (userId: string, accountId: string, nickname?
     },
   });
 
-  return await getAccounts(userId);
+  return await getAccounts(findArgs);
 };
 
 export const changeAccountNickname = async (
@@ -75,5 +91,9 @@ export const changeAccountNickname = async (
     },
   });
 
-  return await getAccounts(userId);
+  return await getAccounts({
+    where: {
+      user_id: userId,
+    },
+  });
 };

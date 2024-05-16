@@ -6,6 +6,7 @@ import { Key } from '@hashgraph/sdk';
 import { HederaAccount } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import useAccountId from '@renderer/composables/useAccountId';
 
@@ -33,6 +34,7 @@ const selectedAccountData = useAccountId();
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 
 /* State */
 const accounts = ref<HederaAccount[]>([]);
@@ -75,7 +77,12 @@ onMounted(async () => {
     throw new Error('User is not logged in');
   }
 
-  accounts.value = await getAll(user.personal.id);
+  accounts.value = await getAll({
+    where: {
+      user_id: user.personal.id,
+      network: network.network,
+    },
+  });
 });
 </script>
 <template>

@@ -28,7 +28,7 @@ import TransactionHeaderControls from '@renderer/components/Transaction/Transact
 
 /* Stores */
 const user = useUserStore();
-const networkStore = useNetworkStore();
+const network = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
@@ -121,7 +121,7 @@ const handleRead = async e => {
     }
     toast.error(message, { position: 'bottom-right' });
   } finally {
-    networkStore.client._operator = null;
+    network.client._operator = null;
     isLoading.value = false;
   }
 };
@@ -141,7 +141,12 @@ onMounted(async () => {
     throw Error('User is not logged in');
   }
 
-  storedFiles.value = await getAll(user.personal.id);
+  storedFiles.value = await getAll({
+    where: {
+      user_id: user.personal.id,
+      network: network.network,
+    },
+  });
 });
 
 /* Watchers */

@@ -6,6 +6,7 @@ import { HederaAccount } from '@prisma/client';
 import { Contact } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
 
 import { useToast } from 'vue-toast-notification';
@@ -23,6 +24,7 @@ import DeleteContactModal from '@renderer/components/Contacts/DeleteContactModal
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 const contacts = useContactsStore();
 
 /* Composables */
@@ -72,7 +74,12 @@ onBeforeMount(async () => {
   await contacts.fetch();
 
   if (isUserLoggedIn(user.personal)) {
-    linkedAccounts.value = await getAll(user.personal.id);
+    linkedAccounts.value = await getAll({
+      where: {
+        user_id: user.personal.id,
+        network: network.network,
+      },
+    });
     selectedId.value = contactList.value[0]?.user?.id || null;
   }
 });

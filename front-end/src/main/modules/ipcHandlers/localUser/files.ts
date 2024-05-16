@@ -15,7 +15,9 @@ export default () => {
   /* Files */
 
   // Get all
-  ipcMain.handle(createChannelName('getAll'), (_e, userId: string) => getFiles(userId));
+  ipcMain.handle(createChannelName('getAll'), (_e, findArgs: Prisma.HederaFileFindManyArgs) =>
+    getFiles(findArgs),
+  );
 
   // Add
   ipcMain.handle(createChannelName('add'), (_e, file: Prisma.HederaFileUncheckedCreateInput) =>
