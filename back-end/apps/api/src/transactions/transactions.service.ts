@@ -16,7 +16,7 @@ import {
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
-import { Repository, MoreThan, EntityManager } from 'typeorm';
+import { Repository, MoreThan, EntityManager, FindManyOptions, Brackets } from 'typeorm';
 
 import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
 
@@ -113,7 +113,7 @@ export class TransactionsService {
       },
     ];
 
-    const [transactions, total] = await this.repo.findAndCount({
+    const findOptions: FindManyOptions<Transaction> = {
       where: whereForUser,
       order,
       relations: {
@@ -121,7 +121,35 @@ export class TransactionsService {
       },
       skip: offset,
       take: limit,
-    });
+    };
+
+    const [transactions, total] = await this.repo
+      .createQueryBuilder()
+      .setFindOptions(findOptions)
+      .orWhere(
+        new Brackets(qb =>
+          qb.where(where).andWhere(
+            `
+            (
+              with recursive "approverList" as
+                (
+                  select * from "transaction_approver"
+                  where "transaction_approver"."transactionId" = "Transaction"."id"
+                    union all
+                      select "approver".* from "transaction_approver" as "approver"
+                      join "approverList" on "approverList"."id" = "approver"."listId"
+                )
+              select count(*) from "approverList"
+              where "approverList"."deletedAt" is null and "approverList"."userId" = :userId
+            ) > 0
+        `,
+            {
+              userId: user.id,
+            },
+          ),
+        ),
+      )
+      .getManyAndCount();
 
     return {
       totalItems: total,
@@ -198,66 +226,54 @@ export class TransactionsService {
     user: User,
     { page, limit, size, offset }: Pagination,
     sort?: Sorting[],
-    // filter?: Filtering[],
+    filter?: Filtering[],
   ): Promise<PaginatedResourceDto<Transaction>> {
-    // const where = getWhere<Transaction>(filter);
+    const where = getWhere<Transaction>(filter);
     const order = getOrder(sort);
 
-    const commonQueryPart = `
-      where (
-      with recursive "approverList" as
-              (
-                select * from "transaction_approver"
-                where "transaction_approver"."transactionId" = "transaction"."id" 
-                  union all
-                    select "approver".* from "transaction_approver" as "approver"
-                    join "approverList" on "approverList"."id" = "approver"."listId"
-              )
-            select count(*) from "approverList"
-            where "approverList"."deletedAt" is null and "approverList"."userId" = $1
-      ) > 0
-    `;
+    const findOptions: FindManyOptions<Transaction> = {
+      order,
+      relations: {
+        creatorKey: true,
+      },
+      skip: offset,
+      take: limit,
+    };
 
-    /* SQL Injection not possible because of sorting params validation */
-    const orderPart = `${
-      order
-        ? `order by ${Object.entries(order)
-            .map(o => `"transaction"."${o[0]}" ${o[1]}`)
-            .join(', ')}`
-        : ''
-    }`;
+    const [transactions, total] = await this.repo
+      .createQueryBuilder()
+      .setFindOptions(findOptions)
+      .where(
+        new Brackets(qb =>
+          qb.where(where).andWhere(
+            `
+            (
+              with recursive "approverList" as
+                (
+                  select * from "transaction_approver"
+                  where "transaction_approver"."transactionId" = "Transaction"."id"
+                    union all
+                      select "approver".* from "transaction_approver" as "approver"
+                      join "approverList" on "approverList"."id" = "approver"."listId"
+                )
+              select count(*) from "approverList"
+              where "approverList"."deletedAt" is null and "approverList"."userId" = :userId and "approverList"."approved" is null
+            ) > 0
+        `,
+            {
+              userId: user.id,
+            },
+          ),
+        ),
+      )
+      .getManyAndCount();
 
-    try {
-      return await this.entityManager.transaction(async transactionalEntityManager => {
-        const totalItemsResult = await transactionalEntityManager.query(
-          `
-            select count(*) from "transaction"
-            ${commonQueryPart}
-          `,
-          [user.id],
-        );
-
-        const items = await transactionalEntityManager.query(
-          `
-            select * from "transaction"
-            ${commonQueryPart}
-            ${orderPart}
-            offset $2
-            limit $3
-          `,
-          [user.id, offset, limit],
-        );
-
-        return {
-          totalItems: Number(totalItemsResult[0].count),
-          items,
-          page,
-          size,
-        };
-      });
-    } catch (error) {
-      throw new BadRequestException(error.message);
-    }
+    return {
+      totalItems: total,
+      items: transactions,
+      page,
+      size,
+    };
   }
 
   /* Create a new transaction with the provided information */

@@ -134,13 +134,13 @@ export class TransactionsController {
     @GetUser() user: User,
     @PaginationParams() paginationParams: Pagination,
     @SortingParams(transactionProperties) sort?: Sorting[],
-    // @FilteringParams({
-    //   validProperties: transactionProperties,
-    //   dateProperties: transactionDateProperties,
-    // })
-    // filter?: Filtering[],
+    @FilteringParams({
+      validProperties: transactionProperties,
+      dateProperties: transactionDateProperties,
+    })
+    filter?: Filtering[],
   ) {
-    return this.transactionsService.getTransactionsToApprove(user, paginationParams, sort);
+    return this.transactionsService.getTransactionsToApprove(user, paginationParams, sort, filter);
   }
 
   @ApiOperation({
