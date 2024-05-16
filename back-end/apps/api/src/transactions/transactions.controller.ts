@@ -3,18 +3,14 @@ import {
   Controller,
   Delete,
   Get,
-  Inject,
   Param,
   ParseIntPipe,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import {
-  CHAIN_SERVICE,
   Filtering,
   FilteringParams,
   PaginatedResourceDto,
@@ -23,7 +19,6 @@ import {
   Serialize,
   Sorting,
   SortingParams,
-  TransactionExecutedDto,
   withPaginatedResponse,
 } from '@app/common';
 
@@ -46,10 +41,7 @@ import {
 @Controller('transactions')
 @UseGuards(JwtAuthGuard, VerifiedUserGuard)
 export class TransactionsController {
-  constructor(
-    private transactionsService: TransactionsService,
-    @Inject(CHAIN_SERVICE) private readonly chainService: ClientProxy,
-  ) {}
+  constructor(private transactionsService: TransactionsService) {}
 
   /* Submit a transaction */
   @ApiOperation({
@@ -67,7 +59,7 @@ export class TransactionsController {
     return this.transactionsService.createTransaction(body, user);
   }
 
-  /* Get all transactions created by the user */
+  /* Get all transactions visible by the user */
   @ApiOperation({
     summary: 'Get created transactions by user or transactions with specific status',
     description:
@@ -136,45 +128,19 @@ export class TransactionsController {
     status: 200,
     type: [TransactionDto],
   })
+  @Serialize(withPaginatedResponse(TransactionDto))
   @Get('/approve')
   getTransactionsToApprove(
     @GetUser() user: User,
-    @Query('take', ParseIntPipe) take: number,
-    @Query('skip', ParseIntPipe) skip: number,
-  ): Promise<Transaction[]> {
-    return this.transactionsService.getTransactionsToApprove(user, take, skip);
-  }
-
-  /* Get all transactions to be observed by the user */
-  @ApiOperation({
-    summary: 'Get transactions to observe',
-    description: 'Get all transactions to be observed by the current user.',
-  })
-  @ApiResponse({
-    status: 200,
-    type: [TransactionDto],
-  })
-  @Get('/observe')
-  getTransactionsToObserve(
-    @GetUser() user: User,
-    @Query('take', ParseIntPipe) take: number,
-    @Query('skip', ParseIntPipe) skip: number,
-  ): Promise<Transaction[]> {
-    return this.transactionsService.getTransactionsToObserve(user, take, skip);
-  }
-
-  /* TEMPORARY: EMIT EVENT TO EXECUTE TRANSACTION */
-  @ApiOperation({
-    summary: 'Execute a transaction',
-    description: 'Emit an event to execute a transaction.',
-  })
-  @ApiResponse({
-    status: 200,
-    type: TransactionExecutedDto,
-  })
-  @Get('execute/:id')
-  async emitExecute(@Param('id', ParseIntPipe) id: number): Promise<TransactionExecutedDto> {
-    return await this.chainService.send('execute', id).toPromise();
+    @PaginationParams() paginationParams: Pagination,
+    @SortingParams(transactionProperties) sort?: Sorting[],
+    @FilteringParams({
+      validProperties: transactionProperties,
+      dateProperties: transactionDateProperties,
+    })
+    filter?: Filtering[],
+  ) {
+    return this.transactionsService.getTransactionsToApprove(user, paginationParams, sort, filter);
   }
 
   @ApiOperation({
@@ -187,8 +153,11 @@ export class TransactionsController {
   })
   @Get('/:id')
   @Serialize(TransactionFullDto)
-  getTransaction(@Param('id', ParseIntPipe) id: number): Promise<Transaction> {
-    return this.transactionsService.getTransactionById(id);
+  async getTransaction(
+    @GetUser() user,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Transaction> {
+    return this.transactionsService.getTransactionWithVerifiedAccess(id, user);
   }
 
   @ApiOperation({

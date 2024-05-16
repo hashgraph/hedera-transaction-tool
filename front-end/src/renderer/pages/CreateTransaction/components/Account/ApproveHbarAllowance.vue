@@ -10,6 +10,9 @@ import {
 } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+
+import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
@@ -19,6 +22,7 @@ import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
 import { stringifyHbar, isAccountId, getTransactionFromBytes } from '@renderer/utils';
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -28,6 +32,11 @@ import TransactionHeaderControls from '@renderer/components/Transaction/Transact
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
+import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
+import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
+
+/* Stores */
+const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
@@ -46,6 +55,9 @@ const maxTransactionFee = ref<Hbar>(new Hbar(2));
 const amount = ref<Hbar>(new Hbar(0));
 const transactionMemo = ref('');
 const keyStructureComponentKey = ref<Key | null>(null);
+
+const observers = ref<number[]>([]);
+const approvers = ref<TransactionApproverDto[]>([]);
 
 const isKeyStructureModalShown = ref(false);
 
@@ -101,7 +113,7 @@ const handleLoadFromDraft = async () => {
   }
 };
 
-const handleSubmit = async () => {
+const handleSubmit = () => {
   isSubmitted.value = true;
   router.push({
     name: 'transactions',
@@ -262,12 +274,28 @@ const columnClass = 'col-4 col-xxxl-3';
             />
           </div>
         </div>
+
+        <div v-if="isLoggedInOrganization(user.selectedOrganization)" class="row mt-6">
+          <div class="form-group col-12 col-xxxl-8">
+            <label class="form-label">Observers</label>
+            <UsersGroup v-model:userIds="observers" :addable="true" :editable="true" />
+          </div>
+        </div>
+
+        <div v-if="isLoggedInOrganization(user.selectedOrganization)" class="row mt-6">
+          <div class="form-group col-12 col-xxxl-8">
+            <label class="form-label">Approvers</label>
+            <ApproversList v-model:approvers="approvers" :editable="true" />
+          </div>
+        </div>
       </div>
     </form>
 
     <TransactionProcessor
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"
+      :observers="observers"
+      :approvers="approvers"
       :on-close-success-modal-click="
         () => {
           validStart = new Date();

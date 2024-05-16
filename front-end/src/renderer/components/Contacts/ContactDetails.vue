@@ -168,7 +168,7 @@ watch(
                 v-for="account in publicKeyToAccounts[key.publicKey]"
                 :key="`${key.publicKey}${account.account}`"
               >
-                <li class="text-center associated-account-badge-bg rounded py-2 px-3">
+                <li class="text-center badge-bg rounded py-2 px-3">
                   <p class="text-small text-secondary">
                     {{ account.account }}
                     <span

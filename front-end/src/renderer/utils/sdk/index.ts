@@ -18,6 +18,7 @@ import { proto } from '@hashgraph/proto';
 import { HederaSpecialFileId } from '@main/shared/interfaces';
 
 import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
+import { ITransactionApprover } from '@main/shared/interfaces/organization/approvers';
 
 export const createFileInfo = (props: {
   fileId: FileId | string;
@@ -283,4 +284,37 @@ export const getSignatures = async (privateKey: PrivateKey, transaction: Transac
   }
 
   return signatures;
+};
+
+export const getTransactionBodySignatureWithoutNodeAccountId = async (
+  privateKey: PrivateKey,
+  transaction: Transaction,
+) => {
+  // @ts-expect-error - _makeTransactionBody is a private method
+  const transactionBody = transaction._makeTransactionBody(null);
+  const bodyBytes = proto.TransactionBody.encode(transactionBody).finish();
+
+  const signature = privateKey.sign(bodyBytes);
+  return await uint8ArrayToHex(signature);
+};
+
+export const isApproved = (approver: ITransactionApprover): boolean | null => {
+  if (approver.approved === false) {
+    return false;
+  }
+
+  if (approver.approved === true) {
+    return true;
+  }
+
+  if (approver.approvers) {
+    const approvals = approver.approvers.filter(approver => isApproved(approver) === true);
+    const rejections = approver.approvers.filter(approver => isApproved(approver) === false);
+    if (approvals.length >= (approver.threshold || approvals.length)) {
+      return true;
+    }
+    return rejections.length >= (approver.threshold || rejections.length) ? false : null;
+  }
+
+  return null;
 };

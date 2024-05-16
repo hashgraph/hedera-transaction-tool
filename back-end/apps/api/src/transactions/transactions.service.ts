@@ -1,6 +1,12 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 
 import {
@@ -10,9 +16,18 @@ import {
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
-import { DeepPartial, Repository, MoreThan } from 'typeorm';
+import {
+  Repository,
+  MoreThan,
+  EntityManager,
+  FindManyOptions,
+  Brackets,
+  FindOptionsWhere,
+  Not,
+  In,
+} from 'typeorm';
 
-import { Transaction, TransactionStatus, User } from '@entities';
+import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
 
 import {
   NOTIFICATIONS_SERVICE,
@@ -32,8 +47,7 @@ import {
 import { UserDto } from '../users/dtos';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 
-import { UserKeysService } from '../user-keys/user-keys.service';
-import { SignersService } from './signers/signers.service';
+import { ApproversService } from './approvers/approvers.service';
 import { userKeysRequiredToSign } from '../utils';
 
 @Injectable()
@@ -42,9 +56,9 @@ export class TransactionsService {
     @InjectRepository(Transaction) private repo: Repository<Transaction>,
     @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
     private readonly configService: ConfigService,
-    private readonly userKeysService: UserKeysService,
-    private readonly signersService: SignersService,
+    private readonly approversService: ApproversService,
     private readonly mirrorNodeService: MirrorNodeService,
+    @InjectEntityManager() private entityManager: EntityManager,
   ) {}
 
   /* Get the transaction for the provided id in the DATABASE */
@@ -53,45 +67,27 @@ export class TransactionsService {
 
     const transaction = await this.repo.findOne({
       where: { id },
-      relations: [
-        'creatorKey',
-        'creatorKey.user',
-        'approvers',
-        'observers',
-        'comments',
-        'signers',
-        'signers.userKey',
-      ],
+      relations: ['creatorKey', 'creatorKey.user', 'observers', 'observers.user', 'comments'],
     });
 
     if (!transaction) return null;
 
-    transaction.signers = await this.signersService.getSignaturesByTransactionId(
-      transaction.id,
-      true,
-    );
-
-    return transaction;
-  }
-
-  /* Get the transaction for the provided transaction id OF THE TRANSACTION */
-  async getTransactionId(id: string): Promise<Transaction> {
-    if (!id) return null;
-
-    const transaction = await this.repo.findOne({
-      where: { transactionId: id },
-      relations: ['creatorKey', 'approvers', 'observers', 'comments', 'signers', 'signers.userKey'],
+    transaction.signers = await this.entityManager.find(TransactionSigner, {
+      where: {
+        transaction: {
+          id: transaction.id,
+        },
+      },
+      relations: {
+        userKey: true,
+      },
+      withDeleted: true,
     });
 
-    transaction.signers = await this.signersService.getSignaturesByTransactionId(
-      transaction.id,
-      true,
-    );
-
     return transaction;
   }
 
-  /* Get the transactions created by the user */
+  /* Get the transactions visible by the user */
   async getTransactions(
     user: User,
     { page, limit, size, offset }: Pagination,
@@ -111,9 +107,15 @@ export class TransactionsService {
           },
         },
       },
+      {
+        ...where,
+        observers: {
+          userId: user.id,
+        },
+      },
     ];
 
-    const [transactions, total] = await this.repo.findAndCount({
+    const findOptions: FindManyOptions<Transaction> = {
       where: whereForUser,
       order,
       relations: {
@@ -121,7 +123,35 @@ export class TransactionsService {
       },
       skip: offset,
       take: limit,
-    });
+    };
+
+    const [transactions, total] = await this.repo
+      .createQueryBuilder()
+      .setFindOptions(findOptions)
+      .orWhere(
+        new Brackets(qb =>
+          qb.where(where).andWhere(
+            `
+            (
+              with recursive "approverList" as
+                (
+                  select * from "transaction_approver"
+                  where "transaction_approver"."transactionId" = "Transaction"."id"
+                    union all
+                      select "approver".* from "transaction_approver" as "approver"
+                      join "approverList" on "approverList"."id" = "approver"."listId"
+                )
+              select count(*) from "approverList"
+              where "approverList"."deletedAt" is null and "approverList"."userId" = :userId
+            ) > 0
+        `,
+            {
+              userId: user.id,
+            },
+          ),
+        ),
+      )
+      .getManyAndCount();
 
     return {
       totalItems: total,
@@ -149,7 +179,7 @@ export class TransactionsService {
 
     /* Ensures the user keys are passed */
     if (user.keys.length === 0) {
-      user.keys = await this.userKeysService.getUserKeys(user.id);
+      user.keys = await this.entityManager.find(UserKey, { where: { user: { id: user.id } } });
       if (user.keys.length === 0)
         return {
           totalItems: 0,
@@ -168,13 +198,7 @@ export class TransactionsService {
 
     for (const transaction of transactions) {
       /* Check if the user should sign the transaction */
-      const keysToSign = await userKeysRequiredToSign(
-        transaction,
-        user,
-        this.userKeysService,
-        this.signersService,
-        this.mirrorNodeService,
-      );
+      const keysToSign = await this.userKeysToSign(transaction, user);
 
       if (keysToSign.length > 0) result.push({ transaction, keysToSign });
     }
@@ -199,50 +223,69 @@ export class TransactionsService {
     };
   }
 
-  async userKeysToSign(transaction: Transaction, user: User): Promise<number[]> {
-    return userKeysRequiredToSign(
-      transaction,
-      user,
-      this.userKeysService,
-      this.signersService,
-      this.mirrorNodeService,
-    );
-  }
+  /* Get the transactions that need to be approved by the user. */
+  async getTransactionsToApprove(
+    user: User,
+    { page, limit, size, offset }: Pagination,
+    sort?: Sorting[],
+    filter?: Filtering[],
+  ): Promise<PaginatedResourceDto<Transaction>> {
+    const where = getWhere<Transaction>(filter);
+    const order = getOrder(sort);
 
-  // Get all transactions that need to be approved by the user.
-  // Include the creator key in the response.
-  //TODO with postgres, there should be a cleaner way to do this
-  getTransactionsToApprove(user: User, take: number, skip: number): Promise<Transaction[]> {
-    const userKeys = user.keys.map(userKey => userKey.id).join(',');
-    return this.repo.query(
-      `with recursive approverList as ` +
-        `(select * from transaction_approver where "userKeyId" in (${userKeys}) ` +
-        `union all ` +
-        `select approver.* from transaction_approver as approver ` +
-        `join approverList on approverList."listId" = approver.id) ` +
-        `select distinct t.*, userKey.* from "transaction" as t ` +
-        `join user_key as userKey on t."creatorKeyId" = userKey.id ` +
-        `join approverList on t.id = "transactionId" LIMIT ${take} OFFSET ${skip}`,
-    );
-  }
+    const whereForUser: FindOptionsWhere<Transaction> = {
+      ...where,
+      status: Not(In([TransactionStatus.EXECUTED, TransactionStatus.FAILED])),
+    };
 
-  // Get all transactions that can be observed by the user.
-  // Include the creator key in the response
-  //TODO the role of the user as on observer needs to limit the response
-  getTransactionsToObserve(user: User, take: number, skip: number): Promise<Transaction[]> {
-    return this.repo
-      .createQueryBuilder('transaction') // Find Transactions (and necessary parts)
-      .leftJoinAndSelect('transaction.creatorKey', 'creatorKey')
-      .leftJoin('transaction.observers', 'observer') // where the list of observer's
-      .where('observer.userId = :userId', { userId: user.id }) // has a userId = user.id
-      .take(take)
-      .skip(skip)
-      .getMany();
+    const findOptions: FindManyOptions<Transaction> = {
+      order,
+      relations: {
+        creatorKey: true,
+      },
+      skip: offset,
+      take: limit,
+    };
+
+    const [transactions, total] = await this.repo
+      .createQueryBuilder()
+      .setFindOptions(findOptions)
+      .where(
+        new Brackets(qb =>
+          qb.where(whereForUser).andWhere(
+            `
+            (
+              with recursive "approverList" as
+                (
+                  select * from "transaction_approver"
+                  where "transaction_approver"."transactionId" = "Transaction"."id"
+                    union all
+                      select "approver".* from "transaction_approver" as "approver"
+                      join "approverList" on "approverList"."id" = "approver"."listId"
+                )
+              select count(*) from "approverList"
+              where "approverList"."deletedAt" is null and "approverList"."userId" = :userId and "approverList"."approved" is null
+            ) > 0
+        `,
+            {
+              userId: user.id,
+            },
+          ),
+        ),
+      )
+      .getManyAndCount();
+
+    return {
+      totalItems: total,
+      items: transactions,
+      page,
+      size,
+    };
   }
 
   /* Create a new transaction with the provided information */
   async createTransaction(dto: CreateTransactionDto, user: UserDto): Promise<Transaction> {
-    const userKeys = await this.userKeysService.getUserKeys(user.id);
+    const userKeys = await this.entityManager.find(UserKey, { where: { user: { id: user.id } } });
     const creatorKey = userKeys.find(key => key.id === dto.creatorKeyId);
 
     /* Check if the key belongs to the user */
@@ -299,24 +342,6 @@ export class TransactionsService {
     return transaction;
   }
 
-  /* Update the transaction for the given transaction id with the provided information */
-  async updateTransaction(
-    transaction: number | Transaction,
-    attrs: DeepPartial<Transaction>,
-  ): Promise<Transaction> {
-    if (!(transaction instanceof Transaction)) {
-      transaction = await this.getTransactionById(transaction);
-    }
-
-    if (!transaction) throw new Error('Transaction not found');
-
-    Object.assign(transaction, attrs);
-
-    await this.repo.save(transaction);
-
-    return transaction;
-  }
-
   /* Remove the transaction for the given transaction id. */
   async removeTransaction(id: number, user: UserDto): Promise<boolean> {
     const transaction = await this.getTransactionById(id);
@@ -332,5 +357,47 @@ export class TransactionsService {
     await this.repo.softRemove(transaction);
 
     return true;
+  }
+
+  /* Get the transaction with the provided id if user has access */
+  async getTransactionWithVerifiedAccess(transactionId: number, user: User) {
+    const transaction = await this.repo.findOne({
+      where: { id: transactionId },
+      relations: ['creatorKey', 'creatorKey.user', 'observers'],
+    });
+
+    if (!transaction) throw new NotFoundException('Transaction not found');
+
+    transaction.signers = await this.entityManager.find(TransactionSigner, {
+      where: {
+        transaction: {
+          id: transaction.id,
+        },
+      },
+      relations: ['userKey', 'userKey.user'],
+      withDeleted: true,
+    });
+
+    const userKeysToSign = await this.userKeysToSign(transaction, user);
+
+    const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
+
+    transaction.approvers = this.approversService.getTreeStructure(approvers);
+
+    if (
+      userKeysToSign.length === 0 &&
+      transaction.creatorKey?.user?.id !== user.id &&
+      !transaction.observers.some(o => o.userId === user.id) &&
+      !transaction.signers.some(s => s.userKey.user.id === user.id) &&
+      !approvers.some(a => a.userId === user.id)
+    )
+      throw new UnauthorizedException("You don't have permission to view this transaction");
+
+    return transaction;
+  }
+
+  /* Get the user keys that are required for a given transaction */
+  userKeysToSign(transaction: Transaction, user: User) {
+    return userKeysRequiredToSign(transaction, user, this.mirrorNodeService, this.entityManager);
   }
 }

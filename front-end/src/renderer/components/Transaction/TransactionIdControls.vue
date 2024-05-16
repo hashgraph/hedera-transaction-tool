@@ -11,6 +11,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
 import { getTransactionFromBytes, stringifyHbar } from '@renderer/utils';
+import { flattenAccountIds } from '@renderer/utils/userStoreHelpers';
 
 import DatePicker from '@vuepic/vue-datepicker';
 import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
@@ -36,19 +37,12 @@ const route = useRoute();
 const account = useAccountId();
 
 /* Computed */
-const accoundIds = computed<string[]>(() =>
-  user.publicKeyToAccounts
-    .map(a => a.accounts)
-    .flat()
-    .filter(acc => !acc.deleted && acc.account !== null)
-    .map(acc => acc.account || '')
-    .filter(acc => acc !== null),
-);
+const accoundIds = computed<string[]>(() => flattenAccountIds(user.publicKeyToAccounts));
 
 /* Handlers */
 const handlePayerChange = payerId => {
   account.accountId.value = payerId;
-  emit('update:payerId', payerId);
+  emit('update:payerId', payerId || '');
 };
 
 /* Functions */
@@ -78,7 +72,7 @@ onMounted(async () => {
     const allAccounts = user.publicKeyToAccounts.map(a => a.accounts).flat();
     if (allAccounts.length > 0 && allAccounts[0].account) {
       account.accountId.value = allAccounts[0].account;
-      emit('update:payerId', allAccounts[0].account);
+      emit('update:payerId', allAccounts[0].account || '');
     }
   }
 });

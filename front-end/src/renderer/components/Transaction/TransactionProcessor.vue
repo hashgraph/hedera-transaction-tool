@@ -4,6 +4,8 @@ import { computed, nextTick, onBeforeUnmount, ref, inject } from 'vue';
 import { Key, KeyList, Transaction, TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 
+import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
@@ -19,7 +21,12 @@ import {
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 import { decryptPrivateKey, flattenKeyList } from '@renderer/services/keyPairService';
 import { deleteDraft, getDraft } from '@renderer/services/transactionDraftsService';
-import { fullUploadSignatures, submitTransaction } from '@renderer/services/organization';
+import {
+  addApprovers,
+  addObservers,
+  fullUploadSignatures,
+  submitTransaction,
+} from '@renderer/services/organization';
 
 import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
@@ -46,6 +53,8 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 /* Props */
 const props = defineProps<{
   transactionBytes: Uint8Array | null;
+  observers?: number[];
+  approvers?: TransactionApproverDto[];
   onExecuted?: (response: TransactionResponse, receipt: TransactionReceipt) => void;
   onSubmitted?: (id: number, body: string) => void;
   onCloseSuccessModalClick?: () => void;
@@ -304,8 +313,84 @@ async function sendSignedTransactionToOrganization() {
   toast.success('Transaction submitted successfully');
   props.onSubmitted && props.onSubmitted(id, body);
 
-  const bodyBytes = await hexToUint8Array(body);
+  const results = await Promise.allSettled([
+    uploadSignatures(body, id),
+    uploadObservers(id),
+    uploadApprovers(id),
+    deleteDraftIfNotTemplate(),
+  ]);
 
+  results.forEach(result => {
+    if (result.status === 'rejected') {
+      toast.error(result.reason.message);
+    }
+  });
+}
+
+async function uploadSignatures(
+  organizationTransactionBody: string,
+  organizationTransactionId: number,
+) {
+  const callback = async () => {
+    /* Verifies the user has entered his password */
+    if (!isLoggedInOrganization(user.selectedOrganization))
+      throw new Error('User is not logged in organization');
+
+    if (!isLoggedInWithPassword(user.personal)) {
+      if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+      userPasswordModalRef.value?.open(
+        'Enter your personal account password',
+        'Enter your personal to sign as a creator',
+        callback,
+      );
+      return;
+    }
+
+    const bodyBytes = await hexToUint8Array(organizationTransactionBody);
+
+    /* Deserialize the transaction */
+    const sdkTransaction = Transaction.fromBytes(bodyBytes);
+
+    /* Check if should sign */
+    const publicKeysRequired = await publicRequiredToSign(
+      sdkTransaction,
+      user.selectedOrganization.userKeys,
+      network.mirrorNodeBaseURL,
+    );
+    if (publicKeysRequired.length === 0) return;
+
+    await fullUploadSignatures(
+      user.personal,
+      user.selectedOrganization,
+      publicKeysRequired,
+      sdkTransaction,
+      organizationTransactionId,
+    );
+
+    toast.success('Transaction signed successfully');
+  };
+  await callback();
+}
+
+async function uploadObservers(transactionId: number) {
+  if (!props.observers || props.observers.length === 0) return;
+
+  if (!isLoggedInOrganization(user.selectedOrganization))
+    throw new Error('User is not logged in organization');
+
+  await addObservers(user.selectedOrganization.serverUrl, transactionId, props.observers);
+}
+
+async function uploadApprovers(transactionId: number) {
+  if (!props.approvers || props.approvers.length === 0) return;
+
+  if (!isLoggedInOrganization(user.selectedOrganization))
+    throw new Error('User is not logged in organization');
+
+  await addApprovers(user.selectedOrganization.serverUrl, transactionId, props.approvers);
+}
+
+async function deleteDraftIfNotTemplate() {
   /* Delete if draft and not template */
   if (route.query.draftId) {
     try {
@@ -315,27 +400,6 @@ async function sendSignedTransactionToOrganization() {
       console.log(error);
     }
   }
-
-  /* Deserialize the transaction */
-  const sdkTransaction = Transaction.fromBytes(bodyBytes);
-
-  /* Check if should sign */
-  const publicKeysRequired = await publicRequiredToSign(
-    sdkTransaction,
-    user.selectedOrganization.userKeys,
-    network.mirrorNodeBaseURL,
-  );
-  if (publicKeysRequired.length === 0) return;
-
-  await fullUploadSignatures(
-    user.personal,
-    user.selectedOrganization,
-    publicKeysRequired,
-    sdkTransaction,
-    id,
-  );
-
-  toast.success('Transaction signed successfully');
 }
 
 function resetData() {

@@ -209,7 +209,6 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
             />
           </div>
         </template>
-        <template v-else></template>
       </template>
     </div>
   </Transition>

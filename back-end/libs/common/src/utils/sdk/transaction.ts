@@ -222,3 +222,32 @@ export const computeSignatureKey = async (
 
   return sigantureKey;
 };
+
+/* Get transaction body bytes without node account id */
+export const getTransactionBodyBytes = (transaction: Transaction) => {
+  // @ts-expect-error - _makeTransactionBody is a private method
+  const transactionBody = transaction._makeTransactionBody(null);
+  return proto.TransactionBody.encode(transactionBody).finish();
+};
+
+/* Verify the signature of the transaction body without node account id */
+export const verifyTransactionBodyWithoutNodeAccountIdSignature = (
+  transaction: Transaction,
+  signature: string | Buffer,
+  publicKey: string | PublicKey,
+) => {
+  const bodyBytes = getTransactionBodyBytes(transaction);
+
+  /* Deserialize Public Key */
+  publicKey = publicKey instanceof PublicKey ? publicKey : PublicKey.fromString(publicKey);
+
+  /* Deserialize Signature */
+  signature = signature instanceof Buffer ? signature : decode(signature);
+
+  try {
+    return publicKey.verify(bodyBytes, signature);
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+};

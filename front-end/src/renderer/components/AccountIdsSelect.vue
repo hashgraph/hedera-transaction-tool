@@ -6,7 +6,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { getAll } from '@renderer/services/accountsService';
 
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { flattenAccountIds, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 /* Props */
 const props = defineProps<{
@@ -24,14 +24,7 @@ const user = useUserStore();
 const linkedAccounts = ref<HederaAccount[]>([]);
 
 /* Computed */
-const accoundIds = computed(() =>
-  user.publicKeyToAccounts
-    .map(a => a.accounts)
-    .flat()
-    .filter(acc => !acc.deleted && acc.account !== null)
-    .map(acc => acc.account || '')
-    .filter(acc => acc !== null),
-);
+const accoundIds = computed(() => flattenAccountIds(user.publicKeyToAccounts));
 
 /* Handlers */
 const handleAccountIdChange = (e: Event) => {
@@ -74,7 +67,7 @@ watch(
       <option :value="accountId">
         {{ accountId }}
         {{
-          linkedAccounts.find(la => la.account_id === accountId)
+          (linkedAccounts.find(la => la.account_id === accountId)?.nickname.trim() || '').length > 0
             ? `(${linkedAccounts.find(la => la.account_id === accountId)?.nickname})`
             : ''
         }}

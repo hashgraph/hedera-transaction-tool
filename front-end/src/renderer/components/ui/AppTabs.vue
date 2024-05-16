@@ -30,6 +30,7 @@ defineEmits(['update:active-index']);
           class="tab-button text-small fw-medium gap-3 w-100"
           :class="[i === activeIndex ? 'active border-main-gradient' : '', navItemButtonClass]"
           @click="$emit('update:active-index', i)"
+          type="button"
         >
           {{ item.title }}
           <span

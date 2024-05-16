@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue';
 import { Hbar, AccountDeleteTransaction, Key, Transaction, KeyList } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -15,7 +16,7 @@ import { getDraft } from '@renderer/services/transactionDraftsService';
 import { remove } from '@renderer/services/accountsService';
 
 import { getTransactionFromBytes, isAccountId } from '@renderer/utils';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -24,6 +25,8 @@ import TransactionProcessor from '@renderer/components/Transaction/TransactionPr
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
+import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
+import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -43,6 +46,9 @@ const transaction = ref<Transaction | null>(null);
 const validStart = ref(new Date());
 const maxTransactionFee = ref<Hbar>(new Hbar(2));
 const transactionMemo = ref('');
+
+const observers = ref<number[]>([]);
+const approvers = ref<TransactionApproverDto[]>([]);
 
 const selectedKey = ref<Key | null>();
 const isKeyStructureModalShown = ref(false);
@@ -290,12 +296,28 @@ const columnClass = 'col-4 col-xxxl-3';
             />
           </div>
         </div>
+
+        <div v-if="isLoggedInOrganization(user.selectedOrganization)" class="row mt-6">
+          <div class="form-group col-12 col-xxxl-8">
+            <label class="form-label">Observers</label>
+            <UsersGroup v-model:userIds="observers" :addable="true" :editable="true" />
+          </div>
+        </div>
+
+        <div v-if="isLoggedInOrganization(user.selectedOrganization)" class="row mt-6">
+          <div class="form-group col-12 col-xxxl-8">
+            <label class="form-label">Approvers</label>
+            <ApproversList v-model:approvers="approvers" :editable="true" />
+          </div>
+        </div>
       </div>
     </form>
 
     <TransactionProcessor
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"
+      :observers="observers"
+      :approvers="approvers"
       :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"

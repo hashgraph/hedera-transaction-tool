@@ -23,8 +23,6 @@ onBeforeMount(async () => {
   }
 
   if (props.transaction.fileHash) {
-    console.log(props.transaction.fileHash);
-
     fileHashHex.value = await uint8ArrayToHex(props.transaction.fileHash);
   }
 });

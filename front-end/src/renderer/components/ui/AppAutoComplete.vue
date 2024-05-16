@@ -93,7 +93,11 @@ onBeforeUnmount(() => {
       v-bind="$attrs"
       @keydown="handleKeyDown"
     />
-    <div v-if="filteredItems.length > 0" ref="dropdownRef" class="autocomplete-custom">
+    <div
+      ref="dropdownRef"
+      class="autocomplete-custom"
+      :class="{ 'd-none': filteredItems.length === 0 }"
+    >
       <div>
         <template v-for="(item, i) in filteredItems" :key="item">
           <div

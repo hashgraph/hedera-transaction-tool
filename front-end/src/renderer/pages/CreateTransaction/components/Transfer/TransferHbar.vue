@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue';
 import { Hbar, KeyList, Transaction, TransferTransaction, Transfer } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import { HederaAccount } from '@prisma/client';
 import { IAccountInfoParsed } from '@main/shared/interfaces';
@@ -20,7 +21,7 @@ import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
 import { getAll } from '@renderer/services/accountsService';
 
 import { getTransactionFromBytes, isAccountId, stringifyHbar } from '@renderer/utils';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -29,6 +30,8 @@ import TransactionIdControls from '@renderer/components/Transaction/TransactionI
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransferCard from '@renderer/components/TransferCard.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
+import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
+import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -62,6 +65,9 @@ const accountInfos = ref<{
   [key: string]: IAccountInfoParsed;
 }>({});
 const linkedAccounts = ref<HederaAccount[]>([]);
+
+const observers = ref<number[]>([]);
+const approvers = ref<TransactionApproverDto[]>([]);
 
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
@@ -104,7 +110,7 @@ const handleCreate = async e => {
 
     transaction.value = createTransaction();
 
-    await transactionProcessor.value?.process(getRequiredKeys());
+    await transactionProcessor.value?.process(await getRequiredKeys());
   } catch (err: any) {
     console.log(err);
 
@@ -236,7 +242,7 @@ const handleRemoveTransfer = async (index: number) => {
   transfers.value = [...transfers.value];
 };
 
-const handleSubmit = async () => {
+const handleSubmit = () => {
   isSubmitted.value = true;
   router.push({
     name: 'transactions',
@@ -269,7 +275,7 @@ function createTransaction() {
   return transaction;
 }
 
-function getRequiredKeys() {
+async function getRequiredKeys() {
   if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
     throw Error('Invalid Payer ID');
   }
@@ -279,6 +285,12 @@ function getRequiredKeys() {
   const addedKeysForAccountIds: string[] = [];
   for (const transfer of transfers.value.filter(t => !t.isApproved)) {
     const accountId = transfer.accountId.toString();
+
+    if (!accountInfos.value[accountId]) {
+      accountInfos.value[accountId] = await getAccountInfo(accountId, network.mirrorNodeBaseURL);
+      accountInfos.value = { ...accountInfos.value };
+    }
+
     const key = accountInfos.value[accountId].key;
     const receiverSigRequired = accountInfos.value[accountId].receiverSignatureRequired;
 
@@ -508,11 +520,27 @@ onMounted(async () => {
             />
           </div>
         </div>
+
+        <div v-if="isLoggedInOrganization(user.selectedOrganization)" class="row mt-6">
+          <div class="form-group col-12 col-xxxl-8">
+            <label class="form-label">Observers</label>
+            <UsersGroup v-model:userIds="observers" :addable="true" :editable="true" />
+          </div>
+        </div>
+
+        <div v-if="isLoggedInOrganization(user.selectedOrganization)" class="row mt-6">
+          <div class="form-group col-12 col-xxxl-8">
+            <label class="form-label">Approvers</label>
+            <ApproversList v-model:approvers="approvers" :editable="true" />
+          </div>
+        </div>
       </div>
     </form>
     <TransactionProcessor
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"
+      :observers="observers"
+      :approvers="approvers"
       :on-close-success-modal-click="
         () => {
           transfers = [];

@@ -12,9 +12,14 @@ import useNetwork from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
 
-import { fullUploadSignatures, getTransactionById } from '@renderer/services/organization';
+import {
+  fullUploadSignatures,
+  getTransactionById,
+  sendApproverChoice,
+} from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
 import { hexToUint8Array } from '@renderer/services/electronUtilsService';
+import { decryptPrivateKey } from '@renderer/services/keyPairService';
 
 import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
@@ -33,14 +38,22 @@ import {
   computeSignatureKey,
   publicRequiredToSign,
 } from '@renderer/utils/transactionSignatureModels';
-import { getUInt8ArrayFromString, openTransactionInHashscan } from '@renderer/utils';
+import {
+  getDateStringExtended,
+  getPrivateKey,
+  getTransactionBodySignatureWithoutNodeAccountId,
+  getUInt8ArrayFromString,
+  openTransactionInHashscan,
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppStepper from '@renderer/components/ui/AppStepper.vue';
 import KeyStructureSignatureStatus from '@renderer/components/KeyStructureSignatureStatus.vue';
+import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 
 import txTypeComponentMapping from './txTypeComponentMapping';
+import ReadOnlyApproversList from '@renderer/components/Approvers/ReadOnlyApproversList.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -146,12 +159,74 @@ const handleSign = async () => {
   });
 };
 
+const handleApprove = async (approved: boolean) => {
+  const callback = async () => {
+    if (
+      !sdkTransaction.value ||
+      !(sdkTransaction.value instanceof SDKTransaction) ||
+      !orgTransaction.value
+    ) {
+      throw new Error('Transaction is not available');
+    }
+
+    if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
+      throw new Error('User is not logged in organization');
+    }
+
+    if (!isLoggedInWithPassword(user.personal)) {
+      if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+      userPasswordModalRef.value?.open(
+        'Enter your personal account password',
+        'Enter your personal account password to decrypt your private key',
+        callback,
+      );
+      return;
+    }
+
+    const publicKey = user.selectedOrganization.userKeys[0].publicKey;
+    const privateKeyRaw = await decryptPrivateKey(
+      user.personal.id,
+      user.personal.password,
+      publicKey,
+    );
+    const privateKey = getPrivateKey(publicKey, privateKeyRaw);
+
+    const signature = await getTransactionBodySignatureWithoutNodeAccountId(
+      privateKey,
+      sdkTransaction.value,
+    );
+
+    await sendApproverChoice(
+      user.selectedOrganization.serverUrl,
+      orgTransaction.value.id,
+      user.selectedOrganization.userKeys[0].id,
+      signature,
+      approved,
+    );
+    toast.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`);
+
+    router.push({
+      name: 'transactions',
+      query: {
+        tab: 'In Progress',
+      },
+    });
+  };
+
+  await callback();
+};
+
 const handleSubmit = async e => {
   e.preventDefault();
 
   if (!isLoggedInOrganization(user.selectedOrganization)) return;
 
-  await handleSign();
+  if (router.currentRoute.value.query.approve) {
+    const choice = e.submitter?.textContent;
+    await handleApprove(choice === approve);
+  } else if (router.currentRoute.value.query.sign) {
+    await handleSign();
+  }
 };
 
 /* Hooks */
@@ -209,6 +284,8 @@ const stepperItems = [
   { title: 'Awaiting Execution', name: 'Awaiting Execution' },
   { title: 'Executed', name: 'Executed' },
 ];
+const reject = 'Reject';
+const approve = 'Approve';
 </script>
 <template>
   <div class="p-5">
@@ -256,6 +333,10 @@ const stepperItems = [
               <div v-if="$route.query.sign">
                 <AppButton color="primary" type="submit">Sign</AppButton>
               </div>
+              <div v-if="$route.query.approve">
+                <AppButton color="secondary" type="submit" class="me-3">{{ reject }}</AppButton>
+                <AppButton color="primary" type="submit">{{ approve }}</AppButton>
+              </div>
             </div>
 
             <div class="fill-remaining mt-5">
@@ -298,11 +379,11 @@ const stepperItems = [
                 />
               </div>
 
-              <hr class="separator my-5" />
+              <hr class="separator my-8" />
 
               <!-- TRANSACTION GENERAL DETAILS -->
               <div :class="sectionHeadingClass">
-                <h2 :class="sectionHeadingClass">Transaction Details</h2>
+                <h2 class="text-title text-bold">Transaction Details</h2>
                 <span
                   v-if="localTransaction || stepperActiveIndex === stepperItems.length - 1"
                   class="text-micro text-pink cursor-pointer"
@@ -328,6 +409,20 @@ const stepperItems = [
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Transaction ID</h4>
                   <p :class="detailItemValueClass">{{ getTransactionId(sdkTransaction) }}</p>
+                </div>
+
+                <!-- Transaction Created -->
+                <div :class="commonColClass">
+                  <h4 :class="detailItemLabelClass">Created at</h4>
+                  <p :class="detailItemValueClass">
+                    {{
+                      getDateStringExtended(
+                        new Date(
+                          orgTransaction?.createdAt || localTransaction?.created_at || Date.now(),
+                        ),
+                      )
+                    }}
+                  </p>
                 </div>
 
                 <!-- Transaction Valid Start -->
@@ -358,7 +453,7 @@ const stepperItems = [
               <hr class="separator my-5" />
 
               <!-- TRANSACTION SPECIFIC DETAILS -->
-              <h2 :class="sectionHeadingClass">{{ transactionSpecificLabel }}</h2>
+              <h2 class="text-title text-bold">{{ transactionSpecificLabel }}</h2>
 
               <!-- Transaction Specific Component -->
               <Component
@@ -366,15 +461,39 @@ const stepperItems = [
                 :transaction="sdkTransaction"
               />
 
-              <hr class="separator my-5" />
+              <hr v-if="signatureKey" class="separator my-5" />
 
               <!-- SIGNATURES COLLECTED -->
-              <h2 v-if="signatureKey" :class="sectionHeadingClass">Signatures Collected</h2>
+              <h2 v-if="signatureKey" class="text-title text-bold">Signatures Collected</h2>
               <div v-if="signatureKey" class="text-small mt-5">
                 <KeyStructureSignatureStatus
                   :keyList="signatureKey"
                   :public-keys-signed="signersPublicKeys"
                 />
+              </div>
+
+              <hr v-if="orgTransaction?.observers" class="separator my-5" />
+
+              <!-- Observers -->
+              <div
+                v-if="orgTransaction?.observers && orgTransaction.observers.length > 0"
+                class="mt-5"
+              >
+                <h4 class="text-title text-bold">Observers</h4>
+                <UsersGroup
+                  :addable="false"
+                  :editable="false"
+                  :userIds="orgTransaction.observers.map(o => o.userId)"
+                />
+              </div>
+
+              <!-- Approvers -->
+              <div
+                v-if="orgTransaction?.approvers && orgTransaction?.approvers.length > 0"
+                class="mt-5"
+              >
+                <h4 class="text-title text-bold">Approvers</h4>
+                <ReadOnlyApproversList :approvers="orgTransaction?.approvers" />
               </div>
             </div>
           </form>

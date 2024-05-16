@@ -1,11 +1,7 @@
-import { IsBoolean, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
-import { TransformBuffer } from '@app/common';
+import { IsArray, IsNumber, IsOptional, ValidateNested, ArrayMinSize } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateTransactionApproverDto {
-  @IsNumber()
-  @IsOptional()
-  transactionId?: number;
-
   @IsNumber()
   @IsOptional()
   listId?: number;
@@ -16,13 +12,19 @@ export class CreateTransactionApproverDto {
 
   @IsNumber()
   @IsOptional()
-  userKeyId?: number;
+  userId?: number;
 
-  @IsNotEmpty()
-  @TransformBuffer()
-  signature?: Buffer;
-
-  @IsBoolean()
+  @IsArray()
+  @ArrayMinSize(1)
   @IsOptional()
-  approved?: boolean;
+  @ValidateNested({ each: true })
+  @Type(() => CreateTransactionApproverDto)
+  approvers?: CreateTransactionApproverDto[];
+}
+
+export class CreateTransactionApproversArrayDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateTransactionApproverDto)
+  approversArray: CreateTransactionApproverDto[];
 }
