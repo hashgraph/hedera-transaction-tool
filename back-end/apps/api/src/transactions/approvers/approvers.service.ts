@@ -1,74 +1,645 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { TransactionApprover } from '@entities';
-import { Repository } from 'typeorm';
-import { CreateTransactionApproverDto } from '../dto/create-transaction-approver.dto';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+
+import {
+  DataSource,
+  DeepPartial,
+  EntityManager,
+  FindManyOptions,
+  FindOneOptions,
+  Repository,
+} from 'typeorm';
+
+import { PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
+
+import { Transaction, TransactionApprover, User, UserKey } from '@entities';
+
+import { userKeysRequiredToSign } from '../../utils';
+
+import {
+  ApproverChoiceDto,
+  CreateTransactionApproverDto,
+  UpdateTransactionApproverDto,
+} from '../dto';
+import { MirrorNodeService, verifyTransactionBodyWithoutNodeAccountIdSignature } from '@app/common';
 
 @Injectable()
 export class ApproversService {
+  private readonly CANNOT_CREATE_EMPTY_APPROVER = 'Cannot create empty approver';
+  private readonly PARENT_APPROVER_NOT_FOUND = 'Parent approver not found';
+  private readonly THRESHOLD_REQUIRED = 'Threshold must be set for the parent approver';
+  private readonly CHILDREN_REQUIRED = 'Children must be set when there is a threshold';
+  private readonly THRESHOLD_LESS_OR_EQUAL_APPROVERS = (total: number) =>
+    `Threshold must be less or equal to the number of approvers (${total}) and not 0`;
+  private readonly USER_NOT_FOUND = (id: number) => `User with id: ${id} not found`;
+  private readonly APPROVER_ALREADY_EXISTS = 'Approver already exists';
+  private readonly ONLY_USER_OR_TREE = 'You can only set a user or a tree of approvers, not both';
+  private readonly ROOT_TRANSACTION_NOT_SAME = 'Root transaction is not the same';
+  private readonly INVALID_UPDATE_APPROVER =
+    'Only one property of the approver can be update user id, list id, or the threshold';
+  private readonly APPROVER_NOT_TREE = 'Cannot update threshold, the approver is not a tree';
+  private readonly APPROVER_IS_TREE = 'Cannot update user ud, the approver is a tree';
+  private readonly CANNOT_SET_CHILD_AS_PARENT = 'Cannot set a child as a parent';
+
   constructor(
     @InjectRepository(TransactionApprover)
     private repo: Repository<TransactionApprover>,
+    @InjectDataSource() private dataSource: DataSource,
+    private readonly mirrorNodeService: MirrorNodeService,
   ) {}
 
-  getTransactionApproverById(id: number): Promise<TransactionApprover> {
-    if (!id) {
-      return null;
-    }
-    return this.repo.findOne({
-      relations: ['transaction', 'userKey'],
+  /* Get the approver by id */
+  getTransactionApproverById(
+    id: number,
+    entityManager?: EntityManager,
+  ): Promise<TransactionApprover> {
+    if (!id) return null;
+
+    const find: FindOneOptions<TransactionApprover> = {
+      relations: ['approvers'],
       where: { id },
-    });
-  }
+    };
 
-  //TODO not sure if this is used, same with approvers, might want to put both of these back into transaction?
-  // because the purpose is to return the list of transactions that the user is a part of, not the transactionapprover
-  getTransactionApproversByUserId(
-    userId: number,
-  ): Promise<TransactionApprover[]> {
-    if (!userId) {
-      return null;
+    if (entityManager) {
+      return entityManager.findOne(TransactionApprover, find);
     }
-    return this.repo
-      .createQueryBuilder('approver')
-      .leftJoinAndSelect('approver.transaction', 'transaction')
-      .leftJoinAndSelect('approver.userKey', 'userKey')
-      .where('userKey.userId = :userId', { userId })
-      .getMany();
+
+    return this.repo.findOne(find);
   }
 
-  // Get the full list of approvers by transactionId. This will return one approver, a list of approvers, or
-  // a complex list (tree) of approvers.
-  //TODO should this list be sorted such that each node has it's children listed first before the next node? Like a tree.
-  getTransactionApproversByTransactionId(
+  /* Get the full list of approvers by transactionId. This will return an array of approvers that may be trees */
+  async getApproversByTransactionId(
     transactionId: number,
+    userId?: number,
+    entityManager?: EntityManager,
   ): Promise<TransactionApprover[]> {
-    if (!transactionId) {
-      return null;
+    if (typeof transactionId !== 'number' || (userId && typeof userId !== 'number')) return null;
+
+    return (entityManager || this.repo).query(
+      `
+      with recursive approverList as
+        (
+          select * from transaction_approver 
+          where "transactionId" = $1
+            union all
+              select approver.* from transaction_approver as approver
+              join approverList on approverList."id" = approver."listId"
+        )
+      select * from approverList
+      where approverList."deletedAt" is null
+        ${userId ? 'and approverList."userId" = $2' : ''}
+      `,
+      userId ? [transactionId, userId] : [transactionId],
+    );
+  }
+
+  /* Get the full list of approvers by transactionId if user has access */
+  async getVerifiedApproversByTransactionId(
+    transactionId: number,
+    user: User,
+  ): Promise<TransactionApprover[]> {
+    const transaction = await this.dataSource.manager.findOne(Transaction, {
+      where: { id: transactionId },
+      relations: [
+        'creatorKey',
+        'creatorKey.user',
+        'observers',
+        'signers',
+        'signers.userKey',
+        'signers.userKey.user',
+      ],
+    });
+
+    if (!transaction) throw new NotFoundException("Transaction doesn't exist");
+
+    const approvers = await this.getApproversByTransactionId(transactionId);
+
+    const userKeysToSign = await userKeysRequiredToSign(
+      transaction,
+      user,
+      this.mirrorNodeService,
+      this.dataSource.manager,
+    );
+
+    if (
+      userKeysToSign.length === 0 &&
+      transaction.creatorKey?.user?.id !== user.id &&
+      !transaction.observers.some(o => o.userId === user.id) &&
+      !transaction.signers.some(s => s.userKey.user.id === user.id) &&
+      !approvers.some(a => a.userId === user.id)
+    )
+      throw new UnauthorizedException("You don't have permission to view this transaction");
+
+    return approvers;
+  }
+
+  /* Get the full list of approvers by approver id. This will return an array of approvers that may be trees */
+  async getTransactionApproversById(
+    id: number,
+    entityManager?: EntityManager,
+  ): Promise<TransactionApprover[]> {
+    if (typeof id !== 'number') throw new NotFoundException("Transaction doesn't exist");
+
+    return (entityManager || this.repo).query(
+      `
+      with recursive approverList as
+        (
+          select * from transaction_approver 
+          where "id" = $1
+            union all
+              select approver.* from transaction_approver as approver
+              join approverList on approverList."id" = approver."listId"
+        )
+      select * from approverList
+      where approverList."deletedAt" is null
+      `,
+      [id],
+    );
+  }
+
+  /* Get root node from a node id */
+  async getRootNodeFromNode(
+    id: number,
+    entityManager?: EntityManager,
+  ): Promise<TransactionApprover | null> {
+    if (!id || typeof id !== 'number') return null;
+
+    return (
+      await (entityManager || this.repo).query(
+        `
+        with recursive approverList as
+          (
+            select * from transaction_approver 
+            where "id" = $1
+              union all 
+                select approver.* from transaction_approver as approver
+                join approverList on approverList."listId" = approver."id"
+          )
+        select * from approverList
+        where "listId" is null
+        `,
+        [id],
+      )
+    )[0];
+  }
+
+  /* Soft deletes approvers' tree */
+  async removeNode(listId: number): Promise<void> {
+    if (!listId || typeof listId !== 'number') return null;
+
+    return this.repo.query(
+      `
+      with recursive approversToDelete AS
+        (
+          select "id", "listId", "deletedAt"
+          from transaction_approver
+          where "id" = $1
+  
+            union all
+              select transaction_approver."id", transaction_approver."listId", transaction_approver."deletedAt"
+              from transaction_approver, approversToDelete     
+              where approversToDelete."id" = transaction_approver."listId"
+      
+        )
+      update transaction_approver
+      set "deletedAt" = now()
+      from approversToDelete
+      where approversToDelete."id" = transaction_approver."listId" or transaction_approver."id" = $1;
+    `,
+      [listId],
+    );
+  }
+
+  /* Create transaction approvers for the given transaction id with the user ids */
+  async createTransactionApprovers(
+    user: User,
+    transactionId: number,
+    dto: CreateTransactionApproverDto,
+  ): Promise<TransactionApprover[]> {
+    await this.getCreatorsTransaction(transactionId, user);
+
+    const approvers: TransactionApprover[] = [];
+
+    try {
+      await this.dataSource.transaction(async transactionalEntityManager => {
+        const createApprover = async (dtoApprover: CreateTransactionApproverDto) => {
+          /* Validate Approver's DTO */
+          this.validateApprover(dtoApprover);
+
+          /* Check if the approver already exists */
+          if (await this.isNode(dtoApprover, transactionId))
+            throw new Error(this.APPROVER_ALREADY_EXISTS);
+
+          /* Check if the parent approver exists and has threshold */
+          if (typeof dtoApprover.listId === 'number') {
+            const parent = await transactionalEntityManager.findOne(TransactionApprover, {
+              where: { id: dtoApprover.listId },
+            });
+
+            if (!parent) throw new Error(this.PARENT_APPROVER_NOT_FOUND);
+            if (typeof parent.threshold !== 'number') throw new Error(this.THRESHOLD_REQUIRED);
+
+            /* Check if the root transaction is the same */
+            const root = await this.getRootNodeFromNode(
+              dtoApprover.listId,
+              transactionalEntityManager,
+            );
+            if (root?.transactionId !== transactionId)
+              throw new Error(this.ROOT_TRANSACTION_NOT_SAME);
+          }
+
+          /* Check if the user exists */
+          if (typeof dtoApprover.userId === 'number') {
+            const userCount = await transactionalEntityManager.count(User, {
+              where: { id: dtoApprover.userId },
+            });
+
+            if (userCount === 0) throw new Error(this.USER_NOT_FOUND(dtoApprover.userId));
+          }
+
+          /* Check if there are sub approvers */
+          if (
+            typeof dtoApprover.userId === 'number' &&
+            dtoApprover.approvers &&
+            dtoApprover.approvers.length > 0
+          )
+            throw new Error(this.ONLY_USER_OR_TREE);
+
+          /* Check if the approver has threshold when there are children */
+          if (
+            dtoApprover.approvers &&
+            dtoApprover.approvers.length > 0 &&
+            (dtoApprover.threshold === null || isNaN(dtoApprover.threshold))
+          )
+            throw new Error(this.THRESHOLD_REQUIRED);
+
+          /* Check if the approver has children when there is threshold */
+          if (typeof dto.threshold === 'number' && (!dto.approvers || dto.approvers.length === 0))
+            throw new Error(this.CHILDREN_REQUIRED);
+
+          /* Check if the approver threshold is less or equal to the number of approvers */
+          if (
+            dtoApprover.approvers &&
+            (dtoApprover.threshold > dtoApprover.approvers.length || dtoApprover.threshold === 0)
+          )
+            throw new Error(this.THRESHOLD_LESS_OR_EQUAL_APPROVERS(dtoApprover.approvers.length));
+
+          const data: DeepPartial<TransactionApprover> = {
+            transactionId:
+              dtoApprover.listId === null || isNaN(dtoApprover.listId) ? transactionId : null,
+            listId: dtoApprover.listId,
+            threshold:
+              dtoApprover.threshold && dtoApprover.approvers ? dtoApprover.threshold : null,
+            userId: dtoApprover.userId,
+          };
+
+          if (typeof dtoApprover.userId === 'number') {
+            const userApproverRecords = await this.getApproversByTransactionId(
+              transactionId,
+              dtoApprover.userId,
+              transactionalEntityManager,
+            );
+
+            if (userApproverRecords.length > 0) {
+              data.signature = userApproverRecords[0].signature;
+              data.userKeyId = userApproverRecords[0].userKeyId;
+              data.approved = userApproverRecords[0].approved;
+            }
+          }
+
+          /* Create approver */
+          const approver = transactionalEntityManager.create(TransactionApprover, data);
+
+          /* Insert approver */
+          await transactionalEntityManager.insert(TransactionApprover, approver);
+          approvers.push(approver);
+
+          /* Continue creating the three */
+          if (dtoApprover.approvers) {
+            for (const nestedDtoApprover of dtoApprover.approvers || []) {
+              const nestedApprover = { ...nestedDtoApprover, listId: approver.id };
+
+              if (!nestedDtoApprover.approvers || nestedDtoApprover.approvers.length === 0) {
+                nestedApprover.threshold = null;
+              }
+
+              await createApprover({ ...nestedDtoApprover, listId: approver.id });
+            }
+          }
+        };
+
+        await createApprover(dto);
+      });
+    } catch (error) {
+      throw new BadRequestException(error.message);
     }
-    return this.repo
-      .query(`with recursive approverList as ` +
-        `(select * from transaction_approver where transactionId = ${transactionId} ` +
-        `union all ` +
-        `select approver.* from transaction_approver as approver ` +
-          `join approverList on approverList.id = approver.listId) ` +
-        `select * from approverList`);
+
+    return approvers;
   }
 
-  //TODO this should ensure that the approver row fits someone (root row, or belongs to a list or whatever)
-  async createTransactionApprover(dto: CreateTransactionApproverDto): Promise<TransactionApprover> {
-    const approver = this.repo.create(dto);
-    approver['user' as any] = dto.userKeyId;
-    approver['list' as any] = dto.listId;
-    approver['transaction' as any] = dto.transactionId;
-    return this.repo.save(approver);
+  /* Updates an approver of a transaction */
+  async updateTransactionApprover(
+    id: number,
+    dto: UpdateTransactionApproverDto,
+    transactionId: number,
+    user: User,
+  ): Promise<TransactionApprover> {
+    try {
+      const approver = await this.dataSource.transaction(async transactionalEntityManager => {
+        /* Check if the dto updates only one thing */
+        if (Object.keys(dto).length > 1 || Object.keys(dto).length === 0)
+          throw new Error(this.INVALID_UPDATE_APPROVER);
+
+        /* Verifies that the approver exists */
+        const approver = await this.getTransactionApproverById(id, transactionalEntityManager);
+        if (!approver) throw new NotFoundException("Approver doesn't exist");
+
+        /* Gets the root approver */
+        const rootNode = await this.getRootNodeFromNode(approver.id, transactionalEntityManager);
+        if (!rootNode) throw new NotFoundException("Root approver doesn't exist");
+
+        /* Verifies that the root transaction is the same as the param */
+        if (rootNode.transactionId !== transactionId)
+          throw new UnauthorizedException(this.ROOT_TRANSACTION_NOT_SAME);
+
+        /* Verifies that the user is the creator of the transaction */
+        await this.getCreatorsTransaction(rootNode.transactionId, user, transactionalEntityManager);
+
+        /* Check if the parent approver exists and has threshold */
+        if (dto.listId === null || typeof dto.listId === 'number') {
+          if (dto.listId === null) {
+            /* Return if the approver is already a root */
+            if (approver.listId === null) return approver;
+
+            /* Get the parent approver */
+            const parent = await transactionalEntityManager.findOne(TransactionApprover, {
+              relations: ['approvers'],
+              where: { id: approver.listId },
+            });
+
+            /* Set the list id to null and set the transaction id */
+            await transactionalEntityManager.update(TransactionApprover, approver.id, {
+              listId: null,
+              transactionId: rootNode.transactionId,
+            });
+            approver.listId = null;
+            approver.transactionId = rootNode.transactionId;
+
+            if (parent) {
+              const newParentApproversLength = parent.approvers.length - 1;
+
+              /* Soft delete the parent if there are no more children */
+              if (newParentApproversLength === 0) {
+                await transactionalEntityManager.softRemove(TransactionApprover, parent);
+              } else if (newParentApproversLength < parent.threshold) {
+                /* Update the parent threshold if the current one is more than the children */
+                await transactionalEntityManager.update(TransactionApprover, parent.id, {
+                  threshold: newParentApproversLength,
+                });
+              }
+            }
+
+            return approver;
+          }
+
+          /* Get the new parent */
+          const newParent = await transactionalEntityManager.findOne(TransactionApprover, {
+            relations: ['approvers'],
+            where: { id: dto.listId },
+          });
+
+          /* Check if the new parent exists and is tree */
+          if (!newParent) throw new Error(this.PARENT_APPROVER_NOT_FOUND);
+          if (typeof newParent.threshold !== 'number') throw new Error(this.THRESHOLD_REQUIRED);
+
+          /* Check if the new parent is not a child of the approver */
+          const approverList = await this.getTransactionApproversById(
+            approver.id,
+            transactionalEntityManager,
+          );
+          if (approverList.some(a => a.id === dto.listId))
+            throw new Error(this.CANNOT_SET_CHILD_AS_PARENT);
+
+          /* Check if the parent's root transaction is the same */
+          const parentRoot = await this.getRootNodeFromNode(dto.listId, transactionalEntityManager);
+          if (parentRoot?.transactionId !== transactionId)
+            throw new Error(this.ROOT_TRANSACTION_NOT_SAME);
+
+          /* Update the list id and sets the transaction id to null */
+          await transactionalEntityManager.update(TransactionApprover, approver.id, {
+            listId: dto.listId,
+            transactionId: null,
+          });
+          approver.listId = dto.listId;
+          approver.transactionId = null;
+
+          return approver;
+        } else if (typeof dto.threshold === 'number') {
+          /* Check if the approver is a tree */
+          if (typeof approver.threshold !== 'number' || typeof approver.userId === 'number')
+            throw new Error(this.APPROVER_NOT_TREE);
+
+          /* Check if the approver threshold is less or equal to the number of approvers */
+          if (
+            approver.approvers &&
+            (dto.threshold > approver.approvers.length || dto.threshold === 0)
+          )
+            throw new Error(this.THRESHOLD_LESS_OR_EQUAL_APPROVERS(approver.approvers.length));
+
+          /* Update the threshold */
+          if (approver.threshold !== dto.threshold) {
+            await transactionalEntityManager.update(TransactionApprover, approver.id, {
+              threshold: dto.threshold,
+            });
+            approver.threshold = dto.threshold;
+
+            return approver;
+          }
+        } else if (typeof dto.userId === 'number') {
+          /* Check if the approver is a tree */
+          if (typeof approver.threshold === 'number') throw new Error(this.APPROVER_IS_TREE);
+
+          /* Check if the user exists */
+          const userCount = await transactionalEntityManager.count(User, {
+            where: { id: dto.userId },
+          });
+          if (userCount === 0) throw new Error(this.USER_NOT_FOUND(dto.userId));
+
+          /* Update the user */
+          if (approver.userId !== dto.userId) {
+            const userApproverRecords = await this.getApproversByTransactionId(
+              transactionId,
+              dto.userId,
+              transactionalEntityManager,
+            );
+
+            const data: DeepPartial<TransactionApprover> = {
+              userId: dto.userId,
+            };
+
+            if (userApproverRecords.length > 0) {
+              data.userKeyId = userApproverRecords[0].userKeyId;
+              data.signature = userApproverRecords[0].signature;
+              data.approved = userApproverRecords[0].approved;
+
+              approver.userKeyId = userApproverRecords[0].userKeyId;
+              approver.signature = userApproverRecords[0].signature;
+              approver.approved = userApproverRecords[0].approved;
+            }
+
+            await transactionalEntityManager.update(TransactionApprover, approver.id, data);
+            approver.userId = dto.userId;
+
+            return approver;
+          }
+        }
+
+        return approver;
+      });
+
+      return approver;
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
   }
 
-  async removeTransactionApprover(id: number): Promise<TransactionApprover> {
+  /* Removes the transaction approver by id */
+  async removeTransactionApprover(id: number): Promise<void> {
     const approver = await this.getTransactionApproverById(id);
-    if (!approver) {
-      throw new NotFoundException();
+
+    if (!approver) throw new NotFoundException("Approver doesn't exist");
+
+    return this.removeNode(approver.id);
+  }
+
+  /* Approves a transaction */
+  async approveTransaction(
+    dto: ApproverChoiceDto,
+    transactionId: number,
+    user: User,
+  ): Promise<boolean> {
+    /* Get all the approvers */
+    const approvers = await this.getVerifiedApproversByTransactionId(transactionId, user);
+
+    /* If user is approver, filter the records that belongs to the user */
+    const userApprovers = approvers.filter(a => a.userId === user.id);
+
+    /* Check if the user is an approver */
+    if (userApprovers.length === 0)
+      throw new UnauthorizedException('You are not an approver of this transaction');
+
+    /* Check if the user has already approved the transaction */
+    if (userApprovers.every(a => a.signature))
+      throw new BadRequestException('You have already approved this transaction');
+
+    /* Ensures the user keys are passed */
+    if (user.keys.length === 0) {
+      user.keys = await this.dataSource.manager.find(UserKey, { where: { user: { id: user.id } } });
+      if (user.keys.length === 0) return false;
     }
-    return this.repo.remove(approver);
+
+    const signatureKey = user.keys.find(key => key.id === dto.userKeyId);
+
+    /* Check if the key belongs to the user */
+    if (!user.keys.some(key => key.id === dto.userKeyId))
+      throw new BadRequestException('Signature key does not belong to the user');
+
+    /* Gets the public key that the signature belongs to */
+    const publicKey = PublicKey.fromString(signatureKey.publicKey);
+
+    /* Get the transaction body */
+    const transaction = await this.dataSource.manager.findOne(Transaction, {
+      where: { id: transactionId },
+    });
+
+    const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
+
+    /* Verify the signature matches the transaction */
+    if (
+      !verifyTransactionBodyWithoutNodeAccountIdSignature(sdkTransaction, dto.signature, publicKey)
+    )
+      throw new BadRequestException('The signature does not match the public key');
+
+    /* Update the approver with the signature */
+    this.dataSource.transaction(async transactionalEntityManager => {
+      transactionalEntityManager
+        .createQueryBuilder()
+        .update(TransactionApprover)
+        .set({
+          userKeyId: dto.userKeyId,
+          signature: dto.signature,
+          approved: dto.approved,
+        })
+        .whereInIds(userApprovers.map(a => a.id))
+        .execute();
+    });
+
+    return true;
+  }
+
+  /* Get the transaction by id and verifies that the user is the creator */
+  async getCreatorsTransaction(
+    transactionId: number,
+    user: User,
+    entityManager?: EntityManager,
+  ): Promise<Transaction> {
+    const find: FindOneOptions<Transaction> = {
+      where: { id: transactionId },
+      relations: ['creatorKey', 'creatorKey.user'],
+    };
+
+    const transaction = await (entityManager
+      ? entityManager.findOne(Transaction, find)
+      : this.dataSource.manager.findOne(Transaction, find));
+
+    if (!transaction) throw new NotFoundException('Transaction not found');
+
+    if (transaction.creatorKey?.user?.id !== user.id)
+      throw new UnauthorizedException('Only the creator of the transaction is able to modify it');
+
+    return transaction;
+  }
+
+  /* Validates the approver DTO */
+  private validateApprover(approver: CreateTransactionApproverDto): void {
+    if (
+      (approver.listId === null || isNaN(approver.listId)) &&
+      (approver.threshold === null || isNaN(approver.threshold) || approver.threshold === 0) &&
+      (approver.userId === null || isNaN(approver.userId)) &&
+      (!approver.approvers || approver.approvers.length === 0)
+    )
+      throw new BadRequestException(this.CANNOT_CREATE_EMPTY_APPROVER);
+  }
+
+  /* Check if the approver node already exists */
+  private async isNode(
+    approver: CreateTransactionApproverDto,
+    transactionId: number,
+    entityManager?: EntityManager,
+  ) {
+    const find: FindManyOptions<TransactionApprover> = {
+      where: {
+        listId: typeof approver.listId === 'number' ? approver.listId : null,
+        userId: typeof approver.userId === 'number' ? approver.userId : null,
+        threshold:
+          typeof approver.threshold === 'number' && approver.threshold !== 0
+            ? approver.threshold
+            : null,
+        transactionId: typeof approver.listId === 'number' ? null : transactionId,
+      },
+    };
+
+    if (entityManager) {
+      const count = await entityManager.count(TransactionApprover, find);
+      return count > 0 && typeof approver.userId === 'number' ? true : false;
+    }
+
+    const count = await this.repo.count(find);
+    return count > 0 && typeof approver.userId === 'number' ? true : false;
   }
 }
