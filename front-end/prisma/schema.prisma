@@ -90,9 +90,10 @@ model Transaction {
   updated_at         DateTime      @updatedAt
   group_id           String?
   creator_public_key String?
+  organizationId     String?
+  network            String
   user               User          @relation(fields: [user_id], references: [id])
   Organization       Organization? @relation(fields: [organizationId], references: [id])
-  organizationId     String?
 }
 
 model TransactionDraft {
@@ -112,6 +113,7 @@ model HederaAccount {
   user_id    String
   account_id String
   nickname   String
+  network            String
   user       User   @relation(fields: [user_id], references: [id])
 }
 
@@ -119,6 +121,7 @@ model HederaFile {
   id            String    @id @default(uuid())
   user_id       String
   file_id       String
+  network            String
   nickname      String?
   description   String?
   metaBytes     String?
