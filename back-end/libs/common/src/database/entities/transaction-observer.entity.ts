@@ -2,8 +2,10 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Generated,
+  JoinColumn,
   ManyToOne,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
 } from 'typeorm';
 import { User } from './user.entity';
 import { Transaction } from './transaction.entity';
@@ -16,20 +18,27 @@ export enum Role {
 
 @Entity()
 export class TransactionObserver {
-  @PrimaryGeneratedColumn()
+  @Column()
+  @Generated('increment')
   id: number;
-
-  @ManyToOne(() => User, (user) => user.observableTransactions)
-  user: User;
 
   @Column()
   role: Role;
 
-  @ManyToOne(() => Transaction, (transaction) => transaction.observers)
+  @ManyToOne(() => User, user => user.observableTransactions)
+  @JoinColumn({ name: 'userId' })
+  user: User;
+
+  @PrimaryColumn()
+  userId: number;
+
+  @ManyToOne(() => Transaction, transaction => transaction.observers)
+  @JoinColumn({ name: 'transactionId' })
   transaction: Transaction;
+
+  @PrimaryColumn()
+  transactionId: number;
 
   @CreateDateColumn()
   createdAt: Date;
 }
-
-//insert into transaction_observer("id", "role", "createdAt", "userId", "transactionId") values (1,'FULL',now(), 1, 1)
