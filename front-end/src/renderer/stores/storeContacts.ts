@@ -44,9 +44,19 @@ const useContactsStore = defineStore('contacts', () => {
     }
   }
 
+  function getContact(userId: number) {
+    return contacts.value.find(c => c.user.id === userId);
+  }
+
+  function getNickname(userId: number) {
+    return contacts.value.find(c => c.user.id === userId)?.nickname || '';
+  }
+
   return {
     contacts,
     fetch,
+    getNickname,
+    getContact,
   };
 });
 
