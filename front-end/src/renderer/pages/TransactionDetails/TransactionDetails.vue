@@ -5,6 +5,8 @@ import { useRouter } from 'vue-router';
 import { KeyList, Transaction as SDKTransaction } from '@hashgraph/sdk';
 import { Transaction } from '@prisma/client';
 
+import { getDateStringExtended } from '../../utils/index';
+
 import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -299,21 +301,11 @@ const stepperItems = [
                 />
               </div>
 
-              <!-- Observers -->
-              <div v-if="orgTransaction?.observers" class="mt-5">
-                <h4 :class="detailItemLabelClass">Observers</h4>
-                <UsersGroup
-                  :addable="false"
-                  :editable="false"
-                  :userIds="orgTransaction.observers.map(o => o.userId)"
-                />
-              </div>
-
-              <hr class="separator my-5" />
+              <hr class="separator my-8" />
 
               <!-- TRANSACTION GENERAL DETAILS -->
               <div :class="sectionHeadingClass">
-                <h2 :class="sectionHeadingClass">Transaction Details</h2>
+                <h2 class="text-title text-bold">Transaction Details</h2>
                 <span
                   v-if="localTransaction || stepperActiveIndex === stepperItems.length - 1"
                   class="text-micro text-pink cursor-pointer"
@@ -339,6 +331,20 @@ const stepperItems = [
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Transaction ID</h4>
                   <p :class="detailItemValueClass">{{ getTransactionId(sdkTransaction) }}</p>
+                </div>
+
+                <!-- Transaction Created -->
+                <div :class="commonColClass">
+                  <h4 :class="detailItemLabelClass">Created at</h4>
+                  <p :class="detailItemValueClass">
+                    {{
+                      getDateStringExtended(
+                        new Date(
+                          orgTransaction?.createdAt || localTransaction?.created_at || Date.now(),
+                        ),
+                      )
+                    }}
+                  </p>
                 </div>
 
                 <!-- Transaction Valid Start -->
@@ -369,7 +375,7 @@ const stepperItems = [
               <hr class="separator my-5" />
 
               <!-- TRANSACTION SPECIFIC DETAILS -->
-              <h2 :class="sectionHeadingClass">{{ transactionSpecificLabel }}</h2>
+              <h2 class="text-title text-bold">{{ transactionSpecificLabel }}</h2>
 
               <!-- Transaction Specific Component -->
               <Component
@@ -380,11 +386,23 @@ const stepperItems = [
               <hr class="separator my-5" />
 
               <!-- SIGNATURES COLLECTED -->
-              <h2 v-if="signatureKey" :class="sectionHeadingClass">Signatures Collected</h2>
+              <h2 v-if="signatureKey" class="text-title text-bold">Signatures Collected</h2>
               <div v-if="signatureKey" class="text-small mt-5">
                 <KeyStructureSignatureStatus
                   :keyList="signatureKey"
                   :public-keys-signed="signersPublicKeys"
+                />
+              </div>
+
+              <hr class="separator my-5" />
+
+              <!-- Observers -->
+              <div v-if="orgTransaction?.observers" class="mt-5">
+                <h4 class="text-title text-bold">Observers</h4>
+                <UsersGroup
+                  :addable="false"
+                  :editable="false"
+                  :userIds="orgTransaction.observers.map(o => o.userId)"
                 />
               </div>
             </div>
