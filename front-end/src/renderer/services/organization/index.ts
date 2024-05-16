@@ -3,7 +3,7 @@ import { AxiosError } from 'axios';
 export * from './auth';
 export * from './user';
 export * from './userKeys';
-export * from './ping';
+export * from './health';
 export * from './transaction';
 
 export function throwIfNoResponse(error: AxiosError) {

@@ -6,7 +6,6 @@ import * as Joi from 'joi';
 import { DatabaseModule, LoggerModule, NotificationsProxyModule } from '@app/common';
 
 import { AuthModule } from './auth/auth.module';
-import { PingModule } from './ping/ping.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { UserKeysModule } from './user-keys/user-keys.module';
 import { UsersModule } from './users/users.module';
@@ -41,7 +40,6 @@ import { HealthModule } from '@app/common/health';
     UserKeysModule,
     AuthModule,
     TransactionsModule,
-    PingModule,
     NotificationsProxyModule,
     HealthModule,
   ],

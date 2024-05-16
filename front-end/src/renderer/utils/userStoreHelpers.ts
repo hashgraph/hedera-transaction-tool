@@ -15,7 +15,7 @@ import {
   LoggedInUserWithPassword,
 } from '@renderer/types';
 
-import { getUserState, ping } from '@renderer/services/organization';
+import { getUserState, healthCheck } from '@renderer/services/organization';
 import { getKeyPairs, hashRecoveryPhrase } from '@renderer/services/keyPairService';
 import { getAccountsByPublicKey } from '@renderer/services/mirrorNodeDataService';
 import { storeKeyPair as storeKey } from '@renderer/services/keyPairService';
@@ -231,7 +231,7 @@ export const getConnectedOrganization = async (
     throw Error('Login to select organization');
   }
 
-  const isActive = await ping(organization.serverUrl);
+  const isActive = await healthCheck(organization.serverUrl);
 
   const inactiveServer: ConnectedOrganization = {
     ...organization,
