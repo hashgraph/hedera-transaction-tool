@@ -180,6 +180,39 @@ export const getTransactionsToSign = async (
   }
 };
 
+/* Get transactions to approve */
+export const getTransactionsToApprove = async (
+  serverUrl: string,
+  page: number,
+  size: number,
+  sort?: { property: string; direction: 'asc' | 'desc' }[],
+): Promise<PaginatedResourceDto<ITransaction>> => {
+  try {
+    const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
+
+    const { data } = await axios.get(
+      `${serverUrl}/${controller}/approve?page=${page}&size=${size}${sorting}`,
+      {
+        withCredentials: true,
+      },
+    );
+
+    return data;
+  } catch (error: any) {
+    let message = 'Failed to get transactions to approve';
+
+    if (error instanceof AxiosError) {
+      throwIfNoResponse(error);
+
+      const errorMessage = error.response?.data?.message;
+      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
+        message = errorMessage;
+      }
+    }
+    throw new Error(message);
+  }
+};
+
 /* Get the count of the transactions to sign */
 export const getTransactionById = async (
   serverUrl: string,
