@@ -16,7 +16,16 @@ import {
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
-import { Repository, MoreThan, EntityManager, FindManyOptions, Brackets } from 'typeorm';
+import {
+  Repository,
+  MoreThan,
+  EntityManager,
+  FindManyOptions,
+  Brackets,
+  FindOptionsWhere,
+  Not,
+  In,
+} from 'typeorm';
 
 import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
 
@@ -224,6 +233,11 @@ export class TransactionsService {
     const where = getWhere<Transaction>(filter);
     const order = getOrder(sort);
 
+    const whereForUser: FindOptionsWhere<Transaction> = {
+      ...where,
+      status: Not(In([TransactionStatus.EXECUTED, TransactionStatus.FAILED])),
+    };
+
     const findOptions: FindManyOptions<Transaction> = {
       order,
       relations: {
@@ -238,7 +252,7 @@ export class TransactionsService {
       .setFindOptions(findOptions)
       .where(
         new Brackets(qb =>
-          qb.where(where).andWhere(
+          qb.where(whereForUser).andWhere(
             `
             (
               with recursive "approverList" as

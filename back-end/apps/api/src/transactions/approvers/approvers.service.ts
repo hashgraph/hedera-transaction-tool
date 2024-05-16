@@ -17,7 +17,7 @@ import {
 
 import { PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
-import { Transaction, TransactionApprover, User, UserKey } from '@entities';
+import { Transaction, TransactionApprover, TransactionStatus, User, UserKey } from '@entities';
 
 import { userKeysRequiredToSign } from '../../utils';
 
@@ -562,6 +562,16 @@ export class ApproversService {
     const transaction = await this.dataSource.manager.findOne(Transaction, {
       where: { id: transactionId },
     });
+
+    /* Check if the transaction exists */
+    if (!transaction) throw new NotFoundException('Transaction not found');
+
+    /* Checks if the transaction is executed */
+    if (
+      transaction.status === TransactionStatus.EXECUTED ||
+      transaction.status === TransactionStatus.FAILED
+    )
+      throw new BadRequestException('Transaction has already been executed');
 
     const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
 
