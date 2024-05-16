@@ -10,6 +10,7 @@ import {
 } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useUserStore from '@renderer/stores/storeUser';
@@ -34,6 +35,7 @@ import TransactionHeaderControls from '@renderer/components/Transaction/Transact
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
+import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -72,6 +74,7 @@ const transactionMemo = ref('');
 const newOwnerKey = ref<Key | null>(null);
 
 const observers = ref<number[]>([]);
+const approvers = ref<TransactionApproverDto[]>([]);
 
 const isKeyStructureModalShown = ref(false);
 const isExecuted = ref(false);
@@ -423,6 +426,13 @@ const columnClass = 'col-4 col-xxxl-3';
             <UsersGroup v-model:userIds="observers" :addable="true" :editable="true" />
           </div>
         </div>
+
+        <div v-if="isLoggedInOrganization(user.selectedOrganization)" class="row mt-6">
+          <div class="form-group col-12 col-xxxl-8">
+            <label class="form-label">Approvers</label>
+            <ApproversList v-model:approvers="approvers" :editable="true" />
+          </div>
+        </div>
       </div>
     </form>
 
@@ -430,6 +440,7 @@ const columnClass = 'col-4 col-xxxl-3';
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"
       :observers="observers"
+      :approvers="approvers"
       :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
       :on-executed="() => (isExecuted = true)"
       :on-submitted="handleSubmit"

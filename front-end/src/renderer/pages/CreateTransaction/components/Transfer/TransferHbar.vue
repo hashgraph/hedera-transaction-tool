@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue';
 import { Hbar, KeyList, Transaction, TransferTransaction, Transfer } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import { HederaAccount } from '@prisma/client';
 import { IAccountInfoParsed } from '@main/shared/interfaces';
@@ -30,6 +31,7 @@ import TransactionProcessor from '@renderer/components/Transaction/TransactionPr
 import TransferCard from '@renderer/components/TransferCard.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
+import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -65,6 +67,7 @@ const accountInfos = ref<{
 const linkedAccounts = ref<HederaAccount[]>([]);
 
 const observers = ref<number[]>([]);
+const approvers = ref<TransactionApproverDto[]>([]);
 
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
@@ -524,12 +527,20 @@ onMounted(async () => {
             <UsersGroup v-model:userIds="observers" :addable="true" :editable="true" />
           </div>
         </div>
+
+        <div v-if="isLoggedInOrganization(user.selectedOrganization)" class="row mt-6">
+          <div class="form-group col-12 col-xxxl-8">
+            <label class="form-label">Approvers</label>
+            <ApproversList v-model:approvers="approvers" :editable="true" />
+          </div>
+        </div>
       </div>
     </form>
     <TransactionProcessor
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"
       :observers="observers"
+      :approvers="approvers"
       :on-close-success-modal-click="
         () => {
           transfers = [];

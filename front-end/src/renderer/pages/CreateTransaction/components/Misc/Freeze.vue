@@ -3,6 +3,7 @@ import { onMounted, ref, watch } from 'vue';
 import { Hbar, FreezeTransaction, FileId, Timestamp, FreezeType, AccountId } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -26,6 +27,7 @@ import TransactionHeaderControls from '@renderer/components/Transaction/Transact
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
+import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -51,6 +53,7 @@ const fileHash = ref('');
 const transactionMemo = ref('');
 
 const observers = ref<number[]>([]);
+const approvers = ref<TransactionApproverDto[]>([]);
 
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
@@ -308,6 +311,13 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
             <UsersGroup v-model:userIds="observers" :addable="true" :editable="true" />
           </div>
         </div>
+
+        <div v-if="isLoggedInOrganization(user.selectedOrganization)" class="row mt-6">
+          <div class="form-group col-12 col-xxxl-8">
+            <label class="form-label">Approvers</label>
+            <ApproversList v-model:approvers="approvers" :editable="true" />
+          </div>
+        </div>
       </div>
     </form>
 
@@ -317,6 +327,7 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
       :on-submitted="handleSubmit"
       :transaction-bytes="transaction?.toBytes() || null"
       :observers="observers"
+      :approvers="approvers"
     >
       <template #successHeading>Freeze executed successfully</template>
       <template #successContent>
