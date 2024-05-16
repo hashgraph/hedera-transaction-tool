@@ -433,3 +433,40 @@ export const removeApprover = async (
     throw new Error(message);
   }
 };
+
+/* Sends approver's choice */
+export const sendApproverChoice = async (
+  serverUrl: string,
+  transactionId: number,
+  userKeyId: number,
+  signature: string,
+  approved: boolean,
+) => {
+  try {
+    const { data } = await axios.post(
+      `${serverUrl}/${controller}/${transactionId}/approvers/approve`,
+      {
+        userKeyId: userKeyId,
+        signature: signature,
+        approved: approved,
+      },
+      {
+        withCredentials: true,
+      },
+    );
+
+    return data;
+  } catch (error: any) {
+    let message = 'Failed to send approve choice';
+
+    if (error instanceof AxiosError) {
+      throwIfNoResponse(error);
+
+      const errorMessage = error.response?.data?.message;
+      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
+        message = errorMessage;
+      }
+    }
+    throw new Error(message);
+  }
+};
