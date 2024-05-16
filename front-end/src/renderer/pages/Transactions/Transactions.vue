@@ -16,6 +16,7 @@ import Drafts from './components/Drafts.vue';
 import ReadyToSign from './components/ReadyToSign.vue';
 import InProgress from './components/InProgress.vue';
 import ReadyForExecution from './components/ReadyForExecution.vue';
+import ReadyForReview from './components/ReadyForReview.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -88,7 +89,7 @@ watch(
 
     <div class="position-relative flex-column-100 overflow-hidden mt-4">
       <AppTabs :items="tabItems" v-model:active-index="activeTabIndex"></AppTabs>
-      <template v-if="activeTabTitle === 'Ready for Review'"></template>
+      <template v-if="activeTabTitle === 'Ready for Review'"><ReadyForReview /></template>
       <template v-if="activeTabTitle === 'Ready to Sign'"> <ReadyToSign /> </template>
       <template v-if="activeTabTitle === 'In Progress'"><InProgress /></template>
       <template v-if="activeTabTitle === 'Ready for Execution'"><ReadyForExecution /></template>
