@@ -222,6 +222,23 @@ export const getNickname = (publicKey: string, keyPairs: KeyPair[]): string | un
   return keyPair?.nickname || undefined;
 };
 
+export const flattenAccountIds = (
+  publicKeyToAccounts: PublicKeyAccounts[],
+  withDeleted = false,
+): string[] => {
+  const accountIds: string[] = [];
+
+  publicKeyToAccounts.forEach(pkToAcc => {
+    pkToAcc.accounts
+      .filter(acc => acc.account !== null && (withDeleted ? true : !acc.deleted))
+      .forEach(acc => {
+        acc.account && accountIds.push(acc.account);
+      });
+  });
+
+  return accountIds;
+};
+
 /* Organization */
 export const getConnectedOrganization = async (
   organization: Organization,
