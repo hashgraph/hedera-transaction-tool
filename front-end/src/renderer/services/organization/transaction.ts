@@ -5,7 +5,6 @@ import { Organization } from '@prisma/client';
 
 import { LoggedInOrganization, LoggedInUserWithPassword } from '@renderer/types';
 
-import { getPrivateKey, getSignatures } from '@renderer/utils';
 import {
   ITransaction,
   ITransactionFull,
@@ -13,8 +12,11 @@ import {
   PaginatedResourceDto,
   TransactionStatus,
 } from '@main/shared/interfaces';
+import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import { decryptPrivateKey } from '../keyPairService';
+
+import { getPrivateKey, getSignatures } from '@renderer/utils';
 
 import { throwIfNoResponse } from '.';
 
@@ -243,7 +245,7 @@ export const getTransactionsForUser = async (
   }
 };
 
-/* Adds an observer */
+/* Adds observers */
 export const addObservers = async (serverUrl: string, transactionId: number, userIds: number[]) => {
   try {
     const { data } = await axios.post(
@@ -272,7 +274,7 @@ export const addObservers = async (serverUrl: string, transactionId: number, use
   }
 };
 
-/* Adds an observer */
+/* Removes an observer */
 export const removeObserver = async (
   serverUrl: string,
   transactionId: number,
@@ -302,7 +304,7 @@ export const removeObserver = async (
   }
 };
 
-/* Adds an observer */
+/* Updates an observer */
 export const updateObserverRole = async (
   serverUrl: string,
   transactionId: number,
@@ -323,6 +325,69 @@ export const updateObserverRole = async (
     return data;
   } catch (error: any) {
     let message = "Failed to update obserser's role";
+
+    if (error instanceof AxiosError) {
+      throwIfNoResponse(error);
+
+      const errorMessage = error.response?.data?.message;
+      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
+        message = errorMessage;
+      }
+    }
+    throw new Error(message);
+  }
+};
+
+/* Adds approvers */
+export const addApprovers = async (
+  serverUrl: string,
+  transactionId: number,
+  approvers: TransactionApproverDto[],
+) => {
+  try {
+    const { data } = await axios.post(
+      `${serverUrl}/${controller}/${transactionId}/approvers`,
+      {
+        approversArray: approvers,
+      },
+      {
+        withCredentials: true,
+      },
+    );
+
+    return data;
+  } catch (error: any) {
+    let message = 'Failed to add approvers to transaction';
+
+    if (error instanceof AxiosError) {
+      throwIfNoResponse(error);
+
+      const errorMessage = error.response?.data?.message;
+      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
+        message = errorMessage;
+      }
+    }
+    throw new Error(message);
+  }
+};
+
+/* Removes an approver */
+export const removeApprover = async (
+  serverUrl: string,
+  transactionId: number,
+  approverId: number,
+) => {
+  try {
+    const { data } = await axios.delete(
+      `${serverUrl}/${controller}/${transactionId}/approvers/${approverId}`,
+      {
+        withCredentials: true,
+      },
+    );
+
+    return data;
+  } catch (error: any) {
+    let message = 'Failed to remove approver';
 
     if (error instanceof AxiosError) {
       throwIfNoResponse(error);
