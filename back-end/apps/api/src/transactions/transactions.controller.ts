@@ -60,7 +60,7 @@ export class TransactionsController {
     return this.transactionsService.createTransaction(body, user);
   }
 
-  /* Get all transactions created by the user */
+  /* Get all transactions visible by the user */
   @ApiOperation({
     summary: 'Get created transactions by user or transactions with specific status',
     description:
@@ -138,24 +138,6 @@ export class TransactionsController {
     return this.transactionsService.getTransactionsToApprove(user, take, skip);
   }
 
-  /* Get all transactions to be observed by the user */
-  @ApiOperation({
-    summary: 'Get transactions to observe',
-    description: 'Get all transactions to be observed by the current user.',
-  })
-  @ApiResponse({
-    status: 200,
-    type: [TransactionDto],
-  })
-  @Get('/observe')
-  getTransactionsToObserve(
-    @GetUser() user: User,
-    @Query('take', ParseIntPipe) take: number,
-    @Query('skip', ParseIntPipe) skip: number,
-  ): Promise<Transaction[]> {
-    return this.transactionsService.getTransactionsToObserve(user, take, skip);
-  }
-
   @ApiOperation({
     summary: 'Get a transaction',
     description: 'Get the transaction for the given transaction id.',
@@ -166,7 +148,11 @@ export class TransactionsController {
   })
   @Get('/:id')
   @Serialize(TransactionFullDto)
-  getTransaction(@Param('id', ParseIntPipe) id: number): Promise<Transaction> {
+  async getTransaction(
+    @GetUser() user,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Transaction> {
+    await this.transactionsService.verifyAccess(id, user);
     return this.transactionsService.getTransactionById(id);
   }
 

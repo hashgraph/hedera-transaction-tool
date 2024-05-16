@@ -1,4 +1,10 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
@@ -58,6 +64,7 @@ export class TransactionsService {
         'creatorKey.user',
         'approvers',
         'observers',
+        'observers.user',
         'comments',
         'signers',
         'signers.userKey',
@@ -80,8 +87,18 @@ export class TransactionsService {
 
     const transaction = await this.repo.findOne({
       where: { transactionId: id },
-      relations: ['creatorKey', 'approvers', 'observers', 'comments', 'signers', 'signers.userKey'],
+      relations: [
+        'creatorKey',
+        'approvers',
+        'observers',
+        'observers.user',
+        'comments',
+        'signers',
+        'signers.userKey',
+      ],
     });
+
+    if (!transaction) return null;
 
     transaction.signers = await this.signersService.getSignaturesByTransactionId(
       transaction.id,
@@ -91,7 +108,7 @@ export class TransactionsService {
     return transaction;
   }
 
-  /* Get the transactions created by the user */
+  /* Get the transactions visible by the user */
   async getTransactions(
     user: User,
     { page, limit, size, offset }: Pagination,
@@ -109,6 +126,12 @@ export class TransactionsService {
           user: {
             id: user.id,
           },
+        },
+      },
+      {
+        ...where,
+        observers: {
+          userId: user.id,
         },
       },
     ];
@@ -226,20 +249,6 @@ export class TransactionsService {
     );
   }
 
-  // Get all transactions that can be observed by the user.
-  // Include the creator key in the response
-  //TODO the role of the user as on observer needs to limit the response
-  getTransactionsToObserve(user: User, take: number, skip: number): Promise<Transaction[]> {
-    return this.repo
-      .createQueryBuilder('transaction') // Find Transactions (and necessary parts)
-      .leftJoinAndSelect('transaction.creatorKey', 'creatorKey')
-      .leftJoin('transaction.observers', 'observer') // where the list of observer's
-      .where('observer.userId = :userId', { userId: user.id }) // has a userId = user.id
-      .take(take)
-      .skip(skip)
-      .getMany();
-  }
-
   /* Create a new transaction with the provided information */
   async createTransaction(dto: CreateTransactionDto, user: UserDto): Promise<Transaction> {
     const userKeys = await this.userKeysService.getUserKeys(user.id);
@@ -332,5 +341,21 @@ export class TransactionsService {
     await this.repo.softRemove(transaction);
 
     return true;
+  }
+
+  async verifyAccess(transactionId: number, user: User) {
+    const transaction = await this.repo.findOne({
+      where: { id: transactionId },
+      relations: ['creatorKey', 'creatorKey.user', 'observers', 'approvers'],
+    });
+
+    if (!transaction) throw new NotFoundException('Transaction not found');
+
+    if (
+      !transaction.observers.some(o => o.userId === user.id) ||
+      transaction.creatorKey?.user?.id !== user.id
+      // || transaction.approvers.some(a => a. === user.id
+    )
+      throw new UnauthorizedException("You don't have permission to view this transaction");
   }
 }
