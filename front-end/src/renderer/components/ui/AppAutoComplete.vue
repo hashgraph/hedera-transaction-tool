@@ -8,6 +8,7 @@ const props = defineProps<{
   modelValue?: string | number;
   filled?: boolean;
   size?: 'small' | 'large' | undefined;
+  dataTestid?: string;
 }>();
 
 /* Emits */
@@ -88,10 +89,11 @@ onBeforeUnmount(() => {
       ref="inputRef"
       :model-value="modelValue"
       @update:model-value="$emit('update:modelValue', $event)"
+      @keydown="handleKeyDown"
       :filled="filled"
       :size="size"
+      :data-testid="dataTestid"
       v-bind="$attrs"
-      @keydown="handleKeyDown"
     />
     <div
       ref="dropdownRef"
