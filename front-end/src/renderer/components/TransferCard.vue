@@ -31,6 +31,10 @@ const props = withDefaults(
     clearOnAddTransfer?: boolean;
     buttonDisabled?: boolean;
     addRestDisabled?: boolean;
+    dataTestIdAccountIdInput?: string;
+    dataTestIdHbarInput?: string;
+    dataTestIdAddRest?: string;
+    dataTestIdAddTransfer?: string;
   }>(),
   {
     showApproved: false,
@@ -132,6 +136,7 @@ onBeforeMount(async () => {
             accoundIds.map(a => a.account_id).concat(flattenAccountIds(user.publicKeyToAccounts))
           "
           placeholder="Enter Account ID"
+          :data-testid="dataTestIdAccountIdInput"
         />
       </div>
       <div class="form-group mt-4">
@@ -140,7 +145,12 @@ onBeforeMount(async () => {
           >Allowance: {{ stringifyHbar(accountData.getSpenderAllowance(spender)) }}</label
         >
         <!-- @vue-ignore Broken type inference -->
-        <AppHbarInput v-model:model-value="amount" placeholder="Enter Amount" :filled="true" />
+        <AppHbarInput
+          v-model:model-value="amount"
+          placeholder="Enter Amount"
+          :filled="true"
+          :data-testid="dataTestIdHbarInput"
+        />
       </div>
       <div class="d-flex align-items-center justify-content-end flex-wrap gap-4 mt-4">
         <template v-if="showApproved">
@@ -161,6 +171,7 @@ onBeforeMount(async () => {
               color="secondary"
               @click="handleAddRest"
               :disabled="!accountData.isValid.value || addRestDisabled"
+              :data-testid="dataTestIdAddRest"
               >Add Rest</AppButton
             >
           </template>
@@ -172,6 +183,7 @@ onBeforeMount(async () => {
               amount.toBigNumber().isEqualTo(0) ||
               buttonDisabled
             "
+            :data-testid="dataTestIdAddTransfer"
             ><span class="bi bi-plus-lg"></span> Add Transfer</AppButton
           >
         </div>
