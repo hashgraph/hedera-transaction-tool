@@ -131,8 +131,8 @@ const handleSign = async () => {
   if (!isLoggedInWithPassword(user.personal)) {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     userPasswordModalRef.value?.open(
-      'Enter your personal account password',
-      'Enter your personal account password to decrypt your private key',
+      'Enter your application password',
+      'Enter your application password to decrypt your private key',
       handleSign,
     );
     return;
@@ -176,8 +176,8 @@ const handleApprove = async (approved: boolean) => {
     if (!isLoggedInWithPassword(user.personal)) {
       if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
       userPasswordModalRef.value?.open(
-        'Enter your personal account password',
-        'Enter your personal account password to decrypt your private key',
+        'Enter your application password',
+        'Enter your application password to decrypt your private key',
         callback,
       );
       return;
