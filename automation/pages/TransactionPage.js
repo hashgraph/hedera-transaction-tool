@@ -32,8 +32,8 @@ class TransactionPage extends BasePage {
   transactionsMenuButtonSelector = 'button-menu-transactions';
   accountsMenuButtonSelector = 'button-menu-accounts';
   createNewTransactionButtonSelector = 'button-create-new';
-  createAccountSublinkSelector = 'menu-sublink-1';
-  updateAccountSublinkSelector = 'menu-sublink-2';
+  createAccountSublinkSelector = 'menu-sublink-0';
+  updateAccountSublinkSelector = 'menu-sublink-1';
   deleteAccountSublinkSelector = 'menu-sublink-3';
   saveDraftButtonSelector = 'button-save-draft';
   signAndSubmitButtonSelector = 'button-sign-and-submit';
