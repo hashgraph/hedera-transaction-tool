@@ -73,3 +73,29 @@ npx playwright test tests/RegistrationTests --workers=1
 
 Replace `tests/RegistrationTests` with the path to the test suite you want to run. This command allows you to focus on a
 specific area of the application, making it useful for targeted testing.
+
+## Current test flows
+
+### 1. Registration tests
+
+```bash
+npx playwright test tests/RegistrationTests --workers=1
+```
+
+### 2. Login tests
+
+```bash
+npx playwright test tests/LoginTests --workers=1
+```
+
+### 3. Settings tests
+
+```bash
+npx playwright test tests/SettingsTests --workers=1
+```
+
+### 4. Transactions tests
+
+```bash
+npx playwright test tests/TransactionTests --workers=1
+```
