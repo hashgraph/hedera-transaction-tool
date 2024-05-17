@@ -63,13 +63,28 @@ npx playwright test --workers=1
 
 This will launch Playwright and execute the test suites defined in the project, outputting the results to your terminal.
 
-## Running a Specific Test Suite
+## Current Тest Suites
 
-If you wish to run a specific suite of test cases, such as the RegistrationTests, you can use the following command:
+### 1. Registration tests
 
 ```bash
 npx playwright test tests/RegistrationTests --workers=1
 ```
 
-Replace `tests/RegistrationTests` with the path to the test suite you want to run. This command allows you to focus on a
-specific area of the application, making it useful for targeted testing.
+### 2. Login tests
+
+```bash
+npx playwright test tests/LoginTests --workers=1
+```
+
+### 3. Settings tests
+
+```bash
+npx playwright test tests/SettingsTests --workers=1
+```
+
+### 4. Transactions tests
+
+```bash
+npx playwright test tests/TransactionTests --workers=1
+```

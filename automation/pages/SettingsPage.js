@@ -1,5 +1,6 @@
 const BasePage = require('./BasePage');
 const { queryDatabase } = require('../utils/databaseUtil');
+const { delay } = require('../utils/util.js');
 
 class SettingsPage extends BasePage {
   constructor(window) {
@@ -145,11 +146,25 @@ class SettingsPage extends BasePage {
   }
 
   async clickOnRestoreButton() {
-    await this.clickByTestId(this.restoreButtonSelector);
+    const maxRetries = 10;
+    let attempt = 0;
+
+    while (attempt < maxRetries) {
+      await this.clickByTestId(this.restoreButtonSelector);
+      if (await this.isElementVisible(this.continueButtonSelector, 3000)) {
+        return;
+      }
+      await delay(2000);
+      attempt++;
+    }
+
+    throw new Error(
+      `Failed to click on restore button and see continue button after ${maxRetries} attempts`,
+    );
   }
 
   async clickOnContinueButton() {
-    await this.clickByTestId(this.continueButtonSelector);
+    await this.clickByTestId(this.continueButtonSelector, 25000);
   }
 
   async fillInPassword(password) {
@@ -173,7 +188,7 @@ class SettingsPage extends BasePage {
   }
 
   async clickOnNicknameContinueButton() {
-    await this.clickByTestId(this.continueNicknameButtonSelector);
+    await this.clickByTestId(this.continueNicknameButtonSelector, 12000);
   }
 
   async clickOnContinuePhraseButton() {
@@ -293,7 +308,7 @@ class SettingsPage extends BasePage {
   }
 
   async clickOnCloseButton() {
-    await this.waitForElementToBeVisible(this.closeButtonSelector);
+    await this.waitForElementToBeVisible(this.closeButtonSelector, 15000);
     await this.clickByTestId(this.closeButtonSelector);
   }
 }

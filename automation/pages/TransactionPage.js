@@ -1,13 +1,15 @@
 const BasePage = require('./BasePage');
-const { getAccountDetails, pollForAccountDetails } = require('../utils/mirrorNodeAPI');
+const { getAccountDetails, getTransactionDetails } = require('../utils/mirrorNodeAPI');
 const { queryDatabase } = require('../utils/databaseUtil');
 const { decodeAndFlattenKeys } = require('../utils/keyUtil');
+const { delay } = require('../utils/util.js');
 
 class TransactionPage extends BasePage {
   constructor(window) {
     super(window);
     this.window = window;
     this.generatedPublicKeys = []; // Store generated public keys
+    this.generatedAccounts = []; // Store generated accounts from create account transaction
   }
 
   /* Selectors */
@@ -20,20 +22,30 @@ class TransactionPage extends BasePage {
   passwordSignTransactionInputSelector = 'input-password-transaction';
   publicKeyInputTextIndex = 'input-complex-key-public-key-';
   publicKeyComplexInputSelector = 'input-complex-public-key';
+  deletedAccountInputSelector = 'input-delete-account-id';
+  transferAccountInputSelector = 'input-transfer-account-id';
+  updateAccountInputSelector = 'input-account-id-for-update';
+  maxAutoAssociationsUpdateInputSelector = 'input-max-auto-token-associations';
+  memoUpdateInputSelector = 'input-memo-update';
 
   //Buttons
   transactionsMenuButtonSelector = 'button-menu-transactions';
   accountsMenuButtonSelector = 'button-menu-accounts';
   createNewTransactionButtonSelector = 'button-create-new';
-  createAccountSublinkSelector = 'menu-sublink-1';
+  createAccountSublinkSelector = 'menu-sublink-0';
+  updateAccountSublinkSelector = 'menu-sublink-1';
+  deleteAccountSublinkSelector = 'menu-sublink-3';
   saveDraftButtonSelector = 'button-save-draft';
   signAndSubmitButtonSelector = 'button-sign-and-submit';
+  signAndSubmitDeleteButtonSelector = 'button-sign-and-submit-delete';
+  signAndSubmitUpdateButtonSelector = 'button-sign-and-submit-update';
   payerDropdownSelector = 'dropdown-payer';
   singleTabSelector = 'tab-single';
   complexTabSelector = 'tab-complex';
   stakingDropdownSelector = 'dropdown-staking-account';
   nodeStakingOptionSelector = 'option-node';
   receiverSigRequiredSwitchSelector = 'switch-receiver-sig-required';
+  acceptStakingRewardsSwitchSelector = 'switch-accept-staking-rewards';
   discardModalDraftButtonSelector = 'button-discard-draft-modal';
   buttonSignTransactionSelector = 'button-sign-transaction';
   buttonCancelTransactionSelector = 'button-cancel-transaction';
@@ -51,14 +63,17 @@ class TransactionPage extends BasePage {
   modalTransactionSuccessSelector = 'modal-transaction-success';
   confirmTransactionModalSelector = 'modal-confirm-transaction';
   spanCreateNewComplexKeyButtonSelector = 'span-create-new-complex-key';
+  updateAccountIdFetchedDivSelector = 'div-account-info-fetched';
 
   //Messages
   textTypeTransactionSelector = 'p-type-transaction';
   textTransactionIdSelector = 'p-transaction-id';
+  linkTransactionIdSelector = 'a-transaction-id';
   textMaxTxFeeSelector = 'p-max-tx-fee';
   newlyCreatedTransactionIdSelector = 'a-transaction-id';
   newlyCreatedAccountIdSelector = 'p-new-crated-account-id';
   accountIdPrefixSelector = 'p-account-id-';
+  toastMessageSelector = '.v-toast__text';
 
   // Method to close the 'Save Draft' modal if it appears
   async closeDraftModal() {
@@ -93,7 +108,7 @@ class TransactionPage extends BasePage {
   async verifyConfirmTransactionInformation(typeTransaction) {
     await this.window.waitForSelector(
       '[data-testid="modal-confirm-transaction"][style*="display: block"]',
-      { state: 'visible', timeout: 5000 },
+      { state: 'visible', timeout: 10000 },
     );
     const regex = /^\d+\.\d+\.\d+@\d+\.\d+$/;
     const transactionId = await this.getTextByTestId(this.textTransactionIdSelector);
@@ -115,6 +130,16 @@ class TransactionPage extends BasePage {
     const accountDetails = await getAccountDetails(accountId);
     console.log('Account Details:', accountDetails);
     return accountDetails;
+  }
+
+  async mirrorGetTransactionResponse(transactionId) {
+    const transactionDetails = await getTransactionDetails(transactionId);
+    if (transactionDetails.transactions.length > 0) {
+      console.log('Transaction Details:', transactionDetails.transactions[0]);
+    } else {
+      console.log('Transaction not found in mirror node');
+    }
+    return transactionDetails;
   }
 
   async closeCompletedTransaction() {
@@ -171,11 +196,55 @@ class TransactionPage extends BasePage {
     );
   }
 
+  async clickOnDeleteAccountTransaction() {
+    console.log('Attempting to click on Delete Account Transaction link');
+    const maxAttempts = 10; // Maximum number of attempts to find the correct element
+    for (let index = 0; index < maxAttempts; index++) {
+      try {
+        await this.clickByTestIdWithIndex(this.deleteAccountSublinkSelector, index);
+        // Check if the next page element that should appear is visible
+        if (await this.isElementVisible(this.transferAccountInputSelector)) {
+          console.log('Successfully navigated to the Create Account Transaction page.');
+          return;
+        }
+      } catch (error) {
+        console.log(
+          `Attempt ${index + 1}: Failed to find or click on the correct element, retrying...`,
+        );
+      }
+    }
+    throw new Error(
+      'Failed to navigate to the Delete Account Transaction page after multiple attempts',
+    );
+  }
+
+  async clickOnUpdateAccountTransaction() {
+    console.log('Attempting to click on Update Account Transaction link');
+    const maxAttempts = 10; // Maximum number of attempts to find the correct element
+    for (let index = 0; index < maxAttempts; index++) {
+      try {
+        await this.clickByTestIdWithIndex(this.updateAccountSublinkSelector, index);
+        // Check if the next page element that should appear is visible
+        if (await this.isElementVisible(this.updateAccountInputSelector)) {
+          console.log('Successfully navigated to the Create Account Transaction page.');
+          return;
+        }
+      } catch (error) {
+        console.log(
+          `Attempt ${index + 1}: Failed to find or click on the correct element, retrying...`,
+        );
+      }
+    }
+    throw new Error(
+      'Failed to navigate to the Update Account Transaction page after multiple attempts',
+    );
+  }
+
   async verifyTransactionExists(transactionId, transactionType) {
     const query = `
-    SELECT COUNT(*) AS count
-    FROM "Transaction"
-    WHERE transaction_id = ? AND type = ?`;
+        SELECT COUNT(*) AS count
+        FROM "Transaction"
+        WHERE transaction_id = ? AND type = ?`;
 
     try {
       const row = await queryDatabase(query, [transactionId, transactionType]);
@@ -188,9 +257,9 @@ class TransactionPage extends BasePage {
 
   async verifyAccountExists(accountId) {
     const query = `
-    SELECT COUNT(*) AS count
-    FROM HederaAccount
-    WHERE account_id = ?`;
+        SELECT COUNT(*) AS count
+        FROM HederaAccount
+        WHERE account_id = ?`;
 
     try {
       const row = await queryDatabase(query, [accountId]);
@@ -288,19 +357,118 @@ class TransactionPage extends BasePage {
   async isAccountCardVisible(accountId) {
     await this.waitForElementToBeVisible(this.addNewAccountButtonSelector);
     const index = await this.findAccountIndexById(accountId);
-    return await this.isElementVisible(this.accountIdPrefixSelector + index);
+    if (index === -1) {
+      return false; // account not found
+    } else {
+      return await this.isElementVisible(this.accountIdPrefixSelector + index);
+    }
   }
 
-  async clickOnStakingDropDown() {
-    await this.clickByTestId(this.stakingDropdownSelector);
+  async ensureAccountExists(password) {
+    if (await this.isAccountsListEmpty()) {
+      await this.createNewAccount(password);
+    }
   }
 
-  async clickOnStakingOptionNode() {
-    await this.clickByTestId(this.nodeStakingOptionSelector);
+  async createNewAccount(password, options = {}) {
+    const {
+      isComplex = false,
+      maxAutoAssociations = null,
+      initialFunds = null,
+      isReceiverSigRequired = false,
+      memo = null,
+    } = options;
+
+    await this.clickOnCreateNewTransactionButton();
+    await this.clickOnCreateAccountTransaction();
+
+    // Handle complex key creation
+    if (isComplex) {
+      await this.handleComplexKeyCreation();
+    }
+
+    // Handle optional settings
+    const optionHandlers = [
+      {
+        condition: maxAutoAssociations !== null,
+        handler: () => this.fillInMaxAccountAssociations(maxAutoAssociations.toString()),
+      },
+      { condition: initialFunds !== null, handler: () => this.fillInInitialFunds(initialFunds) },
+      { condition: isReceiverSigRequired, handler: () => this.clickOnReceiverSigRequiredSwitch() },
+      { condition: memo !== null, handler: () => this.fillInMemo(memo) },
+    ];
+
+    for (const { condition, handler } of optionHandlers) {
+      if (condition) await handler();
+    }
+
+    await this.clickOnSignAndSubmitButton();
+    await this.clickSignTransactionButton();
+    await this.fillInPassword(password);
+    await this.clickOnPasswordContinue();
+    await this.waitForSuccessModalToAppear();
+
+    const [newAccountId, newTransactionId] = await Promise.all([
+      this.getNewAccountIdText(),
+      this.getNewTransactionIdText(),
+    ]);
+
+    await this.clickOnCloseButtonForCompletedTransaction();
+    await this.addAccountsToList(newAccountId);
+
+    return { newAccountId, newTransactionId };
+  }
+
+  // Helper method for complex key creation
+  async handleComplexKeyCreation() {
+    await this.clickOnComplexTab();
+    await this.clickOnCreateNewComplexKeyButton();
+    await this.createComplexKeyStructure();
+    await this.clickOnDoneButton();
+  }
+
+  async deleteAccount(accountId, password) {
+    await this.clickOnTransactionsMenuButton();
+    await this.clickOnCreateNewTransactionButton();
+    await this.clickOnDeleteAccountTransaction();
+    await this.fillInTransferAccountId();
+    await this.fillInDeletedAccountId(accountId);
+    await this.clickOnSignAndSubmitDeleteButton();
+    await this.clickSignTransactionButton();
+    await this.fillInPassword(password);
+    await this.clickOnPasswordContinue();
+    await this.waitForSuccessModalToAppear();
+    const transactionId = await this.getTransactionIdText();
+    await this.clickOnCloseButtonForCompletedTransaction();
+    await this.removeAccountFromList(accountId);
+    return transactionId;
+  }
+
+  async updateAccount(accountId, password, maxAutoAssociations, memo) {
+    await this.clickOnTransactionsMenuButton();
+    await this.clickOnCreateNewTransactionButton();
+    await this.clickOnUpdateAccountTransaction();
+    await this.fillInUpdatedAccountId(accountId);
+    await this.fillInMaxAutoAssociations(maxAutoAssociations);
+    await this.fillInMemoUpdate(memo);
+    await this.clickOnAcceptStakingRewardsSwitch(); //disabling staking rewards
+    await this.waitForElementPresentInDOM(this.updateAccountIdFetchedDivSelector, 30000);
+    await this.clickOnSignAndSubmitUpdateButton();
+    await this.clickSignTransactionButton();
+    await this.fillInPassword(password);
+    await this.clickOnPasswordContinue();
+    await this.waitForSuccessModalToAppear();
+    const transactionId = await this.getTransactionIdText();
+    await this.clickOnCloseButtonForCompletedTransaction();
+    return transactionId;
   }
 
   async clickOnReceiverSigRequiredSwitch() {
     await this.toggleSwitchByTestId(this.receiverSigRequiredSwitchSelector);
+  }
+
+  async clickOnAcceptStakingRewardsSwitch() {
+    await this.toggleSwitchByTestId(this.acceptStakingRewardsSwitchSelector);
   }
 
   async fillInMemo(memo) {
@@ -319,16 +487,24 @@ class TransactionPage extends BasePage {
     await this.clickByTestId(this.signAndSubmitButtonSelector);
   }
 
+  async clickOnSignAndSubmitDeleteButton() {
+    await this.clickByTestId(this.signAndSubmitDeleteButtonSelector);
+  }
+
+  async clickOnSignAndSubmitUpdateButton() {
+    await this.clickByTestId(this.signAndSubmitUpdateButtonSelector);
+  }
+
   async clickSignTransactionButton() {
     // Construct the selector for the confirm transaction modal that is visible and in a displayed state
     const modalSelector = `[data-testid="${this.confirmTransactionModalSelector}"][style*="display: block"]`;
-    await this.window.waitForSelector(modalSelector, { state: 'visible', timeout: 5000 });
+    await this.window.waitForSelector(modalSelector, { state: 'visible', timeout: 15000 });
 
     // Construct the selector for the enabled sign button within the visible modal
     const signButtonSelector = `${modalSelector} [data-testid="${this.buttonSignTransactionSelector}"]:enabled`;
 
     // Wait for the sign button to be visible and enabled, then attempt to click it
-    await this.window.waitForSelector(signButtonSelector, { state: 'visible', timeout: 5000 });
+    await this.window.waitForSelector(signButtonSelector, { state: 'visible', timeout: 15000 });
     await this.window.click(signButtonSelector);
 
     // After clicking the sign button, wait for the password input to become visible
@@ -352,11 +528,15 @@ class TransactionPage extends BasePage {
   }
 
   async waitForSuccessModalToAppear() {
-    await this.waitForElementToBeVisible(this.successCheckMarkIconSelector, 15000);
+    await this.waitForElementToBeVisible(this.successCheckMarkIconSelector, 25000);
   }
 
   async getNewAccountIdText() {
     return await this.getTextByTestId(this.newlyCreatedAccountIdSelector);
+  }
+
+  async getTransactionIdText() {
+    return await this.getTextByTestId(this.linkTransactionIdSelector);
   }
 
   async getNewTransactionIdText() {
@@ -375,13 +555,10 @@ class TransactionPage extends BasePage {
     await this.clickByTestId(this.selectThresholdNumberIndex + depth);
   }
 
-  async getPublicKeyTextByDepth(depth) {
-    await this.clickByTestId(this.publicKeyInputTextIndex + depth);
-  }
-
   async fillInPublicKeyField(publicKey) {
     await this.fillByTestId(this.publicKeyComplexInputSelector, publicKey);
   }
+
   async clickInsertPublicKey() {
     await this.clickByTestId(this.insertPublicKeyButtonSelector);
   }
@@ -396,6 +573,114 @@ class TransactionPage extends BasePage {
 
   async clickOnDoneButton() {
     await this.clickByTestId(this.doneComplexKeyButtonSelector);
+  }
+
+  /**
+   * Fills in the deleted account ID input field, removes the last character, and types it again to trigger UI updates.
+   * Continuously retries until the 'Sign and Submit' button is enabled or a max attempt limit is reached.
+   * @param {string} accountId - The account ID to be filled in.
+   */
+  async fillInDeletedAccountId(accountId) {
+    const maxRetries = 50; // Maximum number of retries before giving up
+    let attempt = 0;
+
+    while (attempt < maxRetries) {
+      // Fill the input normally
+      // Not using BasePage due to spam in the logs
+      const element = this.window.getByTestId(this.deletedAccountInputSelector);
+      await element.fill(accountId);
+
+      // Grab the last character of accountId and prepare the version without the last char
+      const lastChar = accountId.slice(-1);
+      const withoutLastChar = accountId.slice(0, -1);
+
+      // Clear the input and retype it without the last character
+      await element.fill(withoutLastChar);
+
+      // Type the last character
+      await this.window.keyboard.type(lastChar);
+
+      // Check if the 'Sign and Submit' button is enabled
+      if (await this.isButtonEnabled(this.signAndSubmitDeleteButtonSelector)) {
+        return; // Exit the function if the button is enabled
+      }
+
+      // Wait a short period before retrying to allow for UI updates
+      await delay(100); // Wait for 100 milliseconds
+
+      attempt++; // Increment the attempt counter
+    }
+
+    throw new Error('Failed to enable the Sign and Submit button after multiple attempts.');
+  }
+
+  async fillInUpdatedAccountId(accountId) {
+    const maxRetries = 50; // Maximum number of retries before giving up
+    let attempt = 0;
+
+    while (attempt < maxRetries) {
+      // Fill the input normally
+      // Not using BasePage due to spam in the logs
+      const element = this.window.getByTestId(this.updateAccountInputSelector);
+      await element.fill(accountId);
+
+      // Grab the last character of accountId and prepare the version without the last char
+      const lastChar = accountId.slice(-1);
+      const withoutLastChar = accountId.slice(0, -1);
+
+      // Clear the input and retype it without the last character
+      await element.fill(withoutLastChar);
+
+      // Type the last character
+      await this.window.keyboard.type(lastChar);
+
+      // Check if the 'Sign and Submit' button is enabled
+      if (await this.isButtonEnabled(this.signAndSubmitUpdateButtonSelector)) {
+        return; // Exit the function if the button is enabled
+      }
+
+      // Wait a short period before retrying to allow for UI updates
+      await delay(100); // Wait for 100 milliseconds
+
+      attempt++; // Increment the attempt counter
+    }
+
+    throw new Error('Failed to enable the Sign and Submit button after multiple attempts.');
+  }
+
+  async fillInTransferAccountId() {
+    const allAccountIdsText = await this.getTextByTestId(this.payerDropdownSelector);
+    const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
+    await this.fillByTestId(this.transferAccountInputSelector, firstAccountId);
+  }
+
+  async getFirstAccountIdFromText(allAccountIds) {
+    const accountIdsArray = allAccountIds.split(' ');
+    return accountIdsArray[0];
+  }
+
+  async addAccountsToList(accountId) {
+    this.generatedAccounts.push(accountId);
+  }
+
+  async removeAccountFromList(accountId) {
+    this.generatedAccounts = this.generatedAccounts.filter(id => id !== accountId);
+  }
+
+  async isAccountsListEmpty() {
+    return this.generatedAccounts.length === 0;
+  }
+
+  async getFirstAccountFromList() {
+    return this.generatedAccounts[0];
+  }
+
+  async fillInMaxAutoAssociations(amount) {
+    await this.fillByTestId(this.maxAutoAssociationsUpdateInputSelector, amount);
+  }
+
+  async fillInMemoUpdate(memo) {
+    await this.fillByTestId(this.memoUpdateInputSelector, memo);
   }
 }
 

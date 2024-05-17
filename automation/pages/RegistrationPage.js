@@ -415,7 +415,7 @@ class RegistrationPage extends BasePage {
   }
 
   async getToastMessage() {
-    return await this.getTextByCssSelector(this.toastMessageSelector, 3000);
+    return await this.getTextByCssSelector(this.toastMessageSelector, 25000);
   }
 
   async clickOnGenerateAgainButton() {
