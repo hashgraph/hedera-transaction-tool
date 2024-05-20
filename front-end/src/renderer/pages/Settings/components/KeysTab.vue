@@ -243,6 +243,7 @@ watch(isDeleteModalShown, newVal => {
                       'text-mainnet': network.network === 'mainnet',
                       'text-testnet': network.network === 'testnet',
                       'text-previewnet': network.network === 'previewnet',
+                      'text-info': network.network === 'local-node',
                     }"
                   >
                     {{
