@@ -83,14 +83,15 @@ class LoginPage extends BasePage {
   // Method to reset the application state
   async resetState() {
     // Check if the initial reset button exists and is visible
-    const initialResetButtonExists = await this.window
-      .getByTestId(this.resetStateButtonSelector)
-      .isVisible();
+    const initialResetButtonExists = await this.isElementVisible(this.resetStateButtonSelector);
 
     // Proceed only if the initial reset button is visible
     if (initialResetButtonExists) {
-      await this.window.getByTestId(this.resetStateButtonSelector).click();
-
+      try {
+        await this.clickByTestId(this.resetStateButtonSelector);
+      } catch (e) {
+        console.log('Failed to click on the reset link');
+      }
       // Now wait for the confirmation reset button to become visible
       try {
         const resetButton = this.window.getByTestId(this.confirmResetStateButtonSelector);

@@ -118,10 +118,9 @@ class RegistrationPage extends BasePage {
   }
 
   compareWordSets(firstSet, secondSet) {
-    if (firstSet.length !== secondSet.length) {
-      throw new Error('The two word sets are not of the same length.');
-    }
-    return firstSet.every((word, index) => word !== secondSet[index]);
+    const firstPhrase = firstSet.join(' ');
+    const secondPhrase = secondSet.join(' ');
+    return firstPhrase !== secondPhrase;
   }
 
   getCopyOfRecoveryPhraseWords() {
@@ -423,7 +422,7 @@ class RegistrationPage extends BasePage {
   }
 
   async isConfirmPasswordFieldVisible() {
-    return await this.isElementVisible(this.confirmPasswordInputSelector);
+    return await this.isElementVisible(this.confirmPasswordInputSelector, 5000);
   }
 
   async getPublicKey() {

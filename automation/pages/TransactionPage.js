@@ -2,7 +2,6 @@ const BasePage = require('./BasePage');
 const { getAccountDetails, getTransactionDetails } = require('../utils/mirrorNodeAPI');
 const { queryDatabase } = require('../utils/databaseUtil');
 const { decodeAndFlattenKeys } = require('../utils/keyUtil');
-const { delay } = require('../utils/util.js');
 
 class TransactionPage extends BasePage {
   constructor(window) {
@@ -20,13 +19,16 @@ class TransactionPage extends BasePage {
   accountMemoInputSelector = 'input-account-memo';
   nicknameInputSelector = 'input-nickname';
   passwordSignTransactionInputSelector = 'input-password-transaction';
-  publicKeyInputTextIndex = 'input-complex-key-public-key-';
   publicKeyComplexInputSelector = 'input-complex-public-key';
   deletedAccountInputSelector = 'input-delete-account-id';
   transferAccountInputSelector = 'input-transfer-account-id';
   updateAccountInputSelector = 'input-account-id-for-update';
   maxAutoAssociationsUpdateInputSelector = 'input-max-auto-token-associations';
   memoUpdateInputSelector = 'input-memo-update';
+  transferFromAccountIdInputSelector = 'input-transfer-from-account';
+  transferAmountFromAccountInputSelector = 'input-transfer-from-amount';
+  transferToAccountIdInputSelector = 'input-transfer-to-account';
+  transferAmountToAccountInputSelector = 'input-transfer-to-amount';
 
   //Buttons
   transactionsMenuButtonSelector = 'button-menu-transactions';
@@ -34,6 +36,7 @@ class TransactionPage extends BasePage {
   createNewTransactionButtonSelector = 'button-create-new';
   createAccountSublinkSelector = 'menu-sublink-0';
   updateAccountSublinkSelector = 'menu-sublink-1';
+  transferTokensSublinkSelector = 'menu-sublink-2';
   deleteAccountSublinkSelector = 'menu-sublink-3';
   saveDraftButtonSelector = 'button-save-draft';
   signAndSubmitButtonSelector = 'button-sign-and-submit';
@@ -42,8 +45,6 @@ class TransactionPage extends BasePage {
   payerDropdownSelector = 'dropdown-payer';
   singleTabSelector = 'tab-single';
   complexTabSelector = 'tab-complex';
-  stakingDropdownSelector = 'dropdown-staking-account';
-  nodeStakingOptionSelector = 'option-node';
   receiverSigRequiredSwitchSelector = 'switch-receiver-sig-required';
   acceptStakingRewardsSwitchSelector = 'switch-accept-staking-rewards';
   discardModalDraftButtonSelector = 'button-discard-draft-modal';
@@ -57,6 +58,10 @@ class TransactionPage extends BasePage {
   insertPublicKeyButtonSelector = 'button-insert-public-key';
   doneComplexKeyButtonSelector = 'button-complex-key-done';
   addNewAccountButtonSelector = 'button-add-new-account';
+  addTransferFromButtonSelector = 'button-add-transfer-from';
+  addRestButtonSelector = 'button-transfer-to-rest';
+  addTransferToButtonSelector = 'button-add-transfer-to';
+  signAndSubmitTransferSelector = 'button-sign-and-submit-transfer';
 
   //Other
   successCheckMarkIconSelector = 'icon-success-checkmark';
@@ -74,6 +79,7 @@ class TransactionPage extends BasePage {
   newlyCreatedAccountIdSelector = 'p-new-crated-account-id';
   accountIdPrefixSelector = 'p-account-id-';
   toastMessageSelector = '.v-toast__text';
+  hbarAmountValueSelector = 'p-hbar-amount';
 
   // Method to close the 'Save Draft' modal if it appears
   async closeDraftModal() {
@@ -226,6 +232,28 @@ class TransactionPage extends BasePage {
         await this.clickByTestIdWithIndex(this.updateAccountSublinkSelector, index);
         // Check if the next page element that should appear is visible
         if (await this.isElementVisible(this.updateAccountInputSelector)) {
+          console.log('Successfully navigated to the Create Account Transaction page.');
+          return;
+        }
+      } catch (error) {
+        console.log(
+          `Attempt ${index + 1}: Failed to find or click on the correct element, retrying...`,
+        );
+      }
+    }
+    throw new Error(
+      'Failed to navigate to the Update Account Transaction page after multiple attempts',
+    );
+  }
+
+  async clickOnTransferTokensTransaction() {
+    console.log('Attempting to click on Update Account Transaction link');
+    const maxAttempts = 10; // Maximum number of attempts to find the correct element
+    for (let index = 0; index < maxAttempts; index++) {
+      try {
+        await this.clickByTestIdWithIndex(this.transferTokensSublinkSelector, index);
+        // Check if the next page element that should appear is visible
+        if (await this.isElementVisible(this.signAndSubmitTransferSelector)) {
           console.log('Successfully navigated to the Create Account Transaction page.');
           return;
         }
@@ -463,6 +491,34 @@ class TransactionPage extends BasePage {
     return transactionId;
   }
 
+  async transferAmountBetweenAccounts(toAccountId, amount, password, options = {}) {
+    const { isSupposedToFail = false } = options;
+
+    await this.clickOnTransactionsMenuButton();
+    await this.clickOnCreateNewTransactionButton();
+    await this.clickOnTransferTokensTransaction();
+    await this.fillInTransferFromAccountId();
+    await this.fillInTransferAmountFromAccount(amount);
+    await this.fillInTransferToAccountId(toAccountId);
+    await this.clickOnAddTransferFromButton();
+    await this.fillInTransferAmountToAccount(amount);
+    await this.clickOnAddTransferToButton();
+
+    await this.clickOnSignAndSubmitTransferButton();
+    await this.clickSignTransactionButton();
+    await this.fillInPassword(password);
+    await this.clickOnPasswordContinue();
+
+    if (isSupposedToFail) {
+      return null;
+    } else {
+      await this.waitForSuccessModalToAppear();
+      const transactionId = await this.getTransactionIdText();
+      await this.clickOnCloseButtonForCompletedTransaction();
+      return transactionId;
+    }
+  }
+
   async clickOnReceiverSigRequiredSwitch() {
     await this.toggleSwitchByTestId(this.receiverSigRequiredSwitchSelector);
   }
@@ -585,6 +641,7 @@ class TransactionPage extends BasePage {
     let attempt = 0;
 
     while (attempt < maxRetries) {
+      const { delay } = await import('../utils/util.js');
       // Fill the input normally
       // Not using BasePage due to spam in the logs
       const element = this.window.getByTestId(this.deletedAccountInputSelector);
@@ -619,6 +676,7 @@ class TransactionPage extends BasePage {
     let attempt = 0;
 
     while (attempt < maxRetries) {
+      const { delay } = await import('../utils/util.js');
       // Fill the input normally
       // Not using BasePage due to spam in the logs
       const element = this.window.getByTestId(this.updateAccountInputSelector);
@@ -659,6 +717,11 @@ class TransactionPage extends BasePage {
     return accountIdsArray[0];
   }
 
+  async getPayerAccountId() {
+    const allAccountIdsText = await this.getTextByTestId(this.payerDropdownSelector);
+    return await this.getFirstAccountIdFromText(allAccountIdsText);
+  }
+
   async addAccountsToList(accountId) {
     this.generatedAccounts.push(accountId);
   }
@@ -681,6 +744,48 @@ class TransactionPage extends BasePage {
 
   async fillInMemoUpdate(memo) {
     await this.fillByTestId(this.memoUpdateInputSelector, memo);
+  }
+
+  async fillInTransferFromAccountId() {
+    const allAccountIdsText = await this.getTextByTestId(this.payerDropdownSelector);
+    const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
+    await this.fillByTestId(this.transferFromAccountIdInputSelector, firstAccountId);
+  }
+
+  async fillInTransferAmountFromAccount(amount) {
+    await this.fillByTestId(this.transferAmountFromAccountInputSelector, amount);
+  }
+
+  async fillInTransferToAccountId(accountId) {
+    await this.fillByTestId(this.transferToAccountIdInputSelector, accountId);
+  }
+
+  async fillInTransferAmountToAccount(amount) {
+    await this.fillByTestId(this.transferAmountToAccountInputSelector, amount);
+  }
+
+  async clickOnAddTransferFromButton() {
+    await this.clickByTestId(this.addTransferFromButtonSelector);
+  }
+
+  async clickOnAddTransferToButton() {
+    await this.clickByTestId(this.addTransferToButtonSelector);
+  }
+
+  async clickOnAddRestButton() {
+    await this.clickByTestId(this.addRestButtonSelector);
+  }
+
+  async clickOnSignAndSubmitTransferButton() {
+    await this.clickByTestId(this.signAndSubmitTransferSelector);
+  }
+
+  async getHbarAmountValueForTwoAccounts() {
+    return await this.getAllTextByTestId(this.hbarAmountValueSelector);
+  }
+
+  async isSignAndSubmitButtonEnabled() {
+    return await this.isButtonEnabled(this.signAndSubmitTransferSelector);
   }
 }
 
