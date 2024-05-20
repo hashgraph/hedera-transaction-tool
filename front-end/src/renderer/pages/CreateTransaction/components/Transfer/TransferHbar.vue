@@ -337,6 +337,7 @@ onMounted(async () => {
           <AppButton
             color="primary"
             type="submit"
+            data-testid="button-sign-and-submit-transfer"
             :disabled="
               !payerData.accountId.value ||
               !totalBalance.toBigNumber().isEqualTo(0) ||
@@ -370,6 +371,10 @@ onMounted(async () => {
                 :show-balance-in-label="true"
                 :button-disabled="totalBalanceAdjustments >= 10"
                 :clear-on-add-transfer="true"
+                data-test-id-account-id-input="input-transfer-from-account"
+                data-test-id-hbar-input="input-transfer-from-amount"
+                data-test-id-add-rest="button-transfer-from-rest"
+                data-test-id-add-transfer="button-add-transfer-from"
               />
             </div>
             <div class="col-1 align-self-center text-center">
@@ -387,6 +392,10 @@ onMounted(async () => {
                 "
                 :show-transfer-rest="true"
                 :clear-on-add-transfer="true"
+                data-test-id-account-id-input="input-transfer-to-account"
+                data-test-id-hbar-input="input-transfer-to-amount"
+                data-test-id-add-rest="button-transfer-to-rest"
+                data-test-id-add-transfer="button-add-transfer-to"
               />
             </div>
           </div>
@@ -482,7 +491,10 @@ onMounted(async () => {
                         </template>
                       </div>
                       <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
-                        <p class="text-secondary text-small text-bold overflow-hidden">
+                        <p
+                          class="text-secondary text-small text-bold overflow-hidden"
+                          data-testid="p-hbar-amount"
+                        >
                           {{ stringifyHbar(credit.amount as Hbar) }}
                         </p>
                       </div>
