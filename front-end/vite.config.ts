@@ -71,7 +71,7 @@ export default defineConfig(({ command }) => {
       eslint(),
     ],
     server: {
-      port: 8082,
+      port: 8083,
     },
     test: {
       globals: true,
