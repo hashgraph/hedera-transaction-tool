@@ -1,5 +1,7 @@
+import { Network } from '@entities';
+
 export const MirrorNetwork = {
-  fromName(name: string) {
+  fromName(name: Network) {
     switch (name) {
       case 'mainnet':
         return MirrorNetwork.MAINNET;
@@ -25,7 +27,7 @@ export const MirrorNetwork = {
 };
 
 export const MirrorNodeBaseURL = {
-  fromName(name: string) {
+  fromName(name: Network) {
     switch (name) {
       case 'mainnet':
         return MirrorNodeBaseURL.MAINNET;

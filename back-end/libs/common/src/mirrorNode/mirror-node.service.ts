@@ -5,7 +5,9 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 import { Cache } from 'cache-manager';
 
-import { AccountInfo, MirrorNodeBaseURL, Network } from '@app/common';
+import { Network } from '@entities';
+
+import { AccountInfo, MirrorNodeBaseURL } from '@app/common';
 
 @Injectable()
 export class MirrorNodeService {

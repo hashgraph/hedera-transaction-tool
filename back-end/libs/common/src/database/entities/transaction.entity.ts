@@ -11,13 +11,18 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-import { Network } from '@app/common/utils';
-
 import { UserKey } from './user-key.entity';
 import { TransactionComment } from './transaction-comment.entity';
 import { TransactionSigner } from './transaction-signer.entity';
 import { TransactionApprover } from './transaction-approver.entity';
 import { TransactionObserver } from './transaction-observer.entity';
+
+export enum Network {
+  MAINNET = 'mainnet',
+  TESTNET = 'testnet',
+  PREVIEWNET = 'previewnet',
+  LOCAL_NODE = 'local-node',
+}
 
 export enum TransactionType {
   ACCOUNT_CREATE = 'ACCOUNT CREATE',

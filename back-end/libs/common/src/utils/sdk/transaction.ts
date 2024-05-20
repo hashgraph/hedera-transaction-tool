@@ -1,10 +1,9 @@
 import { AccountId, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
-import { TransactionType } from '@entities';
+import { Network, TransactionType } from '@entities';
 import {
   MirrorNodeService,
-  Network,
   decode,
   getSignatureEntities,
   isAccountId,

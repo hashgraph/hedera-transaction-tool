@@ -12,11 +12,10 @@ import {
   Status,
 } from '@hashgraph/sdk';
 
-import { Transaction, TransactionStatus } from '@entities';
+import { Transaction, TransactionStatus, Network } from '@entities';
 
 import {
   MirrorNodeService,
-  Network,
   TransactionExecutedDto,
   ableToSign,
   computeSignatureKey,

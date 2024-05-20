@@ -326,6 +326,7 @@ export class TransactionsService {
       status: TransactionStatus.WAITING_FOR_SIGNATURES,
       creatorKey,
       signature: dto.signature,
+      network: dto.network,
       validStart: sdkTransaction.transactionId.validStart.toDate(),
       cutoffAt: dto.cutoffAt,
     });
