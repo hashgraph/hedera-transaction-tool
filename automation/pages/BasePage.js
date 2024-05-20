@@ -27,6 +27,26 @@ class BasePage {
     return element.textContent();
   }
 
+  async getAllTextByTestId(testId, timeout = this.DEFAULT_TIMEOUT) {
+    console.log(`Getting text for element with testId: ${testId}`);
+
+    const elements = this.window.locator(`[data-testid="${testId}"]`);
+
+    const count = await elements.count();
+    if (count !== 2) {
+      throw new Error(`Expected exactly 2 elements but found ${count}`);
+    }
+
+    const texts = [];
+    for (let i = 0; i < count; i++) {
+      const element = elements.nth(i);
+      await element.waitFor({ state: 'visible', timeout: timeout });
+      texts.push(await element.textContent());
+    }
+
+    return texts;
+  }
+
   async getTextFromInputFieldByTestId(testId, timeout = this.DEFAULT_TIMEOUT) {
     console.log(`Getting text for element with testId: ${testId}`);
     const element = this.window.getByTestId(testId);

@@ -25,6 +25,9 @@ test.describe('Transaction tests', () => {
     await resetAppState(window);
     registrationPage = new RegistrationPage(window);
 
+    // Ensure transactionPage generatedAccounts is empty
+    transactionPage.generatedAccounts = [];
+
     // Generate credentials and store them globally
     globalCredentials.email = generateRandomEmail();
     globalCredentials.password = generateRandomPassword();
@@ -39,6 +42,8 @@ test.describe('Transaction tests', () => {
   });
 
   test.afterAll(async () => {
+    // Ensure transactionPage generatedAccounts is empty
+    transactionPage.generatedAccounts = [];
     await transactionPage.closeCompletedTransaction();
     await transactionPage.clickOnTransactionsMenuButton();
     await transactionPage.closeDraftModal();
@@ -238,5 +243,93 @@ test.describe('Transaction tests', () => {
 
     const acceptStakingRewardsFromResponse = accountDetails.accounts[0]?.decline_reward;
     expect(acceptStakingRewardsFromResponse).toBe(true);
+  });
+
+  test('Verify user can execute transfer tokens tx', async () => {
+    await transactionPage.ensureAccountExists(globalCredentials.password);
+    const accountFromList = await transactionPage.getFirstAccountFromList();
+    const amountToBeTransferred = '1';
+    const transactionId = await transactionPage.transferAmountBetweenAccounts(
+      accountFromList,
+      amountToBeTransferred,
+      globalCredentials.password,
+    );
+
+    const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
+
+    const transactionType = transactionDetails.transactions[0]?.name;
+    const allTransfer = transactionDetails.transactions[0]?.transfers;
+    const amount = allTransfer.find(acc => acc.account === accountFromList)?.amount;
+    const result = transactionDetails.transactions[0]?.result;
+    expect(transactionType).toBe('CRYPTOTRANSFER');
+    expect(amount).toBe(amountToBeTransferred * 100000000);
+    expect(result).toBe('SUCCESS');
+  });
+
+  test('Verify transfer tokens tx fail with insufficient payer balance', async () => {
+    test.setTimeout(1200000);
+    await transactionPage.ensureAccountExists(globalCredentials.password);
+    const accountFromList = await transactionPage.getFirstAccountFromList();
+    const amountToBeTransferred = '10000000';
+    await loginPage.waitForToastToDisappear();
+    await transactionPage.transferAmountBetweenAccounts(
+      accountFromList,
+      amountToBeTransferred,
+      globalCredentials.password,
+      { isSupposedToFail: true },
+    );
+
+    const toastMessage = await registrationPage.getToastMessage();
+    expect(toastMessage).toContain('failed precheck with status INSUFFICIENT_PAYER_BALANCE');
+  });
+
+  test('Verify user can add the rest of remaining hbars to receiver accounts', async () => {
+    const amountToBeTransferred = 10;
+    const amountLeftForRestAccounts = 9;
+    await transactionPage.ensureAccountExists(globalCredentials.password);
+    const receiverAccount = await transactionPage.getFirstAccountFromList();
+    await loginPage.waitForToastToDisappear();
+
+    await transactionPage.clickOnTransactionsMenuButton();
+    await transactionPage.clickOnCreateNewTransactionButton();
+    await transactionPage.clickOnTransferTokensTransaction();
+    await transactionPage.fillInTransferFromAccountId();
+    await transactionPage.fillInTransferAmountFromAccount(amountToBeTransferred.toString());
+    await transactionPage.fillInTransferToAccountId(receiverAccount);
+    await transactionPage.clickOnAddTransferFromButton();
+    await transactionPage.fillInTransferAmountToAccount(
+      (amountToBeTransferred - amountLeftForRestAccounts).toString(),
+    );
+    await transactionPage.clickOnAddTransferToButton();
+
+    await transactionPage.fillInTransferToAccountId(await transactionPage.getPayerAccountId());
+    await transactionPage.clickOnAddRestButton();
+
+    // Get HBAR amounts for the two accounts and verify rest is added up
+    const [firstReceiverAmount, secondReceiverAmount] =
+      await transactionPage.getHbarAmountValueForTwoAccounts();
+    expect(firstReceiverAmount).toContain(
+      (amountToBeTransferred - amountLeftForRestAccounts).toString(),
+    );
+    expect(secondReceiverAmount).toContain(amountLeftForRestAccounts.toString());
+  });
+
+  test('Verify sign button is disabled when receiver amount is higher than payer amount when doing transfer tx', async () => {
+    await transactionPage.ensureAccountExists(globalCredentials.password);
+    const receiverAccount = await transactionPage.getFirstAccountFromList();
+    await loginPage.waitForToastToDisappear();
+
+    await transactionPage.clickOnTransactionsMenuButton();
+    await transactionPage.clickOnCreateNewTransactionButton();
+    await transactionPage.clickOnTransferTokensTransaction();
+    await transactionPage.fillInTransferFromAccountId();
+    await transactionPage.fillInTransferAmountFromAccount('10');
+    await transactionPage.fillInTransferToAccountId(receiverAccount);
+    await transactionPage.clickOnAddTransferFromButton();
+    await transactionPage.fillInTransferAmountToAccount('200');
+    await transactionPage.clickOnAddTransferToButton();
+
+    const isButtonEnabled = await transactionPage.isSignAndSubmitButtonEnabled();
+    expect(isButtonEnabled).toBe(false);
   });
 });

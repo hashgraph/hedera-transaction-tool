@@ -1,6 +1,5 @@
 const BasePage = require('./BasePage');
 const { queryDatabase } = require('../utils/databaseUtil');
-const { delay } = require('../utils/util.js');
 
 class SettingsPage extends BasePage {
   constructor(window) {
@@ -146,6 +145,7 @@ class SettingsPage extends BasePage {
   }
 
   async clickOnRestoreButton() {
+    const { delay } = require('../utils/util.js');
     const maxRetries = 10;
     let attempt = 0;
 
