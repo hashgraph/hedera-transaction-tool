@@ -1,0 +1,58 @@
+### Get Transaction Groups
+GET http://localhost:3000/transaction-groups
+
+### Create a transaction group
+POST http://localhost:3000/transaction-groups
+content-type: application/json
+
+{
+  "description": "my first transaction group",
+  "atomic": false,
+  "groupItems": [
+    {
+      "seq": 0,
+      "transaction": {
+        "name": "create1",
+        "type": "TRANSFER",
+        "description": "first create transaction",
+        "body": "asldfnii23oasindf",
+        "status": "NEW",
+        "creatorKeyId": 1,
+        "signature": "asdfln23linasdf",
+        "validStart": "1999-12-11T11:00:00.000Z",
+        "cutoffAt": "1999-12-11T11:00:00.000Z"
+      }
+    },
+    {
+      "seq": 1,
+      "transaction": {
+        "name": "create2",
+        "type": "TRANSFER",
+        "description": "second create transaction",
+        "body": "asldfnii23oasindf",
+        "status": "NEW",
+        "creatorKeyId": 1,
+        "signature": "asdfln23linasdf",
+        "validStart": "1999-12-11T11:00:00.000Z",
+        "cutoffAt": "1999-12-11T11:00:00.000Z"
+      }
+    },
+    {
+      "seq": 2,
+      "transaction": {
+        "name": "create3",
+        "type": "TRANSFER",
+        "description": "third create transaction",
+        "body": "asldfnii23oasindf",
+        "status": "NEW",
+        "creatorKeyId": 1,
+        "signature": "asdfln23linasdf",
+        "validStart": "1999-12-11T11:00:00.000Z",
+        "cutoffAt": "1999-12-11T11:00:00.000Z"
+      }
+    }
+  ]
+}
+
+### Delete a transaction group
+DELETE http://localhost:3000/transaction-groups/1

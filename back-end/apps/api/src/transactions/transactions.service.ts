@@ -45,10 +45,12 @@ import {
 } from '@app/common';
 
 import { UserDto } from '../users/dtos';
-import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { CreateTransactionDto } from './dto';
 
+import { UserKeysService } from '../user-keys/user-keys.service';
 import { ApproversService } from './approvers/approvers.service';
 import { userKeysRequiredToSign } from '../utils';
+import { SignersService } from './signers';
 
 @Injectable()
 export class TransactionsService {
@@ -56,6 +58,8 @@ export class TransactionsService {
     @InjectRepository(Transaction) private repo: Repository<Transaction>,
     @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
     private readonly configService: ConfigService,
+    private readonly userKeysService: UserKeysService,
+    private readonly signersService: SignersService,
     private readonly approversService: ApproversService,
     private readonly mirrorNodeService: MirrorNodeService,
     @InjectEntityManager() private entityManager: EntityManager,
@@ -118,9 +122,11 @@ export class TransactionsService {
     const findOptions: FindManyOptions<Transaction> = {
       where: whereForUser,
       order,
-      relations: {
-        creatorKey: true,
-      },
+      relations: [
+        'creatorKey',
+        'groupItem',
+        'groupItem.group',
+      ],
       skip: offset,
       take: limit,
     };
@@ -343,7 +349,7 @@ export class TransactionsService {
   }
 
   /* Remove the transaction for the given transaction id. */
-  async removeTransaction(id: number, user: UserDto): Promise<boolean> {
+  async removeTransaction(user: UserDto, id: number, softRemove: boolean = true): Promise<boolean> {
     const transaction = await this.getTransactionById(id);
 
     if (!transaction) {
@@ -354,7 +360,11 @@ export class TransactionsService {
       throw new BadRequestException('Only the creator of the transaction is able to delete it');
     }
 
-    await this.repo.softRemove(transaction);
+    if (softRemove) {
+      await this.repo.softRemove(transaction);
+    } else {
+      await this.repo.remove(transaction);
+    }
 
     return true;
   }
