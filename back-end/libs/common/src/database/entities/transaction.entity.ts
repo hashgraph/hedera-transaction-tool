@@ -68,7 +68,7 @@ export class Transaction {
   @Column()
   transactionHash: string;
 
-  @Column({ type: 'bytea', unique: true })
+  @Column({ type: 'bytea' })
   body: Buffer;
 
   @Column({ type: 'bytea', nullable: true })
