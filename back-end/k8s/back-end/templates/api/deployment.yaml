@@ -63,8 +63,6 @@ spec:
                   key: key
             - name: OTP_EXPIRATION
               value: '20'
-            - name: HEDERA_NETWORK
-              value: 'testnet'
             - name: REDIS_URL
               value: 'redis://redis-master:6379'
           ports:

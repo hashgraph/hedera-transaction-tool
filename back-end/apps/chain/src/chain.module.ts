@@ -26,7 +26,6 @@ import { HealthModule } from '@app/common/health';
         POSTGRES_SYNCHRONIZE: Joi.boolean().required(),
         RABBITMQ_URI: Joi.string().required(),
         REDIS_URL: Joi.string().required(),
-        HEDERA_NETWORK: Joi.string().required(),
       }),
     }),
     ScheduleModule.forRoot(),

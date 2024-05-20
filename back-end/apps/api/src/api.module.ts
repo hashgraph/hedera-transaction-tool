@@ -32,7 +32,6 @@ import { HealthModule } from '@app/common/health';
         JWT_EXPIRATION: Joi.number().required(),
         OTP_SECRET: Joi.string().required(),
         OTP_EXPIRATION: Joi.number().required(),
-        HEDERA_NETWORK: Joi.string().required(),
         REDIS_URL: Joi.string().required(),
       }),
     }),

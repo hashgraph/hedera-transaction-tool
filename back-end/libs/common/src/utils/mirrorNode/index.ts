@@ -1,5 +1,3 @@
-import {} from '@hashgraph/sdk';
-
 export const MirrorNetwork = {
   fromName(name: string) {
     switch (name) {
