@@ -10,7 +10,7 @@ import { setClient } from '@renderer/services/transactionService';
 
 import { getNodeNumbersFromNetwork } from '@renderer/utils';
 
-export type Network = 'mainnet' | 'testnet' | 'previewnet' | 'custom';
+export type Network = 'mainnet' | 'testnet' | 'previewnet' | 'local-node' | 'custom';
 export type CustomNetworkSettings = {
   nodeAccountIds: {
     [key: string]: string;
@@ -36,6 +36,8 @@ const useNetworkStore = defineStore('network', () => {
         return Client.forTestnet();
       case 'previewnet':
         return Client.forPreviewnet();
+      case 'local-node':
+        return Client.forLocalNode();
       case 'custom':
         if (customNetworkSettings.value) {
           return Client.forNetwork(customNetworkSettings.value.nodeAccountIds).setMirrorNetwork(
@@ -96,11 +98,20 @@ const useNetworkStore = defineStore('network', () => {
 
   /* Helpers */
   function getMirrorNodeLinkByNetwork(network: Network) {
+    const MAINNET = 'https://mainnet-public.mirrornode.hedera.com/api/v1';
+    const TESTNET = 'https://testnet.mirrornode.hedera.com/api/v1';
+    const PREVIEWNET = 'https://previewnet.mirrornode.hedera.com/api/v1';
+    const LOCAL_NODE = 'http://localhost:5551/api/v1';
+
     switch (network) {
       case 'mainnet':
+        return MAINNET;
       case 'testnet':
+        return TESTNET;
       case 'previewnet':
-        return `https://${network}.mirrornode.hedera.com/api/v1`;
+        return PREVIEWNET;
+      case 'local-node':
+        return LOCAL_NODE;
       case 'custom':
         if (customNetworkSettings.value) {
           return customNetworkSettings.value?.mirrorNodeRESTAPIEndpoint;

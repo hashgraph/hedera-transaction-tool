@@ -33,11 +33,12 @@ export const setClient = (
     case 'testnet':
       client = Client.forTestnet();
       break;
-
     case 'previewnet':
       client = Client.forPreviewnet();
       break;
-
+    case 'local-node':
+      client = Client.forLocalNode();
+      break;
     case 'custom':
       if (!nodeAccountIds || !mirrorNetwork) {
         throw Error('Settings for custom network are required');

@@ -20,8 +20,8 @@ const networkMapping = {
     label: 'MAINNET',
     className: 'text-mainnet',
   },
-  custom: {
-    label: 'CUSTOM',
+  'local-node': {
+    label: 'LOCAL NODE',
     className: 'text-info',
   },
 };

@@ -120,9 +120,9 @@ onBeforeUnmount(() => {
         <AppButton
           color="secondary"
           data-testid="tab-network-custom"
-          :class="{ active: networkStore.network === 'custom' }"
-          @click="isCustomSettingsVisible = true"
-          >Custom</AppButton
+          :class="{ active: networkStore.network === 'local-node' }"
+          @click="handleNetworkChange('local-node')"
+          >Local Node</AppButton
         >
       </div>
       <Transition name="fade" mode="out-in">
