@@ -125,6 +125,7 @@ async function fetchTransactions() {
       const { totalItems: totalItemsCount, items: rawTransactions } = await getTransactionsForUser(
         user.selectedOrganization.serverUrl,
         [TransactionStatus.EXECUTED, TransactionStatus.FAILED],
+        network.network,
         currentPage.value,
         pageSize.value,
         [{ property: orgSort.field, direction: orgSort.direction }],

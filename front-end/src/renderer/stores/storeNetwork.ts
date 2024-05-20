@@ -4,13 +4,13 @@ import { defineStore } from 'pinia';
 import { Client, Timestamp } from '@hashgraph/sdk';
 
 import { NetworkExchangeRateSetResponse } from '@main/shared/interfaces';
+import { Network } from '@main/shared/enums';
 
 import { getExchangeRateSet } from '@renderer/services/mirrorNodeDataService';
 import { setClient } from '@renderer/services/transactionService';
 
 import { getNodeNumbersFromNetwork } from '@renderer/utils';
 
-export type Network = 'mainnet' | 'testnet' | 'previewnet' | 'local-node' | 'custom';
 export type CustomNetworkSettings = {
   nodeAccountIds: {
     [key: string]: string;
@@ -21,7 +21,7 @@ export type CustomNetworkSettings = {
 
 const useNetworkStore = defineStore('network', () => {
   /* State */
-  const network = ref<Network>('testnet');
+  const network = ref<Network>(Network.TESTNET);
   const customNetworkSettings = ref<CustomNetworkSettings | null>(null);
   const exchangeRateSet = ref<NetworkExchangeRateSetResponse | null>(null);
 
@@ -30,15 +30,15 @@ const useNetworkStore = defineStore('network', () => {
 
   const client = computed(() => {
     switch (network.value) {
-      case 'mainnet':
+      case Network.MAINNET:
         return Client.forMainnet();
-      case 'testnet':
+      case Network.TESTNET:
         return Client.forTestnet();
-      case 'previewnet':
+      case Network.PREVIEWNET:
         return Client.forPreviewnet();
-      case 'local-node':
+      case Network.LOCAL_NODE:
         return Client.forLocalNode();
-      case 'custom':
+      case Network.CUSTOM:
         if (customNetworkSettings.value) {
           return Client.forNetwork(customNetworkSettings.value.nodeAccountIds).setMirrorNetwork(
             customNetworkSettings.value.mirrorNodeGRPCEndpoint,

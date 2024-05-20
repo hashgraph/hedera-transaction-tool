@@ -1,7 +1,10 @@
 import axios, { AxiosError } from 'axios';
 
 import { Transaction } from '@hashgraph/sdk';
+
 import { Organization } from '@prisma/client';
+
+import { Network } from '@main/shared/enums';
 
 import { LoggedInOrganization, LoggedInUserWithPassword } from '@renderer/types';
 
@@ -31,7 +34,7 @@ export const submitTransaction = async (
   name: string,
   description: string,
   body: string,
-  network: 'mainnet' | 'testnet' | 'previewnet' | 'local-node' | 'custom',
+  network: Network,
   signature: string,
   creatorKeyId: number,
 ): Promise<{ id: number; body: string }> => {
@@ -150,6 +153,7 @@ export const fullUploadSignatures = async (
 /* Get transactions to sign */
 export const getTransactionsToSign = async (
   serverUrl: string,
+  network: Network,
   page: number,
   size: number,
   sort?: { property: string; direction: 'asc' | 'desc' }[],
@@ -161,9 +165,10 @@ export const getTransactionsToSign = async (
 > => {
   try {
     const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
+    const filtering = `&filter=network:eq:${network}`;
 
     const { data } = await axios.get(
-      `${serverUrl}/${controller}/sign?page=${page}&size=${size}${sorting}`,
+      `${serverUrl}/${controller}/sign?page=${page}&size=${size}${sorting}${filtering}`,
       {
         withCredentials: true,
       },
@@ -188,15 +193,17 @@ export const getTransactionsToSign = async (
 /* Get transactions to approve */
 export const getTransactionsToApprove = async (
   serverUrl: string,
+  network: Network,
   page: number,
   size: number,
   sort?: { property: string; direction: 'asc' | 'desc' }[],
 ): Promise<PaginatedResourceDto<ITransaction>> => {
   try {
     const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
+    const filtering = `&filter=network:eq:${network}`;
 
     const { data } = await axios.get(
-      `${serverUrl}/${controller}/approve?page=${page}&size=${size}${sorting}`,
+      `${serverUrl}/${controller}/approve?page=${page}&size=${size}${sorting}${filtering}`,
       {
         withCredentials: true,
       },
@@ -274,6 +281,7 @@ export const getTransactionById = async (
 export const getTransactionsForUser = async (
   serverUrl: string,
   status: TransactionStatus[],
+  network: Network,
   page: number,
   size: number,
   sort?: { property: string; direction: 'asc' | 'desc' }[],
@@ -283,7 +291,7 @@ export const getTransactionsForUser = async (
       !status.includes(TransactionStatus.EXECUTED) && !status.includes(TransactionStatus.FAILED);
     const validStartTimestamp = new Date(Date.now() - 180 * 1_000).getTime();
 
-    const filtering = `&filter=status:in:${status.join(',')}${withValidStart ? `&filter=validStart:gte:${validStartTimestamp}` : ''}`;
+    const filtering = `&filter=status:in:${status.join(',')}${withValidStart ? `&filter=validStart:gte:${validStartTimestamp}` : ''}&filter=network:eq:${network}`;
     const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
 
     const { data } = await axios.get(

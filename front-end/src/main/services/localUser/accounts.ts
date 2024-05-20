@@ -1,5 +1,7 @@
 import { Prisma } from '@prisma/client';
 
+import { Network } from '@main/shared/enums';
+
 import { getPrismaClient } from '@main/db';
 
 export const getAccounts = (findArgs: Prisma.HederaAccountFindManyArgs) => {
@@ -16,7 +18,7 @@ export const getAccounts = (findArgs: Prisma.HederaAccountFindManyArgs) => {
 export const addAccount = async (
   userId: string,
   accountId: string,
-  network: 'mainnet' | 'testnet' | 'previewnet' | 'custom',
+  network: Network,
   nickname: string = '',
 ) => {
   const prisma = getPrismaClient();

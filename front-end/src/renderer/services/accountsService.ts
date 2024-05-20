@@ -1,5 +1,7 @@
 import { Prisma } from '@prisma/client';
 
+import { Network } from '@main/shared/enums';
+
 import { getMessageFromIPCError } from '@renderer/utils';
 
 export const getAll = async (findArgs: Prisma.HederaAccountFindManyArgs) => {
@@ -13,7 +15,7 @@ export const getAll = async (findArgs: Prisma.HederaAccountFindManyArgs) => {
 export const add = async (
   userId: string,
   accountId: string,
-  network: 'mainnet' | 'testnet' | 'previewnet' | 'custom',
+  network: Network,
   nickname: string = '',
 ) => {
   try {
