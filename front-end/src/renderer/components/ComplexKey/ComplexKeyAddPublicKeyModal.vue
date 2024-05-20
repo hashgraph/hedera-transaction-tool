@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 import { PublicKey } from '@hashgraph/sdk';
 
@@ -26,6 +26,7 @@ const user = useUserStore();
 
 /* State */
 const publicKey = ref('');
+const type = ref<'ED25519' | 'ECDSA'>('ED25519');
 
 /* Handlers */
 const handleShowUpdate = show => emit('update:show', show);
@@ -33,13 +34,29 @@ const handleShowUpdate = show => emit('update:show', show);
 const handleInsert = (e: Event) => {
   e.preventDefault();
 
-  if (!isPublicKey(publicKey.value)) {
+  if (!isPublicKey(publicKey.value.trim())) {
     throw new Error('Invalid public key');
   }
 
-  props.onPublicKeyAdd(PublicKey.fromString(publicKey.value));
+  const publicKeyInstance =
+    type.value === 'ED25519'
+      ? PublicKey.fromStringED25519(publicKey.value.trim())
+      : PublicKey.fromStringECDSA(publicKey.value.trim());
+
+  props.onPublicKeyAdd(publicKeyInstance);
   handleShowUpdate(false);
 };
+
+/* Watchers */
+watch(
+  () => props.show,
+  show => {
+    if (show) {
+      publicKey.value = '';
+      type.value = 'ED25519';
+    }
+  },
+);
 </script>
 <template>
   <AppModal :show="show" @update:show="handleShowUpdate" class="medium-modal">
@@ -49,6 +66,7 @@ const handleInsert = (e: Event) => {
           <i class="bi bi-x-lg cursor-pointer" @click="$emit('update:show', false)"></i>
         </div>
         <h1 class="text-title text-semi-bold text-center">Add Public Key</h1>
+
         <div class="mt-5">
           <AppInput
             v-model:model-value="publicKey"
@@ -57,6 +75,28 @@ const handleInsert = (e: Event) => {
             type="text"
             placeholder="Enter Public Key"
           />
+        </div>
+        <div class="text-center mt-3">
+          <div class="btn-group d-flex">
+            <AppButton
+              size="small"
+              color="secondary"
+              type="button"
+              data-testid="button-key-type-ed25519"
+              :class="{ active: type === 'ED25519' }"
+              @click="type = 'ED25519'"
+              >ED25519</AppButton
+            >
+            <AppButton
+              size="small"
+              color="secondary"
+              type="button"
+              data-testid="button-key-type-ecdsa"
+              :class="{ active: type === 'ECDSA' }"
+              @click="type = 'ECDSA'"
+              >ECDSA</AppButton
+            >
+          </div>
         </div>
         <hr class="separator my-5" />
         <div>
