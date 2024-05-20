@@ -19,7 +19,7 @@ import {
   TransactionExecutedDto,
   ableToSign,
   computeSignatureKey,
-  getClientFromConfig,
+  getClientFromName,
   getStatusCodeFromMessage,
 } from '@app/common';
 
@@ -69,7 +69,7 @@ export class ExecuteService {
       throw new Error('Transaction has invalid signature.');
 
     /* Execute the transaction */
-    const client = getClientFromConfig(this.configService);
+    const client = getClientFromName(transaction.network);
 
     let statusCode = 21;
 
@@ -106,6 +106,7 @@ export class ExecuteService {
           statusCode: transaction.statusCode,
         },
       );
+      client.close();
       this.sideEffect(sdkTransaction);
     }
     return result;
