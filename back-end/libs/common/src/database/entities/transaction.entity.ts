@@ -11,6 +11,8 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+import { Network } from '@app/common/utils';
+
 import { UserKey } from './user-key.entity';
 import { TransactionComment } from './transaction-comment.entity';
 import { TransactionSigner } from './transaction-signer.entity';
@@ -84,6 +86,9 @@ export class Transaction {
 
   @Column()
   validStart: Date;
+
+  @Column()
+  network: Network;
 
   @Column({ nullable: true })
   cutoffAt?: Date;
