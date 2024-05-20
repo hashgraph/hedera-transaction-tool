@@ -491,7 +491,10 @@ onMounted(async () => {
                         </template>
                       </div>
                       <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
-                        <p class="text-secondary text-small text-bold overflow-hidden">
+                        <p
+                          class="text-secondary text-small text-bold overflow-hidden"
+                          data-testid="p-hbar-amount"
+                        >
                           {{ stringifyHbar(credit.amount as Hbar) }}
                         </p>
                       </div>
