@@ -56,21 +56,6 @@ const hbarDollarAmount = computed(() => {
   return getDollarAmount(network.currentRate, accountData.accountInfo.value.balance.toBigNumber());
 });
 
-/* Hooks */
-onMounted(async () => {
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
-
-  accounts.value = await getAll({
-    where: {
-      user_id: user.personal.id,
-      network: network.network,
-    },
-  });
-  accountData.accountId.value = accounts.value[0]?.account_id || '';
-});
-
 /* Handlers */
 const handleSelectAccount = (accountId: string) => {
   isNicknameInputShown.value = false;
@@ -81,7 +66,8 @@ const handleUnlinkAccount = async () => {
     throw new Error('User is not logged in');
   }
 
-  accounts.value = await remove(user.personal.id, accountData.accountIdFormatted.value);
+  await remove(user.personal.id, accountData.accountIdFormatted.value);
+  await fetchAccounts();
 
   accountData.accountId.value = accounts.value[0]?.account_id || '';
 
@@ -93,16 +79,16 @@ const handleUnlinkAccount = async () => {
 const handleStartNicknameEdit = () => {
   isNicknameInputShown.value = true;
 
-  if (nicknameInputRef.value?.inputRef) {
-    const currentNickname =
-      accounts.value.find(acc => acc.account_id === accountData.accountIdFormatted.value)
-        ?.nickname || '';
-    nicknameInputRef.value.inputRef.value = currentNickname;
+  setTimeout(() => {
+    if (nicknameInputRef.value?.inputRef) {
+      const currentNickname =
+        accounts.value.find(acc => acc.account_id === accountData.accountIdFormatted.value)
+          ?.nickname || '';
+      nicknameInputRef.value.inputRef.value = currentNickname;
+    }
 
-    setTimeout(() => {
-      nicknameInputRef.value?.inputRef?.focus();
-    }, 100);
-  }
+    nicknameInputRef.value?.inputRef?.focus();
+  }, 100);
 };
 
 const handleChangeNickname = async () => {
@@ -112,11 +98,12 @@ const handleChangeNickname = async () => {
 
   isNicknameInputShown.value = false;
 
-  accounts.value = await changeNickname(
+  await changeNickname(
     user.personal.id,
     accountData.accountIdFormatted.value,
     nicknameInputRef.value?.inputRef?.value,
   );
+  await fetchAccounts();
 };
 
 // const handleSortAccounts = (sorting: Sorting) => {
@@ -147,6 +134,25 @@ const handleChangeNickname = async () => {
 //       break;
 //   }
 // };
+
+/* Functions */
+async function fetchAccounts() {
+  if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+
+  accounts.value = await getAll({
+    where: {
+      user_id: user.personal.id,
+      network: network.network,
+    },
+  });
+}
+
+/* Hooks */
+onMounted(async () => {
+  await fetchAccounts();
+
+  accountData.accountId.value = accounts.value[0]?.account_id || '';
+});
 </script>
 <template>
   <div class="px-6 py-5">

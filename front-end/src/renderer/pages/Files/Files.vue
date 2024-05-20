@@ -156,7 +156,8 @@ const handleUnlinkFile = async () => {
   }
 
   // files.value = specialFiles.concat(await remove(user.personal.id, selectedFile.value.file_id));
-  files.value = await remove(user.personal.id, selectedFile.value.file_id);
+  await remove(user.personal.id, selectedFile.value.file_id);
+  await fetchFiles();
 
   isUnlinkFileModalShown.value = false;
 
@@ -194,9 +195,10 @@ const handleChangeNickname = async () => {
     //     nickname: nicknameInputRef.value?.inputRef?.value,
     //   }),
     // );
-    files.value = await update(selectedFile.value.file_id, user.personal.id, {
+    await update(selectedFile.value.file_id, user.personal.id, {
       nickname: nicknameInputRef.value?.inputRef?.value,
     });
+    await fetchFiles();
   }
 };
 
@@ -228,26 +230,30 @@ const handleChangeDescription = async () => {
     //     description: descriptionInputRef.value?.value,
     //   }),
     // );
-    files.value = await update(selectedFile.value.file_id, user.personal.id, {
+    await update(selectedFile.value.file_id, user.personal.id, {
       description: descriptionInputRef.value?.value,
     });
+    await fetchFiles();
   }
 };
 
-/* Hooks */
-onMounted(async () => {
+/* Functions */
+async function fetchFiles() {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
 
-  files.value = files.value.concat(
-    await getAll({
-      where: {
-        user_id: user.personal.id,
-        network: network.network,
-      },
-    }),
-  );
+  files.value = await getAll({
+    where: {
+      user_id: user.personal.id,
+      network: network.network,
+    },
+  });
+}
+
+/* Hooks */
+onMounted(async () => {
+  await fetchFiles();
 });
 
 /* Watchers */
