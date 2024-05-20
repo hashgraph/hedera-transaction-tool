@@ -16,6 +16,7 @@ import { Transaction, TransactionStatus } from '@entities';
 
 import {
   MirrorNodeService,
+  Network,
   TransactionExecutedDto,
   ableToSign,
   computeSignatureKey,
@@ -62,7 +63,11 @@ export class ExecuteService {
       throw new Error('File transactions are not currently supported for execution.');
 
     /* Gets the signature key */
-    const sigantureKey = await computeSignatureKey(sdkTransaction, this.mirrorNodeService);
+    const sigantureKey = await computeSignatureKey(
+      sdkTransaction,
+      this.mirrorNodeService,
+      transaction.network,
+    );
 
     /* Checks if the transaction has valid siganture */
     if (!ableToSign([...sdkTransaction._signerPublicKeys], sigantureKey))
@@ -107,7 +112,7 @@ export class ExecuteService {
         },
       );
       client.close();
-      this.sideEffect(sdkTransaction);
+      this.sideEffect(sdkTransaction, transaction.network);
     }
     return result;
   }
@@ -126,10 +131,13 @@ export class ExecuteService {
     }
   }
 
-  private sideEffect(sdkTransaction: SDKTransaction) {
+  private sideEffect(sdkTransaction: SDKTransaction, network: Network) {
     if (sdkTransaction instanceof AccountUpdateTransaction) {
       setTimeout(async () => {
-        await this.mirrorNodeService.updateAccountInfo(sdkTransaction.accountId.toString());
+        await this.mirrorNodeService.updateAccountInfo(
+          sdkTransaction.accountId.toString(),
+          network,
+        );
       }, 5 * 1_000);
     }
   }

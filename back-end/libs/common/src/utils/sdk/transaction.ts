@@ -1,9 +1,15 @@
 import { AccountId, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
-import { TransactionType } from '@app/common/database/entities';
-import { MirrorNodeService } from '@app/common/mirrorNode';
-import { decode, getSignatureEntities, isAccountId, parseAccountProperty } from '@app/common/utils';
+import { TransactionType } from '@entities';
+import {
+  MirrorNodeService,
+  Network,
+  decode,
+  getSignatureEntities,
+  isAccountId,
+  parseAccountProperty,
+} from '@app/common';
 
 export const isExpired = (transaction: Transaction) => {
   if (!transaction.transactionId?.validStart) {
@@ -189,6 +195,7 @@ export const getStatusCodeFromMessage = (message: string) => {
 export const computeSignatureKey = async (
   transaction: Transaction,
   mirrorNodeService: MirrorNodeService,
+  network: Network,
 ) => {
   /* Get the accounts, receiver accounts and new keys from the transaction */
   const { accounts, receiverAccounts, newKeys } = getSignatureEntities(transaction);
@@ -201,7 +208,7 @@ export const computeSignatureKey = async (
 
   /* Add the keys of the account ids to the signature key list */
   for (const accountId of accounts) {
-    const accountInfo = await mirrorNodeService.getAccountInfo(accountId);
+    const accountInfo = await mirrorNodeService.getAccountInfo(accountId, network);
     const key = parseAccountProperty(accountInfo, 'key');
     if (!key) continue;
 
@@ -210,7 +217,7 @@ export const computeSignatureKey = async (
 
   /* Check if there is a receiver account that required signature, if so add it to the key list */
   for (const accountId of receiverAccounts) {
-    const accountInfo = await mirrorNodeService.getAccountInfo(accountId);
+    const accountInfo = await mirrorNodeService.getAccountInfo(accountId, network);
     const receiverSigRequired = parseAccountProperty(accountInfo, 'receiver_sig_required');
     if (!receiverSigRequired) continue;
 
