@@ -198,7 +198,6 @@ export class TransactionStatusService {
 
   addExecutionTimeout(transaction: Transaction) {
     const name = `execution_timeout_${transaction.id}`;
-    console.log('TRANSACTION ADDED');
 
     if (this.schedulerRegistry.doesExist('timeout', name)) return;
 
