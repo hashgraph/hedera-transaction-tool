@@ -31,6 +31,7 @@ export const submitTransaction = async (
   name: string,
   description: string,
   body: string,
+  network: 'mainnet' | 'testnet' | 'previewnet' | 'local-node' | 'custom',
   signature: string,
   creatorKeyId: number,
 ): Promise<{ id: number; body: string }> => {
@@ -41,6 +42,7 @@ export const submitTransaction = async (
         name,
         description,
         body,
+        network,
         signature,
         creatorKeyId,
       },

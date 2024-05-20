@@ -307,6 +307,7 @@ async function sendSignedTransactionToOrganization() {
     transaction.value?.transactionMemo || `New ${type.value}`,
     transaction.value?.transactionMemo || '',
     hexTransactionBytes,
+    network.network,
     signatureHex,
     user.selectedOrganization.userKeys.find(k => k.publicKey === keyToSignWith)?.id || -1,
   );
