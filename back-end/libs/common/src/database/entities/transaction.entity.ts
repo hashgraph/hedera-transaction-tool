@@ -134,6 +134,7 @@ export const transactionProperties: (keyof Transaction)[] = [
   'transactionHash',
   'status',
   'statusCode',
+  'network',
   'createdAt',
   'executedAt',
   'updatedAt',
