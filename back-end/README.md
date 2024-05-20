@@ -92,6 +92,18 @@ rm -rf <back-end base directory>/pgdata
 docker-compose up
 ```
 
+### Exposed Endpoints
+
+All ports are defined in the [`docker-compose.yaml`](./docker-compose.yaml)
+
+The defaults are:
+
+| Type                           | Endpoint                                       |
+| ------------------------------ | ---------------------------------------------- |
+| API Service Endpoint           | [http://localhost:3001](http://localhost:3001) |
+| Notifications Service Endpoint | [http://localhost:3020](http://localhost:3020) |
+| PgAdmin                        | [http://localhost:5050](http://localhost:5050) |
+
 ### Create Admin User
 
 1. Make sure at least the database is running or just `docker compose up`
