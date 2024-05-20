@@ -88,12 +88,14 @@ const handleLogin = async () => {
 };
 
 const handleForgotPassword = () => {
-  if (!isLoggedInWithPassword(user.personal)) {
-    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-    userPasswordModalRef.value?.open('Enter personal password', null, handleForgotPassword);
-  } else {
-    forgotPasswordModalShown.value = true;
-  }
+  // if (!isLoggedInWithPassword(user.personal)) {
+  //   if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+  //   userPasswordModalRef.value?.open('Enter personal password', null, handleForgotPassword);
+  // } else {
+  //   forgotPasswordModalShown.value = true;
+  // }
+
+  forgotPasswordModalShown.value = true;
 };
 
 /* Hooks */
