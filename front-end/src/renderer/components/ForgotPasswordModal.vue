@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
+import { onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -7,15 +7,10 @@ import { useToast } from 'vue-toast-notification';
 
 import { resetPassword, setPassword, verifyReset } from '@renderer/services/organization';
 import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
-
-import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+import { comparePasswords } from '@renderer/services/userService';
 
 import { isEmail } from '@renderer/utils';
-import {
-  isLoggedInWithPassword,
-  isLoggedOutOrganization,
-  isUserLoggedIn,
-} from '@renderer/utils/userStoreHelpers';
+import { isLoggedOutOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -39,9 +34,6 @@ const user = useUserStore();
 /* Composables */
 const toast = useToast();
 
-/* Injected */
-const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
-
 /* State */
 const email = ref('');
 
@@ -51,6 +43,8 @@ const otp = ref<{
   isValid: boolean;
 } | null>(null);
 
+const personalPassword = ref('');
+const personalPasswordInvalid = ref(false);
 const newPassword = ref('');
 const confirmPassword = ref('');
 const newPasswordInvalid = ref(false);
@@ -104,21 +98,21 @@ async function handleTokenEnter() {
 
 async function handleNewPassword() {
   if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
-  if (!isLoggedInWithPassword(user.personal)) {
-    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-    userPasswordModalRef.value?.open(null, null, handleNewPassword);
-    return;
-  }
   if (!isLoggedOutOrganization(user.selectedOrganization))
     throw new Error('Please select organization');
 
+  const isPasswordCorrect = await comparePasswords(user.personal.id, personalPassword.value);
+
+  personalPasswordInvalid.value = !isPasswordCorrect;
   newPasswordInvalid.value = newPassword.value.trim().length < 8;
   inputConfirmPasswordInvalid.value = newPassword.value !== confirmPassword.value;
 
+  if (personalPasswordInvalid.value) throw new Error('Incorrect personal password');
   if (newPasswordInvalid.value) throw new Error('Password must be at least 8 characters long');
   if (inputConfirmPasswordInvalid.value) throw new Error('Passwords do not match');
 
   try {
+    user.personal.password = personalPassword.value;
     await setPassword(user.selectedOrganization.serverUrl, newPassword.value);
 
     await addOrganizationCredentials(
@@ -212,6 +206,17 @@ watch(
           </div>
 
           <div v-else-if="shouldSetNewPassword">
+            <AppInput
+              v-model="personalPassword"
+              :filled="true"
+              class="mt-4"
+              :class="{ 'is-invalid': personalPasswordInvalid }"
+              type="password"
+              placeholder="Personal Password"
+            />
+            <div v-if="personalPasswordInvalid" class="invalid-feedback">
+              Incorrect personal password
+            </div>
             <AppInput
               v-model="newPassword"
               :filled="true"
