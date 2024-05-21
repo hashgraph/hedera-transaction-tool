@@ -17,6 +17,8 @@ import {
   TransactionSigner,
   TransactionObserver,
   TransactionComment,
+  TransactionGroupItem,
+  TransactionGroup,
   UserStatus,
 } from '../libs/common/src/database/entities';
 
@@ -118,6 +120,8 @@ async function connectDatabase() {
       TransactionApprover,
       TransactionObserver,
       TransactionComment,
+      TransactionGroupItem,
+      TransactionGroup,
     ],
   });
 
