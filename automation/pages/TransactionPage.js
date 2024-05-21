@@ -29,6 +29,9 @@ class TransactionPage extends BasePage {
   transferAmountFromAccountInputSelector = 'input-transfer-from-amount';
   transferToAccountIdInputSelector = 'input-transfer-to-account';
   transferAmountToAccountInputSelector = 'input-transfer-to-amount';
+  allowanceOwnerAccountSelector = 'input-owner-account';
+  allowanceSpenderAccountSelector = 'input-spender-account';
+  allowanceAmountSelector = 'input-allowance-amount';
 
   //Buttons
   transactionsMenuButtonSelector = 'button-menu-transactions';
@@ -38,6 +41,7 @@ class TransactionPage extends BasePage {
   updateAccountSublinkSelector = 'menu-sublink-1';
   transferTokensSublinkSelector = 'menu-sublink-2';
   deleteAccountSublinkSelector = 'menu-sublink-3';
+  allowanceSublinkSelector = 'menu-sublink-4';
   saveDraftButtonSelector = 'button-save-draft';
   signAndSubmitButtonSelector = 'button-sign-and-submit';
   signAndSubmitDeleteButtonSelector = 'button-sign-and-submit-delete';
@@ -62,6 +66,7 @@ class TransactionPage extends BasePage {
   addRestButtonSelector = 'button-transfer-to-rest';
   addTransferToButtonSelector = 'button-add-transfer-to';
   signAndSubmitTransferSelector = 'button-sign-and-submit-transfer';
+  signAndSubmitAllowanceSelector = 'button-sign-and-submit-allowance';
 
   //Other
   successCheckMarkIconSelector = 'icon-success-checkmark';
@@ -170,25 +175,21 @@ class TransactionPage extends BasePage {
   }
 
   /**
-   * Attempts to click on the 'Create Account Transaction' link by testing different indices of the same test ID.
-   * This method is designed to handle scenarios where the same test ID may be used for multiple elements and only
-   * one of them is the correct target at any given time.
-   *
-   * The function iterates through possible indices of the test ID, attempting to click each and then checking if
-   * this action leads to the expected page transition by verifying the visibility of a specific element on the
-   * subsequent page (e.g., 'Sign and Submit' button).
-   *
-   * @throws {Error} Throws an error if unable to navigate to the Create Account Transaction page after multiple attempts.
+   * Generalized function to attempt clicking on a transaction link and check for the visibility of a target element.
+   * @param {string} linkSelector - The test ID selector for the transaction link.
+   * @param {string} targetSelector - The test ID selector for the target element to verify page transition.
+   * @param {string} transactionType - A string representing the type of transaction for logging purposes.
+   * @throws {Error} Throws an error if unable to navigate to the transaction page after multiple attempts.
    */
-  async clickOnCreateAccountTransaction() {
-    console.log('Attempting to click on Create Account Transaction link');
+  async clickOnTransactionLink(linkSelector, targetSelector, transactionType) {
+    console.log(`Attempting to click on ${transactionType} Transaction link`);
     const maxAttempts = 10; // Maximum number of attempts to find the correct element
     for (let index = 0; index < maxAttempts; index++) {
       try {
-        await this.clickByTestIdWithIndex(this.createAccountSublinkSelector, index);
+        await this.clickByTestIdWithIndex(linkSelector, index);
         // Check if the next page element that should appear is visible
-        if (await this.isElementVisible(this.signAndSubmitButtonSelector)) {
-          console.log('Successfully navigated to the Create Account Transaction page.');
+        if (await this.isElementVisible(targetSelector)) {
+          console.log(`Successfully navigated to the ${transactionType} Transaction page.`);
           return;
         }
       } catch (error) {
@@ -198,73 +199,47 @@ class TransactionPage extends BasePage {
       }
     }
     throw new Error(
-      'Failed to navigate to the Create Account Transaction page after multiple attempts',
+      `Failed to navigate to the ${transactionType} Transaction page after multiple attempts`,
+    );
+  }
+
+  async clickOnCreateAccountTransaction() {
+    await this.clickOnTransactionLink(
+      this.createAccountSublinkSelector,
+      this.signAndSubmitButtonSelector,
+      'Create Account',
     );
   }
 
   async clickOnDeleteAccountTransaction() {
-    console.log('Attempting to click on Delete Account Transaction link');
-    const maxAttempts = 10; // Maximum number of attempts to find the correct element
-    for (let index = 0; index < maxAttempts; index++) {
-      try {
-        await this.clickByTestIdWithIndex(this.deleteAccountSublinkSelector, index);
-        // Check if the next page element that should appear is visible
-        if (await this.isElementVisible(this.transferAccountInputSelector)) {
-          console.log('Successfully navigated to the Create Account Transaction page.');
-          return;
-        }
-      } catch (error) {
-        console.log(
-          `Attempt ${index + 1}: Failed to find or click on the correct element, retrying...`,
-        );
-      }
-    }
-    throw new Error(
-      'Failed to navigate to the Delete Account Transaction page after multiple attempts',
+    await this.clickOnTransactionLink(
+      this.deleteAccountSublinkSelector,
+      this.transferAccountInputSelector,
+      'Delete Account',
     );
   }
 
   async clickOnUpdateAccountTransaction() {
-    console.log('Attempting to click on Update Account Transaction link');
-    const maxAttempts = 10; // Maximum number of attempts to find the correct element
-    for (let index = 0; index < maxAttempts; index++) {
-      try {
-        await this.clickByTestIdWithIndex(this.updateAccountSublinkSelector, index);
-        // Check if the next page element that should appear is visible
-        if (await this.isElementVisible(this.updateAccountInputSelector)) {
-          console.log('Successfully navigated to the Create Account Transaction page.');
-          return;
-        }
-      } catch (error) {
-        console.log(
-          `Attempt ${index + 1}: Failed to find or click on the correct element, retrying...`,
-        );
-      }
-    }
-    throw new Error(
-      'Failed to navigate to the Update Account Transaction page after multiple attempts',
+    await this.clickOnTransactionLink(
+      this.updateAccountSublinkSelector,
+      this.updateAccountInputSelector,
+      'Update Account',
+    );
+  }
+
+  async clickOnApproveAllowanceTransaction() {
+    await this.clickOnTransactionLink(
+      this.allowanceSublinkSelector,
+      this.signAndSubmitAllowanceSelector,
+      'Approve Allowance',
     );
   }
 
   async clickOnTransferTokensTransaction() {
-    console.log('Attempting to click on Update Account Transaction link');
-    const maxAttempts = 10; // Maximum number of attempts to find the correct element
-    for (let index = 0; index < maxAttempts; index++) {
-      try {
-        await this.clickByTestIdWithIndex(this.transferTokensSublinkSelector, index);
-        // Check if the next page element that should appear is visible
-        if (await this.isElementVisible(this.signAndSubmitTransferSelector)) {
-          console.log('Successfully navigated to the Create Account Transaction page.');
-          return;
-        }
-      } catch (error) {
-        console.log(
-          `Attempt ${index + 1}: Failed to find or click on the correct element, retrying...`,
-        );
-      }
-    }
-    throw new Error(
-      'Failed to navigate to the Update Account Transaction page after multiple attempts',
+    await this.clickOnTransactionLink(
+      this.transferTokensSublinkSelector,
+      this.signAndSubmitTransferSelector,
+      'Transfer Tokens',
     );
   }
 
@@ -491,6 +466,27 @@ class TransactionPage extends BasePage {
     return transactionId;
   }
 
+  async approveAllowance(spenderAccountId, amount, password, isTestNegative = false) {
+    await this.clickOnTransactionsMenuButton();
+    await this.clickOnCreateNewTransactionButton();
+    await this.clickOnApproveAllowanceTransaction();
+    if (isTestNegative) {
+      await this.fillByTestId(this.allowanceOwnerAccountSelector, '0.0.999');
+    } else {
+      await this.fillInAllowanceOwnerAccount();
+    }
+    await this.fillInAllowanceAmount(amount);
+    await this.fillInSpenderAccountId(spenderAccountId);
+    await this.clickOnSignAndSubmitAllowanceButton();
+    await this.clickSignTransactionButton();
+    await this.fillInPassword(password);
+    await this.clickOnPasswordContinue();
+    await this.waitForSuccessModalToAppear();
+    const transactionId = await this.getTransactionIdText();
+    await this.clickOnCloseButtonForCompletedTransaction();
+    return transactionId;
+  }
+
   async transferAmountBetweenAccounts(toAccountId, amount, password, options = {}) {
     const { isSupposedToFail = false } = options;
 
@@ -552,7 +548,7 @@ class TransactionPage extends BasePage {
   }
 
   async clickSignTransactionButton() {
-    // Construct the selector for the confirm transaction modal that is visible and in a displayed state
+    // Construct the selector for the confirmation transaction modal that is visible and in a displayed state
     const modalSelector = `[data-testid="${this.confirmTransactionModalSelector}"][style*="display: block"]`;
     await this.window.waitForSelector(modalSelector, { state: 'visible', timeout: 15000 });
 
@@ -632,19 +628,20 @@ class TransactionPage extends BasePage {
   }
 
   /**
-   * Fills in the deleted account ID input field, removes the last character, and types it again to trigger UI updates.
-   * Continuously retries until the 'Sign and Submit' button is enabled or a max attempt limit is reached.
+   * Generalized function to fill in the account ID input field, remove the last character,
+   * type it again to trigger UI updates, and retry until the target button is enabled.
    * @param {string} accountId - The account ID to be filled in.
+   * @param {string} inputSelector - The test ID selector for the input field.
+   * @param {string} buttonSelector - The test ID selector for the button to check.
    */
-  async fillInDeletedAccountId(accountId) {
+  async fillInAccountId(accountId, inputSelector, buttonSelector) {
     const maxRetries = 50; // Maximum number of retries before giving up
     let attempt = 0;
 
     while (attempt < maxRetries) {
       const { delay } = await import('../utils/util.js');
       // Fill the input normally
-      // Not using BasePage due to spam in the logs
-      const element = this.window.getByTestId(this.deletedAccountInputSelector);
+      const element = this.window.getByTestId(inputSelector);
       await element.fill(accountId);
 
       // Grab the last character of accountId and prepare the version without the last char
@@ -657,8 +654,8 @@ class TransactionPage extends BasePage {
       // Type the last character
       await this.window.keyboard.type(lastChar);
 
-      // Check if the 'Sign and Submit' button is enabled
-      if (await this.isButtonEnabled(this.signAndSubmitDeleteButtonSelector)) {
+      // Check if the target button is enabled
+      if (await this.isButtonEnabled(buttonSelector)) {
         return; // Exit the function if the button is enabled
       }
 
@@ -668,42 +665,33 @@ class TransactionPage extends BasePage {
       attempt++; // Increment the attempt counter
     }
 
-    throw new Error('Failed to enable the Sign and Submit button after multiple attempts.');
+    throw new Error(
+      `Failed to enable the button after multiple attempts. Selector: ${buttonSelector}`,
+    );
+  }
+
+  async fillInDeletedAccountId(accountId) {
+    await this.fillInAccountId(
+      accountId,
+      this.deletedAccountInputSelector,
+      this.signAndSubmitDeleteButtonSelector,
+    );
   }
 
   async fillInUpdatedAccountId(accountId) {
-    const maxRetries = 50; // Maximum number of retries before giving up
-    let attempt = 0;
+    await this.fillInAccountId(
+      accountId,
+      this.updateAccountInputSelector,
+      this.signAndSubmitUpdateButtonSelector,
+    );
+  }
 
-    while (attempt < maxRetries) {
-      const { delay } = await import('../utils/util.js');
-      // Fill the input normally
-      // Not using BasePage due to spam in the logs
-      const element = this.window.getByTestId(this.updateAccountInputSelector);
-      await element.fill(accountId);
-
-      // Grab the last character of accountId and prepare the version without the last char
-      const lastChar = accountId.slice(-1);
-      const withoutLastChar = accountId.slice(0, -1);
-
-      // Clear the input and retype it without the last character
-      await element.fill(withoutLastChar);
-
-      // Type the last character
-      await this.window.keyboard.type(lastChar);
-
-      // Check if the 'Sign and Submit' button is enabled
-      if (await this.isButtonEnabled(this.signAndSubmitUpdateButtonSelector)) {
-        return; // Exit the function if the button is enabled
-      }
-
-      // Wait a short period before retrying to allow for UI updates
-      await delay(100); // Wait for 100 milliseconds
-
-      attempt++; // Increment the attempt counter
-    }
-
-    throw new Error('Failed to enable the Sign and Submit button after multiple attempts.');
+  async fillInSpenderAccountId(accountId) {
+    await this.fillInAccountId(
+      accountId,
+      this.allowanceSpenderAccountSelector,
+      this.signAndSubmitAllowanceSelector,
+    );
   }
 
   async fillInTransferAccountId() {
@@ -786,6 +774,20 @@ class TransactionPage extends BasePage {
 
   async isSignAndSubmitButtonEnabled() {
     return await this.isButtonEnabled(this.signAndSubmitTransferSelector);
+  }
+
+  async fillInAllowanceOwnerAccount() {
+    const allAccountIdsText = await this.getTextByTestId(this.payerDropdownSelector);
+    const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
+    await this.fillByTestId(this.allowanceOwnerAccountSelector, firstAccountId);
+  }
+
+  async fillInAllowanceAmount(amount) {
+    await this.fillByTestId(this.allowanceAmountSelector, amount);
+  }
+
+  async clickOnSignAndSubmitAllowanceButton() {
+    await this.clickByTestId(this.signAndSubmitAllowanceSelector);
   }
 }
 
