@@ -28,7 +28,7 @@ export class TransactionStatusService {
   /* UPDATES THE TRANSACTIONS STATUSES */
 
   /* On app start for every transaction */
-  @Cron(new Date(Date.now() + 1 * 1000), {
+  @Cron(new Date(Date.now() + 6 * 1000), {
     name: 'initial_status_update',
   })
   async handleInitialTransactionStatusUpdate() {
@@ -127,7 +127,11 @@ export class TransactionStatusService {
         continue;
 
       /* Gets the signature key */
-      const sigantureKey = await computeSignatureKey(sdkTransaction, this.mirrorNodeService);
+      const sigantureKey = await computeSignatureKey(
+        sdkTransaction,
+        this.mirrorNodeService,
+        transaction.network,
+      );
 
       /* Checks if the transaction has valid siganture */
       const isAbleToSign = ableToSign([...sdkTransaction._signerPublicKeys], sigantureKey);
@@ -171,7 +175,11 @@ export class TransactionStatusService {
       return;
 
     /* Gets the signature key */
-    const sigantureKey = await computeSignatureKey(sdkTransaction, this.mirrorNodeService);
+    const sigantureKey = await computeSignatureKey(
+      sdkTransaction,
+      this.mirrorNodeService,
+      transaction.network,
+    );
 
     /* Checks if the transaction has valid siganture */
     const isAbleToSign = ableToSign([...sdkTransaction._signerPublicKeys], sigantureKey);

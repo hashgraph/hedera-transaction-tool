@@ -2,6 +2,8 @@ import { ipcMain } from 'electron';
 
 import { Prisma } from '@prisma/client';
 
+import { Network } from '@main/shared/enums';
+
 import {
   addAccount,
   changeAccountNickname,
@@ -22,13 +24,8 @@ export default () => {
   // Add
   ipcMain.handle(
     createChannelName('add'),
-    (
-      _e,
-      userId: string,
-      accountId: string,
-      network: 'mainnet' | 'testnet' | 'previewnet' | 'custom',
-      nickname: string = '',
-    ) => addAccount(userId, accountId, network, nickname),
+    (_e, userId: string, accountId: string, network: Network, nickname: string = '') =>
+      addAccount(userId, accountId, network, nickname),
   );
 
   // Remove

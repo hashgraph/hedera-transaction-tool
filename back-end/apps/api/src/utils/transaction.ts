@@ -79,7 +79,7 @@ export const userKeysRequiredToSign = async (
 
   /* Check if a key of the user is inside the key of some account required to sign */
   for (const accountId of accounts) {
-    const accountInfo = await mirrorNodeService.getAccountInfo(accountId);
+    const accountInfo = await mirrorNodeService.getAccountInfo(accountId, transaction.network);
     const key = parseAccountProperty(accountInfo, 'key');
     if (!key) continue;
 
@@ -88,7 +88,7 @@ export const userKeysRequiredToSign = async (
 
   /* Check if user has a key included in a receiver account that required signature */
   for (const accountId of receiverAccounts) {
-    const accountInfo = await mirrorNodeService.getAccountInfo(accountId);
+    const accountInfo = await mirrorNodeService.getAccountInfo(accountId, transaction.network);
     const receiverSigRequired = parseAccountProperty(accountInfo, 'receiver_sig_required');
     if (!receiverSigRequired) continue;
 

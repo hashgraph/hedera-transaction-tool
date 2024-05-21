@@ -21,6 +21,13 @@ import {
 
 import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 
+export enum Network {
+  MAINNET = 'mainnet',
+  TESTNET = 'testnet',
+  PREVIEWNET = 'previewnet',
+  LOCAL_NODE = 'local-node',
+}
+
 export enum TransactionType {
   ACCOUNT_CREATE = 'ACCOUNT CREATE',
   ACCOUNT_UPDATE = 'ACCOUNT UPDATE',
@@ -65,7 +72,7 @@ export class Transaction {
   @Column()
   transactionHash: string;
 
-  @Column({ type: 'bytea', unique: true })
+  @Column({ type: 'bytea' })
   body: Buffer;
 
   @Column({ type: 'bytea', nullable: true })
@@ -88,6 +95,9 @@ export class Transaction {
 
   @Column()
   validStart: Date;
+
+  @Column()
+  network: Network;
 
   @Column({ nullable: true })
   cutoffAt?: Date;
@@ -131,6 +141,7 @@ export const transactionProperties: (keyof Transaction)[] = [
   'transactionHash',
   'status',
   'statusCode',
+  'network',
   'createdAt',
   'executedAt',
   'updatedAt',

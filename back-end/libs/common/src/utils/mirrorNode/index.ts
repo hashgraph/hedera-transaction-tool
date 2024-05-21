@@ -1,7 +1,7 @@
-import {} from '@hashgraph/sdk';
+import { Network } from '@entities';
 
 export const MirrorNetwork = {
-  fromName(name: string) {
+  fromName(name: Network) {
     switch (name) {
       case 'mainnet':
         return MirrorNetwork.MAINNET;
@@ -23,11 +23,13 @@ export const MirrorNetwork = {
   MAINNET: ['mainnet-public.mirrornode.hedera.com:443'],
   TESTNET: ['testnet.mirrornode.hedera.com:443'],
   PREVIEWNET: ['previewnet.mirrornode.hedera.com:443'],
-  LOCAL_NODE: ['127.0.0.1:5600'],
+  /* Using host.docker.internal to access the host machine from the container, will work only in dev mode */
+  /* Local node will be used only in development mode */
+  LOCAL_NODE: ['host.docker.internal:5600'],
 };
 
 export const MirrorNodeBaseURL = {
-  fromName(name: string) {
+  fromName(name: Network) {
     switch (name) {
       case 'mainnet':
         return MirrorNodeBaseURL.MAINNET;
@@ -49,5 +51,7 @@ export const MirrorNodeBaseURL = {
   MAINNET: 'https://mainnet-public.mirrornode.hedera.com/api/v1',
   TESTNET: 'https://testnet.mirrornode.hedera.com/api/v1',
   PREVIEWNET: 'https://previewnet.mirrornode.hedera.com/api/v1',
-  LOCAL_NODE: 'http://localhost:5551/api/v1',
+  /* Using host.docker.internal to access the host machine from the container, will work only in dev mode */
+  /* Local node will be used only in development mode */
+  LOCAL_NODE: 'http://host.docker.internal:5551/api/v1',
 };

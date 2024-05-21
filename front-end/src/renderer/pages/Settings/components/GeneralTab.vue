@@ -2,8 +2,9 @@
 import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
 
 import { Theme } from '@main/shared/interfaces';
+import { Network } from '@main/shared/enums';
 
-import useNetworkStore, { Network } from '@renderer/stores/storeNetwork';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
 
@@ -43,7 +44,7 @@ const handleSetCustomNetwork = async () => {
       throw new Error('Invalid node account ID');
     }
 
-    await networkStore.setNetwork('custom', {
+    await networkStore.setNetwork(Network.CUSTOM, {
       nodeAccountIds: {
         [consensusNodeEndpoint.value]: nodeAccountId.value,
       },
@@ -98,31 +99,31 @@ onBeforeUnmount(() => {
         <AppButton
           color="secondary"
           data-testid="tab-network-mainnet"
-          :class="{ active: networkStore.network === 'mainnet' }"
-          @click="handleNetworkChange('mainnet')"
+          :class="{ active: networkStore.network === Network.MAINNET }"
+          @click="handleNetworkChange(Network.MAINNET)"
           >Mainnet</AppButton
         >
         <AppButton
           color="secondary"
           data-testid="tab-network-testnet"
-          :class="{ active: networkStore.network === 'testnet' }"
-          @click="handleNetworkChange('testnet')"
+          :class="{ active: networkStore.network === Network.TESTNET }"
+          @click="handleNetworkChange(Network.TESTNET)"
           >Testnet</AppButton
         >
         <AppButton
           color="secondary"
           data-testid="tab-network-previewnet"
           disabled
-          :class="{ active: networkStore.network === 'previewnet' }"
-          @click="handleNetworkChange('previewnet')"
+          :class="{ active: networkStore.network === Network.PREVIEWNET }"
+          @click="handleNetworkChange(Network.PREVIEWNET)"
           >Previewnet</AppButton
         >
         <AppButton
           color="secondary"
           data-testid="tab-network-custom"
-          :class="{ active: networkStore.network === 'custom' }"
-          @click="isCustomSettingsVisible = true"
-          >Custom</AppButton
+          :class="{ active: networkStore.network === Network.LOCAL_NODE }"
+          @click="handleNetworkChange(Network.LOCAL_NODE)"
+          >Local Node</AppButton
         >
       </div>
       <Transition name="fade" mode="out-in">

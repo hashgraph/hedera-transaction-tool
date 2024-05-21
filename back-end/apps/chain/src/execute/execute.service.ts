@@ -12,14 +12,14 @@ import {
   Status,
 } from '@hashgraph/sdk';
 
-import { Transaction, TransactionStatus } from '@entities';
+import { Transaction, TransactionStatus, Network } from '@entities';
 
 import {
   MirrorNodeService,
   TransactionExecutedDto,
   ableToSign,
   computeSignatureKey,
-  getClientFromConfig,
+  getClientFromName,
   getStatusCodeFromMessage,
 } from '@app/common';
 
@@ -62,14 +62,18 @@ export class ExecuteService {
       throw new Error('File transactions are not currently supported for execution.');
 
     /* Gets the signature key */
-    const sigantureKey = await computeSignatureKey(sdkTransaction, this.mirrorNodeService);
+    const sigantureKey = await computeSignatureKey(
+      sdkTransaction,
+      this.mirrorNodeService,
+      transaction.network,
+    );
 
     /* Checks if the transaction has valid siganture */
     if (!ableToSign([...sdkTransaction._signerPublicKeys], sigantureKey))
       throw new Error('Transaction has invalid signature.');
 
     /* Execute the transaction */
-    const client = getClientFromConfig(this.configService);
+    const client = getClientFromName(transaction.network);
 
     let statusCode = 21;
 
@@ -106,7 +110,8 @@ export class ExecuteService {
           statusCode: transaction.statusCode,
         },
       );
-      this.sideEffect(sdkTransaction);
+      client.close();
+      this.sideEffect(sdkTransaction, transaction.network);
     }
     return result;
   }
@@ -125,10 +130,13 @@ export class ExecuteService {
     }
   }
 
-  private sideEffect(sdkTransaction: SDKTransaction) {
+  private sideEffect(sdkTransaction: SDKTransaction, network: Network) {
     if (sdkTransaction instanceof AccountUpdateTransaction) {
       setTimeout(async () => {
-        await this.mirrorNodeService.updateAccountInfo(sdkTransaction.accountId.toString());
+        await this.mirrorNodeService.updateAccountInfo(
+          sdkTransaction.accountId.toString(),
+          network,
+        );
       }, 5 * 1_000);
     }
   }

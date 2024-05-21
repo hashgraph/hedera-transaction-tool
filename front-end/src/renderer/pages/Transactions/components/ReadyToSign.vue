@@ -6,6 +6,7 @@ import { Transaction } from '@hashgraph/sdk';
 import { ITransaction } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRouter } from 'vue-router';
 
@@ -26,6 +27,7 @@ import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 
 /* Composables */
 const router = useRouter();
@@ -85,6 +87,7 @@ async function fetchTransactions() {
   try {
     const { items: rawTransactions } = await getTransactionsToSign(
       user.selectedOrganization.serverUrl,
+      network.network,
       currentPage.value,
       pageSize.value,
       [{ property: sort.field, direction: sort.direction }],

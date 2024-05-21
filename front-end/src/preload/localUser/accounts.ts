@@ -2,6 +2,8 @@ import { ipcRenderer } from 'electron';
 
 import { HederaAccount, Prisma } from '@prisma/client';
 
+import { Network } from '@main/shared/enums';
+
 export default {
   accounts: {
     getAll: (findArgs: Prisma.HederaAccountFindManyArgs): Promise<HederaAccount[]> =>
@@ -9,7 +11,7 @@ export default {
     add: (
       userId: string,
       accountId: string,
-      network: 'mainnet' | 'testnet' | 'previewnet' | 'custom',
+      network: Network,
       nickname: string,
     ): Promise<HederaAccount[]> =>
       ipcRenderer.invoke('accounts:add', userId, accountId, network, nickname),

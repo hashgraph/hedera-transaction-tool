@@ -7,7 +7,7 @@ import {
 } from '@hashgraph/sdk';
 import { Transaction } from '@prisma/client';
 
-import { Network } from '@renderer/stores/storeNetwork';
+import { Network } from '@main/shared/enums';
 
 import { openExternal } from '@renderer/services/electronUtilsService';
 

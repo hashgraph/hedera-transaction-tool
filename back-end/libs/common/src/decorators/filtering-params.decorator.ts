@@ -55,7 +55,7 @@ function parseFilter(
   dateProperties: string[],
 ): Filtering {
   if (
-    !rawFilter.match(/^[a-zA-Z0-9_]+:(eq|neq|gt|gte|lt|lte|like|nlike|in|nin):[a-zA-Z0-9_, ]+$/) &&
+    !rawFilter.match(/^[a-zA-Z0-9_]+:(eq|neq|gt|gte|lt|lte|like|nlike|in|nin):[a-zA-Z0-9_, -]+$/) &&
     !rawFilter.match(/^[a-zA-Z0-9_]+:(isnull|isnotnull)$/)
   ) {
     throw new BadRequestException('Invalid filter parameter');

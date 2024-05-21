@@ -33,7 +33,7 @@ import {
   NOTIFICATIONS_SERVICE,
   MirrorNodeService,
   encodeUint8Array,
-  getClientFromConfig,
+  getClientFromName,
   getTransactionTypeEnumValue,
   isExpired,
   Pagination,
@@ -319,7 +319,7 @@ export class TransactionsService {
     });
     if (countExisting > 0) throw new BadRequestException('Transaction already exists');
 
-    const client = getClientFromConfig(this.configService);
+    const client = getClientFromName(dto.network);
     sdkTransaction.freezeWith(client);
 
     const transaction = this.repo.create({
@@ -332,6 +332,7 @@ export class TransactionsService {
       status: TransactionStatus.WAITING_FOR_SIGNATURES,
       creatorKey,
       signature: dto.signature,
+      network: dto.network,
       validStart: sdkTransaction.transactionId.validStart.toDate(),
       cutoffAt: dto.cutoffAt,
     });
