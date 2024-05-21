@@ -168,6 +168,7 @@ const columnClass = 'col-4 col-xxxl-3';
           <AppButton
             color="primary"
             type="submit"
+            data-testid="button-sign-and-submit-allowance"
             :disabled="
               !payerData.isValid.value ||
               !ownerData.isValid.value ||
@@ -206,6 +207,7 @@ const columnClass = 'col-4 col-xxxl-3';
               :model-value="ownerData.accountIdFormatted.value"
               @update:model-value="v => (ownerData.accountId.value = v)"
               :filled="true"
+              data-testid="input-owner-account"
               placeholder="Enter Owner ID"
             />
           </div>
@@ -234,6 +236,7 @@ const columnClass = 'col-4 col-xxxl-3';
               :model-value="spenderData.accountIdFormatted.value"
               @update:model-value="v => (spenderData.accountId.value = v)"
               :filled="true"
+              data-testid="input-spender-account"
               placeholder="Enter Spender ID"
             />
           </div>
@@ -257,6 +260,7 @@ const columnClass = 'col-4 col-xxxl-3';
             >
             <AppHbarInput
               v-model:model-value="amount as Hbar"
+              data-testid="input-allowance-amount"
               placeholder="Enter Amount"
               :filled="true"
             />

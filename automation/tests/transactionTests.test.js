@@ -267,7 +267,6 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify transfer tokens tx fail with insufficient payer balance', async () => {
-    test.setTimeout(1200000);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const amountToBeTransferred = '10000000';
@@ -331,5 +330,29 @@ test.describe('Transaction tests', () => {
 
     const isButtonEnabled = await transactionPage.isSignAndSubmitButtonEnabled();
     expect(isButtonEnabled).toBe(false);
+  });
+
+  test('Verify user can execute approve allowance tx', async () => {
+    await transactionPage.ensureAccountExists(globalCredentials.password);
+    const accountFromList = await transactionPage.getFirstAccountFromList();
+    const amountToBeApproved = '10';
+    const transactionId = await transactionPage.approveAllowance(
+      accountFromList,
+      amountToBeApproved,
+      globalCredentials.password,
+    );
+
+    const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
+    const transactionType = transactionDetails.transactions[0]?.name;
+    const result = transactionDetails.transactions[0]?.result;
+    expect(transactionType).toBe('CRYPTOAPPROVEALLOWANCE');
+    expect(result).toBe('SUCCESS');
+
+    const isTxExistingInDb = await transactionPage.verifyTransactionExists(
+      transactionId,
+      'Account Allowance Approve Transaction',
+    );
+
+    expect(isTxExistingInDb).toBe(true);
   });
 });
