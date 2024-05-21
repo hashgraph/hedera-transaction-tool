@@ -177,12 +177,13 @@ watch(isDeleteModalShown, newVal => {
 <template>
   <div class="flex-column-100">
     <div class="mb-3">
-      <template v-for="tab in Object.values(Tabs)" :key="tab">
+      <template v-for="(tab, i) in Object.values(Tabs)" :key="tab">
         <AppButton
           :data-testid="`tab-${tab}`"
           type="button"
           color="borderless"
           class="min-w-unset"
+          :class="[tab === currentTab ? 'active' : '', i !== 0 ? 'ms-3' : '']"
           @click="handleTabChange(tab)"
         >
           {{ tab }}
