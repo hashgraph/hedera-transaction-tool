@@ -11,9 +11,6 @@ class SettingsPage extends BasePage {
   /* Selectors */
 
   // Inputs
-  consensusNodeEndpointInputSelector = 'input-consensus-endpoint';
-  mirrorNodeGrpcEndpointInputSelector = 'input-mirror-grpc-endpoint';
-  mirrorNodeRestEndpointInputSelector = 'input-mirror-rest-endpoint';
   nodeAccountidInputSelector = 'input-node-accountid';
   passwordInputSelector = 'input-password';
   indexInputSelector = 'input-index';
@@ -41,7 +38,6 @@ class SettingsPage extends BasePage {
   darkTabButtonSelector = 'tab-appearance-dark';
   lightTabButtonSelector = 'tab-appearance-light';
   systemTabButtonSelector = 'tab-appearance-system';
-  setButtonSelector = 'button-set';
   restoreButtonSelector = 'button-restore';
   continueButtonSelector = 'button-continue';
   continuePasswordButtonSelector = 'button-continue-password';
@@ -197,30 +193,6 @@ class SettingsPage extends BasePage {
 
   async clickOnCustomTab() {
     await this.clickByTestId(this.customTabButtonSelector);
-  }
-
-  async getConsensusNodeEndpointText() {
-    return await this.getTextFromInputFieldByTestId(this.consensusNodeEndpointInputSelector);
-  }
-
-  async getMirrorNodeGrpcEndpointText() {
-    return await this.getTextFromInputFieldByTestId(this.mirrorNodeGrpcEndpointInputSelector);
-  }
-
-  async getMirrorNodeRestEndpointText() {
-    return await this.getTextFromInputFieldByTestId(this.mirrorNodeRestEndpointInputSelector);
-  }
-
-  async getNodeAccountIdInputText() {
-    return await this.getTextFromInputFieldByTestId(this.nodeAccountidInputSelector);
-  }
-
-  async isSetButtonVisible() {
-    return await this.isElementVisible(this.setButtonSelector);
-  }
-
-  async clickOnSetButton() {
-    await this.clickByTestId(this.setButtonSelector);
   }
 
   async clickOnImportButton() {

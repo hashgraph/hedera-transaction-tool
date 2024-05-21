@@ -27,7 +27,6 @@ async function setupEnvironmentForTransactions(window, password) {
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnCustomTab();
-    await settingsPage.clickOnSetButton();
     await settingsPage.clickOnKeysTab();
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnED25519DropDown();
