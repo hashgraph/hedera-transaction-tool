@@ -30,6 +30,7 @@ import FileTransactionProcessor from '@renderer/components/Transaction/FileTrans
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
+import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 
 /* Composables */
 const toast = useToast();
@@ -50,6 +51,7 @@ const chunkSize = ref(2048);
 const ownerKey = ref<Key | null>(null);
 const newOwnerKey = ref<Key | null>(null);
 const transactionMemo = ref('');
+const removeContent = ref(false);
 
 const fileMeta = ref<File | null>(null);
 const fileReader = ref<FileReader | null>(null);
@@ -126,6 +128,10 @@ const handleCreate = async e => {
         newTransaction.fileId?.toString(),
       );
       newTransaction.setContents(getEncodedContent);
+    }
+
+    if (removeContent.value) {
+      newTransaction.setContents(new Uint8Array());
     }
 
     transaction.value = newTransaction;
@@ -224,7 +230,11 @@ onMounted(async () => {
 
 /* Watchers */
 watch(fileMeta, () => (content.value = ''));
-
+watch(content, () => {
+  if (content.value.length > 0) {
+    removeContent.value = false;
+  }
+});
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
 </script>
@@ -396,9 +406,17 @@ const columnClass = 'col-4 col-xxxl-3';
         <div class="row mt-6">
           <div class="form-group col-12 col-xl-8">
             <label class="form-label">File Contents</label>
+            <Transition name="fade" mode="out-in">
+              <AppCheckBox
+                v-if="content.length === 0"
+                v-model:checked="removeContent"
+                label="Remove File Contents"
+                name="remove-file-contents"
+              />
+            </Transition>
             <textarea
               v-model="content"
-              :disabled="Boolean(fileBuffer)"
+              :disabled="Boolean(fileBuffer) || removeContent"
               class="form-control is-fill py-3"
               rows="10"
             ></textarea>
