@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from 'vue';
+import { inject, onMounted, reactive, ref, watch } from 'vue';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -15,14 +15,16 @@ import {
   getUsersCount,
 } from '@renderer/services/userService';
 
+import { GLOBAL_MODAL_LOADER_KEY, GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
+
 import { isEmail } from '@renderer/utils/validator';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 /* Stores */
 const user = useUserStore();
@@ -31,6 +33,9 @@ const user = useUserStore();
 const toast = useToast();
 const router = useRouter();
 const createTooltips = useCreateTooltips();
+
+/* Injected */
+const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);
 
 /* State */
 const inputEmail = ref('');
@@ -104,15 +109,23 @@ const handleOnFormSubmit = async (event: Event) => {
     }
 
     if (userData) {
-      await user.login(userData.id, userData.email);
+      try {
+        globalModalLoaderRef?.value?.open();
+        await user.login(userData.id, userData.email);
 
-      if (user.secretHashes.length === 0) {
-        if (isUserLoggedIn(user.personal)) {
-          user.personal.password = inputPassword.value;
+        if (user.secretHashes.length === 0) {
+          if (isUserLoggedIn(user.personal)) {
+            user.personal.password = inputPassword.value;
+          }
+          router.push({ name: 'accountSetup' });
+        } else {
+          router.push(
+            router.previousPath ? { path: router.previousPath } : { name: 'transactions' },
+          );
         }
-        router.push({ name: 'accountSetup' });
-      } else {
-        router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
+        globalModalLoaderRef?.value?.close();
+      } catch (error) {
+        globalModalLoaderRef?.value?.close();
       }
     }
   }
