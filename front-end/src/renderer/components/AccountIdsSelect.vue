@@ -31,7 +31,7 @@ const accoundIds = computed(() => flattenAccountIds(user.publicKeyToAccounts));
 /* Handlers */
 const handleAccountIdChange = (e: Event) => {
   const selectEl = e.target as HTMLSelectElement;
-  emit('update:accountId', selectEl.value);
+  emit('update:accountId', selectEl.value || '');
 };
 
 /* Hooks */
@@ -48,7 +48,7 @@ onBeforeMount(async () => {
   });
 
   if (props.accountId.length === 0 && props.selectDefault) {
-    emit('update:accountId', accoundIds.value[0]);
+    emit('update:accountId', accoundIds.value[0] || '');
   }
 });
 

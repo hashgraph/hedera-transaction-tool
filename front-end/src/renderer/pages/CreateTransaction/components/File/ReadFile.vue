@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
-import { FileContentsQuery, FileInfoQuery, Hbar, HbarUnit } from '@hashgraph/sdk';
+import { computed, onMounted, ref, watch } from 'vue';
+import { FileContentsQuery, FileId, FileInfoQuery, Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import { HederaFile } from '@prisma/client';
 
@@ -15,8 +15,8 @@ import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { executeQuery } from '@renderer/services/transactionService';
 import { getAll, update } from '@renderer/services/filesService';
 
-import { isHederaSpecialFileId } from '@renderer/utils/sdk';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isFileId, isHederaSpecialFileId } from '@renderer/utils';
+import { isUserLoggedIn, flattenAccountIds } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -24,6 +24,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
+import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 
 /* Stores */
@@ -43,6 +44,9 @@ const userPassword = ref('');
 const isLoading = ref(false);
 const isUserPasswordModalShown = ref(false);
 const storedFiles = ref<HederaFile[]>([]);
+
+/* Computed */
+const accoundIds = computed<string[]>(() => flattenAccountIds(user.publicKeyToAccounts));
 
 /* Handlers */
 const handleRead = async e => {
@@ -151,6 +155,11 @@ onMounted(async () => {
 
 /* Watchers */
 watch(isUserPasswordModalShown, () => (userPassword.value = ''));
+watch(fileId, id => {
+  if (isFileId(id) && id !== '0') {
+    fileId.value = FileId.fromString(id).toString();
+  }
+});
 
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
@@ -182,10 +191,11 @@ const columnClass = 'col-4 col-xxxl-3';
             />
           </template>
           <template v-else>
-            <AppInput
-              :model-value="payerData.accountIdFormatted.value"
-              @update:model-value="v => (payerData.accountId.value = v)"
+            <AppAutoComplete
+              :model-value="payerData.isValid.value ? payerData.accountIdFormatted.value : ''"
+              @update:model-value="payerData.accountId.value = $event"
               :filled="true"
+              :items="accoundIds"
               placeholder="Enter Payer ID"
             />
           </template>
