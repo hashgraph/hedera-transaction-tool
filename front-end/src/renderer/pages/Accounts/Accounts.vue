@@ -23,6 +23,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 
 /* Enums */
 // enum Sorting {
@@ -45,6 +46,7 @@ const accounts = ref<HederaAccount[]>([]);
 const isKeyStructureModalShown = ref(false);
 const isUnlinkAccountModalShown = ref(false);
 const isNicknameInputShown = ref(false);
+const selectedIndexes = ref<number[]>([]);
 const nicknameInputRef = ref<InstanceType<typeof AppInput> | null>(null);
 
 /* Computed */
@@ -57,19 +59,37 @@ const hbarDollarAmount = computed(() => {
 });
 
 /* Handlers */
-const handleSelectAccount = (accountId: string) => {
+const handleSelectAccount = (accountId: string, index: number) => {
   isNicknameInputShown.value = false;
   accountData.accountId.value = accountId;
+  selectedIndexes.value = [index];
 };
+
+const handleCheckBoxUpdate = (isChecked: boolean, index: number) => {
+  if (isChecked) {
+    selectedIndexes.value.push(index);
+  } else {
+    selectedIndexes.value = selectedIndexes.value.filter(i => i !== index);
+
+    if (accountData.accountId.value === accounts.value[index].account_id) {
+      accountData.accountId.value =
+        selectedIndexes.value.length > 0 ? accounts.value[selectedIndexes.value[0]].account_id : '';
+    }
+  }
+};
+
 const handleUnlinkAccount = async () => {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
 
-  await remove(user.personal.id, accountData.accountIdFormatted.value);
+  await remove(
+    user.personal.id,
+    selectedIndexes.value.map(i => accounts.value[i].account_id),
+  );
   await fetchAccounts();
 
-  accountData.accountId.value = accounts.value[0]?.account_id || '';
+  resetSelectedAccount();
 
   isUnlinkAccountModalShown.value = false;
 
@@ -147,11 +167,16 @@ async function fetchAccounts() {
   });
 }
 
+function resetSelectedAccount() {
+  accountData.accountId.value = accounts.value[0]?.account_id || '';
+  selectedIndexes.value = [0];
+}
+
 /* Hooks */
 onMounted(async () => {
   await fetchAccounts();
 
-  accountData.accountId.value = accounts.value[0]?.account_id || '';
+  resetSelectedAccount();
 });
 </script>
 <template>
@@ -220,21 +245,36 @@ onMounted(async () => {
           <hr class="separator my-5" />
           <div class="fill-remaining pe-3">
             <template v-for="(account, index) in accounts" :key="account.accountId">
-              <div
-                class="container-card-account overflow-hidden p-4 mt-3"
-                :class="{
-                  'is-selected': accountData.accountId.value === account.account_id,
-                }"
-                @click="handleSelectAccount(account.account_id)"
-              >
-                <p class="text-small text-semi-bold overflow-hidden">{{ account.nickname }}</p>
-                <div class="d-flex justify-content-between align-items-center">
-                  <p class="text-micro text-secondary mt-2" :data-testid="'p-account-id-' + index">
-                    {{ account.account_id }}
-                  </p>
-                  <!-- <p class="text-micro text-success text-bold">
-                  {{ accountData.accountInfo.value?.balance }}
-                </p> -->
+              <div class="d-flex align-items-center mt-3">
+                <div
+                  class="visible-on-hover activate-on-sibling-hover"
+                  :selected="selectedIndexes.includes(index) ? true : undefined"
+                >
+                  <AppCheckBox
+                    :checked="selectedIndexes.includes(index)"
+                    @update:checked="handleCheckBoxUpdate($event, index)"
+                    name="select-card"
+                    class="cursor-pointer"
+                  />
+                </div>
+                <div
+                  class="container-card-account activate-on-sibling-hover overflow-hidden w-100 p-4"
+                  :class="{
+                    'is-selected':
+                      accountData.accountId.value === account.account_id ||
+                      selectedIndexes.includes(index),
+                  }"
+                  @click="handleSelectAccount(account.account_id, index)"
+                >
+                  <p class="text-small text-semi-bold overflow-hidden">{{ account.nickname }}</p>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <p
+                      class="text-micro text-secondary mt-2"
+                      :data-testid="'p-account-id-' + index"
+                    >
+                      {{ account.account_id }}
+                    </p>
+                  </div>
                 </div>
               </div>
             </template>

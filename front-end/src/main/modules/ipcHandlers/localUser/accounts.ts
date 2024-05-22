@@ -8,7 +8,7 @@ import {
   addAccount,
   changeAccountNickname,
   getAccounts,
-  removeAccount,
+  removeAccounts,
 } from '@main/services/localUser';
 
 const createChannelName = (...props) => ['accounts', ...props].join(':');
@@ -29,10 +29,8 @@ export default () => {
   );
 
   // Remove
-  ipcMain.handle(
-    createChannelName('remove'),
-    (_e, userId: string, accountId: string, nickname: string = '') =>
-      removeAccount(userId, accountId, nickname),
+  ipcMain.handle(createChannelName('remove'), (_e, userId: string, accountIds: string[]) =>
+    removeAccounts(userId, accountIds),
   );
 
   // Change Nickname

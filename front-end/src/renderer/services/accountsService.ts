@@ -25,9 +25,9 @@ export const add = async (
   }
 };
 
-export const remove = async (userId: string, accountId: string, nickname: string = '') => {
+export const remove = async (userId: string, accountIds: string[]) => {
   try {
-    return await window.electronAPI.local.accounts.remove(userId, accountId, nickname);
+    return await window.electronAPI.local.accounts.remove(userId, accountIds);
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'Account unlink failed'));
   }
