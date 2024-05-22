@@ -32,6 +32,7 @@ const toast = useToast();
 const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
 
 /* State */
+const loading = ref(false);
 const inputEmail = ref('');
 const inputPassword = ref('');
 
@@ -64,6 +65,7 @@ const handleLogin = async () => {
     throw new Error('Please select active organization');
 
   try {
+    loading.value = true;
     await login(user.selectedOrganization.serverUrl, inputEmail.value, inputPassword.value);
 
     await addOrganizationCredentials(
@@ -84,6 +86,8 @@ const handleLogin = async () => {
     inputPasswordInvalid.value = true;
 
     throw new Error(error.message);
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -166,6 +170,7 @@ onBeforeRouteLeave(async () => {
             <AppButton
               color="primary"
               type="submit"
+              :loading="loading"
               :disabled="inputEmail.length === 0 || inputPassword.length === 0"
               >Sign in</AppButton
             >
