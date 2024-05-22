@@ -365,10 +365,15 @@ export const getConnectedOrganizations = async (user: PersonalUser | null) => {
 
   const connectedOrganizations: ConnectedOrganization[] = [];
 
-  for (const organization of organizations) {
-    const connectedOrganization = await getConnectedOrganization(organization, user);
-    connectedOrganizations.push(connectedOrganization);
-  }
+  const results = await Promise.allSettled(
+    organizations.map(organization => getConnectedOrganization(organization, user)),
+  );
+
+  results.forEach(result => {
+    if (result.status === 'fulfilled') {
+      connectedOrganizations.push(result.value);
+    }
+  });
 
   return connectedOrganizations;
 };
