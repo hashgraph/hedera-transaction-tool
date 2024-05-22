@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { inject } from 'vue';
+
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRouter } from 'vue-router';
 
 import { logout } from '@renderer/services/organization';
+
+import { GLOBAL_MODAL_LOADER_KEY, GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
 
 import Logo from '@renderer/components/Logo.vue';
 import LogoText from '@renderer/components/LogoText.vue';
@@ -33,21 +37,32 @@ const networkStore = useNetworkStore();
 /* Composables */
 const router = useRouter();
 
+/* Injected */
+const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);
+
 /* Handlers */
 const handleLogout = async () => {
-  if (user.selectedOrganization) {
-    const { id, nickname, serverUrl, key } = user.selectedOrganization;
-    await logout(serverUrl);
-    await user.selectOrganization({ id, nickname, serverUrl, key });
-  } else {
-    localStorage.removeItem('htx_user');
+  try {
+    globalModalLoaderRef?.value?.open();
 
-    await user.logout();
+    if (user.selectedOrganization) {
+      const { id, nickname, serverUrl, key } = user.selectedOrganization;
+      await logout(serverUrl);
+      globalModalLoaderRef?.value?.close();
+      await user.selectOrganization({ id, nickname, serverUrl, key });
+    } else {
+      localStorage.removeItem('htx_user');
 
-    user.keyPairs = [];
-    user.recoveryPhrase = null;
+      await user.logout();
+      globalModalLoaderRef?.value?.close();
 
-    router.push({ name: 'login' });
+      user.keyPairs = [];
+      user.recoveryPhrase = null;
+
+      router.push({ name: 'login' });
+    }
+  } finally {
+    globalModalLoaderRef?.value?.close();
   }
 };
 </script>
