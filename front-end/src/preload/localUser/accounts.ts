@@ -15,8 +15,8 @@ export default {
       nickname: string,
     ): Promise<HederaAccount[]> =>
       ipcRenderer.invoke('accounts:add', userId, accountId, network, nickname),
-    remove: (userId: string, accountId: string, nickname: string): Promise<HederaAccount[]> =>
-      ipcRenderer.invoke('accounts:remove', userId, accountId, nickname),
+    remove: (userId: string, accountIds: string[]): Promise<void> =>
+      ipcRenderer.invoke('accounts:remove', userId, accountIds),
     changeNickname: (
       userId: string,
       accountId: string,

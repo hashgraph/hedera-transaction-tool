@@ -3,7 +3,7 @@ import { ipcMain } from 'electron';
 import {
   addFile,
   getFiles,
-  removeFile,
+  removeFiles,
   showContentInTemp,
   updateFile,
 } from '@main/services/localUser';
@@ -32,8 +32,8 @@ export default () => {
   );
 
   // Remove
-  ipcMain.handle(createChannelName('remove'), (_e, userId: string, fileId: string) =>
-    removeFile(userId, fileId),
+  ipcMain.handle(createChannelName('remove'), (_e, userId: string, fileIds: string[]) =>
+    removeFiles(userId, fileIds),
   );
 
   // Show in temp folder

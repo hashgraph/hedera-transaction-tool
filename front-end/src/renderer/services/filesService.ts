@@ -30,9 +30,9 @@ export const update = async (
   }
 };
 
-export const remove = async (userId: string, fileId: string) => {
+export const remove = async (userId: string, fileIds: string[]) => {
   try {
-    return await window.electronAPI.local.files.remove(userId, fileId);
+    return await window.electronAPI.local.files.remove(userId, fileIds);
   } catch (err: any) {
     throw Error(getMessageFromIPCError(err, 'File unlink failed'));
   }

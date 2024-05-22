@@ -114,3 +114,21 @@
 .text-dark-blue {
   color: var(--#{$prefix}text-dark-blue);
 }
+
+/* Visibility */
+.visible-on-hover {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+
+  &:hover,
+  &[selected] {
+    opacity: 1;
+  }
+
+  &.activate-on-sibling-hover {
+    &:has(+ *:hover),
+    *:hover + & {
+      opacity: 1;
+    }
+  }
+}

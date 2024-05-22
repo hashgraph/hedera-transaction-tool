@@ -41,29 +41,17 @@ export const addFile = async (file: Prisma.HederaFileUncheckedCreateInput) => {
   });
 };
 
-export const removeFile = async (user_id: string, file_id: string) => {
+export const removeFiles = async (user_id: string, file_ids: string[]) => {
   const prisma = getPrismaClient();
-
-  const findArgs = {
-    where: {
-      user_id,
-    },
-  };
-
-  const files = await getFiles(findArgs);
-
-  if (!files.some(acc => acc.file_id === file_id)) {
-    throw new Error(`File ID not found!`);
-  }
 
   await prisma.hederaFile.deleteMany({
     where: {
       user_id,
-      file_id,
+      file_id: {
+        in: file_ids,
+      },
     },
   });
-
-  return await getFiles(findArgs);
 };
 
 export const updateFile = async (

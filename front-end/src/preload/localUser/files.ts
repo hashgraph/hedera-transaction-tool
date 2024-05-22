@@ -13,8 +13,8 @@ export default {
       userId: string,
       file: Prisma.HederaFileUncheckedUpdateInput,
     ): Promise<HederaFile[]> => ipcRenderer.invoke('files:update', fileId, userId, file),
-    remove: (userId: string, fileId: string): Promise<HederaFile[]> =>
-      ipcRenderer.invoke('files:remove', userId, fileId),
+    remove: (userId: string, fileIds: string[]): Promise<HederaFile[]> =>
+      ipcRenderer.invoke('files:remove', userId, fileIds),
     showContentInTemp: (userId: string, fileId: string): Promise<void> =>
       ipcRenderer.invoke('files:showContentInTemp', userId, fileId),
   },

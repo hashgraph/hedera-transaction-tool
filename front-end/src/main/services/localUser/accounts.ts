@@ -49,31 +49,17 @@ export const addAccount = async (
   return await getAccounts(findArgs);
 };
 
-export const removeAccount = async (userId: string, accountId: string, nickname?: string) => {
+export const removeAccounts = async (userId: string, accountIds: string[]) => {
   const prisma = getPrismaClient();
-
-  const findArgs = {
-    where: {
-      user_id: userId,
-    },
-  };
-
-  const accounts = await getAccounts(findArgs);
-
-  if (
-    !accounts.some(acc => acc.account_id === accountId || (nickname && acc.nickname === nickname))
-  ) {
-    throw new Error(`Account ID ${nickname && `or ${nickname}`} not found!`);
-  }
 
   await prisma.hederaAccount.deleteMany({
     where: {
       user_id: userId,
-      account_id: accountId,
+      account_id: {
+        in: accountIds,
+      },
     },
   });
-
-  return await getAccounts(findArgs);
 };
 
 export const changeAccountNickname = async (

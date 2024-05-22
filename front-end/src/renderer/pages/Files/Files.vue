@@ -25,6 +25,7 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -122,6 +123,7 @@ const selectedFile = ref<HederaFile | null>(null);
 const isUnlinkFileModalShown = ref(false);
 const isKeyStructureModalShown = ref(false);
 const isNicknameInputShown = ref(false);
+const selectedIndexes = ref<number[]>([]);
 const nicknameInputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const isDescriptionInputShown = ref(false);
 const descriptionInputRef = ref<HTMLTextAreaElement | null>(null);
@@ -142,8 +144,23 @@ const selectedFileIdWithChecksum = computed(
 const toast = useToast();
 
 /* Handlers */
-const handleFileItemClick = fileId => {
+const handleSelectFile = (fileId: string, index: number) => {
+  isNicknameInputShown.value = false;
   selectedFile.value = files.value.find(f => f.file_id === fileId) || null;
+  selectedIndexes.value = [index];
+};
+
+const handleCheckBoxUpdate = (isChecked: boolean, index: number) => {
+  if (isChecked) {
+    selectedIndexes.value.push(index);
+  } else {
+    selectedIndexes.value = selectedIndexes.value.filter(i => i !== index);
+
+    if (selectedFile.value?.file_id === files.value[index].file_id) {
+      selectedFile.value =
+        selectedIndexes.value.length > 0 ? files.value[selectedIndexes.value[0]] : null;
+    }
+  }
 };
 
 const handleUnlinkFile = async () => {
@@ -156,8 +173,13 @@ const handleUnlinkFile = async () => {
   }
 
   // files.value = specialFiles.concat(await remove(user.personal.id, selectedFile.value.file_id));
-  await remove(user.personal.id, selectedFile.value.file_id);
+  await remove(
+    user.personal.id,
+    selectedIndexes.value.map(i => files.value[i].file_id),
+  );
   await fetchFiles();
+
+  resetSelectedAccount();
 
   isUnlinkFileModalShown.value = false;
 
@@ -251,9 +273,15 @@ async function fetchFiles() {
   });
 }
 
+function resetSelectedAccount() {
+  selectedFile.value = files.value[0] || null;
+  selectedIndexes.value = [0];
+}
+
 /* Hooks */
 onMounted(async () => {
   await fetchFiles();
+  resetSelectedAccount();
 });
 
 /* Watchers */
@@ -339,17 +367,31 @@ watch(files, newFiles => {
           <hr class="separator my-5" />
 
           <div class="fill-remaining pe-3">
-            <template v-for="file in files" :key="file.fileId">
-              <div
-                class="container-card-account overflow-hidden p-4 mt-3"
-                :class="{
-                  'is-selected': selectedFile?.file_id === file.file_id,
-                }"
-                @click="handleFileItemClick(file.file_id)"
-              >
-                <p class="text-small text-semi-bold overflow-hidden">{{ file.nickname }}</p>
-                <div class="d-flex justify-content-between align-items-center">
-                  <p class="text-micro text-secondary mt-2">{{ file.file_id }}</p>
+            <template v-for="(file, index) in files" :key="file.fileId">
+              <div class="d-flex align-items-center mt-3">
+                <div
+                  class="visible-on-hover activate-on-sibling-hover"
+                  :selected="selectedIndexes.includes(index) ? true : undefined"
+                >
+                  <AppCheckBox
+                    :checked="selectedIndexes.includes(index)"
+                    @update:checked="handleCheckBoxUpdate($event, index)"
+                    name="select-card"
+                    class="cursor-pointer"
+                  />
+                </div>
+                <div
+                  class="container-card-account activate-on-sibling-hover overflow-hidden w-100 p-4 mt-3"
+                  :class="{
+                    'is-selected':
+                      selectedFile?.file_id === file.file_id || selectedIndexes.includes(index),
+                  }"
+                  @click="handleSelectFile(file.file_id, index)"
+                >
+                  <p class="text-small text-semi-bold overflow-hidden">{{ file.nickname }}</p>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <p class="text-micro text-secondary mt-2">{{ file.file_id }}</p>
+                  </div>
                 </div>
               </div>
             </template>
