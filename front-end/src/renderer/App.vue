@@ -12,7 +12,7 @@ import useAutoLogin from '@renderer/composables/useAutoLogin';
 import { getExchangeRateSet } from './services/mirrorNodeDataService';
 import { setClient } from './services/transactionService';
 
-import { provideUserModalRef } from '@renderer/providers';
+import { provideGlobalModalLoaderlRef, provideUserModalRef } from '@renderer/providers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppMenu from '@renderer/components/Menu.vue';
@@ -22,6 +22,7 @@ import ImportantNote from '@renderer/components/ImportantNote.vue';
 import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
 import AutoLoginInOrganization from '@renderer/components/Organization/AutoLoginInOrganization.vue';
 import OrganizationStatusModal from '@renderer/components/Organization/OrganizationStatusModal.vue';
+import GlobalModalLoader from '@renderer/components/GlobalModalLoader.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -33,6 +34,7 @@ useAutoLogin();
 
 /* State */
 const userPasswordModalRef = ref<InstanceType<typeof UserPasswordModal> | null>(null);
+const globalModalLoaderRef = ref<InstanceType<typeof GlobalModalLoader> | null>(null);
 
 /* Handlers */
 async function handleThemeChange() {
@@ -59,6 +61,7 @@ onMounted(async () => {
 
 /* Providers */
 provideUserModalRef(userPasswordModalRef);
+provideGlobalModalLoaderlRef(globalModalLoaderRef);
 </script>
 
 <template>
@@ -93,6 +96,7 @@ provideUserModalRef(userPasswordModalRef);
 
       <OrganizationStatusModal />
       <UserPasswordModal ref="userPasswordModalRef" />
+      <GlobalModalLoader ref="globalModalLoaderRef" />
     </div>
   </Transition>
 
