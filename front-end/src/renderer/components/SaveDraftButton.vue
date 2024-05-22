@@ -57,6 +57,7 @@ const saveDraft = async () => {
 
       if (getTransactionFromBytes(loadedDraft.transactionBytes).toBytes() != transactionBytes) {
         await updateDraft(loadedDraft.id, { transactionBytes: transactionBytes.toString() });
+        toast.success('Draft updated', { position: 'bottom-right' });
         props.handleDraftUpdated && props.handleDraftUpdated(loadedDraft.id);
       } else {
         await sendAddDraft(user.personal.id, transactionBytes);
