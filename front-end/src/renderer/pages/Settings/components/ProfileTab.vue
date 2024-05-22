@@ -82,6 +82,7 @@ const handleChangePassword = async () => {
     }
 
     isSuccessModalShown.value = true;
+    await user.refetchAccounts();
   } catch (err: any) {
     toast.error(err.message || 'Failed to change password', { position: 'bottom-right' });
   }

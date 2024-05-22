@@ -217,6 +217,8 @@ async function process(requiredKey: Key, _chunkSize?: number, _chunkInterval?: n
 
   isConfirmShown.value = true;
 
+  await user.refetchAccounts();
+
   function validateProcess() {
     if (!transaction.value) {
       throw new Error('Transaction not provided');

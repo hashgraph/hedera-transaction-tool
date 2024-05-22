@@ -51,6 +51,7 @@ const useUserStore = defineStore('user', () => {
   const login = async (id: string, email: string) => {
     personal.value = ush.createPersonalUser(id, email);
     await refetchKeys();
+    refetchAccounts();
     await refetchOrganizations();
   };
 
@@ -76,7 +77,6 @@ const useUserStore = defineStore('user', () => {
 
   const refetchKeys = async () => {
     await ush.updateKeyPairs(keyPairs, personal.value, selectedOrganization.value);
-    await refetchAccounts();
   };
 
   const storeKey = async (
@@ -86,6 +86,7 @@ const useUserStore = defineStore('user', () => {
   ) => {
     await ush.storeKeyPair(keyPair, secretHashes.value, password, encrypted);
     await refetchKeys();
+    refetchAccounts();
   };
 
   /** Organization */
@@ -97,7 +98,7 @@ const useUserStore = defineStore('user', () => {
       selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
     }
     await ush.afterOrganizationSelection(personal.value, selectedOrganization, keyPairs, router);
-    await refetchAccounts();
+    refetchAccounts();
     await contacts.fetch();
   };
 
@@ -123,8 +124,8 @@ const useUserStore = defineStore('user', () => {
   /* Watchers */
   watch(
     () => network.network,
-    async () => {
-      await refetchAccounts();
+    () => {
+      refetchAccounts();
     },
   );
   /* Exports */
@@ -142,6 +143,7 @@ const useUserStore = defineStore('user', () => {
     logout,
     setRecoveryPhrase,
     refetchKeys,
+    refetchAccounts,
     storeKey,
     selectOrganization,
     refetchUserState,

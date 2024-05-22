@@ -183,24 +183,28 @@ export const updateKeyPairs = async (
 export const getPublicKeysToAccounts = async (keyPairs: KeyPair[], mirrorNodeBaseURL: string) => {
   const publicKeyToAccounts: PublicKeyAccounts[] = [];
 
-  for (let i = 0; i < keyPairs.length; i++) {
-    const keyPair = keyPairs[i];
+  const results = await Promise.allSettled(
+    keyPairs.map(kp => getAccountsByPublicKey(mirrorNodeBaseURL, kp.public_key)),
+  );
 
-    const publicKeyPair = publicKeyToAccounts.findIndex(
-      pkToAcc => pkToAcc.publicKey === keyPair.public_key,
-    );
+  results.forEach((result, i) => {
+    if (result.status === 'fulfilled') {
+      const keyPair = keyPairs[i];
 
-    const accounts = await getAccountsByPublicKey(mirrorNodeBaseURL, keyPair.public_key);
+      const publicKeyPair = publicKeyToAccounts.findIndex(
+        pkToAcc => pkToAcc.publicKey === keyPair.public_key,
+      );
 
-    if (publicKeyPair >= 0) {
-      publicKeyToAccounts[publicKeyPair].accounts = accounts;
-    } else {
-      publicKeyToAccounts.push({
-        publicKey: keyPair.public_key,
-        accounts: accounts,
-      });
+      if (publicKeyPair >= 0) {
+        publicKeyToAccounts[publicKeyPair].accounts = result.value;
+      } else {
+        publicKeyToAccounts.push({
+          publicKey: keyPair.public_key,
+          accounts: result.value,
+        });
+      }
     }
-  }
+  });
 
   return publicKeyToAccounts;
 };

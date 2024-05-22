@@ -120,6 +120,7 @@ const handleExecuted = async () => {
   // Counter mirror node delay
   setTimeout(async () => {
     await user.refetchKeys();
+    await user.refetchAccounts();
   }, 5000);
 };
 
