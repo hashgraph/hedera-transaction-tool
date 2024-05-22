@@ -1,3 +1,8 @@
+import path from 'path';
+import fs from 'fs/promises';
+
+import { app, shell } from 'electron';
+
 import { Client, FileContentsQuery, PrivateKey, Query, Transaction } from '@hashgraph/sdk';
 
 import { Prisma } from '@prisma/client';
@@ -134,7 +139,7 @@ export const executeQuery = async (
     throw new Error('Invalid key type');
   }
 
-  client.setOperator(accountId, privateKey);
+  client.setOperator(accountId, typedPrivateKey);
 
   const query = Query.fromBytes(queryBytes);
 
@@ -145,15 +150,15 @@ export const executeQuery = async (
       return decodeProto(query.fileId.toString() as HederaSpecialFileId, response);
     }
 
-    // if (
-    //   Buffer.isBuffer(response) &&
-    //   query instanceof FileContentsQuery &&
-    //   response.length > 1000000
-    // ) {
-    //   const filePath = path.join(app.getPath('temp'), `${query.fileId?.toString()}.txt`);
-    //   await fs.writeFile(filePath, response);
-    //   shell.showItemInFolder(filePath);
-    // }
+    if (
+      Buffer.isBuffer(response) &&
+      query instanceof FileContentsQuery &&
+      response.length > 1000000
+    ) {
+      const filePath = path.join(app.getPath('temp'), `${query.fileId?.toString()}.txt`);
+      await fs.writeFile(filePath, response);
+      shell.showItemInFolder(filePath);
+    }
 
     //@ts-expect-error Check if there is a toBytes function
     if (typeof response === 'object' && response !== null && response.toBytes) {

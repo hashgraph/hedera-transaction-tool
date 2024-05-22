@@ -112,7 +112,7 @@ const handleExecuted = async () => {
   }
 
   try {
-    await remove(user.personal.id, accountData.accountId.value);
+    await remove(user.personal.id, [accountData.accountId.value]);
   } catch {
     /* Ignore if not found or error */
   }
