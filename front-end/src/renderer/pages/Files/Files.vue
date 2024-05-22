@@ -158,7 +158,9 @@ const handleCheckBoxUpdate = (isChecked: boolean, index: number) => {
 
     if (selectedFile.value?.file_id === files.value[index].file_id) {
       selectedFile.value =
-        selectedIndexes.value.length > 0 ? files.value[selectedIndexes.value[0]] : null;
+        selectedIndexes.value.length > 0
+          ? files.value[selectedIndexes.value[0]]
+          : files.value[0] || null;
     }
   }
 };
@@ -660,9 +662,15 @@ watch(files, newFiles => {
             <div class="text-center">
               <AppCustomIcon :name="'bin'" style="height: 160px" />
             </div>
-            <h3 class="text-center text-title text-bold mt-3">Unlink file</h3>
+            <h3 class="text-center text-title text-bold mt-3">
+              Unlink file{{ selectedIndexes.length > 1 ? 's' : '' }}
+            </h3>
             <p class="text-center text-small text-secondary mt-4">
-              Are you sure you want to remove this file from your file list?
+              Are you sure you want to remove
+              {{ selectedIndexes.length > 1 ? 'these' : 'this' }} File{{
+                selectedIndexes.length > 1 ? 's' : ''
+              }}
+              from your File list?
             </p>
             <hr class="separator my-5" />
             <div class="flex-between-centered gap-4">

@@ -73,7 +73,9 @@ const handleCheckBoxUpdate = (isChecked: boolean, index: number) => {
 
     if (accountData.accountId.value === accounts.value[index].account_id) {
       accountData.accountId.value =
-        selectedIndexes.value.length > 0 ? accounts.value[selectedIndexes.value[0]].account_id : '';
+        selectedIndexes.value.length > 0
+          ? accounts.value[selectedIndexes.value[0]].account_id
+          : accounts.value[0].account_id || '';
     }
   }
 };
@@ -559,9 +561,15 @@ onMounted(async () => {
               <div class="text-center">
                 <AppCustomIcon :name="'bin'" style="height: 160px" />
               </div>
-              <h3 class="text-center text-title text-bold mt-3">Unlink account</h3>
+              <h3 class="text-center text-title text-bold mt-3">
+                Unlink account{{ selectedIndexes.length > 1 ? 's' : '' }}
+              </h3>
               <p class="text-center text-small text-secondary mt-4">
-                Are you sure you want to remove this Account from your Account list?
+                Are you sure you want to remove
+                {{ selectedIndexes.length > 1 ? 'these' : 'this' }} Account{{
+                  selectedIndexes.length > 1 ? 's' : ''
+                }}
+                from your Account list?
               </p>
               <hr class="separator my-5" />
               <div class="flex-between-centered gap-4">
