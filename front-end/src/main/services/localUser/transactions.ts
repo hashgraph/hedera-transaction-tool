@@ -134,7 +134,7 @@ export const executeQuery = async (
     throw new Error('Invalid key type');
   }
 
-  client.setOperator(accountId, privateKey);
+  client.setOperator(accountId, typedPrivateKey);
 
   const query = Query.fromBytes(queryBytes);
 
