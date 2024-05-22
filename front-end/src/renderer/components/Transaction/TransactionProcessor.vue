@@ -165,6 +165,7 @@ async function process(requiredKey: Key) {
   signatureKey.value = requiredKey;
 
   await nextTick();
+
   await user.refetchKeys();
 
   validateProcess();
@@ -172,6 +173,8 @@ async function process(requiredKey: Key) {
   await nextTick();
 
   isConfirmShown.value = true;
+
+  await user.refetchAccounts();
 
   function validateProcess() {
     if (!transaction.value) {

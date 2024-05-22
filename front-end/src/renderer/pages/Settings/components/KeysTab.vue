@@ -125,6 +125,8 @@ const handleDelete = async e => {
       if (user.shouldSetupAccount) {
         router.push({ name: 'accountSetup' });
       }
+
+      await user.refetchAccounts();
     }
   } catch (err: any) {
     toast.error(err.message || 'Failed to delete key pair', { position: 'bottom-right' });
