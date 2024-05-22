@@ -255,12 +255,16 @@
   cursor: pointer;
   transition: background-color 0.15s linear;
 
-  &:hover {
+  &:hover,
+  &.is-selected {
     background-color: var(--#{$prefix}table-header-bg-color);
   }
 
-  &.is-selected {
-    background-color: var(--#{$prefix}table-header-bg-color);
+  &.activate-on-sibling-hover {
+    &:has(+ *:hover),
+    *:hover + & {
+      background-color: var(--#{$prefix}table-header-bg-color);
+    }
   }
 }
 
