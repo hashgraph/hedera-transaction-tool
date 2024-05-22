@@ -21,6 +21,7 @@ import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStor
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import ContactDetails from '@renderer/components/Contacts/ContactDetails.vue';
 import DeleteContactModal from '@renderer/components/Contacts/DeleteContactModal.vue';
+import AppLoader from '@renderer/components/ui/AppLoader.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -32,6 +33,7 @@ const toast = useToast();
 const router = useRouter();
 
 /* State */
+const fetching = ref(false);
 const selectedId = ref<number | null>(null);
 const isDeleteContactModalShown = ref(false);
 const linkedAccounts = ref<HederaAccount[]>([]);
@@ -66,12 +68,23 @@ async function handleRemove() {
   toast.success('User removed successfully');
 
   selectedId.value = null;
-  await contacts.fetch();
+
+  try {
+    fetching.value = true;
+    await contacts.fetch();
+  } finally {
+    fetching.value = false;
+  }
 }
 
 /* Hooks */
 onBeforeMount(async () => {
-  await contacts.fetch();
+  try {
+    fetching.value = true;
+    await contacts.fetch();
+  } finally {
+    fetching.value = false;
+  }
 
   if (isUserLoggedIn(user.personal)) {
     linkedAccounts.value = await getAll({
@@ -118,19 +131,29 @@ watch(
 
           <hr class="separator my-5" />
           <div class="fill-remaining pe-3">
-            <template v-for="c in contactList" :key="c.user.id">
-              <div
-                class="container-card-account overflow-hidden p-4 mt-3"
-                :class="{
-                  'is-selected': c.user.id === selectedId,
-                }"
-                @click="handleSelectContact(c.user.id)"
-              >
-                <p class="text-small text-semi-bold overflow-hidden">{{ c.nickname }}</p>
-                <div class="d-flex justify-content-between align-items-center">
-                  <p class="text-micro text-secondary overflow-hidden mt-2">{{ c.user.email }}</p>
-                </div>
+            <template v-if="fetching">
+              <div class="mt-5">
+                <AppLoader />
               </div>
+            </template>
+            <template v-else-if="contactList.length > 0">
+              <template v-for="c in contactList" :key="c.user.id">
+                <div
+                  class="container-card-account overflow-hidden p-4 mt-3"
+                  :class="{
+                    'is-selected': c.user.id === selectedId,
+                  }"
+                  @click="handleSelectContact(c.user.id)"
+                >
+                  <p class="text-small text-semi-bold overflow-hidden">{{ c.nickname }}</p>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <p class="text-micro text-secondary overflow-hidden mt-2">{{ c.user.email }}</p>
+                  </div>
+                </div>
+              </template>
+            </template>
+            <template v-else>
+              <p class="text-small text-semi-bold text-center mt-5">No contacts found</p>
             </template>
           </div>
         </div>

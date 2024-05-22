@@ -24,7 +24,8 @@ const useContactsStore = defineStore('contacts', () => {
     if (isLoggedInOrganization(user.selectedOrganization)) {
       if (user.selectedOrganization.isPasswordTemporary) return;
 
-      const users = await getUsers(user.selectedOrganization.serverUrl);
+      const serverUrl = user.selectedOrganization.serverUrl;
+      const users = await getUsers(serverUrl);
 
       const orgContacts = await getOrganizationContacts(
         user.personal.id,
@@ -32,15 +33,22 @@ const useContactsStore = defineStore('contacts', () => {
         user.selectedOrganization.userId,
       );
 
-      for (const orgUser of users) {
-        const userKeys = await getUserKeys(user.selectedOrganization.serverUrl, orgUser.id);
-        contacts.value.push({
-          user: orgUser,
-          userKeys: userKeys,
-          nickname: orgContacts.find(c => c.organization_user_id === orgUser.id)?.nickname || '',
-          nicknameId: orgContacts.find(c => c.organization_user_id === orgUser.id)?.id || null,
-        });
-      }
+      const newContacts: Contact[] = [];
+
+      const result = await Promise.allSettled(users.map(u => getUserKeys(serverUrl, u.id)));
+
+      result.forEach((r, i) => {
+        if (r.status === 'fulfilled') {
+          newContacts.push({
+            user: users[i],
+            userKeys: r.value,
+            nickname: orgContacts.find(c => c.organization_user_id === users[i].id)?.nickname || '',
+            nicknameId: orgContacts.find(c => c.organization_user_id === users[i].id)?.id || null,
+          });
+        }
+      });
+
+      contacts.value = newContacts;
     }
   }
 
