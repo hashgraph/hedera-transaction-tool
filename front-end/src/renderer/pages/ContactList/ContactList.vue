@@ -47,7 +47,7 @@ const contactList = computed(() =>
   contacts.contacts.filter(c =>
     isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin
       ? true
-      : !c.user.admin && c.userKeys.length > 0,
+      : c.userKeys.length > 0,
   ),
 );
 
