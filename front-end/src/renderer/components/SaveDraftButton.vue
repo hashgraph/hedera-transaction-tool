@@ -51,10 +51,22 @@ const saveDraft = async () => {
 
   const transactionBytes = props.getTransactionBytes();
 
-  const { id } = await addDraft(user.personal.id, transactionBytes);
-  props.handleDraftAdded && props.handleDraftAdded(id);
+  if (route.query.draftId) {
+    try {
+      const loadedDraft = await getDraft(route.query.draftId.toString());
 
-  toast.success('Draft saved', { position: 'bottom-right' });
+      if (getTransactionFromBytes(loadedDraft.transactionBytes).toBytes() != transactionBytes) {
+        await updateDraft(loadedDraft.id, { transactionBytes: transactionBytes.toString() });
+        props.handleDraftUpdated && props.handleDraftUpdated(loadedDraft.id);
+      } else {
+        await sendAddDraft(user.personal.id, transactionBytes);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  } else {
+    await sendAddDraft(user.personal.id, transactionBytes);
+  }
 };
 
 const handleModalSaveDraftSubmit = (e: Event) => {
@@ -63,6 +75,13 @@ const handleModalSaveDraftSubmit = (e: Event) => {
   props.handleSaveDraft ? props.handleSaveDraft() : saveDraft();
   routeTo.value && router.push(routeTo.value);
 };
+
+/* Functions */
+async function sendAddDraft(userId: string, transactionBytes: Uint8Array) {
+  const { id } = await addDraft(userId, transactionBytes);
+  props.handleDraftAdded && props.handleDraftAdded(id);
+  toast.success('Draft saved', { position: 'bottom-right' });
+}
 
 /* Hooks */
 onBeforeRouteLeave(async to => {
