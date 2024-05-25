@@ -14,17 +14,17 @@ GET http://localhost:3000/transactions/observe?take=10&skip=0
 GET http://localhost:3000/transactions/2
 
 ### Create a transaction
-POST http://localhost:3000/transactions
+POST http://34.36.90.246/transactions
 content-type: application/json
 
 {
   "name": "create1",
   "type": "TRANSFER",
   "description": "first create transaction",
-  "body": "asldfnii23oasindf",
+  "body": "0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200",
   "status": "NEW",
-  "creatorKeyId": 1,
-  "signature": "asdfln23linasdf",
+  "creatorKeyId": 2,
+  "signature": "0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f",
   "validStart": "1999-12-11T11:00:00.000Z",
   "cutoffAt": "1999-12-11T11:00:00.000Z"
 }
