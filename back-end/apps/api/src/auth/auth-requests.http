@@ -1,10 +1,9 @@
 ### Create user for John
-POST http://localhost:3000/auth/signup
+POST https://hederatransactiontool.com/auth/signup
 content-type: application/json
 
 {
-  "email": "john@test.com",
-  "password": "123456789"
+  "email": "martin.dobrev@limechain.tech"
 }
 
 ### Create user for Ted
@@ -26,7 +25,7 @@ content-type: application/json
 }
 
 ### Log in John
-POST http://34.36.90.246/auth/login
+POST https://hederatransactiontool.com/auth/login
 content-type: application/json
 
 {
@@ -35,14 +34,23 @@ content-type: application/json
 }
 
 ### Log in Ted
-POST http://localhost:3000/auth/login
+POST https://34.49.46.8/auth/login
 content-type: application/json
 
 {
-  "email": "ted@test.com",
+  "email": "john.bair@swirldslabs.com",
   "password": "123456789"
 }
 
 ### Sing out
 POST http://localhost:3000/auth/signout
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcxMDc3NDAzNywiZXhwIjoxNzEwODEwMDM3fQ.h_NwgTMmancbf-ifAlOtH9SuGGqf6MW4COjbryIp14s
+
+### Update password for current user
+PATCH http://localhost:3000/auth/change-password
+content-type: application/json
+
+{
+  "oldPassword": "1234567890",
+  "newPassword": "123456789"
+}
