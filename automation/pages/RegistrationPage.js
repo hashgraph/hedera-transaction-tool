@@ -260,6 +260,7 @@ class RegistrationPage extends BasePage {
     await this.fillAllMissingRecoveryPhraseWords();
     await this.clickOnNextButton();
 
+    await this.waitForElementToDisappear(this.toastMessageSelector);
     await this.clickOnFinalNextButtonWithRetry();
 
     const toastMessage = await this.getToastMessage();

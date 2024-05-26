@@ -789,6 +789,26 @@ class TransactionPage extends BasePage {
   async clickOnSignAndSubmitAllowanceButton() {
     await this.clickByTestId(this.signAndSubmitAllowanceSelector);
   }
+
+  async isSignAndSubmitCreateAccountButtonVisible() {
+    return await this.isElementVisible(this.signAndSubmitButtonSelector);
+  }
+
+  async isSignAndSubmitUpdateAccountButtonVisible() {
+    return await this.isElementVisible(this.signAndSubmitUpdateButtonSelector);
+  }
+
+  async isTransferAccountIdVisible() {
+    return await this.isElementVisible(this.transferAccountInputSelector);
+  }
+
+  async getPrefilledAccountIdInUpdatePage() {
+    return await this.getTextFromInputFieldByTestId(this.updateAccountInputSelector);
+  }
+
+  async getPrefilledAccountIdInDeletePage() {
+    return await this.getTextFromInputFieldByTestId(this.deletedAccountInputSelector);
+  }
 }
 
 module.exports = TransactionPage;
