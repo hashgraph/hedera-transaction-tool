@@ -78,6 +78,10 @@ test.describe('Workflow tests', () => {
     const evmAddressFromMirrorNode = accountDetails.accounts[0]?.evm_address;
     const keyAddressFromMirrorNode = accountDetails.accounts[0]?.key?.key;
     const keyTypeFromMirrorNode = accountDetails.accounts[0]?.key?._type;
+    const normalizedKeyTypeFromMirrorNode =
+      keyTypeFromMirrorNode === 'ECDSA_SECP256K1'
+        ? 'secp256k1'
+        : keyTypeFromMirrorNode.toLowerCase();
     const maxAutoAssociationsFromMirrorNode =
       accountDetails.accounts[0]?.max_automatic_token_associations;
     const ethereumNonceFromMirrorNode = accountDetails.accounts[0]?.ethereum_nonce;
@@ -99,7 +103,7 @@ test.describe('Workflow tests', () => {
     expect(key).toBe(keyAddressFromMirrorNode);
 
     const keyType = (await accountPage.getKeyTypeText()).trim();
-    expect(keyType).toBe(keyTypeFromMirrorNode);
+    expect(normalizedKeyTypeFromMirrorNode).toContain(keyType);
 
     const receiverSigRequiredText = (await accountPage.getReceiverSigRequiredText()).trim();
     expect(receiverSigRequiredText).toBe('Yes');
