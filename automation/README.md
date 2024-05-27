@@ -58,7 +58,7 @@ to run the tests.
 To run all tests, execute the following command from the root of the project:
 
 ```bash
-npx playwright test --workers=1
+npx playwright test
 ```
 
 This will launch Playwright and execute the test suites defined in the project, outputting the results to your terminal.
@@ -68,29 +68,29 @@ This will launch Playwright and execute the test suites defined in the project, 
 ### 1. Registration tests
 
 ```bash
-npx playwright test tests/RegistrationTests --workers=1
+npx playwright test tests/RegistrationTests
 ```
 
 ### 2. Login tests
 
 ```bash
-npx playwright test tests/LoginTests --workers=1
+npx playwright test tests/LoginTests
 ```
 
 ### 3. Settings tests
 
 ```bash
-npx playwright test tests/SettingsTests --workers=1
+npx playwright test tests/SettingsTests
 ```
 
 ### 4. Transactions tests
 
 ```bash
-npx playwright test tests/TransactionTests --workers=1
+npx playwright test tests/TransactionTests
 ```
 
 ### 5. Workflow tests
 
 ```bash
-npx playwright test tests/WorkflowTests --workers=1
+npx playwright test tests/WorkflowTests
 ```
