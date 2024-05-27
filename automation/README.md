@@ -88,3 +88,9 @@ npx playwright test tests/SettingsTests --workers=1
 ```bash
 npx playwright test tests/TransactionTests --workers=1
 ```
+
+### 5. Workflow tests
+
+```bash
+npx playwright test tests/WorkflowTests --workers=1
+```
