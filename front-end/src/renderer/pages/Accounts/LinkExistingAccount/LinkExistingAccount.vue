@@ -72,6 +72,7 @@ const handleLinkAccount = async e => {
           :model-value="accountData.accountIdFormatted.value"
           @update:model-value="v => (accountData.accountId.value = v)"
           :filled="true"
+          data-testid="input-existing-account-id"
           data-bs-toggle="tooltip"
           data-bs-placement="right"
           data-bs-custom-class="wide-tooltip"
@@ -83,7 +84,12 @@ const handleLinkAccount = async e => {
         <label class="form-label">Nickname</label>
         <AppInput v-model="nickname" :filled="true" placeholder="Enter nickname" />
       </div>
-      <AppButton color="primary" type="submit" class="mt-5" :disabled="!accountData.isValid.value"
+      <AppButton
+        color="primary"
+        data-testid="button-link-account-id"
+        type="submit"
+        class="mt-5"
+        :disabled="!accountData.isValid.value"
         >Link Account</AppButton
       >
     </form>

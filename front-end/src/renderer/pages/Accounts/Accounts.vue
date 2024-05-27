@@ -211,13 +211,17 @@ onMounted(async () => {
                   })
                 "
               >
-                <span class="text-small text-bold">Create New</span>
+                <span class="text-small text-bold" data-testid="link-create-new-account"
+                  >Create New</span
+                >
               </li>
               <li
                 class="dropdown-item cursor-pointer mt-3"
                 @click="$router.push('accounts/link-existing')"
               >
-                <span class="text-small text-bold">Add Existing</span>
+                <span class="text-small text-bold" data-testid="link-add-existing-account"
+                  >Add Existing</span
+                >
               </li>
             </ul>
           </div>
@@ -256,6 +260,7 @@ onMounted(async () => {
                     :checked="selectedIndexes.includes(index)"
                     @update:checked="handleCheckBoxUpdate($event, index)"
                     name="select-card"
+                    :data-testid="'checkbox-multiple-account-id-' + index"
                     class="cursor-pointer"
                   />
                 </div>
@@ -326,7 +331,11 @@ onMounted(async () => {
                   >
                   <div v-if="!accountData.accountInfo.value?.deleted" class="border-start ps-3">
                     <div class="dropdown">
-                      <AppButton class="min-w-unset" color="borderless" data-bs-toggle="dropdown"
+                      <AppButton
+                        class="min-w-unset"
+                        color="borderless"
+                        data-testid="button-edit-account"
+                        data-bs-toggle="dropdown"
                         ><span class="bi bi-arrow-repeat"></span> Edit</AppButton
                       >
                       <ul class="dropdown-menu mt-3">
@@ -340,7 +349,11 @@ onMounted(async () => {
                             })
                           "
                         >
-                          <span class="text-small text-bold">Delete from Network</span>
+                          <span
+                            class="text-small text-bold"
+                            data-testid="button-delete-from-network"
+                            >Delete from Network</span
+                          >
                         </li>
                         <li
                           class="dropdown-item cursor-pointer mt-3"
@@ -352,7 +365,9 @@ onMounted(async () => {
                             })
                           "
                         >
-                          <span class="text-small text-bold">Update in Network</span>
+                          <span class="text-small text-bold" data-testid="button-update-in-network"
+                            >Update in Network</span
+                          >
                         </li>
                       </ul>
                     </div>
@@ -366,7 +381,7 @@ onMounted(async () => {
                     <p class="text-small text-semi-bold">Account ID</p>
                   </div>
                   <div class="col-7">
-                    <p class="text-small text-semi-bold">
+                    <p class="text-small text-semi-bold" data-testid="p-account-data-account-id">
                       <template
                         v-if="
                           accountData.accoundIdWithChecksum.value &&
@@ -394,7 +409,10 @@ onMounted(async () => {
                     <p class="text-small text-semi-bold">EVM Address</p>
                   </div>
                   <div class="col-7">
-                    <p class="text-small text-secondary overflow-hidden">
+                    <p
+                      class="text-small text-secondary overflow-hidden"
+                      data-testid="p-account-data-evm-address"
+                    >
                       0x{{ accountData.accountInfo.value?.evmAddress || 'None' }}
                     </p>
                   </div>
@@ -402,7 +420,7 @@ onMounted(async () => {
                 <div class="mt-4 row">
                   <div class="col-5"><p class="text-small text-semi-bold">Balance</p></div>
                   <div class="col-7">
-                    <p class="text-small text-semi-bold">
+                    <p class="text-small text-semi-bold" data-testid="p-account-data-balance">
                       {{
                         stringifyHbar(
                           (accountData.accountInfo.value?.balance as Hbar) || new Hbar(0),
@@ -426,10 +444,16 @@ onMounted(async () => {
                       >
                     </template>
                     <template v-else-if="accountData.key.value instanceof PublicKey && true">
-                      <p class="text-secondary text-small overflow-hidden">
+                      <p
+                        class="text-secondary text-small overflow-hidden"
+                        data-testid="p-account-data-key"
+                      >
                         {{ accountData.key.value.toStringRaw() }}
                       </p>
-                      <p class="text-small text-semi-bold text-pink mt-3">
+                      <p
+                        class="text-small text-semi-bold text-pink mt-3"
+                        data-testid="p-account-data-key-type"
+                      >
                         {{ accountData.key.value._key._type }}
                       </p>
                     </template>
@@ -441,7 +465,10 @@ onMounted(async () => {
                     <p class="text-small text-semi-bold">Receiver Sig. Required</p>
                   </div>
                   <div class="col-7">
-                    <p class="text-small text-semi-bold">
+                    <p
+                      class="text-small text-semi-bold"
+                      data-testid="p-account-data-receiver-sig-required"
+                    >
                       {{ accountData.accountInfo.value?.receiverSignatureRequired ? 'Yes' : 'No' }}
                     </p>
                   </div>
@@ -449,7 +476,7 @@ onMounted(async () => {
                 <div class="mt-4 row">
                   <div class="col-5"><p class="text-small text-semi-bold">Memo</p></div>
                   <div class="col-7">
-                    <p class="text-small text-semi-bold">
+                    <p class="text-small text-semi-bold" data-testid="p-account-data-memo">
                       {{ accountData.accountInfo.value?.memo || 'None' }}
                     </p>
                   </div>
@@ -459,7 +486,10 @@ onMounted(async () => {
                     <p class="text-small text-semi-bold">Max. Auto. Association</p>
                   </div>
                   <div class="col-7">
-                    <p class="text-small text-semi-bold">
+                    <p
+                      class="text-small text-semi-bold"
+                      data-testid="p-account-data-max-auto-association"
+                    >
                       {{ accountData.accountInfo.value?.maxAutomaticTokenAssociations }}
                     </p>
                   </div>
@@ -467,7 +497,7 @@ onMounted(async () => {
                 <div class="mt-4 row">
                   <div class="col-5"><p class="text-small text-semi-bold">Ethereum Nonce</p></div>
                   <div class="col-7">
-                    <p class="text-small text-semi-bold">
+                    <p class="text-small text-semi-bold" data-testid="p-account-data-eth-nonce">
                       {{ accountData.accountInfo.value?.ethereumNonce }}
                     </p>
                   </div>
@@ -476,7 +506,7 @@ onMounted(async () => {
                 <div class="row">
                   <div class="col-5"><p class="text-small text-semi-bold">Created At</p></div>
                   <div class="col-7">
-                    <p class="text-small text-semi-bold">
+                    <p class="text-small text-semi-bold" data-testid="p-account-data-created-at">
                       {{
                         accountData.accountInfo.value?.createdTimestamp
                           ? getFormattedDateFromTimestamp(
@@ -490,7 +520,7 @@ onMounted(async () => {
                 <div class="mt-4 row">
                   <div class="col-5"><p class="text-small text-semi-bold">Expires At</p></div>
                   <div class="col-7">
-                    <p class="text-small text-semi-bold">
+                    <p class="text-small text-semi-bold" data-testid="p-account-data-expires-at">
                       {{
                         accountData.accountInfo.value?.expiryTimestamp
                           ? getFormattedDateFromTimestamp(
@@ -506,7 +536,10 @@ onMounted(async () => {
                     <p class="text-small text-semi-bold">Auto Renew Period</p>
                   </div>
                   <div class="col-7">
-                    <p class="text-small text-semi-bold">
+                    <p
+                      class="text-small text-semi-bold"
+                      data-testid="p-account-data-auto-renew-period"
+                    >
                       <span>{{ accountData.accountInfo.value?.autoRenewPeriod }}s</span>
                       <span class="ms-4">{{ accountData.autoRenewPeriodInDays.value }} days</span>
                     </p>
@@ -516,7 +549,7 @@ onMounted(async () => {
                 <div class="row">
                   <div class="col-5"><p class="text-small text-semi-bold">Staked to</p></div>
                   <div class="col-7">
-                    <p class="text-small text-semi-bold">
+                    <p class="text-small text-semi-bold" data-testid="p-account-data-staked-to">
                       {{ accountData.getStakedToString() }}
                     </p>
                   </div>
@@ -524,7 +557,10 @@ onMounted(async () => {
                 <div class="mt-4 row">
                   <div class="col-5"><p class="text-small text-semi-bold">Pending Reward</p></div>
                   <div class="col-7">
-                    <p class="text-small text-semi-bold">
+                    <p
+                      class="text-small text-semi-bold"
+                      data-testid="p-account-data-pending-reward"
+                    >
                       {{ accountData.getFormattedPendingRewards() }}
                     </p>
                   </div>
@@ -532,7 +568,7 @@ onMounted(async () => {
                 <div class="mt-4 row">
                   <div class="col-5"><p class="text-small text-semi-bold">Rewards</p></div>
                   <div class="col-7">
-                    <p class="text-small text-semi-bold">
+                    <p class="text-small text-semi-bold" data-testid="p-account-data-rewards">
                       {{ accountData.accountInfo.value?.declineReward ? 'Declined' : 'Accepted' }}
                     </p>
                   </div>
@@ -576,7 +612,12 @@ onMounted(async () => {
                 <AppButton color="borderless" @click="isUnlinkAccountModalShown = false"
                   >Cancel</AppButton
                 >
-                <AppButton color="danger" @click="handleUnlinkAccount">Unlink</AppButton>
+                <AppButton
+                  color="danger"
+                  @click="handleUnlinkAccount"
+                  data-testid="button-confirm-unlink-account"
+                  >Unlink</AppButton
+                >
               </div>
             </div>
           </AppModal>
