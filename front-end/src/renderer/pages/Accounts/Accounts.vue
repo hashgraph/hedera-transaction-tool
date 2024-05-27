@@ -348,7 +348,11 @@ onMounted(async () => {
                             })
                           "
                         >
-                          <span class="text-small text-bold">Delete from Network</span>
+                          <span
+                            class="text-small text-bold"
+                            data-testid="button-delete-from-network"
+                            >Delete from Network</span
+                          >
                         </li>
                         <li
                           class="dropdown-item cursor-pointer mt-3"
@@ -360,7 +364,9 @@ onMounted(async () => {
                             })
                           "
                         >
-                          <span class="text-small text-bold">Update in Network</span>
+                          <span class="text-small text-bold" data-testid="button-update-in-network"
+                            >Update in Network</span
+                          >
                         </li>
                       </ul>
                     </div>
@@ -605,7 +611,12 @@ onMounted(async () => {
                 <AppButton color="borderless" @click="isUnlinkAccountModalShown = false"
                   >Cancel</AppButton
                 >
-                <AppButton color="danger" @click="handleUnlinkAccount">Unlink</AppButton>
+                <AppButton
+                  color="danger"
+                  @click="handleUnlinkAccount"
+                  data-testid="button-confirm-unlink-account"
+                  >Unlink</AppButton
+                >
               </div>
             </div>
           </AppModal>
