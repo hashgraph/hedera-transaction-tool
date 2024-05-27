@@ -42,6 +42,7 @@ class AccountPage extends BasePage {
 
   // Inputs
   existingAccountIdInputSelector = 'input-existing-account-id';
+  multiSelectCheckboxSelector = 'checkbox-multiple-account-id-';
 
   async clickOnEditButton() {
     await this.clickByTestId(this.editButtonSelector);
@@ -139,10 +140,9 @@ class AccountPage extends BasePage {
     this.unlikedAccounts.push(accountId);
   }
 
-  async unlinkAccounts(accountId) {
+  async unlinkAccounts() {
     await this.waitForElementToBeVisible(this.confirmUnlinkButtonSelector);
     await this.clickByTestId(this.confirmUnlinkButtonSelector);
-    await this.addAccountToUnliked(accountId);
   }
 
   async fillInExistingAccountId(accountId) {
@@ -170,6 +170,13 @@ class AccountPage extends BasePage {
       await this.clickOnRemoveButton();
       await this.unlinkAccounts(newAccountId);
     }
+  }
+
+  async clickOnAccountCheckbox(accountId) {
+    const { delay } = await import('../utils/util.js');
+    await delay(1000);
+    const index = await this.transactionPage.findAccountIndexById(accountId);
+    await this.clickByTestId(this.multiSelectCheckboxSelector + index);
   }
 }
 

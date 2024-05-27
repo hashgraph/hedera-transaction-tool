@@ -79,9 +79,7 @@ test.describe('Workflow tests', () => {
     const keyAddressFromMirrorNode = accountDetails.accounts[0]?.key?.key;
     const keyTypeFromMirrorNode = accountDetails.accounts[0]?.key?._type;
     const normalizedKeyTypeFromMirrorNode =
-      keyTypeFromMirrorNode === 'ECDSA_SECP256K1'
-        ? 'secp256k1'
-        : keyTypeFromMirrorNode.toLowerCase();
+      keyTypeFromMirrorNode === 'ECDSA_SECP256K1' ? 'secp256k1' : keyTypeFromMirrorNode;
     const maxAutoAssociationsFromMirrorNode =
       accountDetails.accounts[0]?.max_automatic_token_associations;
     const ethereumNonceFromMirrorNode = accountDetails.accounts[0]?.ethereum_nonce;
@@ -186,15 +184,23 @@ test.describe('Workflow tests', () => {
   test('Verify user can unlink accounts', async () => {
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
+    await transactionPage.clickOnTransactionsMenuButton();
+    const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password);
     await transactionPage.mirrorGetAccountResponse(accountFromList);
     await transactionPage.clickOnTransactionsMenuButton();
     await accountPage.clickOnAccountsLink();
+    await accountPage.clickOnAccountCheckbox(newAccountId);
 
     await accountPage.clickOnRemoveButton();
-    await accountPage.unlinkAccounts(accountFromList);
+    await accountPage.unlinkAccounts();
+    await accountPage.addAccountToUnliked(newAccountId);
+    await accountPage.addAccountToUnliked(accountFromList);
 
-    const isAccountCardVisible = await transactionPage.isAccountCardVisible(accountFromList);
-    expect(isAccountCardVisible).toBe(false);
+    const isFirstAccountCardVisible = await transactionPage.isAccountCardVisible(accountFromList);
+    expect(isFirstAccountCardVisible).toBe(false);
+
+    const isSecondAccountCardVisible = await transactionPage.isAccountCardVisible(newAccountId);
+    expect(isSecondAccountCardVisible).toBe(false);
   });
 
   test('Verify user can add an existing account', async () => {

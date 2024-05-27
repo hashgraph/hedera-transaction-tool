@@ -351,7 +351,7 @@ class RegistrationPage extends BasePage {
   }
 
   async clickOnUnderstandCheckbox() {
-    await this.clickByTestIdWithIndex(this.understandBackedUpCheckboxSelector);
+    await this.clickByTestId(this.understandBackedUpCheckboxSelector);
   }
 
   async clickOnGenerateButton() {
@@ -399,7 +399,7 @@ class RegistrationPage extends BasePage {
   }
 
   async isUnderstandCheckboxVisible() {
-    return await this.isElementVisibleByIndex(this.understandBackedUpCheckboxSelector);
+    return await this.isElementVisible(this.understandBackedUpCheckboxSelector);
   }
 
   async isGenerateButtonVisible() {

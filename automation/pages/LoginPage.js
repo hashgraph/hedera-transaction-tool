@@ -69,7 +69,7 @@ class LoginPage extends BasePage {
       this.isElementVisible(this.passwordInputSelector),
       this.isElementVisible(this.signInButtonSelector),
       this.isElementVisible(this.resetStateButtonSelector),
-      this.isElementVisibleByIndex(this.keepLoggedInCheckboxSelector),
+      this.isElementVisible(this.keepLoggedInCheckboxSelector),
     ]);
     return checks.every(isTrue => isTrue);
   }
