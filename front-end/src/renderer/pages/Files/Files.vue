@@ -378,6 +378,7 @@ watch(files, newFiles => {
                   <AppCheckBox
                     :checked="selectedIndexes.includes(index)"
                     @update:checked="handleCheckBoxUpdate($event, index)"
+                    :data-testid="'checkbox-multiple-file-id-' + index"
                     name="select-card"
                     class="cursor-pointer"
                   />
