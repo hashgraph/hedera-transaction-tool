@@ -260,6 +260,7 @@ onMounted(async () => {
                     :checked="selectedIndexes.includes(index)"
                     @update:checked="handleCheckBoxUpdate($event, index)"
                     name="select-card"
+                    :data-testid="'checkbox-multiple-account-id-' + index"
                     class="cursor-pointer"
                   />
                 </div>
