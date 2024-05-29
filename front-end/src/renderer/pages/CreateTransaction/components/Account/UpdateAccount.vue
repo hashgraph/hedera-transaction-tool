@@ -259,6 +259,16 @@ watch(
     }
   },
 );
+
+watch(
+  () => newAccountData.acceptStakingRewards,
+  acceptStakingRewards => {
+    if (!acceptStakingRewards) {
+      stakeType.value = 'None';
+    }
+  },
+);
+
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
 </script>
@@ -352,7 +362,12 @@ const columnClass = 'col-4 col-xxxl-3';
         <div class="row mt-6">
           <div class="form-group" :class="[columnClass]">
             <label class="form-label">Staking</label>
-            <select class="form-select is-fill" name="stake_type" @change="handleStakeTypeChange">
+            <select
+              class="form-select is-fill"
+              name="stake_type"
+              :disabled="!newAccountData.acceptStakingRewards"
+              @change="handleStakeTypeChange"
+            >
               <template v-for="stakeEntity in ['None', 'Account', 'Node']" :key="stakeEntity">
                 <option :value="stakeEntity" :selected="stakeType === stakeEntity">
                   {{ stakeEntity }}
