@@ -45,7 +45,7 @@ const handleStartNicknameEdit = () => {
   setTimeout(() => {
     if (nicknameInputRef.value) {
       if (nicknameInputRef.value.inputRef) {
-        nicknameInputRef.value.inputRef.value = props.contact.nickname || props.contact.user.email;
+        nicknameInputRef.value.inputRef.value = props.contact.nickname || '';
       }
       nicknameInputRef.value?.inputRef?.focus();
     }
@@ -71,6 +71,11 @@ const handleChangeNickname = async () => {
     await updateContact(props.contact.nicknameId, user.personal.id, contactData);
   } else {
     await addContact(contactData);
+  }
+
+  const contact = contacts.contacts.find(c => c.user.id === props.contact.user.id);
+  if (contact) {
+    contact.nickname = contactData.nickname;
   }
 
   await contacts.fetch();

@@ -34,8 +34,6 @@ const useContactsStore = defineStore('contacts', () => {
 
   /* Actions */
   async function fetch() {
-    contacts.value = [];
-
     if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
 
     if (isLoggedInOrganization(user.selectedOrganization)) {
