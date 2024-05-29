@@ -48,7 +48,7 @@ spec:
                   name: postgres-secret
                   key: password
             - name: POSTGRES_SYNCHRONIZE
-              value: 'true'
+              value: 'false'
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
@@ -65,28 +65,10 @@ spec:
               value: '20'
             - name: REDIS_URL
               value: 'redis://redis-master:6379'
-            - name: SSL_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: web-ssl
-                  key: tls.key
-            - name: SSL_CERT
-              valueFrom:
-                secretKeyRef:
-                  name: web-ssl
-                  key: tls.crt
             - name: NODE_ENV
               value: 'production'
           ports:
             - containerPort: 3000
-          volumeMounts:
-            - name: secrets
-              mountPath: "/usr/src/app/dist/apps/api/secrets"
-              readOnly: true
-      volumes:
-        - name: secrets
-          secret:
-            secretName: web-ssl
 ---
 apiVersion: v1
 kind: Service
