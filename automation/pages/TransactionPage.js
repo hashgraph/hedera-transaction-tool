@@ -9,7 +9,6 @@ class TransactionPage extends BasePage {
     this.window = window;
     this.generatedPublicKeys = []; // Store generated public keys
     this.generatedAccounts = []; // Store generated accounts from create account transaction
-    this.generatedFiles = {}; // Store generated files from create file transaction with key-value pairs
   }
 
   /* Selectors */
@@ -33,21 +32,6 @@ class TransactionPage extends BasePage {
   allowanceOwnerAccountSelector = 'input-owner-account';
   allowanceSpenderAccountSelector = 'input-spender-account';
   allowanceAmountSelector = 'input-allowance-amount';
-  fileContentTextFieldSelector = 'textarea-file-content';
-  fileIdInputForReadSelector = 'input-file-id-for-read';
-  fileContentReadTextFieldSelector = 'text-area-read-file-content';
-  signPasswordForReadInputFieldSelector = 'input-password-for-sign-query';
-  publicKeyInputSelector = 'input-public-key';
-  fileIdUpdateInputSelector = 'input-file-id-for-update';
-  fileContentUpdateTextFieldSelector = 'textarea-update-file-content';
-  signPasswordForFileUpdateInputSelector = 'input-password-sign-file-update';
-  fileIdInputForAppendSelector = 'input-file-id-append';
-  fileContentAppendTextFieldSelector = 'textarea-file-content-for-append';
-  fileCreateTransactionMemoInputSelector = 'input-transaction-memo-for-file-create';
-  fileCreateMemoInputSelector = 'input-expiration-time-for-file';
-  fileCreateExpirationDateInputSelector = 'input-expiration-time-for-file';
-  fileCreateNameInputSelector = 'input-file-name-for-file-create';
-  fileCreateDescriptionInputSelector = 'input-file-description-for-file-create';
 
   //Buttons
   transactionsMenuButtonSelector = 'button-menu-transactions';
@@ -58,11 +42,6 @@ class TransactionPage extends BasePage {
   transferTokensSublinkSelector = 'menu-sublink-2';
   deleteAccountSublinkSelector = 'menu-sublink-3';
   allowanceSublinkSelector = 'menu-sublink-4';
-  fileServiceLinkSelector = 'menu-link-1';
-  createFileSublinkSelector = 'menu-sublink-0';
-  updateFileSublinkSelector = 'menu-sublink-1';
-  readFileSublinkSelector = 'menu-sublink-2';
-  appendFileSublinkSelector = 'menu-sublink-3';
   saveDraftButtonSelector = 'button-save-draft';
   signAndSubmitButtonSelector = 'button-sign-and-submit';
   signAndSubmitDeleteButtonSelector = 'button-sign-and-submit-delete';
@@ -88,18 +67,9 @@ class TransactionPage extends BasePage {
   addTransferToButtonSelector = 'button-add-transfer-to';
   signAndSubmitTransferSelector = 'button-sign-and-submit-transfer';
   signAndSubmitAllowanceSelector = 'button-sign-and-submit-allowance';
-  signAndSubmitFileCreateSelector = 'button-sign-and-submit-file-create';
-  signAndReadFileButtonSelector = 'button-sign-and-read-file';
-  signReadQueryButtonSelector = 'button-sign-read-query';
-  signAndSubmitUpdateFileSelector = 'button-sign-and-submit-update-file';
-  signFileUpdateButtonSelector = 'button-sign-file-update';
-  continueSignFileUpdateButtonSelector = 'button-continue-sign-file-update-transaction';
-  closeCompletedTxFileButtonSelector = 'button-close-file-update';
-  signAndSubmitFileAppendButtonSelector = 'button-sign-and-submit-file-append';
 
   //Other
   successCheckMarkIconSelector = 'icon-success-checkmark';
-  successCheckMarkIconForFileSelector = 'icon-file-update-checkmark';
   modalTransactionSuccessSelector = 'modal-transaction-success';
   confirmTransactionModalSelector = 'modal-confirm-transaction';
   spanCreateNewComplexKeyButtonSelector = 'span-create-new-complex-key';
@@ -109,7 +79,6 @@ class TransactionPage extends BasePage {
   textTypeTransactionSelector = 'p-type-transaction';
   textTransactionIdSelector = 'p-transaction-id';
   linkTransactionIdSelector = 'a-transaction-id';
-  linkTransactionIdForFileSelector = 'a-transaction-id-for-file-update';
   textMaxTxFeeSelector = 'p-max-tx-fee';
   newlyCreatedTransactionIdSelector = 'a-transaction-id';
   newlyCreatedAccountIdSelector = 'p-new-crated-account-id';
@@ -144,21 +113,6 @@ class TransactionPage extends BasePage {
     ]);
 
     // Return true if all checks pass
-    return checks.every(isTrue => isTrue);
-  }
-
-  async verifyFileCreateTransactionElements() {
-    const checks = await Promise.all([
-      this.isElementVisible(this.signAndSubmitFileCreateSelector),
-      this.isElementVisible(this.fileContentTextFieldSelector),
-      this.isElementVisible(this.fileCreateTransactionMemoInputSelector),
-      this.isElementVisible(this.fileCreateMemoInputSelector),
-      this.isElementVisible(this.fileCreateExpirationDateInputSelector),
-      this.isElementVisible(this.fileCreateNameInputSelector),
-      this.isElementVisible(this.fileCreateDescriptionInputSelector),
-      this.isElementVisible(this.fileContentTextFieldSelector),
-      this.isElementVisible(this.signAndSubmitFileCreateSelector),
-    ]);
     return checks.every(isTrue => isTrue);
   }
 
@@ -249,22 +203,6 @@ class TransactionPage extends BasePage {
     );
   }
 
-  async clickOnMenuLink(linkSelector, activeClass, transactionType) {
-    console.log(`Attempting to click on ${transactionType} menu link`);
-    const maxAttempts = 10; // Maximum number of attempts to find the correct element
-    for (let index = 0; index < maxAttempts; index++) {
-      try {
-        await this.clickByTestIdWithIndex(linkSelector, index);
-        return;
-      } catch (error) {
-        console.log(
-          `Attempt ${index + 1}: Failed to find or click on the correct element, retrying...`,
-        );
-      }
-    }
-    throw new Error(`Failed to activate the ${transactionType} menu link after multiple attempts`);
-  }
-
   async clickOnCreateAccountTransaction() {
     await this.clickOnTransactionLink(
       this.createAccountSublinkSelector,
@@ -305,38 +243,6 @@ class TransactionPage extends BasePage {
     );
   }
 
-  async clickOnFileCreateTransaction() {
-    await this.clickOnTransactionLink(
-      this.createFileSublinkSelector,
-      this.signAndSubmitFileCreateSelector,
-      'Create File',
-    );
-  }
-
-  async clickOnReadCreateTransaction() {
-    await this.clickOnTransactionLink(
-      this.readFileSublinkSelector,
-      this.signAndReadFileButtonSelector,
-      'Read File',
-    );
-  }
-
-  async clickOnUpdateFileSublink() {
-    await this.clickOnTransactionLink(
-      this.updateFileSublinkSelector,
-      this.signAndSubmitUpdateFileSelector,
-      'Update File',
-    );
-  }
-
-  async clickOnAppendFileSublink() {
-    await this.clickOnTransactionLink(
-      this.appendFileSublinkSelector,
-      this.signAndSubmitFileAppendButtonSelector,
-      'Append File',
-    );
-  }
-
   async verifyTransactionExists(transactionId, transactionType) {
     const query = `
         SELECT COUNT(*) AS count
@@ -363,21 +269,6 @@ class TransactionPage extends BasePage {
       return row ? row.count > 0 : false;
     } catch (error) {
       console.error('Error verifying account:', error);
-      return false;
-    }
-  }
-
-  async verifyFileExists(fileId) {
-    const query = `
-        SELECT COUNT(*) AS count
-        FROM HederaFile
-        WHERE file_id = ?`;
-
-    try {
-      const row = await queryDatabase(query, [fileId]);
-      return row ? row.count > 0 : false;
-    } catch (error) {
-      console.error('Error verifying file:', error);
       return false;
     }
   }
@@ -482,12 +373,6 @@ class TransactionPage extends BasePage {
     }
   }
 
-  async ensureFileExists(text, password) {
-    if (await this.isGeneratedFilesEmpty()) {
-      await this.createFile(text, password);
-    }
-  }
-
   async createNewAccount(password, options = {}) {
     const {
       isComplex = false,
@@ -581,79 +466,6 @@ class TransactionPage extends BasePage {
     return transactionId;
   }
 
-  async createFile(fileContent, password) {
-    await this.clickOnTransactionsMenuButton();
-    await this.clickOnCreateNewTransactionButton();
-    await this.clickOnFileServiceLink();
-    await this.clickOnFileCreateTransaction();
-    const publicKey = await this.getPublicKeyText();
-    await this.fillInFileContent(fileContent);
-    await this.clickOnSignAndSubmitFileCreateButton();
-    await this.clickSignTransactionButton();
-    await this.fillInPassword(password);
-    await this.clickOnPasswordContinue();
-    await this.waitForSuccessModalToAppear();
-    const transactionId = await this.getTransactionIdText();
-    const transactionDetails = await this.mirrorGetTransactionResponse(transactionId);
-    const entityId = transactionDetails.transactions[0].entity_id;
-    await this.addGeneratedFile(entityId, fileContent, publicKey);
-    await this.clickOnCloseButtonForCompletedTransaction();
-    return transactionId;
-  }
-
-  async readFile(fileId, password) {
-    await this.clickOnTransactionsMenuButton();
-    await this.clickOnCreateNewTransactionButton();
-    await this.clickOnFileServiceLink();
-    await this.clickOnReadCreateTransaction();
-    await this.fillInFileIdForRead(fileId);
-    await this.clickOnSignAndReadFileButton();
-    await this.fillInPasswordForRead(password);
-    await this.clickOnSignReadQueryButton();
-    await this.waitForElementToDisappear(this.toastMessageSelector);
-    return await this.readFileContentFromTextArea();
-  }
-
-  async updateFile(fileId, fileContent, password) {
-    await this.clickOnTransactionsMenuButton();
-    await this.clickOnCreateNewTransactionButton();
-    await this.clickOnFileServiceLink();
-    await this.clickOnUpdateFileSublink();
-    await this.fillInFileIdForUpdate(fileId);
-    const publicKey = await this.getPublicKeyFromFile(fileId);
-    await this.fillInPublicKeyForFile(publicKey);
-    await this.fillInFileContentForUpdate(fileContent);
-    await this.clickOnSignAndSubmitUpdateFileButton();
-    await this.clickOnSignFileButton();
-    await this.fillInPasswordForFile(password);
-    await this.clickOnContinueSignFileButton();
-    await this.waitForSuccessModalForFileToAppear();
-    const transactionId = await this.getTransactionIdTextForFiles();
-    await this.clickOnCloseButtonForCompletedFileTransaction();
-    await this.updateFileText(fileId, fileContent);
-    return transactionId;
-  }
-
-  async appendFile(fileId, fileContent, password) {
-    await this.clickOnTransactionsMenuButton();
-    await this.clickOnCreateNewTransactionButton();
-    await this.clickOnFileServiceLink();
-    await this.clickOnAppendFileSublink();
-    await this.fillInFileIdForAppend(fileId);
-    const publicKey = await this.getPublicKeyFromFile(fileId);
-    await this.fillInPublicKeyForFile(publicKey);
-    await this.fillInFileContentForAppend(fileContent);
-    await this.clickOnSignAndSubmitFileAppendButton();
-    await this.clickOnSignFileButton();
-    await this.fillInPasswordForFile(password);
-    await this.clickOnContinueSignFileButton();
-    await this.waitForSuccessModalForFileToAppear();
-    const transactionId = await this.getTransactionIdTextForFiles();
-    await this.clickOnCloseButtonForCompletedFileTransaction();
-    await this.appendToFileText(fileId, fileContent);
-    return transactionId;
-  }
-
   async approveAllowance(spenderAccountId, amount, password, isTestNegative = false) {
     await this.clickOnTransactionsMenuButton();
     await this.clickOnCreateNewTransactionButton();
@@ -716,17 +528,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInInitialFunds(amount) {
-    const { delay } = await import('../utils/util.js');
-    const getFilledBalance = async () =>
-      this.getTextFromInputFieldByTestId(this.initialBalanceInputSelector);
-
-    let filledBalance = await getFilledBalance();
-
-    while (filledBalance !== amount) {
-      await this.fillByTestId(this.initialBalanceInputSelector, amount);
-      await delay(1000);
-      filledBalance = await getFilledBalance();
-    }
+    await this.fillByTestId(this.initialBalanceInputSelector, amount);
   }
 
   async fillInMaxAccountAssociations(amount) {
@@ -769,10 +571,6 @@ class TransactionPage extends BasePage {
     await this.clickByTestId(this.closeCompletedTxButtonSelector);
   }
 
-  async clickOnCloseButtonForCompletedFileTransaction() {
-    await this.clickByTestId(this.closeCompletedTxFileButtonSelector);
-  }
-
   async fillInPassword(password) {
     await this.fillByTestId(this.passwordSignTransactionInputSelector, password);
   }
@@ -785,20 +583,12 @@ class TransactionPage extends BasePage {
     await this.waitForElementToBeVisible(this.successCheckMarkIconSelector, 25000);
   }
 
-  async waitForSuccessModalForFileToAppear() {
-    await this.waitForElementToBeVisible(this.successCheckMarkIconForFileSelector, 25000);
-  }
-
   async getNewAccountIdText() {
     return await this.getTextByTestId(this.newlyCreatedAccountIdSelector);
   }
 
   async getTransactionIdText() {
     return await this.getTextByTestId(this.linkTransactionIdSelector);
-  }
-
-  async getTransactionIdTextForFiles() {
-    return await this.getTextByTestId(this.linkTransactionIdForFileSelector);
   }
 
   async getNewTransactionIdText() {
@@ -845,7 +635,7 @@ class TransactionPage extends BasePage {
    * @param {string} buttonSelector - The test ID selector for the button to check.
    */
   async fillInAccountId(accountId, inputSelector, buttonSelector) {
-    const maxRetries = 100; // Maximum number of retries before giving up
+    const maxRetries = 50; // Maximum number of retries before giving up
     let attempt = 0;
 
     while (attempt < maxRetries) {
@@ -926,49 +716,6 @@ class TransactionPage extends BasePage {
 
   async removeAccountFromList(accountId) {
     this.generatedAccounts = this.generatedAccounts.filter(id => id !== accountId);
-  }
-
-  async addGeneratedFile(fileId, text, publicKey) {
-    this.generatedFiles[fileId] = { text, publicKey };
-  }
-
-  async getTextFromCache(fileId) {
-    const file = this.generatedFiles[fileId];
-    return file ? file.text : null;
-  }
-
-  async getPublicKeyFromFile(fileId) {
-    const file = this.generatedFiles[fileId];
-    return file ? file.publicKey : null;
-  }
-
-  async listGeneratedFileKeys() {
-    return Object.keys(this.generatedFiles);
-  }
-
-  async getFirsFileIdFromCache() {
-    const keys = await this.listGeneratedFileKeys();
-    return keys.length > 0 ? keys[0] : null;
-  }
-
-  async isGeneratedFilesEmpty() {
-    return Object.keys(this.generatedFiles).length === 0;
-  }
-
-  async updateFileText(fileId, newText) {
-    if (this.generatedFiles[fileId]) {
-      this.generatedFiles[fileId].text = newText;
-    } else {
-      throw new Error(`File with ID ${fileId} does not exist.`);
-    }
-  }
-
-  async appendToFileText(fileId, textToAppend) {
-    if (this.generatedFiles[fileId]) {
-      this.generatedFiles[fileId].text += textToAppend;
-    } else {
-      throw new Error(`File with ID ${fileId} does not exist.`);
-    }
   }
 
   async isAccountsListEmpty() {
@@ -1062,81 +809,6 @@ class TransactionPage extends BasePage {
   async getPrefilledAccountIdInDeletePage() {
     return await this.getTextFromInputFieldByTestId(this.deletedAccountInputSelector);
   }
-
-  async fillInFileContent(fileContent) {
-    await this.fillByTestId(this.fileContentTextFieldSelector, fileContent);
-  }
-
-  async clickOnSignAndSubmitFileCreateButton() {
-    await this.clickByTestId(this.signAndSubmitFileCreateSelector);
-  }
-
-  async clickOnFileServiceLink() {
-    await this.clickOnMenuLink(this.fileServiceLinkSelector, 'active', 'File Service');
-  }
-
-  async fillInFileIdForRead(fileId) {
-    await this.fillByTestId(this.fileIdInputForReadSelector, fileId);
-  }
-
-  async readFileContentFromTextArea() {
-    return await this.getTextFromInputFieldByTestId(this.fileContentReadTextFieldSelector);
-  }
-
-  async clickOnSignAndReadFileButton() {
-    await this.clickByTestId(this.signAndReadFileButtonSelector);
-  }
-
-  async fillInPasswordForRead(password) {
-    await this.fillByTestId(this.signPasswordForReadInputFieldSelector, password);
-  }
-
-  async clickOnSignReadQueryButton() {
-    await this.clickByTestId(this.signReadQueryButtonSelector);
-  }
-
-  async getPublicKeyText() {
-    return await this.getTextFromInputFieldByTestIdWithIndex(this.publicKeyInputSelector);
-  }
-
-  async fillInFileIdForUpdate(fileId) {
-    await this.fillByTestId(this.fileIdUpdateInputSelector, fileId);
-  }
-
-  async fillInPublicKeyForFile(publicKey) {
-    await this.fillByTestIdWithIndex(this.publicKeyInputSelector, publicKey);
-  }
-
-  async fillInFileContentForUpdate(fileContent) {
-    await this.fillByTestId(this.fileContentUpdateTextFieldSelector, fileContent);
-  }
-
-  async clickOnSignAndSubmitUpdateFileButton() {
-    await this.clickByTestId(this.signAndSubmitUpdateFileSelector);
-  }
-
-  async clickOnSignFileButton() {
-    await this.clickByTestId(this.signFileUpdateButtonSelector);
-  }
-
-  async fillInPasswordForFile(password) {
-    await this.fillByTestId(this.signPasswordForFileUpdateInputSelector, password);
-  }
-
-  async clickOnContinueSignFileButton() {
-    await this.clickByTestId(this.continueSignFileUpdateButtonSelector);
-  }
-
-  async clickOnSignAndSubmitFileAppendButton() {
-    await this.clickByTestId(this.signAndSubmitFileAppendButtonSelector);
-  }
-
-  async fillInFileIdForAppend(fileId) {
-    await this.fillByTestId(this.fileIdInputForAppendSelector, fileId);
-  }
-
-  async fillInFileContentForAppend(fileContent) {
-    await this.fillByTestId(this.fileContentAppendTextFieldSelector, fileContent);
-  }
 }
+
 module.exports = TransactionPage;
