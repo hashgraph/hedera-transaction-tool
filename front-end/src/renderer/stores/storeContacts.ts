@@ -1,13 +1,14 @@
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
+
+import { Contact } from '@main/shared/interfaces';
 
 import useUserStore from './storeUser';
 
 import { getUserKeys, getUsers } from '@renderer/services/organization';
+import { getOrganizationContacts } from '@renderer/services/contactsService';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
-import { getOrganizationContacts } from '@renderer/services/contactsService';
-import { Contact } from '@main/shared/interfaces';
 
 const useContactsStore = defineStore('contacts', () => {
   const user = useUserStore();
@@ -15,10 +16,24 @@ const useContactsStore = defineStore('contacts', () => {
   /* State */
   const contacts = ref<Contact[]>([]);
 
+  /* Computed */
+  const publicKeys = computed(() => {
+    const publicKeys: { publicKey; nickname: string }[] = [];
+
+    contacts.value.forEach(c => {
+      c.userKeys.forEach(k => {
+        publicKeys.push({
+          publicKey: k.publicKey,
+          nickname: c.nickname,
+        });
+      });
+    });
+
+    return publicKeys;
+  });
+
   /* Actions */
   async function fetch() {
-    contacts.value = [];
-
     if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
 
     if (isLoggedInOrganization(user.selectedOrganization)) {
@@ -62,6 +77,7 @@ const useContactsStore = defineStore('contacts', () => {
 
   return {
     contacts,
+    publicKeys,
     fetch,
     getNickname,
     getContact,
