@@ -716,7 +716,17 @@ class TransactionPage extends BasePage {
   }
 
   async fillInInitialFunds(amount) {
-    await this.fillByTestId(this.initialBalanceInputSelector, amount);
+    const { delay } = await import('../utils/util.js');
+    const getFilledBalance = async () =>
+      this.getTextFromInputFieldByTestId(this.initialBalanceInputSelector);
+
+    let filledBalance = await getFilledBalance();
+
+    while (filledBalance !== amount) {
+      await this.fillByTestId(this.initialBalanceInputSelector, amount);
+      await delay(1000);
+      filledBalance = await getFilledBalance();
+    }
   }
 
   async fillInMaxAccountAssociations(amount) {
@@ -835,7 +845,7 @@ class TransactionPage extends BasePage {
    * @param {string} buttonSelector - The test ID selector for the button to check.
    */
   async fillInAccountId(accountId, inputSelector, buttonSelector) {
-    const maxRetries = 50; // Maximum number of retries before giving up
+    const maxRetries = 100; // Maximum number of retries before giving up
     let attempt = 0;
 
     while (attempt < maxRetries) {

@@ -388,11 +388,11 @@ test.describe('Transaction tests', () => {
   test('Verify user can execute file read tx', async () => {
     await transactionPage.ensureFileExists('test', globalCredentials.password);
     const fileId = await transactionPage.getFirsFileIdFromCache();
-    const textFromList = await transactionPage.getTextFromCache(fileId);
+    const textFromCache = await transactionPage.getTextFromCache(fileId);
 
     const readContent = await transactionPage.readFile(fileId, globalCredentials.password);
 
-    expect(readContent).toBe(textFromList);
+    expect(readContent).toBe(textFromCache);
   });
 
   test('Verify user can execute file update tx', async () => {
@@ -413,8 +413,8 @@ test.describe('Transaction tests', () => {
 
     //Verify file content is updated
     const readContent = await transactionPage.readFile(fileId, globalCredentials.password);
-    const textFromList = await transactionPage.getTextFromCache(fileId);
-    expect(readContent).toBe(textFromList);
+    const textFromCache = await transactionPage.getTextFromCache(fileId);
+    expect(readContent).toBe(textFromCache);
   });
 
   test('Verify user can execute file append tx', async () => {
@@ -435,7 +435,7 @@ test.describe('Transaction tests', () => {
 
     //Verify file content is appended
     const readContent = await transactionPage.readFile(fileId, globalCredentials.password);
-    const textFromList = await transactionPage.getTextFromCache(fileId);
-    expect(readContent).toBe(textFromList);
+    const textFromCache = await transactionPage.getTextFromCache(fileId);
+    expect(readContent).toBe(textFromCache);
   });
 });
