@@ -170,7 +170,7 @@ const columnClass = 'col-4 col-xxxl-3';
       <TransactionHeaderControls heading-text="Read File Query">
         <template #buttons>
           <AppButton color="primary" type="submit" :disabled="!fileId || !payerData.isValid.value">
-            <span class="bi bi-send"></span>
+            <span class="bi bi-send" data-testid="button-sign-and-read-file"></span>
             Sign & Read</AppButton
           >
         </template>
@@ -215,7 +215,12 @@ const columnClass = 'col-4 col-xxxl-3';
         <div class="row">
           <div class="form-group" :class="[columnClass]">
             <label class="form-label">File ID <span class="text-danger">*</span></label>
-            <AppInput v-model="fileId" :filled="true" placeholder="Enter File ID" />
+            <AppInput
+              v-model="fileId"
+              :filled="true"
+              placeholder="Enter File ID"
+              data-testid="input-file-id-for-read"
+            />
           </div>
         </div>
 
@@ -229,6 +234,7 @@ const columnClass = 'col-4 col-xxxl-3';
             </div>
             <textarea
               v-model="content"
+              data-testid="text-area-read-file-content"
               class="form-control text-code is-fill py-3"
               rows="10"
               readonly
@@ -249,7 +255,13 @@ const columnClass = 'col-4 col-xxxl-3';
         <form @submit="handleRead">
           <h3 class="text-center text-title text-bold mt-3">Enter your password</h3>
           <div class="form-group mt-4">
-            <AppInput v-model="userPassword" :filled="true" size="small" type="password" />
+            <AppInput
+              v-model="userPassword"
+              :filled="true"
+              data-testid="input-password-for-sign-query"
+              size="small"
+              type="password"
+            />
           </div>
           <hr class="separator my-5" />
 
@@ -259,6 +271,7 @@ const columnClass = 'col-4 col-xxxl-3';
               :disabled="userPassword.length === 0 || isLoading"
               color="primary"
               type="submit"
+              data-testid="button-sign-read-query"
               >Sign Query</AppButton
             >
           </div>

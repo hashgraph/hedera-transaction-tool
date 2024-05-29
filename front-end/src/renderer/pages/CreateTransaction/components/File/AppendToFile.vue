@@ -195,6 +195,7 @@ const columnClass = 'col-4 col-xxxl-3';
           <AppButton
             color="primary"
             type="submit"
+            data-testid="button-sign-and-submit-file-append"
             :disabled="!ownerKey || !payerData.isValid.value || !fileId"
           >
             <span class="bi bi-send"></span>
@@ -229,7 +230,12 @@ const columnClass = 'col-4 col-xxxl-3';
         <div class="row">
           <div class="form-group" :class="[columnClass]">
             <label class="form-label">File ID <span class="text-danger">*</span></label>
-            <AppInput v-model="fileId" :filled="true" placeholder="Enter File ID" />
+            <AppInput
+              v-model="fileId"
+              data-testid="input-file-id-append"
+              :filled="true"
+              placeholder="Enter File ID"
+            />
           </div>
         </div>
 
@@ -287,6 +293,7 @@ const columnClass = 'col-4 col-xxxl-3';
             <label class="form-label">File Contents</label>
             <textarea
               v-model="content"
+              data-testid="textarea-file-content-for-append"
               :disabled="Boolean(fileBuffer)"
               class="form-control is-fill py-3"
               rows="10"

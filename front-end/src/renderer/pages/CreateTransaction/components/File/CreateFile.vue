@@ -229,6 +229,7 @@ watch(payerData.isValid, isValid => {
           <AppButton
             color="primary"
             type="submit"
+            data-testid="button-sign-and-submit-file-create"
             :disabled="!ownerKey || !payerData.isValid.value"
           >
             <span class="bi bi-send"></span>
@@ -253,6 +254,7 @@ watch(payerData.isValid, isValid => {
             :filled="true"
             maxlength="100"
             placeholder="Enter Transaction Memo"
+            data-testid="input-transaction-memo-for-file-create"
           />
         </div>
       </div>
@@ -272,13 +274,14 @@ watch(payerData.isValid, isValid => {
 
         <div class="row mt-6">
           <div class="form-group col-8 col-xxxl-6">
-            <label class="form-label">Memo</label>
+            <label class="form-label">File Memo</label>
             <AppInput
               v-model="memo"
               type="text"
               :filled="true"
+              data-testid="input-memo-for-file-create"
               maxlength="100"
-              placeholder="Enter memo"
+              placeholder="Enter file memo"
             />
           </div>
         </div>
@@ -288,6 +291,7 @@ watch(payerData.isValid, isValid => {
             <label class="form-label">Expiration Time</label>
             <DatePicker
               v-model="expirationTimestamp"
+              data-testid="input-expiration-time-for-file"
               placeholder="Select Expiration Time"
               :clearable="false"
               :auto-apply="true"
@@ -330,7 +334,12 @@ watch(payerData.isValid, isValid => {
         <div class="row mt-6">
           <div class="form-group col-12 col-xl-8">
             <label class="form-label">File Contents</label>
-            <textarea v-model="content" class="form-control is-fill" rows="10"></textarea>
+            <textarea
+              v-model="content"
+              class="form-control is-fill"
+              rows="10"
+              data-testid="textarea-file-content"
+            ></textarea>
           </div>
         </div>
 
@@ -339,7 +348,12 @@ watch(payerData.isValid, isValid => {
             <label class="form-label">Name</label>
 
             <div class="">
-              <AppInput v-model="fileName" :filled="true" placeholder="Enter File Name" />
+              <AppInput
+                v-model="fileName"
+                :filled="true"
+                data-testid="input-file-name-for-file-create"
+                placeholder="Enter File Name"
+              />
             </div>
           </div>
         </div>
@@ -351,6 +365,7 @@ watch(payerData.isValid, isValid => {
               v-model="description"
               class="form-control is-fill"
               rows="5"
+              data-testid="input-file-description-for-file-create"
               placeholder="Enter File Description"
             ></textarea>
           </div>

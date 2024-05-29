@@ -37,7 +37,11 @@ const useNetworkStore = defineStore('network', () => {
       case Network.PREVIEWNET:
         return Client.forPreviewnet();
       case Network.LOCAL_NODE:
-        return Client.forLocalNode();
+        return Client.forNetwork({
+          '127.0.0.1:50211': '0.0.3',
+        })
+          .setMirrorNetwork('127.0.0.1:5600')
+          .setLedgerId('3');
       case Network.CUSTOM:
         if (customNetworkSettings.value) {
           return Client.forNetwork(customNetworkSettings.value.nodeAccountIds).setMirrorNetwork(
