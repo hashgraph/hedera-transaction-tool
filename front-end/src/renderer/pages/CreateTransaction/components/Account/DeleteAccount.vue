@@ -205,6 +205,18 @@ const columnClass = 'col-4 col-xxxl-3';
         v-model:max-transaction-fee="maxTransactionFee as Hbar"
       />
 
+      <div class="row mt-6">
+        <div class="form-group col-8 col-xxxl-6">
+          <label class="form-label">Transaction Memo</label>
+          <AppInput
+            v-model="transactionMemo"
+            :filled="true"
+            maxlength="100"
+            placeholder="Enter Transaction Memo"
+          />
+        </div>
+      </div>
+
       <hr class="separator my-5" />
 
       <div class="fill-remaining">
@@ -287,18 +299,6 @@ const columnClass = 'col-4 col-xxxl-3';
           >
             Account is already deleted!
           </p>
-        </div>
-
-        <div class="row mt-6">
-          <div class="form-group col-8 col-xxxl-6">
-            <label class="form-label">Transaction Memo</label>
-            <AppInput
-              v-model="transactionMemo"
-              :filled="true"
-              maxlength="100"
-              placeholder="Enter Transaction Memo"
-            />
-          </div>
         </div>
 
         <div v-if="isLoggedInOrganization(user.selectedOrganization)" class="row mt-6">
