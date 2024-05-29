@@ -183,7 +183,7 @@ watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) =
         <div class="mt-5">
           <AppPublicKeyInput
             ref="publicKeyInputRef"
-            data-testid="input_public_key"
+            data-testid="input-public-key"
             :filled="true"
             :label="
               modelKey instanceof PublicKey

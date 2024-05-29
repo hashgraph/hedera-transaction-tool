@@ -641,7 +641,9 @@ defineExpose({
             <AppButton color="borderless" type="button" @click="isConfirmShown = false"
               >Cancel</AppButton
             >
-            <AppButton color="primary" type="submit">Sign</AppButton>
+            <AppButton color="primary" type="submit" data-testid="button-sign-file-update"
+              >Sign</AppButton
+            >
           </div>
         </form>
       </div>
@@ -664,7 +666,13 @@ defineExpose({
           <h3 class="text-center text-title text-bold">Enter your password</h3>
           <div class="form-group mt-5 mb-4">
             <label class="form-label">Password</label>
-            <AppInput size="small" v-model="userPassword" type="password" :filled="true" />
+            <AppInput
+              size="small"
+              data-testid="input-password-sign-file-update"
+              v-model="userPassword"
+              type="password"
+              :filled="true"
+            />
           </div>
           <p v-if="chunksAmount" class="text-small mb-3">Estimated chunks: {{ chunksAmount }}</p>
 
@@ -677,6 +685,7 @@ defineExpose({
             <AppButton
               color="primary"
               :loading="isSigning"
+              data-testid="button-continue-sign-file-update-transaction"
               :disabled="userPassword.length === 0 || isSigning"
               type="submit"
               >Continue</AppButton
@@ -746,7 +755,7 @@ defineExpose({
           <i class="bi bi-x-lg cursor-pointer" @click="isExecutedModalShown = false"></i>
         </div>
         <div class="text-center">
-          <i class="bi bi-check-lg large-icon"></i>
+          <i class="bi bi-check-lg large-icon" data-testid="icon-file-update-checkmark"></i>
         </div>
         <h3 class="text-center text-title text-bold mt-5"><slot name="successHeading"></slot></h3>
         <p
@@ -755,6 +764,7 @@ defineExpose({
           <span class="text-bold text-secondary">Transaction ID:</span>
           <a
             class="link-primary cursor-pointer"
+            data-testid="a-transaction-id-for-file-update"
             @click="
               network.network !== 'custom' &&
                 openExternal(`
@@ -770,6 +780,7 @@ defineExpose({
         <div class="d-grid">
           <AppButton
             color="primary"
+            data-testid="button-close-file-update"
             @click="
               () => {
                 isExecutedModalShown = false;
