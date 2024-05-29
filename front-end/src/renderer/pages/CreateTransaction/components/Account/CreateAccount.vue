@@ -245,6 +245,15 @@ watch(payerData.isValid, isValid => {
   }
 });
 
+watch(
+  () => accountData.acceptStakingRewards,
+  acceptStakingRewards => {
+    if (!acceptStakingRewards) {
+      stakeType.value = 'None';
+    }
+  },
+);
+
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
 </script>
@@ -327,6 +336,7 @@ const columnClass = 'col-4 col-xxxl-3';
           <div class="form-group" :class="[columnClass]">
             <label class="form-label">Staking</label>
             <select
+              :disabled="!accountData.acceptStakingRewards"
               class="form-select is-fill"
               data-testid="dropdown-staking-account"
               name="stake_type"
