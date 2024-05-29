@@ -66,7 +66,7 @@ watch(
   <div>
     <select
       ref="selectElRef"
-      class="form-select is-fill lh-base"
+      class="form-select with-border is-fill lh-base"
       :value="selectedMode"
       @change="handleUserModeChange"
     >

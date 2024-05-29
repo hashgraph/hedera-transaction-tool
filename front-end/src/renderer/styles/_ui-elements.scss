@@ -83,6 +83,10 @@
     border-color: var(--#{$prefix}input-fill-bg-color);
   }
 
+  &.is-fill.with-border:not(.is-invalid) {
+    border-color: var(--#{$prefix}input-fill-with-border-bg-color);
+  }
+
   &.is-fill {
     &:focus {
       background-color: var(--#{$prefix}input-fill-focus-bg-color);

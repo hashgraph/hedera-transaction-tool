@@ -482,12 +482,9 @@ $input-focus-box-shadow: none;
 $input-height: auto;
 $input-line-height: 2;
 $form-group-margin-bottom: 0;
-// $input-bg: $blue-neutral-700;
 $input-padding-y: 5px;
 $input-padding-x: 12px;
 $input-font-size: 14px;
-// $input-disabled-bg: $blue-neutral-800;
-// $input-disabled-border-color: $blue-neutral-800;
 $input-border-radius: $border-radius;
 
 $input-padding-y-sm: 7px;
@@ -495,11 +492,6 @@ $input-padding-x-sm: 12px;
 
 $form-select-border-radius: $border-radius;
 $form-select-border-radius-sm: $border-radius;
-
-// Custom selects
-$custom-select-line-height: 1.5;
-$custom-select-height: auto;
-$custom-select-focus-box-shadow: 0 0 0 1px $primary;
 
 // Range
 $form-range-track-height: 0.25rem;
@@ -523,9 +515,7 @@ $btn-close-color: $neutral-00;
 
 // Pagination
 $pagination-bg: transparent;
-// $pagination-color: $blue-neutral-300;
 $pagination-active-color: $neutral-00;
-// $pagination-active-bg: $blue-neutral-500;
 $pagination-padding-y: 0.175rem;
 $pagination-border-width: 0;
 
@@ -537,8 +527,6 @@ $alert-color-scale: 60% !default;
 // Progress
 $progress-height: 8px;
 $progress-border-radius: 41px;
-// $progress-bar-bg: $positive-300;
-// $progress-bg: $error-200;
 
 // Dropdowns
 $dropdown-border-radius: $border-radius-xl;

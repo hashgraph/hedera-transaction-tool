@@ -13,6 +13,7 @@
   --#{$prefix}input-border-color: #{$dark-blue-200};
   --#{$prefix}input-focus-border-color: #{$dark-blue-400};
   --#{$prefix}input-fill-bg-color: #{$light-blue-300};
+  --#{$prefix}input-fill-with-border-bg-color: #{$dark-blue-200};
   --#{$prefix}input-fill-focus-bg-color: #{$light-blue-500};
 
   --#{$prefix}card-primary-bg-color: #{$light-blue-300};
@@ -57,6 +58,7 @@
     --#{$prefix}input-border-color: #{$dark-blue-600};
     --#{$prefix}input-focus-border-color: #{$dark-blue-400};
     --#{$prefix}input-fill-bg-color: #{$dark-blue-700};
+    --#{$prefix}input-fill-with-border-bg-color: #{$dark-blue-700};
     --#{$prefix}input-fill-focus-bg-color: #{$dark-blue-500};
 
     --#{$prefix}card-primary-bg-color: #{$dark-blue-700};
