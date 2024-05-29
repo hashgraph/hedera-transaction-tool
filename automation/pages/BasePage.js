@@ -54,6 +54,31 @@ class BasePage {
     return element.inputValue();
   }
 
+  async getTextFromInputFieldByTestIdWithIndex(testId, index = 1, timeout = this.DEFAULT_TIMEOUT) {
+    console.log(`Getting text for element with testId: ${testId}`);
+    const element = this.window.getByTestId(testId).nth(index);
+    await element.waitFor({ state: 'visible', timeout: timeout });
+
+    const maxAttempts = 10;
+    const interval = 500;
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+      const value = await element.inputValue();
+      if (value.trim() !== '') {
+        return value;
+      }
+
+      attempts++;
+      console.log(`Attempt ${attempts}: Input field is still empty, waiting...`);
+      await new Promise(resolve => setTimeout(resolve, interval));
+    }
+
+    throw new Error(
+      `Failed to retrieve non-empty text from element with testId: ${testId} after multiple attempts`,
+    );
+  }
+
   async getTextByCssSelector(selector, timeout = this.DEFAULT_TIMEOUT) {
     console.log(`Getting text for element with CSS selector: ${selector}`);
     const element = this.window.locator(selector);
@@ -64,6 +89,12 @@ class BasePage {
   async fillByTestId(testId, value) {
     console.log(`Filling element with testId: ${testId} with value: ${value}`);
     const element = this.window.getByTestId(testId);
+    await element.fill(value);
+  }
+
+  async fillByTestIdWithIndex(testId, value, index = 1) {
+    console.log(`Filling element with testId: ${testId} with value: ${value}`);
+    const element = this.window.getByTestId(testId).nth(1);
     await element.fill(value);
   }
 

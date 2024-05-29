@@ -355,4 +355,87 @@ test.describe('Transaction tests', () => {
 
     expect(isTxExistingInDb).toBe(true);
   });
+
+  test('Verify all elements are present on file create tx page', async () => {
+    await transactionPage.clickOnTransactionsMenuButton();
+    await transactionPage.clickOnCreateNewTransactionButton();
+    await transactionPage.clickOnFileServiceLink();
+    await transactionPage.clickOnFileCreateTransaction();
+
+    const isAllElementsVisible = await transactionPage.verifyFileCreateTransactionElements();
+    expect(isAllElementsVisible).toBe(true);
+  });
+
+  test('Verify user can execute file create tx', async () => {
+    const transactionId = await transactionPage.createFile('test', globalCredentials.password);
+
+    const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
+    const transactionType = transactionDetails.transactions[0]?.name;
+    const result = transactionDetails.transactions[0]?.result;
+    expect(transactionType).toBe('FILECREATE');
+    expect(result).toBe('SUCCESS');
+  });
+
+  test('Verify file is stored in the db after file create tx', async () => {
+    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    const fileId = await transactionPage.getFirsFileIdFromCache();
+
+    const isExistingInDb = await transactionPage.verifyFileExists(fileId);
+
+    expect(isExistingInDb).toBe(true);
+  });
+
+  test('Verify user can execute file read tx', async () => {
+    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    const fileId = await transactionPage.getFirsFileIdFromCache();
+    const textFromCache = await transactionPage.getTextFromCache(fileId);
+
+    const readContent = await transactionPage.readFile(fileId, globalCredentials.password);
+
+    expect(readContent).toBe(textFromCache);
+  });
+
+  test('Verify user can execute file update tx', async () => {
+    const newText = 'Lorem Ipsum';
+    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    const fileId = await transactionPage.getFirsFileIdFromCache();
+    const transactionId = await transactionPage.updateFile(
+      fileId,
+      newText,
+      globalCredentials.password,
+    );
+
+    const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
+    const transactionType = transactionDetails.transactions[0]?.name;
+    const result = transactionDetails.transactions[0]?.result;
+    expect(transactionType).toBe('FILEUPDATE');
+    expect(result).toBe('SUCCESS');
+
+    //Verify file content is updated
+    const readContent = await transactionPage.readFile(fileId, globalCredentials.password);
+    const textFromCache = await transactionPage.getTextFromCache(fileId);
+    expect(readContent).toBe(textFromCache);
+  });
+
+  test('Verify user can execute file append tx', async () => {
+    const newText = ' extra text to append';
+    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    const fileId = await transactionPage.getFirsFileIdFromCache();
+    const transactionId = await transactionPage.appendFile(
+      fileId,
+      newText,
+      globalCredentials.password,
+    );
+
+    const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
+    const transactionType = transactionDetails.transactions[0]?.name;
+    const result = transactionDetails.transactions[0]?.result;
+    expect(transactionType).toBe('FILEAPPEND');
+    expect(result).toBe('SUCCESS');
+
+    //Verify file content is appended
+    const readContent = await transactionPage.readFile(fileId, globalCredentials.password);
+    const textFromCache = await transactionPage.getTextFromCache(fileId);
+    expect(readContent).toBe(textFromCache);
+  });
 });

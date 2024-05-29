@@ -63,7 +63,7 @@ npx playwright test
 
 This will launch Playwright and execute the test suites defined in the project, outputting the results to your terminal.
 
-## Current Тest Suites
+## Current Test Suites
 
 ### 1. Registration tests
 
