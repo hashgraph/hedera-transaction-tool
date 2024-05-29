@@ -1,10 +1,10 @@
-// import * as fs from 'fs';
-// import * as path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 
 import { NestFactory } from '@nestjs/core';
 import { Transport } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
-import { ValidationPipe } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { Logger } from 'nestjs-pino';
@@ -14,15 +14,20 @@ import { ApiModule } from './api.module';
 import * as cookieParser from 'cookie-parser';
 import { API_SERVICE } from '@app/common';
 
-async function bootstrap() {
-  const app = await NestFactory.create(ApiModule);
+const { version } = require('../package.json');
 
-  // const app = await NestFactory.create(ApiModule, {
-  //   httpsOptions: {
-  //     key: fs.readFileSync(path.resolve(__dirname, '../../../cert/key.pem')),
-  //     cert: fs.readFileSync(path.resolve(__dirname, '../../../cert/cert.pem')),
-  //   },
-  // });
+async function bootstrap() {
+  let app: INestApplication;
+
+  if (process.env.NODE_ENV === 'production') {
+    app = await NestFactory.create(ApiModule);
+  } else {
+    const httpsOptions = {
+          key: fs.readFileSync(path.resolve(__dirname, '../../../cert/key.pem')),
+          cert: fs.readFileSync(path.resolve(__dirname, '../../../cert/cert.pem')),
+        };
+    app = await NestFactory.create(ApiModule, { httpsOptions });
+  }
 
   const configService = app.get(ConfigService);
   app.connectMicroservice({
@@ -58,11 +63,10 @@ async function bootstrap() {
     .setDescription(
       'The Backend API module is used for authorization, authentication, pulling and saving transaction data.',
     )
-    .setVersion('1.0')
-    .addServer('http://localhost:3000/', 'Local environment')
+    .setVersion(version)
+    // .addServer('http://localhost:3000/', 'Local environment')
     // .addServer('https://staging.yourapi.com/', 'Staging')
     // .addServer('https://production.yourapi.com/', 'Production')
-    .addTag('what is this for')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document);
