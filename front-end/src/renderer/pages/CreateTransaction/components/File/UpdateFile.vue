@@ -235,6 +235,11 @@ watch(content, () => {
     removeContent.value = false;
   }
 });
+watch(fileBuffer, buffer => {
+  if (buffer && buffer.length > 0) {
+    removeContent.value = false;
+  }
+});
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
 </script>
@@ -382,7 +387,10 @@ const columnClass = 'col-4 col-xxxl-3';
 
         <div class="mt-4 form-group">
           <label for="fileUpload" class="form-label">
-            <span for="fileUpload" class="btn btn-primary" :class="{ disabled: content.length > 0 }"
+            <span
+              for="fileUpload"
+              class="btn btn-primary"
+              :class="{ disabled: content.length > 0 || removeContent }"
               >Upload File</span
             >
           </label>
@@ -391,7 +399,7 @@ const columnClass = 'col-4 col-xxxl-3';
             id="fileUpload"
             name="fileUpload"
             type="file"
-            :disabled="content.length > 0"
+            :disabled="content.length > 0 || removeContent"
             @change="handleFileImport"
           />
           <template v-if="fileMeta">
@@ -408,7 +416,7 @@ const columnClass = 'col-4 col-xxxl-3';
             <label class="form-label">File Contents</label>
             <Transition name="fade" mode="out-in">
               <AppCheckBox
-                v-if="content.length === 0"
+                v-if="content.length === 0 && !fileBuffer"
                 v-model:checked="removeContent"
                 label="Remove File Contents"
                 name="remove-file-contents"
