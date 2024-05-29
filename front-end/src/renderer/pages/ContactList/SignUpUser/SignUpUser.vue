@@ -67,7 +67,7 @@ watch(
         <i class="bi bi-arrow-left"></i>
       </AppButton>
 
-      <h2 class="text-title text-bold">Link existing account</h2>
+      <h2 class="text-title text-bold">Create New Organization User</h2>
     </div>
     <form class="mt-5 col-12 col-md-8 col-lg-6 col-xxl-4" @submit="handleLinkAccount">
       <div class="form-group">
