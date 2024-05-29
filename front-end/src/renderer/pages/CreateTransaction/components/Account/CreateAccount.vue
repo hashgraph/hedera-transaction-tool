@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from 'vue';
+import { nextTick, onMounted, reactive, ref, watch } from 'vue';
 import {
   AccountId,
   AccountCreateTransaction,
@@ -64,7 +64,6 @@ const accountData = reactive<{
   accountId: string;
   receiverSignatureRequired: boolean;
   maxAutomaticTokenAssociations: 0;
-  initialBalance: Hbar;
   stakedAccountId: string;
   stakedNodeId: number | null;
   acceptStakingRewards: boolean;
@@ -73,12 +72,12 @@ const accountData = reactive<{
   accountId: '',
   receiverSignatureRequired: false,
   maxAutomaticTokenAssociations: 0,
-  initialBalance: new Hbar(0),
   stakedAccountId: '',
   stakedNodeId: null,
   acceptStakingRewards: true,
   memo: '',
 });
+const initialBalance = ref<Hbar>(new Hbar(0));
 const stakeType = ref<'Account' | 'Node' | 'None'>('None');
 const ownerKey = ref<Key | null>(null);
 const isExecuted = ref(false);
@@ -160,7 +159,7 @@ const handleLoadFromDraft = async () => {
     accountData.receiverSignatureRequired = draftTransaction.receiverSignatureRequired;
     accountData.maxAutomaticTokenAssociations =
       draftTransaction.maxAutomaticTokenAssociations.toNumber();
-    accountData.initialBalance = draftTransaction.initialBalance || new Hbar(0);
+    initialBalance.value = draftTransaction.initialBalance || new Hbar(0);
     accountData.stakedAccountId = draftTransaction.stakedAccountId?.toString() || '';
 
     if (draftTransaction.stakedNodeId) {
@@ -199,7 +198,7 @@ function createTransaction() {
     .setMaxTransactionFee(maxTransactionFee.value)
     .setReceiverSignatureRequired(accountData.receiverSignatureRequired)
     .setDeclineStakingReward(!accountData.acceptStakingRewards)
-    .setInitialBalance(Hbar.fromString(accountData.initialBalance.toString() || '0'))
+    .setInitialBalance(Hbar.fromString(initialBalance.value.toString() || '0'))
     .setMaxAutomaticTokenAssociations(Number(accountData.maxAutomaticTokenAssociations))
     .setAccountMemo(accountData.memo);
 
@@ -253,6 +252,13 @@ watch(
     }
   },
 );
+
+watch([initialBalance, payerData.accountInfo], async ([balance, accountInfo]) => {
+  if (balance?.toBigNumber().isGreaterThan(accountInfo?.balance?.toBigNumber() || 0)) {
+    await nextTick();
+    initialBalance.value = new Hbar(0);
+  }
+});
 
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
@@ -407,7 +413,7 @@ const columnClass = 'col-4 col-xxxl-3';
             <label class="form-label">Initial Balance {{ HbarUnit.Hbar._symbol }}</label>
             <AppHbarInput
               data-testid="input-initial-balance-amount"
-              v-model:model-value="accountData.initialBalance as Hbar"
+              v-model:model-value="initialBalance as Hbar"
               placeholder="Enter Amount"
               :filled="true"
             />
