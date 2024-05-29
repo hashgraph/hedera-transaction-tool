@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import { PublicKey } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useContactsStore from '@renderer/stores/storeContacts';
 
 import { isPublicKey } from '@renderer/utils/validator';
 
@@ -11,6 +12,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppListItem from '@renderer/components/ui/AppListItem.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 /* Props */
 const props = defineProps<{
@@ -23,10 +25,18 @@ const emit = defineEmits(['update:show']);
 
 /* Stores */
 const user = useUserStore();
+const contacts = useContactsStore();
 
 /* State */
 const publicKey = ref('');
 const type = ref<'ED25519' | 'ECDSA'>('ED25519');
+
+/* Computed */
+const keyList = computed(() => {
+  return user.keyPairs
+    .map(kp => ({ publicKey: kp.public_key, nickname: kp.nickname }))
+    .concat(isLoggedInOrganization(user.selectedOrganization) ? contacts.publicKeys : []);
+});
 
 /* Handlers */
 const handleShowUpdate = show => emit('update:show', show);
@@ -102,12 +112,12 @@ watch(
         <div>
           <h3 class="text-small">Recent</h3>
           <div class="mt-4 overflow-auto" :style="{ height: '158px' }">
-            <template v-for="kp in user.keyPairs" :key="kp.public_key">
+            <template v-for="kp in keyList" :key="kp.public_key">
               <AppListItem
                 class="mt-3"
-                :selected="publicKey === kp.public_key"
-                :value="kp.public_key"
-                @click="publicKey = kp.public_key"
+                :selected="publicKey === kp.publicKey"
+                :value="kp.publicKey"
+                @click="publicKey = kp.publicKey"
               >
                 <div class="d-flex overflow-hidden">
                   <p class="text-nowrap">
@@ -115,7 +125,7 @@ watch(
                     <span class="ms-2 text-nowrap">{{ kp.nickname || 'Public Key' }}</span>
                   </p>
                   <div class="border-start px-4 mx-4">
-                    <span>{{ kp.public_key }}</span>
+                    <span>{{ kp.publicKey }}</span>
                   </div>
                 </div>
               </AppListItem>
