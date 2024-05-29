@@ -245,6 +245,18 @@ watch(payerData.isValid, isValid => {
         v-model:max-transaction-fee="maxTransactionFee as Hbar"
       />
 
+      <div class="row mt-6">
+        <div class="form-group col-8 col-xxxl-6">
+          <label class="form-label">Transaction Memo</label>
+          <AppInput
+            v-model="transactionMemo"
+            :filled="true"
+            maxlength="100"
+            placeholder="Enter Transaction Memo"
+          />
+        </div>
+      </div>
+
       <hr class="separator my-5" />
 
       <div class="fill-remaining">
@@ -254,18 +266,6 @@ watch(payerData.isValid, isValid => {
               :model-key="ownerKey"
               @update:model-key="key => (ownerKey = key)"
               is-required
-            />
-          </div>
-        </div>
-
-        <div class="row mt-6">
-          <div class="form-group col-8 col-xxxl-6">
-            <label class="form-label">Transaction Memo</label>
-            <AppInput
-              v-model="transactionMemo"
-              :filled="true"
-              maxlength="100"
-              placeholder="Enter Transaction Memo"
             />
           </div>
         </div>
