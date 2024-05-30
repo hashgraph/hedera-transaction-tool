@@ -55,7 +55,10 @@ export class TransactionsController {
   @UseGuards(HasKeyGuard)
   @Post()
   @Serialize(TransactionDto)
-  createTransaction(@Body() body: CreateTransactionDto, @GetUser() user): Promise<Transaction> {
+  async createTransaction(
+    @Body() body: CreateTransactionDto,
+    @GetUser() user,
+  ): Promise<Transaction> {
     return this.transactionsService.createTransaction(body, user);
   }
 

@@ -4,11 +4,10 @@ import { ScheduleModule } from '@nestjs/schedule';
 
 import * as Joi from 'joi';
 
-import { DatabaseModule, LoggerModule } from '@app/common';
+import { DatabaseModule, LoggerModule, HealthModule, NotificationsProxyModule } from '@app/common';
 
 import { ExecuteModule } from './execute';
 import { TransactionStatusModule } from './transaction-status/transaction-status.module';
-import { HealthModule } from '@app/common/health';
 
 @Module({
   imports: [
@@ -32,6 +31,7 @@ import { HealthModule } from '@app/common/health';
     ExecuteModule,
     TransactionStatusModule,
     HealthModule,
+    NotificationsProxyModule,
   ],
 })
 export class ChainModule {}
