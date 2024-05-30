@@ -16,12 +16,12 @@
 #ED25519: 336bf7cd70b8b07b5a517c1195f98efdf97eaf8b571c24fe6673d58b3b1dd775
 
 ### Upload a key
-POST http://localhost:3000/user/keys
+POST http://34.36.90.246/user/keys
 #Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcxMDc3MzU2OSwiZXhwIjoxNzEwODA5NTY5fQ.9Ujgbrfew0Lvk93Riu0GmuIklsRALayJrqfGrUFVQn4
 content-type: application/json
 
 {
-  "publicKey": "17f1f34e665b6667556e9f3c3b2981399dc55470437f51ba19bdc647c941fe10"
+  "publicKey": "302a300506032b6570032100d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b"
 }
 
 ### Get all keys for a user

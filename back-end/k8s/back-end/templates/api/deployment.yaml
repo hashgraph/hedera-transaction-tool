@@ -65,6 +65,8 @@ spec:
               value: '20'
             - name: REDIS_URL
               value: 'redis://redis-master:6379'
+            - name: NODE_ENV
+              value: 'production'
           ports:
             - containerPort: 3000
 ---
