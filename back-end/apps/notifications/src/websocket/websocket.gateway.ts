@@ -1,21 +1,18 @@
+import { Inject, Logger } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import {
-  ConnectedSocket,
-  MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
   OnGatewayInit,
-  SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Inject, Logger } from '@nestjs/common';
-import { NotifyClientDto } from './dtos/notify-client.dto';
 import { Server, Socket } from 'socket.io';
-import { AuthWebsocket, AuthWebsocketMiddleware } from './middlewares/auth-websocket.middleware';
-import { AUTH_SERVICE } from '@app/common';
-import { ClientProxy } from '@nestjs/microservices';
 
-//TODO WebTransport vs Websockets - by default transports = polling and websocket, not webtransport
+import { AUTH_SERVICE, NotifyClientDto } from '@app/common';
+
+import { AuthWebsocketMiddleware } from './middlewares/auth-websocket.middleware';
+
 @WebSocketGateway({
   cors: { origin: true, methods: ['GET', 'POST'], credentials: true },
   connectionStateRecovery: { maxDisconnectionDuration: 2 * 60 * 1000 },
@@ -28,29 +25,19 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   @WebSocketServer()
   private server: Server;
 
-  afterInit(server: Server): any {
+  afterInit(server: Server) {
     server.use(AuthWebsocketMiddleware(this.authService));
   }
 
-  handleConnection(client: Socket, ...args): any {
+  handleConnection(client: Socket) {
     this.logger.log(`client connected ${client.id}`);
+    setTimeout(() => {
+      this.notifyClient({ message: 'test', content: 'test' });
+    }, 1000);
   }
 
-  handleDisconnect(client: Socket): any {
+  handleDisconnect(client: Socket) {
     this.logger.log(`client disconnected ${client.id}`);
-  }
-
-  //TODO check with the team to see how they want the data delivered
-  @SubscribeMessage('test')
-  async onMessage(
-    @ConnectedSocket() socket: AuthWebsocket,
-    @MessageBody() body: any,
-  ): Promise<any> {
-    const dto: NotifyClientDto = { message: 'test', content: body };
-    this.notifyClient(dto);
-    // Return doesn't appear to do anything, as far as the client goes?
-    return body;
-    //If this method returns, does it send messages to all clients? I assume not.
   }
 
   notifyClient({ message, content }: NotifyClientDto) {
