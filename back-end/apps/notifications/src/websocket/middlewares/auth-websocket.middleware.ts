@@ -1,9 +1,9 @@
-import { Socket } from 'socket.io';
-import { User } from '@entities';
 import { ClientProxy } from '@nestjs/microservices';
+import { Socket } from 'socket.io';
 import { firstValueFrom } from 'rxjs';
+import * as cookie from 'cookie';
 
-const cookie = require('cookie');
+import { User } from '@entities';
 
 export interface AuthWebsocket extends Socket {
   user: User;
