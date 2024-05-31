@@ -12,6 +12,10 @@ export default function useDisposableWs() {
     disposers.value.push(ws.on(event, callback));
   }
 
+  function off(event: string) {
+    ws.fullOffEvent(event);
+  }
+
   /* Hooks */
   onMounted(async () => {});
 
@@ -19,5 +23,5 @@ export default function useDisposableWs() {
     disposers.value.forEach(dispose => dispose());
   });
 
-  return { on };
+  return { on, off };
 }
