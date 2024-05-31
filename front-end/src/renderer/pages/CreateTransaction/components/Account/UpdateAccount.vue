@@ -22,7 +22,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
-import { getTransactionFromBytes, isAccountId } from '@renderer/utils';
+import { compareKeys, getTransactionFromBytes, isAccountId } from '@renderer/utils';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -187,7 +187,12 @@ function createTransaction() {
   }
 
   isAccountId(accountData.accountId.value) && transaction.setAccountId(accountData.accountId.value);
-  newOwnerKey.value && transaction.setKey(newOwnerKey.value);
+
+  if (newOwnerKey.value && accountData.key.value) {
+    !compareKeys(newOwnerKey.value, accountData.key.value) && transaction.setKey(newOwnerKey.value);
+  } else if (newOwnerKey.value) {
+    transaction.setKey(newOwnerKey.value);
+  }
 
   if (stakeType.value === 'None') {
     transaction.clearStakedAccountId();
@@ -323,7 +328,7 @@ const columnClass = 'col-4 col-xxxl-3';
             <label class="form-label">Account ID <span class="text-danger">*</span></label>
             <AppInput
               :model-value="accountData.accountIdFormatted.value"
-              @update:model-value="v => (accountData.accountId.value = v)"
+              @update:model-value="v => (accountData.accountId.value = v.trim())"
               :filled="true"
               data-testid="input-account-id-for-update"
               placeholder="Enter Account ID"
