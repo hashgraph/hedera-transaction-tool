@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 
@@ -9,7 +10,15 @@ import {
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
-import { MirrorNodeService, ableToSign, computeSignatureKey } from '@app/common';
+import {
+  MirrorNodeService,
+  NOTIFICATIONS_SERVICE,
+  NOTIFY_CLIENT,
+  NotifyClientDto,
+  TRANSACTION_ACTION,
+  ableToSign,
+  computeSignatureKey,
+} from '@app/common';
 
 import { Transaction, TransactionStatus } from '@entities';
 
@@ -20,6 +29,7 @@ import { ExecuteService } from '../execute';
 export class TransactionStatusService {
   constructor(
     @InjectRepository(Transaction) private transactionRepo: Repository<Transaction>,
+    @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
     private schedulerRegistry: SchedulerRegistry,
     private readonly executeService: ExecuteService,
     private readonly mirrorNodeService: MirrorNodeService,
@@ -115,6 +125,8 @@ export class TransactionStatusService {
       },
     });
 
+    let atLeastOneUpdated = false;
+
     for (const transaction of transactions) {
       /* Gets the SDK transaction from the transaction body */
       const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
@@ -141,17 +153,29 @@ export class TransactionStatusService {
         : TransactionStatus.WAITING_FOR_SIGNATURES;
 
       if (transaction.status !== newStatus) {
-        await this.transactionRepo.update(
-          {
-            id: transaction.id,
-          },
-          {
-            status: newStatus,
-          },
-        );
+        try {
+          await this.transactionRepo.update(
+            {
+              id: transaction.id,
+            },
+            {
+              status: newStatus,
+            },
+          );
 
-        transaction.status = newStatus;
+          transaction.status = newStatus;
+          atLeastOneUpdated = true;
+        } catch (error) {
+          console.log(error);
+        }
       }
+    }
+
+    if (atLeastOneUpdated) {
+      this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+        message: TRANSACTION_ACTION,
+        content: '',
+      });
     }
 
     return transactions;
@@ -194,6 +218,11 @@ export class TransactionStatusService {
           : TransactionStatus.WAITING_FOR_SIGNATURES,
       },
     );
+
+    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+      message: TRANSACTION_ACTION,
+      content: '',
+    });
   }
 
   addExecutionTimeout(transaction: Transaction) {

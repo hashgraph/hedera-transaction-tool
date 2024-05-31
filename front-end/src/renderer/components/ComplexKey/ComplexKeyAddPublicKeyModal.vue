@@ -33,9 +33,11 @@ const type = ref<'ED25519' | 'ECDSA'>('ED25519');
 
 /* Computed */
 const keyList = computed(() => {
-  return user.keyPairs
+  const keys = user.keyPairs
     .map(kp => ({ publicKey: kp.public_key, nickname: kp.nickname }))
     .concat(isLoggedInOrganization(user.selectedOrganization) ? contacts.publicKeys : []);
+
+  return keys.filter(k => keys.findIndex(k2 => k2.publicKey === k.publicKey) === keys.indexOf(k));
 });
 
 /* Handlers */

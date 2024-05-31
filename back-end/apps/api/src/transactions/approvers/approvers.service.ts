@@ -1,5 +1,7 @@
+import { ClientProxy } from '@nestjs/microservices';
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -17,6 +19,14 @@ import {
 
 import { PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
+import {
+  MirrorNodeService,
+  NOTIFICATIONS_SERVICE,
+  NOTIFY_CLIENT,
+  NotifyClientDto,
+  TRANSACTION_ACTION,
+  verifyTransactionBodyWithoutNodeAccountIdSignature,
+} from '@app/common';
 import { Transaction, TransactionApprover, TransactionStatus, User, UserKey } from '@entities';
 
 import { userKeysRequiredToSign } from '../../utils';
@@ -27,7 +37,6 @@ import {
   CreateTransactionApproversArrayDto,
   UpdateTransactionApproverDto,
 } from '../dto';
-import { MirrorNodeService, verifyTransactionBodyWithoutNodeAccountIdSignature } from '@app/common';
 
 @Injectable()
 export class ApproversService {
@@ -52,6 +61,7 @@ export class ApproversService {
     private repo: Repository<TransactionApprover>,
     @InjectDataSource() private dataSource: DataSource,
     private readonly mirrorNodeService: MirrorNodeService,
+    @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
   ) {}
 
   /* Get the approver by id */
@@ -193,7 +203,7 @@ export class ApproversService {
   async removeNode(listId: number): Promise<void> {
     if (!listId || typeof listId !== 'number') return null;
 
-    return this.repo.query(
+    await this.repo.query(
       `
       with recursive approversToDelete AS
         (
@@ -214,6 +224,11 @@ export class ApproversService {
     `,
       [listId],
     );
+
+    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+      message: TRANSACTION_ACTION,
+      content: '',
+    });
   }
 
   /* Create transaction approvers for the given transaction id with the user ids */
@@ -340,6 +355,11 @@ export class ApproversService {
         for (const approver of dto.approversArray) {
           await createApprover(approver);
         }
+
+        this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+          message: TRANSACTION_ACTION,
+          content: '',
+        });
       });
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -508,6 +528,11 @@ export class ApproversService {
         return approver;
       });
 
+      this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+        message: TRANSACTION_ACTION,
+        content: '',
+      });
+
       return approver;
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -520,7 +545,14 @@ export class ApproversService {
 
     if (!approver) throw new NotFoundException("Approver doesn't exist");
 
-    return this.removeNode(approver.id);
+    const result = await this.removeNode(approver.id);
+
+    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+      message: TRANSACTION_ACTION,
+      content: '',
+    });
+
+    return result;
   }
 
   /* Approves a transaction */
@@ -582,7 +614,7 @@ export class ApproversService {
       throw new BadRequestException('The signature does not match the public key');
 
     /* Update the approver with the signature */
-    this.dataSource.transaction(async transactionalEntityManager => {
+    await this.dataSource.transaction(async transactionalEntityManager => {
       transactionalEntityManager
         .createQueryBuilder()
         .update(TransactionApprover)
@@ -593,6 +625,11 @@ export class ApproversService {
         })
         .whereInIds(userApprovers.map(a => a.id))
         .execute();
+    });
+
+    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+      message: TRANSACTION_ACTION,
+      content: '',
     });
 
     return true;

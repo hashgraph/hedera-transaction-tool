@@ -1,5 +1,5 @@
-import { ConfigService } from '@nestjs/config';
-import { Injectable } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
@@ -16,6 +16,10 @@ import { Transaction, TransactionStatus, Network } from '@entities';
 
 import {
   MirrorNodeService,
+  NOTIFICATIONS_SERVICE,
+  NOTIFY_CLIENT,
+  NotifyClientDto,
+  TRANSACTION_ACTION,
   TransactionExecutedDto,
   ableToSign,
   computeSignatureKey,
@@ -27,7 +31,7 @@ import {
 export class ExecuteService {
   constructor(
     @InjectRepository(Transaction) private transactionsRepo: Repository<Transaction>,
-    private readonly configService: ConfigService,
+    @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
     private readonly mirrorNodeService: MirrorNodeService,
   ) {}
 
@@ -100,6 +104,7 @@ export class ExecuteService {
       result.error = error.message;
     } finally {
       result.status = transaction.status;
+
       await this.transactionsRepo.update(
         {
           id: transaction.id,
@@ -110,7 +115,14 @@ export class ExecuteService {
           statusCode: transaction.statusCode,
         },
       );
+
       client.close();
+
+      this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+        message: TRANSACTION_ACTION,
+        content: '',
+      });
+
       this.sideEffect(sdkTransaction, transaction.network);
     }
     return result;

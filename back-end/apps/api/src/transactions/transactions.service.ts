@@ -5,7 +5,6 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 
@@ -31,6 +30,7 @@ import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from
 
 import {
   NOTIFICATIONS_SERVICE,
+  NOTIFY_CLIENT,
   MirrorNodeService,
   encodeUint8Array,
   getClientFromName,
@@ -42,24 +42,21 @@ import {
   getWhere,
   getOrder,
   PaginatedResourceDto,
+  TRANSACTION_ACTION,
+  NotifyClientDto,
 } from '@app/common';
 
 import { UserDto } from '../users/dtos';
 import { CreateTransactionDto } from './dto';
 
-import { UserKeysService } from '../user-keys/user-keys.service';
 import { ApproversService } from './approvers/approvers.service';
 import { userKeysRequiredToSign } from '../utils';
-import { SignersService } from './signers';
 
 @Injectable()
 export class TransactionsService {
   constructor(
     @InjectRepository(Transaction) private repo: Repository<Transaction>,
     @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
-    private readonly configService: ConfigService,
-    private readonly userKeysService: UserKeysService,
-    private readonly signersService: SignersService,
     private readonly approversService: ApproversService,
     private readonly mirrorNodeService: MirrorNodeService,
     @InjectEntityManager() private entityManager: EntityManager,
@@ -122,11 +119,7 @@ export class TransactionsService {
     const findOptions: FindManyOptions<Transaction> = {
       where: whereForUser,
       order,
-      relations: [
-        'creatorKey',
-        'groupItem',
-        'groupItem.group',
-      ],
+      relations: ['creatorKey', 'groupItem', 'groupItem.group'],
       skip: offset,
       take: limit,
     };
@@ -345,6 +338,10 @@ export class TransactionsService {
     }
 
     this.notificationsService.emit('notify_transaction_members', transaction);
+    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+      message: TRANSACTION_ACTION,
+      content: '',
+    });
 
     return transaction;
   }
@@ -366,6 +363,11 @@ export class TransactionsService {
     } else {
       await this.repo.remove(transaction);
     }
+
+    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+      message: TRANSACTION_ACTION,
+      content: '',
+    });
 
     return true;
   }

@@ -11,6 +11,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
+import useDisposableWs from '@renderer/composables/useDisposableWs';
 
 import {
   fullUploadSignatures,
@@ -62,6 +63,7 @@ const network = useNetwork();
 /* Composables */
 const router = useRouter();
 const toast = useToast();
+const ws = useDisposableWs();
 
 /* Injected */
 const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
@@ -229,14 +231,8 @@ const handleSubmit = async e => {
   }
 };
 
-/* Hooks */
-onBeforeMount(async () => {
-  const id = router.currentRoute.value.params.id;
-  if (!id) {
-    router.back();
-    return;
-  }
-
+/* Functions */
+async function fetchTransaction(id: string | number) {
   let transactionBytes: Uint8Array;
   if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
     orgTransaction.value = await getTransactionById(
@@ -263,13 +259,28 @@ onBeforeMount(async () => {
   if (isLoggedInOrganization(user.selectedOrganization)) {
     signatureKey.value = await computeSignatureKey(sdkTransaction.value, network.mirrorNodeBaseURL);
   }
+}
+
+/* Hooks */
+onBeforeMount(async () => {
+  const id = router.currentRoute.value.params.id;
+  if (!id) {
+    router.back();
+    return;
+  }
+
+  ws.on('transaction_action', async () => {
+    await fetchTransaction(Array.isArray(id) ? id[0] : id);
+  });
+
+  await fetchTransaction(Array.isArray(id) ? id[0] : id);
 });
 
 /* Watchers */
 watch(
   () => user.selectedOrganization,
-  org => {
-    if (!org) router.back();
+  () => {
+    router.back();
   },
 );
 
