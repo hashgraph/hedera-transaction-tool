@@ -31,9 +31,6 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
 
   handleConnection(client: Socket) {
     this.logger.log(`client connected ${client.id}`);
-    setTimeout(() => {
-      this.notifyClient({ message: 'test', content: 'test' });
-    }, 1000);
   }
 
   handleDisconnect(client: Socket) {
