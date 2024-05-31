@@ -158,6 +158,10 @@ export function encodeKey(keyList: Key) {
   return proto.Key.encode(ikey).finish();
 }
 
+export function compareKeys(key1: Key, key2: Key) {
+  return encodeKey(key1).toString() === encodeKey(key2).toString();
+}
+
 export function decodeKeyList(keyListBytes: string) {
   const bytesArray = Uint8Array.from(keyListBytes.split(',').map(b => Number(b)));
   const protoKey = proto.Key.decode(bytesArray);
