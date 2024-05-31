@@ -14,6 +14,7 @@ import { useRouter } from 'vue-router';
 
 import useNetworkStore from './storeNetwork';
 import useContactsStore from './storeContacts';
+import useWebsocketConnection from './storeWebsocketConnection';
 
 import * as ush from '@renderer/utils/userStoreHelpers';
 
@@ -21,6 +22,7 @@ const useUserStore = defineStore('user', () => {
   /* Stores */
   const network = useNetworkStore();
   const contacts = useContactsStore();
+  const ws = useWebsocketConnection();
 
   /* Composables */
   const router = useRouter();
@@ -89,13 +91,21 @@ const useUserStore = defineStore('user', () => {
     refetchAccounts();
   };
 
-  /** Organization */
+  /* Organization */
   const selectOrganization = async (organization: Organization | null) => {
     if (!organization) {
       selectedOrganization.value = null;
+      ws.setSocket(null);
       await contacts.fetch();
     } else {
       selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
+
+      const NOTIFICATIONS_SERVICE_PORT = 3020; // See docker-compose.yml in the back-end folder
+      ws.setSocket(
+        selectedOrganization.value.serverUrl.includes('localhost')
+          ? `ws://localhost:${NOTIFICATIONS_SERVICE_PORT}`
+          : `${selectedOrganization.value.serverUrl}/ws`,
+      );
     }
     await ush.afterOrganizationSelection(personal.value, selectedOrganization, keyPairs, router);
     refetchAccounts();
