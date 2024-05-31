@@ -4,7 +4,7 @@ import * as path from 'path';
 import { NestFactory } from '@nestjs/core';
 import { Transport } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication, NestApplicationOptions, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { Logger } from 'nestjs-pino';
@@ -14,7 +14,7 @@ import { ApiModule } from './api.module';
 import * as cookieParser from 'cookie-parser';
 import { API_SERVICE } from '@app/common';
 
-const { version } = require('../package.json');
+import { version } from '../package.json';
 
 async function bootstrap() {
   let app: INestApplication;
@@ -22,11 +22,16 @@ async function bootstrap() {
   if (process.env.NODE_ENV === 'production') {
     app = await NestFactory.create(ApiModule);
   } else {
-    const httpsOptions = {
-          key: fs.readFileSync(path.resolve(__dirname, '../../../cert/key.pem')),
-          cert: fs.readFileSync(path.resolve(__dirname, '../../../cert/cert.pem')),
-        };
-    app = await NestFactory.create(ApiModule, { httpsOptions });
+    const options: NestApplicationOptions = {};
+    try {
+      const key = fs.readFileSync(path.resolve(__dirname, '../../../cert/key.pem'));
+      const cert = fs.readFileSync(path.resolve(__dirname, '../../../cert/cert.pem'));
+      options.httpsOptions = { key, cert };
+    } catch (error) {
+      console.log(error);
+    }
+
+    app = await NestFactory.create(ApiModule, options);
   }
 
   const configService = app.get(ConfigService);

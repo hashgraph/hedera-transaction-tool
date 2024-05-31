@@ -17,19 +17,12 @@
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
+    "resolveJsonModule": true,
     "paths": {
-      "@app/common": [
-        "libs/common/src"
-      ],
-      "@app/common/*": [
-        "libs/common/src/*"
-      ],
-      "@transactionModels/*": [
-        "libs/common/src/models/*"
-      ],
-      "@entities": [
-        "libs/common/src/database/entities"
-      ]
+      "@app/common": ["libs/common/src"],
+      "@app/common/*": ["libs/common/src/*"],
+      "@transactionModels/*": ["libs/common/src/models/*"],
+      "@entities": ["libs/common/src/database/entities"]
     }
   }
 }
