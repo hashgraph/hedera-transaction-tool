@@ -34,12 +34,17 @@ const handleAdd = async (e: Event) => {
   e.preventDefault();
 
   try {
+    const url = new URL(serverUrl.value);
+    serverUrl.value = url.origin;
+  } catch (error) {
+    throw new Error('Invalid Server URL');
+  }
+  try {
     const organization = await addOrganization({
       nickname: nickname.value,
       serverUrl: serverUrl.value,
       key: '',
     });
-
     toast.success('Organization Added', { position: 'bottom-right' });
     emit('added', organization);
     emit('update:show', false);
