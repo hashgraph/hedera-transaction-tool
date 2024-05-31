@@ -11,8 +11,20 @@ const useThemeStore = defineStore('theme', () => {
   const id = computed<string | null>(() => socket.value?.id ?? null);
 
   /* Actions */
-  function setSocket(url: string) {
-    socket.value = io(url);
+  function setSocket(url: string | null) {
+    if (socket.value) {
+      socket.value.off();
+      socket.value.disconnect();
+    }
+
+    if (!url) {
+      socket.value = null;
+      return;
+    }
+
+    socket.value = io(url, {
+      withCredentials: true,
+    });
 
     socket.value.on('connect', () => {
       console.log(`Connected to server with id: ${socket.value?.id}`);
@@ -59,7 +71,7 @@ const useThemeStore = defineStore('theme', () => {
     return () => {};
   }
 
-  function fullOff(event: string) {
+  function fullOffEvent(event: string) {
     if (socket.value) {
       socket.value.off(event);
     }
@@ -70,7 +82,7 @@ const useThemeStore = defineStore('theme', () => {
     connect,
     disconnect,
     on,
-    fullOff,
+    fullOffEvent,
     id,
     isConnected,
   };
