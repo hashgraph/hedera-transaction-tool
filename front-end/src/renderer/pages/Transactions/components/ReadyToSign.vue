@@ -9,6 +9,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRouter } from 'vue-router';
+import useDisposableWs from '@renderer/composables/useDisposableWs';
 
 import { getTransactionsToSign } from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
@@ -31,6 +32,7 @@ const network = useNetworkStore();
 
 /* Composables */
 const router = useRouter();
+const ws = useDisposableWs();
 
 /* State */
 const transactions = ref<
@@ -112,6 +114,9 @@ function getOpositeDirection() {
 
 /* Hooks */
 onBeforeMount(async () => {
+  ws.on('transaction_action', async () => {
+    await fetchTransactions();
+  });
   await fetchTransactions();
 });
 

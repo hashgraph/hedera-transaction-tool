@@ -10,6 +10,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRouter } from 'vue-router';
+import useDisposableWs from '@renderer/composables/useDisposableWs';
 
 import { getTransactions, getTransactionsCount } from '@renderer/services/transactionService';
 import { getTransactionsForUser } from '@renderer/services/organization';
@@ -35,6 +36,7 @@ const network = useNetworkStore();
 
 /* Composables */
 const router = useRouter();
+const ws = useDisposableWs();
 
 /* State */
 const organizationTransactions = ref<
@@ -147,6 +149,9 @@ async function fetchTransactions() {
 
 /* Hooks */
 onBeforeMount(async () => {
+  ws.on('transaction_action', async () => {
+    await fetchTransactions();
+  });
   await fetchTransactions();
 });
 
@@ -154,6 +159,16 @@ onBeforeMount(async () => {
 watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
   await fetchTransactions();
 });
+
+watch(
+  () => user.selectedOrganization,
+  async () => {
+    ws.off('transaction_action');
+    ws.on('transaction_action', async () => {
+      await fetchTransactions();
+    });
+  },
+);
 </script>
 
 <template>
