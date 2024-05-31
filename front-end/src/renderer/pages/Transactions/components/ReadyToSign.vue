@@ -116,7 +116,7 @@ onBeforeMount(async () => {
 });
 
 /* Watchers */
-watch([currentPage, pageSize], async () => {
+watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
   await fetchTransactions();
 });
 </script>
