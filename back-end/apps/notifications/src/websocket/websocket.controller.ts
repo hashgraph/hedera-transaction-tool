@@ -6,7 +6,7 @@ import { GET_PORT, NOTIFY_CLIENT, NotifyClientDto } from '@app/common';
 
 import { WebsocketGateway } from './websocket.gateway';
 
-@Controller('websocket')
+@Controller('/ws/websocket')
 export class WebsocketController {
   constructor(
     private readonly websocketGateway: WebsocketGateway,
