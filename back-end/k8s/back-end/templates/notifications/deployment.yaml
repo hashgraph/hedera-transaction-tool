@@ -21,7 +21,7 @@ spec:
             - name: HTTP_PORT
               value: '3020'
             - name: AUTH_HOST
-              value: '3001'
+              value: 'auth'
             - name: AUTH_PORT
               value: '3001'
             - name: RABBITMQ_USERNAME
@@ -46,6 +46,8 @@ kind: Service
 metadata:
   name: notifications
   namespace: hedera-transaction-tool
+  annotations:
+    cloud.google.com/backend-config: '{"default": "ws-backendconfig"}'
 spec:
   ports:
     - name: 'http'
@@ -55,3 +57,11 @@ spec:
   selector:
     app: notifications
   type: NodePort
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: ws-backendconfig
+  namespace: hedera-transaction-tool
+spec:
+  timeoutSec: 3600
