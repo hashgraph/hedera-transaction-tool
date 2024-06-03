@@ -183,50 +183,54 @@ export function formatHbar(hbar: Hbar) {
 }
 
 export function stringifyHbar(hbar: Hbar) {
-  const denominations = [
-    HbarUnit.Tinybar,
-    HbarUnit.Microbar,
-    HbarUnit.Millibar,
-    HbarUnit.Hbar,
-    HbarUnit.Kilobar,
-    HbarUnit.Megabar,
-    HbarUnit.Gigabar,
-  ];
-
-  if (
-    hbar._valueInTinybar.isLessThan(HbarUnit.Microbar._tinybar) &&
-    hbar._valueInTinybar.isGreaterThan(HbarUnit.Microbar._tinybar.negated())
-  ) {
-    return `${hbar.to(HbarUnit.Tinybar)} ${HbarUnit.Tinybar._symbol}`;
-  }
-
-  const checkCommonDenomination = (currentDenomination: HbarUnit, nextDenomination: HbarUnit) => {
-    if (
-      (hbar._valueInTinybar.isLessThan(nextDenomination._tinybar) &&
-        hbar._valueInTinybar.isGreaterThanOrEqualTo(currentDenomination._tinybar)) ||
-      (hbar._valueInTinybar.isGreaterThan(nextDenomination._tinybar.negated()) &&
-        hbar._valueInTinybar.isLessThanOrEqualTo(currentDenomination._tinybar.negated()))
-    ) {
-      return `${hbar.to(currentDenomination)} ${currentDenomination._symbol}`;
-    }
-
-    return null;
-  };
-
-  for (let i = 1; i < denominations.length - 1; i++) {
-    const result = checkCommonDenomination(denominations[i], denominations[i + 1]);
-    if (result) return result;
-  }
-
-  if (
-    hbar._valueInTinybar.isGreaterThanOrEqualTo(HbarUnit.Gigabar._tinybar) ||
-    hbar._valueInTinybar.isLessThanOrEqualTo(HbarUnit.Megabar._tinybar.negated())
-  ) {
-    return `${hbar.to(HbarUnit.Gigabar)} ${HbarUnit.Gigabar._symbol}`;
-  }
-
-  throw new Error('Invalid Hbar');
+  return hbar.toBigNumber().eq(0) ? `0 ${HbarUnit.Hbar._symbol}` : hbar.toString();
 }
+
+// export function stringifyHbar(hbar: Hbar) {
+//   const denominations = [
+//     HbarUnit.Tinybar,
+//     HbarUnit.Microbar,
+//     HbarUnit.Millibar,
+//     HbarUnit.Hbar,
+//     HbarUnit.Kilobar,
+//     HbarUnit.Megabar,
+//     HbarUnit.Gigabar,
+//   ];
+
+//   if (
+//     hbar._valueInTinybar.isLessThan(HbarUnit.Microbar._tinybar) &&
+//     hbar._valueInTinybar.isGreaterThan(HbarUnit.Microbar._tinybar.negated())
+//   ) {
+//     return `${hbar.to(HbarUnit.Tinybar)} ${HbarUnit.Tinybar._symbol}`;
+//   }
+
+//   const checkCommonDenomination = (currentDenomination: HbarUnit, nextDenomination: HbarUnit) => {
+//     if (
+//       (hbar._valueInTinybar.isLessThan(nextDenomination._tinybar) &&
+//         hbar._valueInTinybar.isGreaterThanOrEqualTo(currentDenomination._tinybar)) ||
+//       (hbar._valueInTinybar.isGreaterThan(nextDenomination._tinybar.negated()) &&
+//         hbar._valueInTinybar.isLessThanOrEqualTo(currentDenomination._tinybar.negated()))
+//     ) {
+//       return `${hbar.to(currentDenomination)} ${currentDenomination._symbol}`;
+//     }
+
+//     return null;
+//   };
+
+//   for (let i = 1; i < denominations.length - 1; i++) {
+//     const result = checkCommonDenomination(denominations[i], denominations[i + 1]);
+//     if (result) return result;
+//   }
+
+//   if (
+//     hbar._valueInTinybar.isGreaterThanOrEqualTo(HbarUnit.Gigabar._tinybar) ||
+//     hbar._valueInTinybar.isLessThanOrEqualTo(HbarUnit.Megabar._tinybar.negated())
+//   ) {
+//     return `${hbar.to(HbarUnit.Gigabar)} ${HbarUnit.Gigabar._symbol}`;
+//   }
+
+//   throw new Error('Invalid Hbar');
+// }
 
 export function getNodeNumbersFromNetwork(network: {
   [key: string]: string | AccountId;
