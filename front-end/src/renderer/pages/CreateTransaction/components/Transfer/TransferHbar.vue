@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import { Hbar, KeyList, Transaction, TransferTransaction, Transfer } from '@hashgraph/sdk';
+import { Hbar, KeyList, Transaction, TransferTransaction, Transfer, Key } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
 import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
@@ -20,7 +20,12 @@ import { getDraft, updateDraft } from '@renderer/services/transactionDraftsServi
 import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
 import { getAll } from '@renderer/services/accountsService';
 
-import { getTransactionFromBytes, isAccountId, stringifyHbar } from '@renderer/utils';
+import {
+  getTransactionFromBytes,
+  getPropagationButtonLabel,
+  isAccountId,
+  stringifyHbar,
+} from '@renderer/utils';
 import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -73,6 +78,31 @@ const isExecuted = ref(false);
 const isSubmitted = ref(false);
 
 /* Computed */
+const transactionKey = computed(() => {
+  const keyList: Key[] = [];
+
+  payerData.key.value && keyList.push(payerData.key.value);
+
+  const addedKeysForAccountIds: string[] = [];
+  for (const transfer of transfers.value.filter(t => !t.isApproved)) {
+    const accountId = transfer.accountId.toString();
+
+    const key = accountInfos.value[accountId]?.key;
+    const receiverSigRequired = accountInfos.value[accountId]?.receiverSignatureRequired;
+
+    if (
+      key &&
+      !addedKeysForAccountIds.includes(accountId) &&
+      (transfer.amount.isNegative() || (!transfer.amount.isNegative() && receiverSigRequired))
+    ) {
+      keyList.push(key);
+      addedKeysForAccountIds.push(accountId);
+    }
+  }
+
+  return new KeyList(keyList);
+});
+
 const totalBalance = computed(() => {
   const totalBalance = transfers.value.reduce(
     (acc, debit) => acc.plus(debit.amount.toBigNumber()),
@@ -346,7 +376,13 @@ onMounted(async () => {
             "
           >
             <span class="bi bi-send"></span>
-            Sign & Submit</AppButton
+            {{
+              getPropagationButtonLabel(
+                transactionKey,
+                user.keyPairs,
+                Boolean(user.selectedOrganization),
+              )
+            }}</AppButton
           >
         </template>
       </TransactionHeaderControls>

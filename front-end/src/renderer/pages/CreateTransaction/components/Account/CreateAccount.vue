@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, reactive, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import {
   AccountId,
   AccountCreateTransaction,
@@ -8,6 +8,7 @@ import {
   TransactionReceipt,
   Key,
   HbarUnit,
+  KeyList,
 } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
@@ -29,6 +30,7 @@ import { isAccountId } from '@renderer/utils/validator';
 import {
   getEntityIdFromTransactionReceipt,
   getTransactionFromBytes,
+  getPropagationButtonLabel,
 } from '@renderer/utils/transactions';
 import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
@@ -88,6 +90,13 @@ const transactionMemo = ref('');
 const observers = ref<number[]>([]);
 const approvers = ref<TransactionApproverDto[]>([]);
 
+/* Computed */
+const transactionKey = computed(() => {
+  const keyList: Key[] = [];
+  payerData.key.value && keyList.push(payerData.key.value);
+
+  return new KeyList(keyList);
+});
 /* Handlers */
 const handleStakeTypeChange = (e: Event) => {
   const selectEl = e.target as HTMLSelectElement;
@@ -126,8 +135,7 @@ const handleCreate = async e => {
     }
 
     transaction.value = createTransaction();
-
-    await transactionProcessor.value?.process(payerData.key.value);
+    await transactionProcessor.value?.process(transactionKey.value);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
@@ -279,7 +287,13 @@ const columnClass = 'col-4 col-xxxl-3';
             :disabled="!ownerKey || !payerData.isValid.value"
           >
             <span class="bi bi-send"></span>
-            Sign & Submit</AppButton
+            {{
+              getPropagationButtonLabel(
+                transactionKey,
+                user.keyPairs,
+                Boolean(user.selectedOrganization),
+              )
+            }}</AppButton
           >
         </template>
       </TransactionHeaderControls>

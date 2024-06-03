@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import {
   Hbar,
   HbarUnit,
@@ -21,7 +21,12 @@ import useAccountId from '@renderer/composables/useAccountId';
 import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
-import { stringifyHbar, isAccountId, getTransactionFromBytes } from '@renderer/utils';
+import {
+  stringifyHbar,
+  isAccountId,
+  getTransactionFromBytes,
+  getPropagationButtonLabel,
+} from '@renderer/utils';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -64,6 +69,15 @@ const isKeyStructureModalShown = ref(false);
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
 
+/* Computed */
+const transactionKey = computed(() => {
+  const keyList: Key[] = [];
+  payerData.key.value && keyList.push(payerData.key.value);
+  ownerData.key.value && keyList.push(ownerData.key.value);
+
+  return new KeyList(keyList);
+});
+
 /* Handlers */
 const handleCreate = async e => {
   e.preventDefault();
@@ -82,9 +96,7 @@ const handleCreate = async e => {
     }
 
     transaction.value = createTransaction();
-
-    const requiredKey = new KeyList([payerData.key.value, ownerData.key.value]);
-    await transactionProcessor.value?.process(requiredKey);
+    await transactionProcessor.value?.process(transactionKey.value);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
@@ -177,7 +189,13 @@ const columnClass = 'col-4 col-xxxl-3';
             "
           >
             <span class="bi bi-send"></span>
-            Sign & Submit</AppButton
+            {{
+              getPropagationButtonLabel(
+                transactionKey,
+                user.keyPairs,
+                Boolean(user.selectedOrganization),
+              )
+            }}</AppButton
           >
         </template>
       </TransactionHeaderControls>
