@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { KeyList, Key } from '@hashgraph/sdk';
-
-import useUserStore from '@renderer/stores/storeUser';
+import { KeyList, PublicKey } from '@hashgraph/sdk';
 
 import { normalizePublicKey } from '@renderer/utils/sdk';
-import * as ush from '@renderer/utils/userStoreHelpers';
+
+import AppPublicKeyNickname from '@renderer/components/ui/AppPublicKeyNickname.vue';
 
 /* Props */
 defineProps<{
@@ -13,9 +12,6 @@ defineProps<{
 
 /* Emits */
 defineEmits(['update:keyList']);
-
-/* Stores */
-const user = useUserStore();
 </script>
 <template>
   <div>
@@ -33,11 +29,12 @@ const user = useUserStore();
           <KeyStructure :key-list="item" />
         </div>
       </template>
-      <template v-else-if="item instanceof Key && true">
+      <template v-else-if="item instanceof PublicKey && true">
         <p class="ms-5 my-3">
-          <span v-if="ush.getNickname(normalizePublicKey(item), user.keyPairs)" class="text-pink"
-            >({{ ush.getNickname(normalizePublicKey(item), user.keyPairs) }}) </span
-          >{{ normalizePublicKey(item) }}
+          <span class="me-2">
+            {{ normalizePublicKey(item) }}
+          </span>
+          <AppPublicKeyNickname :public-key="item" :brackets="true" class="text-pink" />
         </p>
       </template>
     </template>

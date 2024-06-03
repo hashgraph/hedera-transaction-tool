@@ -4,7 +4,10 @@ import { computed } from 'vue';
 import { KeyList, PublicKey } from '@hashgraph/sdk';
 
 import { flattenKeyList } from '@renderer/services/keyPairService';
+
 import { ableToSign } from '@renderer/utils';
+
+import AppPublicKeyNickname from '@renderer/components/ui/AppPublicKeyNickname.vue';
 
 /* Props */
 const props = defineProps<{
@@ -17,6 +20,7 @@ const publicKeysInKeyList = computed(() => flattenKeyList(props.keyList));
 const publicKeysInKeyListRaw = computed(() =>
   flattenKeyList(props.keyList).map(k => k.toStringRaw()),
 );
+
 /* Emits */
 defineEmits(['update:keyList']);
 </script>
@@ -27,7 +31,14 @@ defineEmits(['update:keyList']);
         v-if="publicKeysSigned.includes(publicKeysInKeyListRaw[0])"
         class="bi bi-check-lg text-success"
       ></span>
-      {{ publicKeysInKeyListRaw[0] }}
+      <span class="mx-2">
+        {{ publicKeysInKeyListRaw[0] }}
+      </span>
+      <AppPublicKeyNickname
+        :public-key="publicKeysInKeyListRaw[0]"
+        :brackets="true"
+        class="text-pink"
+      />
     </div>
   </template>
   <template v-else>
@@ -56,7 +67,10 @@ defineEmits(['update:keyList']);
               v-if="publicKeysSigned.includes(item.toStringRaw())"
               class="bi bi-check-lg text-success"
             ></span>
-            {{ item.toStringRaw() }}
+            <span class="mx-2">
+              {{ item.toStringRaw() }}
+            </span>
+            <AppPublicKeyNickname :public-key="item" :brackets="true" class="text-pink" />
           </p>
         </template>
       </template>
