@@ -301,7 +301,12 @@ watch(files, newFiles => {
       <div class="row g-0 fill-remaining mt-6">
         <div class="col-4 col-xxl-3 flex-column-100 overflow-hidden with-border-end pe-4 ps-0">
           <div class="dropdown">
-            <AppButton color="primary" size="large" class="w-100" data-bs-toggle="dropdown"
+            <AppButton
+              color="primary"
+              size="large"
+              class="w-100"
+              data-testid="button-add-new-file"
+              data-bs-toggle="dropdown"
               >Add new</AppButton
             >
             <ul class="dropdown-menu w-100 mt-3">
@@ -316,7 +321,9 @@ watch(files, newFiles => {
                   })
                 "
               >
-                <span class="text-small text-bold">Create New</span>
+                <span class="text-small text-bold" data-testid="link-create-new-file"
+                  >Create New</span
+                >
               </li>
               <li
                 class="dropdown-item cursor-pointer mt-3"
@@ -329,7 +336,7 @@ watch(files, newFiles => {
                   })
                 "
               >
-                <span class="text-small text-bold">Update</span>
+                <span class="text-small text-bold" data-testid="link-update-file">Update</span>
               </li>
               <li
                 class="dropdown-item cursor-pointer mt-3"
@@ -342,7 +349,7 @@ watch(files, newFiles => {
                   })
                 "
               >
-                <span class="text-small text-bold">Append</span>
+                <span class="text-small text-bold" data-testid="link-append-file">Append</span>
               </li>
               <li
                 class="dropdown-item cursor-pointer mt-3"
@@ -355,13 +362,15 @@ watch(files, newFiles => {
                   })
                 "
               >
-                <span class="text-small text-bold">Read</span>
+                <span class="text-small text-bold" data-testid="link-read-file">Read</span>
               </li>
               <li
                 class="dropdown-item cursor-pointer mt-3"
                 @click="$router.push('files/link-existing')"
               >
-                <span class="text-small text-bold">Add Existing</span>
+                <span class="text-small text-bold" data-testid="link-add-existing-file"
+                  >Add Existing</span
+                >
               </li>
             </ul>
           </div>
@@ -393,7 +402,9 @@ watch(files, newFiles => {
                 >
                   <p class="text-small text-semi-bold overflow-hidden">{{ file.nickname }}</p>
                   <div class="d-flex justify-content-between align-items-center">
-                    <p class="text-micro text-secondary mt-2">{{ file.file_id }}</p>
+                    <p class="text-micro text-secondary mt-2" :data-testid="'p-file-id-' + index">
+                      {{ file.file_id }}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -439,12 +450,14 @@ watch(files, newFiles => {
                     class="min-w-unset"
                     color="danger"
                     @click="isUnlinkFileModalShown = true"
+                    data-testid="button-remove-file-card"
                     ><span class="bi bi-trash"></span> Remove</AppButton
                   >
                   <div class="border-start ps-3">
                     <AppButton
                       class="min-w-unset"
                       color="borderless"
+                      data-testid="button-update-file"
                       @click="
                         $router.push({
                           name: 'createTransaction',
@@ -459,6 +472,7 @@ watch(files, newFiles => {
                     <AppButton
                       class="min-w-unset"
                       color="borderless"
+                      data-testid="button-append-file"
                       @click="
                         $router.push({
                           name: 'createTransaction',
@@ -473,6 +487,7 @@ watch(files, newFiles => {
                     <AppButton
                       class="min-w-unset"
                       color="borderless"
+                      data-testid="button-read-file"
                       @click="
                         $router.push({
                           name: 'createTransaction',
@@ -499,7 +514,7 @@ watch(files, newFiles => {
                     <p class="text-small text-semi-bold">File ID</p>
                   </div>
                   <div class="col-7">
-                    <p class="text-small text-semi-bold">
+                    <p class="text-small text-semi-bold" data-testid="p-file-id-info">
                       <template
                         v-if="
                           selectedFileIdWithChecksum && Array.isArray(selectedFileIdWithChecksum)
@@ -519,7 +534,7 @@ watch(files, newFiles => {
                     <p class="text-small text-semi-bold">Size</p>
                   </div>
                   <div class="col-7">
-                    <p class="text-small">
+                    <p class="text-small" data-testid="p-file-size">
                       {{
                         selectedFileInfo?.size
                           ? convertBytes(selectedFileInfo.size.toNumber(), {
@@ -560,10 +575,13 @@ watch(files, newFiles => {
                       >
                     </template>
                     <template v-else>
-                      <p class="text-secondary text-small overflow-hidden">
+                      <p class="text-secondary text-small overflow-hidden" data-testid="p-file-key">
                         {{ flattenKeyList(selectedFileInfo.keys)[0].toStringRaw() }}
                       </p>
-                      <p class="text-small text-semi-bold text-pink mt-3">
+                      <p
+                        class="text-small text-semi-bold text-pink mt-3"
+                        data-testid="p-file-key-type"
+                      >
                         {{ flattenKeyList(selectedFileInfo.keys)[0]._key._type }}
                       </p>
                     </template>
@@ -572,7 +590,7 @@ watch(files, newFiles => {
                 <div class="mt-4 row">
                   <div class="col-5"><p class="text-small text-semi-bold">Memo</p></div>
                   <div class="col-7">
-                    <p class="text-small text-semi-bold">
+                    <p class="text-small text-semi-bold" data-testid="p-file-memo">
                       {{
                         selectedFileInfo
                           ? selectedFileInfo.fileMemo.length > 0
@@ -588,7 +606,7 @@ watch(files, newFiles => {
                     <p class="text-small text-semi-bold">Ledger ID</p>
                   </div>
                   <div class="col-7">
-                    <p class="text-small text-semi-bold">
+                    <p class="text-small text-semi-bold" data-testid="p-file-ledger-id">
                       {{ selectedFileInfo?.ledgerId || 'Unknown' }}
                     </p>
                   </div>
@@ -596,7 +614,7 @@ watch(files, newFiles => {
                 <div class="mt-4 row">
                   <div class="col-5"><p class="text-small text-semi-bold">Expires At</p></div>
                   <div class="col-7">
-                    <p class="text-small text-semi-bold">
+                    <p class="text-small text-semi-bold" data-testid="p-file-expires-at">
                       {{
                         selectedFileInfo?.expirationTime
                           ? getFormattedDateFromTimestamp(selectedFileInfo?.expirationTime)
@@ -630,6 +648,7 @@ watch(files, newFiles => {
                     </textarea>
                     <p
                       v-if="!isDescriptionInputShown"
+                      data-testid="p-file-description"
                       class="text-small text-semi-bold text-wrap"
                       @dblclick="handleStartDescriptionEdit"
                     >
@@ -678,7 +697,12 @@ watch(files, newFiles => {
               <AppButton color="borderless" @click="isUnlinkFileModalShown = false"
                 >Cancel</AppButton
               >
-              <AppButton color="danger" @click="handleUnlinkFile">Unlink</AppButton>
+              <AppButton
+                color="danger"
+                @click="handleUnlinkFile"
+                data-testid="button-confirm-unlink-file"
+                >Unlink</AppButton
+              >
             </div>
           </div>
         </AppModal>

@@ -81,6 +81,7 @@ const handleLinkFile = async e => {
           data-bs-placement="right"
           data-bs-custom-class="wide-tooltip"
           data-bs-title="The File ID of the file you would like to link on the Hedera network."
+          data-testid="input-existing-file-id"
           placeholder="0.0.4124"
         />
       </div>
@@ -92,7 +93,12 @@ const handleLinkFile = async e => {
         <label class="form-label">Description</label>
         <textarea v-model="description" class="form-control is-fill" rows="8"></textarea>
       </div>
-      <AppButton color="primary" type="submit" class="mt-5" :disabled="!isFileId(fileId)"
+      <AppButton
+        color="primary"
+        data-testid="button-link-file"
+        type="submit"
+        class="mt-5"
+        :disabled="!isFileId(fileId)"
         >Link File</AppButton
       >
     </form>
