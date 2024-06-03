@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, computed } from 'vue';
 import { FileUpdateTransaction, Hbar, Key, KeyList, Timestamp, Transaction } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+
+import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
@@ -15,7 +17,7 @@ import {
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
 import { getTransactionFromBytes } from '@renderer/utils/transactions';
-import { isAccountId } from '@renderer/utils/validator';
+import { getPropagationButtonLabel, isAccountId } from '@renderer/utils';
 import {
   isHederaSpecialFileId,
   getMinimumExpirationTime,
@@ -31,6 +33,9 @@ import TransactionIdControls from '@renderer/components/Transaction/TransactionI
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
+
+/* Stores */
+const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
@@ -62,6 +67,17 @@ const chunksAmount = ref<number | null>(null);
 
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
+
+/* Computed */
+const transactionKey = computed(() => {
+  const keyList: Key[] = [];
+
+  payerData.key.value && keyList.push(payerData.key.value);
+  ownerKey.value && keyList.push(ownerKey.value);
+  newOwnerKey.value && keyList.push(newOwnerKey.value);
+
+  return new KeyList(keyList);
+});
 
 /* Handlers */
 const handleRemoveFile = async () => {
@@ -135,11 +151,7 @@ const handleCreate = async e => {
     }
 
     transaction.value = newTransaction;
-
-    const requiredKey = new KeyList([payerData.key.value, ownerKey.value]);
-    newOwnerKey.value && requiredKey.push(newOwnerKey.value);
-
-    await transactionProcessor.value?.process(requiredKey, chunkSize.value, 1);
+    await transactionProcessor.value?.process(transactionKey.value, chunkSize.value, 1);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
@@ -259,7 +271,13 @@ const columnClass = 'col-4 col-xxxl-3';
             :disabled="!ownerKey || !payerData.isValid.value || !fileId"
           >
             <span class="bi bi-send"></span>
-            Sign & Submit</AppButton
+            {{
+              getPropagationButtonLabel(
+                transactionKey,
+                user.keyPairs,
+                Boolean(user.selectedOrganization),
+              )
+            }}</AppButton
           >
         </template>
       </TransactionHeaderControls>

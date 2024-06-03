@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { Hbar, AccountDeleteTransaction, Key, Transaction, KeyList } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
@@ -15,7 +15,7 @@ import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 import { remove } from '@renderer/services/accountsService';
 
-import { getTransactionFromBytes, isAccountId } from '@renderer/utils';
+import { getTransactionFromBytes, isAccountId, getPropagationButtonLabel } from '@renderer/utils';
 import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -56,6 +56,23 @@ const isKeyStructureModalShown = ref(false);
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
 
+/* Computed */
+const transactionKey = computed(() => {
+  const keyList: Key[] = [];
+
+  payerData.key.value && keyList.push(payerData.key.value);
+  accountData.key.value && keyList.push(accountData.key.value);
+
+  if (
+    transferAccountData.accountInfo?.value?.receiverSignatureRequired &&
+    transferAccountData.key?.value
+  ) {
+    transferAccountData.key.value && keyList.push(transferAccountData.key.value);
+  }
+
+  return new KeyList(keyList);
+});
+
 /* Handlers */
 const handleCreate = async e => {
   e.preventDefault();
@@ -74,14 +91,7 @@ const handleCreate = async e => {
     }
 
     transaction.value = createTransaction();
-
-    const requiredKey = new KeyList(
-      transferAccountData.accountInfo.value?.receiverSignatureRequired &&
-      transferAccountData.key.value
-        ? [payerData.key.value, accountData.key.value, transferAccountData.key.value]
-        : [payerData.key.value, accountData.key.value],
-    );
-    await transactionProcessor.value?.process(requiredKey);
+    await transactionProcessor.value?.process(transactionKey.value);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
@@ -192,7 +202,13 @@ const columnClass = 'col-4 col-xxxl-3';
             "
           >
             <span class="bi bi-send"></span>
-            Sign & Submit</AppButton
+            {{
+              getPropagationButtonLabel(
+                transactionKey,
+                user.keyPairs,
+                Boolean(user.selectedOrganization),
+              )
+            }}</AppButton
           >
         </template>
       </TransactionHeaderControls>

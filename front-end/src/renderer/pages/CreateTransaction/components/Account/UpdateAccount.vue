@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, watch, onMounted } from 'vue';
+import { computed, ref, reactive, watch, onMounted } from 'vue';
 import {
   AccountId,
   AccountUpdateTransaction,
@@ -22,7 +22,12 @@ import useAccountId from '@renderer/composables/useAccountId';
 import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
-import { compareKeys, getTransactionFromBytes, isAccountId } from '@renderer/utils';
+import {
+  compareKeys,
+  getTransactionFromBytes,
+  getPropagationButtonLabel,
+  isAccountId,
+} from '@renderer/utils';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -80,6 +85,17 @@ const isKeyStructureModalShown = ref(false);
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
 
+/* Computed */
+const transactionKey = computed(() => {
+  const keyList: Key[] = [];
+
+  payerData.key.value && keyList.push(payerData.key.value);
+  accountData.key.value && keyList.push(accountData.key.value);
+  newOwnerKey.value && keyList.push(newOwnerKey.value);
+
+  return new KeyList(keyList);
+});
+
 /* Handlers */
 const handleStakeTypeChange = (e: Event) => {
   const selectEl = e.target as HTMLSelectElement;
@@ -117,11 +133,7 @@ const handleCreate = async e => {
     }
 
     transaction.value = createTransaction();
-
-    const requiredKey = new KeyList([payerData.key.value, accountData.key.value]);
-    newOwnerKey.value && requiredKey.push(newOwnerKey.value);
-
-    await transactionProcessor.value?.process(requiredKey);
+    await transactionProcessor.value?.process(transactionKey.value);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
@@ -295,7 +307,13 @@ const columnClass = 'col-4 col-xxxl-3';
             "
           >
             <span class="bi bi-send"></span>
-            Sign & Submit</AppButton
+            {{
+              getPropagationButtonLabel(
+                transactionKey,
+                user.keyPairs,
+                Boolean(user.selectedOrganization),
+              )
+            }}</AppButton
           >
         </template>
       </TransactionHeaderControls>

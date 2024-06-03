@@ -4,12 +4,14 @@ import {
   TransactionReceipt,
   Transaction as Tx,
   TransactionId,
+  Key,
 } from '@hashgraph/sdk';
-import { Transaction } from '@prisma/client';
+import { KeyPair, Transaction } from '@prisma/client';
 
 import { Network } from '@main/shared/enums';
 
 import { openExternal } from '@renderer/services/electronUtilsService';
+import { flattenKeyList } from '@renderer/services/keyPairService';
 
 export const getTransactionDate = (transaction: Transaction): string => {
   return new Timestamp(
@@ -91,4 +93,30 @@ export const getTransactionType = (transaction: Tx | Uint8Array) => {
 export const getTransactionFromBytes = <T extends Tx>(transactionBytes: string): T => {
   const bytesArray = transactionBytes.split(',').map(n => Number(n));
   return Tx.fromBytes(Uint8Array.from(bytesArray)) as T;
+};
+
+/* Gets the label for the transaction propagation button */
+export const getPropagationButtonLabel = (
+  transactionKey: Key,
+  userKeys: KeyPair[],
+  aciveOrganization: boolean,
+): string => {
+  if (aciveOrganization) {
+    const userPublicKeys = userKeys.map(key => key.public_key);
+    const publicKeys = flattenKeyList(transactionKey);
+
+    const publicKeysRaw = publicKeys.map(pk => pk.toStringRaw());
+    const publicKeysDer = publicKeys.map(pk => pk.toStringRaw());
+
+    const userKeyRequired = userPublicKeys.some(userKey => {
+      if (publicKeysRaw.includes(userKey) || publicKeysDer.includes(userKey)) {
+        return true;
+      }
+      return false;
+    });
+
+    return userKeyRequired ? 'Sign and Share' : 'Create and Share';
+  } else {
+    return 'Sign & Execute';
+  }
 };

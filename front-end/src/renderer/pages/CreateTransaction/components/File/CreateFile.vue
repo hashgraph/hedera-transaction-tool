@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import {
   FileCreateTransaction,
   Hbar,
@@ -30,9 +30,10 @@ import {
   createFileInfo,
   getMinimumExpirationTime,
   getMaximumExpirationTime,
-  isAccountId,
   getEntityIdFromTransactionReceipt,
   getTransactionFromBytes,
+  getPropagationButtonLabel,
+  isAccountId,
 } from '@renderer/utils';
 import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
@@ -77,8 +78,17 @@ const approvers = ref<TransactionApproverDto[]>([]);
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
 
-/* Handlers */
+/* Computed */
+const transactionKey = computed(() => {
+  const keyList: Key[] = [];
 
+  payerData.key.value && keyList.push(payerData.key.value);
+  ownerKey.value && keyList.push(ownerKey.value);
+
+  return new KeyList(keyList);
+});
+
+/* Handlers */
 const handleCreate = async e => {
   e.preventDefault();
 
@@ -92,9 +102,7 @@ const handleCreate = async e => {
     }
 
     transaction.value = createTransaction();
-
-    const requiredKey = new KeyList([payerData.key.value, ownerKey.value]);
-    await transactionProcessor.value?.process(requiredKey);
+    await transactionProcessor.value?.process(transactionKey.value);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
@@ -233,7 +241,13 @@ watch(payerData.isValid, isValid => {
             :disabled="!ownerKey || !payerData.isValid.value"
           >
             <span class="bi bi-send"></span>
-            Sign & Submit</AppButton
+            {{
+              getPropagationButtonLabel(
+                transactionKey,
+                user.keyPairs,
+                Boolean(user.selectedOrganization),
+              )
+            }}</AppButton
           >
         </template>
       </TransactionHeaderControls>
