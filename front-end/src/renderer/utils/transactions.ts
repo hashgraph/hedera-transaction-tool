@@ -40,7 +40,7 @@ export const getTransactionStatus = (transaction: Transaction): string => {
   try {
     return Status._fromCode(transaction.status_code).toString().split('_').join(' ');
   } catch (error) {
-    return 'Unknown';
+    return 'UNKNOWN';
   }
 };
 
@@ -48,11 +48,15 @@ export const getPayerFromTransaction = (transaction: Transaction): number => {
   return Number(transaction.transaction_id.split('@')[0].split('.').join(''));
 };
 
-export const getStatusFromCode = (code: number): string => {
+export const getStatusFromCode = (code?: number): string => {
+  if (code === undefined || code === null) {
+    return 'EXPIRED';
+  }
+
   try {
     return Status._fromCode(code).toString();
   } catch (error) {
-    return 'Unknown';
+    return 'UNKNOWN';
   }
 };
 

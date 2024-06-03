@@ -3,7 +3,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 
-import { In, Between, MoreThan, Repository } from 'typeorm';
+import { In, Between, MoreThan, Repository, LessThanOrEqual } from 'typeorm';
 import {
   FileAppendTransaction,
   FileUpdateTransaction,
@@ -96,7 +96,7 @@ export class TransactionStatusService {
 
   /* For transactions with valid start, started 3 minutes */
   @Cron(CronExpression.EVERY_10_SECONDS, {
-    name: 'status_update_between_ten_minutes_and_one_hour',
+    name: 'status_update_between_ten_seconds_and_three_minutes',
   })
   async handleTransactionsBetweenNowAndAfterThreeMinutes() {
     const transactions = await this.updateTransactions(
@@ -111,6 +111,41 @@ export class TransactionStatusService {
     )) {
       this.addExecutionTimeout(transaction);
     }
+  }
+
+  /* For transactions that are expired */
+  @Cron(CronExpression.EVERY_10_SECONDS, {
+    name: 'status_update_expired_transactions',
+  })
+  async handleExpiredTransactions() {
+    this.transactionRepo.manager.transaction(async transactionalEntityManager => {
+      const transactions = await transactionalEntityManager.find(Transaction, {
+        where: {
+          status: In([
+            TransactionStatus.NEW,
+            TransactionStatus.REJECTED,
+            TransactionStatus.WAITING_FOR_EXECUTION,
+            TransactionStatus.WAITING_FOR_SIGNATURES,
+          ]),
+          validStart: LessThanOrEqual(this.getValidStartExpired()),
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      for (const transaction of transactions) {
+        await transactionalEntityManager.update(
+          Transaction,
+          {
+            id: transaction.id,
+          },
+          {
+            status: TransactionStatus.EXPIRED,
+          },
+        );
+      }
+    });
   }
 
   /* Checks if the signers are enough to sign the transactions and update their statuses */
@@ -242,27 +277,31 @@ export class TransactionStatusService {
   }
 
   private getOneWeekLater() {
-    return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    return new Date(Date.now() + 7 * 24 * 60 * 60 * 1_000);
   }
 
   private getOneDayLater() {
-    return new Date(Date.now() + 1 * 24 * 60 * 60 * 1000);
+    return new Date(Date.now() + 1 * 24 * 60 * 60 * 1_000);
   }
 
   private getOneHourLater() {
-    return new Date(Date.now() + 1 * 60 * 60 * 1000);
+    return new Date(Date.now() + 1 * 60 * 60 * 1_000);
   }
 
   private getTenMinutesLater() {
-    return new Date(Date.now() + 10 * 60 * 1000);
+    return new Date(Date.now() + 10 * 60 * 1_000);
   }
 
   private getThreeMinutesLater() {
-    return new Date(Date.now() + 3 * 60 * 1000);
+    return new Date(Date.now() + 3 * 60 * 1_000);
   }
 
   private getValidStartNowMinus180Seconds() {
     return new Date(new Date().getTime() - 180 * 1_000);
+  }
+
+  private getValidStartExpired() {
+    return new Date(new Date().getTime() - 181 * 1_000);
   }
 
   private isValidStartExecutable(validStart: Date) {

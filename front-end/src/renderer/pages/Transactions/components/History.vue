@@ -126,7 +126,7 @@ async function fetchTransactions() {
 
       const { totalItems: totalItemsCount, items: rawTransactions } = await getTransactionsForUser(
         user.selectedOrganization.serverUrl,
-        [TransactionStatus.EXECUTED, TransactionStatus.FAILED],
+        [TransactionStatus.EXECUTED, TransactionStatus.FAILED, TransactionStatus.EXPIRED],
         network.network,
         currentPage.value,
         pageSize.value,
@@ -334,9 +334,8 @@ watch(
                   </td>
                   <td>
                     <span
-                      v-if="transactionRaw.statusCode"
                       class="badge bg-success text-break"
-                      :class="{ 'bg-danger': ![0, 22].includes(transactionRaw.statusCode) }"
+                      :class="{ 'bg-danger': ![0, 22].includes(transactionRaw.statusCode || -1) }"
                       >{{ getStatusFromCode(transactionRaw.statusCode) }}</span
                     >
                   </td>

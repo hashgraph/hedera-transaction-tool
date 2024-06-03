@@ -288,7 +288,9 @@ export const getTransactionsForUser = async (
 ): Promise<PaginatedResourceDto<ITransaction>> => {
   try {
     const withValidStart =
-      !status.includes(TransactionStatus.EXECUTED) && !status.includes(TransactionStatus.FAILED);
+      !status.includes(TransactionStatus.EXECUTED) &&
+      !status.includes(TransactionStatus.FAILED) &&
+      !status.includes(TransactionStatus.EXPIRED);
     const validStartTimestamp = new Date(Date.now() - 180 * 1_000).getTime();
 
     const filtering = `&filter=status:in:${status.join(',')}${withValidStart ? `&filter=validStart:gte:${validStartTimestamp}` : ''}&filter=network:eq:${network}`;
