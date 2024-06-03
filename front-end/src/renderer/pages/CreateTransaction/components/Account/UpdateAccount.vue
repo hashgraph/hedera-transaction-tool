@@ -303,7 +303,11 @@ const columnClass = 'col-4 col-xxxl-3';
             type="submit"
             data-testid="button-sign-and-submit-update"
             :disabled="
-              !accountData.accountId.value || !payerData.isValid.value || !accountData.isValid.value
+              !accountData.accountId.value ||
+              !payerData.isValid.value ||
+              !accountData.isValid.value ||
+              (stakeType === 'Account' && !isAccountId(newAccountData.stakedAccountId)) ||
+              (stakeType === 'Node' && newAccountData.stakedNodeId === null)
             "
           >
             <span class="bi bi-send"></span>
@@ -385,12 +389,7 @@ const columnClass = 'col-4 col-xxxl-3';
         <div class="row mt-6">
           <div class="form-group" :class="[columnClass]">
             <label class="form-label">Staking</label>
-            <select
-              class="form-select is-fill"
-              name="stake_type"
-              :disabled="!newAccountData.acceptStakingRewards"
-              @change="handleStakeTypeChange"
-            >
+            <select class="form-select is-fill" name="stake_type" @change="handleStakeTypeChange">
               <template v-for="stakeEntity in ['None', 'Account', 'Node']" :key="stakeEntity">
                 <option :value="stakeEntity" :selected="stakeType === stakeEntity">
                   {{ stakeEntity }}
@@ -400,7 +399,7 @@ const columnClass = 'col-4 col-xxxl-3';
           </div>
           <div v-if="stakeType" class="form-group" :class="[columnClass]">
             <template v-if="stakeType === 'Account'">
-              <label class="form-label">Account ID</label>
+              <label class="form-label">Account ID <span class="text-danger">*</span></label>
               <AppInput
                 v-model="newAccountData.stakedAccountId"
                 :filled="true"
@@ -408,7 +407,7 @@ const columnClass = 'col-4 col-xxxl-3';
               />
             </template>
             <template v-else-if="stakeType === 'Node'">
-              <label class="form-label">Node Number</label>
+              <label class="form-label">Node Number <span class="text-danger">*</span></label>
               <select
                 class="form-select is-fill"
                 name="node_number"
