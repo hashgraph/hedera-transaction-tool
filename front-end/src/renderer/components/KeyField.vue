@@ -6,6 +6,7 @@ import { ComplexKey } from '@prisma/client';
 import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useContactsStore from '@renderer/stores/storeContacts';
 
 import { useToast } from 'vue-toast-notification';
 
@@ -46,6 +47,7 @@ enum Tabs {
 
 /* Stores */
 const user = useUserStore();
+const contacts = useContactsStore();
 
 /* Composables */
 const toast = useToast();
@@ -187,7 +189,10 @@ watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) =
             :filled="true"
             :label="
               modelKey instanceof PublicKey
-                ? ush.getNickname(modelKey.toStringRaw(), user.keyPairs)
+                ? ush.getNickname(modelKey.toStringRaw(), user.keyPairs) ||
+                  contacts.getContactByPublicKey(modelKey)?.nickname.trim() ||
+                  contacts.getContactByPublicKey(modelKey)?.user.email ||
+                  'Public Key'
                 : 'Public Key'
             "
             @update:model-value="handlePublicKeyChange"
