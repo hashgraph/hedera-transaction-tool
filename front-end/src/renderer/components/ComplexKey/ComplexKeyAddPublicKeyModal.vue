@@ -50,13 +50,17 @@ const handleInsert = (e: Event) => {
     throw new Error('Invalid public key');
   }
 
-  const publicKeyInstance =
-    type.value === 'ED25519'
-      ? PublicKey.fromStringED25519(publicKey.value.trim())
-      : PublicKey.fromStringECDSA(publicKey.value.trim());
+  try {
+    const publicKeyInstance =
+      type.value === 'ED25519'
+        ? PublicKey.fromStringED25519(publicKey.value.trim())
+        : PublicKey.fromStringECDSA(publicKey.value.trim());
 
-  props.onPublicKeyAdd(publicKeyInstance);
-  handleShowUpdate(false);
+    props.onPublicKeyAdd(publicKeyInstance);
+    handleShowUpdate(false);
+  } catch (error) {
+    throw new Error('Invalid public key. Make sure you are using the correct key type.');
+  }
 };
 
 /* Watchers */
@@ -124,7 +128,12 @@ watch(
                 <div class="d-flex overflow-hidden">
                   <p class="text-nowrap">
                     <span class="bi bi-key m-2"></span>
-                    <span class="ms-2 text-nowrap">{{ kp.nickname || 'Public Key' }}</span>
+                    <span class="ms-2 text-nowrap">{{
+                      kp.nickname ||
+                      contacts.getContactByPublicKey(kp.publicKey)?.nickname.trim() ||
+                      contacts.getContactByPublicKey(kp.publicKey)?.user.email ||
+                      'Public Key'
+                    }}</span>
                   </p>
                   <div class="border-start px-4 mx-4">
                     <span>{{ kp.publicKey }}</span>
