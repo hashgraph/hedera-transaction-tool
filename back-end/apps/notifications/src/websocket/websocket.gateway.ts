@@ -7,11 +7,11 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 
 import { AUTH_SERVICE, NotifyClientDto } from '@app/common';
 
-import { AuthWebsocketMiddleware } from './middlewares/auth-websocket.middleware';
+import { AuthWebsocket, AuthWebsocketMiddleware } from './middlewares/auth-websocket.middleware';
 
 @WebSocketGateway({
   path: '/ws',
