@@ -284,7 +284,12 @@ const columnClass = 'col-4 col-xxxl-3';
             color="primary"
             data-testid="button-sign-and-submit"
             type="submit"
-            :disabled="!ownerKey || !payerData.isValid.value"
+            :disabled="
+              !ownerKey ||
+              !payerData.isValid.value ||
+              (stakeType === 'Account' && !isAccountId(accountData.stakedAccountId)) ||
+              (stakeType === 'Node' && accountData.stakedNodeId === null)
+            "
           >
             <span class="bi bi-send"></span>
             {{
@@ -356,7 +361,6 @@ const columnClass = 'col-4 col-xxxl-3';
           <div class="form-group" :class="[columnClass]">
             <label class="form-label">Staking</label>
             <select
-              :disabled="!accountData.acceptStakingRewards"
               class="form-select is-fill"
               data-testid="dropdown-staking-account"
               name="stake_type"
@@ -375,7 +379,7 @@ const columnClass = 'col-4 col-xxxl-3';
           </div>
           <div v-if="stakeType" class="form-group" :class="[columnClass]">
             <template v-if="stakeType === 'Account'">
-              <label class="form-label">Account ID</label>
+              <label class="form-label">Account ID <span class="text-danger">*</span></label>
               <AppInput
                 data-testid="input-stake-accountid"
                 v-model="accountData.stakedAccountId"
@@ -384,7 +388,7 @@ const columnClass = 'col-4 col-xxxl-3';
               />
             </template>
             <template v-else-if="stakeType === 'Node'">
-              <label class="form-label">Node Number</label>
+              <label class="form-label">Node Number <span class="text-danger">*</span></label>
               <select
                 class="form-select is-fill"
                 name="node_number"

@@ -66,6 +66,8 @@ const useContactsStore = defineStore('contacts', () => {
       });
 
       contacts.value = newContacts;
+    } else {
+      contacts.value = [];
     }
   }
 

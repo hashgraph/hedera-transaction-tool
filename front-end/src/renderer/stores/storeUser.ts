@@ -95,15 +95,15 @@ const useUserStore = defineStore('user', () => {
   const selectOrganization = async (organization: Organization | null) => {
     if (!organization) {
       selectedOrganization.value = null;
+
       ws.setSocket(null);
-      await contacts.fetch();
     } else {
       selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
 
       const NOTIFICATIONS_SERVICE_PORT = 3020; // See docker-compose.yml in the back-end folder
       ws.setSocket(
         selectedOrganization.value.serverUrl.includes('localhost')
-          ? `ws://localhost:${NOTIFICATIONS_SERVICE_PORT}`
+          ? `ws://localhost:${NOTIFICATIONS_SERVICE_PORT}/`
           : `${selectedOrganization.value.serverUrl}/`,
       );
     }
