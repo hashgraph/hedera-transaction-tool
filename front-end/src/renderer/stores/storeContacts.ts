@@ -1,6 +1,8 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 
+import { PublicKey } from '@hashgraph/sdk';
+
 import { Contact } from '@main/shared/interfaces';
 
 import useUserStore from './storeUser';
@@ -71,6 +73,11 @@ const useContactsStore = defineStore('contacts', () => {
     return contacts.value.find(c => c.user.id === userId);
   }
 
+  function getContactByPublicKey(publicKey: PublicKey | string) {
+    publicKey = publicKey instanceof PublicKey ? publicKey.toStringRaw() : publicKey;
+    return contacts.value.find(c => c.userKeys.find(k => k.publicKey === publicKey));
+  }
+
   function getNickname(userId: number) {
     return contacts.value.find(c => c.user.id === userId)?.nickname || '';
   }
@@ -79,8 +86,9 @@ const useContactsStore = defineStore('contacts', () => {
     contacts,
     publicKeys,
     fetch,
-    getNickname,
     getContact,
+    getContactByPublicKey,
+    getNickname,
   };
 });
 
