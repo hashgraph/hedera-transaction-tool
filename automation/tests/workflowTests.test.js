@@ -130,7 +130,7 @@ test.describe('Workflow tests', () => {
     expect(stakedToText).toBe('None');
 
     const pendingRewardText = (await accountPage.getPendingRewardText()).trim();
-    expect(pendingRewardText).toBe('0 tℏ');
+    expect(pendingRewardText).toBe('0 ℏ');
 
     const rewardsText = (await accountPage.getRewardsText()).trim();
     expect(rewardsText).toBe('Accepted');
@@ -361,7 +361,6 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify user can add an existing file to files card', async () => {
-    test.setTimeout(1200000);
     await filePage.ensureFileExistsAndUnlinked(globalCredentials.password);
     await filePage.clickOnFilesMenuButton();
     await filePage.clickOnAddNewButtonForFile();
