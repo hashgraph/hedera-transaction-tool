@@ -50,6 +50,7 @@ export enum TransactionStatus {
   WAITING_FOR_EXECUTION = 'WAITING FOR EXECUTION',
   EXECUTED = 'EXECUTED',
   FAILED = 'FAILED',
+  EXPIRED = 'EXPIRED',
 }
 
 @Entity()
