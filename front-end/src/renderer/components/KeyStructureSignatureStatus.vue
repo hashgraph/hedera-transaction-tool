@@ -31,14 +31,14 @@ defineEmits(['update:keyList']);
         v-if="publicKeysSigned.includes(publicKeysInKeyListRaw[0])"
         class="bi bi-check-lg text-success"
       ></span>
+      <span class="me-2">
+        {{ publicKeysInKeyListRaw[0] }}
+      </span>
       <AppPublicKeyNickname
         :public-key="publicKeysInKeyListRaw[0]"
         :brackets="true"
         class="text-pink"
       />
-      <span class="ms-2">
-        {{ publicKeysInKeyListRaw[0] }}
-      </span>
     </div>
   </template>
   <template v-else>
@@ -67,10 +67,10 @@ defineEmits(['update:keyList']);
               v-if="publicKeysSigned.includes(item.toStringRaw())"
               class="bi bi-check-lg text-success"
             ></span>
-            <AppPublicKeyNickname :public-key="item" :brackets="true" class="text-pink" />
-            <span class="ms-2">
+            <span class="me-2">
               {{ item.toStringRaw() }}
             </span>
+            <AppPublicKeyNickname :public-key="item" :brackets="true" class="text-pink" />
           </p>
         </template>
       </template>

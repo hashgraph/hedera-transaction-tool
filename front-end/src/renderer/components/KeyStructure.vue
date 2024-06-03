@@ -31,10 +31,10 @@ defineEmits(['update:keyList']);
       </template>
       <template v-else-if="item instanceof PublicKey && true">
         <p class="ms-5 my-3">
-          <AppPublicKeyNickname :public-key="item" :brackets="true" class="text-pink" />
-          <span class="ms-2">
+          <span class="me-2">
             {{ normalizePublicKey(item) }}
           </span>
+          <AppPublicKeyNickname :public-key="item" :brackets="true" class="text-pink" />
         </p>
       </template>
     </template>
