@@ -23,14 +23,19 @@ export class UserKeysService {
   // Upload the provided user key for the provided user.
   async uploadKey(user: User, dto: UploadUserKeyDto): Promise<UserKey> {
     // Find the userKey by the publicKey
-    let userKey = await this.getUserKey({ publicKey: dto.publicKey }, { user: true });
+    let userKey = await this.repo.findOne({
+      where: { publicKey: dto.publicKey },
+      relations: { user: true },
+      withDeleted: true,
+    });
+
     if (userKey) {
       // If the userKey found is owned by a different user,
       // or if the userKey has a non null hash or index that doesn't
       // match the hash or index provided
       // throw an error.
       if (
-        userKey.user !== user ||
+        userKey.user.id !== user.id ||
         (userKey.mnemonicHash && userKey.mnemonicHash !== dto.mnemonicHash) ||
         (userKey.index && userKey.index !== dto.index)
       ) {
@@ -41,6 +46,10 @@ export class UserKeysService {
     } else {
       userKey = await this.repo.create(dto);
       userKey.user = user;
+    }
+
+    if (userKey.deletedAt) {
+      await this.repo.recover(userKey);
     }
     return this.repo.save(userKey);
   }
@@ -58,7 +67,7 @@ export class UserKeysService {
   async removeKey(id: number): Promise<UserKey> {
     const userKey = await this.getUserKey({ id });
     if (!userKey) {
-      throw new NotFoundException('key not found');
+      throw new NotFoundException('Key not found');
     }
     return this.repo.softRemove(userKey);
   }
