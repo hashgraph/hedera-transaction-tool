@@ -61,7 +61,10 @@ const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
     }
 
     if (isLoggedInOrganization(user.selectedOrganization)) {
-      if (user.selectedOrganization.userKeys.some(k => k.publicKey === keyPair.public_key)) {
+      if (
+        user.selectedOrganization.userKeys.some(k => k.publicKey === keyPair.public_key) &&
+        user.keyPairs.find(kp => kp.public_key === keyPair.public_key)
+      ) {
         throw new Error('Key pair already exists');
       }
 
