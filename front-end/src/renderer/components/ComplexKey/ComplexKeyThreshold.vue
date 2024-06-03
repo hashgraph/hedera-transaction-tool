@@ -2,8 +2,10 @@
 import { ref } from 'vue';
 import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 
-import { useToast } from 'vue-toast-notification';
 import useUserStore from '@renderer/stores/storeUser';
+import useContactsStore from '@renderer/stores/storeContacts';
+
+import { useToast } from 'vue-toast-notification';
 
 import { isPublicKeyInKeyList } from '@renderer/utils/sdk';
 import * as ush from '@renderer/utils/userStoreHelpers';
@@ -25,6 +27,7 @@ const emit = defineEmits(['update:keyList']);
 
 /* Stores */
 const user = useUserStore();
+const contacts = useContactsStore();
 
 /* Composables */
 const toast = useToast();
@@ -191,7 +194,11 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
                 filled
                 readOnly
                 has-cross-icon
-                :label="ush.getNickname(key.toStringRaw(), user.keyPairs)"
+                :label="
+                  ush.getNickname(key.toStringRaw(), user.keyPairs) ||
+                  contacts.getContactByPublicKey(key)?.nickname.trim() ||
+                  contacts.getContactByPublicKey(key)?.user.email
+                "
                 :on-cross-icon-click="() => handleRemovePublicKey(key)"
                 :input-data-test-id="`input-complex-key-public-key-${depth || 0}-${i}`"
                 :remove-data-test-id="`input-complex-key-remove-${depth || 0}-${i}`"
