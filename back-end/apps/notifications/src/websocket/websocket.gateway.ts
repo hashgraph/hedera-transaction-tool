@@ -14,6 +14,7 @@ import { AUTH_SERVICE, NotifyClientDto } from '@app/common';
 import { AuthWebsocketMiddleware } from './middlewares/auth-websocket.middleware';
 
 @WebSocketGateway({
+  path: '/ws',
   cors: { origin: true, methods: ['GET', 'POST'], credentials: true },
   connectionStateRecovery: { maxDisconnectionDuration: 2 * 60 * 1000 },
 })
@@ -25,15 +26,15 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   @WebSocketServer()
   private server: Server;
 
-  afterInit(server: Server) {
+  afterInit(server: Server): any {
     server.use(AuthWebsocketMiddleware(this.authService));
   }
 
-  handleConnection(client: Socket) {
+  handleConnection(client: AuthWebsocket, ...args): any {
     this.logger.log(`client connected ${client.id}`);
   }
 
-  handleDisconnect(client: Socket) {
+  handleDisconnect(client: AuthWebsocket): any {
     this.logger.log(`client disconnected ${client.id}`);
   }
 

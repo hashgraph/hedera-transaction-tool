@@ -104,7 +104,7 @@ const useUserStore = defineStore('user', () => {
       ws.setSocket(
         selectedOrganization.value.serverUrl.includes('localhost')
           ? `ws://localhost:${NOTIFICATIONS_SERVICE_PORT}`
-          : `${selectedOrganization.value.serverUrl}/ws`,
+          : `${selectedOrganization.value.serverUrl}/`,
       );
     }
     await ush.afterOrganizationSelection(personal.value, selectedOrganization, keyPairs, router);

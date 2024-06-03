@@ -23,6 +23,7 @@ const useThemeStore = defineStore('theme', () => {
     }
 
     socket.value = io(url, {
+      path: '/ws',
       withCredentials: true,
     });
 
