@@ -31,7 +31,7 @@ defineEmits(['update:keyList']);
         v-if="publicKeysSigned.includes(publicKeysInKeyListRaw[0])"
         class="bi bi-check-lg text-success"
       ></span>
-      <span class="me-2">
+      <span class="mx-2">
         {{ publicKeysInKeyListRaw[0] }}
       </span>
       <AppPublicKeyNickname
@@ -67,7 +67,7 @@ defineEmits(['update:keyList']);
               v-if="publicKeysSigned.includes(item.toStringRaw())"
               class="bi bi-check-lg text-success"
             ></span>
-            <span class="me-2">
+            <span class="mx-2">
               {{ item.toStringRaw() }}
             </span>
             <AppPublicKeyNickname :public-key="item" :brackets="true" class="text-pink" />
