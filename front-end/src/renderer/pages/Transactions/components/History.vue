@@ -314,28 +314,31 @@ watch(orgFilters, async () => {
           <tbody>
             <template v-if="!user.selectedOrganization">
               <template
-                v-for="transaction in transactions"
+                v-for="(transaction, index) in transactions"
                 :key="transaction.created_at.toString()"
               >
                 <tr>
-                  <td>{{ getTransactionId(transaction) }}</td>
-                  <td>
+                  <td :data-testid="`transaction-id-${index}`">
+                    {{ getTransactionId(transaction) }}
+                  </td>
+                  <td :data-testid="`transaction-type-${index}`">
                     <span class="text-bold">{{ transaction.type }}</span>
                   </td>
-                  <td>
+                  <td :data-testid="`transaction-status-${index}`">
                     <span
                       class="badge bg-success text-break"
                       :class="{ 'bg-danger': ![0, 22].includes(transaction.status_code) }"
                       >{{ getTransactionStatus(transaction) }}</span
                     >
                   </td>
-                  <td>
+                  <td :data-testid="`transaction-createdAt-${index}`">
                     <span class="text-small text-secondary">
                       {{ getDateStringExtended(transaction.created_at) }}
                     </span>
                   </td>
                   <td class="text-center">
                     <AppButton
+                      :data-testid="`transaction-details-${index}`"
                       @click="handleTransactionDetailsClick(transaction.id)"
                       color="secondary"
                       class="min-w-unset"
@@ -347,40 +350,54 @@ watch(orgFilters, async () => {
             </template>
             <template v-else-if="isLoggedInOrganization(user.selectedOrganization)">
               <template
-                v-for="{ transaction, transactionRaw } in organizationTransactions"
-                :key="transactionRaw.id"
+                v-for="(transactionData, index) in organizationTransactions"
+                :key="transactionData.transactionRaw.id"
               >
-                <tr v-if="transaction instanceof SDKTransaction && true">
-                  <td>{{ sdkTransactionUtils.getTransactionId(transaction) }}</td>
-                  <td>
+                <tr v-if="transactionData.transaction instanceof SDKTransaction">
+                  <td :data-testid="`transaction-id-${index}`">
+                    {{ sdkTransactionUtils.getTransactionId(transactionData.transaction) }}
+                  </td>
+                  <td :data-testid="`transaction-type-${index}`">
                     <span class="text-bold">{{
-                      sdkTransactionUtils.getTransactionType(transaction)
+                      sdkTransactionUtils.getTransactionType(transactionData.transaction)
                     }}</span>
                   </td>
-                  <td>
+                  <td :data-testid="`transaction-status-${index}`">
                     <span
                       class="badge bg-success text-break"
-                      :class="{ 'bg-danger': ![0, 22].includes(transactionRaw.statusCode || -1) }"
-                      >{{ getStatusFromCode(transactionRaw.statusCode) }}</span
+                      :class="{
+                        'bg-danger': ![0, 22].includes(
+                          transactionData.transactionRaw.statusCode || -1,
+                        ),
+                      }"
+                      >{{ getStatusFromCode(transactionData.transactionRaw.statusCode) }}</span
                     >
                   </td>
-                  <td>
+                  <td :data-testid="`transaction-createdAt-${index}`">
                     <span class="text-small text-secondary">
-                      {{ getDateStringExtended(new Date(transactionRaw.createdAt)) }}
+                      {{
+                        getDateStringExtended(new Date(transactionData.transactionRaw.createdAt))
+                      }}
                     </span>
                   </td>
                   <td>
-                    <span class="text-small text-secondary">
+                    <span
+                      :data-testid="`transaction-executedAt-${index}`"
+                      class="text-small text-secondary"
+                    >
                       {{
-                        transactionRaw.executedAt
-                          ? getDateStringExtended(new Date(transactionRaw.executedAt))
+                        transactionData.transactionRaw.executedAt
+                          ? getDateStringExtended(
+                              new Date(transactionData.transactionRaw.executedAt),
+                            )
                           : 'N/A'
                       }}
                     </span>
                   </td>
                   <td class="text-center">
                     <AppButton
-                      @click="handleTransactionDetailsClick(transactionRaw.id)"
+                      :data-testid="`transaction-details-${index}`"
+                      @click="handleTransactionDetailsClick(transactionData.transactionRaw.id)"
                       color="secondary"
                       class="min-w-unset"
                       >Details</AppButton
