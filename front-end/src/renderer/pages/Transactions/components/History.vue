@@ -328,7 +328,7 @@ watch(
                 v-for="(transactionData, index) in organizationTransactions"
                 :key="transactionData.transactionRaw.id"
               >
-                <tr v-if="transactionData.transaction instanceof SDKTransaction">
+                <tr v-if="transactionData.transaction instanceof SDKTransaction && true">
                   <td :data-testid="`transaction-id-${index}`">
                     {{ sdkTransactionUtils.getTransactionId(transactionData.transaction) }}
                   </td>
