@@ -367,7 +367,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can execute file create tx', async () => {
-    const transactionId = await transactionPage.createFile('test', globalCredentials.password);
+    const { transactionId } = await transactionPage.createFile('test', globalCredentials.password);
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
     const transactionType = transactionDetails.transactions[0]?.name;
