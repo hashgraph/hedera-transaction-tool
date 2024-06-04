@@ -190,7 +190,6 @@ export class TransactionsService {
 
     const transactions = await this.repo.find({
       where: {
-        status: TransactionStatus.WAITING_FOR_SIGNATURES,
         validStart: MoreThan(new Date(new Date().getTime() - 180 * 1_000)),
       },
     });
