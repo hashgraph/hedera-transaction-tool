@@ -26,7 +26,7 @@ defineEmits(['update:keyList']);
 </script>
 <template>
   <template v-if="publicKeysInKeyList.length === 1">
-    <div>
+    <div class="text-nowrap">
       <span
         v-if="publicKeysSigned.includes(publicKeysInKeyListRaw[0])"
         class="bi bi-check-lg text-success"
@@ -43,7 +43,7 @@ defineEmits(['update:keyList']);
   </template>
   <template v-else>
     <div>
-      <p>
+      <p class="text-nowrap">
         <span
           v-if="ableToSign(publicKeysSigned, keyList)"
           class="bi bi-check-lg text-success"
@@ -62,7 +62,7 @@ defineEmits(['update:keyList']);
           </div>
         </template>
         <template v-else-if="item instanceof PublicKey && true">
-          <p class="ms-5 my-3">
+          <p class="text-nowrap ms-5 my-3">
             <span
               v-if="publicKeysSigned.includes(item.toStringRaw())"
               class="bi bi-check-lg text-success"
