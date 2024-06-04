@@ -93,16 +93,16 @@ export class TransactionsService {
       { ...where, signers: { userId: user.id } },
       {
         ...where,
-        creatorKey: {
-          user: {
-            id: user.id,
-          },
+        observers: {
+          userId: user.id,
         },
       },
       {
         ...where,
-        observers: {
-          userId: user.id,
+        creatorKey: {
+          user: {
+            id: user.id,
+          },
         },
       },
     ];
