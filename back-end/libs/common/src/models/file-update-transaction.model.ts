@@ -4,6 +4,6 @@ import { TransactionBaseModel } from './transaction.model';
 
 export default class FileUpdateTransactionModel extends TransactionBaseModel<FileUpdateTransaction> {
   getNewKeys() {
-    return this.transaction.keys;
+    return this.transaction.keys || [];
   }
 }
