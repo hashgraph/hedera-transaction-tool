@@ -13,7 +13,7 @@ defineProps<{
         <i class="bi bi-arrow-left"></i>
       </AppButton>
 
-      <h2 class="text-title text-bold">{{ headingText }}</h2>
+      <h2 class="text-title text-bold" data-testid="h2-transaction-type">{{ headingText }}</h2>
     </div>
     <div class="flex-centered justify-content-end flex-wrap gap-3 mt-3">
       <slot name="buttons"></slot>
