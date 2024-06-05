@@ -13,12 +13,13 @@ import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 const props = defineProps<{
   show: boolean;
   alreadyAdded?: number[];
+  mulitple?: boolean;
 }>();
 
 /* Emits */
 const emit = defineEmits<{
   (event: 'update:show', show: boolean): void;
-  (event: 'user-selected', userId: number): void;
+  (event: 'users-selected', userIds: number[]): void;
 }>();
 
 /* Stores */
@@ -26,7 +27,7 @@ const user = useUserStore();
 const contacts = useContactsStore();
 
 /* State */
-const userId = ref<number | null>(null);
+const userIds = ref<number[]>([]);
 
 /* Computed */
 const listedContacts = computed(() =>
@@ -46,11 +47,11 @@ const handleShowUpdate = show => emit('update:show', show);
 const handleInsert = (e: Event) => {
   e.preventDefault();
 
-  if (userId.value === null) return;
+  if (userIds.value.length === 0) return;
 
-  emit('user-selected', userId.value);
+  emit('users-selected', userIds.value);
   emit('update:show', false);
-  userId.value = null;
+  userIds.value = [];
 };
 </script>
 <template>
@@ -69,8 +70,14 @@ const handleInsert = (e: Event) => {
               <template v-for="contact in listedContacts" :key="contact.user.id">
                 <AppListItem
                   class="mt-3"
-                  :selected="contact.user.id === userId"
-                  @click="userId = contact.user.id"
+                  :selected="userIds.includes(contact.user.id)"
+                  @click="
+                    mulitple
+                      ? (userIds = userIds.includes(contact.user.id)
+                          ? userIds.filter(id => id !== contact.user.id)
+                          : [...userIds, contact.user.id])
+                      : (userIds = [contact.user.id])
+                  "
                 >
                   <div class="d-flex flex-nowrap overflow-hidden">
                     <p
@@ -105,7 +112,7 @@ const handleInsert = (e: Event) => {
             color="primary"
             data-testid="button-add-user"
             type="submit"
-            :disabled="userId === null"
+            :disabled="userIds.length === 0"
             >Select</AppButton
           >
         </div>
