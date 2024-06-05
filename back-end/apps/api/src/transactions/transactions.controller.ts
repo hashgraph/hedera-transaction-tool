@@ -100,8 +100,13 @@ export class TransactionsController {
     @GetUser() user: User,
     @PaginationParams() paginationParams: Pagination,
     @SortingParams(transactionProperties) sort?: Sorting[],
+    @FilteringParams({
+      validProperties: transactionProperties,
+      dateProperties: transactionDateProperties,
+    })
+    filter?: Filtering[],
   ) {
-    return this.transactionsService.getTransactionsToSign(user, paginationParams, sort);
+    return this.transactionsService.getTransactionsToSign(user, paginationParams, sort, filter);
   }
 
   /* Returns a flag whether a user should sign a transaction with id */

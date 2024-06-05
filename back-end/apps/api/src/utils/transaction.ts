@@ -9,7 +9,7 @@ import {
   parseAccountProperty,
   MirrorNodeService,
 } from '@app/common';
-import { User, Transaction, TransactionStatus, UserKey, TransactionSigner } from '@entities';
+import { User, Transaction, UserKey, TransactionSigner } from '@entities';
 
 export const userKeysRequiredToSign = async (
   transaction: Transaction,
@@ -19,7 +19,7 @@ export const userKeysRequiredToSign = async (
 ): Promise<number[]> => {
   const userKeyIdsRequired: Set<number> = new Set<number>();
 
-  if (!transaction || transaction.status != TransactionStatus.WAITING_FOR_SIGNATURES) {
+  if (!transaction) {
     return [];
   }
 

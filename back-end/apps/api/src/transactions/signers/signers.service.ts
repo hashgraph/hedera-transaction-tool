@@ -16,7 +16,7 @@ import {
   validateSignature,
 } from '@app/common';
 
-import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
+import { Transaction, TransactionSigner, User, UserKey } from '@entities';
 
 import { userKeysRequiredToSign } from '../../utils';
 
@@ -111,8 +111,6 @@ export class SignersService {
     /* Verify that the transaction exists */
     const transaction = await this.dataSource.manager.findOneBy(Transaction, { id: transactionId });
     if (!transaction) throw new BadRequestException('Transaction not found');
-    if (transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES)
-      throw new BadRequestException('Transaction is not waiting for signatures');
 
     const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
     if (isExpired(sdkTransaction)) throw new BadRequestException('Transaction is expired');
@@ -202,8 +200,6 @@ export class SignersService {
     /* Verify that the transaction exists */
     const transaction = await this.dataSource.manager.findOneBy(Transaction, { id: transactionId });
     if (!transaction) throw new BadRequestException('Transaction not found');
-    if (transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES)
-      throw new BadRequestException('Transaction is not waiting for signatures');
 
     const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
     if (isExpired(sdkTransaction)) throw new BadRequestException('Transaction is expired');

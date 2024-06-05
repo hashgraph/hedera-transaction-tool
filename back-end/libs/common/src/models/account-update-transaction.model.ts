@@ -12,7 +12,7 @@ export default class AccountUpdateTransactionModel extends TransactionBaseModel<
 
   getSigningAccounts(): Set<string> {
     const set = super.getSigningAccounts();
-    set.add(this.transaction.accountId.toString());
+    set.add(this.transaction.accountId?.toString() || '');
     return set;
   }
 }

@@ -123,13 +123,15 @@ export function getMaximumExpirationTime() {
   return now;
 }
 
-export function isPublicKeyInKeyList(publicKey: string | PublicKey, keyList: KeyList) {
-  publicKey = publicKey instanceof PublicKey ? publicKey : PublicKey.fromString(publicKey);
+export function isPublicKeyInKeyList(publicKey: PublicKey | string, keyList: KeyList) {
+  publicKey = publicKey instanceof PublicKey ? publicKey.toStringRaw() : publicKey;
 
   const keys = keyList.toArray();
   return keys.some(key => {
     if (key instanceof PublicKey) {
-      return key.toStringRaw() === publicKey.toStringRaw();
+      return key.toStringRaw() === publicKey;
+    } else if (key instanceof KeyList) {
+      return isPublicKeyInKeyList(publicKey, key);
     }
     return false;
   });
