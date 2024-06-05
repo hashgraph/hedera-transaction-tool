@@ -26,7 +26,10 @@ export const addAccount = async (
   const alreadyAddedCount = await prisma.hederaAccount.count({
     where: {
       user_id: userId,
-      OR: [{ account_id: accountId }, { nickname: nickname }],
+      OR: [
+        { account_id: accountId, network },
+        { nickname: nickname, network },
+      ],
     },
   });
 
