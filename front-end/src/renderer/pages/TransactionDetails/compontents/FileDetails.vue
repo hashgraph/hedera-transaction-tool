@@ -2,15 +2,22 @@
 import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
 
 import { FileCreateTransaction, Transaction, KeyList, FileUpdateTransaction } from '@hashgraph/sdk';
+import { HederaFile } from '@prisma/client';
 
+import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+
+import { useToast } from 'vue-toast-notification';
 
 import { saveFile } from '@renderer/services/electronUtilsService';
 import { getTransactionInfo } from '@renderer/services/mirrorNodeDataService';
+import { add, getAll } from '@renderer/services/filesService';
 
 import { getFormattedDateFromTimestamp } from '@renderer/utils';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
 
 /* Props */
 const props = defineProps<{
@@ -18,12 +25,38 @@ const props = defineProps<{
 }>();
 
 /* Stores */
+const user = useUserStore();
 const network = useNetworkStore();
+
+/* Composables */
+const toast = useToast();
 
 /* State */
 const isKeyStructureModalShown = ref(false);
 const controller = ref<AbortController | null>(null);
 const entityId = ref<string | null>(null);
+const files = ref<HederaFile[]>([]);
+
+/* Handlers */
+const handleLinkEntity = async () => {
+  if (!isUserLoggedIn(user.personal)) throw new Error('User not logged in');
+  if (!entityId.value) throw new Error('Entity ID not available');
+
+  await add({
+    user_id: user.personal.id,
+    file_id: entityId.value,
+    network: network.network,
+  });
+
+  files.value = await getAll({
+    where: {
+      user_id: user.personal.id,
+      network: network.network,
+    },
+  });
+
+  toast.success(`File ${entityId.value} linked`, { position: 'bottom-right' });
+};
 
 /* Hooks */
 onBeforeMount(async () => {
@@ -35,6 +68,7 @@ onBeforeMount(async () => {
   ) {
     throw new Error('Transaction is not Account Create or Update Transaction');
   }
+  if (!isUserLoggedIn(user.personal)) throw new Error('User not logged in');
 
   controller.value = new AbortController();
 
@@ -55,6 +89,13 @@ onBeforeMount(async () => {
   } catch (error) {
     /* Ignore if transaction not available in mirror node */
   }
+
+  files.value = await getAll({
+    where: {
+      user_id: user.personal.id,
+      network: network.network,
+    },
+  });
 });
 
 onBeforeUnmount(() => {
@@ -85,10 +126,29 @@ const commonColClass = 'col-6 col-md-5 col-lg-4 col-xl-3 my-3';
       </p>
     </div>
     <div v-if="transaction instanceof FileCreateTransaction && entityId" class="col-12 mb-3">
-      <h4 :class="detailItemLabelClass">New File ID</h4>
-      <p :class="detailItemValueClass">
-        {{ entityId }}
-      </p>
+      <div class="flex-centered justify-content-start gap-4">
+        <div>
+          <h4 :class="detailItemLabelClass">New File ID</h4>
+          <p :class="detailItemValueClass">
+            {{ entityId }}
+          </p>
+        </div>
+        <div>
+          <AppButton
+            v-if="!files.some(f => f.file_id === entityId)"
+            class="min-w-unset"
+            color="secondary"
+            size="small"
+            @click="handleLinkEntity"
+            >Link File</AppButton
+          >
+          <span
+            v-if="files.some(f => f.file_id === entityId)"
+            class="align-self-start text-small text-secondary"
+            >File already linked</span
+          >
+        </div>
+      </div>
     </div>
 
     <!-- Key -->
