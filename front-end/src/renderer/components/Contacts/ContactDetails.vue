@@ -12,7 +12,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
 
 import { addContact, updateContact } from '@renderer/services/contactsService';
-import { getAccountsByPublicKeys } from '@renderer/services/mirrorNodeDataService';
+import { getAccountsByPublicKeysParallel } from '@renderer/services/mirrorNodeDataService';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
@@ -82,7 +82,7 @@ const handleChangeNickname = async () => {
 };
 
 const handleAccountsLookup = async () => {
-  publicKeyToAccounts.value = await getAccountsByPublicKeys(
+  publicKeyToAccounts.value = await getAccountsByPublicKeysParallel(
     network.mirrorNodeBaseURL,
     props.contact.userKeys.map(key => key.publicKey),
   );
