@@ -23,17 +23,14 @@ export const addAccount = async (
 ) => {
   const prisma = getPrismaClient();
 
-  const findArgs = {
+  const alreadyAddedCount = await prisma.hederaAccount.count({
     where: {
       user_id: userId,
+      OR: [{ account_id: accountId }, { nickname: nickname }],
     },
-  };
+  });
 
-  const accounts = await getAccounts(findArgs);
-
-  if (
-    accounts.some(acc => acc.account_id === accountId || (nickname && acc.nickname === nickname))
-  ) {
+  if (alreadyAddedCount > 0) {
     throw new Error('Account ID or Nickname already exists!');
   }
 
@@ -46,7 +43,11 @@ export const addAccount = async (
     },
   });
 
-  return await getAccounts(findArgs);
+  return await getAccounts({
+    where: {
+      user_id: userId,
+    },
+  });
 };
 
 export const removeAccounts = async (userId: string, accountIds: string[]) => {

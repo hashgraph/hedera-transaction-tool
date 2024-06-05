@@ -32,8 +32,6 @@ async function createWindow() {
 
   mainWindow.on('ready-to-show', () => {
     if (mainWindow) {
-      console.log('emit');
-
       sendUpdateThemeEventTo(mainWindow);
     }
 
