@@ -28,7 +28,7 @@ export const addAccount = async (
       user_id: userId,
       OR: [
         { account_id: accountId, network },
-        { nickname: nickname, network },
+        nickname.trim().length > 0 ? { nickname: nickname, network } : {},
       ],
     },
   });
