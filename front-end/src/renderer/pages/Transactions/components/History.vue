@@ -4,7 +4,7 @@ import { Prisma, Transaction } from '@prisma/client';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
-import { ITransaction, TransactionStatus } from '@main/shared/interfaces';
+import { ITransaction } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -13,7 +13,7 @@ import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 
 import { getTransactions, getTransactionsCount } from '@renderer/services/transactionService';
-import { getTransactionsForUser } from '@renderer/services/organization';
+import { getHistoryTransactions } from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
 import {
@@ -124,9 +124,8 @@ async function fetchTransactions() {
     if (isLoggedInOrganization(user.selectedOrganization)) {
       if (user.selectedOrganization.isPasswordTemporary) return;
 
-      const { totalItems: totalItemsCount, items: rawTransactions } = await getTransactionsForUser(
+      const { totalItems: totalItemsCount, items: rawTransactions } = await getHistoryTransactions(
         user.selectedOrganization.serverUrl,
-        [TransactionStatus.EXECUTED, TransactionStatus.FAILED, TransactionStatus.EXPIRED],
         network.network,
         currentPage.value,
         pageSize.value,

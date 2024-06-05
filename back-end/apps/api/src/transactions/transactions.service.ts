@@ -15,9 +15,16 @@ import {
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
-import { Repository, EntityManager, FindManyOptions, Brackets } from 'typeorm';
+import { Repository, EntityManager, FindManyOptions, Brackets, In } from 'typeorm';
 
-import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
+import {
+  Network,
+  Transaction,
+  TransactionSigner,
+  TransactionStatus,
+  User,
+  UserKey,
+} from '@entities';
 
 import {
   NOTIFICATIONS_SERVICE,
@@ -141,6 +148,44 @@ export class TransactionsService {
           ),
         ),
       )
+      .getManyAndCount();
+
+    return {
+      totalItems: total,
+      items: transactions,
+      page,
+      size,
+    };
+  }
+
+  /* Get the transactions visible by the user */
+  async getHistoryTransactions(
+    { page, limit, size, offset }: Pagination,
+    network: Network,
+    sort?: Sorting[],
+  ): Promise<PaginatedResourceDto<Transaction>> {
+    const order = getOrder(sort);
+
+    console.log(network);
+
+    const findOptions: FindManyOptions<Transaction> = {
+      where: {
+        status: In([
+          TransactionStatus.EXECUTED,
+          TransactionStatus.FAILED,
+          TransactionStatus.EXPIRED,
+        ]),
+        network,
+      },
+      order,
+      relations: ['groupItem', 'groupItem.group'],
+      skip: offset,
+      take: limit,
+    };
+
+    const [transactions, total] = await this.repo
+      .createQueryBuilder()
+      .setFindOptions(findOptions)
       .getManyAndCount();
 
     return {

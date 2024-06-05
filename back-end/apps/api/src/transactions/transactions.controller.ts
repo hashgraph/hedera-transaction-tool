@@ -13,6 +13,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   Filtering,
   FilteringParams,
+  NetworkParam,
   PaginatedResourceDto,
   Pagination,
   PaginationParams,
@@ -22,7 +23,13 @@ import {
   withPaginatedResponse,
 } from '@app/common';
 
-import { Transaction, User, transactionDateProperties, transactionProperties } from '@entities';
+import {
+  Network,
+  Transaction,
+  User,
+  transactionDateProperties,
+  transactionProperties,
+} from '@entities';
 
 import { JwtAuthGuard, VerifiedUserGuard, HasKeyGuard } from '../guards';
 
@@ -84,6 +91,24 @@ export class TransactionsController {
     filter?: Filtering[],
   ): Promise<PaginatedResourceDto<Transaction>> {
     return this.transactionsService.getTransactions(user, paginationParams, sort, filter);
+  }
+
+  /* Get all transactions visible by the user */
+  @ApiOperation({
+    summary: 'Get the history transactions',
+    description: 'Get all transactions that were executed, failed or expired',
+  })
+  @ApiResponse({
+    status: 200,
+  })
+  @Get('/history')
+  @Serialize(withPaginatedResponse(TransactionDto))
+  getHistoryTransactions(
+    @PaginationParams() paginationParams: Pagination,
+    @NetworkParam() network: Network,
+    @SortingParams(transactionProperties) sort?: Sorting[],
+  ): Promise<PaginatedResourceDto<Transaction>> {
+    return this.transactionsService.getHistoryTransactions(paginationParams, network, sort);
   }
 
   /* Get all transactions to be signed by the user */

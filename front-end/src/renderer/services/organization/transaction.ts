@@ -319,6 +319,40 @@ export const getTransactionsForUser = async (
   }
 };
 
+/* Get history transactions */
+export const getHistoryTransactions = async (
+  serverUrl: string,
+  network: Network,
+  page: number,
+  size: number,
+  sort?: { property: string; direction: 'asc' | 'desc' }[],
+): Promise<PaginatedResourceDto<ITransaction>> => {
+  try {
+    const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
+
+    const { data } = await axios.get(
+      `${serverUrl}/${controller}/history?page=${page}&size=${size}${sorting}&network=${network}`,
+      {
+        withCredentials: true,
+      },
+    );
+
+    return data;
+  } catch (error: any) {
+    let message = 'Failed to get transactions';
+
+    if (error instanceof AxiosError) {
+      throwIfNoResponse(error);
+
+      const errorMessage = error.response?.data?.message;
+      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
+        message = errorMessage;
+      }
+    }
+    throw new Error(message);
+  }
+};
+
 /* Adds observers */
 export const addObservers = async (serverUrl: string, transactionId: number, userIds: number[]) => {
   try {
