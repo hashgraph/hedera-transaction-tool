@@ -138,6 +138,13 @@ export class ApproversService {
     );
 
     if (
+      [TransactionStatus.EXECUTED, TransactionStatus.EXPIRED, TransactionStatus.FAILED].includes(
+        transaction.status,
+      )
+    )
+      return approvers;
+
+    if (
       userKeysToSign.length === 0 &&
       transaction.creatorKey?.user?.id !== user.id &&
       !transaction.observers.some(o => o.userId === user.id) &&

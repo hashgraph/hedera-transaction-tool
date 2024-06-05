@@ -10,7 +10,7 @@ import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 
 import { EntityManager, Repository } from 'typeorm';
 
-import { Role, Transaction, TransactionObserver, User } from '@entities';
+import { Role, Transaction, TransactionObserver, TransactionStatus, User } from '@entities';
 
 import {
   MirrorNodeService,
@@ -101,6 +101,13 @@ export class ObserversService {
     );
 
     const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
+
+    if (
+      [TransactionStatus.EXECUTED, TransactionStatus.EXPIRED, TransactionStatus.FAILED].includes(
+        transaction.status,
+      )
+    )
+      return transaction.observers;
 
     if (
       userKeysToSign.length === 0 &&

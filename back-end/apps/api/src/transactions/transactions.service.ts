@@ -374,6 +374,13 @@ export class TransactionsService {
     transaction.approvers = this.approversService.getTreeStructure(approvers);
 
     if (
+      [TransactionStatus.EXECUTED, TransactionStatus.EXPIRED, TransactionStatus.FAILED].includes(
+        transaction.status,
+      )
+    )
+      return transaction;
+
+    if (
       userKeysToSign.length === 0 &&
       transaction.creatorKey?.user?.id !== user.id &&
       !transaction.observers.some(o => o.userId === user.id) &&
