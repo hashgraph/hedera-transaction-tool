@@ -10,6 +10,7 @@ import {
   IAccountInfoParsed,
   CryptoAllowance,
   NetworkExchangeRateSetResponse,
+  Transaction,
 } from '../../main/shared/interfaces';
 
 /* Mirror node data service */
@@ -214,4 +215,20 @@ export const getDollarAmount = (hbarPrice: number, hbarAmount: BigNumber) => {
     result = '';
   }
   return result;
+};
+
+/* Gets the transaction information by transaction id */
+export const getTransactionInfo = async (
+  transactionId: string,
+  mirrorNodeLink: string,
+  controller?: AbortController,
+) => {
+  const { data } = await axios.get<{ transactions: Transaction[] }>(
+    `${mirrorNodeLink}/transactions/${transactionId}`,
+    {
+      signal: controller?.signal,
+    },
+  );
+
+  return data;
 };
