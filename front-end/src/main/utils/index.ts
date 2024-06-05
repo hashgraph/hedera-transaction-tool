@@ -22,8 +22,6 @@ export const saveContentToPath = async (filePath: string, content: Buffer) => {
 
     return true;
   } catch (error) {
-    console.log(error);
-
     return false;
   }
 };

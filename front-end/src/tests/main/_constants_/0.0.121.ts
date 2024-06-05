@@ -16,3 +16,9 @@ export const buffer = [
   10, 26, 10, 24, 99, 111, 110, 116, 114, 97, 99, 116, 115, 46, 107, 110, 111, 119, 110, 66, 108,
   111, 99, 107, 72, 97, 115, 104,
 ];
+
+export const protoInput = `bootstrap.genesisPublicKey=e06b22e0966108fa5d63fc6ae53f9824319b891cd4d6050dbf2b242be7e13344
+staking.rewardRate=273972602739726
+contracts.chainId=296
+ledger.id=0x01
+contracts.knownBlockHash=`;

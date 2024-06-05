@@ -17,3 +17,16 @@ export const buffer = [
   10, 16, 8, 176, 234, 1, 16, 155, 172, 19, 26, 6, 8, 176, 210, 220, 174, 6, 18, 16, 8, 176, 234, 1,
   16, 251, 216, 19, 26, 6, 8, 192, 238, 220, 174, 6,
 ];
+
+export const protoInput = `{
+  "currentRate": {
+    "hbarEquiv": 30000,
+    "centEquiv": 316955,
+    "expirationTime": 1708599600
+  },
+  "nextRate": {
+    "hbarEquiv": 30000,
+    "centEquiv": 322683,
+    "expirationTime": 1708603200
+  }
+}`;
