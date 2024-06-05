@@ -38,11 +38,11 @@ const handleThresholdChange = (e: Event) => {
   emit('update:approver', { ...props.approver, threshold });
 };
 
-const handleUserSelect = (userId: number) => {
-  if (props.approver.approvers?.some(approver => approver.userId === userId)) {
+const handleUserSelect = (userIds: number[]) => {
+  if (props.approver.approvers?.some(approver => approver.userId === userIds[0])) {
     toast.error('User already exists in the list');
   } else {
-    const newApprovers = [...(props.approver.approvers || []).concat([{ userId }])];
+    const newApprovers = [...(props.approver.approvers || []).concat([{ userId: userIds[0] }])];
     const newThreshold = getThreshold(props.approver.threshold, newApprovers);
 
     emitThresholdUpdate(newApprovers, newThreshold);
@@ -227,6 +227,6 @@ function emitThresholdUpdate(newApprovers: TransactionApproverDto[], newThreshol
   <UserSelectModal
     v-if="selectUserModalShown"
     v-model:show="selectUserModalShown"
-    @user-selected="handleUserSelect"
+    @users-selected="handleUserSelect"
   />
 </template>
