@@ -15,7 +15,7 @@ vi.mock('crypto', () => ({ randomUUID: vi.fn() }));
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
 vi.mock('@main/db/prisma');
 
-describe('Services Local User Complex Keys', () => {
+describe('Services Local User Contacts', () => {
   beforeEach(() => {
     vi.resetAllMocks();
   });
