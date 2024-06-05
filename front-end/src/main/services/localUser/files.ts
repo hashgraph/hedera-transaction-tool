@@ -3,7 +3,7 @@ import path from 'path';
 import { app, shell } from 'electron';
 import { HederaFile, Prisma } from '@prisma/client';
 
-import { getPrismaClient } from '@main/db';
+import { getPrismaClient } from '@main/db/prisma';
 import { deleteDirectory, getNumberArrayFromString, saveContentToPath } from '@main/utils';
 
 export const getFiles = async (findArgs: Prisma.HederaFileFindManyArgs) => {

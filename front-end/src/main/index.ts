@@ -2,7 +2,7 @@ import * as path from 'path';
 import { app, BrowserWindow, session } from 'electron';
 import { optimizer, is } from '@electron-toolkit/utils';
 
-import initDatabase from '@main/db';
+import initDatabase from '@main/db/init';
 
 import initLogger from '@main/modules/logger';
 import createMenu from '@main/modules/menu';

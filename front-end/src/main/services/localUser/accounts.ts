@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 
 import { Network } from '@main/shared/enums';
 
-import { getPrismaClient } from '@main/db';
+import { getPrismaClient } from '@main/db/prisma';
 
 export const getAccounts = (findArgs: Prisma.HederaAccountFindManyArgs) => {
   const prisma = getPrismaClient();

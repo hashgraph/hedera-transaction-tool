@@ -1,4 +1,4 @@
-import { getPrismaClient } from '@main/db';
+import { getPrismaClient } from '@main/db/prisma';
 import { Prisma } from '@prisma/client';
 
 export const getLinkedPublicKeys = async (user_id: string) => {

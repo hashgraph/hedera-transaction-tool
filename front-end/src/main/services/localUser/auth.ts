@@ -1,7 +1,7 @@
 import { hash } from '@main/utils/crypto';
 import { randomUUID } from 'crypto';
 
-import { getPrismaClient } from '@main/db';
+import { getPrismaClient } from '@main/db/prisma';
 import { changeDecryptionPassword } from './keyPairs';
 
 export const register = async (email: string, password: string) => {
