@@ -10,6 +10,7 @@ import {
   IAccountInfoParsed,
   CryptoAllowance,
   NetworkExchangeRateSetResponse,
+  Transaction,
 } from '../../main/shared/interfaces';
 
 /* Mirror node data service */
@@ -30,9 +31,9 @@ export const getAccountsByPublicKey = async (
   mirrorNodeURL: string,
   publicKey: string,
 ): Promise<AccountInfo[]> => {
-  try {
-    let accounts: AccountInfo[] = [];
+  let accounts: AccountInfo[] = [];
 
+  try {
     let nextUrl: string | null =
       `${mirrorNodeURL}/accounts/?account.publickey=${publicKey}&limit=25&order=asc`;
 
@@ -50,7 +51,7 @@ export const getAccountsByPublicKey = async (
     return accounts;
   } catch (error) {
     console.log(error);
-    return [];
+    return accounts;
   }
 };
 
@@ -62,27 +63,37 @@ export const getAccountsByPublicKeys = async (
   try {
     const accountsByPublicKeys: { [key: string]: AccountInfo[] } = {};
 
-    for (const publicKey of publicKeys) {
-      let accounts: AccountInfo[] = [];
-      let nextUrl: string | null =
-        `${mirrorNodeURL}/accounts/?account.publickey=${publicKey}&limit=25&order=asc`;
-
-      while (nextUrl) {
-        const { data } = await axios.get(nextUrl);
-
-        accounts = accounts.concat(data.accounts);
-
-        if (data.links?.next) {
-          nextUrl = `${mirrorNodeURL}${data.links.next.slice(data.links.next.indexOf('/accounts'))}`;
-        } else {
-          nextUrl = null;
-        }
-      }
-
-      accountsByPublicKeys[publicKey] = accounts;
+    for (const publicKey of [...new Set<string>(publicKeys)]) {
+      accountsByPublicKeys[publicKey] = await getAccountsByPublicKey(mirrorNodeURL, publicKey);
     }
 
     return accountsByPublicKeys;
+  } catch (error) {
+    console.log(error);
+    return {};
+  }
+};
+
+/* Get accounts by public keys */
+export const getAccountsByPublicKeysParallel = async (
+  mirrorNodeURL: string,
+  publicKeys: string[],
+): Promise<{ [key: string]: AccountInfo[] }> => {
+  try {
+    const uniquePublicKeys = [...new Set<string>(publicKeys)];
+    const publicKeyToAccounts: { [key: string]: AccountInfo[] } = {};
+
+    const results = await Promise.allSettled(
+      uniquePublicKeys.map(pk => getAccountsByPublicKey(mirrorNodeURL, pk)),
+    );
+
+    results.forEach((result, i) => {
+      if (result.status === 'fulfilled') {
+        publicKeyToAccounts[uniquePublicKeys[i]] = result.value;
+      }
+    });
+
+    return publicKeyToAccounts;
   } catch (error) {
     console.log(error);
     return {};
@@ -204,4 +215,20 @@ export const getDollarAmount = (hbarPrice: number, hbarAmount: BigNumber) => {
     result = '';
   }
   return result;
+};
+
+/* Gets the transaction information by transaction id */
+export const getTransactionInfo = async (
+  transactionId: string,
+  mirrorNodeLink: string,
+  controller?: AbortController,
+) => {
+  const { data } = await axios.get<{ transactions: Transaction[] }>(
+    `${mirrorNodeLink}/transactions/${transactionId}`,
+    {
+      signal: controller?.signal,
+    },
+  );
+
+  return data;
 };

@@ -306,7 +306,7 @@ const columnClass = 'col-4 col-xxxl-3';
       <hr class="separator my-5" />
 
       <div class="row mb-6">
-        <div class="form-group" :class="[columnClass]">
+        <div v-if="!user.selectedOrganization" class="form-group" :class="[columnClass]">
           <label class="form-label">Nickname</label>
           <div class="">
             <AppInput

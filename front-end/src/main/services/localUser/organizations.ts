@@ -58,15 +58,15 @@ export const removeOrganization = async (id: string) => {
     },
   });
 
-  await prisma.organizationCredentials.deleteMany({
+  await prisma.contact.deleteMany({
     where: {
       organization_id: id,
     },
   });
 
-  await prisma.transaction.deleteMany({
+  await prisma.organizationCredentials.deleteMany({
     where: {
-      organizationId: id,
+      organization_id: id,
     },
   });
 

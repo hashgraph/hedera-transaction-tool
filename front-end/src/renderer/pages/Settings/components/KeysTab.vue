@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { PublicKey } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -39,8 +39,18 @@ const isDeleteModalShown = ref(false);
 const decryptedKeys = ref<{ decrypted: string | null; publicKey: string }[]>([]);
 const publicKeysPrivateKeyToDecrypt = ref('');
 const keyPairIdToDelete = ref<string | null>(null);
+const missingKeyPairIdToDelete = ref<number | null>(null);
 const userPassword = ref('');
 const currentTab = ref(Tabs.ALL);
+
+/* Computed */
+const externalMissingKeys = computed(() =>
+  isLoggedInOrganization(user.selectedOrganization)
+    ? user.selectedOrganization.userKeys.filter(
+        key => !user.keyPairs.find(kp => kp.public_key === key.publicKey),
+      )
+    : [],
+);
 
 /* Handlers */
 const handleShowDecryptModal = (publicKey: string) => {
@@ -97,6 +107,11 @@ const handleDeleteModal = (keyId: string) => {
   isDeleteModalShown.value = true;
 };
 
+const handleMissingKeyDeleteModal = (id: number) => {
+  missingKeyPairIdToDelete.value = id;
+  isDeleteModalShown.value = true;
+};
+
 const handleDelete = async e => {
   e.preventDefault();
 
@@ -127,9 +142,23 @@ const handleDelete = async e => {
       }
 
       await user.refetchAccounts();
+    } else if (
+      missingKeyPairIdToDelete.value &&
+      isLoggedInOrganization(user.selectedOrganization)
+    ) {
+      await deleteKey(
+        user.selectedOrganization.serverUrl,
+        user.selectedOrganization.userId,
+        missingKeyPairIdToDelete.value,
+      );
+      await user.refetchUserState();
     }
   } catch (err: any) {
     toast.error(err.message || 'Failed to delete key pair', { position: 'bottom-right' });
+  } finally {
+    keyPairIdToDelete.value = null;
+    missingKeyPairIdToDelete.value = null;
+    isDeleteModalShown.value = false;
   }
 };
 
@@ -327,6 +356,76 @@ watch(isDeleteModalShown, newVal => {
                   ></AppButton>
                 </td>
               </tr>
+            </template>
+            <template
+              v-if="
+                (currentTab === Tabs.ALL || currentTab === Tabs.PRIVATE_KEY) &&
+                isLoggedInOrganization(user.selectedOrganization)
+              "
+            >
+              <template v-for="(keyPair, index) in externalMissingKeys" :key="keyPair.publicKey">
+                <tr class="disabled-w-action position-relative">
+                  <td v-if="currentTab === Tabs.ALL" :data-testid="`cell-index-missing-${index}`">
+                    N/A
+                  </td>
+                  <td :data-testid="`cell-nickname-missing-${index}`">N/A</td>
+                  <td :data-testid="`cell-account-missing-${index}`">
+                    <span
+                      v-if="
+                        user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.publicKey)
+                          ?.accounts[0]?.account
+                      "
+                      :class="{
+                        'text-mainnet': network.network === 'mainnet',
+                        'text-testnet': network.network === 'testnet',
+                        'text-previewnet': network.network === 'previewnet',
+                        'text-info': network.network === 'local-node',
+                      }"
+                    >
+                      {{
+                        user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.publicKey)
+                          ?.accounts[0]?.account
+                      }}
+                    </span>
+                    <span v-else>N/A</span>
+                  </td>
+                  <td :data-testid="`cell-key-type-missing-${index}`">
+                    {{
+                      PublicKey.fromString(keyPair.publicKey)._key._type === 'secp256k1'
+                        ? 'ECDSA'
+                        : 'ED25519'
+                    }}
+                  </td>
+                  <td>
+                    <p class="d-flex text-nowrap">
+                      <span
+                        :data-testid="`span-public-key-missing-${index}`"
+                        class="d-inline-block text-truncate"
+                        style="width: 12vw"
+                        >{{ keyPair.publicKey }}</span
+                      >
+                      <span
+                        :data-testid="`span-copy-public-key-missing-${index}`"
+                        class="bi bi-copy cursor-pointer ms-3"
+                        @click="handleCopy(keyPair.publicKey, 'Public Key copied successfully')"
+                      ></span>
+                    </p>
+                  </td>
+                  <td>
+                    <p class="d-flex text-nowrap">N/A</p>
+                  </td>
+                  <td class="text-center">
+                    <AppButton
+                      size="small"
+                      color="danger"
+                      :data-testid="`button-delete-key-${index}`"
+                      @click="handleMissingKeyDeleteModal(keyPair.id)"
+                      class="min-w-unset"
+                      >Delete missing key</AppButton
+                    >
+                  </td>
+                </tr>
+              </template>
             </template>
           </tbody>
         </table>

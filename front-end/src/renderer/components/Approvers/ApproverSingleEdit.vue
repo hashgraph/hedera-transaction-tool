@@ -23,8 +23,8 @@ const contacts = useContactsStore();
 const selectUserModalShown = ref(false);
 
 /* Handlers */
-const handleUserSelect = (userId: number) => {
-  emit('update:modelApprover', { userId });
+const handleUserSelect = (userIds: number[]) => {
+  emit('update:modelApprover', { userId: userIds[0] });
   selectUserModalShown.value = false;
 };
 
@@ -62,7 +62,7 @@ const handleRemoveUser = () => {
     <UserSelectModal
       v-if="selectUserModalShown"
       v-model:show="selectUserModalShown"
-      @user-selected="handleUserSelect"
+      @users-selected="handleUserSelect"
     />
   </div>
 </template>

@@ -587,6 +587,20 @@
         }
       }
     }
+
+    tr.disabled-w-action {
+      td:not(:last-child) {
+        opacity: 0.5;
+      }
+
+      td:last-child {
+        background-color: rgba($dark-blue-700, 0.5);
+
+        @media (prefers-color-scheme: light) {
+          background-color: rgba($light-blue-300, 0.5);
+        }
+      }
+    }
   }
 }
 
