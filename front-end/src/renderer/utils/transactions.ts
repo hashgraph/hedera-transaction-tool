@@ -119,7 +119,7 @@ export const getPropagationButtonLabel = (
       return false;
     });
 
-    return userKeyRequired ? 'Sign and Share' : 'Create and Share';
+    return userKeyRequired ? 'Create' : 'Create and Share';
   } else {
     return 'Sign & Execute';
   }

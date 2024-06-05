@@ -319,7 +319,7 @@ async function sendSignedTransactionToOrganization() {
   props.onSubmitted && props.onSubmitted(id, body);
 
   const results = await Promise.allSettled([
-    uploadSignatures(body, id),
+    // uploadSignatures(body, id),
     uploadObservers(id),
     uploadApprovers(id),
     deleteDraftIfNotTemplate(),
