@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { onBeforeMount, ref } from 'vue';
+import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
 
 import { FileCreateTransaction, Transaction, KeyList, FileUpdateTransaction } from '@hashgraph/sdk';
 
+import useNetworkStore from '@renderer/stores/storeNetwork';
+
 import { saveFile } from '@renderer/services/electronUtilsService';
+import { getTransactionInfo } from '@renderer/services/mirrorNodeDataService';
 
 import { getFormattedDateFromTimestamp } from '@renderer/utils';
 
@@ -14,11 +17,16 @@ const props = defineProps<{
   transaction: Transaction;
 }>();
 
+/* Stores */
+const network = useNetworkStore();
+
 /* State */
 const isKeyStructureModalShown = ref(false);
+const controller = ref<AbortController | null>(null);
+const entityId = ref<string | null>(null);
 
 /* Hooks */
-onBeforeMount(() => {
+onBeforeMount(async () => {
   if (
     !(
       props.transaction instanceof FileCreateTransaction ||
@@ -27,6 +35,30 @@ onBeforeMount(() => {
   ) {
     throw new Error('Transaction is not Account Create or Update Transaction');
   }
+
+  controller.value = new AbortController();
+
+  const payer = props.transaction.transactionId?.accountId?.toString();
+  const seconds = props.transaction.transactionId?.validStart?.seconds?.toString();
+  const nanos = props.transaction.transactionId?.validStart?.nanos?.toString();
+
+  try {
+    const { transactions } = await getTransactionInfo(
+      `${payer}-${seconds}-${nanos}`,
+      network.mirrorNodeBaseURL,
+      controller.value,
+    );
+
+    if (transactions.length > 0) {
+      entityId.value = transactions[0].entity_id || null;
+    }
+  } catch (error) {
+    /* Ignore if transaction not available in mirror node */
+  }
+});
+
+onBeforeUnmount(() => {
+  controller.value?.abort();
 });
 
 /* Misc */
@@ -50,6 +82,12 @@ const commonColClass = 'col-6 col-md-5 col-lg-4 col-xl-3 my-3';
       <h4 :class="detailItemLabelClass">File ID</h4>
       <p :class="detailItemValueClass">
         {{ transaction.fileId.toString() }}
+      </p>
+    </div>
+    <div v-if="transaction instanceof FileCreateTransaction && entityId" class="col-12 mb-3">
+      <h4 :class="detailItemLabelClass">New File ID</h4>
+      <p :class="detailItemValueClass">
+        {{ entityId }}
       </p>
     </div>
 
