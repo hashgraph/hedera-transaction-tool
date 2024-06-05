@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+import { Organization } from '@prisma/client';
+
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
+
+import { updateOrganization } from '@renderer/services/organizationsService';
 
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { updateOrganization } from '@renderer/services/organizationsService';
+import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -20,6 +24,7 @@ const toast = useToast();
 /* State */
 const editedIndex = ref(-1);
 const nicknameInputRef = ref<InstanceType<typeof AppInput>[] | null>(null);
+const addOrganizationModalShown = ref(false);
 
 /* Handlers */
 const handleDeleteConnection = async (organizationId: string) => {
@@ -67,12 +72,17 @@ const handleChangeNickname = async e => {
     await user.refetchOrganizations();
   }
 };
+
+const handleAddOrganization = async (organization: Organization) => {
+  await user.refetchOrganizations();
+  await user.selectOrganization(organization);
+};
 </script>
 <template>
   <div>
     <div class="fill-remaining">
       <div class="overflow-auto">
-        <table class="table-custom">
+        <table v-if="user.organizations && user.organizations.length > 0" class="table-custom">
           <thead>
             <tr>
               <th>Nickname</th>
@@ -127,6 +137,26 @@ const handleChangeNickname = async e => {
             </template>
           </tbody>
         </table>
+        <template v-else>
+          <div class="flex-centered flex-column text-center" v-bind="$attrs">
+            <div>
+              <span class="bi bi-people text-huge text-secondary"></span>
+            </div>
+            <div class="mt-3">
+              <p class="text-title text-semi-bold">There are no connected organizations.</p>
+            </div>
+            <div class="mt-3">
+              <AppButton class="text-main text-pink" @click="addOrganizationModalShown = true"
+                >Connect now</AppButton
+              >
+            </div>
+          </div>
+          <AddOrganizationModal
+            v-if="addOrganizationModalShown"
+            v-model:show="addOrganizationModalShown"
+            @added="handleAddOrganization"
+          />
+        </template>
       </div>
     </div>
   </div>
