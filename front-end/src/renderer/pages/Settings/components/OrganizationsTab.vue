@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
@@ -6,12 +8,18 @@ import { useToast } from 'vue-toast-notification';
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
+import { updateOrganization } from '@renderer/services/organizationsService';
 
 /* Stores */
 const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
+
+/* State */
+const editedIndex = ref(-1);
+const nicknameInputRef = ref<InstanceType<typeof AppInput>[] | null>(null);
 
 /* Handlers */
 const handleDeleteConnection = async (organizationId: string) => {
@@ -24,10 +32,44 @@ const handleDeleteConnection = async (organizationId: string) => {
 
   toast.success('Connection deleted successfully');
 };
+
+const handleStartNicknameEdit = (index: number) => {
+  editedIndex.value = index;
+
+  setTimeout(() => {
+    if (nicknameInputRef.value && nicknameInputRef.value[index].inputRef) {
+      try {
+        nicknameInputRef.value[index].inputRef!.value = user.organizations[index].nickname;
+      } catch {
+        /* TS cannot guarantee that the value is not null */
+      }
+
+      nicknameInputRef.value[index].inputRef?.focus();
+    }
+  }, 100);
+};
+
+const handleChangeNickname = async e => {
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
+  const index = editedIndex.value;
+  editedIndex.value = -1;
+
+  const nickname = e.target?.value?.trim() || '';
+
+  if (nickname.length === 0) {
+    toast.error('Nickname cannot be empty');
+  } else {
+    await updateOrganization(user.organizations[index].id, { nickname });
+    user.organizations[index].nickname = nickname;
+    await user.refetchOrganizations();
+  }
+};
 </script>
 <template>
   <div>
-    <!-- Network -->
     <div class="fill-remaining">
       <div class="overflow-auto">
         <table class="table-custom">
@@ -39,12 +81,33 @@ const handleDeleteConnection = async (organizationId: string) => {
             </tr>
           </thead>
           <tbody class="text-secondary">
-            <template v-for="organization in user.organizations" :key="organization.id">
+            <template v-for="(organization, i) in user.organizations" :key="organization.id">
               <tr>
                 <td>
-                  <p>
-                    {{ organization.nickname }}
-                  </p>
+                  <div class="d-flex align-items-center flex-wrap gap-3">
+                    <AppInput
+                      class="min-w-unset"
+                      placeholder="Enter Nickname"
+                      v-show="editedIndex === i"
+                      ref="nicknameInputRef"
+                      :filled="true"
+                      @blur="handleChangeNickname"
+                    />
+                    <p
+                      v-if="editedIndex === -1 || editedIndex !== i"
+                      class="py-3"
+                      @dblclick="handleStartNicknameEdit(i)"
+                    >
+                      <span class="text-truncate">
+                        {{ organization.nickname }}
+                      </span>
+
+                      <span
+                        class="bi bi-pencil-square text-primary ms-3 cursor-pointer"
+                        @click="handleStartNicknameEdit(i)"
+                      ></span>
+                    </p>
+                  </div>
                 </td>
                 <td>
                   <p class="text-truncate">
