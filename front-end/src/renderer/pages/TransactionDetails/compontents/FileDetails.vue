@@ -4,6 +4,8 @@ import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
 import { FileCreateTransaction, Transaction, KeyList, FileUpdateTransaction } from '@hashgraph/sdk';
 import { HederaFile } from '@prisma/client';
 
+import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
+
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
@@ -22,6 +24,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 /* Props */
 const props = defineProps<{
   transaction: Transaction;
+  organizationTransaction: ITransactionFull | null;
 }>();
 
 /* Stores */
@@ -70,32 +73,34 @@ onBeforeMount(async () => {
   }
   if (!isUserLoggedIn(user.personal)) throw new Error('User not logged in');
 
-  controller.value = new AbortController();
+  if (props.organizationTransaction?.status === TransactionStatus.EXECUTED) {
+    controller.value = new AbortController();
 
-  const payer = props.transaction.transactionId?.accountId?.toString();
-  const seconds = props.transaction.transactionId?.validStart?.seconds?.toString();
-  const nanos = props.transaction.transactionId?.validStart?.nanos?.toString();
+    const payer = props.transaction.transactionId?.accountId?.toString();
+    const seconds = props.transaction.transactionId?.validStart?.seconds?.toString();
+    const nanos = props.transaction.transactionId?.validStart?.nanos?.toString();
 
-  try {
-    const { transactions } = await getTransactionInfo(
-      `${payer}-${seconds}-${nanos}`,
-      network.mirrorNodeBaseURL,
-      controller.value,
-    );
+    try {
+      const { transactions } = await getTransactionInfo(
+        `${payer}-${seconds}-${nanos}`,
+        network.mirrorNodeBaseURL,
+        controller.value,
+      );
 
-    if (transactions.length > 0) {
-      entityId.value = transactions[0].entity_id || null;
+      if (transactions.length > 0) {
+        entityId.value = transactions[0].entity_id || null;
+      }
+    } catch (error) {
+      /* Ignore if transaction not available in mirror node */
     }
-  } catch (error) {
-    /* Ignore if transaction not available in mirror node */
-  }
 
-  files.value = await getAll({
-    where: {
-      user_id: user.personal.id,
-      network: network.network,
-    },
-  });
+    files.value = await getAll({
+      where: {
+        user_id: user.personal.id,
+        network: network.network,
+      },
+    });
+  }
 });
 
 onBeforeUnmount(() => {

@@ -466,6 +466,7 @@ const approve = 'Approve';
               <Component
                 :is="txTypeComponentMapping[getTransactionType(sdkTransaction, true)]"
                 :transaction="sdkTransaction"
+                :organization-transaction="orgTransaction"
               />
 
               <hr class="separator my-5" />
