@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
 
-import { FileCreateTransaction, Transaction, KeyList, FileUpdateTransaction } from '@hashgraph/sdk';
+import {
+  FileCreateTransaction,
+  Transaction,
+  KeyList,
+  FileUpdateTransaction,
+  FileAppendTransaction,
+} from '@hashgraph/sdk';
 import { HederaFile } from '@prisma/client';
 
 import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
@@ -66,14 +72,18 @@ onBeforeMount(async () => {
   if (
     !(
       props.transaction instanceof FileCreateTransaction ||
-      props.transaction instanceof FileUpdateTransaction
+      props.transaction instanceof FileUpdateTransaction ||
+      props.transaction instanceof FileAppendTransaction
     )
   ) {
-    throw new Error('Transaction is not Account Create or Update Transaction');
+    throw new Error('Transaction is not File Create, Update nor Append Transaction');
   }
   if (!isUserLoggedIn(user.personal)) throw new Error('User not logged in');
 
-  if (props.organizationTransaction?.status === TransactionStatus.EXECUTED) {
+  if (
+    props.organizationTransaction?.status === TransactionStatus.EXECUTED &&
+    props.transaction instanceof FileCreateTransaction
+  ) {
     controller.value = new AbortController();
 
     const payer = props.transaction.transactionId?.accountId?.toString();
@@ -116,13 +126,18 @@ const commonColClass = 'col-6 col-md-5 col-lg-4 col-xl-3 my-3';
   <div
     v-if="
       transaction instanceof FileCreateTransaction ||
-      (transaction instanceof FileUpdateTransaction && true)
+      transaction instanceof FileUpdateTransaction ||
+      transaction instanceof FileAppendTransaction
     "
     class="mt-5 row flex-wrap"
   >
     <!-- File ID -->
     <div
-      v-if="transaction instanceof FileUpdateTransaction && transaction.fileId"
+      v-if="
+        (transaction instanceof FileUpdateTransaction ||
+          transaction instanceof FileAppendTransaction) &&
+        transaction.fileId
+      "
       class="col-12 mb-3"
     >
       <h4 :class="detailItemLabelClass">File ID</h4>
@@ -158,6 +173,9 @@ const commonColClass = 'col-6 col-md-5 col-lg-4 col-xl-3 my-3';
 
     <!-- Key -->
     <div
+      v-if="
+        transaction instanceof FileUpdateTransaction || transaction instanceof FileCreateTransaction
+      "
       class="col-12 mb-3"
       :class="{ 'mt-3': transaction instanceof FileUpdateTransaction && transaction.fileId }"
     >
@@ -173,7 +191,15 @@ const commonColClass = 'col-6 col-md-5 col-lg-4 col-xl-3 my-3';
     </div>
 
     <!-- Memo -->
-    <div v-if="transaction.fileMemo && transaction.fileMemo.trim().length > 0" class="col-12 my-3">
+    <div
+      v-if="
+        (transaction instanceof FileUpdateTransaction ||
+          transaction instanceof FileCreateTransaction) &&
+        transaction.fileMemo &&
+        transaction.fileMemo.trim().length > 0
+      "
+      class="col-12 my-3"
+    >
       <h4 :class="detailItemLabelClass">Memo</h4>
       <p :class="detailItemValueClass">
         {{ transaction.fileMemo }}
@@ -181,7 +207,14 @@ const commonColClass = 'col-6 col-md-5 col-lg-4 col-xl-3 my-3';
     </div>
 
     <!-- Expiration Time -->
-    <div v-if="transaction.expirationTime" :class="commonColClass">
+    <div
+      v-if="
+        (transaction instanceof FileUpdateTransaction ||
+          transaction instanceof FileCreateTransaction) &&
+        transaction.expirationTime
+      "
+      :class="commonColClass"
+    >
       <h4 :class="detailItemLabelClass">Expiration Time</h4>
       <p :class="detailItemValueClass">
         {{ getFormattedDateFromTimestamp(transaction.expirationTime) }}
@@ -199,6 +232,9 @@ const commonColClass = 'col-6 col-md-5 col-lg-4 col-xl-3 my-3';
     </div>
 
     <KeyStructureModal
+      v-if="
+        transaction instanceof FileUpdateTransaction || transaction instanceof FileCreateTransaction
+      "
       v-model:show="isKeyStructureModalShown"
       :account-key="new KeyList(transaction.keys)"
     />
