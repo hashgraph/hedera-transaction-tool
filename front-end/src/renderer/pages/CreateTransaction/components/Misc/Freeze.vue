@@ -120,12 +120,16 @@ const handleExecuted = () => {
   isExecuted.value = true;
 };
 
-const handleSubmit = (id: number) => {
-  isSubmitted.value = true;
+const redirectToDetails = async (id: string | number) => {
   router.push({
     name: 'transactionDetails',
     params: { id },
   });
+};
+
+const handleSubmit = (id: number) => {
+  isSubmitted.value = true;
+  redirectToDetails(id);
 };
 
 /* Hooks */
@@ -346,6 +350,7 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
       ref="transactionProcessor"
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"
+      :on-local-stored="redirectToDetails"
       :transaction-bytes="transaction?.toBytes() || null"
       :observers="observers"
       :approvers="approvers"

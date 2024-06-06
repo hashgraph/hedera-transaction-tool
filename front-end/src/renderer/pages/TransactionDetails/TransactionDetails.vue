@@ -435,7 +435,7 @@ const approve = 'Approve';
                 />
               </div>
 
-              <hr class="separator my-8" />
+              <hr v-if="isLoggedInOrganization(user.selectedOrganization)" class="separator my-8" />
 
               <!-- TRANSACTION GENERAL DETAILS -->
               <div :class="sectionHeadingClass">
