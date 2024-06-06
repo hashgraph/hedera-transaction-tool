@@ -120,8 +120,12 @@ const handleExecuted = () => {
   isExecuted.value = true;
 };
 
-const handleSubmit = () => {
+const handleSubmit = (id: number) => {
   isSubmitted.value = true;
+  router.push({
+    name: 'transactionDetails',
+    params: { id },
+  });
 };
 
 /* Hooks */

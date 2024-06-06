@@ -176,8 +176,12 @@ const handleLoadFromDraft = async () => {
   }
 };
 
-const handleSubmit = async () => {
+const handleSubmit = (id: number) => {
   isSubmitted.value = true;
+  router.push({
+    name: 'transactionDetails',
+    params: { id },
+  });
 };
 
 /* Functions */

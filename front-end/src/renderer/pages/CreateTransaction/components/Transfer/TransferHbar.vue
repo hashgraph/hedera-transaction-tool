@@ -272,8 +272,12 @@ const handleRemoveTransfer = async (index: number) => {
   transfers.value = [...transfers.value];
 };
 
-const handleSubmit = () => {
+const handleSubmit = (id: number) => {
   isSubmitted.value = true;
+  router.push({
+    name: 'transactionDetails',
+    params: { id },
+  });
 };
 
 /* Functions */

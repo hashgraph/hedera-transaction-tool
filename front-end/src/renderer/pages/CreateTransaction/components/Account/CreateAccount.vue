@@ -189,8 +189,12 @@ const handleOwnerKeyUpdate = key => {
   ownerKey.value = key;
 };
 
-const handleSubmit = async () => {
+const handleSubmit = (id: number) => {
   isSubmitted.value = true;
+  router.push({
+    name: 'transactionDetails',
+    params: { id },
+  });
 };
 
 /* Functions */
