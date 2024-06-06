@@ -351,7 +351,7 @@ const approve = 'Approve';
 
             <div class="fill-remaining mt-5">
               <!-- Name -->
-              <div
+              <!-- <div
                 v-if="
                   (orgTransaction?.name.trim() || localTransaction?.name.trim() || '').length > 0
                 "
@@ -360,10 +360,10 @@ const approve = 'Approve';
                 <p :class="detailItemValueClass">
                   {{ orgTransaction?.name || localTransaction?.name }}
                 </p>
-              </div>
+              </div> -->
 
               <!-- Description -->
-              <div
+              <!-- <div
                 v-if="
                   (orgTransaction?.description.trim() || localTransaction?.description.trim() || '')
                     .length > 0
@@ -374,7 +374,7 @@ const approve = 'Approve';
                 <p :class="detailItemValueClass">
                   {{ orgTransaction?.description || localTransaction?.description }}
                 </p>
-              </div>
+              </div> -->
 
               <!-- Transaction Status -->
               <div v-if="orgTransaction" class="mt-5">
