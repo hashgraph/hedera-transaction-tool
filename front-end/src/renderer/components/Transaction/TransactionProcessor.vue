@@ -57,6 +57,7 @@ const props = defineProps<{
   approvers?: TransactionApproverDto[];
   onExecuted?: (response: TransactionResponse, receipt: TransactionReceipt) => void;
   onSubmitted?: (id: number, body: string) => void;
+  onLocalStored?: (id: string) => void;
   onCloseSuccessModalClick?: () => void;
   watchExecutedModalShown?: (shown: boolean) => void;
 }>();
@@ -263,7 +264,8 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     network: network.network,
   };
 
-  await storeTransaction(tx);
+  const { id } = await storeTransaction(tx);
+  props.onLocalStored && props.onLocalStored(id);
 }
 
 async function sendSignedTransactionToOrganization() {

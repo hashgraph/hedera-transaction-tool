@@ -53,6 +53,7 @@ const props = defineProps<{
     receipt: TransactionReceipt,
     chunksAmount?: number,
   ) => void;
+  onLocalStored?: (id: string) => void;
   onCloseSuccessModalClick?: () => void;
   watchExecutedModalShown?: (shown: boolean) => void;
 }>();
@@ -307,7 +308,8 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     group_id: null,
     network: network.network,
   };
-  await storeTransaction(transactionToStore);
+  const { id } = await storeTransaction(transactionToStore);
+  props.onLocalStored && props.onLocalStored(id);
 }
 
 async function sendSignedTransactionToOrganization(transactionBytes: Uint8Array) {
@@ -509,7 +511,8 @@ async function executeFileTransactions(
       network: network.network,
     };
 
-    await storeTransaction(transactionToStore);
+    const { id } = await storeTransaction(transactionToStore);
+    props.onLocalStored && props.onLocalStored(id);
   }
 
   isExecuting.value = false;
