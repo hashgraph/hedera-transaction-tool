@@ -127,6 +127,39 @@ const creator = computed(() => {
 });
 
 /* Handlers */
+const handleBack = () => {
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    const status = orgTransaction.value?.status;
+    let tab: string = '';
+
+    switch (status) {
+      case TransactionStatus.EXECUTED:
+      case TransactionStatus.FAILED:
+      case TransactionStatus.EXPIRED:
+        tab = 'History';
+        break;
+      case TransactionStatus.WAITING_FOR_EXECUTION:
+        tab = 'Ready for Execution';
+        break;
+      case TransactionStatus.WAITING_FOR_SIGNATURES:
+        tab = 'In Progress';
+        break;
+      default:
+        tab = 'History';
+        break;
+    }
+
+    router.push({
+      name: 'transactions',
+      query: {
+        tab,
+      },
+    });
+  } else {
+    router.back();
+  }
+};
+
 const handleSign = async () => {
   if (
     !sdkTransaction.value ||
@@ -333,7 +366,7 @@ const approve = 'Approve';
                   type="button"
                   color="secondary"
                   class="btn-icon-only me-4"
-                  @click="$router.back()"
+                  @click="handleBack"
                 >
                   <i class="bi bi-arrow-left"></i>
                 </AppButton>
