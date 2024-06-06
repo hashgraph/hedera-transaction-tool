@@ -165,10 +165,6 @@ const handleSign = async () => {
   );
 
   toast.success('Transaction signed successfully');
-
-  router.push({
-    name: 'transactions',
-  });
 };
 
 const handleApprove = async (approved: boolean) => {
@@ -216,13 +212,6 @@ const handleApprove = async (approved: boolean) => {
       approved,
     );
     toast.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`);
-
-    router.push({
-      name: 'transactions',
-      query: {
-        tab: 'In Progress',
-      },
-    });
   };
 
   await callback();
