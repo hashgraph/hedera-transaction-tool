@@ -25,7 +25,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
     <!-- Account ID -->
     <div v-if="transaction.accountId" :class="commonColClass">
       <h4 :class="detailItemLabelClass">Account ID</h4>
-      <p :class="detailItemValueClass">
+      <p :class="detailItemValueClass" data-testid="p-account-delete-details-account-id">
         {{ transaction.accountId.toString() }}
       </p>
     </div>
@@ -33,7 +33,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
     <!-- Transfer account ID -->
     <div v-if="transaction.transferAccountId" :class="commonColClass">
       <h4 :class="detailItemLabelClass">Transfer Account ID</h4>
-      <p :class="detailItemValueClass">
+      <p :class="detailItemValueClass" data-testid="p-account-delete-details-transfer-account-id">
         {{ transaction.transferAccountId.toString() }}
       </p>
     </div>

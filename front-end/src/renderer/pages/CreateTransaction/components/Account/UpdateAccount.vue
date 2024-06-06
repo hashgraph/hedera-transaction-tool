@@ -337,6 +337,7 @@ const columnClass = 'col-4 col-xxxl-3';
           <label class="form-label">Transaction Memo</label>
           <AppInput
             v-model="transactionMemo"
+            data-testid="input-transaction-memo"
             :filled="true"
             maxlength="100"
             placeholder="Enter Transaction Memo"

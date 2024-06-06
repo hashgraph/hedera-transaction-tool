@@ -318,27 +318,27 @@ watch(orgFilters, async () => {
                 :key="transaction.created_at.toString()"
               >
                 <tr>
-                  <td :data-testid="`transaction-id-${index}`">
+                  <td :data-testid="`td-transaction-id-${index}`">
                     {{ getTransactionId(transaction) }}
                   </td>
-                  <td :data-testid="`transaction-type-${index}`">
+                  <td :data-testid="`td-transaction-type-${index}`">
                     <span class="text-bold">{{ transaction.type }}</span>
                   </td>
-                  <td :data-testid="`transaction-status-${index}`">
+                  <td :data-testid="`td-transaction-status-${index}`">
                     <span
                       class="badge bg-success text-break"
                       :class="{ 'bg-danger': ![0, 22].includes(transaction.status_code) }"
                       >{{ getTransactionStatus(transaction) }}</span
                     >
                   </td>
-                  <td :data-testid="`transaction-createdAt-${index}`">
+                  <td :data-testid="`td-transaction-createdAt-${index}`">
                     <span class="text-small text-secondary">
                       {{ getDateStringExtended(transaction.created_at) }}
                     </span>
                   </td>
                   <td class="text-center">
                     <AppButton
-                      :data-testid="`transaction-details-${index}`"
+                      :data-testid="`button-transaction-details-${index}`"
                       @click="handleTransactionDetailsClick(transaction.id)"
                       color="secondary"
                       class="min-w-unset"
@@ -354,15 +354,15 @@ watch(orgFilters, async () => {
                 :key="transactionData.transactionRaw.id"
               >
                 <tr v-if="transactionData.transaction instanceof SDKTransaction && true">
-                  <td :data-testid="`transaction-id-${index}`">
+                  <td :data-testid="`td-transaction-id-${index}`">
                     {{ sdkTransactionUtils.getTransactionId(transactionData.transaction) }}
                   </td>
-                  <td :data-testid="`transaction-type-${index}`">
+                  <td :data-testid="`td-transaction-type-${index}`">
                     <span class="text-bold">{{
                       sdkTransactionUtils.getTransactionType(transactionData.transaction)
                     }}</span>
                   </td>
-                  <td :data-testid="`transaction-status-${index}`">
+                  <td :data-testid="`td-transaction-status-${index}`">
                     <span
                       class="badge bg-success text-break"
                       :class="{
@@ -373,7 +373,7 @@ watch(orgFilters, async () => {
                       >{{ getStatusFromCode(transactionData.transactionRaw.statusCode) }}</span
                     >
                   </td>
-                  <td :data-testid="`transaction-createdAt-${index}`">
+                  <td :data-testid="`td-transaction-createdAt-${index}`">
                     <span class="text-small text-secondary">
                       {{
                         getDateStringExtended(new Date(transactionData.transactionRaw.createdAt))
@@ -382,7 +382,7 @@ watch(orgFilters, async () => {
                   </td>
                   <td>
                     <span
-                      :data-testid="`transaction-executedAt-${index}`"
+                      :data-testid="`td-transaction-executedAt-${index}`"
                       class="text-small text-secondary"
                     >
                       {{
@@ -396,7 +396,7 @@ watch(orgFilters, async () => {
                   </td>
                   <td class="text-center">
                     <AppButton
-                      :data-testid="`transaction-details-${index}`"
+                      :data-testid="`button-transaction-details-${index}`"
                       @click="handleTransactionDetailsClick(transactionData.transactionRaw.id)"
                       color="secondary"
                       class="min-w-unset"

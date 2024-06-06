@@ -235,7 +235,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
       :class="commonColClass"
     >
       <h4 :class="detailItemLabelClass">Expiration Time</h4>
-      <p :class="detailItemValueClass">
+      <p :class="detailItemValueClass" data-testid="p-file-details-expiration-time">
         {{ getFormattedDateFromTimestamp(transaction.expirationTime) }}
       </p>
     </div>
@@ -244,7 +244,10 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
     <div v-if="transaction.contents" :class="commonColClass">
       <h4 :class="detailItemLabelClass">Contents</h4>
       <p :class="detailItemValueClass">
-        <span class="link-primary cursor-pointer" @click="saveFile(transaction.contents)"
+        <span
+          class="link-primary cursor-pointer"
+          data-testid="button-view-file-contents"
+          @click="saveFile(transaction.contents)"
           >View</span
         >
       </p>
