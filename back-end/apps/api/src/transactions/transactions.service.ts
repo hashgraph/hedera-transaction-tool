@@ -15,18 +15,16 @@ import {
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
-import {
-  Repository,
-  MoreThan,
-  EntityManager,
-  FindManyOptions,
-  Brackets,
-  FindOptionsWhere,
-  Not,
-  In,
-} from 'typeorm';
+import { Repository, EntityManager, FindManyOptions, Brackets, In } from 'typeorm';
 
-import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
+import {
+  Network,
+  Transaction,
+  TransactionSigner,
+  TransactionStatus,
+  User,
+  UserKey,
+} from '@entities';
 
 import {
   NOTIFICATIONS_SERVICE,
@@ -102,16 +100,16 @@ export class TransactionsService {
       { ...where, signers: { userId: user.id } },
       {
         ...where,
-        creatorKey: {
-          user: {
-            id: user.id,
-          },
+        observers: {
+          userId: user.id,
         },
       },
       {
         ...where,
-        observers: {
-          userId: user.id,
+        creatorKey: {
+          user: {
+            id: user.id,
+          },
         },
       },
     ];
@@ -160,18 +158,60 @@ export class TransactionsService {
     };
   }
 
+  /* Get the transactions visible by the user */
+  async getHistoryTransactions(
+    { page, limit, size, offset }: Pagination,
+    network: Network,
+    sort?: Sorting[],
+  ): Promise<PaginatedResourceDto<Transaction>> {
+    const order = getOrder(sort);
+
+    console.log(network);
+
+    const findOptions: FindManyOptions<Transaction> = {
+      where: {
+        status: In([
+          TransactionStatus.EXECUTED,
+          TransactionStatus.FAILED,
+          TransactionStatus.EXPIRED,
+        ]),
+        network,
+      },
+      order,
+      relations: ['groupItem', 'groupItem.group'],
+      skip: offset,
+      take: limit,
+    };
+
+    const [transactions, total] = await this.repo
+      .createQueryBuilder()
+      .setFindOptions(findOptions)
+      .getManyAndCount();
+
+    return {
+      totalItems: total,
+      items: transactions,
+      page,
+      size,
+    };
+  }
+
   /* Get the transactions that a user needs to sign */
   async getTransactionsToSign(
     user: User,
     { page, limit, size, offset }: Pagination,
     sort?: Sorting[],
+    filter?: Filtering[],
   ): Promise<
     PaginatedResourceDto<{
       transaction: Transaction;
       keysToSign: number[];
     }>
   > {
-    let result: {
+    const where = getWhere<Transaction>(filter);
+    const order = getOrder(sort);
+
+    const result: {
       transaction: Transaction;
       keysToSign: number[];
     }[] = [];
@@ -189,10 +229,8 @@ export class TransactionsService {
     }
 
     const transactions = await this.repo.find({
-      where: {
-        status: TransactionStatus.WAITING_FOR_SIGNATURES,
-        validStart: MoreThan(new Date(new Date().getTime() - 180 * 1_000)),
-      },
+      where,
+      order,
     });
 
     for (const transaction of transactions) {
@@ -200,18 +238,6 @@ export class TransactionsService {
       const keysToSign = await this.userKeysToSign(transaction, user);
 
       if (keysToSign.length > 0) result.push({ transaction, keysToSign });
-    }
-
-    if (sort && sort.length) {
-      result = result.sort((a, b) => {
-        for (const { property, direction } of sort) {
-          if (a.transaction[property] < b.transaction[property])
-            return direction === 'asc' ? -1 : 1;
-          if (a.transaction[property] > b.transaction[property])
-            return direction === 'asc' ? 1 : -1;
-        }
-        return 0;
-      });
     }
 
     return {
@@ -232,11 +258,6 @@ export class TransactionsService {
     const where = getWhere<Transaction>(filter);
     const order = getOrder(sort);
 
-    const whereForUser: FindOptionsWhere<Transaction> = {
-      ...where,
-      status: Not(In([TransactionStatus.EXECUTED, TransactionStatus.FAILED])),
-    };
-
     const findOptions: FindManyOptions<Transaction> = {
       order,
       relations: {
@@ -251,7 +272,7 @@ export class TransactionsService {
       .setFindOptions(findOptions)
       .where(
         new Brackets(qb =>
-          qb.where(whereForUser).andWhere(
+          qb.where(where).andWhere(
             `
             (
               with recursive "approverList" as
@@ -396,6 +417,13 @@ export class TransactionsService {
     const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
 
     transaction.approvers = this.approversService.getTreeStructure(approvers);
+
+    if (
+      [TransactionStatus.EXECUTED, TransactionStatus.EXPIRED, TransactionStatus.FAILED].includes(
+        transaction.status,
+      )
+    )
+      return transaction;
 
     if (
       userKeysToSign.length === 0 &&

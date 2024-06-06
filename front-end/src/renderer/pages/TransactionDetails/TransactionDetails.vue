@@ -9,6 +9,7 @@ import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
+import useContactsStore from '@renderer/stores/storeContacts';
 
 import { useToast } from 'vue-toast-notification';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
@@ -59,6 +60,7 @@ import ReadOnlyApproversList from '@renderer/components/Approvers/ReadOnlyApprov
 /* Stores */
 const user = useUserStore();
 const network = useNetwork();
+const contacts = useContactsStore();
 
 /* Composables */
 const router = useRouter();
@@ -114,6 +116,14 @@ const signersPublicKeys = computed(() => {
   if (!orgTransaction.value || !orgTransaction.value.signers) return [];
 
   return orgTransaction.value.signers.map(signer => signer.userKey.publicKey);
+});
+
+const creator = computed(() => {
+  return orgTransaction.value
+    ? contacts.contacts.find(contact =>
+        contact.userKeys.some(k => k.id === orgTransaction.value?.creatorKeyId),
+      )
+    : null;
 });
 
 /* Handlers */
@@ -422,20 +432,6 @@ const approve = 'Approve';
                   <p :class="detailItemValueClass">{{ getTransactionId(sdkTransaction) }}</p>
                 </div>
 
-                <!-- Transaction Created -->
-                <div :class="commonColClass">
-                  <h4 :class="detailItemLabelClass">Created at</h4>
-                  <p :class="detailItemValueClass">
-                    {{
-                      getDateStringExtended(
-                        new Date(
-                          orgTransaction?.createdAt || localTransaction?.created_at || Date.now(),
-                        ),
-                      )
-                    }}
-                  </p>
-                </div>
-
                 <!-- Transaction Valid Start -->
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Valid Start</h4>
@@ -470,7 +466,39 @@ const approve = 'Approve';
               <Component
                 :is="txTypeComponentMapping[getTransactionType(sdkTransaction, true)]"
                 :transaction="sdkTransaction"
+                :organization-transaction="orgTransaction"
               />
+
+              <hr class="separator my-5" />
+
+              <!-- CREATION DETAILS -->
+              <h2 class="text-title text-bold">Creation Details</h2>
+
+              <div class="row flex-wrap">
+                <!-- Creator -->
+                <template v-if="creator">
+                  <div :class="commonColClass">
+                    <h4 :class="detailItemLabelClass">Creator</h4>
+                    <p :class="detailItemValueClass">
+                      {{ creator?.nickname?.trim() || creator?.user?.email || 'Unknown' }}
+                    </p>
+                  </div>
+                </template>
+
+                <!-- Transaction Created -->
+                <div :class="commonColClass">
+                  <h4 :class="detailItemLabelClass">Created at</h4>
+                  <p :class="detailItemValueClass">
+                    {{
+                      getDateStringExtended(
+                        new Date(
+                          orgTransaction?.createdAt || localTransaction?.created_at || Date.now(),
+                        ),
+                      )
+                    }}
+                  </p>
+                </div>
+              </div>
 
               <hr v-if="signatureKey" class="separator my-5" />
 

@@ -12,7 +12,7 @@ export abstract class TransactionBaseModel<T extends Transaction> {
   }
 
   getSigningAccounts(): Set<string> {
-    const payerId = this.transaction.transactionId.accountId;
+    const payerId = this.transaction.transactionId?.accountId;
     if (payerId) {
       return new Set<string>([payerId.toString()]);
     }

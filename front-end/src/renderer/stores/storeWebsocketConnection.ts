@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { Socket, io } from 'socket.io-client';
 import { computed, ref } from 'vue';
 
-const useThemeStore = defineStore('theme', () => {
+const useWebsocketConnection = defineStore('websocketConnection', () => {
   /* State */
   const socket = ref<Socket | null>(null);
 
@@ -89,4 +89,4 @@ const useThemeStore = defineStore('theme', () => {
   };
 });
 
-export default useThemeStore;
+export default useWebsocketConnection;

@@ -80,7 +80,7 @@ const handleOnFormSubmit = async (event: Event) => {
       return;
     }
     const { id, email } = await registerLocal(
-      inputEmail.value,
+      inputEmail.value.trim(),
       inputPassword.value,
       keepLoggedIn.value,
     );
@@ -95,7 +95,12 @@ const handleOnFormSubmit = async (event: Event) => {
     let userData: { id: string; email: string } | null = null;
 
     try {
-      userData = await loginLocal(inputEmail.value, inputPassword.value, keepLoggedIn.value, false);
+      userData = await loginLocal(
+        inputEmail.value.trim(),
+        inputPassword.value,
+        keepLoggedIn.value,
+        false,
+      );
     } catch (error: any) {
       inputEmailInvalid.value = false;
       inputPasswordInvalid.value = false;
@@ -111,7 +116,7 @@ const handleOnFormSubmit = async (event: Event) => {
     if (userData) {
       try {
         globalModalLoaderRef?.value?.open();
-        await user.login(userData.id, userData.email);
+        await user.login(userData.id, userData.email.trim());
 
         if (user.secretHashes.length === 0) {
           if (isUserLoggedIn(user.personal)) {

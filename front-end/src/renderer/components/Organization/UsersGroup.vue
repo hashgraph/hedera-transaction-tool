@@ -28,9 +28,9 @@ const users = computed(() =>
 );
 
 /* Handlers */
-const handleSelectUser = (userId: number) => {
-  const userIds = new Set<number>(props.userIds);
-  userIds.add(userId);
+const handleSelectUser = (userIds: number[]) => {
+  const oldUserIds = new Set<number>(props.userIds);
+  userIds.forEach(id => oldUserIds.add(id));
   emit('update:userIds', [...userIds]);
 };
 
@@ -75,7 +75,8 @@ const handleRemoveObserver = (userId: number) => {
     <UserSelectModal
       v-model:show="selectUserModalShown"
       :alreadyAdded="userIds"
-      @user-selected="handleSelectUser"
+      :mulitple="true"
+      @users-selected="handleSelectUser"
     />
   </div>
 </template>

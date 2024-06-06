@@ -66,10 +66,10 @@ const handleLogin = async () => {
 
   try {
     loading.value = true;
-    await login(user.selectedOrganization.serverUrl, inputEmail.value, inputPassword.value);
+    await login(user.selectedOrganization.serverUrl, inputEmail.value.trim(), inputPassword.value);
 
     await addOrganizationCredentials(
-      inputEmail.value,
+      inputEmail.value.trim(),
       inputPassword.value,
       user.selectedOrganization.id,
       user.personal.id,

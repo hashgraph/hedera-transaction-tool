@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, ref } from 'vue';
+import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
 
 import {
   AccountCreateTransaction,
@@ -8,21 +8,62 @@ import {
   PublicKey,
   AccountUpdateTransaction,
 } from '@hashgraph/sdk';
+import { HederaAccount } from '@prisma/client';
+
+import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
+
+import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
+
+import { useToast } from 'vue-toast-notification';
+
+import { getTransactionInfo } from '@renderer/services/mirrorNodeDataService';
+import { add, getAll } from '@renderer/services/accountsService';
 
 import { isAccountId, stringifyHbar } from '@renderer/utils';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
 
 /* Props */
 const props = defineProps<{
   transaction: Transaction;
+  organizationTransaction: ITransactionFull | null;
 }>();
+
+/* Stores */
+const user = useUserStore();
+const network = useNetworkStore();
+
+/* Composables */
+const toast = useToast();
 
 /* State */
 const isKeyStructureModalShown = ref(false);
+const controller = ref<AbortController | null>(null);
+const entityId = ref<string | null>(null);
+const accounts = ref<HederaAccount[]>([]);
+
+/* Handlers */
+const handleLinkEntity = async () => {
+  if (!isUserLoggedIn(user.personal)) throw new Error('User not logged in');
+  if (!entityId.value) throw new Error('Entity ID not available');
+
+  await add(user.personal.id, entityId.value, network.network);
+
+  accounts.value = await getAll({
+    where: {
+      user_id: user.personal.id,
+      network: network.network,
+    },
+  });
+
+  toast.success(`Account ${entityId.value} linked`, { position: 'bottom-right' });
+};
 
 /* Hooks */
-onBeforeMount(() => {
+onBeforeMount(async () => {
   if (
     !(
       props.transaction instanceof AccountCreateTransaction ||
@@ -31,6 +72,40 @@ onBeforeMount(() => {
   ) {
     throw new Error('Transaction is not Account Create or Update Transaction');
   }
+  if (!isUserLoggedIn(user.personal)) throw new Error('User not logged in');
+
+  if (props.organizationTransaction?.status === TransactionStatus.EXECUTED) {
+    controller.value = new AbortController();
+
+    const payer = props.transaction.transactionId?.accountId?.toString();
+    const seconds = props.transaction.transactionId?.validStart?.seconds?.toString();
+    const nanos = props.transaction.transactionId?.validStart?.nanos?.toString();
+
+    try {
+      const { transactions } = await getTransactionInfo(
+        `${payer}-${seconds}-${nanos}`,
+        network.mirrorNodeBaseURL,
+        controller.value,
+      );
+
+      if (transactions.length > 0) {
+        entityId.value = transactions[0].entity_id || null;
+      }
+    } catch (error) {
+      /* Ignore if transaction not available in mirror node */
+    }
+
+    accounts.value = await getAll({
+      where: {
+        user_id: user.personal.id,
+        network: network.network,
+      },
+    });
+  }
+});
+
+onBeforeUnmount(() => {
+  controller.value?.abort();
 });
 
 /* Misc */
@@ -55,6 +130,31 @@ const commonColClass = 'col-6 col-md-5 col-lg-4 col-xl-3 my-3';
       <p :class="detailItemValueClass">
         {{ transaction.accountId.toString() }}
       </p>
+    </div>
+    <div v-if="transaction instanceof AccountCreateTransaction && entityId" class="col-12 mb-3">
+      <div class="flex-centered justify-content-start gap-4">
+        <div>
+          <h4 :class="detailItemLabelClass">New Account ID</h4>
+          <p :class="detailItemValueClass">
+            {{ entityId }}
+          </p>
+        </div>
+        <div>
+          <AppButton
+            v-if="!accounts.some(f => f.account_id === entityId)"
+            class="min-w-unset"
+            color="secondary"
+            size="small"
+            @click="handleLinkEntity"
+            >Link Account</AppButton
+          >
+          <span
+            v-if="accounts.some(f => f.account_id === entityId)"
+            class="align-self-start text-small text-secondary"
+            >Account already linked</span
+          >
+        </div>
+      </div>
     </div>
 
     <!-- Key -->

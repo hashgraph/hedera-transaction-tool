@@ -14,7 +14,7 @@ import { useRoute } from 'vue-router';
 
 import { execute, signTransaction, storeTransaction } from '@renderer/services/transactionService';
 import {
-  hexToUint8Array,
+  // hexToUint8Array,
   openExternal,
   uint8ArrayToHex,
 } from '@renderer/services/electronUtilsService';
@@ -24,7 +24,7 @@ import { deleteDraft, getDraft } from '@renderer/services/transactionDraftsServi
 import {
   addApprovers,
   addObservers,
-  fullUploadSignatures,
+  // fullUploadSignatures,
   submitTransaction,
 } from '@renderer/services/organization';
 
@@ -37,7 +37,7 @@ import {
   getTransactionType,
   getPrivateKey,
 } from '@renderer/utils';
-import { publicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
+// import { publicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
 import {
   isLoggedInOrganization,
   isLoggedInWithPassword,
@@ -319,7 +319,7 @@ async function sendSignedTransactionToOrganization() {
   props.onSubmitted && props.onSubmitted(id, body);
 
   const results = await Promise.allSettled([
-    uploadSignatures(body, id),
+    // uploadSignatures(body, id),
     uploadObservers(id),
     uploadApprovers(id),
     deleteDraftIfNotTemplate(),
@@ -332,50 +332,50 @@ async function sendSignedTransactionToOrganization() {
   });
 }
 
-async function uploadSignatures(
-  organizationTransactionBody: string,
-  organizationTransactionId: number,
-) {
-  const callback = async () => {
-    /* Verifies the user has entered his password */
-    if (!isLoggedInOrganization(user.selectedOrganization))
-      throw new Error('User is not logged in organization');
+// async function uploadSignatures(
+//   organizationTransactionBody: string,
+//   organizationTransactionId: number,
+// ) {
+//   const callback = async () => {
+//     /* Verifies the user has entered his password */
+//     if (!isLoggedInOrganization(user.selectedOrganization))
+//       throw new Error('User is not logged in organization');
 
-    if (!isLoggedInWithPassword(user.personal)) {
-      if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-      userPasswordModalRef.value?.open(
-        'Enter your application password',
-        'Enter your application password to sign as a creator',
-        callback,
-      );
-      return;
-    }
+//     if (!isLoggedInWithPassword(user.personal)) {
+//       if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+//       userPasswordModalRef.value?.open(
+//         'Enter your application password',
+//         'Enter your application password to sign as a creator',
+//         callback,
+//       );
+//       return;
+//     }
 
-    const bodyBytes = await hexToUint8Array(organizationTransactionBody);
+//     const bodyBytes = await hexToUint8Array(organizationTransactionBody);
 
-    /* Deserialize the transaction */
-    const sdkTransaction = Transaction.fromBytes(bodyBytes);
+//     /* Deserialize the transaction */
+//     const sdkTransaction = Transaction.fromBytes(bodyBytes);
 
-    /* Check if should sign */
-    const publicKeysRequired = await publicRequiredToSign(
-      sdkTransaction,
-      user.selectedOrganization.userKeys,
-      network.mirrorNodeBaseURL,
-    );
-    if (publicKeysRequired.length === 0) return;
+//     /* Check if should sign */
+//     const publicKeysRequired = await publicRequiredToSign(
+//       sdkTransaction,
+//       user.selectedOrganization.userKeys,
+//       network.mirrorNodeBaseURL,
+//     );
+//     if (publicKeysRequired.length === 0) return;
 
-    await fullUploadSignatures(
-      user.personal,
-      user.selectedOrganization,
-      publicKeysRequired,
-      sdkTransaction,
-      organizationTransactionId,
-    );
+//     await fullUploadSignatures(
+//       user.personal,
+//       user.selectedOrganization,
+//       publicKeysRequired,
+//       sdkTransaction,
+//       organizationTransactionId,
+//     );
 
-    toast.success('Transaction signed successfully');
-  };
-  await callback();
-}
+//     toast.success('Transaction signed successfully');
+//   };
+//   await callback();
+// }
 
 async function uploadObservers(transactionId: number) {
   if (!props.observers || props.observers.length === 0) return;

@@ -7,8 +7,8 @@ import FileUpdateTransactionModel from './file-update-transaction.model';
 import FreezeTransactionModel from './freeze-transaction.model';
 import FileAppendTransactionModel from './file-append-transaction.model';
 import AccountDeleteTransactionModel from './account-delete-transaction.model';
-import FileCreateTransactionModel from './file-create-transaction.model';
 import AccountAllowanceApproveTransactionModel from './approve-allowance-transaction.model';
+import FileCreateTransactionModel from './file-create-transaction.model';
 import { TransactionBaseModel } from './transaction.model';
 
 export default class TransactionFactory {

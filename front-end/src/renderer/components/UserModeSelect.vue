@@ -6,6 +6,7 @@ import { Organization } from '@prisma/client';
 import useUserStore from '@renderer/stores/storeUser';
 
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
+import AppButton from './ui/AppButton.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -21,10 +22,7 @@ const handleUserModeChange = async (e: Event) => {
   const newValue = selectEl.value;
   const org = user.organizations.find(org => org.id === newValue);
 
-  if (newValue === 'add_organization') {
-    selectEl.value = selectedMode.value;
-    addOrganizationModalShown.value = true;
-  } else if (newValue === 'personal') {
+  if (newValue === 'personal') {
     selectedMode.value = 'personal';
     await user.selectOrganization(null);
   } else {
@@ -40,6 +38,10 @@ const handleUserModeChange = async (e: Event) => {
         : null,
     );
   }
+};
+
+const handleAddOrganizationButtonClick = async () => {
+  addOrganizationModalShown.value = true;
 };
 
 const handleAddOrganization = async (organization: Organization) => {
@@ -63,7 +65,7 @@ watch(
 );
 </script>
 <template>
-  <div>
+  <div class="d-flex align-items-centert">
     <select
       ref="selectElRef"
       class="form-select with-border is-fill lh-base"
@@ -76,8 +78,15 @@ watch(
           {{ organization.nickname }}
         </option>
       </template>
-      <option value="add_organization">Add Organization</option>
     </select>
+    <AppButton
+      class="ms-3 min-w-unset ws-no-wrap text-title"
+      color="secondary"
+      size="small"
+      @click="handleAddOrganizationButtonClick"
+      ><i class="bi bi-cloud-plus"></i
+    ></AppButton>
+
     <AddOrganizationModal
       v-if="addOrganizationModalShown"
       v-model:show="addOrganizationModalShown"
