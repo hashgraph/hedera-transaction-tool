@@ -75,6 +75,7 @@ const orgTransaction = ref<ITransactionFull | null>(null);
 const localTransaction = ref<Transaction | null>(null);
 const sdkTransaction = ref<SDKTransaction | null>(null);
 const signatureKey = ref<KeyList | null>(null);
+const publicKeysRequiredToSign = ref<string[] | null>(null);
 
 /* Computed */
 const stepperActiveIndex = computed(() => {
@@ -272,9 +273,15 @@ async function fetchTransaction(id: string | number) {
       Number(id),
     );
     transactionBytes = await hexToUint8Array(orgTransaction.value.body);
+    publicKeysRequiredToSign.value = await publicRequiredToSign(
+      SDKTransaction.fromBytes(transactionBytes),
+      user.selectedOrganization.userKeys,
+      network.mirrorNodeBaseURL,
+    );
   } else {
     localTransaction.value = await getTransaction(id);
     transactionBytes = getUInt8ArrayFromString(localTransaction.value.body);
+    publicKeysRequiredToSign.value = null;
   }
 
   try {
@@ -373,10 +380,16 @@ const approve = 'Approve';
 
                 <h2 class="text-title text-bold">Transaction Details</h2>
               </div>
-              <div v-if="$route.query.sign">
+              <div
+                v-if="
+                  isLoggedInOrganization(user.selectedOrganization) &&
+                  publicKeysRequiredToSign &&
+                  publicKeysRequiredToSign.length > 0
+                "
+              >
                 <AppButton color="primary" type="submit">Sign</AppButton>
               </div>
-              <div v-if="$route.query.approve">
+              <div v-if="isLoggedInOrganization(user.selectedOrganization) && $route.query.approve">
                 <AppButton color="secondary" type="submit" class="me-3">{{ reject }}</AppButton>
                 <AppButton color="primary" type="submit">{{ approve }}</AppButton>
               </div>
