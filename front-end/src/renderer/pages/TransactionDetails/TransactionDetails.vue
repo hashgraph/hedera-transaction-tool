@@ -446,7 +446,10 @@ const approve = 'Approve';
                   <div :class="commonColClass">
                     <h4 :class="detailItemLabelClass">Creator</h4>
                     <p :class="detailItemValueClass">
-                      {{ creator?.nickname?.trim() || creator?.user?.email || 'Unknown' }}
+                      {{ creator?.user?.email }}
+                      <span v-if="creator?.nickname?.trim().length > 0" class="text-pink"
+                        >({{ creator?.nickname?.trim() }})</span
+                      >
                     </p>
                   </div>
                 </template>
