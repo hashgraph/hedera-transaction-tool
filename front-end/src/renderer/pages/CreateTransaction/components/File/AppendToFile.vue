@@ -328,7 +328,7 @@ const columnClass = 'col-4 col-xxxl-3';
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"
       :on-executed="
-        (_response, _receipt, chunkAmount) => {
+        (_success, _response, _receipt, chunkAmount) => {
           isExecuted = true;
           chunksAmount = chunkAmount || null;
         }

@@ -141,16 +141,18 @@ const handleCreate = async e => {
   }
 };
 
-const handleExecuted = async (_response, receipt: TransactionReceipt) => {
+const handleExecuted = async (success: boolean, _response?, receipt?: TransactionReceipt) => {
   isExecuted.value = true;
 
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
+  if (success && receipt) {
+    if (!isUserLoggedIn(user.personal)) {
+      throw new Error('User is not logged in');
+    }
 
-  const accountId = getEntityIdFromTransactionReceipt(receipt, 'accountId');
-  await add(user.personal.id, accountId, network.network, nickname.value);
-  toast.success(`Account ${accountId} linked`, { position: 'bottom-right' });
+    const accountId = getEntityIdFromTransactionReceipt(receipt, 'accountId');
+    await add(user.personal.id, accountId, network.network, nickname.value);
+    toast.success(`Account ${accountId} linked`, { position: 'bottom-right' });
+  }
 };
 
 const handleLoadFromDraft = async () => {

@@ -49,8 +49,9 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 const props = defineProps<{
   transactionBytes: Uint8Array | null;
   onExecuted?: (
-    response: TransactionResponse,
-    receipt: TransactionReceipt,
+    success: boolean,
+    response?: TransactionResponse,
+    receipt?: TransactionReceipt,
     chunksAmount?: number,
   ) => void;
   onLocalStored?: (id: string) => void;
@@ -258,7 +259,7 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     status = transactionResult.value.receipt.status._code;
 
     isExecutedModalShown.value = true;
-    props.onExecuted && props.onExecuted(response, receipt);
+    props.onExecuted && props.onExecuted(true, response, receipt);
 
     if (route.query.draftId) {
       try {
@@ -278,6 +279,7 @@ async function executeTransaction(transactionBytes: Uint8Array) {
   } catch (err: any) {
     const data = JSON.parse(err.message);
     status = data.status;
+    props.onExecuted && props.onExecuted(false);
     toast.error(data.message, { position: 'bottom-right' });
   } finally {
     isExecuting.value = false;
@@ -521,6 +523,7 @@ async function executeFileTransactions(
     transactionResult.value = firstTransactionResult;
     props.onExecuted &&
       props.onExecuted(
+        true,
         firstTransactionResult.response,
         firstTransactionResult.receipt,
         chunksAmount.value || undefined,

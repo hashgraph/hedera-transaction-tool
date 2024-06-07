@@ -114,8 +114,10 @@ const handleLoadFromDraft = async () => {
   }
 };
 
-const handleExecuted = async () => {
+const handleExecuted = async (success: boolean) => {
   isExecuted.value = true;
+
+  if (!success) return;
 
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
