@@ -201,7 +201,10 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
       <h4 :class="detailItemLabelClass">Key</h4>
       <p :class="detailItemValueClass">
         <template v-if="transaction.keys">
-          <span class="link-primary cursor-pointer" @click="isKeyStructureModalShown = true"
+          <span
+            class="link-primary cursor-pointer"
+            data-testid="button-file-details-key"
+            @click="isKeyStructureModalShown = true"
             >See details</span
           >
         </template>
