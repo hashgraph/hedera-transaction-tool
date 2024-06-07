@@ -30,7 +30,7 @@ onBeforeMount(async () => {
 /* Misc */
 const detailItemLabelClass = 'text-micro text-semi-bold text-dark-blue';
 const detailItemValueClass = 'text-small overflow-hidden mt-1';
-const commonColClass = 'col-6 col-md-5 col-lg-4 col-xl-3 py-3';
+const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
 </script>
 <template>
   <div v-if="transaction instanceof FreezeTransaction && true" class="mt-5 row flex-wrap">

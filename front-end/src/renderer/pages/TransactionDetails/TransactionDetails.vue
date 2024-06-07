@@ -328,7 +328,7 @@ watch(
 const sectionHeadingClass = 'd-flex justify-content-between align-items-center';
 const detailItemLabelClass = 'text-micro text-semi-bold text-dark-blue';
 const detailItemValueClass = 'text-small mt-1';
-const commonColClass = 'col-6 col-md-5 col-lg-4 col-xl-3 py-3';
+const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
 const stepperItems = [
   { title: 'Transaction Created', name: 'Transaction Created' },
   { title: 'Collecting Signatures', name: 'Collecting Signatures' },
