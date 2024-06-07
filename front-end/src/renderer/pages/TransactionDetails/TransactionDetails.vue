@@ -469,7 +469,10 @@ const approve = 'Approve';
                 </div>
 
                 <!-- Transaction Executed -->
-                <div :class="commonColClass">
+                <div
+                  v-if="orgTransaction?.executedAt || localTransaction?.executedAt"
+                  :class="commonColClass"
+                >
                   <h4 :class="detailItemLabelClass">Executed at</h4>
                   <p :class="detailItemValueClass">
                     {{
@@ -483,7 +486,7 @@ const approve = 'Approve';
                 </div>
               </div>
 
-              <hr v-if="signatureKey" class="separator my-5" />
+              <hr class="separator my-5" />
 
               <!-- TRANSACTION GENERAL DETAILS -->
               <div :class="sectionHeadingClass">
