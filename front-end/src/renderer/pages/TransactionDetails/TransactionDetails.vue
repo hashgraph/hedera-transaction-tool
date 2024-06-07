@@ -256,10 +256,11 @@ const handleSubmit = async e => {
 
   if (!isLoggedInOrganization(user.selectedOrganization)) return;
 
-  if (router.currentRoute.value.query.approve) {
-    const choice = e.submitter?.textContent;
+  const choice = e.submitter?.textContent;
+
+  if ([reject, approve].includes(choice)) {
     await handleApprove(choice === approve);
-  } else if (router.currentRoute.value.query.sign) {
+  } else {
     await handleSign();
   }
 };
@@ -470,7 +471,7 @@ const approve = 'Approve';
 
                 <!-- Transaction Executed -->
                 <div
-                  v-if="orgTransaction?.executedAt || localTransaction?.executedAt"
+                  v-if="orgTransaction?.executedAt || localTransaction?.executed_at"
                   :class="commonColClass"
                 >
                   <h4 :class="detailItemLabelClass">Executed at</h4>
@@ -478,7 +479,7 @@ const approve = 'Approve';
                     {{
                       getDateStringExtended(
                         new Date(
-                          orgTransaction?.executedAt || localTransaction?.executedAt || Date.now(),
+                          orgTransaction?.executedAt || localTransaction?.executed_at || Date.now(),
                         ),
                       )
                     }}
