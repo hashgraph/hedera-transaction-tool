@@ -159,7 +159,7 @@ const commonColClass = 'col-6 col-md-5 col-lg-4 col-xl-3 my-3';
 
     <!-- Key -->
     <div
-      class="col-12 mb-3"
+      class="col-12 my-3"
       :class="{ 'mt-3': transaction instanceof AccountUpdateTransaction && transaction.accountId }"
     >
       <h4 :class="detailItemLabelClass">Key</h4>

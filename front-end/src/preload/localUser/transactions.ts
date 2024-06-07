@@ -43,9 +43,8 @@ export default {
         privateKey,
         privateKeyType,
       ),
-    storeTransaction: (
-      transaction: Prisma.TransactionUncheckedCreateInput,
-    ): Promise<Transaction[]> => ipcRenderer.invoke('transactions:storeTransaction', transaction),
+    storeTransaction: (transaction: Prisma.TransactionUncheckedCreateInput): Promise<Transaction> =>
+      ipcRenderer.invoke('transactions:storeTransaction', transaction),
     getTransactions: (findArgs: Prisma.TransactionFindManyArgs): Promise<Transaction[]> =>
       ipcRenderer.invoke('transactions:getTransactions', findArgs),
     getTransaction: (id: string): Promise<Transaction> =>

@@ -75,6 +75,7 @@ const orgTransaction = ref<ITransactionFull | null>(null);
 const localTransaction = ref<Transaction | null>(null);
 const sdkTransaction = ref<SDKTransaction | null>(null);
 const signatureKey = ref<KeyList | null>(null);
+const publicKeysRequiredToSign = ref<string[] | null>(null);
 
 /* Computed */
 const stepperActiveIndex = computed(() => {
@@ -127,6 +128,39 @@ const creator = computed(() => {
 });
 
 /* Handlers */
+const handleBack = () => {
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    const status = orgTransaction.value?.status;
+    let tab: string = '';
+
+    switch (status) {
+      case TransactionStatus.EXECUTED:
+      case TransactionStatus.FAILED:
+      case TransactionStatus.EXPIRED:
+        tab = 'History';
+        break;
+      case TransactionStatus.WAITING_FOR_EXECUTION:
+        tab = 'Ready for Execution';
+        break;
+      case TransactionStatus.WAITING_FOR_SIGNATURES:
+        tab = 'In Progress';
+        break;
+      default:
+        tab = 'History';
+        break;
+    }
+
+    router.push({
+      name: 'transactions',
+      query: {
+        tab,
+      },
+    });
+  } else {
+    router.back();
+  }
+};
+
 const handleSign = async () => {
   if (
     !sdkTransaction.value ||
@@ -165,10 +199,6 @@ const handleSign = async () => {
   );
 
   toast.success('Transaction signed successfully');
-
-  router.push({
-    name: 'transactions',
-  });
 };
 
 const handleApprove = async (approved: boolean) => {
@@ -216,13 +246,6 @@ const handleApprove = async (approved: boolean) => {
       approved,
     );
     toast.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`);
-
-    router.push({
-      name: 'transactions',
-      query: {
-        tab: 'In Progress',
-      },
-    });
   };
 
   await callback();
@@ -233,10 +256,11 @@ const handleSubmit = async e => {
 
   if (!isLoggedInOrganization(user.selectedOrganization)) return;
 
-  if (router.currentRoute.value.query.approve) {
-    const choice = e.submitter?.textContent;
+  const choice = e.submitter?.textContent;
+
+  if ([reject, approve].includes(choice)) {
     await handleApprove(choice === approve);
-  } else if (router.currentRoute.value.query.sign) {
+  } else {
     await handleSign();
   }
 };
@@ -250,9 +274,15 @@ async function fetchTransaction(id: string | number) {
       Number(id),
     );
     transactionBytes = await hexToUint8Array(orgTransaction.value.body);
+    publicKeysRequiredToSign.value = await publicRequiredToSign(
+      SDKTransaction.fromBytes(transactionBytes),
+      user.selectedOrganization.userKeys,
+      network.mirrorNodeBaseURL,
+    );
   } else {
     localTransaction.value = await getTransaction(id);
     transactionBytes = getUInt8ArrayFromString(localTransaction.value.body);
+    publicKeysRequiredToSign.value = null;
   }
 
   try {
@@ -344,17 +374,23 @@ const approve = 'Approve';
                   type="button"
                   color="secondary"
                   class="btn-icon-only me-4"
-                  @click="$router.back()"
+                  @click="handleBack"
                 >
                   <i class="bi bi-arrow-left"></i>
                 </AppButton>
 
                 <h2 class="text-title text-bold">Transaction Details</h2>
               </div>
-              <div v-if="$route.query.sign">
+              <div
+                v-if="
+                  isLoggedInOrganization(user.selectedOrganization) &&
+                  publicKeysRequiredToSign &&
+                  publicKeysRequiredToSign.length > 0
+                "
+              >
                 <AppButton color="primary" type="submit">Sign</AppButton>
               </div>
-              <div v-if="$route.query.approve">
+              <div v-if="isLoggedInOrganization(user.selectedOrganization) && $route.query.approve">
                 <AppButton color="secondary" type="submit" class="me-3">{{ reject }}</AppButton>
                 <AppButton color="primary" type="submit">{{ approve }}</AppButton>
               </div>
@@ -362,7 +398,7 @@ const approve = 'Approve';
 
             <div class="fill-remaining mt-5">
               <!-- Name -->
-              <div
+              <!-- <div
                 v-if="
                   (orgTransaction?.name.trim() || localTransaction?.name.trim() || '').length > 0
                 "
@@ -371,10 +407,10 @@ const approve = 'Approve';
                 <p :class="detailItemValueClass">
                   {{ orgTransaction?.name || localTransaction?.name }}
                 </p>
-              </div>
+              </div> -->
 
               <!-- Description -->
-              <div
+              <!-- <div
                 v-if="
                   (orgTransaction?.description.trim() || localTransaction?.description.trim() || '')
                     .length > 0
@@ -385,7 +421,7 @@ const approve = 'Approve';
                 <p :class="detailItemValueClass">
                   {{ orgTransaction?.description || localTransaction?.description }}
                 </p>
-              </div>
+              </div> -->
 
               <!-- Transaction Status -->
               <div v-if="orgTransaction" class="mt-5">
@@ -400,7 +436,58 @@ const approve = 'Approve';
                 />
               </div>
 
-              <hr class="separator my-8" />
+              <hr v-if="isLoggedInOrganization(user.selectedOrganization)" class="separator my-8" />
+
+              <!-- CREATION DETAILS -->
+              <h2 class="text-title text-bold">Creation Details</h2>
+
+              <div class="row flex-wrap">
+                <!-- Creator -->
+                <template v-if="creator">
+                  <div :class="commonColClass">
+                    <h4 :class="detailItemLabelClass">Creator</h4>
+                    <p :class="detailItemValueClass">
+                      {{ creator?.user?.email }}
+                      <span v-if="creator?.nickname?.trim().length > 0" class="text-pink"
+                        >({{ creator?.nickname?.trim() }})</span
+                      >
+                    </p>
+                  </div>
+                </template>
+
+                <!-- Transaction Created -->
+                <div :class="commonColClass">
+                  <h4 :class="detailItemLabelClass">Created at</h4>
+                  <p :class="detailItemValueClass">
+                    {{
+                      getDateStringExtended(
+                        new Date(
+                          orgTransaction?.createdAt || localTransaction?.created_at || Date.now(),
+                        ),
+                      )
+                    }}
+                  </p>
+                </div>
+
+                <!-- Transaction Executed -->
+                <div
+                  v-if="orgTransaction?.executedAt || localTransaction?.executed_at"
+                  :class="commonColClass"
+                >
+                  <h4 :class="detailItemLabelClass">Executed at</h4>
+                  <p :class="detailItemValueClass">
+                    {{
+                      getDateStringExtended(
+                        new Date(
+                          orgTransaction?.executedAt || localTransaction?.executed_at || Date.now(),
+                        ),
+                      )
+                    }}
+                  </p>
+                </div>
+              </div>
+
+              <hr class="separator my-5" />
 
               <!-- TRANSACTION GENERAL DETAILS -->
               <div :class="sectionHeadingClass">
@@ -471,37 +558,6 @@ const approve = 'Approve';
 
               <hr class="separator my-5" />
 
-              <!-- CREATION DETAILS -->
-              <h2 class="text-title text-bold">Creation Details</h2>
-
-              <div class="row flex-wrap">
-                <!-- Creator -->
-                <template v-if="creator">
-                  <div :class="commonColClass">
-                    <h4 :class="detailItemLabelClass">Creator</h4>
-                    <p :class="detailItemValueClass">
-                      {{ creator?.nickname?.trim() || creator?.user?.email || 'Unknown' }}
-                    </p>
-                  </div>
-                </template>
-
-                <!-- Transaction Created -->
-                <div :class="commonColClass">
-                  <h4 :class="detailItemLabelClass">Created at</h4>
-                  <p :class="detailItemValueClass">
-                    {{
-                      getDateStringExtended(
-                        new Date(
-                          orgTransaction?.createdAt || localTransaction?.created_at || Date.now(),
-                        ),
-                      )
-                    }}
-                  </p>
-                </div>
-              </div>
-
-              <hr v-if="signatureKey" class="separator my-5" />
-
               <!-- SIGNATURES COLLECTED -->
               <h2 v-if="signatureKey" class="text-title text-bold">Signatures Collected</h2>
               <div v-if="signatureKey" class="text-small mt-5">
@@ -511,7 +567,10 @@ const approve = 'Approve';
                 />
               </div>
 
-              <hr v-if="orgTransaction?.observers" class="separator my-5" />
+              <hr
+                v-if="orgTransaction?.observers && orgTransaction.observers.length > 0"
+                class="separator my-5"
+              />
 
               <!-- Observers -->
               <div

@@ -272,14 +272,16 @@ const handleRemoveTransfer = async (index: number) => {
   transfers.value = [...transfers.value];
 };
 
-const handleSubmit = () => {
-  isSubmitted.value = true;
+const redirectToDetails = async (id: string | number) => {
   router.push({
-    name: 'transactions',
-    query: {
-      tab: 'Ready for Execution',
-    },
+    name: 'transactionDetails',
+    params: { id },
   });
+};
+
+const handleSubmit = (id: number) => {
+  isSubmitted.value = true;
+  redirectToDetails(id);
 };
 
 /* Functions */
@@ -608,6 +610,7 @@ onMounted(async () => {
         }
       "
       :on-submitted="handleSubmit"
+      :on-local-stored="redirectToDetails"
     >
       <template #successHeading>Hbar transferred successfully</template>
       <template #successContent>

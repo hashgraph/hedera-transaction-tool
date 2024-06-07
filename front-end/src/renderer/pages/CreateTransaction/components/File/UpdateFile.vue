@@ -190,14 +190,16 @@ const handleLoadFromDraft = async () => {
   }
 };
 
-// const handleSubmit = async () => {
+const redirectToDetails = async (id: string | number) => {
+  router.push({
+    name: 'transactionDetails',
+    params: { id },
+  });
+};
+
+// const handleSubmit = async (id: number) => {
 //   isSubmitted.value = true;
-//   router.push({
-//     name: 'transactions',
-//     query: {
-//       tab: 'Ready for Execution',
-//     },
-//   });
+//   redirectToDetails(id);
 // };
 
 /* Functions */
@@ -467,6 +469,7 @@ const columnClass = 'col-4 col-xxxl-3';
           chunksAmount = chunkAmount || null;
         }
       "
+      :on-local-stored="redirectToDetails"
       :on-close-success-modal-click="
         () => {
           validStart = new Date();

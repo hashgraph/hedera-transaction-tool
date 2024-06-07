@@ -174,14 +174,16 @@ const handleLoadFromDraft = async () => {
   }
 };
 
-const handleSubmit = () => {
-  isSubmitted.value = true;
+const redirectToDetails = async (id: string | number) => {
   router.push({
-    name: 'transactions',
-    query: {
-      tab: 'Ready for Execution',
-    },
+    name: 'transactionDetails',
+    params: { id },
   });
+};
+
+const handleSubmit = (id: number) => {
+  isSubmitted.value = true;
+  redirectToDetails(id);
 };
 
 /* Functions */
@@ -488,6 +490,7 @@ const columnClass = 'col-4 col-xxxl-3';
       :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
       :on-executed="() => (isExecuted = true)"
       :on-submitted="handleSubmit"
+      :on-local-stored="redirectToDetails"
     >
       <template #successHeading>Account updated successfully</template>
       <template #successContent>

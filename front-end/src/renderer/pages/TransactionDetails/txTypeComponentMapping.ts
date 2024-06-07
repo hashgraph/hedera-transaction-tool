@@ -21,8 +21,8 @@ export const transactionTypeKeys = {
 
 const txTypeComponentMapping = {
   [transactionTypeKeys.createFile]: FileDetails,
-  // [transactionTypeKeys.updateFile]: UpdateFile,
-  // [transactionTypeKeys.appendToFile]: AppendToFileVue,
+  [transactionTypeKeys.updateFile]: FileDetails,
+  [transactionTypeKeys.appendToFile]: FileDetails,
   [transactionTypeKeys.createAccount]: AccountDetails,
   [transactionTypeKeys.updateAccount]: AccountDetails,
   [transactionTypeKeys.deleteAccount]: DeleteAccountDetails,
