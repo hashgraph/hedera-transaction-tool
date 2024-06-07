@@ -437,6 +437,51 @@ const approve = 'Approve';
 
               <hr v-if="isLoggedInOrganization(user.selectedOrganization)" class="separator my-8" />
 
+              <!-- CREATION DETAILS -->
+              <h2 class="text-title text-bold">Creation Details</h2>
+
+              <div class="row flex-wrap">
+                <!-- Creator -->
+                <template v-if="creator">
+                  <div :class="commonColClass">
+                    <h4 :class="detailItemLabelClass">Creator</h4>
+                    <p :class="detailItemValueClass">
+                      {{ creator?.nickname?.trim() || creator?.user?.email || 'Unknown' }}
+                    </p>
+                  </div>
+                </template>
+
+                <!-- Transaction Created -->
+                <div :class="commonColClass">
+                  <h4 :class="detailItemLabelClass">Created at</h4>
+                  <p :class="detailItemValueClass">
+                    {{
+                      getDateStringExtended(
+                        new Date(
+                          orgTransaction?.createdAt || localTransaction?.created_at || Date.now(),
+                        ),
+                      )
+                    }}
+                  </p>
+                </div>
+
+                <!-- Transaction Executed -->
+                <div :class="commonColClass">
+                  <h4 :class="detailItemLabelClass">Executed at</h4>
+                  <p :class="detailItemValueClass">
+                    {{
+                      getDateStringExtended(
+                        new Date(
+                          orgTransaction?.executedAt || localTransaction?.executedAt || Date.now(),
+                        ),
+                      )
+                    }}
+                  </p>
+                </div>
+              </div>
+
+              <hr v-if="signatureKey" class="separator my-5" />
+
               <!-- TRANSACTION GENERAL DETAILS -->
               <div :class="sectionHeadingClass">
                 <h2 class="text-title text-bold">Transaction Details</h2>
@@ -506,37 +551,6 @@ const approve = 'Approve';
 
               <hr class="separator my-5" />
 
-              <!-- CREATION DETAILS -->
-              <h2 class="text-title text-bold">Creation Details</h2>
-
-              <div class="row flex-wrap">
-                <!-- Creator -->
-                <template v-if="creator">
-                  <div :class="commonColClass">
-                    <h4 :class="detailItemLabelClass">Creator</h4>
-                    <p :class="detailItemValueClass">
-                      {{ creator?.nickname?.trim() || creator?.user?.email || 'Unknown' }}
-                    </p>
-                  </div>
-                </template>
-
-                <!-- Transaction Created -->
-                <div :class="commonColClass">
-                  <h4 :class="detailItemLabelClass">Created at</h4>
-                  <p :class="detailItemValueClass">
-                    {{
-                      getDateStringExtended(
-                        new Date(
-                          orgTransaction?.createdAt || localTransaction?.created_at || Date.now(),
-                        ),
-                      )
-                    }}
-                  </p>
-                </div>
-              </div>
-
-              <hr v-if="signatureKey" class="separator my-5" />
-
               <!-- SIGNATURES COLLECTED -->
               <h2 v-if="signatureKey" class="text-title text-bold">Signatures Collected</h2>
               <div v-if="signatureKey" class="text-small mt-5">
@@ -546,7 +560,10 @@ const approve = 'Approve';
                 />
               </div>
 
-              <hr v-if="orgTransaction?.observers" class="separator my-5" />
+              <hr
+                v-if="orgTransaction?.observers && orgTransaction.observers.length > 0"
+                class="separator my-5"
+              />
 
               <!-- Observers -->
               <div
