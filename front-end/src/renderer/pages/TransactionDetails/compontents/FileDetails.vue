@@ -81,7 +81,10 @@ onBeforeMount(async () => {
   if (!isUserLoggedIn(user.personal)) throw new Error('User not logged in');
 
   if (
-    props.organizationTransaction?.status === TransactionStatus.EXECUTED &&
+    props.organizationTransaction?.status &&
+    [TransactionStatus.EXECUTED, TransactionStatus.FAILED].includes(
+      props.organizationTransaction.status,
+    ) &&
     props.transaction instanceof FileCreateTransaction
   ) {
     controller.value = new AbortController();
@@ -159,6 +162,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
             class="min-w-unset"
             color="secondary"
             size="small"
+            type="button"
             @click="handleLinkEntity"
             >Link File</AppButton
           >
