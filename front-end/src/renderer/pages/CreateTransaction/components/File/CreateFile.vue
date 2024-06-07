@@ -108,8 +108,10 @@ const handleCreate = async e => {
   }
 };
 
-const handleExecuted = async (_response, receipt: TransactionReceipt) => {
+const handleExecuted = async (success: boolean, _response?, receipt?: TransactionReceipt) => {
   isExecuted.value = true;
+
+  if (!success || !receipt) return;
 
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');

@@ -55,7 +55,11 @@ const props = defineProps<{
   transactionBytes: Uint8Array | null;
   observers?: number[];
   approvers?: TransactionApproverDto[];
-  onExecuted?: (response: TransactionResponse, receipt: TransactionReceipt) => void;
+  onExecuted?: (
+    success: boolean,
+    response?: TransactionResponse,
+    receipt?: TransactionReceipt,
+  ) => void;
   onSubmitted?: (id: number, body: string) => void;
   onLocalStored?: (id: string) => void;
   onCloseSuccessModalClick?: () => void;
@@ -216,7 +220,7 @@ async function executeTransaction(transactionBytes: Uint8Array) {
 
     isExecutedModalShown.value = true;
 
-    props.onExecuted && props.onExecuted(response, receipt);
+    props.onExecuted && props.onExecuted(true, response, receipt);
 
     if (route.query.draftId) {
       try {
@@ -237,6 +241,7 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     const data = JSON.parse(err.message);
     status = data.status;
 
+    props.onExecuted && props.onExecuted(false);
     toast.error(data.message, { position: 'bottom-right' });
   } finally {
     isExecuting.value = false;
