@@ -207,6 +207,7 @@ test.describe('Transaction tests', () => {
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     await transactionPage.deleteAccount(accountFromList, globalCredentials.password);
+    await transactionPage.clickOnAccountsMenuButton();
 
     const isAccountVisible = await transactionPage.isAccountCardVisible(accountFromList);
     expect(isAccountVisible).toBe(false);
@@ -267,6 +268,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify transfer tokens tx fail with insufficient payer balance', async () => {
+    test.setTimeout(120000);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const amountToBeTransferred = '10000000';

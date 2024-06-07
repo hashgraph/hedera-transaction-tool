@@ -240,6 +240,31 @@ class BasePage {
       throw error;
     }
   }
+
+  /**
+   * Checks whether the switch with the specified testId is toggled on or off.
+   * @param {string} testId - The data-testid of the switch.
+   * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be actionable.
+   * @returns {Promise<boolean>} - Returns true if the switch is toggled on, false otherwise.
+   */
+  async isSwitchToggledOn(testId, timeout = this.DEFAULT_TIMEOUT) {
+    console.log(`Checking if switch with testId: ${testId} is toggled on`);
+    const selector = `input[type='checkbox'][data-testid="${testId}"]`;
+    try {
+      const element = await this.window.waitForSelector(selector, {
+        state: 'attached',
+        timeout: timeout,
+      });
+      const isChecked = await element.isChecked();
+      console.log(`Switch with testId: ${testId} is toggled ${isChecked ? 'on' : 'off'}`);
+      return isChecked;
+    } catch (error) {
+      console.error(
+        `Failed to determine the state of the switch with testId: ${testId}. Error: ${error.message}`,
+      );
+      throw error;
+    }
+  }
 }
 
 module.exports = BasePage;
