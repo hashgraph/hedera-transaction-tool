@@ -14,6 +14,7 @@ import {
   LocalAuthGuard,
   OtpJwtAuthGuard,
   OtpVerifiedAuthGuard,
+  UserThrottlerGuard,
 } from '../guards';
 
 import { GetUser } from '../decorators';
@@ -49,7 +50,7 @@ export class AuthController {
   })
   @Post('/signup')
   @Serialize(AuthDto)
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard, UserThrottlerGuard)
   async signUp(@Body() dto: SignUpUserDto): Promise<User> {
     return this.authService.signUpByAdmin(dto);
   }
@@ -121,6 +122,7 @@ export class AuthController {
   })
   @Post('/reset-password')
   @HttpCode(200)
+  @UseGuards(UserThrottlerGuard)
   async createOtp(@Body() { email }: OtpLocalDto, @Res({ passthrough: true }) response: Response) {
     return this.authService.createOtp(email, response);
   }
