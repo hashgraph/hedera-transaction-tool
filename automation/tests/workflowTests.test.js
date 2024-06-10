@@ -378,62 +378,37 @@ test.describe('Workflow tests', () => {
   test('Verify account create tx is displayed in history page', async () => {
     const { newTransactionId } = await transactionPage.createNewAccount(globalCredentials.password);
     await transactionPage.clickOnTransactionsMenuButton();
-
-    const transactionId = await detailsPage.getFirstTransactionId();
-    expect(newTransactionId.toString()).toContain(transactionId);
-
-    const transactionType = await detailsPage.getFirstTransactionType();
-    expect(transactionType).toBe('Account Create Transaction');
-
-    const transactionStatus = await detailsPage.getFirstTransactionStatus();
-    expect(transactionStatus).toBe('SUCCESS');
-
-    const transactionCreatedAt = await detailsPage.getFirstTransactionCreated();
-    expect(transactionCreatedAt).toBeTruthy();
-
-    const isTransactionDetailsButtonVisible = await detailsPage.isTransactionDetailsButtonVisible();
-    expect(isTransactionDetailsButtonVisible).toBe(true);
+    await detailsPage.assertTransactionDisplayed(newTransactionId, 'Account Create Transaction');
   });
 
   test('Verify transaction details are displayed for account tx ', async () => {
     const { newTransactionId } = await transactionPage.createNewAccount(globalCredentials.password);
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
+    await detailsPage.assertTransactionDetails(
+      newTransactionId,
+      'Account Create Transaction',
+      async () => {
+        const getAccountDetailsKey = await detailsPage.getAccountDetailsKey();
+        expect(getAccountDetailsKey).toBeTruthy();
 
-    const transactionId = await detailsPage.getTransactionDetailsId();
-    expect(newTransactionId.toString()).toContain(transactionId);
+        const getAccountDetailsStaking = await detailsPage.getAccountDetailsStaking();
+        expect(getAccountDetailsStaking).toBe('None');
 
-    const transactionType = await detailsPage.getTransactionDetailsType();
-    expect(transactionType).toBe('Account Create Transaction');
+        const getAccountDetailsDeclineRewards = await detailsPage.getAccountDetailsDeclineRewards();
+        expect(getAccountDetailsDeclineRewards).toBe('No');
 
-    const transactionCreatedAt = await detailsPage.getTransactionDetailsCreatedAt();
-    expect(transactionCreatedAt).toBeTruthy();
+        const getAccountDetailsReceiverSigRequired =
+          await detailsPage.getAccountDetailsReceiverSigRequired();
+        expect(getAccountDetailsReceiverSigRequired).toBe('No');
 
-    const validStart = await detailsPage.getValidStart();
-    expect(validStart).toBeTruthy();
-
-    const transactionFeePayer = await detailsPage.getTransactionDetailsFeePayer();
-    expect(transactionFeePayer).toBeTruthy();
-
-    const getAccountDetailsKey = await detailsPage.getAccountDetailsKey();
-    expect(getAccountDetailsKey).toBeTruthy();
-
-    const getAccountDetailsStaking = await detailsPage.getAccountDetailsStaking();
-    expect(getAccountDetailsStaking).toBe('None');
-
-    const getAccountDetailsDeclineRewards = await detailsPage.getAccountDetailsDeclineRewards();
-    expect(getAccountDetailsDeclineRewards).toBe('No');
-
-    const getAccountDetailsReceiverSigRequired =
-      await detailsPage.getAccountDetailsReceiverSigRequired();
-    expect(getAccountDetailsReceiverSigRequired).toBe('No');
-
-    const getAccountDetailsInitialBalance = await detailsPage.getAccountDetailsInitBalance();
-    expect(getAccountDetailsInitialBalance).toBe('0 ℏ');
+        const getAccountDetailsInitialBalance = await detailsPage.getAccountDetailsInitBalance();
+        expect(getAccountDetailsInitialBalance).toBe('0 ℏ');
+      },
+    );
   });
 
   test('Verify account update tx is displayed in history page', async () => {
-    test.setTimeout(120000);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const updatedMemoText = 'Updated memo';
@@ -445,21 +420,7 @@ test.describe('Workflow tests', () => {
       updatedMemoText,
     );
     await transactionPage.clickOnTransactionsMenuButton();
-
-    const transactionId = await detailsPage.getFirstTransactionId();
-    expect(newTransactionId.toString()).toContain(transactionId);
-
-    const transactionType = await detailsPage.getFirstTransactionType();
-    expect(transactionType).toBe('Account Update Transaction');
-
-    const transactionStatus = await detailsPage.getFirstTransactionStatus();
-    expect(transactionStatus).toBe('SUCCESS');
-
-    const transactionCreatedAt = await detailsPage.getFirstTransactionCreated();
-    expect(transactionCreatedAt).toBeTruthy();
-
-    const isTransactionDetailsButtonVisible = await detailsPage.isTransactionDetailsButtonVisible();
-    expect(isTransactionDetailsButtonVisible).toBe(true);
+    await detailsPage.assertTransactionDisplayed(newTransactionId, 'Account Update Transaction');
   });
 
   test('Verify transaction details are displayed for account update tx ', async () => {
@@ -475,46 +436,33 @@ test.describe('Workflow tests', () => {
     );
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
+    await detailsPage.assertTransactionDetails(
+      newTransactionId,
+      'Account Update Transaction',
+      async () => {
+        const getTransactionMemo = await detailsPage.getTransactionDetailsMemo();
+        expect(getTransactionMemo).toBe('Transaction memo update');
 
-    const transactionId = await detailsPage.getTransactionDetailsId();
-    expect(newTransactionId.toString()).toContain(transactionId);
+        const getAccountId = await detailsPage.getAccountUpdateDetailsId();
+        expect(getAccountId).toBe(accountFromList);
 
-    const transactionType = await detailsPage.getTransactionDetailsType();
-    expect(transactionType).toBe('Account Update Transaction');
+        const getAccountDetailsKey = await detailsPage.getAccountDetailsKey();
+        expect(getAccountDetailsKey).toBeTruthy();
 
-    const transactionCreatedAt = await detailsPage.getTransactionDetailsCreatedAt();
-    expect(transactionCreatedAt).toBeTruthy();
+        const getAccountMemoDetails = await detailsPage.getAccountDetailsMemo();
+        expect(getAccountMemoDetails).toBe(updatedMemoText);
 
-    const transactionExecutedAt = await detailsPage.getTransactionDetailsExecutedAt();
-    expect(transactionExecutedAt).toBeTruthy();
+        const getAccountDetailsStaking = await detailsPage.getAccountDetailsStaking();
+        expect(getAccountDetailsStaking).toBe('None');
 
-    const validStart = await detailsPage.getValidStart();
-    expect(validStart).toBeTruthy();
+        const getAccountDetailsDeclineRewards = await detailsPage.getAccountDetailsDeclineRewards();
+        expect(getAccountDetailsDeclineRewards).toBe('Yes');
 
-    const transactionFeePayer = await detailsPage.getTransactionDetailsFeePayer();
-    expect(transactionFeePayer).toBeTruthy();
-
-    const getTransactionMemo = await detailsPage.getTransactionDetailsMemo();
-    expect(getTransactionMemo).toBe('Transaction memo update');
-
-    const getAccountId = await detailsPage.getAccountUpdateDetailsId();
-    expect(getAccountId).toBe(accountFromList);
-
-    const getAccountDetailsKey = await detailsPage.getAccountDetailsKey();
-    expect(getAccountDetailsKey).toBeTruthy();
-
-    const getAccountMemoDetails = await detailsPage.getAccountDetailsMemo();
-    expect(getAccountMemoDetails).toBe(updatedMemoText);
-
-    const getAccountDetailsStaking = await detailsPage.getAccountDetailsStaking();
-    expect(getAccountDetailsStaking).toBe('None');
-
-    const getAccountDetailsDeclineRewards = await detailsPage.getAccountDetailsDeclineRewards();
-    expect(getAccountDetailsDeclineRewards).toBe('Yes');
-
-    const getAccountDetailsReceiverSigRequired =
-      await detailsPage.getAccountDetailsReceiverSigRequired();
-    expect(getAccountDetailsReceiverSigRequired).toBe('No');
+        const getAccountDetailsReceiverSigRequired =
+          await detailsPage.getAccountDetailsReceiverSigRequired();
+        expect(getAccountDetailsReceiverSigRequired).toBe('No');
+      },
+    );
   });
 
   test('Verify account delete tx is displayed in history page', async () => {
@@ -525,21 +473,7 @@ test.describe('Workflow tests', () => {
       globalCredentials.password,
     );
     await transactionPage.clickOnTransactionsMenuButton();
-
-    const transactionId = await detailsPage.getFirstTransactionId();
-    expect(newTransactionId.toString()).toContain(transactionId);
-
-    const transactionType = await detailsPage.getFirstTransactionType();
-    expect(transactionType).toBe('Account Delete Transaction');
-
-    const transactionStatus = await detailsPage.getFirstTransactionStatus();
-    expect(transactionStatus).toBe('SUCCESS');
-
-    const transactionCreatedAt = await detailsPage.getFirstTransactionCreated();
-    expect(transactionCreatedAt).toBeTruthy();
-
-    const isTransactionDetailsButtonVisible = await detailsPage.isTransactionDetailsButtonVisible();
-    expect(isTransactionDetailsButtonVisible).toBe(true);
+    await detailsPage.assertTransactionDisplayed(newTransactionId, 'Account Delete Transaction');
   });
 
   test('Verify transaction details are displayed for account delete tx ', async () => {
@@ -551,30 +485,17 @@ test.describe('Workflow tests', () => {
     );
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
+    await detailsPage.assertTransactionDetails(
+      newTransactionId,
+      'Account Delete Transaction',
+      async () => {
+        const getDeletedAccountId = await detailsPage.getDeletedAccountId();
+        expect(getDeletedAccountId).toBe(accountFromList);
 
-    const transactionId = await detailsPage.getTransactionDetailsId();
-    expect(newTransactionId.toString()).toContain(transactionId);
-
-    const transactionType = await detailsPage.getTransactionDetailsType();
-    expect(transactionType).toBe('Account Delete Transaction');
-
-    const transactionCreatedAt = await detailsPage.getTransactionDetailsCreatedAt();
-    expect(transactionCreatedAt).toBeTruthy();
-
-    const transactionExecutedAt = await detailsPage.getTransactionDetailsExecutedAt();
-    expect(transactionExecutedAt).toBeTruthy();
-
-    const validStart = await detailsPage.getValidStart();
-    expect(validStart).toBeTruthy();
-
-    const transactionFeePayer = await detailsPage.getTransactionDetailsFeePayer();
-    expect(transactionFeePayer).toBeTruthy();
-
-    const getDeletedAccountId = await detailsPage.getDeletedAccountId();
-    expect(getDeletedAccountId).toBe(accountFromList);
-
-    const getAccountDetailsKey = await detailsPage.getAccountDeleteDetailsTransferId();
-    expect(getAccountDetailsKey).toBeTruthy();
+        const getAccountDetailsKey = await detailsPage.getAccountDeleteDetailsTransferId();
+        expect(getAccountDetailsKey).toBeTruthy();
+      },
+    );
   });
 
   test('Verify transfer tx is displayed in history page', async () => {
@@ -587,21 +508,7 @@ test.describe('Workflow tests', () => {
       globalCredentials.password,
     );
     await transactionPage.clickOnTransactionsMenuButton();
-
-    const transactionId = await detailsPage.getFirstTransactionId();
-    expect(newTransactionId.toString()).toContain(transactionId);
-
-    const transactionType = await detailsPage.getFirstTransactionType();
-    expect(transactionType).toBe('Transfer Transaction');
-
-    const transactionStatus = await detailsPage.getFirstTransactionStatus();
-    expect(transactionStatus).toBe('SUCCESS');
-
-    const transactionCreatedAt = await detailsPage.getFirstTransactionCreated();
-    expect(transactionCreatedAt).toBeTruthy();
-
-    const isTransactionDetailsButtonVisible = await detailsPage.isTransactionDetailsButtonVisible();
-    expect(isTransactionDetailsButtonVisible).toBe(true);
+    await detailsPage.assertTransactionDisplayed(newTransactionId, 'Transfer Transaction');
   });
 
   test('Verify transaction details are displayed for transfer tx ', async () => {
@@ -615,36 +522,23 @@ test.describe('Workflow tests', () => {
     );
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
+    await detailsPage.assertTransactionDetails(
+      newTransactionId,
+      'Transfer Transaction',
+      async () => {
+        const transferDetailsFromAccount = await detailsPage.getTransferDetailsFromAccount();
+        expect(transferDetailsFromAccount).toBeTruthy();
 
-    const transactionId = await detailsPage.getTransactionDetailsId();
-    expect(newTransactionId.toString()).toContain(transactionId);
+        const transferDetailsFromAmount = await detailsPage.getTransferDetailsFromAmount();
+        expect(transferDetailsFromAmount).toContain('-' + amountToBeTransferred + ' ℏ');
 
-    const transactionType = await detailsPage.getTransactionDetailsType();
-    expect(transactionType).toBe('Transfer Transaction');
+        const transferDetailsToAccount = await detailsPage.getTransferDetailsToAccount();
+        expect(transferDetailsToAccount).toBe(accountFromList);
 
-    const transactionCreatedAt = await detailsPage.getTransactionDetailsCreatedAt();
-    expect(transactionCreatedAt).toBeTruthy();
-
-    const transactionExecutedAt = await detailsPage.getTransactionDetailsExecutedAt();
-    expect(transactionExecutedAt).toBeTruthy();
-
-    const validStart = await detailsPage.getValidStart();
-    expect(validStart).toBeTruthy();
-
-    const transactionFeePayer = await detailsPage.getTransactionDetailsFeePayer();
-    expect(transactionFeePayer).toBeTruthy();
-
-    const transferDetailsFromAccount = await detailsPage.getTransferDetailsFromAccount();
-    expect(transferDetailsFromAccount).toBeTruthy();
-
-    const transferDetailsFromAmount = await detailsPage.getTransferDetailsFromAmount();
-    expect(transferDetailsFromAmount).toContain('-' + amountToBeTransferred + ' ℏ');
-
-    const transferDetailsToAccount = await detailsPage.getTransferDetailsToAccount();
-    expect(transferDetailsToAccount).toBe(accountFromList);
-
-    const transferDetailsToAmount = await detailsPage.getTransferDetailsToAmount();
-    expect(transferDetailsToAmount).toContain(amountToBeTransferred + ' ℏ');
+        const transferDetailsToAmount = await detailsPage.getTransferDetailsToAmount();
+        expect(transferDetailsToAmount).toContain(amountToBeTransferred + ' ℏ');
+      },
+    );
   });
 
   test('Verify approve allowance tx is displayed in history page', async () => {
@@ -657,21 +551,10 @@ test.describe('Workflow tests', () => {
       globalCredentials.password,
     );
     await transactionPage.clickOnTransactionsMenuButton();
-
-    const transactionId = await detailsPage.getFirstTransactionId();
-    expect(newTransactionId.toString()).toContain(transactionId);
-
-    const transactionType = await detailsPage.getFirstTransactionType();
-    expect(transactionType).toBe('Account Allowance Approve Transaction');
-
-    const transactionStatus = await detailsPage.getFirstTransactionStatus();
-    expect(transactionStatus).toBe('SUCCESS');
-
-    const transactionCreatedAt = await detailsPage.getFirstTransactionCreated();
-    expect(transactionCreatedAt).toBeTruthy();
-
-    const isTransactionDetailsButtonVisible = await detailsPage.isTransactionDetailsButtonVisible();
-    expect(isTransactionDetailsButtonVisible).toBe(true);
+    await detailsPage.assertTransactionDisplayed(
+      newTransactionId,
+      'Account Allowance Approve Transaction',
+    );
   });
 
   test('Verify transaction details are displayed for approve allowance tx ', async () => {
@@ -685,85 +568,121 @@ test.describe('Workflow tests', () => {
     );
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
+    await detailsPage.assertTransactionDetails(
+      newTransactionId,
+      'Account Allowance Approve Transaction',
+      async () => {
+        const allowanceOwnerAccount = await detailsPage.getAllowanceDetailsOwnerAccount();
+        expect(allowanceOwnerAccount).toBeTruthy();
 
-    const transactionId = await detailsPage.getTransactionDetailsId();
-    expect(newTransactionId.toString()).toContain(transactionId);
+        const allowanceSpenderAccount = await detailsPage.getAllowanceDetailsSpenderAccount();
+        expect(allowanceSpenderAccount).toBe(accountFromList);
 
-    const transactionType = await detailsPage.getTransactionDetailsType();
-    expect(transactionType).toBe('Account Allowance Approve Transaction');
-
-    const transactionCreatedAt = await detailsPage.getTransactionDetailsCreatedAt();
-    expect(transactionCreatedAt).toBeTruthy();
-
-    const transactionExecutedAt = await detailsPage.getTransactionDetailsExecutedAt();
-    expect(transactionExecutedAt).toBeTruthy();
-
-    const validStart = await detailsPage.getValidStart();
-    expect(validStart).toBeTruthy();
-
-    const transactionFeePayer = await detailsPage.getTransactionDetailsFeePayer();
-    expect(transactionFeePayer).toBeTruthy();
-
-    const allowanceOwnerAccount = await detailsPage.getAllowanceDetailsOwnerAccount();
-    expect(allowanceOwnerAccount).toBeTruthy();
-
-    const allowanceSpenderAccount = await detailsPage.getAllowanceDetailsSpenderAccount();
-    expect(allowanceSpenderAccount).toBe(accountFromList);
-
-    const allowanceAmount = await detailsPage.getAllowanceDetailsAmount();
-    expect(allowanceAmount).toContain(amountToBeApproved + ' ℏ');
+        const allowanceAmount = await detailsPage.getAllowanceDetailsAmount();
+        expect(allowanceAmount).toContain(amountToBeApproved + ' ℏ');
+      },
+    );
   });
 
   test('Verify file create tx is displayed in history page', async () => {
     const { transactionId } = await transactionPage.createFile('test', globalCredentials.password);
     await transactionPage.clickOnTransactionsMenuButton();
-
-    const displayedTransactionId = await detailsPage.getFirstTransactionId();
-    expect(transactionId).toContain(displayedTransactionId);
-
-    const transactionType = await detailsPage.getFirstTransactionType();
-    expect(transactionType).toBe('File Create Transaction');
-
-    const transactionStatus = await detailsPage.getFirstTransactionStatus();
-    expect(transactionStatus).toBe('SUCCESS');
-
-    const transactionCreatedAt = await detailsPage.getFirstTransactionCreated();
-    expect(transactionCreatedAt).toBeTruthy();
-
-    const isTransactionDetailsButtonVisible = await detailsPage.isTransactionDetailsButtonVisible();
-    expect(isTransactionDetailsButtonVisible).toBe(true);
+    await detailsPage.assertTransactionDisplayed(transactionId, 'File Create Transaction');
   });
 
   test('Verify transaction details are displayed for file create tx ', async () => {
     const { transactionId } = await transactionPage.createFile('test', globalCredentials.password);
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
+    await detailsPage.assertTransactionDetails(
+      transactionId,
+      'File Create Transaction',
+      async () => {
+        const isKeyButtonVisible = await detailsPage.isSeeKeyDetailsButtonVisible();
+        expect(isKeyButtonVisible).toBe(true);
 
-    const displayedTransactionId = await detailsPage.getTransactionDetailsId();
-    expect(transactionId.toString()).toContain(displayedTransactionId);
+        const fileDetailsExpirationTime = await detailsPage.getFileDetailsExpirationTime();
+        expect(fileDetailsExpirationTime).toBeTruthy();
 
-    const transactionType = await detailsPage.getTransactionDetailsType();
-    expect(transactionType).toBe('File Create Transaction');
+        const isViewContentButtonVisible = await detailsPage.isViewContentsButtonVisible();
+        expect(isViewContentButtonVisible).toBe(true);
+      },
+    );
+  });
 
-    const transactionCreatedAt = await detailsPage.getTransactionDetailsCreatedAt();
-    expect(transactionCreatedAt).toBeTruthy();
+  test('Verify file update tx is displayed in history page', async () => {
+    const newText = 'Lorem Ipsum';
+    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    const fileId = await transactionPage.getFirsFileIdFromCache();
+    const transactionId = await transactionPage.updateFile(
+      fileId,
+      newText,
+      globalCredentials.password,
+    );
+    await transactionPage.clickOnTransactionsMenuButton();
+    await detailsPage.assertTransactionDisplayed(transactionId, 'File Update Transaction');
+  });
 
-    const transactionExecutedAt = await detailsPage.getTransactionDetailsExecutedAt();
-    expect(transactionExecutedAt).toBeTruthy();
+  test('Verify transaction details are displayed for file update tx ', async () => {
+    const newText = 'New text';
+    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    const fileId = await transactionPage.getFirsFileIdFromCache();
+    const transactionId = await transactionPage.updateFile(
+      fileId,
+      newText,
+      globalCredentials.password,
+    );
+    await transactionPage.clickOnTransactionsMenuButton();
+    await detailsPage.clickOnFirstTransactionDetailsButton();
+    await detailsPage.assertTransactionDetails(
+      transactionId,
+      'File Update Transaction',
+      async () => {
+        const fileIdFromDetailsPage = await detailsPage.getFileDetailsFileId();
+        expect(fileId).toBe(fileIdFromDetailsPage);
 
-    const validStart = await detailsPage.getValidStart();
-    expect(validStart).toBeTruthy();
+        const fileDetailsUpdatedKey = await detailsPage.getFileDetailsKeyText();
+        expect(fileDetailsUpdatedKey).toBeTruthy();
 
-    const transactionFeePayer = await detailsPage.getTransactionDetailsFeePayer();
-    expect(transactionFeePayer).toBeTruthy();
+        const isViewContentButtonVisible = await detailsPage.isViewContentsButtonVisible();
+        expect(isViewContentButtonVisible).toBe(true);
+      },
+    );
+  });
 
-    const isKeyButtonVisible = await detailsPage.isSeeKeyDetailsButtonVisible();
-    expect(isKeyButtonVisible).toBe(true);
+  test('Verify file append tx is displayed in history page', async () => {
+    const newText = ' extra text to append';
+    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    const fileId = await transactionPage.getFirsFileIdFromCache();
+    const transactionId = await transactionPage.appendFile(
+      fileId,
+      newText,
+      globalCredentials.password,
+    );
+    await transactionPage.clickOnTransactionsMenuButton();
+    await detailsPage.assertTransactionDisplayed(transactionId, 'File Append Transaction');
+  });
 
-    const fileDetailsExpirationTime = await detailsPage.getFileDetailsExpirationTime();
-    expect(fileDetailsExpirationTime).toBeTruthy();
+  test('Verify transaction details are displayed for file append tx ', async () => {
+    const newText = ' extra text to append';
+    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    const fileId = await transactionPage.getFirsFileIdFromCache();
+    const transactionId = await transactionPage.appendFile(
+      fileId,
+      newText,
+      globalCredentials.password,
+    );
 
-    const isViewContentButtonVisible = await detailsPage.isViewContentsButtonVisible();
-    expect(isViewContentButtonVisible).toBe(true);
+    await detailsPage.assertTransactionDetails(
+      transactionId,
+      'File Append Transaction',
+      async () => {
+        const fileIdFromDetailsPage = await detailsPage.getFileDetailsFileId();
+        expect(fileId).toBe(fileIdFromDetailsPage);
+
+        const isViewContentButtonVisible = await detailsPage.isViewContentsButtonVisible();
+        expect(isViewContentButtonVisible).toBe(true);
+      },
+    );
   });
 });

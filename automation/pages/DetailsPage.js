@@ -1,5 +1,6 @@
 const BasePage = require('./BasePage');
 const TransactionPage = require('./TransactionPage');
+const { expect } = require('playwright/test');
 
 class DetailsPage extends BasePage {
   constructor(window) {
@@ -45,6 +46,8 @@ class DetailsPage extends BasePage {
   allowanceDetailsSpenderAccountSelector = 'p-account-approve-details-spender-id';
   allowanceDetailsAmountSelector = 'p-account-approve-details-amount';
   fileDetailsExpirationTimeSelector = 'p-file-details-expiration-time';
+  fileDetailsFileIdSelector = 'p-file-details-file-id';
+  fileDetailsKeyTextSelector = 'p-file-details-key-text';
 
   async clickOnFirstTransactionDetailsButton() {
     await this.clickByTestId(this.transactionDetailsButtonIndexSelector + '0');
@@ -182,6 +185,53 @@ class DetailsPage extends BasePage {
 
   async clickOnBackButton() {
     await this.clickByTestId(this.backButtonSelector);
+  }
+
+  async getFileDetailsFileId() {
+    return await this.getTextByTestId(this.fileDetailsFileIdSelector);
+  }
+
+  async getFileDetailsKeyText() {
+    return await this.getTextByTestId(this.fileDetailsKeyTextSelector);
+  }
+
+  async assertTransactionDisplayed(expectedId, expectedType) {
+    const transactionId = await this.getFirstTransactionId();
+    expect(expectedId.toString()).toContain(transactionId);
+
+    const transactionType = await this.getFirstTransactionType();
+    expect(transactionType).toBe(expectedType);
+
+    const transactionStatus = await this.getFirstTransactionStatus();
+    expect(transactionStatus).toBe('SUCCESS');
+
+    const transactionCreatedAt = await this.getFirstTransactionCreated();
+    expect(transactionCreatedAt).toBeTruthy();
+
+    const isTransactionDetailsButtonVisible = await this.isTransactionDetailsButtonVisible();
+    expect(isTransactionDetailsButtonVisible).toBe(true);
+  }
+
+  async assertTransactionDetails(expectedId, expectedType, extraAssertions = () => {}) {
+    const transactionId = await this.getTransactionDetailsId();
+    expect(expectedId.toString()).toContain(transactionId);
+
+    const transactionType = await this.getTransactionDetailsType();
+    expect(transactionType).toBe(expectedType);
+
+    const transactionCreatedAt = await this.getTransactionDetailsCreatedAt();
+    expect(transactionCreatedAt).toBeTruthy();
+
+    const transactionExecutedAt = await this.getTransactionDetailsExecutedAt();
+    expect(transactionExecutedAt).toBeTruthy();
+
+    const validStart = await this.getValidStart();
+    expect(validStart).toBeTruthy();
+
+    const transactionFeePayer = await this.getTransactionDetailsFeePayer();
+    expect(transactionFeePayer).toBeTruthy();
+
+    await extraAssertions();
   }
 }
 
