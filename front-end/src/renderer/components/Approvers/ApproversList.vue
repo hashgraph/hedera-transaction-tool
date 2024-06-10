@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 
 import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
@@ -60,36 +60,40 @@ const handleViewSummary = async (index: number, event: Event) => {
   await approverModalRef.value?.viewSummary();
 };
 
-const handleApproverUpdate = async (approver: TransactionApproverDto) => {
-  if (
-    selectedApproverIndex.value > -1 &&
-    getApproverIdFromThreshold(approver) &&
-    props.approvers.some(app => app.userId === getApproverIdFromThreshold(approver))
-  ) {
-    emit(
-      'update:approvers',
-      props.approvers.filter((_, i) => i !== selectedApproverIndex.value),
-    );
-    selectedApproverIndex.value = -1;
-    return;
-  }
+const handleApproversUpdate = async (approvers: TransactionApproverDto[]) => {
+  for (const approver of approvers) {
+    await nextTick();
 
-  if (
-    (typeof approver.userId === 'number' &&
-      props.approvers.some(app => app.userId === approver.userId)) ||
-    (getApproverIdFromThreshold(approver) &&
-      props.approvers.some(app => app.userId === getApproverIdFromThreshold(approver)))
-  ) {
-    selectedApproverIndex.value = -1;
-    return;
-  }
-  if (selectedApproverIndex.value === -1) {
-    emit('update:approvers', [...props.approvers, approver]);
-  } else {
-    emit(
-      'update:approvers',
-      props.approvers.map((a, i) => (i === selectedApproverIndex.value ? approver : a)),
-    );
+    if (
+      selectedApproverIndex.value > -1 &&
+      getApproverIdFromThreshold(approver) &&
+      props.approvers.some(app => app.userId === getApproverIdFromThreshold(approver))
+    ) {
+      emit(
+        'update:approvers',
+        props.approvers.filter((_, i) => i !== selectedApproverIndex.value),
+      );
+      selectedApproverIndex.value = -1;
+      continue;
+    }
+
+    if (
+      (typeof approver.userId === 'number' &&
+        props.approvers.some(app => app.userId === approver.userId)) ||
+      (getApproverIdFromThreshold(approver) &&
+        props.approvers.some(app => app.userId === getApproverIdFromThreshold(approver)))
+    ) {
+      selectedApproverIndex.value = -1;
+      continue;
+    }
+    if (selectedApproverIndex.value === -1) {
+      emit('update:approvers', [...props.approvers, approver]);
+    } else {
+      emit(
+        'update:approvers',
+        props.approvers.map((a, i) => (i === selectedApproverIndex.value ? approver : a)),
+      );
+    }
   }
 
   selectedApproverIndex.value = -1;
@@ -157,7 +161,7 @@ function getApproverIdFromThreshold(approver: TransactionApproverDto) {
       :approver="selectedApprover"
       :on-close="() => (selectedApproverIndex = -1)"
       v-model:show="approverModalShown"
-      @update:approver="handleApproverUpdate"
+      @update:approvers="handleApproversUpdate"
     />
   </div>
 </template>

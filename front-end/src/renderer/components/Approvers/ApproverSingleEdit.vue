@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
@@ -9,8 +9,8 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import UserSelectModal from '@renderer/components/Organization/UserSelectModal.vue';
 
 /* Props */
-defineProps<{
-  modelApprover: TransactionApproverDto | null;
+const props = defineProps<{
+  modelApprovers: TransactionApproverDto[] | null;
 }>();
 
 /* Emits */
@@ -22,14 +22,33 @@ const contacts = useContactsStore();
 /* State */
 const selectUserModalShown = ref(false);
 
+/* Computed */
+const alreadyAddedUserIds = computed<number[]>(() =>
+  props.modelApprovers === null
+    ? []
+    : (props.modelApprovers
+        ?.filter(approver => approver.userId !== undefined)
+        .map(approver => approver.userId) as number[]) || [],
+);
+
 /* Handlers */
 const handleUserSelect = (userIds: number[]) => {
-  emit('update:modelApprover', { userId: userIds[0] });
+  const filteredUserIds = userIds.filter(userId => !alreadyAddedUserIds.value.includes(userId));
+  emit(
+    'update:modelApprover',
+    (props.modelApprovers || []).concat(
+      filteredUserIds.map(userId => ({
+        userId,
+        approverType: 'Single',
+      })),
+    ),
+  );
   selectUserModalShown.value = false;
 };
 
-const handleRemoveUser = () => {
-  emit('update:modelApprover', {});
+const handleRemoveUser = (index: number) => {
+  const newApprovers = props.modelApprovers?.filter((_, i) => i !== index) || [];
+  emit('update:modelApprover', newApprovers.length > 0 ? newApprovers : null);
 };
 </script>
 <template>
@@ -39,29 +58,32 @@ const handleRemoveUser = () => {
         >Select User</AppButton
       >
     </div>
-    <div
-      v-if="modelApprover?.userId"
-      class="key-threshhold-bg d-flex justify-content-between rounded py-3 px-4 mt-5"
-    >
-      <div>
-        {{
-          contacts.getContact(modelApprover.userId)?.user.email || `User: ${modelApprover.userId}`
-        }}
-        <span v-if="contacts.getNickname(modelApprover.userId).trim().length > 0">
-          ({{ contacts.getNickname(modelApprover.userId) }})
-        </span>
+    <template v-for="(approver, _i) in modelApprovers || []" :key="`${approver?.userId}${_i}`">
+      <div
+        v-if="approver?.userId"
+        class="key-threshhold-bg d-flex justify-content-between rounded py-3 px-4 mt-5"
+      >
+        <div>
+          {{ contacts.getContact(approver.userId)?.user.email || `User: ${approver.userId}` }}
+          <span v-if="contacts.getNickname(approver.userId).trim().length > 0">
+            ({{ contacts.getNickname(approver.userId) }})
+          </span>
+        </div>
+        <div class="text-small">
+          <span
+            class="bi bi-x-lg cursor-pointer"
+            @click="handleRemoveUser(_i)"
+            :data-testid="`button-approver-signgle-edit-remove-element`"
+          ></span>
+        </div>
       </div>
-      <div class="text-small">
-        <span
-          class="bi bi-x-lg cursor-pointer"
-          @click="handleRemoveUser"
-          :data-testid="`button-approver-signgle-edit-remove-element`"
-        ></span>
-      </div>
-    </div>
+    </template>
+
     <UserSelectModal
       v-if="selectUserModalShown"
       v-model:show="selectUserModalShown"
+      :mulitple="true"
+      :already-added="alreadyAddedUserIds"
       @users-selected="handleUserSelect"
     />
   </div>

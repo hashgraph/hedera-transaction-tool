@@ -19,18 +19,15 @@ const props = defineProps<{
 }>();
 
 /* Emits */
-const emit = defineEmits(['update:show', 'update:approver']);
+const emit = defineEmits(['update:show', 'update:approvers']);
 
 /* Misc */
 const singleApproverTitle = 'Single';
-
 const complexApproverTitle = 'Complex';
 
 /* State */
 const currentApprover = ref<TransactionApproverDto | null>(props.approver);
-const currentSingleApprover = ref<TransactionApproverDto | null>(
-  props.approver?.userId ? { userId: props.approver.userId } : null,
-);
+const currentSingleApprover = ref<TransactionApproverDto[] | null>(null);
 const errorModalShow = ref(false);
 const summaryMode = ref(false);
 const tabItems = ref<TabItem[]>([{ title: singleApproverTitle }, { title: complexApproverTitle }]);
@@ -44,14 +41,20 @@ const activeApprover = computed(() =>
     : currentApprover.value,
 );
 const currentApproverInvalid = computed(
-  () => activeApprover.value === null || !isApproverValid(activeApprover.value),
+  () =>
+    activeApprover.value === null ||
+    Boolean(
+      activeTabTitle.value === complexApproverTitle &&
+        currentApprover.value &&
+        !isApproverValid(currentApprover.value),
+    ),
 );
 
 /* Handlers */
 const handleApproverUpdate = (newApprover: TransactionApproverDto) =>
   (currentApprover.value = newApprover);
 
-const handleSingleApproverUpdate = (newApprover: TransactionApproverDto) =>
+const handleSingleApproverUpdate = (newApprover: TransactionApproverDto[]) =>
   (currentSingleApprover.value = newApprover);
 
 const handleDoneClick = async e => {
@@ -62,7 +65,10 @@ const handleDoneClick = async e => {
     return;
   }
 
-  emit('update:approver', activeApprover.value);
+  emit(
+    'update:approvers',
+    Array.isArray(activeApprover.value) ? activeApprover.value : [activeApprover.value],
+  );
   emit('update:show', false);
 };
 
@@ -79,7 +85,7 @@ const handleStartEdit = async () => {
   await nextTick();
 
   currentApprover.value = props.approver;
-  currentSingleApprover.value = props.approver?.userId ? { userId: props.approver.userId } : null;
+  currentSingleApprover.value = props.approver?.userId ? [{ userId: props.approver.userId }] : null;
   summaryMode.value = false;
   activeTabIndex.value = props.approver?.userId ? 0 : 1;
   emit('update:show', true);
@@ -118,20 +124,37 @@ function isApproverValid(approver: TransactionApproverDto) {
   return everyNestedKeyValid;
 }
 
-function getApproverFromComplex(approver: TransactionApproverDto | null) {
-  let userId = approver?.userId;
-  while (userId === undefined && approver?.approvers) {
-    approver = approver?.approvers[0];
-    userId = approver.userId;
+function getApproversFromComplex(
+  approver: TransactionApproverDto | null,
+): TransactionApproverDto[] {
+  const approvers: TransactionApproverDto[] = [];
+
+  if (approver && approver.userId !== undefined) {
+    approvers.push({ userId: approver.userId });
+  } else if (approver?.approvers) {
+    approver.approvers.forEach(approver => {
+      approvers.push(...getApproversFromComplex(approver));
+    });
   }
 
-  return userId;
+  return approvers;
+}
+
+function getComplexApproverFromApprovers(
+  approvers: TransactionApproverDto[],
+): TransactionApproverDto {
+  return {
+    approvers,
+  };
 }
 
 /* Watchers */
 watch(activeTabTitle, () => {
   if (activeTabTitle.value === singleApproverTitle && currentSingleApprover.value === null) {
-    currentSingleApprover.value = { userId: getApproverFromComplex(currentApprover.value) };
+    currentSingleApprover.value = getApproversFromComplex(currentApprover.value);
+  }
+  if (activeTabTitle.value === complexApproverTitle && currentApprover.value === null) {
+    currentApprover.value = getComplexApproverFromApprovers(currentSingleApprover.value || []);
   }
 });
 
@@ -190,12 +213,20 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
               </div>
               <div v-else-if="!summaryMode && activeTabTitle === singleApproverTitle">
                 <ApproverSingleEdit
-                  :model-approver="currentSingleApprover"
+                  :model-approvers="currentSingleApprover"
                   @update:model-approver="handleSingleApproverUpdate"
                 />
               </div>
               <div v-else-if="summaryMode">
-                <ApproverStructure :approver="activeApprover || {}" />
+                <ApproverStructure
+                  :approvers="
+                    Array.isArray(activeApprover)
+                      ? activeApprover
+                      : activeApprover
+                        ? [activeApprover]
+                        : []
+                  "
+                />
               </div>
             </Transition>
           </div>
