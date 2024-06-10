@@ -52,6 +52,8 @@ import {
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppStepper from '@renderer/components/ui/AppStepper.vue';
+import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import KeyStructureSignatureStatus from '@renderer/components/KeyStructureSignatureStatus.vue';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 
@@ -78,6 +80,7 @@ const sdkTransaction = ref<SDKTransaction | null>(null);
 const signatureKey = ref<KeyList | null>(null);
 const publicKeysRequiredToSign = ref<string[] | null>(null);
 const shouldApprove = ref<boolean>(false);
+const isConfirmModalShown = ref(false);
 
 /* Computed */
 const stepperItems = computed(() => {
@@ -231,7 +234,12 @@ const handleSign = async () => {
   toast.success('Transaction signed successfully');
 };
 
-const handleApprove = async (approved: boolean) => {
+const handleApprove = async (approved: boolean, showModal?: boolean) => {
+  if (!approved && showModal) {
+    isConfirmModalShown.value = true;
+    return;
+  }
+
   const callback = async () => {
     if (
       !sdkTransaction.value ||
@@ -276,6 +284,13 @@ const handleApprove = async (approved: boolean) => {
       approved,
     );
     toast.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`);
+
+    router.push({
+      name: 'transactions',
+      query: {
+        tab: 'History',
+      },
+    });
   };
 
   await callback();
@@ -289,7 +304,7 @@ const handleSubmit = async e => {
   const choice = e.submitter?.textContent;
 
   if ([reject, approve].includes(choice)) {
-    await handleApprove(choice === approve);
+    await handleApprove(choice === approve, true);
   } else {
     await handleSign();
   }
@@ -626,5 +641,30 @@ const approve = 'Approve';
         </template>
       </Transition>
     </div>
+    <AppModal v-model:show="isConfirmModalShown" class="common-modal">
+      <div class="modal-body">
+        <i
+          class="bi bi-x-lg d-inline-block cursor-pointer"
+          @click="isConfirmModalShown = false"
+        ></i>
+        <div class="text-center">
+          <AppCustomIcon :name="'questionMark'" style="height: 160px" />
+        </div>
+        <h3 class="text-center text-title text-bold mt-4">Reject Transaction?</h3>
+        <p class="text-center text-small text-secondary mt-4">
+          Are you sure you want to reject the transaction
+        </p>
+        <hr class="separator my-5" />
+        <div class="flex-between-centered gap-4">
+          <AppButton color="borderless" @click="isConfirmModalShown = false">Cancel</AppButton>
+          <AppButton
+            color="primary"
+            data-testid="button-confirm-change-password"
+            @click="handleApprove(false)"
+            >Reject</AppButton
+          >
+        </div>
+      </div>
+    </AppModal>
   </div>
 </template>
