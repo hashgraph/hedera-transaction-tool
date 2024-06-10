@@ -31,7 +31,7 @@ const users = computed(() =>
 const handleSelectUser = (userIds: number[]) => {
   const oldUserIds = new Set<number>(props.userIds);
   userIds.forEach(id => oldUserIds.add(id));
-  emit('update:userIds', [...userIds]);
+  emit('update:userIds', [...oldUserIds]);
 };
 
 const handleRemoveObserver = (userId: number) => {
