@@ -78,6 +78,34 @@ const signatureKey = ref<KeyList | null>(null);
 const publicKeysRequiredToSign = ref<string[] | null>(null);
 
 /* Computed */
+const stepperItems = computed(() => {
+  const items: {
+    title: string;
+    name: string;
+    bubbleClass?: string;
+    bubbleLabel?: string;
+    bubbleIcon?: string;
+  }[] = [
+    { title: 'Transaction Created', name: 'Transaction Created' },
+    { title: 'Collecting Signatures', name: 'Collecting Signatures' },
+    { title: 'Awaiting Execution', name: 'Awaiting Execution' },
+  ];
+
+  if (orgTransaction.value?.status === TransactionStatus.EXPIRED) {
+    items.push({
+      title: 'Expired',
+      name: 'Expired',
+      bubbleClass: 'bg-danger text-white',
+      bubbleIcon: 'x-lg',
+    });
+    items[0].bubbleIcon = 'check-lg';
+    items[1].bubbleIcon = 'check-lg';
+    items.splice(2, 1);
+  } else items.push({ title: 'Executed', name: 'Executed' });
+
+  return items;
+});
+
 const stepperActiveIndex = computed(() => {
   switch (orgTransaction.value?.status) {
     case TransactionStatus.NEW:
@@ -329,12 +357,6 @@ const sectionHeadingClass = 'd-flex justify-content-between align-items-center';
 const detailItemLabelClass = 'text-micro text-semi-bold text-dark-blue';
 const detailItemValueClass = 'text-small mt-1';
 const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
-const stepperItems = [
-  { title: 'Transaction Created', name: 'Transaction Created' },
-  { title: 'Collecting Signatures', name: 'Collecting Signatures' },
-  { title: 'Awaiting Execution', name: 'Awaiting Execution' },
-  { title: 'Executed', name: 'Executed' },
-];
 const reject = 'Reject';
 const approve = 'Approve';
 </script>
