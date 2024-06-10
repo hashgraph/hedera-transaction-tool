@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, nextTick } from 'vue';
 import { defineStore } from 'pinia';
 
 import { KeyPair, Organization, Prisma } from '@prisma/client';
@@ -94,6 +94,7 @@ const useUserStore = defineStore('user', () => {
   /* Organization */
   const selectOrganization = async (organization: Organization | null) => {
     ws.setSocket(null);
+    await nextTick();
 
     if (!organization) {
       selectedOrganization.value = null;
@@ -101,11 +102,16 @@ const useUserStore = defineStore('user', () => {
       selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
 
       const NOTIFICATIONS_SERVICE_PORT = 3020; // See docker-compose.yml in the back-end folder
-      ws.setSocket(
-        selectedOrganization.value.serverUrl.includes('localhost')
-          ? `ws://localhost:${NOTIFICATIONS_SERVICE_PORT}/`
-          : `${selectedOrganization.value.serverUrl}/`,
-      );
+
+      try {
+        ws.setSocket(
+          selectedOrganization.value.serverUrl.includes('localhost')
+            ? `ws://localhost:${NOTIFICATIONS_SERVICE_PORT}/`
+            : `${selectedOrganization.value.serverUrl}/`,
+        );
+      } catch (error) {
+        console.log(error);
+      }
     }
     await ush.afterOrganizationSelection(personal.value, selectedOrganization, keyPairs, router);
     refetchAccounts();
