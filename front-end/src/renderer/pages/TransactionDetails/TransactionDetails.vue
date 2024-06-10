@@ -285,12 +285,14 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
     );
     toast.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`);
 
-    router.push({
-      name: 'transactions',
-      query: {
-        tab: 'History',
-      },
-    });
+    if (!approved) {
+      router.push({
+        name: 'transactions',
+        query: {
+          tab: 'History',
+        },
+      });
+    }
   };
 
   await callback();
@@ -479,6 +481,15 @@ const approve = 'Approve';
                 />
               </div>
 
+              <!-- Approvers -->
+              <div
+                v-if="orgTransaction?.approvers && orgTransaction?.approvers.length > 0"
+                class="mt-5"
+              >
+                <h4 class="text-title text-bold">Approvers</h4>
+                <ReadOnlyApproversList :approvers="orgTransaction?.approvers" />
+              </div>
+
               <hr v-if="isLoggedInOrganization(user.selectedOrganization)" class="separator my-8" />
 
               <!-- CREATION DETAILS -->
@@ -626,15 +637,6 @@ const approve = 'Approve';
                   :editable="false"
                   :userIds="orgTransaction.observers.map(o => o.userId)"
                 />
-              </div>
-
-              <!-- Approvers -->
-              <div
-                v-if="orgTransaction?.approvers && orgTransaction?.approvers.length > 0"
-                class="mt-5"
-              >
-                <h4 class="text-title text-bold">Approvers</h4>
-                <ReadOnlyApproversList :approvers="orgTransaction?.approvers" />
               </div>
             </div>
           </form>
