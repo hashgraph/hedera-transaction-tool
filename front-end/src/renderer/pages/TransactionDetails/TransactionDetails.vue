@@ -2,7 +2,7 @@
 import { computed, inject, onBeforeMount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { KeyList, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 import { Transaction } from '@prisma/client';
 
 import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
@@ -17,6 +17,7 @@ import useDisposableWs from '@renderer/composables/useDisposableWs';
 import {
   fullUploadSignatures,
   getTransactionById,
+  getUserShouldApprove,
   sendApproverChoice,
 } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
@@ -51,7 +52,9 @@ import {
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppStepper from '@renderer/components/ui/AppStepper.vue';
-import KeyStructureSignatureStatus from '@renderer/components/KeyStructureSignatureStatus.vue';
+import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import SignatureStatus from '@renderer/components/SignatureStatus.vue';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 
 import txTypeComponentMapping from './txTypeComponentMapping';
@@ -74,10 +77,40 @@ const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODA
 const orgTransaction = ref<ITransactionFull | null>(null);
 const localTransaction = ref<Transaction | null>(null);
 const sdkTransaction = ref<SDKTransaction | null>(null);
-const signatureKey = ref<KeyList | null>(null);
+const signatureKeyObject = ref<Awaited<ReturnType<typeof computeSignatureKey>> | null>(null);
 const publicKeysRequiredToSign = ref<string[] | null>(null);
+const shouldApprove = ref<boolean>(false);
+const isConfirmModalShown = ref(false);
 
 /* Computed */
+const stepperItems = computed(() => {
+  const items: {
+    title: string;
+    name: string;
+    bubbleClass?: string;
+    bubbleLabel?: string;
+    bubbleIcon?: string;
+  }[] = [
+    { title: 'Transaction Created', name: 'Transaction Created' },
+    { title: 'Collecting Signatures', name: 'Collecting Signatures' },
+    { title: 'Awaiting Execution', name: 'Awaiting Execution' },
+  ];
+
+  if (orgTransaction.value?.status === TransactionStatus.EXPIRED) {
+    items.push({
+      title: 'Expired',
+      name: 'Expired',
+      bubbleClass: 'bg-danger text-white',
+      bubbleIcon: 'x-lg',
+    });
+    items[0].bubbleIcon = 'check-lg';
+    items[1].bubbleIcon = 'check-lg';
+    items.splice(2, 1);
+  } else items.push({ title: 'Executed', name: 'Executed' });
+
+  return items;
+});
+
 const stepperActiveIndex = computed(() => {
   switch (orgTransaction.value?.status) {
     case TransactionStatus.NEW:
@@ -201,7 +234,12 @@ const handleSign = async () => {
   toast.success('Transaction signed successfully');
 };
 
-const handleApprove = async (approved: boolean) => {
+const handleApprove = async (approved: boolean, showModal?: boolean) => {
+  if (!approved && showModal) {
+    isConfirmModalShown.value = true;
+    return;
+  }
+
   const callback = async () => {
     if (
       !sdkTransaction.value ||
@@ -246,6 +284,15 @@ const handleApprove = async (approved: boolean) => {
       approved,
     );
     toast.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`);
+
+    if (!approved) {
+      router.push({
+        name: 'transactions',
+        query: {
+          tab: 'History',
+        },
+      });
+    }
   };
 
   await callback();
@@ -259,7 +306,7 @@ const handleSubmit = async e => {
   const choice = e.submitter?.textContent;
 
   if ([reject, approve].includes(choice)) {
-    await handleApprove(choice === approve);
+    await handleApprove(choice === approve, true);
   } else {
     await handleSign();
   }
@@ -269,20 +316,34 @@ const handleSubmit = async e => {
 async function fetchTransaction(id: string | number) {
   let transactionBytes: Uint8Array;
   if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
-    orgTransaction.value = await getTransactionById(
-      user.selectedOrganization?.serverUrl || '',
-      Number(id),
-    );
-    transactionBytes = await hexToUint8Array(orgTransaction.value.body);
-    publicKeysRequiredToSign.value = await publicRequiredToSign(
-      SDKTransaction.fromBytes(transactionBytes),
-      user.selectedOrganization.userKeys,
-      network.mirrorNodeBaseURL,
-    );
+    try {
+      orgTransaction.value = await getTransactionById(
+        user.selectedOrganization?.serverUrl || '',
+        Number(id),
+      );
+      transactionBytes = await hexToUint8Array(orgTransaction.value.body);
+      publicKeysRequiredToSign.value = await publicRequiredToSign(
+        SDKTransaction.fromBytes(transactionBytes),
+        user.selectedOrganization.userKeys,
+        network.mirrorNodeBaseURL,
+      );
+      shouldApprove.value = await getUserShouldApprove(
+        user.selectedOrganization.serverUrl,
+        orgTransaction.value.id,
+      );
+    } catch (error) {
+      router.previousPath ? router.back() : router.push({ name: 'transactions' });
+      throw error;
+    }
   } else {
-    localTransaction.value = await getTransaction(id);
-    transactionBytes = getUInt8ArrayFromString(localTransaction.value.body);
-    publicKeysRequiredToSign.value = null;
+    try {
+      localTransaction.value = await getTransaction(id);
+      transactionBytes = getUInt8ArrayFromString(localTransaction.value.body);
+      publicKeysRequiredToSign.value = null;
+    } catch (error) {
+      router.previousPath ? router.back() : router.push({ name: 'transactions' });
+      throw error;
+    }
   }
 
   try {
@@ -297,7 +358,10 @@ async function fetchTransaction(id: string | number) {
   }
 
   if (isLoggedInOrganization(user.selectedOrganization)) {
-    signatureKey.value = await computeSignatureKey(sdkTransaction.value, network.mirrorNodeBaseURL);
+    signatureKeyObject.value = await computeSignatureKey(
+      sdkTransaction.value,
+      network.mirrorNodeBaseURL,
+    );
   }
 }
 
@@ -329,12 +393,6 @@ const sectionHeadingClass = 'd-flex justify-content-between align-items-center';
 const detailItemLabelClass = 'text-micro text-semi-bold text-dark-blue';
 const detailItemValueClass = 'text-small mt-1';
 const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
-const stepperItems = [
-  { title: 'Transaction Created', name: 'Transaction Created' },
-  { title: 'Collecting Signatures', name: 'Collecting Signatures' },
-  { title: 'Awaiting Execution', name: 'Awaiting Execution' },
-  { title: 'Executed', name: 'Executed' },
-];
 const reject = 'Reject';
 const approve = 'Approve';
 </script>
@@ -381,18 +439,18 @@ const approve = 'Approve';
 
                 <h2 class="text-title text-bold">Transaction Details</h2>
               </div>
+              <div v-if="isLoggedInOrganization(user.selectedOrganization) && shouldApprove">
+                <AppButton color="secondary" type="submit" class="me-3">{{ reject }}</AppButton>
+                <AppButton color="primary" type="submit">{{ approve }}</AppButton>
+              </div>
               <div
-                v-if="
+                v-else-if="
                   isLoggedInOrganization(user.selectedOrganization) &&
                   publicKeysRequiredToSign &&
                   publicKeysRequiredToSign.length > 0
                 "
               >
                 <AppButton color="primary" type="submit">Sign</AppButton>
-              </div>
-              <div v-if="isLoggedInOrganization(user.selectedOrganization) && $route.query.approve">
-                <AppButton color="secondary" type="submit" class="me-3">{{ reject }}</AppButton>
-                <AppButton color="primary" type="submit">{{ approve }}</AppButton>
               </div>
             </div>
 
@@ -434,6 +492,15 @@ const approve = 'Approve';
                       : stepperActiveIndex
                   "
                 />
+              </div>
+
+              <!-- Approvers -->
+              <div
+                v-if="orgTransaction?.approvers && orgTransaction?.approvers.length > 0"
+                class="mt-5"
+              >
+                <h4 class="text-title text-bold">Approvers</h4>
+                <ReadOnlyApproversList :approvers="orgTransaction?.approvers" />
               </div>
 
               <hr v-if="isLoggedInOrganization(user.selectedOrganization)" class="separator my-8" />
@@ -559,10 +626,10 @@ const approve = 'Approve';
               <hr class="separator my-5" />
 
               <!-- SIGNATURES COLLECTED -->
-              <h2 v-if="signatureKey" class="text-title text-bold">Signatures Collected</h2>
-              <div v-if="signatureKey" class="text-small mt-5">
-                <KeyStructureSignatureStatus
-                  :keyList="signatureKey"
+              <h2 v-if="signatureKeyObject" class="text-title text-bold">Signatures Collected</h2>
+              <div v-if="signatureKeyObject" class="text-small mt-5">
+                <SignatureStatus
+                  :signature-key-object="signatureKeyObject"
                   :public-keys-signed="signersPublicKeys"
                 />
               </div>
@@ -584,19 +651,35 @@ const approve = 'Approve';
                   :userIds="orgTransaction.observers.map(o => o.userId)"
                 />
               </div>
-
-              <!-- Approvers -->
-              <div
-                v-if="orgTransaction?.approvers && orgTransaction?.approvers.length > 0"
-                class="mt-5"
-              >
-                <h4 class="text-title text-bold">Approvers</h4>
-                <ReadOnlyApproversList :approvers="orgTransaction?.approvers" />
-              </div>
             </div>
           </form>
         </template>
       </Transition>
     </div>
+    <AppModal v-model:show="isConfirmModalShown" class="common-modal">
+      <div class="modal-body">
+        <i
+          class="bi bi-x-lg d-inline-block cursor-pointer"
+          @click="isConfirmModalShown = false"
+        ></i>
+        <div class="text-center">
+          <AppCustomIcon :name="'questionMark'" style="height: 160px" />
+        </div>
+        <h3 class="text-center text-title text-bold mt-4">Reject Transaction?</h3>
+        <p class="text-center text-small text-secondary mt-4">
+          Are you sure you want to reject the transaction
+        </p>
+        <hr class="separator my-5" />
+        <div class="flex-between-centered gap-4">
+          <AppButton color="borderless" @click="isConfirmModalShown = false">Cancel</AppButton>
+          <AppButton
+            color="primary"
+            data-testid="button-confirm-change-password"
+            @click="handleApprove(false)"
+            >Reject</AppButton
+          >
+        </div>
+      </div>
+    </AppModal>
   </div>
 </template>

@@ -15,7 +15,15 @@ import {
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
-import { Repository, EntityManager, FindManyOptions, Brackets, In } from 'typeorm';
+import {
+  Repository,
+  EntityManager,
+  FindManyOptions,
+  Brackets,
+  In,
+  Not,
+  FindOptionsWhere,
+} from 'typeorm';
 
 import {
   Network,
@@ -211,6 +219,13 @@ export class TransactionsService {
     const where = getWhere<Transaction>(filter);
     const order = getOrder(sort);
 
+    const whereForUser: FindOptionsWhere<Transaction> = {
+      ...where,
+      status: Not(
+        In([TransactionStatus.EXECUTED, TransactionStatus.FAILED, TransactionStatus.EXPIRED]),
+      ),
+    };
+
     const result: {
       transaction: Transaction;
       keysToSign: number[];
@@ -229,7 +244,7 @@ export class TransactionsService {
     }
 
     const transactions = await this.repo.find({
-      where,
+      where: whereForUser,
       order,
     });
 
@@ -258,6 +273,13 @@ export class TransactionsService {
     const where = getWhere<Transaction>(filter);
     const order = getOrder(sort);
 
+    const whereForUser: FindOptionsWhere<Transaction> = {
+      ...where,
+      status: Not(
+        In([TransactionStatus.EXECUTED, TransactionStatus.FAILED, TransactionStatus.EXPIRED]),
+      ),
+    };
+
     const findOptions: FindManyOptions<Transaction> = {
       order,
       relations: {
@@ -272,7 +294,7 @@ export class TransactionsService {
       .setFindOptions(findOptions)
       .where(
         new Brackets(qb =>
-          qb.where(where).andWhere(
+          qb.where(whereForUser).andWhere(
             `
             (
               with recursive "approverList" as
@@ -440,5 +462,22 @@ export class TransactionsService {
   /* Get the user keys that are required for a given transaction */
   userKeysToSign(transaction: Transaction, user: User) {
     return userKeysRequiredToSign(transaction, user, this.mirrorNodeService, this.entityManager);
+  }
+
+  /* Check whether the user should approve the transaction */
+  async shouldApproveTransaction(transactionId: number, user: User) {
+    /* Get all the approvers */
+    const approvers = await this.approversService.getApproversByTransactionId(transactionId);
+
+    /* If user is approver, filter the records that belongs to the user */
+    const userApprovers = approvers.filter(a => a.userId === user.id);
+
+    /* Check if the user is an approver */
+    if (userApprovers.length === 0) return false;
+
+    /* Check if the user has already approved the transaction */
+    if (userApprovers.every(a => a.signature)) return false;
+
+    return true;
   }
 }

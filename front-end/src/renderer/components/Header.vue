@@ -3,6 +3,7 @@ import { inject } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 
 import { useRouter } from 'vue-router';
 
@@ -33,6 +34,7 @@ const networkMapping = {
 /* Stores */
 const user = useUserStore();
 const networkStore = useNetworkStore();
+const ws = useWebsocketConnection();
 
 /* Composables */
 const router = useRouter();
@@ -46,6 +48,8 @@ const handleLogout = async () => {
     globalModalLoaderRef?.value?.open();
 
     if (user.selectedOrganization) {
+      ws.setSocket(null);
+
       const { id, nickname, serverUrl, key } = user.selectedOrganization;
       await logout(serverUrl);
       globalModalLoaderRef?.value?.close();
