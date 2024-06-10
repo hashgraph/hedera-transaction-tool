@@ -316,24 +316,34 @@ const handleSubmit = async e => {
 async function fetchTransaction(id: string | number) {
   let transactionBytes: Uint8Array;
   if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
-    orgTransaction.value = await getTransactionById(
-      user.selectedOrganization?.serverUrl || '',
-      Number(id),
-    );
-    transactionBytes = await hexToUint8Array(orgTransaction.value.body);
-    publicKeysRequiredToSign.value = await publicRequiredToSign(
-      SDKTransaction.fromBytes(transactionBytes),
-      user.selectedOrganization.userKeys,
-      network.mirrorNodeBaseURL,
-    );
-    shouldApprove.value = await getUserShouldApprove(
-      user.selectedOrganization.serverUrl,
-      orgTransaction.value.id,
-    );
+    try {
+      orgTransaction.value = await getTransactionById(
+        user.selectedOrganization?.serverUrl || '',
+        Number(id),
+      );
+      transactionBytes = await hexToUint8Array(orgTransaction.value.body);
+      publicKeysRequiredToSign.value = await publicRequiredToSign(
+        SDKTransaction.fromBytes(transactionBytes),
+        user.selectedOrganization.userKeys,
+        network.mirrorNodeBaseURL,
+      );
+      shouldApprove.value = await getUserShouldApprove(
+        user.selectedOrganization.serverUrl,
+        orgTransaction.value.id,
+      );
+    } catch (error) {
+      router.previousPath ? router.back() : router.push({ name: 'transactions' });
+      throw error;
+    }
   } else {
-    localTransaction.value = await getTransaction(id);
-    transactionBytes = getUInt8ArrayFromString(localTransaction.value.body);
-    publicKeysRequiredToSign.value = null;
+    try {
+      localTransaction.value = await getTransaction(id);
+      transactionBytes = getUInt8ArrayFromString(localTransaction.value.body);
+      publicKeysRequiredToSign.value = null;
+    } catch (error) {
+      router.previousPath ? router.back() : router.push({ name: 'transactions' });
+      throw error;
+    }
   }
 
   try {
