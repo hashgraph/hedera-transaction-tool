@@ -134,7 +134,7 @@ export class TransactionsController {
     return this.transactionsService.getTransactionsToSign(user, paginationParams, sort, filter);
   }
 
-  /* Returns a flag whether a user should sign a transaction with id */
+  /* Returns whether a user should sign a transaction with id */
   @ApiOperation({
     summary: 'Check if the current user should sign the transaction with the provided id',
     description: 'Check if the current user should sign the transaction with the provided id.',
@@ -174,6 +174,23 @@ export class TransactionsController {
     filter?: Filtering[],
   ) {
     return this.transactionsService.getTransactionsToApprove(user, paginationParams, sort, filter);
+  }
+
+  /* Returns whether a user should approve a transaction with id */
+  @ApiOperation({
+    summary: 'Check if the current user should approve the transaction with the provided id',
+    description: 'Check if the current user should approve the transaction with the provided id.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: [Number],
+  })
+  @Get('/approve/:transactionId')
+  async shouldApproveTransaction(
+    @GetUser() user: User,
+    @Param('transactionId', ParseIntPipe) transactionId: number,
+  ): Promise<boolean> {
+    return this.transactionsService.shouldApproveTransaction(transactionId, user);
   }
 
   @ApiOperation({

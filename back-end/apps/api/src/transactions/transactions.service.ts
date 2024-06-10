@@ -463,4 +463,22 @@ export class TransactionsService {
   userKeysToSign(transaction: Transaction, user: User) {
     return userKeysRequiredToSign(transaction, user, this.mirrorNodeService, this.entityManager);
   }
+
+  /* Check whether the user should approve the transaction */
+  async shouldApproveTransaction(transactionId: number, user: User) {
+    /* Get all the approvers */
+    const approvers = await this.approversService.getApproversByTransactionId(transactionId);
+    console.log(approvers);
+
+    /* If user is approver, filter the records that belongs to the user */
+    const userApprovers = approvers.filter(a => a.userId === user.id);
+
+    /* Check if the user is an approver */
+    if (userApprovers.length === 0) return false;
+
+    /* Check if the user has already approved the transaction */
+    if (userApprovers.every(a => a.signature)) return false;
+
+    return true;
+  }
 }
