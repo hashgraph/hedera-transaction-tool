@@ -1,0 +1,105 @@
+<script setup lang="ts">
+import { computed, onBeforeMount, ref } from 'vue';
+import { Key, KeyList } from '@hashgraph/sdk';
+
+import { HederaAccount } from '@prisma/client';
+
+import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
+
+import { getAll } from '@renderer/services/accountsService';
+
+import { ableToSign } from '@renderer/utils';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+
+import SignatureStatusKeyStructure from '@renderer/components/SignatureStatusKeyStructure.vue';
+
+/* Props */
+const props = defineProps<{
+  entities:
+    | {
+        [entityId: string]: Key;
+      }
+    | Key[];
+  publicKeysSigned: string[];
+  label: string;
+}>();
+
+/* Stores */
+const user = useUserStore();
+const network = useNetworkStore();
+
+/* State */
+const linkedAccounts = ref<HederaAccount[]>([]);
+
+/* Computed */
+const labelParts = computed(() => props.label.split('$entityId'));
+
+/* Hooks */
+onBeforeMount(async () => {
+  if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+
+  linkedAccounts.value = await getAll({
+    where: {
+      user_id: user.personal.id,
+      network: network.network,
+    },
+  });
+});
+</script>
+<template>
+  <template v-for="([entityId, key], _index) in Object.entries(entities)" :key="_index">
+    <div class="mt-3 ms-3">
+      <h2
+        v-if="label.trim()"
+        class="text-small mb-2"
+        :class="{ 'text-success': ableToSign(publicKeysSigned, key) }"
+      >
+        <template v-if="Array.isArray(entities)">
+          {{ label.trim() }}
+        </template>
+        <template v-else>
+          <template v-if="label.includes('$entityId')">
+            <template v-for="(part, index) in labelParts" :key="index">
+              <template v-if="index === labelParts.length - 1">
+                {{ part }}
+              </template>
+              <template v-else>
+                <span>{{ part }}</span>
+                <span>
+                  <template
+                    v-if="
+                      (linkedAccounts.find(la => la.account_id === entityId)?.nickname || '')
+                        .length > 0
+                    "
+                  >
+                    <span>
+                      <span class="text-small">
+                        ({{ linkedAccounts.find(la => la.account_id === entityId)?.nickname }})
+                        {{ entityId }}
+                      </span>
+                    </span>
+                  </template>
+                  <template v-else>
+                    <span class="text-small overflow-hidden">
+                      {{ entityId }}
+                    </span>
+                  </template>
+                </span>
+              </template>
+            </template>
+          </template>
+          <template v-else>
+            {{ label.trim() }}
+          </template>
+        </template>
+      </h2>
+      <div class="ms-5">
+        <SignatureStatusKeyStructure
+          :keyList="key instanceof KeyList ? key : new KeyList([key])"
+          :public-keys-signed="publicKeysSigned"
+        />
+      </div>
+    </div>
+  </template>
+</template>

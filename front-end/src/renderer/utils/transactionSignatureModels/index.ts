@@ -120,18 +120,42 @@ export const computeSignatureKey = async (transaction: Transaction, mirrorNodeLi
   /* Get the accounts, receiver accounts and new keys from the transaction */
   const { accounts, receiverAccounts, newKeys } = getSignatureEntities(transaction);
 
-  /* Create a new key list */
-  const sigantureKey = new KeyList();
+  /* Create result object */
+  const resultObject: {
+    signatureKey: KeyList;
+    accountsKeys: {
+      [accountId: string]: Key;
+    };
+    receiverAccountsKeys: {
+      [accountId: string]: Key;
+    };
+    newKeys: Key[];
+    payerKey: {
+      [accountId: string]: Key;
+    };
+  } = {
+    signatureKey: new KeyList(),
+    accountsKeys: {},
+    receiverAccountsKeys: {},
+    payerKey: {},
+    newKeys,
+  };
 
   /* Add keys to the signature key list */
-  newKeys.forEach(key => sigantureKey.push(key));
+  newKeys.forEach(key => resultObject.signatureKey.push(key));
 
   /* Add the keys of the account ids to the signature key list */
   for (const accountId of accounts) {
     const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
     if (!accountInfo.key) continue;
 
-    sigantureKey.push(accountInfo.key);
+    resultObject.signatureKey.push(accountInfo.key);
+
+    if (transaction.transactionId?.accountId?.toString() === accountId) {
+      resultObject.payerKey[accountId] = accountInfo.key;
+    } else {
+      resultObject.accountsKeys[accountId] = accountInfo.key;
+    }
   }
 
   /* Check if there is a receiver account that required signature, if so add it to the key list */
@@ -139,8 +163,9 @@ export const computeSignatureKey = async (transaction: Transaction, mirrorNodeLi
     const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
     if (!accountInfo.receiverSignatureRequired || !accountInfo.key) continue;
 
-    sigantureKey.push(accountInfo.key);
+    resultObject.signatureKey.push(accountInfo.key);
+    resultObject.receiverAccountsKeys[accountId] = accountInfo.key;
   }
 
-  return sigantureKey;
+  return resultObject;
 };

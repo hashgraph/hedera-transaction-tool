@@ -2,7 +2,7 @@
 import { computed, inject, onBeforeMount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { KeyList, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 import { Transaction } from '@prisma/client';
 
 import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
@@ -54,7 +54,7 @@ import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppStepper from '@renderer/components/ui/AppStepper.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
-import KeyStructureSignatureStatus from '@renderer/components/KeyStructureSignatureStatus.vue';
+import SignatureStatus from '@renderer/components/SignatureStatus.vue';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 
 import txTypeComponentMapping from './txTypeComponentMapping';
@@ -77,7 +77,7 @@ const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODA
 const orgTransaction = ref<ITransactionFull | null>(null);
 const localTransaction = ref<Transaction | null>(null);
 const sdkTransaction = ref<SDKTransaction | null>(null);
-const signatureKey = ref<KeyList | null>(null);
+const signatureKeyObject = ref<Awaited<ReturnType<typeof computeSignatureKey>> | null>(null);
 const publicKeysRequiredToSign = ref<string[] | null>(null);
 const shouldApprove = ref<boolean>(false);
 const isConfirmModalShown = ref(false);
@@ -348,7 +348,10 @@ async function fetchTransaction(id: string | number) {
   }
 
   if (isLoggedInOrganization(user.selectedOrganization)) {
-    signatureKey.value = await computeSignatureKey(sdkTransaction.value, network.mirrorNodeBaseURL);
+    signatureKeyObject.value = await computeSignatureKey(
+      sdkTransaction.value,
+      network.mirrorNodeBaseURL,
+    );
   }
 }
 
@@ -613,10 +616,10 @@ const approve = 'Approve';
               <hr class="separator my-5" />
 
               <!-- SIGNATURES COLLECTED -->
-              <h2 v-if="signatureKey" class="text-title text-bold">Signatures Collected</h2>
-              <div v-if="signatureKey" class="text-small mt-5">
-                <KeyStructureSignatureStatus
-                  :keyList="signatureKey"
+              <h2 v-if="signatureKeyObject" class="text-title text-bold">Signatures Collected</h2>
+              <div v-if="signatureKeyObject" class="text-small mt-5">
+                <SignatureStatus
+                  :signature-key-object="signatureKeyObject"
                   :public-keys-signed="signersPublicKeys"
                 />
               </div>
