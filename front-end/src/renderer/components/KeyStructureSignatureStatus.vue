@@ -43,7 +43,7 @@ defineEmits(['update:keyList']);
   </template>
   <template v-else>
     <div>
-      <p class="text-nowrap">
+      <p class="text-nowrap" :class="{ 'text-success': ableToSign(publicKeysSigned, keyList) }">
         <span
           v-if="ableToSign(publicKeysSigned, keyList)"
           class="bi bi-check-lg text-success"
