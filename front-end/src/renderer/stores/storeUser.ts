@@ -93,10 +93,10 @@ const useUserStore = defineStore('user', () => {
 
   /* Organization */
   const selectOrganization = async (organization: Organization | null) => {
+    ws.setSocket(null);
+
     if (!organization) {
       selectedOrganization.value = null;
-
-      ws.setSocket(null);
     } else {
       selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
 

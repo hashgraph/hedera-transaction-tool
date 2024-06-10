@@ -468,7 +468,6 @@ export class TransactionsService {
   async shouldApproveTransaction(transactionId: number, user: User) {
     /* Get all the approvers */
     const approvers = await this.approversService.getApproversByTransactionId(transactionId);
-    console.log(approvers);
 
     /* If user is approver, filter the records that belongs to the user */
     const userApprovers = approvers.filter(a => a.userId === user.id);
