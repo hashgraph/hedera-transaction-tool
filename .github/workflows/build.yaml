@@ -23,25 +23,25 @@ jobs:
         with:
           node-version: 20
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
 
-      - name: run hedera local
-        run: npx @hashgraph/hedera-local start -d
+      # - name: run hedera local
+      #   run: npx @hashgraph/hedera-local start -d
 
       - name: Install pnpm
         run: npm i -g pnpm node-gyp @hashgraph/hedera-local
 
-      # - name: prep hedera
-      #   uses: actions/checkout@v4
-      #   with:
-      #     repository: hashgraph/hedera-local-node
-      #     path: hedera-local-node
-      # - name: run hedera
-      #   run: |
-      #     npm i
-      #     npm run start -- -d
-      #   working-directory: hedera-local-node
+      - name: prep hedera
+        uses: actions/checkout@v4
+        with:
+          repository: hashgraph/hedera-local-node
+          path: hedera-local-node
+      - name: run hedera
+        run: |
+          npm i
+          npm run start -- -d
+        working-directory: hedera-local-node
 
       - name: Install dependencies
         run: npm install
@@ -82,7 +82,7 @@ jobs:
       - name: run automation
         env:
           EXECUTABLE_PATH: ../front-end/release/linux-unpacked/hedera-transaction-tool
-          PRIVATE_KEY: "0x7f109a9e3b0d8ecfba9cc23a3614433ce0fa7ddcc80f2a8f10b222179a5a80d6"
+          PRIVATE_KEY: "0x9a07bbdbb62e24686d2a4259dc88e38438e2c7a1ba167b147ad30ac540b0a3cd"
           ENVIRONMENT: LOCALNET
 
         run: xvfb-run -a pnpm run test
