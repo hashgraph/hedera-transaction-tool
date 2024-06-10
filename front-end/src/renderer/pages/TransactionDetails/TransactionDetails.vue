@@ -17,6 +17,7 @@ import useDisposableWs from '@renderer/composables/useDisposableWs';
 import {
   fullUploadSignatures,
   getTransactionById,
+  getUserShouldApprove,
   sendApproverChoice,
 } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
@@ -76,6 +77,7 @@ const localTransaction = ref<Transaction | null>(null);
 const sdkTransaction = ref<SDKTransaction | null>(null);
 const signatureKey = ref<KeyList | null>(null);
 const publicKeysRequiredToSign = ref<string[] | null>(null);
+const shouldApprove = ref<boolean>(false);
 
 /* Computed */
 const stepperItems = computed(() => {
@@ -307,6 +309,10 @@ async function fetchTransaction(id: string | number) {
       user.selectedOrganization.userKeys,
       network.mirrorNodeBaseURL,
     );
+    shouldApprove.value = await getUserShouldApprove(
+      user.selectedOrganization.serverUrl,
+      orgTransaction.value.id,
+    );
   } else {
     localTransaction.value = await getTransaction(id);
     transactionBytes = getUInt8ArrayFromString(localTransaction.value.body);
@@ -403,18 +409,18 @@ const approve = 'Approve';
 
                 <h2 class="text-title text-bold">Transaction Details</h2>
               </div>
+              <div v-if="isLoggedInOrganization(user.selectedOrganization) && shouldApprove">
+                <AppButton color="secondary" type="submit" class="me-3">{{ reject }}</AppButton>
+                <AppButton color="primary" type="submit">{{ approve }}</AppButton>
+              </div>
               <div
-                v-if="
+                v-else-if="
                   isLoggedInOrganization(user.selectedOrganization) &&
                   publicKeysRequiredToSign &&
                   publicKeysRequiredToSign.length > 0
                 "
               >
                 <AppButton color="primary" type="submit">Sign</AppButton>
-              </div>
-              <div v-if="isLoggedInOrganization(user.selectedOrganization) && $route.query.approve">
-                <AppButton color="secondary" type="submit" class="me-3">{{ reject }}</AppButton>
-                <AppButton color="primary" type="submit">{{ approve }}</AppButton>
               </div>
             </div>
 
