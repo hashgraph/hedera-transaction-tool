@@ -1,19 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 
-import { Prisma, TransactionDraft } from '@prisma/client';
+import { Prisma, TransactionGroup } from '@prisma/client';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useUserStore from '@renderer/stores/storeUser';
-
-import {
-  getDraft,
-  getDrafts,
-  deleteDraft,
-  updateDraft,
-  getDraftsCount,
-} from '@renderer/services/transactionDraftsService';
 
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
@@ -21,14 +13,20 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
+import {
+  getGroup,
+  getGroups,
+  getGroupsCount,
+  deleteGroup,
+} from '@renderer/services/transactionGroupsService';
 
 /* Store */
 const user = useUserStore();
 
 /* State */
-const drafts = ref<TransactionDraft[]>([]);
+const groups = ref<TransactionGroup[]>([]);
 const sort = reactive<{
-  field: Prisma.TransactionDraftScalarFieldEnum;
+  field: Prisma.TransactionGroupScalarFieldEnum;
   direction: Prisma.SortOrder;
 }>({
   field: 'created_at',
@@ -50,40 +48,37 @@ const toast = useToast();
 
 /* Handlers */
 const handleSort = async (
-  field: Prisma.TransactionDraftScalarFieldEnum,
+  field: Prisma.TransactionGroupScalarFieldEnum,
   direction: Prisma.SortOrder,
 ) => {
   sort.field = field;
   sort.direction = direction;
-  drafts.value = await getDrafts(createFindArgs());
+  groups.value = await getGroups(createFindArgs());
 };
 
-const handleUpdateIsTemplate = async (e: Event, id: string) => {
-  const checkbox = e.currentTarget as HTMLInputElement | null;
+// const handleUpdateIsTemplate = async (e: Event, id: string) => {
+//   const checkbox = e.currentTarget as HTMLInputElement | null;
 
-  if (checkbox) {
-    await updateDraft(id, { isTemplate: checkbox.checked });
-  }
+//   if (checkbox) {
+//     await updateDraft(id, { isTemplate: checkbox.checked });
+//   }
+// };
+
+const handleDeleteGroup = async (id: string) => {
+  await deleteGroup(id);
+
+  await fetchGroups();
+
+  toast.success('Group successfully deleted', { position: 'bottom-right' });
 };
 
-const handleDeleteDraft = async (id: string) => {
-  await deleteDraft(id);
-
-  await fetchDrafts();
-
-  toast.success('Draft successfully deleted', { position: 'bottom-right' });
-};
-
-const handleContinueDraft = async (id: string) => {
-  const draft = await getDraft(id);
+const handleContinueGroup = async (id: string) => {
+  const group = await getGroup(id);
 
   router.push({
-    name: 'createTransaction',
-    params: {
-      type: draft.type.replace(/\s/g, ''),
-    },
+    name: 'createTransactionGroup',
     query: {
-      draftId: draft?.id,
+      id: group?.id,
     },
   });
 };
@@ -93,17 +88,18 @@ function getOpositeDirection() {
   return sort.direction === 'asc' ? 'desc' : 'asc';
 }
 
-function createFindArgs(): Prisma.TransactionDraftFindManyArgs {
+function createFindArgs(): Prisma.TransactionGroupFindManyArgs {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
 
   return {
     where: {
-      user_id: user.personal.id,
       GroupItem: {
         every: {
-          transaction_draft_id: null,
+          transaction_draft: {
+            user_id: user.personal.id,
+          },
         },
       },
     },
@@ -115,15 +111,15 @@ function createFindArgs(): Prisma.TransactionDraftFindManyArgs {
   };
 }
 
-async function fetchDrafts() {
+async function fetchGroups() {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
 
   isLoading.value = true;
   try {
-    totalItems.value = await getDraftsCount(user.personal.id);
-    drafts.value = await getDrafts(createFindArgs());
+    totalItems.value = await getGroupsCount(user.personal.id);
+    groups.value = await getGroups(createFindArgs());
     handleSort(sort.field, sort.direction);
   } finally {
     isLoading.value = false;
@@ -132,12 +128,12 @@ async function fetchDrafts() {
 
 /* Hooks */
 onBeforeMount(async () => {
-  await fetchDrafts();
+  await fetchGroups();
 });
 
 /* Watchers */
 watch([currentPage, pageSize], async () => {
-  await fetchDrafts();
+  await fetchGroups();
 });
 </script>
 
@@ -147,7 +143,7 @@ watch([currentPage, pageSize], async () => {
       <AppLoader />
     </template>
     <template v-else>
-      <template v-if="drafts.length > 0">
+      <template v-if="groups.length > 0">
         <table v-show="!isLoading" class="table-custom">
           <thead>
             <tr>
@@ -170,7 +166,7 @@ watch([currentPage, pageSize], async () => {
                   ></i>
                 </div>
               </th>
-              <th>
+              <!-- <th>
                 <div
                   class="table-sort-link"
                   @click="handleSort('type', sort.field === 'type' ? getOpositeDirection() : 'asc')"
@@ -200,47 +196,38 @@ watch([currentPage, pageSize], async () => {
                     :class="[generatedClass]"
                   ></i>
                 </div>
-              </th>
+              </th> -->
               <th class="text-center">
                 <span>Actions</span>
               </th>
             </tr>
           </thead>
           <tbody>
-            <template v-for="(draft, i) in drafts" :key="draft.id">
+            <template v-for="(group, i) in groups" :key="group.id">
               <tr>
                 <td>{{ i + 1 }}</td>
                 <td>
-                  <span class="text-secondary" :data-testid="'span-draft-tx-date-' + i">
-                    {{ draft.created_at.toLocaleString() }}
+                  <span class="text-secondary">
+                    {{ group.created_at.toLocaleString() }}
                   </span>
                 </td>
                 <td>
-                  <span class="text-bold" :data-testid="'span-draft-tx-type-' + i">{{
-                    draft.type
-                  }}</span>
+                  <span class="text-bold">{{ group.description }}</span>
                 </td>
-                <td class="text-center">
+                <!-- <td class="text-center">
                   <input
                     class="form-check-input"
-                    :data-testid="'checkbox-is-template-' + i"
                     type="checkbox"
                     :checked="Boolean(draft.isTemplate)"
                     @change="e => handleUpdateIsTemplate(e, draft.id)"
                   />
-                </td>
+                </td> -->
                 <td class="text-center">
                   <div class="d-flex justify-content-center flex-wrap gap-3">
-                    <AppButton
-                      color="borderless"
-                      :data-testid="'button-draft-delete-' + i"
-                      @click="handleDeleteDraft(draft.id)"
+                    <AppButton color="borderless" @click="handleDeleteGroup(group.id)"
                       >Delete</AppButton
                     >
-                    <AppButton
-                      color="secondary"
-                      :data-testid="'button-draft-continue-' + i"
-                      @click="handleContinueDraft(draft.id)"
+                    <AppButton color="secondary" @click="handleContinueGroup(group.id)"
                       >Continue</AppButton
                     >
                   </div>

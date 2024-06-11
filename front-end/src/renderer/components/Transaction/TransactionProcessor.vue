@@ -272,7 +272,6 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     signature: '',
     valid_start: executedTransaction.transactionId.validStart?.toString() || '',
     executed_at: new Date().getTime() / 1000,
-    group_id: null,
     network: network.network,
   };
 

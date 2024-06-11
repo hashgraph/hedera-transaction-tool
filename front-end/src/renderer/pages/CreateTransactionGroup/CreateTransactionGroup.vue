@@ -1,25 +1,43 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import EmptyTransactionGroup from '@renderer/components/EmptyTransactionGroup.vue';
 import TransactionSelectionModal from '@renderer/components/TransactionSelectionModal.vue';
+import TransactionGroupProcessor from '@renderer/components/Transaction/TransactionGroupProcessor.vue';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
+import useUserStore from '@renderer/stores/storeUser';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { getEntityIdFromTransactionReceipt, isAccountId } from '@renderer/utils';
+import { KeyList, PublicKey } from '@hashgraph/sdk';
+import { useToast } from 'vue-toast-notification';
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
+const user = useUserStore();
 
 /* Composables */
 const router = useRouter();
+const route = useRoute();
+const toast = useToast();
 
 /* State */
 const groupName = ref('');
-const groupEmpty = ref(transactionGroup.groupItems.length == 0);
 const isTransactionSelectionModalShown = ref(false);
+const transactionGroupProcessor = ref<typeof TransactionGroupProcessor | null>(null);
 
+const groupEmpty = computed(() => transactionGroup.groupItems.length == 0);
+
+/* Handlers */
 function handleSaveGroup() {
-  console.log('hello');
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
+  transactionGroup.saveGroup(user.personal.id, groupName.value);
+  transactionGroup.clearGroup();
+  router.push('transactions');
 }
 
 function handleDeleteGroupItem(index: number) {
@@ -37,16 +55,65 @@ function handleEditGroupItem(index: number, type: string) {
     query: { groupIndex: index, group: 'true' },
   });
 }
+
+function handleBack() {
+  if (route.query.id) {
+    transactionGroup.clearGroup();
+  }
+  router.push('transactions');
+}
+
+const handleLoadGroup = async () => {
+  if (!route.query.id) {
+    // transactionGroup.clearGroup();
+    return;
+  }
+
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
+  await transactionGroup.fetchGroup(route.query.id.toString(), {
+    where: {
+      user_id: user.personal.id,
+      GroupItem: {
+        every: {
+          transaction_group_id: route.query.id.toString(),
+        },
+      },
+    },
+  });
+};
+
+async function handleSignSubmit() {
+  console.log('hello in signsubmit');
+  try {
+    const ownerKey = PublicKey.fromString(user.keyPairs[0].public_key);
+
+    const requiredKey = new KeyList([ownerKey]);
+    await transactionGroupProcessor.value?.process(requiredKey);
+  } catch (err: any) {
+    toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
+  }
+}
+
+function handleExecuted() {
+  console.log('hello');
+}
+
+function handleSubmit() {
+  console.log('hello');
+}
+
+/* Hooks */
+onMounted(async () => {
+  await handleLoadGroup();
+});
 </script>
 <template>
   <div class="p-5">
     <div class="d-flex align-items-center">
-      <AppButton
-        type="button"
-        color="secondary"
-        class="btn-icon-only me-4"
-        @click="$router.push('transactions')"
-      >
+      <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">
         <i class="bi bi-arrow-left"></i>
       </AppButton>
 
@@ -71,7 +138,7 @@ function handleEditGroupItem(index: number, type: string) {
       <div v-if="!groupEmpty">
         <div
           v-for="(groupItem, index) in transactionGroup.groupItems"
-          :key="groupItem.transactionBytes"
+          :key="groupItem.transactionBytes.toString()"
         >
           <div class="d-flex justify-content-between p-4" style="background-color: #edefff">
             <div>
@@ -104,12 +171,40 @@ function handleEditGroupItem(index: number, type: string) {
             </div>
           </div>
         </div>
-        <AppButton color="primary" type="submit" class="mt-5">Save Group</AppButton>
+        <div class="mt-5">
+          <AppButton color="primary" type="submit">Save Group</AppButton>
+          <AppButton color="primary" type="button" @click="handleSignSubmit" class="ms-4">
+            <span class="bi bi-send"></span>
+            Sign & Submit</AppButton
+          >
+        </div>
       </div>
     </form>
     <div v-if="groupEmpty">
       <EmptyTransactionGroup class="absolute-centered w-100" />
     </div>
     <TransactionSelectionModal v-model:show="isTransactionSelectionModalShown" group />
+    <TransactionGroupProcessor
+      ref="transactionGroupProcessor"
+      :on-close-success-modal-click="() => $router.push({ name: 'files' })"
+      :on-executed="handleExecuted"
+      :on-submitted="handleSubmit"
+    >
+      <template #successHeading>File created successfully</template>
+      <template #successContent>
+        <p
+          v-if="transactionGroupProcessor?.transactionResult"
+          class="text-small d-flex justify-content-between align-items mt-2"
+        >
+          <span class="text-bold text-secondary">File ID:</span>
+          <span>{{
+            getEntityIdFromTransactionReceipt(
+              transactionGroupProcessor.transactionResult.receipt,
+              'fileId',
+            )
+          }}</span>
+        </p>
+      </template>
+    </TransactionGroupProcessor>
   </div>
 </template>

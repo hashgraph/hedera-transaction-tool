@@ -1,29 +1,52 @@
-import { Prisma } from '@prisma/client';
+import { GroupItem, Prisma } from '@prisma/client';
 import { getPrismaClient } from '@main/db';
 
-// export const getDrafts = async (findArgs: Prisma.TransactionDraftFindManyArgs) => {
-//   const prisma = getPrismaClient();
+export const getGroups = async (findArgs: Prisma.TransactionGroupFindManyArgs) => {
+  const prisma = getPrismaClient();
 
-//   const drafts = await prisma.transactionDraft.findMany(findArgs);
+  try {
+    const groups = await prisma.transactionGroup.findMany(findArgs);
 
-//   return drafts;
-// };
+    return groups;
+  } catch (error: any) {
+    throw new Error(error.message || 'Failed to fetch transaction groups');
+  }
+};
 
-// export const getDraft = async (id: string) => {
-//   const prisma = getPrismaClient();
+export const getGroup = async (id: string) => {
+  const prisma = getPrismaClient();
 
-//   const draft = await prisma.transactionDraft.findFirst({
-//     where: {
-//       id,
-//     },
-//   });
+  const group = await prisma.transactionGroup.findUnique({
+    where: {
+      id,
+    },
+  });
 
-//   if (!draft) {
-//     throw new Error('Transaction draft not found');
-//   }
+  if (!group) {
+    throw new Error('Transaction group not found');
+  }
 
-//   return draft;
-// };
+  return group;
+};
+
+export async function getGroupItem(id: string, seq: string) {
+  const prisma = getPrismaClient();
+
+  const group = await prisma.groupItem.findUnique({
+    where: {
+      transaction_group_id_seq: {
+        transaction_group_id: id,
+        seq: seq,
+      },
+    },
+  });
+
+  if (!group) {
+    throw new Error('Transaction group not found');
+  }
+
+  return group;
+}
 
 export const addGroup = async (group: Prisma.TransactionGroupUncheckedCreateInput) => {
   const prisma = getPrismaClient();
@@ -32,3 +55,91 @@ export const addGroup = async (group: Prisma.TransactionGroupUncheckedCreateInpu
     data: group,
   });
 };
+
+export const addGroupItem = async (groupItem: Prisma.GroupItemUncheckedCreateInput) => {
+  const prisma = getPrismaClient();
+
+  return await prisma.groupItem.create({
+    data: groupItem,
+  });
+};
+
+export async function getGroupItems(id: string) {
+  const prisma = getPrismaClient();
+
+  const groups = await prisma.groupItem.findMany({
+    where: {
+      transaction_group_id: id,
+    },
+    orderBy: {
+      seq: 'asc',
+    },
+  });
+
+  return groups;
+}
+
+export const getGroupsCount = async (userId: string) => {
+  const prisma = getPrismaClient();
+
+  try {
+    const count = await prisma.transactionGroup.count({
+      where: {
+        GroupItem: {
+          every: {
+            transaction_draft: {
+              user_id: userId,
+            },
+          },
+        },
+      },
+    });
+
+    return count;
+  } catch (error: any) {
+    throw new Error(error.message || 'Failed to get drafts count');
+  }
+};
+
+export async function deleteGroup(id: string) {
+  const prisma = getPrismaClient();
+
+  await prisma.groupItem.deleteMany({
+    where: {
+      transaction_group_id: id,
+    },
+  });
+
+  await prisma.transactionDraft.deleteMany({
+    where: {
+      GroupItem: {
+        every: {
+          transaction_group_id: id,
+        },
+      },
+    },
+  });
+
+  await prisma.transactionGroup.delete({
+    where: {
+      id,
+    },
+  });
+}
+
+export async function editGroupItem(groupItem: GroupItem) {
+  const prisma = getPrismaClient();
+
+  await prisma.groupItem.update({
+    where: {
+      transaction_group_id_seq: {
+        transaction_group_id: groupItem.transaction_group_id,
+        seq: groupItem.seq,
+      },
+    },
+    data: {
+      transaction_draft_id: groupItem.transaction_draft_id,
+      transaction_id: groupItem.transaction_id,
+    },
+  });
+}

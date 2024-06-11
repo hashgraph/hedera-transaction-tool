@@ -168,7 +168,7 @@ model TransactionGroup {
   id String @id @default(uuid())
   description String
   atomic Boolean
-  created_datetime DateTime @default(now())
+  created_at DateTime @default(now())
 
   GroupItem GroupItem[]
 }

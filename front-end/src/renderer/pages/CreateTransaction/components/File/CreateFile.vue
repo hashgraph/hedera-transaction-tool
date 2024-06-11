@@ -59,6 +59,7 @@ const transactionGroup = useTransactionGroupStore();
 /* Composables */
 const toast = useToast();
 const router = useRouter();
+const route = useRoute();
 const payerData = useAccountId();
 
 /* State */
@@ -200,15 +201,17 @@ const handleExecuted = async (success: boolean, _response?, receipt?: Transactio
 const handleLoadFromDraft = async () => {
   if (!router.currentRoute.value.query.draftId && !route.query.groupIndex) return;
 
-  let draft: TransactionDraft | GroupItem | null = null;
+  let draftTransactionBytes: string | null = null;
   if (!route.query.group) {
-    draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
+    const draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
+    draftTransactionBytes = draft.transactionBytes;
   } else if (route.query.groupIndex) {
-    draft = transactionGroup.groupItems[Number(route.query.groupIndex)];
+    draftTransactionBytes =
+      transactionGroup.groupItems[Number(route.query.groupIndex)].transactionBytes.toString();
   }
 
-  if (draft) {
-    const draftTransaction = getTransactionFromBytes<FileCreateTransaction>(draft.transactionBytes);
+  if (draftTransactionBytes) {
+    const draftTransaction = getTransactionFromBytes<FileCreateTransaction>(draftTransactionBytes);
     transaction.value = draftTransaction;
 
     if (draftTransaction.keys) {
@@ -250,9 +253,10 @@ const handleLocalStored = (id: string) => {
 function handleAddToGroup() {
   const transactionBytes = createTransaction().toBytes();
   transactionGroup.addGroupItem({
-    transactionBytes: transactionBytes.toString(),
+    transactionBytes: transactionBytes,
     type: 'FileCreateTransaction',
     accountId: '',
+    seq: (transactionGroup.groupItems.length - 1).toString(),
   });
   router.push({ name: 'createTransactionGroup' });
 }
@@ -316,7 +320,7 @@ watch(payerData.isValid, isValid => {
       <TransactionHeaderControls heading-text="Create File Transaction">
         <template #buttons>
           <div
-            v-if="!(route.query.group === 'true')"
+            v-if="!($route.query.group === 'true')"
             class="flex-centered justify-content-end flex-wrap gap-3 mt-3"
           >
             <SaveDraftButton
