@@ -103,14 +103,16 @@ const useUserStore = defineStore('user', () => {
 
       const NOTIFICATIONS_SERVICE_PORT = 3020; // See docker-compose.yml in the back-end folder
 
-      try {
-        ws.setSocket(
-          selectedOrganization.value.serverUrl.includes('localhost')
-            ? `ws://localhost:${NOTIFICATIONS_SERVICE_PORT}/`
-            : `${selectedOrganization.value.serverUrl}/`,
-        );
-      } catch (error) {
-        console.log(error);
+      if (selectedOrganization.value.isServerActive) {
+        try {
+          ws.setSocket(
+            selectedOrganization.value.serverUrl.includes('localhost')
+              ? `ws://localhost:${NOTIFICATIONS_SERVICE_PORT}/`
+              : `${selectedOrganization.value.serverUrl}/`,
+          );
+        } catch (error) {
+          console.log(error);
+        }
       }
     }
     await ush.afterOrganizationSelection(personal.value, selectedOrganization, keyPairs, router);
