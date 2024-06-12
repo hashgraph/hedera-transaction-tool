@@ -173,7 +173,8 @@ export class AuthService {
   }
 
   /* Attempt to authenticate the token. */
-  authenticateWebsocketToken(accessToken: string): Promise<object> {
-    return this.jwtService.verifyAsync(accessToken);
+  async authenticateWebsocketToken(accessToken: string): Promise<User> {
+    const { userId } = await this.jwtService.verifyAsync(accessToken);
+    return this.usersService.getUser({ id: userId });
   }
 }

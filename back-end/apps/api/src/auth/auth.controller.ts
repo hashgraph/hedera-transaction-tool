@@ -20,7 +20,6 @@ import { GetUser } from '../decorators';
 
 import { AuthService } from './auth.service';
 
-import { UserDto } from '../users/dtos';
 import {
   AuthDto,
   ChangePasswordDto,
@@ -168,6 +167,7 @@ export class AuthController {
   }
 
   @MessagePattern('authenticate-websocket-token')
+  @Serialize(AuthDto)
   async authenticateWebsocketToken(@Payload() payload: AuthenticateWebsocketTokenDto) {
     return this.authService.authenticateWebsocketToken(payload.jwt);
   }
