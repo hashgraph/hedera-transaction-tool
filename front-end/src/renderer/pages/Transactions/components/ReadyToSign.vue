@@ -213,7 +213,10 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                   }}
                 </td>
                 <td class="text-center">
-                  <AppButton @click="handleSign(tx.transactionRaw.id)" color="secondary"
+                  <AppButton
+                    @click="handleSign(tx.transactionRaw.id)"
+                    color="secondary"
+                    class="min-w-unset"
                     >Sign</AppButton
                   >
                 </td>
