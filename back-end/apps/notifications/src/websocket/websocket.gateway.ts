@@ -31,11 +31,11 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   }
 
   handleConnection(client: AuthWebsocket, ...args): any {
-    this.logger.log(`client connected ${client.id}`);
+    this.logger.log(`client connected for userId: ${client.user.id}`);
   }
 
   handleDisconnect(client: AuthWebsocket): any {
-    this.logger.log(`client disconnected ${client.id}`);
+    this.logger.log(`client disconnected for userId: ${client.user.id}`);
   }
 
   notifyClient({ message, content }: NotifyClientDto) {
