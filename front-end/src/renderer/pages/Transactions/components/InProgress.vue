@@ -207,7 +207,10 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                   }}
                 </td>
                 <td class="text-center">
-                  <AppButton @click="handleDetails(tx.transactionRaw.id)" color="secondary"
+                  <AppButton
+                    @click="handleDetails(tx.transactionRaw.id)"
+                    color="secondary"
+                    class="min-w-unset"
                     >Details</AppButton
                   >
                 </td>

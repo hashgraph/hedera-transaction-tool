@@ -24,7 +24,8 @@ export const getTransactionDate = (transaction: Transaction): string => {
 
 export const getTransactionId = (transaction: Transaction): string => {
   const transactionId = TransactionId.fromString(transaction.transaction_id);
-  return `${transactionId.accountId?.toString()}@${transactionId.validStart?.seconds.toString()}`;
+  // return `${transactionId.accountId?.toString()}@${transactionId.validStart?.seconds.toString()}`;
+  return transactionId.toString();
 };
 
 export const getTransactionPayerId = (transaction: Transaction): string => {

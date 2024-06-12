@@ -313,6 +313,7 @@ watch(
                     <AppButton
                       @click="handleTransactionDetailsClick(transaction.id)"
                       color="secondary"
+                      class="min-w-unset"
                       >Details</AppButton
                     >
                   </td>
@@ -356,6 +357,7 @@ watch(
                     <AppButton
                       @click="handleTransactionDetailsClick(transactionRaw.id)"
                       color="secondary"
+                      class="min-w-unset"
                       >Details</AppButton
                     >
                   </td>
