@@ -80,7 +80,7 @@ const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') 
 /* Functions */
 async function fetchTransactions() {
   if (!isLoggedInOrganization(user.selectedOrganization)) {
-    throw new Error('Please login in an organization');
+    return;
   }
 
   if (user.selectedOrganization.isPasswordTemporary) return;

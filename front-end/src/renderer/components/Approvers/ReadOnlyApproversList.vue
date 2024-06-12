@@ -42,7 +42,12 @@ const handleViewSummary = (index: number) => {
               'bg-danger': isApproved(approver) === false,
             }"
           >
-            <p class="text-small text-nowrap">
+            <p
+              class="text-small text-nowrap"
+              :class="{
+                'text-white': isApproved(approver) === false || isApproved(approver) === true,
+              }"
+            >
               <template v-if="approver.userId">
                 {{ contacts.getContact(approver.userId)?.user.email || `User: ${approver.userId}` }}
                 <span v-if="contacts.getNickname(approver.userId).trim().length > 0"

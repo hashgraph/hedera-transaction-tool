@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject } from 'vue';
+import { inject, nextTick } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -49,6 +49,7 @@ const handleLogout = async () => {
 
     if (user.selectedOrganization) {
       ws.setSocket(null);
+      await nextTick();
 
       const { id, nickname, serverUrl, key } = user.selectedOrganization;
       await logout(serverUrl);
