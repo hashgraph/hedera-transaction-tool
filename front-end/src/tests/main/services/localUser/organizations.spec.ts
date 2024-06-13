@@ -135,10 +135,10 @@ describe('Services Local User Organizations', () => {
       await removeOrganization(id);
 
       expect(prisma.keyPair.deleteMany).toHaveBeenCalledWith({ where: { organization_id: id } });
+      expect(prisma.contact.deleteMany).toHaveBeenCalledWith({ where: { organization_id: id } });
       expect(prisma.organizationCredentials.deleteMany).toHaveBeenCalledWith({
         where: { organization_id: id },
       });
-      expect(prisma.transaction.deleteMany).toHaveBeenCalledWith({ where: { organizationId: id } });
       expect(prisma.organization.delete).toHaveBeenCalledWith({ where: { id } });
     });
   });
