@@ -58,7 +58,7 @@ describe('updater', () => {
     expect(autoUpdater.checkForUpdates).toHaveBeenCalled();
   });
 
-  test('should handle update events', () => {
+  test('Should handle update events', () => {
     updater(window);
 
     const autoUpdaterMO = autoUpdater as unknown as MockedObject<AppUpdater>;
