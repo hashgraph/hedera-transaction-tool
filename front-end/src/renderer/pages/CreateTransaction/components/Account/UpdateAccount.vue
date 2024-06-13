@@ -449,6 +449,7 @@ const columnClass = 'col-4 col-xxxl-3';
             v-model:checked="newAccountData.receiverSignatureRequired"
             size="md"
             name="receiver-signature"
+            data-testid="switch-receiver-sig-required-for-update"
             label="Receiver Signature Required"
           />
         </div>
