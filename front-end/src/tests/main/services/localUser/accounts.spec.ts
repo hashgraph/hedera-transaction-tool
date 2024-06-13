@@ -63,7 +63,28 @@ describe('Services Local User Accounts', () => {
       prisma.hederaAccount.count.mockResolvedValueOnce(0);
       prisma.hederaAccount.findMany.mockResolvedValueOnce([newUser]);
 
-      const result = await addAccount(userId, accountId, network, nickname);
+      const result = await addAccount(
+        newUser.user_id,
+        newUser.account_id,
+        newUser.network,
+        newUser.nickname,
+      );
+
+      expect(result).toStrictEqual([newUser]);
+    });
+
+    test('Should add an account with provided arguments without nickname', async () => {
+      const newUser = { id: '321', user_id: userId, account_id: accountId, nickname: '', network };
+
+      prisma.hederaAccount.count.mockResolvedValueOnce(0);
+      prisma.hederaAccount.findMany.mockResolvedValueOnce([newUser]);
+
+      const result = await addAccount(
+        newUser.user_id,
+        newUser.account_id,
+        newUser.network,
+        newUser.nickname,
+      );
 
       expect(result).toStrictEqual([newUser]);
     });
