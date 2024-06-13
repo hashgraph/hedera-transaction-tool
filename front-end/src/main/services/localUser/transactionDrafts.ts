@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { getPrismaClient } from '@main/db';
+import { getPrismaClient } from '@main/db/prisma';
 
 export const getDrafts = async (findArgs: Prisma.TransactionDraftFindManyArgs) => {
   const prisma = getPrismaClient();

@@ -5,11 +5,11 @@ import path from 'path';
 import electron from 'electron';
 
 import * as sqlite3 from 'better-sqlite3';
-import { PrismaClient } from '@prisma/client';
 
 import { getDatabaseLogger } from '@main/modules/logger';
 
-export const dbPath = path.join(electron.app.getPath('userData'), 'database.db');
+import { dbPath, getPrismaClient } from './prisma';
+
 const migrationsPath = path.join(
   electron.app.getAppPath(),
   import.meta.env.DEV ? './prisma/migrations' : '../prisma/migrations',
@@ -162,25 +162,4 @@ export async function deleteDatabase() {
   databaseLogger.errorHandler.stopCatching();
 }
 
-let prisma: PrismaClient;
-
-export function getPrismaClient() {
-  if (!prisma) {
-    prisma = createPrismaClient();
-  }
-  return prisma;
-}
-
-export function setPrismaClient(prismaClient: PrismaClient) {
-  prisma = prismaClient;
-}
-
-export function createPrismaClient() {
-  return new PrismaClient({
-    datasources: {
-      db: {
-        url: `file:${dbPath}`,
-      },
-    },
-  });
-}
+export * from './prisma';

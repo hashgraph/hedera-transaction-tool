@@ -11,7 +11,9 @@ export * from './contacts';
 export * from './publicKeyLinked';
 
 import { session } from 'electron';
-import initDatabase, { createPrismaClient, deleteDatabase, setPrismaClient } from '../../db';
+
+import initDatabase, { deleteDatabase } from '@main/db/init';
+import { setPrismaClient, createPrismaClient } from '@main/db/prisma';
 
 export const userStorageFolderName = 'User Storage';
 export const getUserStorageFolderPath = (email: string) => `User Storage/${email}`;

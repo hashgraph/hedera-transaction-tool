@@ -1,4 +1,4 @@
-import { getPrismaClient } from '@main/db';
+import { getPrismaClient } from '@main/db/prisma';
 
 export const getComplexKeys = async (userId: string) => {
   const prisma = getPrismaClient();

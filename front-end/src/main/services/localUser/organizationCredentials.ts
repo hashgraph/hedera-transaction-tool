@@ -1,5 +1,5 @@
 import { session, CookiesSetDetails } from 'electron';
-import { getPrismaClient } from '@main/db';
+import { getPrismaClient } from '@main/db/prisma';
 
 import { Organization, OrganizationCredentials } from '@prisma/client';
 import { jwtDecode } from 'jwt-decode';

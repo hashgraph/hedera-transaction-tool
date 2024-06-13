@@ -6,7 +6,7 @@ import { app, shell } from 'electron';
 import { Client, FileContentsQuery, PrivateKey, Query, Transaction } from '@hashgraph/sdk';
 
 import { Prisma } from '@prisma/client';
-import { getPrismaClient } from '@main/db';
+import { getPrismaClient } from '@main/db/prisma';
 
 import { HederaSpecialFileId } from '@main/shared/interfaces';
 

@@ -2,7 +2,7 @@ import { KeyPair, Prisma } from '@prisma/client';
 
 import { encrypt, decrypt } from '@main/utils/crypto';
 
-import { getPrismaClient } from '@main/db';
+import { getPrismaClient } from '@main/db/prisma';
 
 import { getCurrentUser, getOrganization } from '.';
 
