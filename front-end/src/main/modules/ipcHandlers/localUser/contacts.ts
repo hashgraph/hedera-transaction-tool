@@ -5,7 +5,7 @@ import {
   getOrganizationContacts,
   removeContact,
   updateContact,
-} from '@main/services/localUser';
+} from '@main/services/localUser/contacts';
 import { Prisma } from '@prisma/client';
 
 const createChannelName = (...props) => ['contacts', ...props].join(':');
