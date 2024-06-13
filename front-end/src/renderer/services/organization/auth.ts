@@ -33,7 +33,7 @@ export const login = async (
       }
     }
 
-    throw new Error('Failed Sign in Organization');
+    throw new Error('Failed to Sign in Organization');
   }
 };
 
@@ -50,7 +50,7 @@ export const logout = async (serverUrl: string): Promise<{ id: number }> => {
 
     return { id: data.id };
   } catch (error: any) {
-    throw new Error('Failed log out of Organization');
+    throw new Error('Failed to Log out of Organization');
   }
 };
 
@@ -73,7 +73,7 @@ export const changePassword = async (
     );
     return response.data;
   } catch (error) {
-    let message = 'Failed change user password';
+    let message = 'Failed to change user password';
 
     if (error instanceof AxiosError) {
       throwIfNoResponse(error);
@@ -104,7 +104,7 @@ export const resetPassword = async (
     );
     return response.data;
   } catch (error) {
-    let message = 'Failed request passoword reset';
+    let message = 'Failed to request passoword reset';
 
     if (error instanceof AxiosError) {
       throwIfNoResponse(error);
@@ -132,7 +132,7 @@ export const verifyReset = async (organizationServerUrl: string, otp: string): P
     );
     return response.data;
   } catch (error) {
-    let message = 'Failed verify password reset';
+    let message = 'Failed to verify password reset';
 
     if (error instanceof AxiosError) {
       throwIfNoResponse(error);

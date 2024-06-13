@@ -11,8 +11,11 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
 
+import { useToast } from 'vue-toast-notification';
+
 import { addContact, updateContact } from '@renderer/services/contactsService';
 import { getAccountsByPublicKeysParallel } from '@renderer/services/mirrorNodeDataService';
+import { add, getAll } from '@renderer/services/accountsService';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
@@ -30,13 +33,16 @@ const user = useUserStore();
 const network = useNetworkStore();
 const contacts = useContactsStore();
 
+/* Composables */
+const toast = useToast();
+
 /* State */
 const isNicknameInputShown = ref(false);
 const nicknameInputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const publicKeyToAccounts = ref<{ [key: string]: AccountInfo[] }>({});
 
 /* Emits */
-defineEmits(['update:remove']);
+const emit = defineEmits(['update:linkedAccounts', 'update:remove']);
 
 /* Handlers */
 const handleStartNicknameEdit = () => {
@@ -85,6 +91,26 @@ const handleAccountsLookup = async () => {
   publicKeyToAccounts.value = await getAccountsByPublicKeysParallel(
     network.mirrorNodeBaseURL,
     props.contact.userKeys.map(key => key.publicKey),
+  );
+};
+
+const handleLinkAccount = async (accountId: string) => {
+  if (!isUserLoggedIn(user.personal) || !isLoggedInOrganization(user.selectedOrganization)) {
+    throw new Error('User is not logged in an organization');
+  }
+
+  await add(user.personal.id, accountId, network.network, '');
+
+  toast.success('Account linked successfully');
+
+  emit(
+    'update:linkedAccounts',
+    await getAll({
+      where: {
+        user_id: user.personal.id,
+        network: network.network,
+      },
+    }),
   );
 };
 
@@ -173,7 +199,7 @@ watch(
                 v-for="account in publicKeyToAccounts[key.publicKey]"
                 :key="`${key.publicKey}${account.account}`"
               >
-                <li class="text-center badge-bg rounded py-2 px-3">
+                <li class="flex-centered text-center badge-bg rounded py-2 px-3">
                   <p class="text-small text-secondary">
                     {{ account.account }}
                     <span
@@ -189,6 +215,11 @@ watch(
                       }})</span
                     >
                   </p>
+                  <span
+                    v-if="!linkedAccounts.some(a => a.account_id === account.account)"
+                    class="bi bi-link d-flex cursor-pointer ms-2"
+                    @click="account.account && handleLinkAccount(account.account)"
+                  ></span>
                 </li>
               </template>
             </ul>
