@@ -6,7 +6,7 @@ import {
   removeFiles,
   showContentInTemp,
   updateFile,
-} from '@main/services/localUser';
+} from '@main/services/localUser/files';
 import { Prisma } from '@prisma/client';
 
 const createChannelName = (...props) => ['files', ...props].join(':');
