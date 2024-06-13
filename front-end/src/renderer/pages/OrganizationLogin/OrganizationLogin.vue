@@ -85,7 +85,7 @@ const handleLogin = async () => {
     inputEmailInvalid.value = true;
     inputPasswordInvalid.value = true;
 
-    throw new Error(error.message);
+    toast.error(error.message);
   } finally {
     loading.value = false;
   }
