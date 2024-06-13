@@ -46,14 +46,17 @@ const specialFilesMapping = {
   '0.0.123': {
     protoType: proto.ThrottleDefinitions, //throttles.json
   },
+  '*': {
+    protoType: proto.AccountID,
+  },
 };
 
-export function decodeProto(fileId: HederaSpecialFileId, response: any) {
+export function decodeProto(fileId: HederaSpecialFileId, bytes: Uint8Array) {
   if (specialFilesMapping[fileId] === undefined) {
     throw new Error('File ID is not Hedera special file');
   }
 
-  const decoded = specialFilesMapping[fileId].protoType?.decode(response);
+  const decoded = specialFilesMapping[fileId].protoType?.decode(bytes);
 
   if (decoded instanceof proto.NodeAddressBook) {
     return stringifyNodeAddressBook(decoded);
@@ -65,9 +68,9 @@ export function decodeProto(fileId: HederaSpecialFileId, response: any) {
     return stringifyServicesConfigurationList(decoded);
   } else if (decoded instanceof proto.ThrottleDefinitions) {
     return stringifyThrottleDefinitions(decoded);
+  } else {
+    return JSON.stringify(decoded, null, 2);
   }
-
-  return JSON.stringify(decoded, null, 2);
 }
 
 function stringifyNodeAddressBook(nodeAddressBook: proto.INodeAddressBook) {
@@ -197,9 +200,10 @@ function stringifyExchangeRetSet(exchangeRateSet: proto.IExchangeRateSet) {
 function stringifyServicesConfigurationList(
   servicesConfigurationList: proto.IServicesConfigurationList,
 ) {
-  const nameValues = servicesConfigurationList.nameValue?.map(
-    nv => `${nv.name}=${nv.value}${nv.data && nv.data.length > 0 ? ` data=${nv.data}` : ''}`,
-  );
+  // const nameValues = servicesConfigurationList.nameValue?.map(
+  //   nv => `${nv.name}=${nv.value}${nv.data && nv.data.length > 0 ? ` data=${nv.data}` : ''}`,
+  // );
+  const nameValues = servicesConfigurationList.nameValue?.map(nv => `${nv.name}=${nv.value}`);
   return nameValues?.join('\n');
 }
 
@@ -250,7 +254,7 @@ export function encodeHederaSpecialFile(content: Uint8Array, fileId: HederaSpeci
 }
 
 function encodeNodeAddressBook(content: Uint8Array) {
-  const nodeAddressBook: proto.INodeAddressBook = JSON.parse(Buffer.from(content).toString());
+  const nodeAddressBook = parseBytesToJson<proto.INodeAddressBook>(content);
 
   if (nodeAddressBook.nodeAddress) {
     nodeAddressBook.nodeAddress.forEach(nodeAddress => {
@@ -289,9 +293,21 @@ function encodeNodeAddressBook(content: Uint8Array) {
 }
 
 function encodeExchangeRates(content: Uint8Array) {
-  const exchangeRateSet: proto.IExchangeRateSet = JSON.parse(Buffer.from(content).toString());
+  const exchangeRateSet = parseBytesToJson<proto.IExchangeRateSet>(content);
 
   const protoExchangeRateSet = proto.ExchangeRateSet.create(exchangeRateSet);
+
+  if (protoExchangeRateSet.currentRate?.expirationTime) {
+    protoExchangeRateSet.currentRate.expirationTime = proto.TimestampSeconds.create({
+      seconds: protoExchangeRateSet.currentRate.expirationTime,
+    });
+  }
+
+  if (protoExchangeRateSet.nextRate?.expirationTime) {
+    protoExchangeRateSet.nextRate.expirationTime = proto.TimestampSeconds.create({
+      seconds: protoExchangeRateSet.nextRate.expirationTime,
+    });
+  }
 
   const protobuffEncodedBuffer = proto.ExchangeRateSet.encode(protoExchangeRateSet).finish();
 
@@ -299,12 +315,15 @@ function encodeExchangeRates(content: Uint8Array) {
 }
 
 function encodeServicesConfigurationList(content: Uint8Array) {
-  const parsed = Buffer.from(content)
-    .toString()
-    .split('\n')
+  let stringContent = Buffer.from(content).toString();
+  stringContent = stringContent.slice(1, stringContent.length - 1);
+
+  const parsed = stringContent
+    .split(/\\n/)
     .filter(l => l)
     .map(line => {
       const args = line.split('=');
+
       const setting = proto.Setting.create({
         name: args[0],
         value: `${args[1]}`,
@@ -322,9 +341,7 @@ function encodeServicesConfigurationList(content: Uint8Array) {
 }
 
 function encodeThrottleDefinitions(content: Uint8Array) {
-  const throttleDefinitions: proto.IThrottleDefinitions = JSON.parse(
-    Buffer.from(content).toString(),
-  );
+  const throttleDefinitions = parseBytesToJson<proto.IThrottleDefinitions>(content);
 
   throttleDefinitions.throttleBuckets?.forEach(throttleBucket => {
     // Throttle Groups
@@ -366,9 +383,14 @@ function encodeThrottleDefinitions(content: Uint8Array) {
 }
 
 function encodeCurrentAndNextFeeSchedules(content: Uint8Array) {
-  const currentAndNextFeeSchedule: proto.ICurrentAndNextFeeSchedule = JSON.parse(
-    Buffer.from(content).toString(),
-  );
+  let currentAndNextFeeSchedule = parseBytesToJson<proto.ICurrentAndNextFeeSchedule>(content);
+
+  try {
+    //@ts-expect-error Strange behaviour of JSON.parse
+    currentAndNextFeeSchedule = JSON.parse(currentAndNextFeeSchedule);
+  } catch {
+    // Do nothing
+  }
 
   if (currentAndNextFeeSchedule.currentFeeSchedule) {
     currentAndNextFeeSchedule.currentFeeSchedule = formatFeeSchedule(
@@ -411,6 +433,7 @@ function encodeCurrentAndNextFeeSchedules(content: Uint8Array) {
         seconds: feeSchedule.expiryTime as any,
       });
     }
+
     return feeSchedule;
   }
 
@@ -469,5 +492,17 @@ function encodeCurrentAndNextFeeSchedules(content: Uint8Array) {
     }
 
     return feeComponents;
+  }
+}
+
+/* Strange behaviour of JSON.parse requires such function */
+function parseBytesToJson<T>(bytes: Uint8Array): T {
+  let bytesString = JSON.parse(Buffer.from(bytes).toString());
+
+  try {
+    bytesString = JSON.parse(bytesString);
+    return bytesString;
+  } catch (error) {
+    return bytesString;
   }
 }

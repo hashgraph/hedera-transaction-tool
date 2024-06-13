@@ -17,12 +17,35 @@ vi.mock('electron', () => {
   bw.prototype.loadFile = vi.fn((_: string, __?: Electron.LoadFileOptions) => Promise.resolve());
   // Use "any" because the on function is overloaded
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  bw.prototype.on = vi.fn<any>();
+  const callbacks = {
+    'ready-to-show': vi.fn(),
+    closed: vi.fn(),
+  };
+
+  bw.prototype.on = vi.fn<any>((e, c) => {
+    callbacks[e as keyof typeof callbacks] = c;
+  });
   bw.prototype.destroy = vi.fn();
   bw.prototype.isDestroyed = vi.fn();
   bw.prototype.isMinimized = vi.fn();
   bw.prototype.focus = vi.fn();
   bw.prototype.restore = vi.fn();
+  bw.prototype.close = vi.fn(() => {
+    callbacks.closed && callbacks.closed();
+  });
+  bw.prototype.emit = vi.fn();
+  bw.prototype.show = vi.fn();
+  bw.prototype.restore = vi.fn(() => {
+    callbacks['ready-to-show'] && callbacks['ready-to-show']();
+  });
+
+  Object.defineProperty(bw.prototype, 'webContents', {
+    value: {
+      openDevTools: vi.fn(),
+    },
+    writable: false,
+    enumerable: true,
+  });
 
   const app: Pick<Electron.App, 'getAppPath'> = {
     getAppPath(): string {
@@ -79,7 +102,12 @@ vi.mock('electron', () => {
     },
   };
 
-  return { BrowserWindow: bw, app, screen };
+  const nativeTheme = {
+    on: vi.fn(),
+    removeAllListeners: vi.fn(),
+  };
+
+  return { BrowserWindow: bw, app, screen, nativeTheme };
 });
 
 beforeEach(() => {
@@ -127,4 +155,31 @@ test('Should create a new window if the previous one was destroyed', async () =>
 
   await restoreOrCreateWindow();
   expect(mock.instances).toHaveLength(2);
+});
+
+test('Should set differnet VITE_PUBLIC', async () => {
+  const prevVITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
+
+  //@ts-expect-error read-only property
+  process.env.VITE_DEV_SERVER_URL = 'http://localhost:3000';
+
+  const { mock } = vi.mocked(BrowserWindow);
+
+  await restoreOrCreateWindow();
+  expect(mock.instances).toHaveLength(1);
+  const appWindow = vi.mocked(mock.instances[0]);
+  appWindow.isDestroyed.mockReturnValueOnce(true);
+
+  await restoreOrCreateWindow();
+  expect(mock.instances).toHaveLength(2);
+
+  //@ts-expect-error read-only property
+  process.env.VITE_DEV_SERVER_URL = prevVITE_DEV_SERVER_URL;
+});
+
+test('Should send theme event after ready-to-show emitted with already shown event ', async () => {
+  const window = await restoreOrCreateWindow();
+
+  window.close();
+  window.restore();
 });

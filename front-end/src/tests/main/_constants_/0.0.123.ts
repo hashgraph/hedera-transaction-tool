@@ -178,3 +178,168 @@ export const buffer = [
   101, 101, 81, 117, 101, 114, 121, 76, 105, 109, 105, 116, 115, 16, 232, 7, 26, 10, 10, 2, 13, 36,
   16, 128, 148, 235, 220, 3,
 ];
+
+export const protoInput = `{
+  "throttleBuckets": [
+    {
+      "throttleGroups": [
+        {
+          "operations": [
+            "ScheduleCreate",
+            "CryptoCreate",
+            "CryptoTransfer",
+            "CryptoUpdate",
+            "CryptoDelete",
+            "CryptoGetInfo",
+            "CryptoGetAccountRecords",
+            "ConsensusCreateTopic",
+            "ConsensusSubmitMessage",
+            "ConsensusUpdateTopic",
+            "ConsensusDeleteTopic",
+            "ConsensusGetTopicInfo",
+            "TokenGetNftInfo",
+            "TokenGetInfo",
+            "ScheduleDelete",
+            "ScheduleGetInfo",
+            "FileGetContents",
+            "FileGetInfo",
+            "ContractUpdate",
+            "ContractDelete",
+            "ContractGetInfo",
+            "ContractGetBytecode",
+            "ContractGetRecords",
+            "ContractCallLocal",
+            "TransactionGetRecord",
+            "GetVersionInfo",
+            "TokenGetAccountNftInfos",
+            "TokenGetNftInfos",
+            "CryptoApproveAllowance",
+            "CryptoDeleteAllowance",
+            "UtilPrng"
+          ],
+          "milliOpsPerSec": "10500000"
+        },
+        {
+          "operations": [
+            "FileCreate",
+            "FileUpdate",
+            "FileAppend",
+            "FileDelete"
+          ],
+          "milliOpsPerSec": "13000"
+        },
+        {
+          "operations": [
+            "ScheduleSign"
+          ],
+          "milliOpsPerSec": "100000"
+        },
+        {
+          "operations": [
+            "TokenMint"
+          ],
+          "milliOpsPerSec": "125000"
+        },
+        {
+          "operations": [
+            "ContractCall",
+            "ContractCreate",
+            "EthereumTransaction"
+          ],
+          "milliOpsPerSec": "350000"
+        },
+        {
+          "operations": [
+            "TokenCreate",
+            "TokenDelete",
+            "TokenBurn",
+            "TokenUpdate",
+            "TokenFeeScheduleUpdate",
+            "TokenAssociateToAccount",
+            "TokenAccountWipe",
+            "TokenDissociateFromAccount",
+            "TokenFreezeAccount",
+            "TokenUnfreezeAccount",
+            "TokenGrantKycToAccount",
+            "TokenRevokeKycFromAccount",
+            "TokenPause",
+            "TokenUnpause"
+          ],
+          "milliOpsPerSec": "3000000"
+        }
+      ],
+      "name": "ThroughputLimits",
+      "burstPeriodMs": "15000"
+    },
+    {
+      "throttleGroups": [
+        {
+          "operations": [
+            "FileGetContents",
+            "FileGetInfo",
+            "ContractGetInfo",
+            "ContractGetBytecode",
+            "ContractCallLocal"
+          ],
+          "milliOpsPerSec": "700000"
+        }
+      ],
+      "name": "OffHeapQueryLimits",
+      "burstPeriodMs": "1000"
+    },
+    {
+      "throttleGroups": [
+        {
+          "operations": [
+            "FileCreate",
+            "FileUpdate",
+            "FileAppend",
+            "FileDelete"
+          ],
+          "milliOpsPerSec": "10000"
+        }
+      ],
+      "name": "PriorityReservations",
+      "burstPeriodMs": "3000"
+    },
+    {
+      "throttleGroups": [
+        {
+          "operations": [
+            "CryptoCreate"
+          ],
+          "milliOpsPerSec": "2000"
+        },
+        {
+          "operations": [
+            "ConsensusCreateTopic"
+          ],
+          "milliOpsPerSec": "5000"
+        },
+        {
+          "operations": [
+            "TokenCreate",
+            "TokenAssociateToAccount",
+            "ScheduleCreate"
+          ],
+          "milliOpsPerSec": "100000"
+        }
+      ],
+      "name": "CreationLimits",
+      "burstPeriodMs": "15000"
+    },
+    {
+      "throttleGroups": [
+        {
+          "operations": [
+            "CryptoGetAccountBalance",
+            "TransactionGetReceipt"
+          ],
+          "milliOpsPerSec": "1000000000"
+        }
+      ],
+      "name": "FreeQueryLimits",
+      "burstPeriodMs": "1000"
+    }
+  ]
+}`;

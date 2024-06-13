@@ -4,13 +4,13 @@ import { BrowserWindow, screen } from 'electron';
 
 import { removeListeners, sendUpdateThemeEventTo } from '@main/modules/ipcHandlers/theme';
 
-process.env.DIST_ELECTRON = join(__dirname, '..');
-process.env.DIST = join(process.env.DIST_ELECTRON, '../dist');
-process.env.VITE_PUBLIC = process.env.VITE_DEV_SERVER_URL
-  ? join(process.env.DIST_ELECTRON, '../public')
-  : process.env.DIST;
-
 async function createWindow() {
+  process.env.DIST_ELECTRON = join(__dirname, '..');
+  process.env.DIST = join(process.env.DIST_ELECTRON, '../dist');
+  process.env.VITE_PUBLIC = process.env.VITE_DEV_SERVER_URL
+    ? join(process.env.DIST_ELECTRON, '../public')
+    : process.env.DIST;
+
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 
   const preload = join(__dirname, '../preload/index.js');
@@ -32,6 +32,8 @@ async function createWindow() {
 
   mainWindow.on('ready-to-show', () => {
     if (mainWindow) {
+      console.log('emit');
+
       sendUpdateThemeEventTo(mainWindow);
     }
 
