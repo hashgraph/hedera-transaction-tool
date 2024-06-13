@@ -49,7 +49,8 @@ export const createTransactionId = (
 
   if (typeof validStart === 'string' || validStart instanceof Date) {
     const date = validStart instanceof Date ? validStart : new Date(validStart);
-    validStart = Timestamp.fromDate(date < new Date() ? new Date() : date);
+    const expirationDate = new Date(date.getTime() + 1000 * 60 * 3);
+    validStart = Timestamp.fromDate(expirationDate < new Date() ? new Date() : date);
   }
 
   return TransactionId.withValidStart(accountId, validStart);
