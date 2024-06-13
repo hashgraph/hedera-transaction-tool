@@ -35,6 +35,16 @@ describe('IPC handlers localUser', () => {
   const ipcMainMO = ipcMain as unknown as MockedObject<Electron.IpcMain>;
   const event: Electron.IpcMainEvent = mockDeep<Electron.IpcMainEvent>();
 
+  test('Should register handlers for each event', () => {
+    const event = ['register', 'resetData', 'usersCount', 'comparePasswords', 'changePassword'];
+
+    expect(
+      event.every(util =>
+        ipcMainMO.handle.mock.calls.some(([channel]) => channel === `localUser:${util}`),
+      ),
+    ).toBe(true);
+  });
+
   test('Should set up login handler', async () => {
     const loginHandler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'localUser:login');
     expect(loginHandler).toBeDefined();
