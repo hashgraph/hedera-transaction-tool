@@ -131,6 +131,15 @@ describe('Services Local User Files', () => {
         data: { ...file, user_id: 'user1' },
       });
     });
+
+    test('Should remove the nickname of a file', async () => {
+      await updateFile('1', 'user1', { ...file, nickname: '  ' });
+
+      expect(prisma.hederaFile.updateMany).toHaveBeenCalledWith({
+        where: { file_id: '1', user_id: 'user1' },
+        data: { ...file, nickname: null, user_id: 'user1' },
+      });
+    });
   });
 
   describe('showContentInTemp', () => {

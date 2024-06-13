@@ -148,5 +148,23 @@ describe('Services Local User Accounts', () => {
 
       expect(prisma.hederaAccount.updateMany).toHaveBeenCalledOnce();
     });
+
+    test('Should remove the nickname of an account', async () => {
+      const userId: string = '123';
+      const accountId: string = '0.0.2';
+      const nickname: string = '     ';
+
+      await changeAccountNickname(userId, accountId, nickname);
+
+      expect(prisma.hederaAccount.updateMany).toHaveBeenCalledWith({
+        where: {
+          user_id: userId,
+          account_id: accountId,
+        },
+        data: {
+          nickname: null,
+        },
+      });
+    });
   });
 });
