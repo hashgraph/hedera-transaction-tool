@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
-import { HederaAccount } from '@prisma/client';
+import { HederaAccount, Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -25,14 +25,6 @@ import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 
-/* Enums */
-// enum Sorting {
-//   AccountIdAsc = 'accountIdAsc',
-//   AccountIdDesc = 'accountIdDesc',
-//   NicknameAsc = 'nicknameAsc',
-//   NicknameDesc = 'nicknameDesc',
-// }
-
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
@@ -48,6 +40,11 @@ const isUnlinkAccountModalShown = ref(false);
 const isNicknameInputShown = ref(false);
 const selectedIndexes = ref<number[]>([]);
 const nicknameInputRef = ref<InstanceType<typeof AppInput> | null>(null);
+const sorting = ref<{
+  [key: string]: Prisma.SortOrder;
+}>({
+  created_at: 'asc',
+});
 
 /* Computed */
 const hbarDollarAmount = computed(() => {
@@ -128,34 +125,26 @@ const handleChangeNickname = async () => {
   await fetchAccounts();
 };
 
-// const handleSortAccounts = (sorting: Sorting) => {
-//   switch (sorting) {
-//     case Sorting.AccountIdAsc:
-//       accounts.value = accounts.value.sort(
-//         (a, b) => Number(a.accountId.split('.')[2]) - Number(b.accountId.split('.')[2]),
-//       );
-//       break;
-//     case Sorting.AccountIdDesc:
-//       accounts.value = accounts.value.sort(
-//         (a, b) => Number(b.accountId.split('.')[2]) - Number(a.accountId.split('.')[2]),
-//       );
-//       break;
-//     case Sorting.NicknameAsc:
-//       accounts.value = accounts.value
-//         .filter(acc => acc.nickname)
-//         .sort((a, b) => a.nickname.localeCompare(b.nickname))
-//         .concat(accounts.value.filter(acc => !acc.nickname));
-//       break;
-//     case Sorting.NicknameDesc:
-//       accounts.value = accounts.value = accounts.value
-//         .filter(acc => acc.nickname)
-//         .sort((a, b) => b.nickname.localeCompare(a.nickname))
-//         .concat(accounts.value.filter(acc => !acc.nickname));
-//       break;
-//     default:
-//       break;
-//   }
-// };
+const handleSortAccounts = async (
+  property: keyof Prisma.HederaAccountOrderByWithRelationInput,
+  order: Prisma.SortOrder,
+) => {
+  if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+
+  accounts.value = await getAll({
+    where: {
+      user_id: user.personal.id,
+      network: network.network,
+    },
+    orderBy: {
+      [property]: order,
+    },
+  });
+
+  sorting.value = {
+    [property]: order,
+  };
+};
 
 /* Functions */
 async function fetchAccounts() {
@@ -199,7 +188,7 @@ onMounted(async () => {
               data-bs-toggle="dropdown"
               >Add new</AppButton
             >
-            <ul class="dropdown-menu w-100 mt-3">
+            <ul class="dropdown-menu">
               <li
                 class="dropdown-item cursor-pointer"
                 @click="
@@ -225,30 +214,60 @@ onMounted(async () => {
               </li>
             </ul>
           </div>
-          <!-- <div class="mt-5">
-          <div class="dropdown">
-            <AppButton
-              class="w-100 d-flex text-dark-emphasis align-items-center justify-content-start border-0"
-              data-bs-toggle="dropdown"
-              ><i class="bi bi-filter text-headline me-2"></i> Sort by</AppButton
-            >
-            <ul class="dropdown-menu text-small">
-              <li class="dropdown-item" @click="handleSortAccounts(Sorting.AccountIdAsc)">
-                Account ID A-Z
-              </li>
-              <li class="dropdown-item" @click="handleSortAccounts(Sorting.AccountIdDesc)">
-                Account ID Z-A
-              </li>
-              <li class="dropdown-item" @click="handleSortAccounts(Sorting.NicknameAsc)">
-                Nickname A-Z
-              </li>
-              <li class="dropdown-item" @click="handleSortAccounts(Sorting.NicknameDesc)">
-                Nickname Z-A
-              </li>
-            </ul>
+          <div class="mt-3">
+            <div class="dropdown">
+              <AppButton
+                class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
+                data-bs-toggle="dropdown"
+                ><i class="bi bi-filter text-headline me-2"></i> Sort by</AppButton
+              >
+              <ul class="dropdown-menu text-small">
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.account_id === 'asc' ? true : undefined"
+                  @click="handleSortAccounts('account_id', 'asc')"
+                >
+                  Account ID A-Z
+                </li>
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.account_id === 'desc' ? true : undefined"
+                  @click="handleSortAccounts('account_id', 'desc')"
+                >
+                  Account ID Z-A
+                </li>
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.nickname === 'asc' ? true : undefined"
+                  @click="handleSortAccounts('nickname', 'asc')"
+                >
+                  Nickname A-Z
+                </li>
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.nickname === 'desc' ? true : undefined"
+                  @click="handleSortAccounts('nickname', 'desc')"
+                >
+                  Nickname Z-A
+                </li>
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.created_at === 'asc' ? true : undefined"
+                  @click="handleSortAccounts('created_at', 'asc')"
+                >
+                  Created At A-Z
+                </li>
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.created_at === 'desc' ? true : undefined"
+                  @click="handleSortAccounts('created_at', 'desc')"
+                >
+                  Created At Z-A
+                </li>
+              </ul>
+            </div>
           </div>
-        </div> -->
-          <hr class="separator my-5" />
+          <hr class="separator mb-5" />
           <div class="fill-remaining pe-3">
             <template v-for="(account, index) in accounts" :key="account.accountId">
               <div class="d-flex align-items-center mt-3">
