@@ -31,6 +31,16 @@ describe('IPC handlers contacts', () => {
   const ipcMainMO = ipcMain as unknown as MockedObject<Electron.IpcMain>;
   const event: Electron.IpcMainEvent = mockDeep<Electron.IpcMainEvent>();
 
+  test('Should register handlers for each event', () => {
+    const event = ['getOrganizationContacts', 'addContact', 'updateContact', 'removeContact'];
+
+    expect(
+      event.every(util =>
+        ipcMainMO.handle.mock.calls.some(([channel]) => channel === `contacts:${util}`),
+      ),
+    ).toBe(true);
+  });
+
   test('Should set up getOrganizationContacts handler', async () => {
     const getOrgContactsHandler = ipcMainMO.handle.mock.calls.find(
       ([e]) => e === 'contacts:getOrganizationContacts',
