@@ -26,22 +26,22 @@ jobs:
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
 
-      # - name: run hedera local
-      #   run: npx @hashgraph/hedera-local start -d
+      - name: run hedera local
+        run: npx @hashgraph/hedera-local start -d
 
       - name: Install pnpm
-        run: npm i -g pnpm node-gyp @hashgraph/hedera-local
+        run: npm i -g pnpm node-gyp
 
-      - name: prep hedera
-        uses: actions/checkout@v4
-        with:
-          repository: hashgraph/hedera-local-node
-          path: hedera-local-node
-      - name: run hedera
-        run: |
-          npm i
-          npm run start -- -d
-        working-directory: hedera-local-node
+      # - name: prep hedera
+      #   uses: actions/checkout@v4
+      #   with:
+      #     repository: hashgraph/hedera-local-node
+      #     path: hedera-local-node
+      # - name: run hedera
+      #   run: |
+      #     npm i
+      #     npm run start -- -d
+      #   working-directory: hedera-local-node
 
       - name: Install dependencies
         run: npm install
