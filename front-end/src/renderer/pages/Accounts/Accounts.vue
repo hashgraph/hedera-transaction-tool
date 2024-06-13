@@ -43,7 +43,7 @@ const nicknameInputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const sorting = ref<{
   [key: string]: Prisma.SortOrder;
 }>({
-  created_at: 'asc',
+  created_at: 'desc',
 });
 const selectMany = ref(false);
 
@@ -136,19 +136,11 @@ const handleSortAccounts = async (
 ) => {
   if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
 
-  accounts.value = await getAll({
-    where: {
-      user_id: user.personal.id,
-      network: network.network,
-    },
-    orderBy: {
-      [property]: order,
-    },
-  });
-
   sorting.value = {
     [property]: order,
   };
+
+  await fetchAccounts();
 };
 
 /* Functions */
@@ -160,6 +152,7 @@ async function fetchAccounts() {
       user_id: user.personal.id,
       network: network.network,
     },
+    orderBy: { ...sorting.value },
   });
 }
 
@@ -260,14 +253,14 @@ onMounted(async () => {
                   :selected="sorting.created_at === 'asc' ? true : undefined"
                   @click="handleSortAccounts('created_at', 'asc')"
                 >
-                  Created At A-Z
+                  Added At A-Z
                 </li>
                 <li
                   class="dropdown-item"
                   :selected="sorting.created_at === 'desc' ? true : undefined"
                   @click="handleSortAccounts('created_at', 'desc')"
                 >
-                  Created At Z-A
+                  Added At Z-A
                 </li>
               </ul>
             </div>

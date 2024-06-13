@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 import { FileId, FileInfo } from '@hashgraph/sdk';
 
@@ -130,7 +130,7 @@ const descriptionInputRef = ref<HTMLTextAreaElement | null>(null);
 const sorting = ref<{
   [key: string]: Prisma.SortOrder;
 }>({
-  created_at: 'asc',
+  created_at: 'desc',
 });
 const selectMany = ref(false);
 
@@ -281,7 +281,6 @@ const handleSortFiles = async (
     [property]: order,
   };
 
-  await nextTick();
   await fetchFiles();
 };
 
@@ -441,14 +440,14 @@ watch(files, newFiles => {
                   :selected="sorting.created_at === 'asc' ? true : undefined"
                   @click="handleSortFiles('created_at', 'asc')"
                 >
-                  Created At A-Z
+                  Added At A-Z
                 </li>
                 <li
                   class="dropdown-item"
                   :selected="sorting.created_at === 'desc' ? true : undefined"
                   @click="handleSortFiles('created_at', 'desc')"
                 >
-                  Created At Z-A
+                  Added At Z-A
                 </li>
               </ul>
             </div>
