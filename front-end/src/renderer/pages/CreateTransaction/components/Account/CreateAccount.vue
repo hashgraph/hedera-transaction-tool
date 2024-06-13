@@ -262,7 +262,10 @@ watch(
 );
 
 watch([initialBalance, payerData.accountInfo], async ([balance, accountInfo]) => {
-  if (balance?.toBigNumber().isGreaterThan(accountInfo?.balance?.toBigNumber() || 0)) {
+  if (
+    accountInfo &&
+    balance?.toBigNumber().isGreaterThan(accountInfo.balance?.toBigNumber() || 0)
+  ) {
     await nextTick();
     initialBalance.value = new Hbar(0);
   }
