@@ -38,7 +38,7 @@ const accounts = ref<HederaAccount[]>([]);
 const isKeyStructureModalShown = ref(false);
 const isUnlinkAccountModalShown = ref(false);
 const isNicknameInputShown = ref(false);
-const selectedIndexes = ref<number[]>([]);
+const selectedAccountIds = ref<string[]>([]);
 const nicknameInputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const sorting = ref<{
   [key: string]: Prisma.SortOrder;
@@ -56,22 +56,22 @@ const hbarDollarAmount = computed(() => {
 });
 
 /* Handlers */
-const handleSelectAccount = (accountId: string, index: number) => {
+const handleSelectAccount = (accountId: string) => {
   isNicknameInputShown.value = false;
   accountData.accountId.value = accountId;
-  selectedIndexes.value = [index];
+  selectedAccountIds.value = [accountId];
 };
 
-const handleCheckBoxUpdate = (isChecked: boolean, index: number) => {
+const handleCheckBoxUpdate = (isChecked: boolean, accountId: string) => {
   if (isChecked) {
-    selectedIndexes.value.push(index);
+    selectedAccountIds.value.push(accountId);
   } else {
-    selectedIndexes.value = selectedIndexes.value.filter(i => i !== index);
+    selectedAccountIds.value = selectedAccountIds.value.filter(i => i !== accountId);
 
-    if (accountData.accountId.value === accounts.value[index].account_id) {
+    if (accountData.accountId.value === accountId) {
       accountData.accountId.value =
-        selectedIndexes.value.length > 0
-          ? accounts.value[selectedIndexes.value[0]].account_id
+        selectedAccountIds.value.length > 0
+          ? selectedAccountIds.value[0]
           : accounts.value[0].account_id || '';
     }
   }
@@ -82,10 +82,7 @@ const handleUnlinkAccount = async () => {
     throw new Error('User is not logged in');
   }
 
-  await remove(
-    user.personal.id,
-    selectedIndexes.value.map(i => accounts.value[i].account_id),
-  );
+  await remove(user.personal.id, selectedAccountIds.value);
   await fetchAccounts();
 
   resetSelectedAccount();
@@ -160,7 +157,7 @@ async function fetchAccounts() {
 
 function resetSelectedAccount() {
   accountData.accountId.value = accounts.value[0]?.account_id || '';
-  selectedIndexes.value = [0];
+  selectedAccountIds.value = [accountData.accountId.value];
 }
 
 /* Hooks */
@@ -273,11 +270,11 @@ onMounted(async () => {
               <div class="d-flex align-items-center mt-3">
                 <div
                   class="visible-on-hover activate-on-sibling-hover"
-                  :selected="selectedIndexes.includes(index) ? true : undefined"
+                  :selected="selectedAccountIds.includes(account.account_id) ? true : undefined"
                 >
                   <AppCheckBox
-                    :checked="selectedIndexes.includes(index)"
-                    @update:checked="handleCheckBoxUpdate($event, index)"
+                    :checked="selectedAccountIds.includes(account.account_id)"
+                    @update:checked="handleCheckBoxUpdate($event, account.account_id)"
                     name="select-card"
                     :data-testid="'checkbox-multiple-account-id-' + index"
                     class="cursor-pointer"
@@ -288,9 +285,9 @@ onMounted(async () => {
                   :class="{
                     'is-selected':
                       accountData.accountId.value === account.account_id ||
-                      selectedIndexes.includes(index),
+                      selectedAccountIds.includes(account.account_id),
                   }"
-                  @click="handleSelectAccount(account.account_id, index)"
+                  @click="handleSelectAccount(account.account_id)"
                 >
                   <p class="text-small text-semi-bold overflow-hidden">{{ account.nickname }}</p>
                   <div class="d-flex justify-content-between align-items-center">
@@ -617,12 +614,12 @@ onMounted(async () => {
                 <AppCustomIcon :name="'bin'" style="height: 160px" />
               </div>
               <h3 class="text-center text-title text-bold mt-3">
-                Unlink account{{ selectedIndexes.length > 1 ? 's' : '' }}
+                Unlink account{{ selectedAccountIds.length > 1 ? 's' : '' }}
               </h3>
               <p class="text-center text-small text-secondary mt-4">
                 Are you sure you want to remove
-                {{ selectedIndexes.length > 1 ? 'these' : 'this' }} Account{{
-                  selectedIndexes.length > 1 ? 's' : ''
+                {{ selectedAccountIds.length > 1 ? 'these' : 'this' }} Account{{
+                  selectedAccountIds.length > 1 ? 's' : ''
                 }}
                 from your Account list?
               </p>
