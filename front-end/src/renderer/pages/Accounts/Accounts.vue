@@ -45,6 +45,7 @@ const sorting = ref<{
 }>({
   created_at: 'asc',
 });
+const selectMany = ref(false);
 
 /* Computed */
 const hbarDollarAmount = computed(() => {
@@ -58,8 +59,15 @@ const hbarDollarAmount = computed(() => {
 /* Handlers */
 const handleSelectAccount = (accountId: string) => {
   isNicknameInputShown.value = false;
-  accountData.accountId.value = accountId;
-  selectedAccountIds.value = [accountId];
+
+  if (selectMany.value) {
+    selectedAccountIds.value = selectedAccountIds.value.includes(accountId)
+      ? selectedAccountIds.value.filter(i => i !== accountId)
+      : [...selectedAccountIds.value, accountId];
+  } else {
+    accountData.accountId.value = accountId;
+    selectedAccountIds.value = [accountId];
+  }
 };
 
 const handleCheckBoxUpdate = (isChecked: boolean, accountId: string) => {
@@ -82,7 +90,7 @@ const handleUnlinkAccount = async () => {
     throw new Error('User is not logged in');
   }
 
-  await remove(user.personal.id, selectedAccountIds.value);
+  await remove(user.personal.id, [...selectedAccountIds.value]);
   await fetchAccounts();
 
   resetSelectedAccount();
@@ -211,7 +219,7 @@ onMounted(async () => {
               </li>
             </ul>
           </div>
-          <div class="mt-3">
+          <div class="d-flex justify-content-between mt-3">
             <div class="dropdown">
               <AppButton
                 class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
@@ -263,12 +271,24 @@ onMounted(async () => {
                 </li>
               </ul>
             </div>
+            <div>
+              <AppButton
+                class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
+                @click="
+                  selectMany = !selectMany;
+                  selectedAccountIds = [];
+                "
+              >
+                <i class="bi bi-check-all text-headline me-2"></i> Select many</AppButton
+              >
+            </div>
           </div>
           <hr class="separator mb-5" />
           <div class="fill-remaining pe-3">
             <template v-for="(account, index) in accounts" :key="account.accountId">
               <div class="d-flex align-items-center mt-3">
                 <div
+                  v-if="selectMany"
                   class="visible-on-hover activate-on-sibling-hover"
                   :selected="selectedAccountIds.includes(account.account_id) ? true : undefined"
                 >
@@ -345,7 +365,10 @@ onMounted(async () => {
                     @click="isUnlinkAccountModalShown = true"
                     ><span class="bi bi-trash"></span> Remove</AppButton
                   >
-                  <div v-if="!accountData.accountInfo.value?.deleted" class="border-start ps-3">
+                  <div
+                    v-if="!accountData.accountInfo.value?.deleted && !selectMany"
+                    class="border-start ps-3"
+                  >
                     <div class="dropdown">
                       <AppButton
                         class="min-w-unset"
