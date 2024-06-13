@@ -163,7 +163,7 @@ watch(
             <div v-if="contact" class="container-fluid flex-column-100 position-relative">
               <ContactDetails
                 :contact="contact"
-                :linked-accounts="linkedAccounts"
+                v-model:linked-accounts="linkedAccounts"
                 @update:remove="isDeleteContactModalShown = true"
               />
             </div>
