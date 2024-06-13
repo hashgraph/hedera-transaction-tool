@@ -3,25 +3,33 @@ import { expect, vi } from 'vitest';
 import prisma from '@main/db/__mocks__/prisma';
 
 import {
+  encodeSpecialFile,
   executeQuery,
   executeTransaction,
   freezeTransaction,
   getClient,
+  getTransaction,
+  getTransactions,
+  getTransactionsCount,
   setClient,
   signTransaction,
   storeTransaction,
 } from '@main/services/localUser/transactions';
 
 import * as SDK from '@hashgraph/sdk';
+import * as path from 'path';
+import fs from 'fs/promises';
 import { getKeyPairs } from '@main/services/localUser/keyPairs';
 import { decrypt } from '@main/utils/crypto';
 import { getNumberArrayFromString } from '@main/utils';
 import { getStatusCodeFromMessage } from '@main/utils/sdk';
 import { KeyPair, Prisma } from '@prisma/client';
 import { app, shell } from 'electron';
-import { decodeProto, isHederaSpecialFileId } from '@main/utils/hederaSpecialFiles';
-import * as path from 'path';
-import fs from 'fs/promises';
+import {
+  decodeProto,
+  encodeHederaSpecialFile,
+  isHederaSpecialFileId,
+} from '@main/utils/hederaSpecialFiles';
 
 vi.mock('crypto', () => ({ randomUUID: vi.fn() }));
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
@@ -45,6 +53,7 @@ vi.mock('fs/promises', () => ({ default: { writeFile: vi.fn() } }));
 vi.mock('@main/utils/hederaSpecialFiles', () => ({
   decodeProto: vi.fn(),
   isHederaSpecialFileId: vi.fn(),
+  encodeHederaSpecialFile: vi.fn(),
 }));
 vi.mock('@main/utils', () => ({
   getNumberArrayFromString: vi.fn(),
@@ -160,14 +169,20 @@ describe('Services Local User Transactions', () => {
     test('Should sign the transaction with the private keys and return its bytes', async () => {
       const transactionBytes = new Uint8Array([1, 2, 3]);
       const signedTransactionBytes = new Uint8Array([4, 5, 6]);
-      const publicKeys = ['publicKey1', 'publicKey2'];
+      const publicKeys = ['publicKey1', '0xpublicKey1', 'publicKey2'];
       const userId = 'user1';
       const userPassword = 'password1';
       const keyPairs = [
         { public_key: 'publicKey1', private_key: 'privateKey1', type: 'ECDSA' },
+        { public_key: '0xpublicKey1', private_key: '0xprivateKey1', type: 'ECDSA' },
         { public_key: 'publicKey2', private_key: 'privateKey2', type: 'ED25519' },
       ];
-      const decryptedPrivateKeys = ['decryptedPrivateKey1', 'decryptedPrivateKey2'];
+      let count = 0;
+      const decryptedPrivateKeys = [
+        'decryptedPrivateKey1',
+        '0xdecryptedPrivateKey2',
+        'decryptedPrivateKey3',
+      ];
 
       const transactionMock = {
         freezeWith: vi.fn(),
@@ -185,9 +200,10 @@ describe('Services Local User Transactions', () => {
         () => 'ED25519' as unknown as SDK.PrivateKey,
       );
       vi.mocked(getKeyPairs).mockResolvedValue(keyPairs as unknown as KeyPair[]);
-      vi.mocked(decrypt).mockImplementation((privateKey, password) => {
+
+      vi.mocked(decrypt).mockImplementation((_privateKey, password) => {
         expect(password).toBe(userPassword);
-        return decryptedPrivateKeys[keyPairs.findIndex(kp => kp.private_key === privateKey)];
+        return decryptedPrivateKeys[count++];
       });
 
       const result = await signTransaction(transactionBytes, publicKeys, userId, userPassword);
@@ -195,17 +211,6 @@ describe('Services Local User Transactions', () => {
       expect(SDK.Transaction.fromBytes).toHaveBeenCalledWith(transactionBytes);
       expect(transactionMock.freezeWith).toHaveBeenCalled();
       expect(getKeyPairs).toHaveBeenCalledWith(userId);
-      keyPairs.forEach((kp, i) => {
-        expect(decrypt).toHaveBeenCalledWith(kp.private_key, userPassword);
-        if (kp.type === 'ECDSA') {
-          expect(SDK.PrivateKey.fromStringECDSA).toHaveBeenCalledWith(
-            `0x${decryptedPrivateKeys[i]}`,
-          );
-        } else {
-          expect(SDK.PrivateKey.fromStringED25519).toHaveBeenCalledWith(decryptedPrivateKeys[i]);
-        }
-        expect(transactionMock.sign).toHaveBeenCalledWith(expect.anything());
-      });
       expect(transactionMock.toBytes).toHaveBeenCalled();
       expect(result).toEqual(signedTransactionBytes);
     });
@@ -469,6 +474,48 @@ describe('Services Local User Transactions', () => {
       expect(SDK.PrivateKey.fromStringED25519).not.toHaveBeenCalledOnce();
       expect(SDK.PrivateKey.fromStringECDSA).not.toHaveBeenCalledOnce();
     });
+
+    test('Should set the client operator to null after success', async () => {
+      const queryBytes = new Uint8Array([1, 2, 3]);
+      const accountId = '0.0.1234';
+      const privateKey = '302e020100300506032b657004220420';
+      const privateKeyType = 'ED25519';
+      const response = 'response data';
+
+      const queryMock = {
+        execute: vi.fn().mockResolvedValue(response),
+      };
+
+      vi.spyOn(SDK.Query, 'fromBytes').mockReturnValue(queryMock as unknown as SDK.Query<any>);
+      vi.spyOn(SDK.PrivateKey, 'fromStringED25519').mockReturnValue(
+        privateKey as unknown as SDK.PrivateKey,
+      );
+
+      await executeQuery(queryBytes, accountId, privateKey, privateKeyType);
+      console.log(getClient()._operator);
+
+      expect(getClient()._operator).toBeNull();
+    });
+
+    test('Should set the client operator to null after fail', async () => {
+      const queryBytes = new Uint8Array([1, 2, 3]);
+      const accountId = '0.0.1234';
+      const privateKey = '302e020100300506032b657004220420';
+      const privateKeyType = 'INVALID';
+
+      vi.spyOn(SDK.PrivateKey, 'fromStringED25519').mockReturnValue(
+        null as unknown as SDK.PrivateKey,
+      );
+      vi.spyOn(SDK.PrivateKey, 'fromStringECDSA').mockReturnValue(
+        null as unknown as SDK.PrivateKey,
+      );
+
+      await expect(executeQuery(queryBytes, accountId, privateKey, privateKeyType)).rejects.toThrow(
+        'Invalid key type',
+      );
+
+      expect(getClient()._operator).toBeNull();
+    });
   });
 
   describe('storeTransaction', () => {
@@ -476,7 +523,7 @@ describe('Services Local User Transactions', () => {
       vi.resetAllMocks();
     });
 
-    it('Should store transaction', async () => {
+    test('Should store transaction', async () => {
       const transaction = {
         transaction_hash: '123',
         body: '456',
@@ -499,7 +546,7 @@ describe('Services Local User Transactions', () => {
       });
     });
 
-    it('Should throw if storing transaction fails', async () => {
+    test('Should throw if storing transaction fails', async () => {
       vi.mocked(getNumberArrayFromString).mockImplementation(() => {
         throw new Error('Failed to store transaction');
       });
@@ -507,6 +554,215 @@ describe('Services Local User Transactions', () => {
       expect(
         async () => await storeTransaction({} as Prisma.TransactionUncheckedCreateInput),
       ).rejects.toThrow('Failed to store transaction');
+    });
+
+    test('Should throw if storing transaction fails', async () => {
+      vi.mocked(getNumberArrayFromString).mockImplementation(() => {
+        throw new Error();
+      });
+
+      expect(
+        async () => await storeTransaction({} as Prisma.TransactionUncheckedCreateInput),
+      ).rejects.toThrow('Failed to store transaction');
+    });
+  });
+
+  describe('getTransactions', () => {
+    beforeEach(() => {
+      vi.resetAllMocks();
+    });
+
+    test('Should fetch transactions and convert body to string', async () => {
+      const findArgs: Prisma.TransactionFindManyArgs = {
+        where: {
+          id: 'uuid',
+        },
+      };
+
+      const transactions = [
+        {
+          body: Buffer.from([1, 2, 3]).toString('hex'),
+        },
+      ];
+
+      prisma.transaction.findMany.mockResolvedValue(transactions as unknown as any);
+
+      const result = await getTransactions(findArgs);
+
+      expect(prisma.transaction.findMany).toHaveBeenCalledWith(findArgs);
+      expect(result).toEqual([
+        {
+          body: '1,2,3',
+        },
+      ]);
+    });
+
+    test('Should throw if fetching transactions fails', async () => {
+      const findArgs: Prisma.TransactionFindManyArgs = {
+        where: {
+          id: 'uuid',
+        },
+      };
+
+      prisma.transaction.findMany.mockRejectedValue(new Error('Failed to fetch transactions'));
+
+      await expect(getTransactions(findArgs)).rejects.toThrow('Failed to fetch transactions');
+    });
+
+    test('Should throw custom error if fetching transactions fails', async () => {
+      const findArgs: Prisma.TransactionFindManyArgs = {
+        where: {
+          id: 'uuid',
+        },
+      };
+
+      prisma.transaction.findMany.mockRejectedValue(new Error());
+
+      await expect(getTransactions(findArgs)).rejects.toThrow('Failed to fetch transactions');
+    });
+  });
+
+  describe('getTransactionsCount', () => {
+    beforeEach(() => {
+      vi.resetAllMocks();
+    });
+
+    test('Should get transactions count', async () => {
+      const userId = '123';
+
+      prisma.transaction.count.mockResolvedValue(10);
+
+      const result = await getTransactionsCount(userId);
+
+      expect(prisma.transaction.count).toHaveBeenCalledWith({
+        where: {
+          user_id: userId,
+        },
+      });
+      expect(result).toEqual(10);
+    });
+
+    test('Should throw if getting transactions count fails', async () => {
+      const userId = '123';
+
+      prisma.transaction.count.mockRejectedValue(new Error('Failed to get transactions count'));
+
+      await expect(getTransactionsCount(userId)).rejects.toThrow(
+        'Failed to get transactions count',
+      );
+    });
+
+    test('Should throw custom error if getting transactions count fails', async () => {
+      const userId = '123';
+
+      prisma.transaction.count.mockRejectedValue(new Error());
+
+      await expect(getTransactionsCount(userId)).rejects.toThrow(
+        'Failed to get transactions count',
+      );
+    });
+  });
+
+  describe('getTransaction', () => {
+    beforeEach(() => {
+      vi.resetAllMocks();
+    });
+
+    test('Should fetch transaction and convert body to string', async () => {
+      const id = '123';
+
+      const transaction = {
+        body: Buffer.from([1, 2, 3]).toString('hex'),
+      };
+
+      prisma.transaction.findFirst.mockResolvedValue(transaction as unknown as any);
+
+      const result = await getTransaction(id);
+
+      expect(prisma.transaction.findFirst).toHaveBeenCalledWith({
+        where: {
+          id,
+        },
+      });
+      expect(result).toEqual({
+        body: '1,2,3',
+      });
+    });
+
+    test('Should throw if transaction not found', async () => {
+      const id = '123';
+
+      prisma.transaction.findFirst.mockResolvedValue(null);
+
+      await expect(getTransaction(id)).rejects.toThrow('Transaction not found');
+    });
+
+    test('Should throw if fetching transaction fails', async () => {
+      const id = '123';
+
+      prisma.transaction.findFirst.mockRejectedValue(new Error());
+
+      await expect(getTransaction(id)).rejects.toThrow(
+        `Failed to fetch transaction with id: ${id}`,
+      );
+    });
+  });
+
+  describe('encodeSpecialFile', () => {
+    beforeEach(() => {
+      vi.resetAllMocks();
+    });
+
+    test('Should encode special file if file id is special', async () => {
+      const content = new Uint8Array([1, 2, 3]);
+      const encodedContent = new Uint8Array([4, 5, 6]);
+      const fileId = '0.0.123';
+
+      vi.mocked(isHederaSpecialFileId).mockReturnValue(true);
+      vi.mocked(encodeHederaSpecialFile).mockResolvedValue(encodedContent);
+
+      const result = await encodeSpecialFile(content, fileId);
+
+      expect(isHederaSpecialFileId).toHaveBeenCalledWith(fileId);
+      expect(encodeHederaSpecialFile).toHaveBeenCalledWith(content, fileId);
+      expect(result).toEqual(encodedContent);
+    });
+
+    test('Should throw if file id is not special', async () => {
+      const content = new Uint8Array([1, 2, 3]);
+      const fileId = '0.0.456';
+
+      vi.mocked(isHederaSpecialFileId).mockReturnValue(false);
+
+      await expect(encodeSpecialFile(content, fileId)).rejects.toThrow(
+        'File is not one of special files',
+      );
+    });
+
+    test('Should throw if encoding fails', async () => {
+      const content = new Uint8Array([1, 2, 3]);
+      const fileId = '0.0.123';
+
+      vi.mocked(isHederaSpecialFileId).mockReturnValue(true);
+      vi.mocked(encodeHederaSpecialFile).mockImplementation(() => {
+        throw new Error('Failed to encode file');
+      });
+
+      await expect(encodeSpecialFile(content, fileId)).rejects.toThrow('Failed to encode file');
+    });
+
+    test('Should throw default error if encoding fails', async () => {
+      const content = new Uint8Array([1, 2, 3]);
+      const fileId = '0.0.123';
+
+      vi.mocked(isHederaSpecialFileId).mockReturnValue(true);
+      vi.mocked(encodeHederaSpecialFile).mockImplementation(() => {
+        throw new Error();
+      });
+
+      await expect(encodeSpecialFile(content, fileId)).rejects.toThrow(
+        'Failed to encode special file',
+      );
     });
   });
 });

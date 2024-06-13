@@ -262,6 +262,6 @@ export const encodeSpecialFile = async (content: Uint8Array, fileId: string) => 
     }
   } catch (error: any) {
     console.log(error);
-    throw new Error(error.message || 'Failed to fetch transactions');
+    throw new Error(error.message || 'Failed to encode special file');
   }
 };
