@@ -143,6 +143,7 @@ export default async function initDatabase() {
     const seconds = parseInt(time.slice(12, 14), 10);
 
     const date = new Date(year, month, day, hours, minutes, seconds);
+
     return date.getTime() / 1000;
   }
 }
