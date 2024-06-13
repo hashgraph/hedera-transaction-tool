@@ -30,9 +30,6 @@ jobs:
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
 
-      - name: run hedera local
-        run: npx @hashgraph/hedera-local start -d
-
       - name: Install pnpm
         run: npm i -g pnpm node-gyp
 
@@ -82,6 +79,8 @@ jobs:
       # - name: run back-end
       #   run: docker compose up -d
       #   working-directory: back-end
+      - name: run hedera local
+        run: npx @hashgraph/hedera-local start -d
 
       - name: run automation
         env:
