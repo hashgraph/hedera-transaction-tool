@@ -145,6 +145,7 @@ export const executeQuery = async (
 
   try {
     const response = await query.execute(client);
+    client._operator = null;
 
     if (query instanceof FileContentsQuery && isHederaSpecialFileId(query.fileId?.toString())) {
       return decodeProto(query.fileId.toString() as HederaSpecialFileId, response as Uint8Array);
@@ -169,9 +170,8 @@ export const executeQuery = async (
     }
   } catch (error: any) {
     console.log(error);
-    throw new Error(error.message);
-  } finally {
     client._operator = null;
+    throw new Error(error.message);
   }
 };
 
