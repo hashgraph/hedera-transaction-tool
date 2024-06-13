@@ -159,7 +159,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
       class="col-12 mb-3"
     >
       <h4 :class="detailItemLabelClass">File ID</h4>
-      <p :class="detailItemValueClass">
+      <p :class="detailItemValueClass" data-testid="p-file-details-file-id">
         {{ transaction.fileId.toString() }}
       </p>
     </div>
@@ -199,7 +199,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
       :class="{ 'mt-3': transaction instanceof FileUpdateTransaction && transaction.fileId }"
     >
       <h4 :class="detailItemLabelClass">Key</h4>
-      <p :class="detailItemValueClass">
+      <p :class="detailItemValueClass" data-testid="p-file-details-key-text">
         <template v-if="transaction.keys">
           <span
             class="link-primary cursor-pointer"

@@ -415,7 +415,7 @@ const approve = 'Approve';
                 @click="$router.back()"
                 data-testid="button-back"
               >
-                <i class="bi bi-arrow-left-short text-main" ></i> Back</AppButton
+                <i class="bi bi-arrow-left-short text-main"></i> Back</AppButton
               >
             </div>
             <div class="flex-column-100 justify-content-center">
