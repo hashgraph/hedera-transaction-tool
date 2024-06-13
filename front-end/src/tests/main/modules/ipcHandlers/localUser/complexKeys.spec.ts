@@ -32,6 +32,16 @@ describe('IPC handlers complex keys', () => {
   const ipcMainMO = ipcMain as unknown as MockedObject<Electron.IpcMain>;
   const event: Electron.IpcMainEvent = mockDeep<Electron.IpcMainEvent>();
 
+  test('Should register handlers for each event', () => {
+    const event = ['add', 'getAll', 'getComplexKey', 'delete', 'update'];
+
+    expect(
+      event.every(util =>
+        ipcMainMO.handle.mock.calls.some(([channel]) => channel === `complexKeys:${util}`),
+      ),
+    ).toBe(true);
+  });
+
   test('Should set up add handler', async () => {
     const addHandler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'complexKeys:add');
     expect(addHandler).toBeDefined();
