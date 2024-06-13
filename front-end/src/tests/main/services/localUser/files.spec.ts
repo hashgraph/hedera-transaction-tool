@@ -45,6 +45,7 @@ describe('Services Local User Files', () => {
     metaBytes: '0x456',
     lastRefreshed: new Date(),
     description: 'A description',
+    created_at: new Date(),
   };
 
   describe('getFiles', () => {
