@@ -6,7 +6,7 @@ import {
   getComplexKey,
   deleteComplexKey,
   updateComplexKey,
-} from '@main/services/localUser';
+} from '@main/services/localUser/complexKeys';
 
 const createChannelName = (...props) => ['complexKeys', ...props].join(':');
 

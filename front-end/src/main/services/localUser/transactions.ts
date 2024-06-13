@@ -6,7 +6,7 @@ import { app, shell } from 'electron';
 import { Client, FileContentsQuery, PrivateKey, Query, Transaction } from '@hashgraph/sdk';
 
 import { Prisma } from '@prisma/client';
-import { getPrismaClient } from '@main/db';
+import { getPrismaClient } from '@main/db/prisma';
 
 import { HederaSpecialFileId } from '@main/shared/interfaces';
 
@@ -145,9 +145,10 @@ export const executeQuery = async (
 
   try {
     const response = await query.execute(client);
+    client._operator = null;
 
     if (query instanceof FileContentsQuery && isHederaSpecialFileId(query.fileId?.toString())) {
-      return decodeProto(query.fileId.toString() as HederaSpecialFileId, response);
+      return decodeProto(query.fileId.toString() as HederaSpecialFileId, response as Uint8Array);
     }
 
     if (
@@ -169,9 +170,8 @@ export const executeQuery = async (
     }
   } catch (error: any) {
     console.log(error);
-    throw new Error(error.message);
-  } finally {
     client._operator = null;
+    throw new Error(error.message);
   }
 };
 
@@ -262,6 +262,6 @@ export const encodeSpecialFile = async (content: Uint8Array, fileId: string) => 
     }
   } catch (error: any) {
     console.log(error);
-    throw new Error(error.message || 'Failed to fetch transactions');
+    throw new Error(error.message || 'Failed to encode special file');
   }
 };

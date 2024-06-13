@@ -1,5 +1,5 @@
 import { session, CookiesSetDetails } from 'electron';
-import { getPrismaClient } from '@main/db';
+import { getPrismaClient } from '@main/db/prisma';
 
 import { Organization, OrganizationCredentials } from '@prisma/client';
 import { jwtDecode } from 'jwt-decode';
@@ -42,27 +42,8 @@ export const organizationsToSignIn = async (user_id: string) => {
     const finalCredentials: typeof credentials = [];
 
     for (let i = 0; i < credentials.length; i++) {
-      const shouldSign = !credentialsValid(credentials[i]);
-      if (shouldSign) {
+      if (await organizationCredentialsInvalid(credentials[i]))
         finalCredentials.push(credentials[i]);
-        continue;
-      }
-
-      const token = await getAccessToken(credentials[i].organization.serverUrl);
-      if (!token) {
-        finalCredentials.push(credentials[i]);
-        continue;
-      }
-
-      try {
-        const decoded: any = jwtDecode(token);
-        if (decoded.exp * 1000 < Date.now()) {
-          finalCredentials.push(credentials[i]);
-        }
-      } catch (error) {
-        finalCredentials.push(credentials[i]);
-        continue;
-      }
     }
 
     return finalCredentials;
@@ -84,23 +65,7 @@ export const shouldSignInOrganization = async (user_id: string, organization_id:
       },
     });
 
-    if (!org) {
-      return true;
-    }
-
-    const shouldSign = !credentialsValid(org);
-
-    const token = await getAccessToken(org.organization.serverUrl);
-    if (!token) return true;
-
-    try {
-      const decoded: any = jwtDecode(token);
-      if (decoded.exp * 1000 < Date.now()) return true;
-    } catch (error) {
-      return true;
-    }
-
-    return shouldSign;
+    return await organizationCredentialsInvalid(org);
   } catch (error) {
     return true;
   }
@@ -318,14 +283,6 @@ export const tryAutoSignIn = async (user_id: string, decryptPassword: string) =>
   return failedLogins;
 };
 
-function credentialsValid(credentials?: OrganizationCredentials | null) {
-  if (!credentials) return false;
-
-  if (credentials.password.length === 0 || credentials.email.length === 0) return false;
-
-  return true;
-}
-
 function parseSetCookie(url: string, setCookieString: string) {
   const parts = setCookieString.split(';').map(part => part.trim());
 
@@ -352,11 +309,32 @@ function parseSetCookie(url: string, setCookieString: string) {
       cookie.expirationDate = expirationDate.getTime() / 1000;
     } else if (part.startsWith('samesite=')) {
       const value = part.split('=')[1];
-      cookie.sameSite = value === 'None' ? 'no_restriction' : 'lax';
+      cookie.sameSite = value === 'none' ? 'no_restriction' : 'lax';
     }
   });
 
   cookie.secure = cookie.sameSite === 'no_restriction';
 
   return cookie;
+}
+
+/* Validate organization credentials */
+async function organizationCredentialsInvalid(
+  org?: (OrganizationCredentials & { organization: Organization }) | null,
+) {
+  if (!org) return true;
+
+  if (org.password.length === 0 || org.email.length === 0) return true;
+
+  const token = await getAccessToken(org.organization.serverUrl);
+  if (!token) return true;
+
+  try {
+    const decoded: any = jwtDecode(token);
+    if (decoded.exp * 1000 < Date.now()) return true;
+  } catch (error) {
+    return true;
+  }
+
+  return false;
 }

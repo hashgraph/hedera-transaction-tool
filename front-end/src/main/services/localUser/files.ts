@@ -3,7 +3,7 @@ import path from 'path';
 import { app, shell } from 'electron';
 import { HederaFile, Prisma } from '@prisma/client';
 
-import { getPrismaClient } from '@main/db';
+import { getPrismaClient } from '@main/db/prisma';
 import { deleteDirectory, getNumberArrayFromString, saveContentToPath } from '@main/utils';
 
 export const getFiles = async (findArgs: Prisma.HederaFileFindManyArgs) => {
@@ -20,14 +20,20 @@ export const getFiles = async (findArgs: Prisma.HederaFileFindManyArgs) => {
 export const addFile = async (file: Prisma.HederaFileUncheckedCreateInput) => {
   const prisma = getPrismaClient();
 
-  const files = await getFiles({
+  const alreadyAddedCount = await prisma.hederaFile.count({
     where: {
       user_id: file.user_id,
+      OR: [
+        { file_id: file.file_id, network: file.network },
+        file.nickname && file.nickname.trim().length > 0
+          ? { nickname: file.nickname, network: file.network }
+          : {},
+      ],
     },
   });
 
-  if (files.some(acc => acc.file_id === file.file_id)) {
-    throw new Error('File ID already exists!');
+  if (alreadyAddedCount > 0) {
+    throw new Error('File ID or Nickname already exists!');
   }
 
   await prisma.hederaFile.create({

@@ -9,7 +9,7 @@ import {
   changeAccountNickname,
   getAccounts,
   removeAccounts,
-} from '@main/services/localUser';
+} from '@main/services/localUser/accounts';
 
 const createChannelName = (...props) => ['accounts', ...props].join(':');
 

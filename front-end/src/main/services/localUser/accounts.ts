@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 
 import { Network } from '@main/shared/enums';
 
-import { getPrismaClient } from '@main/db';
+import { getPrismaClient } from '@main/db/prisma';
 
 export const getAccounts = (findArgs: Prisma.HederaAccountFindManyArgs) => {
   const prisma = getPrismaClient();
@@ -23,17 +23,17 @@ export const addAccount = async (
 ) => {
   const prisma = getPrismaClient();
 
-  const findArgs = {
+  const alreadyAddedCount = await prisma.hederaAccount.count({
     where: {
       user_id: userId,
+      OR: [
+        { account_id: accountId, network },
+        nickname.trim().length > 0 ? { nickname: nickname, network } : {},
+      ],
     },
-  };
+  });
 
-  const accounts = await getAccounts(findArgs);
-
-  if (
-    accounts.some(acc => acc.account_id === accountId || (nickname && acc.nickname === nickname))
-  ) {
+  if (alreadyAddedCount > 0) {
     throw new Error('Account ID or Nickname already exists!');
   }
 
@@ -46,7 +46,11 @@ export const addAccount = async (
     },
   });
 
-  return await getAccounts(findArgs);
+  return await getAccounts({
+    where: {
+      user_id: userId,
+    },
+  });
 };
 
 export const removeAccounts = async (userId: string, accountIds: string[]) => {

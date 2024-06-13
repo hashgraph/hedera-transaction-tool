@@ -1,7 +1,7 @@
 import { hash } from '@main/utils/crypto';
 import { randomUUID } from 'crypto';
 
-import { getPrismaClient } from '@main/db';
+import { getPrismaClient } from '@main/db/prisma';
 import { changeDecryptionPassword } from './keyPairs';
 
 export const register = async (email: string, password: string) => {
@@ -16,7 +16,7 @@ export const register = async (email: string, password: string) => {
   });
 };
 
-export const login = async (email: string, password: string, autoRegister?: boolean) => {
+export const login = async (email: string, password: string, _autoRegister?: boolean) => {
   const prisma = getPrismaClient();
 
   const firstUser = await prisma.user.findFirst();
@@ -25,11 +25,15 @@ export const login = async (email: string, password: string, autoRegister?: bool
     throw new Error('Please register');
   }
 
-  if (autoRegister) {
-    return await register(email, password);
-  } else if (email != firstUser.email) {
+  if (email != firstUser.email) {
     throw new Error('Incorrect email');
   }
+
+  // if (autoRegister) {
+  //   return await register(email, password);
+  // } else if (email != firstUser.email) {
+  //   throw new Error('Incorrect email');
+  // }
 
   if (hash(password).toString('hex') !== firstUser.password) {
     throw new Error('Incorrect password');

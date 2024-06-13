@@ -5,17 +5,17 @@ import path from 'path';
 import electron from 'electron';
 
 import * as sqlite3 from 'better-sqlite3';
-import { PrismaClient } from '@prisma/client';
 
 import { getDatabaseLogger } from '@main/modules/logger';
 
-export const dbPath = path.join(electron.app.getPath('userData'), 'database.db');
-const migrationsPath = path.join(
-  electron.app.getAppPath(),
-  import.meta.env.DEV ? './prisma/migrations' : '../prisma/migrations',
-);
+import { dbPath, getPrismaClient } from './prisma';
 
 export default async function initDatabase() {
+  const migrationsPath = path.join(
+    electron.app.getAppPath(),
+    import.meta.env.DEV ? './prisma/migrations' : '../prisma/migrations',
+  );
+
   const databaseLogger = getDatabaseLogger();
   databaseLogger.errorHandler.startCatching();
   databaseLogger.transports.console.format = '{text}';
@@ -143,6 +143,7 @@ export default async function initDatabase() {
     const seconds = parseInt(time.slice(12, 14), 10);
 
     const date = new Date(year, month, day, hours, minutes, seconds);
+
     return date.getTime() / 1000;
   }
 }
@@ -162,25 +163,4 @@ export async function deleteDatabase() {
   databaseLogger.errorHandler.stopCatching();
 }
 
-let prisma: PrismaClient;
-
-export function getPrismaClient() {
-  if (!prisma) {
-    prisma = createPrismaClient();
-  }
-  return prisma;
-}
-
-export function setPrismaClient(prismaClient: PrismaClient) {
-  prisma = prismaClient;
-}
-
-export function createPrismaClient() {
-  return new PrismaClient({
-    datasources: {
-      db: {
-        url: `file:${dbPath}`,
-      },
-    },
-  });
-}
+export * from './prisma';
