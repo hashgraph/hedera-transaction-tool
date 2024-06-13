@@ -12,6 +12,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    concurrency:
+      group: pr-checks-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+      cancel-in-progress: true
+
     steps:
       - name: Install dependencies
         run: sudo apt-get install -y build-essential python3.10
@@ -75,9 +79,9 @@ jobs:
         run: pnpm install
         working-directory: automation
 
-      - name: run back-end
-        run: docker compose up -d
-        working-directory: back-end
+      # - name: run back-end
+      #   run: docker compose up -d
+      #   working-directory: back-end
 
       - name: run automation
         env:
