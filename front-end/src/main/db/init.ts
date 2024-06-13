@@ -10,12 +10,12 @@ import { getDatabaseLogger } from '@main/modules/logger';
 
 import { dbPath, getPrismaClient } from './prisma';
 
-const migrationsPath = path.join(
-  electron.app.getAppPath(),
-  import.meta.env.DEV ? './prisma/migrations' : '../prisma/migrations',
-);
-
 export default async function initDatabase() {
+  const migrationsPath = path.join(
+    electron.app.getAppPath(),
+    import.meta.env.DEV ? './prisma/migrations' : '../prisma/migrations',
+  );
+
   const databaseLogger = getDatabaseLogger();
   databaseLogger.errorHandler.startCatching();
   databaseLogger.transports.console.format = '{text}';
