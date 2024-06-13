@@ -45,6 +45,7 @@ describe('Services Local User Files', () => {
     metaBytes: '0x456',
     lastRefreshed: new Date(),
     description: 'A description',
+    created_at: new Date(),
   };
 
   describe('getFiles', () => {
@@ -128,6 +129,15 @@ describe('Services Local User Files', () => {
       expect(prisma.hederaFile.updateMany).toHaveBeenCalledWith({
         where: { file_id: '1', user_id: 'user1' },
         data: { ...file, user_id: 'user1' },
+      });
+    });
+
+    test('Should remove the nickname of a file', async () => {
+      await updateFile('1', 'user1', { ...file, nickname: '  ' });
+
+      expect(prisma.hederaFile.updateMany).toHaveBeenCalledWith({
+        where: { file_id: '1', user_id: 'user1' },
+        data: { ...file, nickname: null, user_id: 'user1' },
       });
     });
   });

@@ -72,7 +72,7 @@ model OrganizationCredentials {
 }
 
 model Transaction {
-  id                 String        @id @default(uuid())
+  id                 String   @id @default(uuid())
   name               String
   type               String
   description        String
@@ -85,12 +85,12 @@ model Transaction {
   signature          String
   valid_start        String
   executed_at        Int
-  created_at         DateTime      @default(now())
-  updated_at         DateTime      @updatedAt
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
   group_id           String?
   creator_public_key String?
   network            String
-  user               User          @relation(fields: [user_id], references: [id])
+  user               User     @relation(fields: [user_id], references: [id])
 }
 
 model TransactionDraft {
@@ -106,19 +106,21 @@ model TransactionDraft {
 }
 
 model HederaAccount {
-  id         String @id @default(uuid())
+  id         String   @id @default(uuid())
   user_id    String
   account_id String
-  nickname   String
-  network            String
-  user       User   @relation(fields: [user_id], references: [id])
+  nickname   String?
+  network    String
+  created_at DateTime @default(now())
+  user       User     @relation(fields: [user_id], references: [id])
 }
 
 model HederaFile {
   id            String    @id @default(uuid())
   user_id       String
   file_id       String
-  network            String
+  network       String
+  created_at    DateTime  @default(now())
   nickname      String?
   description   String?
   metaBytes     String?

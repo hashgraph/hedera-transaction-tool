@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 
 import { FileId, FileInfo } from '@hashgraph/sdk';
 
-import { HederaFile } from '@prisma/client';
+import { HederaFile, Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -123,10 +123,16 @@ const selectedFile = ref<HederaFile | null>(null);
 const isUnlinkFileModalShown = ref(false);
 const isKeyStructureModalShown = ref(false);
 const isNicknameInputShown = ref(false);
-const selectedIndexes = ref<number[]>([]);
+const selectedFileIds = ref<string[]>([]);
 const nicknameInputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const isDescriptionInputShown = ref(false);
 const descriptionInputRef = ref<HTMLTextAreaElement | null>(null);
+const sorting = ref<{
+  [key: string]: Prisma.SortOrder;
+}>({
+  created_at: 'desc',
+});
+const selectMany = ref(false);
 
 /* Computed */
 const selectedFileInfo = computed(() =>
@@ -144,22 +150,29 @@ const selectedFileIdWithChecksum = computed(
 const toast = useToast();
 
 /* Handlers */
-const handleSelectFile = (fileId: string, index: number) => {
+const handleSelectFile = (fileId: string) => {
   isNicknameInputShown.value = false;
-  selectedFile.value = files.value.find(f => f.file_id === fileId) || null;
-  selectedIndexes.value = [index];
+
+  if (selectMany.value) {
+    selectedFileIds.value = selectedFileIds.value.includes(fileId)
+      ? selectedFileIds.value.filter(f => f !== fileId)
+      : [...selectedFileIds.value, fileId];
+  } else {
+    selectedFile.value = files.value.find(f => f.file_id === fileId) || null;
+    selectedFileIds.value = [fileId];
+  }
 };
 
-const handleCheckBoxUpdate = (isChecked: boolean, index: number) => {
+const handleCheckBoxUpdate = (isChecked: boolean, fileId: string) => {
   if (isChecked) {
-    selectedIndexes.value.push(index);
+    selectedFileIds.value.push(fileId);
   } else {
-    selectedIndexes.value = selectedIndexes.value.filter(i => i !== index);
+    selectedFileIds.value = selectedFileIds.value.filter(f => f !== fileId);
 
-    if (selectedFile.value?.file_id === files.value[index].file_id) {
+    if (selectedFile.value?.file_id === fileId) {
       selectedFile.value =
-        selectedIndexes.value.length > 0
-          ? files.value[selectedIndexes.value[0]]
+        selectedFileIds.value.length > 0
+          ? files.value.find(f => f.file_id === selectedFileIds.value[0]) || null
           : files.value[0] || null;
     }
   }
@@ -175,10 +188,7 @@ const handleUnlinkFile = async () => {
   }
 
   // files.value = specialFiles.concat(await remove(user.personal.id, selectedFile.value.file_id));
-  await remove(
-    user.personal.id,
-    selectedIndexes.value.map(i => files.value[i].file_id),
-  );
+  await remove(user.personal.id, [...selectedFileIds.value]);
   await fetchFiles();
 
   resetSelectedAccount();
@@ -261,6 +271,19 @@ const handleChangeDescription = async () => {
   }
 };
 
+const handleSortFiles = async (
+  property: keyof Prisma.HederaFileOrderByWithRelationInput,
+  order: Prisma.SortOrder,
+) => {
+  if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+
+  sorting.value = {
+    [property]: order,
+  };
+
+  await fetchFiles();
+};
+
 /* Functions */
 async function fetchFiles() {
   if (!isUserLoggedIn(user.personal)) {
@@ -272,12 +295,13 @@ async function fetchFiles() {
       user_id: user.personal.id,
       network: network.network,
     },
+    orderBy: { ...sorting.value },
   });
 }
 
 function resetSelectedAccount() {
   selectedFile.value = files.value[0] || null;
-  selectedIndexes.value = [0];
+  selectedFileIds.value = selectedFile.value?.file_id ? [selectedFile.value?.file_id] : [];
 }
 
 /* Hooks */
@@ -375,18 +399,83 @@ watch(files, newFiles => {
             </ul>
           </div>
 
-          <hr class="separator my-5" />
+          <div class="d-flex justify-content-between mt-3">
+            <div class="dropdown">
+              <AppButton
+                class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
+                data-bs-toggle="dropdown"
+                ><i class="bi bi-filter text-headline me-2"></i> Sort by</AppButton
+              >
+              <ul class="dropdown-menu text-small">
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.file_id === 'asc' ? true : undefined"
+                  @click="handleSortFiles('file_id', 'asc')"
+                >
+                  File ID A-Z
+                </li>
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.account_id === 'desc' ? true : undefined"
+                  @click="handleSortFiles('file_id', 'desc')"
+                >
+                  File ID Z-A
+                </li>
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.nickname === 'asc' ? true : undefined"
+                  @click="handleSortFiles('nickname', 'asc')"
+                >
+                  Nickname A-Z
+                </li>
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.nickname === 'desc' ? true : undefined"
+                  @click="handleSortFiles('nickname', 'desc')"
+                >
+                  Nickname Z-A
+                </li>
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.created_at === 'asc' ? true : undefined"
+                  @click="handleSortFiles('created_at', 'asc')"
+                >
+                  Added At A-Z
+                </li>
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.created_at === 'desc' ? true : undefined"
+                  @click="handleSortFiles('created_at', 'desc')"
+                >
+                  Added At Z-A
+                </li>
+              </ul>
+            </div>
+            <div>
+              <AppButton
+                class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
+                @click="
+                  selectMany = !selectMany;
+                  selectedFileIds = [];
+                "
+              >
+                <i class="bi bi-check-all text-headline me-2"></i> Select many</AppButton
+              >
+            </div>
+          </div>
+          <hr class="separator mb-5" />
 
           <div class="fill-remaining pe-3">
             <template v-for="(file, index) in files" :key="file.fileId">
               <div class="d-flex align-items-center mt-3">
                 <div
+                  v-if="selectMany"
                   class="visible-on-hover activate-on-sibling-hover"
-                  :selected="selectedIndexes.includes(index) ? true : undefined"
+                  :selected="selectedFileIds.includes(file.file_id) ? true : undefined"
                 >
                   <AppCheckBox
-                    :checked="selectedIndexes.includes(index)"
-                    @update:checked="handleCheckBoxUpdate($event, index)"
+                    :checked="selectedFileIds.includes(file.file_id)"
+                    @update:checked="handleCheckBoxUpdate($event, file.file_id)"
                     :data-testid="'checkbox-multiple-file-id-' + index"
                     name="select-card"
                     class="cursor-pointer"
@@ -396,9 +485,10 @@ watch(files, newFiles => {
                   class="container-card-account activate-on-sibling-hover overflow-hidden w-100 p-4 mt-3"
                   :class="{
                     'is-selected':
-                      selectedFile?.file_id === file.file_id || selectedIndexes.includes(index),
+                      selectedFile?.file_id === file.file_id ||
+                      selectedFileIds.includes(file.file_id),
                   }"
-                  @click="handleSelectFile(file.file_id, index)"
+                  @click="handleSelectFile(file.file_id)"
                 >
                   <p class="text-small text-semi-bold overflow-hidden">{{ file.nickname }}</p>
                   <div class="d-flex justify-content-between align-items-center">
@@ -453,7 +543,7 @@ watch(files, newFiles => {
                     data-testid="button-remove-file-card"
                     ><span class="bi bi-trash"></span> Remove</AppButton
                   >
-                  <div class="border-start ps-3">
+                  <div v-if="!selectMany" class="border-start ps-3">
                     <AppButton
                       class="min-w-unset"
                       color="borderless"
@@ -468,7 +558,7 @@ watch(files, newFiles => {
                       ><span class="bi bi-arrow-repeat"></span> Update</AppButton
                     >
                   </div>
-                  <div class="border-start ps-3">
+                  <div v-if="!selectMany" class="border-start ps-3">
                     <AppButton
                       class="min-w-unset"
                       color="borderless"
@@ -483,7 +573,7 @@ watch(files, newFiles => {
                       ><span class="bi bi-plus-square-dotted"></span> Append</AppButton
                     >
                   </div>
-                  <div class="border-start ps-3">
+                  <div v-if="!selectMany" class="border-start ps-3">
                     <AppButton
                       class="min-w-unset"
                       color="borderless"
@@ -683,12 +773,12 @@ watch(files, newFiles => {
               <AppCustomIcon :name="'bin'" style="height: 160px" />
             </div>
             <h3 class="text-center text-title text-bold mt-3">
-              Unlink file{{ selectedIndexes.length > 1 ? 's' : '' }}
+              Unlink file{{ selectedFileIds.length > 1 ? 's' : '' }}
             </h3>
             <p class="text-center text-small text-secondary mt-4">
               Are you sure you want to remove
-              {{ selectedIndexes.length > 1 ? 'these' : 'this' }} File{{
-                selectedIndexes.length > 1 ? 's' : ''
+              {{ selectedFileIds.length > 1 ? 'these' : 'this' }} File{{
+                selectedFileIds.length > 1 ? 's' : ''
               }}
               from your File list?
             </p>

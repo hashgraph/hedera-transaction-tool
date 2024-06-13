@@ -37,7 +37,11 @@ export const addFile = async (file: Prisma.HederaFileUncheckedCreateInput) => {
   }
 
   await prisma.hederaFile.create({
-    data: file,
+    data: {
+      ...file,
+      id: undefined,
+      nickname: file.nickname && file.nickname.trim().length > 0 ? file.nickname : null,
+    },
   });
 
   return await getFiles({
@@ -74,6 +78,10 @@ export const updateFile = async (
     },
     data: {
       ...file,
+      nickname:
+        file.nickname && typeof file.nickname === 'string' && file.nickname.trim().length > 0
+          ? file.nickname
+          : null,
       user_id,
     },
   });

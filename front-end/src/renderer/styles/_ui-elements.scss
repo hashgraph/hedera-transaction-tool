@@ -624,9 +624,15 @@
 
   .dropdown-item {
     border-radius: $border-radius;
+    cursor: pointer;
 
-    &:hover {
+    &:hover,
+    &[selected] {
       background-color: var(--#{$prefix}container-dropdown-menu-item-hover-color);
+    }
+
+    &:not(:first-child) {
+      margin-top: $spacer * 0.25;
     }
   }
 }

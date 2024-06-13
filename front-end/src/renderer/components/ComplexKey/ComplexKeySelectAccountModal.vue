@@ -119,7 +119,9 @@ onMounted(async () => {
               >
                 <p>
                   {{ account.accountId }}
-                  <span v-if="account.nickname.length > 0">({{ account.nickname }})</span>
+                  <span v-if="account.nickname?.trim() && account.nickname.trim().length > 0"
+                    >({{ account.nickname }})</span
+                  >
                 </p>
               </AppListItem>
             </template>

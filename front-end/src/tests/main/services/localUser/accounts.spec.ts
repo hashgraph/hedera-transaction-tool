@@ -27,7 +27,14 @@ describe('Services Local User Accounts', () => {
 
     test('Should get the accounts by a find arguments', async () => {
       const records: HederaAccount[] = [
-        { id: '321', user_id: '123', account_id: '0.0.2', nickname: 'treasury', network: 'net' },
+        {
+          id: '321',
+          user_id: '123',
+          account_id: '0.0.2',
+          nickname: 'treasury',
+          network: 'net',
+          created_at: new Date(),
+        },
       ];
       prisma.hederaAccount.findMany.mockResolvedValueOnce(records);
 
@@ -58,7 +65,14 @@ describe('Services Local User Accounts', () => {
     const nickname: string = 'A Nickname';
 
     test('Should add an account with provided arguments', async () => {
-      const newUser = { id: '321', user_id: userId, account_id: accountId, nickname, network };
+      const newUser = {
+        id: '321',
+        user_id: userId,
+        account_id: accountId,
+        nickname,
+        network,
+        created_at: new Date(),
+      };
 
       prisma.hederaAccount.count.mockResolvedValueOnce(0);
       prisma.hederaAccount.findMany.mockResolvedValueOnce([newUser]);
@@ -74,7 +88,14 @@ describe('Services Local User Accounts', () => {
     });
 
     test('Should add an account with provided arguments without nickname', async () => {
-      const newUser = { id: '321', user_id: userId, account_id: accountId, nickname: '', network };
+      const newUser = {
+        id: '321',
+        user_id: userId,
+        account_id: accountId,
+        nickname: '',
+        network,
+        created_at: new Date(),
+      };
 
       prisma.hederaAccount.count.mockResolvedValueOnce(0);
       prisma.hederaAccount.findMany.mockResolvedValueOnce([newUser]);
@@ -126,6 +147,24 @@ describe('Services Local User Accounts', () => {
       await changeAccountNickname(userId, accountId, nickname);
 
       expect(prisma.hederaAccount.updateMany).toHaveBeenCalledOnce();
+    });
+
+    test('Should remove the nickname of an account', async () => {
+      const userId: string = '123';
+      const accountId: string = '0.0.2';
+      const nickname: string = '     ';
+
+      await changeAccountNickname(userId, accountId, nickname);
+
+      expect(prisma.hederaAccount.updateMany).toHaveBeenCalledWith({
+        where: {
+          user_id: userId,
+          account_id: accountId,
+        },
+        data: {
+          nickname: null,
+        },
+      });
     });
   });
 });

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
-import { HederaAccount } from '@prisma/client';
+import { HederaAccount, Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -25,14 +25,6 @@ import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 
-/* Enums */
-// enum Sorting {
-//   AccountIdAsc = 'accountIdAsc',
-//   AccountIdDesc = 'accountIdDesc',
-//   NicknameAsc = 'nicknameAsc',
-//   NicknameDesc = 'nicknameDesc',
-// }
-
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
@@ -46,8 +38,14 @@ const accounts = ref<HederaAccount[]>([]);
 const isKeyStructureModalShown = ref(false);
 const isUnlinkAccountModalShown = ref(false);
 const isNicknameInputShown = ref(false);
-const selectedIndexes = ref<number[]>([]);
+const selectedAccountIds = ref<string[]>([]);
 const nicknameInputRef = ref<InstanceType<typeof AppInput> | null>(null);
+const sorting = ref<{
+  [key: string]: Prisma.SortOrder;
+}>({
+  created_at: 'desc',
+});
+const selectMany = ref(false);
 
 /* Computed */
 const hbarDollarAmount = computed(() => {
@@ -59,22 +57,29 @@ const hbarDollarAmount = computed(() => {
 });
 
 /* Handlers */
-const handleSelectAccount = (accountId: string, index: number) => {
+const handleSelectAccount = (accountId: string) => {
   isNicknameInputShown.value = false;
-  accountData.accountId.value = accountId;
-  selectedIndexes.value = [index];
+
+  if (selectMany.value) {
+    selectedAccountIds.value = selectedAccountIds.value.includes(accountId)
+      ? selectedAccountIds.value.filter(i => i !== accountId)
+      : [...selectedAccountIds.value, accountId];
+  } else {
+    accountData.accountId.value = accountId;
+    selectedAccountIds.value = [accountId];
+  }
 };
 
-const handleCheckBoxUpdate = (isChecked: boolean, index: number) => {
+const handleCheckBoxUpdate = (isChecked: boolean, accountId: string) => {
   if (isChecked) {
-    selectedIndexes.value.push(index);
+    selectedAccountIds.value.push(accountId);
   } else {
-    selectedIndexes.value = selectedIndexes.value.filter(i => i !== index);
+    selectedAccountIds.value = selectedAccountIds.value.filter(i => i !== accountId);
 
-    if (accountData.accountId.value === accounts.value[index].account_id) {
+    if (accountData.accountId.value === accountId) {
       accountData.accountId.value =
-        selectedIndexes.value.length > 0
-          ? accounts.value[selectedIndexes.value[0]].account_id
+        selectedAccountIds.value.length > 0
+          ? selectedAccountIds.value[0]
           : accounts.value[0].account_id || '';
     }
   }
@@ -85,10 +90,7 @@ const handleUnlinkAccount = async () => {
     throw new Error('User is not logged in');
   }
 
-  await remove(
-    user.personal.id,
-    selectedIndexes.value.map(i => accounts.value[i].account_id),
-  );
+  await remove(user.personal.id, [...selectedAccountIds.value]);
   await fetchAccounts();
 
   resetSelectedAccount();
@@ -128,34 +130,18 @@ const handleChangeNickname = async () => {
   await fetchAccounts();
 };
 
-// const handleSortAccounts = (sorting: Sorting) => {
-//   switch (sorting) {
-//     case Sorting.AccountIdAsc:
-//       accounts.value = accounts.value.sort(
-//         (a, b) => Number(a.accountId.split('.')[2]) - Number(b.accountId.split('.')[2]),
-//       );
-//       break;
-//     case Sorting.AccountIdDesc:
-//       accounts.value = accounts.value.sort(
-//         (a, b) => Number(b.accountId.split('.')[2]) - Number(a.accountId.split('.')[2]),
-//       );
-//       break;
-//     case Sorting.NicknameAsc:
-//       accounts.value = accounts.value
-//         .filter(acc => acc.nickname)
-//         .sort((a, b) => a.nickname.localeCompare(b.nickname))
-//         .concat(accounts.value.filter(acc => !acc.nickname));
-//       break;
-//     case Sorting.NicknameDesc:
-//       accounts.value = accounts.value = accounts.value
-//         .filter(acc => acc.nickname)
-//         .sort((a, b) => b.nickname.localeCompare(a.nickname))
-//         .concat(accounts.value.filter(acc => !acc.nickname));
-//       break;
-//     default:
-//       break;
-//   }
-// };
+const handleSortAccounts = async (
+  property: keyof Prisma.HederaAccountOrderByWithRelationInput,
+  order: Prisma.SortOrder,
+) => {
+  if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+
+  sorting.value = {
+    [property]: order,
+  };
+
+  await fetchAccounts();
+};
 
 /* Functions */
 async function fetchAccounts() {
@@ -166,12 +152,13 @@ async function fetchAccounts() {
       user_id: user.personal.id,
       network: network.network,
     },
+    orderBy: { ...sorting.value },
   });
 }
 
 function resetSelectedAccount() {
   accountData.accountId.value = accounts.value[0]?.account_id || '';
-  selectedIndexes.value = [0];
+  selectedAccountIds.value = [accountData.accountId.value];
 }
 
 /* Hooks */
@@ -199,7 +186,7 @@ onMounted(async () => {
               data-bs-toggle="dropdown"
               >Add new</AppButton
             >
-            <ul class="dropdown-menu w-100 mt-3">
+            <ul class="dropdown-menu">
               <li
                 class="dropdown-item cursor-pointer"
                 @click="
@@ -225,40 +212,82 @@ onMounted(async () => {
               </li>
             </ul>
           </div>
-          <!-- <div class="mt-5">
-          <div class="dropdown">
-            <AppButton
-              class="w-100 d-flex text-dark-emphasis align-items-center justify-content-start border-0"
-              data-bs-toggle="dropdown"
-              ><i class="bi bi-filter text-headline me-2"></i> Sort by</AppButton
-            >
-            <ul class="dropdown-menu text-small">
-              <li class="dropdown-item" @click="handleSortAccounts(Sorting.AccountIdAsc)">
-                Account ID A-Z
-              </li>
-              <li class="dropdown-item" @click="handleSortAccounts(Sorting.AccountIdDesc)">
-                Account ID Z-A
-              </li>
-              <li class="dropdown-item" @click="handleSortAccounts(Sorting.NicknameAsc)">
-                Nickname A-Z
-              </li>
-              <li class="dropdown-item" @click="handleSortAccounts(Sorting.NicknameDesc)">
-                Nickname Z-A
-              </li>
-            </ul>
+          <div class="d-flex justify-content-between mt-3">
+            <div class="dropdown">
+              <AppButton
+                class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
+                data-bs-toggle="dropdown"
+                ><i class="bi bi-filter text-headline me-2"></i> Sort by</AppButton
+              >
+              <ul class="dropdown-menu text-small">
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.account_id === 'asc' ? true : undefined"
+                  @click="handleSortAccounts('account_id', 'asc')"
+                >
+                  Account ID A-Z
+                </li>
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.account_id === 'desc' ? true : undefined"
+                  @click="handleSortAccounts('account_id', 'desc')"
+                >
+                  Account ID Z-A
+                </li>
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.nickname === 'asc' ? true : undefined"
+                  @click="handleSortAccounts('nickname', 'asc')"
+                >
+                  Nickname A-Z
+                </li>
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.nickname === 'desc' ? true : undefined"
+                  @click="handleSortAccounts('nickname', 'desc')"
+                >
+                  Nickname Z-A
+                </li>
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.created_at === 'asc' ? true : undefined"
+                  @click="handleSortAccounts('created_at', 'asc')"
+                >
+                  Added At A-Z
+                </li>
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.created_at === 'desc' ? true : undefined"
+                  @click="handleSortAccounts('created_at', 'desc')"
+                >
+                  Added At Z-A
+                </li>
+              </ul>
+            </div>
+            <div>
+              <AppButton
+                class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
+                @click="
+                  selectMany = !selectMany;
+                  selectedAccountIds = [];
+                "
+              >
+                <i class="bi bi-check-all text-headline me-2"></i> Select many</AppButton
+              >
+            </div>
           </div>
-        </div> -->
-          <hr class="separator my-5" />
+          <hr class="separator mb-5" />
           <div class="fill-remaining pe-3">
             <template v-for="(account, index) in accounts" :key="account.accountId">
               <div class="d-flex align-items-center mt-3">
                 <div
+                  v-if="selectMany"
                   class="visible-on-hover activate-on-sibling-hover"
-                  :selected="selectedIndexes.includes(index) ? true : undefined"
+                  :selected="selectedAccountIds.includes(account.account_id) ? true : undefined"
                 >
                   <AppCheckBox
-                    :checked="selectedIndexes.includes(index)"
-                    @update:checked="handleCheckBoxUpdate($event, index)"
+                    :checked="selectedAccountIds.includes(account.account_id)"
+                    @update:checked="handleCheckBoxUpdate($event, account.account_id)"
                     name="select-card"
                     :data-testid="'checkbox-multiple-account-id-' + index"
                     class="cursor-pointer"
@@ -269,9 +298,9 @@ onMounted(async () => {
                   :class="{
                     'is-selected':
                       accountData.accountId.value === account.account_id ||
-                      selectedIndexes.includes(index),
+                      selectedAccountIds.includes(account.account_id),
                   }"
-                  @click="handleSelectAccount(account.account_id, index)"
+                  @click="handleSelectAccount(account.account_id)"
                 >
                   <p class="text-small text-semi-bold overflow-hidden">{{ account.nickname }}</p>
                   <div class="d-flex justify-content-between align-items-center">
@@ -329,7 +358,10 @@ onMounted(async () => {
                     @click="isUnlinkAccountModalShown = true"
                     ><span class="bi bi-trash"></span> Remove</AppButton
                   >
-                  <div v-if="!accountData.accountInfo.value?.deleted" class="border-start ps-3">
+                  <div
+                    v-if="!accountData.accountInfo.value?.deleted && !selectMany"
+                    class="border-start ps-3"
+                  >
                     <div class="dropdown">
                       <AppButton
                         class="min-w-unset"
@@ -598,12 +630,12 @@ onMounted(async () => {
                 <AppCustomIcon :name="'bin'" style="height: 160px" />
               </div>
               <h3 class="text-center text-title text-bold mt-3">
-                Unlink account{{ selectedIndexes.length > 1 ? 's' : '' }}
+                Unlink account{{ selectedAccountIds.length > 1 ? 's' : '' }}
               </h3>
               <p class="text-center text-small text-secondary mt-4">
                 Are you sure you want to remove
-                {{ selectedIndexes.length > 1 ? 'these' : 'this' }} Account{{
-                  selectedIndexes.length > 1 ? 's' : ''
+                {{ selectedAccountIds.length > 1 ? 'these' : 'this' }} Account{{
+                  selectedAccountIds.length > 1 ? 's' : ''
                 }}
                 from your Account list?
               </p>
