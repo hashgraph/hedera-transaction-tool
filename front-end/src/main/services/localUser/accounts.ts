@@ -42,7 +42,7 @@ export const addAccount = async (
       user_id: userId,
       account_id: accountId,
       network: network,
-      nickname: nickname,
+      nickname: nickname.trim().length > 0 ? nickname : null,
     },
   });
 
@@ -69,7 +69,7 @@ export const removeAccounts = async (userId: string, accountIds: string[]) => {
 export const changeAccountNickname = async (
   userId: string,
   accountId: string,
-  nickname: string,
+  nickname?: string,
 ) => {
   const prisma = getPrismaClient();
 
@@ -79,7 +79,7 @@ export const changeAccountNickname = async (
       account_id: accountId,
     },
     data: {
-      nickname: nickname,
+      nickname: nickname && nickname?.trim().length > 0 ? nickname : null,
     },
   });
 

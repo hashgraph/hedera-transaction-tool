@@ -74,7 +74,8 @@ watch(
       <option :value="accountId">
         {{ accountId }}
         {{
-          (linkedAccounts.find(la => la.account_id === accountId)?.nickname.trim() || '').length > 0
+          (linkedAccounts.find(la => la.account_id === accountId)?.nickname?.trim() || '').length >
+          0
             ? `(${linkedAccounts.find(la => la.account_id === accountId)?.nickname})`
             : ''
         }}
