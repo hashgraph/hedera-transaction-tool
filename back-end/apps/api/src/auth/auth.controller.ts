@@ -30,6 +30,7 @@ import {
   SignUpUserDto,
   AuthenticateWebsocketTokenDto,
 } from './dtos';
+import { UserDto } from '../users/dtos';
 
 @ApiTags('Authentication')
 @Controller('auth')
