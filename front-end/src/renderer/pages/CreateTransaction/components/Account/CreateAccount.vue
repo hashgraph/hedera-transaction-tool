@@ -170,9 +170,12 @@ const handleLoadFromDraft = async () => {
     accountData.maxAutomaticTokenAssociations =
       draftTransaction.maxAutomaticTokenAssociations.toNumber();
     initialBalance.value = draftTransaction.initialBalance || new Hbar(0);
-    accountData.stakedAccountId = draftTransaction.stakedAccountId?.toString() || '';
 
-    if (draftTransaction.stakedNodeId) {
+    if (draftTransaction.stakedAccountId) {
+      stakeType.value = 'Account';
+      accountData.stakedAccountId = draftTransaction.stakedAccountId?.toString() || '';
+    } else if (draftTransaction.stakedNodeId) {
+      stakeType.value = 'Node';
       accountData.stakedNodeId = draftTransaction.stakedNodeId.toNumber();
     }
 
@@ -251,15 +254,6 @@ watch(payerData.isValid, isValid => {
     ownerKey.value = payerData.key.value;
   }
 });
-
-watch(
-  () => accountData.acceptStakingRewards,
-  acceptStakingRewards => {
-    if (!acceptStakingRewards) {
-      stakeType.value = 'None';
-    }
-  },
-);
 
 watch([initialBalance, payerData.accountInfo], async ([balance, accountInfo]) => {
   if (
