@@ -26,12 +26,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: "npm"
+          cache-dependency-path: |
+            front-end/package-lock.json
+            automation/package-lock.json
 
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
 
-      - name: Install pnpm
-        run: npm i -g pnpm node-gyp
+      # - name: Install pnpm
+      #   run: npm i -g pnpm node-gyp
 
       # - name: prep hedera
       #   uses: actions/checkout@v4
@@ -68,12 +72,12 @@ jobs:
         run: npm run build:linux
         working-directory: front-end
 
-      - name: Copy example.env files
-        run: find apps -type f -name "example.env" -print -exec sh -c 'cp "$1" "$(dirname "$1")/.env"' _ {} \;
-        working-directory: back-end
+      # - name: Copy example.env files
+      #   run: find apps -type f -name "example.env" -print -exec sh -c 'cp "$1" "$(dirname "$1")/.env"' _ {} \;
+      #   working-directory: back-end
 
       - name: Install automation dependencies
-        run: pnpm install
+        run: npm ci
         working-directory: automation
 
       # - name: run back-end
@@ -88,7 +92,7 @@ jobs:
           PRIVATE_KEY: "0x9a07bbdbb62e24686d2a4259dc88e38438e2c7a1ba167b147ad30ac540b0a3cd"
           ENVIRONMENT: LOCALNET
 
-        run: xvfb-run -a pnpm run test
+        run: xvfb-run -a npm run test
         working-directory: automation
 
       # - name: Setup tmate session
