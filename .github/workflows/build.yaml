@@ -17,8 +17,8 @@ jobs:
       cancel-in-progress: true
 
     steps:
-      - name: Install dependencies
-        run: sudo apt-get install -y build-essential python3.10
+      # - name: Install dependencies
+      #   run: sudo apt-get install -y build-essential python3.10
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -48,14 +48,14 @@ jobs:
       #     npm run start -- -d
       #   working-directory: hedera-local-node
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install front-end dependencies
+        run: npm ci
         working-directory: front-end
 
-      - name: list npm packages
-        run: |
-          npm ls
-        working-directory: front-end
+      # - name: list npm packages
+      #   run: |
+      #     npm ls
+      #   working-directory: front-end
 
       # - name: Install protobuf
       #   run: pnpm install @hashgraph/proto
@@ -68,7 +68,7 @@ jobs:
       #   run: npm run build
       #   working-directory: front-end
 
-      - name: Build Linux
+      - name: Build Linux executable
         run: npm run build:linux
         working-directory: front-end
 
