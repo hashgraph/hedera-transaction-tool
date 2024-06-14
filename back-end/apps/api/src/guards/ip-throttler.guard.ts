@@ -8,7 +8,7 @@ export class IpThrottlerGuard extends ThrottlerGuard {
     if (!clientIp) {
       throw new HttpException('Unable to determine client IP', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    console.log('client IP', clientIp.replace(/^.*:/, ''));
+    // console.log('client IP', clientIp.replace(/^.*:/, ''));
     return clientIp;
   }
 }

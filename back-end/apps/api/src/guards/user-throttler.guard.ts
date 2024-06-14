@@ -8,7 +8,7 @@ export class UserThrottlerGuard extends ThrottlerGuard {
     if (!user) {
       throw new HttpException('No user connected.', HttpStatus.BAD_REQUEST);
     }
-    console.log('user id', user.id);
+    // console.log('user id', user.id);
     return user.id;
   }
 }
