@@ -8,7 +8,7 @@ export class EmailThrottlerGuard extends ThrottlerGuard {
     if (!email) {
       throw new HttpException('No email specified.', HttpStatus.BAD_REQUEST);
     }
-    console.log('email is', email);
+    // console.log('email is', email);
     return email;
   }
 }
