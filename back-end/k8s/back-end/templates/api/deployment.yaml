@@ -22,14 +22,6 @@ spec:
               value: '3000'
             - name: TCP_PORT
               value: '3001'
-            - name: THROTTLER_GLOBAL_TTL
-              value: '60'
-            - name: THROTTLER_GLOBAL_LIMIT
-              value: '60'
-            - name: THROTTLER_USER_TTL
-              value: '60'
-            - name: THROTTLER_USER_LIMIT
-              value: '20'
             - name: RABBITMQ_USERNAME
               value: 'tool-back-end'
             - name: RABBITMQ_PASSWORD
