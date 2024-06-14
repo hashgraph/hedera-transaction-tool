@@ -64,9 +64,9 @@ jobs:
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
 
-      - name: Build
-        run: npm run build
-        working-directory: front-end
+      # - name: Build
+      #   run: npm run build
+      #   working-directory: front-end
 
       - name: Build Linux
         run: npm run build:linux
