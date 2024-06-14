@@ -29,10 +29,18 @@ POST http://localhost:3000/auth/signout
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcxMDc3NDAzNywiZXhwIjoxNzEwODEwMDM3fQ.h_NwgTMmancbf-ifAlOtH9SuGGqf6MW4COjbryIp14s
 
 ### Update password for current user
-PATCH http://localhost:3000/auth/change-password
+PATCH http://localhost:3001/auth/change-password
 content-type: application/json
 
 {
-  "oldPassword": "1234567890",
-  "newPassword": "123456789"
+  "oldPassword": "123456789",
+  "newPassword": "1234567890"
+}
+
+### Reset password
+POST http://localhost:3001/auth/reset-password
+content-type: application/json
+
+{
+  "email": "john.ted@thing.com"
 }
