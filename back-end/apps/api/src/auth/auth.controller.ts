@@ -10,11 +10,11 @@ import { User } from '@entities';
 
 import {
   AdminGuard,
+  EmailThrottlerGuard,
   JwtAuthGuard,
   LocalAuthGuard,
   OtpJwtAuthGuard,
   OtpVerifiedAuthGuard,
-  UserThrottlerGuard,
 } from '../guards';
 
 import { GetUser } from '../decorators';
@@ -32,6 +32,7 @@ import {
   AuthenticateWebsocketTokenDto,
 } from './dtos';
 import { UserDto } from '../users/dtos';
+import { SkipThrottle } from '@nestjs/throttler';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -50,7 +51,7 @@ export class AuthController {
   })
   @Post('/signup')
   @Serialize(AuthDto)
-  @UseGuards(JwtAuthGuard, AdminGuard, UserThrottlerGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard, EmailThrottlerGuard)
   async signUp(@Body() dto: SignUpUserDto): Promise<User> {
     return this.authService.signUpByAdmin(dto);
   }
@@ -69,7 +70,7 @@ export class AuthController {
   })
   @Post('/login')
   @HttpCode(200)
-  @UseGuards(LocalAuthGuard)
+  @UseGuards(LocalAuthGuard, EmailThrottlerGuard)
   @Serialize(UserDto)
   async login(@GetUser() user: User, @Res({ passthrough: true }) response: Response) {
     await this.authService.login(user, response);
@@ -122,7 +123,7 @@ export class AuthController {
   })
   @Post('/reset-password')
   @HttpCode(200)
-  @UseGuards(UserThrottlerGuard)
+  @UseGuards(EmailThrottlerGuard)
   async createOtp(@Body() { email }: OtpLocalDto, @Res({ passthrough: true }) response: Response) {
     return this.authService.createOtp(email, response);
   }
@@ -169,6 +170,7 @@ export class AuthController {
     this.authService.clearOtpCookie(response);
   }
 
+  @SkipThrottle()
   @MessagePattern('authenticate-websocket-token')
   @Serialize(AuthDto)
   async authenticateWebsocketToken(@Payload() payload: AuthenticateWebsocketTokenDto) {

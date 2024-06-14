@@ -1,15 +1,14 @@
-import { ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 
 @Injectable()
 export class UserThrottlerGuard extends ThrottlerGuard {
-  protected generateKey(context: ExecutionContext, suffix: string, name: string): string {
-    const req = context.switchToHttp().getRequest();
-
-    if (!req.user) {
-      throw new ForbiddenException('User not found.');
+  protected getTracker(req: Record<string, any>): Promise<string> {
+    const user = req.user;
+    if (!user) {
+      throw new HttpException('No user connected.', HttpStatus.BAD_REQUEST);
     }
-
-    return super.generateKey(context, req.user.id, name);
+    console.log('user id', user.id);
+    return user.id;
   }
 }

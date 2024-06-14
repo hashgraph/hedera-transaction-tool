@@ -1,4 +1,4 @@
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { Module } from '@nestjs/common';
 
 import * as Joi from 'joi';
@@ -10,8 +10,9 @@ import { TransactionsModule } from './transactions/transactions.module';
 import { UserKeysModule } from './user-keys/user-keys.module';
 import { UsersModule } from './users/users.module';
 import { HealthModule } from '@app/common/health';
-import { seconds, ThrottlerModule } from '@nestjs/throttler';
-import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
+import { APP_GUARD } from '@nestjs/core';
+import { EmailThrottlerModule, IpThrottlerModule } from './modules';
+import { IpThrottlerGuard } from './guards';
 
 @Module({
   imports: [
@@ -23,10 +24,6 @@ import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
       validationSchema: Joi.object({
         HTTP_PORT: Joi.number().required(),
         TCP_PORT: Joi.number().required(),
-        THROTTLER_GLOBAL_TTL: Joi.number().required(),
-        THROTTLER_GLOBAL_LIMIT: Joi.number().required(),
-        THROTTLER_USER_TTL: Joi.number().required(),
-        THROTTLER_USER_LIMIT: Joi.number().required(),
         POSTGRES_HOST: Joi.string().required(),
         POSTGRES_PORT: Joi.number().required(),
         POSTGRES_DATABASE: Joi.string().required(),
@@ -41,33 +38,20 @@ import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
         REDIS_URL: Joi.string().required(),
       }),
     }),
-    ThrottlerModule.forRootAsync({
-      imports: [],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) =>
-        ({
-          storage:
-            new ThrottlerStorageRedisService(configService.getOrThrow('REDIS_URL')),
-          throttlers: [
-            {
-              name: 'global',
-              ttl: seconds(configService.getOrThrow('THROTTLER_GLOBAL_TTL')),
-              limit: configService.getOrThrow('THROTTLER_GLOBAL_LIMIT'),
-            },
-            {
-              name: 'user',
-              ttl: seconds(configService.getOrThrow('THROTTLER_USER_TTL')),
-              limit: configService.getOrThrow('THROTTLER_USER_LIMIT'),
-            },
-          ]
-        }),
-    }),
     UsersModule,
     UserKeysModule,
     AuthModule,
     TransactionsModule,
     NotificationsProxyModule,
     HealthModule,
+    IpThrottlerModule,
+    EmailThrottlerModule,
   ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: IpThrottlerGuard,
+    },
+  ]
 })
 export class ApiModule {}
