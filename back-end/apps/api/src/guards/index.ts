@@ -5,4 +5,5 @@ export * from './otp-jwt-auth.guard';
 export * from './otp-verified-auth.guard';
 export * from './verified-user.guard';
 export * from './has-key.guard';
-export * from './user-throttler.guard';
+export * from './ip-throttler.guard';
+export * from './email-throttler.guard';

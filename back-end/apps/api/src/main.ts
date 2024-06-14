@@ -4,7 +4,7 @@ import * as path from 'path';
 import { NestFactory } from '@nestjs/core';
 import { Transport } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
-import { INestApplication, NestApplicationOptions, ValidationPipe } from '@nestjs/common';
+import { NestApplicationOptions, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { Logger } from 'nestjs-pino';
@@ -15,12 +15,15 @@ import * as cookieParser from 'cookie-parser';
 import { API_SERVICE } from '@app/common';
 
 import { version } from '../package.json';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  let app: INestApplication;
+  let app: NestExpressApplication;
 
   if (process.env.NODE_ENV === 'production') {
     app = await NestFactory.create(ApiModule);
+
+    app.enable('trust proxy');
   } else {
     const options: NestApplicationOptions = {};
     try {
