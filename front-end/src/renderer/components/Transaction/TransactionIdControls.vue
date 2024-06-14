@@ -57,6 +57,10 @@ const loadFromDraft = async (id: string) => {
       account.accountId.value = transactionId.accountId.toString();
       emit('update:payerId', transactionId.accountId.toString());
     }
+
+    if (transactionId.validStart) {
+      emit('update:validStart', transactionId.validStart.toDate());
+    }
   }
 
   if (draftTransaction.maxTransactionFee) {
