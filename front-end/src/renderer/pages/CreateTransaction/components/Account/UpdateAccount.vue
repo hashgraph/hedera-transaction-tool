@@ -165,10 +165,12 @@ const handleLoadFromDraft = async () => {
     }
 
     if (draftTransaction.stakedAccountId?.toString() !== '0.0.0') {
+      stakeType.value = 'Account';
       newAccountData.stakedAccountId = draftTransaction.stakedAccountId?.toString() || '';
     }
 
     if (draftTransaction.stakedNodeId && draftTransaction.stakedNodeId >= 0) {
+      stakeType.value = 'Node';
       newAccountData.stakedNodeId = draftTransaction.stakedNodeId.toNumber() || '';
     }
   }
@@ -275,15 +277,6 @@ watch(
   id => {
     if (isAccountId(id) && id !== '0') {
       newAccountData.stakedAccountId = AccountId.fromString(id).toString();
-    }
-  },
-);
-
-watch(
-  () => newAccountData.acceptStakingRewards,
-  acceptStakingRewards => {
-    if (!acceptStakingRewards) {
-      stakeType.value = 'None';
     }
   },
 );
