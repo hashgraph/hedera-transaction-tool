@@ -15,7 +15,12 @@ import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 import { remove } from '@renderer/services/accountsService';
 
-import { getTransactionFromBytes, isAccountId, getPropagationButtonLabel } from '@renderer/utils';
+import {
+  getTransactionFromBytes,
+  isAccountId,
+  getPropagationButtonLabel,
+  formatAccountId,
+} from '@renderer/utils';
 import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -253,7 +258,7 @@ const columnClass = 'col-4 col-xxxl-3';
             >
             <AppInput
               :model-value="accountData.accountIdFormatted.value"
-              @update:model-value="v => (accountData.accountId.value = v)"
+              @update:model-value="v => (accountData.accountId.value = formatAccountId(v))"
               :filled="true"
               data-testid="input-delete-account-id"
               placeholder="Enter Account ID"
@@ -294,7 +299,7 @@ const columnClass = 'col-4 col-xxxl-3';
             >
             <AppInput
               :model-value="transferAccountData.accountIdFormatted.value"
-              @update:model-value="v => (transferAccountData.accountId.value = v)"
+              @update:model-value="v => (transferAccountData.accountId.value = formatAccountId(v))"
               :filled="true"
               data-testid="input-transfer-account-id"
               placeholder="Enter Account ID"

@@ -27,6 +27,7 @@ import {
   getTransactionFromBytes,
   getPropagationButtonLabel,
   isAccountId,
+  formatAccountId,
 } from '@renderer/utils';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
@@ -351,7 +352,7 @@ const columnClass = 'col-4 col-xxxl-3';
             <label class="form-label">Account ID <span class="text-danger">*</span></label>
             <AppInput
               :model-value="accountData.accountIdFormatted.value"
-              @update:model-value="v => (accountData.accountId.value = v.trim())"
+              @update:model-value="v => (accountData.accountId.value = formatAccountId(v))"
               :filled="true"
               data-testid="input-account-id-for-update"
               placeholder="Enter Account ID"
@@ -402,7 +403,8 @@ const columnClass = 'col-4 col-xxxl-3';
             <template v-if="stakeType === 'Account'">
               <label class="form-label">Account ID <span class="text-danger">*</span></label>
               <AppInput
-                v-model="newAccountData.stakedAccountId"
+                :model-value="newAccountData.stakedAccountId"
+                @update:model-value="v => (newAccountData.stakedAccountId = formatAccountId(v))"
                 :filled="true"
                 placeholder="Enter Account ID"
               />

@@ -11,7 +11,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
-import { getTransactionFromBytes, stringifyHbar } from '@renderer/utils';
+import { formatAccountId, getTransactionFromBytes, stringifyHbar } from '@renderer/utils';
 import { flattenAccountIds } from '@renderer/utils/userStoreHelpers';
 
 import DatePicker, { DatePickerInstance } from '@vuepic/vue-datepicker';
@@ -45,9 +45,14 @@ const datePicker = ref<DatePickerInstance>(null);
 const accoundIds = computed<string[]>(() => flattenAccountIds(user.publicKeyToAccounts));
 
 /* Handlers */
-const handlePayerChange = payerId => {
+const handlePayerSelect = payerId => {
   account.accountId.value = payerId;
   emit('update:payerId', payerId || '');
+};
+
+const handlePayerChange = payerId => {
+  emit('update:payerId', formatAccountId(payerId));
+  account.accountId.value = formatAccountId(payerId);
 };
 
 /* Functions */
@@ -100,7 +105,7 @@ const columnClass = 'col-4 col-xxxl-3';
       <template v-if="!user.selectedOrganization">
         <AccountIdsSelect
           :account-id="payerId || ''"
-          @update:account-id="handlePayerChange"
+          @update:account-id="handlePayerSelect"
           :select-default="true"
         />
       </template>
@@ -108,12 +113,7 @@ const columnClass = 'col-4 col-xxxl-3';
         <div class="position-relative">
           <AppAutoComplete
             :model-value="account.isValid.value ? account.accountIdFormatted.value : payerId"
-            @update:model-value="
-              v => {
-                $emit('update:payerId', v);
-                account.accountId.value = v;
-              }
-            "
+            @update:model-value="handlePayerChange"
             :filled="true"
             :items="accoundIds"
             placeholder="Enter Payer ID"

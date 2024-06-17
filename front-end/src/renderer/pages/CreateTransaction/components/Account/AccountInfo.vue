@@ -6,7 +6,7 @@ import { Hbar } from '@hashgraph/sdk';
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import { stringifyHbar } from '@renderer/utils';
+import { stringifyHbar, formatAccountId } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -46,7 +46,7 @@ const columnClass = 'col-4 col-xxxl-3';
       <label class="form-label">Account ID <span class="text-danger">*</span></label>
       <AppInput
         :model-value="accountData.accountIdFormatted.value"
-        @update:model-value="v => (accountData.accountId.value = v)"
+        @update:model-value="v => (accountData.accountId.value = formatAccountId(v))"
         :filled="true"
         placeholder="Enter Account ID"
       />

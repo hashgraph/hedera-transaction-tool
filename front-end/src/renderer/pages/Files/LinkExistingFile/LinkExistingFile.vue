@@ -12,7 +12,7 @@ import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import { add } from '@renderer/services/filesService';
 
-import { isAccountId, isFileId } from '@renderer/utils/validator';
+import { isAccountId, isFileId, formatAccountId } from '@renderer/utils';
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -75,7 +75,8 @@ const handleLinkFile = async e => {
       <div class="form-group">
         <label class="form-label">Hedera File ID <span class="text-danger">*</span></label>
         <AppInput
-          v-model="fileId"
+          :model-value="fileId"
+          @update:model-value="fileId = formatAccountId($event)"
           :filled="true"
           data-bs-toggle="tooltip"
           data-bs-placement="right"

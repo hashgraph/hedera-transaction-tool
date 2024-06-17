@@ -26,7 +26,7 @@ import { add } from '@renderer/services/accountsService';
 import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
-import { isAccountId } from '@renderer/utils/validator';
+import { isAccountId, formatAccountId } from '@renderer/utils';
 import {
   getEntityIdFromTransactionReceipt,
   getTransactionFromBytes,
@@ -390,7 +390,8 @@ const columnClass = 'col-4 col-xxxl-3';
               <label class="form-label">Account ID <span class="text-danger">*</span></label>
               <AppInput
                 data-testid="input-stake-accountid"
-                v-model="accountData.stakedAccountId"
+                :model-value="accountData.stakedAccountId"
+                @update:model-value="v => (accountData.stakedAccountId = formatAccountId(v))"
                 :filled="true"
                 placeholder="Enter Account ID"
               />

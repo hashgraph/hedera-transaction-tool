@@ -26,6 +26,7 @@ import {
   isAccountId,
   getTransactionFromBytes,
   getPropagationButtonLabel,
+  formatAccountId,
 } from '@renderer/utils';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
@@ -242,7 +243,7 @@ const columnClass = 'col-4 col-xxxl-3';
 
             <AppInput
               :model-value="ownerData.accountIdFormatted.value"
-              @update:model-value="v => (ownerData.accountId.value = v)"
+              @update:model-value="v => (ownerData.accountId.value = formatAccountId(v))"
               :filled="true"
               data-testid="input-owner-account"
               placeholder="Enter Owner ID"
@@ -271,7 +272,7 @@ const columnClass = 'col-4 col-xxxl-3';
             >
             <AppInput
               :model-value="spenderData.accountIdFormatted.value"
-              @update:model-value="v => (spenderData.accountId.value = v)"
+              @update:model-value="v => (spenderData.accountId.value = formatAccountId(v))"
               :filled="true"
               data-testid="input-spender-account"
               placeholder="Enter Spender ID"
