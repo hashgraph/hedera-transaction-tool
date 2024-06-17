@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRoute } from 'vue-router';
+
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { getDraft } from '@renderer/services/transactionDraftsService';
@@ -13,7 +14,8 @@ import { getDraft } from '@renderer/services/transactionDraftsService';
 import { getTransactionFromBytes, stringifyHbar } from '@renderer/utils';
 import { flattenAccountIds } from '@renderer/utils/userStoreHelpers';
 
-import DatePicker from '@vuepic/vue-datepicker';
+import DatePicker, { DatePickerInstance } from '@vuepic/vue-datepicker';
+
 import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
@@ -35,6 +37,9 @@ const user = useUserStore();
 /* Composables */
 const route = useRoute();
 const account = useAccountId();
+
+/* State */
+const datePicker = ref<DatePickerInstance>(null);
 
 /* Computed */
 const accoundIds = computed<string[]>(() => flattenAccountIds(user.publicKeyToAccounts));
@@ -117,8 +122,11 @@ const columnClass = 'col-4 col-xxxl-3';
       </template>
     </div>
     <div class="form-group" :class="[columnClass]">
-      <label class="form-label">Valid Start Time</label>
+      <label class="form-label"
+        >Valid Start <span class="text-muted text-italic">- Local time</span></label
+      >
       <DatePicker
+        ref="datePicker"
         :model-value="validStart"
         @update:model-value="v => $emit('update:validStart', v)"
         :clearable="false"
@@ -127,6 +135,7 @@ const columnClass = 'col-4 col-xxxl-3';
           keepActionRow: true,
         }"
         :min-date="new Date()"
+        :teleport="true"
         class="is-fill"
         menu-class-name="is-fill"
         calendar-class-name="is-fill"
@@ -134,15 +143,23 @@ const columnClass = 'col-4 col-xxxl-3';
         calendar-cell-class-name="is-fill"
       >
         <template #action-row>
-          <div class="d-grid w-100">
+          <div class="d-flex justify-content-end gap-4 w-100">
             <AppButton
-              color="secondary"
+              class="min-w-unset"
               size="small"
               type="button"
               @click="$emit('update:validStart', new Date())"
             >
               Now
             </AppButton>
+            <AppButton
+              class="min-w-unset"
+              color="secondary"
+              size="small"
+              type="button"
+              @click="datePicker?.closeMenu()"
+              >Close</AppButton
+            >
           </div>
         </template>
       </DatePicker>

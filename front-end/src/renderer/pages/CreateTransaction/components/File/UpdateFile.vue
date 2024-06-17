@@ -24,7 +24,7 @@ import {
   getMaximumExpirationTime,
 } from '@renderer/utils/sdk';
 
-import DatePicker from '@vuepic/vue-datepicker';
+import DatePicker, { DatePickerInstance } from '@vuepic/vue-datepicker';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import KeyField from '@renderer/components/KeyField.vue';
@@ -44,6 +44,7 @@ const router = useRouter();
 
 /* State */
 const transactionProcessor = ref<typeof FileTransactionProcessor | null>(null);
+const datePicker = ref<DatePickerInstance>(null);
 
 const transaction = ref<Transaction | null>(null);
 const validStart = ref(new Date());
@@ -360,16 +361,17 @@ const columnClass = 'col-4 col-xxxl-3';
 
         <div class="row mt-6">
           <div class="form-group col-4 col-xxxl-3">
-            <label class="form-label">Expiration Time</label>
+            <label class="form-label"
+              >Expiration <span class="text-muted text-italic">- Local time</span></label
+            >
             <DatePicker
+              ref="datePicker"
               v-model="expirationTimestamp"
               placeholder="Select Expiration Time"
               :clearable="false"
               :auto-apply="true"
               :config="{
-                keepActionRow:
-                  new Date() >= getMinimumExpirationTime() &&
-                  new Date() <= getMaximumExpirationTime(),
+                keepActionRow: true,
               }"
               :teleport="true"
               :min-date="getMinimumExpirationTime()"
@@ -380,22 +382,28 @@ const columnClass = 'col-4 col-xxxl-3';
               input-class-name="is-fill"
               calendar-cell-class-name="is-fill"
             >
-              <template
-                v-if="
-                  new Date() >= getMinimumExpirationTime() &&
-                  new Date() <= getMaximumExpirationTime()
-                "
-                #action-row
-              >
-                <div class="d-grid w-100">
+              <template #action-row>
+                <div class="d-flex justify-content-end gap-4 w-100">
                   <AppButton
-                    color="secondary"
+                    v-if="
+                      new Date() >= getMinimumExpirationTime() &&
+                      new Date() <= getMaximumExpirationTime()
+                    "
+                    class="min-w-unset"
                     size="small"
                     type="button"
                     @click="$emit('update:validStart', new Date())"
                   >
                     Now
                   </AppButton>
+                  <AppButton
+                    class="min-w-unset"
+                    color="secondary"
+                    size="small"
+                    type="button"
+                    @click="datePicker?.closeMenu()"
+                    >Close</AppButton
+                  >
                 </div>
               </template>
             </DatePicker>
