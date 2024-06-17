@@ -18,8 +18,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # - name: Install dependencies
-      #   run: sudo apt-get install -y build-essential python3.10
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -31,42 +29,9 @@ jobs:
           cache-dependency-path: |
             front-end/package-lock.json
 
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
-
-      # - name: Install pnpm
-      #   run: npm i -g pnpm node-gyp
-
-      # - name: prep hedera
-      #   uses: actions/checkout@v4
-      #   with:
-      #     repository: hashgraph/hedera-local-node
-      #     path: hedera-local-node
-      # - name: run hedera
-      #   run: |
-      #     npm i
-      #     npm run start -- -d
-      #   working-directory: hedera-local-node
-
       - name: Install front-end dependencies
         run: npm ci
         working-directory: front-end
-
-      # - name: list npm packages
-      #   run: |
-      #     npm ls
-      #   working-directory: front-end
-
-      # - name: Install protobuf
-      #   run: pnpm install @hashgraph/proto
-      #   working-directory: front-end
-
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
-
-      # - name: Build
-      #   run: npm run build
-      #   working-directory: front-end
 
       - name: Build Linux executable
         run: npm run build:linux
@@ -91,9 +56,6 @@ jobs:
           - TransactionTests
           - WorkflowTests
     steps:
-      # - name: Copy example.env files
-      #   run: find apps -type f -name "example.env" -print -exec sh -c 'cp "$1" "$(dirname "$1")/.env"' _ {} \;
-      #   working-directory: back-end
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -112,9 +74,6 @@ jobs:
       - name: Install hedera globally
         run: npm i -g @hashgraph/hedera-local
 
-      # - name: run back-end
-      #   run: docker compose up -d
-      #   working-directory: back-end
       - name: run hedera local
         run: hedera start -d
 
@@ -133,6 +92,3 @@ jobs:
 
         run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite }}
         working-directory: automation
-
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
