@@ -409,6 +409,7 @@ onMounted(async () => {
             v-model="transactionMemo"
             :filled="true"
             maxlength="100"
+            data-testid="input-transaction-memo-for-transfer-tokens"
             placeholder="Enter Transaction Memo"
           />
         </div>
@@ -490,13 +491,19 @@ onMounted(async () => {
                           <p v-if="debit.isApproved" class="text-small text-semi-bold me-2">
                             Approved
                           </p>
-                          <p class="text-secondary text-small overflow-hidden">
+                          <p
+                            class="text-secondary text-small overflow-hidden"
+                            data-testid="p-debit-account"
+                          >
                             {{ debit.accountId }}
                           </p>
                         </template>
                       </div>
                       <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
-                        <p class="text-secondary text-small text-bold overflow-hidden">
+                        <p
+                          class="text-secondary text-small text-bold overflow-hidden"
+                          data-testid="p-debit-amount"
+                        >
                           {{ stringifyHbar(debit.amount as Hbar) }}
                         </p>
                       </div>
@@ -540,7 +547,10 @@ onMounted(async () => {
                           </div>
                         </template>
                         <template v-else>
-                          <p class="text-secondary text-small overflow-hidden">
+                          <p
+                            class="text-secondary text-small overflow-hidden"
+                            data-testid="p-credit-account"
+                          >
                             {{ credit.accountId }}
                           </p>
                         </template>

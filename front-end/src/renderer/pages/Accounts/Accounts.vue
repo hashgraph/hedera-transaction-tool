@@ -267,6 +267,7 @@ onMounted(async () => {
             <div>
               <AppButton
                 class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
+                data-testid="button-select-many-accounts"
                 @click="
                   selectMany = !selectMany;
                   selectedAccountIds = [];
