@@ -30,7 +30,7 @@ import {
   storeTransaction,
   signTransaction,
 } from '@renderer/services/transactionService';
-import { openExternal } from '@renderer/services/electronUtilsService';
+// import { openExternal } from '@renderer/services/electronUtilsService';
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 import { getDraft, deleteDraft } from '@renderer/services/transactionDraftsService';
 import { flattenKeyList } from '@renderer/services/keyPairService';
@@ -750,7 +750,7 @@ defineExpose({
       </div>
     </AppModal>
     <!-- Executed modal -->
-    <AppModal
+    <!-- <AppModal
       class="transaction-success-modal"
       v-model:show="isExecutedModalShown"
       :close-on-click-outside="false"
@@ -797,6 +797,6 @@ defineExpose({
           >
         </div>
       </div>
-    </AppModal>
+    </AppModal> -->
   </div>
 </template>
