@@ -139,7 +139,7 @@ watch(
             <template v-else-if="contactList.length > 0">
               <template v-for="c in contactList" :key="c.user.id">
                 <div
-                  class="container-card-account overflow-hidden p-4 mt-3"
+                  class="container-multiple-select overflow-hidden p-4 mt-3"
                   :class="{
                     'is-selected': c.user.id === selectedId,
                   }"

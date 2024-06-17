@@ -482,7 +482,7 @@ watch(files, newFiles => {
                   />
                 </div>
                 <div
-                  class="container-card-account activate-on-sibling-hover overflow-hidden w-100 p-4 mt-3"
+                  class="container-multiple-select activate-on-sibling-hover overflow-hidden w-100 p-4 mt-3"
                   :class="{
                     'is-selected':
                       selectedFile?.file_id === file.file_id ||

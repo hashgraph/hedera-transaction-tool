@@ -294,7 +294,7 @@ onMounted(async () => {
                   />
                 </div>
                 <div
-                  class="container-card-account activate-on-sibling-hover overflow-hidden w-100 p-4"
+                  class="container-multiple-select activate-on-sibling-hover overflow-hidden w-100 p-4"
                   :class="{
                     'is-selected':
                       accountData.accountId.value === account.account_id ||
