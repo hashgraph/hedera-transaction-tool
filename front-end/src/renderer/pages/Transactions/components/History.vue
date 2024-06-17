@@ -29,6 +29,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
+import TransactionFilterDropDown from '@renderer/components/TransactionFilterDropDown.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -60,6 +61,13 @@ const orgSort = reactive<{
   field: 'createdAt',
   direction: 'desc',
 });
+const orgFilter = ref<
+  {
+    property: keyof ITransaction;
+    rule: string;
+    value: string;
+  }[]
+>([{ property: 'network', rule: 'eq', value: network.network }]);
 const totalItems = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
@@ -126,9 +134,9 @@ async function fetchTransactions() {
 
       const { totalItems: totalItemsCount, items: rawTransactions } = await getHistoryTransactions(
         user.selectedOrganization.serverUrl,
-        network.network,
         currentPage.value,
         pageSize.value,
+        orgFilter.value,
         [{ property: orgSort.field, direction: orgSort.direction }],
       );
       totalItems.value = totalItemsCount;
@@ -168,10 +176,23 @@ watch(
     });
   },
 );
+
+watch(orgFilter, async () => {
+  await fetchTransactions();
+});
 </script>
 
 <template>
   <div class="fill-remaining overflow-x-auto">
+    <div v-if="isLoggedInOrganization(user.selectedOrganization)">
+      <TransactionFilterDropDown
+        v-model:filter="orgFilter"
+        toggler-class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
+        :history="true"
+      >
+        <i class="bi bi-filter text-headline me-2"></i> Filter by
+      </TransactionFilterDropDown>
+    </div>
     <template v-if="isLoading">
       <AppLoader />
     </template>
