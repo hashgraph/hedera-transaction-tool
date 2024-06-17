@@ -203,7 +203,7 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
               nav-item-button-class="justify-content-center"
             ></AppTabs>
           </div>
-          <div v-if="show" class="h-100 overflow-auto">
+          <div v-if="show" class="h-100 overflow-auto mt-6">
             <Transition name="fade" :mode="'out-in'">
               <div v-if="!summaryMode && activeTabTitle === complexApproverTitle">
                 <ApproverStructureEdit

@@ -41,7 +41,7 @@ defineEmits(['update:active-index']);
         </AppButton>
       </li>
     </ul>
-    <div class="mt-6" :class="contentContainerClass">
+    <div :class="contentContainerClass">
       <slot :name="items[activeIndex].title"></slot>
     </div>
   </div>

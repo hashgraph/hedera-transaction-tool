@@ -87,7 +87,9 @@ watch(router.currentRoute, newRoute => {
           class="flex-column-100"
         >
           <template #[activeTabTitle]>
-            <RouterView />
+            <div class="mt-6">
+              <RouterView />
+            </div>
           </template>
         </AppTabs>
       </div>

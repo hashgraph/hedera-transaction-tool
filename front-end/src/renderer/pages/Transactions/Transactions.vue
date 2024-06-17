@@ -88,7 +88,9 @@ watch(
     </div>
 
     <div class="position-relative flex-column-100 overflow-hidden mt-4">
-      <AppTabs :items="tabItems" v-model:active-index="activeTabIndex"></AppTabs>
+      <div class="mb-3">
+        <AppTabs :items="tabItems" v-model:active-index="activeTabIndex"></AppTabs>
+      </div>
       <template v-if="activeTabTitle === 'Ready for Review'"><ReadyForReview /></template>
       <template v-if="activeTabTitle === 'Ready to Sign'"> <ReadyToSign /> </template>
       <template v-if="activeTabTitle === 'In Progress'"><InProgress /></template>

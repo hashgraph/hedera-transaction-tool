@@ -110,7 +110,7 @@ watch(activeTabTitle, newTitle => {
       nav-item-class="flex-1"
       nav-item-button-class="justify-content-center"
     ></AppTabs>
-    <div class="fill-remaining overflow-x-auto">
+    <div class="fill-remaining overflow-x-auto mt-6">
       <template v-if="activeTabTitle === createNewTitle">
         <Generate :handle-next="handleNext" />
       </template>
