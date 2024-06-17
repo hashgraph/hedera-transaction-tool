@@ -2,10 +2,10 @@
 import { ITransaction } from '@main/shared/interfaces';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import StatusField from '@renderer/components/Filter/StatusField.vue';
+import FilterFields from '@renderer/components/Filter/FilterFields.vue';
 
 /* Props */
-const props = defineProps<{
+defineProps<{
   filters: {
     property: keyof ITransaction;
     rule: string;
@@ -17,19 +17,7 @@ const props = defineProps<{
 }>();
 
 /* Emits */
-const emit = defineEmits(['update:filters']);
-
-/* Handlers */
-const handleStatusUpdate = (
-  filter: { property: 'status'; rule: string; value: string[] } | null,
-) => {
-  emit(
-    'update:filters',
-    filter
-      ? [...props.filters.filter(f => f.property !== 'status'), filter]
-      : props.filters.filter(f => f.property !== 'status'),
-  );
-};
+defineEmits(['update:filters']);
 </script>
 <template>
   <div class="dropdown">
@@ -42,13 +30,13 @@ const handleStatusUpdate = (
       <slot></slot>
     </AppButton>
     <ul class="dropdown-menu text-small p-5">
-      <div v-if="!hide?.includes('status')">
-        <StatusField
-          :filter="filters.find(f => f.property === 'status') || null"
-          @update:filter="handleStatusUpdate"
-          :history="history"
-        />
-      </div>
+      <FilterFields
+        :filters="filters"
+        @update:filters="$emit('update:filters', $event)"
+        :inline="false"
+        :history="history"
+        :hide="hide"
+      />
     </ul>
   </div>
 </template>

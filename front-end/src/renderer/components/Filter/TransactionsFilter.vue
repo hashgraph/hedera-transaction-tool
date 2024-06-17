@@ -2,10 +2,10 @@
 import { ITransaction } from '@main/shared/interfaces';
 
 import TransactionsFilterDropDown from '@renderer/components/Filter/TransactionsFilterDropDown.vue';
-import StatusField from '@renderer/components/Filter/StatusField.vue';
+import FilterFields from '@renderer/components/Filter/FilterFields.vue';
 
 /* Props */
-const props = defineProps<{
+defineProps<{
   filters: {
     property: keyof ITransaction;
     rule: string;
@@ -18,31 +18,18 @@ const props = defineProps<{
 }>();
 
 /* Emits */
-const emit = defineEmits(['update:filters']);
-
-/* Handlers */
-const handleStatusUpdate = (
-  filter: { property: 'status'; rule: string; value: string[] } | null,
-) => {
-  emit(
-    'update:filters',
-    filter
-      ? [...props.filters.filter(f => f.property !== 'status'), filter]
-      : props.filters.filter(f => f.property !== 'status'),
-  );
-};
+defineEmits(['update:filters']);
 </script>
 <template>
   <template v-if="inline">
-    <div class="row flex-wrap text-small">
-      <div v-if="!hide?.includes('status')" class="col-3">
-        <StatusField
-          :filter="filters.find(f => f.property === 'status') || null"
-          @update:filter="handleStatusUpdate"
-          :inline="true"
-          :history="history"
-        />
-      </div>
+    <div class="d-flex flex-wrap gap-4 text-small">
+      <FilterFields
+        :filters="filters"
+        @update:filters="$emit('update:filters', $event)"
+        :inline="true"
+        :history="history"
+        :hide="hide"
+      />
     </div>
   </template>
   <template v-else>
