@@ -274,7 +274,10 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
           class="row align-items-end mt-6"
         >
           <div class="form-group" :class="[columnClass]">
-            <label class="form-label">Start Time<span class="text-danger">*</span></label>
+            <label class="form-label"
+              >Start <span class="text-muted text-italic">- Local time</span
+              ><span class="text-danger">*</span></label
+            >
             <DatePicker
               :model-value="startTimestamp"
               @update:model-value="v => (startTimestamp = v)"

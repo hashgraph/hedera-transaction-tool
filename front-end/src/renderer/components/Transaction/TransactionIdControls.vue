@@ -117,7 +117,9 @@ const columnClass = 'col-4 col-xxxl-3';
       </template>
     </div>
     <div class="form-group" :class="[columnClass]">
-      <label class="form-label">Valid Start Time</label>
+      <label class="form-label"
+        >Valid Start <span class="text-muted text-italic">- Local time</span></label
+      >
       <DatePicker
         :model-value="validStart"
         @update:model-value="v => $emit('update:validStart', v)"
@@ -135,14 +137,10 @@ const columnClass = 'col-4 col-xxxl-3';
       >
         <template #action-row>
           <div class="d-grid w-100">
-            <AppButton
-              color="secondary"
-              size="small"
-              type="button"
-              @click="$emit('update:validStart', new Date())"
-            >
+            <AppButton size="small" type="button" @click="$emit('update:validStart', new Date())">
               Now
             </AppButton>
+            <AppButton class="mt-3" color="secondary" size="small" type="button"> Close </AppButton>
           </div>
         </template>
       </DatePicker>

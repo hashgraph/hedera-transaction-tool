@@ -360,7 +360,9 @@ const columnClass = 'col-4 col-xxxl-3';
 
         <div class="row mt-6">
           <div class="form-group col-4 col-xxxl-3">
-            <label class="form-label">Expiration Time</label>
+            <label class="form-label"
+              >Expiration <span class="text-muted text-italic">- Local time</span></label
+            >
             <DatePicker
               v-model="expirationTimestamp"
               placeholder="Select Expiration Time"
