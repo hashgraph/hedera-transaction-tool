@@ -184,7 +184,7 @@ watch(orgFilters, async () => {
 
 <template>
   <div class="fill-remaining overflow-x-auto">
-    <div v-if="isLoggedInOrganization(user.selectedOrganization)">
+    <div v-if="isLoggedInOrganization(user.selectedOrganization) && transactions.length > 0">
       <TransactionsFilter
         v-model:filters="orgFilters"
         toggler-class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
