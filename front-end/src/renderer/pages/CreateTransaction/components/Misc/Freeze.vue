@@ -28,7 +28,7 @@ import { getPropagationButtonLabel, isAccountId, isFileId } from '@renderer/util
 import { getTransactionFromBytes } from '@renderer/utils/transactions';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
-import DatePicker from '@vuepic/vue-datepicker';
+import DatePicker, { DatePickerInstance } from '@vuepic/vue-datepicker';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
@@ -49,6 +49,7 @@ const payerData = useAccountId();
 
 /* State */
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
+const datePicker = ref<DatePickerInstance>(null);
 
 const transaction = ref<FreezeTransaction | null>(null);
 const validStart = ref(new Date());
@@ -279,6 +280,7 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
               ><span class="text-danger">*</span></label
             >
             <DatePicker
+              ref="datePicker"
               :model-value="startTimestamp"
               @update:model-value="v => (startTimestamp = v)"
               placeholder="Select Start Time"
@@ -296,15 +298,23 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
               calendar-cell-class-name="is-fill"
             >
               <template #action-row>
-                <div class="d-grid w-100">
+                <div class="d-flex justify-content-end gap-4 w-100">
                   <AppButton
-                    color="secondary"
+                    class="min-w-unset"
                     size="small"
                     type="button"
                     @click="$emit('update:validStart', new Date())"
                   >
                     Now
                   </AppButton>
+                  <AppButton
+                    class="min-w-unset"
+                    color="secondary"
+                    size="small"
+                    type="button"
+                    @click="datePicker?.closeMenu()"
+                    >Close</AppButton
+                  >
                 </div>
               </template>
             </DatePicker>
