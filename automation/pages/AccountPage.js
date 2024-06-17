@@ -22,6 +22,7 @@ class AccountPage extends BasePage {
   updateInNetworkLinkSelector = 'button-update-in-network';
   confirmUnlinkButtonSelector = 'button-confirm-unlink-account';
   linkAccountButtonSelector = 'button-link-account-id';
+  selectManyAccountsButtonSelector = 'button-select-many-accounts';
 
   // Texts
   accountIdTextSelector = 'p-account-data-account-id';
@@ -177,6 +178,10 @@ class AccountPage extends BasePage {
     await delay(1000);
     const index = await this.transactionPage.findAccountIndexById(accountId);
     await this.clickByTestId(this.multiSelectCheckboxSelector + index);
+  }
+
+  async clickOnSelectManyAccountsButton() {
+    await this.clickByTestId(this.selectManyAccountsButtonSelector);
   }
 }
 

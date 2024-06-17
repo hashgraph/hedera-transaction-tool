@@ -280,8 +280,9 @@ test.describe('Transaction tests', () => {
       { isSupposedToFail: true },
     );
 
-    const toastMessage = await registrationPage.getToastMessage();
-    expect(toastMessage).toContain('failed precheck with status INSUFFICIENT_PAYER_BALANCE');
+    await transactionPage.clickOnTransactionsMenuButton();
+    const statusMessage = await transactionPage.getFirstTransactionStatus();
+    expect(statusMessage).toContain('INSUFFICIENT PAYER BALANCE');
   });
 
   test('Verify user can add the rest of remaining hbars to receiver accounts', async () => {
@@ -439,5 +440,298 @@ test.describe('Transaction tests', () => {
     const readContent = await transactionPage.readFile(fileId, globalCredentials.password);
     const textFromCache = await transactionPage.getTextFromCache(fileId);
     expect(readContent).toBe(textFromCache);
+  });
+
+  test('Verify user can save draft and is visible in the draft page', async () => {
+    await transactionPage.clickOnCreateNewTransactionButton();
+    await transactionPage.clickOnCreateAccountTransaction();
+    await transactionPage.saveDraft();
+
+    const draftDate = await transactionPage.getFirstDraftDate();
+    expect(draftDate).toBeTruthy();
+
+    const draftType = await transactionPage.getFirstDraftType();
+    expect(draftType).toBe('Account Create Transaction');
+
+    const isTemplateCheckboxVisible =
+      await transactionPage.getFirstDraftIsTemplateCheckboxVisible();
+    expect(isTemplateCheckboxVisible).toBe(true);
+
+    const isDeleteButtonVisible = await transactionPage.isFirstDraftDeleteButtonVisible();
+    expect(isDeleteButtonVisible).toBe(true);
+
+    const isContinueButtonVisible = await transactionPage.isFirstDraftContinueButtonVisible();
+    expect(isContinueButtonVisible).toBe(true);
+
+    await transactionPage.deleteFirstDraft();
+  });
+
+  test('Verify user can delete a draft transaction', async () => {
+    await transactionPage.clickOnCreateNewTransactionButton();
+    await transactionPage.clickOnCreateAccountTransaction();
+    await transactionPage.saveDraft();
+
+    await transactionPage.deleteFirstDraft();
+
+    const isContinueButtonVisible = await transactionPage.isFirstDraftContinueButtonVisible();
+    expect(isContinueButtonVisible).toBe(false);
+  });
+
+  test('Verify draft transaction is no longer visible after we execute the tx', async () => {
+    await transactionPage.clickOnCreateNewTransactionButton();
+    await transactionPage.clickOnCreateAccountTransaction();
+    await transactionPage.waitForPublicKeyToBeFilled();
+    await transactionPage.saveDraft();
+
+    await transactionPage.clickOnFirstDraftContinueButton();
+    await transactionPage.createNewAccount(globalCredentials.password, {}, true);
+    await transactionPage.clickOnTransactionsMenuButton();
+
+    const isContinueButtonVisible = await transactionPage.isFirstDraftContinueButtonVisible();
+    expect(isContinueButtonVisible).toBe(false);
+  });
+
+  test('Verify draft transaction is visible after we execute the tx and we have template checkbox selected', async () => {
+    await transactionPage.clickOnCreateNewTransactionButton();
+    await transactionPage.clickOnCreateAccountTransaction();
+    await transactionPage.waitForPublicKeyToBeFilled();
+    await transactionPage.saveDraft();
+
+    await transactionPage.clickOnFirstDraftIsTemplateCheckbox();
+    await transactionPage.clickOnFirstDraftContinueButton();
+    await transactionPage.createNewAccount(globalCredentials.password, {}, true);
+    await transactionPage.clickOnTransactionsMenuButton();
+    await transactionPage.navigateToDrafts();
+
+    const isContinueButtonVisible = await transactionPage.isFirstDraftContinueButtonVisible();
+    expect(isContinueButtonVisible).toBe(true);
+
+    await transactionPage.deleteFirstDraft();
+  });
+
+  test('Verify draft transaction contains the saved info for account create tx', async () => {
+    await transactionPage.clickOnCreateNewTransactionButton();
+    await transactionPage.clickOnCreateAccountTransaction();
+
+    const transactionMemoText = 'test tx memo';
+    const initialBalance = '10';
+    const maxAutoAssociations = '10';
+    const accountMemo = 'test acc memo';
+    const testNickname = 'testNickname';
+    await transactionPage.fillInNickname(testNickname);
+    await transactionPage.fillInTransactionMemoUpdate(transactionMemoText);
+    await transactionPage.clickOnReceiverSigRequiredSwitch();
+    await transactionPage.fillInInitialFunds(initialBalance);
+    await transactionPage.fillInMaxAccountAssociations(maxAutoAssociations);
+    await transactionPage.fillInMemo(accountMemo);
+
+    await transactionPage.saveDraft();
+
+    await transactionPage.clickOnFirstDraftContinueButton();
+
+    const transactionMemoFromField = await transactionPage.getTransactionMemoText();
+    expect(transactionMemoFromField).toBe(transactionMemoText);
+
+    const isAcceptStakingRewardsSwitchOn =
+      await transactionPage.isAcceptStakingRewardsSwitchToggledOn();
+    expect(isAcceptStakingRewardsSwitchOn).toBe(true);
+
+    const isReceiverSigRequiredSwitchOn =
+      await transactionPage.isReceiverSigRequiredSwitchToggledOn();
+    expect(isReceiverSigRequiredSwitchOn).toBe(true);
+
+    const initialFundsFromField = await transactionPage.getInitialFundsValue();
+    expect(initialFundsFromField).toBe(initialBalance);
+
+    const maxAutoAssociationsFromField = await transactionPage.getFilledMaxAccountAssociations();
+    expect(maxAutoAssociationsFromField).toBe(maxAutoAssociations);
+
+    const accountMemoFromField = await transactionPage.getMemoText();
+    expect(accountMemoFromField).toBe(accountMemo);
+
+    await transactionPage.navigateToDrafts();
+    await transactionPage.deleteFirstDraft();
+  });
+
+  test('Verify draft transaction contains the saved info for account update tx', async () => {
+    await transactionPage.clickOnCreateNewTransactionButton();
+    await transactionPage.clickOnUpdateAccountTransaction();
+
+    const transactionMemoText = 'test tx memo';
+    const accountIdToBeUpdated = '0.0.12345';
+    const accountMemo = 'test acc memo';
+    const maxAutoAssociations = '10';
+    await transactionPage.fillInTransactionMemoUpdate(transactionMemoText);
+    await transactionPage.fillInUpdateAccountIdNormally(accountIdToBeUpdated);
+    await transactionPage.clickOnAcceptStakingRewardsSwitch();
+    await transactionPage.turnReceiverSigSwitchOn();
+    await transactionPage.fillInMaxAutoAssociations(maxAutoAssociations);
+    await transactionPage.fillInMemoUpdate(accountMemo);
+
+    await transactionPage.saveDraft();
+
+    await transactionPage.clickOnFirstDraftContinueButton();
+
+    const transactionMemoFromField = await transactionPage.getTransactionMemoText();
+    expect(transactionMemoFromField).toBe(transactionMemoText);
+
+    const isAcceptStakingRewardsSwitchOn =
+      await transactionPage.isAcceptStakingRewardsSwitchToggledOn();
+    expect(isAcceptStakingRewardsSwitchOn).toBe(true);
+
+    const isReceiverSigRequiredSwitchOn =
+      await transactionPage.isReceiverSigRequiredSwitchToggledOnForUpdatePage();
+    expect(isReceiverSigRequiredSwitchOn).toBe(true);
+
+    const maxAutoAssociationsFromField =
+      await transactionPage.getFilledMaxAutoAssociationsOnUpdatePage();
+    expect(maxAutoAssociationsFromField).toBe(maxAutoAssociations);
+
+    const accountMemoFromField = await transactionPage.getMemoTextOnUpdatePage();
+    expect(accountMemoFromField).toBe(accountMemo);
+
+    await transactionPage.navigateToDrafts();
+    await transactionPage.deleteFirstDraft();
+  });
+
+  test('Verify draft transaction contains the saved info for account delete tx', async () => {
+    await transactionPage.clickOnCreateNewTransactionButton();
+    await transactionPage.clickOnDeleteAccountTransaction();
+
+    const transactionMemoText = 'test memo';
+    const accountIdToBeDeleted = '0.0.1234';
+    await transactionPage.fillInDeleteAccountTransactionMemo(transactionMemoText);
+    await transactionPage.fillInDeleteAccountIdNormally(accountIdToBeDeleted);
+    const transferAccountId = await transactionPage.fillInTransferAccountId();
+
+    await transactionPage.saveDraft();
+    await transactionPage.clickOnFirstDraftContinueButton();
+
+    const transactionMemoFromField = await transactionPage.getTransactionMemoTextForDeletePage();
+    expect(transactionMemoFromField).toBe(transactionMemoText);
+
+    const deletedIdFromField = await transactionPage.getPrefilledAccountIdInDeletePage();
+    expect(deletedIdFromField).toBe(accountIdToBeDeleted);
+
+    const transferIdFromField = await transactionPage.getPrefilledTransferIdAccountInDeletePage();
+    expect(transferIdFromField).toBe(transferAccountId);
+
+    await transactionPage.navigateToDrafts();
+    await transactionPage.deleteFirstDraft();
+  });
+
+  test('Verify draft transaction contains the saved info for approve allowance tx', async () => {
+    await transactionPage.clickOnCreateNewTransactionButton();
+    await transactionPage.clickOnApproveAllowanceTransaction();
+
+    const transactionMemoText = 'test memo';
+    const amount = '10';
+    const spenderAccountId = '0.0.1234';
+    await transactionPage.fillInTransactionMemoForApprovePage(transactionMemoText);
+    const ownerId = await transactionPage.fillInAllowanceOwnerAccount();
+    await transactionPage.fillInAllowanceAmount(amount);
+    await transactionPage.fillInSpenderAccountIdNormally(spenderAccountId);
+
+    await transactionPage.saveDraft();
+    await transactionPage.clickOnFirstDraftContinueButton();
+
+    const transactionMemoFromField = await transactionPage.getTransactionMemoFromApprovePage();
+    expect(transactionMemoFromField).toBe(transactionMemoText);
+
+    const allowanceOwnerAccountIdFromPage = await transactionPage.getAllowanceOwnerAccountId();
+    expect(allowanceOwnerAccountIdFromPage).toBe(ownerId);
+
+    const allowanceAmountFromField = await transactionPage.getAllowanceAmount();
+    expect(allowanceAmountFromField).toBe(amount);
+
+    const spenderAccountIdFromField = await transactionPage.getSpenderAccountId();
+    expect(spenderAccountIdFromField).toBe(spenderAccountId);
+
+    await transactionPage.navigateToDrafts();
+    await transactionPage.deleteFirstDraft();
+  });
+
+  test('Verify draft transaction contains the saved info for create file tx', async () => {
+    await transactionPage.clickOnCreateNewTransactionButton();
+    await transactionPage.clickOnFileServiceLink();
+    await transactionPage.clickOnFileCreateTransaction();
+
+    const transactionMemoText = 'test memo';
+    const fileMemoText = 'file memo';
+    const fileContent = 'test file content';
+
+    await transactionPage.fillInTransactionMemoForCreateFilePage(transactionMemoText);
+    await transactionPage.fillInFileMemoForCreatePage(fileMemoText);
+    await transactionPage.fillInFileContent(fileContent);
+
+    await transactionPage.saveDraft();
+    await transactionPage.clickOnFirstDraftContinueButton();
+
+    const transactionMemoFromField = await transactionPage.getTransactionMemoFromFilePage();
+    expect(transactionMemoFromField).toBe(transactionMemoText);
+
+    const fileMemoFromField = await transactionPage.getFileMemoFromCreatePage();
+    expect(fileMemoFromField).toBe(fileMemoText);
+
+    const fileContentFromField = await transactionPage.getFileContentText();
+    expect(fileContentFromField).toBe(fileContent);
+
+    await transactionPage.navigateToDrafts();
+    await transactionPage.deleteFirstDraft();
+  });
+
+  test('Verify draft transaction contains the saved info for update file tx', async () => {
+    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    const fileId = await transactionPage.getFirsFileIdFromCache();
+    await transactionPage.clickOnCreateNewTransactionButton();
+    await transactionPage.clickOnFileServiceLink();
+    await transactionPage.clickOnUpdateFileSublink();
+
+    const transactionMemoText = 'test memo';
+    const fileMemoText = 'file memo';
+
+    await transactionPage.fillInTransactionMemoForFileUpdatePage(transactionMemoText);
+    await transactionPage.fillInFileIdForUpdate(fileId);
+    await transactionPage.fillInFileUpdateMemo(fileMemoText);
+
+    await transactionPage.saveDraft();
+    await transactionPage.clickOnFirstDraftContinueButton();
+
+    const transactionMemoFromField = await transactionPage.getTransactionMemoFromFileUpdatePage();
+    expect(transactionMemoFromField).toBe(transactionMemoText);
+
+    const fileIdFromPage = await transactionPage.getFileIdFromUpdatePage();
+    expect(fileId).toBe(fileIdFromPage);
+
+    const fileMemoFromField = await transactionPage.getFileUpdateMemo();
+    expect(fileMemoFromField).toBe(fileMemoText);
+
+    await transactionPage.navigateToDrafts();
+    await transactionPage.deleteFirstDraft();
+  });
+
+  test('Verify draft transaction contains the saved info for append file tx', async () => {
+    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    const fileId = await transactionPage.getFirsFileIdFromCache();
+    await transactionPage.clickOnCreateNewTransactionButton();
+    await transactionPage.clickOnFileServiceLink();
+    await transactionPage.clickOnAppendFileSublink();
+
+    const transactionMemoText = 'test memo';
+
+    await transactionPage.fillInTransactionMemoForFileAppendPage(transactionMemoText);
+    await transactionPage.fillInFileIdForAppend(fileId);
+
+    await transactionPage.saveDraft();
+    await transactionPage.clickOnFirstDraftContinueButton();
+
+    const transactionMemoFromField = await transactionPage.getTransactionMemoFromFileAppendPage();
+    expect(transactionMemoFromField).toBe(transactionMemoText);
+
+    const fileIdFromPage = await transactionPage.getFileIdFromAppendPage();
+    expect(fileId).toBe(fileIdFromPage);
+
+    await transactionPage.navigateToDrafts();
+    await transactionPage.deleteFirstDraft();
   });
 });

@@ -191,6 +191,8 @@ test.describe('Workflow tests', () => {
     await transactionPage.mirrorGetAccountResponse(accountFromList);
     await transactionPage.clickOnTransactionsMenuButton();
     await accountPage.clickOnAccountsLink();
+    await accountPage.clickOnSelectManyAccountsButton();
+    await accountPage.clickOnAccountCheckbox(accountFromList);
     await accountPage.clickOnAccountCheckbox(newAccountId);
 
     await accountPage.clickOnRemoveButton();
@@ -344,7 +346,8 @@ test.describe('Workflow tests', () => {
     const { fileId } = await transactionPage.createFile('test', globalCredentials.password);
     await accountPage.clickOnAccountsLink();
     await filePage.clickOnFilesMenuButton();
-
+    await filePage.clickOnSelectManyFilesButton();
+    await filePage.clickOnFileCheckbox(fileFromPage);
     await filePage.clickOnFileCheckbox(fileId);
     await filePage.clickOnRemoveFileCardButton();
     await filePage.clickOnConfirmUnlinkFileButton();

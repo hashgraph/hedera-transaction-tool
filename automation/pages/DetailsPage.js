@@ -15,9 +15,6 @@ class DetailsPage extends BasePage {
   transactionDetailsButtonIndexSelector = 'button-transaction-details-';
   viewContentsButtonSelector = 'button-view-file-contents';
   seeKeyDetailsButtonSelector = 'button-file-details-key';
-  backButtonSelector = 'button-back';
-  draftDeleteButtonIndexSelector = 'button-draft-delete-';
-  draftContinueButtonIndexSelector = 'button-draft-continue-';
 
   //Text
   transactionCreatedAtIndexSelector = 'td-transaction-createdAt-';
@@ -50,9 +47,6 @@ class DetailsPage extends BasePage {
   fileDetailsExpirationTimeSelector = 'p-file-details-expiration-time';
   fileDetailsFileIdSelector = 'p-file-details-file-id';
   fileDetailsKeyTextSelector = 'p-file-details-key-text';
-  draftDetailsDateIndexSelector = 'span-draft-tx-date-';
-  draftDetailsTypeIndexSelector = 'span-draft-tx-type-';
-  draftDetailsIsTemplateCheckboxSelector = 'checkbox-is-template-';
 
   async clickOnFirstTransactionDetailsButton() {
     await this.clickByTestId(this.transactionDetailsButtonIndexSelector + '0');
@@ -76,26 +70,6 @@ class DetailsPage extends BasePage {
 
   async isTransactionDetailsButtonVisible() {
     return this.isElementVisible(this.transactionDetailsButtonIndexSelector + '0');
-  }
-
-  async clickOnFirstDraftDeleteButton() {
-    await this.clickByTestId(this.draftDeleteButtonIndexSelector + '0');
-  }
-
-  async clickOnFirstDraftContinueButton() {
-    await this.clickByTestId(this.draftContinueButtonIndexSelector + '0');
-  }
-
-  async getFirstDraftDate() {
-    return await this.getTextByTestId(this.draftDetailsDateIndexSelector + '0');
-  }
-
-  async getFirstDraftType() {
-    return await this.getTextByTestId(this.draftDetailsTypeIndexSelector + '0');
-  }
-
-  async getFirstDraftIsTemplate() {
-    return await this.getTextByTestId(this.draftDetailsIsTemplateCheckboxSelector + '0');
   }
 
   async getTransactionDetailsType() {
@@ -200,14 +174,6 @@ class DetailsPage extends BasePage {
 
   async getFileDetailsExpirationTime() {
     return await this.getTextByTestId(this.fileDetailsExpirationTimeSelector);
-  }
-
-  async waitForCreatedAtToBeVisible() {
-    await this.waitForElementToBeVisible(this.transactionDetailsCreatedAtSelector);
-  }
-
-  async clickOnBackButton() {
-    await this.clickByTestId(this.backButtonSelector);
   }
 
   async getFileDetailsFileId() {
