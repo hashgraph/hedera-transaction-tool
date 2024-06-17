@@ -330,3 +330,16 @@ export const isApproved = (approver: ITransactionApprover): boolean | null => {
 
   return null;
 };
+
+export const formatAccountId = (accountId: string) => {
+  const parts = accountId.trim().split('.').filter(Boolean);
+  const [shard, realm, account] = parts;
+
+  if (parts.length === 0 || (parts.length === 1 && shard === '0')) {
+    return '';
+  } else if (parts.length === 1) {
+    return `0.0.${shard || ''}`;
+  }
+
+  return `${shard || ''}.${realm || ''}.${account || ''}`;
+};
