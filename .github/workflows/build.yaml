@@ -8,13 +8,14 @@ on:
     branches:
       - main
 
+concurrency:
+  group: pr-checks-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   build:
+    name: Build front-end
     runs-on: ubuntu-latest
-
-    concurrency:
-      group: pr-checks-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
-      cancel-in-progress: true
 
     steps:
       # - name: Install dependencies
@@ -72,6 +73,24 @@ jobs:
         run: npm run build:linux
         working-directory: front-end
 
+      - name: Cache Build Artifacts
+        uses: actions/cache@v4.0.2
+        with:
+          path: front-end/release/linux-unpacked
+          key: build-artifacts-${{ github.sha }}
+  test:
+    name: ${{ matrix.test-suite }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test-suite:
+          - RegistrationTests
+          - LoginTests
+          - SettingsTests
+          - TransactionTests
+          - WorkflowTests
+    steps:
       # - name: Copy example.env files
       #   run: find apps -type f -name "example.env" -print -exec sh -c 'cp "$1" "$(dirname "$1")/.env"' _ {} \;
       #   working-directory: back-end
@@ -86,13 +105,20 @@ jobs:
       - name: run hedera local
         run: npx @hashgraph/hedera-local start -d
 
+      - name: Restore Build Artifacts
+        uses: actions/cache@v4.0.2
+        with:
+          fail-on-cache-miss: true
+          path: front-end/release/linux-unpacked
+          key: build-artifacts-${{ github.sha }}
+
       - name: run automation
         env:
           EXECUTABLE_PATH: ../front-end/release/linux-unpacked/hedera-transaction-tool
           PRIVATE_KEY: "0x9a07bbdbb62e24686d2a4259dc88e38438e2c7a1ba167b147ad30ac540b0a3cd"
           ENVIRONMENT: LOCALNET
 
-        run: xvfb-run -a npm run test
+        run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite }}
         working-directory: automation
 
       # - name: Setup tmate session
