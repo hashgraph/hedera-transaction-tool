@@ -3,8 +3,9 @@ import * as path from 'path';
 
 import { NestFactory } from '@nestjs/core';
 import { Transport } from '@nestjs/microservices';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
-import { INestApplication, NestApplicationOptions, ValidationPipe } from '@nestjs/common';
+import { NestApplicationOptions, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { Logger } from 'nestjs-pino';
@@ -17,10 +18,10 @@ import { API_SERVICE } from '@app/common';
 import { version } from '../package.json';
 
 async function bootstrap() {
-  let app: INestApplication;
+  let app: NestExpressApplication;
 
   if (process.env.NODE_ENV === 'production') {
-    app = await NestFactory.create(ApiModule);
+    app = await NestFactory.create<NestExpressApplication>(ApiModule);
   } else {
     const options: NestApplicationOptions = {};
     try {
@@ -31,7 +32,7 @@ async function bootstrap() {
       console.log(error);
     }
 
-    app = await NestFactory.create(ApiModule, options);
+    app = await NestFactory.create<NestExpressApplication>(ApiModule, options);
   }
 
   const configService = app.get(ConfigService);
