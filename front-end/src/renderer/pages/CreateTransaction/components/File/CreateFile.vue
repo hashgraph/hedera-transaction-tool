@@ -186,6 +186,11 @@ const handleSubmit = (id: number) => {
   });
 };
 
+const handleLocalStored = (id: string) => {
+  toast.success('File Create Transaction Executed', { position: 'bottom-right' });
+  redirectToDetails(id);
+};
+
 /* Functions */
 function createTransaction() {
   const transaction = new FileCreateTransaction()
@@ -211,6 +216,13 @@ function createTransaction() {
   }
 
   return transaction;
+}
+
+async function redirectToDetails(id: string | number) {
+  router.push({
+    name: 'transactionDetails',
+    params: { id },
+  });
 }
 
 /* Hooks */
@@ -409,6 +421,7 @@ watch(payerData.isValid, isValid => {
       :on-close-success-modal-click="() => $router.push({ name: 'files' })"
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"
+      :on-local-stored="handleLocalStored"
     >
       <template #successHeading>File created successfully</template>
       <template #successContent>
