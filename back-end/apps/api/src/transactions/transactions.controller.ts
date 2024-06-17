@@ -100,7 +100,7 @@ export class TransactionsController {
     @PaginationParams() paginationParams: Pagination,
     @SortingParams(transactionProperties) sort?: Sorting[],
     @FilteringParams({
-      validProperties: transactionProperties.filter(p => p !== 'status'),
+      validProperties: transactionProperties,
       dateProperties: transactionDateProperties,
     })
     filter?: Filtering[],

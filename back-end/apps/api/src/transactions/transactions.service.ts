@@ -23,6 +23,7 @@ import {
   In,
   Not,
   FindOptionsWhere,
+  FindOperator,
 } from 'typeorm';
 
 import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
@@ -170,11 +171,7 @@ export class TransactionsService {
     const findOptions: FindManyOptions<Transaction> = {
       where: {
         ...getWhere<Transaction>(filter),
-        status: In([
-          TransactionStatus.EXECUTED,
-          TransactionStatus.FAILED,
-          TransactionStatus.EXPIRED,
-        ]),
+        status: this.getHistoryStatusWhere(filter),
       },
       order,
       relations: ['groupItem', 'groupItem.group'],
@@ -470,5 +467,42 @@ export class TransactionsService {
     if (userApprovers.every(a => a.signature)) return false;
 
     return true;
+  }
+
+  private getHistoryStatusWhere(
+    filtering: Filtering[],
+  ): TransactionStatus | FindOperator<TransactionStatus> | undefined {
+    const allowedStatuses = [
+      TransactionStatus.EXECUTED,
+      TransactionStatus.FAILED,
+      TransactionStatus.EXPIRED,
+    ];
+    const disallowedStatuses = Object.values(TransactionStatus).filter(
+      s => !allowedStatuses.includes(s),
+    );
+
+    const statusFilter = filtering.find(f => f.property === 'status');
+
+    if (!statusFilter) return;
+
+    const statusFilterValue = statusFilter.value.split(',') as TransactionStatus[];
+
+    switch (statusFilter.rule) {
+      case 'eq':
+        return allowedStatuses.includes(statusFilterValue[0]) ? statusFilterValue[0] : undefined;
+      case 'in':
+        return In(statusFilterValue.filter(s => allowedStatuses.includes(s)));
+      case 'neq':
+        return Not(In([...disallowedStatuses, ...statusFilterValue]));
+      case 'nin':
+        return Not(
+          In([
+            ...disallowedStatuses,
+            ...statusFilterValue.filter(s => allowedStatuses.includes(s)),
+          ]),
+        );
+      default:
+        return undefined;
+    }
   }
 }
