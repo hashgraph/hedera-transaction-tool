@@ -399,12 +399,12 @@ watch(files, newFiles => {
             </ul>
           </div>
 
-          <div class="d-flex justify-content-between mt-3">
+          <div class="d-flex align-items-center justify-content-between mt-3">
             <div class="dropdown">
               <AppButton
                 class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
                 data-bs-toggle="dropdown"
-                ><i class="bi bi-filter text-headline me-2"></i> Sort by</AppButton
+                ><i class="bi bi-arrow-down-up me-2"></i> Sort by</AppButton
               >
               <ul class="dropdown-menu text-small">
                 <li
@@ -482,7 +482,7 @@ watch(files, newFiles => {
                   />
                 </div>
                 <div
-                  class="container-card-account activate-on-sibling-hover overflow-hidden w-100 p-4 mt-3"
+                  class="container-multiple-select activate-on-sibling-hover overflow-hidden w-100 p-4 mt-3"
                   :class="{
                     'is-selected':
                       selectedFile?.file_id === file.file_id ||

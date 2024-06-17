@@ -29,6 +29,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
+import TransactionsFilter from '@renderer/components/Filter/TransactionsFilter.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -60,6 +61,13 @@ const orgSort = reactive<{
   field: 'createdAt',
   direction: 'desc',
 });
+const orgFilters = ref<
+  {
+    property: keyof ITransaction;
+    rule: string;
+    value: string;
+  }[]
+>([{ property: 'network', rule: 'eq', value: network.network }]);
 const totalItems = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
@@ -126,9 +134,9 @@ async function fetchTransactions() {
 
       const { totalItems: totalItemsCount, items: rawTransactions } = await getHistoryTransactions(
         user.selectedOrganization.serverUrl,
-        network.network,
         currentPage.value,
         pageSize.value,
+        orgFilters.value,
         [{ property: orgSort.field, direction: orgSort.direction }],
       );
       totalItems.value = totalItemsCount;
@@ -168,10 +176,27 @@ watch(
     });
   },
 );
+
+watch(orgFilters, async () => {
+  await fetchTransactions();
+});
 </script>
 
 <template>
   <div class="fill-remaining overflow-x-auto">
+    <div
+      v-if="
+        isLoggedInOrganization(user.selectedOrganization) && organizationTransactions.length > 0
+      "
+      class="mt-3 mb-3"
+    >
+      <TransactionsFilter
+        v-model:filters="orgFilters"
+        toggler-class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
+        :history="true"
+        :inline="true"
+      />
+    </div>
     <template v-if="isLoading">
       <AppLoader />
     </template>

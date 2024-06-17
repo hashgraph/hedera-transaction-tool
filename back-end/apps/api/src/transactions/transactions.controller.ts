@@ -13,7 +13,6 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   Filtering,
   FilteringParams,
-  NetworkParam,
   PaginatedResourceDto,
   Pagination,
   PaginationParams,
@@ -23,13 +22,7 @@ import {
   withPaginatedResponse,
 } from '@app/common';
 
-import {
-  Network,
-  Transaction,
-  User,
-  transactionDateProperties,
-  transactionProperties,
-} from '@entities';
+import { Transaction, User, transactionDateProperties, transactionProperties } from '@entities';
 
 import { JwtAuthGuard, VerifiedUserGuard, HasKeyGuard } from '../guards';
 
@@ -105,10 +98,14 @@ export class TransactionsController {
   @Serialize(withPaginatedResponse(TransactionDto))
   getHistoryTransactions(
     @PaginationParams() paginationParams: Pagination,
-    @NetworkParam() network: Network,
     @SortingParams(transactionProperties) sort?: Sorting[],
+    @FilteringParams({
+      validProperties: transactionProperties,
+      dateProperties: transactionDateProperties,
+    })
+    filter?: Filtering[],
   ): Promise<PaginatedResourceDto<Transaction>> {
-    return this.transactionsService.getHistoryTransactions(paginationParams, network, sort);
+    return this.transactionsService.getHistoryTransactions(paginationParams, filter, sort);
   }
 
   /* Get all transactions to be signed by the user */

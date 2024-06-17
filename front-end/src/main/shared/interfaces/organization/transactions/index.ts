@@ -1,3 +1,4 @@
+import { Network } from '@main/shared/enums';
 import { ITransactionApprover } from '../approvers';
 import { ITransactionObserverUserId } from '../observers';
 import { ITransactionSignerUserKey } from '../signers';
@@ -41,6 +42,7 @@ export interface ITransaction {
   createdAt: string;
   executedAt?: string;
   updatedAt: string;
+  network: Network;
   creatorKeyId: number;
 }
 

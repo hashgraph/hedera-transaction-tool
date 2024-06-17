@@ -254,7 +254,7 @@
   cursor: pointer;
 }
 
-.container-card-account {
+.container-multiple-select {
   border-radius: $border-radius;
   cursor: pointer;
   transition: background-color 0.15s linear;
@@ -948,6 +948,37 @@
     &:first-child {
       margin: 0;
     }
+  }
+}
+
+/* Bubble */
+.bubble {
+  background-color: $purple-400;
+  color: $body-bg;
+  border-radius: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+
+  &.bubble-primary {
+    background-color: $primary;
+  }
+
+  &.bubble-secondary {
+    background-color: $secondary;
+  }
+
+  &.bubble-danger {
+    background-color: $danger;
+  }
+
+  &.bubble-success {
+    background-color: $success;
+  }
+
+  &.bubble-warning {
+    background-color: $warning;
   }
 }
 

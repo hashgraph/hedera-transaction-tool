@@ -23,16 +23,10 @@ import {
   In,
   Not,
   FindOptionsWhere,
+  FindOperator,
 } from 'typeorm';
 
-import {
-  Network,
-  Transaction,
-  TransactionSigner,
-  TransactionStatus,
-  User,
-  UserKey,
-} from '@entities';
+import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
 
 import {
   NOTIFICATIONS_SERVICE,
@@ -169,21 +163,15 @@ export class TransactionsService {
   /* Get the transactions visible by the user */
   async getHistoryTransactions(
     { page, limit, size, offset }: Pagination,
-    network: Network,
+    filter?: Filtering[],
     sort?: Sorting[],
   ): Promise<PaginatedResourceDto<Transaction>> {
     const order = getOrder(sort);
 
-    console.log(network);
-
     const findOptions: FindManyOptions<Transaction> = {
       where: {
-        status: In([
-          TransactionStatus.EXECUTED,
-          TransactionStatus.FAILED,
-          TransactionStatus.EXPIRED,
-        ]),
-        network,
+        ...getWhere<Transaction>(filter),
+        status: this.getHistoryStatusWhere(filter),
       },
       order,
       relations: ['groupItem', 'groupItem.group'],
@@ -479,5 +467,42 @@ export class TransactionsService {
     if (userApprovers.every(a => a.signature)) return false;
 
     return true;
+  }
+
+  private getHistoryStatusWhere(
+    filtering: Filtering[],
+  ): TransactionStatus | FindOperator<TransactionStatus> | undefined {
+    const allowedStatuses = [
+      TransactionStatus.EXECUTED,
+      TransactionStatus.FAILED,
+      TransactionStatus.EXPIRED,
+    ];
+    const disallowedStatuses = Object.values(TransactionStatus).filter(
+      s => !allowedStatuses.includes(s),
+    );
+
+    const statusFilter = filtering.find(f => f.property === 'status');
+
+    if (!statusFilter) return;
+
+    const statusFilterValue = statusFilter.value.split(',') as TransactionStatus[];
+
+    switch (statusFilter.rule) {
+      case 'eq':
+        return allowedStatuses.includes(statusFilterValue[0]) ? statusFilterValue[0] : undefined;
+      case 'in':
+        return In(statusFilterValue.filter(s => allowedStatuses.includes(s)));
+      case 'neq':
+        return Not(In([...disallowedStatuses, ...statusFilterValue]));
+      case 'nin':
+        return Not(
+          In([
+            ...disallowedStatuses,
+            ...statusFilterValue.filter(s => allowedStatuses.includes(s)),
+          ]),
+        );
+      default:
+        return undefined;
+    }
   }
 }

@@ -348,16 +348,21 @@ export const getTransactionsForUser = async (
 /* Get history transactions */
 export const getHistoryTransactions = async (
   serverUrl: string,
-  network: Network,
   page: number,
   size: number,
+  filter: {
+    property: keyof ITransaction;
+    rule: string;
+    value: string | string[];
+  }[],
   sort?: { property: string; direction: 'asc' | 'desc' }[],
 ): Promise<PaginatedResourceDto<ITransaction>> => {
   try {
     const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
+    const filtering = filter.map(f => `&filter=${f.property}:${f.rule}:${f.value}`).join('');
 
     const { data } = await axios.get(
-      `${serverUrl}/${controller}/history?page=${page}&size=${size}${sorting}&network=${network}`,
+      `${serverUrl}/${controller}/history?page=${page}&size=${size}${sorting}${filtering}`,
       {
         withCredentials: true,
       },
