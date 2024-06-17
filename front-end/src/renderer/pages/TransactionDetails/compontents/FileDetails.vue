@@ -67,6 +67,23 @@ const handleLinkEntity = async () => {
   toast.success(`File ${entityId.value} linked`, { position: 'bottom-right' });
 };
 
+/* Functions */
+async function fetchTransactionInfo(payer: string, seconds: string, nanos: string) {
+  try {
+    const { transactions } = await getTransactionInfo(
+      `${payer}-${seconds}-${nanos}`,
+      network.mirrorNodeBaseURL,
+      controller.value || undefined,
+    );
+
+    if (transactions.length > 0) {
+      entityId.value = transactions[0].entity_id || null;
+    }
+  } catch (error) {
+    /* Ignore if transaction not available in mirror node */
+  }
+}
+
 /* Hooks */
 onBeforeMount(async () => {
   if (
@@ -80,11 +97,15 @@ onBeforeMount(async () => {
   }
   if (!isUserLoggedIn(user.personal)) throw new Error('User not logged in');
 
-  if (
+  const isExecutedOrganizationTransaction = Boolean(
     props.organizationTransaction?.status &&
-    [TransactionStatus.EXECUTED, TransactionStatus.FAILED].includes(
-      props.organizationTransaction.status,
-    ) &&
+      [TransactionStatus.EXECUTED, TransactionStatus.FAILED].includes(
+        props.organizationTransaction.status,
+      ),
+  );
+
+  if (
+    (isExecutedOrganizationTransaction || !props.organizationTransaction) &&
     props.transaction instanceof FileCreateTransaction
   ) {
     controller.value = new AbortController();
@@ -93,18 +114,12 @@ onBeforeMount(async () => {
     const seconds = props.transaction.transactionId?.validStart?.seconds?.toString();
     const nanos = props.transaction.transactionId?.validStart?.nanos?.toString();
 
-    try {
-      const { transactions } = await getTransactionInfo(
-        `${payer}-${seconds}-${nanos}`,
-        network.mirrorNodeBaseURL,
-        controller.value,
-      );
-
-      if (transactions.length > 0) {
-        entityId.value = transactions[0].entity_id || null;
+    if (payer && seconds && nanos) {
+      if (!props.organizationTransaction) {
+        setTimeout(async () => await fetchTransactionInfo(payer, seconds, nanos), 1500);
+      } else {
+        await fetchTransactionInfo(payer, seconds, nanos);
       }
-    } catch (error) {
-      /* Ignore if transaction not available in mirror node */
     }
 
     files.value = await getAll({
