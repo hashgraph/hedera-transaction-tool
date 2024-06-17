@@ -189,17 +189,8 @@ watch(orgFilters, async () => {
         v-model:filters="orgFilters"
         toggler-class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
         :history="true"
-      >
-        <i class="bi bi-filter text-headline me-2"></i> Filter by
-      </TransactionsFilter>
-      <TransactionsFilter
-        v-model:filters="orgFilters"
-        toggler-class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
-        :history="true"
         :inline="true"
-      >
-        <i class="bi bi-filter text-headline me-2"></i> Filter by
-      </TransactionsFilter>
+      />
     </div>
     <template v-if="isLoading">
       <AppLoader />

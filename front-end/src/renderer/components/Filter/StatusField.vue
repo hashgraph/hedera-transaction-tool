@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-
 import { ITransaction, TransactionStatus } from '@main/shared/interfaces';
 
 import MultipleSelectFilterField from './MultipleSelectFilterField.vue';
@@ -18,12 +16,6 @@ const props = defineProps<{
 
 /* Emits */
 const emit = defineEmits(['update:filter']);
-
-/* Computed */
-const selectedStatuses = computed(() => {
-  if (!props.filter) return [];
-  return Array.isArray(props.filter.value) ? props.filter.value : [props.filter.value];
-});
 
 /* Misc */
 const allowedStatuses = [
@@ -53,16 +45,5 @@ const label = 'Status';
     :label="label"
     :items="statuses"
     :inline="inline"
-  >
-    <template #dropdown-toggler-content>
-      <span class="flex-centered">
-        <template v-if="inline">
-          <i class="bi bi-filter text-subheader me-1"></i>{{ label }}
-        </template>
-        <template v-else>
-          {{ selectedStatuses.length > 0 ? 'Select Statuses' : 'All' }}
-        </template>
-      </span>
-    </template>
-  </MultipleSelectFilterField>
+  />
 </template>
