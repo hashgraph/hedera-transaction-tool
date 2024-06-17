@@ -24,8 +24,13 @@ import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
 
-import { getPropagationButtonLabel, isAccountId, isFileId } from '@renderer/utils';
-import { getTransactionFromBytes } from '@renderer/utils/transactions';
+import {
+  getPropagationButtonLabel,
+  getTransactionFromBytes,
+  isAccountId,
+  isFileId,
+  formatAccountId,
+} from '@renderer/utils';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import DatePicker, { DatePickerInstance } from '@vuepic/vue-datepicker';
@@ -329,9 +334,7 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
             <label class="form-label">File ID</label>
             <AppInput
               :model-value="fileId?.toString()"
-              @update:model-value="
-                v => (fileId = isFileId(v) && v !== '0' ? FileId.fromString(v).toString() : v)
-              "
+              @update:model-value="v => (fileId = formatAccountId(v))"
               :filled="true"
               placeholder="Enter File ID"
             />

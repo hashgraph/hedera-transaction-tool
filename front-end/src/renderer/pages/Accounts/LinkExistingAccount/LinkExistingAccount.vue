@@ -11,6 +11,8 @@ import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import { add } from '@renderer/services/accountsService';
 
+import { formatAccountId } from '@renderer/utils';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
@@ -70,7 +72,7 @@ const handleLinkAccount = async e => {
         >
         <AppInput
           :model-value="accountData.accountIdFormatted.value"
-          @update:model-value="v => (accountData.accountId.value = v)"
+          @update:model-value="v => (accountData.accountId.value = formatAccountId(v))"
           :filled="true"
           data-testid="input-existing-account-id"
           data-bs-toggle="tooltip"

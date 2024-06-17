@@ -12,7 +12,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 
 import { getAll } from '@renderer/services/accountsService';
 
-import { stringifyHbar } from '@renderer/utils';
+import { formatAccountId, stringifyHbar } from '@renderer/utils';
 import { flattenAccountIds, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -130,7 +130,7 @@ onBeforeMount(async () => {
         >
         <AppAutoComplete
           :model-value="accountData.accountIdFormatted.value"
-          @update:model-value="v => (accountData.accountId.value = v)"
+          @update:model-value="v => (accountData.accountId.value = formatAccountId(v))"
           :filled="true"
           :items="
             accoundIds.map(a => a.account_id).concat(flattenAccountIds(user.publicKeyToAccounts))

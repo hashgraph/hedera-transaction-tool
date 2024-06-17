@@ -12,7 +12,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 
 import { getAll } from '@renderer/services/accountsService';
 
-import { isAccountId } from '@renderer/utils/validator';
+import { formatAccountId, isAccountId } from '@renderer/utils';
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -100,7 +100,7 @@ onMounted(async () => {
                 ? selectedAccountData.accountIdFormatted.value
                 : selectedAccountData.accountId.value
             "
-            @update:model-value="v => (selectedAccountData.accountId.value = v)"
+            @update:model-value="v => (selectedAccountData.accountId.value = formatAccountId(v))"
             filled
             type="text"
             placeholder="Enter Account ID"

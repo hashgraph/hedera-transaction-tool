@@ -13,7 +13,12 @@ import useAccountId from '@renderer/composables/useAccountId';
 import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
-import { getTransactionFromBytes, getPropagationButtonLabel, isAccountId } from '@renderer/utils';
+import {
+  getTransactionFromBytes,
+  getPropagationButtonLabel,
+  isAccountId,
+  formatAccountId,
+} from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -257,7 +262,8 @@ const columnClass = 'col-4 col-xxxl-3';
           <div class="form-group" :class="[columnClass]">
             <label class="form-label">File ID <span class="text-danger">*</span></label>
             <AppInput
-              v-model="fileId"
+              :model-value="fileId"
+              @update:model-value="fileId = formatAccountId($event)"
               data-testid="input-file-id-append"
               :filled="true"
               placeholder="Enter File ID"

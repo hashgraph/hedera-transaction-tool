@@ -16,8 +16,12 @@ import {
 } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
-import { getTransactionFromBytes } from '@renderer/utils/transactions';
-import { getPropagationButtonLabel, isAccountId } from '@renderer/utils';
+import {
+  getPropagationButtonLabel,
+  getTransactionFromBytes,
+  isAccountId,
+  formatAccountId,
+} from '@renderer/utils';
 import {
   isHederaSpecialFileId,
   getMinimumExpirationTime,
@@ -317,7 +321,8 @@ const columnClass = 'col-4 col-xxxl-3';
           <div class="form-group" :class="[columnClass]">
             <label class="form-label">File ID <span class="text-danger">*</span></label>
             <AppInput
-              v-model="fileId"
+              :model-value="fileId"
+              @update:model-value="v => (fileId = formatAccountId(v))"
               :filled="true"
               placeholder="Enter File ID"
               data-testid="input-file-id-for-update"

@@ -15,7 +15,7 @@ import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { executeQuery } from '@renderer/services/transactionService';
 import { getAll, update } from '@renderer/services/filesService';
 
-import { isFileId, isHederaSpecialFileId } from '@renderer/utils';
+import { isFileId, isHederaSpecialFileId, formatAccountId } from '@renderer/utils';
 import { isUserLoggedIn, flattenAccountIds } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -193,7 +193,7 @@ const columnClass = 'col-4 col-xxxl-3';
           <template v-else>
             <AppAutoComplete
               :model-value="payerData.isValid.value ? payerData.accountIdFormatted.value : ''"
-              @update:model-value="payerData.accountId.value = $event"
+              @update:model-value="payerData.accountId.value = formatAccountId($event)"
               :filled="true"
               :items="accoundIds"
               placeholder="Enter Payer ID"
@@ -216,7 +216,8 @@ const columnClass = 'col-4 col-xxxl-3';
           <div class="form-group" :class="[columnClass]">
             <label class="form-label">File ID <span class="text-danger">*</span></label>
             <AppInput
-              v-model="fileId"
+              :model-value="fileId"
+              @update:model-value="v => (fileId = formatAccountId(v))"
               :filled="true"
               placeholder="Enter File ID"
               data-testid="input-file-id-for-read"
