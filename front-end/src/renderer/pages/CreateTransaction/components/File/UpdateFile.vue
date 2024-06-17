@@ -190,11 +190,9 @@ const handleLoadFromDraft = async () => {
   }
 };
 
-const redirectToDetails = async (id: string | number) => {
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
-  });
+const handleLocalStored = (id: string) => {
+  toast.success('File Update Transaction Executed', { position: 'bottom-right' });
+  redirectToDetails(id);
 };
 
 // const handleSubmit = async (id: number) => {
@@ -231,6 +229,13 @@ function createTransaction() {
   }
 
   return transaction;
+}
+
+async function redirectToDetails(id: string | number) {
+  router.push({
+    name: 'transactionDetails',
+    params: { id },
+  });
 }
 
 /* Hooks */
@@ -469,7 +474,7 @@ const columnClass = 'col-4 col-xxxl-3';
           chunksAmount = chunkAmount || null;
         }
       "
-      :on-local-stored="redirectToDetails"
+      :on-local-stored="handleLocalStored"
       :on-close-success-modal-click="
         () => {
           validStart = new Date();
