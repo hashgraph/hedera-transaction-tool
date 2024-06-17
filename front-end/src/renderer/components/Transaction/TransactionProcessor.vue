@@ -15,7 +15,7 @@ import { useRoute } from 'vue-router';
 import { execute, signTransaction, storeTransaction } from '@renderer/services/transactionService';
 import {
   // hexToUint8Array,
-  openExternal,
+  // openExternal,
   uint8ArrayToHex,
 } from '@renderer/services/electronUtilsService';
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
@@ -567,7 +567,7 @@ defineExpose({
         </div>
       </div>
     </AppModal>
-    <!-- Executed modal -->
+    <!-- Executed modal
     <AppModal
       v-model:show="isExecutedModalShown"
       data-testid="modal-transaction-success"
@@ -616,6 +616,6 @@ defineExpose({
           >
         </div>
       </div>
-    </AppModal>
+    </AppModal> -->
   </div>
 </template>
