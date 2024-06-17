@@ -149,6 +149,8 @@ const handleExecuted = async (success: boolean, _response?, receipt?: Transactio
       throw new Error('User is not logged in');
     }
 
+    toast.success(`Account Create Transaction Executed`, { position: 'bottom-right' });
+
     const accountId = getEntityIdFromTransactionReceipt(receipt, 'accountId');
     await add(user.personal.id, accountId, network.network, nickname.value);
     toast.success(`Account ${accountId} linked`, { position: 'bottom-right' });
@@ -196,10 +198,7 @@ const handleOwnerKeyUpdate = key => {
 
 const handleSubmit = (id: number) => {
   isSubmitted.value = true;
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
-  });
+  redirectToDetails(id);
 };
 
 /* Functions */
@@ -233,6 +232,13 @@ function createTransaction() {
 
   return transaction;
 }
+
+const redirectToDetails = async (id: string | number) => {
+  router.push({
+    name: 'transactionDetails',
+    params: { id },
+  });
+};
 
 /* Hooks */
 onMounted(async () => {
@@ -483,6 +489,7 @@ const columnClass = 'col-4 col-xxxl-3';
       :approvers="approvers"
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"
+      :on-local-stored="redirectToDetails"
       :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
     >
       <template #successHeading>Account created successfully</template>
