@@ -25,14 +25,7 @@ import {
   FindOptionsWhere,
 } from 'typeorm';
 
-import {
-  Network,
-  Transaction,
-  TransactionSigner,
-  TransactionStatus,
-  User,
-  UserKey,
-} from '@entities';
+import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
 
 import {
   NOTIFICATIONS_SERVICE,
@@ -169,21 +162,19 @@ export class TransactionsService {
   /* Get the transactions visible by the user */
   async getHistoryTransactions(
     { page, limit, size, offset }: Pagination,
-    network: Network,
+    filter?: Filtering[],
     sort?: Sorting[],
   ): Promise<PaginatedResourceDto<Transaction>> {
     const order = getOrder(sort);
 
-    console.log(network);
-
     const findOptions: FindManyOptions<Transaction> = {
       where: {
+        ...getWhere<Transaction>(filter),
         status: In([
           TransactionStatus.EXECUTED,
           TransactionStatus.FAILED,
           TransactionStatus.EXPIRED,
         ]),
-        network,
       },
       order,
       relations: ['groupItem', 'groupItem.group'],
