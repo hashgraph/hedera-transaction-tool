@@ -81,6 +81,7 @@ jobs:
   test:
     name: ${{ matrix.test-suite }}
     runs-on: ubuntu-latest
+    needs: build
     strategy:
       fail-fast: false
       matrix:
