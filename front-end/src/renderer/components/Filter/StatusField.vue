@@ -31,6 +31,7 @@ const allowedStatuses = [
   TransactionStatus.EXPIRED,
   TransactionStatus.FAILED,
 ];
+
 const statuses = Object.values(TransactionStatus)
   .filter(s => (props.history ? allowedStatuses.includes(s) : true))
   .map(status => ({
@@ -41,19 +42,23 @@ const statuses = Object.values(TransactionStatus)
       .map(w => w.charAt(0).toUpperCase() + w.slice(1))
       .join(' '),
   }));
+
+const label = 'Status';
 </script>
 <template>
   <MultipleSelectFilterField
     :filter="filter"
     @update:filter="emit('update:filter', $event)"
     :property="'status'"
-    :label="'Status'"
+    :label="label"
     :items="statuses"
     :inline="inline"
   >
     <template #dropdown-toggler-content>
       <span class="flex-centered">
-        <template v-if="inline"> <i class="bi bi-filter text-subheader me-1"></i>Status </template>
+        <template v-if="inline">
+          <i class="bi bi-filter text-subheader me-1"></i>{{ label }}
+        </template>
         <template v-else>
           {{ selectedStatuses.length > 0 ? 'Select Statuses' : 'All' }}
         </template>
