@@ -959,6 +959,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  user-select: none;
 
   &.bubble-primary {
     background-color: $primary;
