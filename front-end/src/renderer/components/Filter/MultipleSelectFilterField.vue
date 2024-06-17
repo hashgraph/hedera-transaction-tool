@@ -80,7 +80,22 @@ function removeItem(item: string) {
         data-bs-toggle="dropdown"
         data-bs-auto-close="outside"
       >
-        <slot name="dropdown-toggler-content"></slot>
+        <slot name="dropdown-toggler-content">
+          <span class="flex-centered">
+            <template v-if="inline">
+              <i class="bi bi-filter text-subheader me-1"></i>{{ label }}
+              <span
+                v-if="selectedItems.length > 0"
+                class="bubble text-footnote ms-2"
+                :style="{ width: '16px', height: '16px' }"
+                >{{ selectedItems.length }}</span
+              >
+            </template>
+            <template v-else>
+              {{ selectedItems.length > 0 ? `${selectedItems.length} Selected` : 'All' }}
+            </template>
+          </span>
+        </slot>
       </AppButton>
       <ul class="dropdown-menu text-small mt-2">
         <div class="overflow-auto" :style="{ maxHeight: '35vh' }">
