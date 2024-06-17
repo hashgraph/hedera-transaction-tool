@@ -6,28 +6,28 @@ import StatusField from '@renderer/components/Filter/StatusField.vue';
 
 /* Props */
 const props = defineProps<{
-  filter: {
+  filters: {
     property: keyof ITransaction;
     rule: string;
     value: string | string[];
   }[];
   togglerClass?: string;
   history?: boolean;
-  hideStatus?: boolean;
+  hide?: (keyof ITransaction)[];
 }>();
 
 /* Emits */
-const emit = defineEmits(['update:filter']);
+const emit = defineEmits(['update:filters']);
 
 /* Handlers */
 const handleStatusUpdate = (
   filter: { property: 'status'; rule: string; value: string[] } | null,
 ) => {
   emit(
-    'update:filter',
+    'update:filters',
     filter
-      ? [...props.filter.filter(f => f.property !== 'status'), filter]
-      : props.filter.filter(f => f.property !== 'status'),
+      ? [...props.filters.filter(f => f.property !== 'status'), filter]
+      : props.filters.filter(f => f.property !== 'status'),
   );
 };
 </script>
@@ -42,13 +42,12 @@ const handleStatusUpdate = (
       <slot></slot>
     </AppButton>
     <ul class="dropdown-menu text-small p-5">
-      <div v-if="!hideStatus">
+      <div v-if="!hide?.includes('status')">
         <StatusField
-          :filter="filter.find(f => f.property === 'status') || null"
+          :filter="filters.find(f => f.property === 'status') || null"
           @update:filter="handleStatusUpdate"
-          :history="true"
+          :history="history"
         />
-        <hr class="separator mt-3" />
       </div>
     </ul>
   </div>
