@@ -29,7 +29,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
-import TransactionFilterDropDown from '@renderer/components/Filter/TransactionFilterDropDown.vue';
+import TransactionsFilter from '@renderer/components/Filter/TransactionsFilter.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -61,7 +61,7 @@ const orgSort = reactive<{
   field: 'createdAt',
   direction: 'desc',
 });
-const orgFilter = ref<
+const orgFilters = ref<
   {
     property: keyof ITransaction;
     rule: string;
@@ -136,7 +136,7 @@ async function fetchTransactions() {
         user.selectedOrganization.serverUrl,
         currentPage.value,
         pageSize.value,
-        orgFilter.value,
+        orgFilters.value,
         [{ property: orgSort.field, direction: orgSort.direction }],
       );
       totalItems.value = totalItemsCount;
@@ -177,7 +177,7 @@ watch(
   },
 );
 
-watch(orgFilter, async () => {
+watch(orgFilters, async () => {
   await fetchTransactions();
 });
 </script>
@@ -185,13 +185,21 @@ watch(orgFilter, async () => {
 <template>
   <div class="fill-remaining overflow-x-auto">
     <div v-if="isLoggedInOrganization(user.selectedOrganization)">
-      <TransactionFilterDropDown
-        v-model:filter="orgFilter"
+      <TransactionsFilter
+        v-model:filters="orgFilters"
         toggler-class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
         :history="true"
       >
         <i class="bi bi-filter text-headline me-2"></i> Filter by
-      </TransactionFilterDropDown>
+      </TransactionsFilter>
+      <TransactionsFilter
+        v-model:filters="orgFilters"
+        toggler-class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
+        :history="true"
+        :inline="true"
+      >
+        <i class="bi bi-filter text-headline me-2"></i> Filter by
+      </TransactionsFilter>
     </div>
     <template v-if="isLoading">
       <AppLoader />
