@@ -156,7 +156,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
       <div class="flex-centered justify-content-start gap-4">
         <div>
           <h4 :class="detailItemLabelClass">New Account ID</h4>
-          <p :class="detailItemValueClass">
+          <p :class="detailItemValueClass" data-testid="p-new-account-id">
             {{ entityId }}
           </p>
         </div>
