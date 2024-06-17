@@ -136,15 +136,13 @@ const handleExecuted = async (success: boolean) => {
   }, 5000);
 };
 
-const redirectToDetails = async (id: string | number) => {
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
-  });
-};
-
 const handleSubmit = (id: number) => {
   isSubmitted.value = true;
+  redirectToDetails(id);
+};
+
+const handleLocalStored = (id: string) => {
+  toast.success('Account Delete Transaction Executed', { position: 'bottom-right' });
   redirectToDetails(id);
 };
 
@@ -171,6 +169,13 @@ function createTransaction() {
   }
 
   return transaction;
+}
+
+async function redirectToDetails(id: string | number) {
+  router.push({
+    name: 'transactionDetails',
+    params: { id },
+  });
 }
 
 /* Hooks */
@@ -345,7 +350,7 @@ const columnClass = 'col-4 col-xxxl-3';
       :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"
-      :on-local-stored="redirectToDetails"
+      :on-local-stored="handleLocalStored"
     >
       <template #successHeading>Account deleted successfully</template>
       <template #successContent>

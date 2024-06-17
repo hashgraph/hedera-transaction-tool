@@ -272,11 +272,9 @@ const handleRemoveTransfer = async (index: number) => {
   transfers.value = [...transfers.value];
 };
 
-const redirectToDetails = async (id: string | number) => {
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
-  });
+const handleLocalStored = (id: string) => {
+  toast.success('Transfer Hbar Transaction Executed', { position: 'bottom-right' });
+  redirectToDetails(id);
 };
 
 const handleSubmit = (id: number) => {
@@ -337,6 +335,13 @@ async function getRequiredKeys() {
   }
 
   return keyList;
+}
+
+async function redirectToDetails(id: string | number) {
+  router.push({
+    name: 'transactionDetails',
+    params: { id },
+  });
 }
 
 /* Hooks */
@@ -610,7 +615,7 @@ onMounted(async () => {
         }
       "
       :on-submitted="handleSubmit"
-      :on-local-stored="redirectToDetails"
+      :on-local-stored="handleLocalStored"
     >
       <template #successHeading>Hbar transferred successfully</template>
       <template #successContent>

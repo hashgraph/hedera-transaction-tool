@@ -120,6 +120,7 @@ const handleNodeNumberChange = (e: Event) => {
     newAccountData.stakedNodeId = Number(value);
   }
 };
+
 const handleCreate = async e => {
   e.preventDefault();
 
@@ -176,15 +177,13 @@ const handleLoadFromDraft = async () => {
   }
 };
 
-const redirectToDetails = async (id: string | number) => {
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
-  });
-};
-
 const handleSubmit = (id: number) => {
   isSubmitted.value = true;
+  redirectToDetails(id);
+};
+
+const handleLocalStored = (id: string) => {
+  toast.success('Account Update Transaction Executed', { position: 'bottom-right' });
   redirectToDetails(id);
 };
 
@@ -235,6 +234,13 @@ function createTransaction() {
   }
 
   return transaction;
+}
+
+async function redirectToDetails(id: string | number) {
+  router.push({
+    name: 'transactionDetails',
+    params: { id },
+  });
 }
 
 /* Hooks */
@@ -483,7 +489,7 @@ const columnClass = 'col-4 col-xxxl-3';
       :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
       :on-executed="() => (isExecuted = true)"
       :on-submitted="handleSubmit"
-      :on-local-stored="redirectToDetails"
+      :on-local-stored="handleLocalStored"
     >
       <template #successHeading>Account updated successfully</template>
       <template #successContent>

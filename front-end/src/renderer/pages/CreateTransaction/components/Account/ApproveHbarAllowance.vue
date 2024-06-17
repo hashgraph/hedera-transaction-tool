@@ -125,11 +125,9 @@ const handleLoadFromDraft = async () => {
   }
 };
 
-const redirectToDetails = async (id: string | number) => {
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
-  });
+const handleLocalStored = (id: string) => {
+  toast.success('Approve Allowance Transaction Executed', { position: 'bottom-right' });
+  redirectToDetails(id);
 };
 
 const handleSubmit = (id: number) => {
@@ -160,6 +158,13 @@ function createTransaction() {
   }
 
   return transaction;
+}
+
+async function redirectToDetails(id: string | number) {
+  router.push({
+    name: 'transactionDetails',
+    params: { id },
+  });
 }
 
 /* Hooks */
@@ -332,7 +337,7 @@ const columnClass = 'col-4 col-xxxl-3';
       "
       :on-executed="() => (isExecuted = true)"
       :on-submitted="handleSubmit"
-      :on-local-stored="redirectToDetails"
+      :on-local-stored="handleLocalStored"
     >
       <template #successHeading>Allowance Approved Successfully</template>
       <template #successContent>

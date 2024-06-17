@@ -120,11 +120,9 @@ const handleExecuted = () => {
   isExecuted.value = true;
 };
 
-const redirectToDetails = async (id: string | number) => {
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
-  });
+const handleLocalStored = (id: string) => {
+  toast.success('Freeze Transaction Executed', { position: 'bottom-right' });
+  redirectToDetails(id);
 };
 
 const handleSubmit = (id: number) => {
@@ -187,6 +185,13 @@ function createTransaction() {
   }
 
   return transaction;
+}
+
+async function redirectToDetails(id: string | number) {
+  router.push({
+    name: 'transactionDetails',
+    params: { id },
+  });
 }
 
 /* Watchers */
@@ -350,7 +355,7 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
       ref="transactionProcessor"
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"
-      :on-local-stored="redirectToDetails"
+      :on-local-stored="handleLocalStored"
       :transaction-bytes="transaction?.toBytes() || null"
       :observers="observers"
       :approvers="approvers"
