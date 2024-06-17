@@ -83,30 +83,32 @@ function removeItem(item: string) {
         <slot name="dropdown-toggler-content"></slot>
       </AppButton>
       <ul class="dropdown-menu text-small mt-2">
-        <template v-for="item in items" :key="item">
-          <div class="d-flex align-items-center mt-2">
-            <div
-              class="visible-on-hover activate-on-sibling-hover"
-              :selected="selectedItems.includes(item.value) ? true : undefined"
-            >
-              <AppCheckBox
-                :checked="selectedItems.includes(item.value)"
-                @update:checked="handleSelectItem(item.value)"
-                name="select-transaction-item"
-                class="cursor-pointer"
-              />
+        <div class="overflow-auto" :style="{ maxHeight: '35vh' }">
+          <template v-for="item in items" :key="item">
+            <div class="d-flex align-items-center mt-2">
+              <div
+                class="visible-on-hover activate-on-sibling-hover"
+                :selected="selectedItems.includes(item.value) ? true : undefined"
+              >
+                <AppCheckBox
+                  :checked="selectedItems.includes(item.value)"
+                  @update:checked="handleSelectItem(item.value)"
+                  name="select-transaction-item"
+                  class="cursor-pointer"
+                />
+              </div>
+              <div
+                class="dropdown-item container-multiple-select activate-on-sibling-hover overflow-hidden w-100 p-3"
+                :class="{
+                  'is-selected': selectedItems.includes(item.value),
+                }"
+                @click="handleSelectItem(item.value)"
+              >
+                <p class="text-small text-semi-bold overflow-hidden">{{ item.label }}</p>
+              </div>
             </div>
-            <div
-              class="dropdown-item container-multiple-select activate-on-sibling-hover overflow-hidden w-100 p-3"
-              :class="{
-                'is-selected': selectedItems.includes(item.value),
-              }"
-              @click="handleSelectItem(item.value)"
-            >
-              <p class="text-small text-semi-bold overflow-hidden">{{ item.label }}</p>
-            </div>
-          </div>
-        </template>
+          </template>
+        </div>
       </ul>
     </div>
   </div>
