@@ -29,7 +29,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
-import TransactionFilterDropDown from '@renderer/components/TransactionFilterDropDown.vue';
+import TransactionFilterDropDown from '@renderer/components/Filter/TransactionFilterDropDown.vue';
 
 /* Stores */
 const user = useUserStore();
