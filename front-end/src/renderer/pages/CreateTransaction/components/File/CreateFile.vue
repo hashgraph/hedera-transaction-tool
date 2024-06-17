@@ -232,7 +232,7 @@ onMounted(async () => {
 
 /* Watchers */
 watch(payerData.isValid, isValid => {
-  if (isValid && payerData.key.value) {
+  if (isValid && payerData.key.value && !router.currentRoute.value.query.draftId) {
     ownerKey.value = payerData.key.value;
   }
 });

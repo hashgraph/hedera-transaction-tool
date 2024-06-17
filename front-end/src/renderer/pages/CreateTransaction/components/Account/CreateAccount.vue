@@ -256,7 +256,12 @@ watch(
 );
 
 watch(payerData.isValid, isValid => {
-  if (isValid && payerData.key.value && !ownerKey.value) {
+  if (
+    isValid &&
+    payerData.key.value &&
+    !ownerKey.value &&
+    !router.currentRoute.value.query.draftId
+  ) {
     ownerKey.value = payerData.key.value;
   }
 });
