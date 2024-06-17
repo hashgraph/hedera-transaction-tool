@@ -3,13 +3,11 @@ import { ConfigModule } from '@nestjs/config';
 
 import * as Joi from 'joi';
 
-import { LoggerModule } from '@app/common';
-import { ApiProxyModule } from '@app/common/modules/api-proxy.module';
+import { ApiProxyModule, AuthProxyModule, LoggerModule } from '@app/common';
 
 import { WebsocketModule } from './websocket/websocket.module';
 import { EmailModule } from './email/email.module';
 import { HealthModule } from '@app/common/health';
-import { AuthProxyModule } from '@app/common/modules/auth-proxy.module';
 
 @Module({
   imports: [

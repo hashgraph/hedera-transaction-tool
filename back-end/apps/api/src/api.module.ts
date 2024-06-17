@@ -10,6 +10,9 @@ import { TransactionsModule } from './transactions/transactions.module';
 import { UserKeysModule } from './user-keys/user-keys.module';
 import { UsersModule } from './users/users.module';
 import { HealthModule } from '@app/common/health';
+import { APP_GUARD } from '@nestjs/core';
+import { EmailThrottlerModule, IpThrottlerModule } from './modules';
+import { IpThrottlerGuard } from './guards';
 
 @Module({
   imports: [
@@ -41,6 +44,14 @@ import { HealthModule } from '@app/common/health';
     TransactionsModule,
     NotificationsProxyModule,
     HealthModule,
+    IpThrottlerModule,
+    EmailThrottlerModule,
   ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: IpThrottlerGuard,
+    },
+  ]
 })
 export class ApiModule {}

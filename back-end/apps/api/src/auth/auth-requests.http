@@ -1,45 +1,27 @@
-### Create user for John
-POST https://hederatransactiontool.com/auth/signup
+### Create user local
+POST http://localhost:3001/auth/signup
 content-type: application/json
 
 {
-  "email": "martin.dobrev@limechain.tech"
+  "email": "john.bair+16@swirldslabs.com"
 }
 
-### Create user for Ted
-POST http://localhost:3000/auth/signup
-content-type: application/json
-
-{
-  "email": "ted@test.com",
-  "password": "123456789"
-}
-
-### Create user with real email
-POST http://localhost:3000/auth/signup
+### Log in local
+POST http://localhost:3001/auth/login
 content-type: application/json
 
 {
   "email": "john.bair@swirldslabs.com",
-  "password": "123456789"
-}
-
-### Log in John
-POST https://hederatransactiontool.com/auth/login
-content-type: application/json
-
-{
-  "email": "john.bair@swirldslabs.com",
-  "password": "123456789"
+  "password": "1234567890"
 }
 
 ### Log in Ted
-POST https://34.49.46.8/auth/login
+POST http://localhost:3001/auth/login
 content-type: application/json
 
 {
-  "email": "john.bair@swirldslabs.com",
-  "password": "123456789"
+  "email": "pisosoft@outlook.com",
+  "password": "NIbl1iIMJcZVEMz5"
 }
 
 ### Sing out
@@ -47,10 +29,18 @@ POST http://localhost:3000/auth/signout
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiam9obkB0ZXN0LmNvbSIsImlhdCI6MTcxMDc3NDAzNywiZXhwIjoxNzEwODEwMDM3fQ.h_NwgTMmancbf-ifAlOtH9SuGGqf6MW4COjbryIp14s
 
 ### Update password for current user
-PATCH http://localhost:3000/auth/change-password
+PATCH http://localhost:3001/auth/change-password
 content-type: application/json
 
 {
-  "oldPassword": "1234567890",
-  "newPassword": "123456789"
+  "oldPassword": "123456789",
+  "newPassword": "1234567890"
+}
+
+### Reset password
+POST http://localhost:3001/auth/reset-password
+content-type: application/json
+
+{
+  "email": "john.ted@thing.com"
 }
