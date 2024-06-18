@@ -353,7 +353,6 @@ const columnClass = 'col-4 col-xxxl-3';
       :transaction-bytes="transaction?.toBytes() || null"
       :observers="observers"
       :approvers="approvers"
-      :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"
       :on-local-stored="handleLocalStored"

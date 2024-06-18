@@ -490,23 +490,6 @@ const columnClass = 'col-4 col-xxxl-3';
         }
       "
       :on-local-stored="handleLocalStored"
-      :on-close-success-modal-click="
-        () => {
-          validStart = new Date();
-          maxTransactionFee = new Hbar(2);
-          fileId = '';
-          newOwnerKey = null;
-          ownerKey = null;
-          memo = '';
-          expirationTimestamp = undefined;
-          fileMeta = null;
-          fileBuffer = null;
-          chunkSize = 2048;
-          content = '';
-          chunksAmount = null;
-          transaction = null;
-        }
-      "
     >
       <template #successHeading>File updated successfully</template>
       <template #successContent>

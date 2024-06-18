@@ -10,7 +10,7 @@ import {
   TransactionReceipt,
 } from '@hashgraph/sdk';
 
-import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+import { MEMO_MAX_LENGTH, TRANSACTION_MAX_SIZE } from '@main/shared/constants';
 import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import { Prisma } from '@prisma/client';
@@ -34,6 +34,7 @@ import {
   getTransactionFromBytes,
   getPropagationButtonLabel,
   isAccountId,
+  convertBytes,
 } from '@renderer/utils';
 import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
@@ -73,6 +74,11 @@ const fileName = ref('');
 const description = ref('');
 const transactionMemo = ref('');
 
+const fileMeta = ref<File | null>(null);
+const fileReader = ref<FileReader | null>(null);
+const fileBuffer = ref<Uint8Array | null>(null);
+const loadPercentage = ref(0);
+
 const observers = ref<number[]>([]);
 const approvers = ref<TransactionApproverDto[]>([]);
 
@@ -90,6 +96,47 @@ const transactionKey = computed(() => {
 });
 
 /* Handlers */
+const handleRemoveFile = async () => {
+  fileReader.value?.abort();
+  fileMeta.value = null;
+  fileReader.value = null;
+  fileBuffer.value = null;
+  content.value = '';
+};
+
+const handleFileImport = async (e: Event) => {
+  const fileImportEl = e.target as HTMLInputElement;
+  const file = fileImportEl.files && fileImportEl.files[0];
+
+  if (file) {
+    if (file.size >= TRANSACTION_MAX_SIZE) {
+      toast.error(
+        `File too large (${convertBytes(file.size)}), Hedera max transaction size is: ${convertBytes(TRANSACTION_MAX_SIZE)}`,
+        { position: 'bottom-right' },
+      );
+      return;
+    }
+
+    fileMeta.value = file;
+
+    fileReader.value = new FileReader();
+
+    fileReader.value.readAsArrayBuffer(file);
+    fileReader.value.addEventListener('loadend', async () => {
+      const data = fileReader.value?.result;
+      if (data && data instanceof ArrayBuffer) {
+        fileBuffer.value = new Uint8Array(data);
+      }
+    });
+    fileReader.value.addEventListener(
+      'progress',
+      e => (loadPercentage.value = (100 * e.loaded) / e.total),
+    );
+    fileReader.value.addEventListener('error', () => console.log('Error'));
+    fileReader.value.addEventListener('abort', () => console.log('Aborted'));
+  }
+};
+
 const handleCreate = async e => {
   e.preventDefault();
 
@@ -197,7 +244,6 @@ function createTransaction() {
   const transaction = new FileCreateTransaction()
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(new Hbar(maxTransactionFee.value || 0))
-    .setContents(content.value)
     .setFileMemo(memo.value);
 
   if (ownerKey.value) {
@@ -214,6 +260,14 @@ function createTransaction() {
 
   if (transactionMemo.value.length > 0 && transactionMemo.value.length <= MEMO_MAX_LENGTH) {
     transaction.setTransactionMemo(transactionMemo.value);
+  }
+
+  if (content.value.length > 0) {
+    transaction.setContents(content.value);
+  }
+
+  if (fileBuffer.value) {
+    transaction.setContents(fileBuffer.value);
   }
 
   return transaction;
@@ -365,11 +419,35 @@ watch(payerData.isValid, isValid => {
           </div>
         </div>
 
+        <div class="mt-6 form-group">
+          <label for="fileUpload" class="form-label">
+            <span for="fileUpload" class="btn btn-primary" :class="{ disabled: content.length > 0 }"
+              >Upload File</span
+            >
+          </label>
+          <AppInput
+            class="form-control form-control-sm is-fill"
+            id="fileUpload"
+            name="fileUpload"
+            type="file"
+            :disabled="content.length > 0"
+            @change="handleFileImport"
+          />
+          <template v-if="fileMeta">
+            <span v-if="fileMeta" class="ms-3">{{ fileMeta.name }}</span>
+            <span v-if="loadPercentage < 100" class="ms-3">{{ loadPercentage.toFixed(2) }}%</span>
+            <span v-if="fileMeta" class="ms-3 cursor-pointer" @click="handleRemoveFile"
+              ><i class="bi bi-x-lg"></i
+            ></span>
+          </template>
+        </div>
+
         <div class="row mt-6">
           <div class="form-group col-12 col-xl-8">
             <label class="form-label">File Contents</label>
             <textarea
               v-model="content"
+              :disabled="Boolean(fileBuffer)"
               class="form-control is-fill"
               rows="10"
               data-testid="textarea-file-content"
@@ -426,7 +504,6 @@ watch(payerData.isValid, isValid => {
       :transaction-bytes="transaction?.toBytes() || null"
       :observers="observers"
       :approvers="approvers"
-      :on-close-success-modal-click="() => $router.push({ name: 'files' })"
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"
       :on-local-stored="handleLocalStored"

@@ -346,20 +346,6 @@ const columnClass = 'col-4 col-xxxl-3';
         }
       "
       :on-local-stored="handleLocalStored"
-      :on-close-success-modal-click="
-        () => {
-          validStart = new Date();
-          maxTransactionFee = new Hbar(2);
-          fileId = '';
-          ownerKey = null;
-          fileMeta = null;
-          fileBuffer = null;
-          chunkSize = 2048;
-          content = '';
-          chunksAmount = null;
-          transaction = null;
-        }
-      "
     >
       <template #successHeading>Appended to file successfully</template>
       <template #successContent>
