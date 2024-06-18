@@ -121,7 +121,7 @@ class TransactionPage extends BasePage {
   transactionTypeHeaderSelector = 'h2-transaction-type';
   transactionDetailsCreatedAtSelector = 'p-transaction-details-created-at';
   transactionDetailsIdSelector = 'p-transaction-details-id';
-  approveAllowanceTransactionMemoSelector = 'inout-transaction-memo-for-approve-allowance';
+  approveAllowanceTransactionMemoSelector = 'input-transaction-memo-for-approve-allowance';
   newAccountIdDetailsSelector = 'p-new-account-id';
   transactionStatusIndexSelector = 'td-transaction-status-';
   draftDetailsDateIndexSelector = 'span-draft-tx-date-';
