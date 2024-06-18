@@ -15,6 +15,15 @@ content-type: application/json
   "password": "1234567890"
 }
 
+### Log in remote
+POST https://34.49.46.8/auth/login
+content-type: application/json
+
+{
+  "email": "john.bair@swirldslabs.com",
+  "password": "123456789"
+}
+
 ### Log in Ted
 POST http://localhost:3001/auth/login
 content-type: application/json
