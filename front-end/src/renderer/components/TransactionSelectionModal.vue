@@ -20,7 +20,7 @@ const activeGroupIndex = ref(0);
 /* Misc */
 const transactionGroups = [
   {
-    groupTitle: 'Crypto Service',
+    groupTitle: 'Account',
     items: [
       { label: 'Create Account', name: transactionTypeKeys.createAccount },
       { label: 'Update Account', name: transactionTypeKeys.updateAccount },
@@ -31,7 +31,7 @@ const transactionGroups = [
     ],
   },
   {
-    groupTitle: 'File Service',
+    groupTitle: 'File',
     items: [
       { label: 'Create File', name: transactionTypeKeys.createFile },
       { label: 'Update File', name: transactionTypeKeys.updateFile },
@@ -42,7 +42,7 @@ const transactionGroups = [
   },
   // { groupTitle: 'Token Service', items: [] },
   // { groupTitle: 'Smart Contract Service', items: [] },
-  { groupTitle: 'Software Update', items: [{ label: 'Freeze', name: transactionTypeKeys.freeze }] },
+  { groupTitle: 'Node', items: [{ label: 'Freeze', name: transactionTypeKeys.freeze }] },
   // { groupTitle: 'Token Service', items: [] },
   // { groupTitle: 'Schedule Service', items: [] },
   // { groupTitle: 'Freeze Service', items: [] },
