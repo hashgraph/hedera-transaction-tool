@@ -3,39 +3,21 @@ import * as path from 'path';
 
 import { NestFactory } from '@nestjs/core';
 import { Transport } from '@nestjs/microservices';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
 import { NestApplicationOptions, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-
 import { Logger } from 'nestjs-pino';
-
-import { ApiModule } from './api.module';
-
 import * as cookieParser from 'cookie-parser';
+
 import { API_SERVICE } from '@app/common';
 
 import { version } from '../package.json';
-import { NestExpressApplication } from '@nestjs/platform-express';
+
+import { ApiModule } from './api.module';
 
 async function bootstrap() {
-  let app: NestExpressApplication;
-
-  if (process.env.NODE_ENV === 'production') {
-    app = await NestFactory.create(ApiModule);
-
-    app.enable('trust proxy');
-  } else {
-    const options: NestApplicationOptions = {};
-    try {
-      const key = fs.readFileSync(path.resolve(__dirname, '../../../cert/key.pem'));
-      const cert = fs.readFileSync(path.resolve(__dirname, '../../../cert/cert.pem'));
-      options.httpsOptions = { key, cert };
-    } catch (error) {
-      console.log(error);
-    }
-
-    app = await NestFactory.create(ApiModule, options);
-  }
+  const app: NestExpressApplication = await createApp();
 
   const configService = app.get(ConfigService);
   app.connectMicroservice({
@@ -82,4 +64,25 @@ async function bootstrap() {
   await app.startAllMicroservices();
   await app.listen(configService.get<string>('HTTP_PORT'));
 }
+
+async function createApp(): Promise<NestExpressApplication> {
+  if (process.env.NODE_ENV === 'production') {
+    const app = (await NestFactory.create(ApiModule)) as NestExpressApplication;
+    app.enable('trust proxy');
+
+    return app;
+  } else {
+    const options: NestApplicationOptions = {};
+    try {
+      const key = fs.readFileSync(path.resolve(__dirname, '../../../cert/key.pem'));
+      const cert = fs.readFileSync(path.resolve(__dirname, '../../../cert/cert.pem'));
+      options.httpsOptions = { key, cert };
+    } catch (error) {
+      console.log(error);
+    }
+
+    return (await NestFactory.create(ApiModule, options)) as NestExpressApplication;
+  }
+}
+
 bootstrap();
