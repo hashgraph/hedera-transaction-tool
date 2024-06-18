@@ -34,15 +34,19 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
       <div class="row flex-wrap my-3" :class="{ 'mt-0': i === 0 }">
         <div v-if="approval.ownerAccountId" :class="commonColClass">
           <h4 :class="detailItemLabelClass">Owner ID</h4>
-          <p :class="detailItemValueClass">{{ approval.ownerAccountId?.toString() }}</p>
+          <p :class="detailItemValueClass" data-testid="p-account-approve-details-owner-id">
+            {{ approval.ownerAccountId?.toString() }}
+          </p>
         </div>
         <div v-if="approval.spenderAccountId" :class="commonColClass">
           <h4 :class="detailItemLabelClass">Spender ID</h4>
-          <p :class="detailItemValueClass">{{ approval.spenderAccountId?.toString() }}</p>
+          <p :class="detailItemValueClass" data-testid="p-account-approve-details-spender-id">
+            {{ approval.spenderAccountId?.toString() }}
+          </p>
         </div>
         <div :class="commonColClass">
           <h4 :class="detailItemLabelClass">Amount</h4>
-          <p :class="detailItemValueClass">
+          <p :class="detailItemValueClass" data-testid="p-account-approve-details-amount">
             {{ stringifyHbar(approval.amount || Hbar.fromString('0')) }}
           </p>
         </div>

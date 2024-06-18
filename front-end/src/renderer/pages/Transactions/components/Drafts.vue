@@ -206,16 +206,19 @@ watch([currentPage, pageSize], async () => {
               <tr>
                 <td>{{ i + 1 }}</td>
                 <td>
-                  <span class="text-secondary">
+                  <span class="text-secondary" :data-testid="'span-draft-tx-date-' + i">
                     {{ draft.created_at.toLocaleString() }}
                   </span>
                 </td>
                 <td>
-                  <span class="text-bold">{{ draft.type }}</span>
+                  <span class="text-bold" :data-testid="'span-draft-tx-type-' + i">{{
+                    draft.type
+                  }}</span>
                 </td>
                 <td class="text-center">
                   <input
                     class="form-check-input"
+                    :data-testid="'checkbox-is-template-' + i"
                     type="checkbox"
                     :checked="Boolean(draft.isTemplate)"
                     @change="e => handleUpdateIsTemplate(e, draft.id)"
@@ -223,10 +226,16 @@ watch([currentPage, pageSize], async () => {
                 </td>
                 <td class="text-center">
                   <div class="d-flex justify-content-center flex-wrap gap-3">
-                    <AppButton color="borderless" @click="handleDeleteDraft(draft.id)"
+                    <AppButton
+                      color="borderless"
+                      :data-testid="'button-draft-delete-' + i"
+                      @click="handleDeleteDraft(draft.id)"
                       >Delete</AppButton
                     >
-                    <AppButton color="secondary" @click="handleContinueDraft(draft.id)"
+                    <AppButton
+                      color="secondary"
+                      :data-testid="'button-draft-continue-' + i"
+                      @click="handleContinueDraft(draft.id)"
                       >Continue</AppButton
                     >
                   </div>

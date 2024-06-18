@@ -76,13 +76,19 @@ onBeforeMount(async () => {
                   </template>
                   <template v-else>
                     <p v-if="debit.isApproved" class="text-small text-semi-bold me-2">Approved</p>
-                    <p class="text-secondary text-small overflow-hidden">
+                    <p
+                      class="text-secondary text-small overflow-hidden"
+                      data-testid="p-transfer-from-account-details"
+                    >
                       {{ debit.accountId }}
                     </p>
                   </template>
                 </div>
                 <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
-                  <p class="text-secondary text-small text-bold overflow-hidden">
+                  <p
+                    class="text-secondary text-small text-bold overflow-hidden"
+                    data-testid="p-transfer-from-amount-details"
+                  >
                     {{ stringifyHbar(debit.amount) }}
                   </p>
                 </div>
@@ -115,19 +121,28 @@ onBeforeMount(async () => {
                             ?.nickname
                         }}
                       </p>
-                      <p class="text-secondary text-micro overflow-hidden">
+                      <p
+                        class="text-secondary text-micro overflow-hidden"
+                        data-testid="p-transfer-to-account-details"
+                      >
                         {{ credit.accountId }}
                       </p>
                     </div>
                   </template>
                   <template v-else>
-                    <p class="text-secondary text-small overflow-hidden">
+                    <p
+                      class="text-secondary text-small overflow-hidden"
+                      data-testid="p-transfer-to-account-details"
+                    >
                       {{ credit.accountId }}
                     </p>
                   </template>
                 </div>
                 <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
-                  <p class="text-secondary text-small text-bold overflow-hidden">
+                  <p
+                    class="text-secondary text-small text-bold overflow-hidden"
+                    data-testid="p-transfer-to-amount-details"
+                  >
                     {{ stringifyHbar(credit.amount) }}
                   </p>
                 </div>

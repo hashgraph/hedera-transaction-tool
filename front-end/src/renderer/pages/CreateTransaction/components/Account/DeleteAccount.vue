@@ -242,6 +242,7 @@ const columnClass = 'col-4 col-xxxl-3';
             v-model="transactionMemo"
             :filled="true"
             maxlength="100"
+            data-testid="input-delete-account-memo"
             placeholder="Enter Transaction Memo"
           />
         </div>

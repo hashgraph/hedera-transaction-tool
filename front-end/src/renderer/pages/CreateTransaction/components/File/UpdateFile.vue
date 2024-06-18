@@ -308,6 +308,7 @@ const columnClass = 'col-4 col-xxxl-3';
           <AppInput
             v-model="transactionMemo"
             :filled="true"
+            data-testid="input-transaction-memo-for-file-update"
             maxlength="100"
             placeholder="Enter Transaction Memo"
           />
@@ -359,6 +360,7 @@ const columnClass = 'col-4 col-xxxl-3';
               type="text"
               :filled="true"
               maxlength="100"
+              data-testid="input-file-update-memo"
               placeholder="Enter memo"
             />
           </div>

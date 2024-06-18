@@ -337,6 +337,7 @@ const columnClass = 'col-4 col-xxxl-3';
           <label class="form-label">Transaction Memo</label>
           <AppInput
             v-model="transactionMemo"
+            data-testid="input-transaction-memo"
             :filled="true"
             maxlength="100"
             placeholder="Enter Transaction Memo"
@@ -448,6 +449,7 @@ const columnClass = 'col-4 col-xxxl-3';
             v-model:checked="newAccountData.receiverSignatureRequired"
             size="md"
             name="receiver-signature"
+            data-testid="switch-receiver-sig-required-for-update"
             label="Receiver Signature Required"
           />
         </div>

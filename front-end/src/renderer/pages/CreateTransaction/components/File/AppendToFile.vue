@@ -250,6 +250,7 @@ const columnClass = 'col-4 col-xxxl-3';
             v-model="transactionMemo"
             :filled="true"
             maxlength="100"
+            data-testid="input-transaction-memo-for-file-append"
             placeholder="Enter Transaction Memo"
           />
         </div>

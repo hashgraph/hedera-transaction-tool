@@ -148,7 +148,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
       class="col-12 mb-3"
     >
       <h4 :class="detailItemLabelClass">Account ID</h4>
-      <p :class="detailItemValueClass">
+      <p :class="detailItemValueClass" data-testid="p-account-details-id">
         {{ transaction.accountId.toString() }}
       </p>
     </div>
@@ -156,7 +156,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
       <div class="flex-centered justify-content-start gap-4">
         <div>
           <h4 :class="detailItemLabelClass">New Account ID</h4>
-          <p :class="detailItemValueClass">
+          <p :class="detailItemValueClass" data-testid="p-new-account-id">
             {{ entityId }}
           </p>
         </div>
@@ -185,7 +185,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
       :class="{ 'mt-3': transaction instanceof AccountUpdateTransaction && transaction.accountId }"
     >
       <h4 :class="detailItemLabelClass">Key</h4>
-      <p :class="detailItemValueClass">
+      <p :class="detailItemValueClass" data-testid="p-account-details-key">
         <template v-if="transaction.key instanceof KeyList && true">
           <span class="link-primary cursor-pointer" @click="isKeyStructureModalShown = true"
             >See details</span
@@ -209,7 +209,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
       class="col-12 my-3"
     >
       <h4 :class="detailItemLabelClass">Memo</h4>
-      <p :class="detailItemValueClass">
+      <p :class="detailItemValueClass" data-testid="p-account-details-memo">
         {{ transaction.accountMemo }}
       </p>
     </div>
@@ -217,7 +217,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
     <!-- Staking -->
     <div :class="commonColClass">
       <h4 :class="detailItemLabelClass">Staking</h4>
-      <p :class="detailItemValueClass">
+      <p :class="detailItemValueClass" data-testid="p-account-details-staking">
         {{
           transaction.stakedAccountId && transaction.stakedAccountId.toString() !== '0.0.0'
             ? `Account ${transaction.stakedAccountId.toString()}`
@@ -231,7 +231,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
     <!-- Decline staking rewards -->
     <div :class="commonColClass">
       <h4 :class="detailItemLabelClass">Decline Staking Rewards</h4>
-      <p :class="detailItemValueClass">
+      <p :class="detailItemValueClass" data-testid="p-account-details-decline-rewards">
         {{ transaction.declineStakingRewards ? 'Yes' : 'No' }}
       </p>
     </div>
@@ -239,7 +239,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
     <!-- Receiver signature required -->
     <div :class="commonColClass">
       <h4 :class="detailItemLabelClass">Receiver Signature Required</h4>
-      <p :class="detailItemValueClass">
+      <p :class="detailItemValueClass" data-testid="p-account-details-receiver-sig-required">
         {{ transaction.receiverSignatureRequired ? 'Yes' : 'No' }}
       </p>
     </div>
@@ -250,7 +250,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
       :class="commonColClass"
     >
       <h4 :class="detailItemLabelClass">Initial balance</h4>
-      <p :class="detailItemValueClass">
+      <p :class="detailItemValueClass" data-testid="p-account-details-init-balance">
         {{ stringifyHbar(transaction.initialBalance) }}
       </p>
     </div>

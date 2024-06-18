@@ -432,6 +432,7 @@ const approve = 'Approve';
                   type="button"
                   color="secondary"
                   class="btn-icon-only me-4"
+                  data-testid="button-back"
                   @click="handleBack"
                 >
                   <i class="bi bi-arrow-left"></i>
@@ -462,7 +463,7 @@ const approve = 'Approve';
                 "
               >
                 <h4 :class="detailItemLabelClass">Name</h4>
-                <p :class="detailItemValueClass">
+                <p :class="detailItemValueClass" data-testid="p-transaction-details-name">
                   {{ orgTransaction?.name || localTransaction?.name }}
                 </p>
               </div> -->
@@ -525,7 +526,7 @@ const approve = 'Approve';
                 <!-- Transaction Created -->
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Created at</h4>
-                  <p :class="detailItemValueClass">
+                  <p :class="detailItemValueClass" data-testid="p-transaction-details-created-at">
                     {{
                       getDateStringExtended(
                         new Date(
@@ -542,7 +543,7 @@ const approve = 'Approve';
                   :class="commonColClass"
                 >
                   <h4 :class="detailItemLabelClass">Executed at</h4>
-                  <p :class="detailItemValueClass">
+                  <p :class="detailItemValueClass" data-testid="p-transaction-details-executed_at">
                     {{
                       getDateStringExtended(
                         new Date(
@@ -577,19 +578,23 @@ const approve = 'Approve';
                 <!-- Transaction Type -->
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Type</h4>
-                  <p :class="detailItemValueClass">{{ getTransactionType(sdkTransaction) }}</p>
+                  <p :class="detailItemValueClass" data-testid="p-transaction-details-type">
+                    {{ getTransactionType(sdkTransaction) }}
+                  </p>
                 </div>
 
                 <!-- Transaction ID -->
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Transaction ID</h4>
-                  <p :class="detailItemValueClass">{{ getTransactionId(sdkTransaction) }}</p>
+                  <p :class="detailItemValueClass" data-testid="p-transaction-details-id">
+                    {{ getTransactionId(sdkTransaction) }}
+                  </p>
                 </div>
 
                 <!-- Transaction Valid Start -->
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Valid Start</h4>
-                  <p :class="detailItemValueClass">
+                  <p :class="detailItemValueClass" data-testid="p-transaction-details-valid-start">
                     {{ getTransactionDateExtended(sdkTransaction) }}
                   </p>
                 </div>
@@ -597,7 +602,7 @@ const approve = 'Approve';
                 <!-- Transaction Fee Payer -->
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Fee Payer</h4>
-                  <p :class="detailItemValueClass">
+                  <p :class="detailItemValueClass" data-testid="p-transaction-details-fee-payer">
                     {{ getTransactionPayerId(sdkTransaction) }}
                   </p>
                 </div>
@@ -606,7 +611,7 @@ const approve = 'Approve';
               <!-- Transaction Memo -->
               <div v-if="sdkTransaction.transactionMemo" class="mt-5">
                 <h4 :class="detailItemLabelClass">Transaction Memo</h4>
-                <p :class="detailItemValueClass">
+                <p :class="detailItemValueClass" data-testid="p-transaction-details-memo">
                   {{ sdkTransaction.transactionMemo }}
                 </p>
               </div>
