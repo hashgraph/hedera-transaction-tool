@@ -49,7 +49,7 @@ import {
 import { UserDto } from '../users/dtos';
 import { CreateTransactionDto } from './dto';
 
-import { ApproversService } from './approvers/approvers.service';
+import { ApproversService } from './approvers';
 import { userKeysRequiredToSign } from '../utils';
 
 @Injectable()
@@ -233,6 +233,7 @@ export class TransactionsService {
 
     const transactions = await this.repo.find({
       where: whereForUser,
+      relations: ['groupItem'],
       order,
     });
 
@@ -272,6 +273,7 @@ export class TransactionsService {
       order,
       relations: {
         creatorKey: true,
+        groupItem: true,
       },
       skip: offset,
       take: limit,
@@ -464,9 +466,7 @@ export class TransactionsService {
     if (userApprovers.length === 0) return false;
 
     /* Check if the user has already approved the transaction */
-    if (userApprovers.every(a => a.signature)) return false;
-
-    return true;
+    return !userApprovers.every(a => a.signature);
   }
 
   private getHistoryStatusWhere(
