@@ -125,17 +125,6 @@ class BasePage {
     return await element.isEditable();
   }
 
-  async isElementVisibleByIndex(testId, index = 1, timeout = this.DEFAULT_TIMEOUT) {
-    console.log(`Checking if element with testId: ${testId} at index: ${index} is visible`);
-    try {
-      const element = this.window.getByTestId(testId).nth(index);
-      await element.waitFor({ state: 'visible', timeout: timeout });
-      return await element.isVisible();
-    } catch (error) {
-      return false;
-    }
-  }
-
   async waitForElementToDisappear(
     selector,
     timeout = this.DEFAULT_TIMEOUT,
@@ -239,6 +228,59 @@ class BasePage {
       );
       throw error;
     }
+  }
+
+  /**
+   * Checks whether the switch with the specified testId is toggled on or off.
+   * @param {string} testId - The data-testid of the switch.
+   * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be actionable.
+   * @returns {Promise<boolean>} - Returns true if the switch is toggled on, false otherwise.
+   */
+  async isSwitchToggledOn(testId, timeout = this.DEFAULT_TIMEOUT) {
+    console.log(`Checking if switch with testId: ${testId} is toggled on`);
+    const selector = `input[type='checkbox'][data-testid="${testId}"]`;
+    try {
+      const element = await this.window.waitForSelector(selector, {
+        state: 'attached',
+        timeout: timeout,
+      });
+      const isChecked = await element.isChecked();
+      console.log(`Switch with testId: ${testId} is toggled ${isChecked ? 'on' : 'off'}`);
+      return isChecked;
+    } catch (error) {
+      console.error(
+        `Failed to determine the state of the switch with testId: ${testId}. Error: ${error.message}`,
+      );
+      throw error;
+    }
+  }
+
+  async waitForInputFieldToBeFilled(testId, index = 0, timeout = this.LONG_TIMEOUT) {
+    console.log(`Waiting for input field with testId: ${testId} to be filled`);
+    const element = this.window.getByTestId(testId).nth(index);
+
+    const maxAttempts = timeout / 500; // Check every 500ms until the timeout
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+      const tagName = await element.evaluate(node => node.tagName.toLowerCase());
+      if (['input', 'textarea', 'select'].includes(tagName)) {
+        const value = await element.inputValue();
+        if (value.trim() !== '') {
+          console.log(`Input field with testId: ${testId} is filled with value: ${value}`);
+          return value;
+        }
+      } else {
+        throw new Error(
+          `Element with testId: ${testId} is not an input, textarea, or select element`,
+        );
+      }
+
+      attempts++;
+      await new Promise(resolve => setTimeout(resolve, 500)); // Wait for 500 milliseconds before retrying
+    }
+
+    throw new Error(`Input field with testId: ${testId} was not filled within the timeout period`);
   }
 }
 

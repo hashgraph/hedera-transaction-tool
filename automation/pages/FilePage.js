@@ -25,6 +25,7 @@ class FilePage extends BasePage {
   linkFileButtonSelector = 'button-link-file';
   confirmUnlinkFileButtonSelector = 'button-confirm-unlink-file';
   filesMenuButtonSelector = 'button-menu-files';
+  selectManyFilesButtonSelector = 'button-select-many-files';
 
   // Inputs
   existingFileIdInputSelector = 'input-existing-file-id';
@@ -122,10 +123,6 @@ class FilePage extends BasePage {
     return await this.getTextByTestId(this.fileDescriptionTextSelector);
   }
 
-  async getUnlikedFiles() {
-    return this.unlikedFiles;
-  }
-
   async getFirstFileFromList() {
     return await this.unlikedFiles[0];
   }
@@ -195,6 +192,10 @@ class FilePage extends BasePage {
       await this.addFileToUnliked(fileId);
       await this.waitForElementToDisappear(this.toastMessageSelector);
     }
+  }
+
+  async clickOnSelectManyFilesButton() {
+    await this.clickByTestId(this.selectManyFilesButtonSelector);
   }
 }
 

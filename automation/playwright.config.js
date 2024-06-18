@@ -8,9 +8,6 @@ export default defineConfig({
     {
       name: 'Transaction tool',
       testDir: './tests',
-      use: {
-        channel: 'chrome',
-      },
     },
   ],
 });

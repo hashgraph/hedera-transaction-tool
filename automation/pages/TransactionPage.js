@@ -26,6 +26,7 @@ class TransactionPage extends BasePage {
   updateAccountInputSelector = 'input-account-id-for-update';
   maxAutoAssociationsUpdateInputSelector = 'input-max-auto-token-associations';
   memoUpdateInputSelector = 'input-memo-update';
+  transactionMemoUpdateInputSelector = 'input-transaction-memo';
   transferFromAccountIdInputSelector = 'input-transfer-from-account';
   transferAmountFromAccountInputSelector = 'input-transfer-from-amount';
   transferToAccountIdInputSelector = 'input-transfer-to-account';
@@ -44,10 +45,14 @@ class TransactionPage extends BasePage {
   fileIdInputForAppendSelector = 'input-file-id-append';
   fileContentAppendTextFieldSelector = 'textarea-file-content-for-append';
   fileCreateTransactionMemoInputSelector = 'input-transaction-memo-for-file-create';
-  fileCreateMemoInputSelector = 'input-expiration-time-for-file';
+  fileUpdateTransactionMemoInputSelector = 'input-transaction-memo-for-file-update';
+  fileAppendTransactionMemoInputSelector = 'input-transaction-memo-for-file-append';
+  fileCreateMemoInputSelector = 'input-memo-for-file-create';
   fileCreateExpirationDateInputSelector = 'input-expiration-time-for-file';
   fileCreateNameInputSelector = 'input-file-name-for-file-create';
   fileCreateDescriptionInputSelector = 'input-file-description-for-file-create';
+  deleteAccountMemoInputSelector = 'input-delete-account-memo';
+  fileUpdateMemoInputSelector = 'input-file-update-memo';
 
   //Buttons
   transactionsMenuButtonSelector = 'button-menu-transactions';
@@ -71,6 +76,7 @@ class TransactionPage extends BasePage {
   singleTabSelector = 'tab-single';
   complexTabSelector = 'tab-complex';
   receiverSigRequiredSwitchSelector = 'switch-receiver-sig-required';
+  receiverSigRequiredSwitchForUpdateSelector = 'switch-receiver-sig-required-for-update';
   acceptStakingRewardsSwitchSelector = 'switch-accept-staking-rewards';
   discardModalDraftButtonSelector = 'button-discard-draft-modal';
   buttonSignTransactionSelector = 'button-sign-transaction';
@@ -94,12 +100,12 @@ class TransactionPage extends BasePage {
   signAndSubmitUpdateFileSelector = 'button-sign-and-submit-update-file';
   signFileUpdateButtonSelector = 'button-sign-file-update';
   continueSignFileUpdateButtonSelector = 'button-continue-sign-file-update-transaction';
-  closeCompletedTxFileButtonSelector = 'button-close-file-update';
   signAndSubmitFileAppendButtonSelector = 'button-sign-and-submit-file-append';
+  draftsTabSelector = 'tab-0';
+  draftDeleteButtonIndexSelector = 'button-draft-delete-';
+  draftContinueButtonIndexSelector = 'button-draft-continue-';
 
   //Other
-  successCheckMarkIconSelector = 'icon-success-checkmark';
-  successCheckMarkIconForFileSelector = 'icon-file-update-checkmark';
   modalTransactionSuccessSelector = 'modal-transaction-success';
   confirmTransactionModalSelector = 'modal-confirm-transaction';
   spanCreateNewComplexKeyButtonSelector = 'span-create-new-complex-key';
@@ -108,15 +114,19 @@ class TransactionPage extends BasePage {
   //Messages
   textTypeTransactionSelector = 'p-type-transaction';
   textTransactionIdSelector = 'p-transaction-id';
-  linkTransactionIdSelector = 'a-transaction-id';
-  linkTransactionIdForFileSelector = 'a-transaction-id-for-file-update';
   textMaxTxFeeSelector = 'p-max-tx-fee';
-  newlyCreatedTransactionIdSelector = 'a-transaction-id';
-  newlyCreatedAccountIdSelector = 'p-new-crated-account-id';
   accountIdPrefixSelector = 'p-account-id-';
   toastMessageSelector = '.v-toast__text';
   hbarAmountValueSelector = 'p-hbar-amount';
   transactionTypeHeaderSelector = 'h2-transaction-type';
+  transactionDetailsCreatedAtSelector = 'p-transaction-details-created-at';
+  transactionDetailsIdSelector = 'p-transaction-details-id';
+  approveAllowanceTransactionMemoSelector = 'inout-transaction-memo-for-approve-allowance';
+  newAccountIdDetailsSelector = 'p-new-account-id';
+  transactionStatusIndexSelector = 'td-transaction-status-';
+  draftDetailsDateIndexSelector = 'span-draft-tx-date-';
+  draftDetailsTypeIndexSelector = 'span-draft-tx-type-';
+  draftDetailsIsTemplateCheckboxSelector = 'checkbox-is-template-';
 
   // Method to close the 'Save Draft' modal if it appears
   async closeDraftModal() {
@@ -489,7 +499,7 @@ class TransactionPage extends BasePage {
     }
   }
 
-  async createNewAccount(password, options = {}) {
+  async createNewAccount(password, options = {}, isComingFromDraft = false) {
     const {
       isComplex = false,
       maxAutoAssociations = null,
@@ -497,10 +507,10 @@ class TransactionPage extends BasePage {
       isReceiverSigRequired = false,
       memo = null,
     } = options;
-
-    await this.clickOnCreateNewTransactionButton();
-    await this.clickOnCreateAccountTransaction();
-
+    if (!isComingFromDraft) {
+      await this.clickOnCreateNewTransactionButton();
+      await this.clickOnCreateAccountTransaction();
+    }
     // Handle complex key creation
     if (isComplex) {
       await this.handleComplexKeyCreation();
@@ -525,14 +535,13 @@ class TransactionPage extends BasePage {
     await this.clickSignTransactionButton();
     await this.fillInPassword(password);
     await this.clickOnPasswordContinue();
-    await this.waitForSuccessModalToAppear();
+    await this.waitForCreatedAtToBeVisible();
 
-    const [newAccountId, newTransactionId] = await Promise.all([
-      this.getNewAccountIdText(),
-      this.getNewTransactionIdText(),
-    ]);
+    const newTransactionId = await this.getTransactionDetailsId();
+    const transactionDetails = await this.mirrorGetTransactionResponse(newTransactionId);
+    const newAccountId = transactionDetails.transactions[0].entity_id;
 
-    await this.clickOnCloseButtonForCompletedTransaction();
+    await this.clickOnTransactionsMenuButton();
     await this.addAccountsToList(newAccountId);
 
     return { newAccountId, newTransactionId };
@@ -556,9 +565,9 @@ class TransactionPage extends BasePage {
     await this.clickSignTransactionButton();
     await this.fillInPassword(password);
     await this.clickOnPasswordContinue();
-    await this.waitForSuccessModalToAppear();
-    const transactionId = await this.getTransactionIdText();
-    await this.clickOnCloseButtonForCompletedTransaction();
+    await this.waitForCreatedAtToBeVisible();
+    const transactionId = await this.getTransactionDetailsId();
+    await this.clickOnTransactionsMenuButton();
     await this.removeAccountFromList(accountId);
     return transactionId;
   }
@@ -570,16 +579,27 @@ class TransactionPage extends BasePage {
     await this.fillInUpdatedAccountId(accountId);
     await this.fillInMaxAutoAssociations(maxAutoAssociations);
     await this.fillInMemoUpdate(memo);
-    await this.clickOnAcceptStakingRewardsSwitch(); //disabling staking rewards
+    await this.fillInTransactionMemoUpdate('Transaction memo update');
+    if (await this.isSwitchToggledOn(this.acceptStakingRewardsSwitchSelector)) {
+      await this.clickOnAcceptStakingRewardsSwitch(); //disabling staking rewards
+    }
     await this.waitForElementPresentInDOM(this.updateAccountIdFetchedDivSelector, 30000);
     await this.clickOnSignAndSubmitUpdateButton();
     await this.clickSignTransactionButton();
     await this.fillInPassword(password);
     await this.clickOnPasswordContinue();
-    await this.waitForSuccessModalToAppear();
-    const transactionId = await this.getTransactionIdText();
-    await this.clickOnCloseButtonForCompletedTransaction();
+    await this.waitForCreatedAtToBeVisible();
+    const transactionId = await this.getTransactionDetailsId();
+    await this.clickOnTransactionsMenuButton();
     return transactionId;
+  }
+
+  async waitForCreatedAtToBeVisible() {
+    await this.waitForElementToBeVisible(this.transactionDetailsCreatedAtSelector, 25000);
+  }
+
+  async getTransactionDetailsId() {
+    return await this.getTextByTestId(this.transactionDetailsIdSelector);
   }
 
   async createFile(fileContent, password) {
@@ -593,12 +613,12 @@ class TransactionPage extends BasePage {
     await this.clickSignTransactionButton();
     await this.fillInPassword(password);
     await this.clickOnPasswordContinue();
-    await this.waitForSuccessModalToAppear();
-    const transactionId = await this.getTransactionIdText();
+    await this.waitForCreatedAtToBeVisible();
+    const transactionId = await this.getTransactionDetailsId();
+    await this.clickOnTransactionsMenuButton();
     const transactionDetails = await this.mirrorGetTransactionResponse(transactionId);
     const fileId = transactionDetails.transactions[0].entity_id;
     await this.addGeneratedFile(fileId, fileContent, publicKey);
-    await this.clickOnCloseButtonForCompletedTransaction();
     return { transactionId, fileId };
   }
 
@@ -628,9 +648,9 @@ class TransactionPage extends BasePage {
     await this.clickOnSignFileButton();
     await this.fillInPasswordForFile(password);
     await this.clickOnContinueSignFileButton();
-    await this.waitForSuccessModalForFileToAppear();
-    const transactionId = await this.getTransactionIdTextForFiles();
-    await this.clickOnCloseButtonForCompletedFileTransaction();
+    await this.waitForCreatedAtToBeVisible();
+    const transactionId = await this.getTransactionDetailsId();
+    await this.clickOnTransactionsMenuButton();
     await this.updateFileText(fileId, fileContent);
     return transactionId;
   }
@@ -648,9 +668,9 @@ class TransactionPage extends BasePage {
     await this.clickOnSignFileButton();
     await this.fillInPasswordForFile(password);
     await this.clickOnContinueSignFileButton();
-    await this.waitForSuccessModalForFileToAppear();
-    const transactionId = await this.getTransactionIdTextForFiles();
-    await this.clickOnCloseButtonForCompletedFileTransaction();
+    await this.waitForCreatedAtToBeVisible();
+    const transactionId = await this.getTransactionDetailsId();
+    await this.clickOnTransactionsMenuButton();
     await this.appendToFileText(fileId, fileContent);
     return transactionId;
   }
@@ -670,9 +690,9 @@ class TransactionPage extends BasePage {
     await this.clickSignTransactionButton();
     await this.fillInPassword(password);
     await this.clickOnPasswordContinue();
-    await this.waitForSuccessModalToAppear();
-    const transactionId = await this.getTransactionIdText();
-    await this.clickOnCloseButtonForCompletedTransaction();
+    await this.waitForCreatedAtToBeVisible();
+    const transactionId = await this.getTransactionDetailsId();
+    await this.clickOnTransactionsMenuButton();
     return transactionId;
   }
 
@@ -697,9 +717,9 @@ class TransactionPage extends BasePage {
     if (isSupposedToFail) {
       return null;
     } else {
-      await this.waitForSuccessModalToAppear();
-      const transactionId = await this.getTransactionIdText();
-      await this.clickOnCloseButtonForCompletedTransaction();
+      await this.waitForCreatedAtToBeVisible();
+      const transactionId = await this.getTransactionDetailsId();
+      await this.clickOnTransactionsMenuButton();
       return transactionId;
     }
   }
@@ -708,12 +728,36 @@ class TransactionPage extends BasePage {
     await this.toggleSwitchByTestId(this.receiverSigRequiredSwitchSelector);
   }
 
+  async clickONReceiverSigRequiredSwitchForUpdate() {
+    await this.toggleSwitchByTestId(this.receiverSigRequiredSwitchForUpdateSelector);
+  }
+
+  async isReceiverSigRequiredSwitchToggledOn() {
+    return await this.isSwitchToggledOn(this.receiverSigRequiredSwitchSelector);
+  }
+
+  async isReceiverSigRequiredSwitchToggledOnUpdatePage() {
+    return await this.isSwitchToggledOn(this.receiverSigRequiredSwitchForUpdateSelector);
+  }
+
+  async isReceiverSigRequiredSwitchToggledOnForUpdatePage() {
+    return await this.isSwitchToggledOn(this.receiverSigRequiredSwitchForUpdateSelector);
+  }
+
   async clickOnAcceptStakingRewardsSwitch() {
     await this.toggleSwitchByTestId(this.acceptStakingRewardsSwitchSelector);
   }
 
+  async isAcceptStakingRewardsSwitchToggledOn() {
+    return await this.isSwitchToggledOn(this.acceptStakingRewardsSwitchSelector);
+  }
+
   async fillInMemo(memo) {
     await this.fillByTestId(this.accountMemoInputSelector, memo);
+  }
+
+  async getMemoText() {
+    return this.getTextFromInputFieldByTestId(this.accountMemoInputSelector);
   }
 
   async fillInInitialFunds(amount) {
@@ -730,12 +774,20 @@ class TransactionPage extends BasePage {
     }
   }
 
+  async getInitialFundsValue() {
+    return this.getTextFromInputFieldByTestId(this.initialBalanceInputSelector);
+  }
+
   async fillInMaxAccountAssociations(amount) {
     await this.fillByTestId(this.maxAutoAssociationsInputSelector, amount);
   }
 
+  async getFilledMaxAccountAssociations() {
+    return this.getTextFromInputFieldByTestId(this.maxAutoAssociationsInputSelector);
+  }
+
   async clickOnSignAndSubmitButton() {
-    await this.clickByTestId(this.signAndSubmitButtonSelector);
+    await this.clickByTestId(this.signAndSubmitButtonSelector, 10000);
   }
 
   async clickOnSignAndSubmitDeleteButton() {
@@ -770,40 +822,12 @@ class TransactionPage extends BasePage {
     await this.clickByTestId(this.closeCompletedTxButtonSelector);
   }
 
-  async clickOnCloseButtonForCompletedFileTransaction() {
-    await this.clickByTestId(this.closeCompletedTxFileButtonSelector);
-  }
-
   async fillInPassword(password) {
     await this.fillByTestId(this.passwordSignTransactionInputSelector, password);
   }
 
   async clickOnCancelTransaction() {
     await this.clickByTestId(this.buttonCancelTransactionSelector);
-  }
-
-  async waitForSuccessModalToAppear() {
-    await this.waitForElementToBeVisible(this.successCheckMarkIconSelector, 25000);
-  }
-
-  async waitForSuccessModalForFileToAppear() {
-    await this.waitForElementToBeVisible(this.successCheckMarkIconForFileSelector, 25000);
-  }
-
-  async getNewAccountIdText() {
-    return await this.getTextByTestId(this.newlyCreatedAccountIdSelector);
-  }
-
-  async getTransactionIdText() {
-    return await this.getTextByTestId(this.linkTransactionIdSelector);
-  }
-
-  async getTransactionIdTextForFiles() {
-    return await this.getTextByTestId(this.linkTransactionIdForFileSelector);
-  }
-
-  async getNewTransactionIdText() {
-    return await this.getTextByTestId(this.newlyCreatedTransactionIdSelector);
   }
 
   async clickAddButton(depth) {
@@ -905,10 +929,19 @@ class TransactionPage extends BasePage {
     );
   }
 
+  async fillInSpenderAccountIdNormally(accountId) {
+    await this.fillByTestId(this.allowanceSpenderAccountSelector, accountId);
+  }
+
+  async getSpenderAccountId() {
+    return await this.getTextFromInputFieldByTestId(this.allowanceSpenderAccountSelector);
+  }
+
   async fillInTransferAccountId() {
     const allAccountIdsText = await this.getTextByTestId(this.payerDropdownSelector);
     const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
     await this.fillByTestId(this.transferAccountInputSelector, firstAccountId);
+    return firstAccountId;
   }
 
   async getFirstAccountIdFromText(allAccountIds) {
@@ -984,14 +1017,47 @@ class TransactionPage extends BasePage {
     await this.fillByTestId(this.maxAutoAssociationsUpdateInputSelector, amount);
   }
 
+  async getFilledMaxAutoAssociationsOnUpdatePage() {
+    return await this.getTextFromInputFieldByTestId(this.maxAutoAssociationsUpdateInputSelector);
+  }
+
   async fillInMemoUpdate(memo) {
     await this.fillByTestId(this.memoUpdateInputSelector, memo);
+  }
+
+  async fillInUpdateAccountIdNormally(accountId) {
+    await this.fillByTestId(this.updateAccountInputSelector, accountId);
+  }
+
+  async fillInDeleteAccountIdNormally(accountId) {
+    await this.fillByTestId(this.deletedAccountInputSelector, accountId);
+  }
+
+  async getMemoTextOnUpdatePage() {
+    return await this.getTextFromInputFieldByTestId(this.memoUpdateInputSelector);
+  }
+
+  async fillInTransactionMemoUpdate(memo) {
+    await this.fillByTestId(this.transactionMemoUpdateInputSelector, memo);
+  }
+
+  async getTransactionMemoText() {
+    return await this.getTextFromInputFieldByTestId(this.transactionMemoUpdateInputSelector);
+  }
+
+  async getTransactionMemoTextForDeletePage() {
+    return await this.getTextFromInputFieldByTestId(this.deleteAccountMemoInputSelector);
+  }
+
+  async fillInNickname(nickname) {
+    await this.fillByTestId(this.nicknameInputSelector, nickname);
   }
 
   async fillInTransferFromAccountId() {
     const allAccountIdsText = await this.getTextByTestId(this.payerDropdownSelector);
     const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
     await this.fillByTestId(this.transferFromAccountIdInputSelector, firstAccountId);
+    return firstAccountId;
   }
 
   async fillInTransferAmountFromAccount(amount) {
@@ -1034,10 +1100,19 @@ class TransactionPage extends BasePage {
     const allAccountIdsText = await this.getTextByTestId(this.payerDropdownSelector);
     const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
     await this.fillByTestId(this.allowanceOwnerAccountSelector, firstAccountId);
+    return firstAccountId;
+  }
+
+  async getAllowanceOwnerAccountId() {
+    return await this.getTextFromInputFieldByTestId(this.allowanceOwnerAccountSelector);
   }
 
   async fillInAllowanceAmount(amount) {
     await this.fillByTestId(this.allowanceAmountSelector, amount);
+  }
+
+  async getAllowanceAmount() {
+    return await this.getTextFromInputFieldByTestId(this.allowanceAmountSelector);
   }
 
   async clickOnSignAndSubmitAllowanceButton() {
@@ -1064,12 +1139,20 @@ class TransactionPage extends BasePage {
     return await this.getTextFromInputFieldByTestId(this.deletedAccountInputSelector);
   }
 
+  async getPrefilledTransferIdAccountInDeletePage() {
+    return await this.getTextFromInputFieldByTestId(this.transferAccountInputSelector);
+  }
+
   async fillInFileContent(fileContent) {
     await this.fillByTestId(this.fileContentTextFieldSelector, fileContent);
   }
 
+  async getFileContentText() {
+    return await this.getTextFromInputFieldByTestId(this.fileContentTextFieldSelector);
+  }
+
   async clickOnSignAndSubmitFileCreateButton() {
-    await this.clickByTestId(this.signAndSubmitFileCreateSelector);
+    await this.clickByTestId(this.signAndSubmitFileCreateSelector, 10000);
   }
 
   async clickOnFileServiceLink() {
@@ -1154,6 +1237,149 @@ class TransactionPage extends BasePage {
 
   async getTransactionTypeHeaderText() {
     return await this.getTextByTestId(this.transactionTypeHeaderSelector);
+  }
+
+  async clickOnSaveDraftButton() {
+    await this.clickByTestId(this.saveDraftButtonSelector);
+  }
+
+  async clickOnDraftsMenuButton() {
+    await this.clickByTestId(this.draftsTabSelector);
+  }
+
+  async fillInDeleteAccountTransactionMemo(memo) {
+    await this.fillByTestId(this.deleteAccountMemoInputSelector, memo);
+  }
+
+  async fillInTransactionMemoForApprovePage(memo) {
+    await this.fillByTestId(this.approveAllowanceTransactionMemoSelector, memo);
+  }
+
+  async getTransactionMemoFromApprovePage() {
+    return await this.getTextFromInputFieldByTestId(this.approveAllowanceTransactionMemoSelector);
+  }
+
+  async fillInTransactionMemoForCreateFilePage(memo) {
+    await this.fillByTestId(this.fileCreateTransactionMemoInputSelector, memo);
+  }
+
+  async getTransactionMemoFromFilePage() {
+    return await this.getTextFromInputFieldByTestId(this.fileCreateTransactionMemoInputSelector);
+  }
+
+  async fillInFileMemoForCreatePage(memo) {
+    await this.fillByTestId(this.fileCreateMemoInputSelector, memo);
+  }
+
+  async getFileMemoFromCreatePage() {
+    return await this.getTextFromInputFieldByTestId(this.fileCreateMemoInputSelector);
+  }
+
+  async fillInTransactionMemoForFileUpdatePage(memo) {
+    await this.fillByTestId(this.fileUpdateTransactionMemoInputSelector, memo);
+  }
+
+  async getTransactionMemoFromFileUpdatePage() {
+    return await this.getTextFromInputFieldByTestId(this.fileUpdateTransactionMemoInputSelector);
+  }
+
+  async fillInTransactionMemoForFileAppendPage(memo) {
+    await this.fillByTestId(this.fileAppendTransactionMemoInputSelector, memo);
+  }
+
+  async getTransactionMemoFromFileAppendPage() {
+    return await this.getTextFromInputFieldByTestId(this.fileAppendTransactionMemoInputSelector);
+  }
+
+  async fillInFileUpdateMemo(memo) {
+    await this.fillByTestId(this.fileUpdateMemoInputSelector, memo);
+  }
+
+  async getFileUpdateMemo() {
+    return await this.getTextFromInputFieldByTestId(this.fileUpdateMemoInputSelector);
+  }
+
+  async getNewAccountIdDetailsText() {
+    return await this.getTextByTestId(this.newAccountIdDetailsSelector, 15000);
+  }
+
+  async getFirstTransactionStatus() {
+    return await this.getTextByTestId(this.transactionStatusIndexSelector + '0');
+  }
+
+  async getFirstDraftDate() {
+    return await this.getTextByTestId(this.draftDetailsDateIndexSelector + '0');
+  }
+
+  async getFirstDraftType() {
+    return await this.getTextByTestId(this.draftDetailsTypeIndexSelector + '0');
+  }
+
+  async getFirstDraftIsTemplateCheckboxVisible() {
+    return await this.isElementVisible(this.draftDetailsIsTemplateCheckboxSelector + '0');
+  }
+
+  async clickOnFirstDraftIsTemplateCheckbox() {
+    await this.clickByTestId(this.draftDetailsIsTemplateCheckboxSelector + '0');
+  }
+
+  async clickOnFirstDraftDeleteButton() {
+    await this.clickByTestId(this.draftDeleteButtonIndexSelector + '0');
+  }
+
+  async isFirstDraftDeleteButtonVisible() {
+    return await this.isElementVisible(this.draftDeleteButtonIndexSelector + '0');
+  }
+
+  async clickOnFirstDraftContinueButton() {
+    await this.clickByTestId(this.draftContinueButtonIndexSelector + '0');
+  }
+
+  async isFirstDraftContinueButtonVisible() {
+    return await this.isElementVisible(this.draftContinueButtonIndexSelector + '0');
+  }
+
+  async saveDraft() {
+    await this.clickOnSaveDraftButton();
+    await this.clickOnTransactionsMenuButton();
+    await this.closeDraftModal();
+    await this.clickOnDraftsMenuButton();
+  }
+
+  async deleteFirstDraft() {
+    await this.clickOnFirstDraftDeleteButton();
+    await this.waitForElementToDisappear(this.toastMessageSelector);
+  }
+
+  async navigateToDrafts() {
+    await this.clickOnTransactionsMenuButton();
+    await this.closeDraftModal();
+    await this.clickOnDraftsMenuButton();
+  }
+
+  async waitForPublicKeyToBeFilled() {
+    await this.waitForInputFieldToBeFilled(this.publicKeyInputSelector, 1);
+  }
+
+  async turnReceiverSigSwitchOn() {
+    const maxAttempts = 10;
+    const interval = 500;
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+      const isToggledOn = await this.isReceiverSigRequiredSwitchToggledOnForUpdatePage();
+      if (isToggledOn) {
+        console.log(`Receiver signature switch is turned on.`);
+        return; // Exit the function if the switch is toggled on
+      } else {
+        console.log(`Attempt ${attempts + 1}: Receiver signature switch is off, toggling it on...`);
+        await this.clickONReceiverSigRequiredSwitchForUpdate();
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, interval));
+      }
+    }
+
+    throw new Error('Failed to turn the receiver signature switch on after multiple attempts');
   }
 }
 module.exports = TransactionPage;
