@@ -223,7 +223,7 @@ const columnClass = 'col-4 col-xxxl-3';
             v-model="transactionMemo"
             :filled="true"
             maxlength="100"
-            data-testid="inout-transaction-memo-for-approve-allowance"
+            data-testid="input-transaction-memo-for-approve-allowance"
             placeholder="Enter Transaction Memo"
           />
         </div>
