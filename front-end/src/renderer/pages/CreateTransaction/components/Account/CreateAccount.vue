@@ -496,7 +496,6 @@ const columnClass = 'col-4 col-xxxl-3';
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"
       :on-local-stored="redirectToDetails"
-      :on-close-success-modal-click="() => $router.push({ name: 'accounts' })"
     >
       <template #successHeading>Account created successfully</template>
       <template #successContent>

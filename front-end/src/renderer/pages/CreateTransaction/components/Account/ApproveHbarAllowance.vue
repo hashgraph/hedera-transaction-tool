@@ -327,16 +327,6 @@ const columnClass = 'col-4 col-xxxl-3';
       :transaction-bytes="transaction?.toBytes() || null"
       :observers="observers"
       :approvers="approvers"
-      :on-close-success-modal-click="
-        () => {
-          validStart = new Date();
-          maxTransactionFee = new Hbar(2);
-          ownerData.accountId.value = '';
-          spenderData.accountId.value = '';
-          amount = new Hbar(0);
-          transaction = null;
-        }
-      "
       :on-executed="() => (isExecuted = true)"
       :on-submitted="handleSubmit"
       :on-local-stored="handleLocalStored"

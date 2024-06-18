@@ -611,17 +611,9 @@ onMounted(async () => {
       :transaction-bytes="transaction?.toBytes() || null"
       :observers="observers"
       :approvers="approvers"
-      :on-close-success-modal-click="
-        () => {
-          transfers = [];
-        }
-      "
       :on-executed="
         () => {
           isExecuted = true;
-          validStart = new Date();
-          maxTransactionFee = new Hbar(2);
-          transaction = null;
         }
       "
       :on-submitted="handleSubmit"
