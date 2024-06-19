@@ -399,7 +399,7 @@ watch(files, newFiles => {
             </ul>
           </div>
 
-          <div class="d-flex align-items-center justify-content-between mt-3">
+          <div class="d-flex align-items-center justify-content-between my-3">
             <div class="dropdown">
               <AppButton
                 class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
@@ -451,7 +451,7 @@ watch(files, newFiles => {
                 </li>
               </ul>
             </div>
-            <div>
+            <div class="transition-bg rounded px-3" :class="{ 'bg-secondary': selectMany }">
               <AppButton
                 class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
                 data-testid="button-select-many-files"
