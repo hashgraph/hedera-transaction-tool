@@ -1,4 +1,4 @@
-import { AxiosError } from 'axios';
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 export function throwIfNoResponse(error: AxiosError) {
   if (!error.response) {
@@ -26,4 +26,33 @@ export const commonRequestHandler = async <T>(
     }
     throw new Error(message);
   }
+};
+
+export const axiosWithCredentials = {
+  get: <T = any, R = AxiosResponse<T>, D = any>(
+    url: string,
+    config?: AxiosRequestConfig<D> | undefined,
+  ) =>
+    axios.get<T, R>(url, {
+      ...config,
+      withCredentials: true,
+    }),
+  post: <T = any, R = AxiosResponse<T>, D = any>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig<D> | undefined,
+  ) => axios.post<T, R>(url, data, { ...config, withCredentials: true }),
+  patch: <T = any, R = AxiosResponse<T>, D = any>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig<D> | undefined,
+  ) => axios.patch<T, R>(url, data, { ...config, withCredentials: true }),
+  delete: <T = any, R = AxiosResponse<T>, D = any>(
+    url: string,
+    config?: AxiosRequestConfig<D> | undefined,
+  ) =>
+    axios.delete<T, R>(url, {
+      ...config,
+      withCredentials: true,
+    }),
 };

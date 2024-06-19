@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-import { commonRequestHandler } from '@renderer/utils';
+import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 
 /* Authentification service for organization */
 
@@ -14,16 +12,10 @@ export const login = async (
 ): Promise<{ id: number }> =>
   commonRequestHandler(
     async () => {
-      const { data } = await axios.post(
-        `${serverUrl}/${authController}/login`,
-        {
-          email,
-          password,
-        },
-        {
-          withCredentials: true,
-        },
-      );
+      const { data } = await axiosWithCredentials.post(`${serverUrl}/${authController}/login`, {
+        email,
+        password,
+      });
 
       return { id: data.id };
     },
@@ -34,13 +26,7 @@ export const login = async (
 /* Logout the user */
 export const logout = async (serverUrl: string): Promise<{ id: number }> =>
   commonRequestHandler(async () => {
-    const { data } = await axios.post(
-      `${serverUrl}/${authController}/logout`,
-      {},
-      {
-        withCredentials: true,
-      },
-    );
+    const { data } = await axiosWithCredentials.post(`${serverUrl}/${authController}/logout`);
 
     return { id: data.id };
   }, 'Failed to Log out of Organization');
@@ -52,14 +38,11 @@ export const changePassword = async (
   newPassword: string,
 ): Promise<void> =>
   commonRequestHandler(async () => {
-    const response = await axios.patch(
+    const response = await axiosWithCredentials.patch(
       `${organizationServerUrl}/${authController}/change-password`,
       {
         oldPassword,
         newPassword,
-      },
-      {
-        withCredentials: true,
       },
     );
     return response.data;
@@ -68,13 +51,10 @@ export const changePassword = async (
 /* Sends a reset password request */
 export const resetPassword = async (organizationServerUrl: string, email: string): Promise<void> =>
   commonRequestHandler(async () => {
-    const response = await axios.post(
+    const response = await axiosWithCredentials.post(
       `${organizationServerUrl}/${authController}/reset-password`,
       {
         email,
-      },
-      {
-        withCredentials: true,
       },
     );
     return response.data;
@@ -83,13 +63,10 @@ export const resetPassword = async (organizationServerUrl: string, email: string
 /* Sends the OTP in order to verify the password reset */
 export const verifyReset = async (organizationServerUrl: string, otp: string): Promise<void> =>
   commonRequestHandler(async () => {
-    const response = await axios.post(
+    const response = await axiosWithCredentials.post(
       `${organizationServerUrl}/${authController}/verify-reset`,
       {
         token: otp,
-      },
-      {
-        withCredentials: true,
       },
     );
     return response.data;
@@ -98,13 +75,10 @@ export const verifyReset = async (organizationServerUrl: string, otp: string): P
 /* Sets new password after being OTP verified */
 export const setPassword = async (organizationServerUrl: string, password: string): Promise<void> =>
   commonRequestHandler(async () => {
-    const response = await axios.patch(
+    const response = await axiosWithCredentials.patch(
       `${organizationServerUrl}/${authController}/set-password`,
       {
         password,
-      },
-      {
-        withCredentials: true,
       },
     );
     return response.data;
@@ -120,13 +94,10 @@ export const signUp = (
   createdAt: string;
 }> =>
   commonRequestHandler(async () => {
-    const response = await axios.post(
+    const response = await axiosWithCredentials.post(
       `${organizationServerUrl}/${authController}/signup`,
       {
         email,
-      },
-      {
-        withCredentials: true,
       },
     );
     return response.data;

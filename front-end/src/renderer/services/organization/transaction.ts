@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 import { Transaction } from '@hashgraph/sdk';
 
 import { Organization } from '@prisma/client';
@@ -20,9 +18,14 @@ import {
   TransactionApproverDto,
 } from '@main/shared/interfaces/organization/approvers';
 
-import { decryptPrivateKey } from '../keyPairService';
+import {
+  axiosWithCredentials,
+  commonRequestHandler,
+  getPrivateKey,
+  getSignatures,
+} from '@renderer/utils';
 
-import { commonRequestHandler, getPrivateKey, getSignatures } from '@renderer/utils';
+import { decryptPrivateKey } from '../keyPairService';
 
 const controller = 'transactions';
 
@@ -37,20 +40,14 @@ export const submitTransaction = async (
   creatorKeyId: number,
 ): Promise<{ id: number; body: string }> =>
   commonRequestHandler(async () => {
-    const { data } = await axios.post(
-      `${serverUrl}/${controller}`,
-      {
-        name,
-        description,
-        body,
-        network,
-        signature,
-        creatorKeyId,
-      },
-      {
-        withCredentials: true,
-      },
-    );
+    const { data } = await axiosWithCredentials.post(`${serverUrl}/${controller}`, {
+      name,
+      description,
+      body,
+      network,
+      signature,
+      creatorKeyId,
+    });
 
     return { id: data.id, body: data.body };
   }, 'Failed submit transaction');
@@ -63,16 +60,10 @@ export const uploadSignature = async (
   signatures: { [key: string]: string },
 ): Promise<void> =>
   commonRequestHandler(async () => {
-    await axios.post(
-      `${serverUrl}/${controller}/${transactionId}/signers`,
-      {
-        publicKeyId,
-        signatures,
-      },
-      {
-        withCredentials: true,
-      },
-    );
+    await axiosWithCredentials.post(`${serverUrl}/${controller}/${transactionId}/signers`, {
+      publicKeyId,
+      signatures,
+    });
   }, 'Failed upload signature');
 
 /* Decrypt, sign, upload signatures to the backend */
@@ -98,13 +89,10 @@ export const fullUploadSignatures = async (
   }
 
   await commonRequestHandler(async () => {
-    await axios.post(
+    await axiosWithCredentials.post(
       `${organization.serverUrl}/${controller}/${transactionId}/signers/many`,
       {
         signatures: signaturesArray,
-      },
-      {
-        withCredentials: true,
       },
     );
   }, 'Failed upload signatures');
@@ -127,11 +115,8 @@ export const getTransactionsToSign = async (
     const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
     const filtering = `&filter=network:eq:${network}`;
 
-    const { data } = await axios.get(
+    const { data } = await axiosWithCredentials.get(
       `${serverUrl}/${controller}/sign?page=${page}&size=${size}${sorting}${filtering}`,
-      {
-        withCredentials: true,
-      },
     );
 
     return data;
@@ -149,11 +134,8 @@ export const getTransactionsToApprove = async (
     const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
     const filtering = `&filter=network:eq:${network}`;
 
-    const { data } = await axios.get(
+    const { data } = await axiosWithCredentials.get(
       `${serverUrl}/${controller}/approve?page=${page}&size=${size}${sorting}${filtering}`,
-      {
-        withCredentials: true,
-      },
     );
 
     return data;
@@ -165,9 +147,9 @@ export const getTransactionApprovers = async (
   transactionId: number,
 ): Promise<ITransactionApprover[]> =>
   commonRequestHandler(async () => {
-    const { data } = await axios.get(`${serverUrl}/${controller}/${transactionId}/approvers`, {
-      withCredentials: true,
-    });
+    const { data } = await axiosWithCredentials.get(
+      `${serverUrl}/${controller}/${transactionId}/approvers`,
+    );
 
     return data;
   }, 'Failed to get transaction approvers');
@@ -178,9 +160,9 @@ export const getUserShouldApprove = async (
   transactionId: number,
 ): Promise<boolean> =>
   commonRequestHandler(async () => {
-    const { data } = await axios.get(`${serverUrl}/${controller}/approve/${transactionId}`, {
-      withCredentials: true,
-    });
+    const { data } = await axiosWithCredentials.get(
+      `${serverUrl}/${controller}/approve/${transactionId}`,
+    );
 
     return data;
   }, 'Failed to get if user should approve the transaction');
@@ -191,7 +173,7 @@ export const getTransactionById = async (
   id: number,
 ): Promise<ITransactionFull> =>
   commonRequestHandler(async () => {
-    const { data } = await axios.get(`${serverUrl}/${controller}/${id}`, {
+    const { data } = await axiosWithCredentials.get(`${serverUrl}/${controller}/${id}`, {
       withCredentials: true,
     });
 
@@ -218,11 +200,8 @@ export const getTransactionsForUser = async (
     const filtering = `&filter=status:in:${status.join(',')}${withValidStart ? `&filter=validStart:gte:${validStartTimestamp}` : ''}&filter=network:eq:${network}`;
     const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
 
-    const { data } = await axios.get(
+    const { data } = await axiosWithCredentials.get(
       `${serverUrl}/${controller}?page=${page}&size=${size}${filtering}${sorting}`,
-      {
-        withCredentials: true,
-      },
     );
 
     return data;
@@ -244,11 +223,8 @@ export const getHistoryTransactions = async (
     const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
     const filtering = filter.map(f => `&filter=${f.property}:${f.rule}:${f.value}`).join('');
 
-    const { data } = await axios.get(
+    const { data } = await axiosWithCredentials.get(
       `${serverUrl}/${controller}/history?page=${page}&size=${size}${sorting}${filtering}`,
-      {
-        withCredentials: true,
-      },
     );
 
     return data;
@@ -257,13 +233,10 @@ export const getHistoryTransactions = async (
 /* Adds observers */
 export const addObservers = async (serverUrl: string, transactionId: number, userIds: number[]) =>
   commonRequestHandler(async () => {
-    const { data } = await axios.post(
+    const { data } = await axiosWithCredentials.post(
       `${serverUrl}/${controller}/${transactionId}/observers`,
       {
         userIds,
-      },
-      {
-        withCredentials: true,
       },
     );
 
@@ -277,11 +250,8 @@ export const removeObserver = async (
   observerId: number,
 ) =>
   commonRequestHandler(async () => {
-    const { data } = await axios.delete(
+    const { data } = await axiosWithCredentials.delete(
       `${serverUrl}/${controller}/${transactionId}/observers/${observerId}`,
-      {
-        withCredentials: true,
-      },
     );
 
     return data;
@@ -295,13 +265,10 @@ export const updateObserverRole = async (
   role: ObserverRole,
 ) =>
   commonRequestHandler(async () => {
-    const { data } = await axios.patch(
+    const { data } = await axiosWithCredentials.patch(
       `${serverUrl}/${controller}/${transactionId}/observers/${observerId}`,
       {
         role,
-      },
-      {
-        withCredentials: true,
       },
     );
 
@@ -315,13 +282,10 @@ export const addApprovers = async (
   approvers: TransactionApproverDto[],
 ) =>
   commonRequestHandler(async () => {
-    const { data } = await axios.post(
+    const { data } = await axiosWithCredentials.post(
       `${serverUrl}/${controller}/${transactionId}/approvers`,
       {
         approversArray: approvers,
-      },
-      {
-        withCredentials: true,
       },
     );
 
@@ -335,11 +299,8 @@ export const removeApprover = async (
   approverId: number,
 ) =>
   commonRequestHandler(async () => {
-    const { data } = await axios.delete(
+    const { data } = await axiosWithCredentials.delete(
       `${serverUrl}/${controller}/${transactionId}/approvers/${approverId}`,
-      {
-        withCredentials: true,
-      },
     );
 
     return data;
@@ -354,15 +315,12 @@ export const sendApproverChoice = async (
   approved: boolean,
 ) =>
   commonRequestHandler(async () => {
-    const { data } = await axios.post(
+    const { data } = await axiosWithCredentials.post(
       `${serverUrl}/${controller}/${transactionId}/approvers/approve`,
       {
         userKeyId: userKeyId,
         signature: signature,
         approved: approved,
-      },
-      {
-        withCredentials: true,
       },
     );
 

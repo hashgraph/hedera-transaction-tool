@@ -1,9 +1,8 @@
-import axios from 'axios';
-
 import { IUser, IUserKey } from '@main/shared/interfaces';
 
+import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
+
 import { getUserKeys } from './userKeys';
-import { commonRequestHandler } from '@renderer/utils';
 
 /* User service for organization */
 const controller = 'users';
@@ -48,26 +47,22 @@ export const getUserState = async (organizationServerUrl: string) => {
 /* Get information about current user */
 export const getMe = async (organizationServerUrl: string): Promise<IUser> =>
   commonRequestHandler(async () => {
-    const response = await axios.get(`${organizationServerUrl}/${controller}/me`, {
-      withCredentials: true,
-    });
+    const response = await axiosWithCredentials.get(`${organizationServerUrl}/${controller}/me`);
     return response.data;
   }, 'Failed to get user information');
 
 /* Get information about organization users */
 export const getUsers = (organizationServerUrl: string): Promise<IUser[]> =>
   commonRequestHandler(async () => {
-    const response = await axios.get(`${organizationServerUrl}/${controller}`, {
-      withCredentials: true,
-    });
+    const response = await axiosWithCredentials.get(`${organizationServerUrl}/${controller}`);
     return response.data;
   }, 'Failed to get organization users');
 
 /* ADMIN ONLY: Delete a user */
 export const deleteUser = (organizationServerUrl: string, id) =>
   commonRequestHandler(async () => {
-    const response = await axios.delete(`${organizationServerUrl}/${controller}/${id}`, {
-      withCredentials: true,
-    });
+    const response = await axiosWithCredentials.delete(
+      `${organizationServerUrl}/${controller}/${id}`,
+    );
     return response.data;
   }, 'Failed to delete user');

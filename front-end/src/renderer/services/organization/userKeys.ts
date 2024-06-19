@@ -1,8 +1,6 @@
-import axios from 'axios';
-
 import { IUserKey } from '@main/shared/interfaces';
 
-import { commonRequestHandler } from '@renderer/utils';
+import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 
 /* User keys service for organization */
 
@@ -14,11 +12,8 @@ export const getUserKeys = async (
   organizationUserId: number,
 ): Promise<IUserKey[]> =>
   commonRequestHandler(async () => {
-    const response = await axios.get(
+    const response = await axiosWithCredentials.get(
       `${organizationServerUrl}/${controller[0]}/${organizationUserId}/${controller[1]}`,
-      {
-        withCredentials: true,
-      },
     );
 
     return response.data;
@@ -31,12 +26,9 @@ export const uploadKey = async (
   key: { publicKey: string; index?: number; mnemonicHash?: string },
 ) =>
   commonRequestHandler(async () => {
-    await axios.post(
+    await axiosWithCredentials.post(
       `${organizationServerUrl}/${controller[0]}/${organizationUserId}/${controller[1]}`,
       key,
-      {
-        withCredentials: true,
-      },
     );
   }, 'Failed to upload user key');
 
@@ -47,10 +39,7 @@ export const deleteKey = async (
   keyId: number,
 ) =>
   commonRequestHandler(async () => {
-    await axios.delete(
+    await axiosWithCredentials.delete(
       `${organizationServerUrl}/${controller[0]}/${organizationUserId}/${controller[1]}/${keyId}`,
-      {
-        withCredentials: true,
-      },
     );
   }, 'Failed to delete user key');
