@@ -52,6 +52,14 @@ export const submitTransaction = async (
     return { id: data.id, body: data.body };
   }, 'Failed submit transaction');
 
+/* Cancel a transaction  */
+export const cancelTransaction = async (serverUrl: string, id: number): Promise<boolean> =>
+  commonRequestHandler(async () => {
+    const { data } = await axiosWithCredentials.patch(`${serverUrl}/${controller}/cancel/${id}`);
+
+    return data;
+  }, `Failed cancel transaction with id ${id}`);
+
 /* Uploads signatures to the back end */
 export const uploadSignature = async (
   serverUrl: string,
