@@ -5,13 +5,34 @@ const os = require('os');
 // Function to get the database path
 function getDatabasePath() {
   const homeDir = os.homedir();
-  return path.join(
-    homeDir,
-    'Library',
-    'Application Support',
-    'hedera-transaction-tool',
-    'database.db',
-  );
+  if (process.platform === 'darwin'){
+    return path.join(
+      homeDir,
+      'Library',
+      'Application Support',
+      'hedera-transaction-tool',
+      'database.db',
+    );
+  } else if (process.platform === 'linux') {
+    return path.join(
+      homeDir,
+      '.config',
+      'hedera-transaction-tool', 
+      'database.db'
+    ); 
+  }
+  else if (process.platform === 'win32') {
+    return path.join(
+      homeDir,
+      'AppData',
+      'Roaming',
+      'hedera-transaction-tool',
+      'database.db',
+    );
+  }
+  else {
+    throw new Error('Unsupported platform');
+  }
 }
 
 // Function to open the database connection

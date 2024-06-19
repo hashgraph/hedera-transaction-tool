@@ -17,7 +17,7 @@
     "start": "vite preview",
     "devTools": "./node_modules/.bin/vue-devtools",
     "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
+    "build": "npm run  generate:database && vue-tsc --noEmit && vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:win": "npm run build && electron-builder --win --config",
     "build:mac": "npm run build && electron-builder --mac",
@@ -27,7 +27,8 @@
     "test:renderer": "vitest --config src/tests/vitest.config.renderer.ts --passWithNoTests",
     "test:e2e": "npm run build && vitest --config src/tests/vitest.config.e2e.ts --passWithNoTests",
     "test:main:coverage": "vitest --config src/tests/vitest.config.main.ts --coverage.enabled --coverage.include=src/main",
-    "test:renderer:coverage": "vitest --config src/tests/vitest.config.renderer.ts --coverage.enabled --coverage.include=src/renderer"
+    "test:renderer:coverage": "vitest --config src/tests/vitest.config.renderer.ts --coverage.enabled --coverage.include=src/renderer",
+    "generate:database": "prisma generate"
   },
   "dependencies": {
     "@electron-toolkit/utils": "^3.0.0",
