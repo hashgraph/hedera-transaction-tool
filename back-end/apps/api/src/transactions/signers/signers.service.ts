@@ -16,7 +16,7 @@ import {
   validateSignature,
 } from '@app/common';
 
-import { Transaction, TransactionSigner, User, UserKey } from '@entities';
+import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
 
 import { userKeysRequiredToSign } from '../../utils';
 
@@ -115,6 +115,10 @@ export class SignersService {
     const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
     if (isExpired(sdkTransaction)) throw new BadRequestException('Transaction is expired');
 
+    /* Checks if the transaction is canceled */
+    if (transaction.status === TransactionStatus.CANCELED)
+      throw new BadRequestException('Transaction has been canceled');
+
     /* Verify that each signature corresponds the correct transaction for the given node and to the public key  */
     for (const key in signatures) {
       if (!validateSignature(sdkTransaction, key, signatures[key], userKey.publicKey)) {
@@ -203,6 +207,10 @@ export class SignersService {
 
     const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
     if (isExpired(sdkTransaction)) throw new BadRequestException('Transaction is expired');
+
+    /* Checks if the transaction is canceled */
+    if (transaction.status === TransactionStatus.CANCELED)
+      throw new BadRequestException('Transaction has been canceled');
 
     const userKeys: UserKey[] = [];
 
