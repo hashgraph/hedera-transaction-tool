@@ -185,7 +185,7 @@ watch([amount, accountData.isValid], async ([newAmount]) => {
               @click="handleAddRest"
               :disabled="!accountData.isValid.value || addRestDisabled"
               :data-testid="dataTestIdAddRest"
-              >Add Rest</AppButton
+              >Add All</AppButton
             >
           </template>
           <AppButton
