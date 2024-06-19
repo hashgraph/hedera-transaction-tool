@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, ref } from 'vue';
+import { nextTick, onBeforeMount, ref, watch } from 'vue';
 
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
@@ -31,6 +31,7 @@ const props = withDefaults(
     clearOnAddTransfer?: boolean;
     buttonDisabled?: boolean;
     addRestDisabled?: boolean;
+    restrictAmountToBalance?: boolean;
     dataTestIdAccountIdInput?: string;
     dataTestIdHbarInput?: string;
     dataTestIdAddRest?: string;
@@ -112,6 +113,18 @@ onBeforeMount(async () => {
         network: network.network,
       },
     });
+  }
+});
+
+/* Watchers */
+watch([amount, accountData.isValid], async ([newAmount]) => {
+  if (
+    props.restrictAmountToBalance &&
+    accountData.isValid.value &&
+    accountData.accountInfo.value?.balance.toBigNumber().isLessThan(newAmount.toBigNumber())
+  ) {
+    await nextTick();
+    amount.value = accountData.accountInfo.value?.balance as Hbar;
   }
 });
 </script>
