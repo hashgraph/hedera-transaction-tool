@@ -516,20 +516,20 @@ export class TransactionsService {
 
   private getHistoryStatusWhere(
     filtering: Filtering[],
-  ): TransactionStatus | FindOperator<TransactionStatus> | undefined {
+  ): TransactionStatus | FindOperator<TransactionStatus> {
     const allowedStatuses = [
       TransactionStatus.EXECUTED,
       TransactionStatus.FAILED,
       TransactionStatus.EXPIRED,
       TransactionStatus.CANCELED,
     ];
-    const disallowedStatuses = Object.values(TransactionStatus).filter(
+    const forbiddenStatuses = Object.values(TransactionStatus).filter(
       s => !allowedStatuses.includes(s),
     );
 
     const statusFilter = filtering.find(f => f.property === 'status');
 
-    if (!statusFilter) return;
+    if (!statusFilter) return Not(In([...forbiddenStatuses]));
 
     const statusFilterValue = statusFilter.value.split(',') as TransactionStatus[];
 
@@ -539,16 +539,13 @@ export class TransactionsService {
       case 'in':
         return In(statusFilterValue.filter(s => allowedStatuses.includes(s)));
       case 'neq':
-        return Not(In([...disallowedStatuses, ...statusFilterValue]));
+        return Not(In([...forbiddenStatuses, ...statusFilterValue]));
       case 'nin':
         return Not(
-          In([
-            ...disallowedStatuses,
-            ...statusFilterValue.filter(s => allowedStatuses.includes(s)),
-          ]),
+          In([...forbiddenStatuses, ...statusFilterValue.filter(s => allowedStatuses.includes(s))]),
         );
       default:
-        return undefined;
+        return Not(In([...forbiddenStatuses]));
     }
   }
 }
