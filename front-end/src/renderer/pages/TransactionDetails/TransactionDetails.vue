@@ -45,7 +45,7 @@ import {
   getDateStringExtended,
   getPrivateKey,
   getTransactionBodySignatureWithoutNodeAccountId,
-  getUInt8ArrayFromString,
+  getUInt8ArrayFromBytesString,
   openTransactionInHashscan,
 } from '@renderer/utils';
 
@@ -338,7 +338,7 @@ async function fetchTransaction(id: string | number) {
   } else {
     try {
       localTransaction.value = await getTransaction(id);
-      transactionBytes = getUInt8ArrayFromString(localTransaction.value.body);
+      transactionBytes = getUInt8ArrayFromBytesString(localTransaction.value.body);
       publicKeysRequiredToSign.value = null;
     } catch (error) {
       router.previousPath ? router.back() : router.push({ name: 'transactions' });

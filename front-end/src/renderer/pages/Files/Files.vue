@@ -14,7 +14,7 @@ import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import { getAll, remove, showContentInTemp, update } from '@renderer/services/filesService';
 import { flattenKeyList, getKeyListLevels } from '@renderer/services/keyPairService';
 
-import { getUInt8ArrayFromString, convertBytes } from '@renderer/utils';
+import { getUInt8ArrayFromBytesString, convertBytes } from '@renderer/utils';
 import { getFormattedDateFromTimestamp } from '@renderer/utils/transactions';
 
 import { transactionTypeKeys } from '@renderer/pages/CreateTransaction/txTypeComponentMapping';
@@ -137,7 +137,7 @@ const selectMany = ref(false);
 /* Computed */
 const selectedFileInfo = computed(() =>
   selectedFile.value?.metaBytes
-    ? FileInfo.fromBytes(getUInt8ArrayFromString(selectedFile.value.metaBytes))
+    ? FileInfo.fromBytes(getUInt8ArrayFromBytesString(selectedFile.value.metaBytes))
     : null,
 );
 const selectedFileIdWithChecksum = computed(
