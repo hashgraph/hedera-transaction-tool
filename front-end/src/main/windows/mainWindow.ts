@@ -1,6 +1,6 @@
 import { join } from 'path';
 
-import { BrowserWindow, screen } from 'electron';
+import { BrowserWindow, screen, session as ses } from 'electron';
 
 import { removeListeners, sendUpdateThemeEventTo } from '@main/modules/ipcHandlers/theme';
 
@@ -15,6 +15,8 @@ async function createWindow() {
 
   const preload = join(__dirname, '../preload/index.js');
 
+  const session = ses.fromPartition('persist:main');
+
   const mainWindow = new BrowserWindow({
     width: Math.round(width * 0.9),
     height: Math.round(height * 0.9),
@@ -25,7 +27,7 @@ async function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: false,
-      partition: 'persist:main',
+      session,
     },
     show: false,
   });
