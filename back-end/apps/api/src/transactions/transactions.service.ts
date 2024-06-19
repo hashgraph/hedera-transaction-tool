@@ -405,6 +405,38 @@ export class TransactionsService {
     return true;
   }
 
+  /* Cancel the transaction if the valid start has not come yet. */
+  async cancelTransaction(user: UserDto, id: number): Promise<boolean> {
+    const transaction = await this.getTransactionById(id);
+
+    if (!transaction) {
+      throw new BadRequestException('Transaction not found');
+    }
+
+    if (transaction.creatorKey?.user?.id !== user.id) {
+      throw new BadRequestException('Only the creator of the transaction is able to delete it');
+    }
+
+    if (
+      ![
+        TransactionStatus.WAITING_FOR_SIGNATURES,
+        TransactionStatus.WAITING_FOR_EXECUTION,
+        TransactionStatus.NEW,
+      ].includes(transaction.status)
+    ) {
+      throw new BadRequestException('Only transactions in progress can be canceled');
+    }
+
+    await this.repo.update({ id }, { status: TransactionStatus.CANCELED });
+
+    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+      message: TRANSACTION_ACTION,
+      content: '',
+    });
+
+    return true;
+  }
+
   /* Get the transaction with the provided id if user has access */
   async getTransactionWithVerifiedAccess(transactionId: number, user: User) {
     const transaction = await this.repo.findOne({
