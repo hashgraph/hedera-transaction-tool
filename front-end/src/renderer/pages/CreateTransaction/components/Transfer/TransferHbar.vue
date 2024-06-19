@@ -427,6 +427,7 @@ onMounted(async () => {
                 :show-balance-in-label="true"
                 :button-disabled="totalBalanceAdjustments >= 10"
                 :clear-on-add-transfer="true"
+                :restrict-amount-to-balance="true"
                 data-test-id-account-id-input="input-transfer-from-account"
                 data-test-id-hbar-input="input-transfer-from-amount"
                 data-test-id-add-rest="button-transfer-from-rest"
