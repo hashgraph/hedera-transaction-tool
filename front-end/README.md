@@ -47,12 +47,20 @@ npm run dev
 
 ### Additional Commands
 
+Build the app localy
+
 ```bash
 npm run build # builds application, distributable files can be found in "dist" folder
 
 # OR
 
 npm run build:mac # uses mac as build target
+```
+
+Run the tests
+
+```bash
+npm run test:main # run tests for the main folder
 ```
 
 ## Publish
