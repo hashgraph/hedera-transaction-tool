@@ -399,7 +399,7 @@ watch(files, newFiles => {
             </ul>
           </div>
 
-          <div class="d-flex align-items-center justify-content-between mt-3">
+          <div class="d-flex align-items-center justify-content-between my-3">
             <div class="dropdown">
               <AppButton
                 class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
@@ -412,14 +412,14 @@ watch(files, newFiles => {
                   :selected="sorting.file_id === 'asc' ? true : undefined"
                   @click="handleSortFiles('file_id', 'asc')"
                 >
-                  File ID A-Z
+                  File ID Asc
                 </li>
                 <li
                   class="dropdown-item"
                   :selected="sorting.account_id === 'desc' ? true : undefined"
                   @click="handleSortFiles('file_id', 'desc')"
                 >
-                  File ID Z-A
+                  File ID Dsc
                 </li>
                 <li
                   class="dropdown-item"
@@ -440,18 +440,18 @@ watch(files, newFiles => {
                   :selected="sorting.created_at === 'asc' ? true : undefined"
                   @click="handleSortFiles('created_at', 'asc')"
                 >
-                  Added At A-Z
+                  Date Added Asc
                 </li>
                 <li
                   class="dropdown-item"
                   :selected="sorting.created_at === 'desc' ? true : undefined"
                   @click="handleSortFiles('created_at', 'desc')"
                 >
-                  Added At Z-A
+                  Date Added Dsc
                 </li>
               </ul>
             </div>
-            <div>
+            <div class="transition-bg rounded px-3" :class="{ 'bg-secondary': selectMany }">
               <AppButton
                 class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
                 data-testid="button-select-many-files"
