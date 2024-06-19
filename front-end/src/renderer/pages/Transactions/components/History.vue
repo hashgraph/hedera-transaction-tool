@@ -4,7 +4,7 @@ import { Prisma, Transaction } from '@prisma/client';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
-import { ITransaction } from '@main/shared/interfaces';
+import { ITransaction, TransactionStatus } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -370,7 +370,13 @@ watch(orgFilters, async () => {
                           transactionData.transactionRaw.statusCode || -1,
                         ),
                       }"
-                      >{{ getStatusFromCode(transactionData.transactionRaw.statusCode) }}</span
+                      >{{
+                        getStatusFromCode(transactionData.transactionRaw.statusCode)
+                          ? getStatusFromCode(transactionData.transactionRaw.statusCode)
+                          : transactionData.transactionRaw.status === TransactionStatus.EXPIRED
+                            ? 'EXPIRED'
+                            : 'CANCELED'
+                      }}</span
                     >
                   </td>
                   <td :data-testid="`td-transaction-createdAt-${index}`">

@@ -49,9 +49,9 @@ export const getPayerFromTransaction = (transaction: Transaction): number => {
   return Number(transaction.transaction_id.split('@')[0].split('.').join(''));
 };
 
-export const getStatusFromCode = (code?: number): string => {
+export const getStatusFromCode = (code?: number): string | null => {
   if (code === undefined || code === null) {
-    return 'EXPIRED';
+    return null;
   }
 
   try {
