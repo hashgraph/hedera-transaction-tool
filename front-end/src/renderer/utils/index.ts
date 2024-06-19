@@ -4,6 +4,7 @@ export * from './transactions';
 export * from './validator';
 
 export const getMessageFromIPCError = (err: any, msg: string) => {
+  console.log(err);
   return err.message?.split(': Error: ')[1] || msg;
 };
 
@@ -58,10 +59,14 @@ export const convertBytes = (
   return `${(bytes / Math.pow(base, i)).toFixed(decimals)} ${units[i]}`;
 };
 
-export const getUInt8ArrayFromString = (bytes: string) => {
+export const getUInt8ArrayFromBytesString = (bytes: string) => {
   const numberArray = bytes.split(',').map(n => Number(n));
 
   return Uint8Array.from(numberArray);
+};
+
+export const encodeString = (str: string) => {
+  return new TextEncoder().encode(str);
 };
 
 export const getDateStringExtended = (date: Date) => {

@@ -13,9 +13,9 @@ import useAccountId from '@renderer/composables/useAccountId';
 
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { executeQuery } from '@renderer/services/transactionService';
-import { getAll, update } from '@renderer/services/filesService';
+import { add, getAll, update } from '@renderer/services/filesService';
 
-import { isFileId, isHederaSpecialFileId, formatAccountId } from '@renderer/utils';
+import { isFileId, isHederaSpecialFileId, formatAccountId, encodeString } from '@renderer/utils';
 import { isUserLoggedIn, flattenAccountIds } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -96,7 +96,7 @@ const handleRead = async e => {
 
     toast.success('File content read', { position: 'bottom-right' });
 
-    if (storedFiles.value.some(f => f.file_id === fileId.value)) {
+    try {
       const fileInfoQuery = new FileInfoQuery()
         .setMaxQueryPayment(maxQueryFee.value as Hbar)
         .setFileId(fileId.value);
@@ -108,13 +108,32 @@ const handleRead = async e => {
         keyPair.type,
       );
 
-      await update(fileId.value, user.personal.id, {
-        contentBytes: response.join(','),
-        metaBytes: infoResponse.join(','),
-        lastRefreshed: new Date(),
-      });
+      const contentBytes = (
+        isHederaSpecialFileId(fileId.value) ? encodeString(response) : response
+      ).join(',');
 
-      toast.success('Stored file info updated', { position: 'bottom-right' });
+      if (storedFiles.value.some(f => f.file_id === fileId.value)) {
+        await update(fileId.value, user.personal.id, {
+          contentBytes,
+          metaBytes: infoResponse.join(','),
+          lastRefreshed: new Date(),
+        });
+
+        toast.success('Stored file info updated', { position: 'bottom-right' });
+      } else {
+        await add({
+          user_id: user.personal.id,
+          file_id: fileId.value,
+          network: network.network,
+          contentBytes,
+          metaBytes: infoResponse.join(','),
+          lastRefreshed: new Date(),
+        });
+
+        toast.success(`File ${fileId.value} linked`, { position: 'bottom-right' });
+      }
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to add/update file info', { position: 'bottom-right' });
     }
 
     isUserPasswordModalShown.value = false;
