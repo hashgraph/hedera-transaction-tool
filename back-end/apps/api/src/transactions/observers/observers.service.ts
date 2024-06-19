@@ -103,9 +103,12 @@ export class ObserversService {
     const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
 
     if (
-      [TransactionStatus.EXECUTED, TransactionStatus.EXPIRED, TransactionStatus.FAILED].includes(
-        transaction.status,
-      )
+      [
+        TransactionStatus.EXECUTED,
+        TransactionStatus.EXPIRED,
+        TransactionStatus.FAILED,
+        TransactionStatus.CANCELED,
+      ].includes(transaction.status)
     )
       return transaction.observers;
 

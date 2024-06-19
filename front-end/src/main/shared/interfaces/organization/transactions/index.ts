@@ -20,6 +20,7 @@ export enum BackEndTransactionType {
 export enum TransactionStatus {
   NEW = 'NEW',
   REJECTED = 'REJECTED',
+  CANCELED = 'CANCELED',
   WAITING_FOR_SIGNATURES = 'WAITING FOR SIGNATURES',
   WAITING_FOR_EXECUTION = 'WAITING FOR EXECUTION',
   EXECUTED = 'EXECUTED',

@@ -141,6 +141,8 @@ export class ExecuteService {
         throw new Error('Transaction has already been rejected.');
       case TransactionStatus.EXPIRED:
         throw new Error('Transaction has been expired.');
+      case TransactionStatus.CANCELED:
+        throw new Error('Transaction has been canceled.');
     }
   }
 

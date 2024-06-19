@@ -121,6 +121,7 @@ const stepperActiveIndex = computed(() => {
       return 2;
     case TransactionStatus.EXECUTED:
     case TransactionStatus.FAILED:
+    case TransactionStatus.CANCELED:
       return 3;
     default:
       return -1;
@@ -170,6 +171,7 @@ const handleBack = () => {
       case TransactionStatus.EXECUTED:
       case TransactionStatus.FAILED:
       case TransactionStatus.EXPIRED:
+      case TransactionStatus.CANCELED:
         tab = 'History';
         break;
       case TransactionStatus.WAITING_FOR_EXECUTION:
@@ -440,18 +442,28 @@ const approve = 'Approve';
 
                 <h2 class="text-title text-bold">Transaction Details</h2>
               </div>
-              <div v-if="isLoggedInOrganization(user.selectedOrganization) && shouldApprove">
-                <AppButton color="secondary" type="submit" class="me-3">{{ reject }}</AppButton>
-                <AppButton color="primary" type="submit">{{ approve }}</AppButton>
-              </div>
-              <div
-                v-else-if="
-                  isLoggedInOrganization(user.selectedOrganization) &&
-                  publicKeysRequiredToSign &&
-                  publicKeysRequiredToSign.length > 0
-                "
-              >
-                <AppButton color="primary" type="submit">Sign</AppButton>
+              <div class="flex-centered gap-4">
+                <div
+                  v-if="
+                    isLoggedInOrganization(user.selectedOrganization) &&
+                    creator?.user.id === user.selectedOrganization.userId
+                  "
+                >
+                  <AppButton color="secondary" type="submit" class="me-3">Cancel</AppButton>
+                </div>
+                <div v-if="isLoggedInOrganization(user.selectedOrganization) && shouldApprove">
+                  <AppButton color="secondary" type="submit" class="me-3">{{ reject }}</AppButton>
+                  <AppButton color="primary" type="submit">{{ approve }}</AppButton>
+                </div>
+                <div
+                  v-else-if="
+                    isLoggedInOrganization(user.selectedOrganization) &&
+                    publicKeysRequiredToSign &&
+                    publicKeysRequiredToSign.length > 0
+                  "
+                >
+                  <AppButton color="primary" type="submit">Sign</AppButton>
+                </div>
               </div>
             </div>
 

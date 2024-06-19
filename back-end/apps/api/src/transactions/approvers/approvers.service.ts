@@ -138,9 +138,12 @@ export class ApproversService {
     );
 
     if (
-      [TransactionStatus.EXECUTED, TransactionStatus.EXPIRED, TransactionStatus.FAILED].includes(
-        transaction.status,
-      )
+      [
+        TransactionStatus.EXECUTED,
+        TransactionStatus.EXPIRED,
+        TransactionStatus.FAILED,
+        TransactionStatus.CANCELED,
+      ].includes(transaction.status)
     )
       return approvers;
 
@@ -611,6 +614,10 @@ export class ApproversService {
       transaction.status === TransactionStatus.FAILED
     )
       throw new BadRequestException('Transaction has already been executed');
+
+    /* Checks if the transaction is canceled */
+    if (transaction.status === TransactionStatus.CANCELED)
+      throw new BadRequestException('Transaction has been canceled');
 
     const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
 

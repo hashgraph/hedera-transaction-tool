@@ -210,7 +210,12 @@ export class TransactionsService {
     const whereForUser: FindOptionsWhere<Transaction> = {
       ...where,
       status: Not(
-        In([TransactionStatus.EXECUTED, TransactionStatus.FAILED, TransactionStatus.EXPIRED]),
+        In([
+          TransactionStatus.EXECUTED,
+          TransactionStatus.FAILED,
+          TransactionStatus.EXPIRED,
+          TransactionStatus.CANCELED,
+        ]),
       ),
     };
 
@@ -265,7 +270,12 @@ export class TransactionsService {
     const whereForUser: FindOptionsWhere<Transaction> = {
       ...where,
       status: Not(
-        In([TransactionStatus.EXECUTED, TransactionStatus.FAILED, TransactionStatus.EXPIRED]),
+        In([
+          TransactionStatus.EXECUTED,
+          TransactionStatus.FAILED,
+          TransactionStatus.EXPIRED,
+          TransactionStatus.CANCELED,
+        ]),
       ),
     };
 
@@ -463,9 +473,12 @@ export class TransactionsService {
     transaction.approvers = this.approversService.getTreeStructure(approvers);
 
     if (
-      [TransactionStatus.EXECUTED, TransactionStatus.EXPIRED, TransactionStatus.FAILED].includes(
-        transaction.status,
-      )
+      [
+        TransactionStatus.EXECUTED,
+        TransactionStatus.EXPIRED,
+        TransactionStatus.FAILED,
+        TransactionStatus.CANCELED,
+      ].includes(transaction.status)
     )
       return transaction;
 
@@ -508,6 +521,7 @@ export class TransactionsService {
       TransactionStatus.EXECUTED,
       TransactionStatus.FAILED,
       TransactionStatus.EXPIRED,
+      TransactionStatus.CANCELED,
     ];
     const disallowedStatuses = Object.values(TransactionStatus).filter(
       s => !allowedStatuses.includes(s),
