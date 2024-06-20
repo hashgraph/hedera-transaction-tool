@@ -116,6 +116,7 @@ const stepperItems = computed(() => {
     items[1].bubbleIcon = 'check-lg';
     items.splice(2, 1);
   } else items.push({ title: 'Executed', name: 'Executed' });
+  console.log(items);
 
   return items;
 });
@@ -130,7 +131,6 @@ const stepperActiveIndex = computed(() => {
       return 2;
     case TransactionStatus.EXECUTED:
     case TransactionStatus.FAILED:
-    case TransactionStatus.CANCELED:
       return 3;
     default:
       return -1;
