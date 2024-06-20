@@ -1,44 +1,32 @@
 import { Prisma } from '@prisma/client';
 
-import { getMessageFromIPCError } from '@renderer/utils';
+import { commonIPCHandler } from '@renderer/utils';
 
 /* Organizations Service */
 
 /* Get organizations */
-export const getOrganizations = async () => {
-  try {
+export const getOrganizations = async () =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.organizations.getOrganizations();
-  } catch (error: any) {
-    throw Error(getMessageFromIPCError(error, 'Failed to fetch organizations'));
-  }
-};
+  }, 'Failed to fetch organizations');
 
 /* Adds organizations */
-export const addOrganization = async (organization: Prisma.OrganizationCreateInput) => {
-  try {
+export const addOrganization = async (organization: Prisma.OrganizationCreateInput) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.organizations.addOrganization(organization);
-  } catch (error: any) {
-    throw Error(getMessageFromIPCError(error, 'Failed to add organization'));
-  }
-};
+  }, 'Failed to add organization');
 
 /* Updates organizations */
 export const updateOrganization = async (
   id: string,
   organization: Prisma.OrganizationUncheckedUpdateWithoutOrganizationCredentialsInput,
-) => {
-  try {
+) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.organizations.updateOrganization(id, organization);
-  } catch (error: any) {
-    throw Error(getMessageFromIPCError(error, `Failed to update organization with id: ${id}`));
-  }
-};
+  }, `Failed to update organization with id: ${id}`);
 
 /* Deletes organizations */
-export const deleteOrganization = async (id: string) => {
-  try {
+export const deleteOrganization = async (id: string) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.organizations.deleteOrganization(id);
-  } catch (error: any) {
-    throw Error(getMessageFromIPCError(error, `Failed to delete transaction with id: ${id}`));
-  }
-};
+  }, `Failed to delete transaction with id: ${id}`);

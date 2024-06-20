@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 
-import { getMessageFromIPCError } from '@renderer/utils';
+import { commonIPCHandler } from '@renderer/utils';
 
 export const getAll = async (findArgs: Prisma.HederaFileFindManyArgs) => {
   try {
@@ -10,38 +10,26 @@ export const getAll = async (findArgs: Prisma.HederaFileFindManyArgs) => {
   }
 };
 
-export const add = async (file: Prisma.HederaFileUncheckedCreateInput) => {
-  try {
+export const add = async (file: Prisma.HederaFileUncheckedCreateInput) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.files.add(file);
-  } catch (err: any) {
-    throw Error(getMessageFromIPCError(err, 'File link failed'));
-  }
-};
+  }, 'File link failed');
 
 export const update = async (
   fileId: string,
   userId: string,
   file: Prisma.HederaFileUncheckedUpdateInput,
-) => {
-  try {
+) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.files.update(fileId, userId, file);
-  } catch (err: any) {
-    throw Error(getMessageFromIPCError(err, 'File update failed'));
-  }
-};
+  }, 'File update failed');
 
-export const remove = async (userId: string, fileIds: string[]) => {
-  try {
+export const remove = async (userId: string, fileIds: string[]) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.files.remove(userId, fileIds);
-  } catch (err: any) {
-    throw Error(getMessageFromIPCError(err, 'File unlink failed'));
-  }
-};
+  }, 'File unlink failed');
 
-export const showContentInTemp = async (userId: string, fileId: string) => {
-  try {
+export const showContentInTemp = async (userId: string, fileId: string) =>
+  commonIPCHandler(async () => {
     await window.electronAPI.local.files.showContentInTemp(userId, fileId);
-  } catch (err: any) {
-    throw Error(getMessageFromIPCError(err, 'Failed to open file'));
-  }
-};
+  }, 'Failed to open file');

@@ -1,26 +1,19 @@
 import { Prisma } from '@prisma/client';
 
-import { getMessageFromIPCError } from '@renderer/utils';
-import { getTransactionType } from '@renderer/utils/transactions';
+import { commonIPCHandler, getTransactionType } from '@renderer/utils';
 
 /* Transaction Drafts Service */
 
 /* Get raw drafts */
-export const getDrafts = async (findArgs: Prisma.TransactionDraftFindManyArgs) => {
-  try {
+export const getDrafts = async (findArgs: Prisma.TransactionDraftFindManyArgs) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.transactionDrafts.getDrafts(findArgs);
-  } catch (error: any) {
-    throw Error(getMessageFromIPCError(error, 'Failed to fetch transaction drafts'));
-  }
-};
+  }, 'Failed to fetch transaction drafts');
 
-export const getDraft = async (id: string) => {
-  try {
+export const getDraft = async (id: string) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.transactionDrafts.getDraft(id);
-  } catch (error: any) {
-    throw Error(getMessageFromIPCError(error, `Failed to fetch transaction with id: ${id}`));
-  }
-};
+  }, `Failed to fetch transaction with id: ${id}`);
 
 export const addDraft = async (userId: string, transactionBytes: Uint8Array, details?: string) => {
   const transactionDraft: Prisma.TransactionDraftUncheckedCreateInput = {
@@ -32,47 +25,30 @@ export const addDraft = async (userId: string, transactionBytes: Uint8Array, det
     details: details || null,
   };
 
-  try {
+  return await commonIPCHandler(async () => {
     return await window.electronAPI.local.transactionDrafts.addDraft(transactionDraft);
-  } catch (error: any) {
-    throw Error(getMessageFromIPCError(error, 'Failed to add transaction draft'));
-  }
+  }, 'Failed to add transaction draft');
 };
 
-export const updateDraft = async (
-  id: string,
-  draft: Prisma.TransactionDraftUncheckedUpdateInput,
-) => {
-  try {
+export const updateDraft = async (id: string, draft: Prisma.TransactionDraftUncheckedUpdateInput) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.transactionDrafts.updateDraft(id, draft);
-  } catch (error: any) {
-    throw Error(getMessageFromIPCError(error, `Failed to fetch transaction with id: ${draft.id}`));
-  }
-};
+  }, `Failed to fetch transaction with id: ${draft.id}`);
 
-export const deleteDraft = async (id: string) => {
-  try {
+export const deleteDraft = async (id: string) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.transactionDrafts.deleteDraft(id);
-  } catch (error: any) {
-    throw Error(getMessageFromIPCError(error, `Failed to delete transaction with id: ${id}`));
-  }
-};
+  }, `Failed to delete transaction with id: ${id}`);
 
-export const draftExists = async (transactionBytes: Uint8Array) => {
-  try {
+export const draftExists = async (transactionBytes: Uint8Array) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.transactionDrafts.draftExists(
       transactionBytes.toString(),
     );
-  } catch (error: any) {
-    throw Error(getMessageFromIPCError(error, `Failed to determine if transaction draft exist`));
-  }
-};
+  }, `Failed to determine if transaction draft exist`);
 
 /* Returns saved drafts count */
-export const getDraftsCount = async (userId: string) => {
-  try {
+export const getDraftsCount = async (userId: string) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.transactionDrafts.getDraftsCount(userId);
-  } catch (err: any) {
-    throw Error(getMessageFromIPCError(err, 'Failed to get transactions count'));
-  }
-};
+  }, 'Failed to get transactions count');

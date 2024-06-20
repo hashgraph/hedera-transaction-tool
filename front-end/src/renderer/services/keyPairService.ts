@@ -3,25 +3,87 @@ import { proto } from '@hashgraph/proto';
 
 import { Prisma } from '@prisma/client';
 
-import { getMessageFromIPCError } from '@renderer/utils';
+import { commonIPCHandler } from '@renderer/utils';
 
 /* Key Pairs Service */
 
 /* Get stored key pairs */
-export const getKeyPairs = async (userId: string, organizationId?: string | null) => {
-  try {
+export const getKeyPairs = async (userId: string, organizationId?: string | null) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.keyPairs.getAll(userId, organizationId);
-  } catch (error: any) {
-    throw Error(getMessageFromIPCError(error, 'Failed to fetch key pairs'));
-  }
-};
+  }, 'Failed to fetch key pairs');
 
 /* Get stored secret hashes */
-export const getSecretHashes = async (userId: string, organizationId?: string | null) => {
-  try {
+export const getSecretHashes = async (userId: string, organizationId?: string | null) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.keyPairs.getSecretHashes(userId, organizationId);
+  }, 'Failed to fetch secret hashes');
+
+/* Store key pair*/
+export const storeKeyPair = async (
+  keyPair: Prisma.KeyPairUncheckedCreateInput,
+  password: string,
+  encrypted: boolean,
+) =>
+  commonIPCHandler(async () => {
+    return await window.electronAPI.local.keyPairs.store(keyPair, password, encrypted);
+  }, 'Failed to store key pair');
+
+/* Change the decryption password of a stored private key */
+export const changeDecryptionPassword = async (
+  userId: string,
+  oldPassword: string,
+  newPassword: string,
+) =>
+  commonIPCHandler(async () => {
+    return await window.electronAPI.local.keyPairs.changeDecryptionPassword(
+      userId,
+      oldPassword,
+      newPassword,
+    );
+  }, 'Failed to change decryption password');
+
+/* Decrypt private key with user's password */
+export const decryptPrivateKey = async (userId: string, password: string, publicKey: string) =>
+  commonIPCHandler(async () => {
+    return await window.electronAPI.local.keyPairs.decryptPrivateKey(userId, password, publicKey);
+  }, 'Failed to decrypt private key/s');
+
+/* Hash recovery phrase */
+export const hashRecoveryPhrase = async (words: string[]) =>
+  commonIPCHandler(async () => {
+    return await window.electronAPI.local.utils.hash(words.toString());
+  }, 'Failed to hash recovery phrase');
+
+/* Delete all stored key pairs */
+export const clearKeys = async (userId: string, organizationId?: string) =>
+  commonIPCHandler(async () => {
+    return await window.electronAPI.local.keyPairs.clear(userId, organizationId);
+  }, 'Failed to clear key pairs');
+
+/* Delete the encrypted private keys from user's key pairs */
+export const deleteEncryptedPrivateKeys = async (userId: string, organizationId: string) =>
+  commonIPCHandler(async () => {
+    return await window.electronAPI.local.keyPairs.deleteEncryptedPrivateKeys(
+      userId,
+      organizationId,
+    );
+  }, 'Failed to delete encrypted private keys');
+
+/* Delete Key Pair */
+export const deleteKeyPair = async (keyPairId: string) =>
+  commonIPCHandler(async () => {
+    return await window.electronAPI.local.keyPairs.deleteKeyPair(keyPairId);
+  }, 'Failed to delete keys pair');
+
+/* Validates if the provided recovery phrase is valid according to BIP-39 */
+export const validateMnemonic = async (words: string[]) => {
+  try {
+    words = words.map(w => w.toLocaleLowerCase());
+    await Mnemonic.fromWords(words);
+    return true;
   } catch (error) {
-    throw Error(getMessageFromIPCError(error, 'Failed to fetch secret hashes'));
+    return false;
   }
 };
 
@@ -45,95 +107,6 @@ export const restorePrivateKey = async (
       return mnemonic.toStandardECDSAsecp256k1PrivateKey(passphrase, keyIndex);
     default:
       throw new Error('Key type not supported');
-  }
-};
-
-/* Store key pair*/
-export const storeKeyPair = async (
-  keyPair: Prisma.KeyPairUncheckedCreateInput,
-  password: string,
-  encrypted: boolean,
-) => {
-  try {
-    return await window.electronAPI.local.keyPairs.store(keyPair, password, encrypted);
-  } catch (error) {
-    throw Error(getMessageFromIPCError(error, 'Failed to store key pair'));
-  }
-};
-
-/* Change the decryption password of a stored private key */
-export const changeDecryptionPassword = async (
-  userId: string,
-  oldPassword: string,
-  newPassword: string,
-) => {
-  try {
-    return await window.electronAPI.local.keyPairs.changeDecryptionPassword(
-      userId,
-      oldPassword,
-      newPassword,
-    );
-  } catch (error) {
-    throw Error(getMessageFromIPCError(error, 'Failed to change decryption password'));
-  }
-};
-
-/* Decrypt private key with user's password */
-export const decryptPrivateKey = async (userId: string, password: string, publicKey: string) => {
-  try {
-    return await window.electronAPI.local.keyPairs.decryptPrivateKey(userId, password, publicKey);
-  } catch (error) {
-    throw Error(getMessageFromIPCError(error, 'Failed to decrypt private key/s'));
-  }
-};
-
-/* Hash recovery phrase */
-export const hashRecoveryPhrase = async (words: string[]) => {
-  try {
-    return await window.electronAPI.local.utils.hash(words.toString());
-  } catch (error) {
-    throw Error(getMessageFromIPCError(error, 'Failed to hash recovery phrase'));
-  }
-};
-
-/* Delete all stored key pairs */
-export const clearKeys = async (userId: string, organizationId?: string) => {
-  try {
-    return await window.electronAPI.local.keyPairs.clear(userId, organizationId);
-  } catch (error) {
-    throw Error(getMessageFromIPCError(error, 'Failed to clear key pairs'));
-  }
-};
-
-/* Delete the encrypted private keys from user's key pairs */
-export const deleteEncryptedPrivateKeys = async (userId: string, organizationId: string) => {
-  try {
-    return await window.electronAPI.local.keyPairs.deleteEncryptedPrivateKeys(
-      userId,
-      organizationId,
-    );
-  } catch (error) {
-    throw Error(getMessageFromIPCError(error, 'Failed to delete encrypted private keys'));
-  }
-};
-
-/* Validates if the provided recovery phrase is valid according to BIP-39 */
-export const validateMnemonic = async (words: string[]) => {
-  try {
-    words = words.map(w => w.toLocaleLowerCase());
-    await Mnemonic.fromWords(words);
-    return true;
-  } catch (error) {
-    return false;
-  }
-};
-
-/* Delete Key Pair */
-export const deleteKeyPair = async (keyPairId: string) => {
-  try {
-    return await window.electronAPI.local.keyPairs.deleteKeyPair(keyPairId);
-  } catch (error) {
-    throw Error(getMessageFromIPCError(error, 'Failed to delete keys pair'));
   }
 };
 
