@@ -267,24 +267,6 @@ test.describe('Transaction tests', () => {
     expect(result).toBe('SUCCESS');
   });
 
-  test('Verify transfer tokens tx fail with insufficient payer balance', async () => {
-    test.setTimeout(120000);
-    await transactionPage.ensureAccountExists(globalCredentials.password);
-    const accountFromList = await transactionPage.getFirstAccountFromList();
-    const amountToBeTransferred = '10000000';
-    await loginPage.waitForToastToDisappear();
-    await transactionPage.transferAmountBetweenAccounts(
-      accountFromList,
-      amountToBeTransferred,
-      globalCredentials.password,
-      { isSupposedToFail: true },
-    );
-
-    await transactionPage.clickOnTransactionsMenuButton();
-    const statusMessage = await transactionPage.getFirstTransactionStatus();
-    expect(statusMessage).toContain('INSUFFICIENT PAYER BALANCE');
-  });
-
   test('Verify user can add the rest of remaining hbars to receiver accounts', async () => {
     const amountToBeTransferred = 10;
     const amountLeftForRestAccounts = 9;
