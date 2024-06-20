@@ -116,7 +116,6 @@ const stepperItems = computed(() => {
     items[1].bubbleIcon = 'check-lg';
     items.splice(2, 1);
   } else items.push({ title: 'Executed', name: 'Executed' });
-  console.log(items);
 
   return items;
 });
@@ -170,33 +169,31 @@ const creator = computed(() => {
     : null;
 });
 
-const canCancel = computed(() => {
-  if (!orgTransaction.value || !creator.value) return false;
-
-  return (
-    isLoggedInOrganization(user.selectedOrganization) &&
-    creator.value.user.id === user.selectedOrganization.userId &&
+const transactionIsInProgress = computed(
+  () =>
+    orgTransaction.value &&
     [
       TransactionStatus.NEW,
       TransactionStatus.WAITING_FOR_EXECUTION,
       TransactionStatus.WAITING_FOR_SIGNATURES,
-    ].includes(orgTransaction.value.status)
-  );
+    ].includes(orgTransaction.value.status),
+);
+
+const canCancel = computed(() => {
+  if (!orgTransaction.value || !creator.value) return false;
+  if (!isLoggedInOrganization(user.selectedOrganization)) return false;
+
+  const userIsCreator = creator.value.user.id === user.selectedOrganization.userId;
+  return userIsCreator && transactionIsInProgress.value;
 });
 
 const canSign = computed(() => {
   if (!orgTransaction.value || !publicKeysRequiredToSign.value) return false;
+  if (!isLoggedInOrganization(user.selectedOrganization)) return false;
 
-  return (
-    isLoggedInOrganization(user.selectedOrganization) &&
-    publicKeysRequiredToSign.value.length > 0 &&
-    ![
-      TransactionStatus.EXPIRED,
-      TransactionStatus.FAILED,
-      TransactionStatus.CANCELED,
-      TransactionStatus.REJECTED,
-    ].includes(orgTransaction.value.status)
-  );
+  const userShouldSign = publicKeysRequiredToSign.value.length > 0;
+
+  return userShouldSign && transactionIsInProgress.value;
 });
 
 /* Handlers */
