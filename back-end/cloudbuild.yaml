@@ -5,39 +5,39 @@ steps:
       [
         'build',
         '-t',
-        'us-south1-docker.pkg.dev/transaction-tool-dev/api/development',
+        'gcr.io/transaction-tool-dev/api',
         '-f',
         'apps/api/Dockerfile',
         '.'
       ]
   - name: 'gcr.io/cloud-builders/docker'
     args:
-      ['push', 'us-south1-docker.pkg.dev/transaction-tool-dev/api/development']
+      ['push', 'gcr.io/transaction-tool-dev/api']
   # Chain service
   - name: 'gcr.io/cloud-builders/docker'
     args:
       [
         'build',
         '-t',
-        'us-south1-docker.pkg.dev/transaction-tool-dev/chain/development',
+        'gcr.io/transaction-tool-dev/chain',
         '-f',
         'apps/chain/Dockerfile',
         '.'
       ]
   - name: 'gcr.io/cloud-builders/docker'
     args:
-      ['push', 'us-south1-docker.pkg.dev/transaction-tool-dev/chain/development']
+      ['push', 'gcr.io/transaction-tool-dev/chain']
   # Notifications service
   - name: 'gcr.io/cloud-builders/docker'
     args:
       [
         'build',
         '-t',
-        'us-south1-docker.pkg.dev/transaction-tool-dev/notifications/development',
+        'gcr.io/transaction-tool-dev/notifications',
         '-f',
         'apps/notifications/Dockerfile',
         '.'
       ]
   - name: 'gcr.io/cloud-builders/docker'
     args:
-      ['push', 'us-south1-docker.pkg.dev/transaction-tool-dev/notifications/development']
+      ['push', 'gcr.io/transaction-tool-dev/notifications']
