@@ -15,7 +15,7 @@ concurrency:
 jobs:
   build:
     name: Build front-end
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: [ self-hosted, Linux, medium, ephemeral ]
 
     steps:
       - name: Checkout code
@@ -44,7 +44,7 @@ jobs:
           key: build-artifacts-${{ github.sha }}
   test:
     name: ${{ matrix.test-suite }}
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: [ self-hosted, Linux, medium, ephemeral ]
     needs: build
     strategy:
       fail-fast: false
