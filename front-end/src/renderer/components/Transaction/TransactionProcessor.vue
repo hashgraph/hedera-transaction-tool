@@ -258,7 +258,7 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     transaction_id: executedTransaction.transactionId.toString(),
     transaction_hash: (await executedTransaction.getTransactionHash()).toString(),
     body: transactionBytes.toString(),
-    status: getStatusFromCode(status),
+    status: getStatusFromCode(status) || 'UNKNOWN',
     status_code: status,
     user_id: user.personal.id,
     creator_public_key: null,

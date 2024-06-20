@@ -22,6 +22,7 @@ const allowedStatuses = [
   TransactionStatus.EXECUTED,
   TransactionStatus.EXPIRED,
   TransactionStatus.FAILED,
+  TransactionStatus.CANCELED,
 ];
 
 const statuses = Object.values(TransactionStatus)

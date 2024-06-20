@@ -1,5 +1,3 @@
-import axios, { AxiosError } from 'axios';
-
 import { Transaction } from '@hashgraph/sdk';
 
 import { Organization } from '@prisma/client';
@@ -20,11 +18,14 @@ import {
   TransactionApproverDto,
 } from '@main/shared/interfaces/organization/approvers';
 
+import {
+  axiosWithCredentials,
+  commonRequestHandler,
+  getPrivateKey,
+  getSignatures,
+} from '@renderer/utils';
+
 import { decryptPrivateKey } from '../keyPairService';
-
-import { getPrivateKey, getSignatures } from '@renderer/utils';
-
-import { throwIfNoResponse } from '.';
 
 const controller = 'transactions';
 
@@ -37,38 +38,27 @@ export const submitTransaction = async (
   network: Network,
   signature: string,
   creatorKeyId: number,
-): Promise<{ id: number; body: string }> => {
-  try {
-    const { data } = await axios.post(
-      `${serverUrl}/${controller}`,
-      {
-        name,
-        description,
-        body,
-        network,
-        signature,
-        creatorKeyId,
-      },
-      {
-        withCredentials: true,
-      },
-    );
+): Promise<{ id: number; body: string }> =>
+  commonRequestHandler(async () => {
+    const { data } = await axiosWithCredentials.post(`${serverUrl}/${controller}`, {
+      name,
+      description,
+      body,
+      network,
+      signature,
+      creatorKeyId,
+    });
 
     return { id: data.id, body: data.body };
-  } catch (error: any) {
-    let message = 'Failed submit transaction';
+  }, 'Failed submit transaction');
 
-    if (error instanceof AxiosError) {
-      throwIfNoResponse(error);
+/* Cancel a transaction  */
+export const cancelTransaction = async (serverUrl: string, id: number): Promise<boolean> =>
+  commonRequestHandler(async () => {
+    const { data } = await axiosWithCredentials.patch(`${serverUrl}/${controller}/cancel/${id}`);
 
-      const errorMessage = error.response?.data?.message;
-      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
-        message = errorMessage;
-      }
-    }
-    throw new Error(message);
-  }
-};
+    return data;
+  }, `Failed cancel transaction with id ${id}`);
 
 /* Uploads signatures to the back end */
 export const uploadSignature = async (
@@ -76,32 +66,13 @@ export const uploadSignature = async (
   transactionId: number,
   publicKeyId: number,
   signatures: { [key: string]: string },
-): Promise<void> => {
-  try {
-    await axios.post(
-      `${serverUrl}/${controller}/${transactionId}/signers`,
-      {
-        publicKeyId,
-        signatures,
-      },
-      {
-        withCredentials: true,
-      },
-    );
-  } catch (error: any) {
-    let message = 'Failed submit transaction';
-
-    if (error instanceof AxiosError) {
-      throwIfNoResponse(error);
-
-      const errorMessage = error.response?.data?.message;
-      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
-        message = errorMessage;
-      }
-    }
-    throw new Error(message);
-  }
-};
+): Promise<void> =>
+  commonRequestHandler(async () => {
+    await axiosWithCredentials.post(`${serverUrl}/${controller}/${transactionId}/signers`, {
+      publicKeyId,
+      signatures,
+    });
+  }, 'Failed upload signature');
 
 /* Decrypt, sign, upload signatures to the backend */
 export const fullUploadSignatures = async (
@@ -125,29 +96,14 @@ export const fullUploadSignatures = async (
     });
   }
 
-  try {
-    await axios.post(
+  await commonRequestHandler(async () => {
+    await axiosWithCredentials.post(
       `${organization.serverUrl}/${controller}/${transactionId}/signers/many`,
       {
         signatures: signaturesArray,
       },
-      {
-        withCredentials: true,
-      },
     );
-  } catch (error: any) {
-    let message = 'Failed upload signatures';
-
-    if (error instanceof AxiosError) {
-      throwIfNoResponse(error);
-
-      const errorMessage = error.response?.data?.message;
-      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
-        message = errorMessage;
-      }
-    }
-    throw new Error(message);
-  }
+  }, 'Failed upload signatures');
 };
 
 /* Get transactions to sign */
@@ -162,33 +118,17 @@ export const getTransactionsToSign = async (
     transaction: ITransaction;
     keysToSign: number[];
   }>
-> => {
-  try {
+> =>
+  commonRequestHandler(async () => {
     const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
     const filtering = `&filter=network:eq:${network}`;
 
-    const { data } = await axios.get(
+    const { data } = await axiosWithCredentials.get(
       `${serverUrl}/${controller}/sign?page=${page}&size=${size}${sorting}${filtering}`,
-      {
-        withCredentials: true,
-      },
     );
 
     return data;
-  } catch (error: any) {
-    let message = 'Failed to get transactions to sign';
-
-    if (error instanceof AxiosError) {
-      throwIfNoResponse(error);
-
-      const errorMessage = error.response?.data?.message;
-      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
-        message = errorMessage;
-      }
-    }
-    throw new Error(message);
-  }
-};
+  }, 'Failed to get transactions to sign');
 
 /* Get transactions to approve */
 export const getTransactionsToApprove = async (
@@ -197,111 +137,56 @@ export const getTransactionsToApprove = async (
   page: number,
   size: number,
   sort?: { property: string; direction: 'asc' | 'desc' }[],
-): Promise<PaginatedResourceDto<ITransaction>> => {
-  try {
+): Promise<PaginatedResourceDto<ITransaction>> =>
+  commonRequestHandler(async () => {
     const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
     const filtering = `&filter=network:eq:${network}`;
 
-    const { data } = await axios.get(
+    const { data } = await axiosWithCredentials.get(
       `${serverUrl}/${controller}/approve?page=${page}&size=${size}${sorting}${filtering}`,
-      {
-        withCredentials: true,
-      },
     );
 
     return data;
-  } catch (error: any) {
-    let message = 'Failed to get transactions to approve';
-
-    if (error instanceof AxiosError) {
-      throwIfNoResponse(error);
-
-      const errorMessage = error.response?.data?.message;
-      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
-        message = errorMessage;
-      }
-    }
-    throw new Error(message);
-  }
-};
+  }, 'Failed to get transactions to approve');
 
 /* Get transaction to approvers */
 export const getTransactionApprovers = async (
   serverUrl: string,
   transactionId: number,
-): Promise<ITransactionApprover[]> => {
-  try {
-    const { data } = await axios.get(`${serverUrl}/${controller}/${transactionId}/approvers`, {
-      withCredentials: true,
-    });
+): Promise<ITransactionApprover[]> =>
+  commonRequestHandler(async () => {
+    const { data } = await axiosWithCredentials.get(
+      `${serverUrl}/${controller}/${transactionId}/approvers`,
+    );
 
     return data;
-  } catch (error: any) {
-    let message = 'Failed to get transaction approvers';
-
-    if (error instanceof AxiosError) {
-      throwIfNoResponse(error);
-
-      const errorMessage = error.response?.data?.message;
-      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
-        message = errorMessage;
-      }
-    }
-    throw new Error(message);
-  }
-};
+  }, 'Failed to get transaction approvers');
 
 /* Get if user should approve a transaction */
 export const getUserShouldApprove = async (
   serverUrl: string,
   transactionId: number,
-): Promise<boolean> => {
-  try {
-    const { data } = await axios.get(`${serverUrl}/${controller}/approve/${transactionId}`, {
-      withCredentials: true,
-    });
+): Promise<boolean> =>
+  commonRequestHandler(async () => {
+    const { data } = await axiosWithCredentials.get(
+      `${serverUrl}/${controller}/approve/${transactionId}`,
+    );
 
     return data;
-  } catch (error: any) {
-    let message = 'Failed to get if a user should approve the transaction';
-
-    if (error instanceof AxiosError) {
-      throwIfNoResponse(error);
-
-      const errorMessage = error.response?.data?.message;
-      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
-        message = errorMessage;
-      }
-    }
-    throw new Error(message);
-  }
-};
+  }, 'Failed to get if user should approve the transaction');
 
 /* Get the count of the transactions to sign */
 export const getTransactionById = async (
   serverUrl: string,
   id: number,
-): Promise<ITransactionFull> => {
-  try {
-    const { data } = await axios.get(`${serverUrl}/${controller}/${id}`, {
+): Promise<ITransactionFull> =>
+  commonRequestHandler(async () => {
+    const { data } = await axiosWithCredentials.get(`${serverUrl}/${controller}/${id}`, {
       withCredentials: true,
     });
 
     return data;
-  } catch (error: any) {
-    let message = `Failed to get transaction with id ${id}`;
-
-    if (error instanceof AxiosError) {
-      throwIfNoResponse(error);
-
-      const errorMessage = error.response?.data?.message;
-      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
-        message = errorMessage;
-      }
-    }
-    throw new Error(message);
-  }
-};
+  }, `Failed to get transaction with id ${id}`);
 
 /* Get transactions for user with specific status */
 export const getTransactionsForUser = async (
@@ -311,39 +196,24 @@ export const getTransactionsForUser = async (
   page: number,
   size: number,
   sort?: { property: string; direction: 'asc' | 'desc' }[],
-): Promise<PaginatedResourceDto<ITransaction>> => {
-  try {
+): Promise<PaginatedResourceDto<ITransaction>> =>
+  commonRequestHandler(async () => {
     const withValidStart =
       !status.includes(TransactionStatus.EXECUTED) &&
       !status.includes(TransactionStatus.FAILED) &&
-      !status.includes(TransactionStatus.EXPIRED);
+      !status.includes(TransactionStatus.EXPIRED) &&
+      !status.includes(TransactionStatus.CANCELED);
     const validStartTimestamp = new Date(Date.now() - 180 * 1_000).getTime();
 
     const filtering = `&filter=status:in:${status.join(',')}${withValidStart ? `&filter=validStart:gte:${validStartTimestamp}` : ''}&filter=network:eq:${network}`;
     const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
 
-    const { data } = await axios.get(
+    const { data } = await axiosWithCredentials.get(
       `${serverUrl}/${controller}?page=${page}&size=${size}${filtering}${sorting}`,
-      {
-        withCredentials: true,
-      },
     );
 
     return data;
-  } catch (error: any) {
-    let message = 'Failed to get transactions';
-
-    if (error instanceof AxiosError) {
-      throwIfNoResponse(error);
-
-      const errorMessage = error.response?.data?.message;
-      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
-        message = errorMessage;
-      }
-    }
-    throw new Error(message);
-  }
-};
+  }, 'Failed to get transactions for user');
 
 /* Get history transactions */
 export const getHistoryTransactions = async (
@@ -356,92 +226,44 @@ export const getHistoryTransactions = async (
     value: string | string[];
   }[],
   sort?: { property: string; direction: 'asc' | 'desc' }[],
-): Promise<PaginatedResourceDto<ITransaction>> => {
-  try {
+): Promise<PaginatedResourceDto<ITransaction>> =>
+  commonRequestHandler(async () => {
     const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
     const filtering = filter.map(f => `&filter=${f.property}:${f.rule}:${f.value}`).join('');
 
-    const { data } = await axios.get(
+    const { data } = await axiosWithCredentials.get(
       `${serverUrl}/${controller}/history?page=${page}&size=${size}${sorting}${filtering}`,
-      {
-        withCredentials: true,
-      },
     );
 
     return data;
-  } catch (error: any) {
-    let message = 'Failed to get transactions';
-
-    if (error instanceof AxiosError) {
-      throwIfNoResponse(error);
-
-      const errorMessage = error.response?.data?.message;
-      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
-        message = errorMessage;
-      }
-    }
-    throw new Error(message);
-  }
-};
+  }, 'Failed to get history transactions');
 
 /* Adds observers */
-export const addObservers = async (serverUrl: string, transactionId: number, userIds: number[]) => {
-  try {
-    const { data } = await axios.post(
+export const addObservers = async (serverUrl: string, transactionId: number, userIds: number[]) =>
+  commonRequestHandler(async () => {
+    const { data } = await axiosWithCredentials.post(
       `${serverUrl}/${controller}/${transactionId}/observers`,
       {
         userIds,
       },
-      {
-        withCredentials: true,
-      },
     );
 
     return data;
-  } catch (error: any) {
-    let message = 'Failed to add obsersers to transaction';
-
-    if (error instanceof AxiosError) {
-      throwIfNoResponse(error);
-
-      const errorMessage = error.response?.data?.message;
-      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
-        message = errorMessage;
-      }
-    }
-    throw new Error(message);
-  }
-};
+  }, 'Failed to add observers to transaction');
 
 /* Removes an observer */
 export const removeObserver = async (
   serverUrl: string,
   transactionId: number,
   observerId: number,
-) => {
-  try {
-    const { data } = await axios.delete(
+) =>
+  commonRequestHandler(async () => {
+    const { data } = await axiosWithCredentials.delete(
       `${serverUrl}/${controller}/${transactionId}/observers/${observerId}`,
-      {
-        withCredentials: true,
-      },
     );
 
     return data;
-  } catch (error: any) {
-    let message = 'Failed to remove obserser';
-
-    if (error instanceof AxiosError) {
-      throwIfNoResponse(error);
-
-      const errorMessage = error.response?.data?.message;
-      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
-        message = errorMessage;
-      }
-    }
-    throw new Error(message);
-  }
-};
+  }, 'Failed to remove observer');
 
 /* Updates an observer */
 export const updateObserverRole = async (
@@ -449,96 +271,48 @@ export const updateObserverRole = async (
   transactionId: number,
   observerId: number,
   role: ObserverRole,
-) => {
-  try {
-    const { data } = await axios.patch(
+) =>
+  commonRequestHandler(async () => {
+    const { data } = await axiosWithCredentials.patch(
       `${serverUrl}/${controller}/${transactionId}/observers/${observerId}`,
       {
         role,
       },
-      {
-        withCredentials: true,
-      },
     );
 
     return data;
-  } catch (error: any) {
-    let message = "Failed to update obserser's role";
-
-    if (error instanceof AxiosError) {
-      throwIfNoResponse(error);
-
-      const errorMessage = error.response?.data?.message;
-      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
-        message = errorMessage;
-      }
-    }
-    throw new Error(message);
-  }
-};
+  }, 'Failed to update observer role');
 
 /* Adds approvers */
 export const addApprovers = async (
   serverUrl: string,
   transactionId: number,
   approvers: TransactionApproverDto[],
-) => {
-  try {
-    const { data } = await axios.post(
+) =>
+  commonRequestHandler(async () => {
+    const { data } = await axiosWithCredentials.post(
       `${serverUrl}/${controller}/${transactionId}/approvers`,
       {
         approversArray: approvers,
       },
-      {
-        withCredentials: true,
-      },
     );
 
     return data;
-  } catch (error: any) {
-    let message = 'Failed to add approvers to transaction';
-
-    if (error instanceof AxiosError) {
-      throwIfNoResponse(error);
-
-      const errorMessage = error.response?.data?.message;
-      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
-        message = errorMessage;
-      }
-    }
-    throw new Error(message);
-  }
-};
+  }, 'Failed to add approvers to transaction');
 
 /* Removes an approver */
 export const removeApprover = async (
   serverUrl: string,
   transactionId: number,
   approverId: number,
-) => {
-  try {
-    const { data } = await axios.delete(
+) =>
+  commonRequestHandler(async () => {
+    const { data } = await axiosWithCredentials.delete(
       `${serverUrl}/${controller}/${transactionId}/approvers/${approverId}`,
-      {
-        withCredentials: true,
-      },
     );
 
     return data;
-  } catch (error: any) {
-    let message = 'Failed to remove approver';
-
-    if (error instanceof AxiosError) {
-      throwIfNoResponse(error);
-
-      const errorMessage = error.response?.data?.message;
-      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
-        message = errorMessage;
-      }
-    }
-    throw new Error(message);
-  }
-};
+  }, 'Failed to remove approver');
 
 /* Sends approver's choice */
 export const sendApproverChoice = async (
@@ -547,32 +321,16 @@ export const sendApproverChoice = async (
   userKeyId: number,
   signature: string,
   approved: boolean,
-) => {
-  try {
-    const { data } = await axios.post(
+) =>
+  commonRequestHandler(async () => {
+    const { data } = await axiosWithCredentials.post(
       `${serverUrl}/${controller}/${transactionId}/approvers/approve`,
       {
         userKeyId: userKeyId,
         signature: signature,
         approved: approved,
       },
-      {
-        withCredentials: true,
-      },
     );
 
     return data;
-  } catch (error: any) {
-    let message = 'Failed to send approve choice';
-
-    if (error instanceof AxiosError) {
-      throwIfNoResponse(error);
-
-      const errorMessage = error.response?.data?.message;
-      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
-        message = errorMessage;
-      }
-    }
-    throw new Error(message);
-  }
-};
+  }, 'Failed to send approve choice');

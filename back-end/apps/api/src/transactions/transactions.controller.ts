@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -191,6 +192,22 @@ export class TransactionsController {
   }
 
   @ApiOperation({
+    summary: 'Cancel a transaction',
+    description: 'Cancel a transaction if the valid start date is in the future.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: TransactionDto,
+  })
+  @Patch('/cancel/:id')
+  async cancelTransaction(
+    @GetUser() user,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<boolean> {
+    return this.transactionsService.cancelTransaction(user, id);
+  }
+
+  @ApiOperation({
     summary: 'Get a transaction',
     description: 'Get the transaction for the given transaction id.',
   })
@@ -216,6 +233,6 @@ export class TransactionsController {
   })
   @Delete('/:id')
   deleteTransaction(@GetUser() user, @Param('id', ParseIntPipe) id: number): Promise<boolean> {
-    return this.transactionsService.removeTransaction(user, id);
+    return this.transactionsService.removeTransaction(user, id, true);
   }
 }

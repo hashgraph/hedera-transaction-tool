@@ -15,6 +15,7 @@ import { useToast } from 'vue-toast-notification';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 
 import {
+  cancelTransaction,
   fullUploadSignatures,
   getTransactionById,
   getUserShouldApprove,
@@ -81,9 +82,15 @@ const signatureKeyObject = ref<Awaited<ReturnType<typeof computeSignatureKey>> |
 const publicKeysRequiredToSign = ref<string[] | null>(null);
 const shouldApprove = ref<boolean>(false);
 const isConfirmModalShown = ref(false);
+const confirmModalTitle = ref('');
+const confirmModalText = ref('');
+const confirmModalButtonText = ref('');
+const confirmCallback = ref<((...any) => void) | null>(null);
 
 /* Computed */
 const stepperItems = computed(() => {
+  if (!orgTransaction.value) return [];
+
   const items: {
     title: string;
     name: string;
@@ -96,10 +103,12 @@ const stepperItems = computed(() => {
     { title: 'Awaiting Execution', name: 'Awaiting Execution' },
   ];
 
-  if (orgTransaction.value?.status === TransactionStatus.EXPIRED) {
+  if (
+    [TransactionStatus.EXPIRED, TransactionStatus.CANCELED].includes(orgTransaction.value.status)
+  ) {
     items.push({
-      title: 'Expired',
-      name: 'Expired',
+      title: orgTransaction.value.status === TransactionStatus.EXPIRED ? 'Expired' : 'Canceled',
+      name: orgTransaction.value.status === TransactionStatus.EXPIRED ? 'Expired' : 'Canceled',
       bubbleClass: 'bg-danger text-white',
       bubbleIcon: 'x-lg',
     });
@@ -160,6 +169,33 @@ const creator = computed(() => {
     : null;
 });
 
+const transactionIsInProgress = computed(
+  () =>
+    orgTransaction.value &&
+    [
+      TransactionStatus.NEW,
+      TransactionStatus.WAITING_FOR_EXECUTION,
+      TransactionStatus.WAITING_FOR_SIGNATURES,
+    ].includes(orgTransaction.value.status),
+);
+
+const canCancel = computed(() => {
+  if (!orgTransaction.value || !creator.value) return false;
+  if (!isLoggedInOrganization(user.selectedOrganization)) return false;
+
+  const userIsCreator = creator.value.user.id === user.selectedOrganization.userId;
+  return userIsCreator && transactionIsInProgress.value;
+});
+
+const canSign = computed(() => {
+  if (!orgTransaction.value || !publicKeysRequiredToSign.value) return false;
+  if (!isLoggedInOrganization(user.selectedOrganization)) return false;
+
+  const userShouldSign = publicKeysRequiredToSign.value.length > 0;
+
+  return userShouldSign && transactionIsInProgress.value;
+});
+
 /* Handlers */
 const handleBack = () => {
   if (isLoggedInOrganization(user.selectedOrganization)) {
@@ -170,6 +206,7 @@ const handleBack = () => {
       case TransactionStatus.EXECUTED:
       case TransactionStatus.FAILED:
       case TransactionStatus.EXPIRED:
+      case TransactionStatus.CANCELED:
         tab = 'History';
         break;
       case TransactionStatus.WAITING_FOR_EXECUTION:
@@ -236,6 +273,10 @@ const handleSign = async () => {
 
 const handleApprove = async (approved: boolean, showModal?: boolean) => {
   if (!approved && showModal) {
+    confirmModalTitle.value = 'Reject Transaction?';
+    confirmModalText.value = 'Are you sure you want to reject the transaction?';
+    confirmModalButtonText.value = 'Reject';
+    confirmCallback.value = () => handleApprove(false);
     isConfirmModalShown.value = true;
     return;
   }
@@ -286,16 +327,40 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
     toast.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`);
 
     if (!approved) {
-      router.push({
-        name: 'transactions',
-        query: {
-          tab: 'History',
-        },
-      });
+      redirectToHistory();
     }
   };
 
   await callback();
+};
+
+const handleCancel = async (showModal?: boolean) => {
+  if (!orgTransaction.value) {
+    throw new Error('Transaction is not available');
+  }
+
+  if (showModal) {
+    confirmModalTitle.value = 'Cancel Transaction?';
+    confirmModalText.value = 'Are you sure you want to cancel the transaction?';
+    confirmModalButtonText.value = 'Confirm';
+    confirmCallback.value = () => handleCancel();
+    isConfirmModalShown.value = true;
+    return;
+  }
+
+  if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in organization');
+  }
+
+  try {
+    await cancelTransaction(user.selectedOrganization.serverUrl, orgTransaction.value.id);
+  } catch (error) {
+    isConfirmModalShown.value = false;
+    throw error;
+  }
+  toast.success(`Transaction canceled successfully`);
+
+  redirectToHistory();
 };
 
 const handleSubmit = async e => {
@@ -303,12 +368,14 @@ const handleSubmit = async e => {
 
   if (!isLoggedInOrganization(user.selectedOrganization)) return;
 
-  const choice = e.submitter?.textContent;
+  const buttonContent = e.submitter?.textContent;
 
-  if ([reject, approve].includes(choice)) {
-    await handleApprove(choice === approve, true);
-  } else {
+  if ([reject, approve].includes(buttonContent)) {
+    await handleApprove(buttonContent === approve, true);
+  } else if (buttonContent === sign) {
     await handleSign();
+  } else {
+    await handleCancel(true);
   }
 };
 
@@ -365,6 +432,15 @@ async function fetchTransaction(id: string | number) {
   }
 }
 
+function redirectToHistory() {
+  router.push({
+    name: 'transactions',
+    query: {
+      tab: 'History',
+    },
+  });
+}
+
 /* Hooks */
 onBeforeMount(async () => {
   const id = router.currentRoute.value.params.id;
@@ -395,6 +471,8 @@ const detailItemValueClass = 'text-small mt-1';
 const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
 const reject = 'Reject';
 const approve = 'Approve';
+const sign = 'Sign';
+const cancel = 'Cancel';
 </script>
 <template>
   <div class="p-5">
@@ -440,18 +518,17 @@ const approve = 'Approve';
 
                 <h2 class="text-title text-bold">Transaction Details</h2>
               </div>
-              <div v-if="isLoggedInOrganization(user.selectedOrganization) && shouldApprove">
-                <AppButton color="secondary" type="submit" class="me-3">{{ reject }}</AppButton>
-                <AppButton color="primary" type="submit">{{ approve }}</AppButton>
-              </div>
-              <div
-                v-else-if="
-                  isLoggedInOrganization(user.selectedOrganization) &&
-                  publicKeysRequiredToSign &&
-                  publicKeysRequiredToSign.length > 0
-                "
-              >
-                <AppButton color="primary" type="submit">Sign</AppButton>
+              <div class="flex-centered gap-4">
+                <div v-if="canCancel">
+                  <AppButton color="secondary" type="submit" class="me-3">{{ cancel }}</AppButton>
+                </div>
+                <div v-if="isLoggedInOrganization(user.selectedOrganization) && shouldApprove">
+                  <AppButton color="secondary" type="submit" class="me-3">{{ reject }}</AppButton>
+                  <AppButton color="primary" type="submit">{{ approve }}</AppButton>
+                </div>
+                <div v-else-if="canSign">
+                  <AppButton color="primary" type="submit">{{ sign }}</AppButton>
+                </div>
               </div>
             </div>
 
@@ -670,9 +747,9 @@ const approve = 'Approve';
         <div class="text-center">
           <AppCustomIcon :name="'questionMark'" style="height: 160px" />
         </div>
-        <h3 class="text-center text-title text-bold mt-4">Reject Transaction?</h3>
+        <h3 class="text-center text-title text-bold mt-4">{{ confirmModalTitle }}</h3>
         <p class="text-center text-small text-secondary mt-4">
-          Are you sure you want to reject the transaction
+          {{ confirmModalText }}
         </p>
         <hr class="separator my-5" />
         <div class="flex-between-centered gap-4">
@@ -680,8 +757,8 @@ const approve = 'Approve';
           <AppButton
             color="primary"
             data-testid="button-confirm-change-password"
-            @click="handleApprove(false)"
-            >Reject</AppButton
+            @click="confirmCallback && confirmCallback()"
+            >{{ confirmModalButtonText }}</AppButton
           >
         </div>
       </div>

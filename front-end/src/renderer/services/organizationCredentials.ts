@@ -1,42 +1,29 @@
-import { getMessageFromIPCError } from '@renderer/utils';
+import { commonIPCHandler } from '@renderer/utils';
 
 /* Organizations Service */
 
 /* Get the connected organizations */
-export const getConnectedOrganizations = async (user_id: string) => {
-  try {
+export const getConnectedOrganizations = async (user_id: string) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.organizationCredentials.getConnectedOrganizations(
       user_id,
     );
-  } catch (error: any) {
-    throw Error(getMessageFromIPCError(error, 'Failed to fetch organizations'));
-  }
-};
+  }, 'Failed to fetch organizations');
 
 /* Returns the organizations that the user should sign into */
-export const getOrganizationsToSignIn = async (user_id: string) => {
-  try {
+export const getOrganizationsToSignIn = async (user_id: string) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.organizationCredentials.organizationsToSignIn(user_id);
-  } catch (error: any) {
-    throw Error(
-      getMessageFromIPCError(error, 'Failed to fetch organizations that user should sign in'),
-    );
-  }
-};
+  }, 'Failed to fetch organizations that user should sign in');
 
 /* Returns whether the user should sign in a specific organization */
-export const shouldSignInOrganization = async (user_id: string, organization_id: string) => {
-  try {
+export const shouldSignInOrganization = async (user_id: string, organization_id: string) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.organizationCredentials.shouldSignInOrganization(
       user_id,
       organization_id,
     );
-  } catch (error: any) {
-    throw Error(
-      getMessageFromIPCError(error, 'Failed to determine whether user should sign in organization'),
-    );
-  }
-};
+  }, 'Failed to determine whether user should sign in organization');
 
 /* Adds a new organization credentials to the user */
 export const addOrganizationCredentials = async (
@@ -46,8 +33,8 @@ export const addOrganizationCredentials = async (
   user_id: string,
   encryptPassword: string,
   updateIfExists: boolean = false,
-) => {
-  try {
+) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.organizationCredentials.addOrganizationCredentials(
       email,
       password,
@@ -56,10 +43,7 @@ export const addOrganizationCredentials = async (
       encryptPassword,
       updateIfExists,
     );
-  } catch (error: any) {
-    throw Error(getMessageFromIPCError(error, 'Failed to store organization credentials'));
-  }
-};
+  }, 'Failed to store organization credentials');
 
 /* Updates the organization credentials */
 export const updateOrganizationCredentials = async (
@@ -68,8 +52,8 @@ export const updateOrganizationCredentials = async (
   email?: string,
   password?: string,
   encryptPassword?: string,
-) => {
-  try {
+) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.organizationCredentials.updateOrganizationCredentials(
       organization_id,
       user_id,
@@ -77,31 +61,22 @@ export const updateOrganizationCredentials = async (
       password,
       encryptPassword,
     );
-  } catch (error: any) {
-    throw Error(getMessageFromIPCError(error, 'Failed to store organization credentials'));
-  }
-};
+  }, 'Failed to store organization credentials');
 
 /* Deletes the organization credentials */
-export const deleteOrganizationCredentials = async (organization_id: string, user_id: string) => {
-  try {
+export const deleteOrganizationCredentials = async (organization_id: string, user_id: string) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.organizationCredentials.deleteOrganizationCredentials(
       organization_id,
       user_id,
     );
-  } catch (error: any) {
-    throw Error(getMessageFromIPCError(error, 'Failed to delete organization credentials'));
-  }
-};
+  }, 'Failed to delete organization credentials');
 
 /* Try auto sign in */
-export const tryAutoSignIn = async (user_id: string, decryptPassword: string) => {
-  try {
+export const tryAutoSignIn = async (user_id: string, decryptPassword: string) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.organizationCredentials.tryAutoSignIn(
       user_id,
       decryptPassword,
     );
-  } catch (error: any) {
-    throw Error(getMessageFromIPCError(error, 'Failed failed to auto sign in to organizations'));
-  }
-};
+  }, 'Failed failed to auto sign in to organizations');

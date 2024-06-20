@@ -210,7 +210,12 @@ export class TransactionsService {
     const whereForUser: FindOptionsWhere<Transaction> = {
       ...where,
       status: Not(
-        In([TransactionStatus.EXECUTED, TransactionStatus.FAILED, TransactionStatus.EXPIRED]),
+        In([
+          TransactionStatus.EXECUTED,
+          TransactionStatus.FAILED,
+          TransactionStatus.EXPIRED,
+          TransactionStatus.CANCELED,
+        ]),
       ),
     };
 
@@ -265,7 +270,12 @@ export class TransactionsService {
     const whereForUser: FindOptionsWhere<Transaction> = {
       ...where,
       status: Not(
-        In([TransactionStatus.EXECUTED, TransactionStatus.FAILED, TransactionStatus.EXPIRED]),
+        In([
+          TransactionStatus.EXECUTED,
+          TransactionStatus.FAILED,
+          TransactionStatus.EXPIRED,
+          TransactionStatus.CANCELED,
+        ]),
       ),
     };
 
@@ -405,6 +415,38 @@ export class TransactionsService {
     return true;
   }
 
+  /* Cancel the transaction if the valid start has not come yet. */
+  async cancelTransaction(user: UserDto, id: number): Promise<boolean> {
+    const transaction = await this.getTransactionById(id);
+
+    if (!transaction) {
+      throw new BadRequestException('Transaction not found');
+    }
+
+    if (transaction.creatorKey?.user?.id !== user.id) {
+      throw new BadRequestException('Only the creator of the transaction is able to delete it');
+    }
+
+    if (
+      ![
+        TransactionStatus.WAITING_FOR_SIGNATURES,
+        TransactionStatus.WAITING_FOR_EXECUTION,
+        TransactionStatus.NEW,
+      ].includes(transaction.status)
+    ) {
+      throw new BadRequestException('Only transactions in progress can be canceled');
+    }
+
+    await this.repo.update({ id }, { status: TransactionStatus.CANCELED });
+
+    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+      message: TRANSACTION_ACTION,
+      content: '',
+    });
+
+    return true;
+  }
+
   /* Get the transaction with the provided id if user has access */
   async getTransactionWithVerifiedAccess(transactionId: number, user: User) {
     const transaction = await this.repo.findOne({
@@ -431,9 +473,12 @@ export class TransactionsService {
     transaction.approvers = this.approversService.getTreeStructure(approvers);
 
     if (
-      [TransactionStatus.EXECUTED, TransactionStatus.EXPIRED, TransactionStatus.FAILED].includes(
-        transaction.status,
-      )
+      [
+        TransactionStatus.EXECUTED,
+        TransactionStatus.EXPIRED,
+        TransactionStatus.FAILED,
+        TransactionStatus.CANCELED,
+      ].includes(transaction.status)
     )
       return transaction;
 
@@ -471,19 +516,20 @@ export class TransactionsService {
 
   private getHistoryStatusWhere(
     filtering: Filtering[],
-  ): TransactionStatus | FindOperator<TransactionStatus> | undefined {
+  ): TransactionStatus | FindOperator<TransactionStatus> {
     const allowedStatuses = [
       TransactionStatus.EXECUTED,
       TransactionStatus.FAILED,
       TransactionStatus.EXPIRED,
+      TransactionStatus.CANCELED,
     ];
-    const disallowedStatuses = Object.values(TransactionStatus).filter(
+    const forbiddenStatuses = Object.values(TransactionStatus).filter(
       s => !allowedStatuses.includes(s),
     );
 
     const statusFilter = filtering.find(f => f.property === 'status');
 
-    if (!statusFilter) return;
+    if (!statusFilter) return Not(In([...forbiddenStatuses]));
 
     const statusFilterValue = statusFilter.value.split(',') as TransactionStatus[];
 
@@ -493,16 +539,13 @@ export class TransactionsService {
       case 'in':
         return In(statusFilterValue.filter(s => allowedStatuses.includes(s)));
       case 'neq':
-        return Not(In([...disallowedStatuses, ...statusFilterValue]));
+        return Not(In([...forbiddenStatuses, ...statusFilterValue]));
       case 'nin':
         return Not(
-          In([
-            ...disallowedStatuses,
-            ...statusFilterValue.filter(s => allowedStatuses.includes(s)),
-          ]),
+          In([...forbiddenStatuses, ...statusFilterValue.filter(s => allowedStatuses.includes(s))]),
         );
       default:
-        return undefined;
+        return Not(In([...forbiddenStatuses]));
     }
   }
 }

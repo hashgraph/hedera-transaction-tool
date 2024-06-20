@@ -2,11 +2,8 @@ export * from './dom';
 export * from './sdk';
 export * from './transactions';
 export * from './validator';
-
-export const getMessageFromIPCError = (err: any, msg: string) => {
-  console.log(err);
-  return err.message?.split(': Error: ')[1] || msg;
-};
+export * from './axios';
+export * from './ipc';
 
 export const getDateTimeLocalInputValue = (date: Date) => {
   const tzo = -date.getTimezoneOffset();

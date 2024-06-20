@@ -1,14 +1,15 @@
-import { getMessageFromIPCError } from '@renderer/utils';
+import { commonIPCHandler } from '@renderer/utils';
 
 /* User Service */
 
+/* Login locally */
 export const loginLocal = async (
   email: string,
   password: string,
   keepLoggedIn = false,
   autoRegister = false,
-) => {
-  try {
+) =>
+  commonIPCHandler(async () => {
     const { id, email: userEmail } = await window.electronAPI.local.localUser.login(
       email,
       password,
@@ -21,13 +22,11 @@ export const loginLocal = async (
       localStorage.removeItem('htx_user');
     }
     return { id, email: userEmail };
-  } catch (err: any) {
-    throw Error(getMessageFromIPCError(err, 'Login failed'));
-  }
-};
+  }, 'Login failed');
 
-export const registerLocal = async (email: string, password: string, keepLoggedIn = false) => {
-  try {
+/* Register locally */
+export const registerLocal = async (email: string, password: string, keepLoggedIn = false) =>
+  commonIPCHandler(async () => {
     const { id, email: userEmail } = await window.electronAPI.local.localUser.register(
       email,
       password,
@@ -38,43 +37,32 @@ export const registerLocal = async (email: string, password: string, keepLoggedI
     }
 
     return { id: id, email: userEmail };
-  } catch (err: any) {
-    throw Error(getMessageFromIPCError(err, 'Registration failed'));
-  }
-};
+  }, 'Registration failed');
 
-export const resetDataLocal = async () => {
-  try {
+/* Reset the whole local app */
+export const resetDataLocal = async () =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.localUser.resetData();
-  } catch (err: any) {
-    throw Error(getMessageFromIPCError(err, 'Failed to reset user data'));
-  }
-};
+  }, 'Failed to reset user data');
 
-export const getUsersCount = async () => {
-  try {
+/* Get the count of local users */
+export const getUsersCount = async () =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.localUser.usersCount();
-  } catch (err: any) {
-    throw Error(getMessageFromIPCError(err, 'Failed to check for registered users'));
-  }
-};
+  }, 'Failed to check for registered users');
 
-export const comparePasswords = async (userId: string, password: string) => {
-  try {
+/* Compare local user password with value */
+export const comparePasswords = async (userId: string, password: string) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.localUser.comparePasswords(userId, password);
-  } catch (err: any) {
-    throw Error(getMessageFromIPCError(err, 'User not exists'));
-  }
-};
+  }, 'User not exists');
 
-export const changePassword = async (userId: string, oldPassword: string, newPassword: string) => {
-  try {
+/* Change user password */
+export const changePassword = async (userId: string, oldPassword: string, newPassword: string) =>
+  commonIPCHandler(async () => {
     return await window.electronAPI.local.localUser.changePassword(
       userId,
       oldPassword,
       newPassword,
     );
-  } catch (err: any) {
-    throw Error(getMessageFromIPCError(err, 'Failed to change password'));
-  }
-};
+  }, 'Failed to change password');

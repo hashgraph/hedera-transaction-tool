@@ -1,6 +1,6 @@
-import axios from 'axios';
-
 import { IUser, IUserKey } from '@main/shared/interfaces';
+
+import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 
 import { getUserKeys } from './userKeys';
 
@@ -45,40 +45,24 @@ export const getUserState = async (organizationServerUrl: string) => {
 };
 
 /* Get information about current user */
-export const getMe = async (organizationServerUrl: string): Promise<IUser> => {
-  try {
-    const response = await axios.get(`${organizationServerUrl}/${controller}/me`, {
-      withCredentials: true,
-    });
+export const getMe = async (organizationServerUrl: string): Promise<IUser> =>
+  commonRequestHandler(async () => {
+    const response = await axiosWithCredentials.get(`${organizationServerUrl}/${controller}/me`);
     return response.data;
-  } catch (error: any) {
-    console.log(error);
-    throw new Error('Failed get user information');
-  }
-};
+  }, 'Failed to get user information');
 
 /* Get information about organization users */
-export async function getUsers(organizationServerUrl: string): Promise<IUser[]> {
-  try {
-    const response = await axios.get(`${organizationServerUrl}/${controller}`, {
-      withCredentials: true,
-    });
+export const getUsers = (organizationServerUrl: string): Promise<IUser[]> =>
+  commonRequestHandler(async () => {
+    const response = await axiosWithCredentials.get(`${organizationServerUrl}/${controller}`);
     return response.data;
-  } catch (error: any) {
-    console.log(error);
-    throw new Error('Failed to get organization users');
-  }
-}
+  }, 'Failed to get organization users');
 
 /* ADMIN ONLY: Delete a user */
-export async function deleteUser(organizationServerUrl: string, id) {
-  try {
-    const response = await axios.delete(`${organizationServerUrl}/${controller}/${id}`, {
-      withCredentials: true,
-    });
+export const deleteUser = (organizationServerUrl: string, id) =>
+  commonRequestHandler(async () => {
+    const response = await axiosWithCredentials.delete(
+      `${organizationServerUrl}/${controller}/${id}`,
+    );
     return response.data;
-  } catch (error: any) {
-    console.log(error);
-    throw new Error('Failed to delete user');
-  }
-}
+  }, 'Failed to delete user');
