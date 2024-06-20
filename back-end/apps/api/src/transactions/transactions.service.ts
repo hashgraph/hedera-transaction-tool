@@ -68,7 +68,7 @@ export class TransactionsService {
 
     const transaction = await this.repo.findOne({
       where: { id },
-      relations: ['creatorKey', 'creatorKey.user', 'observers', 'observers.user', 'comments'],
+      relations: ['creatorKey', 'creatorKey.user', 'observers', 'observers.user', 'comments', 'groupItem'],
     });
 
     if (!transaction) return null;
@@ -451,7 +451,7 @@ export class TransactionsService {
   async getTransactionWithVerifiedAccess(transactionId: number, user: User) {
     const transaction = await this.repo.findOne({
       where: { id: transactionId },
-      relations: ['creatorKey', 'creatorKey.user', 'observers'],
+      relations: ['creatorKey', 'creatorKey.user', 'observers', 'groupItem'],
     });
 
     if (!transaction) throw new NotFoundException('Transaction not found');
