@@ -2,10 +2,30 @@
 GET http://localhost:3000/transaction-groups
 
 ### Create a transaction group
-POST http://localhost:3000/transaction-groups
+POST http://localhost:3001/transaction-groups
 content-type: application/json
 
-{"description":"transaction - 0.0.1234@1717108937.064000000","atomic":false,"groupItems":[{"seq":0,"transaction":{"name":"first","type":"ACCOUNT CREATE","description":"first account create transaction","body":"0x0a8b012a88010a83010a180a0b08c981e4b2061080a0c21e12070800100018d20918001206080010001802188084af5f220308b401320274785a510a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080b68ce92d30ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200","status":"NEW","creatorKeyId":2,"signature":"0x3c7f7f30cfa781a01fbf9a6ba1195d31d9581a3a2805ee742e483b9e4e8001a7521895eb7680123477fffee3bf522fc8ec24a46bb7d67c96311e8125f951f801","validStart":"2024-05-30T22:42:17.064Z","cutoffAt":"2024-05-30T22:45:17.064Z"}}]}
+{
+  "description":"transaction - 0.0.2673708@1719504120.234000000",
+  "atomic":false,
+  "groupItems":
+  [
+    {"seq":0,
+      "transaction":
+      {
+        "name":"New Account Create Transaction",
+        "type":"ACCOUNT CREATE",
+        "description":"first account create transaction",
+        "body":"0a88012a85010a80010a170a0808f085a7c406100012090800100018ac98a30118001206080010001803188084af5f220308b40132005a510a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b108084af5f30ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0668656c6c6f218801011200",
+        "status":"WAITING FOR SIGNATURES",
+        "network":"testnet",
+        "creatorKeyId":2,
+        "signature":"8d5e5b31cc3ee2c1b1e8443422ca13a8b211ffed4a9c0eea590835835aab15ae88204b1f6fb60b3cb7198b46a08a121a820e4c65a5a350f565e6b92ae035e405",
+        "validStart":"2024-06-27T16:02:00.000Z"
+      }
+    }
+  ]
+}
 
 ### Delete a transaction group
 DELETE http://localhost:3000/transaction-groups/13

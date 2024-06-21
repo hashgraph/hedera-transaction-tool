@@ -5,6 +5,7 @@ import { TransactionStatus, TransactionType } from '@entities';
 import { TransactionSignerUserKeyDto } from './transaction-signer.dto';
 import { TransactionApproverDto } from './transaction-approver.dto';
 import { TransactionObserverDto } from './transaction-observer.dto';
+import { TransactionGroupItemDto } from './transaction-group-item.dto';
 
 export class TransactionDto {
   @Expose()
@@ -54,6 +55,10 @@ export class TransactionDto {
   @Transform(({ obj }) => (obj.creatorKey ? obj.creatorKey.id : undefined))
   @Expose()
   creatorKeyId: number;
+
+  @Expose()
+  @Type(() => TransactionGroupItemDto)
+  groupItem: TransactionGroupItemDto;
 }
 
 export class TransactionFullDto extends TransactionDto {
