@@ -85,6 +85,9 @@ jobs:
           path: front-end/release/linux-unpacked
           key: build-artifacts-${{ github.sha }}
 
+      - name: Install xvfb
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
       - name: run automation
         env:
           EXECUTABLE_PATH: ../front-end/release/linux-unpacked/hedera-transaction-tool
