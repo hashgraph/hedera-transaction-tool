@@ -9,6 +9,7 @@ const {
 const RegistrationPage = require('../pages/RegistrationPage.js');
 const { expect } = require('playwright/test');
 const LoginPage = require('../pages/LoginPage');
+import { allure } from 'allure-playwright';
 
 let app, window;
 let globalCredentials = { email: '', password: '' };
@@ -46,42 +47,84 @@ test.describe('Login tests', () => {
   });
 
   test('Verify that login with incorrect password shows an error message', async () => {
+    await allure.label('feature', 'Login');
+    await allure.label('severity', 'normal');
+    let passwordErrorMessage;
     const incorrectPassword = globalCredentials.password + '123';
-    await loginPage.waitForToastToDisappear();
-    await loginPage.login(globalCredentials.email, incorrectPassword);
-    const passwordErrorMessage = (await loginPage.getLoginPasswordErrorMessage()).trim();
-
-    expect(passwordErrorMessage).toBe('Invalid password.');
+    await allure.step('Wait for any previous toasts to disappear', async () => {
+      await loginPage.waitForToastToDisappear();
+    });
+    await allure.step('Attempt to login with incorrect password', async () => {
+      await loginPage.login(globalCredentials.email, incorrectPassword);
+    });
+    await allure.step('Get the password error message', async () => {
+      passwordErrorMessage = (await loginPage.getLoginPasswordErrorMessage()).trim();
+    });
+    await allure.step('Verify the error message', async () => {
+      expect(passwordErrorMessage).toBe('Invalid password.');
+    });
   });
 
   test('Verify that login with incorrect email shows an error message', async () => {
-    const incorrectEmail = globalCredentials.email + '123';
-    await loginPage.waitForToastToDisappear();
-    await loginPage.login(incorrectEmail, globalCredentials.password);
-    const passwordErrorMessage = (await loginPage.getLoginEmailErrorMessage()).trim();
+    await allure.label('feature', 'Login');
+    await allure.label('severity', 'normal');
 
-    expect(passwordErrorMessage).toBe('Invalid e-mail.');
+    let emailErrorMessage;
+    const incorrectEmail = globalCredentials.email + '123';
+    await allure.step('Wait for any previous toasts to disappear', async () => {
+      await loginPage.waitForToastToDisappear();
+    });
+    await allure.step('Attempt to login with incorrect email', async () => {
+      await loginPage.login(incorrectEmail, globalCredentials.password);
+    });
+    await allure.step('Get the password error message', async () => {
+      emailErrorMessage = (await loginPage.getLoginEmailErrorMessage()).trim();
+    });
+
+    await allure.step('Verify the error message', async () => {
+      expect(emailErrorMessage).toBe('Invalid e-mail.');
+    });
   });
 
   test('Verify all essential elements are present on the login page', async () => {
-    const allElementsAreCorrect = await loginPage.verifyLoginElements();
+    await allure.label('feature', 'Login');
+    await allure.label('severity', 'normal');
 
-    expect(allElementsAreCorrect).toBe(true);
+    const allElementsAreCorrect = await loginPage.verifyLoginElements();
+    await allure.step('Verify login elements', async () => {
+      expect(allElementsAreCorrect).toBe(true);
+    });
   });
 
   test('Verify successful login', async () => {
-    await loginPage.login(globalCredentials.email, globalCredentials.password);
-    // Assuming we have logged in, user should see the settings button
-    const isButtonVisible = await loginPage.isSettingsButtonVisible();
+    await allure.label('feature', 'Login');
+    await allure.label('severity', 'critical');
 
-    expect(isButtonVisible).toBe(true);
+    await allure.step('Attempt to login with correct credentials', async () => {
+      await loginPage.login(globalCredentials.email, globalCredentials.password);
+    });
+    await allure.step('Verify settings button visibility', async () => {
+      // Assuming we have logged in, user should see the settings button
+      const isButtonVisible = await loginPage.isSettingsButtonVisible();
+
+      expect(isButtonVisible).toBe(true);
+    });
   });
 
   test('Verify resetting account', async () => {
-    await loginPage.logout();
-    await resetAppState(window);
+    await allure.label('feature', 'Account Reset');
+    await allure.label('severity', 'critical');
+
+    await allure.step('Attempt logout', async () => {
+      await loginPage.logout();
+    });
+    await allure.step('Reset app state', async () => {
+      await resetAppState(window);
+    });
     // Assuming we have reset the account, and we land on the registration page, we confirm that we see password field.
-    const isConfirmPasswordVisible = await registrationPage.isConfirmPasswordFieldVisible();
-    expect(isConfirmPasswordVisible).toBe(true);
+    await allure.step('Verify account is reset', async () => {
+      const isConfirmPasswordVisible = await registrationPage.isConfirmPasswordFieldVisible();
+      expect(isConfirmPasswordVisible).toBe(true);
+    });
   });
 });

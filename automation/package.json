@@ -2,11 +2,15 @@
   "name": "hedera-transaction-tool-tests",
   "version": "1.0.0",
   "scripts": {
-    "test": "playwright test"
+    "test": "playwright test",
+    "allure:generate": "allure generate allure-results --clean --single-file -o allure-report",
+    "allure:open": "allure open allure-report"
   },
   "devDependencies": {
     "playwright": "^1.41.2",
-    "prettier": "^3.2.5"
+    "prettier": "^3.2.5",
+    "allure-playwright": "^2.0.0",
+    "allure-commandline": "^2.29.0"
   },
   "main": "playwright.config.js",
   "directories": {
