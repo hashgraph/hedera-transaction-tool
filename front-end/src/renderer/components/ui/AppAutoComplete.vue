@@ -64,10 +64,49 @@ const handleKeyDown = (e: KeyboardEvent) => {
   }
 };
 
-const handleResize = () => {
+const handleUpdate = (value: string) => {
+  emit('update:modelValue', value);
+};
+
+const handleSelectItem = (event: Event, item: string) => {
+  event.stopPropagation();
+
+  handleUpdate(item);
+  toggleDropdown(false);
+};
+
+const handleInputClick = () => {
+  toggleDropdown(true);
+};
+
+function handleResize() {
   if (!inputRef.value?.inputRef || !dropdownRef.value) return;
   dropdownRef.value.style.width = `${inputRef.value.inputRef.offsetWidth}px`;
-};
+}
+
+function handleWindowClick(e: Event) {
+  if (!dropdownRef.value) return;
+  if (!inputRef.value?.inputRef) return;
+
+  const target = e.target as HTMLElement;
+  if (inputRef.value.inputRef.contains(target) || dropdownRef.value.contains(target)) return;
+
+  toggleDropdown(false);
+}
+
+/* Functions */
+function toggleDropdown(show: boolean) {
+  if (!dropdownRef.value) return;
+
+  const newVisibility = show ? 'visible' : 'hidden';
+  const newOpacity = show ? '1' : '0';
+
+  if (dropdownRef.value.style.visibility === newVisibility) return;
+  if (dropdownRef.value.style.opacity === newOpacity) return;
+
+  dropdownRef.value.style.visibility = newVisibility;
+  dropdownRef.value.style.opacity = newOpacity;
+}
 
 /* Hooks */
 onMounted(() => {
@@ -76,19 +115,21 @@ onMounted(() => {
   }, 100);
 
   window.addEventListener('resize', handleResize);
+  window.addEventListener('click', handleWindowClick);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize);
+  window.removeEventListener('click', handleWindowClick);
 });
 </script>
 
 <template>
-  <div>
+  <div @click="handleInputClick" @blur="toggleDropdown(false)">
     <AppInput
       ref="inputRef"
       :model-value="modelValue"
-      @update:model-value="$emit('update:modelValue', $event)"
+      @update:model-value="handleUpdate($event)"
       @keydown="handleKeyDown"
       :filled="filled"
       :size="size"
@@ -107,7 +148,7 @@ onBeforeUnmount(() => {
             :class="{
               selected: i === selectedIndex || i === hoveredIndex,
             }"
-            @click="$emit('update:modelValue', item)"
+            @click="handleSelectItem($event, item)"
             ref="itemRefs"
           >
             {{ item }}

@@ -919,10 +919,10 @@
 
   background-color: var(--#{$prefix}input-fill-bg-color);
 
-  input:focus ~ & {
-    visibility: visible;
-    opacity: 1;
-  }
+  // input:focus ~ & {
+  //   visibility: visible;
+  //   opacity: 1;
+  // }
 
   > div {
     max-height: var(--max-height);
