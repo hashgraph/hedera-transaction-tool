@@ -227,7 +227,7 @@ const handleBack = () => {
       },
     });
   } else {
-    router.back();
+    redirectToHistory();
   }
 };
 
@@ -490,7 +490,7 @@ const cancel = 'Cancel';
               <AppButton
                 color="secondary"
                 class="min-w-unset"
-                @click="$router.back()"
+                @click="handleBack"
                 data-testid="button-back"
               >
                 <i class="bi bi-arrow-left-short text-main"></i> Back</AppButton
