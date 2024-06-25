@@ -10,7 +10,8 @@
     "playwright": "^1.41.2",
     "prettier": "^3.2.5",
     "allure-playwright": "^2.0.0",
-    "allure-commandline": "^2.29.0"
+    "allure-commandline": "^2.29.0",
+    "allure-js-commons": "3.0.0-beta.3"
   },
   "main": "playwright.config.js",
   "directories": {

@@ -11,6 +11,8 @@ const RegistrationPage = require('../pages/RegistrationPage.js');
 const { expect } = require('playwright/test');
 const LoginPage = require('../pages/LoginPage');
 const SettingsPage = require('../pages/SettingsPage');
+const { allure } = require('allure-playwright');
+const { Severity } = require('allure-js-commons');
 
 let app, window;
 let globalCredentials = { email: '', password: '' };
@@ -49,12 +51,14 @@ test.describe('Settings tests', () => {
   });
 
   test('Verify that all elements in settings page are present', async () => {
+    await allure.severity(Severity.NORMAL);
     await settingsPage.clickOnSettingsButton();
     const allElementsVisible = await settingsPage.verifySettingsElements();
     expect(allElementsVisible).toBe(true);
   });
 
   test('Verify user can decrypt private key', async () => {
+    await allure.severity(Severity.BLOCKER);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
 
@@ -67,6 +71,7 @@ test.describe('Settings tests', () => {
   });
 
   test('Verify user can restore key', async () => {
+    await allure.severity(Severity.BLOCKER);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
 
@@ -76,7 +81,7 @@ test.describe('Settings tests', () => {
     await settingsPage.fillInPassword(globalCredentials.password);
     await settingsPage.clickOnPasswordContinueButton();
 
-    const isMnemonicRequired = settingsPage.isElementVisible(
+    const isMnemonicRequired = await settingsPage.isElementVisible(
       registrationPage.getRecoveryWordSelector(1),
     );
     if (isMnemonicRequired) {
@@ -99,6 +104,7 @@ test.describe('Settings tests', () => {
   });
 
   test('Verify user restored key pair is saved in the local database', async () => {
+    await allure.severity(Severity.BLOCKER);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
 
@@ -108,7 +114,7 @@ test.describe('Settings tests', () => {
     await settingsPage.fillInPassword(globalCredentials.password);
     await settingsPage.clickOnPasswordContinueButton();
 
-    const isMnemonicRequired = settingsPage.isElementVisible(
+    const isMnemonicRequired = await settingsPage.isElementVisible(
       registrationPage.getRecoveryWordSelector(1),
     );
     if (isMnemonicRequired) {
@@ -133,6 +139,7 @@ test.describe('Settings tests', () => {
   });
 
   test('Verify user can delete key', async () => {
+    await allure.severity(Severity.NORMAL);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
 
@@ -144,7 +151,7 @@ test.describe('Settings tests', () => {
     await settingsPage.fillInPassword(globalCredentials.password);
     await settingsPage.clickOnPasswordContinueButton();
 
-    const isMnemonicRequired = settingsPage.isElementVisible(
+    const isMnemonicRequired = await settingsPage.isElementVisible(
       registrationPage.getRecoveryWordSelector(1),
     );
     if (isMnemonicRequired) {
@@ -183,6 +190,7 @@ test.describe('Settings tests', () => {
   });
 
   test('Verify user can import ECDSA key', async () => {
+    await allure.severity(Severity.NORMAL);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
 
@@ -213,6 +221,7 @@ test.describe('Settings tests', () => {
   });
 
   test('Verify user can import ED25519 keys', async () => {
+    await allure.severity(Severity.NORMAL);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
 
@@ -243,6 +252,7 @@ test.describe('Settings tests', () => {
   });
 
   test('Verify user can change password', async () => {
+    await allure.severity(Severity.BLOCKER);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnProfileTab();
 

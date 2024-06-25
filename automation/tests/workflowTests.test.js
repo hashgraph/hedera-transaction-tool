@@ -14,6 +14,8 @@ const TransactionPage = require('../pages/TransactionPage');
 const AccountPage = require('../pages/AccountPage');
 const FilePage = require('../pages/FilePage');
 const DetailsPage = require('../pages/DetailsPage');
+const { allure } = require('allure-playwright');
+const { Severity } = require('allure-js-commons');
 
 let app, window;
 let globalCredentials = { email: '', password: '' };
@@ -60,12 +62,13 @@ test.describe('Workflow tests', () => {
   });
 
   test.beforeEach(async () => {
-    await transactionPage.closeCompletedTransaction();
+    //await transactionPage.closeCompletedTransaction();
     await transactionPage.clickOnTransactionsMenuButton();
     await transactionPage.closeDraftModal();
   });
 
   test('Verify account card is visible with valid information', async () => {
+    await allure.severity(Severity.NORMAL);
     const initialHbarFunds = '1';
     const memoText = 'test memo';
     const maxAutoAssociations = '23';
@@ -137,6 +140,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify clicking on "Create New" button navigates the user on create account tx page', async () => {
+    await allure.severity(Severity.TRIVIAL);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     await transactionPage.mirrorGetAccountResponse(accountFromList);
@@ -151,6 +155,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify clicking on "Edit" and "Update" navigates the user on update account tx page with prefilled account', async () => {
+    await allure.severity(Severity.TRIVIAL);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     await transactionPage.mirrorGetAccountResponse(accountFromList);
@@ -168,6 +173,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify clicking on "Edit" and "Delete" navigates the user on update account tx page with prefilled account', async () => {
+    await allure.severity(Severity.TRIVIAL);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     await transactionPage.mirrorGetAccountResponse(accountFromList);
@@ -184,6 +190,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify user can unlink accounts', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     await transactionPage.clickOnTransactionsMenuButton();
@@ -208,6 +215,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify user can add an existing account', async () => {
+    await allure.severity(Severity.NORMAL);
     await accountPage.ensureAccountExistsAndUnlinked(globalCredentials.password);
     const accountFromList = await accountPage.getFirstAccountFromUnlinkedList();
     await accountPage.clickOnAccountsLink();
@@ -223,6 +231,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify file card is visible with valid information', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.ensureFileExists('test', globalCredentials.password);
     await accountPage.clickOnAccountsLink();
     await filePage.clickOnFilesMenuButton();
@@ -253,6 +262,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify file card update flow leads to update page with prefilled fileid', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.ensureFileExists('test', globalCredentials.password);
     await accountPage.clickOnAccountsLink();
     await filePage.clickOnFilesMenuButton();
@@ -267,6 +277,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify file card append flow leads to append page with prefilled fileid', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.ensureFileExists('test', globalCredentials.password);
     await accountPage.clickOnAccountsLink();
     await filePage.clickOnFilesMenuButton();
@@ -281,6 +292,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify file card read flow leads to read page with prefilled fileid', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.ensureFileExists('test', globalCredentials.password);
     await accountPage.clickOnAccountsLink();
     await filePage.clickOnFilesMenuButton();
@@ -295,6 +307,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify clicking on "Add new" and "Create new" navigates the user to create new file transaction page', async () => {
+    await allure.severity(Severity.TRIVIAL);
     await filePage.clickOnFilesMenuButton();
     await filePage.clickOnAddNewFileButton();
     await filePage.clickOnCreateNewFileLink();
@@ -304,6 +317,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify clicking on "Add new" and "Update" navigates the user to update file transaction page w/o prefilled id', async () => {
+    await allure.severity(Severity.TRIVIAL);
     await filePage.clickOnFilesMenuButton();
     await filePage.clickOnAddNewFileButton();
     await filePage.clickOnUpdateFileLink();
@@ -316,6 +330,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify clicking on "Add new" and "Append" navigates the user to update file transaction page w/o prefilled id', async () => {
+    await allure.severity(Severity.TRIVIAL);
     await filePage.clickOnFilesMenuButton();
     await filePage.clickOnAddNewFileButton();
     await filePage.clickOnAppendFileLink();
@@ -328,6 +343,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify clicking on "Add new" and "Read" navigates the user to update file transaction page w/o prefilled id', async () => {
+    await allure.severity(Severity.TRIVIAL);
     await filePage.clickOnFilesMenuButton();
     await filePage.clickOnAddNewFileButton();
     await filePage.clickOnReadFileLink();
@@ -340,6 +356,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify user can unlink multiple files', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.ensureFileExists('test', globalCredentials.password);
     await filePage.clickOnFilesMenuButton();
     const fileFromPage = await filePage.getFirstFileIdFromPage();
@@ -364,6 +381,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify user can add an existing file to files card', async () => {
+    await allure.severity(Severity.NORMAL);
     await filePage.ensureFileExistsAndUnlinked(globalCredentials.password);
     await filePage.clickOnFilesMenuButton();
     await filePage.clickOnAddNewButtonForFile();
@@ -379,12 +397,14 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify account create tx is displayed in history page', async () => {
+    await allure.severity(Severity.NORMAL);
     const { newTransactionId } = await transactionPage.createNewAccount(globalCredentials.password);
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.assertTransactionDisplayed(newTransactionId, 'Account Create Transaction');
   });
 
   test('Verify transaction details are displayed for account tx ', async () => {
+    await allure.severity(Severity.NORMAL);
     const { newTransactionId } = await transactionPage.createNewAccount(globalCredentials.password);
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
@@ -412,6 +432,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify account update tx is displayed in history page', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const updatedMemoText = 'Updated memo';
@@ -427,6 +448,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify transaction details are displayed for account update tx ', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const updatedMemoText = 'Updated memo';
@@ -469,6 +491,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify account delete tx is displayed in history page', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const newTransactionId = await transactionPage.deleteAccount(
@@ -480,6 +503,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify transaction details are displayed for account delete tx ', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const newTransactionId = await transactionPage.deleteAccount(
@@ -502,6 +526,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify transfer tx is displayed in history page', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const amountToBeTransferred = '1';
@@ -515,6 +540,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify transaction details are displayed for transfer tx ', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const amountToBeTransferred = '1';
@@ -545,6 +571,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify approve allowance tx is displayed in history page', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const amountToBeApproved = '10';
@@ -561,6 +588,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify transaction details are displayed for approve allowance tx ', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const amountToBeApproved = '10';
@@ -588,12 +616,14 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify file create tx is displayed in history page', async () => {
+    await allure.severity(Severity.NORMAL);
     const { transactionId } = await transactionPage.createFile('test', globalCredentials.password);
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.assertTransactionDisplayed(transactionId, 'File Create Transaction');
   });
 
   test('Verify transaction details are displayed for file create tx ', async () => {
+    await allure.severity(Severity.NORMAL);
     const { transactionId } = await transactionPage.createFile('test', globalCredentials.password);
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
@@ -614,6 +644,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify file update tx is displayed in history page', async () => {
+    await allure.severity(Severity.NORMAL);
     const newText = 'Lorem Ipsum';
     await transactionPage.ensureFileExists('test', globalCredentials.password);
     const fileId = await transactionPage.getFirsFileIdFromCache();
@@ -627,6 +658,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify transaction details are displayed for file update tx ', async () => {
+    await allure.severity(Severity.NORMAL);
     const newText = 'New text';
     await transactionPage.ensureFileExists('test', globalCredentials.password);
     const fileId = await transactionPage.getFirsFileIdFromCache();
@@ -654,6 +686,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify file append tx is displayed in history page', async () => {
+    await allure.severity(Severity.NORMAL);
     const newText = ' extra text to append';
     await transactionPage.ensureFileExists('test', globalCredentials.password);
     const fileId = await transactionPage.getFirsFileIdFromCache();
@@ -667,6 +700,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify transaction details are displayed for file append tx ', async () => {
+    await allure.severity(Severity.NORMAL);
     const newText = ' extra text to append';
     await transactionPage.ensureFileExists('test', globalCredentials.password);
     const fileId = await transactionPage.getFirsFileIdFromCache();

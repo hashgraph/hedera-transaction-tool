@@ -11,6 +11,8 @@ const RegistrationPage = require('../pages/RegistrationPage.js');
 const { expect } = require('playwright/test');
 const LoginPage = require('../pages/LoginPage');
 const TransactionPage = require('../pages/TransactionPage');
+const { allure } = require('allure-playwright');
+const { Severity } = require('allure-js-commons');
 
 let app, window;
 let globalCredentials = { email: '', password: '' };
@@ -54,12 +56,13 @@ test.describe('Transaction tests', () => {
   });
 
   test.beforeEach(async () => {
-    await transactionPage.closeCompletedTransaction();
+    //await transactionPage.closeCompletedTransaction();
     await transactionPage.clickOnTransactionsMenuButton();
     await transactionPage.closeDraftModal();
   });
 
   test('Verify that all elements on account create page are correct', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnCreateAccountTransaction();
 
@@ -69,6 +72,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify confirm transaction modal is displayed with valid information for Account Create tx', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnCreateAccountTransaction();
 
@@ -81,6 +85,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can execute create account transaction with single key', async () => {
+    await allure.severity(Severity.BLOCKER);
     const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password);
 
     const accountDetails = await transactionPage.mirrorGetAccountResponse(newAccountId);
@@ -101,6 +106,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can create account with receiver sig required', async () => {
+    await allure.severity(Severity.NORMAL);
     const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password, {
       isReceiverSigRequired: true,
     });
@@ -111,6 +117,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can create account with initial funds', async () => {
+    await allure.severity(Severity.NORMAL);
     const initialHbarFunds = '1';
 
     const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password, {
@@ -123,6 +130,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can create account with max account associations', async () => {
+    await allure.severity(Severity.NORMAL);
     const maxAutoAssociations = 10;
 
     const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password, {
@@ -135,6 +143,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify transaction is stored in the local database for account create tx', async () => {
+    await allure.severity(Severity.NORMAL);
     const { newTransactionId } = await transactionPage.createNewAccount(globalCredentials.password);
 
     const isTxExistingInDb = await transactionPage.verifyTransactionExists(
@@ -146,6 +155,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify account is stored in the local database for account create tx', async () => {
+    await allure.severity(Severity.NORMAL);
     const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password);
     await transactionPage.clickOnAccountsMenuButton();
 
@@ -155,6 +165,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can execute Account Create tx with complex key', async () => {
+    await allure.severity(Severity.BLOCKER);
     const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password, {
       isComplex: true,
     });
@@ -168,6 +179,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify account is displayed in the account card section', async () => {
+    await allure.severity(Severity.NORMAL);
     const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password);
 
     await transactionPage.clickOnAccountsMenuButton();
@@ -177,6 +189,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can execute account delete tx', async () => {
+    await allure.severity(Severity.BLOCKER);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const transactionId = await transactionPage.deleteAccount(
@@ -195,6 +208,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify account is deleted from the db after account delete tx', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     await transactionPage.deleteAccount(accountFromList, globalCredentials.password);
@@ -204,6 +218,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify account id is removed from the account cards after account delete tx', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     await transactionPage.deleteAccount(accountFromList, globalCredentials.password);
@@ -214,6 +229,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify that account is updated after we execute an account update tx', async () => {
+    await allure.severity(Severity.BLOCKER);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const updatedMemoText = 'Updated memo';
@@ -247,6 +263,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can execute transfer tokens tx', async () => {
+    await allure.severity(Severity.BLOCKER);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const amountToBeTransferred = '1';
@@ -268,6 +285,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can add the rest of remaining hbars to receiver accounts', async () => {
+    await allure.severity(Severity.TRIVIAL);
     const amountToBeTransferred = 10;
     const amountLeftForRestAccounts = 9;
     await transactionPage.ensureAccountExists(globalCredentials.password);
@@ -299,6 +317,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify sign button is disabled when receiver amount is higher than payer amount when doing transfer tx', async () => {
+    await allure.severity(Severity.TRIVIAL);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const receiverAccount = await transactionPage.getFirstAccountFromList();
     await loginPage.waitForToastToDisappear();
@@ -318,6 +337,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can execute approve allowance tx', async () => {
+    await allure.severity(Severity.BLOCKER);
     await transactionPage.ensureAccountExists(globalCredentials.password);
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const amountToBeApproved = '10';
@@ -342,6 +362,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify all elements are present on file create tx page', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.clickOnTransactionsMenuButton();
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnFileServiceLink();
@@ -352,6 +373,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can execute file create tx', async () => {
+    await allure.severity(Severity.BLOCKER);
     const { transactionId } = await transactionPage.createFile('test', globalCredentials.password);
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
@@ -362,6 +384,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify file is stored in the db after file create tx', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.ensureFileExists('test', globalCredentials.password);
     const fileId = await transactionPage.getFirsFileIdFromCache();
 
@@ -371,6 +394,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can execute file read tx', async () => {
+    await allure.severity(Severity.BLOCKER);
     await transactionPage.ensureFileExists('test', globalCredentials.password);
     const fileId = await transactionPage.getFirsFileIdFromCache();
     const textFromCache = await transactionPage.getTextFromCache(fileId);
@@ -381,6 +405,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can execute file update tx', async () => {
+    await allure.severity(Severity.BLOCKER);
     const newText = 'Lorem Ipsum';
     await transactionPage.ensureFileExists('test', globalCredentials.password);
     const fileId = await transactionPage.getFirsFileIdFromCache();
@@ -403,6 +428,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can execute file append tx', async () => {
+    await allure.severity(Severity.BLOCKER);
     const newText = ' extra text to append';
     await transactionPage.ensureFileExists('test', globalCredentials.password);
     const fileId = await transactionPage.getFirsFileIdFromCache();
@@ -425,6 +451,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can save draft and is visible in the draft page', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnCreateAccountTransaction();
     await transactionPage.saveDraft();
@@ -449,6 +476,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can delete a draft transaction', async () => {
+    await allure.severity(Severity.TRIVIAL);
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnCreateAccountTransaction();
     await transactionPage.saveDraft();
@@ -460,6 +488,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify draft transaction is no longer visible after we execute the tx', async () => {
+    await allure.severity(Severity.TRIVIAL);
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnCreateAccountTransaction();
     await transactionPage.waitForPublicKeyToBeFilled();
@@ -474,6 +503,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify draft transaction is visible after we execute the tx and we have template checkbox selected', async () => {
+    await allure.severity(Severity.TRIVIAL);
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnCreateAccountTransaction();
     await transactionPage.waitForPublicKeyToBeFilled();
@@ -492,6 +522,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify draft transaction contains the saved info for account create tx', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnCreateAccountTransaction();
 
@@ -536,6 +567,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify draft transaction contains the saved info for account update tx', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnUpdateAccountTransaction();
 
@@ -577,6 +609,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify draft transaction contains the saved info for account delete tx', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnDeleteAccountTransaction();
 
@@ -603,6 +636,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify draft transaction contains the saved info for approve allowance tx', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnApproveAllowanceTransaction();
 
@@ -634,6 +668,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify draft transaction contains the saved info for create file tx', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnFileServiceLink();
     await transactionPage.clickOnFileCreateTransaction();
@@ -663,6 +698,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify draft transaction contains the saved info for update file tx', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.ensureFileExists('test', globalCredentials.password);
     const fileId = await transactionPage.getFirsFileIdFromCache();
     await transactionPage.clickOnCreateNewTransactionButton();
@@ -693,6 +729,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify draft transaction contains the saved info for append file tx', async () => {
+    await allure.severity(Severity.NORMAL);
     await transactionPage.ensureFileExists('test', globalCredentials.password);
     const fileId = await transactionPage.getFirsFileIdFromCache();
     await transactionPage.clickOnCreateNewTransactionButton();

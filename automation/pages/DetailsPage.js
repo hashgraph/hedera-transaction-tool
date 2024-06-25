@@ -1,6 +1,7 @@
 const BasePage = require('./BasePage');
 const TransactionPage = require('./TransactionPage');
 const { expect } = require('playwright/test');
+import { allure } from 'allure-playwright';
 
 class DetailsPage extends BasePage {
   constructor(window) {
@@ -10,13 +11,10 @@ class DetailsPage extends BasePage {
   }
 
   /* Selectors */
-
-  // Buttons
   transactionDetailsButtonIndexSelector = 'button-transaction-details-';
   viewContentsButtonSelector = 'button-view-file-contents';
   seeKeyDetailsButtonSelector = 'button-file-details-key';
 
-  //Text
   transactionCreatedAtIndexSelector = 'td-transaction-createdAt-';
   transactionStatusIndexSelector = 'td-transaction-status-';
   transactionTypeIndexSelector = 'td-transaction-type-';
@@ -49,178 +47,250 @@ class DetailsPage extends BasePage {
   fileDetailsKeyTextSelector = 'p-file-details-key-text';
 
   async clickOnFirstTransactionDetailsButton() {
-    await this.clickByTestId(this.transactionDetailsButtonIndexSelector + '0');
+    return allure.step('Click on First Transaction Details Button', async () => {
+      await this.clickByTestId(this.transactionDetailsButtonIndexSelector + '0');
+    });
   }
 
   async getFirstTransactionCreated() {
-    return await this.getTextByTestId(this.transactionCreatedAtIndexSelector + '0');
+    return allure.step('Get First Transaction Created', async () => {
+      return await this.getTextByTestId(this.transactionCreatedAtIndexSelector + '0');
+    });
   }
 
   async getFirstTransactionStatus() {
-    return await this.getTextByTestId(this.transactionStatusIndexSelector + '0');
+    return allure.step('Get First Transaction Status', async () => {
+      return await this.getTextByTestId(this.transactionStatusIndexSelector + '0');
+    });
   }
 
   async getFirstTransactionType() {
-    return await this.getTextByTestId(this.transactionTypeIndexSelector + '0');
+    return allure.step('Get First Transaction Type', async () => {
+      return await this.getTextByTestId(this.transactionTypeIndexSelector + '0');
+    });
   }
 
   async getFirstTransactionId() {
-    return await this.getTextByTestId(this.transactionIdIndexSelector + '0');
+    return allure.step('Get First Transaction ID', async () => {
+      return await this.getTextByTestId(this.transactionIdIndexSelector + '0');
+    });
   }
 
   async isTransactionDetailsButtonVisible() {
-    return this.isElementVisible(this.transactionDetailsButtonIndexSelector + '0');
+    return allure.step('Check if Transaction Details Button is Visible', async () => {
+      return this.isElementVisible(this.transactionDetailsButtonIndexSelector + '0');
+    });
   }
 
   async getTransactionDetailsType() {
-    return await this.getTextByTestId(this.transactionDetailsTypeSelector);
+    return allure.step('Get Transaction Details Type', async () => {
+      return await this.getTextByTestId(this.transactionDetailsTypeSelector);
+    });
   }
 
   async getTransactionDetailsId() {
-    return await this.getTextByTestId(this.transactionDetailsIdSelector);
+    return allure.step('Get Transaction Details ID', async () => {
+      return await this.getTextByTestId(this.transactionDetailsIdSelector);
+    });
   }
 
   async getTransactionDetailsCreatedAt() {
-    return await this.getTextByTestId(this.transactionDetailsCreatedAtSelector);
+    return allure.step('Get Transaction Details Created At', async () => {
+      return await this.getTextByTestId(this.transactionDetailsCreatedAtSelector);
+    });
   }
 
   async getTransactionDetailsExecutedAt() {
-    return await this.getTextByTestId(this.transactionDetailsExecutedAtSelector);
+    return allure.step('Get Transaction Details Executed At', async () => {
+      return await this.getTextByTestId(this.transactionDetailsExecutedAtSelector);
+    });
   }
 
   async getValidStart() {
-    return await this.getTextByTestId(this.transactionDetailsValidStartSelector);
+    return allure.step('Get Valid Start', async () => {
+      return await this.getTextByTestId(this.transactionDetailsValidStartSelector);
+    });
   }
 
   async getTransactionDetailsFeePayer() {
-    return await this.getTextByTestId(this.transactionDetailsFeePayerSelector);
+    return allure.step('Get Transaction Details Fee Payer', async () => {
+      return await this.getTextByTestId(this.transactionDetailsFeePayerSelector);
+    });
   }
 
   async getTransactionDetailsMemo() {
-    return await this.getTextByTestId(this.transactionDetailsMemoSelector);
+    return allure.step('Get Transaction Details Memo', async () => {
+      return await this.getTextByTestId(this.transactionDetailsMemoSelector);
+    });
   }
 
   async getAccountUpdateDetailsId() {
-    return await this.getTextByTestId(this.accountUpdateDetailsIdSelector);
+    return allure.step('Get Account Update Details ID', async () => {
+      return await this.getTextByTestId(this.accountUpdateDetailsIdSelector);
+    });
   }
 
   async getAccountDetailsKey() {
-    return await this.getTextByTestId(this.accountDetailsKeySelector);
+    return allure.step('Get Account Details Key', async () => {
+      return await this.getTextByTestId(this.accountDetailsKeySelector);
+    });
   }
 
   async getAccountDetailsMemo() {
-    return await this.getTextByTestId(this.accountDetailsMemoSelector);
+    return allure.step('Get Account Details Memo', async () => {
+      return await this.getTextByTestId(this.accountDetailsMemoSelector);
+    });
   }
 
   async getAccountDetailsStaking() {
-    return await this.getTextByTestId(this.accountDetailsStakingSelector);
+    return allure.step('Get Account Details Staking', async () => {
+      return await this.getTextByTestId(this.accountDetailsStakingSelector);
+    });
   }
 
   async getAccountDetailsDeclineRewards() {
-    return await this.getTextByTestId(this.accountDetailsDeclineRewardsSelector);
+    return allure.step('Get Account Details Decline Rewards', async () => {
+      return await this.getTextByTestId(this.accountDetailsDeclineRewardsSelector);
+    });
   }
 
   async getAccountDetailsReceiverSigRequired() {
-    return await this.getTextByTestId(this.accountDetailsReceiverSigRequiredSelector);
+    return allure.step('Get Account Details Receiver Sig Required', async () => {
+      return await this.getTextByTestId(this.accountDetailsReceiverSigRequiredSelector);
+    });
   }
 
   async getAccountDetailsInitBalance() {
-    return await this.getTextByTestId(this.accountDetailsInitBalanceSelector);
+    return allure.step('Get Account Details Init Balance', async () => {
+      return await this.getTextByTestId(this.accountDetailsInitBalanceSelector);
+    });
   }
 
   async getDeletedAccountId() {
-    return await this.getTextByTestId(this.accountDeleteDetailsDeletedAccountIdSelector);
+    return allure.step('Get Deleted Account ID', async () => {
+      return await this.getTextByTestId(this.accountDeleteDetailsDeletedAccountIdSelector);
+    });
   }
 
   async getAccountDeleteDetailsTransferId() {
-    return await this.getTextByTestId(this.accountDeleteDetailsTransferIdSelector);
+    return allure.step('Get Account Delete Details Transfer ID', async () => {
+      return await this.getTextByTestId(this.accountDeleteDetailsTransferIdSelector);
+    });
   }
 
   async getTransferDetailsFromAccount() {
-    return await this.getTextByTestId(this.transferDetailsFromAccountSelector);
+    return allure.step('Get Transfer Details From Account', async () => {
+      return await this.getTextByTestId(this.transferDetailsFromAccountSelector);
+    });
   }
 
   async getTransferDetailsFromAmount() {
-    return await this.getTextByTestId(this.transferDetailsFromAmountSelector);
+    return allure.step('Get Transfer Details From Amount', async () => {
+      return await this.getTextByTestId(this.transferDetailsFromAmountSelector);
+    });
   }
 
   async getTransferDetailsToAccount() {
-    return await this.getTextByTestId(this.transferDetailsToAccountSelector);
+    return allure.step('Get Transfer Details To Account', async () => {
+      return await this.getTextByTestId(this.transferDetailsToAccountSelector);
+    });
   }
 
   async getTransferDetailsToAmount() {
-    return await this.getTextByTestId(this.transferDetailsToAmountSelector);
+    return allure.step('Get Transfer Details To Amount', async () => {
+      return await this.getTextByTestId(this.transferDetailsToAmountSelector);
+    });
   }
 
   async getAllowanceDetailsOwnerAccount() {
-    return await this.getTextByTestId(this.allowanceDetailsOwnerAccountSelector);
+    return allure.step('Get Allowance Details Owner Account', async () => {
+      return await this.getTextByTestId(this.allowanceDetailsOwnerAccountSelector);
+    });
   }
 
   async getAllowanceDetailsSpenderAccount() {
-    return await this.getTextByTestId(this.allowanceDetailsSpenderAccountSelector);
+    return allure.step('Get Allowance Details Spender Account', async () => {
+      return await this.getTextByTestId(this.allowanceDetailsSpenderAccountSelector);
+    });
   }
 
   async getAllowanceDetailsAmount() {
-    return await this.getTextByTestId(this.allowanceDetailsAmountSelector);
+    return allure.step('Get Allowance Details Amount', async () => {
+      return await this.getTextByTestId(this.allowanceDetailsAmountSelector);
+    });
   }
 
   async isViewContentsButtonVisible() {
-    return await this.isElementVisible(this.viewContentsButtonSelector);
+    return allure.step('Check if View Contents Button is Visible', async () => {
+      return await this.isElementVisible(this.viewContentsButtonSelector);
+    });
   }
 
   async isSeeKeyDetailsButtonVisible() {
-    return await this.isElementVisible(this.seeKeyDetailsButtonSelector);
+    return allure.step('Check if See Key Details Button is Visible', async () => {
+      return await this.isElementVisible(this.seeKeyDetailsButtonSelector);
+    });
   }
 
   async getFileDetailsExpirationTime() {
-    return await this.getTextByTestId(this.fileDetailsExpirationTimeSelector);
+    return allure.step('Get File Details Expiration Time', async () => {
+      return await this.getTextByTestId(this.fileDetailsExpirationTimeSelector);
+    });
   }
 
   async getFileDetailsFileId() {
-    return await this.getTextByTestId(this.fileDetailsFileIdSelector);
+    return allure.step('Get File Details File ID', async () => {
+      return await this.getTextByTestId(this.fileDetailsFileIdSelector);
+    });
   }
 
   async getFileDetailsKeyText() {
-    return await this.getTextByTestId(this.fileDetailsKeyTextSelector);
+    return allure.step('Get File Details Key Text', async () => {
+      return await this.getTextByTestId(this.fileDetailsKeyTextSelector);
+    });
   }
 
   async assertTransactionDisplayed(expectedId, expectedType) {
-    const transactionId = await this.getFirstTransactionId();
-    expect(expectedId.toString()).toContain(transactionId);
+    return allure.step('Assert Transaction Displayed', async () => {
+      const transactionId = await this.getFirstTransactionId();
+      expect(expectedId.toString()).toContain(transactionId);
 
-    const transactionType = await this.getFirstTransactionType();
-    expect(transactionType).toBe(expectedType);
+      const transactionType = await this.getFirstTransactionType();
+      expect(transactionType).toBe(expectedType);
 
-    const transactionStatus = await this.getFirstTransactionStatus();
-    expect(transactionStatus).toBe('SUCCESS');
+      const transactionStatus = await this.getFirstTransactionStatus();
+      expect(transactionStatus).toBe('SUCCESS');
 
-    const transactionCreatedAt = await this.getFirstTransactionCreated();
-    expect(transactionCreatedAt).toBeTruthy();
+      const transactionCreatedAt = await this.getFirstTransactionCreated();
+      expect(transactionCreatedAt).toBeTruthy();
 
-    const isTransactionDetailsButtonVisible = await this.isTransactionDetailsButtonVisible();
-    expect(isTransactionDetailsButtonVisible).toBe(true);
+      const isTransactionDetailsButtonVisible = await this.isTransactionDetailsButtonVisible();
+      expect(isTransactionDetailsButtonVisible).toBe(true);
+    });
   }
 
   async assertTransactionDetails(expectedId, expectedType, extraAssertions = () => {}) {
-    const transactionId = await this.getTransactionDetailsId();
-    expect(expectedId.toString()).toContain(transactionId);
+    return allure.step('Assert Transaction Details', async () => {
+      const transactionId = await this.getTransactionDetailsId();
+      expect(expectedId.toString()).toContain(transactionId);
 
-    const transactionType = await this.getTransactionDetailsType();
-    expect(transactionType).toBe(expectedType);
+      const transactionType = await this.getTransactionDetailsType();
+      expect(transactionType).toBe(expectedType);
 
-    const transactionCreatedAt = await this.getTransactionDetailsCreatedAt();
-    expect(transactionCreatedAt).toBeTruthy();
+      const transactionCreatedAt = await this.getTransactionDetailsCreatedAt();
+      expect(transactionCreatedAt).toBeTruthy();
 
-    const transactionExecutedAt = await this.getTransactionDetailsExecutedAt();
-    expect(transactionExecutedAt).toBeTruthy();
+      const transactionExecutedAt = await this.getTransactionDetailsExecutedAt();
+      expect(transactionExecutedAt).toBeTruthy();
 
-    const validStart = await this.getValidStart();
-    expect(validStart).toBeTruthy();
+      const validStart = await this.getValidStart();
+      expect(validStart).toBeTruthy();
 
-    const transactionFeePayer = await this.getTransactionDetailsFeePayer();
-    expect(transactionFeePayer).toBeTruthy();
+      const transactionFeePayer = await this.getTransactionDetailsFeePayer();
+      expect(transactionFeePayer).toBeTruthy();
 
-    await extraAssertions();
+      await extraAssertions();
+    });
   }
 }
 
