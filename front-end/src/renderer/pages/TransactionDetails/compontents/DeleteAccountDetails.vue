@@ -31,9 +31,13 @@ async function fetchTransactionInfo(payer: string, seconds: string, nanos: strin
       controller.value || undefined,
     );
 
-    if (transactions.length > 0) {
+    if (transactions.length > 0 && props.transaction instanceof AccountDeleteTransaction) {
       // transfers.value = transactions[0].transfers || null;
-      console.log('transactions[0].transfers', transactions[0].transfers);
+      const deletedAccountId = props.transaction.accountId?.toString();
+      const transferredAmount = transactions[0].transfers?.find(
+        transfer => transfer.account?.toString() === deletedAccountId,
+      )?.amount;
+      console.log('transferredAmount', transferredAmount);
     }
   } catch (error) {
     /* Ignore if transaction not available in mirror node */
