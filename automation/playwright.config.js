@@ -2,13 +2,12 @@ import { defineConfig } from '@playwright/test';
 import * as os from 'os';
 import dotenv from 'dotenv';
 
-// Load environment variables from .env file
 dotenv.config();
 
 export default defineConfig({
   reporter: process.env.CI
     ? [
-        'github',
+        ['github'],
         ['list'],
         [
           'allure-playwright',
