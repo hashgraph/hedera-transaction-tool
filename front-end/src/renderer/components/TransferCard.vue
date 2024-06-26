@@ -132,12 +132,12 @@ watch([amount, accountData.isValid], async ([newAmount]) => {
   <div class="border rounded overflow-hidden p-4">
     <form @submit="handleSubmit">
       <div class="form-group overflow-hidden position-relative">
-        <label class="form-label mb-0 me-3">{{ accountLabel }}</label>
-        <label v-if="accountData.accountInfo.value?.deleted" class="form-label text-secondary me-3"
-          >Account is deleted</label
+        <label class="form-label me-3">{{ accountLabel }}</label>
+        <label v-if="accountData.accountInfo.value?.deleted" class="form-label text-danger me-3"
+          ><span class="bi bi-exclamation-triangle-fill me-1"></span> Account is deleted</label
         >
         <label
-          v-if="showBalanceInLabel && accountData.isValid.value"
+          v-else-if="showBalanceInLabel && accountData.isValid.value"
           class="form-label text-secondary"
           >Balance:
           {{
@@ -157,7 +157,7 @@ watch([amount, accountData.isValid], async ([newAmount]) => {
         />
       </div>
       <div class="form-group mt-4">
-        <label class="form-label mb-0 me-3">Amount {{ HbarUnit.Hbar._symbol }}</label>
+        <label class="form-label me-3">Amount {{ HbarUnit.Hbar._symbol }}</label>
         <label v-if="spender?.trim() && isApprovedTransfer" class="form-label text-secondary"
           >Allowance: {{ stringifyHbar(accountData.getSpenderAllowance(spender)) }}</label
         >
