@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { onBeforeMount, ref } from 'vue';
 
-import { Transaction, AccountDeleteTransaction } from '@hashgraph/sdk';
+import { Transaction, AccountDeleteTransaction, Hbar } from '@hashgraph/sdk';
 
 import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getTransactionInfo } from '@renderer/services/mirrorNodeDataService';
+
+import { stringifyHbar } from '@renderer/utils';
 
 /* Props */
 const props = defineProps<{
@@ -20,7 +22,7 @@ const network = useNetworkStore();
 
 /* State */
 const controller = ref<AbortController | null>(null);
-// const transfers = ref<Transfer[] | null>(null);
+const transferredAmount = ref<Hbar | undefined>(new Hbar(0));
 
 /* Functions */
 async function fetchTransactionInfo(payer: string, seconds: string, nanos: string) {
@@ -34,10 +36,11 @@ async function fetchTransactionInfo(payer: string, seconds: string, nanos: strin
     if (transactions.length > 0 && props.transaction instanceof AccountDeleteTransaction) {
       // transfers.value = transactions[0].transfers || null;
       const deletedAccountId = props.transaction.accountId?.toString();
-      const transferredAmount = transactions[0].transfers?.find(
-        transfer => transfer.account?.toString() === deletedAccountId,
-      )?.amount;
-      console.log('transferredAmount', transferredAmount);
+      transferredAmount.value = new Hbar(
+        transactions[0].transfers?.find(
+          transfer => transfer.account?.toString() === deletedAccountId,
+        )?.amount,
+      );
     }
   } catch (error) {
     /* Ignore if transaction not available in mirror node */
@@ -95,6 +98,14 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
       <h4 :class="detailItemLabelClass">Transfer Account ID</h4>
       <p :class="detailItemValueClass" data-testid="p-account-delete-details-transfer-account-id">
         {{ transaction.transferAccountId.toString() }}
+      </p>
+    </div>
+
+    <!-- Transfered amount -->
+    <div v-if="transferredAmount" :class="commonColClass">
+      <h4 :class="detailItemLabelClass">Transferred Amount</h4>
+      <p :class="detailItemValueClass" data-testid="p-account-delete-details-transfer-account-id">
+        {{ stringifyHbar((transferredAmount as Hbar) || new Hbar(0)) }}
       </p>
     </div>
   </div>
