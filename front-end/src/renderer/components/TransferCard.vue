@@ -133,6 +133,9 @@ watch([amount, accountData.isValid], async ([newAmount]) => {
     <form @submit="handleSubmit">
       <div class="form-group overflow-hidden position-relative">
         <label class="form-label mb-0 me-3">{{ accountLabel }}</label>
+        <label v-if="accountData.accountInfo.value?.deleted" class="form-label text-secondary me-3"
+          >Account is deleted</label
+        >
         <label
           v-if="showBalanceInLabel && accountData.isValid.value"
           class="form-label text-secondary"
@@ -141,6 +144,7 @@ watch([amount, accountData.isValid], async ([newAmount]) => {
             stringifyHbar((accountData.accountInfo.value?.balance as Hbar) || new Hbar(0))
           }}</label
         >
+
         <AppAutoComplete
           :model-value="accountData.accountIdFormatted.value"
           @update:model-value="v => (accountData.accountId.value = formatAccountId(v))"
