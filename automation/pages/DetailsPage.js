@@ -47,7 +47,7 @@ class DetailsPage extends BasePage {
   fileDetailsKeyTextSelector = 'p-file-details-key-text';
 
   async clickOnFirstTransactionDetailsButton() {
-    return allure.step('Click on First Transaction Details Button', async () => {
+    await allure.step('Click on First Transaction Details Button', async () => {
       await this.clickByTestId(this.transactionDetailsButtonIndexSelector + '0');
     });
   }
@@ -251,7 +251,7 @@ class DetailsPage extends BasePage {
   }
 
   async assertTransactionDisplayed(expectedId, expectedType) {
-    return allure.step('Assert Transaction Displayed', async () => {
+    await allure.step('Assert Transaction Displayed', async () => {
       const transactionId = await this.getFirstTransactionId();
       expect(expectedId.toString()).toContain(transactionId);
 
@@ -270,7 +270,7 @@ class DetailsPage extends BasePage {
   }
 
   async assertTransactionDetails(expectedId, expectedType, extraAssertions = () => {}) {
-    return allure.step('Assert Transaction Details', async () => {
+    await allure.step('Assert Transaction Details', async () => {
       const transactionId = await this.getTransactionDetailsId();
       expect(expectedId.toString()).toContain(transactionId);
 

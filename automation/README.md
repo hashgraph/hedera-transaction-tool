@@ -63,7 +63,7 @@ npx playwright test
 
 This will launch Playwright and execute the test suites defined in the project, outputting the results to your terminal.
 
-## Current Тest Suites
+## Current Test Suites
 
 ### 1. Registration tests
 
@@ -93,4 +93,19 @@ npx playwright test tests/TransactionTests
 
 ```bash
 npx playwright test tests/WorkflowTests
+```
+
+## Test Reports
+After running the tests, you can generate and view Allure reports by executing the following commands:
+
+### 1. Generate reports
+
+```bash
+npm run allure:generate
+```
+
+### 2. Open reports
+
+```bash
+npm run allure:open
 ```

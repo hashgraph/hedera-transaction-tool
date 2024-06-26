@@ -41,25 +41,25 @@ class FilePage extends BasePage {
   toastMessageSelector = '.v-toast__text';
 
   async clickOnRemoveFileCardButton() {
-    return allure.step('Click on Remove File Card Button', async () => {
+    await allure.step('Click on Remove File Card Button', async () => {
       await this.clickByTestId(this.removeFileCardButtonSelector);
     });
   }
 
   async clickOnUpdateFileButton() {
-    return allure.step('Click on Update File Button', async () => {
+    await allure.step('Click on Update File Button', async () => {
       await this.clickByTestId(this.updateFileButtonSelector);
     });
   }
 
   async clickOnAppendFileButton() {
-    return allure.step('Click on Append File Button', async () => {
+    await allure.step('Click on Append File Button', async () => {
       await this.clickByTestId(this.appendFileButtonSelector);
     });
   }
 
   async clickOnReadFileButton() {
-    return allure.step('Click on Read File Button', async () => {
+    await allure.step('Click on Read File Button', async () => {
       await this.clickByTestId(this.readFileButtonSelector);
     });
   }
@@ -71,43 +71,43 @@ class FilePage extends BasePage {
   }
 
   async clickOnCreateNewFileLink() {
-    return allure.step('Click on Create New File Link', async () => {
+    await allure.step('Click on Create New File Link', async () => {
       await this.clickByTestId(this.createNewLinkSelector);
     });
   }
 
   async clickOnUpdateFileLink() {
-    return allure.step('Click on Update File Link', async () => {
+    await allure.step('Click on Update File Link', async () => {
       await this.clickByTestId(this.updateLinkSelector);
     });
   }
 
   async clickOnAppendFileLink() {
-    return allure.step('Click on Append File Link', async () => {
+    await allure.step('Click on Append File Link', async () => {
       await this.clickByTestId(this.appendLinkSelector);
     });
   }
 
   async clickOnReadFileLink() {
-    return allure.step('Click on Read File Link', async () => {
+    await allure.step('Click on Read File Link', async () => {
       await this.clickByTestId(this.readLinkSelector);
     });
   }
 
   async clickOnAddExistingFileLink() {
-    return allure.step('Click on Add Existing File Link', async () => {
+    await allure.step('Click on Add Existing File Link', async () => {
       await this.clickByTestId(this.addExistingLinkSelector);
     });
   }
 
   async clickOnLinkFileButton() {
-    return allure.step('Click on Link File Button', async () => {
+    await allure.step('Click on Link File Button', async () => {
       await this.clickByTestId(this.linkFileButtonSelector);
     });
   }
 
   async fillInExistingFileId(fileId) {
-    return allure.step('Fill in Existing File ID', async () => {
+    await allure.step('Fill in Existing File ID', async () => {
       await this.fillByTestId(this.existingFileIdInputSelector, fileId);
     });
   }
@@ -173,19 +173,19 @@ class FilePage extends BasePage {
   }
 
   async addFileToUnliked(fileId) {
-    return allure.step('Add File to Unliked', async () => {
+    await allure.step('Add File to Unliked', async () => {
       this.unlikedFiles.push(fileId);
     });
   }
 
   async clickOnFilesMenuButton() {
-    return allure.step('Click on Files Menu Button', async () => {
+    await allure.step('Click on Files Menu Button', async () => {
       await this.clickByTestId(this.filesMenuButtonSelector);
     });
   }
 
   async clickOnConfirmUnlinkFileButton() {
-    return allure.step('Click on Confirm Unlink File Button', async () => {
+    await allure.step('Click on Confirm Unlink File Button', async () => {
       await this.clickByTestId(this.confirmUnlinkFileButtonSelector);
     });
   }
@@ -197,13 +197,16 @@ class FilePage extends BasePage {
   }
 
   async clickOnAddNewButtonForFile() {
-    return allure.step('Click on Add New Button for File', async () => {
+    await allure.step('Click on Add New Button for File', async () => {
+      const { delay } = await import('../utils/util.js');
+      await delay(500);
       await this.clickByTestId(this.addNewButtonSelector);
+      await delay(500);
     });
   }
 
   async clickOnFileCheckbox(fileId) {
-    return allure.step('Click on File Checkbox', async () => {
+    await allure.step('Click on File Checkbox', async () => {
       const { delay } = await import('../utils/util.js');
       await delay(1000);
       const index = await this.findFileByIndex(fileId);
@@ -241,7 +244,7 @@ class FilePage extends BasePage {
   }
 
   async ensureFileExistsAndUnlinked(password) {
-    return allure.step('Ensure File Exists and Unlinked', async () => {
+    await allure.step('Ensure File Exists and Unlinked', async () => {
       if (await this.isUnlinkedFilesEmpty()) {
         const { fileId } = await this.transactionPage.createFile('test', password);
         await this.clickOnFilesMenuButton();
@@ -254,7 +257,7 @@ class FilePage extends BasePage {
   }
 
   async clickOnSelectManyFilesButton() {
-    return allure.step('Click on Select Many Files Button', async () => {
+    await allure.step('Click on Select Many Files Button', async () => {
       await this.clickByTestId(this.selectManyFilesButtonSelector);
     });
   }

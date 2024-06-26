@@ -43,20 +43,23 @@ class AccountPage extends BasePage {
   multiSelectCheckboxSelector = 'checkbox-multiple-account-id-';
 
   async clickOnEditButton() {
-    return allure.step('Click on Edit Button', async () => {
+    await allure.step('Click on Edit Button', async () => {
       await this.clickByTestId(this.editButtonSelector);
     });
   }
 
   async clickOnRemoveButton() {
-    return allure.step('Click on Remove Button', async () => {
+    await allure.step('Click on Remove Button', async () => {
       await this.clickByTestId(this.removeButtonSelector);
     });
   }
 
   async clickOnAddNewButton() {
-    return allure.step('Click on Add New Button', async () => {
+    await allure.step('Click on Add New Button', async () => {
+      const { delay } = await import('../utils/util.js');
+      await delay(500);
       await this.clickByTestId(this.addNewButtonSelector);
+      await delay(500);
     });
   }
 
@@ -73,7 +76,7 @@ class AccountPage extends BasePage {
   }
 
   async clickOnAccountsLink() {
-    return allure.step('Click on Accounts Link', async () => {
+    await allure.step('Click on Accounts Link', async () => {
       await this.clickByTestId(this.accountsLinkSelector);
     });
   }
@@ -169,13 +172,13 @@ class AccountPage extends BasePage {
   }
 
   async clickOnDeleteFromNetworkLink() {
-    return allure.step('Click on Delete From Network Link', async () => {
+    await allure.step('Click on Delete From Network Link', async () => {
       await this.clickByTestId(this.deleteFromNetworkLinkSelector);
     });
   }
 
   async clickOnUpdateInNetworkLink() {
-    return allure.step('Click on Update In Network Link', async () => {
+    await allure.step('Click on Update In Network Link', async () => {
       await this.clickByTestId(this.updateInNetworkLinkSelector);
     });
   }
@@ -187,20 +190,20 @@ class AccountPage extends BasePage {
   }
 
   async unlinkAccounts() {
-    return allure.step('Unlink Accounts', async () => {
+    await allure.step('Unlink Accounts', async () => {
       await this.waitForElementToBeVisible(this.confirmUnlinkButtonSelector);
       await this.clickByTestId(this.confirmUnlinkButtonSelector);
     });
   }
 
   async fillInExistingAccountId(accountId) {
-    return allure.step('Fill In Existing Account ID', async () => {
+    await allure.step('Fill In Existing Account ID', async () => {
       await this.fillByTestId(this.existingAccountIdInputSelector, accountId);
     });
   }
 
   async clickOnLinkAccountButton() {
-    return allure.step('Click on Link Account Button', async () => {
+    await allure.step('Click on Link Account Button', async () => {
       await this.clickByTestId(this.linkAccountButtonSelector);
     });
   }
@@ -218,7 +221,7 @@ class AccountPage extends BasePage {
   }
 
   async ensureAccountExistsAndUnlinked(password) {
-    return allure.step('Ensure Account Exists and Unlinked', async () => {
+    await allure.step('Ensure Account Exists and Unlinked', async () => {
       if (await this.isUnlinkedAccountsListEmpty()) {
         const { newAccountId } = await this.transactionPage.createNewAccount(password);
         await this.transactionPage.mirrorGetAccountResponse(newAccountId);
@@ -226,12 +229,13 @@ class AccountPage extends BasePage {
         await this.clickOnAccountsLink();
         await this.clickOnRemoveButton();
         await this.unlinkAccounts(newAccountId);
+        await this.addAccountToUnliked(newAccountId);
       }
     });
   }
 
   async clickOnAccountCheckbox(accountId) {
-    return allure.step('Click on Account Checkbox', async () => {
+    await allure.step('Click on Account Checkbox', async () => {
       const { delay } = await import('../utils/util.js');
       await delay(1000);
       const index = await this.transactionPage.findAccountIndexById(accountId);
@@ -240,7 +244,7 @@ class AccountPage extends BasePage {
   }
 
   async clickOnSelectManyAccountsButton() {
-    return allure.step('Click on Select Many Accounts Button', async () => {
+    await allure.step('Click on Select Many Accounts Button', async () => {
       await this.clickByTestId(this.selectManyAccountsButtonSelector);
     });
   }

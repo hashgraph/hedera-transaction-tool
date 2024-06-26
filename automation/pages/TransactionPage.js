@@ -133,7 +133,7 @@ class TransactionPage extends BasePage {
   async closeDraftModal() {
     return await allure.step('Close Draft Modal', async () => {
       const modalButton = this.window.getByTestId(this.discardModalDraftButtonSelector);
-      await modalButton.waitFor({ state: 'visible', timeout: 500 }).catch(e => {});
+      await modalButton.waitFor({ state: 'visible', timeout: 100 }).catch(e => {});
 
       if (await modalButton.isVisible()) {
         await modalButton.click();

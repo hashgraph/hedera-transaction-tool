@@ -84,7 +84,7 @@ class SettingsPage extends BasePage {
   }
 
   async incrementIndex() {
-    return allure.step('Increment Index', async () => {
+    await allure.step('Increment Index', async () => {
       let numericValue = parseInt(this.currentIndex);
       numericValue++;
       this.currentIndex = numericValue.toString();
@@ -92,7 +92,7 @@ class SettingsPage extends BasePage {
   }
 
   async decrementIndex() {
-    return allure.step('Decrement Index', async () => {
+    await allure.step('Decrement Index', async () => {
       let numericValue = parseInt(this.currentIndex);
       numericValue--;
       this.currentIndex = numericValue.toString();
@@ -136,25 +136,25 @@ class SettingsPage extends BasePage {
   }
 
   async clickOnSettingsButton() {
-    return allure.step('Click on Settings Button', async () => {
+    await allure.step('Click on Settings Button', async () => {
       await this.clickByTestId(this.settingsButtonSelector);
     });
   }
 
   async clickOnKeysTab() {
-    return allure.step('Click on Keys Tab', async () => {
+    await allure.step('Click on Keys Tab', async () => {
       await this.clickByTestId(this.keysTabButtonSelector);
     });
   }
 
   async clickOnProfileTab() {
-    return allure.step('Click on Profile Tab', async () => {
+    await allure.step('Click on Profile Tab', async () => {
       await this.clickByTestId(this.profileTabButtonSelector);
     });
   }
 
   async clickOnRestoreButton() {
-    return allure.step('Click on Restore Button', async () => {
+    await allure.step('Click on Restore Button', async () => {
       const { delay } = require('../utils/util.js');
       const maxRetries = 10;
       let attempt = 0;
@@ -175,139 +175,139 @@ class SettingsPage extends BasePage {
   }
 
   async clickOnContinueButton() {
-    return allure.step('Click on Continue Button', async () => {
+    await allure.step('Click on Continue Button', async () => {
       await this.clickByTestId(this.continueButtonSelector, 25000);
     });
   }
 
   async fillInPassword(password) {
-    return allure.step('Fill in Password', async () => {
+    await allure.step('Fill in Password', async () => {
       await this.fillByTestId(this.passwordInputSelector, password);
     });
   }
 
   async clickOnPasswordContinueButton() {
-    return allure.step('Click on Password Continue Button', async () => {
+    await allure.step('Click on Password Continue Button', async () => {
       await this.clickByTestId(this.continuePasswordButtonSelector);
     });
   }
 
   async fillInIndex(index = 1) {
-    return allure.step('Fill in Index', async () => {
+    await allure.step('Fill in Index', async () => {
       await this.fillByTestId(this.indexInputSelector, index);
     });
   }
 
   async clickOnIndexContinueButton() {
-    return allure.step('Click on Index Continue Button', async () => {
+    await allure.step('Click on Index Continue Button', async () => {
       await this.clickByTestId(this.continueIndexButtonSelector);
     });
   }
 
   async fillInNickname(nickname) {
-    return allure.step('Fill in Nickname', async () => {
+    await allure.step('Fill in Nickname', async () => {
       await this.fillByTestId(this.nicknameInputSelector, nickname);
     });
   }
 
   async clickOnNicknameContinueButton() {
-    return allure.step('Click on Nickname Continue Button', async () => {
+    await allure.step('Click on Nickname Continue Button', async () => {
       await this.clickByTestId(this.continueNicknameButtonSelector, 12000);
     });
   }
 
   async clickOnContinuePhraseButton() {
-    return allure.step('Click on Continue Phrase Button', async () => {
+    await allure.step('Click on Continue Phrase Button', async () => {
       await this.clickByTestId(this.continuePhraseButtonSelector);
     });
   }
 
   async clickOnCustomTab() {
-    return allure.step('Click on Custom Tab', async () => {
+    await allure.step('Click on Custom Tab', async () => {
       await this.clickByTestId(this.customTabButtonSelector);
     });
   }
 
   async clickOnImportButton() {
-    return allure.step('Click on Import Button', async () => {
+    await allure.step('Click on Import Button', async () => {
       await this.clickByTestId(this.importButtonSelector);
     });
   }
 
   async clickOnECDSADropDown() {
-    return allure.step('Click on ECDSA Drop Down', async () => {
+    await allure.step('Click on ECDSA Drop Down', async () => {
       await this.clickByTestId(this.ecdsaImportLinkSelector);
     });
   }
 
   async clickOnED25519DropDown() {
-    return allure.step('Click on ED25519 Drop Down', async () => {
+    await allure.step('Click on ED25519 Drop Down', async () => {
       await this.clickByTestId(this.ed25519ImportLinkSelector);
     });
   }
 
   async fillInECDSAPrivateKey(ecdsaPrivateKey) {
-    return allure.step('Fill in ECDSA Private Key', async () => {
+    await allure.step('Fill in ECDSA Private Key', async () => {
       await this.fillByTestId(this.ecdsaPrivateKeyInputSelector, ecdsaPrivateKey);
     });
   }
 
   async fillInED25519PrivateKey(ecdsaPrivateKey) {
-    return allure.step('Fill in ED25519 Private Key', async () => {
+    await allure.step('Fill in ED25519 Private Key', async () => {
       await this.fillByTestId(this.ed25519PrivateKeyInputSelector, ecdsaPrivateKey);
     });
   }
 
   async fillInECDSANickname(ecdsaNickname) {
-    return allure.step('Fill in ECDSA Nickname', async () => {
+    await allure.step('Fill in ECDSA Nickname', async () => {
       await this.fillByTestId(this.ecdsaNicknameInputSelector, ecdsaNickname);
     });
   }
 
   async fillInED25519Nickname(ecdsaNickname) {
-    return allure.step('Fill in ED25519 Nickname', async () => {
+    await allure.step('Fill in ED25519 Nickname', async () => {
       await this.fillByTestId(this.ed25519PNicknameInputSelector, ecdsaNickname);
     });
   }
 
   async fillInECDSAPassword(password) {
-    return allure.step('Fill in ECDSA Password', async () => {
+    await allure.step('Fill in ECDSA Password', async () => {
       await this.fillByTestId(this.ecdsaPasswordInputSelector, password);
     });
   }
 
   async fillInED25519Password(password) {
-    return allure.step('Fill in ED25519 Password', async () => {
+    await allure.step('Fill in ED25519 Password', async () => {
       await this.fillByTestId(this.ed25519PasswordInputSelector, password);
     });
   }
 
   async clickOnECDSAImportButton() {
-    return allure.step('Click on ECDSA Import Button', async () => {
+    await allure.step('Click on ECDSA Import Button', async () => {
       await this.clickByTestId(this.ecdsaImportButtonSelector);
     });
   }
 
   async clickOnED25519ImportButton() {
-    return allure.step('Click on ED25519 Import Button', async () => {
+    await allure.step('Click on ED25519 Import Button', async () => {
       await this.clickByTestId(this.ed25519ImportButtonSelector);
     });
   }
 
   async clickOnEyeDecryptIcon() {
-    return allure.step('Click on Eye Decrypt Icon', async () => {
+    await allure.step('Click on Eye Decrypt Icon', async () => {
       await this.clickByTestId(this.decryptMainPrivateKeyButtonSelector);
     });
   }
 
   async fillInDecryptPassword(password) {
-    return allure.step('Fill in Decrypt Password', async () => {
+    await allure.step('Fill in Decrypt Password', async () => {
       await this.fillByTestId(this.decryptPasswordInputSelector, password);
     });
   }
 
   async clickOnDecryptButton() {
-    return allure.step('Click on Decrypt Button', async () => {
+    await allure.step('Click on Decrypt Button', async () => {
       await this.clickByTestId(this.decryptPasswordButtonSelector);
     });
   }
@@ -319,43 +319,43 @@ class SettingsPage extends BasePage {
   }
 
   async clickOnDeleteButtonAtIndex(index) {
-    return allure.step('Click on Delete Button at Index', async () => {
+    await allure.step('Click on Delete Button at Index', async () => {
       await this.clickByTestId(this.deleteKeyButtonPrefix + index);
     });
   }
 
   async clickOnDeleteKeyPairButton() {
-    return allure.step('Click on Delete Key Pair Button', async () => {
+    await allure.step('Click on Delete Key Pair Button', async () => {
       await this.clickByTestId(this.deleteKeyPairButton);
     });
   }
 
   async fillInCurrentPassword(password) {
-    return allure.step('Fill in Current Password', async () => {
+    await allure.step('Fill in Current Password', async () => {
       await this.fillByTestId(this.currentPasswordInputSelector, password);
     });
   }
 
   async fillInNewPassword(password) {
-    return allure.step('Fill in New Password', async () => {
+    await allure.step('Fill in New Password', async () => {
       await this.fillByTestId(this.newPasswordInputSelector, password);
     });
   }
 
   async clickOnChangePasswordButton() {
-    return allure.step('Click on Change Password Button', async () => {
+    await allure.step('Click on Change Password Button', async () => {
       await this.clickByTestId(this.changePasswordButtonSelector);
     });
   }
 
   async clickOnConfirmChangePassword() {
-    return allure.step('Click on Confirm Change Password', async () => {
+    await allure.step('Click on Confirm Change Password', async () => {
       await this.clickByTestId(this.confirmChangePasswordButtonSelector);
     });
   }
 
   async clickOnCloseButton() {
-    return allure.step('Click on Close Button', async () => {
+    await allure.step('Click on Close Button', async () => {
       await this.waitForElementToBeVisible(this.closeButtonSelector, 15000);
       await this.clickByTestId(this.closeButtonSelector);
     });

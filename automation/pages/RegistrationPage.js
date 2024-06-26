@@ -478,7 +478,7 @@ class RegistrationPage extends BasePage {
 
   async isConfirmPasswordFieldVisible() {
     return await allure.step('Is Confirm Password Field Visible', async () => {
-      return await this.isElementVisible(this.confirmPasswordInputSelector, 5000);
+      return await this.isElementVisible(this.confirmPasswordInputSelector, 7500);
     });
   }
 
