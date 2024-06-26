@@ -1,17 +1,73 @@
 <script setup lang="ts">
-import { onBeforeMount } from 'vue';
+import { onBeforeMount, ref } from 'vue';
 
 import { Transaction, AccountDeleteTransaction } from '@hashgraph/sdk';
+
+import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
+
+import useNetworkStore from '@renderer/stores/storeNetwork';
+
+import { getTransactionInfo } from '@renderer/services/mirrorNodeDataService';
 
 /* Props */
 const props = defineProps<{
   transaction: Transaction;
+  organizationTransaction: ITransactionFull | null;
 }>();
 
+/* Stores */
+const network = useNetworkStore();
+
+/* State */
+const controller = ref<AbortController | null>(null);
+// const transfers = ref<Transfer[] | null>(null);
+
+/* Functions */
+async function fetchTransactionInfo(payer: string, seconds: string, nanos: string) {
+  try {
+    const { transactions } = await getTransactionInfo(
+      `${payer}-${seconds}-${nanos}`,
+      network.mirrorNodeBaseURL,
+      controller.value || undefined,
+    );
+
+    if (transactions.length > 0) {
+      // transfers.value = transactions[0].transfers || null;
+      console.log('transactions[0].transfers', transactions[0].transfers);
+    }
+  } catch (error) {
+    /* Ignore if transaction not available in mirror node */
+  }
+}
+
 /* Hooks */
-onBeforeMount(() => {
+onBeforeMount(async () => {
   if (!(props.transaction instanceof AccountDeleteTransaction)) {
     throw new Error('Transaction is not Account Delete Transaction');
+  }
+
+  const isExecutedOrganizationTransaction = Boolean(
+    props.organizationTransaction?.status &&
+      [TransactionStatus.EXECUTED, TransactionStatus.FAILED].includes(
+        props.organizationTransaction.status,
+      ),
+  );
+
+  if (
+    (isExecutedOrganizationTransaction || !props.organizationTransaction) &&
+    props.transaction instanceof AccountDeleteTransaction
+  ) {
+    const payer = props.transaction.transactionId?.accountId?.toString();
+    const seconds = props.transaction.transactionId?.validStart?.seconds?.toString();
+    const nanos = props.transaction.transactionId?.validStart?.nanos?.toString();
+
+    if (payer && seconds && nanos) {
+      if (!props.organizationTransaction) {
+        setTimeout(async () => await fetchTransactionInfo(payer, seconds, nanos), 1500);
+      } else {
+        await fetchTransactionInfo(payer, seconds, nanos);
+      }
+    }
   }
 });
 
