@@ -45,10 +45,27 @@ export interface ITransaction {
   updatedAt: string;
   network: Network;
   creatorKeyId: number;
+  groupItem: IGroupItem;
 }
 
 export interface ITransactionFull extends ITransaction {
   signers: ITransactionSignerUserKey[];
   approvers: ITransactionApprover[];
   observers: ITransactionObserverUserId[];
+}
+
+export interface IGroupItem {
+  seq: number;
+  transactionId: number;
+  groupId: number;
+  transaction: ITransaction;
+  group: IGroup;
+}
+
+export interface IGroup {
+  id: number;
+  description: string;
+  atomic: boolean;
+  createdAt: Date;
+  groupItems: IGroupItem;
 }

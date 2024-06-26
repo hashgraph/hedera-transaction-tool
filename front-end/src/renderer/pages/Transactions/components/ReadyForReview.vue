@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
+import { computed, inject, onBeforeMount, reactive, ref, watch } from 'vue';
 
 import { Transaction } from '@hashgraph/sdk';
 
@@ -11,7 +11,11 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 
-import { getTransactionsToApprove } from '@renderer/services/organization';
+import {
+  getApiGroups,
+  getTransactionsToApprove,
+  sendApproverChoice,
+} from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
 import {
@@ -19,12 +23,20 @@ import {
   getTransactionId,
   getTransactionType,
 } from '@renderer/utils/sdk/transactions';
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+import {
+  isLoggedInOrganization,
+  isLoggedInWithPassword,
+  isUserLoggedIn,
+} from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
+import { useToast } from 'vue-toast-notification';
+import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+import { decryptPrivateKey } from '@renderer/services/keyPairService';
+import { getPrivateKey, getTransactionBodySignatureWithoutNodeAccountId } from '@renderer/utils';
 
 /* Stores */
 const user = useUserStore();
@@ -33,18 +45,24 @@ const network = useNetworkStore();
 /* Composables */
 const router = useRouter();
 const ws = useDisposableWs();
+const toast = useToast();
 
 /* State */
 const transactions = ref<
-  {
-    transactionRaw: ITransaction;
-    transaction: Transaction;
-  }[]
->([]);
+  Map<
+    number,
+    {
+      transactionRaw: ITransaction;
+      transaction: Transaction;
+    }[]
+  >
+>(new Map());
+const groups = ref();
 const totalItems = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
 const isLoading = ref(true);
+const tx = ref();
 
 const sort = reactive<{
   field: keyof ITransaction;
@@ -53,6 +71,9 @@ const sort = reactive<{
   field: 'createdAt',
   direction: 'desc',
 });
+
+/* Injected */
+const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
 
 /* Computed */
 const generatedClass = computed(() => {
@@ -68,6 +89,71 @@ const handleApprove = async (id: number) => {
       approve: 'true',
     },
   });
+};
+
+const handleApproveGroup = async (id: number) => {
+  try {
+    if (transactions.value.get(id) != undefined) {
+      const txs = transactions.value.get(id);
+      if (txs != undefined) {
+        if (!txs[0].transaction || !(txs[0].transaction instanceof Transaction)) {
+          throw new Error('Transaction not provided');
+        }
+
+        for (const transaction of txs) {
+          tx.value = transaction;
+
+          await handleApproveSingle();
+        }
+      }
+    }
+    toast.success('Transactions signed successfully');
+  } catch {
+    toast.error('Transactions not approved');
+  }
+};
+
+const handleApproveSingle = async () => {
+  const callback = async () => {
+    if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
+      throw new Error('User is not logged in organization');
+    }
+
+    if (!isLoggedInWithPassword(user.personal)) {
+      if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+      userPasswordModalRef.value?.open(
+        'Enter your application password',
+        'Enter your application password to decrypt your private key',
+        callback,
+      );
+      return;
+    }
+
+    const publicKey = user.selectedOrganization.userKeys[0].publicKey;
+    const privateKeyRaw = await decryptPrivateKey(
+      user.personal.id,
+      user.personal.password,
+      publicKey,
+    );
+    const privateKey = getPrivateKey(publicKey, privateKeyRaw);
+
+    const signature = await getTransactionBodySignatureWithoutNodeAccountId(
+      privateKey,
+      tx.value.transaction,
+    );
+
+    console.log(tx.value.transactionRaw.id);
+
+    await sendApproverChoice(
+      user.selectedOrganization.serverUrl,
+      tx.value.transactionRaw.id,
+      user.selectedOrganization.userKeys[0].id,
+      signature,
+      true,
+    );
+  };
+
+  await callback();
 };
 
 const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') => {
@@ -95,10 +181,23 @@ async function fetchTransactions() {
     );
     totalItems.value = total;
     const transactionsBytes = await hexToUint8ArrayBatch(rawTransactions.map(t => t.body));
-    transactions.value = rawTransactions.map((transaction, i) => ({
-      transactionRaw: transaction,
-      transaction: Transaction.fromBytes(transactionsBytes[i]),
-    }));
+
+    for (const [i, transaction] of rawTransactions.entries()) {
+      const currentGroup = transaction.groupItem.groupId ? transaction.groupItem.groupId : -1;
+      const currentVal = transactions.value.get(currentGroup);
+      const newVal = {
+        transactionRaw: transaction,
+        transaction: Transaction.fromBytes(transactionsBytes[i]),
+      };
+      if (currentVal != undefined) {
+        currentVal.push(newVal);
+        transactions.value.set(currentGroup, currentVal);
+      } else {
+        transactions.value.set(currentGroup, new Array(newVal));
+      }
+    }
+
+    groups.value = await getApiGroups(user.selectedOrganization.serverUrl, network.network);
   } finally {
     isLoading.value = false;
   }
@@ -128,7 +227,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
       <AppLoader class="h-100" />
     </template>
     <template v-else>
-      <template v-if="transactions.length > 0">
+      <template v-if="transactions.size > 0">
         <table class="table-custom">
           <thead>
             <tr>
@@ -187,37 +286,60 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
             </tr>
           </thead>
           <tbody>
-            <template v-for="(tx, index) in transactions" :key="tx.transactionRaw.id">
-              <tr>
-                <td :data-testid="`td-review-transaction-id-${index}`">
-                  {{
-                    tx.transaction instanceof Transaction ? getTransactionId(tx.transaction) : 'N/A'
-                  }}
+            <template v-for="group of transactions" :key="group[0]">
+              <tr v-if="group[0] != -1">
+                <td>
+                  {{ group[0] }}
                 </td>
-                <td :data-testid="`td-review-transaction-type-${index}`">
-                  <span class="text-bold">{{
-                    tx.transaction instanceof Transaction
-                      ? getTransactionType(tx.transaction)
-                      : 'N/A'
-                  }}</span>
-                </td>
-                <td :data-testid="`td-review-transaction-valid-start-${index}`">
+                <td>{{ groups[group[0] - 1].description }}</td>
+                <td>
                   {{
-                    tx.transaction instanceof Transaction
-                      ? getTransactionDateExtended(tx.transaction)
+                    group[1][0].transaction instanceof Transaction
+                      ? getTransactionDateExtended(group[1][0].transaction)
                       : 'N/A'
                   }}
                 </td>
                 <td class="text-center">
-                  <AppButton
-                    @click="handleApprove(tx.transactionRaw.id)"
-                    :data-testid="`button-review-transaction-approve-${index}`"
+                  <AppButton 
+                    @click="handleApproveGroup(group[0])" 
                     color="secondary"
                     class="min-w-unset"
                     >Submit Approval</AppButton
                   >
                 </td>
               </tr>
+              <template v-else>
+                <div v-for="tx of group[1]" :key="tx.transactionRaw.id">
+                  <tr>
+                    <td>
+                      {{
+                        tx.transaction instanceof Transaction
+                          ? getTransactionId(tx.transaction)
+                          : 'N/A'
+                      }}
+                    </td>
+                    <td>
+                      <span class="text-bold">{{
+                        tx.transaction instanceof Transaction
+                          ? getTransactionType(tx.transaction)
+                          : 'N/A'
+                      }}</span>
+                    </td>
+                    <td>
+                      {{
+                        tx.transaction instanceof Transaction
+                          ? getTransactionDateExtended(tx.transaction)
+                          : 'N/A'
+                      }}
+                    </td>
+                    <td class="text-center">
+                      <AppButton @click="handleApprove(tx.transactionRaw.id)" color="secondary"
+                        >Submit Approval</AppButton
+                      >
+                    </td>
+                  </tr>
+                </div>
+              </template>
             </template>
           </tbody>
           <tfoot class="d-table-caption">

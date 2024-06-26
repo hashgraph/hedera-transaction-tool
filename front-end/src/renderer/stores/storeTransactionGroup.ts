@@ -1,3 +1,5 @@
+import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
+import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 import { Prisma } from '@prisma/client';
 import { getDrafts } from '@renderer/services/transactionDraftsService';
 import {
@@ -17,6 +19,9 @@ export interface GroupItem {
   accountId: string;
   seq: string;
   groupId?: string;
+  keyList: string[];
+  observers: number[];
+  approvers: TransactionApproverDto[];
 }
 
 const useTransactionGroupStore = defineStore('transactionGroup', () => {
@@ -24,6 +29,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   const groupItems = ref<GroupItem[]>([]);
   const description = ref('');
 
+  // TODO: keylists, approvers and observers must be saved in local drafts
   /* Actions */
   async function fetchGroup(id: string, findArgs: Prisma.TransactionDraftFindManyArgs) {
     groupItems.value = [];
@@ -42,6 +48,9 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
           accountId: '',
           groupId: id,
           seq: item.seq,
+          keyList: [],
+          observers: [],
+          approvers: [],
         });
       }
     }
@@ -80,6 +89,33 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     }
   }
 
+  function getRequiredKeys() {
+    const keys = new Array<string>();
+    for (const groupItem of groupItems.value) {
+      keys.concat(groupItem.keyList);
+    }
+    const keySet = new Set(keys);
+    const returningKeys = new Array<Key>();
+    for (const key of Array.from(keySet)) {
+      returningKeys.push(PublicKey.fromString(key));
+    }
+    return KeyList.from(returningKeys);
+  }
+
+  // function getObservers() {
+  //   const observers = new Array<number>();
+  //   for (const groupItem of groupItems.value) {
+  //     observers.concat(groupItem.observers);
+  //   }
+  //   const observerSet = new Set(observers);
+  //   return Array.from(observerSet);
+  // }
+
+  // function getApprovers() {
+  //   console.log('TODO');
+  //   return new Array<TransactionApproverDto>();
+  // }
+
   return {
     fetchGroup,
     addGroupItem,
@@ -88,6 +124,10 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     saveGroup,
     clearGroup,
     groupItems,
+    description,
+    getRequiredKeys,
+    // getObservers,
+    // getApprovers,
   };
 });
 

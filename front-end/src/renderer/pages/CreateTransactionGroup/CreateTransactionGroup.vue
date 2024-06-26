@@ -9,8 +9,12 @@ import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 import { useRouter, useRoute } from 'vue-router';
 import useUserStore from '@renderer/stores/storeUser';
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
-import { getEntityIdFromTransactionReceipt, isAccountId } from '@renderer/utils';
-import { KeyList, PublicKey } from '@hashgraph/sdk';
+import {
+  getEntityIdFromTransactionReceipt,
+  isAccountId,
+  getPropagationButtonLabel,
+} from '@renderer/utils';
+import { Key, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
 import { useToast } from 'vue-toast-notification';
 
 /* Stores */
@@ -29,6 +33,10 @@ const transactionGroupProcessor = ref<typeof TransactionGroupProcessor | null>(n
 
 const groupEmpty = computed(() => transactionGroup.groupItems.length == 0);
 
+const transactionKey = computed(() => {
+  return transactionGroup.getRequiredKeys();
+});
+
 /* Handlers */
 function handleSaveGroup() {
   if (!isUserLoggedIn(user.personal)) {
@@ -38,6 +46,10 @@ function handleSaveGroup() {
   transactionGroup.saveGroup(user.personal.id, groupName.value);
   transactionGroup.clearGroup();
   router.push('transactions');
+}
+
+function nameUpdated() {
+  transactionGroup.description = groupName.value;
 }
 
 function handleDeleteGroupItem(index: number) {
@@ -86,7 +98,6 @@ const handleLoadGroup = async () => {
 };
 
 async function handleSignSubmit() {
-  console.log('hello in signsubmit');
   try {
     const ownerKey = PublicKey.fromString(user.keyPairs[0].public_key);
 
@@ -98,11 +109,11 @@ async function handleSignSubmit() {
 }
 
 function handleExecuted() {
-  console.log('hello');
+  // console.log('hello');
 }
 
 function handleSubmit() {
-  console.log('hello');
+  // console.log('hello');
 }
 
 /* Hooks */
@@ -122,7 +133,12 @@ onMounted(async () => {
     <form class="mt-5" @submit.prevent="handleSaveGroup">
       <div class="form-group col-6">
         <label class="form-label">Transaction Group Name</label>
-        <AppInput v-model="groupName" filled placeholder="Enter Name" />
+        <AppInput
+          v-model="groupName"
+          @update:modelValue="nameUpdated"
+          filled
+          placeholder="Enter Name"
+        />
       </div>
       <hr class="separator my-5 w-100" />
       <div class="d-flex justify-content-between">
@@ -175,7 +191,13 @@ onMounted(async () => {
           <AppButton color="primary" type="submit">Save Group</AppButton>
           <AppButton color="primary" type="button" @click="handleSignSubmit" class="ms-4">
             <span class="bi bi-send"></span>
-            Sign & Submit</AppButton
+            {{
+              getPropagationButtonLabel(
+                transactionKey,
+                user.keyPairs,
+                Boolean(user.selectedOrganization),
+              )
+            }}</AppButton
           >
         </div>
       </div>

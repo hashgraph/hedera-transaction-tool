@@ -25,15 +25,12 @@ import {
   signTransaction,
   storeTransaction,
 } from '@renderer/services/transactionService';
-import { hexToUint8Array, uint8ArrayToHex } from '@renderer/services/electronUtilsService';
 import { decryptPrivateKey, flattenKeyList } from '@renderer/services/keyPairService';
 import { deleteDraft, getDraft } from '@renderer/services/transactionDraftsService';
-import { fullUploadSignatures, submitTransaction } from '@renderer/services/organization';
 
 import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
-import { ableToSign, getStatusFromCode, getTransactionType, getPrivateKey } from '@renderer/utils';
-import { publicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
+import { ableToSign, getPrivateKey, getStatusFromCode, getTransactionType } from '@renderer/utils';
 import {
   isLoggedInOrganization,
   isLoggedInWithPassword,
@@ -49,9 +46,22 @@ import useTransactionGroupStore, { GroupItem } from '@renderer/stores/storeTrans
 import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
 import { addGroupItem, editGroupItem } from '@renderer/services/transactionGroupsService';
 import { addGroup, getGroupItem } from '@renderer/services/transactionGroupsService';
+import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
+import {
+  submitTransaction,
+  addApprovers,
+  addObservers,
+  ApiTransaction,
+  ApiGroupItem,
+  submitTransactionGroup,
+  getTransactionsToSign,
+} from '@renderer/services/organization';
+import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 /* Props */
 const props = defineProps<{
+  observers?: number[];
+  approvers?: TransactionApproverDto[];
   onExecuted?: (
     response: TransactionResponse,
     receipt: TransactionReceipt,
@@ -133,7 +143,9 @@ async function handleConfirmTransaction(e: Event) {
   //   );
   // }
 
-  if (localPublicKeysReq.value.length > 0) {
+  if (user.selectedOrganization) {
+    await sendSignedTransactionsToOrganization();
+  } else if (localPublicKeysReq.value.length > 0) {
     isConfirmShown.value = false;
     isSignModalShown.value = true;
   } else {
@@ -187,18 +199,9 @@ async function handleSignTransactions() {
 
           if (!user.selectedOrganization) {
             await executeFileTransactions(signedTransaction, chunks);
-          } else {
-            const chunkedTransactions = await chunkFileTransactionForOrganization(
-              signedTransaction,
-              chunks,
-            );
-            await sendSignedChunksToOrganization(chunkedTransactions);
           }
         } else if (!user.selectedOrganization) {
           await executeTransaction(signedTransactionBytes, groupItem);
-        } else {
-          await sendSignedFileTransactionToOrganization(signedTransactionBytes);
-          console.log('Send to back end signed along with required', externalPublicKeysReq.value);
         }
       } else {
         await executeTransaction(signedTransactionBytes, groupItem);
@@ -258,11 +261,7 @@ async function executeTransaction(transactionBytes: Uint8Array, groupItem?: Grou
   try {
     isExecuting.value = true;
 
-    console.log('about to execute');
-
     const { response, receipt } = await execute(transactionBytes);
-
-    console.log('done executing');
 
     transactionResult.value = { response, receipt };
 
@@ -287,7 +286,6 @@ async function executeTransaction(transactionBytes: Uint8Array, groupItem?: Grou
     if (unmounted.value) {
       toast.success('Transaction executed', { position: 'bottom-right' });
     }
-    console.log('hello in execute');
   } catch (err: any) {
     const data = JSON.parse(err.message);
     status = data.status;
@@ -317,11 +315,10 @@ async function executeTransaction(transactionBytes: Uint8Array, groupItem?: Grou
     signature: '',
     valid_start: executedTransaction.transactionId.validStart?.toString() || '',
     executed_at: new Date().getTime() / 1000,
+    network: network.network,
   };
 
   const storedTransaction = await storeTransaction(tx);
-
-  console.log(storedTransaction);
 
   if (groupItem?.groupId != undefined) {
     const savedGroupItem = await getGroupItem(groupItem.groupId, groupItem.seq);
@@ -331,28 +328,179 @@ async function executeTransaction(transactionBytes: Uint8Array, groupItem?: Grou
       transaction_draft_id: null,
       seq: groupItem.seq,
     });
-    console.log('edited group item');
     await deleteDraft(savedGroupItem.transaction_draft_id!);
-    console.log('deleted draft');
   } else if (groupItem) {
-    console.log('creating groupItem');
-    console.log(storedTransaction.id);
     if (newGroupId.value === '') {
       const newGroup = await addGroup('', false);
       newGroupId.value = newGroup.id;
     }
     await addGroupItem(groupItem, newGroupId.value, storedTransaction.id);
-    console.log('added group item');
   }
   // Modify transaction group items using transactionGroup.groupId and transactionGroup.seq and storedTransaction.id
   // Delete drafts
+}
+
+async function sendSignedTransactionsToOrganization() {
+  isConfirmShown.value = false;
+
+  /* Verifies the user is logged in organization */
+  if (!isLoggedInOrganization(user.selectedOrganization)) {
+    throw new Error('Please select an organization');
+  }
+
+  /* Verifies the user has entered his password */
+  if (!isLoggedInWithPassword(user.personal)) {
+    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+    userPasswordModalRef.value?.open(
+      'Enter your application password',
+      'Enter your application password to sign as a creator',
+      sendSignedTransactionsToOrganization,
+    );
+    return;
+  }
+
+  /* Verifies there is actual transaction to process */
+  if (!transactionGroup.groupItems[0].transactionBytes) throw new Error('No Transactions provided');
+
+  /* User Serializes each Transaction */
+  const groupBytesHex = new Array<string>();
+  for (const groupItem of transactionGroup.groupItems) {
+    groupBytesHex.push(await uint8ArrayToHex(groupItem.transactionBytes));
+  }
+
+  /* Signs the unfrozen transaction */
+  const keyToSignWith = user.keyPairs[0].public_key;
+
+  const privateKeyRaw = await decryptPrivateKey(
+    user.personal.id,
+    user.personal.password,
+    keyToSignWith,
+  );
+  const privateKey = getPrivateKey(keyToSignWith, privateKeyRaw);
+
+  const groupSignatureHex = new Array<string>();
+  for (const groupItem of transactionGroup.groupItems) {
+    groupSignatureHex.push(await uint8ArrayToHex(privateKey.sign(groupItem.transactionBytes)));
+  }
+
+  /* Submit transactions to the back end */
+  const apiGroupItems = new Array<ApiGroupItem>();
+  for (const [i, groupItem] of transactionGroup.groupItems.entries()) {
+    const transaction = Transaction.fromBytes(groupItem.transactionBytes);
+    apiGroupItems.push({
+      seq: i,
+      transaction: {
+        name: transaction.transactionMemo || `New ${getTransactionType(transaction)}`,
+        description: transaction.transactionMemo || '',
+        body: groupBytesHex[i],
+        network: network.network,
+        signature: groupSignatureHex[i],
+        creatorKeyId:
+          user.selectedOrganization.userKeys.find(k => k.publicKey === keyToSignWith)?.id || -1,
+      },
+    });
+  }
+
+  const { id, body } = await submitTransactionGroup(
+    user.selectedOrganization.serverUrl,
+    transactionGroup.description,
+    false,
+    apiGroupItems,
+  );
+
+  //TODO: fix to getting actual transactions
+  const transactions = await getTransactionsToSign(
+    user.selectedOrganization.serverUrl,
+    network.network,
+    1,
+    10,
+  );
+
+  const newTransactions = new Array<number>();
+
+  for (const [i, transaction] of transactions.items.entries()) {
+    if (
+      transaction.transaction.groupItem.groupId == id &&
+      transaction.transaction.groupItem.seq == i
+    ) {
+      newTransactions.push(transaction.transaction.id);
+    }
+  }
+
+  console.log(newTransactions);
+
+  toast.success('Transaction submitted successfully');
+  props.onSubmitted && props.onSubmitted(id, body);
+
+  //TODO: should be per transaction ID, not group ID
+  for (const [i, groupItem] of transactionGroup.groupItems.entries()) {
+    const results = await Promise.allSettled([
+      // uploadSignatures(body, id),
+      uploadObservers(newTransactions[i], parseInt(groupItem.seq)),
+      uploadApprovers(newTransactions[i], parseInt(groupItem.seq)),
+      deleteDraftsIfNotTemplate(),
+    ]);
+    results.forEach(result => {
+      if (result.status === 'rejected') {
+        toast.error(result.reason.message);
+      }
+    });
+  }
+}
+
+async function uploadObservers(transactionId: number, seqId: number) {
+  if (
+    !transactionGroup.groupItems[seqId].observers ||
+    transactionGroup.groupItems[seqId].observers.length === 0
+  ) {
+    return;
+  }
+
+  if (!isLoggedInOrganization(user.selectedOrganization))
+    throw new Error('User is not logged in organization');
+
+  await addObservers(
+    user.selectedOrganization.serverUrl,
+    transactionId,
+    transactionGroup.groupItems[seqId].observers,
+  );
+}
+
+async function uploadApprovers(transactionId: number, seqId: number) {
+  if (
+    !transactionGroup.groupItems[seqId].approvers ||
+    transactionGroup.groupItems[seqId].approvers.length === 0
+  ) {
+    return;
+  }
+
+  if (!isLoggedInOrganization(user.selectedOrganization))
+    throw new Error('User is not logged in organization');
+
+  await addApprovers(
+    user.selectedOrganization.serverUrl,
+    transactionId,
+    transactionGroup.groupItems[seqId].approvers,
+  );
+}
+
+async function deleteDraftsIfNotTemplate() {
+  // TODO
+  /* Delete if draft and not template */
+  // if (route.query.draftId) {
+  //   try {
+  //     const draft = await getDraft(route.query.draftId.toString());
+  //     if (!draft.isTemplate) await deleteDraft(route.query.draftId.toString());
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // }
 }
 
 async function executeFileTransactions(
   transaction: FileUpdateTransaction | FileAppendTransaction,
   chunks: Uint8Array[],
 ) {
-  console.log('hello in execute file');
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
@@ -463,6 +611,7 @@ async function executeFileTransactions(
       signature: '',
       valid_start: chunkTransaction.transactionId?.validStart?.toString() || '',
       executed_at: new Date().getTime() / 1000,
+      network: network.network,
     };
 
     await storeTransaction(transactionToStore);

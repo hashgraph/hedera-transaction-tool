@@ -4,3 +4,4 @@ export * from './userKeys';
 export * from './health';
 export * from './transaction';
 export * from './notificationPreferences';
+export * from './transactionGroup';

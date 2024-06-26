@@ -14,8 +14,8 @@ export interface ITransactionApprover extends IBaseTransactionApprover {
 }
 
 export interface TransactionApproverDto {
-  listId?: number;
-  threshold?: number;
+  listId?: number; //
+  threshold?: number; //
   userId?: number;
   approvers?: TransactionApproverDto[];
 }

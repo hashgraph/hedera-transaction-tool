@@ -56,6 +56,7 @@ model Organization {
   keyPairs                KeyPair[]
   OrganizationCredentials OrganizationCredentials[]
   Contact                 Contact[]
+  Transaction             Transaction[]
 }
 
 model OrganizationCredentials {
@@ -90,11 +91,11 @@ model Transaction {
   group_id           String?
   creator_public_key String?
   network            String
-  user               User     @relation(fields: [user_id], references: [id])
-  organization_id     String?
+  user               User          @relation(fields: [user_id], references: [id])
+  organization_id    String?
   organization       Organization? @relation(fields: [organization_id], references: [id])
 
-  GroupItem          GroupItem[]
+  GroupItem GroupItem[]
 }
 
 model TransactionDraft {
@@ -108,7 +109,7 @@ model TransactionDraft {
   details          String?
   user             User     @relation(fields: [user_id], references: [id])
 
-  GroupItem        GroupItem[]
+  GroupItem GroupItem[]
 }
 
 model HederaAccount {
@@ -165,22 +166,22 @@ model PublicKeyLinked {
 }
 
 model TransactionGroup {
-  id String @id @default(uuid())
+  id          String   @id @default(uuid())
   description String
-  atomic Boolean
-  created_at DateTime @default(now())
+  atomic      Boolean
+  created_at  DateTime @default(now())
 
   GroupItem GroupItem[]
 }
 
 model GroupItem {
-  transaction_id String?
+  transaction_id       String?
   transaction_draft_id String?
   transaction_group_id String
-  seq String
-  transaction Transaction? @relation(fields: [transaction_id], references: [id])
-  transaction_draft TransactionDraft? @relation(fields: [transaction_draft_id], references: [id])
-  transaction_group TransactionGroup @relation(fields: [transaction_group_id], references: [id])
+  seq                  String
+  transaction          Transaction?      @relation(fields: [transaction_id], references: [id])
+  transaction_draft    TransactionDraft? @relation(fields: [transaction_draft_id], references: [id])
+  transaction_group    TransactionGroup  @relation(fields: [transaction_group_id], references: [id])
 
   @@unique([transaction_group_id, seq])
 }

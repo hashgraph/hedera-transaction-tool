@@ -252,11 +252,21 @@ const handleLocalStored = (id: string) => {
 
 function handleAddToGroup() {
   const transactionBytes = createTransaction().toBytes();
+  const keys = new Array<string>();
+  if (ownerKey.value instanceof KeyList) {
+    for (const key of ownerKey.value.toArray()) {
+      keys.push(key.toString());
+    }
+  }
+  // TODO: handle single key?
   transactionGroup.addGroupItem({
     transactionBytes: transactionBytes,
     type: 'FileCreateTransaction',
     accountId: '',
-    seq: (transactionGroup.groupItems.length - 1).toString(),
+    seq: transactionGroup.groupItems.length.toString(),
+    keyList: keys,
+    observers: observers.value,
+    approvers: approvers.value,
   });
   router.push({ name: 'createTransactionGroup' });
 }

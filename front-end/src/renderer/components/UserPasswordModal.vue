@@ -55,7 +55,7 @@ const handleClose = () => {
 const handleOpen = (
   _heading: string | null,
   _subHeading: string | null,
-  _callback: (password: string) => void,
+  _callback: (password: string, id?: number) => void,
 ) => {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');

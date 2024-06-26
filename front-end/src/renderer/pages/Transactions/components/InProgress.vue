@@ -91,6 +91,7 @@ async function fetchTransactions() {
       pageSize.value,
       [{ property: sort.field, direction: sort.direction }],
     );
+    // console.log(rawTransactions);
     totalItems.value = totalItemsCount;
     const transactionsBytes = await hexToUint8ArrayBatch(rawTransactions.map(t => t.body));
     transactions.value = rawTransactions.map((transaction, i) => ({
