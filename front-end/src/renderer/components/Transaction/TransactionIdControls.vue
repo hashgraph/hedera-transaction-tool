@@ -98,7 +98,10 @@ const columnClass = 'col-4 col-xxxl-3';
   <div class="row flex-wrap align-items-end">
     <div class="form-group" :class="[columnClass]">
       <label class="form-label">Payer ID <span class="text-danger">*</span></label>
-      <label v-if="account.isValid.value" class="d-block form-label text-secondary"
+      <label v-if="account.accountInfo.value?.deleted" class="d-block form-label text-danger me-3"
+        ><span class="bi bi-exclamation-triangle-fill me-1"></span> Account is deleted</label
+      >
+      <label v-else-if="account.isValid.value" class="d-block form-label text-secondary"
         >Balance:
         {{ stringifyHbar((account.accountInfo.value?.balance as Hbar) || new Hbar(0)) }}</label
       >
