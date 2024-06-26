@@ -280,6 +280,14 @@ const columnClass = 'col-4 col-xxxl-3';
           </div>
         </div>
 
+        <div v-if="accountData.isValid.value" class="my-4">
+          <p class="text-small">
+            In order to delete this account, you will need to transfer the remaining
+            <span class="text-secondary">{{ accountData.accountInfo.value?.balance || 0 }}</span>
+            to another account
+          </p>
+        </div>
+
         <div class="my-4">
           <p
             v-if="accountData.accountInfo.value && accountData.accountInfo.value.deleted"
