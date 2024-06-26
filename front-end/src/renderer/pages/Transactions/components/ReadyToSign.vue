@@ -282,54 +282,57 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
           </thead>
           <tbody>
             <template v-for="group of transactions" :key="group[0]">
-              <tr v-if="group[0] != -1">
-                <td>
-                  {{ group[0] }}
-                </td>
-                <td>{{ groups[group[0] - 1].description }}</td>
-                <td>
-                  {{
-                    group[1][0].transaction instanceof Transaction
-                      ? getTransactionDateExtended(group[1][0].transaction)
-                      : 'N/A'
-                  }}
-                </td>
-                <td class="text-center">
-                  <AppButton @click="handleSignGroup(group[0])" color="secondary">Sign</AppButton>
-                </td>
+              <tr>
+                <template v-if="group[0] != -1">
+                  <td>
+                    {{ group[0] }}
+                  </td>
+                  <td>{{ groups[group[0] - 1].description }}</td>
+                  <td>
+                    {{
+                      group[1][0].transaction instanceof Transaction
+                        ? getTransactionDateExtended(group[1][0].transaction)
+                        : 'N/A'
+                    }}
+                  </td>
+                  <td class="text-center">
+                    <AppButton @click="handleSignGroup(group[0])" color="secondary">Sign</AppButton>
+                  </td>
+                </template>
+
+                <template v-else>
+                  <template v-for="tx of group[1]" :key="tx.transactionRaw.id">
+                    <tr>
+                      <td>
+                        {{
+                          tx.transaction instanceof Transaction
+                            ? getTransactionId(tx.transaction)
+                            : 'N/A'
+                        }}
+                      </td>
+                      <td>
+                        <span class="text-bold">{{
+                          tx.transaction instanceof Transaction
+                            ? getTransactionType(tx.transaction)
+                            : 'N/A'
+                        }}</span>
+                      </td>
+                      <td>
+                        {{
+                          tx.transaction instanceof Transaction
+                            ? getTransactionDateExtended(tx.transaction)
+                            : 'N/A'
+                        }}
+                      </td>
+                      <td class="text-center">
+                        <AppButton @click="handleSign(tx.transactionRaw.id)" color="secondary"
+                          >Sign</AppButton
+                        >
+                      </td>
+                    </tr>
+                  </template>
+                </template>
               </tr>
-              <template v-else>
-                <div v-for="tx of group[1]" :key="tx.transactionRaw.id">
-                  <tr>
-                    <td>
-                      {{
-                        tx.transaction instanceof Transaction
-                          ? getTransactionId(tx.transaction)
-                          : 'N/A'
-                      }}
-                    </td>
-                    <td>
-                      <span class="text-bold">{{
-                        tx.transaction instanceof Transaction
-                          ? getTransactionType(tx.transaction)
-                          : 'N/A'
-                      }}</span>
-                    </td>
-                    <td>
-                      {{
-                        tx.transaction instanceof Transaction
-                          ? getTransactionDateExtended(tx.transaction)
-                          : 'N/A'
-                      }}
-                    </td>
-                    <td class="text-center">
-                      <AppButton @click="handleSign(tx.transactionRaw.id)" color="secondary"
-                        >Sign</AppButton
-                      >
-                    </td>
-                  </tr>
-                </div>
-              </template>
             </template>
 
             <!-- <template v-for="[groupId, tx] of transactions.entries()" :key="tx">

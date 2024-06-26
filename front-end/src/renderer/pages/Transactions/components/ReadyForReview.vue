@@ -287,30 +287,31 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
           </thead>
           <tbody>
             <template v-for="group of transactions" :key="group[0]">
-              <tr v-if="group[0] != -1">
-                <td>
-                  {{ group[0] }}
-                </td>
-                <td>{{ groups[group[0] - 1].description }}</td>
-                <td>
-                  {{
-                    group[1][0].transaction instanceof Transaction
-                      ? getTransactionDateExtended(group[1][0].transaction)
-                      : 'N/A'
-                  }}
-                </td>
-                <td class="text-center">
-                  <AppButton 
-                    @click="handleApproveGroup(group[0])" 
-                    color="secondary"
-                    class="min-w-unset"
-                    >Submit Approval</AppButton
-                  >
-                </td>
-              </tr>
-              <template v-else>
-                <div v-for="tx of group[1]" :key="tx.transactionRaw.id">
-                  <tr>
+              <tr>
+                <template v-if="group[0] != -1">
+                  <td>
+                    {{ group[0] }}
+                  </td>
+                  <td>{{ groups[group[0] - 1].description }}</td>
+                  <td>
+                    {{
+                      group[1][0].transaction instanceof Transaction
+                        ? getTransactionDateExtended(group[1][0].transaction)
+                        : 'N/A'
+                    }}
+                  </td>
+                  <td class="text-center">
+                    <AppButton 
+                      @click="handleApproveGroup(group[0])" 
+                      color="secondary"
+                      class="min-w-unset"
+                      >Submit Approval</AppButton
+                    >
+                  </td>
+                </template>
+
+                <template v-else>
+                  <template v-for="tx of group[1]" :key="tx.transactionRaw.id">
                     <td>
                       {{
                         tx.transaction instanceof Transaction
@@ -337,9 +338,9 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                         >Submit Approval</AppButton
                       >
                     </td>
-                  </tr>
-                </div>
-              </template>
+                  </template>
+                </template>
+              </tr>
             </template>
           </tbody>
           <tfoot class="d-table-caption">

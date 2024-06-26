@@ -5,6 +5,7 @@ import { attachMeta } from './meta';
 import Transactions from '@renderer/pages/Transactions';
 import UserLogin from '@renderer/pages/UserLogin';
 import CreateTransactionGroup from '@renderer/pages/CreateTransactionGroup/CreateTransactionGroup.vue';
+import TransactionGroupDetails from '@renderer/pages/TransactionGroupDetails/TransactionGroupDetails.vue';
 
 const StyleGuide = () => import('@renderer/pages/Styleguide');
 const Accounts = () => import('@renderer/pages/Accounts');
@@ -64,6 +65,11 @@ const routes: RouteRecordRaw[] = [
     path: '/transaction/:id',
     name: 'transactionDetails',
     component: TransactionDetails,
+  },
+  {
+    path: '/transaction-group/:id',
+    name: 'transactionGroupDetails',
+    component: TransactionGroupDetails,
   },
   {
     path: '/settings',

@@ -7,7 +7,7 @@ import { MEMO_MAX_LENGTH } from '@main/shared/constants';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import {
@@ -38,14 +38,18 @@ import TransactionIdControls from '@renderer/components/Transaction/TransactionI
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
+import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
+import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 /* Stores */
 const user = useUserStore();
+const transactionGroup = useTransactionGroupStore();
 
 /* Composables */
 const toast = useToast();
 const payerData = useAccountId();
 const router = useRouter();
+const route = useRoute();
 
 /* State */
 const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
@@ -71,6 +75,9 @@ const loadPercentage = ref(0);
 const content = ref('');
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
+
+const observers = ref<number[]>([]);
+const approvers = ref<TransactionApproverDto[]>([]);
 
 /* Computed */
 const transactionKey = computed(() => {
@@ -163,12 +170,18 @@ const handleCreate = async e => {
 };
 
 const handleLoadFromDraft = async () => {
-  if (!router.currentRoute.value.query.draftId) return;
+  if (!router.currentRoute.value.query.draftId && !route.query.groupIndex) return;
+  let draftTransactionBytes: string | null = null;
+  if (!route.query.group) {
+    const draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
+    draftTransactionBytes = draft.transactionBytes;
+  } else if (route.query.groupIndex) {
+    draftTransactionBytes =
+      transactionGroup.groupItems[Number(route.query.groupIndex)].transactionBytes.toString();
+  }
 
-  const draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
-  const draftTransaction = getTransactionFromBytes<FileUpdateTransaction>(draft.transactionBytes);
-
-  if (draft) {
+  if (draftTransactionBytes) {
+    const draftTransaction = getTransactionFromBytes<FileUpdateTransaction>(draftTransactionBytes);
     transaction.value = draftTransaction;
 
     if (draftTransaction.keys) {
@@ -244,6 +257,26 @@ async function redirectToDetails(id: string | number) {
     name: 'transactionDetails',
     params: { id },
   });
+
+function handleAddToGroup() {
+  const transactionBytes = createTransaction().toBytes();
+  const keys = new Array<string>();
+  if (ownerKey.value instanceof KeyList) {
+    for (const key of ownerKey.value.toArray()) {
+      keys.push(key.toString());
+    }
+  }
+  // TODO: handle single key?
+  transactionGroup.addGroupItem({
+    transactionBytes: transactionBytes,
+    type: 'FileUpdateTransaction',
+    accountId: '',
+    seq: transactionGroup.groupItems.length.toString(),
+    keyList: keys,
+    observers: observers.value,
+    approvers: approvers.value,
+  });
+  router.push({ name: 'createTransactionGroup' });
 }
 
 /* Hooks */
@@ -275,29 +308,40 @@ const columnClass = 'col-4 col-xxxl-3';
     <form @submit="handleCreate" class="flex-column-100">
       <TransactionHeaderControls heading-text="Update File Transaction">
         <template #buttons>
-          <SaveDraftButton
-            :get-transaction-bytes="() => createTransaction().toBytes()"
-            :is-executed="isExecuted || isSubmitted"
-          />
-          <AppButton
-            color="primary"
-            type="submit"
-            data-testid="button-sign-and-submit-update-file"
-            :disabled="
-              (!isLoggedInOrganization(user.selectedOrganization) && !ownerKey) ||
-              !payerData.isValid.value ||
-              !fileId
-            "
+          <div
+            v-if="!($route.query.group === 'true')"
+            class="flex-centered justify-content-end flex-wrap gap-3 mt-3"
           >
-            <span class="bi bi-send"></span>
-            {{
-              getPropagationButtonLabel(
-                transactionKey,
-                user.keyPairs,
-                Boolean(user.selectedOrganization),
-              )
-            }}</AppButton
-          >
+            <SaveDraftButton
+              :get-transaction-bytes="() => createTransaction().toBytes()"
+              :is-executed="isExecuted || isSubmitted"
+            />
+            <AppButton
+              color="primary"
+              type="submit"
+              data-testid="button-sign-and-submit-file-create"
+              :disabled="
+                (!isLoggedInOrganization(user.selectedOrganization) && !ownerKey) ||
+                !payerData.isValid.value ||
+                !fileId
+              "
+            >
+              <span class="bi bi-send"></span>
+              {{
+                getPropagationButtonLabel(
+                  transactionKey,
+                  user.keyPairs,
+                  Boolean(user.selectedOrganization),
+                )
+              }}</AppButton
+            >
+          </div>
+          <div v-else>
+            <AppButton color="primary" type="button" @click="handleAddToGroup">
+              <span class="bi bi-plus-lg" />
+              Add to Group
+            </AppButton>
+          </div>
         </template>
       </TransactionHeaderControls>
 
