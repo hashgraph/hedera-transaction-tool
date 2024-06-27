@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeMount, ref } from 'vue';
 
-import { Transaction, AccountDeleteTransaction, Hbar } from '@hashgraph/sdk';
+import { Transaction, AccountDeleteTransaction, Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
 
@@ -34,13 +34,12 @@ async function fetchTransactionInfo(payer: string, seconds: string, nanos: strin
     );
 
     if (transactions.length > 0 && props.transaction instanceof AccountDeleteTransaction) {
-      // transfers.value = transactions[0].transfers || null;
       const deletedAccountId = props.transaction.accountId?.toString();
-      transferredAmount.value = new Hbar(
+      const amount =
         transactions[0].transfers?.find(
           transfer => transfer.account?.toString() === deletedAccountId,
-        )?.amount,
-      );
+        )?.amount || 0;
+      transferredAmount.value = Hbar.from(Math.abs(amount), HbarUnit.Tinybar);
     }
   } catch (error) {
     /* Ignore if transaction not available in mirror node */
