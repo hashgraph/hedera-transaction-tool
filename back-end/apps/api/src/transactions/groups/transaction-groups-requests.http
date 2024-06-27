@@ -6,29 +6,29 @@ POST http://localhost:3001/transaction-groups
 content-type: application/json
 
 {
-  "description":"transaction - 0.0.2673708@1719504120.234000000",
-  "atomic":false,
-  "groupItems":
-  [
-    {"seq":0,
-      "transaction":
-      {
-        "name":"New Account Create Transaction",
-        "type":"ACCOUNT CREATE",
-        "description":"first account create transaction",
-        "body":"0a88012a85010a80010a170a0808f085a7c406100012090800100018ac98a30118001206080010001803188084af5f220308b40132005a510a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b108084af5f30ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0668656c6c6f218801011200",
-        "status":"WAITING FOR SIGNATURES",
-        "network":"testnet",
-        "creatorKeyId":2,
-        "signature":"8d5e5b31cc3ee2c1b1e8443422ca13a8b211ffed4a9c0eea590835835aab15ae88204b1f6fb60b3cb7198b46a08a121a820e4c65a5a350f565e6b92ae035e405",
-        "validStart":"2024-06-27T16:02:00.000Z"
+  "description": "Create Account",
+  "atomic": true,
+  "groupItems": [
+    {
+      "seq": 0,
+      "transaction": {
+        "name": "Create Account",
+        "type": "ACCOUNT CREATE",
+        "transactionId": "0.0.2673708@1769846400.000000000",
+        "description": "Create Account",
+        "body": "0a7f2a7d0a790a170a080880edf6cb06100012090800100018ac98a30118001206080010001803188084af5f2202087832005a4b0a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080d0dbc3f40230ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda038801001200",
+        "status": "WAITING FOR SIGNATURES",
+        "signature": "8dc8820f28e6f55322666453398f40f21dc788d680be8d6c61c0ee9cedbbe7359d8cb318c8955b4a6cfb763cda5bfa2d57dcede0b3903e68c865d36a347d5801",
+        "validStart": "2026-01-31T08:00:00.000Z",
+        "creatorKeyId": 2,
+        "network": "testnet"
       }
     }
   ]
 }
 
 ### Get a transaction group
-GET http://localhost:3001/transaction-groups/1
+GET http://localhost:3001/transaction-groups/45
 
 ### Delete a transaction group
 DELETE http://localhost:3000/transaction-groups/13

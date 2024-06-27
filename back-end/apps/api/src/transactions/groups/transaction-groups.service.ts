@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import {
+  asyncFilter,
   NOTIFICATIONS_SERVICE,
   NOTIFY_CLIENT,
   NotifyClientDto,
@@ -75,7 +76,7 @@ export class TransactionGroupsService {
       throw new NotFoundException('Transaction not found');
     }
 
-    group.groupItems = group.groupItems.filter((groupItem) => {
+    group.groupItems = await asyncFilter(group.groupItems, async (groupItem) => {
       return this.transactionsService.verifyAccess(groupItem.transaction, user);
     });
 
