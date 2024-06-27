@@ -1,4 +1,5 @@
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
+import { TransactionGroupItemDto } from './transaction-group-item.dto';
 
 export class TransactionGroupDto {
   @Expose()
@@ -12,4 +13,8 @@ export class TransactionGroupDto {
 
   @Expose()
   createdAt: Date;
+
+  @Expose()
+  @Type(() => TransactionGroupItemDto)
+  groupItems: TransactionGroupItemDto[];
 }

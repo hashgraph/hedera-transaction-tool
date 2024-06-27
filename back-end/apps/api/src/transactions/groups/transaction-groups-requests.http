@@ -27,5 +27,8 @@ content-type: application/json
   ]
 }
 
+### Get a transaction group
+GET http://localhost:3001/transaction-groups/1
+
 ### Delete a transaction group
 DELETE http://localhost:3000/transaction-groups/13

@@ -1,4 +1,5 @@
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
+import { TransactionDto } from './transaction.dto';
 
 export class TransactionGroupItemDto {
   @Expose()
@@ -9,4 +10,8 @@ export class TransactionGroupItemDto {
 
   @Expose()
   seq: number;
+
+  @Expose()
+  @Type(() => TransactionDto)
+  transaction: TransactionDto;
 }

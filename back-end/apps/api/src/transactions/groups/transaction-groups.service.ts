@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -9,7 +9,7 @@ import {
   NotifyClientDto,
   TRANSACTION_ACTION,
 } from '@app/common';
-import { TransactionGroup, TransactionGroupItem } from '@entities';
+import { TransactionGroup, TransactionGroupItem, User } from '@entities';
 
 import { TransactionsService } from '../transactions.service';
 
@@ -55,6 +55,33 @@ export class TransactionGroupsService {
       message: TRANSACTION_ACTION,
       content: '',
     });
+
+    return group;
+  }
+
+  async getTransactionGroup(user: User, id: number): Promise<TransactionGroup> {
+    const group = await this.repo.findOne({
+      where: { id },
+      relations: [
+        'groupItems',
+        'groupItems.transaction',
+        'groupItems.transaction.creatorKey',
+        'groupItems.transaction.creatorKey.user',
+        'groupItems.transaction.observers',
+      ],
+    });
+
+    if (!(group?.groupItems.length > 0)) {
+      throw new NotFoundException('Transaction not found');
+    }
+
+    group.groupItems = group.groupItems.filter((groupItem) => {
+      return this.transactionsService.verifyAccess(groupItem.transaction, user);
+    });
+
+    if (group.groupItems.length === 0) {
+      throw new UnauthorizedException("You don't have permission to view this group.");
+    }
 
     return group;
   }
