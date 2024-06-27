@@ -68,6 +68,7 @@ const handleAddOrganization = async (organization: Organization) => {
         class="w-100 d-flex align-items-center justify-content-between"
         data-bs-toggle="dropdown"
         v-bind="$attrs"
+        style="min-width: 200px"
         >{{ defaultDropDownValue }} <i class="bi bi-chevron-down ms-3"></i
       ></AppButton>
       <ul class="dropdown-menu w-100 mt-3">
