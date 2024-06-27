@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 
 import { Organization } from '@prisma/client';
 
@@ -12,21 +12,26 @@ import AppButton from './ui/AppButton.vue';
 const user = useUserStore();
 
 /* State */
-const selectElRef = ref<HTMLSelectElement | null>(null);
 const selectedMode = ref<string>('personal');
 const addOrganizationModalShown = ref(false);
+const defaultDropDownValue = ref<string>('My Transactions');
 
 /* Handlers */
 const handleUserModeChange = async (e: Event) => {
-  const selectEl = e.target as HTMLSelectElement;
-  const newValue = selectEl.value;
+  const selectEl = e.currentTarget as HTMLSelectElement;
+  const newValue = selectEl.getAttribute('data-value');
   const org = user.organizations.find(org => org.id === newValue);
 
   if (newValue === 'personal') {
     selectedMode.value = 'personal';
+    defaultDropDownValue.value = 'My Transactions';
     await user.selectOrganization(null);
   } else {
     selectedMode.value = org ? org.id : 'personal';
+    const organizationNickname =
+      user.organizations.find(org => org.id === newValue)?.nickname || '';
+    defaultDropDownValue.value = organizationNickname;
+
     await user.selectOrganization(
       org
         ? {
@@ -52,21 +57,41 @@ const handleAddOrganization = async (organization: Organization) => {
     selectedMode.value = organization.id;
   }
 };
-
-/* Watchers */
-watch(
-  () => user.selectedOrganization,
-  async selectedOrganization => {
-    if (!selectedOrganization) {
-      selectedMode.value = 'personal';
-      selectElRef.value?.value ? (selectElRef.value.value = selectedMode.value) : {};
-    }
-  },
-);
 </script>
 <template>
   <div class="d-flex align-items-centert">
-    <select
+    <div class="dropdown">
+      <AppButton
+        id="modeSelectorDropdown"
+        color="secondary"
+        data-testid=""
+        class="w-100 d-flex align-items-center justify-content-between"
+        data-bs-toggle="dropdown"
+        v-bind="$attrs"
+        >{{ defaultDropDownValue }} <i class="bi bi-chevron-down ms-3"></i
+      ></AppButton>
+      <ul class="dropdown-menu w-100 mt-3">
+        <li
+          data-testid=""
+          data-value="personal"
+          class="dropdown-item cursor-pointer"
+          @click="handleUserModeChange"
+        >
+          <span class="text-small">My Transactions</span>
+        </li>
+        <template v-for="organization in user.organizations" :key="organization.id">
+          <li
+            data-testid=""
+            class="dropdown-item cursor-pointer mt-3"
+            @click="handleUserModeChange"
+            :data-value="organization.id"
+          >
+            <span class="text-small">{{ organization.nickname }}</span>
+          </li>
+        </template>
+      </ul>
+    </div>
+    <!-- <select
       ref="selectElRef"
       class="form-select with-border is-fill lh-base"
       :value="selectedMode"
@@ -78,7 +103,7 @@ watch(
           {{ organization.nickname }}
         </option>
       </template>
-    </select>
+    </select> -->
     <AppButton
       class="ms-3 min-w-unset ws-no-wrap text-title"
       color="secondary"
