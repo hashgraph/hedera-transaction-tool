@@ -94,6 +94,9 @@ const handleLogout = async () => {
           :class="networkMapping[networkStore.network].className"
           >{{ networkMapping[networkStore.network].label }}</span
         >
+        <RouterLink class="container-icon text-white" to="/settings/general"
+          ><i class="text-icon-main bi bi-toggles"></i
+        ></RouterLink>
       </div>
       <div>
         <UserModeSelect />
