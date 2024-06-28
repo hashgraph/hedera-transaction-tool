@@ -11,7 +11,7 @@ POST http://localhost:3001/auth/login
 content-type: application/json
 
 {
-  "email": "john.bair@swirldslabs.com",
+  "email": "john.bair+16@swirldslabs.com",
   "password": "1234567890"
 }
 

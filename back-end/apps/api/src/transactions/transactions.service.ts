@@ -454,7 +454,24 @@ export class TransactionsService {
       relations: ['creatorKey', 'creatorKey.user', 'observers', 'groupItem'],
     });
 
+    if (!(await this.verifyAccess(transaction, user))) {
+      throw new UnauthorizedException("You don't have permission to view this transaction");
+    }
+    return transaction;
+  }
+
+  async verifyAccess(transaction: Transaction, user: User): Promise<boolean> {
     if (!transaction) throw new NotFoundException('Transaction not found');
+
+    if (
+      [
+        TransactionStatus.EXECUTED,
+        TransactionStatus.EXPIRED,
+        TransactionStatus.FAILED,
+        TransactionStatus.CANCELED,
+      ].includes(transaction.status)
+    )
+      return true;
 
     transaction.signers = await this.entityManager.find(TransactionSigner, {
       where: {
@@ -472,26 +489,11 @@ export class TransactionsService {
 
     transaction.approvers = this.approversService.getTreeStructure(approvers);
 
-    if (
-      [
-        TransactionStatus.EXECUTED,
-        TransactionStatus.EXPIRED,
-        TransactionStatus.FAILED,
-        TransactionStatus.CANCELED,
-      ].includes(transaction.status)
-    )
-      return transaction;
-
-    if (
-      userKeysToSign.length === 0 &&
-      transaction.creatorKey?.user?.id !== user.id &&
-      !transaction.observers.some(o => o.userId === user.id) &&
-      !transaction.signers.some(s => s.userKey.user.id === user.id) &&
-      !approvers.some(a => a.userId === user.id)
-    )
-      throw new UnauthorizedException("You don't have permission to view this transaction");
-
-    return transaction;
+    return userKeysToSign.length !== 0 ||
+      transaction.creatorKey?.user?.id === user.id ||
+      transaction.observers.some(o => o.userId === user.id) ||
+      transaction.signers.some(s => s.userKey.user.id === user.id) ||
+      approvers.some(a => a.userId === user.id);
   }
 
   /* Get the user keys that are required for a given transaction */

@@ -36,6 +36,19 @@ export class TransactionGroupsController {
     return this.transactionGroupsService.getTransactionGroups();
   }
 
+  @ApiOperation({
+    summary: 'Get a transaction group',
+    description: 'Get a transaction group and its transactions by its id.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: TransactionGroupDto,
+  })
+  @Get('/:id')
+  getTransactionGroup(@GetUser() user: User, @Param('id', ParseIntPipe) groupId: number): Promise<TransactionGroup> {
+    return this.transactionGroupsService.getTransactionGroup(user, groupId);
+  }
+
   /* Delete a transaction group */
   @ApiOperation({
     summary: 'Remove a transaction group',
