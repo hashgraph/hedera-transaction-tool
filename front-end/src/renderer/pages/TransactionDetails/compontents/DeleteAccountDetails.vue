@@ -103,7 +103,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
     <!-- Transfered amount -->
     <div v-if="transferredAmount" :class="commonColClass">
       <h4 :class="detailItemLabelClass">Transferred Amount</h4>
-      <p :class="detailItemValueClass" data-testid="p-account-delete-details-transfer-account-id">
+      <p :class="detailItemValueClass" data-testid="p-account-delete-details-transfer-amount">
         {{ stringifyHbar((transferredAmount as Hbar) || new Hbar(0)) }}
       </p>
     </div>
