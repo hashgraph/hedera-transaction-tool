@@ -89,14 +89,17 @@ const handleLogin = async () => {
     toast.success('Successfully signed in');
 
     const { id, serverUrl, nickname, key } = user.selectedOrganization;
-    loading.value = false;
+    // loading.value = false;
 
-    await withLoader(
+    /* await withLoader(
       user.selectOrganization.bind(null, { id, serverUrl, nickname, key }),
       toast,
       globalModalLoaderRef?.value,
       'Failed to change user mode',
-    )();
+    )(); */    
+
+    await user.selectOrganization({ id, serverUrl, nickname, key });
+    router.push(router.previousPath);
   } catch (error: any) {
     inputEmailInvalid.value = true;
     inputPasswordInvalid.value = true;

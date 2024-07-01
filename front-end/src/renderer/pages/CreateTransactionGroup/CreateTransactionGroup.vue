@@ -63,7 +63,7 @@ function handleDuplicateGroupItem(index: number) {
 function handleEditGroupItem(index: number, type: string) {
   router.push({
     name: 'createTransaction',
-    params: { type },
+    params: { type, seq: index },
     query: { groupIndex: index, group: 'true' },
   });
 }
@@ -108,12 +108,18 @@ async function handleSignSubmit() {
   }
 }
 
-function handleExecuted() {
-  // console.log('hello');
+function handleExecuted(id: number) {
+  router.push({
+    name: 'transactionGroupDetails',
+    params: { id },
+  });
 }
 
-function handleSubmit() {
-  // console.log('hello');
+function handleSubmit(id: number) {
+  router.push({
+    name: 'transactionGroupDetails',
+    params: { id },
+  });
 }
 
 /* Hooks */

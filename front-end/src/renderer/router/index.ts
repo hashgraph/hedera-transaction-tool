@@ -51,7 +51,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/account-setup', name: 'accountSetup', component: AccountSetup },
   { path: '/restore-key', name: 'restoreKey', component: RestoreKey },
   {
-    path: '/create-transaction/:type',
+    path: '/create-transaction/:type/:seq?',
     name: 'createTransaction',
     component: CreateTransaction,
   },

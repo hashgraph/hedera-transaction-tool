@@ -1,5 +1,5 @@
 import { GroupItem, Prisma } from '@prisma/client';
-import { getPrismaClient } from '@main/db';
+import { getPrismaClient } from '@main/db/prisma';
 
 export const getGroups = async (findArgs: Prisma.TransactionGroupFindManyArgs) => {
   const prisma = getPrismaClient();

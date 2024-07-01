@@ -64,6 +64,14 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     groupItems.value.push(groupItem);
   }
 
+  function editGroupItem(newGroupItem: GroupItem) {
+    for (const [i] of groupItems.value.entries()) {
+      if (i == Number.parseInt(newGroupItem.seq)) {
+        groupItems.value[i] = newGroupItem;
+      }
+    }
+  }
+
   function removeGroupItem(index: number) {
     groupItems.value.splice(index, 1);
   }
@@ -126,8 +134,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     groupItems,
     description,
     getRequiredKeys,
-    // getObservers,
-    // getApprovers,
+    editGroupItem,
   };
 });
 

@@ -166,6 +166,27 @@ function handleAddToGroup() {
   router.push({ name: 'createTransactionGroup' });
 }
 
+function handleEditGroupItem() {
+  const transactionBytes = createTransaction().toBytes();
+  const keys = new Array<string>();
+  if (payerData.key.value instanceof KeyList) {
+    for (const key of payerData.key.value.toArray()) {
+      keys.push(key.toString());
+    }
+  }
+
+  transactionGroup.editGroupItem({
+    transactionBytes: transactionBytes,
+    type: 'AccountAllowanceApproveTransaction',
+    accountId: '',
+    seq: route.params.seq[0],
+    keyList: keys,
+    observers: observers.value,
+    approvers: approvers.value,
+  });
+  router.push({ name: 'createTransactionGroup' });
+}
+
 /* Hooks */
 onMounted(async () => {
   await handleLoadFromDraft();
@@ -275,7 +296,16 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
             >
           </div>
           <div v-else>
-            <AppButton color="primary" type="button" @click="handleAddToGroup">
+            <AppButton
+              v-if="$route.params.seq"
+              color="primary"
+              type="button"
+              @click="handleEditGroupItem"
+            >
+              <span class="bi bi-plus-lg" />
+              Edit Group Item
+            </AppButton>
+            <AppButton v-else color="primary" type="button" @click="handleAddToGroup">
               <span class="bi bi-plus-lg" />
               Add to Group
             </AppButton>

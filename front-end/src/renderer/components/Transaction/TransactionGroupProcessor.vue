@@ -44,7 +44,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import useTransactionGroupStore, { GroupItem } from '@renderer/stores/storeTransactionGroup';
 import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
-import { addGroupItem, editGroupItem } from '@renderer/services/transactionGroupsService';
+import { addGroupItem, editGroupItem, getGroup } from '@renderer/services/transactionGroupsService';
 import { addGroup, getGroupItem } from '@renderer/services/transactionGroupsService';
 import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
 import {
@@ -55,6 +55,9 @@ import {
   ApiGroupItem,
   submitTransactionGroup,
   getTransactionsToSign,
+  getApiGroups,
+  getApiGroupById,
+  IGroup,
 } from '@renderer/services/organization';
 import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
@@ -409,35 +412,21 @@ async function sendSignedTransactionsToOrganization() {
   );
 
   //TODO: fix to getting actual transactions
-  const transactions = await getTransactionsToSign(
+  const group: IGroup = await getApiGroupById(
     user.selectedOrganization.serverUrl,
     network.network,
-    1,
-    10,
+    id,
   );
-
-  const newTransactions = new Array<number>();
-
-  for (const [i, transaction] of transactions.items.entries()) {
-    if (
-      transaction.transaction.groupItem.groupId == id &&
-      transaction.transaction.groupItem.seq == i
-    ) {
-      newTransactions.push(transaction.transaction.id);
-    }
-  }
-
-  console.log(newTransactions);
 
   toast.success('Transaction submitted successfully');
   props.onSubmitted && props.onSubmitted(id, body);
 
   //TODO: should be per transaction ID, not group ID
-  for (const [i, groupItem] of transactionGroup.groupItems.entries()) {
+  for (const groupItem of group.groupItems) {
     const results = await Promise.allSettled([
       // uploadSignatures(body, id),
-      uploadObservers(newTransactions[i], parseInt(groupItem.seq)),
-      uploadApprovers(newTransactions[i], parseInt(groupItem.seq)),
+      uploadObservers(groupItem.transaction.id, groupItem.seq),
+      uploadApprovers(groupItem.transaction.id, groupItem.seq),
       deleteDraftsIfNotTemplate(),
     ]);
     results.forEach(result => {
@@ -446,6 +435,8 @@ async function sendSignedTransactionsToOrganization() {
       }
     });
   }
+
+  transactionGroup.clearGroup();
 }
 
 async function uploadObservers(transactionId: number, seqId: number) {

@@ -1,6 +1,9 @@
+import { GroupItem } from './../../stores/storeTransactionGroup';
 import { Network } from '@main/shared/enums';
 import axios, { AxiosError } from 'axios';
 import { throwIfNoResponse } from '.';
+import { ITransaction } from '@main/shared/interfaces';
+import { commonRequestHandler } from '@renderer/utils';
 
 export interface ApiTransaction {
   name: string;
@@ -13,7 +16,19 @@ export interface ApiTransaction {
 
 export interface ApiGroupItem {
   seq: number;
-  transaction: ApiTransaction;
+  transaction: ApiTransaction | ITransaction;
+}
+
+export interface IGroupItem {
+  seq: number;
+  transaction: ITransaction;
+}
+
+export interface IGroup {
+  id: number;
+  description: string;
+  createdAt: string;
+  groupItems: IGroupItem[];
 }
 
 export const submitTransactionGroup = async (
@@ -22,7 +37,7 @@ export const submitTransactionGroup = async (
   atomic: boolean,
   groupItems: ApiGroupItem[],
 ): Promise<{ id: number; body: string }> => {
-  try {
+  return commonRequestHandler(async () => {
     const { data } = await axios.post(
       `${serverUrl}/transaction-groups`,
       {
@@ -36,40 +51,27 @@ export const submitTransactionGroup = async (
     );
 
     return { id: data.id, body: '' };
-  } catch (error: any) {
-    let message = 'Failed submit transaction';
-
-    if (error instanceof AxiosError) {
-      throwIfNoResponse(error);
-
-      const errorMessage = error.response?.data?.message;
-      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
-        message = errorMessage;
-      }
-    }
-    throw new Error(message);
-  }
+  }, 'Failed submit transaction');
 };
 
 /* Get transaction groups */
 export const getApiGroups = async (serverUrl: string, network: Network) => {
-  try {
+  return commonRequestHandler(async () => {
     const { data } = await axios.get(`${serverUrl}/transaction-groups/`, {
       withCredentials: true,
     });
 
     return data;
-  } catch (error: any) {
-    let message = 'Failed to get transaction groups';
+  }, 'Failed to get transaction groups');
+};
 
-    if (error instanceof AxiosError) {
-      throwIfNoResponse(error);
+/* Get transaction groups */
+export const getApiGroupById = async (serverUrl: string, network: Network, id: number) => {
+  return commonRequestHandler(async () => {
+    const { data } = await axios.get(`${serverUrl}/transaction-groups/${id}`, {
+      withCredentials: true,
+    });
 
-      const errorMessage = error.response?.data?.message;
-      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
-        message = errorMessage;
-      }
-    }
-    throw new Error(message);
-  }
+    return data;
+  }, 'Failed to get transaction groups');
 };

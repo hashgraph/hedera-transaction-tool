@@ -86,6 +86,7 @@ const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') 
 
 /* Functions */
 async function fetchTransactions() {
+  transactions.value = new Map();
   if (!isLoggedInOrganization(user.selectedOrganization)) {
     return;
   }
@@ -102,12 +103,12 @@ async function fetchTransactions() {
       pageSize.value,
       [{ property: sort.field, direction: sort.direction }],
     );
-    console.log(rawTransactions);
     totalItems.value = totalItemsCount;
     const transactionsBytes = await hexToUint8ArrayBatch(rawTransactions.map(t => t.body));
 
     for (const [i, transaction] of rawTransactions.entries()) {
-      const currentGroup = transaction.groupItem.groupId ? transaction.groupItem.groupId : -1;
+      const currentGroup =
+        transaction.groupItem?.groupId != null ? transaction.groupItem.groupId : -1;
       const currentVal = transactions.value.get(currentGroup);
       const newVal = {
         transactionRaw: transaction,
@@ -120,8 +121,6 @@ async function fetchTransactions() {
         transactions.value.set(currentGroup, new Array(newVal));
       }
     }
-
-    console.log(transactions.value);
 
     groups.value = await getApiGroups(user.selectedOrganization.serverUrl, network.network);
   } finally {
@@ -213,10 +212,10 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
           </thead>
           <tbody>
             <template v-for="group of transactions" :key="group[0]">
-              <tr>
-                <template v-if="group[0] != -1">
+              <template v-if="group[0] != -1">
+                <tr>
                   <td>
-                    {{ group[0] }}
+                    <i class="bi bi-stack" />
                   </td>
                   <td>{{ groups[group[0] - 1].description }}</td>
                   <td>
@@ -231,10 +230,12 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                       >Sign</AppButton
                     >
                   </td>
-                </template>
+                </tr>
+              </template>
 
-                <template v-else>
-                  <template v-for="tx of group[1]" :key="tx.transactionRaw.id">
+              <template v-else>
+                <template v-for="tx of group[1]" :key="tx.transactionRaw.id">
+                  <tr>
                     <td>
                       {{
                         tx.transaction instanceof Transaction
@@ -261,9 +262,9 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                         >Sign</AppButton
                       >
                     </td>
-                  </template>
+                  </tr>
                 </template>
-              </tr>
+              </template>
             </template>
 
             <!-- <template v-for="tx in transactions" :key="tx.transactionRaw.id">

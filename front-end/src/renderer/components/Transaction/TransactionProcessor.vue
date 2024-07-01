@@ -314,6 +314,11 @@ async function sendSignedTransactionToOrganization() {
   const signature = privateKey.sign(props.transactionBytes);
   const signatureHex = await uint8ArrayToHex(signature);
 
+  console.log(await uint8ArrayToHex(props.transactionBytes));
+  console.log(signatureHex);
+
+  
+
   /* Submit the transaction to the back end */
   const { id, body } = await submitTransaction(
     user.selectedOrganization.serverUrl,

@@ -91,27 +91,34 @@ const handleApprove = async (id: number) => {
   });
 };
 
-const handleApproveGroup = async (id: number) => {
-  try {
-    if (transactions.value.get(id) != undefined) {
-      const txs = transactions.value.get(id);
-      if (txs != undefined) {
-        if (!txs[0].transaction || !(txs[0].transaction instanceof Transaction)) {
-          throw new Error('Transaction not provided');
-        }
-
-        for (const transaction of txs) {
-          tx.value = transaction;
-
-          await handleApproveSingle();
-        }
-      }
-    }
-    toast.success('Transactions signed successfully');
-  } catch {
-    toast.error('Transactions not approved');
-  }
+const handleDetails = async (id: number) => {
+  router.push({
+    name: 'transactionGroupDetails',
+    params: { id },
+  });
 };
+
+// const handleDetails = async (id: number) => {
+//   try {
+//     if (transactions.value.get(id) != undefined) {
+//       const txs = transactions.value.get(id);
+//       if (txs != undefined) {
+//         if (!txs[0].transaction || !(txs[0].transaction instanceof Transaction)) {
+//           throw new Error('Transaction not provided');
+//         }
+
+//         for (const transaction of txs) {
+//           tx.value = transaction;
+
+//           await handleApproveSingle();
+//         }
+//       }
+//     }
+//     toast.success('Transactions signed successfully');
+//   } catch {
+//     toast.error('Transactions not approved');
+//   }
+// };
 
 const handleApproveSingle = async () => {
   const callback = async () => {
@@ -142,8 +149,6 @@ const handleApproveSingle = async () => {
       tx.value.transaction,
     );
 
-    console.log(tx.value.transactionRaw.id);
-
     await sendApproverChoice(
       user.selectedOrganization.serverUrl,
       tx.value.transactionRaw.id,
@@ -164,6 +169,7 @@ const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') 
 
 /* Functions */
 async function fetchTransactions() {
+  transactions.value = new Map();
   if (!isLoggedInOrganization(user.selectedOrganization)) {
     return;
   }
@@ -183,7 +189,8 @@ async function fetchTransactions() {
     const transactionsBytes = await hexToUint8ArrayBatch(rawTransactions.map(t => t.body));
 
     for (const [i, transaction] of rawTransactions.entries()) {
-      const currentGroup = transaction.groupItem.groupId ? transaction.groupItem.groupId : -1;
+      const currentGroup =
+        transaction.groupItem?.groupId != null ? transaction.groupItem.groupId : -1;
       const currentVal = transactions.value.get(currentGroup);
       const newVal = {
         transactionRaw: transaction,
@@ -287,10 +294,10 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
           </thead>
           <tbody>
             <template v-for="group of transactions" :key="group[0]">
-              <tr>
-                <template v-if="group[0] != -1">
+              <template v-if="group[0] != -1">
+                <tr>
                   <td>
-                    {{ group[0] }}
+                    <i class="bi bi-stack" />
                   </td>
                   <td>{{ groups[group[0] - 1].description }}</td>
                   <td>
@@ -302,16 +309,18 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                   </td>
                   <td class="text-center">
                     <AppButton 
-                      @click="handleApproveGroup(group[0])" 
+                      @click="handleDetails(group[0])" 
                       color="secondary"
                       class="min-w-unset"
-                      >Submit Approval</AppButton
+                      >Details</AppButton
                     >
                   </td>
-                </template>
+                </tr>
+              </template>
 
-                <template v-else>
-                  <template v-for="tx of group[1]" :key="tx.transactionRaw.id">
+              <template v-else>
+                <template v-for="tx of group[1]" :key="tx.transactionRaw.id">
+                  <tr>
                     <td>
                       {{
                         tx.transaction instanceof Transaction
@@ -338,9 +347,9 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                         >Submit Approval</AppButton
                       >
                     </td>
-                  </template>
+                  </tr>
                 </template>
-              </tr>
+              </template>
             </template>
           </tbody>
           <tfoot class="d-table-caption">

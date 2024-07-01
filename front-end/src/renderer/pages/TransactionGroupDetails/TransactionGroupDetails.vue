@@ -1,124 +1,252 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, inject, onMounted, ref } from 'vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppInput from '@renderer/components/ui/AppInput.vue';
-import EmptyTransactionGroup from '@renderer/components/EmptyTransactionGroup.vue';
-import TransactionSelectionModal from '@renderer/components/TransactionSelectionModal.vue';
-import TransactionGroupProcessor from '@renderer/components/Transaction/TransactionGroupProcessor.vue';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 import { useRouter, useRoute } from 'vue-router';
 import useUserStore from '@renderer/stores/storeUser';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 import {
-  getEntityIdFromTransactionReceipt,
-  isAccountId,
-  getPropagationButtonLabel,
-} from '@renderer/utils';
-import { Key, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
+  isLoggedInOrganization,
+  isLoggedInWithPassword,
+  isUserLoggedIn,
+} from '@renderer/utils/userStoreHelpers';
+import { KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
 import { useToast } from 'vue-toast-notification';
+import useDisposableWs from '@renderer/composables/useDisposableWs';
+import useNetwork from '@renderer/stores/storeNetwork';
+import {
+  IGroup,
+  fullUploadSignatures,
+  getApiGroupById,
+  getUserShouldApprove,
+  sendApproverChoice,
+} from '@renderer/services/organization';
+import { publicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
+import { hexToUint8Array } from '@renderer/services/electronUtilsService';
+import { USER_PASSWORD_MODAL_TYPE, USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
+import { TransactionStatus } from '@main/shared/interfaces';
+import { decryptPrivateKey } from '@renderer/services/keyPairService';
+import { getPrivateKey, getTransactionBodySignatureWithoutNodeAccountId } from '@renderer/utils';
+import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
 const user = useUserStore();
+const network = useNetwork();
 
 /* Composables */
 const router = useRouter();
 const route = useRoute();
 const toast = useToast();
+const ws = useDisposableWs();
 
 /* State */
-const groupName = ref('');
-const isTransactionSelectionModalShown = ref(false);
-const transactionGroupProcessor = ref<typeof TransactionGroupProcessor | null>(null);
+const group = ref<IGroup>();
+const groupEmpty = computed(() => group.value?.groupItems.length == 0);
+const shouldApprove = ref(false);
+const isConfirmModalShown = ref(false);
+const publicKeysRequiredToSign = ref<string[] | null>([]);
 
-const groupEmpty = computed(() => transactionGroup.groupItems.length == 0);
-
-const transactionKey = computed(() => {
-  return transactionGroup.getRequiredKeys();
-});
+/* Injected */
+const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
 
 /* Handlers */
-function handleSaveGroup() {
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
+async function handleFetchGroup(id: string | number) {
+  if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
+    try {
+      group.value = await getApiGroupById(
+        user.selectedOrganization.serverUrl,
+        network.network,
+        Number(id),
+      );
+      if (group.value?.groupItems != undefined) {
+        for (const item of group.value.groupItems) {
+          shouldApprove.value =
+            shouldApprove.value ||
+            (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id));
+
+          const transactionBytes = await hexToUint8Array(item.transaction.body);
+
+          const newKeys = await publicRequiredToSign(
+            Transaction.fromBytes(transactionBytes),
+            user.selectedOrganization.userKeys,
+            network.mirrorNodeBaseURL,
+          );
+
+          publicKeysRequiredToSign.value = publicKeysRequiredToSign.value!.concat(newKeys);
+        }
+      }
+      console.log(publicKeysRequiredToSign.value);
+    } catch (error) {
+      router.previousPath ? router.back() : router.push({ name: 'transactions' });
+      throw error;
+    }
+  } else {
+    console.log('not logged into org');
   }
-
-  transactionGroup.saveGroup(user.personal.id, groupName.value);
-  transactionGroup.clearGroup();
-  router.push('transactions');
 }
 
-function nameUpdated() {
-  transactionGroup.description = groupName.value;
-}
+/* Handlers */
+const handleBack = () => {
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    const status = group.value?.groupItems[0].transaction.status;
+    let tab: string = '';
 
-function handleDeleteGroupItem(index: number) {
-  transactionGroup.removeGroupItem(index);
-}
+    switch (status) {
+      case TransactionStatus.EXECUTED:
+      case TransactionStatus.FAILED:
+      case TransactionStatus.EXPIRED:
+        tab = 'History';
+        break;
+      case TransactionStatus.WAITING_FOR_EXECUTION:
+        tab = 'Ready for Execution';
+        break;
+      case TransactionStatus.WAITING_FOR_SIGNATURES:
+        tab = 'In Progress';
+        break;
+      default:
+        tab = 'History';
+        break;
+    }
 
-function handleDuplicateGroupItem(index: number) {
-  transactionGroup.duplicateGroupItem(index);
-}
-
-function handleEditGroupItem(index: number, type: string) {
-  router.push({
-    name: 'createTransaction',
-    params: { type },
-    query: { groupIndex: index, group: 'true' },
-  });
-}
-
-function handleBack() {
-  if (route.query.id) {
-    transactionGroup.clearGroup();
-  }
-  router.push('transactions');
-}
-
-const handleLoadGroup = async () => {
-  if (!route.query.id) {
-    // transactionGroup.clearGroup();
-    return;
-  }
-
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
-
-  await transactionGroup.fetchGroup(route.query.id.toString(), {
-    where: {
-      user_id: user.personal.id,
-      GroupItem: {
-        every: {
-          transaction_group_id: route.query.id.toString(),
-        },
+    router.push({
+      name: 'transactions',
+      query: {
+        tab,
       },
+    });
+  } else {
+    router.back();
+  }
+};
+
+const handleSign = async (id: number) => {
+  router.push({
+    name: 'transactionDetails',
+    params: { id },
+    query: {
+      sign: 'true',
     },
   });
 };
 
-async function handleSignSubmit() {
-  try {
-    const ownerKey = PublicKey.fromString(user.keyPairs[0].public_key);
-
-    const requiredKey = new KeyList([ownerKey]);
-    await transactionGroupProcessor.value?.process(requiredKey);
-  } catch (err: any) {
-    toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
+const handleSignGroup = async () => {
+  if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in organization');
   }
-}
 
-function handleExecuted() {
-  // console.log('hello');
-}
+  if (!isLoggedInWithPassword(user.personal)) {
+    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+    userPasswordModalRef.value?.open(
+      'Enter your application password',
+      'Enter your application password to decrypt your private key',
+      handleSignGroup,
+    );
+    return;
+  }
 
-function handleSubmit() {
-  // console.log('hello');
-}
+  try {
+    if (group.value != undefined) {
+      for (const groupItem of group.value.groupItems) {
+        const transactionBytes = await hexToUint8Array(groupItem.transaction.body);
+        const transaction = Transaction.fromBytes(transactionBytes);
+        const publicKeysRequired = await publicRequiredToSign(
+          transaction,
+          user.selectedOrganization.userKeys,
+          network.mirrorNodeBaseURL,
+        );
+        await fullUploadSignatures(
+          user.personal,
+          user.selectedOrganization,
+          publicKeysRequired,
+          transaction,
+          groupItem.transaction.id,
+        );
+      }
+    }
+    toast.success('Transactions signed successfully');
+  } catch {
+    toast.error('Transactions not signed');
+  }
+};
+
+const handleApproveAll = async (approved: boolean, showModal?: boolean) => {
+  if (!approved && showModal) {
+    isConfirmModalShown.value = true;
+    return;
+  }
+
+  const callback = async () => {
+    if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
+      throw new Error('User is not logged in organization');
+    }
+
+    if (!isLoggedInWithPassword(user.personal)) {
+      if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+      userPasswordModalRef.value?.open(
+        'Enter your application password',
+        'Enter your application password to decrypt your private key',
+        callback,
+      );
+      return;
+    }
+
+    const publicKey = user.selectedOrganization.userKeys[0].publicKey;
+    const privateKeyRaw = await decryptPrivateKey(
+      user.personal.id,
+      user.personal.password,
+      publicKey,
+    );
+    const privateKey = getPrivateKey(publicKey, privateKeyRaw);
+
+    if (group.value != undefined) {
+      for (const item of group.value.groupItems) {
+        if (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id)) {
+          const transactionBytes = await hexToUint8Array(item.transaction.body);
+          const transaction = Transaction.fromBytes(transactionBytes);
+          const signature = await getTransactionBodySignatureWithoutNodeAccountId(
+            privateKey,
+            transaction,
+          );
+
+          await sendApproverChoice(
+            user.selectedOrganization.serverUrl,
+            item.transaction.id,
+            user.selectedOrganization.userKeys[0].id,
+            signature,
+            approved,
+          );
+        }
+      }
+    }
+    toast.success(`Transactions ${approved ? 'approved' : 'rejected'} successfully`);
+
+    if (!approved) {
+      router.push({
+        name: 'transactions',
+        query: {
+          tab: 'History',
+        },
+      });
+    }
+  };
+
+  await callback();
+};
 
 /* Hooks */
 onMounted(async () => {
-  await handleLoadGroup();
+  const id = router.currentRoute.value.params.id;
+  if (!id) {
+    router.back();
+    return;
+  }
+
+  ws.on('transaction_action', async () => {
+    await handleFetchGroup(Array.isArray(id) ? id[0] : id);
+  });
+
+  await handleFetchGroup(Array.isArray(id) ? id[0] : id);
 });
 </script>
 <template>
@@ -128,105 +256,124 @@ onMounted(async () => {
         <i class="bi bi-arrow-left"></i>
       </AppButton>
 
-      <h2 class="text-title text-bold">Create Transaction Group</h2>
+      <h2 class="text-title text-bold">Transaction Group Details</h2>
     </div>
-    <form class="mt-5" @submit.prevent="handleSaveGroup">
-      <div class="form-group col-6">
-        <label class="form-label">Transaction Group Name</label>
-        <AppInput
+    <div class="form-group col-6">
+      <label class="form-label">Transaction Group Name</label>
+      <div>{{ group?.description }}</div>
+      <!-- <AppInput
           v-model="groupName"
           @update:modelValue="nameUpdated"
           filled
           placeholder="Enter Name"
-        />
-      </div>
-      <hr class="separator my-5 w-100" />
-      <div class="d-flex justify-content-between">
-        <div />
+        /> -->
+    </div>
+    <hr class="separator my-5 w-100" />
+    <div v-if="!groupEmpty">
+      <table class="table-custom">
+        <thead>
+          <tr>
+            <th>
+              <div>
+                <span>Transaction ID</span>
+              </div>
+            </th>
+            <th>
+              <div>
+                <span>Transaction Type</span>
+              </div>
+            </th>
+            <th>
+              <div>
+                <span>Valid Start</span>
+              </div>
+            </th>
+            <th class="text-center">
+              <span>Actions</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <template v-for="groupItem in group?.groupItems" :key="groupItem.seq">
+            <tr>
+              <td>
+                {{ groupItem.transaction.transactionId }}
+              </td>
+              <td>
+                <span class="text-bold">{{ groupItem.transaction.name }}</span>
+              </td>
+              <td>
+                {{ groupItem.transaction.validStart }}
+              </td>
+              <td class="text-center">
+                <AppButton
+                  type="button"
+                  color="secondary"
+                  @click.prevent="handleSign(groupItem.transaction.id)"
+                  >Sign</AppButton
+                >
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+      <div class="mt-5">
         <AppButton
+          v-if="shouldApprove"
+          color="secondary"
           type="button"
-          class="text-main text-primary"
-          @click="isTransactionSelectionModalShown = true"
-          ><i class="bi bi-plus-lg"></i> <span>Add Transaction</span></AppButton
+          class="me-3"
+          @click="handleApproveAll(false, true)"
         >
+          Reject All
+        </AppButton>
+        <AppButton
+          v-if="shouldApprove"
+          color="primary"
+          type="button"
+          class="me-3"
+          @click="handleApproveAll(true, true)"
+        >
+          Approve All
+        </AppButton>
+        <AppButton
+          v-if="
+            isLoggedInOrganization(user.selectedOrganization) &&
+            publicKeysRequiredToSign &&
+            publicKeysRequiredToSign.length > 0
+          "
+          color="primary"
+          type="button"
+          @click="handleSignGroup"
+        >
+          Sign All
+        </AppButton>
       </div>
-      <hr class="separator my-5 w-100" />
-      <div v-if="!groupEmpty">
-        <div
-          v-for="(groupItem, index) in transactionGroup.groupItems"
-          :key="groupItem.transactionBytes.toString()"
-        >
-          <div class="d-flex justify-content-between p-4" style="background-color: #edefff">
-            <div>
-              <div>{{ groupItem.type }}</div>
-              <div>{{ groupItem.accountId }}</div>
-            </div>
-            <div class="d-flex">
-              <AppButton
-                type="button"
-                class="text-black"
-                @click="handleDeleteGroupItem(index)"
-                style="min-width: 0"
-                >Delete
-              </AppButton>
-              <AppButton
-                type="button"
-                class="text-black"
-                @click="handleDuplicateGroupItem(index)"
-                style="min-width: 0"
-                >Duplicate
-              </AppButton>
-              <AppButton
-                type="button"
-                class="text-black"
-                @click="handleEditGroupItem(index, groupItem.type)"
-                style="background-color: #dcdfff; min-width: 0"
-              >
-                Edit
-              </AppButton>
-            </div>
-          </div>
+    </div>
+    <AppModal v-model:show="isConfirmModalShown" class="common-modal">
+      <div class="modal-body">
+        <i
+          class="bi bi-x-lg d-inline-block cursor-pointer"
+          @click="isConfirmModalShown = false"
+        ></i>
+        <div class="text-center">
+          <AppCustomIcon :name="'questionMark'" style="height: 160px" />
         </div>
-        <div class="mt-5">
-          <AppButton color="primary" type="submit">Save Group</AppButton>
-          <AppButton color="primary" type="button" @click="handleSignSubmit" class="ms-4">
-            <span class="bi bi-send"></span>
-            {{
-              getPropagationButtonLabel(
-                transactionKey,
-                user.keyPairs,
-                Boolean(user.selectedOrganization),
-              )
-            }}</AppButton
+        <h3 class="text-center text-title text-bold mt-4">Reject Transaction?</h3>
+        <p class="text-center text-small text-secondary mt-4">
+          Are you sure you want to reject the transaction
+        </p>
+        <hr class="separator my-5" />
+        <div class="flex-between-centered gap-4">
+          <AppButton color="borderless" @click="isConfirmModalShown = false">Cancel</AppButton>
+          <AppButton
+            color="primary"
+            data-testid="button-confirm-change-password"
+            @click="handleApproveAll(false)"
+            >Reject</AppButton
           >
         </div>
       </div>
-    </form>
-    <div v-if="groupEmpty">
-      <EmptyTransactionGroup class="absolute-centered w-100" />
-    </div>
-    <TransactionSelectionModal v-model:show="isTransactionSelectionModalShown" group />
-    <TransactionGroupProcessor
-      ref="transactionGroupProcessor"
-      :on-close-success-modal-click="() => $router.push({ name: 'files' })"
-      :on-executed="handleExecuted"
-      :on-submitted="handleSubmit"
-    >
-      <template #successHeading>File created successfully</template>
-      <template #successContent>
-        <p
-          v-if="transactionGroupProcessor?.transactionResult"
-          class="text-small d-flex justify-content-between align-items mt-2"
-        >
-          <span class="text-bold text-secondary">File ID:</span>
-          <span>{{
-            getEntityIdFromTransactionReceipt(
-              transactionGroupProcessor.transactionResult.receipt,
-              'fileId',
-            )
-          }}</span>
-        </p>
-      </template>
-    </TransactionGroupProcessor>
+    </AppModal>
   </div>
 </template>
