@@ -64,8 +64,8 @@ export class UserKeysController {
     status: 200,
   })
   @Delete('/:id')
-  removeKey(@Param('id', ParseIntPipe) id: number): void {
+  removeKey(@Param('id', ParseIntPipe) id: number) {
     // If this returns the result, the dto can't decode the id as things are null
-    this.userKeysService.removeKey(id);
+    return this.userKeysService.removeKey(id);
   }
 }
