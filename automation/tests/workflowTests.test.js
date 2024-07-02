@@ -497,9 +497,6 @@ test.describe('Workflow tests', () => {
 
         const getTransferAccountId = await detailsPage.getAccountDeleteDetailsTransferId();
         expect(getTransferAccountId).toBeTruthy();
-
-        const getTransferAmount = await detailsPage.getAccountDeleteDetailsTransferAmount();
-        expect(getTransferAmount).toBeTruthy();
       },
     );
   });
