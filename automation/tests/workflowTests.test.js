@@ -60,7 +60,7 @@ test.describe('Workflow tests', () => {
   });
 
   test.beforeEach(async () => {
-    await transactionPage.closeCompletedTransaction();
+    // await transactionPage.closeCompletedTransaction();
     await transactionPage.clickOnTransactionsMenuButton();
     await transactionPage.closeDraftModal();
   });
