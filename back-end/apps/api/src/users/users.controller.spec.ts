@@ -34,7 +34,7 @@ describe('UsersController', () => {
       status: UserStatus.NONE,
       createdAt: new Date(),
       updatedAt: new Date(),
-      deletedAt: new Date(),
+      deletedAt: null,
       keys: [],
       signerForTransactions: [],
       observableTransactions: [],
