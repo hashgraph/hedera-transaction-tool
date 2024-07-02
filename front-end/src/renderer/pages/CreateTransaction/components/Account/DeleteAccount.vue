@@ -25,6 +25,8 @@ import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStor
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
@@ -57,6 +59,7 @@ const approvers = ref<TransactionApproverDto[]>([]);
 
 const selectedKey = ref<Key | null>();
 const isKeyStructureModalShown = ref(false);
+const isConfirmModalShown = ref(false);
 
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
@@ -79,8 +82,16 @@ const transactionKey = computed(() => {
 });
 
 /* Handlers */
+const handleFormSubmit = e => {
+  e.preventDefault();
+
+  isConfirmModalShown.value = true;
+};
+
 const handleCreate = async e => {
   e.preventDefault();
+
+  isConfirmModalShown.value = false;
 
   try {
     if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
@@ -197,7 +208,7 @@ const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <div class="flex-column-100 overflow-hidden">
-    <form @submit="handleCreate" class="flex-column-100">
+    <form @submit="handleFormSubmit" class="flex-column-100">
       <TransactionHeaderControls heading-text="Delete Account Transaction">
         <template #buttons>
           <SaveDraftButton
@@ -383,5 +394,41 @@ const columnClass = 'col-4 col-xxxl-3';
       v-model:show="isKeyStructureModalShown"
       :account-key="selectedKey"
     />
+
+    <AppModal
+      class="common-modal"
+      v-model:show="isConfirmModalShown"
+      :close-on-click-outside="false"
+      :close-on-escape="false"
+    >
+      <div class="p-5">
+        <div>
+          <i class="bi bi-x-lg cursor-pointer" @click="isConfirmModalShown = false"></i>
+        </div>
+        <div class="text-center">
+          <AppCustomIcon :name="'error'" style="height: 160px" />
+        </div>
+        <h3 class="text-center text-title text-bold mt-4">
+          Are you sure you want to delete the account
+          <span class="text-secondary">{{ accountData.accountIdFormatted.value }}</span> ?
+        </h3>
+        <p class="text-center text-small text-secondary mt-3">
+          Deleting this account will permanently remove it from the network. The account cannot be
+          restored once deleted.
+        </p>
+
+        <hr class="separator my-5" />
+
+        <div class="flex-between-centered gap-4">
+          <AppButton color="borderless" @click="isConfirmModalShown = false">Cancel</AppButton>
+          <AppButton
+            color="primary"
+            data-testid="button-confirm-delete-account"
+            @click="handleCreate"
+            >Confirm</AppButton
+          >
+        </div>
+      </div>
+    </AppModal>
   </div>
 </template>

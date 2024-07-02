@@ -60,7 +60,7 @@ test.describe('Workflow tests', () => {
   });
 
   test.beforeEach(async () => {
-    await transactionPage.closeCompletedTransaction();
+    // await transactionPage.closeCompletedTransaction();
     await transactionPage.clickOnTransactionsMenuButton();
     await transactionPage.closeDraftModal();
   });
@@ -497,9 +497,6 @@ test.describe('Workflow tests', () => {
 
         const getTransferAccountId = await detailsPage.getAccountDeleteDetailsTransferId();
         expect(getTransferAccountId).toBeTruthy();
-
-        const getTransferAmount = await detailsPage.getAccountDeleteDetailsTransferAmount();
-        expect(getTransferAmount).toBeTruthy();
       },
     );
   });

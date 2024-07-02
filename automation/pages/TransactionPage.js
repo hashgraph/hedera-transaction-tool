@@ -104,6 +104,7 @@ class TransactionPage extends BasePage {
   draftsTabSelector = 'tab-0';
   draftDeleteButtonIndexSelector = 'button-draft-delete-';
   draftContinueButtonIndexSelector = 'button-draft-continue-';
+  confirmDeleteAccountButtonSelector = 'button-confirm-delete-account';
 
   //Other
   modalTransactionSuccessSelector = 'modal-transaction-success';
@@ -562,6 +563,7 @@ class TransactionPage extends BasePage {
     await this.fillInTransferAccountId();
     await this.fillInDeletedAccountId(accountId);
     await this.clickOnSignAndSubmitDeleteButton();
+    await this.clickOnConfirmDeleteAccountButton();
     await this.clickSignTransactionButton();
     await this.fillInPassword(password);
     await this.clickOnPasswordContinue();
@@ -1380,6 +1382,10 @@ class TransactionPage extends BasePage {
     }
 
     throw new Error('Failed to turn the receiver signature switch on after multiple attempts');
+  }
+
+  async clickOnConfirmDeleteAccountButton() {
+    await this.clickByTestId(this.confirmDeleteAccountButtonSelector);
   }
 }
 module.exports = TransactionPage;
