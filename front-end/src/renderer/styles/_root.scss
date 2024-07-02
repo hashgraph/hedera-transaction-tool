@@ -5,6 +5,7 @@
   --#{$prefix}link-primary-hover-color: #{$purple-700};
   --#{$prefix}link-secondary-color: #{$purple-500};
   --#{$prefix}link-secondary-hover-color: #{$purple-400};
+  --#{$prefix}link-white-color: #{$neutral-800};
 
   --#{$prefix}menu-link-color: #{$neutral-800};
   --#{$prefix}menu-link-color-hover: #{$neutral-900};
@@ -28,7 +29,7 @@
 
   --#{$prefix}container-dropdown-menu-item-hover-color: #{$light-blue-300};
 
-  --#{$prefix}btn-secondary-bg-color: #{$light-blue-500};
+  --#{$prefix}btn-secondary-bg-color: #{$light-blue-900};
   --#{$prefix}btn-borderless-color: #{$dark-blue-950};
 
   --#{$prefix}btn-group-container-bg-color: #{$light-blue-200};
@@ -50,6 +51,7 @@
     --#{$prefix}link-primary-hover-color: #{$dark-blue-400};
     --#{$prefix}link-secondary-color: #{$purple-400};
     --#{$prefix}link-secondary-hover-color: #{$dark-blue-300};
+    --#{$prefix}link-white-color: #{$neutral-00};
 
     --#{$prefix}menu-link-color: #{$dark-blue-200};
     --#{$prefix}menu-link-color-hover: #{$neutral-00};

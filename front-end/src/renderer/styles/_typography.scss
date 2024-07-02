@@ -101,6 +101,16 @@
   }
 }
 
+.link-white {
+  text-decoration: none;
+  color: var(--#{$prefix}link-white-color) !important;
+  transition: color 0.15s linear;
+
+  &:hover {
+    color: var(--#{$prefix}link-white-color) !important;
+  }
+}
+
 .link-menu {
   display: flex;
   align-items: center;
