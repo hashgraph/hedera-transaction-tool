@@ -35,7 +35,7 @@ describe('UserKeysController', () => {
       status: UserStatus.NONE,
       createdAt: new Date(),
       updatedAt: new Date(),
-      deletedAt: new Date(),
+      deletedAt: null,
       keys: [],
       signerForTransactions: [],
       observableTransactions: [],
@@ -49,7 +49,7 @@ describe('UserKeysController', () => {
       mnemonicHash: 'mnemonicHash',
       index: 1,
       user: user,
-      deletedAt: new Date(),
+      deletedAt: null,
       createdTransactions: [],
       approvedTransactions: [],
       signedTransactions: []
