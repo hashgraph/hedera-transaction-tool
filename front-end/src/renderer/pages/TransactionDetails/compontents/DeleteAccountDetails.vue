@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, ref } from 'vue';
+import { onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
 
 import { Transaction, AccountDeleteTransaction, Hbar, HbarUnit } from '@hashgraph/sdk';
 
@@ -46,12 +46,7 @@ async function fetchTransactionInfo(payer: string, seconds: string, nanos: strin
   }
 }
 
-/* Hooks */
-onBeforeMount(async () => {
-  if (!(props.transaction instanceof AccountDeleteTransaction)) {
-    throw new Error('Transaction is not Account Delete Transaction');
-  }
-
+async function checkAndFetchTransactionInfo() {
   const isExecutedOrganizationTransaction = Boolean(
     props.organizationTransaction?.status &&
       [TransactionStatus.EXECUTED, TransactionStatus.FAILED].includes(
@@ -63,6 +58,8 @@ onBeforeMount(async () => {
     (isExecutedOrganizationTransaction || !props.organizationTransaction) &&
     props.transaction instanceof AccountDeleteTransaction
   ) {
+    controller.value = new AbortController();
+
     const payer = props.transaction.transactionId?.accountId?.toString();
     const seconds = props.transaction.transactionId?.validStart?.seconds?.toString();
     const nanos = props.transaction.transactionId?.validStart?.nanos?.toString();
@@ -75,6 +72,24 @@ onBeforeMount(async () => {
       }
     }
   }
+}
+
+/* Hooks */
+onBeforeMount(async () => {
+  if (!(props.transaction instanceof AccountDeleteTransaction)) {
+    throw new Error('Transaction is not Account Delete Transaction');
+  }
+
+  await checkAndFetchTransactionInfo();
+});
+
+onBeforeUnmount(() => {
+  controller.value?.abort();
+});
+
+/* Watchers */
+watch([() => props.transaction, () => props.organizationTransaction], async () => {
+  setTimeout(async () => await checkAndFetchTransactionInfo(), 3000);
 });
 
 /* Misc */
@@ -101,7 +116,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
     </div>
 
     <!-- Transfered amount -->
-    <div v-if="transferredAmount" :class="commonColClass">
+    <div v-if="transferredAmount?.toBigNumber().gt(0)" :class="commonColClass">
       <h4 :class="detailItemLabelClass">Transferred Amount</h4>
       <p :class="detailItemValueClass" data-testid="p-account-delete-details-transfer-amount">
         {{ stringifyHbar((transferredAmount as Hbar) || new Hbar(0)) }}
