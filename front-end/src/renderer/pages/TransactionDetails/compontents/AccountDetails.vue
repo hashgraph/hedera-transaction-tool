@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
+import { onBeforeMount, onBeforeUnmount, ref, nextTick, watch } from 'vue';
 
 import {
   AccountCreateTransaction,
@@ -79,16 +79,7 @@ async function fetchTransactionInfo(payer: string, seconds: string, nanos: strin
   }
 }
 
-/* Hooks */
-onBeforeMount(async () => {
-  if (
-    !(
-      props.transaction instanceof AccountCreateTransaction ||
-      props.transaction instanceof AccountUpdateTransaction
-    )
-  ) {
-    throw new Error('Transaction is not Account Create or Update Transaction');
-  }
+async function checkAndFetchTransactionInfo() {
   if (!isUserLoggedIn(user.personal)) throw new Error('User not logged in');
 
   const isExecutedOrganizationTransaction = Boolean(
@@ -123,10 +114,29 @@ onBeforeMount(async () => {
       },
     });
   }
+}
+
+/* Hooks */
+onBeforeMount(async () => {
+  if (
+    !(
+      props.transaction instanceof AccountCreateTransaction ||
+      props.transaction instanceof AccountUpdateTransaction
+    )
+  ) {
+    throw new Error('Transaction is not Account Create or Update Transaction');
+  }
+
+  await checkAndFetchTransactionInfo();
 });
 
 onBeforeUnmount(() => {
   controller.value?.abort();
+});
+
+/* Watchers */
+watch([() => props.transaction, () => props.organizationTransaction], async () => {
+  setTimeout(async () => await checkAndFetchTransactionInfo(), 3000);
 });
 
 /* Misc */

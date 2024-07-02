@@ -495,8 +495,11 @@ test.describe('Workflow tests', () => {
         const getDeletedAccountId = await detailsPage.getDeletedAccountId();
         expect(getDeletedAccountId).toBe(accountFromList);
 
-        const getAccountDetailsKey = await detailsPage.getAccountDeleteDetailsTransferId();
-        expect(getAccountDetailsKey).toBeTruthy();
+        const getTransferAccountId = await detailsPage.getAccountDeleteDetailsTransferId();
+        expect(getTransferAccountId).toBeTruthy();
+
+        const getTransferAmount = await detailsPage.getAccountDeleteDetailsTransferAmount();
+        expect(getTransferAmount).toBeTruthy();
       },
     );
   });
