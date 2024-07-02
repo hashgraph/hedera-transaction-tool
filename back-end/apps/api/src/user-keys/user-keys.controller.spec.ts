@@ -1,8 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserKeysController } from './user-keys.controller';
 import { UserKeysService } from './user-keys.service';
-import { Column, DeleteDateColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { Transaction, TransactionApprover, TransactionSigner, User, UserKey, UserStatus } from '@entities';
+import { User, UserKey, UserStatus } from '@entities';
 
 describe('UserKeysController', () => {
   let controller: UserKeysController;
