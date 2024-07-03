@@ -107,7 +107,17 @@ vi.mock('electron', () => {
     removeAllListeners: vi.fn(),
   };
 
-  return { BrowserWindow: bw, app, screen, nativeTheme };
+  const session = {
+    fromPartition: vi.fn(),
+  };
+
+  return {
+    BrowserWindow: bw,
+    app,
+    screen,
+    nativeTheme,
+    session,
+  };
 });
 
 beforeEach(() => {
