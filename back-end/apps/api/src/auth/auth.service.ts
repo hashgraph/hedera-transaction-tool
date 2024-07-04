@@ -68,8 +68,10 @@ export class AuthService {
     response.cookie('Authentication', accessToken, {
       httpOnly: true,
       expires,
-      sameSite: this.configService.get('NODE_ENV') === 'production' ? 'none' : 'lax',
-      secure: this.configService.get('NODE_ENV') === 'production',
+      sameSite: ['production', 'testing'].includes(this.configService.get('NODE_ENV'))
+        ? 'none'
+        : 'lax',
+      secure: ['production', 'testing'].includes(this.configService.get('NODE_ENV')),
     });
   }
 
@@ -77,8 +79,10 @@ export class AuthService {
   logout(response: Response) {
     response.clearCookie('Authentication', {
       httpOnly: true,
-      sameSite: this.configService.get('NODE_ENV') === 'production' ? 'none' : 'lax',
-      secure: this.configService.get('NODE_ENV') === 'production',
+      sameSite: ['production', 'testing'].includes(this.configService.get('NODE_ENV'))
+        ? 'none'
+        : 'lax',
+      secure: ['production', 'testing'].includes(this.configService.get('NODE_ENV')),
     });
     //TODO implement token blacklisting
   }
@@ -147,8 +151,10 @@ export class AuthService {
     response.cookie('otp', accessToken, {
       httpOnly: true,
       expires,
-      sameSite: this.configService.get('NODE_ENV') === 'production' ? 'none' : 'lax',
-      secure: this.configService.get('NODE_ENV') === 'production',
+      sameSite: ['production', 'testing'].includes(this.configService.get('NODE_ENV'))
+        ? 'none'
+        : 'lax',
+      secure: ['production', 'testing'].includes(this.configService.get('NODE_ENV')),
     });
   }
 
@@ -156,8 +162,10 @@ export class AuthService {
   clearOtpCookie(response: Response) {
     response.clearCookie('otp', {
       httpOnly: true,
-      sameSite: this.configService.get('NODE_ENV') === 'production' ? 'none' : 'lax',
-      secure: this.configService.get('NODE_ENV') === 'production',
+      sameSite: ['production', 'testing'].includes(this.configService.get('NODE_ENV'))
+        ? 'none'
+        : 'lax',
+      secure: ['production', 'testing'].includes(this.configService.get('NODE_ENV')),
     });
   }
 

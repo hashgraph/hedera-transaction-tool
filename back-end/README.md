@@ -86,7 +86,7 @@ The defaults are:
    mkcert -key-file ./cert/key.pem -cert-file ./cert/cert.pem localhost
    ```
 
-2. Next, set the `NODE_ENV` to `production`, you can set it in the root `.env`
+2. Next, set the `NODE_ENV` to `testing`, you can set it in the root `.env`
 
 3. Now, open api's [main.ts](./apps/api/src/main.ts) and uncomment the code that initializes the Nest application with https options and comment the other one
 
@@ -97,35 +97,39 @@ The defaults are:
 
 ### Deploy on Kubernetes
 
-When deploying to a server, it may be desired to use Kubernetes. 
-The docker images are currently private. They must be created and pushed 
+When deploying to a server, it may be desired to use Kubernetes.
+The docker images are currently private. They must be created and pushed
 to an accessible location. Update the deployment files as needed.
 
-A helm chart is forthcoming. 
+A helm chart is forthcoming.
 Until then, use the following commands once connected to a cluster:
 
 1. Create the namespace:
+
    ```bash
    kubectl create -f ./namespace.yaml
    ```
 
 2. Setup postgres:
+
    ```bash
    kubectl apply -f ./postgres-secret.yaml
    kubectl apply -f ./postgres-deployment.yaml
    ```
 
 3. Install the helm chart and apply the rabbitmq definition:
-   ```bash 
+
+   ```bash
    helm repo add bitnami https://charts.bitnami.com/bitnami
    helm install back-end bitnami/rabbitmq-cluster-operator --namespace hedera-transaction-tool
-      
+
    kubectl apply -f ./rabbitmq-definition.yaml
    ```
 
 4. Install the helm chart for redis:
+
    ```bash
-   helm install redis bitnami/redis --namespace hedera-transaction-tool --set auth.enabled=false --set master.resourcesPreset=nano 
+   helm install redis bitnami/redis --namespace hedera-transaction-tool --set auth.enabled=false --set master.resourcesPreset=nano
    ```
 
 5. Apply the required secrets:
@@ -134,35 +138,39 @@ Until then, use the following commands once connected to a cluster:
    kubectl apply -f ./otp-secret.yaml
    kubectl apply -f ./brevo-secret.yaml
    ```
-   
 6. Deploy the services. Until migration is properly in place, the first time the api service is deployed, ensure that POSTGRES_SYNCHRONIZE is set to true in the yaml:
    ```bash
    kubectl apply -f ./api/deployment.yaml
    kubectl apply -f ./chain/deployment.yaml
    kubectl apply -f ./notifications/deployment.yaml
    ```
-   
 7. Setup SSL. The [cert-manager guide](https://cert-manager.io/docs/tutorials/getting-started-with-cert-manager-on-google-kubernetes-engine-using-lets-encrypt-for-ingress-ssl/) describes the process, but in short:
+
    ```bash
    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.5/cert-manager.yaml --namespace hedera-transaction-tool
    ```
+
    Install the issuer (this issuer uses Lets Encrypt's production service, use the staging service for testing):
+
    ```bash
    kubectl apply -f ./issuer-lets-encrypt-production.yaml
    ```
+
    Install the secret that holds the key and cert:
+
    ```bash
    kubectl apply -f ./ssl-secret.yaml
    ```
 
 8. Deploy the ingress:
+
    ```bash
    kubectl apply -f ./ingress.yaml
    ```
+
    Note: if there are issues with the issuer and ingress, the ingress may have to be applied without ssl options before step 7.
 
-
 9. Using the actual name of the Postgres pod, connect to Postgres to create the admin user:
-   ```bash   
+   ```bash
    kubectl exec -it <podname> -- psql -h localhost -U postgres --password -p 5432
    ```

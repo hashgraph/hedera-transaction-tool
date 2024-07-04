@@ -67,22 +67,30 @@ async function bootstrap() {
 
 async function createApp(): Promise<NestExpressApplication> {
   if (process.env.NODE_ENV === 'production') {
-    const app = (await NestFactory.create(ApiModule)) as NestExpressApplication;
-    app.enable('trust proxy');
-
-    return app;
+    return await createAppForDeployment();
   } else {
-    const options: NestApplicationOptions = {};
-    try {
-      const key = fs.readFileSync(path.resolve(__dirname, '../../../cert/key.pem'));
-      const cert = fs.readFileSync(path.resolve(__dirname, '../../../cert/cert.pem'));
-      options.httpsOptions = { key, cert };
-    } catch (error) {
-      console.log(error);
-    }
-
-    return (await NestFactory.create(ApiModule, options)) as NestExpressApplication;
+    return await createAppForDevelopment();
   }
+}
+
+async function createAppForDeployment(): Promise<NestExpressApplication> {
+  const app = (await NestFactory.create(ApiModule)) as NestExpressApplication;
+  app.enable('trust proxy');
+
+  return app;
+}
+
+async function createAppForDevelopment(): Promise<NestExpressApplication> {
+  const options: NestApplicationOptions = {};
+  try {
+    const key = fs.readFileSync(path.resolve(__dirname, '../../../cert/key.pem'));
+    const cert = fs.readFileSync(path.resolve(__dirname, '../../../cert/cert.pem'));
+    options.httpsOptions = { key, cert };
+  } catch (error) {
+    console.log(error);
+  }
+
+  return (await NestFactory.create(ApiModule, options)) as NestExpressApplication;
 }
 
 bootstrap();
