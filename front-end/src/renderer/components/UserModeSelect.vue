@@ -110,6 +110,7 @@ const handleAddOrganization = async (organization: Organization) => {
       color="secondary"
       size="small"
       @click="handleAddOrganizationButtonClick"
+      data-testid="button-add-new-organization"
       ><i class="bi bi-cloud-plus"></i
     ></AppButton>
 

@@ -87,11 +87,11 @@ watch(
 
       <div class="form-group mt-5">
         <label class="form-label">Nickname</label>
-        <AppInput size="small" v-model="nickname" :filled="true" placeholder="Enter nickname" />
+        <AppInput size="small" data-testid="input-organization-nickname" v-model="nickname" :filled="true" placeholder="Enter nickname" />
       </div>
       <div class="form-group mt-5">
         <label class="form-label">Server URL</label>
-        <AppInput size="small" v-model="serverUrl" :filled="true" placeholder="Enter Server URL" />
+        <AppInput size="small" data-testid="input-server-url" v-model="serverUrl" :filled="true" placeholder="Enter Server URL" />
       </div>
 
       <hr class="separator my-5" />
@@ -100,7 +100,7 @@ watch(
         <AppButton color="borderless" type="button" @click="$emit('update:show', false)"
           >Cancel</AppButton
         >
-        <AppButton color="primary" type="submit">Add</AppButton>
+        <AppButton color="primary" data-testid="button-add-organization-in-modal" type="submit">Add</AppButton>
       </div>
     </form>
   </AppModal>
