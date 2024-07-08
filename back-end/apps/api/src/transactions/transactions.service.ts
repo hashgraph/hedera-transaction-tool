@@ -461,15 +461,15 @@ export class TransactionsService {
       relations: ['creatorKey', 'creatorKey.user', 'observers', 'groupItem'],
     });
 
+    await this.attachTransactionSignersApprovers(transaction);
+
     if (!(await this.verifyAccess(transaction, user))) {
       throw new UnauthorizedException("You don't have permission to view this transaction");
     }
     return transaction;
   }
 
-  async verifyAccess(transaction: Transaction, user: User): Promise<boolean> {
-    if (!transaction) throw new NotFoundException('Transaction not found');
-
+  async attachTransactionSignersApprovers(transaction: Transaction) {
     transaction.signers = await this.entityManager.find(TransactionSigner, {
       where: {
         transaction: {
@@ -480,11 +480,12 @@ export class TransactionsService {
       withDeleted: true,
     });
 
-    const userKeysToSign = await this.userKeysToSign(transaction, user);
-
     const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
-
     transaction.approvers = this.approversService.getTreeStructure(approvers);
+  }
+
+  async verifyAccess(transaction: Transaction, user: User): Promise<boolean> {
+    if (!transaction) throw new NotFoundException('Transaction not found');
 
     if (
       [
@@ -496,12 +497,14 @@ export class TransactionsService {
     )
       return true;
 
+    const userKeysToSign = await this.userKeysToSign(transaction, user);
+
     return (
       userKeysToSign.length !== 0 ||
       transaction.creatorKey?.user?.id === user.id ||
       transaction.observers.some(o => o.userId === user.id) ||
       transaction.signers.some(s => s.userKey.user.id === user.id) ||
-      approvers.some(a => a.userId === user.id)
+      transaction.approvers.some(a => a.userId === user.id)
     );
   }
 
