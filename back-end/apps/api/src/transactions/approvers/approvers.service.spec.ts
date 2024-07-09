@@ -2,16 +2,23 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ClientProxy } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { mock, mockDeep } from 'jest-mock-extended';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 
 import { MirrorNodeService, NOTIFICATIONS_SERVICE, NOTIFY_CLIENT } from '@app/common';
+import { verifyTransactionBodyWithoutNodeAccountIdSignature } from '@app/common/utils';
 import { TransactionApprover, TransactionStatus, User } from '@entities';
 import { userKeysRequiredToSign } from '../../utils';
 
 import { ApproversService } from './approvers.service';
-import { CreateTransactionApproversArrayDto } from '../dto';
+import {
+  ApproverChoiceDto,
+  CreateTransactionApproversArrayDto,
+  UpdateTransactionApproverDto,
+} from '../dto';
+import { AccountCreateTransaction } from '@hashgraph/sdk';
 
 jest.mock('../../utils');
+jest.mock('@app/common/utils');
 
 describe('ApproversService', () => {
   let service: ApproversService;
@@ -80,6 +87,12 @@ describe('ApproversService', () => {
 
       expect(result).toEqual(approver);
     });
+
+    it('should return null if id is null', async () => {
+      const result = await service.getTransactionApproverById(null);
+
+      expect(result).toBeNull();
+    });
   });
 
   describe('getApproversByTransactionId', () => {
@@ -136,6 +149,12 @@ describe('ApproversService', () => {
 
       expect(approversRepo.query).toHaveBeenCalledWith(expect.anything(), [transactionId]);
       expect(result).toEqual(approvers);
+    });
+
+    it('should return null if transaction id is null', async () => {
+      const result = await service.getApproversByTransactionId(null);
+
+      expect(result).toBeNull();
     });
   });
 
@@ -247,6 +266,12 @@ describe('ApproversService', () => {
       expect(dataSource.manager.query).toHaveBeenCalledWith(expect.anything(), [id]);
       expect(result).toEqual(approvers);
     });
+
+    it('should throw if id is null', async () => {
+      await expect(service.getTransactionApproversById(null)).rejects.toThrow(
+        "Transaction doesn't exist",
+      );
+    });
   });
 
   describe('getRootNodeFromNode', () => {
@@ -256,6 +281,12 @@ describe('ApproversService', () => {
       await service.getRootNodeFromNode(nodeId);
 
       expect(dataSource.manager.query).toHaveBeenCalledWith(expect.anything(), [nodeId]);
+    });
+
+    it('should return null if id is null', async () => {
+      const result = await service.getRootNodeFromNode(null);
+
+      expect(result).toBeNull();
     });
   });
 
@@ -268,7 +299,27 @@ describe('ApproversService', () => {
       expect(dataSource.manager.query).toHaveBeenCalledWith(expect.anything(), [nodeId]);
       expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, expect.anything());
     });
+
+    it('should return null if id is null', async () => {
+      const result = await service.removeNode(null);
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null if id is not number', async () => {
+      //@ts-expect-error test case
+      const result = await service.getRootNodeFromNode('sd');
+
+      expect(result).toBeNull();
+    });
   });
+
+  const mockTransaction = () => {
+    const transactionMock = jest.fn(async passedFunction => {
+      await passedFunction(dataSource.manager);
+    });
+    dataSource.transaction.mockImplementation(transactionMock);
+  };
 
   describe('createTransactionApprovers', () => {
     const transaction = {
@@ -280,6 +331,8 @@ describe('ApproversService', () => {
       jest.resetAllMocks();
 
       dataSource.manager.findOne.mockResolvedValueOnce(transaction);
+
+      mockTransaction();
     });
 
     it('should create basic transaction approver', async () => {
@@ -292,12 +345,1187 @@ describe('ApproversService', () => {
         ],
       };
 
-      const transactionMock = jest.fn(async passedFunction => {
-        await passedFunction(dataSource.manager);
-      });
-      dataSource.transaction.mockImplementation(transactionMock);
+      approversRepo.count.mockResolvedValueOnce(0);
+      dataSource.manager.count.calledWith(User, expect.anything()).mockResolvedValueOnce(1);
+      jest.spyOn(service, 'getApproversByTransactionId').mockResolvedValueOnce([]);
 
       await service.createTransactionApprovers(user, transactionId, dto);
+
+      expect(dataSource.manager.create).toHaveBeenCalledWith(TransactionApprover, {
+        userId: 1,
+        transactionId: transaction.id,
+        threshold: null,
+      });
+      expect(dataSource.manager.insert).toHaveBeenCalled();
+      expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, expect.anything());
+    });
+
+    it('should create nested transaction approver', async () => {
+      const transactionId = 1;
+      const dto: CreateTransactionApproversArrayDto = {
+        approversArray: [
+          {
+            threshold: 2,
+            approvers: [
+              {
+                threshold: 1,
+                approvers: [
+                  {
+                    userId: 1,
+                  },
+                  {
+                    userId: 2,
+                  },
+                ],
+              },
+              {
+                userId: 3,
+                approvers: [],
+              },
+            ],
+          },
+        ],
+      };
+
+      approversRepo.count.mockResolvedValueOnce(0);
+      dataSource.manager.count.calledWith(User, expect.anything()).mockResolvedValueOnce(1);
+      jest.spyOn(service, 'getApproversByTransactionId').mockResolvedValue([]);
+      dataSource.manager.create.mockImplementationOnce(
+        jest.fn((_entity, data) => ({ ...data, id: 1 })),
+      );
+      dataSource.manager.create.mockImplementationOnce(
+        jest.fn((_entity, data) => ({ ...data, id: 2 })),
+      );
+      dataSource.manager.create.mockImplementationOnce(
+        jest.fn((_entity, data) => ({ ...data, id: 3 })),
+      );
+      dataSource.manager.create.mockImplementationOnce(
+        jest.fn((_entity, data) => ({ ...data, id: 4 })),
+      );
+      dataSource.manager.create.mockImplementationOnce(
+        jest.fn((_entity, data) => ({ ...data, id: 5 })),
+      );
+      dataSource.manager.findOne.mockResolvedValueOnce({ id: 1, threshold: 2 });
+      dataSource.manager.findOne.mockResolvedValueOnce({ id: 2, threshold: 1 });
+      dataSource.manager.findOne.mockResolvedValueOnce({ id: 2, threshold: 1 });
+      dataSource.manager.findOne.mockResolvedValueOnce({ id: 1, threshold: 2 });
+      jest.spyOn(service, 'getRootNodeFromNode').mockImplementation(
+        jest.fn(
+          async () =>
+            ({
+              id: 1,
+              threshold: 2,
+              transactionId: transaction.id,
+            }) as TransactionApprover,
+        ),
+      );
+
+      await service.createTransactionApprovers(user, transactionId, dto);
+
+      expect(dataSource.manager.insert).toHaveBeenNthCalledWith(1, TransactionApprover, {
+        id: 1,
+        transactionId: transaction.id,
+        threshold: 2,
+        listId: undefined,
+        userId: undefined,
+      });
+      expect(dataSource.manager.insert).toHaveBeenNthCalledWith(2, TransactionApprover, {
+        id: 2,
+        transactionId: null,
+        threshold: 1,
+        listId: 1,
+        userId: undefined,
+      });
+      expect(dataSource.manager.insert).toHaveBeenNthCalledWith(3, TransactionApprover, {
+        id: 3,
+        transactionId: null,
+        threshold: null,
+        listId: 2,
+        userId: 1,
+      });
+      expect(dataSource.manager.insert).toHaveBeenNthCalledWith(4, TransactionApprover, {
+        id: 4,
+        transactionId: null,
+        threshold: null,
+        listId: 2,
+        userId: 2,
+      });
+      expect(dataSource.manager.insert).toHaveBeenNthCalledWith(5, TransactionApprover, {
+        id: 5,
+        transactionId: null,
+        threshold: null,
+        listId: 1,
+        userId: 3,
+      });
+      expect(dataSource.manager.insert).toHaveBeenCalledTimes(5);
+      expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, expect.anything());
+    });
+
+    it('should fail empty approver', async () => {
+      const transactionId = 1;
+      const dto: CreateTransactionApproversArrayDto = {
+        approversArray: [{}],
+      };
+
+      await expect(service.createTransactionApprovers(user, transactionId, dto)).rejects.toThrow(
+        'Cannot create empty approver',
+      );
+    });
+
+    it('should fail on approver with both user id and threshold', async () => {
+      const transactionId = 1;
+      const dto: CreateTransactionApproversArrayDto = {
+        approversArray: [
+          {
+            userId: 1,
+            threshold: 2,
+          },
+        ],
+      };
+
+      await expect(service.createTransactionApprovers(user, transactionId, dto)).rejects.toThrow(
+        'Children must be set when there is a threshold',
+      );
+    });
+
+    it('should fail create basic transaction approver with a non existing user', async () => {
+      const transactionId = 1;
+      const dto: CreateTransactionApproversArrayDto = {
+        approversArray: [
+          {
+            userId: 1,
+          },
+        ],
+      };
+
+      approversRepo.count.mockResolvedValueOnce(0);
+      dataSource.manager.count.calledWith(User, expect.anything()).mockResolvedValueOnce(0);
+      jest.spyOn(service, 'getApproversByTransactionId').mockResolvedValueOnce([]);
+
+      await expect(service.createTransactionApprovers(user, transactionId, dto)).rejects.toThrow(
+        'User with id: 1 not found',
+      );
+    });
+
+    it('should fail on approver with threshold but no children', async () => {
+      const transactionId = 1;
+      const dto: CreateTransactionApproversArrayDto = {
+        approversArray: [
+          {
+            threshold: 2,
+          },
+        ],
+      };
+
+      await expect(service.createTransactionApprovers(user, transactionId, dto)).rejects.toThrow(
+        'Children must be set when there is a threshold',
+      );
+    });
+
+    it('should fail on approver with threshold an user id', async () => {
+      const transactionId = 1;
+      const dto: CreateTransactionApproversArrayDto = {
+        approversArray: [
+          {
+            userId: 1,
+            threshold: 2,
+            approvers: [
+              {
+                userId: 2,
+              },
+            ],
+          },
+        ],
+      };
+
+      await expect(service.createTransactionApprovers(user, transactionId, dto)).rejects.toThrow(
+        'You can only set a user or a tree of approvers, not both',
+      );
+    });
+
+    it('should fail on approver with a tree but without a threshold', async () => {
+      const transactionId = 1;
+      const dto: CreateTransactionApproversArrayDto = {
+        approversArray: [
+          {
+            approvers: [
+              {
+                userId: 2,
+              },
+            ],
+          },
+        ],
+      };
+
+      await expect(service.createTransactionApprovers(user, transactionId, dto)).rejects.toThrow(
+        'Threshold must be set for the parent approver',
+      );
+    });
+
+    it('should fail on approver with a tree and invalid threshold', async () => {
+      const transactionId = 1;
+      const dto: CreateTransactionApproversArrayDto = {
+        approversArray: [
+          {
+            threshold: 412,
+            approvers: [
+              {
+                userId: 2,
+              },
+            ],
+          },
+        ],
+      };
+
+      await expect(service.createTransactionApprovers(user, transactionId, dto)).rejects.toThrow(
+        'Threshold must be less or equal to the number of approvers (1) and not 0',
+      );
+    });
+
+    it('should fail on approver that already exists', async () => {
+      const transactionId = 1;
+      const dto: CreateTransactionApproversArrayDto = {
+        approversArray: [
+          {
+            userId: 2,
+          },
+        ],
+      };
+
+      approversRepo.count.mockResolvedValueOnce(1);
+      await expect(service.createTransactionApprovers(user, transactionId, dto)).rejects.toThrow(
+        'Approver already exists',
+      );
+    });
+
+    it('should fail on attaching a child to a non-existent parent', async () => {
+      const transactionId = 1;
+      const dto: CreateTransactionApproversArrayDto = {
+        approversArray: [
+          {
+            listId: 2,
+          },
+        ],
+      };
+
+      dataSource.manager.findOne.mockResolvedValueOnce(null);
+
+      await expect(service.createTransactionApprovers(user, transactionId, dto)).rejects.toThrow(
+        'Parent approver not found',
+      );
+    });
+
+    it('should fail on attaching a child to a parent on different transaction', async () => {
+      const transactionId = 1;
+      const dto: CreateTransactionApproversArrayDto = {
+        approversArray: [
+          {
+            listId: 2,
+          },
+        ],
+      };
+
+      dataSource.manager.findOne.mockResolvedValueOnce({ id: 2, threshold: 2 });
+      jest.spyOn(service, 'getRootNodeFromNode').mockImplementation(
+        jest.fn(
+          async () =>
+            ({
+              id: 1,
+              threshold: 2,
+              transactionId: 123123123123,
+            }) as TransactionApprover,
+        ),
+      );
+      await expect(service.createTransactionApprovers(user, transactionId, dto)).rejects.toThrow(
+        'Root transaction is not the same',
+      );
+    });
+
+    it('should create basic transaction approver that is already added', async () => {
+      const transactionId = 1;
+      const dto: CreateTransactionApproversArrayDto = {
+        approversArray: [
+          {
+            userId: 1,
+          },
+        ],
+      };
+
+      approversRepo.count.mockResolvedValueOnce(0);
+      dataSource.manager.count.calledWith(User, expect.anything()).mockResolvedValueOnce(1);
+      jest.spyOn(service, 'getApproversByTransactionId').mockResolvedValueOnce([
+        {
+          userId: 1,
+          transactionId: transaction.id,
+          signature: Buffer.from('0x123'),
+          userKeyId: 1,
+          approved: true,
+        } as TransactionApprover,
+      ]);
+
+      await service.createTransactionApprovers(user, transactionId, dto);
+
+      expect(dataSource.manager.create).toHaveBeenCalledWith(TransactionApprover, {
+        userId: 1,
+        transactionId: transaction.id,
+        threshold: null,
+        signature: Buffer.from('0x123'),
+        userKeyId: 1,
+        approved: true,
+      });
+      expect(dataSource.manager.insert).toHaveBeenCalled();
+      expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, expect.anything());
+    });
+  });
+
+  describe('updateTransactionApprover', () => {
+    const transaction = {
+      id: 1,
+      creatorKey: { user },
+    };
+
+    const basicApprover: TransactionApprover = {
+      id: 1,
+      transactionId: 1,
+      userId: 1,
+      listId: undefined,
+      threshold: null,
+      approvers: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+    };
+
+    const treeChild = {
+      id: 3,
+      transactionId: null,
+      userId: 1,
+      listId: 2,
+      threshold: null,
+      approvers: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+    };
+
+    const treeApprover: TransactionApprover = {
+      id: 2,
+      transactionId: 1,
+      userId: null,
+      threshold: 2,
+      listId: undefined,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+      approvers: [
+        { ...treeChild },
+        {
+          id: 4,
+          transactionId: null,
+          userId: 2,
+          listId: 2,
+          threshold: null,
+          approvers: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          deletedAt: null,
+        },
+      ],
+    };
+
+    const treeApprover2: TransactionApprover = {
+      id: 5,
+      transactionId: 1,
+      userId: null,
+      threshold: 1,
+      listId: undefined,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+      approvers: [
+        {
+          id: 6,
+          transactionId: null,
+          userId: 7,
+          listId: 5,
+          threshold: null,
+          approvers: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          deletedAt: null,
+        },
+      ],
+    };
+
+    beforeEach(() => {
+      jest.resetAllMocks();
+
+      dataSource.manager.findOne.mockResolvedValueOnce(transaction);
+
+      mockTransaction();
+    });
+
+    it('should update basic transaction approver', async () => {
+      const transactionId = 1;
+      const dto: UpdateTransactionApproverDto = {
+        userId: 12,
+      };
+
+      jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce({ ...basicApprover });
+      jest.spyOn(service, 'getRootNodeFromNode').mockResolvedValueOnce({ ...basicApprover });
+      jest.spyOn(service, 'getApproversByTransactionId').mockResolvedValueOnce([]);
+      dataSource.manager.count.mockResolvedValueOnce(1);
+
+      await service.updateTransactionApprover(1, dto, transactionId, user);
+
+      expect(dataSource.manager.update).toHaveBeenCalledWith(TransactionApprover, 1, {
+        userId: 12,
+        userKeyId: undefined,
+        signature: undefined,
+        approved: undefined,
+      });
+      expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, expect.anything());
+    });
+
+    it('should do nothing if approver user id updated with the same user id', async () => {
+      const transactionId = 1;
+      const dto: UpdateTransactionApproverDto = {
+        userId: basicApprover.userId,
+      };
+
+      jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce({ ...basicApprover });
+      jest.spyOn(service, 'getRootNodeFromNode').mockResolvedValueOnce({ ...basicApprover });
+      jest.spyOn(service, 'getApproversByTransactionId').mockResolvedValueOnce([]);
+      dataSource.manager.count.mockResolvedValueOnce(1);
+
+      await service.updateTransactionApprover(1, dto, transactionId, user);
+
+      expect(dataSource.manager.update).not.toHaveBeenCalled();
+    });
+
+    it('should fail on update of non existing approver', async () => {
+      const transactionId = 1;
+      const dto: UpdateTransactionApproverDto = {
+        userId: 12,
+      };
+
+      jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce(null);
+
+      await expect(service.updateTransactionApprover(1, dto, transactionId, user)).rejects.toThrow(
+        "Approver doesn't exist",
+      );
+    });
+
+    it('should fail on update of approver without root', async () => {
+      const transactionId = 1;
+      const dto: UpdateTransactionApproverDto = {
+        userId: 12,
+      };
+
+      jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce({ ...basicApprover });
+      jest.spyOn(service, 'getRootNodeFromNode').mockResolvedValueOnce(null);
+
+      await expect(service.updateTransactionApprover(1, dto, transactionId, user)).rejects.toThrow(
+        "Root approver doesn't exist",
+      );
+    });
+
+    it('should fail on update of an approver with non existing user', async () => {
+      const transactionId = 1;
+      const dto: UpdateTransactionApproverDto = {
+        userId: 12,
+      };
+
+      jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce({ ...basicApprover });
+      jest.spyOn(service, 'getRootNodeFromNode').mockResolvedValueOnce({ ...basicApprover });
+      dataSource.manager.count.mockResolvedValueOnce(0);
+
+      await expect(service.updateTransactionApprover(1, dto, transactionId, user)).rejects.toThrow(
+        'User with id: 12 not found',
+      );
+    });
+
+    it('should fail on update of an approver with non existing user', async () => {
+      const transactionId = 1;
+      const dto: UpdateTransactionApproverDto = {
+        userId: 12,
+      };
+
+      jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce({ ...basicApprover });
+      jest.spyOn(service, 'getRootNodeFromNode').mockResolvedValueOnce({ ...basicApprover });
+      dataSource.manager.count.mockResolvedValueOnce(0);
+
+      await expect(service.updateTransactionApprover(1, dto, transactionId, user)).rejects.toThrow(
+        'User with id: 12 not found',
+      );
+    });
+
+    it('should fail on update many properties of an approver', async () => {
+      const transactionId = 1;
+      const dto: UpdateTransactionApproverDto = {
+        userId: 12,
+        threshold: 3,
+      };
+
+      jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce({ ...basicApprover });
+      jest.spyOn(service, 'getRootNodeFromNode').mockResolvedValueOnce({ ...basicApprover });
+
+      await expect(service.updateTransactionApprover(1, dto, transactionId, user)).rejects.toThrow(
+        'Only one property of the approver can be update user id, list id, or the threshold',
+      );
+    });
+
+    it('should fail on update nested approver with user id ', async () => {
+      const transactionId = 1;
+      const dto: UpdateTransactionApproverDto = {
+        userId: 12,
+      };
+
+      jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce({ ...treeApprover });
+      jest.spyOn(service, 'getRootNodeFromNode').mockResolvedValueOnce({ ...treeApprover });
+
+      await expect(service.updateTransactionApprover(1, dto, transactionId, user)).rejects.toThrow(
+        'Cannot update user id, the approver is a tree',
+      );
+    });
+
+    it('should update attach approver to a tree', async () => {
+      const transactionId = 1;
+      const dto: UpdateTransactionApproverDto = {
+        listId: 5,
+      };
+
+      jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce({ ...basicApprover });
+      jest.spyOn(service, 'getRootNodeFromNode').mockResolvedValueOnce({ ...basicApprover });
+      dataSource.manager.findOne
+        .calledWith(TransactionApprover, expect.anything())
+        .mockResolvedValueOnce(treeApprover2);
+      jest
+        .spyOn(service, 'getTransactionApproversById')
+        .mockResolvedValueOnce([treeApprover.approvers[0], treeApprover.approvers[1]]);
+      jest.spyOn(service, 'getRootNodeFromNode').mockResolvedValueOnce(treeApprover2);
+
+      await service.updateTransactionApprover(1, dto, transactionId, user);
+
+      expect(dataSource.manager.update).toHaveBeenCalledWith(TransactionApprover, 1, {
+        listId: 5,
+        transactionId: null,
+      });
+      expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, expect.anything());
+    });
+
+    it('should fail on update listId if parent (listId approver) not found', async () => {
+      const transactionId = 1;
+      const dto: UpdateTransactionApproverDto = {
+        listId: 5,
+      };
+
+      jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce({ ...basicApprover });
+      jest.spyOn(service, 'getRootNodeFromNode').mockResolvedValueOnce({ ...basicApprover });
+      dataSource.manager.findOne
+        .calledWith(TransactionApprover, expect.anything())
+        .mockResolvedValueOnce(null);
+
+      await expect(service.updateTransactionApprover(1, dto, transactionId, user)).rejects.toThrow(
+        'Parent approver not found',
+      );
+    });
+
+    it('should fail on update listId if parent (listId approver) is not tree', async () => {
+      const transactionId = 1;
+      const dto: UpdateTransactionApproverDto = {
+        listId: 5,
+      };
+
+      jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce({ ...basicApprover });
+      jest.spyOn(service, 'getRootNodeFromNode').mockResolvedValueOnce({ ...basicApprover });
+      dataSource.manager.findOne
+        .calledWith(TransactionApprover, expect.anything())
+        .mockResolvedValueOnce({ ...basicApprover });
+
+      await expect(service.updateTransactionApprover(1, dto, transactionId, user)).rejects.toThrow(
+        'Threshold must be set for the parent approver',
+      );
+    });
+
+    it('should fail on update transaction is different', async () => {
+      const transactionId = 1;
+      const dto: UpdateTransactionApproverDto = {
+        listId: 5,
+      };
+
+      jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce({ ...basicApprover });
+      jest
+        .spyOn(service, 'getRootNodeFromNode')
+        .mockResolvedValueOnce({ ...basicApprover, transactionId: 2 });
+
+      await expect(service.updateTransactionApprover(1, dto, transactionId, user)).rejects.toThrow(
+        'Root transaction is not the same',
+      );
+    });
+
+    it('should fail on update listId if the new list id is child of the updated approver', async () => {
+      const transactionId = 1;
+      const dto: UpdateTransactionApproverDto = {
+        listId: 3,
+      };
+
+      jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce({ ...treeApprover });
+      jest.spyOn(service, 'getRootNodeFromNode').mockResolvedValueOnce({ ...treeApprover });
+      dataSource.manager.findOne
+        .calledWith(TransactionApprover, expect.anything())
+        .mockResolvedValueOnce({
+          id: 3,
+          transactionId: null,
+          userId: 1,
+          listId: 2,
+          threshold: 3,
+          approvers: [
+            /* some children */
+          ],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          deletedAt: null,
+        });
+      jest
+        .spyOn(service, 'getTransactionApproversById')
+        .mockResolvedValueOnce([treeApprover.approvers[0], treeApprover.approvers[1]]);
+      jest.spyOn(service, 'getRootNodeFromNode').mockResolvedValueOnce({ ...treeApprover });
+      await expect(service.updateTransactionApprover(3, dto, transactionId, user)).rejects.toThrow(
+        'Cannot set a child as a parent',
+      );
+    });
+
+    it('should fail on update listId if the parent is not in same transaction', async () => {
+      const transactionId = 1;
+      const dto: UpdateTransactionApproverDto = {
+        listId: 3,
+      };
+
+      jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce({ ...treeApprover });
+      jest.spyOn(service, 'getRootNodeFromNode').mockResolvedValueOnce({ ...treeApprover });
+      dataSource.manager.findOne
+        .calledWith(TransactionApprover, expect.anything())
+        .mockResolvedValueOnce({ ...treeApprover2, transactionId: 2 });
+      jest.spyOn(service, 'getTransactionApproversById').mockResolvedValueOnce([]);
+      jest
+        .spyOn(service, 'getRootNodeFromNode')
+        .mockResolvedValueOnce({ ...treeApprover2, transactionId: 2 });
+      await expect(service.updateTransactionApprover(3, dto, transactionId, user)).rejects.toThrow(
+        'Root transaction is not the same',
+      );
+    });
+
+    it('should do nothing if update list id that is null with null', async () => {
+      const transactionId = 1;
+      const dto: UpdateTransactionApproverDto = {
+        listId: null,
+      };
+
+      jest
+        .spyOn(service, 'getTransactionApproverById')
+        .mockResolvedValueOnce({ ...basicApprover, listId: null });
+      jest
+        .spyOn(service, 'getRootNodeFromNode')
+        .mockResolvedValueOnce({ ...basicApprover, listId: null });
+
+      await service.updateTransactionApprover(1, dto, transactionId, user);
+
+      expect(dataSource.manager.update).not.toHaveBeenCalled();
+    });
+
+    it('should update child to a tree', async () => {
+      const transactionId = 1;
+      const dto: UpdateTransactionApproverDto = {
+        listId: null,
+      };
+
+      jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce({ ...treeChild });
+      jest.spyOn(service, 'getRootNodeFromNode').mockResolvedValueOnce({ ...treeApprover });
+      dataSource.manager.findOne
+        .calledWith(TransactionApprover, expect.anything())
+        .mockResolvedValueOnce({ ...treeApprover });
+
+      await service.updateTransactionApprover(treeChild.id, dto, transactionId, user);
+
+      expect(dataSource.manager.update).toHaveBeenNthCalledWith(
+        1,
+        TransactionApprover,
+        treeChild.id,
+        {
+          listId: null,
+          transactionId: transactionId,
+        },
+      );
+      expect(dataSource.manager.update).toHaveBeenNthCalledWith(
+        2,
+        TransactionApprover,
+        treeApprover.id,
+        {
+          threshold: 1,
+        },
+      );
+      expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, expect.anything());
+    });
+
+    it('should soft remove tree if no children left', async () => {
+      const transactionId = 1;
+      const dto: UpdateTransactionApproverDto = {
+        listId: null,
+      };
+
+      jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce({ ...treeChild });
+      jest
+        .spyOn(service, 'getRootNodeFromNode')
+        .mockResolvedValueOnce({ ...treeApprover, threshold: 1, approvers: [{ ...treeChild }] });
+      dataSource.manager.findOne
+        .calledWith(TransactionApprover, expect.anything())
+        .mockResolvedValueOnce({ ...treeApprover, threshold: 1, approvers: [{ ...treeChild }] });
+
+      await service.updateTransactionApprover(treeChild.id, dto, transactionId, user);
+
+      expect(dataSource.manager.update).toHaveBeenNthCalledWith(
+        1,
+        TransactionApprover,
+        treeChild.id,
+        {
+          listId: null,
+          transactionId: transactionId,
+        },
+      );
+      expect(dataSource.manager.softRemove).toHaveBeenCalled();
+      expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, expect.anything());
+    });
+
+    it('should update the threshold of a tree', async () => {
+      const transactionId = 1;
+      const dto: UpdateTransactionApproverDto = {
+        threshold: 1,
+      };
+
+      jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce({ ...treeApprover });
+      jest.spyOn(service, 'getRootNodeFromNode').mockResolvedValueOnce({ ...treeApprover });
+      dataSource.manager.findOne
+        .calledWith(TransactionApprover, expect.anything())
+        .mockResolvedValueOnce({ ...treeApprover });
+
+      await service.updateTransactionApprover(treeApprover.id, dto, transactionId, user);
+
+      expect(dataSource.manager.update).toHaveBeenCalledWith(TransactionApprover, treeApprover.id, {
+        threshold: 1,
+      });
+      expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, expect.anything());
+    });
+
+    it('should fail on update the threshold of a tree with invalid threshold', async () => {
+      const transactionId = 1;
+      const dto: UpdateTransactionApproverDto = {
+        threshold: 3,
+      };
+
+      jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce({ ...treeApprover });
+      jest.spyOn(service, 'getRootNodeFromNode').mockResolvedValueOnce({ ...treeApprover });
+      dataSource.manager.findOne
+        .calledWith(TransactionApprover, expect.anything())
+        .mockResolvedValueOnce({ ...treeApprover });
+
+      await expect(
+        service.updateTransactionApprover(treeApprover.id, dto, transactionId, user),
+      ).rejects.toThrow('Threshold must be less or equal to the number of approvers (2) and not 0');
+    });
+
+    it('should fail on update the threshold if approver is not a tree', async () => {
+      const transactionId = 1;
+      const dto: UpdateTransactionApproverDto = {
+        threshold: 1,
+      };
+
+      jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce({ ...basicApprover });
+      jest.spyOn(service, 'getRootNodeFromNode').mockResolvedValueOnce({ ...basicApprover });
+
+      await expect(
+        service.updateTransactionApprover(basicApprover.id, dto, transactionId, user),
+      ).rejects.toThrow('Cannot update threshold, the approver is not a tree');
+    });
+  });
+
+  describe('removeTransactionApprover', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it('should soft remove approver', async () => {
+      jest
+        .spyOn(service, 'getTransactionApproverById')
+        .mockResolvedValueOnce({ id: 1 } as TransactionApprover);
+
+      await service.removeTransactionApprover(1);
+
+      expect(approversRepo.query).toHaveBeenCalled();
+      expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, expect.anything());
+    });
+
+    it('should fail if approver does not exists', async () => {
+      jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce(null);
+
+      await expect(service.removeTransactionApprover(1)).rejects.toThrow("Approver doesn't exist");
+    });
+  });
+
+  describe('approveTransaction', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it('should send transaction approval', async () => {
+      const dto: ApproverChoiceDto = {
+        userKeyId: user.keys[0].id,
+        signature: Buffer.from('0x123'),
+        approved: true,
+      };
+      const sdkTransaction = new AccountCreateTransaction();
+      const transaction = {
+        id: 1,
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+        body: sdkTransaction.toBytes(),
+      };
+
+      mockTransaction();
+
+      const queryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        whereInIds: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockImplementation(jest.fn()),
+      };
+      dataSource.manager.createQueryBuilder.mockReturnValue(
+        queryBuilder as unknown as SelectQueryBuilder<TransactionApprover>,
+      );
+
+      jest.spyOn(service, 'getVerifiedApproversByTransactionId').mockResolvedValueOnce([
+        {
+          userId: user.id,
+          transactionId: 1,
+        } as TransactionApprover,
+      ]);
+      dataSource.manager.findOne.mockResolvedValueOnce(transaction);
+      jest.mocked(verifyTransactionBodyWithoutNodeAccountIdSignature).mockReturnValue(true);
+
+      await service.approveTransaction(dto, transaction.id, user);
+
+      expect(queryBuilder.update).toHaveBeenCalled();
+      expect(queryBuilder.set).toHaveBeenCalled();
+      expect(queryBuilder.whereInIds).toHaveBeenCalled();
+      expect(queryBuilder.execute).toHaveBeenCalled();
+      expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, expect.anything());
+    });
+
+    it('should throw if user not approver', async () => {
+      const dto: ApproverChoiceDto = {
+        userKeyId: user.keys[0].id,
+        signature: Buffer.from('0x123'),
+        approved: true,
+      };
+      const transaction = {
+        id: 1,
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+      };
+
+      jest.spyOn(service, 'getVerifiedApproversByTransactionId').mockResolvedValueOnce([]);
+      dataSource.manager.findOne.mockResolvedValueOnce(transaction);
+
+      await expect(service.approveTransaction(dto, transaction.id, user)).rejects.toThrow(
+        'You are not an approver of this transaction',
+      );
+    });
+
+    it('should throw if user already approver', async () => {
+      const dto: ApproverChoiceDto = {
+        userKeyId: user.keys[0].id,
+        signature: Buffer.from('0x123'),
+        approved: true,
+      };
+      const transaction = {
+        id: 1,
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+      };
+
+      jest.spyOn(service, 'getVerifiedApproversByTransactionId').mockResolvedValueOnce([
+        {
+          userId: user.id,
+          transactionId: 1,
+          ...dto,
+        } as TransactionApprover,
+      ]);
+      dataSource.manager.findOne.mockResolvedValueOnce(transaction);
+
+      await expect(service.approveTransaction(dto, transaction.id, user)).rejects.toThrow(
+        'You have already approved this transaction',
+      );
+    });
+
+    it('should do nothing if user has no keys to approve with', async () => {
+      const dto: ApproverChoiceDto = {
+        userKeyId: user.keys[0].id,
+        signature: Buffer.from('0x123'),
+        approved: true,
+      };
+      const transaction = {
+        id: 1,
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+      };
+
+      jest.spyOn(service, 'getVerifiedApproversByTransactionId').mockResolvedValueOnce([
+        {
+          userId: user.id,
+          transactionId: 1,
+        } as TransactionApprover,
+      ]);
+      dataSource.manager.find.mockResolvedValueOnce([]);
+      dataSource.manager.findOne.mockResolvedValueOnce(transaction);
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([]);
+
+      expect(await service.approveTransaction(dto, transaction.id, { ...user, keys: [] })).toEqual(
+        false,
+      );
+    });
+
+    it('should throw if the signature key does not belong to the user', async () => {
+      const dto: ApproverChoiceDto = {
+        userKeyId: 2,
+        signature: Buffer.from('0x123'),
+        approved: true,
+      };
+      const transaction = {
+        id: 1,
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+      };
+
+      jest.spyOn(service, 'getVerifiedApproversByTransactionId').mockResolvedValueOnce([
+        {
+          userId: user.id,
+          transactionId: 1,
+        } as TransactionApprover,
+      ]);
+      dataSource.manager.findOne.mockResolvedValueOnce(transaction);
+
+      await expect(service.approveTransaction(dto, transaction.id, user)).rejects.toThrow(
+        'Signature key does not belong to the user',
+      );
+    });
+
+    it('should throw if the transaction is not found', async () => {
+      const dto: ApproverChoiceDto = {
+        userKeyId: user.keys[0].id,
+        signature: Buffer.from('0x123'),
+        approved: true,
+      };
+
+      mockTransaction();
+
+      jest.spyOn(service, 'getVerifiedApproversByTransactionId').mockResolvedValueOnce([
+        {
+          userId: user.id,
+          transactionId: 1,
+        } as TransactionApprover,
+      ]);
+
+      await expect(service.approveTransaction(dto, 1, user)).rejects.toThrow(
+        'Transaction not found',
+      );
+    });
+
+    it('should throw if the transaction is already executed', async () => {
+      const dto: ApproverChoiceDto = {
+        userKeyId: user.keys[0].id,
+        signature: Buffer.from('0x123'),
+        approved: true,
+      };
+      const transaction = {
+        id: 1,
+        status: TransactionStatus.EXECUTED,
+      };
+
+      jest.spyOn(service, 'getVerifiedApproversByTransactionId').mockResolvedValueOnce([
+        {
+          userId: user.id,
+          transactionId: 1,
+        } as TransactionApprover,
+      ]);
+      dataSource.manager.findOne.mockResolvedValueOnce(transaction);
+
+      await expect(service.approveTransaction(dto, transaction.id, user)).rejects.toThrow(
+        'Transaction has already been executed',
+      );
+    });
+
+    it('should throw if the transaction is canceled', async () => {
+      const dto: ApproverChoiceDto = {
+        userKeyId: user.keys[0].id,
+        signature: Buffer.from('0x123'),
+        approved: true,
+      };
+      const transaction = {
+        id: 1,
+        status: TransactionStatus.CANCELED,
+      };
+
+      jest.spyOn(service, 'getVerifiedApproversByTransactionId').mockResolvedValueOnce([
+        {
+          userId: user.id,
+          transactionId: 1,
+        } as TransactionApprover,
+      ]);
+      dataSource.manager.findOne.mockResolvedValueOnce(transaction);
+
+      await expect(service.approveTransaction(dto, transaction.id, user)).rejects.toThrow(
+        'Transaction has been canceled',
+      );
+    });
+
+    it('should throw if signature is invalid', async () => {
+      const dto: ApproverChoiceDto = {
+        userKeyId: user.keys[0].id,
+        signature: Buffer.from('0x123'),
+        approved: true,
+      };
+      const sdkTransaction = new AccountCreateTransaction();
+      const transaction = {
+        id: 1,
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+        body: sdkTransaction.toBytes(),
+      };
+
+      jest.spyOn(service, 'getVerifiedApproversByTransactionId').mockResolvedValueOnce([
+        {
+          userId: user.id,
+          transactionId: 1,
+        } as TransactionApprover,
+      ]);
+      dataSource.manager.findOne.mockResolvedValueOnce(transaction);
+      jest.mocked(verifyTransactionBodyWithoutNodeAccountIdSignature).mockReturnValue(false);
+
+      await expect(service.approveTransaction(dto, transaction.id, user)).rejects.toThrow(
+        'The signature does not match the public key',
+      );
+    });
+  });
+
+  describe('getCreatorsTransaction', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it('should return the transaction if user is creator', async () => {
+      const transaction = {
+        id: 1,
+        creatorKey: { user },
+      };
+
+      dataSource.manager.findOne.mockResolvedValueOnce(transaction);
+
+      expect(await service.getCreatorsTransaction(1, user)).toEqual(transaction);
+    });
+
+    it('should throw if user is not creator', async () => {
+      const transaction = {
+        id: 1,
+        creatorKey: { user: { id: 2 } },
+      };
+
+      dataSource.manager.findOne.mockResolvedValueOnce(transaction);
+
+      await expect(service.getCreatorsTransaction(1, user)).rejects.toThrow(
+        'Only the creator of the transaction is able to modify it',
+      );
+    });
+
+    it('should throw if transaction is not found', async () => {
+      dataSource.manager.findOne.mockResolvedValueOnce(null);
+
+      await expect(service.getCreatorsTransaction(1, user)).rejects.toThrow(
+        'Transaction not found',
+      );
+    });
+  });
+
+  describe('getTreeStructure', () => {
+    const today = new Date();
+
+    const approver1: TransactionApprover = {
+      id: 3,
+      transactionId: null,
+      userId: 1,
+      listId: 2,
+      threshold: null,
+      approvers: [],
+      createdAt: today,
+      updatedAt: today,
+      deletedAt: null,
+    };
+
+    const approver2: TransactionApprover = {
+      id: 4,
+      transactionId: null,
+      userId: 2,
+      listId: 2,
+      threshold: null,
+      approvers: [],
+      createdAt: today,
+      updatedAt: today,
+      deletedAt: null,
+    };
+
+    const approver3 = {
+      id: 2,
+      transactionId: 1,
+      userId: null,
+      threshold: 2,
+      listId: null,
+      createdAt: today,
+      updatedAt: today,
+      deletedAt: null,
+    } as TransactionApprover;
+
+    const treeApprover: TransactionApprover = {
+      id: 2,
+      transactionId: 1,
+      userId: null,
+      threshold: 2,
+      listId: null,
+      createdAt: today,
+      updatedAt: today,
+      deletedAt: null,
+      approvers: [
+        {
+          id: 3,
+          transactionId: null,
+          userId: 1,
+          listId: 2,
+          threshold: null,
+          approvers: [],
+          createdAt: today,
+          updatedAt: today,
+          deletedAt: null,
+        },
+        {
+          id: 4,
+          transactionId: null,
+          userId: 2,
+          listId: 2,
+          threshold: null,
+          approvers: [],
+          createdAt: today,
+          updatedAt: today,
+          deletedAt: null,
+        },
+      ],
+    };
+
+    it('should return the tree structure', async () => {
+      expect(
+        service.getTreeStructure([{ ...approver1 }, { ...approver2 }, { ...approver3 }]),
+      ).toEqual([{ ...treeApprover }]);
     });
   });
 });
