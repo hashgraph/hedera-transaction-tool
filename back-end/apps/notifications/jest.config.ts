@@ -7,7 +7,7 @@ const config: Config = {
   transform: {
     '^.+\\.(t|j)s$': 'ts-jest',
   },
-  collectCoverageFrom: ['<rootDir>/apps/notifications/**/*.(t|j)s'],
+  collectCoverageFrom: ['<rootDir>/apps/notifications/src/**/*.(t|j)s'],
   coverageDirectory: './coverage',
   testEnvironment: 'node',
   roots: ['<rootDir>/libs/', '<rootDir>/apps/notifications'],
