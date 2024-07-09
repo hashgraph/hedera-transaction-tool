@@ -545,11 +545,15 @@ export class TransactionsService {
 
     if (!statusFilter) return Not(In([...forbiddenStatuses]));
 
-    const statusFilterValue = statusFilter.value.split(',') as TransactionStatus[];
+    const statusFilterValue = statusFilter.value
+      .split(',')
+      .map(v => v.trim()) as TransactionStatus[];
 
     switch (statusFilter.rule) {
       case 'eq':
-        return allowedStatuses.includes(statusFilterValue[0]) ? statusFilterValue[0] : undefined;
+        return allowedStatuses.includes(statusFilterValue[0])
+          ? statusFilterValue[0]
+          : Not(In([...forbiddenStatuses]));
       case 'in':
         return In(statusFilterValue.filter(s => allowedStatuses.includes(s)));
       case 'neq':
