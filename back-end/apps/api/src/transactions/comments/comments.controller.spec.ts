@@ -1,12 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { mockDeep } from 'jest-mock-extended';
 
+import { guardMock } from '@app/common';
 import { User } from '@entities';
 
 import { CommentsController } from './comments.controller';
 
 import { CommentsService } from './comments.service';
 import { VerifiedUserGuard } from '../../guards';
-import { mockDeep } from 'jest-mock-extended';
 
 describe('CommentsController', () => {
   let controller: CommentsController;
@@ -29,11 +30,7 @@ describe('CommentsController', () => {
       ],
     })
       .overrideGuard(VerifiedUserGuard)
-      .useValue({
-        canActivate: jest.fn(() => {
-          return true;
-        }),
-      })
+      .useValue(guardMock())
       .compile();
 
     controller = module.get<CommentsController>(CommentsController);

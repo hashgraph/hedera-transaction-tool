@@ -1,12 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { TransactionGroupsController } from './transaction-groups.controller';
+
+import { guardMock } from '@app/common';
 import { TransactionGroup, User, UserStatus } from '@entities';
+
+import { TransactionGroupsController } from './transaction-groups.controller';
+
 import { TransactionGroupsService } from './transaction-groups.service';
+import { VerifiedUserGuard } from '../../guards';
 
 describe('TransactionGroupsController', () => {
   let controller: TransactionGroupsController;
   let user: User;
-  let transactionGroup: TransactionGroup
+  let transactionGroup: TransactionGroup;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -18,10 +23,13 @@ describe('TransactionGroupsController', () => {
             createTransactionGroup: jest.fn(),
             getTransactionGroups: jest.fn(),
             removeTransactionGroup: jest.fn(),
-          }
+          },
         },
-      ]
-    }).compile();
+      ],
+    })
+      .overrideGuard(VerifiedUserGuard)
+      .useValue(guardMock())
+      .compile();
 
     controller = module.get<TransactionGroupsController>(TransactionGroupsController);
     user = {
@@ -37,7 +45,7 @@ describe('TransactionGroupsController', () => {
       signerForTransactions: [],
       observableTransactions: [],
       approvableTransactions: [],
-      comments: []
+      comments: [],
     };
     transactionGroup = {
       id: 1,
@@ -54,7 +62,7 @@ describe('TransactionGroupsController', () => {
       const body = {
         description: 'Test Transaction Group Description',
         atomic: false,
-        groupItems: []
+        groupItems: [],
       };
 
       jest.spyOn(controller, 'createTransactionGroup').mockResolvedValue(result);
