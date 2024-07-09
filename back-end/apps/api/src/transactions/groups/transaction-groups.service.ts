@@ -1,7 +1,7 @@
 import { Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 
 import {
   asyncFilter,
@@ -20,36 +20,38 @@ import { CreateTransactionGroupDto } from '../dto';
 export class TransactionGroupsService {
   constructor(
     private readonly transactionsService: TransactionsService,
-    @InjectRepository(TransactionGroup) private readonly repo: Repository<TransactionGroup>,
-    @InjectRepository(TransactionGroupItem)
-    private readonly itemRepo: Repository<TransactionGroupItem>,
+    @InjectDataSource() private dataSource: DataSource,
     @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
   ) {}
 
   getTransactionGroups(): Promise<TransactionGroup[]> {
-    return this.repo.find();
+    return this.dataSource.manager.find(TransactionGroup);
   }
 
   async createTransactionGroup(
     user: User,
     dto: CreateTransactionGroupDto,
   ): Promise<TransactionGroup> {
-    const group = this.repo.create(dto);
-    const groupItems: TransactionGroupItem[] = [];
+    const group = this.dataSource.manager.create(TransactionGroup, dto);
 
-    for (const groupItemDto of dto.groupItems) {
-      const transaction = await this.transactionsService.createTransaction(
-        groupItemDto.transaction,
-        user,
-      );
-      const groupItem = this.itemRepo.create(groupItemDto);
-      groupItem.transaction = transaction;
-      groupItem.group = group;
-      groupItems.push(await this.itemRepo.save(groupItem));
-    }
+    await this.dataSource.transaction(async manager => {
+      const groupItems: TransactionGroupItem[] = [];
 
-    await this.repo.save(group);
-    await this.itemRepo.save(groupItems);
+      for (const groupItemDto of dto.groupItems) {
+        const transaction = await this.transactionsService.createTransaction(
+          groupItemDto.transaction,
+          user,
+        );
+        const groupItem = manager.create(TransactionGroupItem, groupItemDto);
+
+        groupItem.transaction = transaction;
+        groupItem.group = group;
+        groupItems.push(await manager.save(TransactionGroupItem, groupItem));
+      }
+
+      await manager.save(TransactionGroup, group);
+      await manager.save(TransactionGroupItem, groupItems);
+    });
 
     this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
       message: TRANSACTION_ACTION,
@@ -60,7 +62,7 @@ export class TransactionGroupsService {
   }
 
   async getTransactionGroup(user: User, id: number): Promise<TransactionGroup> {
-    const group = await this.repo.findOne({
+    const group = await this.dataSource.manager.findOne(TransactionGroup, {
       where: { id },
       relations: [
         'groupItems',
@@ -88,11 +90,11 @@ export class TransactionGroupsService {
   }
 
   async removeTransactionGroup(user: User, id: number): Promise<TransactionGroup> {
-    const group = await this.repo.findOneBy({ id });
+    const group = await this.dataSource.manager.findOneBy(TransactionGroup, { id });
     if (!group) {
       throw new Error('group not found');
     }
-    const groupItems = await this.itemRepo.find({
+    const groupItems = await this.dataSource.manager.find(TransactionGroupItem, {
       relations: {
         group: true,
       },
@@ -104,11 +106,11 @@ export class TransactionGroupsService {
     });
     for (const groupItem of groupItems) {
       const transactionId = groupItem.transactionId;
-      await this.itemRepo.remove(groupItem);
+      await this.dataSource.manager.remove(TransactionGroupItem, groupItem);
       await this.transactionsService.removeTransaction(user, transactionId, false);
     }
 
-    const result = await this.repo.remove(group);
+    const result = await this.dataSource.manager.remove(TransactionGroup, group);
 
     this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
       message: TRANSACTION_ACTION,
