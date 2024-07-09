@@ -15,7 +15,6 @@ import { TransactionGroup, TransactionGroupItem, User } from '@entities';
 import { TransactionsService } from '../transactions.service';
 
 import { CreateTransactionGroupDto } from '../dto';
-import { UserDto } from '../../users/dtos';
 
 @Injectable()
 export class TransactionGroupsService {
@@ -32,7 +31,7 @@ export class TransactionGroupsService {
   }
 
   async createTransactionGroup(
-    user: UserDto,
+    user: User,
     dto: CreateTransactionGroupDto,
   ): Promise<TransactionGroup> {
     const group = this.repo.create(dto);
@@ -88,7 +87,7 @@ export class TransactionGroupsService {
     return group;
   }
 
-  async removeTransactionGroup(user: UserDto, id: number): Promise<TransactionGroup> {
+  async removeTransactionGroup(user: User, id: number): Promise<TransactionGroup> {
     const group = await this.repo.findOneBy({ id });
     if (!group) {
       throw new Error('group not found');
