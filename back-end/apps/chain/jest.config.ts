@@ -8,7 +8,6 @@ const config: Config = {
     '^.+\\.(t|j)s$': 'ts-jest',
   },
   collectCoverageFrom: ['<rootDir>/apps/chain/src/**/*.{!(module),}.(t|j)s'],
-  coverageDirectory: './coverage',
   testEnvironment: 'node',
   roots: ['<rootDir>/libs/', '<rootDir>/apps/chain'],
   moduleNameMapper: {
