@@ -118,7 +118,7 @@ export class TransactionStatusService {
     name: 'status_update_expired_transactions',
   })
   async handleExpiredTransactions() {
-    this.transactionRepo.manager.transaction(async transactionalEntityManager => {
+    await this.transactionRepo.manager.transaction(async transactionalEntityManager => {
       const transactions = await transactionalEntityManager.find(Transaction, {
         where: {
           status: In([
@@ -145,6 +145,11 @@ export class TransactionStatusService {
           },
         );
       }
+    });
+
+    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+      message: TRANSACTION_ACTION,
+      content: '',
     });
   }
 
