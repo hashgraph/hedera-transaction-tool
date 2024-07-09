@@ -268,7 +268,6 @@ export class ApproversService {
             });
 
             if (!parent) throw new Error(this.PARENT_APPROVER_NOT_FOUND);
-            if (typeof parent.threshold !== 'number') throw new Error(this.THRESHOLD_REQUIRED);
 
             /* Check if the root transaction is the same */
             const root = await this.getRootNodeFromNode(
@@ -350,7 +349,7 @@ export class ApproversService {
 
           /* Continue creating the three */
           if (dtoApprover.approvers) {
-            for (const nestedDtoApprover of dtoApprover.approvers || []) {
+            for (const nestedDtoApprover of dtoApprover.approvers) {
               const nestedApprover = { ...nestedDtoApprover, listId: approver.id };
 
               if (!nestedDtoApprover.approvers || nestedDtoApprover.approvers.length === 0) {
