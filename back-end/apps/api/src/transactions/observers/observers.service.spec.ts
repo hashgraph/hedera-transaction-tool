@@ -14,13 +14,11 @@ import {
 } from '@entities';
 
 import { NOTIFICATIONS_SERVICE, MirrorNodeService } from '@app/common';
-// import {} from '@app/common/utils';
 import { userKeysRequiredToSign } from '../../utils';
 
 import { ObserversService } from './observers.service';
 import { ApproversService } from '../approvers';
 
-// jest.mock('@app/common/utils');
 jest.mock('../../utils');
 
 describe('ObserversService', () => {
