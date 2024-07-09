@@ -68,7 +68,14 @@ export class TransactionsService {
 
     const transaction = await this.repo.findOne({
       where: { id },
-      relations: ['creatorKey', 'creatorKey.user', 'observers', 'observers.user', 'comments', 'groupItem'],
+      relations: [
+        'creatorKey',
+        'creatorKey.user',
+        'observers',
+        'observers.user',
+        'comments',
+        'groupItem',
+      ],
     });
 
     if (!transaction) return null;
@@ -454,10 +461,27 @@ export class TransactionsService {
       relations: ['creatorKey', 'creatorKey.user', 'observers', 'groupItem'],
     });
 
+    await this.attachTransactionSignersApprovers(transaction);
+
     if (!(await this.verifyAccess(transaction, user))) {
       throw new UnauthorizedException("You don't have permission to view this transaction");
     }
     return transaction;
+  }
+
+  async attachTransactionSignersApprovers(transaction: Transaction) {
+    transaction.signers = await this.entityManager.find(TransactionSigner, {
+      where: {
+        transaction: {
+          id: transaction.id,
+        },
+      },
+      relations: ['userKey', 'userKey.user'],
+      withDeleted: true,
+    });
+
+    const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
+    transaction.approvers = this.approversService.getTreeStructure(approvers);
   }
 
   async verifyAccess(transaction: Transaction, user: User): Promise<boolean> {
@@ -473,27 +497,15 @@ export class TransactionsService {
     )
       return true;
 
-    transaction.signers = await this.entityManager.find(TransactionSigner, {
-      where: {
-        transaction: {
-          id: transaction.id,
-        },
-      },
-      relations: ['userKey', 'userKey.user'],
-      withDeleted: true,
-    });
-
     const userKeysToSign = await this.userKeysToSign(transaction, user);
 
-    const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
-
-    transaction.approvers = this.approversService.getTreeStructure(approvers);
-
-    return userKeysToSign.length !== 0 ||
+    return (
+      userKeysToSign.length !== 0 ||
       transaction.creatorKey?.user?.id === user.id ||
       transaction.observers.some(o => o.userId === user.id) ||
       transaction.signers.some(s => s.userKey.user.id === user.id) ||
-      approvers.some(a => a.userId === user.id);
+      transaction.approvers.some(a => a.userId === user.id)
+    );
   }
 
   /* Get the user keys that are required for a given transaction */

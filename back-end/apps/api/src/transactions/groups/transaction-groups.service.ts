@@ -76,7 +76,8 @@ export class TransactionGroupsService {
       throw new NotFoundException('Transaction not found');
     }
 
-    group.groupItems = await asyncFilter(group.groupItems, async (groupItem) => {
+    group.groupItems = await asyncFilter(group.groupItems, async groupItem => {
+      await this.transactionsService.attachTransactionSignersApprovers(groupItem.transaction);
       return this.transactionsService.verifyAccess(groupItem.transaction, user);
     });
 
