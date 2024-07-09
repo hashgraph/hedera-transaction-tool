@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, onBeforeUnmount, ref, nextTick, watch } from 'vue';
+import { onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
 
 import {
   AccountCreateTransaction,
