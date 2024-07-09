@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { ClientProxy } from '@nestjs/microservices';
 
+import * as crypto from 'crypto';
 import { Response } from 'express';
 import { totp } from 'otplib';
 import * as bcrypt from 'bcryptjs';
