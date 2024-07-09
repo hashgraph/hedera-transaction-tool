@@ -1,13 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ObserversController } from './observers.controller';
+import { mockDeep } from 'jest-mock-extended';
+
+import { guardMock } from '@app/common';
 import { Role, TransactionObserver, User, UserStatus } from '@entities';
-import { describe } from 'node:test';
+
+import { ObserversController } from './observers.controller';
+
 import { ObserversService } from './observers.service';
+import { VerifiedUserGuard } from '../../guards';
 
 describe('ObserversController', () => {
   let controller: ObserversController;
   let user: User;
   let observer: TransactionObserver;
+
+  const observersService = mockDeep<ObserversService>();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -15,23 +22,13 @@ describe('ObserversController', () => {
       providers: [
         {
           provide: ObserversService,
-          useValue: {
-            getTransactionObserverById: jest.fn(),
-            getObserversByTransactionId: jest.fn(),
-            getVerifiedObserversByTransactionId: jest.fn(),
-            getTransactionObserversById: jest.fn(),
-            getRootNodeFromNode: jest.fn(),
-            removeNode: jest.fn(),
-            createTransactionObservers: jest.fn(),
-            updateTransactionObserver: jest.fn(),
-            removeTransactionObserver: jest.fn(),
-            approveTransaction: jest.fn(),
-            getCreatorsTransaction: jest.fn(),
-            getTreeStructure: jest.fn(),
-          }
+          useValue: observersService,
         },
-      ]
-    }).compile();
+      ],
+    })
+      .overrideGuard(VerifiedUserGuard)
+      .useValue(guardMock())
+      .compile();
 
     controller = module.get<ObserversController>(ObserversController);
     user = {
@@ -47,7 +44,7 @@ describe('ObserversController', () => {
       signerForTransactions: [],
       observableTransactions: [],
       approvableTransactions: [],
-      comments: []
+      comments: [],
     };
     observer = {
       id: 1,
@@ -56,19 +53,18 @@ describe('ObserversController', () => {
       user: user,
       role: Role.FULL,
       transactionId: 1,
-      userId: 1
+      userId: 1,
     };
   });
 
   describe('createTransactionObserver', () => {
     it('should return an array of transaction observers', async () => {
       const body = {
-        userIds: [1, 2, 3]
+        userIds: [1, 2, 3],
       };
       const result = [observer];
 
-
-      jest.spyOn(controller, 'createTransactionObserver').mockResolvedValue(result);
+      observersService.createTransactionObservers.mockResolvedValue(result);
 
       expect(await controller.createTransactionObserver(user, 1, body)).toBe(result);
     });
@@ -78,7 +74,7 @@ describe('ObserversController', () => {
     it('should return a transaction observer', async () => {
       const result = [observer];
 
-      jest.spyOn(controller, 'getTransactionObserversByTransactionId').mockResolvedValue(result);
+      observersService.getTransactionObserversByTransactionId.mockResolvedValue(result);
 
       expect(await controller.getTransactionObserversByTransactionId(user, 1)).toBe(result);
     });
@@ -87,11 +83,11 @@ describe('ObserversController', () => {
   describe('updateTransactionObserver', () => {
     it('should return a transaction observer', async () => {
       const body = {
-        role: Role.FULL
+        role: Role.FULL,
       };
       const result = observer;
 
-      jest.spyOn(controller, 'updateTransactionObserver').mockResolvedValue(result);
+      observersService.updateTransactionObserver.mockResolvedValue(result);
 
       expect(await controller.updateTransactionObserver(user, 1, body)).toBe(result);
     });
@@ -101,7 +97,7 @@ describe('ObserversController', () => {
     it('should return a boolean indicating if the removal was successful', async () => {
       const result = observer;
 
-      jest.spyOn(controller, 'removeTransactionObserver').mockResolvedValue(result);
+      observersService.removeTransactionObserver.mockResolvedValue(result);
 
       expect(await controller.removeTransactionObserver(user, 1)).toBe(result);
     });
