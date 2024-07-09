@@ -470,6 +470,8 @@ export class TransactionsService {
   }
 
   async attachTransactionSignersApprovers(transaction: Transaction) {
+    if (!transaction) throw new NotFoundException('Transaction not found');
+
     transaction.signers = await this.entityManager.find(TransactionSigner, {
       where: {
         transaction: {
