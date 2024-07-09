@@ -131,32 +131,32 @@ export class TransactionsService {
       take: limit,
     };
 
+    const whereBrackets = new Brackets(qb =>
+      qb.where(where).andWhere(
+        `
+        (
+          with recursive "approverList" as
+            (
+              select * from "transaction_approver"
+              where "transaction_approver"."transactionId" = "Transaction"."id"
+                union all
+                  select "approver".* from "transaction_approver" as "approver"
+                  join "approverList" on "approverList"."id" = "approver"."listId"
+            )
+          select count(*) from "approverList"
+          where "approverList"."deletedAt" is null and "approverList"."userId" = :userId
+        ) > 0
+        `,
+        {
+          userId: user.id,
+        },
+      ),
+    );
+
     const [transactions, total] = await this.repo
       .createQueryBuilder()
       .setFindOptions(findOptions)
-      .orWhere(
-        new Brackets(qb =>
-          qb.where(where).andWhere(
-            `
-            (
-              with recursive "approverList" as
-                (
-                  select * from "transaction_approver"
-                  where "transaction_approver"."transactionId" = "Transaction"."id"
-                    union all
-                      select "approver".* from "transaction_approver" as "approver"
-                      join "approverList" on "approverList"."id" = "approver"."listId"
-                )
-              select count(*) from "approverList"
-              where "approverList"."deletedAt" is null and "approverList"."userId" = :userId
-            ) > 0
-        `,
-            {
-              userId: user.id,
-            },
-          ),
-        ),
-      )
+      .orWhere(whereBrackets)
       .getManyAndCount();
 
     return {
@@ -170,8 +170,8 @@ export class TransactionsService {
   /* Get the transactions visible by the user */
   async getHistoryTransactions(
     { page, limit, size, offset }: Pagination,
-    filter?: Filtering[],
-    sort?: Sorting[],
+    filter: Filtering[] = [],
+    sort: Sorting[] = [],
   ): Promise<PaginatedResourceDto<Transaction>> {
     const order = getOrder(sort);
 
@@ -232,7 +232,7 @@ export class TransactionsService {
     }[] = [];
 
     /* Ensures the user keys are passed */
-    if (user.keys.length === 0) {
+    if (!user.keys || user.keys.length === 0) {
       user.keys = await this.entityManager.find(UserKey, { where: { user: { id: user.id } } });
       if (user.keys.length === 0)
         return {
@@ -333,7 +333,7 @@ export class TransactionsService {
   }
 
   /* Create a new transaction with the provided information */
-  async createTransaction(dto: CreateTransactionDto, user: UserDto): Promise<Transaction> {
+  async createTransaction(dto: CreateTransactionDto, user: User): Promise<Transaction> {
     const userKeys = await this.entityManager.find(UserKey, { where: { user: { id: user.id } } });
     const creatorKey = userKeys.find(key => key.id === dto.creatorKeyId);
 
@@ -470,6 +470,8 @@ export class TransactionsService {
   }
 
   async attachTransactionSignersApprovers(transaction: Transaction) {
+    if (!transaction) throw new NotFoundException('Transaction not found');
+
     transaction.signers = await this.entityManager.find(TransactionSigner, {
       where: {
         transaction: {
@@ -545,11 +547,15 @@ export class TransactionsService {
 
     if (!statusFilter) return Not(In([...forbiddenStatuses]));
 
-    const statusFilterValue = statusFilter.value.split(',') as TransactionStatus[];
+    const statusFilterValue = statusFilter.value
+      .split(',')
+      .map(v => v.trim()) as TransactionStatus[];
 
     switch (statusFilter.rule) {
       case 'eq':
-        return allowedStatuses.includes(statusFilterValue[0]) ? statusFilterValue[0] : undefined;
+        return allowedStatuses.includes(statusFilterValue[0])
+          ? statusFilterValue[0]
+          : Not(In([...forbiddenStatuses]));
       case 'in':
         return In(statusFilterValue.filter(s => allowedStatuses.includes(s)));
       case 'neq':

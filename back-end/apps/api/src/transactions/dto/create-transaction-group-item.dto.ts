@@ -8,7 +8,7 @@ export class CreateTransactionGroupItemDto {
 
   @IsObject()
   @IsNotEmptyObject()
-  @ValidateNested()
+  @ValidateNested({ each: true })
   @Type(() => CreateTransactionDto)
   transaction: CreateTransactionDto;
 }

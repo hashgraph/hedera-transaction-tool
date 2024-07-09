@@ -1,6 +1,7 @@
 import { Body, Controller, HttpCode, Patch, Post, Res, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { MessagePattern, Payload } from '@nestjs/microservices';
+import { SkipThrottle } from '@nestjs/throttler';
 
 import { Response } from 'express';
 
@@ -32,7 +33,6 @@ import {
   AuthenticateWebsocketTokenDto,
 } from './dtos';
 import { UserDto } from '../users/dtos';
-import { SkipThrottle } from '@nestjs/throttler';
 
 @ApiTags('Authentication')
 @Controller('auth')

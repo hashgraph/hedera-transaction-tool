@@ -1,18 +1,29 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
+import { mockDeep } from 'jest-mock-extended';
+
+import { guardMock, Pagination } from '@app/common';
+import {
+  Network,
+  Transaction,
+  TransactionStatus,
+  TransactionType,
+  User,
+  UserStatus,
+} from '@entities';
+
 import { TransactionsController } from './transactions.controller';
-import { Network, Transaction, TransactionStatus, TransactionType, User, UserStatus } from '@entities';
+
 import { TransactionsService } from './transactions.service';
-import { HasKeyGuard } from '../guards';
-import { BadRequestException, ExecutionContext } from '@nestjs/common';
-import { of } from 'rxjs';
-import { describe } from 'node:test';
-import { Pagination } from '@app/common';
+import { HasKeyGuard, VerifiedUserGuard } from '../guards';
 
 describe('TransactionsController', () => {
   let controller: TransactionsController;
   let user: User;
-  let transaction: Transaction
+  let transaction: Transaction;
   let pagination: Pagination;
+
+  const transactionService = mockDeep<TransactionsService>();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -20,30 +31,14 @@ describe('TransactionsController', () => {
       providers: [
         {
           provide: TransactionsService,
-          useValue: {
-            getTransactionById: jest.fn(),
-            getTransactions: jest.fn(),
-            getHistoryTransactions: jest.fn(),
-            getTransactionsToSign: jest.fn(),
-            getTransactionsToApprove: jest.fn(),
-            getTransactionsToObserve: jest.fn(),
-            createTransaction: jest.fn(),
-            removeTransaction: jest.fn(),
-            cancelTransaction: jest.fn(),
-            getTransactionWithVerifiedAccess: jest.fn(),
-            getUserKeysToSign: jest.fn(),
-            shouldApproveTransaction: jest.fn(),
-            getHistoryStatusWhere: jest.fn(),
-          }
+          useValue: transactionService,
         },
       ],
     })
       .overrideGuard(HasKeyGuard)
-      .useValue({
-        canActivate: jest.fn((context: ExecutionContext) => {
-          return of(true);
-        }),
-      })
+      .useValue(guardMock())
+      .overrideGuard(VerifiedUserGuard)
+      .useValue(guardMock())
       .compile();
 
     controller = module.get<TransactionsController>(TransactionsController);
@@ -60,7 +55,7 @@ describe('TransactionsController', () => {
       signerForTransactions: [],
       observableTransactions: [],
       approvableTransactions: [],
-      comments: []
+      comments: [],
     };
     transaction = {
       id: 1,
@@ -70,8 +65,12 @@ describe('TransactionsController', () => {
       transactionId: '0.0.123@15648433.112315',
       validStart: new Date(),
       transactionHash: '5a381df6a8s4f9e0asd8f46aw8e1f0asdd',
-      body: Buffer.from('0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200'),
-      signature: Buffer.from('0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f'),
+      body: Buffer.from(
+        '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      ),
+      signature: Buffer.from(
+        '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
+      ),
       status: TransactionStatus.NEW,
       network: Network.TESTNET,
       cutoffAt: new Date(),
@@ -105,9 +104,9 @@ describe('TransactionsController', () => {
 
   describe('createTransaction', () => {
     it('should return a transaction', async () => {
-      const dto = {...transaction, creatorKeyId: 1 };
+      const dto = { ...transaction, creatorKeyId: 1 };
 
-      jest.spyOn(controller, 'createTransaction').mockResolvedValue(transaction);
+      transactionService.createTransaction.mockResolvedValue(transaction);
 
       expect(await controller.createTransaction(dto, user)).toBe(transaction);
     });
@@ -122,7 +121,7 @@ describe('TransactionsController', () => {
         size: 10,
       };
 
-      jest.spyOn(controller, 'getTransactions').mockResolvedValue(result);
+      transactionService.getTransactions.mockResolvedValue(result);
 
       expect(await controller.getTransactions(user, pagination)).toBe(result);
     });
@@ -135,7 +134,7 @@ describe('TransactionsController', () => {
         size: 0,
       };
 
-      jest.spyOn(controller, 'getTransactions').mockResolvedValue(result);
+      transactionService.getTransactions.mockResolvedValue(result);
 
       expect(await controller.getTransactions(user, pagination)).toEqual(result);
     });
@@ -150,7 +149,7 @@ describe('TransactionsController', () => {
         size: 10,
       };
 
-      jest.spyOn(controller, 'getHistoryTransactions').mockResolvedValue(result);
+      transactionService.getHistoryTransactions.mockResolvedValue(result);
 
       expect(await controller.getHistoryTransactions(pagination)).toBe(result);
     });
@@ -163,7 +162,7 @@ describe('TransactionsController', () => {
         size: 0,
       };
 
-      jest.spyOn(controller, 'getHistoryTransactions').mockResolvedValue(result);
+      transactionService.getHistoryTransactions.mockResolvedValue(result);
 
       expect(await controller.getHistoryTransactions(pagination)).toEqual(result);
     });
@@ -173,15 +172,17 @@ describe('TransactionsController', () => {
     it('should return an array of transactions', async () => {
       const result = {
         totalItems: 1,
-        items: [{
-          transaction,
-          keysToSign: [1],
-        }],
+        items: [
+          {
+            transaction,
+            keysToSign: [1],
+          },
+        ],
         page: 1,
         size: 10,
       };
 
-      jest.spyOn(controller, 'getTransactionsToSign').mockResolvedValue(result);
+      transactionService.getTransactionsToSign.mockResolvedValue(result);
 
       expect(await controller.getTransactionsToSign(user, pagination)).toBe(result);
     });
@@ -194,7 +195,7 @@ describe('TransactionsController', () => {
         size: 0,
       };
 
-      jest.spyOn(controller, 'getTransactionsToSign').mockResolvedValue(result);
+      transactionService.getTransactionsToSign.mockResolvedValue(result);
 
       expect(await controller.getTransactionsToSign(user, pagination)).toEqual(result);
     });
@@ -204,7 +205,7 @@ describe('TransactionsController', () => {
     it('should return an array of key ids', async () => {
       const result = [1];
 
-      jest.spyOn(controller, 'shouldSignTransaction').mockResolvedValue(result);
+      transactionService.userKeysToSign.mockResolvedValue(result);
 
       expect(await controller.shouldSignTransaction(user, 1)).toBe(result);
     });
@@ -219,7 +220,7 @@ describe('TransactionsController', () => {
         size: 10,
       };
 
-      jest.spyOn(controller, 'getTransactionsToApprove').mockResolvedValue(result);
+      transactionService.getTransactionsToApprove.mockResolvedValue(result);
 
       expect(await controller.getTransactionsToApprove(user, pagination)).toBe(result);
     });
@@ -232,7 +233,7 @@ describe('TransactionsController', () => {
         size: 0,
       };
 
-      jest.spyOn(controller, 'getTransactionsToApprove').mockResolvedValue(result);
+      transactionService.getTransactionsToApprove.mockResolvedValue(result);
 
       expect(await controller.getTransactionsToApprove(user, pagination)).toEqual(result);
     });
@@ -242,7 +243,7 @@ describe('TransactionsController', () => {
     it('should return a boolean indicating if the user can approve the transaction', async () => {
       const result = false;
 
-      jest.spyOn(controller, 'shouldApproveTransaction').mockResolvedValue(result);
+      transactionService.shouldApproveTransaction.mockResolvedValue(result);
 
       expect(await controller.shouldApproveTransaction(user, 1)).toBe(result);
     });
@@ -252,36 +253,44 @@ describe('TransactionsController', () => {
     it('should return a boolean indicating if the transaction was deleted successfully', async () => {
       const result = true;
 
-      jest.spyOn(controller, 'deleteTransaction').mockResolvedValue(result);
+      transactionService.removeTransaction.mockResolvedValue(result);
 
       expect(await controller.deleteTransaction(user, 1)).toBe(result);
     });
 
     it('should throw an error if the transaction cannot be deleted', async () => {
-      jest.spyOn(controller, 'deleteTransaction').mockRejectedValue(new BadRequestException('Transaction not found'));
+      jest
+        .spyOn(controller, 'deleteTransaction')
+        .mockRejectedValue(new BadRequestException('Transaction not found'));
 
-      await expect(controller.deleteTransaction(user, 1)).rejects.toThrowError('Transaction not found');
+      await expect(controller.deleteTransaction(user, 1)).rejects.toThrowError(
+        'Transaction not found',
+      );
     });
   });
 
   describe('cancelTransaction', () => {
     it('should return a boolean indicating if the transaction has been canceled', async () => {
       const result = true;
-      jest.spyOn(controller, 'cancelTransaction').mockResolvedValue(result);
+      transactionService.cancelTransaction.mockResolvedValue(result);
 
       expect(await controller.cancelTransaction(user, 1)).toBe(result);
     });
 
     it('should return a boolean indicating if the transaction has not been canceled', async () => {
-      jest.spyOn(controller, 'cancelTransaction').mockRejectedValue(new BadRequestException('Transaction cannot be canceled'));
+      jest
+        .spyOn(controller, 'cancelTransaction')
+        .mockRejectedValue(new BadRequestException('Transaction cannot be canceled'));
 
-      await expect(controller.cancelTransaction(user, 1)).rejects.toThrowError('Transaction cannot be canceled');
+      await expect(controller.cancelTransaction(user, 1)).rejects.toThrowError(
+        'Transaction cannot be canceled',
+      );
     });
   });
 
   describe('getTransaction', () => {
     it('should return a transaction', async () => {
-      jest.spyOn(controller, 'getTransaction').mockResolvedValue(transaction);
+      transactionService.getTransactionWithVerifiedAccess.mockResolvedValue(transaction);
 
       expect(await controller.getTransaction(user, 1)).toBe(transaction);
     });

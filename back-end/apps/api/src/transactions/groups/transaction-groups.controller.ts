@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { TransactionGroupsService } from './transaction-groups.service';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard, VerifiedUserGuard } from '../../guards';
@@ -17,7 +26,8 @@ export class TransactionGroupsController {
   /* Submit a transaction group */
   @ApiOperation({
     summary: 'Create a transaction group',
-    description: 'Create a transaction group for the organization. ' +
+    description:
+      'Create a transaction group for the organization. ' +
       'The group contains group items that each point to a transaction ' +
       'that the organization is to approve, sign, and execute.',
   })
@@ -26,7 +36,10 @@ export class TransactionGroupsController {
     type: TransactionGroupDto,
   })
   @Post()
-  createTransactionGroup(@GetUser() user: User, @Body() dto: CreateTransactionGroupDto): Promise<TransactionGroup> {
+  createTransactionGroup(
+    @GetUser() user: User,
+    @Body() dto: CreateTransactionGroupDto,
+  ): Promise<TransactionGroup> {
     return this.transactionGroupsService.createTransactionGroup(user, dto);
   }
 
@@ -52,13 +65,14 @@ export class TransactionGroupsController {
   /* Delete a transaction group */
   @ApiOperation({
     summary: 'Remove a transaction group',
-    description: 'Remove the transaction group, group items, and transactions for the provided transaction group id.',
+    description:
+      'Remove the transaction group, group items, and transactions for the provided transaction group id.',
   })
   @ApiResponse({
     status: 200,
   })
   @Delete('/:id')
-  removeTransactionGroup(@GetUser() user: User, @Param('id', ParseIntPipe) groupId: number, ): void {
+  removeTransactionGroup(@GetUser() user: User, @Param('id', ParseIntPipe) groupId: number): void {
     this.transactionGroupsService.removeTransactionGroup(user, groupId);
   }
 }

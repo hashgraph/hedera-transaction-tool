@@ -9,7 +9,9 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test:cov": "jest --config ./jest.config.ts --coverage",
+    "test:watch": "jest --config ./jest.config.ts --watch",
+    "test:watch:cov": "jest --config ./jest.config.ts --watch --coverage"
   },
   "dependencies": {
     "@nestjs/schedule": "^4.0.2"

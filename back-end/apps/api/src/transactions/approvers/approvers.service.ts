@@ -53,7 +53,7 @@ export class ApproversService {
   private readonly INVALID_UPDATE_APPROVER =
     'Only one property of the approver can be update user id, list id, or the threshold';
   private readonly APPROVER_NOT_TREE = 'Cannot update threshold, the approver is not a tree';
-  private readonly APPROVER_IS_TREE = 'Cannot update user ud, the approver is a tree';
+  private readonly APPROVER_IS_TREE = 'Cannot update user id, the approver is a tree';
   private readonly CANNOT_SET_CHILD_AS_PARENT = 'Cannot set a child as a parent';
 
   constructor(
@@ -268,7 +268,6 @@ export class ApproversService {
             });
 
             if (!parent) throw new Error(this.PARENT_APPROVER_NOT_FOUND);
-            if (typeof parent.threshold !== 'number') throw new Error(this.THRESHOLD_REQUIRED);
 
             /* Check if the root transaction is the same */
             const root = await this.getRootNodeFromNode(
@@ -350,7 +349,7 @@ export class ApproversService {
 
           /* Continue creating the three */
           if (dtoApprover.approvers) {
-            for (const nestedDtoApprover of dtoApprover.approvers || []) {
+            for (const nestedDtoApprover of dtoApprover.approvers) {
               const nestedApprover = { ...nestedDtoApprover, listId: approver.id };
 
               if (!nestedDtoApprover.approvers || nestedDtoApprover.approvers.length === 0) {
@@ -508,25 +507,16 @@ export class ApproversService {
 
           /* Update the user */
           if (approver.userId !== dto.userId) {
-            const userApproverRecords = await this.getApproversByTransactionId(
-              transactionId,
-              dto.userId,
-              transactionalEntityManager,
-            );
-
             const data: DeepPartial<TransactionApprover> = {
               userId: dto.userId,
+              userKeyId: undefined,
+              signature: undefined,
+              approved: undefined,
             };
 
-            if (userApproverRecords.length > 0) {
-              data.userKeyId = userApproverRecords[0].userKeyId;
-              data.signature = userApproverRecords[0].signature;
-              data.approved = userApproverRecords[0].approved;
-
-              approver.userKeyId = userApproverRecords[0].userKeyId;
-              approver.signature = userApproverRecords[0].signature;
-              approver.approved = userApproverRecords[0].approved;
-            }
+            approver.userKeyId = undefined;
+            approver.signature = undefined;
+            approver.approved = undefined;
 
             await transactionalEntityManager.update(TransactionApprover, approver.id, data);
             approver.userId = dto.userId;
@@ -556,11 +546,6 @@ export class ApproversService {
     if (!approver) throw new NotFoundException("Approver doesn't exist");
 
     const result = await this.removeNode(approver.id);
-
-    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
-    });
 
     return result;
   }
@@ -701,12 +686,7 @@ export class ApproversService {
       },
     };
 
-    if (entityManager) {
-      const count = await entityManager.count(TransactionApprover, find);
-      return count > 0 && typeof approver.userId === 'number' ? true : false;
-    }
-
-    const count = await this.repo.count(find);
+    const count = await (entityManager || this.repo).count(TransactionApprover, find);
     return count > 0 && typeof approver.userId === 'number' ? true : false;
   }
 

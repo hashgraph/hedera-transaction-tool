@@ -1,12 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UserKeysController } from './user-keys.controller';
-import { UserKeysService } from './user-keys.service';
+import { mockDeep } from 'jest-mock-extended';
+
+import { guardMock } from '@app/common';
 import { User, UserKey, UserStatus } from '@entities';
+
+import { UserKeysController } from './user-keys.controller';
+
+import { UserKeysService } from './user-keys.service';
+import { VerifiedUserGuard } from '../guards';
 
 describe('UserKeysController', () => {
   let controller: UserKeysController;
   let user: User;
   let userKey: UserKey;
+
+  const userKeysService = mockDeep<UserKeysService>();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -14,15 +22,13 @@ describe('UserKeysController', () => {
       providers: [
         {
           provide: UserKeysService,
-          useValue: {
-            createKey: jest.fn(),
-            deleteKey: jest.fn(),
-            getKeys: jest.fn(),
-            getKey: jest.fn(),
-          },
+          useValue: userKeysService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(VerifiedUserGuard)
+      .useValue(guardMock())
+      .compile();
 
     controller = module.get<UserKeysController>(UserKeysController);
 
@@ -39,7 +45,7 @@ describe('UserKeysController', () => {
       signerForTransactions: [],
       observableTransactions: [],
       approvableTransactions: [],
-      comments: []
+      comments: [],
     };
 
     userKey = {
@@ -51,7 +57,7 @@ describe('UserKeysController', () => {
       deletedAt: null,
       createdTransactions: [],
       approvedTransactions: [],
-      signedTransactions: []
+      signedTransactions: [],
     };
   });
 
@@ -61,7 +67,7 @@ describe('UserKeysController', () => {
 
   describe('getKey', () => {
     it('should return a key', async () => {
-      jest.spyOn(controller, 'uploadKey').mockResolvedValue(userKey);
+      userKeysService.uploadKey.mockResolvedValue(userKey);
 
       expect(await controller.uploadKey(user, userKey)).toBe(userKey);
     });
@@ -81,13 +87,13 @@ describe('UserKeysController', () => {
     it('should return an array of keys', async () => {
       const result = [userKey];
 
-      jest.spyOn(controller, 'getUserKeys').mockResolvedValue(result);
+      userKeysService.getUserKeys.mockResolvedValue(result);
 
       expect(await controller.getUserKeys(1)).toBe(result);
     });
 
     it('should return an empty array if no keys exist', async () => {
-      jest.spyOn(controller, 'getUserKeys').mockResolvedValue([]);
+      userKeysService.getUserKeys.mockResolvedValue([]);
 
       expect(await controller.getUserKeys(1)).toEqual([]);
     });
@@ -95,13 +101,13 @@ describe('UserKeysController', () => {
 
   describe('removeKey', () => {
     it('should return a key', async () => {
-      jest.spyOn(controller, 'removeKey').mockResolvedValue(userKey);
+      userKeysService.removeKey.mockResolvedValue(userKey);
 
       expect(await controller.removeKey(1)).toBe(userKey);
     });
 
     it('should return an error if key does not exist', async () => {
-      jest.spyOn(controller, 'removeKey').mockResolvedValue(null);
+      userKeysService.removeKey.mockResolvedValue(null);
 
       try {
         await controller.removeKey(1);
