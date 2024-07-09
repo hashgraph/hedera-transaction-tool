@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { mockDeep } from 'jest-mock-extended';
 
 import { guardMock } from '@app/common';
 import { TransactionGroup, User, UserStatus } from '@entities';
@@ -13,20 +14,18 @@ describe('TransactionGroupsController', () => {
   let user: User;
   let transactionGroup: TransactionGroup;
 
+  const transactionGroupsService = mockDeep<TransactionGroupsService>();
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [TransactionGroupsController],
-      providers: [
-        {
-          provide: TransactionGroupsService,
-          useValue: {
-            createTransactionGroup: jest.fn(),
-            getTransactionGroups: jest.fn(),
-            removeTransactionGroup: jest.fn(),
+        controllers: [TransactionGroupsController],
+        providers: [
+          {
+            provide: TransactionGroupsService,
+            useValue: transactionGroupsService,
           },
-        },
-      ],
-    })
+        ],
+      })
       .overrideGuard(VerifiedUserGuard)
       .useValue(guardMock())
       .compile();
@@ -65,7 +64,7 @@ describe('TransactionGroupsController', () => {
         groupItems: [],
       };
 
-      jest.spyOn(controller, 'createTransactionGroup').mockResolvedValue(result);
+      transactionGroupsService.createTransactionGroup.mockResolvedValue(result);
 
       expect(await controller.createTransactionGroup(user, body)).toEqual(result);
     });
@@ -75,7 +74,7 @@ describe('TransactionGroupsController', () => {
     it('should return an array of transaction groups', async () => {
       const result = [transactionGroup];
 
-      jest.spyOn(controller, 'getTransactionGroups').mockResolvedValue(result);
+      transactionGroupsService.getTransactionGroups.mockResolvedValue(result);
 
       expect(await controller.getTransactionGroups()).toEqual(result);
     });
@@ -83,7 +82,7 @@ describe('TransactionGroupsController', () => {
 
   describe('removeTransactionGroup', () => {
     it('should return void', async () => {
-      jest.spyOn(controller, 'removeTransactionGroup').mockReturnValue(undefined);
+      transactionGroupsService.removeTransactionGroup.mockReturnValue(undefined);
 
       expect(await controller.removeTransactionGroup(user, 1)).toBeUndefined();
     });
