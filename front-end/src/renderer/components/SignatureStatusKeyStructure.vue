@@ -26,12 +26,13 @@ defineEmits(['update:keyList']);
 </script>
 <template>
   <template v-if="publicKeysInKeyList.length === 1">
-    <div class="text-nowrap">
+    <div class="d-flex position-relative text-nowrap">
       <span
         v-if="publicKeysSigned.includes(publicKeysInKeyListRaw[0])"
-        class="bi bi-check-lg text-success"
+        class="bi bi-check-lg text-success position-absolute"
+        :style="{ left: '-15px' }"
       ></span>
-      <span class="mx-2">
+      <span class="me-2">
         {{ publicKeysInKeyListRaw[0] }}
       </span>
       <AppPublicKeyNickname
@@ -43,35 +44,39 @@ defineEmits(['update:keyList']);
   </template>
   <template v-else>
     <div>
-      <p class="text-nowrap" :class="{ 'text-success': ableToSign(publicKeysSigned, keyList) }">
+      <div class="d-flex position-relative">
         <span
           v-if="ableToSign(publicKeysSigned, keyList)"
-          class="bi bi-check-lg text-success"
+          class="bi bi-check-lg text-success position-absolute"
+          :style="{ left: '-15px' }"
         ></span>
-        Threshold ({{
-          !keyList.threshold || keyList.threshold === keyList.toArray().length
-            ? keyList.toArray().length
-            : keyList.threshold
-        }}
-        of {{ keyList.toArray().length }})
-      </p>
+        <p class="text-nowrap" :class="{ 'text-success': ableToSign(publicKeysSigned, keyList) }">
+          Threshold ({{
+            !keyList.threshold || keyList.threshold === keyList.toArray().length
+              ? keyList.toArray().length
+              : keyList.threshold
+          }}
+          of {{ keyList.toArray().length }})
+        </p>
+      </div>
       <template v-for="(item, _index) in keyList.toArray()" :key="_index">
         <template v-if="item instanceof KeyList && true">
-          <div class="ms-5">
+          <div class="ms-6">
             <SignatureStatusKeyStructure :key-list="item" :public-keys-signed="publicKeysSigned" />
           </div>
         </template>
         <template v-else-if="item instanceof PublicKey && true">
-          <p class="text-nowrap ms-5 my-3">
+          <div class="d-flex position-relative text-nowrap ms-6 my-3">
             <span
               v-if="publicKeysSigned.includes(item.toStringRaw())"
-              class="bi bi-check-lg text-success"
+              class="bi bi-check-lg text-success position-absolute"
+              :style="{ left: '-15px' }"
             ></span>
-            <span class="mx-2">
+            <p class="text-nowrap me-2">
               {{ item.toStringRaw() }}
-            </span>
-            <AppPublicKeyNickname :public-key="item" :brackets="true" class="text-pink" />
-          </p>
+              <AppPublicKeyNickname :public-key="item" :brackets="true" class="text-pink" />
+            </p>
+          </div>
         </template>
       </template>
     </div>

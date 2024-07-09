@@ -25,12 +25,12 @@ defineEmits(['update:keyList']);
     </p>
     <template v-for="(item, _index) in keyList.toArray()" :key="_index">
       <template v-if="item instanceof KeyList && true">
-        <div class="ms-5">
+        <div class="ms-6">
           <KeyStructure :key-list="item" />
         </div>
       </template>
       <template v-else-if="item instanceof PublicKey && true">
-        <p class="text-nowrap ms-5 my-3">
+        <p class="text-nowrap ms-6 my-3">
           <span class="me-2">
             {{ normalizePublicKey(item) }}
           </span>

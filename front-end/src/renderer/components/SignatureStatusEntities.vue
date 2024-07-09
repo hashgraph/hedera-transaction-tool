@@ -49,11 +49,12 @@ onBeforeMount(async () => {
 </script>
 <template>
   <template v-for="([entityId, key], _index) in Object.entries(entities)" :key="_index">
-    <div class="mt-3 ms-3">
-      <div class="d-flex text-nowrap">
+    <div class="mt-2">
+      <div class="d-flex position-relative text-nowrap">
         <span
           v-if="ableToSign(publicKeysSigned, key)"
-          class="bi bi-check-lg text-success me-2"
+          class="bi bi-check-lg text-success position-absolute"
+          :style="{ left: '-15px' }"
         ></span>
         <h2
           v-if="label.trim()"
@@ -101,7 +102,7 @@ onBeforeMount(async () => {
         </h2>
       </div>
 
-      <div class="ms-5">
+      <div class="ms-6">
         <SignatureStatusKeyStructure
           :keyList="key instanceof KeyList ? key : new KeyList([key])"
           :public-keys-signed="publicKeysSigned"

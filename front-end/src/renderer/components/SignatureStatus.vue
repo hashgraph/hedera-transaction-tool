@@ -32,53 +32,64 @@ const props = defineProps<{
 const publicKeysInKeyList = computed(() => flattenKeyList(props.signatureKeyObject.signatureKey));
 </script>
 <template>
-  <template v-if="publicKeysInKeyList.length > 1">
-    <div>
-      <p
-        class="text-nowrap"
-        :class="{ 'text-success': ableToSign(publicKeysSigned, signatureKeyObject.signatureKey) }"
-      >
+  <div :class="{ 'ms-4': publicKeysInKeyList.length > 1 }">
+    <template v-if="publicKeysInKeyList.length > 1">
+      <div class="d-flex position-relative text-nowrap">
         <span
           v-if="ableToSign(publicKeysSigned, signatureKeyObject.signatureKey)"
-          class="bi bi-check-lg text-success"
+          class="bi bi-check-lg text-success position-absolute"
+          :style="{ left: '-15px' }"
         ></span>
-        Threshold ({{
-          !signatureKeyObject.signatureKey.threshold ||
-          signatureKeyObject.signatureKey.threshold ===
-            signatureKeyObject.signatureKey.toArray().length
-            ? signatureKeyObject.signatureKey.toArray().length
-            : signatureKeyObject.signatureKey.threshold
-        }}
-        of {{ signatureKeyObject.signatureKey.toArray().length }})
-      </p>
-    </div>
-  </template>
-  <template v-if="signatureKeyObject.payerKey">
-    <SignatureStatusEntities
-      :entities="signatureKeyObject.payerKey"
-      :public-keys-signed="publicKeysSigned"
-      :label="`Payer $entityId Key`"
-    />
-  </template>
-  <template v-if="Object.keys(signatureKeyObject.accountsKeys).length > 0">
-    <SignatureStatusEntities
-      :entities="signatureKeyObject.accountsKeys"
-      :public-keys-signed="publicKeysSigned"
-      :label="`$entityId Key`"
-    />
-  </template>
-  <template v-if="Object.keys(signatureKeyObject.receiverAccountsKeys).length > 0">
-    <SignatureStatusEntities
-      :entities="signatureKeyObject.receiverAccountsKeys"
-      :public-keys-signed="publicKeysSigned"
-      :label="`Receiver Account $entityId Key`"
-    />
-  </template>
-  <template v-if="signatureKeyObject.newKeys.length > 0">
-    <SignatureStatusEntities
-      :entities="signatureKeyObject.newKeys"
-      :public-keys-signed="publicKeysSigned"
-      :label="`New Key${signatureKeyObject.newKeys.length > 1 ? 's' : ''}`"
-    />
-  </template>
+        <p
+          class="text-nowrap"
+          :class="{ 'text-success': ableToSign(publicKeysSigned, signatureKeyObject.signatureKey) }"
+        >
+          Threshold ({{
+            !signatureKeyObject.signatureKey.threshold ||
+            signatureKeyObject.signatureKey.threshold ===
+              signatureKeyObject.signatureKey.toArray().length
+              ? signatureKeyObject.signatureKey.toArray().length
+              : signatureKeyObject.signatureKey.threshold
+          }}
+          of {{ signatureKeyObject.signatureKey.toArray().length }})
+        </p>
+      </div>
+    </template>
+    <template v-if="signatureKeyObject.payerKey">
+      <div class="ms-4" :class="{ 'ms-6': publicKeysInKeyList.length > 1 }">
+        <SignatureStatusEntities
+          :entities="signatureKeyObject.payerKey"
+          :public-keys-signed="publicKeysSigned"
+          :label="`Payer $entityId Key`"
+        />
+      </div>
+    </template>
+    <template v-if="Object.keys(signatureKeyObject.accountsKeys).length > 0">
+      <div class="ms-4" :class="{ 'ms-6': publicKeysInKeyList.length > 1 }">
+        <SignatureStatusEntities
+          :entities="signatureKeyObject.accountsKeys"
+          :public-keys-signed="publicKeysSigned"
+          :label="`$entityId Key`"
+        />
+      </div>
+    </template>
+    <template v-if="Object.keys(signatureKeyObject.receiverAccountsKeys).length > 0">
+      <div class="ms-4" :class="{ 'ms-6': publicKeysInKeyList.length > 1 }">
+        <SignatureStatusEntities
+          :entities="signatureKeyObject.receiverAccountsKeys"
+          :public-keys-signed="publicKeysSigned"
+          :label="`Receiver Account $entityId Key`"
+        />
+      </div>
+    </template>
+    <template v-if="signatureKeyObject.newKeys.length > 0">
+      <div class="ms-4" :class="{ 'ms-6': publicKeysInKeyList.length > 1 }">
+        <SignatureStatusEntities
+          :entities="signatureKeyObject.newKeys"
+          :public-keys-signed="publicKeysSigned"
+          :label="`New Key${signatureKeyObject.newKeys.length > 1 ? 's' : ''}`"
+        />
+      </div>
+    </template>
+  </div>
 </template>
