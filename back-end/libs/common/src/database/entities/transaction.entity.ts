@@ -130,7 +130,7 @@ export class Transaction {
   observers: TransactionObserver[];
 
   @OneToOne(() => TransactionGroupItem, groupItem => groupItem.transaction)
-  groupItem: TransactionGroupItem;
+  groupItem?: TransactionGroupItem;
 }
 
 export const transactionProperties: (keyof Transaction)[] = [
