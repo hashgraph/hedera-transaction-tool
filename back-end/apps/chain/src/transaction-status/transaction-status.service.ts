@@ -96,7 +96,7 @@ export class TransactionStatusService {
 
   /* For transactions with valid start, started 3 minutes */
   @Cron(CronExpression.EVERY_10_SECONDS, {
-    name: 'status_update_between_ten_seconds_and_three_minutes',
+    name: 'status_update_between_now_and_three_minutes',
   })
   async handleTransactionsBetweenNowAndAfterThreeMinutes() {
     const transactions = await this.updateTransactions(
@@ -281,35 +281,35 @@ export class TransactionStatusService {
     this.schedulerRegistry.addTimeout(name, timeout);
   }
 
-  private getOneWeekLater() {
+  getOneWeekLater() {
     return new Date(Date.now() + 7 * 24 * 60 * 60 * 1_000);
   }
 
-  private getOneDayLater() {
+  getOneDayLater() {
     return new Date(Date.now() + 1 * 24 * 60 * 60 * 1_000);
   }
 
-  private getOneHourLater() {
+  getOneHourLater() {
     return new Date(Date.now() + 1 * 60 * 60 * 1_000);
   }
 
-  private getTenMinutesLater() {
+  getTenMinutesLater() {
     return new Date(Date.now() + 10 * 60 * 1_000);
   }
 
-  private getThreeMinutesLater() {
+  getThreeMinutesLater() {
     return new Date(Date.now() + 3 * 60 * 1_000);
   }
 
-  private getValidStartNowMinus180Seconds() {
+  getValidStartNowMinus180Seconds() {
     return new Date(new Date().getTime() - 180 * 1_000);
   }
 
-  private getValidStartExpired() {
+  getValidStartExpired() {
     return new Date(new Date().getTime() - 181 * 1_000);
   }
 
-  private isValidStartExecutable(validStart: Date) {
+  isValidStartExecutable(validStart: Date) {
     const time = validStart.getTime();
     return time < Date.now() && time + 180 * 1_000 > Date.now();
   }
