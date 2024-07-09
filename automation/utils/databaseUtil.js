@@ -1,4 +1,5 @@
 const sqlite3 = require('sqlite3').verbose();
+const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { Client } = require('pg');
@@ -29,26 +30,41 @@ function getDatabasePath() {
 }
 
 function openDatabase() {
-  return new sqlite3.Database(getDatabasePath(), sqlite3.OPEN_READWRITE, err => {
+  const dbPath = getDatabasePath();
+  if (!fs.existsSync(dbPath)) {
+    console.log('SQLite database file does not exist.');
+    return null;
+  }
+
+  return new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE, err => {
     if (err) {
-      console.error(err.message);
+      console.error('Failed to connect to the SQLite database:', err.message);
+    } else {
+      console.log('Connected to the SQLite database.');
     }
-    console.log('Connected to the SQLite database.');
   });
 }
 
 function closeDatabase(db) {
-  db.close(err => {
-    if (err) {
-      console.error(err.message);
-    }
-    console.log('Closed the database connection.');
-  });
+  if (db) {
+    db.close(err => {
+      if (err) {
+        console.error('Failed to close the SQLite database:', err.message);
+      } else {
+        console.log('Closed the SQLite database connection.');
+      }
+    });
+  }
 }
 
 function queryDatabase(query, params = []) {
   return new Promise((resolve, reject) => {
     const db = openDatabase();
+    if (!db) {
+      reject(new Error('SQLite database file does not exist.'));
+      return;
+    }
+
     console.log('Executing query:', query, 'Params:', params);
     db.get(query, params, (err, row) => {
       if (err) {
@@ -58,13 +74,18 @@ function queryDatabase(query, params = []) {
         console.log('Query result:', row);
         resolve(row);
       }
+      closeDatabase(db);
     });
-    closeDatabase(db);
   });
 }
 
 async function resetDbState() {
   const db = openDatabase();
+  if (!db) {
+    console.log('SQLite database file does not exist. Skipping reset.');
+    return;
+  }
+
   const tablesToReset = [
     'Organization',
     'User',
@@ -127,9 +148,9 @@ async function createTestUser(email, password) {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const query = `
-      INSERT INTO "user" (email, password, status)
-      VALUES ($1, $2, $3)
-      RETURNING id;
+        INSERT INTO "user" (email, password, status)
+        VALUES ($1, $2, $3)
+            RETURNING id;
     `;
     const values = [email, hashedPassword, 'NONE'];
 
