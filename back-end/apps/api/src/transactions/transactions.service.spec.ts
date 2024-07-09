@@ -107,7 +107,14 @@ describe('TransactionsService', () => {
 
     expect(transactionsRepo.findOne).toHaveBeenCalledWith({
       where: { id: 1 },
-      relations: ['creatorKey', 'creatorKey.user', 'observers', 'observers.user', 'comments'],
+      relations: [
+        'creatorKey',
+        'creatorKey.user',
+        'observers',
+        'observers.user',
+        'comments',
+        'groupItem',
+      ],
     });
 
     expect(entityManager.find).toHaveBeenCalledWith(TransactionSigner, {
