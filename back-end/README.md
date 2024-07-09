@@ -67,6 +67,16 @@ cd apps/api
 npm run test:cov
 ```
 
+```bash
+cd apps/notifications
+npm run test:cov
+```
+
+```bash
+cd apps/chain
+npm run test:cov
+```
+
 ### Exposed Endpoints
 
 All ports are defined in the [`docker-compose.yaml`](./docker-compose.yaml)
