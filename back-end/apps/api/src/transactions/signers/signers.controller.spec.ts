@@ -1,13 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { SignersController } from './signers.controller';
+import { mockDeep } from 'jest-mock-extended';
+
+import { guardMock } from '@app/common';
 import { TransactionSigner, User, UserStatus } from '@entities';
+
+import { SignersController } from './signers.controller';
+
 import { SignersService } from './signers.service';
-import { describe } from 'node:test';
+import { VerifiedUserGuard } from '../../guards';
 
 describe('SignaturesController', () => {
   let controller: SignersController;
   let user: User;
   let signer: TransactionSigner;
+
+  const signersService = mockDeep<SignersService>();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -15,17 +22,13 @@ describe('SignaturesController', () => {
       providers: [
         {
           provide: SignersService,
-          useValue: {
-            getSignatureById: jest.fn(),
-            getSignaturesByUser: jest.fn(),
-            getSignaturesByTransactionId: jest.fn(),
-            uploadSignature: jest.fn(),
-            uploadSignatures: jest.fn(),
-            removeSignature: jest.fn(),
-          }
+          useValue: signersService,
         },
-      ]
-    }).compile();
+      ],
+    })
+      .overrideGuard(VerifiedUserGuard)
+      .useValue(guardMock())
+      .compile();
 
     controller = module.get<SignersController>(SignersController);
     user = {
@@ -41,7 +44,7 @@ describe('SignaturesController', () => {
       signerForTransactions: [],
       observableTransactions: [],
       approvableTransactions: [],
-      comments: []
+      comments: [],
     };
     signer = {
       id: 1,
@@ -51,15 +54,15 @@ describe('SignaturesController', () => {
       user,
       userId: 1,
       userKey: null,
-      userKeyId: 0
-    }
+      userKeyId: 0,
+    };
   });
 
   describe('getSignaturesByTransactionId', () => {
     it('should return an array of signatures', async () => {
       const result = [signer];
 
-      jest.spyOn(controller, 'getSignaturesByTransactionId').mockResolvedValue(result);
+      signersService.getSignaturesByTransactionId.mockResolvedValue(result);
 
       expect(await controller.getSignaturesByTransactionId(1)).toEqual(result);
     });
@@ -70,7 +73,7 @@ describe('SignaturesController', () => {
       const result = { items: [signer], totalItems: 1, page: 1, size: 10 };
       const pagination = { page: 1, limit: 10, size: 10, offset: 0 };
 
-      jest.spyOn(controller, 'getSignaturesByUser').mockResolvedValue(result);
+      signersService.getSignaturesByUser.mockResolvedValue(result);
 
       expect(await controller.getSignaturesByUser(user, pagination)).toEqual(result);
     });
@@ -81,10 +84,10 @@ describe('SignaturesController', () => {
       const result = signer;
       const body = {
         publicKeyId: 1,
-        signatures: { '0.0.3': Buffer.from('signature') }
+        signatures: { '0.0.3': Buffer.from('signature') },
       };
 
-      jest.spyOn(controller, 'uploadSignature').mockResolvedValue(result);
+      signersService.uploadSignature.mockResolvedValue(result);
 
       expect(await controller.uploadSignature(1, body, user)).toEqual(result);
     });
@@ -94,10 +97,10 @@ describe('SignaturesController', () => {
     it('should return an array of signatures', async () => {
       const result = [signer];
       const body = {
-        signatures: [{ publicKeyId: 1, signatures: { '0.0.3': Buffer.from('signature') } }]
+        signatures: [{ publicKeyId: 1, signatures: { '0.0.3': Buffer.from('signature') } }],
       };
 
-      jest.spyOn(controller, 'uploadSignatures').mockResolvedValue(result);
+      signersService.uploadSignatures.mockResolvedValue(result);
 
       expect(await controller.uploadSignatures(1, body, user)).toEqual(result);
     });
