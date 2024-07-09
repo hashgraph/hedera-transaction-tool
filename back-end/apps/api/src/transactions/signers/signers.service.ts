@@ -47,7 +47,6 @@ export class SignersService {
   async getSignaturesByUser(
     user: User,
     { limit, offset, page, size }: Pagination,
-
     withDeleted: boolean = false,
   ): Promise<PaginatedResourceDto<TransactionSigner>> {
     if (!user) return null;
@@ -217,8 +216,6 @@ export class SignersService {
     for (const { publicKeyId, signatures } of signaturesArray) {
       /* Get the user key */
       const userKey = user.keys.find(key => key.id === publicKeyId);
-      if (!userKey)
-        throw new BadRequestException(`Public key with id ${publicKeyId} not found in your keys`);
 
       /* Verify that the signature is not already added */
       if (isAlreadySigned(sdkTransaction, userKey.publicKey))
