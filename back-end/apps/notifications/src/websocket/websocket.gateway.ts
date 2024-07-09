@@ -26,15 +26,15 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   @WebSocketServer()
   private server: Server;
 
-  afterInit(server: Server): any {
+  afterInit(server: Server) {
     server.use(AuthWebsocketMiddleware(this.authService));
   }
 
-  handleConnection(client: AuthWebsocket, ...args): any {
+  handleConnection(client: AuthWebsocket, ...args) {
     this.logger.log(`client connected for userId: ${client.user.id}`);
   }
 
-  handleDisconnect(client: AuthWebsocket): any {
+  handleDisconnect(client: AuthWebsocket) {
     this.logger.log(`client disconnected for userId: ${client.user.id}`);
   }
 
