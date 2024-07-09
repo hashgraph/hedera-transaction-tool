@@ -1,12 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UsersController } from './users.controller';
-import { UsersService } from './users.service';
+import { mockDeep } from 'jest-mock-extended';
+
+import { guardMock } from '@app/common';
 import { User, UserStatus } from '@entities';
-import { describe } from 'node:test';
+
+import { UsersController } from './users.controller';
+
+import { UsersService } from './users.service';
+import { VerifiedUserGuard } from '../guards';
 
 describe('UsersController', () => {
   let controller: UsersController;
   let user: User;
+
+  const userService = mockDeep<UsersService>();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -14,16 +21,13 @@ describe('UsersController', () => {
       providers: [
         {
           provide: UsersService,
-          useValue: {
-            create: jest.fn(),
-            findAll: jest.fn(),
-            findOne: jest.fn(),
-            update: jest.fn(),
-            remove: jest.fn(),
-          }
+          useValue: userService,
         },
-      ]
-    }).compile();
+      ],
+    })
+      .overrideGuard(VerifiedUserGuard)
+      .useValue(guardMock())
+      .compile();
 
     controller = module.get<UsersController>(UsersController);
     user = {
@@ -39,7 +43,7 @@ describe('UsersController', () => {
       signerForTransactions: [],
       observableTransactions: [],
       approvableTransactions: [],
-      comments: []
+      comments: [],
     };
   });
 
@@ -51,13 +55,13 @@ describe('UsersController', () => {
     it('should return an array of users', async () => {
       const result = [user];
 
-      jest.spyOn(controller, 'getUsers').mockResolvedValue(result);
+      userService.getUsers.mockResolvedValue(result);
 
       expect(await controller.getUsers()).toBe(result);
     });
 
     it('should return an empty array if no users exist', async () => {
-      jest.spyOn(controller, 'getUsers').mockResolvedValue([]);
+      userService.getUsers.mockResolvedValue([]);
 
       expect(await controller.getUsers()).toEqual([]);
     });
@@ -65,13 +69,13 @@ describe('UsersController', () => {
 
   describe('getUser', () => {
     it('should return a user', async () => {
-      jest.spyOn(controller, 'getUser').mockResolvedValue(user);
+      userService.getUser.mockResolvedValue(user);
 
       expect(await controller.getUser(1)).toBe(user);
     });
 
     it('should throw an error if the user does not exist', async () => {
-      jest.spyOn(controller, 'getUser').mockResolvedValue(null);
+      userService.getUser.mockResolvedValue(null);
 
       try {
         await controller.getUser(1);
@@ -83,15 +87,13 @@ describe('UsersController', () => {
 
   describe('getMe', () => {
     it('should return the current user', async () => {
-      jest.spyOn(controller, 'getMe').mockReturnValue(user);
-
       expect(await controller.getMe(user)).toBe(user);
     });
   });
 
   describe('updateUser', () => {
     it('should return the updated user', async () => {
-      jest.spyOn(controller, 'updateUser').mockResolvedValue(user);
+      userService.updateUserById.mockResolvedValue(user);
 
       expect(await controller.updateUser(1, user)).toBe(user);
     });
@@ -107,7 +109,7 @@ describe('UsersController', () => {
     });
 
     it('should throw an error if the user does not exist', async () => {
-      jest.spyOn(controller, 'updateUser').mockResolvedValue(null);
+      userService.updateUser.mockResolvedValue(null);
 
       try {
         await controller.updateUser(1, user);
@@ -119,13 +121,13 @@ describe('UsersController', () => {
 
   describe('removeUser', () => {
     it('should remove a user', async () => {
-      jest.spyOn(controller, 'removeUser').mockResolvedValue(user);
+      userService.removeUser.mockResolvedValue(user);
 
       expect(await controller.removeUser(1)).toBe(user);
     });
 
     it('should throw an error if the user does not exist', async () => {
-      jest.spyOn(controller, 'removeUser').mockResolvedValue(null);
+      userService.removeUser.mockResolvedValue(null);
 
       try {
         await controller.removeUser(1);
