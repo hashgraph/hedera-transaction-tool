@@ -1,16 +1,22 @@
+import { UnprocessableEntityException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { mockDeep } from 'jest-mock-extended';
+import { Response } from 'express';
+
+import { guardMock } from '@app/common';
+import { User, UserStatus } from '@entities';
+
 import { AuthController } from './auth.controller';
+
 import { AuthService } from './auth.service';
 import { EmailThrottlerGuard } from '../guards';
-import { ExecutionContext, UnprocessableEntityException } from '@nestjs/common';
-import { of } from 'rxjs';
-import { User, UserStatus } from '@entities';
-import { Response } from 'express';
 
 describe('AuthController', () => {
   let controller: AuthController;
   let user: User;
   let res: Response;
+
+  const authService = mockDeep<AuthService>();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -18,25 +24,12 @@ describe('AuthController', () => {
       providers: [
         {
           provide: AuthService,
-          useValue: {
-            signUpByAdmin: jest.fn(),
-            login: jest.fn(),
-            logout: jest.fn(),
-            changePassword: jest.fn(),
-            createOtp: jest.fn(),
-            verifyOtp: jest.fn(),
-            setPassword: jest.fn(),
-            authenticateWebsocketToken: jest.fn(),
-          },
+          useValue: authService,
         },
       ],
     })
       .overrideGuard(EmailThrottlerGuard)
-      .useValue({
-        canActivate: jest.fn((context: ExecutionContext) => {
-          return of(true);
-        }),
-      })
+      .useValue(guardMock())
       .compile();
 
     controller = module.get<AuthController>(AuthController);
@@ -57,7 +50,7 @@ describe('AuthController', () => {
     };
     res = {
       status: jest.fn().mockReturnThis(),
-      send: jest.fn()
+      send: jest.fn(),
     } as unknown as Response;
   });
 
@@ -65,19 +58,25 @@ describe('AuthController', () => {
     it('should return a user', async () => {
       const result = user;
 
-      jest.spyOn(controller, 'signUp').mockResolvedValue(result);
+      authService.signUpByAdmin.mockResolvedValue(result);
 
       expect(await controller.signUp({ email: 'john@test.com' })).toBe(result);
     });
 
     it('should throw an error if the user already exists', async () => {
-      jest.spyOn(controller, 'signUp').mockRejectedValue(new UnprocessableEntityException('Email already exists.'));
+      jest
+        .spyOn(controller, 'signUp')
+        .mockRejectedValue(new UnprocessableEntityException('Email already exists.'));
 
-      await expect(controller.signUp({ email: 'john@test.com' })).rejects.toThrowError('Email already exists.');
+      await expect(controller.signUp({ email: 'john@test.com' })).rejects.toThrowError(
+        'Email already exists.',
+      );
     });
 
     it('should throw an error if no email is supplied', async () => {
-      jest.spyOn(controller, 'signUp').mockRejectedValue(new UnprocessableEntityException('Email is required.'));
+      jest
+        .spyOn(controller, 'signUp')
+        .mockRejectedValue(new UnprocessableEntityException('Email is required.'));
 
       await expect(controller.signUp({ email: null })).rejects.toThrowError('Email is required.');
     });
@@ -86,8 +85,6 @@ describe('AuthController', () => {
   describe('login', () => {
     it('should return a user', async () => {
       const result = user;
-
-      jest.spyOn(controller, 'login').mockResolvedValue(result);
 
       expect(await controller.login(user, res)).toBe(result);
     });
@@ -98,9 +95,9 @@ describe('AuthController', () => {
       const changePassword = {
         oldPassword: 'Doe',
         newPassword: 'Doe',
-      }
+      };
 
-      jest.spyOn(controller, 'changePassword').mockResolvedValue(undefined);
+      authService.changePassword.mockResolvedValue(undefined);
 
       expect(await controller.changePassword(user, changePassword)).toBeUndefined();
     });
@@ -108,7 +105,7 @@ describe('AuthController', () => {
 
   describe('reset-password', () => {
     it('should have no return value', async () => {
-      jest.spyOn(controller, 'createOtp').mockResolvedValue(undefined);
+      authService.createOtp.mockResolvedValue(undefined);
 
       expect(await controller.createOtp({ email: 'john@test.com' }, res)).toBeUndefined();
     });
@@ -116,7 +113,7 @@ describe('AuthController', () => {
 
   describe('verify-reset', () => {
     it('should have no return value', async () => {
-      jest.spyOn(controller, 'verifyOtp').mockResolvedValue(undefined);
+      authService.verifyOtp.mockResolvedValue(undefined);
 
       expect(await controller.verifyOtp(user, { token: '' }, res)).toBeUndefined();
     });
@@ -124,7 +121,7 @@ describe('AuthController', () => {
 
   describe('set-password', () => {
     it('should have no return value', async () => {
-      jest.spyOn(controller, 'setPassword').mockResolvedValue(undefined);
+      authService.setPassword.mockResolvedValue(undefined);
 
       expect(await controller.setPassword(user, { password: 'Doe' }, res)).toBeUndefined();
     });
@@ -132,13 +129,15 @@ describe('AuthController', () => {
 
   describe('authenticateWebsocketToken', () => {
     it('should return a user', async () => {
-      const res = {
-        clearCookie: jest.fn()
-      } as unknown as Response;
-
-      jest.spyOn(controller, 'authenticateWebsocketToken').mockResolvedValue(user);
+      authService.authenticateWebsocketToken.mockResolvedValue(user);
 
       expect(await controller.authenticateWebsocketToken({ jwt: 'token' })).toBe(user);
+    });
+  });
+
+  describe('logout', () => {
+    it('should have no return value', async () => {
+      expect(await controller.logout(res)).toBeUndefined();
     });
   });
 });
