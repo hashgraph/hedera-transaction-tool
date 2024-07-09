@@ -548,11 +548,6 @@ export class ApproversService {
 
     const result = await this.removeNode(approver.id);
 
-    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
-    });
-
     return result;
   }
 
