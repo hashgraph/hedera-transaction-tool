@@ -1,12 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ApproversController } from './approvers.controller';
-import { ApproversService } from './approvers.service';
+import { mockDeep } from 'jest-mock-extended';
+
+import { guardMock } from '@app/common';
 import { TransactionApprover, User, UserStatus } from '@entities';
+
+import { ApproversController } from './approvers.controller';
+
+import { ApproversService } from './approvers.service';
+import { VerifiedUserGuard } from '../../guards';
 
 describe('ApproversController', () => {
   let controller: ApproversController;
   let user: User;
   let transactionApprover: TransactionApprover;
+
+  const approversService = mockDeep<ApproversService>();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -14,23 +22,13 @@ describe('ApproversController', () => {
       providers: [
         {
           provide: ApproversService,
-          useValue: {
-            getTransactionApproverById: jest.fn(),
-            getApproversByTransactionId: jest.fn(),
-            getVerifiedApproversByTransactionId: jest.fn(),
-            getTransactionApproversById: jest.fn(),
-            getRootNodeFromNode: jest.fn(),
-            removeNode: jest.fn(),
-            createTransactionApprovers: jest.fn(),
-            updateTransactionApprover: jest.fn(),
-            removeTransactionApprover: jest.fn(),
-            approveTransaction: jest.fn(),
-            getCreatorsTransaction: jest.fn(),
-            getTreeStructure: jest.fn(),
-          }
+          useValue: approversService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(VerifiedUserGuard)
+      .useValue(guardMock())
+      .compile();
 
     controller = module.get<ApproversController>(ApproversController);
     user = {
@@ -46,7 +44,7 @@ describe('ApproversController', () => {
       signerForTransactions: [],
       observableTransactions: [],
       approvableTransactions: [],
-      comments: []
+      comments: [],
     };
     transactionApprover = {
       id: 1,
@@ -64,9 +62,13 @@ describe('ApproversController', () => {
     it('should return an approver', async () => {
       const result = [transactionApprover];
 
-      jest.spyOn(controller, 'createTransactionApprovers').mockResolvedValue(result);
+      approversService.createTransactionApprovers.mockResolvedValue(result);
 
-      expect(await controller.createTransactionApprovers(user, 1, { approversArray: [{ userId: user.id }] })).toBe(result);
+      expect(
+        await controller.createTransactionApprovers(user, 1, {
+          approversArray: [{ userId: user.id }],
+        }),
+      ).toBe(result);
     });
   });
 
@@ -79,7 +81,7 @@ describe('ApproversController', () => {
         approved: true,
       };
 
-      jest.spyOn(controller, 'approveTransaction').mockResolvedValue(result);
+      approversService.approveTransaction.mockResolvedValue(result);
 
       expect(await controller.approveTransaction(user, 1, approval)).toBe(result);
     });
@@ -89,7 +91,7 @@ describe('ApproversController', () => {
     it('should return an array of approvers', async () => {
       const result = [transactionApprover];
 
-      jest.spyOn(controller, 'getTransactionApproversByTransactionId').mockResolvedValue(result);
+      approversService.getVerifiedApproversByTransactionId.mockResolvedValue(result);
 
       expect(await controller.getTransactionApproversByTransactionId(user, 1)).toBe(result);
     });
@@ -99,8 +101,6 @@ describe('ApproversController', () => {
     it('should return a boolean indicating if the removal was successful', async () => {
       const result = true;
 
-      jest.spyOn(controller, 'removeTransactionApprover').mockResolvedValue(result);
-
       expect(await controller.removeTransactionApprover(user, 1, 1)).toBe(result);
     });
   });
@@ -109,7 +109,7 @@ describe('ApproversController', () => {
     it('should return an approver', async () => {
       const result = transactionApprover;
 
-      jest.spyOn(controller, 'updateTransactionApprover').mockResolvedValue(result);
+      approversService.updateTransactionApprover.mockResolvedValue(result);
 
       expect(await controller.updateTransactionApprover(user, 1, 1, { userId: 2 })).toBe(result);
     });
