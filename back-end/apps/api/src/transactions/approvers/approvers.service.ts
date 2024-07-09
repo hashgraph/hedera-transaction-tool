@@ -53,7 +53,7 @@ export class ApproversService {
   private readonly INVALID_UPDATE_APPROVER =
     'Only one property of the approver can be update user id, list id, or the threshold';
   private readonly APPROVER_NOT_TREE = 'Cannot update threshold, the approver is not a tree';
-  private readonly APPROVER_IS_TREE = 'Cannot update user ud, the approver is a tree';
+  private readonly APPROVER_IS_TREE = 'Cannot update user id, the approver is a tree';
   private readonly CANNOT_SET_CHILD_AS_PARENT = 'Cannot set a child as a parent';
 
   constructor(
@@ -508,25 +508,16 @@ export class ApproversService {
 
           /* Update the user */
           if (approver.userId !== dto.userId) {
-            const userApproverRecords = await this.getApproversByTransactionId(
-              transactionId,
-              dto.userId,
-              transactionalEntityManager,
-            );
-
             const data: DeepPartial<TransactionApprover> = {
               userId: dto.userId,
+              userKeyId: undefined,
+              signature: undefined,
+              approved: undefined,
             };
 
-            if (userApproverRecords.length > 0) {
-              data.userKeyId = userApproverRecords[0].userKeyId;
-              data.signature = userApproverRecords[0].signature;
-              data.approved = userApproverRecords[0].approved;
-
-              approver.userKeyId = userApproverRecords[0].userKeyId;
-              approver.signature = userApproverRecords[0].signature;
-              approver.approved = userApproverRecords[0].approved;
-            }
+            approver.userKeyId = undefined;
+            approver.signature = undefined;
+            approver.approved = undefined;
 
             await transactionalEntityManager.update(TransactionApprover, approver.id, data);
             approver.userId = dto.userId;
