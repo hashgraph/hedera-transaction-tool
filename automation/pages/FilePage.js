@@ -92,7 +92,7 @@ class FilePage extends BasePage {
   }
 
   async getFileIdText() {
-    return await this.getTextByTestId(this.fileIdTextSelector);
+    return await this.getTextByTestId(this.fileIdTextSelector, 3000);
   }
 
   async getFileSizeText() {
