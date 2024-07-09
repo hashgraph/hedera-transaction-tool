@@ -23,7 +23,7 @@ import {
 import { Transaction, TransactionStatus } from '@entities';
 
 import { UpdateTransactionStatusDto } from './dto';
-import { ExecuteService } from '../execute';
+import { ExecuteService } from '../execute/execute.service';
 
 @Injectable()
 export class TransactionStatusService {

@@ -28,7 +28,7 @@ import { ExecuteService } from './execute.service';
 
 jest.mock('@app/common');
 jest.mock('murlock', () => {
-  const original = jest.requireActual('murlock'); // Step 2.
+  const original = jest.requireActual('murlock');
   return {
     ...original,
     MurLock: function MurLock() {
