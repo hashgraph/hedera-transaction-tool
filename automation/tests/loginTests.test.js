@@ -9,6 +9,7 @@ const {
 const RegistrationPage = require('../pages/RegistrationPage.js');
 const { expect } = require('playwright/test');
 const LoginPage = require('../pages/LoginPage');
+const { resetDbState } = require('../utils/databaseUtil');
 
 let app, window;
 let globalCredentials = { email: '', password: '' };
@@ -17,10 +18,10 @@ let loginPage;
 
 test.describe('Login tests', () => {
   test.beforeAll(async () => {
+    await resetDbState();
     ({ app, window } = await setupApp());
     loginPage = new LoginPage(window);
     await loginPage.logout();
-    await resetAppState(window);
     registrationPage = new RegistrationPage(window);
 
     // Generate credentials and store them globally
@@ -35,10 +36,8 @@ test.describe('Login tests', () => {
   });
 
   test.afterAll(async () => {
-    await loginPage.logout();
-    await resetAppState(window);
-
     await closeApp(app);
+    await resetDbState();
   });
 
   test.beforeEach(async () => {

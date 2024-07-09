@@ -11,6 +11,7 @@ const RegistrationPage = require('../pages/RegistrationPage.js');
 const { expect } = require('playwright/test');
 const LoginPage = require('../pages/LoginPage');
 const TransactionPage = require('../pages/TransactionPage');
+const { resetDbState } = require('../utils/databaseUtil');
 
 let app, window;
 let globalCredentials = { email: '', password: '' };
@@ -18,11 +19,10 @@ let registrationPage, loginPage, transactionPage;
 
 test.describe('Transaction tests', () => {
   test.beforeAll(async () => {
+    await resetDbState();
     ({ app, window } = await setupApp());
     loginPage = new LoginPage(window);
     transactionPage = new TransactionPage(window);
-    await loginPage.logout();
-    await resetAppState(window);
     registrationPage = new RegistrationPage(window);
 
     // Ensure transactionPage generatedAccounts is empty
@@ -44,13 +44,8 @@ test.describe('Transaction tests', () => {
   test.afterAll(async () => {
     // Ensure transactionPage generatedAccounts is empty
     transactionPage.generatedAccounts = [];
-    await transactionPage.closeCompletedTransaction();
-    await transactionPage.clickOnTransactionsMenuButton();
-    await transactionPage.closeDraftModal();
-    await loginPage.logout();
-    await resetAppState(window);
-
     await closeApp(app);
+    await resetDbState();
   });
 
   test.beforeEach(async () => {

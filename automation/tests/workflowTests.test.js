@@ -14,6 +14,7 @@ const TransactionPage = require('../pages/TransactionPage');
 const AccountPage = require('../pages/AccountPage');
 const FilePage = require('../pages/FilePage');
 const DetailsPage = require('../pages/DetailsPage');
+const { resetDbState } = require('../utils/databaseUtil');
 
 let app, window;
 let globalCredentials = { email: '', password: '' };
@@ -21,14 +22,13 @@ let registrationPage, loginPage, transactionPage, accountPage, filePage, details
 
 test.describe('Workflow tests', () => {
   test.beforeAll(async () => {
+    await resetDbState();
     ({ app, window } = await setupApp());
     loginPage = new LoginPage(window);
     transactionPage = new TransactionPage(window);
     accountPage = new AccountPage(window);
     filePage = new FilePage(window);
     detailsPage = new DetailsPage(window);
-    await loginPage.logout();
-    await resetAppState(window);
     registrationPage = new RegistrationPage(window);
 
     // Ensure transactionPage generatedAccounts is empty
@@ -50,13 +50,8 @@ test.describe('Workflow tests', () => {
   test.afterAll(async () => {
     // Ensure transactionPage generatedAccounts is empty
     transactionPage.generatedAccounts = [];
-    await transactionPage.closeCompletedTransaction();
-    await transactionPage.clickOnTransactionsMenuButton();
-    await transactionPage.closeDraftModal();
-    await loginPage.logout();
-    await resetAppState(window);
-
     await closeApp(app);
+    await resetDbState();
   });
 
   test.beforeEach(async () => {
