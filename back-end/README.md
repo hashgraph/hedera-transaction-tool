@@ -58,6 +58,15 @@ rm -rf <back-end base directory>/pgdata
 docker-compose up
 ```
 
+### Running tests
+
+Tests are run per service. Navigate to the service you want to test. There you can use the test commands to run the tests and see the coverage
+
+```bash
+cd apps/api
+npm run test:cov
+```
+
 ### Exposed Endpoints
 
 All ports are defined in the [`docker-compose.yaml`](./docker-compose.yaml)
@@ -129,7 +138,7 @@ Until then, use the following commands once connected to a cluster:
 4. Install the helm chart for redis:
 
    ```bash
-   helm install redis bitnami/redis --namespace hedera-transaction-tool --set auth.enabled=false --set architecture=standalone 
+   helm install redis bitnami/redis --namespace hedera-transaction-tool --set auth.enabled=false --set architecture=standalone
    ```
 
 5. Apply the required secrets:
@@ -138,14 +147,12 @@ Until then, use the following commands once connected to a cluster:
    kubectl apply -f ./otp-secret.yaml
    kubectl apply -f ./brevo-secret.yaml
    ```
-   
 6. Deploy the services. Until migration is properly in place, the first time the api service is deployed, ensure that POSTGRES_SYNCHRONIZE is set to true in the yaml:
    ```bash
    kubectl apply -f ./api/deployment.yaml
    kubectl apply -f ./chain/deployment.yaml
    kubectl apply -f ./notifications/deployment.yaml
    ```
-   
 7. Setup SSL. The [cert-manager guide](https://cert-manager.io/docs/tutorials/getting-started-with-cert-manager-on-google-kubernetes-engine-using-lets-encrypt-for-ingress-ssl/) describes the process, but in short:
 
    ```bash
@@ -173,7 +180,7 @@ Until then, use the following commands once connected to a cluster:
    Note: if there are issues with the issuer and ingress, the ingress may have to be applied without ssl options before step 7.
 
 9. Using the actual name of the Postgres pod, connect to Postgres to create the admin user:
-   
+
    ```bash
    kubectl exec -it <podname> -- psql -h localhost -U postgres --password -p 5432
    ```
