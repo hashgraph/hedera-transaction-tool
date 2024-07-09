@@ -109,7 +109,7 @@ watch(
 </script>
 
 <template>
-  <div class="px-6 py-5">
+  <div class="px-4 px-xxl-6 py-5">
     <div class="container-fluid flex-column-100">
       <div class="d-flex justify-content-between">
         <h1 class="text-title text-bold">Contact List</h1>
