@@ -701,12 +701,7 @@ export class ApproversService {
       },
     };
 
-    if (entityManager) {
-      const count = await entityManager.count(TransactionApprover, find);
-      return count > 0 && typeof approver.userId === 'number' ? true : false;
-    }
-
-    const count = await this.repo.count(find);
+    const count = await (entityManager || this.repo).count(TransactionApprover, find);
     return count > 0 && typeof approver.userId === 'number' ? true : false;
   }
 
