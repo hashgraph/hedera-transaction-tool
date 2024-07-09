@@ -1,81 +1,69 @@
 import { Test, TestingModule } from '@nestjs/testing';
+
+import { User } from '@entities';
+
 import { CommentsController } from './comments.controller';
+
 import { CommentsService } from './comments.service';
-import { TransactionComment, User, UserStatus } from '@entities';
+import { VerifiedUserGuard } from '../../guards';
+import { mockDeep } from 'jest-mock-extended';
 
 describe('CommentsController', () => {
   let controller: CommentsController;
-  let user: User;
-  let comment: TransactionComment;
+  const commentsService = mockDeep<CommentsService>();
+
+  let user: Partial<User>;
 
   beforeEach(async () => {
+    user = {
+      id: 1,
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CommentsController],
       providers: [
         {
           provide: CommentsService,
-          useValue: {
-            createComment: jest.fn(),
-            getTransactionComments: jest.fn(),
-            getTransactionCommentById: jest.fn(),
-          },
+          useValue: commentsService,
         },
-      ]
-    }).compile();
+      ],
+    })
+      .overrideGuard(VerifiedUserGuard)
+      .useValue({
+        canActivate: jest.fn(() => {
+          return true;
+        }),
+      })
+      .compile();
 
     controller = module.get<CommentsController>(CommentsController);
-    user = {
-      id: 1,
-      email: 'John@test.com',
-      password: 'Doe',
-      admin: true,
-      status: UserStatus.NONE,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      deletedAt: null,
-      keys: [],
-      signerForTransactions: [],
-      observableTransactions: [],
-      approvableTransactions: [],
-      comments: []
-    };
-    comment = {
-      id: 1,
-      transaction: null,
-      user: user,
-      message: 'test',
-      createdAt: new Date(),
-    }
   });
 
   describe('createComment', () => {
     it('should return a comment', async () => {
-      const result = comment;
+      await controller.createComment(user as User, 1, { message: 'test' });
 
-      jest.spyOn(controller, 'createComment').mockResolvedValue(result);
-
-      expect(await controller.createComment(user, 1, { message: 'test' })).toBe(result);
+      expect(commentsService.createComment).toHaveBeenCalledWith(user, 1, { message: 'test' });
     });
   });
 
   describe('getComments', () => {
     it('should return an array of comments', async () => {
-      const result = [comment];
+      const id = 1;
 
-      jest.spyOn(controller, 'getComments').mockResolvedValue(result);
+      await controller.getComments(id);
 
-      expect(await controller.getComments(1)).toBe(result);
+      expect(commentsService.getTransactionComments).toHaveBeenCalledWith(id);
     });
   });
 
   describe('getCommentById', () => {
     it('should return a comment', async () => {
-      const result = comment;
+      const id = 1;
 
-      jest.spyOn(controller, 'getCommentById').mockResolvedValue(result);
+      await controller.getCommentById(id);
 
-      expect(await controller.getCommentById(1)).toBe(result);
+      expect(commentsService.getTransactionCommentById).toHaveBeenCalledWith(id);
     });
   });
-
 });
