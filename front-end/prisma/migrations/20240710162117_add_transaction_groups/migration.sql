@@ -1,9 +1,3 @@
-/*
-  Warnings:
-
-  - You are about to drop the column `group_id` on the `Transaction` table. All the data in the column will be lost.
-
-*/
 -- CreateTable
 CREATE TABLE "TransactionGroup" (
     "id" TEXT NOT NULL PRIMARY KEY,
@@ -41,13 +35,14 @@ CREATE TABLE "new_Transaction" (
     "executed_at" INTEGER NOT NULL,
     "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" DATETIME NOT NULL,
+    "group_id" TEXT,
     "creator_public_key" TEXT,
     "network" TEXT NOT NULL,
     "organization_id" TEXT,
     CONSTRAINT "Transaction_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "Transaction_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "Organization" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
-INSERT INTO "new_Transaction" ("body", "created_at", "creator_public_key", "description", "executed_at", "id", "name", "network", "signature", "status", "status_code", "transaction_hash", "transaction_id", "type", "updated_at", "user_id", "valid_start") SELECT "body", "created_at", "creator_public_key", "description", "executed_at", "id", "name", "network", "signature", "status", "status_code", "transaction_hash", "transaction_id", "type", "updated_at", "user_id", "valid_start" FROM "Transaction";
+INSERT INTO "new_Transaction" ("body", "created_at", "creator_public_key", "description", "executed_at", "group_id", "id", "name", "network", "signature", "status", "status_code", "transaction_hash", "transaction_id", "type", "updated_at", "user_id", "valid_start") SELECT "body", "created_at", "creator_public_key", "description", "executed_at", "group_id", "id", "name", "network", "signature", "status", "status_code", "transaction_hash", "transaction_id", "type", "updated_at", "user_id", "valid_start" FROM "Transaction";
 DROP TABLE "Transaction";
 ALTER TABLE "new_Transaction" RENAME TO "Transaction";
 PRAGMA foreign_key_check;
