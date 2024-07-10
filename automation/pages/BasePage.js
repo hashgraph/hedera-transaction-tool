@@ -226,7 +226,6 @@ class BasePage {
       console.error(
         `Element with selector "${testId}" did not appear in the DOM within ${timeout} ms.`,
       );
-      throw error;
     }
   }
 

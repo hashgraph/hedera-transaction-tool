@@ -11,6 +11,7 @@ const RegistrationPage = require('../pages/RegistrationPage.js');
 const { expect } = require('playwright/test');
 const LoginPage = require('../pages/LoginPage');
 const SettingsPage = require('../pages/SettingsPage');
+const { resetDbState } = require('../utils/databaseUtil');
 
 let app, window;
 let globalCredentials = { email: '', password: '' };
@@ -18,10 +19,9 @@ let registrationPage, loginPage, settingsPage;
 
 test.describe('Settings tests', () => {
   test.beforeAll(async () => {
+    await resetDbState();
     ({ app, window } = await setupApp());
     loginPage = new LoginPage(window);
-    await loginPage.logout();
-    await resetAppState(window);
     registrationPage = new RegistrationPage(window);
     settingsPage = new SettingsPage(window);
 
@@ -37,10 +37,8 @@ test.describe('Settings tests', () => {
   });
 
   test.afterAll(async () => {
-    await loginPage.logout();
-    await resetAppState(window);
-
     await closeApp(app);
+    await resetDbState();
   });
 
   test.beforeEach(async () => {

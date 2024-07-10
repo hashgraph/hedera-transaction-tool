@@ -39,19 +39,22 @@ to run the tests.
    ```env
    EXECUTABLE_PATH='/path/to/Hedera Transaction Tool'
    PRIVATE_KEY='your_private_key_here'
+   PRIVATE_KEY_2, PRIVATE_KEY_3, PRIVATE_KEY_4: Additional private keys as required.
    ENVIRONMENT='TESTNET'
+   ORGANIZATION_URL: URL for your organization, e.g., https://localhost:3001.
+   
+   POSTGRES_HOST: Host of your PostgreSQL server, typically localhost.
+   POSTGRES_PORT: Port for your PostgreSQL server, typically 5432.
+   POSTGRES_DATABASE: Name of your PostgreSQL database, e.g., postgres.
+   POSTGRES_USERNAME: Username for your PostgreSQL database, e.g., postgres.
+   POSTGRES_PASSWORD: Password for your PostgreSQL database, e.g., postgres.
    ```
-
-   Replace `/path/to/Hedera Transaction Tool` with the actual path to your Hedera Transaction Tool executable.
-
-   Replace `your_private_key_here` with the appropriate private key.
-
    Replace `ENVIRONMENT` with variable that can be set to `TESTNET` or `LOCALNET`.
 
    Depending on the environment selected:
 
-   - TESTNET: Use your ECDSA private key.
-   - LOCALNET: Use your ED25519 private key.
+   - TESTNET: Use your ECDSA private keys.
+   - LOCALNET: Use your ED25519 private keys.
 
 ## Running Tests
 
@@ -93,4 +96,10 @@ npx playwright test tests/TransactionTests
 
 ```bash
 npx playwright test tests/WorkflowTests
+```
+
+### 5. Organization tests
+
+```bash
+npx playwright test tests/OrganizationTests
 ```
