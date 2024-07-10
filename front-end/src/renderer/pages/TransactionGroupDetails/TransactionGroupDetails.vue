@@ -1,15 +1,14 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, ref } from 'vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
-import { useRouter, useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import useUserStore from '@renderer/stores/storeUser';
 import {
   isLoggedInOrganization,
   isLoggedInWithPassword,
   isUserLoggedIn,
 } from '@renderer/utils/userStoreHelpers';
-import { KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
+import { Transaction } from '@hashgraph/sdk';
 import { useToast } from 'vue-toast-notification';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 import useNetwork from '@renderer/stores/storeNetwork';
@@ -30,13 +29,11 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Stores */
-const transactionGroup = useTransactionGroupStore();
 const user = useUserStore();
 const network = useNetwork();
 
 /* Composables */
 const router = useRouter();
-const route = useRoute();
 const toast = useToast();
 const ws = useDisposableWs();
 
@@ -54,11 +51,7 @@ const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODA
 async function handleFetchGroup(id: string | number) {
   if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
     try {
-      group.value = await getApiGroupById(
-        user.selectedOrganization.serverUrl,
-        network.network,
-        Number(id),
-      );
+      group.value = await getApiGroupById(user.selectedOrganization.serverUrl, Number(id));
       if (group.value?.groupItems != undefined) {
         for (const item of group.value.groupItems) {
           shouldApprove.value =

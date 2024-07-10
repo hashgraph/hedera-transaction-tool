@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, onBeforeMount, reactive, ref, watch } from 'vue';
+import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 
 import { Transaction } from '@hashgraph/sdk';
 
@@ -11,11 +11,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 
-import {
-  getApiGroups,
-  getTransactionsToApprove,
-  sendApproverChoice,
-} from '@renderer/services/organization';
+import { getApiGroups, getTransactionsToApprove } from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
 import {
@@ -23,20 +19,12 @@ import {
   getTransactionId,
   getTransactionType,
 } from '@renderer/utils/sdk/transactions';
-import {
-  isLoggedInOrganization,
-  isLoggedInWithPassword,
-  isUserLoggedIn,
-} from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
-import { useToast } from 'vue-toast-notification';
-import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
-import { decryptPrivateKey } from '@renderer/services/keyPairService';
-import { getPrivateKey, getTransactionBodySignatureWithoutNodeAccountId } from '@renderer/utils';
 
 /* Stores */
 const user = useUserStore();
@@ -45,7 +33,6 @@ const network = useNetworkStore();
 /* Composables */
 const router = useRouter();
 const ws = useDisposableWs();
-const toast = useToast();
 
 /* State */
 const transactions = ref<
@@ -62,7 +49,6 @@ const totalItems = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
 const isLoading = ref(true);
-const tx = ref();
 
 const sort = reactive<{
   field: keyof ITransaction;
@@ -71,9 +57,6 @@ const sort = reactive<{
   field: 'createdAt',
   direction: 'desc',
 });
-
-/* Injected */
-const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
 
 /* Computed */
 const generatedClass = computed(() => {
@@ -120,47 +103,6 @@ const handleDetails = async (id: number) => {
 //   }
 // };
 
-const handleApproveSingle = async () => {
-  const callback = async () => {
-    if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
-      throw new Error('User is not logged in organization');
-    }
-
-    if (!isLoggedInWithPassword(user.personal)) {
-      if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-      userPasswordModalRef.value?.open(
-        'Enter your application password',
-        'Enter your application password to decrypt your private key',
-        callback,
-      );
-      return;
-    }
-
-    const publicKey = user.selectedOrganization.userKeys[0].publicKey;
-    const privateKeyRaw = await decryptPrivateKey(
-      user.personal.id,
-      user.personal.password,
-      publicKey,
-    );
-    const privateKey = getPrivateKey(publicKey, privateKeyRaw);
-
-    const signature = await getTransactionBodySignatureWithoutNodeAccountId(
-      privateKey,
-      tx.value.transaction,
-    );
-
-    await sendApproverChoice(
-      user.selectedOrganization.serverUrl,
-      tx.value.transactionRaw.id,
-      user.selectedOrganization.userKeys[0].id,
-      signature,
-      true,
-    );
-  };
-
-  await callback();
-};
-
 const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') => {
   sort.field = field;
   sort.direction = direction;
@@ -204,7 +146,7 @@ async function fetchTransactions() {
       }
     }
 
-    groups.value = await getApiGroups(user.selectedOrganization.serverUrl, network.network);
+    groups.value = await getApiGroups(user.selectedOrganization.serverUrl);
   } finally {
     isLoading.value = false;
   }
@@ -308,8 +250,8 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                     }}
                   </td>
                   <td class="text-center">
-                    <AppButton 
-                      @click="handleDetails(group[0])" 
+                    <AppButton
+                      @click="handleDetails(group[0])"
                       color="secondary"
                       class="min-w-unset"
                       >Details</AppButton

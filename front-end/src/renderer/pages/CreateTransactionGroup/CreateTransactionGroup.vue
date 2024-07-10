@@ -9,12 +9,8 @@ import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 import { useRouter, useRoute } from 'vue-router';
 import useUserStore from '@renderer/stores/storeUser';
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
-import {
-  getEntityIdFromTransactionReceipt,
-  isAccountId,
-  getPropagationButtonLabel,
-} from '@renderer/utils';
-import { Key, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
+import { getEntityIdFromTransactionReceipt, getPropagationButtonLabel } from '@renderer/utils';
+import { KeyList, PublicKey } from '@hashgraph/sdk';
 import { useToast } from 'vue-toast-notification';
 
 /* Stores */

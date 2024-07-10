@@ -44,18 +44,14 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import useTransactionGroupStore, { GroupItem } from '@renderer/stores/storeTransactionGroup';
 import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
-import { addGroupItem, editGroupItem, getGroup } from '@renderer/services/transactionGroupsService';
+import { addGroupItem, editGroupItem } from '@renderer/services/transactionGroupsService';
 import { addGroup, getGroupItem } from '@renderer/services/transactionGroupsService';
 import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
 import {
-  submitTransaction,
   addApprovers,
   addObservers,
-  ApiTransaction,
   ApiGroupItem,
   submitTransactionGroup,
-  getTransactionsToSign,
-  getApiGroups,
   getApiGroupById,
   IGroup,
 } from '@renderer/services/organization';
@@ -94,7 +90,7 @@ const transactionResult = ref<{
 } | null>();
 const chunksAmount = ref<number | null>(null);
 const chunkSize = ref(1024);
-const chunkInterval = ref(0.1);
+// const chunkInterval = ref(0.1);
 const userPassword = ref('');
 const signatureKey = ref<Key | KeyList | null>(null);
 const isConfirmShown = ref(false);
@@ -114,9 +110,9 @@ const newGroupId = ref('');
 const flattenedSignatureKey = computed(() =>
   signatureKey.value ? flattenKeyList(signatureKey.value).map(pk => pk.toStringRaw()) : [],
 );
-const externalPublicKeysReq = computed(() =>
-  flattenedSignatureKey.value.filter(pk => !user.publicKeys.includes(pk)),
-);
+// const externalPublicKeysReq = computed(() =>
+//   flattenedSignatureKey.value.filter(pk => !user.publicKeys.includes(pk)),
+// );
 const localPublicKeysReq = computed(() =>
   flattenedSignatureKey.value.filter(pk => user.publicKeys.includes(pk)),
 );
@@ -412,11 +408,7 @@ async function sendSignedTransactionsToOrganization() {
   );
 
   //TODO: fix to getting actual transactions
-  const group: IGroup = await getApiGroupById(
-    user.selectedOrganization.serverUrl,
-    network.network,
-    id,
-  );
+  const group: IGroup = await getApiGroupById(user.selectedOrganization.serverUrl, id);
 
   toast.success('Transaction submitted successfully');
   props.onSubmitted && props.onSubmitted(id, body);
@@ -503,7 +495,6 @@ async function executeFileTransactions(
   } | null = null;
   processedChunks.value = 0;
   let hasFailed = false;
-  const group = transaction.transactionId?.validStart?.seconds.toString() || '';
 
   validateTransaction(transaction);
 
@@ -638,86 +629,86 @@ async function executeFileTransactions(
   }
 }
 
-async function chunkFileTransactionForOrganization(
-  transaction: FileUpdateTransaction | FileAppendTransaction,
-  chunks: Uint8Array[],
-) {
-  if (!transaction.contents) return [transaction.toBytes()];
+// async function chunkFileTransactionForOrganization(
+//   transaction: FileUpdateTransaction | FileAppendTransaction,
+//   chunks: Uint8Array[],
+// ) {
+//   if (!transaction.contents) return [transaction.toBytes()];
 
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
+//   if (!isUserLoggedIn(user.personal)) {
+//     throw new Error('User is not logged in');
+//   }
 
-  validateTransaction(transaction);
+//   validateTransaction(transaction);
 
-  const transactions: Uint8Array[] = [];
-  const isUpdateTransaction = transaction instanceof FileUpdateTransaction;
+//   const transactions: Uint8Array[] = [];
+//   const isUpdateTransaction = transaction instanceof FileUpdateTransaction;
 
-  isChunkingModalShown.value = true;
-  processedChunks.value = 0;
+//   isChunkingModalShown.value = true;
+//   processedChunks.value = 0;
 
-  if (isUpdateTransaction) {
-    const updateTransaction = new FileUpdateTransaction()
-      .setTransactionId(transaction.transactionId!)
-      .setTransactionValidDuration(180)
-      .setMaxTransactionFee(transaction.maxTransactionFee || new Hbar(2))
-      .setFileId(transaction.fileId!)
-      .setContents(chunks[0]);
-    transaction.fileMemo && updateTransaction.setFileMemo(transaction.fileMemo);
-    transaction.keys && transaction.keys.length > 0 && updateTransaction.setKeys(transaction.keys);
-    transaction.expirationTime && updateTransaction.setExpirationTime(transaction.expirationTime);
+//   if (isUpdateTransaction) {
+//     const updateTransaction = new FileUpdateTransaction()
+//       .setTransactionId(transaction.transactionId!)
+//       .setTransactionValidDuration(180)
+//       .setMaxTransactionFee(transaction.maxTransactionFee || new Hbar(2))
+//       .setFileId(transaction.fileId!)
+//       .setContents(chunks[0]);
+//     transaction.fileMemo && updateTransaction.setFileMemo(transaction.fileMemo);
+//     transaction.keys && transaction.keys.length > 0 && updateTransaction.setKeys(transaction.keys);
+//     transaction.expirationTime && updateTransaction.setExpirationTime(transaction.expirationTime);
 
-    transactions[0] = await signTransaction(
-      updateTransaction.toBytes(),
-      localPublicKeysReq.value,
-      user.personal.id,
-      userPassword.value,
-    );
+//     transactions[0] = await signTransaction(
+//       updateTransaction.toBytes(),
+//       localPublicKeysReq.value,
+//       user.personal.id,
+//       userPassword.value,
+//     );
 
-    processedChunks.value++;
-  }
+//     processedChunks.value++;
+//   }
 
-  for (let i = isUpdateTransaction ? 1 : 0; i < chunks.length; i++) {
-    if (!transaction.transactionId) throw new Error('Transaction ID is missing');
-    if (!transaction.transactionId.accountId)
-      throw new Error('Account ID in Transaction ID is missing');
+//   for (let i = isUpdateTransaction ? 1 : 0; i < chunks.length; i++) {
+//     if (!transaction.transactionId) throw new Error('Transaction ID is missing');
+//     if (!transaction.transactionId.accountId)
+//       throw new Error('Account ID in Transaction ID is missing');
 
-    const transactionId = createTransactionId(
-      transaction.transactionId.accountId,
-      transaction.transactionId.validStart?.plusNanos(i * chunkInterval.value * 1000000000) ||
-        new Date(),
-    );
+//     const transactionId = createTransactionId(
+//       transaction.transactionId.accountId,
+//       transaction.transactionId.validStart?.plusNanos(i * chunkInterval.value * 1000000000) ||
+//         new Date(),
+//     );
 
-    const appendTransaction = new FileAppendTransaction()
-      .setTransactionId(transactionId)
-      .setTransactionValidDuration(180)
-      .setMaxTransactionFee(transaction.maxTransactionFee || new Hbar(2))
-      .setFileId(transaction.fileId!)
-      .setContents(chunks[i])
-      .setMaxChunks(1)
-      .setChunkSize(chunkSize.value);
+//     const appendTransaction = new FileAppendTransaction()
+//       .setTransactionId(transactionId)
+//       .setTransactionValidDuration(180)
+//       .setMaxTransactionFee(transaction.maxTransactionFee || new Hbar(2))
+//       .setFileId(transaction.fileId!)
+//       .setContents(chunks[i])
+//       .setMaxChunks(1)
+//       .setChunkSize(chunkSize.value);
 
-    transactions.push(
-      await signTransaction(
-        appendTransaction.toBytes(),
-        localPublicKeysReq.value,
-        user.personal.id,
-        userPassword.value,
-      ),
-    );
+//     transactions.push(
+//       await signTransaction(
+//         appendTransaction.toBytes(),
+//         localPublicKeysReq.value,
+//         user.personal.id,
+//         userPassword.value,
+//       ),
+//     );
 
-    processedChunks.value++;
-  }
+//     processedChunks.value++;
+//   }
 
-  isChunkingModalShown.value = false;
+//   isChunkingModalShown.value = false;
 
-  return transactions;
-}
+//   return transactions;
+// }
 
-async function sendSignedFileTransactionToOrganization(transactionBytes?: Uint8Array) {
-  console.log(transactionBytes);
-  console.log('Send to back end signed along with required', externalPublicKeysReq.value);
-}
+// async function sendSignedFileTransactionToOrganization(transactionBytes?: Uint8Array) {
+//   console.log(transactionBytes);
+//   console.log('Send to back end signed along with required', externalPublicKeysReq.value);
+// }
 
 // async function sendSignedTransactionToOrganization() {
 //   isConfirmShown.value = false;
@@ -804,10 +795,10 @@ async function sendSignedFileTransactionToOrganization(transactionBytes?: Uint8A
 //   toast.success('Transaction signed successfully');
 // }
 
-async function sendSignedChunksToOrganization(transactions: Uint8Array[]) {
-  console.log(transactions);
-  console.log('Send to back end signed along with required', externalPublicKeysReq.value);
-}
+// async function sendSignedChunksToOrganization(transactions: Uint8Array[]) {
+//   console.log(transactions);
+//   console.log('Send to back end signed along with required', externalPublicKeysReq.value);
+// }
 
 function validateTransaction(transaction: FileUpdateTransaction | FileAppendTransaction) {
   if (!transaction.transactionId) throw new Error('Transaction ID is missing');

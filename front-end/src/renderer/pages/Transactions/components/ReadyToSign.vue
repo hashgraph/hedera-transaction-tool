@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, onBeforeMount, reactive, ref, watch } from 'vue';
+import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 
 import { Transaction } from '@hashgraph/sdk';
 
@@ -11,32 +11,20 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 
-import {
-  fullUploadSignatures,
-  getApiGroups,
-  getTransactionsToSign,
-} from '@renderer/services/organization';
+import { getApiGroups, getTransactionsToSign } from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
-
-import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
 import {
   getTransactionDateExtended,
   getTransactionId,
   getTransactionType,
 } from '@renderer/utils/sdk/transactions';
-import {
-  isLoggedInOrganization,
-  isLoggedInWithPassword,
-  isUserLoggedIn,
-} from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
-import { publicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
-import { useToast } from 'vue-toast-notification';
 
 /* Stores */
 const user = useUserStore();
@@ -45,7 +33,6 @@ const network = useNetworkStore();
 /* Composables */
 const router = useRouter();
 const ws = useDisposableWs();
-const toast = useToast();
 
 /* State */
 const transactions = ref<
@@ -64,7 +51,6 @@ const totalItems = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
 const isLoading = ref(true);
-const tx = ref();
 
 const sort = reactive<{
   field: keyof ITransaction;
@@ -73,9 +59,6 @@ const sort = reactive<{
   field: 'createdAt',
   direction: 'desc',
 });
-
-/* Injected */
-const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
 
 /* Computed */
 const generatedClass = computed(() => {
@@ -127,36 +110,6 @@ const handleDetails = async (id: number) => {
 //   }
 // };
 
-const handleSignSingle = async () => {
-  if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in organization');
-  }
-
-  if (!isLoggedInWithPassword(user.personal)) {
-    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-    userPasswordModalRef.value?.open(
-      'Enter your application password',
-      'Enter your application password to decrypt your private key',
-      handleSignSingle,
-    );
-    return;
-  }
-
-  const publicKeysRequired = await publicRequiredToSign(
-    tx.value.transaction,
-    user.selectedOrganization.userKeys,
-    network.mirrorNodeBaseURL,
-  );
-
-  await fullUploadSignatures(
-    user.personal,
-    user.selectedOrganization,
-    publicKeysRequired,
-    tx.value.transaction,
-    tx.value.transactionRaw.id,
-  );
-};
-
 const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') => {
   sort.field = field;
   sort.direction = direction;
@@ -206,7 +159,7 @@ async function fetchTransactions() {
       }
     }
 
-    groups.value = await getApiGroups(user.selectedOrganization.serverUrl, network.network);
+    groups.value = await getApiGroups(user.selectedOrganization.serverUrl);
   } finally {
     isLoading.value = false;
   }

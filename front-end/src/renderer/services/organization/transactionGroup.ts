@@ -1,7 +1,5 @@
-import { GroupItem } from './../../stores/storeTransactionGroup';
 import { Network } from '@main/shared/enums';
-import axios, { AxiosError } from 'axios';
-import { throwIfNoResponse } from '.';
+import axios from 'axios';
 import { ITransaction } from '@main/shared/interfaces';
 import { commonRequestHandler } from '@renderer/utils';
 
@@ -55,7 +53,7 @@ export const submitTransactionGroup = async (
 };
 
 /* Get transaction groups */
-export const getApiGroups = async (serverUrl: string, network: Network) => {
+export const getApiGroups = async (serverUrl: string) => {
   return commonRequestHandler(async () => {
     const { data } = await axios.get(`${serverUrl}/transaction-groups/`, {
       withCredentials: true,
@@ -66,7 +64,7 @@ export const getApiGroups = async (serverUrl: string, network: Network) => {
 };
 
 /* Get transaction groups */
-export const getApiGroupById = async (serverUrl: string, network: Network, id: number) => {
+export const getApiGroupById = async (serverUrl: string, id: number) => {
   return commonRequestHandler(async () => {
     const { data } = await axios.get(`${serverUrl}/transaction-groups/${id}`, {
       withCredentials: true,

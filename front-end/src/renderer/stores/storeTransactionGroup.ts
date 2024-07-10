@@ -3,13 +3,11 @@ import { TransactionApproverDto } from '@main/shared/interfaces/organization/app
 import { Prisma } from '@prisma/client';
 import { getDrafts } from '@renderer/services/transactionDraftsService';
 import {
-  addGroup,
   addGroupWithDrafts,
-  deleteGroup,
   getGroup,
   getGroupItems,
 } from '@renderer/services/transactionGroupsService';
-import { getTransactionFromBytes, getTransactionPayerId } from '@renderer/utils/transactions';
+import { getTransactionFromBytes } from '@renderer/utils/transactions';
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 

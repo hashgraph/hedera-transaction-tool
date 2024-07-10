@@ -16,7 +16,7 @@ import { useRoute, useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
-import { getDraft, updateDraft } from '@renderer/services/transactionDraftsService';
+import { getDraft } from '@renderer/services/transactionDraftsService';
 import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
 import { getAll } from '@renderer/services/accountsService';
 
@@ -54,16 +54,16 @@ const payerData = useAccountId();
 const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
 
 const transaction = ref<Transaction | null>(null);
-const savedDraft = ref<{
-  id: string;
-  created_at: Date;
-  updated_at: Date;
-  user_id: string;
-  type: string;
-  transactionBytes: string;
-  isTemplate: boolean | null;
-  details: string | null;
-}>();
+// const savedDraft = ref<{
+//   id: string;
+//   created_at: Date;
+//   updated_at: Date;
+//   user_id: string;
+//   type: string;
+//   transactionBytes: string;
+//   isTemplate: boolean | null;
+//   details: string | null;
+// }>();
 const validStart = ref(new Date());
 const maxTransactionFee = ref<Hbar>(new Hbar(2));
 const transactionMemo = ref('');
@@ -149,12 +149,6 @@ const handleCreate = async e => {
 
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
-};
-
-const handleDraftAdded = async (id: string) => {
-  if (savedDraft.value?.isTemplate) return;
-
-  await updateDraft(id, { details: JSON.stringify({ transfers: transfers.value }) });
 };
 
 const handleLoadFromDraft = async () => {

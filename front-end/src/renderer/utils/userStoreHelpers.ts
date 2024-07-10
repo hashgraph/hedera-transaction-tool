@@ -423,11 +423,12 @@ export const deleteOrganizationConnection = async (
   await deleteOrganization(organizationId);
 };
 
-const navigateToPreviousRoute = (router: Router) => {
-  const currentRoute = router.currentRoute.value;
-  if (router.previousPath) {
-    currentRoute.path !== router.previousPath && router.push(router.previousPath);
-  } else {
-    currentRoute.name !== 'transactions' && router.push({ name: 'transactions' });
-  }
-};
+// This function may no longer be needed
+// const navigateToPreviousRoute = (router: Router) => {
+//   const currentRoute = router.currentRoute.value;
+//   if (router.previousPath) {
+//     currentRoute.path !== router.previousPath && router.push(router.previousPath);
+//   } else {
+//     currentRoute.name !== 'transactions' && router.push({ name: 'transactions' });
+//   }
+// };

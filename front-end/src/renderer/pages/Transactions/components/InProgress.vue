@@ -122,7 +122,7 @@ async function fetchTransactions() {
       }
     }
 
-    groups.value = await getApiGroups(user.selectedOrganization.serverUrl, network.network);
+    groups.value = await getApiGroups(user.selectedOrganization.serverUrl);
   } finally {
     isLoading.value = false;
   }

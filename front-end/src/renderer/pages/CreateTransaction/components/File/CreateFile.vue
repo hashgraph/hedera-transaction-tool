@@ -17,7 +17,7 @@ import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
-import useTransactionGroupStore, { GroupItem } from '@renderer/stores/storeTransactionGroup';
+import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 import { useToast } from 'vue-toast-notification';
 import { useRoute, useRouter } from 'vue-router';
@@ -49,7 +49,6 @@ import TransactionIdControls from '@renderer/components/Transaction/TransactionI
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
-import { TransactionDraft } from '@prisma/client';
 
 /* Stores */
 const user = useUserStore();
