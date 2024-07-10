@@ -89,12 +89,22 @@ defineExpose({
         </p>
         <div class="form-group mt-5 mb-4">
           <label class="form-label">Password</label>
-          <AppInput v-model="password" size="small" type="password" :filled="true" />
+          <AppInput
+            v-model="password"
+            data-testid="input-encrypt-password"
+            size="small"
+            type="password"
+            :filled="true"
+          />
         </div>
         <hr class="separator my-5" />
         <div class="flex-between-centered gap-4">
           <AppButton color="borderless" type="button" @click="handleClose">Cancel</AppButton>
-          <AppButton color="primary" :disabled="password.length === 0" type="submit"
+          <AppButton
+            color="primary"
+            data-testid="button-continue-encrypt-password"
+            :disabled="password.length === 0"
+            type="submit"
             >Continue</AppButton
           >
         </div>

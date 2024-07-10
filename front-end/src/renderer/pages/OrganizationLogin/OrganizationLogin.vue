@@ -145,6 +145,7 @@ onBeforeRouteLeave(async () => {
         <AppInput
           v-model="inputEmail"
           :filled="true"
+          data-testid="input-login-email-for-organization"
           :class="{ 'is-invalid': inputEmailInvalid }"
           placeholder="Enter email"
         />
@@ -153,6 +154,7 @@ onBeforeRouteLeave(async () => {
         <AppInput
           v-model="inputPassword"
           :filled="true"
+          data-testid="input-login-password-for-organization"
           type="password"
           :class="{ 'is-invalid': inputPasswordInvalid }"
           placeholder="Enter password"
@@ -170,6 +172,7 @@ onBeforeRouteLeave(async () => {
             <AppButton
               color="primary"
               type="submit"
+              data-testid="button-sign-in-organization-user"
               :loading="loading"
               :disabled="inputEmail.length === 0 || inputPassword.length === 0"
               >Sign in</AppButton
