@@ -61,12 +61,12 @@ defineEmits(['update:keyList']);
       </div>
       <template v-for="(item, _index) in keyList.toArray()" :key="_index">
         <template v-if="item instanceof KeyList && true">
-          <div class="ms-6">
+          <div class="ms-5">
             <SignatureStatusKeyStructure :key-list="item" :public-keys-signed="publicKeysSigned" />
           </div>
         </template>
         <template v-else-if="item instanceof PublicKey && true">
-          <div class="d-flex position-relative text-nowrap ms-6 my-3">
+          <div class="d-flex position-relative text-nowrap ms-5 my-3">
             <span
               v-if="publicKeysSigned.includes(item.toStringRaw())"
               class="bi bi-check-lg text-success position-absolute"

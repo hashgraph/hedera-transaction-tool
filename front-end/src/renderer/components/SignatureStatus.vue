@@ -56,7 +56,7 @@ const publicKeysInKeyList = computed(() => flattenKeyList(props.signatureKeyObje
       </div>
     </template>
     <template v-if="signatureKeyObject.payerKey">
-      <div class="ms-4" :class="{ 'ms-6': publicKeysInKeyList.length > 1 }">
+      <div class="ms-4" :class="{ 'ms-5': publicKeysInKeyList.length > 1 }">
         <SignatureStatusEntities
           :entities="signatureKeyObject.payerKey"
           :public-keys-signed="publicKeysSigned"
@@ -65,7 +65,7 @@ const publicKeysInKeyList = computed(() => flattenKeyList(props.signatureKeyObje
       </div>
     </template>
     <template v-if="Object.keys(signatureKeyObject.accountsKeys).length > 0">
-      <div class="ms-4" :class="{ 'ms-6': publicKeysInKeyList.length > 1 }">
+      <div class="ms-4" :class="{ 'ms-5': publicKeysInKeyList.length > 1 }">
         <SignatureStatusEntities
           :entities="signatureKeyObject.accountsKeys"
           :public-keys-signed="publicKeysSigned"
@@ -74,7 +74,7 @@ const publicKeysInKeyList = computed(() => flattenKeyList(props.signatureKeyObje
       </div>
     </template>
     <template v-if="Object.keys(signatureKeyObject.receiverAccountsKeys).length > 0">
-      <div class="ms-4" :class="{ 'ms-6': publicKeysInKeyList.length > 1 }">
+      <div class="ms-4" :class="{ 'ms-5': publicKeysInKeyList.length > 1 }">
         <SignatureStatusEntities
           :entities="signatureKeyObject.receiverAccountsKeys"
           :public-keys-signed="publicKeysSigned"
@@ -83,7 +83,7 @@ const publicKeysInKeyList = computed(() => flattenKeyList(props.signatureKeyObje
       </div>
     </template>
     <template v-if="signatureKeyObject.newKeys.length > 0">
-      <div class="ms-4" :class="{ 'ms-6': publicKeysInKeyList.length > 1 }">
+      <div class="ms-4" :class="{ 'ms-5': publicKeysInKeyList.length > 1 }">
         <SignatureStatusEntities
           :entities="signatureKeyObject.newKeys"
           :public-keys-signed="publicKeysSigned"
