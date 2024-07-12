@@ -258,7 +258,7 @@ export class ApproversService {
           this.validateApprover(dtoApprover);
 
           /* Check if the approver already exists */
-          if (await this.isNode(dtoApprover, transactionId))
+          if (await this.isNode(dtoApprover, transactionId, transactionalEntityManager))
             throw new Error(this.APPROVER_ALREADY_EXISTS);
 
           /* Check if the parent approver exists and has threshold */
@@ -657,19 +657,8 @@ export class ApproversService {
     return transaction;
   }
 
-  /* Validates the approver DTO */
-  private validateApprover(approver: CreateTransactionApproverDto): void {
-    if (
-      (approver.listId === null || isNaN(approver.listId)) &&
-      (approver.threshold === null || isNaN(approver.threshold) || approver.threshold === 0) &&
-      (approver.userId === null || isNaN(approver.userId)) &&
-      (!approver.approvers || approver.approvers.length === 0)
-    )
-      throw new BadRequestException(this.CANNOT_CREATE_EMPTY_APPROVER);
-  }
-
   /* Check if the approver node already exists */
-  private async isNode(
+  async isNode(
     approver: CreateTransactionApproverDto,
     transactionId: number,
     entityManager?: EntityManager,
@@ -690,6 +679,7 @@ export class ApproversService {
     return count > 0 && typeof approver.userId === 'number' ? true : false;
   }
 
+  /* Get the tree structure of the approvers */
   getTreeStructure(approvers: TransactionApprover[]): TransactionApprover[] {
     const approverMap = new Map(approvers.map(approver => [approver.id, { ...approver }]));
 
@@ -710,5 +700,16 @@ export class ApproversService {
     );
 
     return rootApprovers;
+  }
+
+  /* Validates the approver DTO */
+  private validateApprover(approver: CreateTransactionApproverDto): void {
+    if (
+      (approver.listId === null || isNaN(approver.listId)) &&
+      (approver.threshold === null || isNaN(approver.threshold) || approver.threshold === 0) &&
+      (approver.userId === null || isNaN(approver.userId)) &&
+      (!approver.approvers || approver.approvers.length === 0)
+    )
+      throw new BadRequestException(this.CANNOT_CREATE_EMPTY_APPROVER);
   }
 }

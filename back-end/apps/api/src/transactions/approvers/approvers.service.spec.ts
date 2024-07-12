@@ -592,7 +592,7 @@ describe('ApproversService', () => {
         ],
       };
 
-      approversRepo.count.mockResolvedValueOnce(1);
+      dataSource.manager.count.mockResolvedValueOnce(1);
       await expect(service.createTransactionApprovers(user, transactionId, dto)).rejects.toThrow(
         'Approver already exists',
       );
@@ -1526,6 +1526,21 @@ describe('ApproversService', () => {
       expect(
         service.getTreeStructure([{ ...approver1 }, { ...approver2 }, { ...approver3 }]),
       ).toEqual([{ ...treeApprover }]);
+    });
+  });
+
+  describe('isNode', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it('should return true if the approver is node', async () => {
+      const transactionId = 1;
+
+      approversRepo.count.mockResolvedValueOnce(1);
+      expect(await service.isNode({ userId: 1 } as TransactionApprover, transactionId)).toEqual(
+        true,
+      );
     });
   });
 });
