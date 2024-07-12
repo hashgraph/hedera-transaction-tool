@@ -102,7 +102,7 @@ onBeforeMount(async () => {
         </h2>
       </div>
 
-      <div class="ms-6">
+      <div class="ms-5">
         <SignatureStatusKeyStructure
           :keyList="key instanceof KeyList ? key : new KeyList([key])"
           :public-keys-signed="publicKeysSigned"
