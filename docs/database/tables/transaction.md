@@ -1,5 +1,5 @@
 # transaction
-**Description**: This table stores transaction records and associated metadata.
+**Description**: This table stores transaction and associated metadata.
 
 ## Columns
 
