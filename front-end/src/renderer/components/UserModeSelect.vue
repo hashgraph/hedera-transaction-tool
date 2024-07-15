@@ -55,6 +55,10 @@ const handleAddOrganization = async (organization: Organization) => {
 
   if (user.selectedOrganization?.isServerActive) {
     selectedMode.value = organization.id;
+
+    const organizationNickname =
+      user.organizations.find(org => org.id === organization.id)?.nickname || '';
+    defaultDropDownValue.value = organizationNickname;
   }
 };
 </script>
