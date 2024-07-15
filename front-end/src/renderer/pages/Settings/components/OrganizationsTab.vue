@@ -114,6 +114,7 @@ const handleAddOrganization = async (organization: Organization) => {
 
                       <span
                         class="bi bi-pencil-square text-primary ms-3 cursor-pointer"
+                        data-testid="button-edit-nickname"
                         @click="handleStartNicknameEdit(i)"
                       ></span>
                     </p>
@@ -127,6 +128,7 @@ const handleAddOrganization = async (organization: Organization) => {
                 <td class="text-center">
                   <AppButton
                     size="small"
+                    data-testid="button-delete-connection"
                     color="danger"
                     @click="handleDeleteConnection(organization.id)"
                     class="min-w-unset"

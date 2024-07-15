@@ -88,7 +88,7 @@ watch(
       <AppButton
         id="modeSelectorDropdown"
         color="secondary"
-        data-testid=""
+        data-testid="dropdown-select-mode"
         class="w-100 d-flex align-items-center justify-content-between"
         data-bs-toggle="dropdown"
         v-bind="$attrs"
@@ -97,16 +97,16 @@ watch(
       ></AppButton>
       <ul class="dropdown-menu w-100 mt-3">
         <li
-          data-testid=""
+          data-testid="dropdown-item-0"
           data-value="personal"
           class="dropdown-item cursor-pointer"
           @click="handleUserModeChange"
         >
           <span class="text-small">My Transactions</span>
         </li>
-        <template v-for="organization in user.organizations" :key="organization.id">
+        <template v-for="(organization, index) in user.organizations" :key="organization.id">
           <li
-            data-testid=""
+            :data-testid="'dropdown-item-' + (index + 1)"
             class="dropdown-item cursor-pointer mt-3"
             @click="handleUserModeChange"
             :data-value="organization.id"
