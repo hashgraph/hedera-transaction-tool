@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 import { Organization } from '@prisma/client';
 
@@ -52,15 +52,21 @@ const handleAddOrganizationButtonClick = async () => {
 const handleAddOrganization = async (organization: Organization) => {
   await user.refetchOrganizations();
   await user.selectOrganization(organization);
+};
+
+watch(user, () => {
+  const lastAddedOrganization = user.organizations[user.organizations.length - 1];
 
   if (user.selectedOrganization?.isServerActive) {
-    selectedMode.value = organization.id;
+    selectedMode.value = lastAddedOrganization.id;
 
     const organizationNickname =
-      user.organizations.find(org => org.id === organization.id)?.nickname || '';
+      user.organizations.find(org => org.id === lastAddedOrganization.id)?.nickname || '';
     defaultDropDownValue.value = organizationNickname;
+  } else {
+    defaultDropDownValue.value = 'My Transactions';
   }
-};
+});
 </script>
 <template>
   <div class="d-flex align-items-centert">
