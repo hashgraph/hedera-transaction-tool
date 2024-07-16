@@ -46,6 +46,7 @@ const menuItems = [
 
   {
     link: '/contact-list',
+    testid: 'button-contact-list',
     title: 'Contact List',
     icon: 'bi bi-book',
   },
