@@ -5,7 +5,7 @@
 | Column Name     | Type       | Description                                                                            |
 |-----------------|------------|----------------------------------------------------------------------------------------|
 | **seq**            | Integer    |  Sequence of transaction execution within the transaction group, if it matter. If the sequence is not important this can be null.                 |               
-| **transactionId**       | String     |  The transaction id ( Foreign key to transaction)                                          |
+| **transactionId**       | String     |  The transaction id (Foreign key to transaction)                                          |
 | **groupId**     | Timestamp  |  The group id of the transaction ( Foreign key to transaction_group )                              |
 
 
