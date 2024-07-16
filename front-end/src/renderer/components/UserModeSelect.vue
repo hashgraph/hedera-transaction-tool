@@ -30,7 +30,6 @@ const handleUserModeChange = async (e: Event) => {
     selectedMode.value = org ? org.id : 'personal';
     const organizationNickname =
       user.organizations.find(org => org.id === newValue)?.nickname || '';
-    defaultDropDownValue.value = organizationNickname;
 
     await user.selectOrganization(
       org
@@ -42,6 +41,10 @@ const handleUserModeChange = async (e: Event) => {
           }
         : null,
     );
+
+    if (user.selectedOrganization?.isServerActive) {
+      defaultDropDownValue.value = organizationNickname;
+    }
   }
 };
 
@@ -52,21 +55,32 @@ const handleAddOrganizationButtonClick = async () => {
 const handleAddOrganization = async (organization: Organization) => {
   await user.refetchOrganizations();
   await user.selectOrganization(organization);
-};
-
-watch(user, () => {
-  const lastAddedOrganization = user.organizations[user.organizations.length - 1];
 
   if (user.selectedOrganization?.isServerActive) {
-    selectedMode.value = lastAddedOrganization.id;
+    selectedMode.value = organization.id;
 
     const organizationNickname =
-      user.organizations.find(org => org.id === lastAddedOrganization.id)?.nickname || '';
+      user.organizations.find(org => org.id === organization.id)?.nickname || '';
     defaultDropDownValue.value = organizationNickname;
-  } else {
-    defaultDropDownValue.value = 'My Transactions';
   }
-});
+};
+
+watch(
+  () => user.organizations,
+  () => {
+    const lastAddedOrganization = user.organizations[user.organizations.length - 1];
+
+    if (user.selectedOrganization?.isServerActive) {
+      selectedMode.value = lastAddedOrganization.id;
+
+      const organizationNickname =
+        user.organizations.find(org => org.id === lastAddedOrganization.id)?.nickname || '';
+      defaultDropDownValue.value = organizationNickname;
+    } else {
+      defaultDropDownValue.value = 'My Transactions';
+    }
+  },
+);
 </script>
 <template>
   <div class="d-flex align-items-centert">
