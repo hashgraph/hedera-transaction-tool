@@ -11,5 +11,15 @@
 | **userId**        | Integer       | The ID of the user. |
 | **createAt**    | Timestamp  | The timestamp when the transaction was signed by the Signer.                                 |
 
+### Example Query
+```sql
+SELECT * FROM "transaction_signer" WHERE "id" = 1;
 
+```
 
+### Example Response
+```
+ id | transactionId | userKeyId | userId |         createdAt          
+----+---------------+-----------+--------+----------------------------
+  1 |             2 |         1 |      1 | 2024-05-24 18:31:42.249219
+```
