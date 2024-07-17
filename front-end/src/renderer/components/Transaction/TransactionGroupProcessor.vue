@@ -56,6 +56,7 @@ import {
   IGroup,
 } from '@renderer/services/organization';
 import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+import useThemeStore from '@renderer/stores/storeTheme';
 
 /* Props */
 const props = defineProps<{
@@ -75,6 +76,7 @@ const props = defineProps<{
 const user = useUserStore();
 const network = useNetworkStore();
 const transactionGroup = useTransactionGroupStore();
+const theme = useThemeStore();
 
 /* Composables */
 const toast = useToast();
@@ -855,8 +857,11 @@ defineExpose({
           v-for="(groupItem, index) in transactionGroup.groupItems"
           :key="groupItem.transactionBytes.toString()"
         >
-          <div class="d-flex p-4" style="background-color: #edefff">
-            <div>{{ index + 1 }}</div>
+          <div
+            class="d-flex p-4"
+            :style="theme.isDark ? 'background-color: #15162A' : 'background-color: #edefff'"
+          >
+            <div class="me-4">{{ index + 1 }}</div>
             <div>{{ groupItem.type }}</div>
           </div>
         </div>

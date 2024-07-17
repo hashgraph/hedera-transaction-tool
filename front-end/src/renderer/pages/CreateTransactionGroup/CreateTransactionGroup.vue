@@ -13,10 +13,12 @@ import { getEntityIdFromTransactionReceipt, getPropagationButtonLabel } from '@r
 import { KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
 import { useToast } from 'vue-toast-notification';
 import { createTransactionId } from '@renderer/services/transactionService';
+import useThemeStore from '@renderer/stores/storeTheme';
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
 const user = useUserStore();
+const theme = useThemeStore();
 
 /* Composables */
 const router = useRouter();
@@ -170,7 +172,10 @@ onMounted(async () => {
           v-for="(groupItem, index) in transactionGroup.groupItems"
           :key="groupItem.transactionBytes.toString()"
         >
-          <div class="d-flex justify-content-between p-4" style="background-color: #edefff">
+          <div
+            class="d-flex justify-content-between p-4"
+            :style="theme.isDark ? 'background-color: #15162a' : 'background-color: #edefff'"
+          >
             <div>
               <div>{{ groupItem.type }}</div>
               <div>{{ groupItem.accountId }}</div>
@@ -178,23 +183,27 @@ onMounted(async () => {
             <div class="d-flex">
               <AppButton
                 type="button"
-                class="text-black"
+                :class="theme.isDark ? 'text-white' : 'text-black'"
                 @click="handleDeleteGroupItem(index)"
                 style="min-width: 0"
                 >Delete
               </AppButton>
               <AppButton
                 type="button"
-                class="text-black"
+                :class="theme.isDark ? 'text-white' : 'text-black'"
                 @click="handleDuplicateGroupItem(index)"
                 style="min-width: 0"
                 >Duplicate
               </AppButton>
               <AppButton
                 type="button"
-                class="text-black"
+                :class="theme.isDark ? 'text-white' : 'text-black'"
                 @click="handleEditGroupItem(index, groupItem.type)"
-                style="background-color: #dcdfff; min-width: 0"
+                :style="
+                  theme.isDark
+                    ? 'background-color: #333666; min-width: 0'
+                    : 'background-color: #dcdfff; min-width: 0'
+                "
               >
                 Edit
               </AppButton>
