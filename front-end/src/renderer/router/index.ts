@@ -19,6 +19,7 @@ const AccountSetup = () => import('@renderer/pages/AccountSetup');
 const GeneralTab = () => import('@renderer/pages/Settings/components/GeneralTab.vue');
 const WorkGroupsTab = () => import('@renderer/pages/Settings/components/WorkGroupsTab.vue');
 const KeysTab = () => import('@renderer/pages/Settings/components/KeysTab.vue');
+const NotificationsTab = () => import('@renderer/pages/Settings/components/NotificationsTab.vue');
 const RestoreKey = () => import('@renderer/pages/RestoreKey');
 const CreateTransaction = () => import('@renderer/pages/CreateTransaction');
 const ProfileTab = () => import('@renderer/pages/Settings/components/ProfileTab.vue');
@@ -83,6 +84,11 @@ const routes: RouteRecordRaw[] = [
         path: 'organizations',
         name: 'settingsOrganizations',
         component: OrganizationsTab,
+      },
+      {
+        path: 'notifications',
+        name: 'settingsNotifications',
+        component: NotificationsTab,
       },
     ],
   },
