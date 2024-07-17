@@ -96,7 +96,7 @@ watch(
           data-bs-toggle="dropdown"
           ><i class="bi bi-plus-lg"></i> <span>Create New</span></AppButton
         >
-        <ul class="dropdown-menu w-100 mt-3">
+        <ul class="dropdown-menu mt-3">
           <li class="dropdown-item cursor-pointer" @click="isTransactionSelectionModalShown = true">
             <span class="text-small text-bold">Transaction</span>
           </li>
@@ -108,9 +108,6 @@ watch(
           </li>
         </ul>
       </div>
-      <!-- <AppButton color="primary" @click="isTransactionSelectionModalShown = true">
-        <i class="bi bi-plus-lg"></i> <span>Create New</span>
-      </AppButton> -->
     </div>
 
     <div class="position-relative flex-column-100 overflow-hidden mt-4">

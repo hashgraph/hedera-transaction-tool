@@ -161,6 +161,8 @@ function handleAddToGroup() {
     keyList: keys,
     observers: observers.value,
     approvers: approvers.value,
+    payerAccountId: payerData.accountId.value,
+    validStart: validStart.value,
   });
   router.push({ name: 'createTransactionGroup' });
 }
@@ -182,6 +184,8 @@ function handleEditGroupItem() {
     keyList: keys,
     observers: observers.value,
     approvers: approvers.value,
+    payerAccountId: payerData.accountId.value,
+    validStart: validStart.value,
   });
   router.push({ name: 'createTransactionGroup' });
 }
@@ -192,7 +196,7 @@ function createTransaction() {
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(maxTransactionFee.value);
 
-  if (isAccountId(payerData.accountId.value)) {
+  if (isAccountId(payerData.accountId.value) && !route.params.seq) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
   }
 

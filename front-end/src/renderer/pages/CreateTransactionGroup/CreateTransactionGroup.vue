@@ -10,8 +10,9 @@ import { useRouter, useRoute } from 'vue-router';
 import useUserStore from '@renderer/stores/storeUser';
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 import { getEntityIdFromTransactionReceipt, getPropagationButtonLabel } from '@renderer/utils';
-import { KeyList, PublicKey } from '@hashgraph/sdk';
+import { KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
 import { useToast } from 'vue-toast-notification';
+import { createTransactionId } from '@renderer/services/transactionService';
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
@@ -38,6 +39,8 @@ function handleSaveGroup() {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
+
+  addTransactionIds();
 
   transactionGroup.saveGroup(user.personal.id, groupName.value);
   transactionGroup.clearGroup();
@@ -98,6 +101,7 @@ async function handleSignSubmit() {
     const ownerKey = PublicKey.fromString(user.keyPairs[0].public_key);
 
     const requiredKey = new KeyList([ownerKey]);
+    addTransactionIds();
     await transactionGroupProcessor.value?.process(requiredKey);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
@@ -118,6 +122,14 @@ function handleSubmit(id: number) {
   });
 }
 
+function addTransactionIds() {
+  for (const groupItem of transactionGroup.groupItems) {
+    const transaction = Transaction.fromBytes(groupItem.transactionBytes);
+    transaction.setTransactionId(
+      createTransactionId(groupItem.payerAccountId, groupItem.validStart),
+    );
+  }
+}
 /* Hooks */
 onMounted(async () => {
   await handleLoadGroup();

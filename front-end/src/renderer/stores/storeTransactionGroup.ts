@@ -20,6 +20,8 @@ export interface GroupItem {
   keyList: string[];
   observers: number[];
   approvers: TransactionApproverDto[];
+  payerAccountId: string;
+  validStart: Date;
 }
 
 const useTransactionGroupStore = defineStore('transactionGroup', () => {
@@ -49,6 +51,8 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
           keyList: [],
           observers: [],
           approvers: [],
+          payerAccountId: transaction.transactionId?.accountId?.toString() as string,
+          validStart: transaction.transactionId?.validStart?.toDate() as Date,
         });
       }
     }
@@ -77,10 +81,24 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   function duplicateGroupItem(index: number) {
     const newGroupItems = new Array<GroupItem>();
     groupItems.value.forEach((groupItem, i) => {
-      if (i == index + 1) {
-        newGroupItems.push(groupItems.value[index]);
-      }
       newGroupItems.push(groupItem);
+      if (i == index) {
+        const newDate = new Date(groupItem.validStart);
+        newDate.setTime(newDate.getTime() + 5);
+        const newItem = {
+          transactionBytes: groupItem.transactionBytes,
+          type: groupItem.type,
+          accountId: groupItem.accountId,
+          groupId: groupItem.groupId,
+          seq: groupItem.seq,
+          keyList: groupItem.keyList,
+          observers: groupItem.observers,
+          approvers: groupItem.approvers,
+          payerAccountId: groupItem.payerAccountId,
+          validStart: newDate,
+        };
+        newGroupItems.push(newItem);
+      }
     });
     groupItems.value = newGroupItems;
   }
