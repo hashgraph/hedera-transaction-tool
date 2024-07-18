@@ -283,5 +283,9 @@ class SettingsPage extends BasePage {
     await this.waitForElementToBeVisible(this.closeButtonSelector, 15000);
     await this.clickByTestId(this.closeButtonSelector);
   }
+
+  async clickOnOrganisationsTab() {
+    await this.clickByTestId(this.organisationsTabButtonSelector);
+  }
 }
 module.exports = SettingsPage;

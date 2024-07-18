@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const { proto } = require('@hashgraph/proto');
 const { PublicKey, KeyList, Key } = require('@hashgraph/sdk');
+const bip39 = require('bip39');
 
 // Retrieves the private key from environment variables
 function getPrivateKey() {
@@ -85,9 +86,15 @@ const decodeAndFlattenKeys = protobuffEncodedKey => {
   }
 };
 
+// Generates a 24-word seed mnemonic phrase
+function generateMnemonic() {
+  return bip39.generateMnemonic(256);
+}
+
 module.exports = {
   getPrivateKey,
   generateECDSAKeyPair,
   generateEd25519KeyPair,
   decodeAndFlattenKeys,
+  generateMnemonic,
 };
