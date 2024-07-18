@@ -97,6 +97,7 @@ const handleAddOrganization = async (organization: Organization) => {
                   <div class="d-flex align-items-center flex-wrap gap-3">
                     <AppInput
                       class="min-w-unset"
+                      data-testid="input-edit-nickname"
                       placeholder="Enter Nickname"
                       v-show="editedIndex === i"
                       ref="nicknameInputRef"
@@ -108,12 +109,13 @@ const handleAddOrganization = async (organization: Organization) => {
                       class="py-3"
                       @dblclick="handleStartNicknameEdit(i)"
                     >
-                      <span class="text-truncate">
+                      <span class="text-truncate" data-testid="span-organization-nickname">
                         {{ organization.nickname }}
                       </span>
 
                       <span
                         class="bi bi-pencil-square text-primary ms-3 cursor-pointer"
+                        data-testid="button-edit-nickname"
                         @click="handleStartNicknameEdit(i)"
                       ></span>
                     </p>
@@ -127,6 +129,7 @@ const handleAddOrganization = async (organization: Organization) => {
                 <td class="text-center">
                   <AppButton
                     size="small"
+                    data-testid="button-delete-connection"
                     color="danger"
                     @click="handleDeleteConnection(organization.id)"
                     class="min-w-unset"

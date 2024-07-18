@@ -49,12 +49,17 @@ watch(
       </div>
       <form class="mt-3" @submit="handleSelectedOrganizationNotActiveSubmit">
         <h3 class="text-center text-title text-bold">Organization status error</h3>
-        <p class="text-center text-small text-secondary mt-4">
+        <p
+          class="text-center text-small text-secondary mt-4"
+          data-testid="p-organization-error-message"
+        >
           Organization server is not reachable
         </p>
         <hr class="separator my-5" />
         <div class="d-grid">
-          <AppButton color="primary" type="submit">Close</AppButton>
+          <AppButton color="primary" data-testid="button-close-modal" type="submit"
+            >Close</AppButton
+          >
         </div>
       </form>
     </div>
