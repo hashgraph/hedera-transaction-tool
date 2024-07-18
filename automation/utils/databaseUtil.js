@@ -51,7 +51,7 @@ function closeDatabase(db) {
       if (err) {
         console.error('Failed to close the SQLite database:', err.message);
       } else {
-        console.log('Closed the SQLite database connection.');
+        console.log('Disconnected from the SQLite database.');
       }
     });
   }
@@ -140,6 +140,22 @@ async function disconnectPostgresDatabase(client) {
   console.log('Disconnected from PostgreSQL database');
 }
 
+async function queryPostgresDatabase(query, params = []) {
+  const client = await connectPostgresDatabase();
+
+  try {
+    console.log('Executing query:', query, 'Params:', params);
+    const res = await client.query(query, params);
+    console.log('Query result:', res.rows);
+    return res.rows;
+  } catch (err) {
+    console.error('Query error:', err.message);
+    throw err;
+  } finally {
+    await disconnectPostgresDatabase(client);
+  }
+}
+
 async function createTestUser(email, password) {
   const client = await connectPostgresDatabase();
 
@@ -195,4 +211,5 @@ module.exports = {
   createTestUser,
   resetDbState,
   resetPostgresDbState,
+  queryPostgresDatabase,
 };
