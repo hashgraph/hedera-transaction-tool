@@ -13,12 +13,10 @@ import { getEntityIdFromTransactionReceipt, getPropagationButtonLabel } from '@r
 import { KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
 import { useToast } from 'vue-toast-notification';
 import { createTransactionId } from '@renderer/services/transactionService';
-import useThemeStore from '@renderer/stores/storeTheme';
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
 const user = useUserStore();
-const theme = useThemeStore();
 
 /* Composables */
 const router = useRouter();
@@ -44,6 +42,7 @@ function handleSaveGroup() {
 
   addTransactionIds();
 
+  console.log(groupName.value);
   transactionGroup.saveGroup(user.personal.id, groupName.value);
   transactionGroup.clearGroup();
   router.push('transactions');
@@ -172,10 +171,7 @@ onMounted(async () => {
           v-for="(groupItem, index) in transactionGroup.groupItems"
           :key="groupItem.transactionBytes.toString()"
         >
-          <div
-            class="d-flex justify-content-between p-4"
-            :style="theme.isDark ? 'background-color: #15162a' : 'background-color: #edefff'"
-          >
+          <div class="d-flex justify-content-between p-4 transaction-group-row">
             <div>
               <div>{{ groupItem.type }}</div>
               <div>{{ groupItem.accountId }}</div>
@@ -183,27 +179,22 @@ onMounted(async () => {
             <div class="d-flex">
               <AppButton
                 type="button"
-                :class="theme.isDark ? 'text-white' : 'text-black'"
+                class="transaction-group-button-borderless"
                 @click="handleDeleteGroupItem(index)"
                 style="min-width: 0"
                 >Delete
               </AppButton>
               <AppButton
                 type="button"
-                :class="theme.isDark ? 'text-white' : 'text-black'"
+                class="transaction-group-button-borderless"
                 @click="handleDuplicateGroupItem(index)"
                 style="min-width: 0"
                 >Duplicate
               </AppButton>
               <AppButton
                 type="button"
-                :class="theme.isDark ? 'text-white' : 'text-black'"
+                class="transaction-group-button"
                 @click="handleEditGroupItem(index, groupItem.type)"
-                :style="
-                  theme.isDark
-                    ? 'background-color: #333666; min-width: 0'
-                    : 'background-color: #dcdfff; min-width: 0'
-                "
               >
                 Edit
               </AppButton>

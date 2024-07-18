@@ -166,37 +166,9 @@ watch([currentPage, pageSize], async () => {
                   ></i>
                 </div>
               </th>
-              <!-- <th>
-                <div
-                  class="table-sort-link"
-                  @click="handleSort('type', sort.field === 'type' ? getOpositeDirection() : 'asc')"
-                >
-                  <span>Transaction Type</span>
-                  <i
-                    v-if="sort.field === 'type'"
-                    class="bi text-title"
-                    :class="[generatedClass]"
-                  ></i>
-                </div>
+              <th class="text-center">
+                <span>Name</span>
               </th>
-              <th>
-                <div
-                  class="table-sort-link justify-content-center"
-                  @click="
-                    handleSort(
-                      'isTemplate',
-                      sort.field === 'isTemplate' ? getOpositeDirection() : 'asc',
-                    )
-                  "
-                >
-                  <span>Is Template</span>
-                  <i
-                    v-if="sort.field === 'isTemplate'"
-                    class="bi text-title"
-                    :class="[generatedClass]"
-                  ></i>
-                </div>
-              </th> -->
               <th class="text-center">
                 <span>Actions</span>
               </th>
