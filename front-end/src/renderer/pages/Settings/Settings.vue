@@ -13,14 +13,16 @@ const router = useRouter();
 /* Misc */
 const generalTitle = 'General';
 const keysTitle = 'Keys';
-const organizations = 'Organizations';
+const organizationsTitle = 'Organizations';
 const profileTitle = 'Profile';
+const notificationsTitle = 'Notifications';
+
 const tabItems: TabItem[] = [
   { title: generalTitle },
-  // { title: 'Work Groups' },
-  { title: organizations },
+  { title: organizationsTitle },
   { title: keysTitle },
   { title: profileTitle },
+  { title: notificationsTitle },
 ];
 const tabTitles = tabItems.map(t => t.title.toLocaleLowerCase().replaceAll(' ', '-'));
 
