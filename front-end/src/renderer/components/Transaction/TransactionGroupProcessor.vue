@@ -106,19 +106,12 @@ const unmounted = ref(false);
 const newGroupId = ref('');
 
 /* Computed */
-// const transaction = computed(() =>
-//   props.transactionBytes ? Transaction.fromBytes(props.transactionBytes) : null,
-// );
 const flattenedSignatureKey = computed(() =>
   signatureKey.value ? flattenKeyList(signatureKey.value).map(pk => pk.toStringRaw()) : [],
 );
-// const externalPublicKeysReq = computed(() =>
-//   flattenedSignatureKey.value.filter(pk => !user.publicKeys.includes(pk)),
-// );
 const localPublicKeysReq = computed(() =>
   flattenedSignatureKey.value.filter(pk => user.publicKeys.includes(pk)),
 );
-// const type = computed(() => transaction.value && getTransactionType(transaction.value));
 
 /* Handlers */
 async function handleConfirmTransaction(e: Event) {
@@ -132,17 +125,6 @@ async function handleConfirmTransaction(e: Event) {
   //  with all local -> SIGN AND SEND
   //  with local and external -> SIGN AND SEND
   //  without local but external -> SEND
-
-  // if (user.selectedOrganization) {
-  //   await sendSignedTransactionToOrganization();
-  // } else if (localPublicKeysReq.value.length > 0) {
-  //   isConfirmShown.value = false;
-  //   isSignModalShown.value = true;
-  // } else {
-  //   throw new Error(
-  //     'Unable to execute, all of the required signatures should be with your keys. You are currently in Personal mode.',
-  //   );
-  // }
 
   if (user.selectedOrganization) {
     await sendSignedTransactionsToOrganization();
@@ -409,13 +391,11 @@ async function sendSignedTransactionsToOrganization() {
     apiGroupItems,
   );
 
-  //TODO: fix to getting actual transactions
   const group: IGroup = await getApiGroupById(user.selectedOrganization.serverUrl, id);
 
   toast.success('Transaction submitted successfully');
   props.onSubmitted && props.onSubmitted(id, body);
 
-  //TODO: should be per transaction ID, not group ID
   for (const groupItem of group.groupItems) {
     const results = await Promise.allSettled([
       // uploadSignatures(body, id),
