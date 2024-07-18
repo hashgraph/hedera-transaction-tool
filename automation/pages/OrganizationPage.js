@@ -378,6 +378,13 @@ class OrganizationPage extends BasePage {
     return await this.isElementVisible(this.deleteNextButtonSelector);
   }
 
+  /**
+   * Retrieves the public key for a user identified by the given email.
+   *
+   * @param {string} email - The email of the user whose public key is to be retrieved.
+   * @return {Promise<string|null>} A promise that resolves to the public key if found, or null if not found.
+   * @throws {Error} If there is an error executing the query.
+   */
   async getPublicKeyByEmail(email) {
     const query = `
       SELECT uk."publicKey"
@@ -395,6 +402,13 @@ class OrganizationPage extends BasePage {
     }
   }
 
+  /**
+   * Retrieves the user ID for a user identified by the given email.
+   *
+   * @param {string} email - The email of the user whose ID is to be retrieved.
+   * @return {Promise<number|null>} A promise that resolves to the user ID if found, or null if not found.
+   * @throws {Error} If there is an error executing the query.
+   */
   async getUserIdByEmail(email) {
     const query = `
       SELECT id
@@ -411,6 +425,13 @@ class OrganizationPage extends BasePage {
     }
   }
 
+  /**
+   * Checks if the given public key is marked as deleted.
+   *
+   * @param {string} publicKey - The public key to check.
+   * @return {Promise<boolean>} A promise that resolves to true if the key is deleted, or false if not.
+   * @throws {Error} If there is an error executing the query.
+   */
   async isKeyDeleted(publicKey) {
     const checkDeletionQuery = `
     SELECT "deletedAt"
@@ -435,6 +456,13 @@ class OrganizationPage extends BasePage {
     }
   }
 
+  /**
+   * Finds a new public key for the user identified by the given user ID, where the key index is 0 and the key is not deleted.
+   *
+   * @param {number} userId - The ID of the user whose new public key is to be found.
+   * @return {Promise<boolean>} A promise that resolves to true if a new key is found, or false if not.
+   * @throws {Error} If there is an error executing the query.
+   */
   async findNewKey(userId) {
     const findNewKeyQuery = `
     SELECT "publicKey"
