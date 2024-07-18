@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 import { Organization } from '@prisma/client';
 
@@ -30,7 +30,6 @@ const handleUserModeChange = async (e: Event) => {
     selectedMode.value = org ? org.id : 'personal';
     const organizationNickname =
       user.organizations.find(org => org.id === newValue)?.nickname || '';
-    defaultDropDownValue.value = organizationNickname;
 
     await user.selectOrganization(
       org
@@ -42,6 +41,10 @@ const handleUserModeChange = async (e: Event) => {
           }
         : null,
     );
+
+    if (user.selectedOrganization?.isServerActive) {
+      defaultDropDownValue.value = organizationNickname;
+    }
   }
 };
 
@@ -55,8 +58,36 @@ const handleAddOrganization = async (organization: Organization) => {
 
   if (user.selectedOrganization?.isServerActive) {
     selectedMode.value = organization.id;
+
+    const organizationNickname =
+      user.organizations.find(org => org.id === organization.id)?.nickname || '';
+    defaultDropDownValue.value = organizationNickname;
   }
 };
+
+watch(
+  () => user.organizations,
+  (current, prev) => {
+    const lastAddedOrganization = user.organizations[user.organizations.length - 1];
+
+    if (user.selectedOrganization?.isServerActive) {
+      // Check if organization was added or removed
+      if (current.length > prev.length) {
+        selectedMode.value = lastAddedOrganization.id;
+
+        const organizationNickname =
+          user.organizations.find(org => org.id === lastAddedOrganization.id)?.nickname || '';
+        defaultDropDownValue.value = organizationNickname;
+      } else {
+        selectedMode.value = user.selectedOrganization.id;
+
+        defaultDropDownValue.value = user.selectedOrganization.nickname;
+      }
+    } else {
+      defaultDropDownValue.value = 'My Transactions';
+    }
+  },
+);
 </script>
 <template>
   <div class="d-flex align-items-centert">
@@ -64,7 +95,7 @@ const handleAddOrganization = async (organization: Organization) => {
       <AppButton
         id="modeSelectorDropdown"
         color="secondary"
-        data-testid=""
+        data-testid="dropdown-select-mode"
         class="w-100 d-flex align-items-center justify-content-between"
         data-bs-toggle="dropdown"
         v-bind="$attrs"
@@ -73,16 +104,16 @@ const handleAddOrganization = async (organization: Organization) => {
       ></AppButton>
       <ul class="dropdown-menu w-100 mt-3">
         <li
-          data-testid=""
+          data-testid="dropdown-item-0"
           data-value="personal"
           class="dropdown-item cursor-pointer"
           @click="handleUserModeChange"
         >
           <span class="text-small">My Transactions</span>
         </li>
-        <template v-for="organization in user.organizations" :key="organization.id">
+        <template v-for="(organization, index) in user.organizations" :key="organization.id">
           <li
-            data-testid=""
+            :data-testid="'dropdown-item-' + (index + 1)"
             class="dropdown-item cursor-pointer mt-3"
             @click="handleUserModeChange"
             :data-value="organization.id"
