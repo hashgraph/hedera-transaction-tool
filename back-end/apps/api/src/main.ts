@@ -15,6 +15,8 @@ import { API_SERVICE } from '@app/common';
 import { version } from '../package.json';
 
 import { ApiModule } from './api.module';
+import { NotFoundExceptionFilter } from './filters/not-found-exception.filter';
+import { BadRequestExceptionFilter } from './filters/bad-request-exception.filter';
 
 async function bootstrap() {
   const app: NestExpressApplication = await createApp();
@@ -41,6 +43,7 @@ async function bootstrap() {
       transform: true, // Allows the @Transform validation checks to save the transformed value
     }),
   );
+  app.useGlobalFilters(new NotFoundExceptionFilter(), new BadRequestExceptionFilter());
   app.useLogger(app.get(Logger));
 
   app.enableCors({
