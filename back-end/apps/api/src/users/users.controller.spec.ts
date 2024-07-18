@@ -121,9 +121,9 @@ describe('UsersController', () => {
 
   describe('removeUser', () => {
     it('should remove a user', async () => {
-      userService.removeUser.mockResolvedValue(user);
+      userService.removeUser.mockResolvedValue(true);
 
-      expect(await controller.removeUser(1)).toBe(user);
+      expect(await controller.removeUser(1)).toBe(true);
     });
 
     it('should throw an error if the user does not exist', async () => {

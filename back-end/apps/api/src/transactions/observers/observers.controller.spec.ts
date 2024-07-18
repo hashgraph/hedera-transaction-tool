@@ -95,7 +95,7 @@ describe('ObserversController', () => {
 
   describe('removeTransactionObserver', () => {
     it('should return a boolean indicating if the removal was successful', async () => {
-      const result = observer;
+      const result = true;
 
       observersService.removeTransactionObserver.mockResolvedValue(result);
 

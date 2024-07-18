@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsRelations, Repository } from 'typeorm';
 import { User, UserKey } from '@entities';
-import { UploadUserKeyDto } from './dtos/upload-user-key.dto';
+import { UploadUserKeyDto } from './dtos';
 import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';
 
 @Injectable()
@@ -64,12 +64,14 @@ export class UserKeysService {
 
   // Remove the user key for the provided userKeyId.
   // This is a soft remove, meaning that the deleted timestamp will be set.
-  async removeKey(id: number): Promise<UserKey> {
+  async removeKey(id: number): Promise<boolean> {
     const userKey = await this.getUserKey({ id });
     if (!userKey) {
       throw new NotFoundException('Key not found');
     }
-    return this.repo.softRemove(userKey);
+    await this.repo.softRemove(userKey);
+
+    return true;
   }
 
   /* Returns the count of the user keys for the provided user */

@@ -22,7 +22,7 @@ import {
 
 import { userKeysRequiredToSign } from '../../utils';
 
-import { ApproversService } from '../approvers/approvers.service';
+import { ApproversService } from '../approvers';
 
 import { CreateTransactionObserversDto, UpdateTransactionObserverDto } from '../dto';
 
@@ -145,17 +145,17 @@ export class ObserversService {
   }
 
   /* Remove the transaction observer for the given transaction observer id. */
-  async removeTransactionObserver(id: number, user: User): Promise<TransactionObserver> {
+  async removeTransactionObserver(id: number, user: User): Promise<boolean> {
     const observer = await this.getUpdateableObserver(id, user);
 
-    const result = await this.repo.remove(observer);
+    await this.repo.remove(observer);
 
     this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
       message: TRANSACTION_ACTION,
       content: '',
     });
 
-    return result;
+    return true;
   }
 
   /* Helper function to get the observer and verify that the user has permission to update it. */

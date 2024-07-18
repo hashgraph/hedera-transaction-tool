@@ -89,10 +89,11 @@ export class UsersController {
   })
   @ApiResponse({
     status: 200,
+    type: Boolean,
   })
   @UseGuards(AdminGuard)
   @Delete('/:id')
-  removeUser(@Param('id', ParseIntPipe) id: number) {
+  removeUser(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
     return this.usersService.removeUser(id);
   }
 }

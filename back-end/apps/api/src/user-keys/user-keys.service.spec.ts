@@ -158,12 +158,11 @@ describe('UserKeysService', () => {
     it('should soft remove the user key if it exists', async () => {
       const userKey = { id: 1, publicKey: 'test-public-key' } as UserKey;
       repo.findOne.mockResolvedValue(userKey);
-      repo.softRemove.mockResolvedValue(userKey);
 
       const result = await service.removeKey(1);
 
       expect(repo.softRemove).toHaveBeenCalledWith(userKey);
-      expect(result).toEqual(userKey);
+      expect(result).toEqual(true);
     });
   });
 

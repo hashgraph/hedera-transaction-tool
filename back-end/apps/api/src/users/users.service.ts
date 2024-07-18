@@ -100,14 +100,16 @@ export class UsersService {
 
   // Remove a user from the organization.
   // This is a soft delete, meaning the deletedTimestamp will be set.
-  async removeUser(id: number): Promise<User> {
+  async removeUser(id: number): Promise<boolean> {
     const user = await this.getUser({ id });
 
     if (!user) {
       throw new BadRequestException('User not found');
     }
 
-    return this.repo.softRemove(user);
+    await this.repo.softRemove(user);
+
+    return true;
   }
 
   // For the given password, create a salt and hash it with the password.

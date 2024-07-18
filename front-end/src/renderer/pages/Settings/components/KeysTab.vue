@@ -153,6 +153,7 @@ const handleDelete = async e => {
       );
       await user.refetchUserState();
     }
+    toast.success(`Private key deleted successfully`, { position: 'bottom-right' });
   } catch (err: any) {
     toast.error(err.message || 'Failed to delete key pair', { position: 'bottom-right' });
   } finally {

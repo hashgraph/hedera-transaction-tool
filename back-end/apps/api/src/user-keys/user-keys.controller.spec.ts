@@ -101,9 +101,9 @@ describe('UserKeysController', () => {
 
   describe('removeKey', () => {
     it('should return a key', async () => {
-      userKeysService.removeKey.mockResolvedValue(userKey);
+      userKeysService.removeKey.mockResolvedValue(true);
 
-      expect(await controller.removeKey(1)).toBe(userKey);
+      expect(await controller.removeKey(1)).toBe(true);
     });
 
     it('should return an error if key does not exist', async () => {

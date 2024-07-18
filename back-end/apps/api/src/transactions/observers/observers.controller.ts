@@ -17,7 +17,7 @@ import { TransactionObserver, User } from '@entities';
 
 import { JwtAuthGuard, VerifiedUserGuard } from '../../guards';
 
-import { GetUser } from '../../decorators/get-user.decorator';
+import { GetUser } from '../../decorators';
 
 import { ObserversService } from './observers.service';
 
@@ -94,10 +94,11 @@ export class ObserversController {
     description: 'Delete the transaction observer for the given transaction observer id.',
   })
   @ApiResponse({
-    status: 201,
+    status: 200,
+    type: Boolean,
   })
   @Delete('/:id')
-  removeTransactionObserver(@GetUser() user: User, @Param('id', ParseIntPipe) id: number) {
+  removeTransactionObserver(@GetUser() user: User, @Param('id', ParseIntPipe) id: number): Promise<boolean> {
     return this.observersService.removeTransactionObserver(id, user);
   }
 }
