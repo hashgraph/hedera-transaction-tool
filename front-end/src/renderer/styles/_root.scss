@@ -31,6 +31,10 @@
 
   --#{$prefix}btn-secondary-bg-color: #{$light-blue-900};
   --#{$prefix}btn-borderless-color: #{$dark-blue-950};
+  --#{$prefix}btn-borderless-color-hover: #{$neutral-700};
+  --#{$prefix}btn-borderless-color-active: #{$neutral-900};
+  --#{$prefix}btn-borderless-border-color-hover: #{$neutral-700};
+  --#{$prefix}btn-borderless-border-color-active: #{$neutral-900};
 
   --#{$prefix}btn-group-container-bg-color: #{$light-blue-200};
   --#{$prefix}container-threshhold-key: #{$light-blue-300};
@@ -77,6 +81,10 @@
 
     --#{$prefix}btn-secondary-bg-color: #{$dark-blue-600};
     --#{$prefix}btn-borderless-color: #{$neutral-00};
+    --#{$prefix}btn-borderless-color-hover: #{$neutral-300};
+    --#{$prefix}btn-borderless-color-active: #{$neutral-400};
+    --#{$prefix}btn-borderless-border-color-hover: #{$neutral-300};
+    --#{$prefix}btn-borderless-border-color-active: #{$neutral-400};
 
     --#{$prefix}btn-group-container-bg-color: #{$dark-blue-700};
     --#{$prefix}container-threshhold-key: #{$dark-blue-600};
