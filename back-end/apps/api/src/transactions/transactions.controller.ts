@@ -230,6 +230,7 @@ export class TransactionsController {
   })
   @ApiResponse({
     status: 200,
+    type: Boolean,
   })
   @Delete('/:id')
   deleteTransaction(@GetUser() user, @Param('id', ParseIntPipe) id: number): Promise<boolean> {

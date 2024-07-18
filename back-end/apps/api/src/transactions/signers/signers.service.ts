@@ -20,7 +20,7 @@ import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from
 
 import { userKeysRequiredToSign } from '../../utils';
 
-import { UploadSignatureArrayDto, UploadSignatureDto } from '../dto/upload-signature.dto';
+import { UploadSignatureArrayDto, UploadSignatureDto } from '../dto';
 
 @Injectable()
 export class SignersService {
@@ -293,7 +293,9 @@ export class SignersService {
   }
 
   /* Remove the signature for the given id */
-  removeSignature(id: number) {
-    return this.repo.softDelete(id);
+  async removeSignature(id: number): Promise<boolean> {
+    await this.repo.softDelete(id);
+
+    return true;
   }
 }

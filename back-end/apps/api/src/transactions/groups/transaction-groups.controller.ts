@@ -70,9 +70,10 @@ export class TransactionGroupsController {
   })
   @ApiResponse({
     status: 200,
+    type: Boolean,
   })
   @Delete('/:id')
-  removeTransactionGroup(@GetUser() user: User, @Param('id', ParseIntPipe) groupId: number): void {
-    this.transactionGroupsService.removeTransactionGroup(user, groupId);
+  removeTransactionGroup(@GetUser() user: User, @Param('id', ParseIntPipe) groupId: number): Promise<boolean> {
+    return this.transactionGroupsService.removeTransactionGroup(user, groupId);
   }
 }

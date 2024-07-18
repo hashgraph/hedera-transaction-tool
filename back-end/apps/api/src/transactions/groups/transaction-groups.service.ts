@@ -89,7 +89,7 @@ export class TransactionGroupsService {
     return group;
   }
 
-  async removeTransactionGroup(user: User, id: number): Promise<TransactionGroup> {
+  async removeTransactionGroup(user: User, id: number): Promise<boolean> {
     const group = await this.dataSource.manager.findOneBy(TransactionGroup, { id });
     if (!group) {
       throw new Error('group not found');
@@ -110,13 +110,13 @@ export class TransactionGroupsService {
       await this.transactionsService.removeTransaction(user, transactionId, false);
     }
 
-    const result = await this.dataSource.manager.remove(TransactionGroup, group);
+    await this.dataSource.manager.remove(TransactionGroup, group);
 
     this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
       message: TRANSACTION_ACTION,
       content: '',
     });
 
-    return result;
+    return true;
   }
 }

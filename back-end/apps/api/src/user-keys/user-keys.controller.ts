@@ -16,12 +16,11 @@ import { User, UserKey } from '@entities';
 
 import { JwtAuthGuard, VerifiedUserGuard } from '../guards';
 
-import { GetUser } from '../decorators/get-user.decorator';
+import { GetUser } from '../decorators';
 
 import { UserKeysService } from './user-keys.service';
 
-import { UploadUserKeyDto } from './dtos/upload-user-key.dto';
-import { UserKeyDto } from './dtos/user-key.dto';
+import { UploadUserKeyDto, UserKeyDto } from './dtos';
 
 @ApiTags('User Keys')
 @Controller('user/:userId?/keys')
@@ -62,9 +61,10 @@ export class UserKeysController {
   })
   @ApiResponse({
     status: 200,
+    type: Boolean,
   })
   @Delete('/:id')
-  removeKey(@Param('id', ParseIntPipe) id: number) {
+  removeKey(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
     // If this returns the result, the dto can't decode the id as things are null
     return this.userKeysService.removeKey(id);
   }
