@@ -67,15 +67,22 @@ const handleAddOrganization = async (organization: Organization) => {
 
 watch(
   () => user.organizations,
-  () => {
+  (current, prev) => {
     const lastAddedOrganization = user.organizations[user.organizations.length - 1];
 
     if (user.selectedOrganization?.isServerActive) {
-      selectedMode.value = lastAddedOrganization.id;
+      // Check if organization was added or removed
+      if (current.length > prev.length) {
+        selectedMode.value = lastAddedOrganization.id;
 
-      const organizationNickname =
-        user.organizations.find(org => org.id === lastAddedOrganization.id)?.nickname || '';
-      defaultDropDownValue.value = organizationNickname;
+        const organizationNickname =
+          user.organizations.find(org => org.id === lastAddedOrganization.id)?.nickname || '';
+        defaultDropDownValue.value = organizationNickname;
+      } else {
+        selectedMode.value = user.selectedOrganization.id;
+
+        defaultDropDownValue.value = user.selectedOrganization.nickname;
+      }
     } else {
       defaultDropDownValue.value = 'My Transactions';
     }
