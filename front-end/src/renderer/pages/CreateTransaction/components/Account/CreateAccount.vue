@@ -349,7 +349,7 @@ const columnClass = 'col-4 col-xxxl-3';
             <AppButton
               color="primary"
               type="submit"
-              data-testid="button-sign-and-submit-file-create"
+              data-testid="button-sign-and-submit"
               :disabled="!ownerKey || !payerData.isValid.value"
             >
               <span class="bi bi-send"></span>

@@ -285,7 +285,7 @@ const columnClass = 'col-4 col-xxxl-3';
             <AppButton
               color="primary"
               type="submit"
-              data-testid="button-sign-and-submit-file-create"
+              data-testid="button-sign-and-submit-file-append"
               :disabled="
                 (!isLoggedInOrganization(user.selectedOrganization) && !ownerKey) ||
                 !payerData.isValid.value ||

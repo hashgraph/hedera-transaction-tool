@@ -286,7 +286,6 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
             <AppButton
               color="primary"
               type="submit"
-              data-testid="button-sign-and-submit-file-create"
               :disabled="!payerData.key || !payerData.isValid.value"
             >
               <span class="bi bi-send"></span>
