@@ -6,7 +6,7 @@ import { User, UserKey, UserStatus } from '@entities';
 
 import { UserKeysController } from './user-keys.controller';
 
-import { UserKeysService } from './user-keys.service';
+import { MAX_USER_KEYS, UserKeysService } from './user-keys.service';
 import { VerifiedUserGuard } from '../guards';
 
 describe('UserKeysController', () => {
@@ -75,11 +75,15 @@ describe('UserKeysController', () => {
     it('should return an error if publicKey is not supplied', async () => {
       const invalidUserKey = { ...userKey, publicKey: null };
 
-      try {
-        await controller.uploadKey(user, invalidUserKey);
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-      }
+      userKeysService.uploadKey.mockRejectedValue(new Error('Public Key in use.'));
+
+      await expect(controller.uploadKey(user, invalidUserKey)).rejects.toThrow(Error);
+    });
+
+    it('should return an error if the user has too many keys', async () => {
+      userKeysService.uploadKey.mockRejectedValue(new Error(`A user can only have up to ${MAX_USER_KEYS} keys.`));
+
+      await expect(controller.uploadKey(user, userKey)).rejects.toThrow(Error);
     });
   });
 
@@ -107,13 +111,9 @@ describe('UserKeysController', () => {
     });
 
     it('should return an error if key does not exist', async () => {
-      userKeysService.removeKey.mockResolvedValue(null);
+      userKeysService.removeKey.mockRejectedValue(new Error('Key not found'));
 
-      try {
-        await controller.removeKey(1);
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-      }
+      await expect(controller.removeKey(1)).rejects.toThrow(Error);
     });
   });
 });
