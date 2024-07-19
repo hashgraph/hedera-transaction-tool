@@ -25,7 +25,7 @@ export class UserKey {
   @Column({ nullable: true })
   index: number;
 
-  @Column()
+  @Column({ length: 128 })
   publicKey: string;
 
   @DeleteDateColumn()
