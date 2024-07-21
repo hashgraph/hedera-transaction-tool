@@ -130,6 +130,7 @@ const columnClass = 'col-4 col-xxxl-3';
       >
       <DatePicker
         ref="datePicker"
+        data-testid="date-picker-valid-start"
         :model-value="validStart"
         @update:model-value="v => $emit('update:validStart', v)"
         :clearable="false"
@@ -138,6 +139,7 @@ const columnClass = 'col-4 col-xxxl-3';
           keepActionRow: true,
         }"
         :min-date="new Date()"
+        enable-seconds
         :teleport="true"
         class="is-fill"
         menu-class-name="is-fill"
