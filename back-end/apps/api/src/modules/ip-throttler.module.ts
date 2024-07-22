@@ -16,12 +16,12 @@ import { ConfigService } from '@nestjs/config';
             {
               name: 'global-minute',
               ttl: seconds(60),
-              limit: 10_000,
+              limit: configService.getOrThrow<number>('GLOBAL_MINUTE_LIMIT'),
             },
             {
               name: 'global-second',
               ttl: seconds(1),
-              limit: 1000,
+              limit: configService.getOrThrow<number>('GLOBAL_SECOND_LIMIT'),
             },
           ]
         }),

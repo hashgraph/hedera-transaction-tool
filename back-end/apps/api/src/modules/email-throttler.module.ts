@@ -14,16 +14,16 @@ import { ConfigService } from '@nestjs/config';
             new ThrottlerStorageRedisService(configService.getOrThrow('REDIS_URL')),
           throttlers: [
             {
-              name: 'anon-minute',
+              name: 'anonymous-minute',
               ttl: seconds(60),
-              limit: 3,
+              limit: configService.getOrThrow<number>('ANONYMOUS_MINUTE_LIMIT'),
             },
             {
-              name: 'anon-second',
-              ttl: seconds(1),
-              limit: 1,
+              name: 'anonymous-five-second',
+              ttl: seconds(5),
+              limit: configService.getOrThrow<number>('ANONYMOUS_FIVE_SECOND_LIMIT'),
             },
-          ]
+          ],
         }),
     }),
   ],
