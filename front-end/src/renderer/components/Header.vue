@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { inject, nextTick } from 'vue';
+import { inject, nextTick, onUpdated } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 
 import { useRouter } from 'vue-router';
+import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import { logout } from '@renderer/services/organization';
 
@@ -38,6 +39,7 @@ const ws = useWebsocketConnection();
 
 /* Composables */
 const router = useRouter();
+const createTooltips = useCreateTooltips();
 
 /* Injected */
 const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);
@@ -70,6 +72,11 @@ const handleLogout = async () => {
     globalModalLoaderRef?.value?.close();
   }
 };
+
+/* Hooks */
+onUpdated(() => {
+  createTooltips();
+});
 </script>
 
 <template>
@@ -109,8 +116,12 @@ const handleLogout = async () => {
         class="container-icon"
         data-testid="button-logout"
         @click="handleLogout"
+        data-bs-toggle="tooltip"
+        data-bs-placement="bottom"
+        data-bs-custom-class="wide-tooltip"
+        data-bs-title="Log out"
       >
-        <i class="text-icon-main bi bi-box-arrow-right"></i>
+        <i class="text-icon-main bi bi-box-arrow-up-right"></i>
       </span>
     </div>
   </div>
