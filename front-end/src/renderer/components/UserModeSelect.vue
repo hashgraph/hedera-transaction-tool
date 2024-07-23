@@ -1,15 +1,19 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { onUpdated, ref, watch } from 'vue';
 
 import { Organization } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
 import AppButton from './ui/AppButton.vue';
 
 /* Stores */
 const user = useUserStore();
+
+/* Composables */
+const createTooltips = useCreateTooltips();
 
 /* State */
 const selectedMode = ref<string>('personal');
@@ -64,6 +68,11 @@ const handleAddOrganization = async (organization: Organization) => {
     defaultDropDownValue.value = organizationNickname;
   }
 };
+
+/* Hooks */
+onUpdated(() => {
+  createTooltips();
+});
 
 watch(
   () => user.organizations,
@@ -142,7 +151,11 @@ watch(
       size="small"
       @click="handleAddOrganizationButtonClick"
       data-testid="button-add-new-organization"
-      ><i class="bi bi-cloud-plus"></i
+      data-bs-toggle="tooltip"
+      data-bs-placement="bottom"
+      data-bs-custom-class="wide-tooltip"
+      data-bs-title="Add organization"
+      ><i class="bi bi-plus-square"></i
     ></AppButton>
 
     <AddOrganizationModal
