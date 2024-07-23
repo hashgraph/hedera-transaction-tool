@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 
 import { HederaAccount } from '@prisma/client';
 
@@ -40,6 +40,23 @@ const toast = useToast();
 const isNicknameInputShown = ref(false);
 const nicknameInputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const publicKeyToAccounts = ref<{ [key: string]: AccountInfo[] }>({});
+
+/* Computed */
+const publicKeyToAccountsLinked = computed(() => {
+  const result: { [key: string]: AccountInfo[] } = {};
+
+  Object.keys(publicKeyToAccounts.value).forEach(key => {
+    const linkedAccs = publicKeyToAccounts.value[key].filter(account =>
+      props.linkedAccounts.some(linkedAccount => linkedAccount.account_id === account.account),
+    );
+
+    if (linkedAccs.length > 0) {
+      result[key] = linkedAccs;
+    }
+  });
+
+  return result;
+});
 
 /* Emits */
 const emit = defineEmits(['update:linkedAccounts', 'update:remove']);
@@ -159,73 +176,128 @@ watch(
       >
     </div>
   </div>
+  <div class="mt-4 row">
+    <div class="col-5">
+      <p class="text-main text-semi-bold">Email</p>
+    </div>
+    <div class="col-7">
+      <p class="text-secondary overflow-hidden">
+        {{ contact.user.email }}
+      </p>
+    </div>
+  </div>
   <hr class="separator my-4" />
   <div class="fill-remaining overflow-x-hidden pe-3">
-    <div class="mt-4 row">
-      <div class="col-5">
-        <p class="text-small text-semi-bold">Email</p>
-      </div>
-      <div class="col-7">
-        <p class="text-small overflow-hidden">
-          {{ contact.user.email }}
-        </p>
-      </div>
-    </div>
-    <template v-for="key in contact.userKeys" :key="key.publicKey">
-      <div class="mt-4 row">
-        <div class="col-5">
-          <p class="text-small text-semi-bold">Public Key</p>
-        </div>
-        <div class="col-7">
-          <p class="text-secondary text-small overflow-hidden">
-            {{ PublicKey.fromString(key.publicKey).toStringRaw() }}
-          </p>
-          <p class="text-small text-semi-bold text-pink mt-3">
-            {{ PublicKey.fromString(key.publicKey)._key._type }}
-          </p>
-        </div>
-      </div>
-      <Transition name="fade" mode="out-in">
-        <div
-          v-if="publicKeyToAccounts[key.publicKey] && publicKeyToAccounts[key.publicKey].length > 0"
-          class="mt-4 row"
-        >
+    <template v-for="(key, index) in contact.userKeys" :key="key.publicKey">
+      <div class="p-4">
+        <hr v-if="index != 0" class="separator mb-4" />
+        <div class="mt-4 row">
           <div class="col-5">
-            <p class="text-small text-semi-bold">Associated Accounts</p>
+            <p class="text-small text-semi-bold">Public Key</p>
           </div>
           <div class="col-7">
-            <ul class="d-flex flex-wrap gap-3">
-              <template
-                v-for="account in publicKeyToAccounts[key.publicKey]"
-                :key="`${key.publicKey}${account.account}`"
-              >
-                <li class="flex-centered text-center badge-bg rounded py-2 px-3">
-                  <p class="text-small text-secondary">
-                    {{ account.account }}
-                    <span
-                      v-if="
-                        (
-                          linkedAccounts
-                            .find(a => a.account_id === account.account)
-                            ?.nickname?.trim() || ''
-                        ).length > 0
-                      "
-                      >({{
-                        linkedAccounts.find(a => a.account_id === account.account)?.nickname
-                      }})</span
-                    >
-                  </p>
-                  <span
-                    v-if="!linkedAccounts.some(a => a.account_id === account.account)"
-                    class="bi bi-link d-flex cursor-pointer ms-2"
-                    @click="account.account && handleLinkAccount(account.account)"
-                  ></span>
-                </li>
-              </template>
-            </ul>
+            <p class="text-secondary text-small overflow-hidden">
+              {{ PublicKey.fromString(key.publicKey).toStringRaw() }}
+            </p>
+            <p class="text-small text-semi-bold text-pink mt-3">
+              {{ PublicKey.fromString(key.publicKey)._key._type }}
+            </p>
           </div>
         </div>
-      </Transition>
+        <Transition name="fade" mode="out-in">
+          <div
+            v-if="
+              publicKeyToAccounts[key.publicKey] && publicKeyToAccounts[key.publicKey].length > 0
+            "
+            class="mt-4 row"
+          >
+            <div class="col-5">
+              <p class="text-small text-semi-bold">
+                Associated Accounts
+                <span class="text-secondary"
+                  >({{ publicKeyToAccounts[key.publicKey].length }})</span
+                >
+              </p>
+            </div>
+            <div class="col-7">
+              <ul class="d-flex flex-wrap gap-3">
+                <template
+                  v-for="account in publicKeyToAccounts[key.publicKey]"
+                  :key="`${key.publicKey}${account.account}`"
+                >
+                  <li
+                    v-if="!linkedAccounts.some(a => a.account_id === account.account)"
+                    class="flex-centered text-center badge-bg rounded py-2 px-3"
+                  >
+                    <p class="text-small text-secondary">
+                      {{ account.account }}
+                      <span
+                        v-if="
+                          (
+                            linkedAccounts
+                              .find(a => a.account_id === account.account)
+                              ?.nickname?.trim() || ''
+                          ).length > 0
+                        "
+                        >({{
+                          linkedAccounts.find(a => a.account_id === account.account)?.nickname
+                        }})</span
+                      >
+                    </p>
+                    <span
+                      v-if="!linkedAccounts.some(a => a.account_id === account.account)"
+                      class="bi bi-link d-flex cursor-pointer ms-2"
+                      @click="account.account && handleLinkAccount(account.account)"
+                    ></span>
+                  </li>
+                </template>
+              </ul>
+            </div>
+          </div>
+        </Transition>
+
+        <Transition name="fade" mode="out-in">
+          <div v-if="publicKeyToAccountsLinked[key.publicKey].length" class="mt-4 row">
+            <div class="col-5">
+              <p class="text-small text-semi-bold">
+                Linked Accounts
+                <span class="text-secondary"
+                  >({{ publicKeyToAccountsLinked[key.publicKey].length }})</span
+                >
+              </p>
+            </div>
+            <div class="col-7">
+              <ul class="d-flex flex-wrap gap-3">
+                <template
+                  v-for="account in publicKeyToAccounts[key.publicKey]"
+                  :key="`${key.publicKey}${account.account}`"
+                >
+                  <li
+                    v-if="linkedAccounts.find(a => a.account_id === account.account)"
+                    class="flex-centered text-center badge-bg rounded py-2 px-3"
+                  >
+                    <p class="text-small text-secondary">
+                      {{ account.account }}
+                      <span
+                        v-if="
+                          (
+                            linkedAccounts
+                              .find(a => a.account_id === account.account)
+                              ?.nickname?.trim() || ''
+                          ).length > 0
+                        "
+                        >({{
+                          linkedAccounts.find(a => a.account_id === account.account)?.nickname
+                        }})</span
+                      >
+                    </p>
+                  </li>
+                </template>
+              </ul>
+            </div>
+          </div>
+        </Transition>
+      </div>
     </template>
   </div>
 </template>
