@@ -187,21 +187,21 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
             </tr>
           </thead>
           <tbody>
-            <template v-for="tx in transactions" :key="tx.transactionRaw.id">
+            <template v-for="(tx, index) in transactions" :key="tx.transactionRaw.id">
               <tr>
-                <td>
+                <td :data-testid="`td-review-transaction-id-${index}`">
                   {{
                     tx.transaction instanceof Transaction ? getTransactionId(tx.transaction) : 'N/A'
                   }}
                 </td>
-                <td>
+                <td :data-testid="`td-review-transaction-type-${index}`">
                   <span class="text-bold">{{
                     tx.transaction instanceof Transaction
                       ? getTransactionType(tx.transaction)
                       : 'N/A'
                   }}</span>
                 </td>
-                <td>
+                <td :data-testid="`td-review-transaction-valid-start-${index}`">
                   {{
                     tx.transaction instanceof Transaction
                       ? getTransactionDateExtended(tx.transaction)
@@ -211,6 +211,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                 <td class="text-center">
                   <AppButton
                     @click="handleApprove(tx.transactionRaw.id)"
+                    :data-testid="`button-review-transaction-approve-${index}`"
                     color="secondary"
                     class="min-w-unset"
                     >Submit Approval</AppButton

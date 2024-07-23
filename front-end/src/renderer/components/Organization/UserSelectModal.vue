@@ -88,7 +88,9 @@ const handleInsert = (e: Event) => {
                       <span class="ms-2 text-nowrap">{{ contact.nickname.trim() }}</span>
                     </p>
                     <div :class="[contact.nickname.trim().length > 0 ? 'border-start ps-4' : '']">
-                      <span :data-testid="'span-email-' + index" class="text-nowrap">{{ contact.user.email }}</span>
+                      <span :data-testid="'span-email-' + index" class="text-nowrap">{{
+                        contact.user.email
+                      }}</span>
                     </div>
                   </div>
                 </AppListItem>
