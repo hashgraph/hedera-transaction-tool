@@ -257,7 +257,13 @@ watch(
         </Transition>
 
         <Transition name="fade" mode="out-in">
-          <div v-if="publicKeyToAccountsLinked[key.publicKey].length" class="mt-4 row">
+          <div
+            v-if="
+              publicKeyToAccountsLinked[key.publicKey] &&
+              publicKeyToAccountsLinked[key.publicKey].length
+            "
+            class="mt-4 row"
+          >
             <div class="col-5">
               <p class="text-small text-semi-bold">
                 Linked Accounts
