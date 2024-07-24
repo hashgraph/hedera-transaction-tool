@@ -24,6 +24,12 @@ export class UserKeysService {
 
   // Upload the provided user key for the provided user.
   async uploadKey(user: User, dto: UploadUserKeyDto): Promise<UserKey> {
+    // If the user doesn't have keys, get the keys
+    if (!user.keys) {
+      user.keys = await this.getUserKeys(user.id);
+    }
+
+    // Check if the user already has the maximum number of keys
     if (user.keys.length >= MAX_USER_KEYS) {
       throw new BadRequestException(`A user can only have up to ${MAX_USER_KEYS} keys.`);
     }
