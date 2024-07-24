@@ -5,9 +5,10 @@ import { mockDeep } from 'jest-mock-extended';
 
 import { User, UserKey } from '@entities';
 
-import { UserKeysService } from './user-keys.service';
+import { MAX_USER_KEYS, UserKeysService } from './user-keys.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException } from '@nestjs/common';
+
 describe('UserKeysService', () => {
   let service: UserKeysService;
 
@@ -50,8 +51,14 @@ describe('UserKeysService', () => {
   });
 
   describe('uploadKey', () => {
-    const user = { id: 1, name: 'Test User' } as unknown as User;
-    const dto = { publicKey: 'test-public-key', mnemonicHash: 'test-hash', index: 0 };
+    let user;
+    let dto;
+
+    beforeEach(() => {
+      user = { id: 1, name: 'Test User' } as unknown as User;
+      dto = { publicKey: 'test-public-key', mnemonicHash: 'test-hash', index: 0 };
+      service.getUserKeys = jest.fn().mockResolvedValue([]);
+    });
 
     it('should throw BadRequestException if public key is in use by a different user', async () => {
       const existingUserKey = {
@@ -85,6 +92,16 @@ describe('UserKeysService', () => {
         index: 333,
       };
       repo.findOne.mockResolvedValue(existingUserKey as UserKey);
+
+      await expect(service.uploadKey(user, dto)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException if user has too many keys', async () => {
+      user.keys = Array.from({ length: MAX_USER_KEYS }, (_, i) => ({
+        id: i + 1,
+        publicKey: `key-${i}`,
+        user: { id: user.id },
+      })) as UserKey[];
 
       await expect(service.uploadKey(user, dto)).rejects.toThrow(BadRequestException);
     });
