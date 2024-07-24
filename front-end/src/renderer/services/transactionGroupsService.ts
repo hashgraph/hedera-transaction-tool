@@ -1,7 +1,7 @@
 import { Prisma, GroupItem } from '@prisma/client';
 import { GroupItem as StoreGroupItem } from '@renderer/stores/storeTransactionGroup';
 
-import { getMessageFromIPCError } from '@renderer/utils';
+import { commonIPCHandler, getMessageFromIPCError } from '@renderer/utils';
 import { getTransactionType } from '@renderer/utils/transactions';
 
 /* Transaction Groups Service */
@@ -106,16 +106,49 @@ export async function addGroup(description: string, atomic: boolean) {
   }
 }
 
-// export const updateDraft = async (
-//   id: string,
-//   draft: Prisma.TransactionDraftUncheckedUpdateInput,
-// ) => {
-//   try {
-//     return await window.electronAPI.local.transactionDrafts.updateDraft(id, draft);
-//   } catch (error: any) {
-//     throw Error(getMessageFromIPCError(error, `Failed to fetch transaction with id: ${draft.id}`));
-//   }
-// };
+export async function updateGroup(
+  id: string,
+  userId: string,
+  group: Prisma.TransactionGroupUncheckedUpdateInput,
+  groupItems: StoreGroupItem[],
+) {
+  try {
+    await window.electronAPI.local.transactionGroups.updateGroup(id, group);
+    for (const [index, item] of groupItems.entries()) {
+      const transactionDraft: Prisma.TransactionDraftUncheckedUpdateInput = {
+        created_at: new Date(),
+        updated_at: new Date(),
+        user_id: userId,
+        transactionBytes: item.transactionBytes.toString(),
+        type: getTransactionType(item.transactionBytes),
+      };
+      const savedItem = await getGroupItem(id, index.toString());
+      if (savedItem) {
+        await window.electronAPI.local.transactionDrafts.updateDraft(
+          savedItem.transaction_draft_id!,
+          transactionDraft,
+        );
+      } else {
+        const transactionDraft: Prisma.TransactionDraftUncheckedCreateInput = {
+          created_at: new Date(),
+          updated_at: new Date(),
+          user_id: userId,
+          transactionBytes: item.transactionBytes.toString(),
+          type: getTransactionType(item.transactionBytes),
+        };
+        const draft = await window.electronAPI.local.transactionDrafts.addDraft(transactionDraft);
+        const groupItem: Prisma.GroupItemUncheckedCreateInput = {
+          transaction_draft_id: draft.id,
+          transaction_group_id: id,
+          seq: index.toString(),
+        };
+        await window.electronAPI.local.transactionGroups.addGroupItem(groupItem);
+      }
+    }
+  } catch (error: any) {
+    throw Error(getMessageFromIPCError(error, `Failed to fetch transaction group with id: ${id}`));
+  }
+}
 
 export const deleteGroup = async (id: string) => {
   try {

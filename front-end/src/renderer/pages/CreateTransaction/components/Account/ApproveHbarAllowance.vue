@@ -145,6 +145,17 @@ const handleSubmit = (id: number) => {
 };
 
 function handleAddToGroup() {
+  if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
+    throw Error('Invalid Payer ID');
+  }
+
+  if (!isAccountId(ownerData.accountId.value) || !ownerData.key.value) {
+    throw Error('Invalid Owner ID');
+  }
+
+  if (!isAccountId(spenderData.accountId.value)) {
+    throw Error('Invalid Spender ID');
+  }
   const transactionBytes = createTransaction().toBytes();
   const keys = new Array<string>();
   if (ownerData.key.value instanceof KeyList) {
@@ -181,6 +192,7 @@ function handleEditGroupItem() {
     type: 'AccountAllowanceApproveTransaction',
     accountId: '',
     seq: route.params.seq[0],
+    groupId: transactionGroup.groupItems[Number(route.query.groupIndex)].groupId,
     keyList: keys,
     observers: observers.value,
     approvers: approvers.value,

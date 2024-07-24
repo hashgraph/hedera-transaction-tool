@@ -6,6 +6,7 @@ import {
   addGroupWithDrafts,
   getGroup,
   getGroupItems,
+  updateGroup,
 } from '@renderer/services/transactionGroupsService';
 import { getTransactionFromBytes } from '@renderer/utils/transactions';
 import { defineStore } from 'pinia';
@@ -60,6 +61,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
 
   function clearGroup() {
     groupItems.value = [];
+    description.value = '';
   }
 
   function addGroupItem(groupItem: GroupItem) {
@@ -103,13 +105,17 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     groupItems.value = newGroupItems;
   }
 
-  async function saveGroup(userId: string, description: string) {
+  async function saveGroup(userId: string, description: string, groupId?: string) {
     // Alter this when we know what 'atomic' does
-    const groupId = await addGroupWithDrafts(userId, description, false, groupItems.value);
-    const items = await getGroupItems(groupId!);
-    for (const [index, groupItem] of groupItems.value.entries()) {
-      groupItem.groupId = groupId;
-      groupItem.seq = items[index].seq;
+    if (groupId) {
+      await updateGroup(groupId, userId, { description, atomic: false }, groupItems.value);
+    } else {
+      const newGroupId = await addGroupWithDrafts(userId, description, false, groupItems.value);
+      const items = await getGroupItems(newGroupId!);
+      for (const [index, groupItem] of groupItems.value.entries()) {
+        groupItem.groupId = newGroupId;
+        groupItem.seq = items[index].seq;
+      }
     }
   }
 

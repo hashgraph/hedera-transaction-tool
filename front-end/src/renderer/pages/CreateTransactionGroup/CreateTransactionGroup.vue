@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import EmptyTransactionGroup from '@renderer/components/EmptyTransactionGroup.vue';
+import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import TransactionSelectionModal from '@renderer/components/TransactionSelectionModal.vue';
 import TransactionGroupProcessor from '@renderer/components/Transaction/TransactionGroupProcessor.vue';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
@@ -42,8 +42,11 @@ function handleSaveGroup() {
 
   addTransactionIds();
 
-  console.log(groupName.value);
-  transactionGroup.saveGroup(user.personal.id, groupName.value);
+  transactionGroup.saveGroup(
+    user.personal.id,
+    groupName.value,
+    transactionGroup.groupItems[0].groupId,
+  );
   transactionGroup.clearGroup();
   router.push('transactions');
 }
@@ -61,6 +64,7 @@ function handleDuplicateGroupItem(index: number) {
 }
 
 function handleEditGroupItem(index: number, type: string) {
+  type = type.replace(/\s/g, '');
   router.push({
     name: 'createTransaction',
     params: { type, seq: index },
@@ -123,6 +127,11 @@ function handleSubmit(id: number) {
   });
 }
 
+function handleClose() {
+  transactionGroup.clearGroup();
+  router.push({ name: 'transactions' });
+}
+
 function addTransactionIds() {
   for (const groupItem of transactionGroup.groupItems) {
     const transaction = Transaction.fromBytes(groupItem.transactionBytes);
@@ -134,10 +143,11 @@ function addTransactionIds() {
 /* Hooks */
 onMounted(async () => {
   await handleLoadGroup();
+  groupName.value = transactionGroup.description;
 });
 </script>
 <template>
-  <div class="p-5">
+  <div class="p-5 overflow-y-auto">
     <div class="d-flex align-items-center">
       <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">
         <i class="bi bi-arrow-left"></i>
@@ -217,30 +227,16 @@ onMounted(async () => {
       </div>
     </form>
     <div v-if="groupEmpty">
-      <EmptyTransactionGroup class="absolute-centered w-100" />
+      <EmptyTransactions class="absolute-centered w-100" />
     </div>
     <TransactionSelectionModal v-model:show="isTransactionSelectionModalShown" group />
     <TransactionGroupProcessor
       ref="transactionGroupProcessor"
-      :on-close-success-modal-click="() => $router.push({ name: 'files' })"
+      :on-close-success-modal-click="handleClose"
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"
     >
-      <template #successHeading>File created successfully</template>
-      <template #successContent>
-        <p
-          v-if="transactionGroupProcessor?.transactionResult"
-          class="text-small d-flex justify-content-between align-items mt-2"
-        >
-          <span class="text-bold text-secondary">File ID:</span>
-          <span>{{
-            getEntityIdFromTransactionReceipt(
-              transactionGroupProcessor.transactionResult.receipt,
-              'fileId',
-            )
-          }}</span>
-        </p>
-      </template>
+      <template #successHeading>Transaction Group Executed Successfully</template>
     </TransactionGroupProcessor>
   </div>
 </template>

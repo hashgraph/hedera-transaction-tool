@@ -250,6 +250,14 @@ const handleLocalStored = (id: string) => {
 };
 
 function handleAddToGroup() {
+  if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
+    throw Error('Invalid Payer ID');
+  }
+
+  if (!ownerKey.value) {
+    throw Error('Key is required');
+  }
+
   const transactionBytes = createTransaction().toBytes();
   const keys = new Array<string>();
   if (ownerKey.value instanceof KeyList) {
@@ -286,6 +294,7 @@ function handleEditGroupItem() {
     type: 'FileCreateTransaction',
     accountId: '',
     seq: route.params.seq[0],
+    groupId: transactionGroup.groupItems[Number(route.query.groupIndex)].groupId,
     keyList: keys,
     observers: observers.value,
     approvers: approvers.value,

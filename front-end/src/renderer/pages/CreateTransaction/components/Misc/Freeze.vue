@@ -146,6 +146,10 @@ const handleSubmit = (id: number) => {
 };
 
 function handleAddToGroup() {
+  if (!isAccountId(payerData.accountId.value)) {
+    throw new Error('Invalid Payer ID');
+  }
+
   const transactionBytes = createTransaction().toBytes();
   const keys = new Array<string>();
   if (payerData.key.value instanceof KeyList) {
@@ -179,9 +183,10 @@ function handleEditGroupItem() {
 
   transactionGroup.editGroupItem({
     transactionBytes: transactionBytes,
-    type: 'AccountAllowanceApproveTransaction',
+    type: 'FreezeTransaction',
     accountId: '',
     seq: route.params.seq[0],
+    groupId: transactionGroup.groupItems[Number(route.query.groupIndex)].groupId,
     keyList: keys,
     observers: observers.value,
     approvers: approvers.value,

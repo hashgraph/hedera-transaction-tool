@@ -12,6 +12,7 @@ import {
   deleteGroup,
   editGroupItem,
   getGroupItem,
+  updateGroup,
 } from '@main/services/localUser';
 
 const createChannelName = (...props) => ['transactionGroups', ...props].join(':');
@@ -33,6 +34,11 @@ export default () => {
     createChannelName('addGroup'),
     (_e, transactionGroup: Prisma.TransactionGroupUncheckedCreateInput) =>
       addGroup(transactionGroup),
+  );
+  // Udpate group
+  ipcMain.handle(
+    createChannelName('updateGroup'),
+    (_e, id: string, group: Prisma.TransactionGroupUncheckedUpdateInput) => updateGroup(id, group),
   );
   // Add a group item
   ipcMain.handle(

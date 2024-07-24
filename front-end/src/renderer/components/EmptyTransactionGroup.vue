@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import TransactionSelectionModal from '@renderer/components/TransactionSelectionModal.vue';
+import { useRouter } from 'vue-router';
 
-/* State */
-const isTransactionSelectionModalShown = ref(false);
+/* Composables */
+const router = useRouter();
+
+/* Handler */
+function onClick() {
+  router.push('create-transaction-group');
+}
 </script>
 <template>
   <div class="flex-centered flex-column text-center" v-bind="$attrs">
@@ -21,10 +24,9 @@ const isTransactionSelectionModalShown = ref(false);
       </p>
     </div>
     <div class="mt-3">
-      <AppButton class="text-main text-pink" @click="isTransactionSelectionModalShown = true"
-        ><i class="bi bi-plus-lg"></i> <span>Add Transaction</span></AppButton
+      <AppButton class="text-main text-pink" @click="onClick"
+        ><i class="bi bi-plus-lg"></i> <span>Create Transaction Group</span></AppButton
       >
     </div>
   </div>
-  <TransactionSelectionModal v-model:show="isTransactionSelectionModalShown" />
 </template>

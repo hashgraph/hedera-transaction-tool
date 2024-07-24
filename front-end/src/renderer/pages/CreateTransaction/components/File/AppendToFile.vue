@@ -207,6 +207,18 @@ async function redirectToDetails(id: string | number) {
 }
 
 function handleAddToGroup() {
+  if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
+    throw Error('Invalid Payer ID');
+  }
+
+  if (!isAccountId(fileId.value)) {
+    throw Error('Invalid File ID');
+  }
+
+  if (!ownerKey.value) {
+    throw Error('Signature key is required');
+  }
+
   observers.value = [];
   approvers.value = [];
   const transactionBytes = createTransaction().toBytes();
@@ -222,6 +234,7 @@ function handleAddToGroup() {
     type: 'FileAppendTransaction',
     accountId: '',
     seq: transactionGroup.groupItems.length.toString(),
+    groupId: transactionGroup.groupItems[Number(route.query.groupIndex)].groupId,
     keyList: keys,
     observers: observers.value,
     approvers: approvers.value,

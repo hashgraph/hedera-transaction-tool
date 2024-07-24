@@ -12,13 +12,13 @@ import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
-import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import {
   getGroup,
   getGroups,
   getGroupsCount,
   deleteGroup,
 } from '@renderer/services/transactionGroupsService';
+import EmptyTransactionGroup from '@renderer/components/EmptyTransactionGroup.vue';
 
 /* Store */
 const user = useUserStore();
@@ -220,7 +220,7 @@ watch([currentPage, pageSize], async () => {
         </table>
       </template>
       <template v-else>
-        <EmptyTransactions class="absolute-centered w-100" />
+        <EmptyTransactionGroup class="absolute-centered w-100" />
       </template>
     </template>
   </div>
