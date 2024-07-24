@@ -172,8 +172,8 @@ onMounted(async () => {
           type="button"
           class="text-main text-primary"
           @click="isTransactionSelectionModalShown = true"
-          ><i class="bi bi-plus-lg"></i> <span>Add Transaction</span></AppButton
-        >
+          ><i class="bi bi-plus-lg"></i> <span>Add Transaction</span>
+        </AppButton>
       </div>
       <hr class="separator my-5 w-100" />
       <div v-if="!groupEmpty">
@@ -227,7 +227,7 @@ onMounted(async () => {
       </div>
     </form>
     <div v-if="groupEmpty">
-      <EmptyTransactions class="absolute-centered w-100" />
+      <EmptyTransactions class="absolute-centered w-100" group />
     </div>
     <TransactionSelectionModal v-model:show="isTransactionSelectionModalShown" group />
     <TransactionGroupProcessor
