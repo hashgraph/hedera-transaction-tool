@@ -181,7 +181,7 @@ Until then, use the following commands once connected to a cluster:
    kubectl apply -f ./ssl-secret.yaml
    ```
 
-8. Deploy the ingress:
+8. The ingress uses the name of a previously reserved static ip (named 'web-ip'). If using the GCP console, this can be done in VPC Network -> IP Addresses. Deploy the ingress:
 
    ```bash
    kubectl apply -f ./ingress.yaml
