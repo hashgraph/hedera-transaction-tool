@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule, TypeOrmModuleAsyncOptions } from '@nestjs/typeorm';
 import { EntityClassOrSchema } from '@nestjs/typeorm/dist/interfaces/entity-class-or-schema.type';
 import { ConfigService } from '@nestjs/config';
-import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
 @Module({
   imports: [
@@ -18,7 +17,6 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
           password: configService.getOrThrow('POSTGRES_PASSWORD'),
           synchronize: configService.getOrThrow('POSTGRES_SYNCHRONIZE'),
           autoLoadEntities: true,
-          namingStrategy: new SnakeNamingStrategy(),
         }) as TypeOrmModuleAsyncOptions,
       inject: [ConfigService],
     }),
