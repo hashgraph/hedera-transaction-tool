@@ -27,6 +27,13 @@ class BasePage {
     return element.textContent();
   }
 
+  async getTextByTestIdWithIndex(testId, index = 1, timeout = this.DEFAULT_TIMEOUT) {
+    console.log(`Getting text for element with testId: ${testId} at index: ${index}`);
+    const element = this.window.getByTestId(testId).nth(index);
+    await element.waitFor({ state: 'visible', timeout: timeout });
+    return element.textContent();
+  }
+
   async getAllTextByTestId(testId, timeout = this.DEFAULT_TIMEOUT) {
     console.log(`Getting text for element with testId: ${testId}`);
 
@@ -280,6 +287,34 @@ class BasePage {
     }
 
     throw new Error(`Input field with testId: ${testId} was not filled within the timeout period`);
+  }
+
+  /**
+   * Selects an option from a <select> element by its value.
+   *
+   * @param {string} testId - The data-testid attribute of the <select> element.
+   * @param {string} value - The value of the option to select.
+   * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be actionable.
+   */
+  async selectOptionByValue(testId, value, timeout = this.DEFAULT_TIMEOUT) {
+    console.log(`Selecting option with value: ${value} in <select> with testId: ${testId}`);
+    const selectElement = this.window.getByTestId(testId);
+    await selectElement.waitFor({ state: 'visible', timeout: timeout });
+    await selectElement.selectOption({ value });
+  }
+
+  /**
+   * Gets the inner text or HTML of an element by its CSS selector.
+   *
+   * @param {string} selector - The CSS selector of the element.
+   * @param {number} [timeout=this.DEFAULT_TIMEOUT] - The timeout to wait for the element to be visible.
+   * @returns {Promise<string>} - The inner text or HTML of the element.
+   */
+  async getInnerContentBySelector(selector, timeout = this.DEFAULT_TIMEOUT) {
+    console.log(`Getting inner content for element with selector: ${selector}`);
+    const element = this.window.getByTestId(selector);
+    await element.waitFor({ state: 'visible', timeout: timeout });
+    return element.innerHTML();
   }
 }
 
