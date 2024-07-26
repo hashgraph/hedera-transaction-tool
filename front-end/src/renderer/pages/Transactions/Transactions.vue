@@ -46,13 +46,13 @@ const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title
 function setTabItems() {
   if (isOrganizationActive(user.selectedOrganization)) {
     const currentTabTitle = activeTabTitle.value;
-    tabItems.value = organizationTabs;
+    tabItems.value = [...organizationTabs];
     const newIndex = tabItems.value.findIndex(tab => tab.title === currentTabTitle);
     activeTabIndex.value = newIndex >= 0 ? newIndex : 0;
   } else {
     const newIndex = sharedTabs.findIndex(tab => tab.title === activeTabTitle.value);
     activeTabIndex.value = newIndex >= 0 ? newIndex : 0;
-    tabItems.value = sharedTabs;
+    tabItems.value = [...sharedTabs];
   }
 }
 
