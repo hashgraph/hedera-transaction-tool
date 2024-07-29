@@ -25,11 +25,13 @@ const user = useUserStore();
 const route = useRoute();
 
 /* State */
-const organizationOnlyTabs: TabItem[] = [
+const organizationTabs: TabItem[] = [
+  { title: 'Drafts' },
   { title: 'Ready for Review' },
   { title: 'Ready to Sign' },
   { title: 'In Progress' },
   { title: 'Ready for Execution' },
+  { title: 'History' },
 ];
 const sharedTabs: TabItem[] = [{ title: 'Drafts' }, { title: 'History' }];
 
@@ -44,13 +46,13 @@ const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title
 function setTabItems() {
   if (isOrganizationActive(user.selectedOrganization)) {
     const currentTabTitle = activeTabTitle.value;
-    tabItems.value = [...organizationOnlyTabs, ...sharedTabs];
+    tabItems.value = [...organizationTabs];
     const newIndex = tabItems.value.findIndex(tab => tab.title === currentTabTitle);
     activeTabIndex.value = newIndex >= 0 ? newIndex : 0;
   } else {
     const newIndex = sharedTabs.findIndex(tab => tab.title === activeTabTitle.value);
     activeTabIndex.value = newIndex >= 0 ? newIndex : 0;
-    tabItems.value = sharedTabs;
+    tabItems.value = [...sharedTabs];
   }
 }
 
