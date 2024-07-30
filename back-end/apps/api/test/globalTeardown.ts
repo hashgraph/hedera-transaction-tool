@@ -31,8 +31,9 @@ export default async function globalTeardown() {
     }
   });
 
+  /* Stops the Hedera Localnet */
   try {
-    await stopHederaLocalnet();
+    // await stopHederaLocalnet();
   } catch (error) {
     console.log(error);
   }
