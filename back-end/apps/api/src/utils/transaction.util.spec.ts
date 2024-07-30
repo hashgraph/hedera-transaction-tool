@@ -47,9 +47,10 @@ describe('keysRequiredToSign', () => {
 
   it('should return user key IDs required to sign the transaction', async () => {
     const pk = PrivateKey.generateED25519();
+    const keys = [{ id: 1, publicKey: pk.publicKey.toStringRaw() }];
 
     entityManager.find.mockResolvedValueOnce([]);
-    entityManager.find.mockResolvedValueOnce([{ id: 1, publicKey: pk.publicKey.toStringRaw() }]);
+    entityManager.find.mockResolvedValueOnce(keys);
     jest.mocked(getSignatureEntities).mockReturnValueOnce({
       accounts: ['0.0.21212'],
       receiverAccounts: ['0.0.21212'],
@@ -67,14 +68,15 @@ describe('keysRequiredToSign', () => {
     } as AccountInfo);
 
     const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
-    expect(result).toEqual([1]);
+    expect(result).toEqual(keys);
   });
 
   it('should return user key IDs required to sign the transaction', async () => {
     const pk = PrivateKey.generateED25519();
+    const keys = [{ id: 1, publicKey: pk.publicKey.toStringRaw() }];
 
     entityManager.find.mockResolvedValueOnce([]);
-    entityManager.find.mockResolvedValueOnce([{ id: 1, publicKey: pk.publicKey.toStringRaw() }]);
+    entityManager.find.mockResolvedValueOnce(keys);
     jest.mocked(getSignatureEntities).mockReturnValueOnce({
       accounts: ['0.0.21212'],
       receiverAccounts: ['0.0.21212'],
@@ -89,11 +91,12 @@ describe('keysRequiredToSign', () => {
     } as AccountInfo);
 
     const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
-    expect(result).toEqual([1]);
+    expect(result).toEqual(keys);
   });
 
   it('should not retun user key IDs if user already signed the transaction', async () => {
     const pk = PrivateKey.generateED25519();
+    const keys = [{ id: 1, publicKey: pk.publicKey.toStringRaw() }];
 
     entityManager.find.mockResolvedValueOnce([
       {
@@ -102,7 +105,7 @@ describe('keysRequiredToSign', () => {
         },
       },
     ]);
-    entityManager.find.mockResolvedValueOnce([{ id: 1, publicKey: pk.publicKey.toStringRaw() }]);
+    entityManager.find.mockResolvedValueOnce(keys);
     jest.mocked(getSignatureEntities).mockReturnValueOnce({
       accounts: ['0.0.21212'],
       receiverAccounts: ['0.0.21212'],
@@ -125,6 +128,7 @@ describe('keysRequiredToSign', () => {
 
   it('should not retun user key IDs if user already signed the transaction', async () => {
     const pk = PrivateKey.generateED25519();
+    const keys = [{ id: 1, publicKey: pk.publicKey.toStringRaw() }];
 
     entityManager.find.mockResolvedValueOnce([
       {
@@ -133,7 +137,7 @@ describe('keysRequiredToSign', () => {
         },
       },
     ]);
-    entityManager.find.mockResolvedValueOnce([{ id: 1, publicKey: pk.publicKey.toStringRaw() }]);
+    entityManager.find.mockResolvedValueOnce(keys);
     jest.mocked(getSignatureEntities).mockReturnValueOnce({
       accounts: ['0.0.21212'],
       receiverAccounts: ['0.0.21212'],
@@ -153,9 +157,10 @@ describe('keysRequiredToSign', () => {
 
   it('should not add account key if it is not found', async () => {
     const pk = PrivateKey.generateED25519();
+    const keys = [{ id: 1, publicKey: pk.publicKey.toStringRaw() }];
 
     entityManager.find.mockResolvedValueOnce([]);
-    entityManager.find.mockResolvedValueOnce([{ id: 1, publicKey: pk.publicKey.toStringRaw() }]);
+    entityManager.find.mockResolvedValueOnce(keys);
     jest.mocked(getSignatureEntities).mockReturnValue({
       accounts: ['0.0.21212'],
       receiverAccounts: ['0.0.21212'],
@@ -173,9 +178,10 @@ describe('keysRequiredToSign', () => {
 
   it('should not add account key if receiver sig is not required', async () => {
     const pk = PrivateKey.generateED25519();
+    const keys = [{ id: 1, publicKey: pk.publicKey.toStringRaw() }];
 
     entityManager.find.mockResolvedValueOnce([]);
-    entityManager.find.mockResolvedValueOnce([{ id: 1, publicKey: pk.publicKey.toStringRaw() }]);
+    entityManager.find.mockResolvedValueOnce(keys);
     jest.mocked(getSignatureEntities).mockReturnValue({
       accounts: [],
       receiverAccounts: ['0.0.21213'],

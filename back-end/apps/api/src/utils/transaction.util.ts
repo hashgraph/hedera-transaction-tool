@@ -16,7 +16,7 @@ export const keysRequiredToSign = async (
   mirrorNodeService: MirrorNodeService,
   entityManager: EntityManager,
   userKeys?: UserKey[],
-): Promise<number[]> => {
+): Promise<UserKey[]> => {
   const userKeyIdsRequired: Set<number> = new Set<number>();
 
   if (!transaction) {
@@ -101,7 +101,7 @@ export const keysRequiredToSign = async (
     userKeyInKeyOrIsKey(key).forEach(userKey => userKeyIdsRequired.add(userKey.id));
   }
 
-  return [...userKeyIdsRequired];
+  return userKeys.filter(userKey => userKeyIdsRequired.has(userKey.id));
 };
 
 export const userKeysRequiredToSign = async (
@@ -116,5 +116,12 @@ export const userKeysRequiredToSign = async (
     if (user.keys.length === 0) return [];
   }
 
-  return keysRequiredToSign(transaction, mirrorNodeService, entityManager, user.keys);
+  const userKeysRequiredToSign = await keysRequiredToSign(
+    transaction,
+    mirrorNodeService,
+    entityManager,
+    user.keys,
+  );
+
+  return userKeysRequiredToSign.map(k => k.id);
 };
