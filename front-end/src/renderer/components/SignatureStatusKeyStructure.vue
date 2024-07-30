@@ -13,6 +13,7 @@ import AppPublicKeyNickname from '@renderer/components/ui/AppPublicKeyNickname.v
 const props = defineProps<{
   keyList: KeyList;
   publicKeysSigned: string[];
+  depth: number;
 }>();
 
 /* Computed */
@@ -31,8 +32,9 @@ defineEmits(['update:keyList']);
         v-if="publicKeysSigned.includes(publicKeysInKeyListRaw[0])"
         class="bi bi-check-lg text-success position-absolute"
         :style="{ left: '-15px' }"
+        data-testid="span-checkmark-payer-key"
       ></span>
-      <span class="me-2">
+      <span class="me-2" data-testid="span-payer-key">
         {{ publicKeysInKeyListRaw[0] }}
       </span>
       <AppPublicKeyNickname
@@ -49,6 +51,7 @@ defineEmits(['update:keyList']);
           v-if="ableToSign(publicKeysSigned, keyList)"
           class="bi bi-check-lg text-success position-absolute"
           :style="{ left: '-15px' }"
+          data-testid="span-checkmark-threshold"
         ></span>
         <p class="text-nowrap" :class="{ 'text-success': ableToSign(publicKeysSigned, keyList) }">
           Threshold ({{
@@ -62,7 +65,11 @@ defineEmits(['update:keyList']);
       <template v-for="(item, _index) in keyList.toArray()" :key="_index">
         <template v-if="item instanceof KeyList && true">
           <div class="ms-5">
-            <SignatureStatusKeyStructure :key-list="item" :public-keys-signed="publicKeysSigned" />
+            <SignatureStatusKeyStructure
+              :key-list="item"
+              :public-keys-signed="publicKeysSigned"
+              :depth="depth + 1"
+            />
           </div>
         </template>
         <template v-else-if="item instanceof PublicKey && true">
@@ -71,8 +78,9 @@ defineEmits(['update:keyList']);
               v-if="publicKeysSigned.includes(item.toStringRaw())"
               class="bi bi-check-lg text-success position-absolute"
               :style="{ left: '-15px' }"
+              :data-testid="`span-checkmark-public-key-${depth}-${_index}`"
             ></span>
-            <p class="text-nowrap me-2">
+            <p class="text-nowrap me-2" :data-testid="`span-public-key-${depth}-${_index}`">
               {{ item.toStringRaw() }}
               <AppPublicKeyNickname :public-key="item" :brackets="true" class="text-pink" />
             </p>
