@@ -1,5 +1,4 @@
 /* eslint-disable no-var */
-
 import * as path from 'path';
 
 import { GenericContainer, StartedTestContainer } from 'testcontainers';
