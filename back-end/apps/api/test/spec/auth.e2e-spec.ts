@@ -8,7 +8,7 @@ import { UserStatus } from '@entities';
 
 import { closeApp, createNestApp } from '../utils';
 import { getCookieRaw, Endpoint, getCookieValue } from '../utils/httpUtils';
-import { resetUsersPassword } from '../utils/databaseUtil';
+import { resetUsersState } from '../utils/databaseUtil';
 
 import { admin, dummy, invalidEmail, validEmail } from '../utils/constants';
 
@@ -188,7 +188,7 @@ describe('Auth (e2e)', () => {
     });
 
     afterAll(async () => {
-      await resetUsersPassword();
+      await resetUsersState();
     });
 
     it('(PATCH) should change password', async () => {
@@ -310,7 +310,7 @@ describe('Auth (e2e)', () => {
     });
 
     afterAll(async () => {
-      await resetUsersPassword();
+      await resetUsersState();
     });
 
     it('(PATCH) should set password', async () => {

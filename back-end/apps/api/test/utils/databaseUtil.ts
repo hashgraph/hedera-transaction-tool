@@ -126,7 +126,7 @@ export async function addUsers() {
   console.log(`Id: ${userNew.id}, User: ${userNew.email}, ${dummyNewPassword} \n`);
 }
 
-export async function resetUsersPassword() {
+export async function resetUsersState() {
   const dataSource = await connectDatabase();
 
   const userRepo = dataSource.getRepository(User);
@@ -134,14 +134,19 @@ export async function resetUsersPassword() {
   try {
     const admin = await userRepo.findOne({
       where: { email: adminEmail },
+      withDeleted: true,
     });
-    const user = await userRepo.findOne({ where: { email: dummyEmail } });
-    const userNew = await userRepo.findOne({ where: { email: dummyNewEmail } });
+    const user = await userRepo.findOne({ where: { email: dummyEmail }, withDeleted: true });
+    const userNew = await userRepo.findOne({ where: { email: dummyNewEmail }, withDeleted: true });
 
     if (!admin || !user || !userNew) {
-      console.log(chalk.red('Failed to reset users password'));
+      console.log(chalk.red('Failed to reset users state'));
       return;
     }
+
+    await userRepo.recover(admin);
+    await userRepo.recover(user);
+    await userRepo.recover(userNew);
 
     const hashAdmin = bcrypt.hashSync(adminPassword);
     const hashUser = bcrypt.hashSync(dummyPassword);
@@ -151,11 +156,15 @@ export async function resetUsersPassword() {
     user.password = hashUser;
     userNew.password = hashUserNew;
 
+    admin.admin = true;
+    user.admin = false;
+    userNew.admin = false;
+
     await userRepo.save(admin);
     await userRepo.save(user);
     await userRepo.save(userNew);
 
-    console.log(chalk.green('Users password reset successfully \n'));
+    console.log(chalk.green('Users state reset successfully \n'));
   } catch (error) {
     console.log(chalk.red(error.message));
   }
