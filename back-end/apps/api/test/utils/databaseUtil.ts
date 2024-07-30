@@ -388,6 +388,8 @@ export async function addTransactions() {
   return {
     userTransactions,
     adminTransactions,
+    userToSignCount: 3,
+    adminToSignCount: 2,
     total: userTransactions.length + adminTransactions.length,
   };
 }
