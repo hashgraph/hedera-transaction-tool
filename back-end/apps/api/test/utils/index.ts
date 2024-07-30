@@ -59,14 +59,13 @@ function setupApp(app: NestExpressApplication) {
 
 function connectMicroservice(app: NestExpressApplication) {
   const configService = app.get(ConfigService);
-  /* To check why TCP microservice is not closing */
-  // app.connectMicroservice({
-  //   transport: Transport.TCP,
-  //   options: {
-  //     host: '0.0.0.0',
-  //     port: configService.getOrThrow<string>('TCP_PORT'),
-  //   },
-  // });
+  app.connectMicroservice({
+    transport: Transport.TCP,
+    options: {
+      host: '0.0.0.0',
+      port: configService.getOrThrow<string>('TCP_PORT'),
+    },
+  });
   app.connectMicroservice({
     transport: Transport.RMQ,
     options: {

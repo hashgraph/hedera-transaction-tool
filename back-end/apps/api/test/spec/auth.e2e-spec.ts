@@ -15,7 +15,7 @@ describe('Auth (e2e)', () => {
     server = app.getHttpServer();
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await closeApp(app);
   });
 
