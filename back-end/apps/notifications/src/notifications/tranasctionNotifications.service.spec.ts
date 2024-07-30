@@ -5,7 +5,7 @@ import { mockDeep } from 'jest-mock-extended';
 
 import { MirrorNodeService, NotifyForTransactionDto } from '@app/common';
 import { keysRequiredToSign } from '@app/common/utils';
-import { Transaction, UserKey } from '@entities';
+import { Transaction, User, UserKey } from '@entities';
 
 import { TransactionNotificationsService } from './tranasctionNotifications.service';
 import { EmailService } from '../email/email.service';
@@ -51,50 +51,102 @@ describe('Transaction Notifications Service', () => {
     expect(service).toBeDefined();
   });
 
-  it('should throw an error if transaction not found', async () => {
-    entityManager.findOne.mockResolvedValueOnce(null);
+  describe('notifyTransactionRequiredSigners', () => {
+    it('should throw an error if transaction not found', async () => {
+      entityManager.findOne.mockResolvedValueOnce(null);
 
-    const dto: NotifyForTransactionDto = { transactionId: 1 };
+      const dto: NotifyForTransactionDto = { transactionId: 1 };
 
-    await expect(service.notifyTransactionRequiredSigners(dto)).rejects.toThrow(
-      'Transaction not found',
-    );
+      await expect(service.notifyTransactionRequiredSigners(dto)).rejects.toThrow(
+        'Transaction not found',
+      );
+    });
+
+    it('should not send emails if no users found', async () => {
+      const transaction = { id: 1, transactionId: '0x123' } as Transaction;
+      entityManager.findOne.mockResolvedValueOnce(transaction);
+
+      const keys = [{ user: { id: 1 } }] as UserKey[];
+      jest.mocked(keysRequiredToSign).mockResolvedValueOnce(keys);
+
+      entityManager.find.mockResolvedValueOnce([]);
+
+      const dto: NotifyForTransactionDto = { transactionId: 1 };
+
+      await service.notifyTransactionRequiredSigners(dto);
+
+      expect(emailService.notifyEmail).not.toHaveBeenCalled();
+    });
+
+    it('should send emails to users', async () => {
+      const transaction = { id: 1, transactionId: '0x123' } as Transaction;
+      entityManager.findOne.mockResolvedValueOnce(transaction);
+
+      const keys = [{ user: { id: 1 } }] as UserKey[];
+      jest.mocked(keysRequiredToSign).mockResolvedValueOnce(keys);
+
+      const users = [{ id: 1, email: 'user@example.com' }];
+      entityManager.find.mockResolvedValueOnce(users);
+
+      const dto: NotifyForTransactionDto = { transactionId: 1 };
+
+      await service.notifyTransactionRequiredSigners(dto);
+
+      expect(emailService.notifyEmail).toHaveBeenCalledWith({
+        subject: 'Hedera Transaction Tool | Transaction to sign',
+        email: ['user@example.com'],
+        text: `You have a transaction to sign. Please visit the Hedera Transaction Tool to sign the transaction 0x123.`,
+      });
+    });
   });
 
-  it('should not send emails if no users found', async () => {
-    const transaction = { id: 1, transactionId: '0x123' } as Transaction;
-    entityManager.findOne.mockResolvedValueOnce(transaction);
+  describe('notifyTransactionCreatorOnReadyForExecution', () => {
+    it('should throw an error if transaction not found', async () => {
+      entityManager.findOne.mockResolvedValueOnce(null);
 
-    const keys = [{ user: { id: 1 } }] as UserKey[];
-    jest.mocked(keysRequiredToSign).mockResolvedValueOnce(keys);
+      const dto: NotifyForTransactionDto = { transactionId: 1 };
 
-    entityManager.find.mockResolvedValueOnce([]);
+      await expect(service.notifyTransactionCreatorOnReadyForExecution(dto)).rejects.toThrow(
+        'Transaction not found',
+      );
+    });
 
-    const dto: NotifyForTransactionDto = { transactionId: 1 };
+    it('should throw an error if user not found', async () => {
+      const transaction = {
+        id: 1,
+        transactionId: '0x123',
+        creatorKey: { user: { id: 1 } },
+      } as Transaction;
+      entityManager.findOne.mockResolvedValueOnce(transaction);
+      entityManager.findOne.mockResolvedValueOnce(null);
 
-    await service.notifyTransactionRequiredSigners(dto);
+      const dto: NotifyForTransactionDto = { transactionId: 1 };
 
-    expect(emailService.notifyEmail).not.toHaveBeenCalled();
-  });
+      await expect(service.notifyTransactionCreatorOnReadyForExecution(dto)).rejects.toThrow(
+        'User not found',
+      );
+    });
 
-  it('should send emails to users', async () => {
-    const transaction = { id: 1, transactionId: '0x123' } as Transaction;
-    entityManager.findOne.mockResolvedValueOnce(transaction);
+    it('should send email to transaction creator', async () => {
+      const transaction = {
+        id: 1,
+        transactionId: '0x123',
+        creatorKey: { user: { id: 1 } },
+      } as Transaction;
+      const user = { id: 1, email: 'user@example.com' } as User;
 
-    const keys = [{ user: { id: 1 } }] as UserKey[];
-    jest.mocked(keysRequiredToSign).mockResolvedValueOnce(keys);
+      entityManager.findOne.mockResolvedValueOnce(transaction);
+      entityManager.findOne.mockResolvedValueOnce(user);
 
-    const users = [{ id: 1, email: 'user@example.com' }];
-    entityManager.find.mockResolvedValueOnce(users);
+      const dto: NotifyForTransactionDto = { transactionId: 1 };
 
-    const dto: NotifyForTransactionDto = { transactionId: 1 };
+      await service.notifyTransactionCreatorOnReadyForExecution(dto);
 
-    await service.notifyTransactionRequiredSigners(dto);
-
-    expect(emailService.notifyEmail).toHaveBeenCalledWith({
-      subject: 'Hedera Transaction Tool | Transaction to sign',
-      email: ['user@example.com'],
-      text: `You have a transaction to sign. Please visit the Hedera Transaction Tool to sign the transaction 0x123.`,
+      expect(emailService.notifyEmail).toHaveBeenCalledWith({
+        subject: 'Hedera Transaction Tool | Transaction ready for execution',
+        email: 'user@example.com',
+        text: `Your transaction 0x123 is ready for execution.`,
+      });
     });
   });
 });

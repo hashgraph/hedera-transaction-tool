@@ -36,4 +36,16 @@ describe('Transaction Notifications Controller', () => {
 
     expect(notificationsService.notifyTransactionRequiredSigners).toHaveBeenCalledWith(dto);
   });
+
+  it('should invoke notify transaction required signer with correct params', async () => {
+    const dto: NotifyForTransactionDto = {
+      transactionId: 1,
+    };
+
+    await controller.notifyTransactionCreatorOnReadyForExecution(dto);
+
+    expect(notificationsService.notifyTransactionCreatorOnReadyForExecution).toHaveBeenCalledWith(
+      dto,
+    );
+  });
 });

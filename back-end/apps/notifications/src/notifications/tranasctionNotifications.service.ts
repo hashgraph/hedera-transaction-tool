@@ -51,4 +51,37 @@ export class TransactionNotificationsService {
       });
     }
   }
+
+  async notifyTransactionCreatorOnReadyForExecution(dto: NotifyForTransactionDto) {
+    /* Get transaction */
+    const transaction = await this.entityManager.findOne(Transaction, {
+      where: {
+        id: dto.transactionId,
+      },
+      relations: {
+        creatorKey: {
+          user: true,
+        },
+      },
+    });
+
+    if (!transaction) throw new Error('Transaction not found');
+
+    /* Get user */
+    const user = await this.entityManager.findOne(User, {
+      where: {
+        id: transaction.creatorKey?.user?.id,
+      },
+    });
+
+    if (!user) throw new Error('User not found');
+
+    if (user.email) {
+      this.emailService.notifyEmail({
+        subject: 'Hedera Transaction Tool | Transaction ready for execution',
+        email: user.email,
+        text: `Your transaction ${transaction.transactionId} is ready for execution.`,
+      });
+    }
+  }
 }
