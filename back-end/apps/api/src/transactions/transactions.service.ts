@@ -418,8 +418,6 @@ export class TransactionsService {
         return acc;
       }, []);
 
-      console.log('signersEmails', signersEmails);
-
       if (signersEmails.length > 0) {
         this.notificationsService.emit('notify_transaction_members', {
           subject: 'Hedera Transaction Tool | Transaction to sign',
