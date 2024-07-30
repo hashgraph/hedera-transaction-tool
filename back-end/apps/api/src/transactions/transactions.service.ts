@@ -538,9 +538,6 @@ export class TransactionsService {
     return userKeysRequiredToSign(transaction, user, this.mirrorNodeService, this.entityManager);
   }
 
-  /* Notify transaction signers */
-  private;
-
   /* Get the status where clause for the history transactions */
   private getHistoryStatusWhere(
     filtering: Filtering[],
