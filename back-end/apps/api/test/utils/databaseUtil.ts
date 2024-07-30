@@ -110,6 +110,39 @@ export async function addUsers() {
   console.log(`Id: ${user.id}, User: ${user.email}, ${dummyPassword}, ${publicKeyRaw1} \n`);
 }
 
+export async function resetUsersPassword() {
+  const dataSource = await connectDatabase();
+
+  const userRepo = dataSource.getRepository(User);
+
+  try {
+    const admin = await userRepo.findOne({
+      where: { email: adminEmail },
+    });
+    const user = await userRepo.findOne({ where: { email: adminEmail } });
+
+    if (!admin || !user) {
+      console.log(chalk.red('Failed to reset users password'));
+      return;
+    }
+
+    const hashAdmin = bcrypt.hashSync(adminPassword);
+    const hashUser = bcrypt.hashSync(dummyPassword);
+
+    admin.password = hashAdmin;
+    user.password = hashUser;
+
+    await userRepo.save(admin);
+    await userRepo.save(user);
+
+    console.log(chalk.green('Users password reset successfully \n'));
+  } catch (error) {
+    console.log(chalk.red(error.message));
+  }
+
+  dataSource.destroy();
+}
+
 function verifyEnv() {
   const requiredEnv = [
     'POSTGRES_HOST',
