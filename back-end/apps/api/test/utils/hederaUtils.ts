@@ -1,6 +1,16 @@
 import * as crypto from 'crypto';
 
-import { AccountId, Mnemonic, Timestamp, Transaction, TransactionId } from '@hashgraph/sdk';
+import {
+  AccountCreateTransaction,
+  AccountId,
+  Client,
+  Key,
+  Mnemonic,
+  PrivateKey,
+  Timestamp,
+  Transaction,
+  TransactionId,
+} from '@hashgraph/sdk';
 
 import { Network, TransactionType } from '../../../../libs/common/src/database/entities';
 
@@ -89,4 +99,24 @@ export const getTransactionTypeEnumValue = (transaction: Transaction): Transacti
     default:
       throw new Error(`Unsupported transaction type: ${sdkType}`);
   }
+};
+
+export const createAccount = async (payerId: AccountId, payerKey: PrivateKey, key: Key) => {
+  const client = Client.forLocalNode();
+  client.setOperator(payerId, payerKey);
+
+  const response = await new AccountCreateTransaction()
+    .setTransactionId(createTransactionId(payerId))
+    .setKey(key)
+    .execute(client);
+
+  const receipt = await response.getReceipt(client);
+
+  client.close();
+
+  return {
+    response,
+    receipt,
+    accountId: receipt.accountId,
+  };
 };
