@@ -16,7 +16,7 @@ export class EmailService {
     auth: {
       user: this.configService.getOrThrow<string>('BREVO_USERNAME'),
       pass: this.configService.getOrThrow<string>('BREVO_PASSWORD'),
-    }
+    },
   });
 
   async notifyEmail({ email, subject, text }: NotifyEmailDto) {
@@ -31,7 +31,14 @@ export class EmailService {
     console.log(`Message sent: ${info.messageId}`);
   }
 
-  async notifyTransactionMembers(payload: NotifyTransactionMembersDto) {
-    console.log(`Notifying transaction members...`);
+  async notifyTransactionMembers({ emails, subject, text }: NotifyTransactionMembersDto) {
+    const info = await this.transporter.sendMail({
+      from: '"Transaction Tool" info@transactiontool.com', // sender address
+      to: emails[0], // list of receivers
+      subject: subject, // Subject line
+      text: text, // plain text body
+    });
+
+    console.log(`Message sent: ${info.messageId}`);
   }
 }

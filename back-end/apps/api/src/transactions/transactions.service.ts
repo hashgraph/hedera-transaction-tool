@@ -387,7 +387,24 @@ export class TransactionsService {
       throw new BadRequestException('Failed to save transaction');
     }
 
-    this.notificationsService.emit('notify_transaction_members', transaction);
+    // Check if the transaction has any approvers
+
+    // Check if the transaction has any observers
+
+    // Check if the transaction has any signers
+
+    // Filter signers
+
+    const signersEmails = transaction.signers.map(s => s.userKey.user.email);
+
+    if (signersEmails.length > 0) {
+      this.notificationsService.emit('notify_transaction_members', {
+        subject: 'Hedera Transaction Tool Registration',
+        emails: signersEmails,
+        text: `You have a transaction to sign</b>`,
+      });
+    }
+
     this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
       message: TRANSACTION_ACTION,
       content: '',
