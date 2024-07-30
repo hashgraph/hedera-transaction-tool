@@ -186,6 +186,49 @@ export async function getUsers() {
   }
 }
 
+export async function getUserKeys(id?: number) {
+  const dataSource = await connectDatabase();
+
+  const userKeyRepo = dataSource.getRepository(UserKey);
+
+  try {
+    const userKeys = await userKeyRepo.find(
+      id
+        ? {
+            where: {
+              user: {
+                id,
+              },
+            },
+          }
+        : undefined,
+    );
+
+    await dataSource.destroy();
+    return userKeys;
+  } catch (error) {
+    console.log(chalk.red(error.message));
+  }
+}
+
+export async function getUser(type: 'admin' | 'user' | 'userNew') {
+  const dataSource = await connectDatabase();
+
+  const userRepo = dataSource.getRepository(User);
+
+  try {
+    const user = await userRepo.findOne({
+      where: {
+        email: type === 'admin' ? adminEmail : type === 'user' ? dummyEmail : dummyNewEmail,
+      },
+    });
+    await dataSource.destroy();
+    return user;
+  } catch (error) {
+    console.log(chalk.red(error.message));
+  }
+}
+
 function verifyEnv() {
   const requiredEnv = [
     'POSTGRES_HOST',
