@@ -197,7 +197,7 @@ export class TransactionsController {
   })
   @ApiResponse({
     status: 200,
-    type: TransactionDto,
+    type: Boolean,
   })
   @Patch('/cancel/:id')
   async cancelTransaction(
