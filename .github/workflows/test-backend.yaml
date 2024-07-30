@@ -49,3 +49,6 @@ jobs:
       - name: Run unit tests
         run: pnpm --filter ${{ matrix.test-suite }} test:cov
         working-directory: back-end
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
