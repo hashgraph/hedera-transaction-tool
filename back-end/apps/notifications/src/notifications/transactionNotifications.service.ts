@@ -23,6 +23,11 @@ export class TransactionNotificationsService {
       where: {
         id: dto.transactionId,
       },
+      relations: {
+        creatorKey: {
+          user: true,
+        },
+      },
     });
 
     if (!transaction) throw new Error('Transaction not found');
@@ -33,7 +38,11 @@ export class TransactionNotificationsService {
       this.entityManager,
     );
 
-    const distinctUserIds = allKeys.map(k => k.userId).filter((v, i, a) => a.indexOf(v) === i);
+    const distinctUserIds = allKeys
+      .map(k => k.userId)
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .filter(id => id !== transaction.creatorKey?.user?.id)
+      .filter(Boolean);
 
     /* Get users by keys */
     const users = await this.entityManager.find(User, {

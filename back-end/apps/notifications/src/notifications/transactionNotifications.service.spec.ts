@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import { EntityManager } from 'typeorm';
+import { EntityManager, In } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
 import { MirrorNodeService, NotifyForTransactionDto } from '@app/common';
@@ -66,7 +66,7 @@ describe('Transaction Notifications Service', () => {
       const transaction = { id: 1, transactionId: '0x123' } as Transaction;
       entityManager.findOne.mockResolvedValueOnce(transaction);
 
-      const keys = [{ user: { id: 1 } }] as UserKey[];
+      const keys = [{ userId: 1 }] as UserKey[];
       jest.mocked(keysRequiredToSign).mockResolvedValueOnce(keys);
 
       entityManager.find.mockResolvedValueOnce([]);
@@ -82,7 +82,7 @@ describe('Transaction Notifications Service', () => {
       const transaction = { id: 1, transactionId: '0x123' } as Transaction;
       entityManager.findOne.mockResolvedValueOnce(transaction);
 
-      const keys = [{ user: { id: 1 } }] as UserKey[];
+      const keys = [{ userId: 1 }] as UserKey[];
       jest.mocked(keysRequiredToSign).mockResolvedValueOnce(keys);
 
       const users = [{ id: 1, email: 'user@example.com' }];
@@ -92,6 +92,38 @@ describe('Transaction Notifications Service', () => {
 
       await service.notifyTransactionRequiredSigners(dto);
 
+      expect(emailService.notifyEmail).toHaveBeenCalledWith({
+        subject: 'Hedera Transaction Tool | Transaction to sign',
+        email: ['user@example.com'],
+        text: `You have a transaction to sign. Please visit the Hedera Transaction Tool to sign the transaction 0x123.`,
+      });
+    });
+
+    it('should not send email to creator', async () => {
+      const transaction = {
+        id: 1,
+        transactionId: '0x123',
+        creatorKey: {
+          user: { id: 1 },
+        },
+      } as Transaction;
+      entityManager.findOne.mockResolvedValueOnce(transaction);
+
+      const keys = [{ userId: 4 }, { userId: 1 }] as UserKey[];
+      jest.mocked(keysRequiredToSign).mockResolvedValueOnce(keys);
+
+      const users = [{ id: 4, email: 'user@example.com' }];
+      entityManager.find.mockResolvedValueOnce(users);
+
+      const dto: NotifyForTransactionDto = { transactionId: 1 };
+
+      await service.notifyTransactionRequiredSigners(dto);
+
+      expect(entityManager.find).toHaveBeenCalledWith(User, {
+        where: {
+          id: In([4]),
+        },
+      });
       expect(emailService.notifyEmail).toHaveBeenCalledWith({
         subject: 'Hedera Transaction Tool | Transaction to sign',
         email: ['user@example.com'],
