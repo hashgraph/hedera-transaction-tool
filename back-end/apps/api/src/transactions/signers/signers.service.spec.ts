@@ -13,13 +13,12 @@ import {
   isAlreadySigned,
   isExpired,
   validateSignature,
+  userKeysRequiredToSign,
 } from '@app/common/utils';
 
 import { SignersService } from './signers.service';
-import { userKeysRequiredToSign } from '../../utils';
 
 jest.mock('@app/common/utils');
-jest.mock('../../utils');
 
 describe('SignaturesService', () => {
   let service: SignersService;

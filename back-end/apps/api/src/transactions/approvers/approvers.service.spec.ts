@@ -3,11 +3,14 @@ import { ClientProxy } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { mock, mockDeep } from 'jest-mock-extended';
 import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
+import { AccountCreateTransaction } from '@hashgraph/sdk';
 
 import { MirrorNodeService, NOTIFICATIONS_SERVICE, NOTIFY_CLIENT } from '@app/common';
-import { verifyTransactionBodyWithoutNodeAccountIdSignature } from '@app/common/utils';
+import {
+  userKeysRequiredToSign,
+  verifyTransactionBodyWithoutNodeAccountIdSignature,
+} from '@app/common/utils';
 import { TransactionApprover, TransactionStatus, User } from '@entities';
-import { userKeysRequiredToSign } from '../../utils';
 
 import { ApproversService } from './approvers.service';
 import {
@@ -15,9 +18,7 @@ import {
   CreateTransactionApproversArrayDto,
   UpdateTransactionApproverDto,
 } from '../dto';
-import { AccountCreateTransaction } from '@hashgraph/sdk';
 
-jest.mock('../../utils');
 jest.mock('@app/common/utils');
 
 describe('ApproversService', () => {

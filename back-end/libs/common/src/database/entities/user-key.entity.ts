@@ -2,6 +2,7 @@ import {
   Column,
   DeleteDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -17,7 +18,11 @@ export class UserKey {
   id: number;
 
   @ManyToOne(() => User, user => user.keys)
+  @JoinColumn({ name: 'userId' })
   user: User;
+
+  @Column()
+  userId: number;
 
   @Column({ nullable: true })
   mnemonicHash: string;
