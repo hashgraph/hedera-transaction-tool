@@ -3,10 +3,12 @@ import * as crypto from 'crypto';
 import {
   AccountCreateTransaction,
   AccountId,
+  AccountUpdateTransaction,
   Client,
   Key,
   Mnemonic,
   PrivateKey,
+  PublicKey,
   Timestamp,
   Transaction,
   TransactionId,
@@ -118,5 +120,51 @@ export const createAccount = async (payerId: AccountId, payerKey: PrivateKey, ke
     response,
     receipt,
     accountId: receipt.accountId,
+  };
+};
+
+export const updateAccount = async (
+  payerId: AccountId,
+  payerKey: PrivateKey,
+  accountId: AccountId,
+  oldAccountPrivateKey: PrivateKey,
+  options: {
+    newKey?: PublicKey;
+    newKeyPrivateKey?: PrivateKey;
+    memo?: string;
+    declineStakingReward?: boolean;
+    receiverSignatureRequired?: boolean;
+  },
+) => {
+  const client = Client.forLocalNode();
+  client.setOperator(payerId, payerKey);
+
+  const transaction = new AccountUpdateTransaction()
+    .setTransactionId(createTransactionId(payerId))
+    .setAccountId(accountId);
+
+  if (options.newKey && !options.newKeyPrivateKey) {
+    throw new Error('newKeyPrivateKey is required when newKey is provided');
+  }
+
+  options.newKey && transaction.setKey(options.newKey);
+  options.memo && transaction.setAccountMemo(options.memo);
+  options.declineStakingReward !== undefined &&
+    transaction.setDeclineStakingReward(options.declineStakingReward);
+  options.receiverSignatureRequired !== undefined &&
+    transaction.setReceiverSignatureRequired(options.receiverSignatureRequired);
+
+  transaction.freezeWith(client);
+  await transaction.sign(oldAccountPrivateKey);
+  options.newKey && (await transaction.sign(options.newKeyPrivateKey));
+
+  const response = await transaction.execute(client);
+  const receipt = await response.getReceipt(client);
+
+  client.close();
+
+  return {
+    response,
+    receipt,
   };
 };
