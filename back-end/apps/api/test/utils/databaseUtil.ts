@@ -321,9 +321,9 @@ export async function addTransactions() {
     .setTransactionId(createTransactionId(localnet1003.accountId, new Date(Date.now() + 1000)))
     .setKeys(new KeyList([localnet1003.publicKey, localnet1003.publicKey]));
 
-  const transactions = [
+  const userTransactions = [
     transactionRepo.create({
-      name: 'Simple Account Create Transaction',
+      name: '#1 Simple Account Create Transaction',
       description: 'This is a simple account create transaction',
       body: Buffer.from(accountCreate.toBytes()),
       creatorKey: { id: userKey1003.id },
@@ -331,7 +331,7 @@ export async function addTransactions() {
       network: localnet1003.network,
     }),
     transactionRepo.create({
-      name: 'Simple Account Update Transaction',
+      name: '#2 Simple Account Update Transaction',
       description: 'This is a simple account update transaction',
       body: Buffer.from(accountUpdate.toBytes()),
       creatorKey: { id: userKey1004.id },
@@ -339,15 +339,7 @@ export async function addTransactions() {
       network: localnet1004.network,
     }),
     transactionRepo.create({
-      name: 'Simple File Create Transaction',
-      description: 'This is a simple file create transaction',
-      body: Buffer.from(fileCreate.toBytes()),
-      creatorKey: { id: adminKey1002.id },
-      signature: Buffer.from(localnet1002.privateKey.sign(fileCreate.toBytes())),
-      network: localnet1002.network,
-    }),
-    transactionRepo.create({
-      name: 'Second simple File Create Transaction',
+      name: '#4 Second simple File Create Transaction',
       description: 'This is a second simple file create transaction',
       body: Buffer.from(fileCreate2.toBytes()),
       creatorKey: { id: userKey1003.id },
@@ -356,9 +348,20 @@ export async function addTransactions() {
     }),
   ];
 
+  const adminTransactions = [
+    transactionRepo.create({
+      name: '#3 Simple File Create Transaction',
+      description: 'This is a simple file create transaction',
+      body: Buffer.from(fileCreate.toBytes()),
+      creatorKey: { id: adminKey1002.id },
+      signature: Buffer.from(localnet1002.privateKey.sign(fileCreate.toBytes())),
+      network: localnet1002.network,
+    }),
+  ];
+
   const client = Client.forLocalNode();
 
-  for (const transaction of transactions) {
+  for (const transaction of userTransactions.concat(adminTransactions)) {
     const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
     sdkTransaction.freezeWith(client);
 
@@ -381,6 +384,12 @@ export async function addTransactions() {
   client.close();
 
   console.log(chalk.green('Transactions added successfully \n'));
+
+  return {
+    userTransactions,
+    adminTransactions,
+    total: userTransactions.length + adminTransactions.length,
+  };
 }
 
 export async function getTransactions() {
