@@ -12,6 +12,7 @@ import {
   AccountUpdateTransaction,
   FileAppendTransaction,
   FileUpdateTransaction,
+  KeyList,
   PublicKey,
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
@@ -46,12 +47,14 @@ import {
   TRANSACTION_ACTION,
   NotifyClientDto,
   parseAccountProperty,
+  flattenKeyList,
 } from '@app/common';
 
 import { UserDto } from '../users/dtos';
 import { CreateTransactionDto } from './dto';
 
 import { ApproversService } from './approvers';
+import { UserKeysService } from '../user-keys/user-keys.service';
 import { userKeysRequiredToSign } from '../utils';
 
 @Injectable()
@@ -61,6 +64,7 @@ export class TransactionsService {
     @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
     private readonly approversService: ApproversService,
     private readonly mirrorNodeService: MirrorNodeService,
+    private readonly userkeysService: UserKeysService,
     @InjectEntityManager() private entityManager: EntityManager,
   ) {}
 
@@ -391,22 +395,30 @@ export class TransactionsService {
 
     /* Check if the transaction is requiring signatures */
     if (sdkTransaction instanceof AccountUpdateTransaction) {
-      /* Call mirror node to get signers */
+      /* Call mirror node to get current signers */
       const accountInfo = await this.mirrorNodeService.getAccountInfo(
         sdkTransaction.accountId.toString(),
         dto.network,
       );
 
-      const keys = parseAccountProperty(accountInfo, 'key');
-      console.log('keys', keys);
+      const currentKey = parseAccountProperty(accountInfo, 'key');
 
-      /* Get new keys with signers */
+      /* Get new signers from transaction */
+      const newKey = sdkTransaction.key;
+
+      const allKeys = flattenKeyList(new KeyList([currentKey, newKey])).map(k => k.toStringRaw());
+
+      /* Get users by keys */
+      const users = await this.userkeysService.getUsersByKeys(allKeys);
 
       /* Get signers email addresses */
-
       /* Filter signers if needed based on notifications settings and duplicates */
+      const signersEmails = users.reduce((acc, user) => {
+        if (user.email && !acc.includes(user.email)) acc.push(user.email);
+        return acc;
+      }, []);
 
-      const signersEmails = [];
+      console.log('signersEmails', signersEmails);
 
       if (signersEmails.length > 0) {
         this.notificationsService.emit('notify_transaction_members', {
