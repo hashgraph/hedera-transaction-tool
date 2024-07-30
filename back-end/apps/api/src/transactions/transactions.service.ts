@@ -552,6 +552,8 @@ export class TransactionsService {
       s => !allowedStatuses.includes(s),
     );
 
+    if (!filtering || filtering.length === 0) return Not(In([...forbiddenStatuses]));
+
     const statusFilter = filtering.find(f => f.property === 'status');
 
     if (!statusFilter) return Not(In([...forbiddenStatuses]));
