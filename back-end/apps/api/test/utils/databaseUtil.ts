@@ -35,13 +35,19 @@ import {
 } from './constants';
 
 export async function createUser(
-  dataSource: DataSource,
   email: string = 'admin@test.com',
   password: string = '1234567890',
+  dataSource?: DataSource,
   admin: boolean = false,
   status: UserStatus = UserStatus.NONE,
 ) {
   verifyEnv();
+
+  const hasInitialDataSource = Boolean(dataSource);
+
+  if (!dataSource) {
+    dataSource = await connectDatabase();
+  }
 
   const userRepo = dataSource.getRepository(User);
 
@@ -60,6 +66,10 @@ export async function createUser(
     return await userRepo.save(user);
   } catch (error) {
     console.log(chalk.red(error.message));
+  }
+
+  if (!hasInitialDataSource) {
+    await dataSource.destroy();
   }
 }
 
@@ -95,12 +105,12 @@ export async function addUsers(dataSource?: DataSource) {
     dataSource = await connectDatabase();
   }
 
-  const admin = await createUser(dataSource, adminEmail, adminPassword, true);
-  const user = await createUser(dataSource, dummyEmail, dummyPassword, false);
+  const admin = await createUser(adminEmail, adminPassword, dataSource, true);
+  const user = await createUser(dummyEmail, dummyPassword, dataSource, false);
   const userNew = await createUser(
-    dataSource,
     dummyNewEmail,
     dummyNewPassword,
+    dataSource,
     false,
     UserStatus.NEW,
   );
