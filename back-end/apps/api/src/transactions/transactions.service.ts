@@ -44,7 +44,7 @@ import {
   PaginatedResourceDto,
   TRANSACTION_ACTION,
   NotifyClientDto,
-  NOTIFY_TRANSACTION_SIGNERS,
+  NOTIFY_TRANSACTION_REQUIRED_SIGNERS,
   NotifyForTransactionDto,
   userKeysRequiredToSign,
 } from '@app/common';
@@ -389,9 +389,12 @@ export class TransactionsService {
       throw new BadRequestException('Failed to save transaction');
     }
 
-    this.notificationsService.emit<undefined, NotifyForTransactionDto>(NOTIFY_TRANSACTION_SIGNERS, {
-      transactionId: transaction.id,
-    });
+    this.notificationsService.emit<undefined, NotifyForTransactionDto>(
+      NOTIFY_TRANSACTION_REQUIRED_SIGNERS,
+      {
+        transactionId: transaction.id,
+      },
+    );
 
     this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
       message: TRANSACTION_ACTION,

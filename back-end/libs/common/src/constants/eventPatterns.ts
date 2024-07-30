@@ -6,4 +6,4 @@ export const GET_PORT = 'get_port';
 export const NOTIFY_EMAIL = 'notify_email';
 
 /* Transaction patterns */
-export const NOTIFY_TRANSACTION_SIGNERS = 'notify_transaction_signers';
+export const NOTIFY_TRANSACTION_REQUIRED_SIGNERS = 'notify_transaction_rqeuired_signers';
