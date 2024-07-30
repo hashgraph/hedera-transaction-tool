@@ -15,3 +15,4 @@ export const dummy = {
 };
 
 export const validEmail = 'peter@test.com';
+export const invalidEmail = 'petc0q34.fsv.erw@taf135.`s.weest.com';
