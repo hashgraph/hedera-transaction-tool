@@ -19,11 +19,11 @@ const chainServiceContainerName = 'Chain_Service';
 export default async function globalSetup() {
   /* Stops the containers if they are already running */
   await Promise.allSettled([
-    stopContainersByName('Redis'),
-    stopContainersByName('Postgres'),
-    stopContainersByName('RabbitMQ'),
-    stopContainersByName('Notifications_Service'),
-    stopContainersByName('Chain_Service'),
+    deleteContainersByName('Redis'),
+    deleteContainersByName('Postgres'),
+    deleteContainersByName('RabbitMQ'),
+    deleteContainersByName('Notifications_Service'),
+    deleteContainersByName('Chain_Service'),
   ]);
 
   /* Starts the Redis, Postgres, RabbitMQ containers */
@@ -154,7 +154,7 @@ function getGetawayFromTestContainer(container: StartedTestContainer) {
   return container.startedTestContainer.inspectResult.NetworkSettings.Gateway;
 }
 
-async function stopContainersByName(containerName) {
+async function deleteContainersByName(containerName) {
   const execPromise = util.promisify(exec);
 
   const { stdout } = await execPromise(
@@ -172,8 +172,10 @@ async function stopContainersByName(containerName) {
     try {
       await execPromise(`docker stop ${id}`);
       console.log(`Stopped container ${id}`);
+      await execPromise(`docker rm ${id}`);
+      console.log(`Deleted container ${id}`);
     } catch (error) {
-      console.error(`Error stopping container ${id}: ${error}`);
+      console.error(`Error deleting container ${id}: ${error}`);
     }
   }
 }
