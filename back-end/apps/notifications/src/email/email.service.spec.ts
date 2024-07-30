@@ -4,12 +4,13 @@ import { mockDeep } from 'jest-mock-extended';
 import { createTransport, Transporter } from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
 
+import { NotifyEmailDto } from '@app/common';
+
 import { EmailService } from './email.service';
-import { NotifyEmailDto } from './dtos';
 
 jest.mock('nodemailer');
 
-describe('ExecuteService', () => {
+describe('Email Service', () => {
   let service: EmailService;
   const transport = {
     sendMail: jest.fn(),
@@ -59,13 +60,5 @@ describe('ExecuteService', () => {
         text: dto.text,
       }),
     );
-  });
-
-  it('should notify transaction members', async () => {
-    jest.spyOn(console, 'log');
-
-    await service.notifyTransactionMembers({});
-
-    expect(console.log).toHaveBeenCalledWith('Notifying transaction members...');
   });
 });
