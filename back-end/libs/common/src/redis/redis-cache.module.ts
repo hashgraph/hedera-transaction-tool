@@ -1,6 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Inject, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { CacheModule } from '@nestjs/cache-manager';
+import { CacheModule, CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 
 import * as redisStore from 'cache-manager-redis-store';
 
@@ -17,4 +17,12 @@ import * as redisStore from 'cache-manager-redis-store';
     }),
   ],
 })
-export class RedisCacheModule {}
+export class RedisCacheModule {
+  constructor(@Inject(CACHE_MANAGER) private cache: Cache) {}
+
+  onModuleDestroy() {
+    // @ts-expect-error getClient is not visible
+    const client = this.cache.store.getClient();
+    client.quit();
+  }
+}
