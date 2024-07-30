@@ -22,11 +22,13 @@ export class MirrorNodeService {
 
   /* Get the account inforamtion for accountId */
   async getAccountInfo(accountId: string, network: Network): Promise<AccountInfo> {
+    const env = this.configService.get<string>('NODE_ENV');
+
     const cachedData = await this.cacheService.get<AccountInfo>(
       this.getCacheKey(accountId, network),
     );
 
-    if (cachedData) return cachedData;
+    if (cachedData && env !== 'test') return cachedData;
 
     const { data } = await this.httpService.axiosRef.get<AccountInfo>(
       `${this.getMirrorNodeBaseURL(network)}/accounts/${accountId}`,
