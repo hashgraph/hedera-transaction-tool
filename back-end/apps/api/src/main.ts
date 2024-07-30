@@ -5,30 +5,15 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
 import { NestApplicationOptions } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-
-import { version } from '../package.json';
 
 import { ApiModule } from './api.module';
-import { setupApp } from './setup-app';
+import { setupApp, setupSwagger } from './setup-app';
 
 async function bootstrap() {
   const app: NestExpressApplication = await createApp();
 
   setupApp(app);
-
-  const config = new DocumentBuilder()
-    .setTitle('Hedera Transaction Tool Backend API')
-    .setDescription(
-      'The Backend API module is used for authorization, authentication, pulling and saving transaction data.',
-    )
-    .setVersion(version)
-    // .addServer('http://localhost:3000/', 'Local environment')
-    // .addServer('https://staging.yourapi.com/', 'Staging')
-    // .addServer('https://production.yourapi.com/', 'Production')
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api-docs', app, document);
+  setupSwagger(app);
 
   const configService = app.get(ConfigService);
 

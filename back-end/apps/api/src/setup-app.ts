@@ -2,9 +2,12 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Transport } from '@nestjs/microservices';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
 
 import * as cookieParser from 'cookie-parser';
+
+import { version } from '../package.json';
 
 import { API_SERVICE } from '@app/common';
 
@@ -52,4 +55,19 @@ function connectMicroservices(app: NestExpressApplication) {
       queue: API_SERVICE,
     },
   });
+}
+
+export function setupSwagger(app: NestExpressApplication) {
+  const config = new DocumentBuilder()
+    .setTitle('Hedera Transaction Tool Backend API')
+    .setDescription(
+      'The Backend API module is used for authorization, authentication, pulling and saving transaction data.',
+    )
+    .setVersion(version)
+    // .addServer('http://localhost:3000/', 'Local environment')
+    // .addServer('https://staging.yourapi.com/', 'Staging')
+    // .addServer('https://production.yourapi.com/', 'Production')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api-docs', app, document);
 }
