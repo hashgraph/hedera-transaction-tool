@@ -1,6 +1,6 @@
 import { KeyList, Key, PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
-import { EntityManager } from 'typeorm';
+import { EntityManager, In, Not } from 'typeorm';
 
 import {
   isExpired,
@@ -11,11 +11,11 @@ import {
 } from '@app/common';
 import { User, Transaction, UserKey, TransactionSigner } from '@entities';
 
-export const userKeysRequiredToSign = async (
+export const keysRequiredToSign = async (
   transaction: Transaction,
-  user: User,
   mirrorNodeService: MirrorNodeService,
   entityManager: EntityManager,
+  userKeys?: UserKey[],
 ): Promise<number[]> => {
   const userKeyIdsRequired: Set<number> = new Set<number>();
 
@@ -23,20 +23,17 @@ export const userKeysRequiredToSign = async (
     return [];
   }
 
-  /* Ensures the user keys are passed */
-  if (user.keys.length === 0) {
-    user.keys = await entityManager.find(UserKey, { where: { user: { id: user.id } } });
-    if (user.keys.length === 0) return [];
-  }
+  /* Deserialize the transaction */
+  const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
 
-  /* Gets the user signatures for this transaction */
+  /* Ignore if expired */
+  if (isExpired(sdkTransaction)) return [];
+
+  /* Get the user signatures for this transaction */
   const signatures = await entityManager.find(TransactionSigner, {
     where: {
       transaction: {
         id: transaction.id,
-      },
-      user: {
-        id: user.id,
       },
     },
     relations: {
@@ -45,17 +42,23 @@ export const userKeysRequiredToSign = async (
     withDeleted: true,
   });
 
-  /* Deserialize the transaction */
-  const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
+  /* Signer keys */
+  const signerKeys = signatures.map(s => s.userKey);
 
-  /* Ignore if expired */
-  if (isExpired(sdkTransaction)) return [];
+  /* Get all keys */
+  if (!userKeys) {
+    userKeys = await entityManager.find(UserKey, {
+      where: {
+        id: Not(In(signerKeys.map(k => k.id))),
+      },
+    });
+  }
 
   /* Get signature entities */
   const { newKeys, accounts, receiverAccounts } = getSignatureEntities(sdkTransaction);
 
   /* Check if the user has a key that is required to sign */
-  const userKeysIncludedInTransaction = user.keys.filter(
+  const userKeysIncludedInTransaction = userKeys.filter(
     userKey =>
       newKeys.some(key =>
         isPublicKeyInKeyList(userKey.publicKey, key instanceof KeyList ? key : new KeyList([key])),
@@ -65,13 +68,13 @@ export const userKeysRequiredToSign = async (
 
   const userKeyInKeyOrIsKey = (key: Key) =>
     (key instanceof PublicKey &&
-      user.keys.filter(
+      userKeys.filter(
         userKey =>
           userKey.publicKey === key.toStringRaw() &&
           !signatures.some(s => s.userKey.publicKey === userKey.publicKey),
       )) ||
     (key instanceof KeyList &&
-      user.keys.filter(
+      userKeys.filter(
         userKey =>
           isPublicKeyInKeyList(userKey.publicKey, key) &&
           !signatures.some(s => s.userKey.publicKey === userKey.publicKey),
@@ -99,4 +102,19 @@ export const userKeysRequiredToSign = async (
   }
 
   return [...userKeyIdsRequired];
+};
+
+export const userKeysRequiredToSign = async (
+  transaction: Transaction,
+  user: User,
+  mirrorNodeService: MirrorNodeService,
+  entityManager: EntityManager,
+): Promise<number[]> => {
+  /* Ensures the user keys are passed */
+  if (!user.keys || user.keys.length === 0) {
+    user.keys = await entityManager.find(UserKey, { where: { user: { id: user.id } } });
+    if (user.keys.length === 0) return [];
+  }
+
+  return keysRequiredToSign(transaction, mirrorNodeService, entityManager, user.keys);
 };
