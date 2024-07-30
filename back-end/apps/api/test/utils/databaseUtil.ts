@@ -18,13 +18,21 @@ import {
 
 import { generatePrivateKey } from './hederaUtils';
 
-import { adminEmail, adminPassword, dummyEmail, dummyPassword } from './constants';
+import {
+  adminEmail,
+  adminPassword,
+  dummyEmail,
+  dummyNewEmail,
+  dummyNewPassword,
+  dummyPassword,
+} from './constants';
 
 export async function createUser(
   dataSource: DataSource,
   email: string = 'admin@test.com',
   password: string = '1234567890',
   admin: boolean = false,
+  status: UserStatus = UserStatus.NONE,
 ) {
   verifyEnv();
 
@@ -34,7 +42,7 @@ export async function createUser(
   const user = userRepo.create({
     email,
     admin,
-    status: UserStatus.NONE,
+    status: status,
     password,
   });
 
@@ -78,6 +86,13 @@ export async function addUsers() {
 
   const admin = await createUser(dataSource, adminEmail, adminPassword, true);
   const user = await createUser(dataSource, dummyEmail, dummyPassword, false);
+  const userNew = await createUser(
+    dataSource,
+    dummyNewEmail,
+    dummyNewPassword,
+    false,
+    UserStatus.NEW,
+  );
 
   const { publicKeyRaw, mnemonicHash, index } = await generatePrivateKey();
   const {
@@ -86,7 +101,7 @@ export async function addUsers() {
     index: index1,
   } = await generatePrivateKey();
 
-  if (!admin || !user) {
+  if (!admin || !user || !userNew) {
     console.log(chalk.red('Failed to add users'));
     return;
   }
@@ -108,6 +123,7 @@ export async function addUsers() {
   console.log(chalk.green('Users added successfully \n'));
   console.log(`Id: ${admin.id}, Admin: ${admin.email}, ${adminPassword}, ${publicKeyRaw}`);
   console.log(`Id: ${user.id}, User: ${user.email}, ${dummyPassword}, ${publicKeyRaw1} \n`);
+  console.log(`Id: ${userNew.id}, User: ${userNew.email}, ${dummyNewPassword} \n`);
 }
 
 export async function resetUsersPassword() {
@@ -119,21 +135,25 @@ export async function resetUsersPassword() {
     const admin = await userRepo.findOne({
       where: { email: adminEmail },
     });
-    const user = await userRepo.findOne({ where: { email: adminEmail } });
+    const user = await userRepo.findOne({ where: { email: dummyEmail } });
+    const userNew = await userRepo.findOne({ where: { email: dummyNewEmail } });
 
-    if (!admin || !user) {
+    if (!admin || !user || !userNew) {
       console.log(chalk.red('Failed to reset users password'));
       return;
     }
 
     const hashAdmin = bcrypt.hashSync(adminPassword);
     const hashUser = bcrypt.hashSync(dummyPassword);
+    const hashUserNew = bcrypt.hashSync(dummyNewPassword);
 
     admin.password = hashAdmin;
     user.password = hashUser;
+    userNew.password = hashUserNew;
 
     await userRepo.save(admin);
     await userRepo.save(user);
+    await userRepo.save(userNew);
 
     console.log(chalk.green('Users password reset successfully \n'));
   } catch (error) {
