@@ -1,4 +1,6 @@
 /* eslint-disable no-var */
+import { exec } from 'child_process';
+import * as util from 'util';
 import * as path from 'path';
 
 import { GenericContainer, StartedTestContainer } from 'testcontainers';
@@ -8,7 +10,22 @@ import { RabbitMQContainer } from '@testcontainers/rabbitmq';
 
 import { addUsers } from './utils/databaseUtil';
 
+const redisContainerName = 'Redis';
+const postgresContainerName = 'Postgres';
+const rabbitMQContainerName = 'RabbitMQ';
+const notificationsServiceContainerName = 'Notifications_Service';
+const chainServiceContainerName = 'Chain_Service';
+
 export default async function globalSetup() {
+  /* Stops the containers if they are already running */
+  await Promise.allSettled([
+    stopContainersByName('Redis'),
+    stopContainersByName('Postgres'),
+    stopContainersByName('RabbitMQ'),
+    stopContainersByName('Notifications_Service'),
+    stopContainersByName('Chain_Service'),
+  ]);
+
   /* Starts the Redis, Postgres, RabbitMQ containers */
   await Promise.all([startRedis(), startPostgres(), startRabbitMQ()]);
 
@@ -23,11 +40,11 @@ export default async function globalSetup() {
 
 async function startRedis() {
   /* For more information visit: https://node.testcontainers.org/modules/redis/ */
-  const containerName = 'Redis';
-
-  console.log(`Starting ${containerName} container...`);
-  global.REDIS_CONTAINER = await new RedisContainer().withName(containerName).start();
-  console.log(`${containerName} container started at ${global.REDIS_CONTAINER.getConnectionUrl()}`);
+  console.log(`Starting ${redisContainerName} container...`);
+  global.REDIS_CONTAINER = await new RedisContainer().withName(redisContainerName).start();
+  console.log(
+    `${redisContainerName} container started at ${global.REDIS_CONTAINER.getConnectionUrl()}`,
+  );
 
   process.env.REDIS_GETAWAY = getGetawayFromTestContainer(global.REDIS_CONTAINER);
   process.env.REDIS_URL = global.REDIS_CONTAINER.getConnectionUrl();
@@ -35,12 +52,12 @@ async function startRedis() {
 
 async function startPostgres() {
   /* For more information visit: https://node.testcontainers.org/modules/postgresql/ */
-  const containerName = 'Postgres';
-
-  console.log(`Starting ${containerName} container...`);
-  global.POSTGRES_CONTAINER = await new PostgreSqlContainer().withName(`${containerName}`).start();
+  console.log(`Starting ${postgresContainerName} container...`);
+  global.POSTGRES_CONTAINER = await new PostgreSqlContainer()
+    .withName(`${postgresContainerName}`)
+    .start();
   console.log(
-    `${containerName} container started at ${global.POSTGRES_CONTAINER.getConnectionUri()}`,
+    `${postgresContainerName} container started at ${global.POSTGRES_CONTAINER.getConnectionUri()}`,
   );
 
   process.env.POSTGRES_GETAWAY = getGetawayFromTestContainer(global.POSTGRES_CONTAINER);
@@ -53,20 +70,18 @@ async function startPostgres() {
 
 async function startRabbitMQ() {
   /* For more information visit: https://node.testcontainers.org/modules/rabbitmq/ */
-  const containerName = 'RabbitMQ';
-
-  console.log(`Starting ${containerName} container...`);
-  global.RABBITMQ_CONTAINER = await new RabbitMQContainer().withName(containerName).start();
-  console.log(`${containerName} container started at ${global.RABBITMQ_CONTAINER.getAmqpUrl()}`);
+  console.log(`Starting ${rabbitMQContainerName} container...`);
+  global.RABBITMQ_CONTAINER = await new RabbitMQContainer().withName(rabbitMQContainerName).start();
+  console.log(
+    `${rabbitMQContainerName} container started at ${global.RABBITMQ_CONTAINER.getAmqpUrl()}`,
+  );
 
   process.env.RABBITMQ_GATEWAY = getGetawayFromTestContainer(global.RABBITMQ_CONTAINER);
   process.env.RABBITMQ_URI = global.RABBITMQ_CONTAINER.getAmqpUrl();
 }
 
 async function startNotificationsService() {
-  const containerName = 'Notifications_Service';
-
-  console.log(`Starting ${containerName} container...`);
+  console.log(`Starting ${notificationsServiceContainerName} container...`);
 
   const container = await GenericContainer.fromDockerfile(
     path.join(__dirname, '../../../'),
@@ -76,7 +91,7 @@ async function startNotificationsService() {
     .build();
 
   const startedContainer = await container
-    .withName(containerName)
+    .withName(notificationsServiceContainerName)
     .withCommand(['npm', 'run', 'start:dev', 'notifications'])
     .withEnvironment({
       HTTP_PORT: '3020',
@@ -94,16 +109,14 @@ async function startNotificationsService() {
   global.NOTIFICATIONS_SERVICE_CONTAINER = startedContainer;
 
   console.log(
-    `${containerName} container started at ${global.NOTIFICATIONS_SERVICE_CONTAINER.getHost()}:${startedContainer.getMappedPort(3020)}`,
+    `${notificationsServiceContainerName} container started at ${global.NOTIFICATIONS_SERVICE_CONTAINER.getHost()}:${startedContainer.getMappedPort(3020)}`,
   );
 
   process.env.NOTIFICATIONS_SERVICE_URL = `http://${global.NOTIFICATIONS_SERVICE_CONTAINER.getHost()}:${startedContainer.getMappedPort(3020)}`;
 }
 
 async function startChainService() {
-  const containerName = 'Chain_Service';
-
-  console.log(`Starting ${containerName} container...`);
+  console.log(`Starting ${chainServiceContainerName} container...`);
 
   const container = await GenericContainer.fromDockerfile(
     path.join(__dirname, '../../../'),
@@ -130,7 +143,7 @@ async function startChainService() {
   global.CHAIN_SERVICE_CONTAINER = startedContainer;
 
   console.log(
-    `${containerName} container started at ${global.CHAIN_SERVICE_CONTAINER.getHost()}:${startedContainer.getMappedPort(3020)}`,
+    `${chainServiceContainerName} container started at ${global.CHAIN_SERVICE_CONTAINER.getHost()}:${startedContainer.getMappedPort(3020)}`,
   );
 
   process.env.CHAIN_SERVICE_URL = `http://${global.CHAIN_SERVICE_CONTAINER.getHost()}:${startedContainer.getMappedPort(3020)}`;
@@ -139,4 +152,28 @@ async function startChainService() {
 function getGetawayFromTestContainer(container: StartedTestContainer) {
   //@ts-expect-error - startedTestContainer is protected
   return container.startedTestContainer.inspectResult.NetworkSettings.Gateway;
+}
+
+async function stopContainersByName(containerName) {
+  const execPromise = util.promisify(exec);
+
+  const { stdout } = await execPromise(
+    `docker ps --filter "name=${containerName}" --format "{{.ID}}"`,
+  );
+
+  const containerIds = stdout.split('\n').filter(id => id);
+
+  if (containerIds.length === 0) {
+    console.log('No containers found with the specified name.');
+    return;
+  }
+
+  for (const id of containerIds) {
+    try {
+      await execPromise(`docker stop ${id}`);
+      console.log(`Stopped container ${id}`);
+    } catch (error) {
+      console.error(`Error stopping container ${id}: ${error}`);
+    }
+  }
 }
