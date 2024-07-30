@@ -1,13 +1,14 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString, ValidateIf } from 'class-validator';
 
 export class UploadUserKeyDto {
-  @IsOptional()
+  @ValidateIf(val => val.index)
   @IsString()
   @IsNotEmpty()
   mnemonicHash?: string;
 
-  @IsOptional()
+  @ValidateIf(val => val.mnemonicHash)
   @IsNumber()
+  @IsNotEmpty()
   index?: number;
 
   @IsString()
