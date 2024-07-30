@@ -9,10 +9,8 @@ import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 
 import {
-  AccountUpdateTransaction,
   FileAppendTransaction,
   FileUpdateTransaction,
-  KeyList,
   PublicKey,
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
@@ -46,16 +44,15 @@ import {
   PaginatedResourceDto,
   TRANSACTION_ACTION,
   NotifyClientDto,
-  parseAccountProperty,
-  flattenKeyList,
+  NOTIFY_TRANSACTION_SIGNERS,
+  NotifyForTransactionDto,
+  userKeysRequiredToSign,
 } from '@app/common';
 
 import { UserDto } from '../users/dtos';
 import { CreateTransactionDto } from './dto';
 
 import { ApproversService } from './approvers';
-import { UserKeysService } from '../user-keys/user-keys.service';
-import { userKeysRequiredToSign } from '../utils';
 
 @Injectable()
 export class TransactionsService {
@@ -64,7 +61,6 @@ export class TransactionsService {
     @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
     private readonly approversService: ApproversService,
     private readonly mirrorNodeService: MirrorNodeService,
-    private readonly userkeysService: UserKeysService,
     @InjectEntityManager() private entityManager: EntityManager,
   ) {}
 
@@ -393,39 +389,9 @@ export class TransactionsService {
       throw new BadRequestException('Failed to save transaction');
     }
 
-    /* Check if the transaction is requiring signatures */
-    if (sdkTransaction instanceof AccountUpdateTransaction) {
-      /* Call mirror node to get current signers */
-      const accountInfo = await this.mirrorNodeService.getAccountInfo(
-        sdkTransaction.accountId.toString(),
-        dto.network,
-      );
-
-      const currentKey = parseAccountProperty(accountInfo, 'key');
-
-      /* Get new signers from transaction */
-      const newKey = sdkTransaction.key;
-
-      const allKeys = flattenKeyList(new KeyList([currentKey, newKey])).map(k => k.toStringRaw());
-
-      /* Get users by keys */
-      const users = await this.userkeysService.getUsersByKeys(allKeys);
-
-      /* Get signers email addresses */
-      /* Filter signers if needed based on notifications settings and duplicates */
-      const signersEmails = users.reduce((acc, user) => {
-        if (user.email && !acc.includes(user.email)) acc.push(user.email);
-        return acc;
-      }, []);
-
-      if (signersEmails.length > 0) {
-        this.notificationsService.emit('notify_transaction_members', {
-          subject: 'Hedera Transaction Tool | Transaction to sign',
-          emails: signersEmails,
-          text: `You have a transaction to sign. Please visit the Hedera Transaction Tool to sign the transaction ${transaction.id}.`,
-        });
-      }
-    }
+    this.notificationsService.emit<undefined, NotifyForTransactionDto>(NOTIFY_TRANSACTION_SIGNERS, {
+      transactionId: transaction.id,
+    });
 
     this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
       message: TRANSACTION_ACTION,
@@ -549,11 +515,6 @@ export class TransactionsService {
     );
   }
 
-  /* Get the user keys that are required for a given transaction */
-  userKeysToSign(transaction: Transaction, user: User) {
-    return userKeysRequiredToSign(transaction, user, this.mirrorNodeService, this.entityManager);
-  }
-
   /* Check whether the user should approve the transaction */
   async shouldApproveTransaction(transactionId: number, user: User) {
     /* Get all the approvers */
@@ -569,6 +530,15 @@ export class TransactionsService {
     return !userApprovers.every(a => a.signature);
   }
 
+  /* Get the user keys that are required for a given transaction */
+  userKeysToSign(transaction: Transaction, user: User) {
+    return userKeysRequiredToSign(transaction, user, this.mirrorNodeService, this.entityManager);
+  }
+
+  /* Notify transaction signers */
+  private;
+
+  /* Get the status where clause for the history transactions */
   private getHistoryStatusWhere(
     filtering: Filtering[],
   ): TransactionStatus | FindOperator<TransactionStatus> {

@@ -2,7 +2,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 import { mock, mockDeep } from 'jest-mock-extended';
-import { Brackets, EntityManager, In, Not, Repository, SelectQueryBuilder } from 'typeorm';
+import {
+  Brackets,
+  DeepPartial,
+  EntityManager,
+  In,
+  Not,
+  Repository,
+  SelectQueryBuilder,
+} from 'typeorm';
 import {
   AccountCreateTransaction,
   AccountId,
@@ -13,8 +21,13 @@ import {
   FileUpdateTransaction,
 } from '@hashgraph/sdk';
 
-import { NOTIFICATIONS_SERVICE, MirrorNodeService, NOTIFY_CLIENT } from '@app/common';
-import { getClientFromName, isExpired } from '@app/common/utils';
+import {
+  NOTIFICATIONS_SERVICE,
+  MirrorNodeService,
+  NOTIFY_CLIENT,
+  NOTIFY_TRANSACTION_SIGNERS,
+} from '@app/common';
+import { getClientFromName, isExpired, userKeysRequiredToSign } from '@app/common/utils';
 import {
   Network,
   Transaction,
@@ -28,10 +41,8 @@ import {
 import { TransactionsService } from './transactions.service';
 import { ApproversService } from './approvers';
 import { CreateTransactionDto } from './dto';
-import { userKeysRequiredToSign } from '../utils';
 
 jest.mock('@app/common/utils');
-jest.mock('../utils');
 
 describe('TransactionsService', () => {
   let service: TransactionsService;
@@ -328,15 +339,20 @@ describe('TransactionsService', () => {
     jest.mocked(isExpired).mockReturnValueOnce(false);
     transactionsRepo.count.mockResolvedValueOnce(0);
     jest.mocked(getClientFromName).mockReturnValueOnce(client);
+    transactionsRepo.create.mockImplementationOnce(
+      (input: DeepPartial<Transaction>) => ({ ...input }) as Transaction,
+    );
+    transactionsRepo.save.mockImplementationOnce(async (t: Transaction) => {
+      t.id = 1;
+      return t;
+    });
 
     await service.createTransaction(dto, user as User);
 
     expect(transactionsRepo.save).toHaveBeenCalled();
-    expect(notificationsService.emit).toHaveBeenNthCalledWith(
-      1,
-      'notify_transaction_members',
-      undefined,
-    );
+    expect(notificationsService.emit).toHaveBeenNthCalledWith(1, NOTIFY_TRANSACTION_SIGNERS, {
+      transactionId: 1,
+    });
     expect(notificationsService.emit).toHaveBeenNthCalledWith(2, NOTIFY_CLIENT, expect.anything());
 
     client.close();
