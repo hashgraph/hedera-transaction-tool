@@ -86,6 +86,8 @@ A testing containers for `Postgres`, `Redis`, `RabbitMQ` and `Hedera Localnet` w
 
 Things to notice:
 
+- Note that you should not have the back-end running, stop it!
+
 - Note that after running the tests you may receive an error when starting the back-end with `docker compose`. This problem is mitigated by recreating the back-end containers, to do so start the back-end with the `--force-recreate` flag:
 
 ```bash
