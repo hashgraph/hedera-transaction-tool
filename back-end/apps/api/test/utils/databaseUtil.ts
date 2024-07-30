@@ -118,7 +118,7 @@ export async function addUsers() {
     index: index1,
   });
 
-  dataSource.destroy();
+  await dataSource.destroy();
 
   console.log(chalk.green('Users added successfully \n'));
   console.log(`Id: ${admin.id}, Admin: ${admin.email}, ${adminPassword}, ${publicKeyRaw}`);
@@ -160,7 +160,21 @@ export async function resetUsersPassword() {
     console.log(chalk.red(error.message));
   }
 
-  dataSource.destroy();
+  await dataSource.destroy();
+}
+
+export async function getUsers() {
+  const dataSource = await connectDatabase();
+
+  const userRepo = dataSource.getRepository(User);
+
+  try {
+    const users = await userRepo.find();
+    await dataSource.destroy();
+    return users;
+  } catch (error) {
+    console.log(chalk.red(error.message));
+  }
 }
 
 function verifyEnv() {
