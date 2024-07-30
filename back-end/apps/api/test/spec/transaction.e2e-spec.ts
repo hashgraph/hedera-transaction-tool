@@ -440,4 +440,45 @@ describe('Transactions (e2e)', () => {
       expect(body.totalItems).toEqual(0);
     });
   });
+
+  describe('/transactions/sign', () => {
+    let endpoint: Endpoint;
+
+    beforeEach(() => {
+      endpoint = new Endpoint(server, '/transactions/sign');
+    });
+
+    it('(GET) should get all transactions to sign', async () => {
+      /* User has created 3 transactions that need his signatures */
+      const { status, body } = await endpoint.get(null, userAuthCookie, 'page=1&size=99');
+
+      /* Admin has created 1 transaction that needs his signature, but one of the user created transaction requires admin's key signature */
+      const { status: status2, body: body2 } = await endpoint.get(
+        null,
+        adminAuthCookie,
+        'page=1&size=99',
+      );
+
+      expect(status).toEqual(200);
+      expect(body.totalItems).toEqual(3);
+
+      expect(status2).toEqual(200);
+      expect(body2.totalItems).toEqual(2);
+    });
+
+    it('(GET) should get paginated transactions', async () => {
+      const { status, body } = await endpoint.get(null, userAuthCookie, 'page=1&size=2');
+
+      expect(status).toEqual(200);
+      expect(body.items.length).toEqual(2);
+    });
+
+    it('(GET) should not get transactions to sign if not verified', async () => {
+      await endpoint.get(null, userNewAuthCookie, 'page=1&size=99').expect(403);
+    });
+
+    it('(GET) should not get transactions to sign if not logged in', async () => {
+      await endpoint.get(null, null).expect(401);
+    });
+  });
 });
