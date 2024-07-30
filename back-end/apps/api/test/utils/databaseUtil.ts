@@ -1,12 +1,14 @@
 import * as chalk from 'chalk';
 import * as bcrypt from 'bcryptjs';
 
-import { DataSource, DeepPartial } from 'typeorm';
+import { DataSource, DeepPartial, EntityTarget, ObjectLiteral } from 'typeorm';
 import {
   AccountCreateTransaction,
   AccountUpdateTransaction,
+  Client,
   FileCreateTransaction,
   KeyList,
+  Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
 import {
@@ -20,11 +22,13 @@ import {
   TransactionGroupItem,
   TransactionGroup,
   UserStatus,
+  TransactionStatus,
 } from '../../../../libs/common/src/database/entities';
 
 import {
   createTransactionId,
   generatePrivateKey,
+  getTransactionTypeEnumValue,
   localnet1002,
   localnet1003,
   localnet1004,
@@ -41,24 +45,36 @@ import {
   dummyPassword,
 } from './constants';
 
+let _dataSource: DataSource;
+
+export async function getDataSource() {
+  if (!_dataSource) {
+    _dataSource = await connectDatabase();
+  }
+
+  return _dataSource;
+}
+
+export const destroyDataSource = async () => {
+  if (_dataSource) {
+    await _dataSource.destroy();
+    _dataSource = null;
+  }
+};
+
+export const getRepository = async <Entity extends ObjectLiteral>(target: EntityTarget<Entity>) => {
+  const dataSource = await getDataSource();
+  return dataSource.getRepository(target);
+};
+
 export async function createUser(
   email: string = 'admin@test.com',
   password: string = '1234567890',
-  dataSource?: DataSource,
   admin: boolean = false,
   status: UserStatus = UserStatus.NONE,
 ) {
-  verifyEnv();
+  const userRepo = await getRepository(User);
 
-  const hasInitialDataSource = Boolean(dataSource);
-
-  if (!dataSource) {
-    dataSource = await connectDatabase();
-  }
-
-  const userRepo = dataSource.getRepository(User);
-
-  /* Create partial admin user */
   const user = userRepo.create({
     email,
     admin,
@@ -74,23 +90,11 @@ export async function createUser(
   } catch (error) {
     console.log(chalk.red(error.message));
   }
-
-  if (!hasInitialDataSource) {
-    await dataSource.destroy();
-  }
 }
 
-export async function attachKeyToUser(
-  dataSource: DataSource,
-  userId: number,
-  key: DeepPartial<UserKey>,
-) {
-  verifyEnv();
+export async function attachKeyToUser(userId: number, key: DeepPartial<UserKey>) {
+  const userKeyRepo = await getRepository(UserKey);
 
-  /* Setup database connection */
-  const userKeyRepo = dataSource.getRepository(UserKey);
-
-  /* Create key */
   const userKey = userKeyRepo.create({
     ...key,
     user: {
@@ -105,22 +109,10 @@ export async function attachKeyToUser(
   }
 }
 
-export async function addUsers(dataSource?: DataSource) {
-  const hasInitialDataSource = Boolean(dataSource);
-
-  if (!dataSource) {
-    dataSource = await connectDatabase();
-  }
-
-  const admin = await createUser(adminEmail, adminPassword, dataSource, true);
-  const user = await createUser(dummyEmail, dummyPassword, dataSource, false);
-  const userNew = await createUser(
-    dummyNewEmail,
-    dummyNewPassword,
-    dataSource,
-    false,
-    UserStatus.NEW,
-  );
+export async function addUsers() {
+  const admin = await createUser(adminEmail, adminPassword, true);
+  const user = await createUser(dummyEmail, dummyPassword, false);
+  const userNew = await createUser(dummyNewEmail, dummyNewPassword, false, UserStatus.NEW);
 
   const { publicKeyRaw, mnemonicHash, index } = await generatePrivateKey();
   const {
@@ -134,21 +126,17 @@ export async function addUsers(dataSource?: DataSource) {
     return;
   }
 
-  await attachKeyToUser(dataSource, admin.id, {
+  await attachKeyToUser(admin.id, {
     publicKey: publicKeyRaw,
     mnemonicHash,
     index,
   });
 
-  await attachKeyToUser(dataSource, user.id, {
+  await attachKeyToUser(user.id, {
     publicKey: publicKeyRaw1,
     mnemonicHash: mnemonicHash1,
     index: index1,
   });
-
-  if (!hasInitialDataSource) {
-    await dataSource.destroy();
-  }
 
   console.log(chalk.green('Users added successfully \n'));
   console.log(`Id: ${admin.id}, Admin: ${admin.email}, ${adminPassword}, ${publicKeyRaw}`);
@@ -156,13 +144,7 @@ export async function addUsers(dataSource?: DataSource) {
   console.log(`Id: ${userNew.id}, User: ${userNew.email}, ${dummyNewPassword} \n`);
 }
 
-export async function addHederaLocalnetAccounts(dataSource?: DataSource) {
-  const hasInitialDataSource = Boolean(dataSource);
-
-  if (!dataSource) {
-    dataSource = await connectDatabase();
-  }
-
+export async function addHederaLocalnetAccounts() {
   const admin = await getUser('admin');
   const user = await getUser('user');
 
@@ -172,26 +154,20 @@ export async function addHederaLocalnetAccounts(dataSource?: DataSource) {
   }
 
   for (const account of [localnet2, localnet1002, localnet1022]) {
-    await attachKeyToUser(dataSource, admin.id, {
+    await attachKeyToUser(admin.id, {
       publicKey: account.publicKeyRaw,
     });
   }
 
   for (const account of [localnet1003, localnet1004]) {
-    await attachKeyToUser(dataSource, user.id, {
+    await attachKeyToUser(user.id, {
       publicKey: account.publicKeyRaw,
     });
-  }
-
-  if (!hasInitialDataSource) {
-    await dataSource.destroy();
   }
 }
 
 export async function resetUsersState() {
-  const dataSource = await connectDatabase();
-
-  const userRepo = dataSource.getRepository(User);
+  const userRepo = await getRepository(User);
 
   try {
     const admin = await userRepo.findOne({
@@ -230,31 +206,23 @@ export async function resetUsersState() {
   } catch (error) {
     console.log(chalk.red(error.message));
   }
-
-  await dataSource.destroy();
 }
 
 export async function getUsers() {
-  const dataSource = await connectDatabase();
-
-  const userRepo = dataSource.getRepository(User);
+  const userRepo = await getRepository(User);
 
   try {
-    const users = await userRepo.find();
-    await dataSource.destroy();
-    return users;
+    return userRepo.find();
   } catch (error) {
     console.log(chalk.red(error.message));
   }
 }
 
 export async function getUserKeys(id?: number) {
-  const dataSource = await connectDatabase();
-
-  const userKeyRepo = dataSource.getRepository(UserKey);
+  const userKeyRepo = await getRepository(UserKey);
 
   try {
-    const userKeys = await userKeyRepo.find(
+    return await userKeyRepo.find(
       id
         ? {
             where: {
@@ -265,19 +233,13 @@ export async function getUserKeys(id?: number) {
           }
         : undefined,
     );
-
-    await dataSource.destroy();
-    return userKeys;
   } catch (error) {
     console.log(chalk.red(error.message));
   }
-  await dataSource.destroy();
 }
 
 export async function getUserKey(userId: number, publicKey: string) {
-  const dataSource = await connectDatabase();
-
-  const userKeyRepo = dataSource.getRepository(UserKey);
+  const userKeyRepo = await getRepository(UserKey);
 
   try {
     const userKey = await userKeyRepo.findOne({
@@ -288,39 +250,29 @@ export async function getUserKey(userId: number, publicKey: string) {
         publicKey,
       },
     });
-
-    await dataSource.destroy();
     return userKey;
   } catch (error) {
     console.log(chalk.red(error.message));
   }
-  await dataSource.destroy();
 }
 
 export async function getUser(type: 'admin' | 'user' | 'userNew') {
-  const dataSource = await connectDatabase();
-
-  const userRepo = dataSource.getRepository(User);
+  const userRepo = await getRepository(User);
 
   try {
-    const user = await userRepo.findOne({
+    return await userRepo.findOne({
       where: {
         email: type === 'admin' ? adminEmail : type === 'user' ? dummyEmail : dummyNewEmail,
       },
     });
-    return user;
   } catch (error) {
     console.log(chalk.red(error.message));
   }
-
-  await dataSource.destroy();
 }
 
 export async function clearUsers() {
-  const dataSource = await connectDatabase();
-
-  const userRepo = dataSource.getRepository(User);
-  const userKeyRepo = dataSource.getRepository(UserKey);
+  const userRepo = await getRepository(User);
+  const userKeyRepo = await getRepository(UserKey);
 
   try {
     await userKeyRepo.delete({});
@@ -329,11 +281,10 @@ export async function clearUsers() {
   } catch (error) {
     console.log(chalk.red(error.message));
   }
-
-  await dataSource.destroy();
 }
 
-export async function addTransactions(dataSource: DataSource) {
+export async function addTransactions() {
+  const dataSource = await getDataSource();
   const transactionRepo = dataSource.getRepository(Transaction);
 
   const admin = await getUser('admin');
@@ -367,52 +318,73 @@ export async function addTransactions(dataSource: DataSource) {
     .setKeys(new KeyList([localnet1002.publicKey, localnet2.publicKey]));
 
   const fileCreate2 = new FileCreateTransaction()
-    .setTransactionId(createTransactionId(localnet1003.accountId))
+    .setTransactionId(createTransactionId(localnet1003.accountId, new Date(Date.now() + 1000)))
     .setKeys(new KeyList([localnet1003.publicKey, localnet1003.publicKey]));
 
   const transactions = [
-    {
+    transactionRepo.create({
       name: 'Simple Account Create Transaction',
       description: 'This is a simple account create transaction',
       body: Buffer.from(accountCreate.toBytes()),
-      creatorKeyId: userKey1003.id,
+      creatorKey: { id: userKey1003.id },
       signature: Buffer.from(localnet1003.privateKey.sign(accountCreate.toBytes())),
       network: localnet1003.network,
-    },
-    {
+    }),
+    transactionRepo.create({
       name: 'Simple Account Update Transaction',
       description: 'This is a simple account update transaction',
       body: Buffer.from(accountUpdate.toBytes()),
-      creatorKeyId: userKey1004.id,
+      creatorKey: { id: userKey1004.id },
       signature: Buffer.from(localnet1004.privateKey.sign(accountUpdate.toBytes())),
       network: localnet1004.network,
-    },
-    {
+    }),
+    transactionRepo.create({
       name: 'Simple File Create Transaction',
       description: 'This is a simple file create transaction',
       body: Buffer.from(fileCreate.toBytes()),
-      creatorKeyId: adminKey1002.id,
+      creatorKey: { id: adminKey1002.id },
       signature: Buffer.from(localnet1002.privateKey.sign(fileCreate.toBytes())),
       network: localnet1002.network,
-    },
-    {
+    }),
+    transactionRepo.create({
       name: 'Second simple File Create Transaction',
       description: 'This is a second simple file create transaction',
       body: Buffer.from(fileCreate2.toBytes()),
-      creatorKeyId: userKey1003.id,
+      creatorKey: { id: userKey1003.id },
       signature: Buffer.from(localnet1003.privateKey.sign(fileCreate.toBytes())),
       network: localnet1003.network,
-    },
+    }),
   ];
 
+  const client = Client.forLocalNode();
+
   for (const transaction of transactions) {
-    await transactionRepo.save(transaction);
+    const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
+    sdkTransaction.freezeWith(client);
+
+    transaction.type = getTransactionTypeEnumValue(sdkTransaction);
+    transaction.transactionId = sdkTransaction.transactionId.toString();
+    transaction.body = Buffer.from(sdkTransaction.toBytes());
+    transaction.transactionHash = Buffer.from(await sdkTransaction.getTransactionHash()).toString(
+      'hex',
+    );
+    transaction.status = TransactionStatus.WAITING_FOR_SIGNATURES;
+    transaction.validStart = sdkTransaction.transactionId.validStart.toDate();
+
+    try {
+      await transactionRepo.save(transaction);
+    } catch (error) {
+      console.error(error);
+    }
   }
+
+  client.close();
 
   console.log(chalk.green('Transactions added successfully \n'));
 }
 
-export async function getTransactions(dataSource: DataSource) {
+export async function getTransactions() {
+  const dataSource = await getDataSource();
   const transactionRepo = dataSource.getRepository(Transaction);
 
   try {
@@ -423,22 +395,25 @@ export async function getTransactions(dataSource: DataSource) {
 }
 
 export async function resetDatabase() {
-  const dataSource = await connectDatabase();
+  const dataSource = await getDataSource();
 
   try {
     await dataSource.synchronize(true);
 
-    await addUsers(dataSource);
+    await addUsers();
 
     console.log(chalk.green('Database reset successfully \n'));
   } catch (error) {
     console.log(chalk.red(error.message));
   }
-
-  await dataSource.destroy();
 }
 
-export async function withDataSource<T>(callback: (dataSource: DataSource, ...args) => T, ...args) {
+export async function withDisposableDataSource<T>(
+  callback: (dataSource: DataSource, ...args) => T,
+  ...args
+) {
+  verifyEnv();
+
   const dataSource = await connectDatabase();
 
   try {

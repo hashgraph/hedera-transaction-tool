@@ -1,8 +1,8 @@
 import * as crypto from 'crypto';
 
-import { AccountId, Mnemonic, Timestamp, TransactionId } from '@hashgraph/sdk';
+import { AccountId, Mnemonic, Timestamp, Transaction, TransactionId } from '@hashgraph/sdk';
 
-import { Network } from '../../../../libs/common/src/database/entities';
+import { Network, TransactionType } from '../../../../libs/common/src/database/entities';
 
 import { HederaAccount } from './models';
 
@@ -51,3 +51,42 @@ export const generatePrivateKey = async (mnemonic?: Mnemonic) => {
 
 export const createTransactionId = (accountId: AccountId, date?: Date) =>
   TransactionId.withValidStart(accountId, Timestamp.fromDate(date || new Date()));
+
+export const getTransactionTypeEnumValue = (transaction: Transaction): TransactionType => {
+  const sdkType = transaction.constructor.name
+    .slice(transaction.constructor.name.startsWith('_') ? 1 : 0)
+    .split(/(?=[A-Z])/)
+    .join(' ')
+    .replace('Transaction', '')
+    .trim()
+    .toLocaleUpperCase();
+
+  switch (sdkType) {
+    case TransactionType.ACCOUNT_CREATE:
+      return TransactionType.ACCOUNT_CREATE;
+    case TransactionType.ACCOUNT_UPDATE:
+      return TransactionType.ACCOUNT_UPDATE;
+    case TransactionType.ACCOUNT_DELETE:
+      return TransactionType.ACCOUNT_DELETE;
+    case TransactionType.ACCOUNT_ALLOWANCE_APPROVE:
+      return TransactionType.ACCOUNT_ALLOWANCE_APPROVE;
+    case TransactionType.FILE_CREATE:
+      return TransactionType.FILE_CREATE;
+    case TransactionType.FILE_APPEND:
+      return TransactionType.FILE_APPEND;
+    case TransactionType.FILE_UPDATE:
+      return TransactionType.FILE_UPDATE;
+    case TransactionType.FILE_DELETE:
+      return TransactionType.FILE_DELETE;
+    case TransactionType.FREEZE:
+      return TransactionType.FREEZE;
+    case TransactionType.SYSTEM_DELETE:
+      return TransactionType.SYSTEM_DELETE;
+    case TransactionType.SYSTEM_UNDELETE:
+      return TransactionType.SYSTEM_UNDELETE;
+    case TransactionType.TRANSFER:
+      return TransactionType.TRANSFER;
+    default:
+      throw new Error(`Unsupported transaction type: ${sdkType}`);
+  }
+};

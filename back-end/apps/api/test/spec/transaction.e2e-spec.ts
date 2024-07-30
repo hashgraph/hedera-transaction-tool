@@ -13,7 +13,6 @@ import {
   getUserKey,
   resetDatabase,
   resetUsersState,
-  withDataSource,
 } from '../utils/databaseUtil';
 import { Endpoint } from '../utils/httpUtils';
 import { createTransactionId, localnet1003, localnet2 } from '../utils/hederaUtils';
@@ -57,7 +56,7 @@ describe('Transactions (e2e)', () => {
   beforeAll(async () => {
     await resetDatabase();
     await addHederaLocalnetAccounts();
-    await withDataSource(addTransactions);
+    await addTransactions();
   });
 
   beforeEach(async () => {
@@ -108,7 +107,7 @@ describe('Transactions (e2e)', () => {
     it('(POST) should not create a transaction if user has no keys', async () => {
       const transaction = await createTransaction();
 
-      const user = await createUser('test@test.com', '1234567890', null, false, UserStatus.NONE);
+      const user = await createUser('test@test.com', '1234567890', false, UserStatus.NONE);
       const cookie = await login(app, { ...user, password: '1234567890' });
 
       const { status, body } = await endpoint.post(transaction, null, cookie);
