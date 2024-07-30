@@ -17,7 +17,7 @@ export default async function globalSetup() {
   await addUsers();
 
   /* Start the Notifications, Chain Services */
-  await Promise.allSettled([startNotificationsService(), startChainService()]);
+  // await Promise.allSettled([startNotificationsService(), startChainService()]);
 
   console.log('Global setup completed!');
 }
