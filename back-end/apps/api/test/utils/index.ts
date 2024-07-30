@@ -31,7 +31,13 @@ export async function closeApp(app: NestExpressApplication) {
   if (!app) return;
 
   await app.close();
-  await Promise.allSettled([app.getMicroservices().map(ms => ms.close())]);
+  const results = await Promise.allSettled([app.getMicroservices().map(ms => ms.close())]);
+
+  results.forEach(result => {
+    if (result.status === 'rejected') {
+      console.error('Error closing microservice', result.reason);
+    }
+  });
 }
 
 function setupApp(app: NestExpressApplication) {
