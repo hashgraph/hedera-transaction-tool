@@ -45,6 +45,7 @@ import {
   PaginatedResourceDto,
   TRANSACTION_ACTION,
   NotifyClientDto,
+  parseAccountProperty,
 } from '@app/common';
 
 import { UserDto } from '../users/dtos';
@@ -391,12 +392,21 @@ export class TransactionsService {
     /* Check if the transaction is requiring signatures */
     if (sdkTransaction instanceof AccountUpdateTransaction) {
       /* Call mirror node to get signers */
+      const accountInfo = await this.mirrorNodeService.getAccountInfo(
+        sdkTransaction.accountId.toString(),
+        dto.network,
+      );
+
+      const keys = parseAccountProperty(accountInfo, 'key');
+      console.log('keys', keys);
+
+      /* Get new keys with signers */
 
       /* Get signers email addresses */
 
       /* Filter signers if needed */
 
-      const signersEmails = [''];
+      const signersEmails = [];
 
       if (signersEmails.length > 0) {
         this.notificationsService.emit('notify_transaction_members', {
