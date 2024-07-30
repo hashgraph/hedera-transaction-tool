@@ -648,4 +648,82 @@ describe('Transactions (e2e)', () => {
 
     // it('(GET) should get empty array if the transaction is already signed', async () => {});
   });
+
+  describe('/transactions/cancel/:transactionId', () => {
+    let endpoint: Endpoint;
+
+    beforeEach(() => {
+      endpoint = new Endpoint(server, '/transactions/cancel');
+    });
+
+    afterAll(async () => {
+      await resetDatabase();
+      await addHederaLocalnetAccounts();
+      testsAddedTransactionsCountUser = 0;
+      testsAddedTransactionsCountAdmin = 0;
+      addedTransactions = await addTransactions();
+    });
+
+    it('(PATCH) should cancel a transaction if creator', async () => {
+      const transaction = await createTransaction(user, localnet1003);
+      const { body: newTransaction } = await new Endpoint(server, '/transactions')
+        .post(transaction, null, userAuthCookie)
+        .expect(201);
+
+      const { status } = await endpoint.patch(null, newTransaction.id.toString(), userAuthCookie);
+
+      const transactionFromDb = await repo.findOne({ where: { id: newTransaction.id } });
+
+      expect(status).toEqual(200);
+      expect(transactionFromDb?.status).toEqual(TransactionStatus.CANCELED);
+    });
+
+    it('(PATCH) should not cancel a transaction if not creator', async () => {
+      const transaction = await createTransaction(user, localnet1003);
+      const { body: newTransaction } = await new Endpoint(server, '/transactions')
+        .post(transaction, null, userAuthCookie)
+        .expect(201);
+
+      const { status } = await endpoint.patch(null, newTransaction.id.toString(), adminAuthCookie);
+
+      const transactionFromDb = await repo.findOne({ where: { id: newTransaction.id } });
+
+      expect(status).toEqual(401);
+      expect(transactionFromDb?.status).not.toEqual(TransactionStatus.CANCELED);
+    });
+
+    it('(PATCH) should not cancel a transaction if not verified', async () => {
+      const transaction = await createTransaction(user, localnet1003);
+      const { body: newTransaction } = await new Endpoint(server, '/transactions')
+        .post(transaction, null, userAuthCookie)
+        .expect(201);
+
+      const { status } = await endpoint.patch(
+        null,
+        newTransaction.id.toString(),
+        userNewAuthCookie,
+      );
+
+      const transactionFromDb = await repo.findOne({ where: { id: newTransaction.id } });
+
+      expect(status).toEqual(403);
+      expect(transactionFromDb?.status).not.toEqual(TransactionStatus.CANCELED);
+    });
+
+    it("(PATCH) should not cancel a transaction if it's already executed", async () => {
+      const transaction = await createTransaction(user, localnet1003);
+      const { body: newTransaction } = await new Endpoint(server, '/transactions')
+        .post(transaction, null, userAuthCookie)
+        .expect(201);
+
+      await repo.update({ id: newTransaction.id }, { status: TransactionStatus.EXECUTED });
+
+      const { status } = await endpoint.patch(null, newTransaction.id.toString(), userAuthCookie);
+
+      const transactionFromDb = await repo.findOne({ where: { id: newTransaction.id } });
+
+      expect(status).toEqual(400);
+      expect(transactionFromDb?.status).not.toEqual(TransactionStatus.CANCELED);
+    });
+  });
 });
