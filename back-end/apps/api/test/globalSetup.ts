@@ -35,7 +35,7 @@ export default async function globalSetup() {
   await addUsers();
 
   /* Start the Hedera Localnet */
-  // await startHederaLocalnet();
+  await startHederaLocalnet();
 
   /* Start the Notifications, Chain Services */
   // await Promise.allSettled([startNotificationsService(), startChainService()]);
