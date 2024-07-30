@@ -311,7 +311,7 @@ export async function addTransactions() {
   const accountUpdate = new AccountUpdateTransaction()
     .setTransactionId(createTransactionId(localnet1004.accountId))
     .setAccountId(localnet1004.accountId)
-    .setKey(localnet1004.publicKey);
+    .setKey(new KeyList([localnet1004.publicKey, localnet1002.publicKey]));
 
   const fileCreate = new FileCreateTransaction()
     .setTransactionId(createTransactionId(localnet1002.accountId))
