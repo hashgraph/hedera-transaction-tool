@@ -1,44 +1,19 @@
 import { ValidationPipe } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { Transport } from '@nestjs/microservices';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { Test, TestingModuleBuilder } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 // import { Logger } from 'nestjs-pino';
 
 import * as cookieParser from 'cookie-parser';
 
 import { API_SERVICE } from '@app/common';
-import { ApiModule, config } from '../../src/api.module';
-
-export const overrideConfigServiceProvider = (builder: TestingModuleBuilder) => {
-  const configModule = ConfigModule.forRoot({
-    isGlobal: true,
-    envFilePath: '../../.env.test',
-  });
-
-  builder
-    .overrideModule(config)
-    .useModule(configModule)
-    .overrideProvider(ConfigService)
-    .useClass(configModule.exports![0]);
-};
-
-export const addUseMocker = (builder: TestingModuleBuilder) => {
-  builder.useMocker(mocker => {
-    if (mocker === Reflector) {
-      return new Reflector();
-    }
-  });
-};
+import { ApiModule } from '../../src/api.module';
 
 export async function createNestApp() {
   const moduleFixtureBuilder = Test.createTestingModule({
     imports: [ApiModule],
   });
-
-  // addUseMocker(moduleFixtureBuilder);
-  // overrideConfigServiceProvider(moduleFixtureBuilder);
 
   const moduleFixture = await moduleFixtureBuilder.compile();
 
