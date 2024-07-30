@@ -4,6 +4,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { Test } from '@nestjs/testing';
 
 import { API_SERVICE } from '@app/common';
+import { User } from '@entities';
 
 import { admin, dummy, dummyNew } from './constants';
 
@@ -58,13 +59,30 @@ export async function closeApp(app: NestExpressApplication) {
 
 export async function login(
   app: NestExpressApplication,
-  user: 'admin' | 'user' | 'userNew',
+  user: 'admin' | 'user' | 'userNew' | User,
 ): Promise<string> {
   const endpoint = new Endpoint(app.getHttpServer(), '/auth/login');
 
-  const email = user === 'admin' ? admin.email : user === 'user' ? dummy.email : dummyNew.email;
-  const password =
-    user === 'admin' ? admin.password : user === 'user' ? dummy.password : dummyNew.password;
+  let email: string;
+  let password: string;
+
+  switch (user) {
+    case 'admin':
+      email = admin.email;
+      password = admin.password;
+      break;
+    case 'user':
+      email = dummy.email;
+      password = dummy.password;
+      break;
+    case 'userNew':
+      email = dummyNew.email;
+      password = dummyNew.password;
+      break;
+    default:
+      email = user.email;
+      password = user.password;
+  }
 
   const res = await endpoint.post({
     email,
