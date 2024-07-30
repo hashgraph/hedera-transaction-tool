@@ -83,6 +83,7 @@ describe('TransactionsController', () => {
         mnemonicHash: 'mnemonicHash',
         index: 1,
         user: user,
+        userId: user.id,
         deletedAt: null,
         createdTransactions: [],
         approvedTransactions: [],

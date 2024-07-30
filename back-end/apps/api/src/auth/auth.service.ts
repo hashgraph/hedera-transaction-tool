@@ -14,7 +14,12 @@ import { Response } from 'express';
 import { totp } from 'otplib';
 import * as bcrypt from 'bcryptjs';
 
-import { ELECTRON_APP_PROTOCOL_PREFIX, NOTIFICATIONS_SERVICE } from '@app/common';
+import {
+  ELECTRON_APP_PROTOCOL_PREFIX,
+  NOTIFICATIONS_SERVICE,
+  NOTIFY_EMAIL,
+  NotifyEmailDto,
+} from '@app/common';
 import { User, UserStatus } from '@entities';
 
 import { JwtPayload, OtpPayload } from '../interfaces';
@@ -44,7 +49,7 @@ export class AuthService {
 
     const user = await this.usersService.createUser(dto.email, tempPassword);
 
-    this.notificationsService.emit('notify_email', {
+    this.notificationsService.emit<undefined, NotifyEmailDto>(NOTIFY_EMAIL, {
       subject: 'Hedera Transaction Tool Registration',
       email: user.email,
       text: `You have been registered in Hedera Transaction Tool.\nYour temporary password is: <b>${tempPassword}</b>`,
@@ -108,7 +113,7 @@ export class AuthService {
     const secret = this.getOtpSecret(user.email);
     const token = totp.generate(secret);
 
-    this.notificationsService.emit('notify_email', {
+    this.notificationsService.emit<undefined, NotifyEmailDto>(NOTIFY_EMAIL, {
       email: user.email,
       subject: 'Password Reset token',
       text: `

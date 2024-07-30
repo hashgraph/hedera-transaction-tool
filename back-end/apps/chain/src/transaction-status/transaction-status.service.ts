@@ -14,7 +14,9 @@ import {
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
   NOTIFY_CLIENT,
+  NOTIFY_TRANSACTION_CREATOR_ON_READY_FOR_EXECUTION,
   NotifyClientDto,
+  NotifyForTransactionDto,
   TRANSACTION_ACTION,
   ableToSign,
   computeSignatureKey,
@@ -204,6 +206,16 @@ export class TransactionStatusService {
           );
 
           transaction.status = newStatus;
+
+          if (newStatus === TransactionStatus.WAITING_FOR_EXECUTION) {
+            this.notificationsService.emit<undefined, NotifyForTransactionDto>(
+              NOTIFY_TRANSACTION_CREATOR_ON_READY_FOR_EXECUTION,
+              {
+                transactionId: transaction.id,
+              },
+            );
+          }
+
           atLeastOneUpdated = true;
         } catch (error) {
           console.log(error);
@@ -247,17 +259,27 @@ export class TransactionStatusService {
 
     /* Checks if the transaction has valid siganture */
     const isAbleToSign = ableToSign([...sdkTransaction._signerPublicKeys], sigantureKey);
+    const newStatus = isAbleToSign
+      ? TransactionStatus.WAITING_FOR_EXECUTION
+      : TransactionStatus.WAITING_FOR_SIGNATURES;
 
     await this.transactionRepo.update(
       {
         id,
       },
       {
-        status: isAbleToSign
-          ? TransactionStatus.WAITING_FOR_EXECUTION
-          : TransactionStatus.WAITING_FOR_SIGNATURES,
+        status: newStatus,
       },
     );
+
+    if (newStatus === TransactionStatus.WAITING_FOR_EXECUTION) {
+      this.notificationsService.emit<undefined, NotifyForTransactionDto>(
+        NOTIFY_TRANSACTION_CREATOR_ON_READY_FOR_EXECUTION,
+        {
+          transactionId: transaction.id,
+        },
+      );
+    }
 
     this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
       message: TRANSACTION_ACTION,

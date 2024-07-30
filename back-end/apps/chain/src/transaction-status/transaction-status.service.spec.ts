@@ -289,7 +289,7 @@ describe('TransactionStatusService', () => {
           status: TransactionStatus.WAITING_FOR_SIGNATURES,
         },
       );
-      expect(notificationsService.emit).toHaveBeenCalledTimes(1);
+      expect(notificationsService.emit).toHaveBeenCalledTimes(2);
     });
 
     it('should not emit notifications event if no transactions updated', async () => {
@@ -382,7 +382,7 @@ describe('TransactionStatusService', () => {
           status: TransactionStatus.WAITING_FOR_EXECUTION,
         },
       );
-      expect(notificationsService.emit).toHaveBeenCalledTimes(1);
+      expect(notificationsService.emit).toHaveBeenCalledTimes(2);
     });
 
     it('should not emit notifications event if no transactions updated', async () => {

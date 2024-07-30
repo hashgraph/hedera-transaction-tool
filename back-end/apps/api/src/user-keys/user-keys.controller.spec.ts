@@ -54,6 +54,7 @@ describe('UserKeysController', () => {
       mnemonicHash: 'mnemonicHash',
       index: 1,
       user: user,
+      userId: user.id,
       deletedAt: null,
       createdTransactions: [],
       approvedTransactions: [],
@@ -81,7 +82,9 @@ describe('UserKeysController', () => {
     });
 
     it('should return an error if the user has too many keys', async () => {
-      userKeysService.uploadKey.mockRejectedValue(new Error(`A user can only have up to ${MAX_USER_KEYS} keys.`));
+      userKeysService.uploadKey.mockRejectedValue(
+        new Error(`A user can only have up to ${MAX_USER_KEYS} keys.`),
+      );
 
       await expect(controller.uploadKey(user, userKey)).rejects.toThrow(Error);
     });

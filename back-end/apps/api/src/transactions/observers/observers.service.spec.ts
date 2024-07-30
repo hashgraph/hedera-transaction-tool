@@ -14,12 +14,12 @@ import {
 } from '@entities';
 
 import { NOTIFICATIONS_SERVICE, MirrorNodeService } from '@app/common';
-import { userKeysRequiredToSign } from '../../utils';
+import { userKeysRequiredToSign } from '@app/common/utils';
 
 import { ObserversService } from './observers.service';
 import { ApproversService } from '../approvers';
 
-jest.mock('../../utils');
+jest.mock('@app/common/utils');
 
 describe('ObserversService', () => {
   let service: ObserversService;

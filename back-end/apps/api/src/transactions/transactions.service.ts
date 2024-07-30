@@ -44,13 +44,15 @@ import {
   PaginatedResourceDto,
   TRANSACTION_ACTION,
   NotifyClientDto,
+  NOTIFY_TRANSACTION_REQUIRED_SIGNERS,
+  NotifyForTransactionDto,
+  userKeysRequiredToSign,
 } from '@app/common';
 
 import { UserDto } from '../users/dtos';
 import { CreateTransactionDto } from './dto';
 
 import { ApproversService } from './approvers';
-import { userKeysRequiredToSign } from '../utils';
 
 @Injectable()
 export class TransactionsService {
@@ -387,7 +389,13 @@ export class TransactionsService {
       throw new BadRequestException('Failed to save transaction');
     }
 
-    this.notificationsService.emit('notify_transaction_members', transaction);
+    this.notificationsService.emit<undefined, NotifyForTransactionDto>(
+      NOTIFY_TRANSACTION_REQUIRED_SIGNERS,
+      {
+        transactionId: transaction.id,
+      },
+    );
+
     this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
       message: TRANSACTION_ACTION,
       content: '',
@@ -510,11 +518,6 @@ export class TransactionsService {
     );
   }
 
-  /* Get the user keys that are required for a given transaction */
-  userKeysToSign(transaction: Transaction, user: User) {
-    return userKeysRequiredToSign(transaction, user, this.mirrorNodeService, this.entityManager);
-  }
-
   /* Check whether the user should approve the transaction */
   async shouldApproveTransaction(transactionId: number, user: User) {
     /* Get all the approvers */
@@ -530,6 +533,12 @@ export class TransactionsService {
     return !userApprovers.every(a => a.signature);
   }
 
+  /* Get the user keys that are required for a given transaction */
+  userKeysToSign(transaction: Transaction, user: User) {
+    return userKeysRequiredToSign(transaction, user, this.mirrorNodeService, this.entityManager);
+  }
+
+  /* Get the status where clause for the history transactions */
   private getHistoryStatusWhere(
     filtering: Filtering[],
   ): TransactionStatus | FindOperator<TransactionStatus> {

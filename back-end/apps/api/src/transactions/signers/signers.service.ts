@@ -14,11 +14,10 @@ import {
   isAlreadySigned,
   isExpired,
   validateSignature,
+  userKeysRequiredToSign,
 } from '@app/common';
 
 import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
-
-import { userKeysRequiredToSign } from '../../utils';
 
 import { UploadSignatureArrayDto, UploadSignatureDto } from '../dto';
 

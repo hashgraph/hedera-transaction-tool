@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 
-import { EmailController } from './email.controller';
+import { NotifyEmailDto } from '@app/common';
 
+import { EmailController } from './email.controller';
 import { EmailService } from './email.service';
-import { NotifyEmailDto, NotifyTransactionMembersDto } from './dtos';
 
 describe('EmailController', () => {
   let controller: EmailController;
@@ -38,13 +38,5 @@ describe('EmailController', () => {
     await controller.notifyEmail(dto);
 
     expect(emailService.notifyEmail).toHaveBeenCalledWith(dto);
-  });
-
-  it('should invoke notify transaction members with correct params', async () => {
-    const dto: NotifyTransactionMembersDto = {};
-
-    await controller.notifyTransactionMembers(dto);
-
-    expect(emailService.notifyTransactionMembers).toHaveBeenCalledWith(dto);
   });
 });

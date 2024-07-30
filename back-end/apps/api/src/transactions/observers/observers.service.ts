@@ -18,9 +18,8 @@ import {
   NOTIFY_CLIENT,
   NotifyClientDto,
   TRANSACTION_ACTION,
+  userKeysRequiredToSign,
 } from '@app/common';
-
-import { userKeysRequiredToSign } from '../../utils';
 
 import { ApproversService } from '../approvers';
 
