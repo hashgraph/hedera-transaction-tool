@@ -43,8 +43,8 @@ export class Endpoint {
     this.server = server;
   }
 
-  public get(param?: string, cookie?: string) {
-    return get(this.server, this.createEndpoint(param), cookie);
+  public get(param?: string, cookie?: string, query?: string) {
+    return get(this.server, this.createEndpoint(param, query), cookie);
   }
 
   public post(data?, param?: string, cookie?: string) {
@@ -72,8 +72,17 @@ export class Endpoint {
     return del(this.server, this.createEndpoint(param), cookie);
   }
 
-  private createEndpoint(param?: string) {
-    return `${this.endpoint}${param || ''}`.replaceAll('//', '/');
+  private createEndpoint(param?: string, query?: string) {
+    let result = this.endpoint;
+
+    if (param) {
+      result += param.startsWith('/') ? param : `/${param}`;
+    }
+    if (query) {
+      result += query.startsWith('?') ? query : `?${query}`;
+    }
+
+    return result.replaceAll('//', '/');
   }
 }
 
