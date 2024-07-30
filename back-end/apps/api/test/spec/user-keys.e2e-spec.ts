@@ -3,7 +3,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { User } from '@entities';
 
 import { closeApp, createNestApp, login } from '../utils';
-import { getUser, getUserKeys, resetUsersState } from '../utils/databaseUtil';
+import { getUser, getUserKeys, resetDatabase, resetUsersState } from '../utils/databaseUtil';
 import { Endpoint } from '../utils/httpUtils';
 import { generatePrivateKey } from '../utils/hederaUtils';
 
@@ -18,6 +18,10 @@ describe('User Keys (e2e)', () => {
   let userNewAuthCookie: string;
   let admin: User;
   let user: User;
+
+  beforeAll(async () => {
+    await resetDatabase();
+  });
 
   beforeEach(async () => {
     app = await createNestApp();

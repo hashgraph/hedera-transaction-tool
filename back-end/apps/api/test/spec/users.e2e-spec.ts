@@ -2,7 +2,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 
 import { closeApp, createNestApp, login } from '../utils';
 import { Endpoint } from '../utils/httpUtils';
-import { getUsers, resetUsersState } from '../utils/databaseUtil';
+import { getUsers, resetDatabase, resetUsersState } from '../utils/databaseUtil';
 
 describe('Users (e2e)', () => {
   let app: NestExpressApplication;
@@ -10,6 +10,10 @@ describe('Users (e2e)', () => {
   let adminAuthCookie: string;
   let userAuthCookie: string;
   let userNewAuthCookie: string;
+
+  beforeAll(async () => {
+    await resetDatabase();
+  });
 
   beforeEach(async () => {
     app = await createNestApp();

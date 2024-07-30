@@ -81,8 +81,12 @@ export async function attachKeyToUser(
   }
 }
 
-export async function addUsers() {
-  const dataSource = await connectDatabase();
+export async function addUsers(dataSource?: DataSource) {
+  const hasInitialDataSource = Boolean(dataSource);
+
+  if (!dataSource) {
+    dataSource = await connectDatabase();
+  }
 
   const admin = await createUser(dataSource, adminEmail, adminPassword, true);
   const user = await createUser(dataSource, dummyEmail, dummyPassword, false);
@@ -118,7 +122,9 @@ export async function addUsers() {
     index: index1,
   });
 
-  await dataSource.destroy();
+  if (!hasInitialDataSource) {
+    await dataSource.destroy();
+  }
 
   console.log(chalk.green('Users added successfully \n'));
   console.log(`Id: ${admin.id}, Admin: ${admin.email}, ${adminPassword}, ${publicKeyRaw}`);
@@ -209,6 +215,7 @@ export async function getUserKeys(id?: number) {
   } catch (error) {
     console.log(chalk.red(error.message));
   }
+  await dataSource.destroy();
 }
 
 export async function getUser(type: 'admin' | 'user' | 'userNew') {
@@ -222,11 +229,29 @@ export async function getUser(type: 'admin' | 'user' | 'userNew') {
         email: type === 'admin' ? adminEmail : type === 'user' ? dummyEmail : dummyNewEmail,
       },
     });
-    await dataSource.destroy();
     return user;
   } catch (error) {
     console.log(chalk.red(error.message));
   }
+
+  await dataSource.destroy();
+}
+
+export async function clearUsers() {
+  const dataSource = await connectDatabase();
+
+  const userRepo = dataSource.getRepository(User);
+  const userKeyRepo = dataSource.getRepository(UserKey);
+
+  try {
+    await userKeyRepo.delete({});
+    await userRepo.delete({});
+    console.log(chalk.green('Users cleared successfully \n'));
+  } catch (error) {
+    console.log(chalk.red(error.message));
+  }
+
+  await dataSource.destroy();
 }
 
 function verifyEnv() {
@@ -246,6 +271,22 @@ function verifyEnv() {
   if (isNaN(Number(process.env.POSTGRES_PORT))) {
     throw new Error('POSTGRES_PORT must be a number');
   }
+}
+
+export async function resetDatabase() {
+  const dataSource = await connectDatabase();
+
+  try {
+    await dataSource.synchronize(true);
+
+    await addUsers(dataSource);
+
+    console.log(chalk.green('Database reset successfully \n'));
+  } catch (error) {
+    console.log(chalk.red(error.message));
+  }
+
+  await dataSource.destroy();
 }
 
 async function connectDatabase() {

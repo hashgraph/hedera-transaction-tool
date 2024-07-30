@@ -8,7 +8,7 @@ import { UserStatus } from '@entities';
 
 import { closeApp, createNestApp } from '../utils';
 import { getCookieRaw, Endpoint, getCookieValue } from '../utils/httpUtils';
-import { resetUsersState } from '../utils/databaseUtil';
+import { resetDatabase, resetUsersState } from '../utils/databaseUtil';
 
 import { admin, dummy, invalidEmail, validEmail } from '../utils/constants';
 
@@ -21,6 +21,10 @@ describe('Auth (e2e)', () => {
   let userAuthCookie: string;
   let unverifiedOTPCookie: string;
   let verifiedOTPCookie: string;
+
+  beforeAll(async () => {
+    await resetDatabase();
+  });
 
   beforeEach(async () => {
     app = await createNestApp();
