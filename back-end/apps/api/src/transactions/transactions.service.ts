@@ -404,7 +404,7 @@ export class TransactionsService {
 
       /* Get signers email addresses */
 
-      /* Filter signers if needed */
+      /* Filter signers if needed based on notifications settings and duplicates */
 
       const signersEmails = [];
 
