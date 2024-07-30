@@ -1,8 +1,8 @@
 import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
-export class NotifyTransactionMembersDto {
-  @IsEmail()
-  emails: string[];
+export class NotifyEmailDto {
+  @IsEmail({}, { each: true })
+  email: string | string[];
 
   @IsString()
   @IsNotEmpty()
