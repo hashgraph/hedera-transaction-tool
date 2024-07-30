@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 
-import { Mnemonic } from '@hashgraph/sdk';
+import { AccountId, Mnemonic, Timestamp, TransactionId } from '@hashgraph/sdk';
 
 import { Network } from '../../../../libs/common/src/database/entities';
 
@@ -49,4 +49,5 @@ export const generatePrivateKey = async (mnemonic?: Mnemonic) => {
   return { mnemonic, mnemonicWords, mnemonicHash, privateKey, publicKey, publicKeyRaw, index };
 };
 
-export const createTransaction = async () => {};
+export const createTransactionId = (accountId: AccountId, date?: Date) =>
+  TransactionId.withValidStart(accountId, Timestamp.fromDate(date || new Date()));
