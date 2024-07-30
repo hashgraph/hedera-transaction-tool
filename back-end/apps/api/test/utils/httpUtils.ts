@@ -81,3 +81,9 @@ export const getCookieRaw = (res: request.Response, name: string) => {
     return res.headers['set-cookie'];
   }
 };
+
+export const getCookieValue = (cookie: string) => {
+  const cookiePairs = cookie.split(';');
+  const [, cookieValue] = cookiePairs[0].trim().split('=');
+  return cookieValue;
+};
