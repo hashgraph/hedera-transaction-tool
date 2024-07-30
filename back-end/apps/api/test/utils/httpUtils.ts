@@ -6,7 +6,7 @@ type ServerType = ReturnType<NestExpressApplication['getHttpServer']>;
 
 export const req = (
   server: ServerType,
-  type: 'get' | 'post' | 'put' | 'delete',
+  type: 'get' | 'post' | 'put' | 'delete' | 'patch',
   endpoint: string,
   cookie?: string,
 ) => {
@@ -30,6 +30,9 @@ export const put = (server: ServerType, endpoint: string, cookie?: string) =>
 
 export const del = (server: ServerType, endpoint: string, cookie?: string) =>
   req(server, 'delete', endpoint, cookie);
+
+export const patch = (server: ServerType, endpoint: string, cookie?: string) =>
+  req(server, 'patch', endpoint, cookie);
 
 export class Endpoint {
   public endpoint: string;
@@ -56,6 +59,13 @@ export class Endpoint {
       return put(this.server, this.endpoint, cookie).send(data);
     }
     return put(this.server, this.endpoint, cookie);
+  }
+
+  public patch(data?, cookie?: string) {
+    if (data) {
+      return patch(this.server, this.endpoint, cookie).send(data);
+    }
+    return patch(this.server, this.endpoint, cookie);
   }
 
   public delete(cookie?: string) {
