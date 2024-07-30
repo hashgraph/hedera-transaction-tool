@@ -1,11 +1,12 @@
 import { NestFactory } from '@nestjs/core';
-import { NotificationsModule } from './notifications.module';
+import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Transport } from '@nestjs/microservices';
 import { Logger } from 'nestjs-pino';
-import { ValidationPipe } from '@nestjs/common';
+
 import { NOTIFICATIONS_SERVICE } from '@app/common';
 
+import { NotificationsModule } from './notifications.module';
 async function bootstrap() {
   const app = await NestFactory.create(NotificationsModule);
   const configService = app.get(ConfigService);
