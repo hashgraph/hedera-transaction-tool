@@ -1,4 +1,9 @@
+import { exec } from 'child_process';
+import * as util from 'util';
+
 import { StartedTestContainer } from 'testcontainers';
+
+const execPromise = util.promisify(exec);
 
 export default async function globalTeardown() {
   /* Stops the Notifications, Chain Services */
@@ -25,6 +30,12 @@ export default async function globalTeardown() {
       console.error(`Error stopping container ${i}: ${res.reason}`);
     }
   });
+
+  try {
+    await stopHederaLocalnet();
+  } catch (error) {
+    console.log(error);
+  }
 }
 
 async function stopContainer(container: StartedTestContainer) {
@@ -33,8 +44,16 @@ async function stopContainer(container: StartedTestContainer) {
   console.log(`Stopping ${name} container...`);
   try {
     await container.stop();
-    console.log(`${name} container stopped!`);
+    console.log(`${name} container stopped`);
   } catch (error) {
     console.error(`Error stopping container: ${error}`);
   }
+}
+
+async function stopHederaLocalnet() {
+  console.log('Stopping Hedera Localnet...');
+
+  await execPromise(`hedera stop -d`);
+
+  console.log('Hedera Localnet stopped');
 }

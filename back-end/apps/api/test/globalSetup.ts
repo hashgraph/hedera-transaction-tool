@@ -10,6 +10,8 @@ import { RabbitMQContainer } from '@testcontainers/rabbitmq';
 
 import { addUsers } from './utils/databaseUtil';
 
+const execPromise = util.promisify(exec);
+
 const redisContainerName = 'Redis';
 const postgresContainerName = 'Postgres';
 const rabbitMQContainerName = 'RabbitMQ';
@@ -31,6 +33,9 @@ export default async function globalSetup() {
 
   /* Add Users to the database */
   await addUsers();
+
+  /* Start the Hedera Localnet */
+  await startHederaLocalnet();
 
   /* Start the Notifications, Chain Services */
   // await Promise.allSettled([startNotificationsService(), startChainService()]);
@@ -149,14 +154,20 @@ async function startChainService() {
   process.env.CHAIN_SERVICE_URL = `http://${global.CHAIN_SERVICE_CONTAINER.getHost()}:${startedContainer.getMappedPort(3020)}`;
 }
 
+async function startHederaLocalnet() {
+  console.log('Starting Hedera Localnet...');
+
+  await execPromise(`hedera start -d`);
+
+  console.log('Hedera Localnet started');
+}
+
 function getGetawayFromTestContainer(container: StartedTestContainer) {
   //@ts-expect-error - startedTestContainer is protected
   return container.startedTestContainer.inspectResult.NetworkSettings.Gateway;
 }
 
 async function deleteContainersByName(containerName) {
-  const execPromise = util.promisify(exec);
-
   const { stdout } = await execPromise(
     `docker ps --filter "name=${containerName}" --format "{{.ID}}"`,
   );
