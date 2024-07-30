@@ -111,6 +111,7 @@ describe('Auth (e2e)', () => {
           {
             email: validEmail,
           },
+          null,
           adminAuthCookie,
         )
         .expect(201)
@@ -137,6 +138,7 @@ describe('Auth (e2e)', () => {
           {
             email: validEmail,
           },
+          null,
           userAuthCookie,
         )
         .expect(403);
@@ -148,6 +150,7 @@ describe('Auth (e2e)', () => {
           {
             email: invalidEmail,
           },
+          null,
           adminAuthCookie,
         )
         .expect(400);
@@ -155,7 +158,7 @@ describe('Auth (e2e)', () => {
 
     it('(POST) should throw on missing email', async () => {
       await endpoint
-        .post({}, adminAuthCookie)
+        .post({}, null, adminAuthCookie)
         .expect(400)
         .expect({ statusCode: 400, message: 'No email specified.' });
     });
@@ -169,7 +172,7 @@ describe('Auth (e2e)', () => {
     });
 
     it('(POST) should logout', async () => {
-      await endpoint.post({}, userAuthCookie).expect(200);
+      await endpoint.post({}, null, userAuthCookie).expect(200);
     });
 
     it('(POST) should not logout if not logged in', async () => {
@@ -195,6 +198,7 @@ describe('Auth (e2e)', () => {
             oldPassword: dummy.password,
             newPassword: 'newPassword',
           },
+          null,
           userAuthCookie,
         )
         .expect(200);
@@ -211,6 +215,7 @@ describe('Auth (e2e)', () => {
             oldPassword: 'invalid',
             newPassword: 'newPassword',
           },
+          null,
           userAuthCookie,
         )
         .expect(400);
@@ -223,6 +228,7 @@ describe('Auth (e2e)', () => {
             oldPassword: dummy.password,
             newPassword: dummy.password,
           },
+          null,
           userAuthCookie,
         )
         .expect(400);
@@ -268,6 +274,7 @@ describe('Auth (e2e)', () => {
           {
             token,
           },
+          null,
           unverifiedOTPCookie,
         )
         .expect(200);
@@ -283,6 +290,7 @@ describe('Auth (e2e)', () => {
           {
             token: 'invalid',
           },
+          null,
           unverifiedOTPCookie,
         )
         .expect(401)
@@ -311,6 +319,7 @@ describe('Auth (e2e)', () => {
           {
             password: 'newPassword',
           },
+          null,
           verifiedOTPCookie,
         )
         .expect(200);
@@ -329,13 +338,14 @@ describe('Auth (e2e)', () => {
           {
             password: 'short',
           },
+          null,
           verifiedOTPCookie,
         )
         .expect(400);
     });
 
     it('(PATCH) should not set password with missing password', async () => {
-      await endpoint.patch({}, verifiedOTPCookie).expect(400);
+      await endpoint.patch({}, null, verifiedOTPCookie).expect(400);
     });
 
     it('(PATCH) should not set password with invalid OTP', async () => {
@@ -344,6 +354,7 @@ describe('Auth (e2e)', () => {
           {
             password: 'newPassword',
           },
+          null,
           unverifiedOTPCookie,
         )
         .expect(401)
