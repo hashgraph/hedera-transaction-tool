@@ -12,6 +12,7 @@ const config: Config = {
   testEnvironment: 'node',
   globalSetup: '<rootDir>/test/globalSetup.ts',
   globalTeardown: '<rootDir>/test/globalTeardown.ts',
+  setupFilesAfterEnv: ['<rootDir>/test/setup-jest.ts'],
   roots: ['<rootDir>../../libs/', '<rootDir>'],
   moduleNameMapper: {
     '^@app/common(|/.*)$': '<rootDir>../../libs/common/src/$1',
