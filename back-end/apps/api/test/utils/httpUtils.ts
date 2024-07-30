@@ -39,37 +39,37 @@ export class Endpoint {
   public server: ServerType;
 
   constructor(server: ServerType, endpoint: string) {
-    this.endpoint = endpoint;
+    this.endpoint = endpoint.endsWith('/') ? endpoint : `${endpoint}/`;
     this.server = server;
   }
 
-  public get(cookie?: string) {
-    return get(this.server, this.endpoint, cookie);
+  public get(param?: string, cookie?: string) {
+    return get(this.server, `${this.endpoint}${param || ''}`, cookie);
   }
 
-  public post(data?, cookie?: string) {
+  public post(data?, param?: string, cookie?: string) {
     if (data) {
-      return post(this.server, this.endpoint, cookie).send(data);
+      return post(this.server, `${this.endpoint}${param || ''}`, cookie).send(data);
     }
-    return post(this.server, this.endpoint, cookie);
+    return post(this.server, `${this.endpoint}${param || ''}`, cookie);
   }
 
-  public put(data?, cookie?: string) {
+  public put(data?, param?: string, cookie?: string) {
     if (data) {
-      return put(this.server, this.endpoint, cookie).send(data);
+      return put(this.server, `${this.endpoint}${param || ''}`, cookie).send(data);
     }
-    return put(this.server, this.endpoint, cookie);
+    return put(this.server, `${this.endpoint}${param || ''}`, cookie);
   }
 
-  public patch(data?, cookie?: string) {
+  public patch(data?, param?: string, cookie?: string) {
     if (data) {
-      return patch(this.server, this.endpoint, cookie).send(data);
+      return patch(this.server, `${this.endpoint}${param || ''}`, cookie).send(data);
     }
-    return patch(this.server, this.endpoint, cookie);
+    return patch(this.server, `${this.endpoint}${param || ''}`, cookie);
   }
 
-  public delete(cookie?: string) {
-    return del(this.server, this.endpoint, cookie);
+  public delete(param?: string, cookie?: string) {
+    return del(this.server, `${this.endpoint}${param || ''}`, cookie);
   }
 }
 
