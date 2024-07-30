@@ -13,7 +13,7 @@ import {
 } from '@app/common';
 import { UserKey } from '@entities';
 
-import { keysRequiredToSign, userKeysRequiredToSign } from './transaction.util';
+import { keysRequiredToSign, userKeysRequiredToSign } from '.';
 
 jest.mock('@app/common');
 

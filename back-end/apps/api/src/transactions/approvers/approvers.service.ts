@@ -25,11 +25,10 @@ import {
   NOTIFY_CLIENT,
   NotifyClientDto,
   TRANSACTION_ACTION,
+  userKeysRequiredToSign,
   verifyTransactionBodyWithoutNodeAccountIdSignature,
 } from '@app/common';
 import { Transaction, TransactionApprover, TransactionStatus, User, UserKey } from '@entities';
-
-import { userKeysRequiredToSign } from '../../utils';
 
 import {
   ApproverChoiceDto,
