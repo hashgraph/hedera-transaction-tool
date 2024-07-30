@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 
 import { TransactionNotificationsController } from './transactionNotifications.controller';
-import { TransactionNotificationsService } from './tranasctionNotifications.service';
+import { TransactionNotificationsService } from './transactionNotifications.service';
 import { NotifyForTransactionDto } from '@app/common';
 
 describe('Transaction Notifications Controller', () => {

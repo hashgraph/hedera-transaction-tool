@@ -7,7 +7,7 @@ import { MirrorNodeService, NotifyForTransactionDto } from '@app/common';
 import { keysRequiredToSign } from '@app/common/utils';
 import { Transaction, User, UserKey } from '@entities';
 
-import { TransactionNotificationsService } from './tranasctionNotifications.service';
+import { TransactionNotificationsService } from './transactionNotifications.service';
 import { EmailService } from '../email/email.service';
 
 jest.mock('@app/common/utils');

@@ -7,7 +7,7 @@ import {
   NotifyForTransactionDto,
 } from '@app/common';
 
-import { TransactionNotificationsService } from './tranasctionNotifications.service';
+import { TransactionNotificationsService } from './transactionNotifications.service';
 
 @Controller()
 export class TransactionNotificationsController {

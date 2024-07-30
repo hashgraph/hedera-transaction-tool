@@ -15,7 +15,7 @@ import {
 } from '@entities';
 
 import { TransactionNotificationsController } from './transactionNotifications.controller';
-import { TransactionNotificationsService } from './tranasctionNotifications.service';
+import { TransactionNotificationsService } from './transactionNotifications.service';
 
 @Module({
   imports: [
