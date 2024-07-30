@@ -5,8 +5,11 @@ import { Test } from '@nestjs/testing';
 
 import { API_SERVICE } from '@app/common';
 
-import { ApiModule } from '../../src/api.module';
+import { admin, dummy, dummyNew } from './constants';
 
+import { Endpoint, getCookieRaw } from './httpUtils';
+
+import { ApiModule } from '../../src/api.module';
 import { setupApp } from '../../src/setup-app';
 
 export async function createNestApp() {
@@ -51,4 +54,22 @@ export async function closeApp(app: NestExpressApplication) {
       console.error('Error closing microservice', result.reason);
     }
   });
+}
+
+export async function login(
+  app: NestExpressApplication,
+  user: 'admin' | 'user' | 'userNew',
+): Promise<string> {
+  const endpoint = new Endpoint(app.getHttpServer(), '/auth/login');
+
+  const email = user === 'admin' ? admin.email : user === 'user' ? dummy.email : dummyNew.email;
+  const password =
+    user === 'admin' ? admin.password : user === 'user' ? dummy.password : dummyNew.password;
+
+  const res = await endpoint.post({
+    email,
+    password,
+  });
+
+  return getCookieRaw(res, 'Authentication');
 }
