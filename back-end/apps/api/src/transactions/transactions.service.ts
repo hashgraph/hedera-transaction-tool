@@ -439,7 +439,7 @@ export class TransactionsService {
     }
 
     if (transaction.creatorKey?.user?.id !== user.id) {
-      throw new BadRequestException('Only the creator of the transaction is able to delete it');
+      throw new UnauthorizedException('Only the creator of the transaction is able to delete it');
     }
 
     if (
