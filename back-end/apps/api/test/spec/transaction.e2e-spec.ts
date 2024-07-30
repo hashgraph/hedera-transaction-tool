@@ -646,7 +646,7 @@ describe('Transactions (e2e)', () => {
     it('(GET) should get empty array if transaction does not exist', async () =>
       endpoint.get('999', userAuthCookie).expect(200).expect([]));
 
-    // it('(GET) should get empty array if the transaction is already signed', async () => {});
+    it.todo('(GET) should get empty array if the transaction is already signed');
   });
 
   describe('/transactions/cancel/:transactionId', () => {
@@ -725,5 +725,67 @@ describe('Transactions (e2e)', () => {
       expect(status).toEqual(400);
       expect(transactionFromDb?.status).not.toEqual(TransactionStatus.CANCELED);
     });
+  });
+
+  describe('/transactions/:transactionId', () => {
+    let endpoint: Endpoint;
+
+    beforeEach(() => {
+      endpoint = new Endpoint(server, '/transactions');
+    });
+
+    afterAll(async () => {
+      await resetDatabase();
+      await addHederaLocalnetAccounts();
+      testsAddedTransactionsCountUser = 0;
+      testsAddedTransactionsCountAdmin = 0;
+      addedTransactions = await addTransactions();
+    });
+
+    it('(GET) should get a transaction by id if has access (Is creator)', async () => {
+      const id = addedTransactions.userTransactions[0].id;
+
+      const { status, body } = await endpoint.get(id.toString(), userAuthCookie);
+
+      expect(status).toEqual(200);
+      expect(body.id).toEqual(id);
+    });
+
+    it.todo('(GET) should get a transaction by id if has access (is observer)');
+    it.todo('(GET) should get a transaction by id if has access (is reviewer)');
+    it.todo('(GET) should get a transaction by id if has access (is signer)');
+    it.todo('(GET) should get a transaction by id if has access (should sign)');
+
+    it('(GET) should get a transaction by id if has access (is in a status visible for everyone)', async () => {
+      const transaction = await createTransaction(user, localnet1003);
+      const { body: newTransaction } = await new Endpoint(server, '/transactions')
+        .post(transaction, null, userAuthCookie)
+        .expect(201);
+      await repo.update({ id: newTransaction.id }, { status: TransactionStatus.EXECUTED });
+
+      const { status, body } = await endpoint.get(newTransaction.id.toString(), adminAuthCookie);
+
+      expect(status).toEqual(200);
+      expect(body.id).toEqual(newTransaction.id);
+    });
+
+    it('(GET) should NOT get a transaction by id if has access (is in a status NOT visible for everyone)', async () => {
+      const transaction = await createTransaction(user, localnet1003);
+      const { body: newTransaction } = await new Endpoint(server, '/transactions')
+        .post(transaction, null, userAuthCookie)
+        .expect(201);
+
+      return endpoint.get(newTransaction.id.toString(), adminAuthCookie).expect(401);
+    });
+
+    it('(GET) should not get a transaction by id if not creator, signer, observer, reviewer or should sign', () =>
+      endpoint
+        .get(addedTransactions.userTransactions[0].id.toString(), adminAuthCookie)
+        .expect(401));
+
+    it('(GET) should not get a transaction by id if not verified', () =>
+      endpoint
+        .get(addedTransactions.userTransactions[0].id.toString(), userNewAuthCookie)
+        .expect(403));
   });
 });
