@@ -9,6 +9,7 @@ import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 
 import {
+  AccountUpdateTransaction,
   FileAppendTransaction,
   FileUpdateTransaction,
   PublicKey,
@@ -387,22 +388,23 @@ export class TransactionsService {
       throw new BadRequestException('Failed to save transaction');
     }
 
-    // Check if the transaction has any approvers
+    /* Check if the transaction is requiring signatures */
+    if (sdkTransaction instanceof AccountUpdateTransaction) {
+      /* Call mirror node to get signers */
 
-    // Check if the transaction has any observers
+      /* Get signers email addresses */
 
-    // Check if the transaction has any signers
+      /* Filter signers if needed */
 
-    // Filter signers
+      const signersEmails = [''];
 
-    const signersEmails = transaction.signers.map(s => s.userKey.user.email);
-
-    if (signersEmails.length > 0) {
-      this.notificationsService.emit('notify_transaction_members', {
-        subject: 'Hedera Transaction Tool Registration',
-        emails: signersEmails,
-        text: `You have a transaction to sign</b>`,
-      });
+      if (signersEmails.length > 0) {
+        this.notificationsService.emit('notify_transaction_members', {
+          subject: 'Hedera Transaction Tool | Transaction to sign',
+          emails: signersEmails,
+          text: `You have a transaction to sign. Please visit the Hedera Transaction Tool to sign the transaction ${transaction.id}.`,
+        });
+      }
     }
 
     this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
