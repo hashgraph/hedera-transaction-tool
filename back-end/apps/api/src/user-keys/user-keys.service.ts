@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsRelations, In, Repository } from 'typeorm';
+import { FindOptionsRelations, Repository } from 'typeorm';
 import { User, UserKey } from '@entities';
 import { UploadUserKeyDto } from './dtos';
 import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';
@@ -89,15 +89,5 @@ export class UserKeysService {
   /* Returns the count of the user keys for the provided user */
   async getUserKeysCount(userId: number): Promise<number> {
     return this.repo.count({ where: { user: { id: userId } } });
-  }
-
-  async getUsersByKeys(publicKeys: string[]): Promise<User[]> {
-    const userKeys = await this.repo.find({
-      where: { publicKey: In(publicKeys) },
-      relations: ['user'],
-      select: ['user'],
-    });
-
-    return userKeys.map(uk => uk.user);
   }
 }
