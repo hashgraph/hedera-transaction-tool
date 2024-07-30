@@ -612,12 +612,40 @@ describe('Transactions (e2e)', () => {
 
       const { status, body } = await endpoint.get(null, userAuthCookie, 'page=1&size=99');
 
-      console.log(body.items);
-
       expect(status).toEqual(200);
       expect(body.totalItems).toEqual(
         addedTransactions.userToSignCount + testsAddedTransactionsCountUser,
       );
     });
+  });
+
+  describe('/transactions/sign/:transactionId', () => {
+    let endpoint: Endpoint;
+
+    beforeEach(() => {
+      endpoint = new Endpoint(server, '/transactions/sign');
+    });
+
+    it('(GET) should get keys required to sign for the given transaction', async () => {
+      const { status, body } = await endpoint.get('1', userAuthCookie);
+      const userKey1003 = await getUserKey(user.id, localnet1003.publicKeyRaw);
+
+      expect(status).toEqual(200);
+      expect(body).toEqual([userKey1003.id]);
+    });
+
+    it('(GET) should not get transactions to sign if not verified', () =>
+      endpoint.get('1', userNewAuthCookie).expect(403));
+
+    it('(GET) should not get transactions to sign if not logged in', () =>
+      endpoint.get('1', null).expect(401));
+
+    it('(GET) should get empty array if user should not sign the transaction', () =>
+      endpoint.get('4', userAuthCookie).expect(200).expect([]));
+
+    it('(GET) should get empty array if transaction does not exist', async () =>
+      endpoint.get('999', userAuthCookie).expect(200).expect([]));
+
+    // it('(GET) should get empty array if the transaction is already signed', async () => {});
   });
 });
