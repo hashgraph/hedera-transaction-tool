@@ -26,7 +26,7 @@ export function setupApp(app: NestExpressApplication, addLogger: boolean = true)
     }),
   );
 
-  // app.useGlobalFilters(new NotFoundExceptionFilter(), new BadRequestExceptionFilter());
+  app.useGlobalFilters(new NotFoundExceptionFilter(), new BadRequestExceptionFilter());
 
   if (addLogger) {
     app.useLogger(app.get(Logger));
