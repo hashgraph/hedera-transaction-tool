@@ -2,6 +2,12 @@ import * as chalk from 'chalk';
 import * as bcrypt from 'bcryptjs';
 
 import { DataSource, DeepPartial } from 'typeorm';
+import {
+  AccountCreateTransaction,
+  AccountUpdateTransaction,
+  FileCreateTransaction,
+  KeyList,
+} from '@hashgraph/sdk';
 
 import {
   User,
@@ -17,6 +23,7 @@ import {
 } from '../../../../libs/common/src/database/entities';
 
 import {
+  createTransactionId,
   generatePrivateKey,
   localnet1002,
   localnet1003,
@@ -326,22 +333,92 @@ export async function clearUsers() {
   await dataSource.destroy();
 }
 
-function verifyEnv() {
-  const requiredEnv = [
-    'POSTGRES_HOST',
-    'POSTGRES_PORT',
-    'POSTGRES_DATABASE',
-    'POSTGRES_USERNAME',
-    'POSTGRES_PASSWORD',
-  ];
-  const missingEnv = requiredEnv.filter(env => !process.env[env]);
+export async function addTransactions(dataSource: DataSource) {
+  const transactionRepo = dataSource.getRepository(Transaction);
 
-  if (missingEnv.length) {
-    throw new Error(`Missing environment variables: ${missingEnv.join(', ')}`);
+  const admin = await getUser('admin');
+  const user = await getUser('user');
+
+  if (!admin || !user) {
+    console.log(chalk.red('Failed to add transactions'));
+    return;
   }
 
-  if (isNaN(Number(process.env.POSTGRES_PORT))) {
-    throw new Error('POSTGRES_PORT must be a number');
+  const userKey1003 = await getUserKey(user.id, localnet1003.publicKeyRaw);
+  const userKey1004 = await getUserKey(user.id, localnet1004.publicKeyRaw);
+  const adminKey2 = await getUserKey(admin.id, localnet2.publicKeyRaw);
+  const adminKey1002 = await getUserKey(admin.id, localnet1002.publicKeyRaw);
+
+  if (!userKey1003 || !userKey1004 || !adminKey2 || !adminKey1002) {
+    throw new Error('Keys not found');
+  }
+
+  const accountCreate = new AccountCreateTransaction()
+    .setTransactionId(createTransactionId(localnet1003.accountId))
+    .setKey(localnet1003.publicKey);
+
+  const accountUpdate = new AccountUpdateTransaction()
+    .setTransactionId(createTransactionId(localnet1004.accountId))
+    .setAccountId(localnet1004.accountId)
+    .setKey(localnet1004.publicKey);
+
+  const fileCreate = new FileCreateTransaction()
+    .setTransactionId(createTransactionId(localnet1002.accountId))
+    .setKeys(new KeyList([localnet1002.publicKey, localnet2.publicKey]));
+
+  const fileCreate2 = new FileCreateTransaction()
+    .setTransactionId(createTransactionId(localnet1003.accountId))
+    .setKeys(new KeyList([localnet1003.publicKey, localnet1003.publicKey]));
+
+  const transactions = [
+    {
+      name: 'Simple Account Create Transaction',
+      description: 'This is a simple account create transaction',
+      body: Buffer.from(accountCreate.toBytes()),
+      creatorKeyId: userKey1003.id,
+      signature: Buffer.from(localnet1003.privateKey.sign(accountCreate.toBytes())),
+      network: localnet1003.network,
+    },
+    {
+      name: 'Simple Account Update Transaction',
+      description: 'This is a simple account update transaction',
+      body: Buffer.from(accountUpdate.toBytes()),
+      creatorKeyId: userKey1004.id,
+      signature: Buffer.from(localnet1004.privateKey.sign(accountUpdate.toBytes())),
+      network: localnet1004.network,
+    },
+    {
+      name: 'Simple File Create Transaction',
+      description: 'This is a simple file create transaction',
+      body: Buffer.from(fileCreate.toBytes()),
+      creatorKeyId: adminKey1002.id,
+      signature: Buffer.from(localnet1002.privateKey.sign(fileCreate.toBytes())),
+      network: localnet1002.network,
+    },
+    {
+      name: 'Second simple File Create Transaction',
+      description: 'This is a second simple file create transaction',
+      body: Buffer.from(fileCreate2.toBytes()),
+      creatorKeyId: userKey1003.id,
+      signature: Buffer.from(localnet1003.privateKey.sign(fileCreate.toBytes())),
+      network: localnet1003.network,
+    },
+  ];
+
+  for (const transaction of transactions) {
+    await transactionRepo.save(transaction);
+  }
+
+  console.log(chalk.green('Transactions added successfully \n'));
+}
+
+export async function getTransactions(dataSource: DataSource) {
+  const transactionRepo = dataSource.getRepository(Transaction);
+
+  try {
+    return await transactionRepo.find();
+  } catch (error) {
+    console.log(chalk.red(error.message));
   }
 }
 
@@ -359,6 +436,37 @@ export async function resetDatabase() {
   }
 
   await dataSource.destroy();
+}
+
+export async function withDataSource<T>(callback: (dataSource: DataSource, ...args) => T, ...args) {
+  const dataSource = await connectDatabase();
+
+  try {
+    return await callback(dataSource, ...args);
+  } catch (error) {
+    console.log(chalk.red(error.message));
+  }
+
+  await dataSource.destroy();
+}
+
+function verifyEnv() {
+  const requiredEnv = [
+    'POSTGRES_HOST',
+    'POSTGRES_PORT',
+    'POSTGRES_DATABASE',
+    'POSTGRES_USERNAME',
+    'POSTGRES_PASSWORD',
+  ];
+  const missingEnv = requiredEnv.filter(env => !process.env[env]);
+
+  if (missingEnv.length) {
+    throw new Error(`Missing environment variables: ${missingEnv.join(', ')}`);
+  }
+
+  if (isNaN(Number(process.env.POSTGRES_PORT))) {
+    throw new Error('POSTGRES_PORT must be a number');
+  }
 }
 
 async function connectDatabase() {
