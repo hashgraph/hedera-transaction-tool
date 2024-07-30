@@ -32,7 +32,8 @@ export class TransactionNotificationsService {
       this.mirrorNodeService,
       this.entityManager,
     );
-    const distinctUserIds = allKeys.map(k => k.user.id).filter((v, i, a) => a.indexOf(v) === i);
+
+    const distinctUserIds = allKeys.map(k => k.userId).filter((v, i, a) => a.indexOf(v) === i);
 
     /* Get users by keys */
     const users = await this.entityManager.find(User, {
