@@ -13,7 +13,7 @@
     "test:cov": "jest --config ./jest.config.ts --coverage",
     "test:watch": "jest --config ./jest.config.ts --watch",
     "test:watch:cov": "jest --config ./jest.config.ts --watch --coverage",
-    "test:e2e": "jest --config ./test/jest-e2e.config.ts"
+    "test:e2e": "jest --config ./test/jest-e2e.config.ts --runInBand"
   },
   "dependencies": {
     "otplib": "^12.0.1",
