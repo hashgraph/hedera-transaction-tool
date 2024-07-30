@@ -44,32 +44,36 @@ export class Endpoint {
   }
 
   public get(param?: string, cookie?: string) {
-    return get(this.server, `${this.endpoint}${param || ''}`, cookie);
+    return get(this.server, this.createEndpoint(param), cookie);
   }
 
   public post(data?, param?: string, cookie?: string) {
     if (data) {
-      return post(this.server, `${this.endpoint}${param || ''}`, cookie).send(data);
+      return post(this.server, this.createEndpoint(param), cookie).send(data);
     }
-    return post(this.server, `${this.endpoint}${param || ''}`, cookie);
+    return post(this.server, this.createEndpoint(param), cookie);
   }
 
   public put(data?, param?: string, cookie?: string) {
     if (data) {
-      return put(this.server, `${this.endpoint}${param || ''}`, cookie).send(data);
+      return put(this.server, this.createEndpoint(param), cookie).send(data);
     }
-    return put(this.server, `${this.endpoint}${param || ''}`, cookie);
+    return put(this.server, this.createEndpoint(param), cookie);
   }
 
   public patch(data?, param?: string, cookie?: string) {
     if (data) {
-      return patch(this.server, `${this.endpoint}${param || ''}`, cookie).send(data);
+      return patch(this.server, this.createEndpoint(param), cookie).send(data);
     }
-    return patch(this.server, `${this.endpoint}${param || ''}`, cookie);
+    return patch(this.server, this.createEndpoint(param), cookie);
   }
 
   public delete(param?: string, cookie?: string) {
-    return del(this.server, `${this.endpoint}${param || ''}`, cookie);
+    return del(this.server, this.createEndpoint(param), cookie);
+  }
+
+  private createEndpoint(param?: string) {
+    return `${this.endpoint}${param || ''}`.replaceAll('//', '/');
   }
 }
 
