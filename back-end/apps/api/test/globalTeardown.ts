@@ -1,10 +1,6 @@
 import { StartedTestContainer } from 'testcontainers';
 
-import { getFormattedFullTime } from './utils/timeUtils';
-
 export default async function globalTeardown() {
-  console.log(`${getFormattedFullTime(new Date())} Global teardown started`);
-
   /* Stops the Redis, Postgres, RabbitMQ containers */
   const result = await Promise.allSettled([
     stopContainer(global.REDIS_CONTAINER),
