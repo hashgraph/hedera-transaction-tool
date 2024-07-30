@@ -16,7 +16,14 @@ import {
   UserStatus,
 } from '../../../../libs/common/src/database/entities';
 
-import { generatePrivateKey } from './hederaUtils';
+import {
+  generatePrivateKey,
+  localnet1002,
+  localnet1003,
+  localnet1004,
+  localnet1022,
+  localnet2,
+} from './hederaUtils';
 
 import {
   adminEmail,
@@ -132,6 +139,38 @@ export async function addUsers(dataSource?: DataSource) {
   console.log(`Id: ${userNew.id}, User: ${userNew.email}, ${dummyNewPassword} \n`);
 }
 
+export async function addHederaLocalnetAccounts(dataSource?: DataSource) {
+  const hasInitialDataSource = Boolean(dataSource);
+
+  if (!dataSource) {
+    dataSource = await connectDatabase();
+  }
+
+  const admin = await getUser('admin');
+  const user = await getUser('user');
+
+  if (!admin || !user) {
+    console.log(chalk.red('Failed to add users'));
+    return;
+  }
+
+  for (const account of [localnet2, localnet1002, localnet1022]) {
+    await attachKeyToUser(dataSource, admin.id, {
+      publicKey: account.publicKeyRaw,
+    });
+  }
+
+  for (const account of [localnet1003, localnet1004]) {
+    await attachKeyToUser(dataSource, user.id, {
+      publicKey: account.publicKeyRaw,
+    });
+  }
+
+  if (!hasInitialDataSource) {
+    await dataSource.destroy();
+  }
+}
+
 export async function resetUsersState() {
   const dataSource = await connectDatabase();
 
@@ -212,6 +251,29 @@ export async function getUserKeys(id?: number) {
 
     await dataSource.destroy();
     return userKeys;
+  } catch (error) {
+    console.log(chalk.red(error.message));
+  }
+  await dataSource.destroy();
+}
+
+export async function getUserKey(userId: number, publicKey: string) {
+  const dataSource = await connectDatabase();
+
+  const userKeyRepo = dataSource.getRepository(UserKey);
+
+  try {
+    const userKey = await userKeyRepo.findOne({
+      where: {
+        user: {
+          id: userId,
+        },
+        publicKey,
+      },
+    });
+
+    await dataSource.destroy();
+    return userKey;
   } catch (error) {
     console.log(chalk.red(error.message));
   }
