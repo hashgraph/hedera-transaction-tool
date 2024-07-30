@@ -1,7 +1,12 @@
 import { NestExpressApplication } from '@nestjs/platform-express';
 
 import { Repository } from 'typeorm';
-import { AccountCreateTransaction } from '@hashgraph/sdk';
+import {
+  AccountCreateTransaction,
+  AccountUpdateTransaction,
+  Hbar,
+  TransferTransaction,
+} from '@hashgraph/sdk';
 
 import {
   Network,
@@ -12,7 +17,7 @@ import {
   TransactionType,
 } from '@entities';
 
-import { closeApp, createNestApp, login } from '../utils';
+import { closeApp, createNestApp, login, sleep } from '../utils';
 import {
   addHederaLocalnetAccounts,
   addTransactions,
@@ -24,7 +29,13 @@ import {
   resetUsersState,
 } from '../utils/databaseUtil';
 import { Endpoint } from '../utils/httpUtils';
-import { createTransactionId, localnet1003, localnet2 } from '../utils/hederaUtils';
+import {
+  createAccount,
+  createTransactionId,
+  localnet1003,
+  localnet2,
+  updateAccount,
+} from '../utils/hederaUtils';
 import { HederaAccount } from '../utils/models';
 
 describe('Transactions (e2e)', () => {
@@ -39,13 +50,10 @@ describe('Transactions (e2e)', () => {
   let admin: User;
   let user: User;
 
-  let addedTransactions: {
-    userTransactions: Transaction[];
-    adminTransactions: Transaction[];
-    total: number;
-  };
+  let addedTransactions: Awaited<ReturnType<typeof addTransactions>>;
 
-  let testsAddedTransactionsCount = 0;
+  let testsAddedTransactionsCountUser = 0;
+  let testsAddedTransactionsCountAdmin = 0;
 
   const createTransaction = async (u?: User, account?: HederaAccount) => {
     const transaction = new AccountCreateTransaction()
@@ -108,7 +116,7 @@ describe('Transactions (e2e)', () => {
       const transaction = await createTransaction();
 
       const { status, body } = await endpoint.post(transaction, null, userAuthCookie);
-      testsAddedTransactionsCount++;
+      testsAddedTransactionsCountUser++;
 
       expect(status).toEqual(201);
       expect(body.body).not.toEqual(transaction.body);
@@ -254,7 +262,7 @@ describe('Transactions (e2e)', () => {
       const { status } = await endpoint.post(transaction, null, userAuthCookie);
       const countAfter = await repo.count();
 
-      testsAddedTransactionsCount++;
+      testsAddedTransactionsCountUser++;
 
       expect(status).toEqual(400);
       // expect(body).toMatchObject(
@@ -302,7 +310,7 @@ describe('Transactions (e2e)', () => {
 
       expect(status).toEqual(200);
       expect(body.totalItems).toEqual(
-        addedTransactions.userTransactions.length + testsAddedTransactionsCount,
+        addedTransactions.userTransactions.length + testsAddedTransactionsCountUser,
       );
     });
 
@@ -367,6 +375,8 @@ describe('Transactions (e2e)', () => {
     beforeAll(async () => {
       await resetDatabase();
       await addHederaLocalnetAccounts();
+      testsAddedTransactionsCountUser = 0;
+      testsAddedTransactionsCountAdmin = 0;
       addedTransactions = await addTransactions();
 
       for (let i = 0; i < addedTransactions.userTransactions.length; i++) {
@@ -386,6 +396,8 @@ describe('Transactions (e2e)', () => {
     afterAll(async () => {
       await resetDatabase();
       await addHederaLocalnetAccounts();
+      testsAddedTransactionsCountUser = 0;
+      testsAddedTransactionsCountAdmin = 0;
       addedTransactions = await addTransactions();
     });
 
@@ -479,6 +491,133 @@ describe('Transactions (e2e)', () => {
 
     it('(GET) should not get transactions to sign if not logged in', async () => {
       await endpoint.get(null, null).expect(401);
+    });
+
+    it('(GET) should not get transactions to sign if user has no keys', async () => {
+      const user = await createUser('test123@test.com', '1234567890', false, UserStatus.NONE);
+      const cookie = await login(app, { ...user, password: '1234567890' });
+
+      const { body } = await endpoint.get(null, cookie, 'page=1&size=99');
+
+      expect(body.totalItems).toEqual(0);
+    });
+
+    let newlyCreatedAccount: HederaAccount;
+
+    it('(GET) should get transaction to sign if user key is included in the transaction', async () => {
+      const { accountId } = await createAccount(
+        localnet2.accountId,
+        localnet2.privateKey,
+        localnet2.publicKey,
+      );
+
+      newlyCreatedAccount = new HederaAccount()
+        .setAccountId(accountId.toString())
+        .setPrivateKey(localnet2.privateKey.toStringDer())
+        .setNetwork(localnet2.network);
+
+      await sleep(3000); //Wait for mirror node to update its data after account creation
+
+      const transaction = new AccountUpdateTransaction()
+        .setTransactionId(createTransactionId(localnet2.accountId))
+        .setAccountId(accountId)
+        .setKey(localnet1003.publicKey);
+      const buffer = Buffer.from(transaction.toBytes()).toString('hex');
+      const userKey = await getUserKey(admin.id, localnet2.publicKeyRaw);
+      if (userKey === null) throw new Error('TEST: User key not found');
+
+      const dto = {
+        name: 'In Test #1 Account Update Transaction',
+        description: 'TEST This is a account update transaction',
+        body: buffer,
+        creatorKeyId: userKey.id,
+        signature: Buffer.from(localnet2.privateKey.sign(transaction.toBytes())).toString('hex'),
+        network: localnet2.network,
+      };
+
+      await new Endpoint(server, '/transactions').post(dto, null, adminAuthCookie).expect(201);
+      testsAddedTransactionsCountAdmin++;
+      testsAddedTransactionsCountUser++;
+
+      const { status, body } = await endpoint.get(null, userAuthCookie, 'page=1&size=99');
+
+      expect(status).toEqual(200);
+      expect(body.totalItems).toEqual(
+        addedTransactions.userToSignCount + testsAddedTransactionsCountUser,
+      );
+    });
+
+    it('(GET) should get transaction to sign if user has a key with an account that is payer for transaction', async () => {
+      const transaction = new AccountCreateTransaction()
+        .setTransactionId(createTransactionId(localnet2.accountId))
+        .setKey(localnet1003.publicKey);
+      const buffer = Buffer.from(transaction.toBytes()).toString('hex');
+      const userKey = await getUserKey(user.id, localnet1003.publicKeyRaw);
+      if (userKey === null) throw new Error('TEST: User key not found');
+
+      const dto = {
+        name: 'In Test #2 Simple Account Create Transaction',
+        description: 'TEST This is a simple account create transaction',
+        body: buffer,
+        creatorKeyId: userKey.id,
+        signature: Buffer.from(localnet1003.privateKey.sign(transaction.toBytes())).toString('hex'),
+        network: localnet2.network,
+      };
+
+      await new Endpoint(server, '/transactions').post(dto, null, userAuthCookie).expect(201);
+      testsAddedTransactionsCountAdmin++;
+
+      const { status, body } = await endpoint.get(null, adminAuthCookie, 'page=1&size=99');
+
+      expect(status).toEqual(200);
+      expect(body.totalItems).toEqual(
+        addedTransactions.adminToSignCount + testsAddedTransactionsCountAdmin,
+      );
+    });
+
+    it('(GET) should get transaction to sign if a user has a key with an account that requires a signature upon receiving Hbars and this account is added as a receiver in a transaction', async () => {
+      await updateAccount(
+        localnet2.accountId,
+        localnet2.privateKey,
+        newlyCreatedAccount.accountId,
+        newlyCreatedAccount.privateKey,
+        {
+          newKey: localnet1003.publicKey,
+          newKeyPrivateKey: localnet1003.privateKey,
+          receiverSignatureRequired: true,
+        },
+      );
+
+      await sleep(3000); //Wait for mirror node to update its data after account creation
+
+      const transaction = new TransferTransaction()
+        .setTransactionId(createTransactionId(localnet2.accountId))
+        .addHbarTransfer(newlyCreatedAccount.accountId, Hbar.fromString('10'));
+      const buffer = Buffer.from(transaction.toBytes()).toString('hex');
+      const userKey = await getUserKey(admin.id, localnet2.publicKeyRaw);
+      if (userKey === null) throw new Error('TEST: User key not found');
+
+      const dto = {
+        name: 'In Test #3 TEST Transfer Transaction',
+        description: 'TEST This is a transfer transaction',
+        body: buffer,
+        creatorKeyId: userKey.id,
+        signature: Buffer.from(localnet2.privateKey.sign(transaction.toBytes())).toString('hex'),
+        network: localnet2.network,
+      };
+
+      await new Endpoint(server, '/transactions').post(dto, null, adminAuthCookie).expect(201);
+      testsAddedTransactionsCountAdmin++;
+      testsAddedTransactionsCountUser++;
+
+      const { status, body } = await endpoint.get(null, userAuthCookie, 'page=1&size=99');
+
+      console.log(body.items);
+
+      expect(status).toEqual(200);
+      expect(body.totalItems).toEqual(
+        addedTransactions.userToSignCount + testsAddedTransactionsCountUser,
+      );
     });
   });
 });
