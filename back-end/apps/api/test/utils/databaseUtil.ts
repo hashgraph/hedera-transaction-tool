@@ -18,6 +18,8 @@ import {
 
 import { generatePrivateKey } from './hederaUtils';
 
+import { adminEmail, adminPassword, dummyEmail, dummyPassword } from './constants';
+
 export async function createUser(
   dataSource: DataSource,
   email: string = 'admin@test.com',
@@ -74,9 +76,8 @@ export async function attachKeyToUser(
 export async function addUsers() {
   const dataSource = await connectDatabase();
 
-  const password = '1234567890';
-  const admin = await createUser(dataSource, 'admin@test.com', password, true);
-  const user = await createUser(dataSource, 'dummy@test.com', password, false);
+  const admin = await createUser(dataSource, adminEmail, adminPassword, true);
+  const user = await createUser(dataSource, dummyEmail, dummyPassword, false);
 
   const { publicKeyRaw, mnemonicHash, index } = await generatePrivateKey();
   const {
@@ -105,8 +106,8 @@ export async function addUsers() {
   dataSource.destroy();
 
   console.log(chalk.green('Users added successfully \n'));
-  console.log(`Id: ${admin.id}, Admin: ${admin.email}, ${password}, ${publicKeyRaw}`);
-  console.log(`Id: ${user.id}, User: ${user.email}, ${password}, ${publicKeyRaw1} \n`);
+  console.log(`Id: ${admin.id}, Admin: ${admin.email}, ${adminPassword}, ${publicKeyRaw}`);
+  console.log(`Id: ${user.id}, User: ${user.email}, ${dummyPassword}, ${publicKeyRaw1} \n`);
 }
 
 function verifyEnv() {

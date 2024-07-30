@@ -4,6 +4,7 @@ import * as request from 'supertest';
 
 import { closeApp, createNestApp } from '../utils';
 import { getCookieRaw } from '../utils/httpUtils';
+import { admin, validEmail } from '../utils/constants';
 
 describe('Auth (e2e)', () => {
   let app: NestExpressApplication;
@@ -23,8 +24,8 @@ describe('Auth (e2e)', () => {
     const res = await request(server)
       .post('/auth/login')
       .send({
-        email: 'admin@test.com',
-        password: '1234567890',
+        email: admin.email,
+        password: admin.password,
       })
       .expect(200);
 
@@ -36,7 +37,7 @@ describe('Auth (e2e)', () => {
       .post('/auth/signup')
       .set('Cookie', authCookie)
       .send({
-        email: 'some.valid.email@test.com',
+        email: validEmail,
       })
       .expect(201);
   });
@@ -45,7 +46,7 @@ describe('Auth (e2e)', () => {
     return request(server)
       .post('/auth/signup')
       .send({
-        email: 'some.valid.email@test.com',
+        email: validEmail,
       })
       .expect(401);
   });
