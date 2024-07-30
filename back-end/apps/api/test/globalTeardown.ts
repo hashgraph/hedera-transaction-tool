@@ -54,7 +54,11 @@ async function stopContainer(container: StartedTestContainer) {
 async function stopHederaLocalnet() {
   console.log('Stopping Hedera Localnet...');
 
-  await execPromise(`hedera stop -d`);
-
-  console.log('Hedera Localnet stopped');
+  try {
+    await execPromise(`hedera stop -d`);
+    console.log('Hedera Localnet stopped');
+  } catch (error) {
+    console.log('Error stopping Hedera Localnet');
+    console.log(error);
+  }
 }

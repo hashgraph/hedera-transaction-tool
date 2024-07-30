@@ -157,9 +157,13 @@ async function startChainService() {
 async function startHederaLocalnet() {
   console.log('Starting Hedera Localnet...');
 
-  await execPromise(`hedera start -d`);
-
-  console.log('Hedera Localnet started');
+  try {
+    await execPromise(`hedera start -d`);
+    console.log('Hedera Localnet started');
+  } catch (error) {
+    console.log('Error starting Hedera Localnet:');
+    console.log(error);
+  }
 }
 
 function getGetawayFromTestContainer(container: StartedTestContainer) {
