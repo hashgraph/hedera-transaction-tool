@@ -119,8 +119,9 @@ const useUserStore = defineStore('user', () => {
     }
     await ush.afterOrganizationSelection(personal.value, selectedOrganization, keyPairs, router);
     refetchAccounts();
-    await contacts.fetch();
-    await notifications.fetchPreferences();
+    if (organization) {
+      await Promise.allSettled([contacts.fetch(), notifications.fetchPreferences()]);
+    }
   };
 
   const refetchUserState = async () => await ush.refetchUserState(selectedOrganization);
