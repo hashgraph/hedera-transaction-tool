@@ -134,7 +134,7 @@ describe('Transaction Notifications Service', () => {
       });
     });
 
-    it('should not send email if user turned of his notifications for signatures', async () => {
+    it('should not send email if user turned off his notifications for signatures', async () => {
       const transaction = { id: 1, transactionId: '0x123' } as Transaction;
       entityManager.findOne.mockResolvedValueOnce(transaction);
 
@@ -209,7 +209,7 @@ describe('Transaction Notifications Service', () => {
       });
     });
 
-    it('should not send email if user turned of his notifications for ready for execution', async () => {
+    it('should not send email if user turned off his notifications for ready for execution', async () => {
       const transaction = {
         id: 1,
         transactionId: '0x123',
