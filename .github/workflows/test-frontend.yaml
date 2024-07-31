@@ -101,6 +101,7 @@ jobs:
         working-directory: automation
 
   unit-test:
+    name: ${{ matrix.test-suite }} unit tests
     runs-on: [self-hosted, Linux, medium, ephemeral]
     strategy:
       fail-fast: false
