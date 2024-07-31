@@ -24,8 +24,8 @@ const requiredSignatures = ref(notificationsStore.notifications.email['required-
           label="Transaction Threshold Reached"
         />
         <p class="text-small text-secondary mt-2">
-          You will be notified when a transaction you are a Signer in has collected enough signature
-          to satisfy the threshold.
+          You will be notified when a transaction you are a Creator in has collected enough
+          signature to satisfy the threshold.
         </p>
       </div>
       <div class="mt-6">
