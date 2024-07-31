@@ -19,3 +19,8 @@ export class NotificationPreferences {
   @Column({ default: true })
   transactionReadyForExecution: boolean;
 }
+
+export type NotificationPreferencesOptions = Omit<
+  NotificationPreferences,
+  'id' | 'user' | 'userId'
+>;
