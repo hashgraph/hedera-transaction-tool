@@ -189,6 +189,24 @@ describe('NotificationPreferencesService', () => {
       expect(repo.insert).toHaveBeenCalledWith(newPreferences);
       expect(result).toEqual(newPreferences);
     });
+
+    it('should not update preferences if no fields are provided', async () => {
+      const dto: UpdateNotificationPreferencesDto = {};
+
+      const existingPreferences = {
+        id: 1,
+        userId: user.id,
+        transactionRequiredSignature: false,
+        transactionReadyForExecution: true,
+      } as NotificationPreferences;
+      repo.findOne.mockResolvedValue(existingPreferences);
+
+      const result = await service.updatePreferences(user, dto);
+
+      expect(repo.findOne).toHaveBeenCalledWith({ where: { userId: user.id } });
+      expect(repo.update).not.toHaveBeenCalled();
+      expect(result).toEqual(existingPreferences);
+    });
   });
 
   describe('getPreferencesOrCreate', () => {

@@ -30,6 +30,8 @@ export class NotificationPreferencesService {
 
     const preferences = await this.getPreferences(user);
 
+    if (!updateTxReqSignature && !updateTxReadyForExecution) return preferences;
+
     if (preferences) {
       await this.repo.update(
         {
