@@ -12,6 +12,8 @@ describe('NotificationPreferencesService', () => {
   const repo = mockDeep<Repository<NotificationPreferences>>();
 
   beforeEach(async () => {
+    jest.resetAllMocks();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NotificationPreferencesService,
