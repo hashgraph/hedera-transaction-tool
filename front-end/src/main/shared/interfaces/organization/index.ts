@@ -3,6 +3,7 @@ export * from './user';
 export * from './transactions';
 export * from './signers';
 export * from './observers';
+export * from './notification-preferences';
 
 export type PaginatedResourceDto<T> = {
   totalItems: number;

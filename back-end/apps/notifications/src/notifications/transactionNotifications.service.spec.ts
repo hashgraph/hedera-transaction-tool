@@ -123,12 +123,40 @@ describe('Transaction Notifications Service', () => {
         where: {
           id: In([4]),
         },
+        relations: {
+          notificationPreferences: true,
+        },
       });
       expect(emailService.notifyEmail).toHaveBeenCalledWith({
         subject: 'Hedera Transaction Tool | Transaction to sign',
         email: ['user@example.com'],
         text: `You have a transaction to sign. Please visit the Hedera Transaction Tool to sign the transaction 0x123.`,
       });
+    });
+
+    it('should not send email if user turned off his notifications for signatures', async () => {
+      const transaction = { id: 1, transactionId: '0x123' } as Transaction;
+      entityManager.findOne.mockResolvedValueOnce(transaction);
+
+      const keys = [{ userId: 1 }] as UserKey[];
+      jest.mocked(keysRequiredToSign).mockResolvedValueOnce(keys);
+
+      const users = [
+        {
+          id: 1,
+          email: 'user@example.com',
+          notificationPreferences: {
+            transactionRequiredSignature: false,
+          },
+        },
+      ];
+      entityManager.find.mockResolvedValueOnce(users);
+
+      const dto: NotifyForTransactionDto = { transactionId: 1 };
+
+      await service.notifyTransactionRequiredSigners(dto);
+
+      expect(emailService.notifyEmail).not.toHaveBeenCalled();
     });
   });
 
@@ -179,6 +207,56 @@ describe('Transaction Notifications Service', () => {
         email: 'user@example.com',
         text: `Your transaction 0x123 is ready for execution.`,
       });
+    });
+
+    it('should not send email if user turned off his notifications for ready for execution', async () => {
+      const transaction = {
+        id: 1,
+        transactionId: '0x123',
+        creatorKey: { user: { id: 1 } },
+      } as Transaction;
+      const user = {
+        id: 1,
+        email: 'user@example.com',
+        notificationPreferences: {
+          transactionReadyForExecution: false,
+        },
+      } as User;
+
+      entityManager.findOne.mockResolvedValueOnce(transaction);
+      entityManager.findOne.mockResolvedValueOnce(user);
+
+      const dto: NotifyForTransactionDto = { transactionId: 1 };
+
+      await service.notifyTransactionCreatorOnReadyForExecution(dto);
+
+      expect(emailService.notifyEmail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('filterByNotificationPreferences', () => {
+    it('should return empty array if no users', () => {
+      const users = [] as User[];
+      const result = service.filterByNotificationPreferences(users, 'transactionReadyForExecution');
+
+      expect(result).toEqual([]);
+    });
+
+    it('should return all users if no notification preferences', () => {
+      const users = [{ id: 1 }, { id: 2 }] as User[];
+      const result = service.filterByNotificationPreferences(users, 'transactionReadyForExecution');
+
+      expect(result).toEqual(users);
+    });
+
+    it('should return only users with notification preferences', () => {
+      const users = [
+        { id: 1, notificationPreferences: { transactionReadyForExecution: true } },
+        { id: 2, notificationPreferences: { transactionReadyForExecution: false } },
+      ] as User[];
+      const result = service.filterByNotificationPreferences(users, 'transactionReadyForExecution');
+
+      expect(result).toEqual([users[0]]);
     });
   });
 });

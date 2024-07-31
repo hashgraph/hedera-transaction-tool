@@ -9,10 +9,14 @@ export function addGuards(router: Router) {
 
   router.beforeEach(to => {
     const userIsLoggedIn = user.personal?.isLoggedIn;
+    const userIsLoggedInOrganization = isLoggedInOrganization(user.selectedOrganization);
     const userIsAdmin =
       isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin;
 
-    if (to.meta.onlyAdmin && !userIsAdmin) {
+    if (
+      (to.meta.onlyAdmin && !userIsAdmin) ||
+      (to.meta.onlyOrganization && !userIsLoggedInOrganization)
+    ) {
       return { name: 'transactions' };
     }
 
@@ -20,7 +24,7 @@ export function addGuards(router: Router) {
       (!userIsLoggedIn && to.name === 'accountSetup') ||
       (userIsLoggedIn && to.name === 'login') ||
       (!user.shouldSetupAccount && to.name === 'accountSetup') ||
-      (isLoggedInOrganization(user.selectedOrganization) && to.name === 'organizationLogin')
+      (userIsLoggedInOrganization && to.name === 'organizationLogin')
     ) {
       return router.previousPath ? { path: router.previousPath } : { name: 'transactions' };
     }

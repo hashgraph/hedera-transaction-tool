@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 
 import { HederaAccount } from '@prisma/client';
 
@@ -10,7 +10,6 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
 
 import { useToast } from 'vue-toast-notification';
-import { useRouter } from 'vue-router';
 
 import { deleteUser } from '@renderer/services/organization';
 import { removeContact } from '@renderer/services/contactsService';
@@ -22,6 +21,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import ContactDetails from '@renderer/components/Contacts/ContactDetails.vue';
 import DeleteContactModal from '@renderer/components/Contacts/DeleteContactModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
+import useRedirectOnOnlyOrganization from '@renderer/composables/useRedirectOnOnlyOrganization';
 
 /* Stores */
 const user = useUserStore();
@@ -29,8 +29,8 @@ const network = useNetworkStore();
 const contacts = useContactsStore();
 
 /* Composables */
+useRedirectOnOnlyOrganization();
 const toast = useToast();
-const router = useRouter();
 
 /* State */
 const fetching = ref(false);
@@ -96,16 +96,6 @@ onBeforeMount(async () => {
     selectedId.value = contactList.value[0]?.user?.id || null;
   }
 });
-
-/* Watchers */
-watch(
-  () => user.selectedOrganization,
-  () => {
-    if (!isLoggedInOrganization(user.selectedOrganization)) {
-      router.push({ name: 'transactions' });
-    }
-  },
-);
 </script>
 
 <template>

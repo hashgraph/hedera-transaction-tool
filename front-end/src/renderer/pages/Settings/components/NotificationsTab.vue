@@ -1,16 +1,15 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import useNotificationsStore from '@renderer/stores/storeNotifications';
+
+import useRedirectOnOnlyOrganization from '@renderer/composables/useRedirectOnOnlyOrganization';
 
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 
-import useNotificationsStore from '@renderer/stores/storeNotifications';
-
 /* Stores */
-const notificationsStore = useNotificationsStore();
+const notifications = useNotificationsStore();
 
-/* State */
-const threshholdReached = ref(notificationsStore.notifications.email['threshhold-reached']);
-const requiredSignatures = ref(notificationsStore.notifications.email['required-signatures']);
+/* Composable */
+useRedirectOnOnlyOrganization();
 </script>
 
 <template>
@@ -19,18 +18,24 @@ const requiredSignatures = ref(notificationsStore.notifications.email['required-
       <p>Email notifications</p>
       <div class="mt-4">
         <AppSwitch
-          v-model:checked="threshholdReached"
-          name="threshhold-reached"
+          :checked="notifications.notifications['threshold-reached']"
+          @update:checked="
+            notifications.updatePreferences({ transactionReadyForExecution: $event })
+          "
+          name="threshold-reached"
           label="Transaction Threshold Reached"
         />
         <p class="text-small text-secondary mt-2">
-          You will be notified when a transaction you are a Signer in has collected enough signature
-          to satisfy the threshold.
+          You will be notified when a transaction you are a Creator in has collected enough
+          signature to satisfy the threshold.
         </p>
       </div>
       <div class="mt-6">
         <AppSwitch
-          v-model:checked="requiredSignatures"
+          :checked="notifications.notifications['required-signatures']"
+          @update:checked="
+            notifications.updatePreferences({ transactionRequiredSignature: $event })
+          "
           name="required-signatures"
           label="Required Signature"
         />

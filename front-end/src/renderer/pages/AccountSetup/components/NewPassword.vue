@@ -3,6 +3,7 @@ import { inject, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useContactsStore from '@renderer/stores/storeContacts';
+import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 import { useToast } from 'vue-toast-notification';
 
@@ -28,6 +29,7 @@ const props = defineProps<{
 /* Stores */
 const user = useUserStore();
 const contacts = useContactsStore();
+const notifications = useNotificationsStore();
 
 /* Composables */
 const toast = useToast();
@@ -100,6 +102,7 @@ const handleChangePassword = async () => {
 
       await user.refetchUserState();
       await contacts.fetch();
+      await notifications.fetchPreferences();
 
       props.handleContinue();
 
