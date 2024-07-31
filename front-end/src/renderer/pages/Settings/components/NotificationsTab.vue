@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import useNotificationsStore from '@renderer/stores/storeNotifications';
 
+import useRedirectOnOnlyOrganization from '@renderer/composables/useRedirectOnOnlyOrganization';
+
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 
 /* Stores */
 const notifications = useNotificationsStore();
+
+/* Composable */
+useRedirectOnOnlyOrganization();
 </script>
 
 <template>
