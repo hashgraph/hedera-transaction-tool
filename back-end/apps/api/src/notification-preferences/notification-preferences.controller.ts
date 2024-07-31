@@ -22,7 +22,8 @@ export class NotificationPreferencesController {
 
   @ApiOperation({
     summary: 'Updates the notification preferences for the current user',
-    description: 'Upload a user key for the current user.',
+    description:
+      'Updates the notification preferences for the current user. If the preferences do not exist, they will be created.',
   })
   @ApiResponse({
     status: 200,
@@ -39,7 +40,8 @@ export class NotificationPreferencesController {
 
   @ApiOperation({
     summary: "Get user's notification preferences",
-    description: 'Get notification preferences for the provided user id.',
+    description:
+      'Get notification preferences for the provided user id. If the preferences do not exist, they will be created and be all true by default.',
   })
   @ApiResponse({
     status: 200,
