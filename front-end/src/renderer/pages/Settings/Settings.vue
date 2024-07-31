@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 
+import useUserStore from '@renderer/stores/storeUser';
+
 import { useRouter, RouterView } from 'vue-router';
 
 import AppTabs, { TabItem } from '@renderer/components/ui/AppTabs.vue';
 import ImportExternalPrivateKeyDropDown from '@renderer/components/ImportExternalPrivateKeyDropDown.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+
+/* Stores */
+const user = useUserStore();
 
 /* Composables */
 const router = useRouter();
@@ -38,13 +44,34 @@ const propTabIndex = tabTitles.findIndex(
 /* State */
 const activeTabIndex = ref(propTabIndex >= 0 ? propTabIndex : 0);
 
-/* Getters */
+/* Computed */
+const visibleTabItems = computed(() =>
+  tabItems.filter(t => {
+    if (t.title === notificationsTitle) {
+      return isLoggedInOrganization(user.selectedOrganization);
+    }
+
+    return true;
+  }),
+);
 const activeTabTitle = computed(() => tabItems[activeTabIndex.value].title);
 
 /* Watchers */
 watch(activeTabIndex, newIndex => {
   router.push(tabTitles[newIndex]);
 });
+
+watch(
+  () => user.selectedOrganization,
+  () => {
+    if (
+      activeTabTitle.value === notificationsTitle &&
+      !isLoggedInOrganization(user.selectedOrganization)
+    ) {
+      activeTabIndex.value = tabItems.findIndex(t => t.title === generalTitle);
+    }
+  },
+);
 
 watch(router.currentRoute, newRoute => {
   const title = newRoute.path
@@ -83,7 +110,7 @@ watch(router.currentRoute, newRoute => {
       </div>
       <div class="overflow-hidden mt-7">
         <AppTabs
-          :items="tabItems"
+          :items="visibleTabItems"
           v-model:active-index="activeTabIndex"
           :content-container-class="'fill-remaining'"
           class="flex-column-100"
