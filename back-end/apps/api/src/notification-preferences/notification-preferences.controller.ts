@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Patch, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { Serialize } from '@app/common';
@@ -28,7 +28,8 @@ export class NotificationPreferencesController {
     status: 200,
     type: NotificationPreferencesDto,
   })
-  @Post()
+  @Patch()
+  @HttpCode(200)
   updatePreferences(
     @GetUser() user: User,
     @Body() body: UpdateNotificationPreferencesDto,
@@ -45,6 +46,7 @@ export class NotificationPreferencesController {
     type: NotificationPreferencesDto,
   })
   @Get()
+  @HttpCode(200)
   getPreferencesOrCreate(@GetUser() user: User): Promise<NotificationPreferences> {
     return this.notificationPreferencesService.getPreferencesOrCreate(user);
   }
