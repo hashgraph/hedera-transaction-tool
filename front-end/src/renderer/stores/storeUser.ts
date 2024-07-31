@@ -15,6 +15,7 @@ import { useRouter } from 'vue-router';
 import useNetworkStore from './storeNetwork';
 import useContactsStore from './storeContacts';
 import useWebsocketConnection from './storeWebsocketConnection';
+import useNotificationsStore from './storeNotifications';
 
 import * as ush from '@renderer/utils/userStoreHelpers';
 
@@ -22,6 +23,7 @@ const useUserStore = defineStore('user', () => {
   /* Stores */
   const network = useNetworkStore();
   const contacts = useContactsStore();
+  const notifications = useNotificationsStore();
   const ws = useWebsocketConnection();
 
   /* Composables */
@@ -118,6 +120,7 @@ const useUserStore = defineStore('user', () => {
     await ush.afterOrganizationSelection(personal.value, selectedOrganization, keyPairs, router);
     refetchAccounts();
     await contacts.fetch();
+    await notifications.fetchPreferences();
   };
 
   const refetchUserState = async () => await ush.refetchUserState(selectedOrganization);
