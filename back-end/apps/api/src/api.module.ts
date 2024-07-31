@@ -16,6 +16,7 @@ import { AuthModule } from './auth/auth.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { UserKeysModule } from './user-keys/user-keys.module';
 import { UsersModule } from './users/users.module';
+import { NotificationPreferencesModule } from './notification-preferences/notification-preferences.module';
 
 export const config = ConfigModule.forRoot({
   envFilePath: getEnvFilePaths(),
@@ -47,6 +48,7 @@ export const config = ConfigModule.forRoot({
     UserKeysModule,
     AuthModule,
     TransactionsModule,
+    NotificationPreferencesModule,
     NotificationsProxyModule,
     HealthModule,
     IpThrottlerModule,
