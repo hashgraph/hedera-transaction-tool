@@ -4,7 +4,7 @@ import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager, In } from 'typeorm';
 
 import { keysRequiredToSign, MirrorNodeService, NotifyForTransactionDto } from '@app/common';
-import { Transaction, User } from '@entities';
+import { NotificationPreferencesOptions, Transaction, User } from '@entities';
 
 import { EmailService } from '../email/email.service';
 
@@ -49,8 +49,14 @@ export class TransactionNotificationsService {
       where: {
         id: In(distinctUserIds),
       },
+      relations: {
+        notificationPreferences: true,
+      },
     });
-    const emails = users.map(u => u.email);
+
+    const emails = this.filterByNotificationPreferences(users, 'transactionRequiredSignature').map(
+      u => u.email,
+    );
 
     if (emails.length > 0) {
       this.emailService.notifyEmail({
@@ -77,20 +83,36 @@ export class TransactionNotificationsService {
     if (!transaction) throw new Error('Transaction not found');
 
     /* Get user */
-    const user = await this.entityManager.findOne(User, {
+    let user = await this.entityManager.findOne(User, {
       where: {
         id: transaction.creatorKey?.user?.id,
+      },
+      relations: {
+        notificationPreferences: true,
       },
     });
 
     if (!user) throw new Error('User not found');
 
-    if (user.email) {
+    [user] = this.filterByNotificationPreferences([user], 'transactionReadyForExecution');
+
+    if (user && user.email) {
       this.emailService.notifyEmail({
         subject: 'Hedera Transaction Tool | Transaction ready for execution',
         email: user.email,
         text: `Your transaction ${transaction.transactionId} is ready for execution.`,
       });
     }
+  }
+
+  filterByNotificationPreferences(
+    users: User[],
+    notificationType: keyof NotificationPreferencesOptions,
+  ) {
+    return users.filter(u => {
+      if (!u.notificationPreferences || u.notificationPreferences[notificationType]) return true;
+
+      return false;
+    });
   }
 }
