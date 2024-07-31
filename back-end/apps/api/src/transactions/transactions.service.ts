@@ -439,7 +439,7 @@ export class TransactionsService {
     }
 
     if (transaction.creatorKey?.user?.id !== user.id) {
-      throw new BadRequestException('Only the creator of the transaction is able to delete it');
+      throw new UnauthorizedException('Only the creator of the transaction is able to cancel it');
     }
 
     if (
@@ -551,6 +551,8 @@ export class TransactionsService {
     const forbiddenStatuses = Object.values(TransactionStatus).filter(
       s => !allowedStatuses.includes(s),
     );
+
+    if (!filtering || filtering.length === 0) return Not(In([...forbiddenStatuses]));
 
     const statusFilter = filtering.find(f => f.property === 'status');
 

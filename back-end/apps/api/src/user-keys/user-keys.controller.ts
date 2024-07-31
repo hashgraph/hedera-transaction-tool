@@ -64,8 +64,8 @@ export class UserKeysController {
     type: Boolean,
   })
   @Delete('/:id')
-  removeKey(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
+  async removeKey(@GetUser() user: User, @Param('id', ParseIntPipe) id: number): Promise<boolean> {
     // If this returns the result, the dto can't decode the id as things are null
-    return this.userKeysService.removeKey(id);
+    return this.userKeysService.removeUserKey(user, id);
   }
 }

@@ -522,7 +522,7 @@ describe('TransactionsService', () => {
     transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
 
     await expect(service.cancelTransaction({ id: 1 } as User, 123)).rejects.toThrow(
-      'Only the creator of the transaction is able to delete it',
+      'Only the creator of the transaction is able to cancel it',
     );
   });
 

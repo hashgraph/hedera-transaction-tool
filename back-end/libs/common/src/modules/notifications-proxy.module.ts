@@ -14,7 +14,7 @@ import { NOTIFICATIONS_SERVICE } from '@app/common';
           transport: Transport.RMQ,
           options: {
             urls: [configService.getOrThrow<string>('RABBITMQ_URI')],
-            queue: 'notifications',
+            queue: NOTIFICATIONS_SERVICE,
           },
         }),
         inject: [ConfigService],

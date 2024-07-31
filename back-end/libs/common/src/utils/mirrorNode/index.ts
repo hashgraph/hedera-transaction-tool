@@ -25,7 +25,7 @@ export const MirrorNetwork = {
   PREVIEWNET: ['previewnet.mirrornode.hedera.com:443'],
   /* Using host.docker.internal to access the host machine from the container, will work only in dev mode */
   /* Local node will be used only in development mode */
-  LOCAL_NODE: ['host.docker.internal:5600'],
+  LOCAL_NODE: [`${process.env.NODE_ENV !== 'test' ? 'host.docker.internal' : '127.0.0.1'}:5600`],
 };
 
 export const MirrorNodeBaseURL = {
@@ -53,5 +53,5 @@ export const MirrorNodeBaseURL = {
   PREVIEWNET: 'https://previewnet.mirrornode.hedera.com/api/v1',
   /* Using host.docker.internal to access the host machine from the container, will work only in dev mode */
   /* Local node will be used only in development mode */
-  LOCAL_NODE: 'http://host.docker.internal:5551/api/v1',
+  LOCAL_NODE: `http://${process.env.NODE_ENV !== 'test' ? 'host.docker.internal' : '127.0.0.1'}:5551/api/v1`,
 };

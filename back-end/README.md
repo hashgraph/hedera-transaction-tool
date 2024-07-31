@@ -64,17 +64,47 @@ Tests are run per service. Navigate to the service you want to test. There you c
 
 ```bash
 cd apps/api
-npm run test:cov
+pnpm run test:cov
 ```
 
 ```bash
 cd apps/notifications
-npm run test:cov
+pnpm run test:cov
 ```
 
 ```bash
 cd apps/chain
-npm run test:cov
+pnpm run test:cov
+```
+
+### Running E2E test
+
+The first task is to start Docker!
+
+To run the E2E tests navigate to the the desired service and follow the steps below: \
+A testing containers for `Postgres`, `Redis`, `RabbitMQ` and `Hedera Localnet` will be started once you run the test command.
+
+Things to notice:
+
+- Note that you should not have the back-end running, stop it!
+
+- Note that after running the tests you may receive an error when starting the back-end with `docker compose`. This problem is mitigated by recreating the back-end containers, to do so start the back-end with the `--force-recreate` flag:
+
+```bash
+docker compose up --force-recreate
+```
+
+- Note that the `Hedera Localnet` may boot up slowly, if you want to speed-up the process, start it manually by running:
+
+```bash
+pnpx hedera start -d
+```
+
+After the reading the above notes, start the tests:
+
+```bash
+cd apps/api
+pnpm run test:e2e
 ```
 
 ### Exposed Endpoints
@@ -93,7 +123,7 @@ The defaults are:
 
 1. Make sure at least the database is running or just `docker compose up`
 2. Create `.env` file inside `scripts` folder
-3. Run `npm run create-admin` and follow the steps
+3. Run `pnpm run create-admin` and follow the steps
 
 ### Start developing on HTTPS
 

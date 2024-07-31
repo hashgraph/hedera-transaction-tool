@@ -7,7 +7,7 @@ import { User, UserKey } from '@entities';
 
 import { MAX_USER_KEYS, UserKeysService } from './user-keys.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 describe('UserKeysService', () => {
   let service: UserKeysService;
@@ -55,7 +55,7 @@ describe('UserKeysService', () => {
     let dto;
 
     beforeEach(() => {
-      user = { id: 1, name: 'Test User' } as unknown as User;
+      user = { id: 1, email: 'email@test.com' } as unknown as User;
       dto = { publicKey: 'test-public-key', mnemonicHash: 'test-hash', index: 0 };
       service.getUserKeys = jest.fn().mockResolvedValue([]);
     });
@@ -179,6 +179,39 @@ describe('UserKeysService', () => {
       const result = await service.removeKey(1);
 
       expect(repo.softRemove).toHaveBeenCalledWith(userKey);
+      expect(result).toEqual(true);
+    });
+  });
+
+  describe('removeUserKey', () => {
+    let user: User;
+    let userKey: UserKey;
+
+    beforeEach(() => {
+      user = { id: 1, email: 'email@test.com' } as User;
+      userKey = { id: 1, publicKey: 'test-public-key', user: user } as UserKey;
+    });
+
+    it('should throw NotFoundException if the key does not exist', async () => {
+      service.getUserKey = jest.fn().mockResolvedValue(undefined);
+
+      await expect(service.removeUserKey(user, 1)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException if the key is not owned by the user', async () => {
+      const anotherUser = { id: 2, email: 'email@test.com' } as User;
+      service.getUserKey = jest.fn().mockResolvedValue({ ...userKey, user: anotherUser });
+
+      await expect(service.removeUserKey(user, 1)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should soft remove the user key if it exists and is owned by the user', async () => {
+      service.getUserKey = jest.fn().mockResolvedValue(userKey);
+      const softRemoveSpy = jest.spyOn(repo, 'softRemove').mockResolvedValue(undefined);
+
+      const result = await service.removeUserKey(user, 1);
+
+      expect(softRemoveSpy).toHaveBeenCalledWith(userKey);
       expect(result).toEqual(true);
     });
   });

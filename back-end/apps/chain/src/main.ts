@@ -1,32 +1,13 @@
 import { NestFactory } from '@nestjs/core';
-import { ConfigService } from '@nestjs/config';
-import { Transport } from '@nestjs/microservices';
-import { ValidationPipe } from '@nestjs/common';
-
-import { Logger } from 'nestjs-pino';
 
 import { ChainModule } from './chain.module';
-import { CHAIN_SERVICE } from '@app/common';
+
+import { setupApp } from './setup-app';
 
 async function bootstrap() {
   const app = await NestFactory.create(ChainModule);
-  app.useLogger(app.get(Logger));
 
-  const configService = app.get(ConfigService);
-  app.connectMicroservice({
-    transport: Transport.RMQ,
-    options: {
-      urls: [configService.getOrThrow<string>('RABBITMQ_URI')],
-      queue: CHAIN_SERVICE,
-    },
-  });
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-    }),
-  );
+  setupApp(app);
 
   await app.startAllMicroservices();
   await app.init();

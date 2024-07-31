@@ -86,6 +86,22 @@ export class UserKeysService {
     return true;
   }
 
+  async removeUserKey(user: User, id: number): Promise<boolean> {
+    const userKey = await this.getUserKey({ id }, { user: true });
+
+    if (!userKey) {
+      throw new NotFoundException('Key not found');
+    }
+
+    if (userKey.user.id !== user.id) {
+      throw new BadRequestException('Key not owned by user');
+    }
+
+    await this.repo.softRemove(userKey);
+
+    return true;
+  }
+
   /* Returns the count of the user keys for the provided user */
   async getUserKeysCount(userId: number): Promise<number> {
     return this.repo.count({ where: { user: { id: userId } } });
