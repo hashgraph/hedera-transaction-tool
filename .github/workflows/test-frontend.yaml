@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build:
     name: Build front-end
-    runs-on: [ self-hosted, Linux, medium, ephemeral ]
+    runs-on: [self-hosted, Linux, medium, ephemeral]
 
     steps:
       - name: Checkout code
@@ -45,7 +45,7 @@ jobs:
           key: build-artifacts-${{ github.sha }}
   test:
     name: ${{ matrix.test-suite }}
-    runs-on: [ self-hosted, Linux, medium, ephemeral ]
+    runs-on: [self-hosted, Linux, medium, ephemeral]
     needs: build
     strategy:
       fail-fast: false
@@ -99,3 +99,35 @@ jobs:
 
         run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite }}
         working-directory: automation
+
+  unit-test:
+    runs-on: [self-hosted, Linux, medium, ephemeral]
+    strategy:
+      fail-fast: false
+      matrix:
+        test-suite:
+          - main
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: |
+            front-end/package-lock.json
+
+      - name: Install front-end dependencies
+        run: npm ci
+        working-directory: front-end
+
+      - name: Run unit tests
+        run: npm run test:${{ matrix.test-suite }}:coverage
+        working-directory: front-end
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # v4.5.0
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
