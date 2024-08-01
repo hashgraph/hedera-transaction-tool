@@ -252,7 +252,12 @@ export const getConnectedOrganization = async (
     throw Error('Login to select organization');
   }
 
-  const isActive = await healthCheck(organization.serverUrl);
+  let isActive = false;
+  try {
+    isActive = await healthCheck(organization.serverUrl);
+  } catch (error) {
+    console.log(error);
+  }
 
   const inactiveServer: ConnectedOrganization = {
     ...organization,
@@ -270,7 +275,14 @@ export const getConnectedOrganization = async (
     return inactiveServer;
   }
 
-  if (await shouldSignInOrganization(user.id, organization.id)) {
+  let shouldSignIn = true;
+  try {
+    shouldSignIn = await shouldSignInOrganization(user.id, organization.id);
+  } catch (error) {
+    console.log(error);
+  }
+
+  if (shouldSignIn) {
     return activeloginRequired;
   }
 

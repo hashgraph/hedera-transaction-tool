@@ -97,6 +97,20 @@ watch(
     }
   },
 );
+
+/* Watchers */
+watch(
+  () => user.selectedOrganization,
+  current => {
+    if (current) {
+      selectedMode.value = current.id;
+      defaultDropDownValue.value = current.nickname;
+    } else {
+      selectedMode.value = 'personal';
+      defaultDropDownValue.value = 'My Transactions';
+    }
+  },
+);
 </script>
 <template>
   <div class="d-flex align-items-centert">
@@ -152,6 +166,7 @@ watch(
       @click="handleAddOrganizationButtonClick"
       data-testid="button-add-new-organization"
       data-bs-toggle="tooltip"
+      data-bs-trigger="hover"
       data-bs-placement="bottom"
       data-bs-custom-class="wide-tooltip"
       data-bs-title="Add organization"

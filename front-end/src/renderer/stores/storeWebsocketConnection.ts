@@ -13,8 +13,8 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
   /* Actions */
   function setSocket(url: string | null) {
     if (socket.value) {
-      socket.value.off();
       socket.value.disconnect();
+      socket.value.off();
     }
 
     if (!url) {

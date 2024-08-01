@@ -55,6 +55,7 @@ const handleLogout = async () => {
 
       const { id, nickname, serverUrl, key } = user.selectedOrganization;
       await logout(serverUrl);
+      await user.selectOrganization(null);
       globalModalLoaderRef?.value?.close();
       await user.selectOrganization({ id, nickname, serverUrl, key });
     } else {
@@ -117,6 +118,7 @@ onUpdated(() => {
         data-testid="button-logout"
         @click="handleLogout"
         data-bs-toggle="tooltip"
+        data-bs-trigger="hover"
         data-bs-placement="bottom"
         data-bs-custom-class="wide-tooltip"
         data-bs-title="Log out"
