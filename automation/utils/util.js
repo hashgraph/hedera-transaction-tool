@@ -45,7 +45,7 @@ async function setupEnvironmentForTransactions(
     await settingsPage.clickOnECDSADropDown();
     await settingsPage.fillInECDSAPrivateKey(privateKey);
     await settingsPage.fillInECDSANickname('Payer Account');
-    //await settingsPage.fillInECDSAPassword(password);
+    await settingsPage.fillInECDSAPassword(password);
     await settingsPage.clickOnECDSAImportButton();
   }
 }
