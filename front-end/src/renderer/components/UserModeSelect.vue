@@ -166,6 +166,7 @@ watch(
       @click="handleAddOrganizationButtonClick"
       data-testid="button-add-new-organization"
       data-bs-toggle="tooltip"
+      data-bs-trigger="hover"
       data-bs-placement="bottom"
       data-bs-custom-class="wide-tooltip"
       data-bs-title="Add organization"

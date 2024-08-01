@@ -118,6 +118,7 @@ onUpdated(() => {
         data-testid="button-logout"
         @click="handleLogout"
         data-bs-toggle="tooltip"
+        data-bs-trigger="hover"
         data-bs-placement="bottom"
         data-bs-custom-class="wide-tooltip"
         data-bs-title="Log out"
