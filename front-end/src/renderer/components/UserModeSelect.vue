@@ -4,7 +4,7 @@ import { onUpdated, ref, watch } from 'vue';
 import { Organization } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useCreateTooltips, { removeStuckTooltip } from '@renderer/composables/useCreateTooltips';
+import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
 import AppButton from './ui/AppButton.vue';
@@ -164,7 +164,6 @@ watch(
       color="secondary"
       size="small"
       @click="handleAddOrganizationButtonClick"
-      @mouseleave="removeStuckTooltip($event.currentTarget)"
       data-testid="button-add-new-organization"
       data-bs-toggle="tooltip"
       data-bs-trigger="hover"
