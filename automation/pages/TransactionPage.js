@@ -224,7 +224,7 @@ class TransactionPage extends BasePage {
   }
 
   async clickOnTransactionsMenuButton() {
-    await this.clickByTestId(this.transactionsMenuButtonSelector);
+    await this.clickByTestId(this.transactionsMenuButtonSelector, 2500);
   }
 
   async clickOnAccountsMenuButton() {

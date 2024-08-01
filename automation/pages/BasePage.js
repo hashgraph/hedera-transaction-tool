@@ -307,10 +307,10 @@ class BasePage {
    * Gets the inner text or HTML of an element by its CSS selector.
    *
    * @param {string} selector - The CSS selector of the element.
-   * @param {number} [timeout=this.DEFAULT_TIMEOUT] - The timeout to wait for the element to be visible.
+   * @param {number} [timeout=this.LONG_TIMEOUT] - The timeout to wait for the element to be visible.
    * @returns {Promise<string>} - The inner text or HTML of the element.
    */
-  async getInnerContentBySelector(selector, timeout = this.DEFAULT_TIMEOUT) {
+  async getInnerContentBySelector(selector, timeout = this.LONG_TIMEOUT) {
     console.log(`Getting inner content for element with selector: ${selector}`);
     const element = this.window.getByTestId(selector);
     await element.waitFor({ state: 'visible', timeout: timeout });

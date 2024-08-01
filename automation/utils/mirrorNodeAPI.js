@@ -50,7 +50,7 @@ const pollWithRetry = async (
   endpoint,
   params,
   validateResult,
-  timeout = 15000,
+  timeout = 20000,
   interval = 2500,
 ) => {
   return retry(
