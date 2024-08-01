@@ -6,7 +6,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 
 import { useRouter } from 'vue-router';
-import useCreateTooltips from '@renderer/composables/useCreateTooltips';
+import useCreateTooltips, { removeStuckTooltip } from '@renderer/composables/useCreateTooltips';
 
 import { logout } from '@renderer/services/organization';
 
@@ -117,6 +117,7 @@ onUpdated(() => {
         class="container-icon"
         data-testid="button-logout"
         @click="handleLogout"
+        @mouseleave="removeStuckTooltip($event.currentTarget as HTMLElement)"
         data-bs-toggle="tooltip"
         data-bs-trigger="hover"
         data-bs-placement="bottom"
