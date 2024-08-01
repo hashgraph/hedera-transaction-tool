@@ -100,12 +100,12 @@ const useUserStore = defineStore('user', () => {
 
     if (!organization) {
       selectedOrganization.value = null;
+      await ush.afterOrganizationSelection(personal.value, selectedOrganization, keyPairs, router);
     } else {
       selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
 
       const NOTIFICATIONS_SERVICE_PORT = 3020; // See docker-compose.yml in the back-end folder
-
-      if (selectedOrganization.value.isServerActive) {
+      if (selectedOrganization.value.isServerActive && !selectedOrganization.value.loginRequired) {
         try {
           ws.setSocket(
             selectedOrganization.value.serverUrl.includes('localhost')
@@ -116,12 +116,21 @@ const useUserStore = defineStore('user', () => {
           console.log(error);
         }
       }
+
+      try {
+        await ush.afterOrganizationSelection(
+          personal.value,
+          selectedOrganization,
+          keyPairs,
+          router,
+        );
+        await Promise.allSettled([contacts.fetch(), notifications.fetchPreferences()]);
+      } catch (error) {
+        await selectOrganization(null);
+      }
     }
-    await ush.afterOrganizationSelection(personal.value, selectedOrganization, keyPairs, router);
+
     refetchAccounts();
-    if (organization) {
-      await Promise.allSettled([contacts.fetch(), notifications.fetchPreferences()]);
-    }
   };
 
   const refetchUserState = async () => await ush.refetchUserState(selectedOrganization);

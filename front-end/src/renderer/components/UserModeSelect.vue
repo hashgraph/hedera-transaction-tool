@@ -97,6 +97,20 @@ watch(
     }
   },
 );
+
+/* Watchers */
+watch(
+  () => user.selectedOrganization,
+  current => {
+    if (current) {
+      selectedMode.value = current.id;
+      defaultDropDownValue.value = current.nickname;
+    } else {
+      selectedMode.value = 'personal';
+      defaultDropDownValue.value = 'My Transactions';
+    }
+  },
+);
 </script>
 <template>
   <div class="d-flex align-items-centert">
