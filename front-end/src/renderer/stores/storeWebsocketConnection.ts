@@ -32,8 +32,6 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
     });
 
     socket.value.on('connect_error', error => {
-      console.log(socket.value?.id);
-
       if (socket.value?.active) {
         // temporary failure, the socket will automatically try to reconnect
       } else {
