@@ -188,7 +188,6 @@ test.describe('Organization Settings tests', () => {
   });
 
   test('Verify user can restore account with new mnemonic phrase', async () => {
-    test.setTimeout(120000);
     const publicKeyBeforeReset = await organizationPage.getPublicKeyByEmail(firstUser.email);
     const userId = await organizationPage.getUserIdByEmail(firstUser.email);
     await settingsPage.clickOnSettingsButton();
