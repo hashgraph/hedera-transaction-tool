@@ -27,7 +27,7 @@ If you use another version, please use [n](https://github.com/tj/n) to manage.
 ### Install dependencies ⏬
 
 ```bash
-pnpm install -r
+pnpm install
 ```
 
 Before running the project please create `.env` in `back-end`, `apps/api`, `apps/chain`,
@@ -38,15 +38,43 @@ Or copy the existing example.env in each location.
 cp example.env .env
 ```
 
+### Choose the mode in which the application will work
+
 ### Start developing ⚒️
+
+(Often used to test on electron client application in development mode)
 
 As some services are dependent on other services, they must be run together.
 This can be done in docker. Install and run Docker Desktop.
-From the back-end directory, run:
+
+1. Make sure you don't have `cert` folder, containing self-signed certificate for HTTPS mode
+2. Make sure you have not set `NODE_ENV=production` in your `.env` files or it should be `development`
+3. From the root directory, run:
 
 ```bash
 docker-compose up
 ```
+
+`Important! If error is received, add --force-recreate`
+
+### Start developing on HTTPS ⚒️ or Prepare for Automation tests
+
+(Often used to test on BUILT electron client application)
+
+1. First you need to create self-signed certificate
+
+   ```bash
+   mkdir -p cert # if you don't have the cert directory
+   mkcert -install
+   mkcert -key-file ./cert/key.pem -cert-file ./cert/cert.pem localhost
+   ```
+
+2. Next, set the `NODE_ENV` to `testing`, do this in every `.env`
+
+3. Run
+   ```bash
+   docker-compose up
+   ```
 
 ### Resetting Local Postgres Data
 
@@ -124,25 +152,6 @@ The defaults are:
 1. Make sure at least the database is running or just `docker compose up`
 2. Create `.env` file inside `scripts` folder
 3. Run `pnpm run create-admin` and follow the steps
-
-### Start developing on HTTPS
-
-1. First you need to create self-signed certificate
-
-   ```bash
-   mkdir -p cert # if you don't have the cert directory
-   mkcert -install
-   mkcert -key-file ./cert/key.pem -cert-file ./cert/cert.pem localhost
-   ```
-
-2. Next, set the `NODE_ENV` to `testing`, you can set it in the root `.env`
-
-3. Now, open api's [main.ts](./apps/api/src/main.ts) and uncomment the code that initializes the Nest application with https options and comment the other one
-
-4. Run
-   ```bash
-   docker-compose up
-   ```
 
 ### Deploy on Kubernetes
 
