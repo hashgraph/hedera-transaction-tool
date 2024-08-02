@@ -32,7 +32,7 @@ import DatePicker, { DatePickerInstance } from '@vuepic/vue-datepicker';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import KeyField from '@renderer/components/KeyField.vue';
-import FileTransactionProcessor from '@renderer/components/Transaction/FileTransactionProcessor.vue';
+import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
@@ -47,7 +47,7 @@ const payerData = useAccountId();
 const router = useRouter();
 
 /* State */
-const transactionProcessor = ref<typeof FileTransactionProcessor | null>(null);
+const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 const datePicker = ref<DatePickerInstance>(null);
 
 const transaction = ref<Transaction | null>(null);
@@ -68,8 +68,6 @@ const fileReader = ref<FileReader | null>(null);
 const fileBuffer = ref<Uint8Array | null>(null);
 const loadPercentage = ref(0);
 const content = ref('');
-const chunksAmount = ref<number | null>(null);
-
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
 
@@ -200,10 +198,10 @@ const handleLocalStored = (id: string) => {
   redirectToDetails(id);
 };
 
-// const handleSubmit = async (id: number) => {
-//   isSubmitted.value = true;
-//   redirectToDetails(id);
-// };
+const handleSubmit = async (id: number) => {
+  isSubmitted.value = true;
+  redirectToDetails(id);
+};
 
 /* Functions */
 function createTransaction() {
@@ -480,28 +478,16 @@ const columnClass = 'col-4 col-xxxl-3';
       </div>
     </form>
 
-    <FileTransactionProcessor
+    <TransactionProcessor
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"
       :on-executed="
-        (_success, _response, _receipt, chunkAmount) => {
+        () => {
           isExecuted = true;
-          chunksAmount = chunkAmount || null;
         }
       "
       :on-local-stored="handleLocalStored"
-    >
-      <template #successHeading>File updated successfully</template>
-      <template #successContent>
-        <p class="text-small d-flex justify-content-between align-items mt-2">
-          <span class="text-bold text-secondary">File ID:</span>
-          <span>{{ fileId }}</span>
-        </p>
-        <p v-if="chunksAmount" class="text-small d-flex justify-content-between align-items mt-2">
-          <span class="text-bold text-secondary">Number of Chunks</span>
-          <span>{{ chunksAmount }}</span>
-        </p>
-      </template>
-    </FileTransactionProcessor>
+      :on-submitted="handleSubmit"
+    />
   </div>
 </template>
