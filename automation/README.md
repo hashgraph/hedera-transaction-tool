@@ -106,3 +106,9 @@ npx playwright test tests/WorkflowTests
 ```bash
 npx playwright test tests/OrganizationSettingsTests
 ```
+
+### 7. Organization Transaction tests
+
+```bash
+npx playwright test tests/OrganizationTransactionTests
+```
