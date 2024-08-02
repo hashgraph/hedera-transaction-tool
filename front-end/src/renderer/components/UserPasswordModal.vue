@@ -5,7 +5,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { comparePasswords } from '@renderer/services/userService';
 
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInWithPassword, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -32,7 +32,8 @@ const handlePasswordEntered = async (e: Event) => {
   const isPasswordCorrect = await comparePasswords(user.personal.id, password.value);
 
   if (isPasswordCorrect) {
-    user.personal.password = password.value;
+    user.setPassword(password.value);
+    if (!isLoggedInWithPassword(user.personal)) throw new Error('Failed to set user password');
 
     const currentCallback = callback.value;
     handleClose();

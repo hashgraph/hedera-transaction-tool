@@ -87,7 +87,7 @@ const handleOnFormSubmit = async (event: Event) => {
     await user.login(id, email);
 
     if (isUserLoggedIn(user.personal)) {
-      user.personal.password = inputPassword.value;
+      user.setPassword(inputPassword.value);
     }
 
     router.push({ name: 'accountSetup' });
@@ -120,7 +120,7 @@ const handleOnFormSubmit = async (event: Event) => {
 
         if (user.secretHashes.length === 0) {
           if (isUserLoggedIn(user.personal)) {
-            user.personal.password = inputPassword.value;
+            user.setPassword(inputPassword.value);
           }
           router.push({ name: 'accountSetup' });
         } else {
