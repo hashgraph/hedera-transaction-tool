@@ -24,10 +24,7 @@
     "build:linux": "npm run build && electron-builder --linux --config",
     "publish": "npm run build && electron-builder -m -p 'onTagOrDraft'",
     "test:main": "vitest --config src/tests/vitest.config.main.ts --passWithNoTests",
-    "test:renderer": "vitest --config src/tests/vitest.config.renderer.ts --passWithNoTests",
-    "test:e2e": "npm run build && vitest --config src/tests/vitest.config.e2e.ts --passWithNoTests",
     "test:main:coverage": "vitest --config src/tests/vitest.config.main.ts --coverage.enabled --coverage.include=src/main",
-    "test:renderer:coverage": "vitest --config src/tests/vitest.config.renderer.ts --coverage.enabled --coverage.include=src/renderer",
     "generate:database": "prisma generate"
   },
   "dependencies": {
