@@ -190,6 +190,7 @@ async function resetPostgresDbState() {
     'transaction_signer',
     'transaction',
     'user_key',
+    'notification_preferences',
     'user',
   ];
 
@@ -206,10 +207,49 @@ async function resetPostgresDbState() {
   }
 }
 
+async function getUserIds() {
+  const query = 'SELECT id FROM public."user"';
+  return await queryPostgresDatabase(query);
+}
+
+async function disableNotificationPreferences(userIds) {
+  const client = await connectPostgresDatabase();
+
+  try {
+    for (const userId of userIds) {
+      const query = `
+        INSERT INTO public.notification_preferences ("userId", "transactionRequiredSignature", "transactionReadyForExecution")
+        VALUES ($1, false, false)
+        ON CONFLICT ("userId")
+        DO UPDATE SET "transactionRequiredSignature" = EXCLUDED."transactionRequiredSignature",
+                      "transactionReadyForExecution" = EXCLUDED."transactionReadyForExecution";
+      `;
+      const values = [userId];
+      await client.query(query, values);
+      console.log(`Notification preferences disabled for user ID: ${userId}`);
+    }
+  } catch (err) {
+    console.error('Error disabling notification preferences:', err);
+  } finally {
+    await disconnectPostgresDatabase(client);
+  }
+}
+
+async function disableNotificationsForTestUsers() {
+  try {
+    const userIds = await getUserIds();
+    const userIdValues = userIds.map(user => user.id);
+    await disableNotificationPreferences(userIdValues);
+  } catch (err) {
+    console.error('Error disabling notifications for test users:', err);
+  }
+}
+
 module.exports = {
   queryDatabase,
   createTestUser,
   resetDbState,
   resetPostgresDbState,
   queryPostgresDatabase,
+  disableNotificationsForTestUsers,
 };

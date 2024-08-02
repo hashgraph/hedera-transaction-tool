@@ -116,7 +116,6 @@ class TransactionPage extends BasePage {
   textTypeTransactionSelector = 'p-type-transaction';
   textTransactionIdSelector = 'p-transaction-id';
   textMaxTxFeeSelector = 'p-max-tx-fee';
-  accountIdPrefixSelector = 'p-account-id-';
   toastMessageSelector = '.v-toast__text';
   hbarAmountValueSelector = 'p-hbar-amount';
   transactionTypeHeaderSelector = 'h2-transaction-type';
@@ -124,10 +123,14 @@ class TransactionPage extends BasePage {
   transactionDetailsIdSelector = 'p-transaction-details-id';
   approveAllowanceTransactionMemoSelector = 'input-transaction-memo-for-approve-allowance';
   newAccountIdDetailsSelector = 'p-new-account-id';
+
+  //Indexes
+  accountIdPrefixSelector = 'p-account-id-';
   transactionStatusIndexSelector = 'td-transaction-status-';
   draftDetailsDateIndexSelector = 'span-draft-tx-date-';
   draftDetailsTypeIndexSelector = 'span-draft-tx-type-';
   draftDetailsIsTemplateCheckboxSelector = 'checkbox-is-template-';
+  selectThresholdValueIndexSelector = 'select-complex-key-threshold-';
 
   // Method to close the 'Save Draft' modal if it appears
   async closeDraftModal() {
@@ -221,7 +224,7 @@ class TransactionPage extends BasePage {
   }
 
   async clickOnTransactionsMenuButton() {
-    await this.clickByTestId(this.transactionsMenuButtonSelector);
+    await this.clickByTestId(this.transactionsMenuButtonSelector, 2500);
   }
 
   async clickOnAccountsMenuButton() {
@@ -394,10 +397,12 @@ class TransactionPage extends BasePage {
     }
   }
 
-  async addPublicKeyAtDepth(depth) {
+  async addPublicKeyAtDepth(depth, publicKey = null) {
     await this.clickAddButton(depth);
     await this.selectPublicKeyOption(depth);
-    const publicKey = await this.generateRandomPublicKey();
+    if (publicKey === null) {
+      publicKey = await this.generateRandomPublicKey();
+    }
     await this.fillInPublicKeyField(publicKey);
     await this.clickInsertPublicKey();
   }
@@ -800,7 +805,7 @@ class TransactionPage extends BasePage {
     await this.clickByTestId(this.signAndSubmitUpdateButtonSelector);
   }
 
-  async clickSignTransactionButton() {
+  async clickSignTransactionButton(waitForPassword = true) {
     // Construct the selector for the confirmation transaction modal that is visible and in a displayed state
     const modalSelector = `[data-testid="${this.confirmTransactionModalSelector}"][style*="display: block"]`;
     await this.window.waitForSelector(modalSelector, { state: 'visible', timeout: 15000 });
@@ -812,8 +817,10 @@ class TransactionPage extends BasePage {
     await this.window.waitForSelector(signButtonSelector, { state: 'visible', timeout: 15000 });
     await this.window.click(signButtonSelector);
 
-    // After clicking the sign button, wait for the password input to become visible
-    await this.waitForElementToBeVisible(this.passwordSignTransactionInputSelector);
+    if (waitForPassword) {
+      // After clicking the sign button, wait for the password input to become visible
+      await this.waitForElementToBeVisible(this.passwordSignTransactionInputSelector);
+    }
   }
 
   async clickOnPasswordContinue() {
@@ -862,6 +869,10 @@ class TransactionPage extends BasePage {
 
   async clickOnDoneButton() {
     await this.clickByTestId(this.doneComplexKeyButtonSelector);
+  }
+
+  async clickOnDoneButtonForComplexKeyCreation() {
+    await this.clickByTestIdWithIndex(this.doneComplexKeyButtonSelector, 0);
   }
 
   /**

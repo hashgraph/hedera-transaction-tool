@@ -3,6 +3,7 @@ import { generateMnemonic } from '../utils/keyUtil';
 const BasePage = require('./BasePage');
 const RegistrationPage = require('./RegistrationPage');
 const SettingsPage = require('./SettingsPage');
+const TransactionPage = require('./TransactionPage');
 const {
   generateRandomEmail,
   generateRandomPassword,
@@ -14,10 +15,13 @@ class OrganizationPage extends BasePage {
     super(window);
     this.window = window;
     this.users = []; // List to store user credentials
+    this.transactions = []; // List to store transactions
     this.organizationRecoveryWords = [];
     this.badOrganizationList = [];
+    this.complexAccountId = [];
     this.registrationPage = new RegistrationPage(window);
     this.settingsPage = new SettingsPage(window);
+    this.transactionPage = new TransactionPage(window);
   }
 
   /* Selectors */
@@ -27,11 +31,11 @@ class OrganizationPage extends BasePage {
   continueEncryptPasswordButtonSelector = 'button-continue-encrypt-password';
   addOrganizationButtonInModalSelector = 'button-add-organization-in-modal';
   signInOrganizationButtonSelector = 'button-sign-in-organization-user';
-  readyForReviewTabSelector = 'tab-0';
-  readyToSignTabSelector = 'tab-1';
-  inProgressTabSelector = 'tab-2';
-  readyForExecutionTabSelector = 'tab-3';
-  draftsTabSelector = 'tab-4';
+  draftsTabSelector = 'tab-0';
+  readyForReviewTabSelector = 'tab-1';
+  readyToSignTabSelector = 'tab-2';
+  inProgressTabSelector = 'tab-3';
+  readyForExecutionTabSelector = 'tab-4';
   historyTabSelector = 'tab-5';
   deleteOrganizationButtonSelector = 'button-delete-connection';
   dropdownSelectModeSelector = 'dropdown-select-mode';
@@ -40,6 +44,20 @@ class OrganizationPage extends BasePage {
   logoutButtonSelector = 'button-logout';
   contactListButton = 'button-contact-list';
   deleteNextButtonSelector = 'button-delete-next';
+  addApproverButtonSelector = 'button-add-approver';
+  addObserverButtonSelector = 'button-add-observer';
+  selectUserButtonSelector = 'button-select-user';
+  addUserButtonSelector = 'button-add-user';
+  doneButtonSelector = 'button-complex-key-done';
+  timePickerIconSelector = '.dp--tp-wrap button[aria-label="Open time picker"]';
+  incrementSecondsButtonSelector = 'button[aria-label="Increment seconds"]';
+  incrementMinutesButtonSelector = 'button[aria-label="Increment minutes"]';
+  incrementHourButtonSelector = 'button[aria-label="Increment hours"]';
+  secondsOverlayButtonSelector = 'button[aria-label="Open seconds overlay"]';
+  minutesOverlayButtonSelector = 'button[aria-label="Open minutes overlay"]';
+  hoursOverlayButtonSelector = 'button[aria-label="Open hours overlay"]';
+  insertComplexKeyButtonSelector = 'button-insert-public-key';
+  signTransactionButtonSelector = 'button-sign-org-transaction';
 
   // Inputs
   organizationNicknameInputSelector = 'input-organization-nickname';
@@ -48,14 +66,51 @@ class OrganizationPage extends BasePage {
   emailForOrganizationInputSelector = 'input-login-email-for-organization';
   passwordForOrganizationInputSelector = 'input-login-password-for-organization';
   editOrganizationNicknameInputSelector = 'input-edit-nickname';
+  inputPublicComplexKeySelector = 'input-complex-public-key';
 
   // Texts
   organizationErrorMessageSelector = 'p-organization-error-message';
   organizationNicknameTextSelector = 'span-organization-nickname';
+  firstUserOfListSelector = 'span-email-0';
+  transactionDetailsIdSelector = 'p-transaction-details-id';
+  transactionValidStartSelector = 'p-transaction-details-valid-start';
+  createdStageSelector = 'stepper-title-0';
+  collectingSignaturesSelector = 'stepper-title-1';
+  awaitingExecutionSelector = 'stepper-title-2';
+  executedSelector = 'stepper-title-3';
+  firstSignerThresholdPublicKeySelector = 'span-public-key-0-0';
+  secondSignerThresholdPublicKeySelector = 'span-public-key-1-0';
+  thirdSignerThresholdPublicKeySelector = 'span-public-key-1-1';
+  firstSignerCheckmarkSelector = 'span-checkmark-public-key-0-0';
+  secondSignerCheckmarkSelector = 'span-checkmark-public-key-1-0';
+  thirdSignerCheckmarkSelector = 'span-checkmark-public-key-1-1';
 
-  // Others
+  // Indexes
   modeSelectionIndexSelector = 'dropdown-item-';
   firstMissingKeyIndexSelector = 'cell-index-missing-0';
+  readyForReviewTransactionIdIndexSelector = 'td-review-transaction-id-';
+  readyForReviewTransactionTypeIndexSelector = 'td-review-transaction-type-';
+  readyForReviewValidStartIndexSelector = 'td-review-transaction-valid-start-';
+  readyForReviewSubmitApprovalButtonIndexSelector = 'button-review-transaction-approve-';
+  readyForSignTransactionIdIndexSelector = 'td-transaction-id-for-sign-';
+  readyForSignTransactionTypeIndexSelector = 'td-transaction-type-for-sign-';
+  readyForSignValidStartIndexSelector = 'td-transaction-valid-start-for-sign-';
+  readyForSignSubmitSignButtonIndexSelector = 'button-transaction-sign-';
+  inProgressTransactionIdIndexSelector = 'td-transaction-id-in-progress-';
+  inProgressTransactionTypeIndexSelector = 'td-transaction-type-in-progress-';
+  inProgressValidStartIndexSelector = 'td-transaction-valid-start-in-progress-';
+  inProgressDetailsButtonIndexSelector = 'button-transaction-in-progress-details-';
+  readyForExecutionTransactionIdIndexSelector = 'td-transaction-id-ready-execution-';
+  readyForExecutionTransactionTypeIndexSelector = 'td-transaction-type-ready-execution-';
+  readyForExecutionValidStartIndexSelector = 'td-transaction-valid-start-ready-execution-';
+  readyForExecutionDetailsButtonIndexSelector = 'button-transaction-ready-execution-details-';
+  historyTransactionIdIndexSelector = 'td-transaction-id-';
+  historyTransactionTypeIndexSelector = 'td-transaction-type-';
+  historyTransactionStatusIndexSelector = 'td-transaction-status-';
+  historyCreatedAtIndexSelector = 'td-transaction-createdAt-';
+  historyDetailsButtonIndexSelector = 'button-transaction-details-';
+
+  stageBubbleIndexSelector = 'div-stepper-nav-item-bubble-';
 
   async clickOnAddNewOrganizationButton() {
     await this.clickByTestId(this.addNewOrganizationButtonSelector);
@@ -201,6 +256,14 @@ class OrganizationPage extends BasePage {
 
     console.log(`Changing password for user: ${email}`);
     user.password = newPassword;
+  }
+
+  findUserAndReturnPassword(email) {
+    const user = this.users.find(user => user.email === email);
+    if (!user) {
+      throw new Error(`User with email ${email} is not defined`);
+    }
+    return user.password;
   }
 
   async returnAllTabsVisible() {
@@ -483,6 +546,475 @@ class OrganizationPage extends BasePage {
       console.error('Error finding new key for user:', error);
       return false;
     }
+  }
+
+  //TODO - Align the below methods based on new implementation
+
+  // async clickOnAddApproverButton() {
+  //   await this.clickByTestId(this.addApproverButtonSelector);
+  // }
+  //
+  // async clickOnAddObserverButton() {
+  //   await this.clickByTestId(this.addObserverButtonSelector);
+  // }
+  //
+  // async clickOnSelectUserButton() {
+  //   await this.clickByTestId(this.selectUserButtonSelector);
+  // }
+  //
+  // async clickOnAddUserButton() {
+  //   await this.clickByTestIdWithIndex(this.addUserButtonSelector);
+  // }
+  //
+  // async clickOnDoneButton() {
+  //   await this.clickByTestId(this.doneButtonSelector);
+  // }
+  //
+  // async clickOnFirstUserOfList() {
+  //   await this.clickByTestIdWithIndex(this.firstUserOfListSelector);
+  // }
+  //
+  // async getFirstUserOfList() {
+  //   return await this.getTextByTestIdWithIndex(this.firstUserOfListSelector);
+  // }
+
+  /**
+   * Opens the date picker.
+   */
+  async openDatePicker() {
+    await this.window.click(`.dp__input_wrap`);
+    await this.window.waitForSelector('.dp__instance_calendar');
+  }
+
+  /**
+   * Switches to the time picker within the date picker.
+   */
+  async switchToTimePicker() {
+    await this.window.click(this.timePickerIconSelector);
+    await this.window.waitForSelector('.dp__time_input');
+  }
+
+  /**
+   * Moves the time ahead by the specified number of seconds, handling minute and hour overflow.
+   *
+   * @param {number} seconds - The number of seconds to move ahead.
+   */
+  async moveTimeAheadBySeconds(seconds) {
+    const increment = async (selector, count) => {
+      if (count > 0) {
+        for (let i = 0; i < count; i++) {
+          await this.window.click(selector);
+        }
+      } else if (count < 0) {
+        for (let i = 0; i > count; i--) {
+          await this.window.click(selector.replace('Increment', 'Decrement'));
+        }
+      }
+    };
+    // Get the current time values
+    const currentSeconds = parseInt(
+      await this.window.textContent(this.secondsOverlayButtonSelector),
+    );
+    const currentMinutes = parseInt(
+      await this.window.textContent(this.minutesOverlayButtonSelector),
+    );
+    const currentHours = parseInt(await this.window.textContent(this.hoursOverlayButtonSelector));
+
+    // Calculate the new time values
+    const totalSeconds = currentSeconds + seconds;
+    const extraMinutes = Math.floor(totalSeconds / 60);
+    const newSeconds = (totalSeconds + 60) % 60;
+
+    const totalMinutes = currentMinutes + extraMinutes;
+    const extraHours = Math.floor(totalMinutes / 60);
+    const newMinutes = (totalMinutes + 60) % 60;
+
+    const newHours = (currentHours + extraHours + 24) % 24;
+
+    await increment(this.incrementSecondsButtonSelector, newSeconds - currentSeconds);
+    await increment(this.incrementMinutesButtonSelector, newMinutes - currentMinutes);
+    await increment(this.incrementHourButtonSelector, newHours - currentHours);
+  }
+
+  /**
+   * Opens the date picker, switches to the time picker, and moves the time ahead by 30 seconds.
+   */
+  async setDateTimeAheadBy(time = 30) {
+    await this.openDatePicker();
+    await this.switchToTimePicker();
+    await this.moveTimeAheadBySeconds(time);
+  }
+
+  async fillInComplexPublicKey(publicKey) {
+    await this.fillByTestId(this.inputPublicComplexKeySelector, publicKey);
+  }
+
+  async clickOnInsertComplexKeyButton() {
+    await this.clickByTestId(this.insertComplexKeyButtonSelector);
+  }
+
+  async addComplexKeyAccountForTransactions() {
+    await this.transactionPage.clickOnTransactionsMenuButton();
+    await this.transactionPage.clickOnCreateNewTransactionButton();
+    await this.transactionPage.clickOnCreateAccountTransaction();
+    await this.transactionPage.clickOnComplexTab();
+    await this.transactionPage.clickOnCreateNewComplexKeyButton();
+
+    //add account#1
+    const publicKey = await this.getPublicKeyByEmail(this.users[0].email);
+    await this.transactionPage.addPublicKeyAtDepth('0', publicKey);
+
+    //add threshold
+    await this.transactionPage.addThresholdKeyAtDepth('0');
+
+    //add account#2
+    const publicKey2 = await this.getPublicKeyByEmail(this.users[1].email);
+    await this.transactionPage.addPublicKeyAtDepth('0-1', publicKey2);
+
+    //add account#3
+    const publicKey3 = await this.getPublicKeyByEmail(this.users[2].email);
+    await this.transactionPage.addPublicKeyAtDepth('0-1', publicKey3);
+
+    //select threshold value to be 1 out of 2
+    await this.selectOptionByValue(
+      this.transactionPage.selectThresholdValueIndexSelector + '0-1',
+      '1',
+    );
+
+    await this.transactionPage.clickOnDoneButtonForComplexKeyCreation();
+
+    await this.transactionPage.clickOnSignAndSubmitButton();
+    await this.transactionPage.clickSignTransactionButton(false);
+    const transactionId = await this.getTransactionDetailsId();
+    await this.clickOnSignTransactionButton();
+    const transactionResponse =
+      await this.transactionPage.mirrorGetTransactionResponse(transactionId);
+    this.complexAccountId.push(transactionResponse.transactions[0].entity_id);
+  }
+
+  async clickOnSignTransactionButton() {
+    await this.clickByTestId(this.signTransactionButtonSelector, 2500);
+  }
+
+  async getTransactionDetailsId() {
+    return await this.getTextByTestId(this.transactionDetailsIdSelector, 5000);
+  }
+
+  async getValidStart() {
+    return await this.getTextByTestId(this.transactionValidStartSelector);
+  }
+
+  getComplexAccountId() {
+    return this.complexAccountId[0];
+  }
+
+  async clickOnReadyToSignTab() {
+    await this.clickByTestId(this.readyToSignTabSelector);
+  }
+
+  async clickOnInProgressTab() {
+    await this.clickByTestId(this.inProgressTabSelector);
+  }
+
+  async clickOnReadyForExecutionTab() {
+    await this.clickByTestId(this.readyForExecutionTabSelector);
+  }
+
+  async clickOnHistoryTab() {
+    await this.clickByTestId(this.historyTabSelector);
+  }
+
+  async updateAccount(accountId, memo, timeForExecution = 10, isSignRequiredFromCreator = false) {
+    await this.transactionPage.clickOnTransactionsMenuButton();
+    await this.transactionPage.clickOnCreateNewTransactionButton();
+    await this.transactionPage.clickOnUpdateAccountTransaction();
+    await this.setDateTimeAheadBy(timeForExecution);
+    await this.transactionPage.fillInUpdatedAccountId(accountId);
+    await this.transactionPage.fillInMemoUpdate(memo);
+    await this.transactionPage.fillInTransactionMemoUpdate('tx memo update');
+    await this.transactionPage.waitForElementPresentInDOM(
+      this.transactionPage.updateAccountIdFetchedDivSelector,
+      30000,
+    );
+    await this.transactionPage.clickOnSignAndSubmitUpdateButton();
+    await this.transactionPage.clickSignTransactionButton(false);
+    const txId = await this.getTransactionDetailsId();
+    const validStart = await this.getValidStart();
+    if (isSignRequiredFromCreator) {
+      await this.clickOnSignTransactionButton();
+    }
+    return { txId, validStart };
+  }
+
+  async getReadyForSignTransactionIdByIndex(index) {
+    return await this.getTextByTestId(this.readyForSignTransactionIdIndexSelector + index);
+  }
+
+  async getReadyForSignTransactionTypeByIndex(index) {
+    return await this.getTextByTestId(this.readyForSignTransactionTypeIndexSelector + index);
+  }
+
+  async getReadyForSignValidStartByIndex(index) {
+    return await this.getTextByTestId(this.readyForSignValidStartIndexSelector + index);
+  }
+
+  async isReadyForSignSubmitSignButtonVisibleByIndex(index) {
+    return await this.isElementVisible(this.readyForSignSubmitSignButtonIndexSelector + index);
+  }
+
+  async clickOnSubmitSignButtonByIndex(index) {
+    await this.clickByTestId(this.readyForSignSubmitSignButtonIndexSelector + index);
+  }
+
+  async getInProgressTransactionIdByIndex(index) {
+    return await this.getTextByTestId(this.inProgressTransactionIdIndexSelector + index);
+  }
+
+  async getInProgressTransactionTypeByIndex(index) {
+    return await this.getTextByTestId(this.inProgressTransactionTypeIndexSelector + index);
+  }
+
+  async getInProgressValidStartByIndex(index) {
+    return await this.getTextByTestId(this.inProgressValidStartIndexSelector + index);
+  }
+
+  async isInProgressDetailsButtonVisibleByIndex(index) {
+    return await this.isElementVisible(this.inProgressDetailsButtonIndexSelector + index);
+  }
+
+  async clickOnInProgressDetailsButtonByIndex(index) {
+    await this.clickByTestId(this.inProgressDetailsButtonIndexSelector + index);
+  }
+
+  async getReadyForExecutionTransactionIdByIndex(index) {
+    return await this.getTextByTestId(this.readyForExecutionTransactionIdIndexSelector + index);
+  }
+
+  async getReadyForExecutionTransactionTypeByIndex(index) {
+    return await this.getTextByTestId(this.readyForExecutionTransactionTypeIndexSelector + index);
+  }
+
+  async getReadyForExecutionValidStartByIndex(index) {
+    return await this.getTextByTestId(this.readyForExecutionValidStartIndexSelector + index);
+  }
+
+  async isReadyForExecutionDetailsButtonVisibleByIndex(index) {
+    return await this.isElementVisible(this.readyForExecutionDetailsButtonIndexSelector + index);
+  }
+
+  async clickOnReadyForExecutionDetailsButtonByIndex(index) {
+    await this.clickByTestId(this.readyForExecutionDetailsButtonIndexSelector + index);
+  }
+
+  async getHistoryTransactionIdByIndex(index) {
+    return await this.getTextByTestId(this.historyTransactionIdIndexSelector + index);
+  }
+
+  async getHistoryTransactionTypeByIndex(index) {
+    return await this.getTextByTestId(this.historyTransactionTypeIndexSelector + index);
+  }
+
+  async getHistoryTransactionStatusByIndex(index) {
+    return await this.getTextByTestId(this.historyTransactionStatusIndexSelector + index);
+  }
+
+  async getHistoryTransactionCreatedAtByIndex(index) {
+    return await this.getTextByTestId(this.historyCreatedAtIndexSelector + index);
+  }
+
+  async isHistoryDetailsButtonVisibleByIndex(index) {
+    return await this.isElementVisible(this.historyDetailsButtonIndexSelector + index);
+  }
+
+  async clickOnHistoryDetailsButtonByIndex(index) {
+    await this.clickByTestId(this.historyDetailsButtonIndexSelector + index);
+  }
+
+  async getTransactionDetails(
+    transactionId,
+    transactionIdIndexSelector,
+    getTransactionIdByIndex,
+    getTransactionTypeByIndex,
+    getValidStartByIndex,
+    getDetailsButtonVisibleByIndex,
+    additionalFields = [],
+    maxRetries = 10,
+    retryDelay = 500,
+  ) {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const count = await this.countElementsByTestId(transactionIdIndexSelector);
+      for (let i = 0; i < count; i++) {
+        const id = await getTransactionIdByIndex.call(this, i);
+        if (id === transactionId) {
+          const transactionType = await getTransactionTypeByIndex.call(this, i);
+          const validStart = await getValidStartByIndex.call(this, i);
+          const detailsButton = await getDetailsButtonVisibleByIndex.call(this, i);
+
+          const additionalData = {};
+          for (const field of additionalFields) {
+            additionalData[field.name] = await field.getter.call(this, i);
+          }
+
+          return {
+            transactionId: id,
+            transactionType,
+            validStart,
+            detailsButton,
+            ...additionalData,
+          };
+        }
+      }
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+    }
+    return null;
+  }
+
+  async getReadyForSignTransactionDetails(transactionId) {
+    return await this.getTransactionDetails(
+      transactionId,
+      this.readyForSignTransactionIdIndexSelector,
+      this.getReadyForSignTransactionIdByIndex,
+      this.getReadyForSignTransactionTypeByIndex,
+      this.getReadyForSignValidStartByIndex,
+      this.isReadyForSignSubmitSignButtonVisibleByIndex,
+      [{ name: 'isSignButtonVisible', getter: this.isReadyForSignSubmitSignButtonVisibleByIndex }],
+    );
+  }
+
+  async getInProgressTransactionDetails(transactionId) {
+    return await this.getTransactionDetails(
+      transactionId,
+      this.inProgressTransactionIdIndexSelector,
+      this.getInProgressTransactionIdByIndex,
+      this.getInProgressTransactionTypeByIndex,
+      this.getInProgressValidStartByIndex,
+      this.isInProgressDetailsButtonVisibleByIndex,
+      [],
+    );
+  }
+
+  async getReadyForExecutionTransactionDetails(transactionId) {
+    return await this.getTransactionDetails(
+      transactionId,
+      this.readyForExecutionTransactionIdIndexSelector,
+      this.getReadyForExecutionTransactionIdByIndex,
+      this.getReadyForExecutionTransactionTypeByIndex,
+      this.getReadyForExecutionValidStartByIndex,
+      this.isReadyForExecutionDetailsButtonVisibleByIndex,
+      [],
+    );
+  }
+
+  async getHistoryTransactionDetails(transactionId) {
+    return await this.getTransactionDetails(
+      transactionId,
+      this.historyTransactionIdIndexSelector,
+      this.getHistoryTransactionIdByIndex,
+      this.getHistoryTransactionTypeByIndex,
+      this.getHistoryTransactionCreatedAtByIndex,
+      this.isHistoryDetailsButtonVisibleByIndex,
+      [{ name: 'status', getter: this.getHistoryTransactionStatusByIndex }],
+    );
+  }
+
+  async clickOnSubmitSignButtonByTransactionId(transactionId, maxRetries = 10, retryDelay = 1000) {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const count = await this.countElementsByTestId(this.readyForSignTransactionIdIndexSelector);
+      for (let i = 0; i < count; i++) {
+        const id = await this.getReadyForSignTransactionIdByIndex(i);
+        if (id === transactionId) {
+          await this.clickOnSubmitSignButtonByIndex(i);
+          return;
+        }
+      }
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+    }
+  }
+
+  async clickOnReadyForExecutionDetailsButtonByTransactionId(
+    transactionId,
+    maxRetries = 10,
+    retryDelay = 1000,
+  ) {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const count = await this.countElementsByTestId(
+        this.readyForExecutionTransactionIdIndexSelector,
+      );
+      for (let i = 0; i < count; i++) {
+        const id = await this.getReadyForExecutionTransactionIdByIndex(i);
+        if (id === transactionId) {
+          await this.clickOnReadyForExecutionDetailsButtonByIndex(i);
+          return;
+        }
+      }
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+    }
+  }
+
+  async clickOnHistoryDetailsButtonByTransactionId(
+    transactionId,
+    maxRetries = 10,
+    retryDelay = 1000,
+  ) {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const count = await this.countElementsByTestId(this.historyTransactionIdIndexSelector);
+      for (let i = 0; i < count; i++) {
+        const id = await this.getHistoryTransactionIdByIndex(i);
+        if (id === transactionId) {
+          await this.clickOnHistoryDetailsButtonByIndex(i);
+          return;
+        }
+      }
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+    }
+  }
+
+  async getOrCreateUpdateTransaction(
+    accountId,
+    memo,
+    timeForExecution = 100,
+    isSignRequiredFromCreator = true,
+  ) {
+    if (this.transactions.length > 0) {
+      console.log('Reusing existing transaction');
+      return this.transactions[0];
+    }
+
+    console.log('Creating new transaction');
+    const { txId, validStart } = await this.updateAccount(
+      accountId,
+      memo,
+      timeForExecution,
+      isSignRequiredFromCreator,
+    );
+    const transactionDetails = { txId, validStart };
+    this.transactions.push(transactionDetails);
+    return transactionDetails;
+  }
+
+  /**
+   * Verifies if a specific transaction stage is completed.
+   *
+   * @param {number} stageIndex - The index of the stage to verify.
+   * @returns {Promise<boolean>} - True if the stage is completed, false if active.
+   */
+  async isTransactionStageCompleted(stageIndex) {
+    const bubbleContent = await this.getInnerContentBySelector(
+      this.stageBubbleIndexSelector + stageIndex,
+    );
+    return bubbleContent.trim().includes('bi-check-lg');
+  }
+
+  async isFirstSignerCheckmarkVisible() {
+    return await this.isElementVisible(this.firstSignerCheckmarkSelector);
+  }
+
+  async isSecondSignerCheckmarkVisible() {
+    return await this.isElementVisible(this.secondSignerCheckmarkSelector);
+  }
+
+  async isThirdSignerCheckmarkVisible() {
+    return await this.isElementVisible(this.thirdSignerCheckmarkSelector);
   }
 }
 
