@@ -40,15 +40,15 @@ import {
 // import { publicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
 import {
   isLoggedInOrganization,
-  isLoggedInWithPassword,
+  isLoggedInWithValidPassword,
   isUserLoggedIn,
 } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
-import AppInput from '@renderer/components/ui/AppInput.vue';
-import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+// import AppInput from '@renderer/components/ui/AppInput.vue';
+// import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Props */
 const props = defineProps<{
@@ -82,11 +82,10 @@ const transactionResult = ref<{
   response: TransactionResponse;
   receipt: TransactionReceipt;
 } | null>();
-const userPassword = ref('');
 const signatureKey = ref<Key | KeyList | null>(null);
 const isConfirmShown = ref(false);
 const isSigning = ref(false);
-const isSignModalShown = ref(false);
+// const isSignModalShown = ref(false);
 const isChunkingModalShown = ref(false);
 const isExecuting = ref(false);
 const isExecutedModalShown = ref(false);
@@ -120,8 +119,7 @@ async function handleConfirmTransaction(e: Event) {
   if (user.selectedOrganization) {
     await sendSignedTransactionToOrganization();
   } else if (localPublicKeysReq.value.length > 0) {
-    isConfirmShown.value = false;
-    isSignModalShown.value = true;
+    await signAfterConfirm();
   } else {
     throw new Error(
       'Unable to execute, all of the required signatures should be with your keys. You are currently in Personal mode.',
@@ -129,9 +127,7 @@ async function handleConfirmTransaction(e: Event) {
   }
 }
 
-async function handleSignTransaction(e: Event) {
-  e.preventDefault();
-
+async function signAfterConfirm() {
   if (!props.transactionBytes) throw new Error('Transaction not provided');
 
   if (!isUserLoggedIn(user.personal)) {
@@ -144,17 +140,29 @@ async function handleSignTransaction(e: Event) {
     );
   }
 
+  /* Verifies the user has entered his password */
+  if (!isLoggedInWithValidPassword(user.personal)) {
+    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+    isConfirmShown.value = false;
+    userPasswordModalRef.value?.open(
+      'Enter your application password',
+      'Enter your application password to sign the transaction',
+      signAfterConfirm,
+    );
+    return;
+  }
+
   try {
+    isConfirmShown.value = true;
     isSigning.value = true;
 
     const signedTransactionBytes = await signTransaction(
       props.transactionBytes,
       localPublicKeysReq.value,
       user.personal.id,
-      userPassword.value,
+      user.personal.password,
     );
-
-    isSignModalShown.value = false;
+    isConfirmShown.value = false;
 
     await executeTransaction(signedTransactionBytes);
   } catch (err: any) {
@@ -215,11 +223,9 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     const { response, receipt } = await execute(transactionBytes);
 
     transactionResult.value = { response, receipt };
-
     status = receipt.status._code;
 
     isExecutedModalShown.value = true;
-
     props.onExecuted && props.onExecuted(true, response, receipt);
 
     if (route.query.draftId) {
@@ -282,7 +288,7 @@ async function sendSignedTransactionToOrganization() {
   }
 
   /* Verifies the user has entered his password */
-  if (!isLoggedInWithPassword(user.personal)) {
+  if (!isLoggedInWithValidPassword(user.personal)) {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     userPasswordModalRef.value?.open(
       'Enter your application password',
@@ -348,7 +354,7 @@ async function sendSignedTransactionToOrganization() {
 //     if (!isLoggedInOrganization(user.selectedOrganization))
 //       throw new Error('User is not logged in organization');
 
-//     if (!isLoggedInWithPassword(user.personal)) {
+//     if (!isLoggedInWithValidPassword(user.personal)) {
 //       if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
 //       userPasswordModalRef.value?.open(
 //         'Enter your application password',
@@ -415,13 +421,11 @@ async function deleteDraftIfNotTemplate() {
 }
 
 function resetData() {
-  userPassword.value = '';
   transactionResult.value = null;
   isSigning.value = false;
   isExecuting.value = false;
   isExecutedModalShown.value = false;
   isChunkingModalShown.value = false;
-  isSignModalShown.value = false;
   signatureKey.value = null;
 }
 
@@ -492,7 +496,12 @@ defineExpose({
               @click="isConfirmShown = false"
               >Cancel</AppButton
             >
-            <AppButton color="primary" type="submit" data-testid="button-sign-transaction"
+            <AppButton
+              color="primary"
+              type="submit"
+              data-testid="button-sign-transaction"
+              :loading="isSigning"
+              :disabled="isSigning"
               >Sign</AppButton
             >
           </div>
@@ -500,7 +509,7 @@ defineExpose({
       </div>
     </AppModal>
     <!-- Sign modal -->
-    <AppModal
+    <!-- <AppModal
       v-model:show="isSignModalShown"
       class="common-modal"
       :close-on-click-outside="false"
@@ -541,7 +550,7 @@ defineExpose({
           </div>
         </form>
       </div>
-    </AppModal>
+    </AppModal> -->
     <!-- Executing modal -->
     <AppModal
       v-model:show="isExecuting"

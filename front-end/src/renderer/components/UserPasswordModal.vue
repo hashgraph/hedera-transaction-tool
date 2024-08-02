@@ -57,6 +57,12 @@ const handleOpen = (
   _subHeading: string | null,
   _callback: (password: string) => void,
 ) => {
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
+  user.personal.password = '';
+
   heading.value = _heading;
   subHeading.value = _subHeading;
   callback.value = _callback;

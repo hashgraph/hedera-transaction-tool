@@ -16,7 +16,7 @@ import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/pro
 
 import {
   isLoggedInOrganization,
-  isLoggedInWithPassword,
+  isLoggedInWithValidPassword,
   isUserLoggedIn,
 } from '@renderer/utils/userStoreHelpers';
 import { getWidthOfElementWithText } from '@renderer/utils/dom';
@@ -115,7 +115,7 @@ const handleSave = async () => {
   if (keys.value.length === 0) throw Error('No key pairs to save');
 
   if (!isUserLoggedIn(user.personal)) throw Error('User is logged in');
-  if (!isLoggedInWithPassword(user.personal)) {
+  if (!isLoggedInWithValidPassword(user.personal)) {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     userPasswordModalRef.value?.open(
       'Enter personal password',

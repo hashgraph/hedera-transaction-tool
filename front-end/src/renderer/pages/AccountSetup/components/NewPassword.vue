@@ -14,7 +14,7 @@ import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/pro
 
 import {
   isLoggedInOrganization,
-  isLoggedInWithPassword,
+  isLoggedInWithValidPassword,
   isUserLoggedIn,
 } from '@renderer/utils/userStoreHelpers';
 
@@ -60,7 +60,7 @@ const handleChangePassword = async () => {
     throw new Error('User is not logged in');
   }
 
-  if (!isLoggedInWithPassword(user.personal)) {
+  if (!isLoggedInWithValidPassword(user.personal)) {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     userPasswordModalRef.value?.open(
       'Enter personal password',
