@@ -167,7 +167,6 @@ const handleSave = async () => {
     toast.success(`Key Pair${keys.value.length > 1 ? 's' : ''} saved successfully`, {
       position: 'bottom-right',
     });
-    user.personal.password = '';
     router.push({ name: 'settingsKeys' });
   } catch (err: any) {
     let message = `Failed to store key pair${keys.value.length > 1 ? 's' : ''}`;
