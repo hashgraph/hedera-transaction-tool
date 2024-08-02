@@ -106,6 +106,7 @@ onBeforeMount(async () => {
         <SignatureStatusKeyStructure
           :keyList="key instanceof KeyList ? key : new KeyList([key])"
           :public-keys-signed="publicKeysSigned"
+          :depth="0"
         />
       </div>
     </div>

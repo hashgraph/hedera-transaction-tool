@@ -67,7 +67,7 @@ const handleInsert = (e: Event) => {
           <h3 class="text-small">Contacts</h3>
           <template v-if="listedContacts.length > 0">
             <div class="mt-4 overflow-auto" :style="{ height: '20vh' }">
-              <template v-for="contact in listedContacts" :key="contact.user.id">
+              <template v-for="(contact, index) in listedContacts" :key="contact.user.id">
                 <AppListItem
                   class="mt-3"
                   :selected="userIds.includes(contact.user.id)"
@@ -88,7 +88,9 @@ const handleInsert = (e: Event) => {
                       <span class="ms-2 text-nowrap">{{ contact.nickname.trim() }}</span>
                     </p>
                     <div :class="[contact.nickname.trim().length > 0 ? 'border-start ps-4' : '']">
-                      <span class="text-nowrap">{{ contact.user.email }}</span>
+                      <span :data-testid="'span-email-' + index" class="text-nowrap">{{
+                        contact.user.email
+                      }}</span>
                     </div>
                   </div>
                 </AppListItem>

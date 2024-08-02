@@ -27,6 +27,7 @@ defineProps<{
             <div
               class="stepper-nav-item-bubble text-small rounded-circle border border-dark p-2"
               :class="[item.bubbleClass && `${item.bubbleClass}`]"
+              :data-testid="`div-stepper-nav-item-bubble-${index}`"
             >
               <template v-if="activeIndex <= index">
                 <template v-if="item.bubbleIcon">

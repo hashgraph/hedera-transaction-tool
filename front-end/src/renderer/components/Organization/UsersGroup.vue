@@ -48,6 +48,7 @@ const handleRemoveObserver = (userId: number) => {
         :color="'borderless'"
         :size="'small'"
         type="button"
+        data-testid="button-add-observer"
         class="text-small min-w-unset"
         @click="selectUserModalShown = true"
         ><span class="bi bi-plus-lg"></span> Add</AppButton

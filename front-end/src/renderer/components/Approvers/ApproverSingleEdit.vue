@@ -54,7 +54,11 @@ const handleRemoveUser = (index: number) => {
 <template>
   <div>
     <div class="text-center">
-      <AppButton color="secondary" type="button" @click="selectUserModalShown = true"
+      <AppButton
+        color="secondary"
+        data-testid="button-select-user"
+        type="button"
+        @click="selectUserModalShown = true"
         >Select User</AppButton
       >
     </div>

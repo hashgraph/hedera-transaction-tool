@@ -185,21 +185,21 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
             </tr>
           </thead>
           <tbody>
-            <template v-for="tx in transactions" :key="tx.transactionRaw.id">
+            <template v-for="(tx, index) in transactions" :key="tx.transactionRaw.id">
               <tr>
-                <td>
+                <td :data-testid="`td-transaction-id-in-progress-${index}`">
                   {{
                     tx.transaction instanceof Transaction ? getTransactionId(tx.transaction) : 'N/A'
                   }}
                 </td>
-                <td>
+                <td :data-testid="`td-transaction-type-in-progress-${index}`">
                   <span class="text-bold">{{
                     tx.transaction instanceof Transaction
                       ? getTransactionType(tx.transaction)
                       : 'N/A'
                   }}</span>
                 </td>
-                <td>
+                <td :data-testid="`td-transaction-valid-start-in-progress-${index}`">
                   {{
                     tx.transaction instanceof Transaction
                       ? getTransactionDateExtended(tx.transaction)
@@ -209,6 +209,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                 <td class="text-center">
                   <AppButton
                     @click="handleDetails(tx.transactionRaw.id)"
+                    :data-testid="`button-transaction-in-progress-details-${index}`"
                     color="secondary"
                     class="min-w-unset"
                     >Details</AppButton

@@ -117,6 +117,7 @@ function getApproverIdFromThreshold(approver: TransactionApproverDto) {
         :color="'borderless'"
         :size="'small'"
         type="button"
+        data-testid="button-add-approver"
         class="text-small min-w-unset"
         @click="handleAddNew"
         ><span class="bi bi-plus-lg"></span> Add</AppButton

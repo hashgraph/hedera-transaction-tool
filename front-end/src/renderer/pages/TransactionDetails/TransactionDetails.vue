@@ -527,7 +527,12 @@ const cancel = 'Cancel';
                   <AppButton color="primary" type="submit">{{ approve }}</AppButton>
                 </div>
                 <div v-else-if="canSign">
-                  <AppButton color="primary" type="submit">{{ sign }}</AppButton>
+                  <AppButton
+                    color="primary"
+                    data-testid="button-sign-org-transaction"
+                    type="submit"
+                    >{{ sign }}</AppButton
+                  >
                 </div>
               </div>
             </div>
