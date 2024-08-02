@@ -19,6 +19,7 @@ import {
   isAccountId,
   formatAccountId,
 } from '@renderer/utils';
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -220,7 +221,11 @@ const columnClass = 'col-4 col-xxxl-3';
             color="primary"
             type="submit"
             data-testid="button-sign-and-submit-file-append"
-            :disabled="!ownerKey || !payerData.isValid.value || !fileId"
+            :disabled="
+              (!isLoggedInOrganization(user.selectedOrganization) && !ownerKey) ||
+              !payerData.isValid.value ||
+              !fileId
+            "
           >
             <span class="bi bi-send"></span>
             {{
@@ -271,7 +276,7 @@ const columnClass = 'col-4 col-xxxl-3';
           </div>
         </div>
 
-        <div class="row mt-6">
+        <div v-if="!isLoggedInOrganization(user.selectedOrganization)" class="row mt-6">
           <div class="form-group col-8 col-xxxl-6">
             <KeyField
               :model-key="ownerKey"
