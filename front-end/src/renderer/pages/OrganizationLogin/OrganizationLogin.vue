@@ -9,11 +9,7 @@ import { useToast } from 'vue-toast-notification';
 import { login } from '@renderer/services/organization';
 import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
-import {
-  isLoggedInWithValidPassword,
-  isLoggedOutOrganization,
-  isUserLoggedIn,
-} from '@renderer/utils/userStoreHelpers';
+import { isLoggedOutOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
@@ -50,8 +46,8 @@ const handleOnFormSubmit = async (e: Event) => {
 
 const handleLogin = async () => {
   if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
-
-  if (!isLoggedInWithValidPassword(user.personal)) {
+  const personalPassword = user.getPassword();
+  if (!personalPassword) {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     userPasswordModalRef.value?.open(
       'Enter your application password',
@@ -73,7 +69,7 @@ const handleLogin = async () => {
       inputPassword.value,
       user.selectedOrganization.id,
       user.personal.id,
-      user.personal.password,
+      personalPassword,
       true,
     );
 
@@ -92,7 +88,8 @@ const handleLogin = async () => {
 };
 
 const handleForgotPassword = () => {
-  // if (!isLoggedInWithValidPassword(user.personal)) {
+  // const personalPassword = user.getPassword();
+  // if (!personalPassword) {
   //   if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
   //   userPasswordModalRef.value?.open('Enter personal password', null, handleForgotPassword);
   // } else {

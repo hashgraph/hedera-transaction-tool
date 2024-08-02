@@ -141,7 +141,8 @@ async function signAfterConfirm() {
   }
 
   /* Verifies the user has entered his password */
-  if (!isLoggedInWithValidPassword(user.personal)) {
+  const personalPassword = user.getPassword();
+  if (!personalPassword) {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     isConfirmShown.value = false;
     userPasswordModalRef.value?.open(
@@ -160,7 +161,7 @@ async function signAfterConfirm() {
       props.transactionBytes,
       localPublicKeysReq.value,
       user.personal.id,
-      user.personal.password,
+      personalPassword,
     );
     isConfirmShown.value = false;
 
@@ -288,7 +289,8 @@ async function sendSignedTransactionToOrganization() {
   }
 
   /* Verifies the user has entered his password */
-  if (!isLoggedInWithValidPassword(user.personal)) {
+  const personalPassword = user.getPassword();
+  if (!isLoggedInWithValidPassword(user.personal) || !personalPassword) {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     userPasswordModalRef.value?.open(
       'Enter your application password',
@@ -307,11 +309,7 @@ async function sendSignedTransactionToOrganization() {
   /* Signs the unfrozen transaction */
   const keyToSignWith = user.keyPairs[0].public_key;
 
-  const privateKeyRaw = await decryptPrivateKey(
-    user.personal.id,
-    user.personal.password,
-    keyToSignWith,
-  );
+  const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, keyToSignWith);
   const privateKey = getPrivateKey(keyToSignWith, privateKeyRaw);
 
   const signature = privateKey.sign(props.transactionBytes);

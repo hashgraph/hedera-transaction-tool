@@ -11,11 +11,7 @@ import { generateExternalKeyPairFromString } from '@renderer/services/keyPairSer
 import { comparePasswords } from '@renderer/services/userService';
 import { uploadKey } from '@renderer/services/organization';
 
-import {
-  isLoggedInOrganization,
-  isUserLoggedIn,
-  isLoggedInWithValidPassword,
-} from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
@@ -44,15 +40,14 @@ const ed25519Key = reactive<{ privateKey: string; nickname?: string }>({
 
 /* Handlers */
 const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
-
   const privateKey = type === 'ED25519' ? ed25519Key.privateKey : ecdsaKey.privateKey;
   const nickname = type === 'ED25519' ? ed25519Key.nickname : ecdsaKey.nickname;
 
   const callback = async () => {
-    if (!isLoggedInWithValidPassword(user.personal)) {
+    /* Verify user is logged in with password */
+    if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+    const personalPassword = user.getPassword();
+    if (!personalPassword) {
       if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
       isImportED25519KeyModalShown.value = false;
       isImportECDSAKeyModalShown.value = false;
@@ -78,7 +73,7 @@ const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
         throw new Error('Key pair already exists');
       }
 
-      if (!(await comparePasswords(user.personal.id, user.personal.password))) {
+      if (!(await comparePasswords(user.personal.id, personalPassword))) {
         throw new Error('Incorrect password');
       }
 
@@ -98,7 +93,7 @@ const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
         });
       }
 
-      await user.storeKey(keyPair, user.personal.password, false);
+      await user.storeKey(keyPair, personalPassword, false);
 
       await user.refetchUserState();
 

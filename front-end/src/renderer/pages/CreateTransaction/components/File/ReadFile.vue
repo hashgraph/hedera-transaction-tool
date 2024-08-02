@@ -16,11 +16,7 @@ import { executeQuery } from '@renderer/services/transactionService';
 import { add, getAll, update } from '@renderer/services/filesService';
 
 import { isFileId, isHederaSpecialFileId, formatAccountId, encodeString } from '@renderer/utils';
-import {
-  isUserLoggedIn,
-  flattenAccountIds,
-  isLoggedInWithValidPassword,
-} from '@renderer/utils/userStoreHelpers';
+import { isUserLoggedIn, flattenAccountIds } from '@renderer/utils/userStoreHelpers';
 
 import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
@@ -55,7 +51,9 @@ const accoundIds = computed<string[]>(() => flattenAccountIds(user.publicKeyToAc
 
 /* Handlers */
 const readFile = async () => {
-  if (!isLoggedInWithValidPassword(user.personal)) {
+  if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+  const personalPassword = user.getPassword();
+  if (!personalPassword) {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     userPasswordModalRef.value?.open(
       'Enter your application password',
@@ -79,7 +77,7 @@ const readFile = async () => {
 
     const privateKey = await decryptPrivateKey(
       user.personal.id,
-      user.personal.password,
+      personalPassword,
       keyPair.public_key,
     );
 

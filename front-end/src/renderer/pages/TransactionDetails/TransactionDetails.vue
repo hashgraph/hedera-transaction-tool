@@ -294,7 +294,8 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
       throw new Error('User is not logged in organization');
     }
 
-    if (!isLoggedInWithValidPassword(user.personal)) {
+    const personalPassword = user.getPassword();
+    if (!personalPassword) {
       if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
       userPasswordModalRef.value?.open(
         'Enter your application password',
@@ -305,11 +306,7 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
     }
 
     const publicKey = user.selectedOrganization.userKeys[0].publicKey;
-    const privateKeyRaw = await decryptPrivateKey(
-      user.personal.id,
-      user.personal.password,
-      publicKey,
-    );
+    const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
     const privateKey = getPrivateKey(publicKey, privateKeyRaw);
 
     const signature = await getTransactionBodySignatureWithoutNodeAccountId(

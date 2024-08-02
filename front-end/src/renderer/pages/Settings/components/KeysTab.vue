@@ -11,11 +11,7 @@ import { useRouter } from 'vue-router';
 import { deleteKey } from '@renderer/services/organization';
 import { decryptPrivateKey, deleteKeyPair } from '@renderer/services/keyPairService';
 
-import {
-  isLoggedInOrganization,
-  isLoggedInWithValidPassword,
-  isUserLoggedIn,
-} from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
@@ -70,7 +66,9 @@ const handleTabChange = (tab: Tabs) => {
 
 const decrypt = async () => {
   try {
-    if (!isLoggedInWithValidPassword(user.personal)) {
+    if (!isUserLoggedIn(user.personal)) throw Error('User is not logged in');
+    const personalPassword = user.getPassword();
+    if (!personalPassword) {
       if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
       userPasswordModalRef.value?.open(
         'Enter your application password',
@@ -87,7 +85,7 @@ const decrypt = async () => {
     if (!keyFromDecrypted) {
       const decryptedKey = await decryptPrivateKey(
         user.personal.id,
-        user.personal.password,
+        personalPassword,
         publicKeysPrivateKeyToDecrypt.value,
       );
 
