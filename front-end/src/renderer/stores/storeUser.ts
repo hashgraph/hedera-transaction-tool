@@ -37,6 +37,7 @@ const useUserStore = defineStore('user', () => {
 
   /** Personal */
   const personal = ref<PersonalUser | null>(null);
+  const passwordStoreDuration = ref<number>(30 * 60 * 1_000);
 
   /** Organization */
   const selectedOrganization = ref<ConnectedOrganization | null>(null);
@@ -65,6 +66,28 @@ const useUserStore = defineStore('user', () => {
     organizations.value.splice(0, organizations.value.length);
     publicKeyToAccounts.value.splice(0, publicKeyToAccounts.value.length);
     keyPairs.value = [];
+  };
+
+  const setPassword = (password: string) => {
+    if (!ush.isUserLoggedIn(personal.value)) throw new Error('User is not logged in');
+
+    personal.value.password = password;
+
+    if (!ush.isLoggedInWithPassword(personal.value)) throw new Error('Failed to set user password');
+
+    personal.value.passwordExpiresAt = new Date(Date.now() + passwordStoreDuration.value);
+  };
+
+  const setPasswordStoreDuration = (durationMs: number) => {
+    if (!ush.isUserLoggedIn(personal.value)) throw new Error('User is not logged in');
+
+    const oldDuration = passwordStoreDuration.value;
+    passwordStoreDuration.value = durationMs;
+
+    if (ush.isLoggedInWithPassword(personal.value)) {
+      const prevSetAt = personal.value.passwordExpiresAt.getTime() - oldDuration;
+      personal.value.passwordExpiresAt = new Date(prevSetAt + durationMs);
+    }
   };
 
   /** Keys */
@@ -177,6 +200,8 @@ const useUserStore = defineStore('user', () => {
     refetchAccounts,
     storeKey,
     selectOrganization,
+    setPassword,
+    setPasswordStoreDuration,
     refetchUserState,
     deleteOrganization,
     refetchOrganizations,
