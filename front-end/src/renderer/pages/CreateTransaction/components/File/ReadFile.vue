@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, inject, onMounted, ref, watch } from 'vue';
 import { FileContentsQuery, FileId, FileInfoQuery, Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import { HederaFile } from '@prisma/client';
@@ -16,13 +16,17 @@ import { executeQuery } from '@renderer/services/transactionService';
 import { add, getAll, update } from '@renderer/services/filesService';
 
 import { isFileId, isHederaSpecialFileId, formatAccountId, encodeString } from '@renderer/utils';
-import { isUserLoggedIn, flattenAccountIds } from '@renderer/utils/userStoreHelpers';
+import {
+  isUserLoggedIn,
+  flattenAccountIds,
+  isLoggedInWithValidPassword,
+} from '@renderer/utils/userStoreHelpers';
+
+import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
-import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
@@ -36,24 +40,29 @@ const toast = useToast();
 const payerData = useAccountId();
 const route = useRoute();
 
+/* Injected */
+const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
+
 /* State */
 const maxQueryFee = ref<Hbar>(new Hbar(2));
 const fileId = ref('');
 const content = ref('');
-const userPassword = ref('');
 const isLoading = ref(false);
-const isUserPasswordModalShown = ref(false);
 const storedFiles = ref<HederaFile[]>([]);
 
 /* Computed */
 const accoundIds = computed<string[]>(() => flattenAccountIds(user.publicKeyToAccounts));
 
 /* Handlers */
-const handleRead = async e => {
-  e.preventDefault();
-
-  if (!isUserLoggedIn(user.personal)) {
-    throw Error('User is not logged in');
+const readFile = async () => {
+  if (!isLoggedInWithValidPassword(user.personal)) {
+    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+    userPasswordModalRef.value?.open(
+      'Enter your application password',
+      'Enter your application password to decrypt your keys and sign the transaction',
+      readFile,
+    );
+    return;
   }
 
   try {
@@ -70,7 +79,7 @@ const handleRead = async e => {
 
     const privateKey = await decryptPrivateKey(
       user.personal.id,
-      userPassword.value,
+      user.personal.password,
       keyPair.public_key,
     );
 
@@ -135,8 +144,6 @@ const handleRead = async e => {
     } catch (error: any) {
       toast.error(error?.message || 'Failed to add/update file info', { position: 'bottom-right' });
     }
-
-    isUserPasswordModalShown.value = false;
   } catch (err: any) {
     let message = 'Failed to execute query';
     if (err.message && typeof err.message === 'string') {
@@ -149,9 +156,9 @@ const handleRead = async e => {
   }
 };
 
-const handleSubmit = e => {
+const handleSubmit = async e => {
   e.preventDefault();
-  isUserPasswordModalShown.value = true;
+  await readFile();
 };
 
 /* Hooks */
@@ -173,7 +180,6 @@ onMounted(async () => {
 });
 
 /* Watchers */
-watch(isUserPasswordModalShown, () => (userPassword.value = ''));
 watch(fileId, id => {
   if (isFileId(id) && id !== '0') {
     fileId.value = FileId.fromString(id).toString();
@@ -188,7 +194,12 @@ const columnClass = 'col-4 col-xxxl-3';
     <form @submit="handleSubmit" class="flex-column-100">
       <TransactionHeaderControls heading-text="Read File Query">
         <template #buttons>
-          <AppButton color="primary" type="submit" :disabled="!fileId || !payerData.isValid.value">
+          <AppButton
+            color="primary"
+            type="submit"
+            :loading="isLoading"
+            :disabled="!fileId || !payerData.isValid.value || isLoading"
+          >
             <span class="bi bi-send" data-testid="button-sign-and-read-file"></span>
             Sign & Read</AppButton
           >
@@ -263,40 +274,5 @@ const columnClass = 'col-4 col-xxxl-3';
         </div>
       </div>
     </form>
-
-    <AppModal v-model:show="isUserPasswordModalShown" class="common-modal">
-      <div class="p-5">
-        <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="isUserPasswordModalShown = false"></i>
-        </div>
-        <div class="text-center">
-          <AppCustomIcon :name="'lock'" style="height: 160px" />
-        </div>
-        <form @submit="handleRead">
-          <h3 class="text-center text-title text-bold mt-3">Enter your password</h3>
-          <div class="form-group mt-4">
-            <AppInput
-              v-model="userPassword"
-              :filled="true"
-              data-testid="input-password-for-sign-query"
-              size="small"
-              type="password"
-            />
-          </div>
-          <hr class="separator my-5" />
-
-          <div class="d-grid">
-            <AppButton
-              :loading="isLoading"
-              :disabled="userPassword.length === 0 || isLoading"
-              color="primary"
-              type="submit"
-              data-testid="button-sign-read-query"
-              >Sign Query</AppButton
-            >
-          </div>
-        </form>
-      </div>
-    </AppModal>
   </div>
 </template>
