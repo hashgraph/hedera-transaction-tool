@@ -37,7 +37,7 @@ const useUserStore = defineStore('user', () => {
 
   /** Personal */
   const personal = ref<PersonalUser | null>(null);
-  const passwordStoreDuration = ref<number>(30 * 60 * 1_000);
+  const passwordStoreDuration = ref<number>(10 * 60 * 1_000);
 
   /** Organization */
   const selectedOrganization = ref<ConnectedOrganization | null>(null);
@@ -66,6 +66,17 @@ const useUserStore = defineStore('user', () => {
     organizations.value.splice(0, organizations.value.length);
     publicKeyToAccounts.value.splice(0, publicKeyToAccounts.value.length);
     keyPairs.value = [];
+  };
+
+  const getPassword = () => {
+    if (!ush.isUserLoggedIn(personal.value)) throw new Error('User is not logged in');
+    if (!ush.isLoggedInWithValidPassword(personal.value)) {
+      personal.value.password = null;
+      return null;
+    }
+
+    personal.value.passwordExpiresAt = new Date(Date.now() + passwordStoreDuration.value);
+    return personal.value.password;
   };
 
   const setPassword = (password: string) => {
@@ -200,6 +211,7 @@ const useUserStore = defineStore('user', () => {
     refetchAccounts,
     storeKey,
     selectOrganization,
+    getPassword,
     setPassword,
     setPasswordStoreDuration,
     refetchUserState,
