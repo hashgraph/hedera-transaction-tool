@@ -117,11 +117,11 @@ const handleOnFormSubmit = async (event: Event) => {
       try {
         globalModalLoaderRef?.value?.open();
         await user.login(userData.id, userData.email.trim());
+        if (isUserLoggedIn(user.personal)) {
+          user.setPassword(inputPassword.value);
+        }
 
         if (user.secretHashes.length === 0) {
-          if (isUserLoggedIn(user.personal)) {
-            user.setPassword(inputPassword.value);
-          }
           router.push({ name: 'accountSetup' });
         } else {
           router.push(
