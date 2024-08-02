@@ -53,11 +53,11 @@ test.describe('Organization Settings tests', () => {
       globalCredentials.password,
     );
 
-    await setupEnvironmentForTransactions(window, globalCredentials.password);
+    await setupEnvironmentForTransactions(window);
 
     // Setup Organization
     await organizationPage.setupOrganization();
-    await organizationPage.setUpUsers(window, globalCredentials.password);
+    await organizationPage.setUpUsers(window);
     firstUser = organizationPage.getUser(0);
     secondUser = organizationPage.getUser(1);
     thirdUser = organizationPage.getUser(2);

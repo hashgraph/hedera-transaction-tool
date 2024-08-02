@@ -57,8 +57,6 @@ test.describe('Settings tests', () => {
     await settingsPage.clickOnKeysTab();
 
     await settingsPage.clickOnEyeDecryptIcon();
-    await settingsPage.fillInDecryptPassword(globalCredentials.password);
-    await settingsPage.clickOnDecryptButton();
     const decryptedPrivateKey = await settingsPage.getPrivateKeyText();
 
     expect(decryptedPrivateKey).toBeTruthy();
@@ -70,9 +68,6 @@ test.describe('Settings tests', () => {
 
     await settingsPage.clickOnRestoreButton();
     await settingsPage.clickOnContinueButton();
-
-    await settingsPage.fillInPassword(globalCredentials.password);
-    await settingsPage.clickOnPasswordContinueButton();
 
     const isMnemonicRequired = settingsPage.isElementVisible(
       registrationPage.getRecoveryWordSelector(1),
@@ -102,9 +97,6 @@ test.describe('Settings tests', () => {
 
     await settingsPage.clickOnRestoreButton();
     await settingsPage.clickOnContinueButton();
-
-    await settingsPage.fillInPassword(globalCredentials.password);
-    await settingsPage.clickOnPasswordContinueButton();
 
     const isMnemonicRequired = settingsPage.isElementVisible(
       registrationPage.getRecoveryWordSelector(1),
@@ -138,9 +130,6 @@ test.describe('Settings tests', () => {
 
     await settingsPage.clickOnRestoreButton();
     await settingsPage.clickOnContinueButton();
-
-    await settingsPage.fillInPassword(globalCredentials.password);
-    await settingsPage.clickOnPasswordContinueButton();
 
     const isMnemonicRequired = settingsPage.isElementVisible(
       registrationPage.getRecoveryWordSelector(1),
@@ -191,7 +180,7 @@ test.describe('Settings tests', () => {
 
     await settingsPage.fillInECDSAPrivateKey(privateKey);
     await settingsPage.fillInECDSANickname('Test-ECDSA-Import');
-    await settingsPage.fillInECDSAPassword(globalCredentials.password);
+    // await settingsPage.fillInECDSAPassword(globalCredentials.password);
     await loginPage.waitForToastToDisappear();
     await settingsPage.clickOnECDSAImportButton();
 
@@ -221,7 +210,6 @@ test.describe('Settings tests', () => {
 
     await settingsPage.fillInED25519PrivateKey(privateKey);
     await settingsPage.fillInED25519Nickname('Test-ED25519-Import');
-    await settingsPage.fillInED25519Password(globalCredentials.password);
     await loginPage.waitForToastToDisappear();
     await settingsPage.clickOnED25519ImportButton();
 

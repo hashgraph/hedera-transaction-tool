@@ -22,11 +22,7 @@ async function closeApp(app) {
   await app.close();
 }
 
-async function setupEnvironmentForTransactions(
-  window,
-  password,
-  privateKey = process.env.PRIVATE_KEY,
-) {
+async function setupEnvironmentForTransactions(window, privateKey = process.env.PRIVATE_KEY) {
   if (process.env.ENVIRONMENT.toUpperCase() === 'LOCALNET') {
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
@@ -36,7 +32,6 @@ async function setupEnvironmentForTransactions(
     await settingsPage.clickOnED25519DropDown();
     await settingsPage.fillInED25519PrivateKey(privateKey);
     await settingsPage.fillInED25519Nickname('Payer Account');
-    await settingsPage.fillInED25519Password(password);
     await settingsPage.clickOnED25519ImportButton();
   } else {
     const settingsPage = new SettingsPage(window);
@@ -45,7 +40,6 @@ async function setupEnvironmentForTransactions(
     await settingsPage.clickOnECDSADropDown();
     await settingsPage.fillInECDSAPrivateKey(privateKey);
     await settingsPage.fillInECDSANickname('Payer Account');
-    await settingsPage.fillInECDSAPassword(password);
     await settingsPage.clickOnECDSAImportButton();
   }
 }

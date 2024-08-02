@@ -183,9 +183,9 @@ class FilePage extends BasePage {
     }
   }
 
-  async ensureFileExistsAndUnlinked(password) {
+  async ensureFileExistsAndUnlinked() {
     if (await this.isUnlinkedFilesEmpty()) {
-      const { fileId } = await this.transactionPage.createFile('test', password);
+      const { fileId } = await this.transactionPage.createFile('test');
       await this.clickOnFilesMenuButton();
       await this.clickOnRemoveFileCardButton();
       await this.clickOnConfirmUnlinkFileButton();

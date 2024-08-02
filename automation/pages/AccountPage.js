@@ -162,9 +162,9 @@ class AccountPage extends BasePage {
     return this.unlikedAccounts[0];
   }
 
-  async ensureAccountExistsAndUnlinked(password) {
+  async ensureAccountExistsAndUnlinked() {
     if (await this.isUnlinkedAccountsListEmpty()) {
-      const { newAccountId } = await this.transactionPage.createNewAccount(password);
+      const { newAccountId } = await this.transactionPage.createNewAccount();
       await this.transactionPage.mirrorGetAccountResponse(newAccountId);
       await this.transactionPage.clickOnTransactionsMenuButton();
       await this.clickOnAccountsLink();

@@ -493,19 +493,19 @@ class TransactionPage extends BasePage {
     }
   }
 
-  async ensureAccountExists(password) {
+  async ensureAccountExists() {
     if (await this.isAccountsListEmpty()) {
-      await this.createNewAccount(password);
+      await this.createNewAccount();
     }
   }
 
-  async ensureFileExists(text, password) {
+  async ensureFileExists(text) {
     if (await this.isGeneratedFilesEmpty()) {
-      await this.createFile(text, password);
+      await this.createFile(text);
     }
   }
 
-  async createNewAccount(password, options = {}, isComingFromDraft = false) {
+  async createNewAccount(options = {}, isComingFromDraft = false) {
     const {
       isComplex = false,
       maxAutoAssociations = null,
@@ -539,8 +539,6 @@ class TransactionPage extends BasePage {
 
     await this.clickOnSignAndSubmitButton();
     await this.clickSignTransactionButton();
-    await this.fillInPassword(password);
-    await this.clickOnPasswordContinue();
     await this.waitForCreatedAtToBeVisible();
 
     const newTransactionId = await this.getTransactionDetailsId();
@@ -561,7 +559,7 @@ class TransactionPage extends BasePage {
     await this.clickOnDoneButton();
   }
 
-  async deleteAccount(accountId, password) {
+  async deleteAccount(accountId) {
     await this.clickOnTransactionsMenuButton();
     await this.clickOnCreateNewTransactionButton();
     await this.clickOnDeleteAccountTransaction();
@@ -570,8 +568,6 @@ class TransactionPage extends BasePage {
     await this.clickOnSignAndSubmitDeleteButton();
     await this.clickOnConfirmDeleteAccountButton();
     await this.clickSignTransactionButton();
-    await this.fillInPassword(password);
-    await this.clickOnPasswordContinue();
     await this.waitForCreatedAtToBeVisible();
     const transactionId = await this.getTransactionDetailsId();
     await this.clickOnTransactionsMenuButton();
@@ -579,7 +575,7 @@ class TransactionPage extends BasePage {
     return transactionId;
   }
 
-  async updateAccount(accountId, password, maxAutoAssociations, memo) {
+  async updateAccount(accountId, maxAutoAssociations, memo) {
     await this.clickOnTransactionsMenuButton();
     await this.clickOnCreateNewTransactionButton();
     await this.clickOnUpdateAccountTransaction();
@@ -593,8 +589,6 @@ class TransactionPage extends BasePage {
     await this.waitForElementPresentInDOM(this.updateAccountIdFetchedDivSelector, 30000);
     await this.clickOnSignAndSubmitUpdateButton();
     await this.clickSignTransactionButton();
-    await this.fillInPassword(password);
-    await this.clickOnPasswordContinue();
     await this.waitForCreatedAtToBeVisible();
     const transactionId = await this.getTransactionDetailsId();
     await this.clickOnTransactionsMenuButton();
@@ -609,7 +603,7 @@ class TransactionPage extends BasePage {
     return await this.getTextByTestId(this.transactionDetailsIdSelector);
   }
 
-  async createFile(fileContent, password) {
+  async createFile(fileContent) {
     await this.clickOnTransactionsMenuButton();
     await this.clickOnCreateNewTransactionButton();
     await this.clickOnFileServiceLink();
@@ -618,8 +612,6 @@ class TransactionPage extends BasePage {
     await this.fillInFileContent(fileContent);
     await this.clickOnSignAndSubmitFileCreateButton();
     await this.clickSignTransactionButton();
-    await this.fillInPassword(password);
-    await this.clickOnPasswordContinue();
     await this.waitForCreatedAtToBeVisible();
     const transactionId = await this.getTransactionDetailsId();
     await this.clickOnTransactionsMenuButton();
@@ -629,20 +621,18 @@ class TransactionPage extends BasePage {
     return { transactionId, fileId };
   }
 
-  async readFile(fileId, password) {
+  async readFile(fileId) {
     await this.clickOnTransactionsMenuButton();
     await this.clickOnCreateNewTransactionButton();
     await this.clickOnFileServiceLink();
     await this.clickOnReadCreateTransaction();
     await this.fillInFileIdForRead(fileId);
     await this.clickOnSignAndReadFileButton();
-    await this.fillInPasswordForRead(password);
-    await this.clickOnSignReadQueryButton();
     await this.waitForElementToDisappear(this.toastMessageSelector);
     return await this.readFileContentFromTextArea();
   }
 
-  async updateFile(fileId, fileContent, password) {
+  async updateFile(fileId, fileContent) {
     await this.clickOnTransactionsMenuButton();
     await this.clickOnCreateNewTransactionButton();
     await this.clickOnFileServiceLink();
@@ -652,9 +642,7 @@ class TransactionPage extends BasePage {
     await this.fillInPublicKeyForFile(publicKey);
     await this.fillInFileContentForUpdate(fileContent);
     await this.clickOnSignAndSubmitUpdateFileButton();
-    await this.clickOnSignFileButton();
-    await this.fillInPasswordForFile(password);
-    await this.clickOnContinueSignFileButton();
+    await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();
     const transactionId = await this.getTransactionDetailsId();
     await this.clickOnTransactionsMenuButton();
@@ -662,7 +650,7 @@ class TransactionPage extends BasePage {
     return transactionId;
   }
 
-  async appendFile(fileId, fileContent, password) {
+  async appendFile(fileId, fileContent) {
     await this.clickOnTransactionsMenuButton();
     await this.clickOnCreateNewTransactionButton();
     await this.clickOnFileServiceLink();
@@ -672,9 +660,7 @@ class TransactionPage extends BasePage {
     await this.fillInPublicKeyForFile(publicKey);
     await this.fillInFileContentForAppend(fileContent);
     await this.clickOnSignAndSubmitFileAppendButton();
-    await this.clickOnSignFileButton();
-    await this.fillInPasswordForFile(password);
-    await this.clickOnContinueSignFileButton();
+    await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();
     const transactionId = await this.getTransactionDetailsId();
     await this.clickOnTransactionsMenuButton();
@@ -682,7 +668,7 @@ class TransactionPage extends BasePage {
     return transactionId;
   }
 
-  async approveAllowance(spenderAccountId, amount, password, isTestNegative = false) {
+  async approveAllowance(spenderAccountId, amount, isTestNegative = false) {
     await this.clickOnTransactionsMenuButton();
     await this.clickOnCreateNewTransactionButton();
     await this.clickOnApproveAllowanceTransaction();
@@ -695,15 +681,13 @@ class TransactionPage extends BasePage {
     await this.fillInSpenderAccountId(spenderAccountId);
     await this.clickOnSignAndSubmitAllowanceButton();
     await this.clickSignTransactionButton();
-    await this.fillInPassword(password);
-    await this.clickOnPasswordContinue();
     await this.waitForCreatedAtToBeVisible();
     const transactionId = await this.getTransactionDetailsId();
     await this.clickOnTransactionsMenuButton();
     return transactionId;
   }
 
-  async transferAmountBetweenAccounts(toAccountId, amount, password, options = {}) {
+  async transferAmountBetweenAccounts(toAccountId, amount, options = {}) {
     const { isSupposedToFail = false } = options;
 
     await this.clickOnTransactionsMenuButton();
@@ -718,8 +702,6 @@ class TransactionPage extends BasePage {
 
     await this.clickOnSignAndSubmitTransferButton();
     await this.clickSignTransactionButton();
-    await this.fillInPassword(password);
-    await this.clickOnPasswordContinue();
 
     if (isSupposedToFail) {
       return null;
@@ -805,7 +787,7 @@ class TransactionPage extends BasePage {
     await this.clickByTestId(this.signAndSubmitUpdateButtonSelector);
   }
 
-  async clickSignTransactionButton(waitForPassword = true) {
+  async clickSignTransactionButton() {
     // Construct the selector for the confirmation transaction modal that is visible and in a displayed state
     const modalSelector = `[data-testid="${this.confirmTransactionModalSelector}"][style*="display: block"]`;
     await this.window.waitForSelector(modalSelector, { state: 'visible', timeout: 15000 });
@@ -816,11 +798,6 @@ class TransactionPage extends BasePage {
     // Wait for the sign button to be visible and enabled, then attempt to click it
     await this.window.waitForSelector(signButtonSelector, { state: 'visible', timeout: 15000 });
     await this.window.click(signButtonSelector);
-
-    if (waitForPassword) {
-      // After clicking the sign button, wait for the password input to become visible
-      await this.waitForElementToBeVisible(this.passwordSignTransactionInputSelector);
-    }
   }
 
   async clickOnPasswordContinue() {
