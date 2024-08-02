@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, inject, ref, watch } from 'vue';
 import { PublicKey } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -11,11 +11,16 @@ import { useRouter } from 'vue-router';
 import { deleteKey } from '@renderer/services/organization';
 import { decryptPrivateKey, deleteKeyPair } from '@renderer/services/keyPairService';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import {
+  isLoggedInOrganization,
+  isLoggedInWithValidPassword,
+  isUserLoggedIn,
+} from '@renderer/utils/userStoreHelpers';
+
+import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Stores */
@@ -26,6 +31,9 @@ const network = useNetworkStore();
 const toast = useToast();
 const router = useRouter();
 
+/* Injected */
+const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
+
 enum Tabs {
   ALL = 'All',
   RECOVERY_PHRASE = 'Imported from Recovery Phrase',
@@ -33,14 +41,12 @@ enum Tabs {
 }
 
 /* State */
-const isDecryptedModalShown = ref(false);
 const isDeleteModalShown = ref(false);
 
 const decryptedKeys = ref<{ decrypted: string | null; publicKey: string }[]>([]);
 const publicKeysPrivateKeyToDecrypt = ref('');
 const keyPairIdToDelete = ref<string | null>(null);
 const missingKeyPairIdToDelete = ref<number | null>(null);
-const userPassword = ref('');
 const currentTab = ref(Tabs.ALL);
 
 /* Computed */
@@ -53,21 +59,25 @@ const externalMissingKeys = computed(() =>
 );
 
 /* Handlers */
-const handleShowDecryptModal = (publicKey: string) => {
+const handleShowPrivateKey = async (publicKey: string) => {
   publicKeysPrivateKeyToDecrypt.value = publicKey;
-  isDecryptedModalShown.value = true;
+  await decrypt();
 };
 
 const handleTabChange = (tab: Tabs) => {
   currentTab.value = tab;
 };
 
-const handleDecrypt = async e => {
-  e.preventDefault();
-
+const decrypt = async () => {
   try {
-    if (!isUserLoggedIn(user.personal)) {
-      throw Error('User is not logged in');
+    if (!isLoggedInWithValidPassword(user.personal)) {
+      if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+      userPasswordModalRef.value?.open(
+        'Enter your application password',
+        'Enter your application password to decrypt your key',
+        decrypt,
+      );
+      return;
     }
 
     const keyFromDecrypted = decryptedKeys.value.find(
@@ -77,7 +87,7 @@ const handleDecrypt = async e => {
     if (!keyFromDecrypted) {
       const decryptedKey = await decryptPrivateKey(
         user.personal.id,
-        userPassword.value,
+        user.personal.password,
         publicKeysPrivateKeyToDecrypt.value,
       );
 
@@ -86,8 +96,6 @@ const handleDecrypt = async e => {
         decrypted: decryptedKey,
       });
     }
-
-    isDecryptedModalShown.value = false;
   } catch (err: any) {
     toast.error('Failed to decrypt private key', { position: 'bottom-right' });
   }
@@ -195,11 +203,6 @@ function getUserKeyToDelete() {
 }
 
 /* Watchers */
-watch(isDecryptedModalShown, newVal => {
-  if (!newVal) {
-    userPassword.value = '';
-  }
-});
 watch(isDeleteModalShown, newVal => {
   if (!newVal) {
     keyPairIdToDelete.value = null;
@@ -341,7 +344,7 @@ watch(isDeleteModalShown, newVal => {
                       <span
                         :data-testid="`span-show-modal-${index}`"
                         class="bi bi-eye cursor-pointer ms-3"
-                        @click="handleShowDecryptModal(keyPair.public_key)"
+                        @click="handleShowPrivateKey(keyPair.public_key)"
                       ></span>
                     </template>
                   </p>
@@ -431,41 +434,6 @@ watch(isDeleteModalShown, newVal => {
           </tbody>
         </table>
       </div>
-
-      <AppModal v-model:show="isDecryptedModalShown" class="common-modal">
-        <div class="p-5">
-          <div>
-            <i class="bi bi-x-lg cursor-pointer" @click="isDecryptedModalShown = false"></i>
-          </div>
-          <div class="text-center">
-            <AppCustomIcon :name="'lock'" style="height: 160px" />
-          </div>
-          <form @submit="handleDecrypt">
-            <h3 class="text-center text-title text-bold mt-3">Decrypt private key</h3>
-            <div class="form-group mt-5">
-              <label class="form-label">Enter your password</label>
-              <AppInput
-                v-model="userPassword"
-                data-testid="input-decrypt-password"
-                :filled="true"
-                type="password"
-                placeholder="Type your password"
-              />
-            </div>
-            <hr class="separator my-5" />
-
-            <div class="d-grid mt-5">
-              <AppButton
-                type="submit"
-                data-testid="button-decrypt"
-                color="primary"
-                :disabled="userPassword.length === 0"
-                >Decrypt</AppButton
-              >
-            </div>
-          </form>
-        </div>
-      </AppModal>
 
       <AppModal v-model:show="isDeleteModalShown" class="common-modal">
         <div class="p-5">
