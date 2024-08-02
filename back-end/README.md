@@ -27,7 +27,7 @@ If you use another version, please use [n](https://github.com/tj/n) to manage.
 ### Install dependencies ⏬
 
 ```bash
-pnpm install -r
+pnpm install
 ```
 
 Before running the project please create `.env` in `back-end`, `apps/api`, `apps/chain`,
