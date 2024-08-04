@@ -9,7 +9,7 @@ import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 import { useRouter, useRoute } from 'vue-router';
 import useUserStore from '@renderer/stores/storeUser';
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
-import { getEntityIdFromTransactionReceipt, getPropagationButtonLabel } from '@renderer/utils';
+import { getPropagationButtonLabel } from '@renderer/utils';
 import { KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
 import { useToast } from 'vue-toast-notification';
 import { createTransactionId } from '@renderer/services/transactionService';
@@ -138,6 +138,7 @@ function addTransactionIds() {
     transaction.setTransactionId(
       createTransactionId(groupItem.payerAccountId, groupItem.validStart),
     );
+    groupItem.transactionBytes = transaction.toBytes();
   }
 }
 /* Hooks */

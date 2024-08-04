@@ -92,7 +92,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
           type: groupItem.type,
           accountId: groupItem.accountId,
           groupId: groupItem.groupId,
-          seq: groupItem.seq,
+          seq: groupItem.seq + 1,
           keyList: groupItem.keyList,
           observers: groupItem.observers,
           approvers: groupItem.approvers,

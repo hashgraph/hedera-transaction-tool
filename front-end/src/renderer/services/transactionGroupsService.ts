@@ -1,7 +1,7 @@
 import { Prisma, GroupItem } from '@prisma/client';
 import { GroupItem as StoreGroupItem } from '@renderer/stores/storeTransactionGroup';
 
-import { commonIPCHandler, getMessageFromIPCError } from '@renderer/utils';
+import { getMessageFromIPCError } from '@renderer/utils';
 import { getTransactionType } from '@renderer/utils/transactions';
 
 /* Transaction Groups Service */
@@ -122,8 +122,8 @@ export async function updateGroup(
         transactionBytes: item.transactionBytes.toString(),
         type: getTransactionType(item.transactionBytes),
       };
-      const savedItem = await getGroupItem(id, index.toString());
-      if (savedItem) {
+      if (item.groupId) {
+        const savedItem = await getGroupItem(id, index.toString());
         await window.electronAPI.local.transactionDrafts.updateDraft(
           savedItem.transaction_draft_id!,
           transactionDraft,
