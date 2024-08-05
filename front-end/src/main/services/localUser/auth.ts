@@ -1,5 +1,6 @@
 import { hash } from '@main/utils/crypto';
 import { randomUUID } from 'crypto';
+import * as bcrypt from 'bcrypt';
 
 import { getPrismaClient } from '@main/db/prisma';
 import { changeDecryptionPassword } from './keyPairs';
@@ -11,7 +12,7 @@ export const register = async (email: string, password: string) => {
     data: {
       id: randomUUID(),
       email: email,
-      password: hash(password).toString('hex'),
+      password: hash(password),
     },
   });
 };
@@ -36,7 +37,9 @@ export const login = async (email: string, password: string, _autoRegister?: boo
   //   throw new Error('Incorrect email');
   // }
 
-  if (hash(password).toString('hex') !== firstUser.password) {
+  const correct = bcrypt.compareSync(password, firstUser.password);
+
+  if (!correct) {
     throw new Error('Incorrect password');
   }
 
@@ -71,11 +74,7 @@ export const comparePasswords = async (userId: string, password: string) => {
     throw new Error('User not found');
   }
 
-  if (hash(password).toString('hex') === firstUser.password) {
-    return true;
-  } else {
-    return false;
-  }
+  return bcrypt.compareSync(password, firstUser.password);
 };
 
 export const changePassword = async (userId: string, oldPassword: string, newPassword: string) => {
@@ -89,7 +88,7 @@ export const changePassword = async (userId: string, oldPassword: string, newPas
         id: userId,
       },
       data: {
-        password: hash(newPassword).toString('hex'),
+        password: hash(newPassword),
       },
     });
   } else {
