@@ -41,6 +41,7 @@ const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADE
 const inputEmail = ref('');
 const inputPassword = ref('');
 const inputConfirmPassword = ref('');
+const buttonLoading = ref(false);
 
 const inputEmailInvalid = ref(false);
 const inputPasswordInvalid = ref(false);
@@ -79,6 +80,7 @@ const handleOnFormSubmit = async (event: Event) => {
       toast.error('Password too weak', { position: 'bottom-right' });
       return;
     }
+    buttonLoading.value = true;
     const { id, email } = await registerLocal(
       inputEmail.value.trim(),
       inputPassword.value,
@@ -111,6 +113,8 @@ const handleOnFormSubmit = async (event: Event) => {
       if (error.message.includes('password')) {
         inputPasswordInvalid.value = true;
       }
+    } finally {
+      buttonLoading.value = false;
     }
 
     if (userData) {
@@ -131,6 +135,8 @@ const handleOnFormSubmit = async (event: Event) => {
         globalModalLoaderRef?.value?.close();
       } catch (error) {
         globalModalLoaderRef?.value?.close();
+      } finally {
+        buttonLoading.value = false;
       }
     }
   }
@@ -349,6 +355,7 @@ watch(inputEmail, pass => {
               color="primary"
               type="submit"
               class="w-100"
+              :loading="buttonLoading"
               :disabled="inputEmail.length === 0 || inputPassword.length === 0"
               >{{ shouldRegister ? 'Next' : 'Sign in' }}</AppButton
             >
