@@ -32,6 +32,18 @@ export default () => {
     return bcrypt.compareSync(data, hash);
   });
 
+  ipcMain.handle(
+    createChannelName('compareDataToHashes'),
+    (_e, data: string, hashes: string[]): boolean => {
+      for (const hash of hashes) {
+        const matched = bcrypt.compareSync(data, hash);
+        if (matched) return true;
+      }
+
+      return false;
+    },
+  );
+
   ipcMain.handle(createChannelName('uint8ArrayToHex'), (_e, data: string): string => {
     return Buffer.from(getNumberArrayFromString(data)).toString('hex');
   });

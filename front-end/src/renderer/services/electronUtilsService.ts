@@ -113,13 +113,19 @@ export const hexToUint8ArrayBatch = async (data: string[]) => {
 export const hashData = async (data: string) =>
   commonIPCHandler(async () => {
     return await window.electronAPI.local.utils.hash(data);
-  }, 'Failed to hash recovery phrase');
+  }, 'Failed to hash data');
 
-/* Compare hashes */
+/* Compare hash */
 export const compareHash = async (data: string, hash: string) =>
   commonIPCHandler(async () => {
     return await window.electronAPI.local.utils.compareHash(data, hash);
-  }, 'Failed to hash recovery phrase');
+  }, 'Failed to compare data to hash');
+
+/* Compare data to hashes */
+export const compareDataToHashes = async (data: string, hashes: string[]) =>
+  commonIPCHandler(async () => {
+    return await window.electronAPI.local.utils.compareDataToHashes(data, hashes);
+  }, 'Failed to compare data to hashes');
 
 /* Opens a buffer in a temp file */
 export const openBufferInTempFile = async (name: string, data: Uint8Array) => {

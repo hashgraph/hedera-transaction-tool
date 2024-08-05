@@ -389,4 +389,39 @@ describe('registerUtilsListeners', () => {
       expect(result).toEqual(true);
     }
   });
+
+  test('Should compare the data to hashes in util:compareDataToHashes and return true if match is found', () => {
+    const data = 'testData';
+    const hash = ['testHash', 'testHash2'];
+
+    const compareHashHandler = ipcMainMO.handle.mock.calls.find(
+      ([e]) => e === 'utils:compareDataToHashes',
+    );
+
+    expect(compareHashHandler).toBeDefined();
+
+    if (compareHashHandler) {
+      vi.mocked(compareSync).mockReturnValueOnce(false);
+      vi.mocked(compareSync).mockReturnValueOnce(true);
+      const result = compareHashHandler[1](event, data, hash);
+      expect(result).toEqual(true);
+    }
+  });
+
+  test('Should compare the data to hashes in util:compareDataToHashes and return false if match is NOT found', () => {
+    const data = 'testData';
+    const hash = ['testHash', 'testHash2'];
+
+    const compareHashHandler = ipcMainMO.handle.mock.calls.find(
+      ([e]) => e === 'utils:compareDataToHashes',
+    );
+
+    expect(compareHashHandler).toBeDefined();
+
+    if (compareHashHandler) {
+      vi.mocked(compareSync).mockReturnValue(false);
+      const result = compareHashHandler[1](event, data, hash);
+      expect(result).toEqual(false);
+    }
+  });
 });
