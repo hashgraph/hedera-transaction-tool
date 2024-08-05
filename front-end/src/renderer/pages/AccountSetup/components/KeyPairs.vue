@@ -164,7 +164,7 @@ const handleSave = async () => {
       await user.storeKey(
         keyPair,
         props.selectedPersonalKeyPair ? props.selectedPersonalKeyPair.secret_hash : recoveryWords,
-        user.personal.password,
+        personalPassword,
         Boolean(props.selectedPersonalKeyPair),
       );
       user.secretHashes.push(

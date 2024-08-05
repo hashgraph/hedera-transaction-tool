@@ -7,6 +7,7 @@ import { KeyPair } from '@prisma/client';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
+import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppStepper from '@renderer/components/ui/AppStepper.vue';
@@ -28,6 +29,11 @@ const user = useUserStore();
 
 /* Composables */
 const router = useRouter();
+useSetDynamicLayout({
+  loggedInClass: true,
+  shouldSetupAccountClass: true,
+  showMenu: false,
+});
 
 /* State */
 const keyPairsComponent = ref<InstanceType<typeof KeyPairs> | null>(null);
@@ -41,6 +47,7 @@ const stepperItems = ref<{ title: string; name: StepName }[]>([
   { title: 'Key Pairs', name: 'keyPairs' },
 ]);
 const selectedPersonalKeyPair = ref<KeyPair | null>(null);
+const isSaving = ref(false);
 
 /* Handlers */
 const handleBack = () => {
@@ -60,7 +67,12 @@ const handleNext = async () => {
   const currentIndex = stepperItems.value.findIndex(i => i.name === step.value.current);
 
   if (currentIndex + 1 === stepperItems.value.length) {
-    await keyPairsComponent.value?.handleSave();
+    try {
+      isSaving.value = true;
+      await keyPairsComponent.value?.handleSave();
+    } finally {
+      isSaving.value = false;
+    }
   } else {
     step.value.current =
       currentIndex >= 0
@@ -205,6 +217,9 @@ onBeforeRouteLeave(async () => {
           @click="handleNext"
           class="ms-3 mt-6"
           data-testid="button-next"
+          :disabled="isSaving"
+          :loading="isSaving"
+          loading-text="Saving..."
           >Next</AppButton
         >
       </div>

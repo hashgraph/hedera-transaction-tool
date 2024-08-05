@@ -13,6 +13,7 @@ import useContactsStore from '@renderer/stores/storeContacts';
 
 import { useToast } from 'vue-toast-notification';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
+import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
 import {
   cancelTransaction,
@@ -70,6 +71,11 @@ const contacts = useContactsStore();
 const router = useRouter();
 const toast = useToast();
 const ws = useDisposableWs();
+useSetDynamicLayout({
+  loggedInClass: true,
+  shouldSetupAccountClass: false,
+  showMenu: true,
+});
 
 /* Injected */
 const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
@@ -86,6 +92,10 @@ const confirmModalTitle = ref('');
 const confirmModalText = ref('');
 const confirmModalButtonText = ref('');
 const confirmCallback = ref<((...any) => void) | null>(null);
+const isSigning = ref(false);
+const isApproving = ref(false);
+const isConfirmModalLoadingState = ref(false);
+const confirmModalLoadingText = ref('');
 
 /* Computed */
 const stepperItems = computed(() => {
@@ -254,21 +264,28 @@ const handleSign = async () => {
     return;
   }
 
-  const publicKeysRequired = await publicRequiredToSign(
-    sdkTransaction.value,
-    user.selectedOrganization.userKeys,
-    network.mirrorNodeBaseURL,
-  );
+  try {
+    isSigning.value = true;
 
-  await fullUploadSignatures(
-    user.personal,
-    user.selectedOrganization,
-    publicKeysRequired,
-    sdkTransaction.value,
-    orgTransaction.value.id,
-  );
+    const publicKeysRequired = await publicRequiredToSign(
+      sdkTransaction.value,
+      user.selectedOrganization.userKeys,
+      network.mirrorNodeBaseURL,
+    );
 
-  toast.success('Transaction signed successfully');
+    await fullUploadSignatures(
+      user.personal,
+      user.selectedOrganization,
+      publicKeysRequired,
+      sdkTransaction.value,
+      orgTransaction.value.id,
+    );
+    toast.success('Transaction signed successfully');
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : 'Failed to sign transaction');
+  } finally {
+    isSigning.value = false;
+  }
 };
 
 const handleApprove = async (approved: boolean, showModal?: boolean) => {
@@ -277,6 +294,7 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
     confirmModalText.value = 'Are you sure you want to reject the transaction?';
     confirmModalButtonText.value = 'Reject';
     confirmCallback.value = () => handleApprove(false);
+    confirmModalLoadingText.value = 'Rejecting...';
     isConfirmModalShown.value = true;
     return;
   }
@@ -305,26 +323,41 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
       return;
     }
 
-    const publicKey = user.selectedOrganization.userKeys[0].publicKey;
-    const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
-    const privateKey = getPrivateKey(publicKey, privateKeyRaw);
+    try {
+      if (approved) {
+        isApproving.value = true;
+      } else {
+        isConfirmModalLoadingState.value = true;
+      }
 
-    const signature = await getTransactionBodySignatureWithoutNodeAccountId(
-      privateKey,
-      sdkTransaction.value,
-    );
+      const publicKey = user.selectedOrganization.userKeys[0].publicKey;
+      const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
+      const privateKey = getPrivateKey(publicKey, privateKeyRaw);
 
-    await sendApproverChoice(
-      user.selectedOrganization.serverUrl,
-      orgTransaction.value.id,
-      user.selectedOrganization.userKeys[0].id,
-      signature,
-      approved,
-    );
-    toast.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`);
+      const signature = await getTransactionBodySignatureWithoutNodeAccountId(
+        privateKey,
+        sdkTransaction.value,
+      );
 
-    if (!approved) {
-      redirectToHistory();
+      await sendApproverChoice(
+        user.selectedOrganization.serverUrl,
+        orgTransaction.value.id,
+        user.selectedOrganization.userKeys[0].id,
+        signature,
+        approved,
+      );
+      toast.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`);
+
+      if (!approved) {
+        redirectToHistory();
+      }
+    } catch (error) {
+      isConfirmModalShown.value = false;
+      throw error;
+    } finally {
+      isApproving.value = false;
+      isConfirmModalLoadingState.value = false;
+      confirmModalLoadingText.value = '';
     }
   };
 
@@ -350,12 +383,17 @@ const handleCancel = async (showModal?: boolean) => {
   }
 
   try {
+    confirmModalLoadingText.value = 'Canceling...';
+    isConfirmModalLoadingState.value = true;
     await cancelTransaction(user.selectedOrganization.serverUrl, orgTransaction.value.id);
+    toast.success(`Transaction canceled successfully`);
   } catch (error) {
     isConfirmModalShown.value = false;
     throw error;
+  } finally {
+    isConfirmModalLoadingState.value = false;
+    confirmModalLoadingText.value = '';
   }
-  toast.success(`Transaction canceled successfully`);
 
   redirectToHistory();
 };
@@ -521,13 +559,23 @@ const cancel = 'Cancel';
                 </div>
                 <div v-if="isLoggedInOrganization(user.selectedOrganization) && shouldApprove">
                   <AppButton color="secondary" type="submit" class="me-3">{{ reject }}</AppButton>
-                  <AppButton color="primary" type="submit">{{ approve }}</AppButton>
+                  <AppButton
+                    color="primary"
+                    type="submit"
+                    :disabled="isApproving"
+                    :loading="isApproving"
+                    loading-text="Approving..."
+                    >{{ approve }}</AppButton
+                  >
                 </div>
                 <div v-else-if="canSign">
                   <AppButton
                     color="primary"
                     data-testid="button-sign-org-transaction"
                     type="submit"
+                    :disabled="isSigning"
+                    :loading="isSigning"
+                    loading-text="Signing..."
                     >{{ sign }}</AppButton
                   >
                 </div>
@@ -760,6 +808,9 @@ const cancel = 'Cancel';
             color="primary"
             data-testid="button-confirm-change-password"
             @click="confirmCallback && confirmCallback()"
+            :disabled="isConfirmModalLoadingState"
+            :loading="isConfirmModalLoadingState"
+            :loading-text="confirmModalLoadingText"
             >{{ confirmModalButtonText }}</AppButton
           >
         </div>

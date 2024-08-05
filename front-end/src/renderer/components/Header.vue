@@ -6,11 +6,14 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 
 import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toast-notification';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import { logout } from '@renderer/services/organization';
 
 import { GLOBAL_MODAL_LOADER_KEY, GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
+
+import { withLoader } from '@renderer/utils';
 
 import Logo from '@renderer/components/Logo.vue';
 import LogoText from '@renderer/components/LogoText.vue';
@@ -40,37 +43,30 @@ const ws = useWebsocketConnection();
 /* Composables */
 const router = useRouter();
 const createTooltips = useCreateTooltips();
+const toast = useToast();
 
 /* Injected */
 const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);
 
 /* Handlers */
 const handleLogout = async () => {
-  try {
-    globalModalLoaderRef?.value?.open();
+  if (user.selectedOrganization) {
+    ws.setSocket(null);
+    await nextTick();
 
-    if (user.selectedOrganization) {
-      ws.setSocket(null);
-      await nextTick();
+    const { id, nickname, serverUrl, key } = user.selectedOrganization;
+    await logout(serverUrl);
+    await user.selectOrganization(null);
+    await user.selectOrganization({ id, nickname, serverUrl, key });
+  } else {
+    localStorage.removeItem('htx_user');
 
-      const { id, nickname, serverUrl, key } = user.selectedOrganization;
-      await logout(serverUrl);
-      await user.selectOrganization(null);
-      globalModalLoaderRef?.value?.close();
-      await user.selectOrganization({ id, nickname, serverUrl, key });
-    } else {
-      localStorage.removeItem('htx_user');
+    await user.logout();
 
-      await user.logout();
-      globalModalLoaderRef?.value?.close();
+    user.keyPairs = [];
+    user.recoveryPhrase = null;
 
-      user.keyPairs = [];
-      user.recoveryPhrase = null;
-
-      router.push({ name: 'login' });
-    }
-  } finally {
-    globalModalLoaderRef?.value?.close();
+    await router.push({ name: 'login' });
   }
 };
 
@@ -116,7 +112,7 @@ onUpdated(() => {
         "
         class="container-icon"
         data-testid="button-logout"
-        @click="handleLogout"
+        @click="withLoader(handleLogout, toast, globalModalLoaderRef)()"
         data-bs-toggle="tooltip"
         data-bs-trigger="hover"
         data-bs-placement="bottom"

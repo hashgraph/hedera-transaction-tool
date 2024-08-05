@@ -44,6 +44,7 @@ const publicKeysPrivateKeyToDecrypt = ref('');
 const keyPairIdToDelete = ref<string | null>(null);
 const missingKeyPairIdToDelete = ref<number | null>(null);
 const currentTab = ref(Tabs.ALL);
+const isDeletingKey = ref(false);
 
 /* Computed */
 const externalMissingKeys = computed(() =>
@@ -122,6 +123,8 @@ const handleDelete = async e => {
   e.preventDefault();
 
   try {
+    isDeletingKey.value = true;
+
     if (!isUserLoggedIn(user.personal)) {
       throw Error('User is not logged in');
     }
@@ -166,6 +169,7 @@ const handleDelete = async e => {
   } finally {
     keyPairIdToDelete.value = null;
     missingKeyPairIdToDelete.value = null;
+    isDeletingKey.value = false;
     isDeleteModalShown.value = false;
   }
 };
@@ -186,13 +190,9 @@ function getUserKeyToDelete() {
     throw Error('User is not logged in the organization');
   }
 
-  const organiationKey = user.selectedOrganization.userKeys.find(key => {
-    if (localKey.secret_hash) {
-      return key.mnemonicHash === localKey.secret_hash && key.publicKey === localKey.public_key;
-    } else {
-      return !key.mnemonicHash && key.publicKey === localKey.public_key;
-    }
-  });
+  const organiationKey = user.selectedOrganization.userKeys.find(
+    key => key.publicKey === localKey.public_key,
+  );
 
   if (!organiationKey) {
     throw Error('Organization key not found');
@@ -459,7 +459,13 @@ watch(isDeleteModalShown, newVal => {
               go through creating or importing a recovery phrase again. Do you wish to continue?
             </p>
             <div class="d-grid mt-5">
-              <AppButton type="submit" data-testid="button-delete-keypair" color="danger"
+              <AppButton
+                type="submit"
+                data-testid="button-delete-keypair"
+                color="danger"
+                :disabled="isDeletingKey"
+                :loading="isDeletingKey"
+                loading-text="Deleting..."
                 >Delete</AppButton
               >
             </div>

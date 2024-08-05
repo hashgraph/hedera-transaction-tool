@@ -141,10 +141,8 @@ const handleSaveKey = async e => {
           });
         }
 
+        await user.storeKey(keyPair, user.recoveryPhrase.words, personalPassword, false);
         user.recoveryPhrase = null;
-
-        await user.storeKey(keyPair, user.recoveryPhrase.words, password.value, false);
-
         await user.refetchUserState();
 
         toast.success('Key Pair saved', { position: 'bottom-right' });

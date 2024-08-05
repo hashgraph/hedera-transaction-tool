@@ -33,11 +33,13 @@ const newPassword = ref('');
 
 const isConfirmModalShown = ref(false);
 const isSuccessModalShown = ref(false);
+const isChangingPassword = ref(false);
 
 /* Handlers */
 const handleChangePassword = async () => {
-  isConfirmModalShown.value = false;
   try {
+    isChangingPassword.value = true;
+
     if (!isUserLoggedIn(user.personal)) {
       throw new Error('User is not logged in');
     }
@@ -77,10 +79,14 @@ const handleChangePassword = async () => {
       await user.refetchKeys();
     }
 
+    isConfirmModalShown.value = false;
     isSuccessModalShown.value = true;
+
     await user.refetchAccounts();
   } catch (err: any) {
     toast.error(err.message || 'Failed to change password', { position: 'bottom-right' });
+  } finally {
+    isChangingPassword.value = false;
   }
 };
 </script>
@@ -142,6 +148,9 @@ const handleChangePassword = async () => {
             color="primary"
             data-testid="button-confirm-change-password"
             @click="handleChangePassword"
+            :disabled="isChangingPassword"
+            :loading="isChangingPassword"
+            loading-text="Changing..."
             >Change</AppButton
           >
         </div>

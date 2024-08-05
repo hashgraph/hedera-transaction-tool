@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { onUpdated, ref, watch } from 'vue';
+import { inject, onUpdated, ref, watch } from 'vue';
 
 import { Organization } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
+
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
+import { useToast } from 'vue-toast-notification';
+
+import { GLOBAL_MODAL_LOADER_KEY, GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
+
+import { withLoader } from '@renderer/utils';
 
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
 import AppButton from './ui/AppButton.vue';
@@ -14,6 +20,10 @@ const user = useUserStore();
 
 /* Composables */
 const createTooltips = useCreateTooltips();
+const toast = useToast();
+
+/* Injected */
+const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);
 
 /* State */
 const selectedMode = ref<string>('personal');
@@ -130,7 +140,14 @@ watch(
           data-testid="dropdown-item-0"
           data-value="personal"
           class="dropdown-item cursor-pointer"
-          @click="handleUserModeChange"
+          @click="
+            withLoader(
+              handleUserModeChange.bind(null, $event),
+              toast,
+              globalModalLoaderRef,
+              'Failed to select user mode',
+            )()
+          "
         >
           <span class="text-small">My Transactions</span>
         </li>
@@ -138,7 +155,14 @@ watch(
           <li
             :data-testid="'dropdown-item-' + (index + 1)"
             class="dropdown-item cursor-pointer mt-3"
-            @click="handleUserModeChange"
+            @click="
+              withLoader(
+                handleUserModeChange.bind(null, $event),
+                toast,
+                globalModalLoaderRef,
+                'Failed to select user mode',
+              )()
+            "
             :data-value="organization.id"
           >
             <span class="text-small">{{ organization.nickname }}</span>
