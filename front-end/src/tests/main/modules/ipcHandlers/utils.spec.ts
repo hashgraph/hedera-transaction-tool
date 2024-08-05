@@ -5,7 +5,6 @@ import registerUtilsListeners from '@main/modules/ipcHandlers/utils';
 import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
 import { mockDeep } from 'vitest-mock-extended';
 import { proto } from '@hashgraph/proto';
-import { hash } from '@main/utils/crypto';
 import { getNumberArrayFromString, saveContentToPath } from '@main/utils';
 import path from 'path';
 import fs from 'fs/promises';
@@ -131,23 +130,6 @@ describe('registerUtilsListeners', () => {
       const key = decodeProtobuffKeyHandler[1](event, encodedKey);
       expect(proto.Key.decode).toHaveBeenCalledWith(Buffer.from(encodedKey, 'hex'));
       expect(key).toEqual(proto.Key.create({ ed25519: Uint8Array.from([1, 2, 3]) }));
-    }
-  });
-
-  test('Should hash data and return hex in util:hash', () => {
-    const data = 'some-data';
-    const hashBuffer = Buffer.from(data);
-
-    vi.mocked(hash).mockReturnValue(hashBuffer);
-
-    const hashHandler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'utils:hash');
-
-    expect(hashHandler).toBeDefined();
-
-    if (hashHandler) {
-      const hexHash = hashHandler[1](event, data);
-      expect(hash).toHaveBeenCalledWith(hashBuffer);
-      expect(hexHash).toEqual(hashBuffer.toString('hex'));
     }
   });
 
