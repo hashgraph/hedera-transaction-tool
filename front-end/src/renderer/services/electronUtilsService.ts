@@ -1,6 +1,8 @@
 import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 import * as HashgraphProto from '@hashgraph/proto';
 
+import { commonIPCHandler } from '@renderer/utils';
+
 /* Electron Utilities Service */
 
 /* Open external URL */
@@ -106,6 +108,18 @@ export const hexToUint8ArrayBatch = async (data: string[]) => {
     throw new Error('Failed to convert hexes to UInt8Array string');
   }
 };
+
+/* Hash data */
+export const hashData = async (data: string) =>
+  commonIPCHandler(async () => {
+    return await window.electronAPI.local.utils.hash(data);
+  }, 'Failed to hash recovery phrase');
+
+/* Compare hashes */
+export const compareHashes = async (hash1: string, hash2: string) =>
+  commonIPCHandler(async () => {
+    return await window.electronAPI.local.utils.compareHashes(hash1, hash2);
+  }, 'Failed to hash recovery phrase');
 
 /* Opens a buffer in a temp file */
 export const openBufferInTempFile = async (name: string, data: Uint8Array) => {
