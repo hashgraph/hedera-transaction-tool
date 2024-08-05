@@ -97,6 +97,7 @@ const handleOnFormSubmit = async (event: Event) => {
     let userData: { id: string; email: string } | null = null;
 
     try {
+      buttonLoading.value = true;
       userData = await loginLocal(
         inputEmail.value.trim(),
         inputPassword.value,
