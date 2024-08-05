@@ -1,7 +1,8 @@
 import crypto from 'crypto';
+import * as bcrypt from 'bcrypt';
 
-export function hash(data) {
-  return crypto.createHash('sha256').update(data).digest();
+export function hash(data: string | Buffer) {
+  return bcrypt.hashSync(data, 10);
 }
 
 export function createCredentials(password: string) {
