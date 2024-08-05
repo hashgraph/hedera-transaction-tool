@@ -143,7 +143,7 @@ const handleSaveKey = async e => {
 
         user.recoveryPhrase = null;
 
-        await user.storeKey(keyPair, personalPassword, false);
+        await user.storeKey(keyPair, user.recoveryPhrase.words, password.value, false);
 
         await user.refetchUserState();
 

@@ -119,10 +119,11 @@ const useUserStore = defineStore('user', () => {
 
   const storeKey = async (
     keyPair: Prisma.KeyPairUncheckedCreateInput,
+    mnemonic: string[] | string | null,
     password: string,
     encrypted: boolean,
   ) => {
-    await ush.storeKeyPair(keyPair, secretHashes.value, password, encrypted);
+    await ush.storeKeyPair(keyPair, secretHashes.value, mnemonic, password, encrypted);
     await refetchKeys();
     refetchAccounts();
   };
