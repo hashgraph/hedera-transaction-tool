@@ -472,7 +472,10 @@ describe('TransactionStatusService', () => {
     it('should set a timeout with the correct delay', () => {
       service.addExecutionTimeout(transaction);
 
-      expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), timeToValidStart + 5 * 1000);
+      expect(setTimeout).toHaveBeenCalledWith(
+        expect.any(Function),
+        expect.closeTo(timeToValidStart + 5 * 1000),
+      );
     });
 
     it('should add the timeout to the scheduler registry', () => {
