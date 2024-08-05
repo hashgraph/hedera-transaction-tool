@@ -404,7 +404,8 @@ describe('registerUtilsListeners', () => {
       vi.mocked(compareSync).mockReturnValueOnce(false);
       vi.mocked(compareSync).mockReturnValueOnce(true);
       const result = compareHashHandler[1](event, data, hash);
-      expect(result).toEqual(true);
+
+      expect(result).toEqual('testHash2');
     }
   });
 
@@ -421,7 +422,8 @@ describe('registerUtilsListeners', () => {
     if (compareHashHandler) {
       vi.mocked(compareSync).mockReturnValue(false);
       const result = compareHashHandler[1](event, data, hash);
-      expect(result).toEqual(false);
+
+      expect(result).toEqual(null);
     }
   });
 });

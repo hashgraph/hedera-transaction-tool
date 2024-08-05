@@ -34,13 +34,13 @@ export default () => {
 
   ipcMain.handle(
     createChannelName('compareDataToHashes'),
-    (_e, data: string, hashes: string[]): boolean => {
+    (_e, data: string, hashes: string[]): string | null => {
       for (const hash of hashes) {
         const matched = bcrypt.compareSync(data, hash);
-        if (matched) return true;
+        if (matched) return hash;
       }
 
-      return false;
+      return null;
     },
   );
 

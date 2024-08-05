@@ -27,8 +27,8 @@ const validateMatchingSecretHash = async () => {
   if (!isMnenmonicValid.value) return;
 
   if (props.secretHashes.length > 0) {
-    const inSecretHashes = await compareDataToHashes(words.value.toString(), props.secretHashes);
-    isSecretHashValid.value = inSecretHashes;
+    const matchedHash = await compareDataToHashes(words.value.toString(), props.secretHashes);
+    isSecretHashValid.value = Boolean(matchedHash);
     return;
   }
 

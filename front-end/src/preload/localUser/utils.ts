@@ -10,7 +10,7 @@ export default {
     hash: (data: string): Promise<string> => ipcRenderer.invoke('utils:hash', data),
     compareHash: (data: string, hash: string): Promise<boolean> =>
       ipcRenderer.invoke('utils:compareHash', data, hash),
-    compareDataToHashes: (data: string, hashes: string[]): Promise<boolean> =>
+    compareDataToHashes: (data: string, hashes: string[]): Promise<string | null> =>
       ipcRenderer.invoke('utils:compareDataToHashes', data, hashes),
     uint8ArrayToHex: (data: string): Promise<string> =>
       ipcRenderer.invoke('utils:uint8ArrayToHex', data),
