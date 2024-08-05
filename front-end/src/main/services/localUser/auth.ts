@@ -16,6 +16,7 @@ export const register = async (email: string, password: string) => {
   });
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const login = async (email: string, password: string, _autoRegister?: boolean) => {
   const prisma = getPrismaClient();
 
