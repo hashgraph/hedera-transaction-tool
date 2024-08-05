@@ -5,11 +5,13 @@ import registerUtilsListeners from '@main/modules/ipcHandlers/utils';
 import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
 import { mockDeep } from 'vitest-mock-extended';
 import { proto } from '@hashgraph/proto';
+import { compareSync, hashSync } from 'bcrypt';
 import { getNumberArrayFromString, saveContentToPath } from '@main/utils';
 import path from 'path';
 import fs from 'fs/promises';
 
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
+vi.mock('bcrypt', () => ({ hashSync: vi.fn(), compareSync: vi.fn() }));
 vi.mock('electron', () => {
   const bw = vi.fn() as unknown as MockedClass<typeof BrowserWindow>;
   bw.getAllWindows = vi.fn();
@@ -355,6 +357,36 @@ describe('registerUtilsListeners', () => {
       expect(dialog.showErrorBox).toHaveBeenCalledWith('Failed to save file', 'An error');
       await saveFileHandler[1](event, uint8ArrayString);
       expect(dialog.showErrorBox).toHaveBeenCalledWith('Failed to save file', 'Unknown error');
+    }
+  });
+
+  test('Should hash the data in util:hash', () => {
+    const data = 'testData';
+    const hash = 'testHash';
+
+    const hashHandler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'utils:hash');
+
+    expect(hashHandler).toBeDefined();
+
+    if (hashHandler) {
+      vi.mocked(hashSync).mockReturnValue(hash);
+      const result = hashHandler[1](event, data);
+      expect(result).toEqual(hash);
+    }
+  });
+
+  test('Should compare the data and hash in util:compareHash', () => {
+    const data = 'testData';
+    const hash = 'testHash';
+
+    const compareHashHandler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'utils:compareHash');
+
+    expect(compareHashHandler).toBeDefined();
+
+    if (compareHashHandler) {
+      vi.mocked(compareSync).mockReturnValue(true);
+      const result = compareHashHandler[1](event, data, hash);
+      expect(result).toEqual(true);
     }
   });
 });
