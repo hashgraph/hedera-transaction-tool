@@ -1,16 +1,12 @@
 import crypto from 'crypto';
 import * as bcrypt from 'bcrypt';
 
-export function hash(data: string | Buffer) {
-  return bcrypt.hashSync(data, 10);
-}
-
 export function createCredentials(password: string) {
-  let temp = hash(password);
+  let temp = bcrypt.hashSync(password, 10);
 
   const iv = temp.slice(0, 16);
 
-  temp = hash(temp);
+  temp = bcrypt.hashSync(temp, 10);
 
   const key = temp.slice(8);
 

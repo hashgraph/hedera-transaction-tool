@@ -7,7 +7,9 @@ export default {
     openExternal: (url: string) => ipcRenderer.send('utils:openExternal', url),
     decodeProtobuffKey: (protobuffEncodedKey: string): Promise<proto.Key> =>
       ipcRenderer.invoke('utils:decodeProtobuffKey', protobuffEncodedKey),
-    hash: (data: any): Promise<string> => ipcRenderer.invoke('utils:hash', data),
+    hash: (data: string): Promise<string> => ipcRenderer.invoke('utils:hash', data),
+    compareHashes: (hash1: string, hash2: string): Promise<boolean> =>
+      ipcRenderer.invoke('utils:compareHashes', hash1, hash2),
     uint8ArrayToHex: (data: string): Promise<string> =>
       ipcRenderer.invoke('utils:uint8ArrayToHex', data),
     hexToUint8Array: (hexString: string): Promise<string> =>
