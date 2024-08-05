@@ -139,6 +139,7 @@ const handleDelete = async e => {
       }
 
       await deleteKeyPair(keyPairIdToDelete.value);
+      toast.success(`Private key deleted successfully`, { position: 'bottom-right' });
       await user.refetchKeys();
 
       isDeleteModalShown.value = false;
@@ -158,8 +159,8 @@ const handleDelete = async e => {
         missingKeyPairIdToDelete.value,
       );
       await user.refetchUserState();
+      toast.success(`Private key deleted successfully`, { position: 'bottom-right' });
     }
-    toast.success(`Private key deleted successfully`, { position: 'bottom-right' });
   } catch (err: any) {
     toast.error(err.message || 'Failed to delete key pair', { position: 'bottom-right' });
   } finally {
