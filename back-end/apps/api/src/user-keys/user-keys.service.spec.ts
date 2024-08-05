@@ -72,18 +72,6 @@ describe('UserKeysService', () => {
       await expect(service.uploadKey(user, dto)).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw BadRequestException if public key is in use but dto has different mnemonic', async () => {
-      const existingUserKey = {
-        user,
-        publicKey: dto.publicKey,
-        mnemonicHash: 'different-hash',
-        index: dto.index,
-      };
-      repo.findOne.mockResolvedValue(existingUserKey as UserKey);
-
-      await expect(service.uploadKey(user, dto)).rejects.toThrow(BadRequestException);
-    });
-
     it('should throw BadRequestException if public key is in use but dto has different index', async () => {
       const existingUserKey = {
         user,

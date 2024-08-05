@@ -46,11 +46,7 @@ export class UserKeysService {
       // or if the userKey has a non null hash or index that doesn't
       // match the hash or index provided
       // throw an error.
-      if (
-        userKey.user.id !== user.id ||
-        (userKey.mnemonicHash && userKey.mnemonicHash !== dto.mnemonicHash) ||
-        (userKey.index && userKey.index !== dto.index)
-      ) {
+      if (userKey.user.id !== user.id || (userKey.index && userKey.index !== dto.index)) {
         throw new BadRequestException('Public Key in use.');
       }
       // Set the hash and/or index (only if the current value is null)
