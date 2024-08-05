@@ -1,4 +1,3 @@
-import { hash } from '@main/utils/crypto';
 import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcrypt';
 
@@ -12,7 +11,7 @@ export const register = async (email: string, password: string) => {
     data: {
       id: randomUUID(),
       email: email,
-      password: hash(password),
+      password: bcrypt.hashSync(password, 10),
     },
   });
 };
@@ -88,7 +87,7 @@ export const changePassword = async (userId: string, oldPassword: string, newPas
         id: userId,
       },
       data: {
-        password: hash(newPassword),
+        password: bcrypt.hashSync(newPassword, 10),
       },
     });
   } else {
