@@ -8,8 +8,8 @@ export default {
     decodeProtobuffKey: (protobuffEncodedKey: string): Promise<proto.Key> =>
       ipcRenderer.invoke('utils:decodeProtobuffKey', protobuffEncodedKey),
     hash: (data: string): Promise<string> => ipcRenderer.invoke('utils:hash', data),
-    compareHashes: (hash1: string, hash2: string): Promise<boolean> =>
-      ipcRenderer.invoke('utils:compareHashes', hash1, hash2),
+    compareHash: (data: string, hash: string): Promise<boolean> =>
+      ipcRenderer.invoke('utils:compareHash', data, hash),
     uint8ArrayToHex: (data: string): Promise<string> =>
       ipcRenderer.invoke('utils:uint8ArrayToHex', data),
     hexToUint8Array: (hexString: string): Promise<string> =>

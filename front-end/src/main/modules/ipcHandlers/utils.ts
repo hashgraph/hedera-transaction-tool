@@ -28,12 +28,9 @@ export default () => {
     return bcrypt.hashSync(data, 10);
   });
 
-  ipcMain.handle(
-    createChannelName('compareHashes'),
-    (_e, hash1: string, hash2: string): boolean => {
-      return bcrypt.compareSync(hash1, hash2);
-    },
-  );
+  ipcMain.handle(createChannelName('compareHash'), (_e, data: string, hash: string): boolean => {
+    return bcrypt.compareSync(data, hash);
+  });
 
   ipcMain.handle(createChannelName('uint8ArrayToHex'), (_e, data: string): string => {
     return Buffer.from(getNumberArrayFromString(data)).toString('hex');

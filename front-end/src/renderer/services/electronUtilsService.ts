@@ -116,9 +116,9 @@ export const hashData = async (data: string) =>
   }, 'Failed to hash recovery phrase');
 
 /* Compare hashes */
-export const compareHashes = async (hash1: string, hash2: string) =>
+export const compareHash = async (data: string, hash: string) =>
   commonIPCHandler(async () => {
-    return await window.electronAPI.local.utils.compareHashes(hash1, hash2);
+    return await window.electronAPI.local.utils.compareHash(data, hash);
   }, 'Failed to hash recovery phrase');
 
 /* Opens a buffer in a temp file */
