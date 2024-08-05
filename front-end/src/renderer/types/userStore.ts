@@ -18,6 +18,7 @@ export type LoggedInUserWithPassword = {
   id: string;
   email: string;
   password: string;
+  passwordExpiresAt: Date;
 };
 
 export type PersonalUser = LoggedOutUser | LoggedInUser | LoggedInUserWithPassword;

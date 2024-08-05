@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onUnmounted, ref, watch } from 'vue';
+import { inject, onUnmounted, ref, watch } from 'vue';
 import { Mnemonic } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 
@@ -8,11 +8,12 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
-import { comparePasswords } from '@renderer/services/userService';
 import { restorePrivateKey } from '@renderer/services/keyPairService';
 import { uploadKey } from '@renderer/services/organization';
 
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+
+import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -25,11 +26,13 @@ const user = useUserStore();
 const toast = useToast();
 const router = useRouter();
 
+/* Injected */
+const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
+
 /* State */
 const step = ref(0);
 const ableToContinue = ref(false);
 
-const password = ref('');
 const recoveryPhrase = ref([]);
 const index = ref(0);
 const nickname = ref('');
@@ -43,20 +46,6 @@ const restoredKey = ref<{ privateKey: string; publicKey: string } | null>(null);
 const handleFinish = e => {
   e.preventDefault();
   step.value++;
-};
-
-const handleEnterPassword = async e => {
-  e.preventDefault();
-
-  if (!user.personal?.isLoggedIn) {
-    throw new Error('User not found');
-  }
-
-  if (!(await comparePasswords(user.personal.id, password.value))) {
-    throw new Error('Incorrect password');
-  }
-
-  user.recoveryPhrase ? (step.value += 2) : step.value++;
 };
 
 const handleRestoreKey = async e => {
@@ -102,61 +91,75 @@ const handleRestoreKey = async e => {
 const handleSaveKey = async e => {
   e.preventDefault();
 
-  if (!user.personal?.isLoggedIn) {
-    throw new Error('User not found');
-  }
+  const callback = async () => {
+    if (!isUserLoggedIn(user.personal)) throw Error('User is not logged in');
+    const personalPassword = user.getPassword();
+    if (!personalPassword) {
+      if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+      userPasswordModalRef.value?.open(
+        'Enter your application password',
+        'Enter your application password to decrypt your key',
+        callback,
+      );
+      return;
+    }
 
-  if (!user.recoveryPhrase) {
-    throw new Error('Recovery phrase not found');
-  }
+    if (!user.recoveryPhrase) {
+      throw new Error('Recovery phrase not found');
+    }
 
-  if (restoredKey.value) {
-    try {
-      const keyPair: Prisma.KeyPairUncheckedCreateInput = {
-        user_id: user.personal.id,
-        index: Number(index.value),
-        private_key: restoredKey.value.privateKey,
-        public_key: restoredKey.value.publicKey,
-        type: 'ED25519',
-        organization_id: null,
-        organization_user_id: null,
-        secret_hash: user.recoveryPhrase.hash,
-        nickname: nickname.value || null,
-      };
+    if (restoredKey.value) {
+      try {
+        const keyPair: Prisma.KeyPairUncheckedCreateInput = {
+          user_id: user.personal.id,
+          index: Number(index.value),
+          private_key: restoredKey.value.privateKey,
+          public_key: restoredKey.value.publicKey,
+          type: 'ED25519',
+          organization_id: null,
+          organization_user_id: null,
+          secret_hash: user.recoveryPhrase.hash,
+          nickname: nickname.value || null,
+        };
 
-      if (isLoggedInOrganization(user.selectedOrganization)) {
-        if (
-          user.selectedOrganization.userKeys.some(k => k.publicKey === restoredKey.value?.publicKey)
-        ) {
-          throw new Error('Key pair already exists');
+        if (isLoggedInOrganization(user.selectedOrganization)) {
+          if (
+            user.selectedOrganization.userKeys.some(
+              k => k.publicKey === restoredKey.value?.publicKey,
+            )
+          ) {
+            throw new Error('Key pair already exists');
+          }
+
+          keyPair.organization_id = user.selectedOrganization.id;
+          keyPair.organization_user_id = user.selectedOrganization.userId;
+
+          await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
+            publicKey: restoredKey.value.publicKey,
+            index: keyPair.index,
+            mnemonicHash: user.recoveryPhrase.hash,
+          });
         }
 
-        keyPair.organization_id = user.selectedOrganization.id;
-        keyPair.organization_user_id = user.selectedOrganization.userId;
+        user.recoveryPhrase = null;
 
-        await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
-          publicKey: restoredKey.value.publicKey,
-          index: keyPair.index,
-          mnemonicHash: user.recoveryPhrase.hash,
-        });
+        await user.storeKey(keyPair, personalPassword, false);
+
+        await user.refetchUserState();
+
+        toast.success('Key Pair saved', { position: 'bottom-right' });
+        router.push({ name: 'settingsKeys' });
+      } catch (err: any) {
+        let message = 'Failed to store key pair';
+        if (err.message && typeof err.message === 'string') {
+          message = err.message;
+        }
+        toast.error(message, { position: 'bottom-right' });
       }
-
-      user.recoveryPhrase = null;
-
-      await user.storeKey(keyPair, password.value, false);
-
-      await user.refetchUserState();
-
-      toast.success('Key Pair saved', { position: 'bottom-right' });
-      router.push({ name: 'settingsKeys' });
-    } catch (err: any) {
-      let message = 'Failed to store key pair';
-      if (err.message && typeof err.message === 'string') {
-        message = err.message;
-      }
-      toast.error(message, { position: 'bottom-right' });
     }
-  }
+  };
+
+  await callback();
 };
 
 /* Hooks */
@@ -201,7 +204,7 @@ watch(index, () => {
                 data-testid="button-continue"
                 color="primary"
                 class="d-block w-100"
-                @click="step++"
+                @click="user.recoveryPhrase ? (step += 2) : step++"
                 >Continue</AppButton
               >
               <AppButton
@@ -217,35 +220,7 @@ watch(index, () => {
         </div>
 
         <!-- Step 2 -->
-        <form v-else-if="step === 1" class="w-100" @submit="handleEnterPassword">
-          <h1 class="text-display text-bold text-center">Enter password</h1>
-          <p class="text-main mt-5 text-center">Please enter new password</p>
-          <div
-            class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
-          >
-            <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
-              <AppInput
-                v-model="password"
-                :filled="true"
-                data-testid="input-password"
-                type="password"
-                placeholder="Enter password"
-              />
-              <AppButton
-                size="large"
-                data-testid="button-continue-password"
-                type="submit"
-                color="primary"
-                class="mt-5 d-block w-100"
-                :disabled="password.length === 0"
-                >Continue</AppButton
-              >
-            </div>
-          </div>
-        </form>
-
-        <!-- Step 3 -->
-        <form v-else-if="step === 2" @submit="handleFinish" class="fill-remaining">
+        <form v-else-if="step === 1" @submit="handleFinish" class="fill-remaining">
           <h1 class="text-display text-bold text-center">Enter your recovery phrase</h1>
           <div class="mt-8">
             <Import
@@ -272,8 +247,8 @@ watch(index, () => {
           </div>
         </form>
 
-        <!-- Step 4 -->
-        <form v-else-if="step === 3" class="w-100" @submit="handleRestoreKey">
+        <!-- Step 3 -->
+        <form v-else-if="step === 2" class="w-100" @submit="handleRestoreKey">
           <h1 class="text-display text-bold text-center">Provide Index of Key</h1>
           <p class="text-main mt-5 text-center">Please enter the index of the key</p>
           <div
@@ -303,8 +278,8 @@ watch(index, () => {
           </div>
         </form>
 
-        <!-- Step 5 -->
-        <form v-else-if="step === 4" class="w-100" @submit="handleSaveKey">
+        <!-- Step 4 -->
+        <form v-else-if="step === 3" class="w-100" @submit="handleSaveKey">
           <h1 class="text-display text-bold text-center">Enter nickname</h1>
           <p class="text-main mt-5 text-center">Please enter your nickname (optional)</p>
           <div

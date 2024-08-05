@@ -44,7 +44,7 @@ test.describe('Workflow tests', () => {
       globalCredentials.password,
     );
 
-    await setupEnvironmentForTransactions(window, globalCredentials.password);
+    await setupEnvironmentForTransactions(window);
   });
 
   test.afterAll(async () => {
@@ -57,7 +57,7 @@ test.describe('Workflow tests', () => {
   test.beforeEach(async () => {
     // await transactionPage.closeCompletedTransaction();
     await transactionPage.clickOnTransactionsMenuButton();
-    await transactionPage.closeDraftModal();
+    // await transactionPage.closeDraftModal();
   });
 
   test('Verify account card is visible with valid information', async () => {
@@ -65,7 +65,7 @@ test.describe('Workflow tests', () => {
     const memoText = 'test memo';
     const maxAutoAssociations = '23';
 
-    const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password, {
+    const { newAccountId } = await transactionPage.createNewAccount({
       initialFunds: initialHbarFunds,
       memo: memoText,
       maxAutoAssociations: maxAutoAssociations,
@@ -132,7 +132,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify clicking on "Create New" button navigates the user on create account tx page', async () => {
-    await transactionPage.ensureAccountExists(globalCredentials.password);
+    await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
     await transactionPage.mirrorGetAccountResponse(accountFromList);
     await transactionPage.clickOnTransactionsMenuButton();
@@ -143,10 +143,12 @@ test.describe('Workflow tests', () => {
     const isSignAndSubmitButtonVisible =
       await transactionPage.isSignAndSubmitCreateAccountButtonVisible();
     expect(isSignAndSubmitButtonVisible).toBe(true);
+    await transactionPage.clickOnTransactionsMenuButton();
+    await transactionPage.closeDraftModal();
   });
 
   test('Verify clicking on "Edit" and "Update" navigates the user on update account tx page with prefilled account', async () => {
-    await transactionPage.ensureAccountExists(globalCredentials.password);
+    await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
     await transactionPage.mirrorGetAccountResponse(accountFromList);
     await transactionPage.clickOnTransactionsMenuButton();
@@ -160,10 +162,12 @@ test.describe('Workflow tests', () => {
 
     const isAccountIdPrefilled = await transactionPage.getPrefilledAccountIdInUpdatePage();
     expect(isAccountIdPrefilled).toBe(accountFromList);
+    await transactionPage.clickOnTransactionsMenuButton();
+    await transactionPage.closeDraftModal();
   });
 
   test('Verify clicking on "Edit" and "Delete" navigates the user on update account tx page with prefilled account', async () => {
-    await transactionPage.ensureAccountExists(globalCredentials.password);
+    await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
     await transactionPage.mirrorGetAccountResponse(accountFromList);
     await transactionPage.clickOnTransactionsMenuButton();
@@ -176,13 +180,15 @@ test.describe('Workflow tests', () => {
 
     const isAccountIdPrefilled = await transactionPage.getPrefilledAccountIdInDeletePage();
     expect(isAccountIdPrefilled).toBe(accountFromList);
+    await transactionPage.clickOnTransactionsMenuButton();
+    await transactionPage.closeDraftModal();
   });
 
   test('Verify user can unlink accounts', async () => {
-    await transactionPage.ensureAccountExists(globalCredentials.password);
+    await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
     await transactionPage.clickOnTransactionsMenuButton();
-    const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password);
+    const { newAccountId } = await transactionPage.createNewAccount();
     await transactionPage.mirrorGetAccountResponse(accountFromList);
     await transactionPage.clickOnTransactionsMenuButton();
     await accountPage.clickOnAccountsLink();
@@ -203,7 +209,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify user can add an existing account', async () => {
-    await accountPage.ensureAccountExistsAndUnlinked(globalCredentials.password);
+    await accountPage.ensureAccountExistsAndUnlinked();
     const accountFromList = await accountPage.getFirstAccountFromUnlinkedList();
     await accountPage.clickOnAccountsLink();
     await accountPage.clickOnAddNewButton();
@@ -218,7 +224,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify file card is visible with valid information', async () => {
-    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    await transactionPage.ensureFileExists('test');
     await accountPage.clickOnAccountsLink();
     await filePage.clickOnFilesMenuButton();
 
@@ -248,7 +254,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify file card update flow leads to update page with prefilled fileid', async () => {
-    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    await transactionPage.ensureFileExists('test');
     await accountPage.clickOnAccountsLink();
     await filePage.clickOnFilesMenuButton();
     const fileId = await filePage.getFirstFileIdFromPage();
@@ -259,10 +265,12 @@ test.describe('Workflow tests', () => {
 
     const transactionHeaderText = await transactionPage.getTransactionTypeHeaderText();
     expect(transactionHeaderText).toBe('Update File Transaction');
+    await transactionPage.clickOnTransactionsMenuButton();
+    await transactionPage.closeDraftModal();
   });
 
   test('Verify file card append flow leads to append page with prefilled fileid', async () => {
-    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    await transactionPage.ensureFileExists('test');
     await accountPage.clickOnAccountsLink();
     await filePage.clickOnFilesMenuButton();
     const fileId = await filePage.getFirstFileIdFromPage();
@@ -273,10 +281,12 @@ test.describe('Workflow tests', () => {
 
     const transactionHeaderText = await transactionPage.getTransactionTypeHeaderText();
     expect(transactionHeaderText).toBe('Append File Transaction');
+    await transactionPage.clickOnTransactionsMenuButton();
+    await transactionPage.closeDraftModal();
   });
 
   test('Verify file card read flow leads to read page with prefilled fileid', async () => {
-    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    await transactionPage.ensureFileExists('test');
     await accountPage.clickOnAccountsLink();
     await filePage.clickOnFilesMenuButton();
     const fileId = await filePage.getFirstFileIdFromPage();
@@ -296,6 +306,8 @@ test.describe('Workflow tests', () => {
 
     const transactionHeaderText = await transactionPage.getTransactionTypeHeaderText();
     expect(transactionHeaderText).toBe('Create File Transaction');
+    await transactionPage.clickOnTransactionsMenuButton();
+    await transactionPage.closeDraftModal();
   });
 
   test('Verify clicking on "Add new" and "Update" navigates the user to update file transaction page w/o prefilled id', async () => {
@@ -308,6 +320,8 @@ test.describe('Workflow tests', () => {
 
     const fileIdFromUpdatePage = await transactionPage.getFileIdFromUpdatePage();
     expect(fileIdFromUpdatePage).toBe('');
+    await transactionPage.clickOnTransactionsMenuButton();
+    await transactionPage.closeDraftModal();
   });
 
   test('Verify clicking on "Add new" and "Append" navigates the user to update file transaction page w/o prefilled id', async () => {
@@ -320,6 +334,8 @@ test.describe('Workflow tests', () => {
 
     const fileIdFromUpdatePage = await transactionPage.getFileIdFromAppendPage();
     expect(fileIdFromUpdatePage).toBe('');
+    await transactionPage.clickOnTransactionsMenuButton();
+    await transactionPage.closeDraftModal();
   });
 
   test('Verify clicking on "Add new" and "Read" navigates the user to update file transaction page w/o prefilled id', async () => {
@@ -335,10 +351,10 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify user can unlink multiple files', async () => {
-    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    await transactionPage.ensureFileExists('test');
     await filePage.clickOnFilesMenuButton();
     const fileFromPage = await filePage.getFirstFileIdFromPage();
-    const { fileId } = await transactionPage.createFile('test', globalCredentials.password);
+    const { fileId } = await transactionPage.createFile('test');
     await accountPage.clickOnAccountsLink();
     await filePage.clickOnFilesMenuButton();
     await filePage.clickOnSelectManyFilesButton();
@@ -359,7 +375,7 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify user can add an existing file to files card', async () => {
-    await filePage.ensureFileExistsAndUnlinked(globalCredentials.password);
+    await filePage.ensureFileExistsAndUnlinked();
     await filePage.clickOnFilesMenuButton();
     await filePage.clickOnAddNewButtonForFile();
     await filePage.clickOnAddExistingFileLink();
@@ -374,13 +390,13 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify account create tx is displayed in history page', async () => {
-    const { newTransactionId } = await transactionPage.createNewAccount(globalCredentials.password);
+    const { newTransactionId } = await transactionPage.createNewAccount();
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.assertTransactionDisplayed(newTransactionId, 'Account Create Transaction');
   });
 
   test('Verify transaction details are displayed for account tx ', async () => {
-    const { newTransactionId } = await transactionPage.createNewAccount(globalCredentials.password);
+    const { newTransactionId } = await transactionPage.createNewAccount();
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
     await detailsPage.assertTransactionDetails(
@@ -407,13 +423,12 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify account update tx is displayed in history page', async () => {
-    await transactionPage.ensureAccountExists(globalCredentials.password);
+    await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const updatedMemoText = 'Updated memo';
     const maxAutoAssociationsNumber = '44';
     const newTransactionId = await transactionPage.updateAccount(
       accountFromList,
-      globalCredentials.password,
       maxAutoAssociationsNumber,
       updatedMemoText,
     );
@@ -422,13 +437,12 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify transaction details are displayed for account update tx ', async () => {
-    await transactionPage.ensureAccountExists(globalCredentials.password);
+    await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const updatedMemoText = 'Updated memo';
     const maxAutoAssociationsNumber = '44';
     const newTransactionId = await transactionPage.updateAccount(
       accountFromList,
-      globalCredentials.password,
       maxAutoAssociationsNumber,
       updatedMemoText,
     );
@@ -464,23 +478,17 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify account delete tx is displayed in history page', async () => {
-    await transactionPage.ensureAccountExists(globalCredentials.password);
+    await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
-    const newTransactionId = await transactionPage.deleteAccount(
-      accountFromList,
-      globalCredentials.password,
-    );
+    const newTransactionId = await transactionPage.deleteAccount(accountFromList);
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.assertTransactionDisplayed(newTransactionId, 'Account Delete Transaction');
   });
 
   test('Verify transaction details are displayed for account delete tx ', async () => {
-    await transactionPage.ensureAccountExists(globalCredentials.password);
+    await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
-    const newTransactionId = await transactionPage.deleteAccount(
-      accountFromList,
-      globalCredentials.password,
-    );
+    const newTransactionId = await transactionPage.deleteAccount(accountFromList);
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
     await detailsPage.assertTransactionDetails(
@@ -497,26 +505,24 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify transfer tx is displayed in history page', async () => {
-    await transactionPage.ensureAccountExists(globalCredentials.password);
+    await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const amountToBeTransferred = '1';
     const newTransactionId = await transactionPage.transferAmountBetweenAccounts(
       accountFromList,
       amountToBeTransferred,
-      globalCredentials.password,
     );
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.assertTransactionDisplayed(newTransactionId, 'Transfer Transaction');
   });
 
   test('Verify transaction details are displayed for transfer tx ', async () => {
-    await transactionPage.ensureAccountExists(globalCredentials.password);
+    await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const amountToBeTransferred = '1';
     const newTransactionId = await transactionPage.transferAmountBetweenAccounts(
       accountFromList,
       amountToBeTransferred,
-      globalCredentials.password,
     );
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
@@ -540,13 +546,12 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify approve allowance tx is displayed in history page', async () => {
-    await transactionPage.ensureAccountExists(globalCredentials.password);
+    await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const amountToBeApproved = '10';
     const newTransactionId = await transactionPage.approveAllowance(
       accountFromList,
       amountToBeApproved,
-      globalCredentials.password,
     );
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.assertTransactionDisplayed(
@@ -556,13 +561,12 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify transaction details are displayed for approve allowance tx ', async () => {
-    await transactionPage.ensureAccountExists(globalCredentials.password);
+    await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const amountToBeApproved = '10';
     const newTransactionId = await transactionPage.approveAllowance(
       accountFromList,
       amountToBeApproved,
-      globalCredentials.password,
     );
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
@@ -583,13 +587,13 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify file create tx is displayed in history page', async () => {
-    const { transactionId } = await transactionPage.createFile('test', globalCredentials.password);
+    const { transactionId } = await transactionPage.createFile('test');
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.assertTransactionDisplayed(transactionId, 'File Create Transaction');
   });
 
   test('Verify transaction details are displayed for file create tx ', async () => {
-    const { transactionId } = await transactionPage.createFile('test', globalCredentials.password);
+    const { transactionId } = await transactionPage.createFile('test');
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
     await detailsPage.assertTransactionDetails(
@@ -610,26 +614,18 @@ test.describe('Workflow tests', () => {
 
   test('Verify file update tx is displayed in history page', async () => {
     const newText = 'Lorem Ipsum';
-    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    await transactionPage.ensureFileExists('test');
     const fileId = await transactionPage.getFirsFileIdFromCache();
-    const transactionId = await transactionPage.updateFile(
-      fileId,
-      newText,
-      globalCredentials.password,
-    );
+    const transactionId = await transactionPage.updateFile(fileId, newText);
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.assertTransactionDisplayed(transactionId, 'File Update Transaction');
   });
 
   test('Verify transaction details are displayed for file update tx ', async () => {
     const newText = 'New text';
-    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    await transactionPage.ensureFileExists('test');
     const fileId = await transactionPage.getFirsFileIdFromCache();
-    const transactionId = await transactionPage.updateFile(
-      fileId,
-      newText,
-      globalCredentials.password,
-    );
+    const transactionId = await transactionPage.updateFile(fileId, newText);
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
     await detailsPage.assertTransactionDetails(
@@ -650,26 +646,18 @@ test.describe('Workflow tests', () => {
 
   test('Verify file append tx is displayed in history page', async () => {
     const newText = ' extra text to append';
-    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    await transactionPage.ensureFileExists('test');
     const fileId = await transactionPage.getFirsFileIdFromCache();
-    const transactionId = await transactionPage.appendFile(
-      fileId,
-      newText,
-      globalCredentials.password,
-    );
+    const transactionId = await transactionPage.appendFile(fileId, newText);
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.assertTransactionDisplayed(transactionId, 'File Append Transaction');
   });
 
   test('Verify transaction details are displayed for file append tx ', async () => {
     const newText = ' extra text to append';
-    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    await transactionPage.ensureFileExists('test');
     const fileId = await transactionPage.getFirsFileIdFromCache();
-    const transactionId = await transactionPage.appendFile(
-      fileId,
-      newText,
-      globalCredentials.password,
-    );
+    const transactionId = await transactionPage.appendFile(fileId, newText);
 
     await detailsPage.assertTransactionDetails(
       transactionId,

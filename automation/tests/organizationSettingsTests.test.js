@@ -46,7 +46,7 @@ test.describe('Organization Settings tests', () => {
       globalCredentials.password,
     );
 
-    await setupEnvironmentForTransactions(window, globalCredentials.password);
+    await setupEnvironmentForTransactions(window);
 
     // Setup Organization
     await organizationPage.setupOrganization();
@@ -116,7 +116,7 @@ test.describe('Organization Settings tests', () => {
     await organizationPage.setupOrganization();
     await organizationPage.fillInLoginDetailsAndClickSignIn(firstUser.email, firstUser.password);
     await organizationPage.recoverAccount();
-    await organizationPage.recoverPrivateKey(window, globalCredentials.password);
+    await organizationPage.recoverPrivateKey(window);
     const isContactListVisible = await organizationPage.isContactListButtonVisible();
     expect(isContactListVisible).toBe(true);
   });
@@ -136,7 +136,7 @@ test.describe('Organization Settings tests', () => {
     await settingsPage.clickOnKeysTab();
     const missingKey = await organizationPage.isFirstMissingKeyVisible();
     expect(missingKey).toBe(true);
-    await organizationPage.recoverPrivateKey(window, globalCredentials.password);
+    await organizationPage.recoverPrivateKey(window);
   });
 
   test('Verify user can restore missing keys when doing account recovery', async () => {
@@ -152,7 +152,7 @@ test.describe('Organization Settings tests', () => {
     await organizationPage.recoverAccount();
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
-    await organizationPage.recoverPrivateKey(window, globalCredentials.password);
+    await organizationPage.recoverPrivateKey(window);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
     const missingKey = await organizationPage.isFirstMissingKeyVisible();

@@ -112,7 +112,7 @@ async function handleNewPassword() {
   if (inputConfirmPasswordInvalid.value) throw new Error('Passwords do not match');
 
   try {
-    user.personal.password = personalPassword.value;
+    user.setPassword(personalPassword.value);
     await setPassword(user.selectedOrganization.serverUrl, newPassword.value);
 
     await addOrganizationCredentials(
@@ -120,7 +120,7 @@ async function handleNewPassword() {
       newPassword.value,
       user.selectedOrganization.id,
       user.personal.id,
-      user.personal.password,
+      personalPassword.value,
       true,
     );
 

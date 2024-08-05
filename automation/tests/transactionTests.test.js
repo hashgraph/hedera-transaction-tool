@@ -38,7 +38,7 @@ test.describe('Transaction tests', () => {
       globalCredentials.password,
     );
 
-    await setupEnvironmentForTransactions(window, globalCredentials.password);
+    await setupEnvironmentForTransactions(window);
   });
 
   test.afterAll(async () => {
@@ -51,7 +51,7 @@ test.describe('Transaction tests', () => {
   test.beforeEach(async () => {
     // await transactionPage.closeCompletedTransaction();
     await transactionPage.clickOnTransactionsMenuButton();
-    await transactionPage.closeDraftModal();
+    // await transactionPage.closeDraftModal();
   });
 
   test('Verify that all elements on account create page are correct', async () => {
@@ -61,6 +61,8 @@ test.describe('Transaction tests', () => {
     const allElementsAreVisible = await transactionPage.verifyAccountCreateTransactionElements();
 
     expect(allElementsAreVisible).toBe(true);
+    await transactionPage.clickOnTransactionsMenuButton();
+    await transactionPage.closeDraftModal();
   });
 
   test('Verify confirm transaction modal is displayed with valid information for Account Create tx', async () => {
@@ -73,10 +75,12 @@ test.describe('Transaction tests', () => {
     await transactionPage.clickOnCancelTransaction();
 
     expect(confirmTransactionIsDisplayedAndCorrect).toBe(true);
+    await transactionPage.clickOnTransactionsMenuButton();
+    await transactionPage.closeDraftModal();
   });
 
   test('Verify user can execute create account transaction with single key', async () => {
-    const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password);
+    const { newAccountId } = await transactionPage.createNewAccount();
 
     const accountDetails = await transactionPage.mirrorGetAccountResponse(newAccountId);
     const createdTimestamp = accountDetails.accounts[0]?.created_timestamp;
@@ -86,9 +90,7 @@ test.describe('Transaction tests', () => {
   test('Verify user can create account with memo', async () => {
     const memoText = 'test memo';
 
-    const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password, {
-      memo: memoText,
-    });
+    const { newAccountId } = await transactionPage.createNewAccount({ memo: memoText });
 
     const accountDetails = await transactionPage.mirrorGetAccountResponse(newAccountId);
     const memoFromAPI = accountDetails.accounts[0]?.memo;
@@ -96,7 +98,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can create account with receiver sig required', async () => {
-    const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password, {
+    const { newAccountId } = await transactionPage.createNewAccount({
       isReceiverSigRequired: true,
     });
 
@@ -108,7 +110,7 @@ test.describe('Transaction tests', () => {
   test('Verify user can create account with initial funds', async () => {
     const initialHbarFunds = '1';
 
-    const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password, {
+    const { newAccountId } = await transactionPage.createNewAccount({
       initialFunds: initialHbarFunds,
     });
 
@@ -120,9 +122,7 @@ test.describe('Transaction tests', () => {
   test('Verify user can create account with max account associations', async () => {
     const maxAutoAssociations = 10;
 
-    const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password, {
-      maxAutoAssociations,
-    });
+    const { newAccountId } = await transactionPage.createNewAccount({ maxAutoAssociations });
 
     const accountDetails = await transactionPage.mirrorGetAccountResponse(newAccountId);
     const maxAutoAssociationsFromAPI = accountDetails.accounts[0]?.max_automatic_token_associations;
@@ -130,7 +130,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify transaction is stored in the local database for account create tx', async () => {
-    const { newTransactionId } = await transactionPage.createNewAccount(globalCredentials.password);
+    const { newTransactionId } = await transactionPage.createNewAccount();
 
     const isTxExistingInDb = await transactionPage.verifyTransactionExists(
       newTransactionId,
@@ -141,7 +141,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify account is stored in the local database for account create tx', async () => {
-    const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password);
+    const { newAccountId } = await transactionPage.createNewAccount();
     await transactionPage.clickOnAccountsMenuButton();
 
     const isTxExistingInDb = await transactionPage.verifyAccountExists(newAccountId);
@@ -150,9 +150,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can execute Account Create tx with complex key', async () => {
-    const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password, {
-      isComplex: true,
-    });
+    const { newAccountId } = await transactionPage.createNewAccount({ isComplex: true });
     const allGeneratedKeys = transactionPage.getAllGeneratedPublicKeys();
 
     const accountDetails = await transactionPage.mirrorGetAccountResponse(newAccountId);
@@ -163,7 +161,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify account is displayed in the account card section', async () => {
-    const { newAccountId } = await transactionPage.createNewAccount(globalCredentials.password);
+    const { newAccountId } = await transactionPage.createNewAccount();
 
     await transactionPage.clickOnAccountsMenuButton();
     const isAccountVisible = await transactionPage.isAccountCardVisible(newAccountId);
@@ -172,12 +170,9 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can execute account delete tx', async () => {
-    await transactionPage.ensureAccountExists(globalCredentials.password);
+    await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
-    const transactionId = await transactionPage.deleteAccount(
-      accountFromList,
-      globalCredentials.password,
-    );
+    const transactionId = await transactionPage.deleteAccount(accountFromList);
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
     const transactionType = transactionDetails.transactions[0]?.name;
@@ -190,18 +185,18 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify account is deleted from the db after account delete tx', async () => {
-    await transactionPage.ensureAccountExists(globalCredentials.password);
+    await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
-    await transactionPage.deleteAccount(accountFromList, globalCredentials.password);
+    await transactionPage.deleteAccount(accountFromList);
 
     const isTxExistingInDb = await transactionPage.verifyAccountExists(accountFromList);
     expect(isTxExistingInDb).toBe(false);
   });
 
   test('Verify account id is removed from the account cards after account delete tx', async () => {
-    await transactionPage.ensureAccountExists(globalCredentials.password);
+    await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
-    await transactionPage.deleteAccount(accountFromList, globalCredentials.password);
+    await transactionPage.deleteAccount(accountFromList);
     await transactionPage.clickOnAccountsMenuButton();
 
     const isAccountVisible = await transactionPage.isAccountCardVisible(accountFromList);
@@ -209,13 +204,12 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify that account is updated after we execute an account update tx', async () => {
-    await transactionPage.ensureAccountExists(globalCredentials.password);
+    await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const updatedMemoText = 'Updated memo';
     const maxAutoAssociationsNumber = '44';
     const transactionId = await transactionPage.updateAccount(
       accountFromList,
-      globalCredentials.password,
       maxAutoAssociationsNumber,
       updatedMemoText,
     );
@@ -242,13 +236,12 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can execute transfer tokens tx', async () => {
-    await transactionPage.ensureAccountExists(globalCredentials.password);
+    await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const amountToBeTransferred = '1';
     const transactionId = await transactionPage.transferAmountBetweenAccounts(
       accountFromList,
       amountToBeTransferred,
-      globalCredentials.password,
     );
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
@@ -265,7 +258,7 @@ test.describe('Transaction tests', () => {
   test('Verify user can add the rest of remaining hbars to receiver accounts', async () => {
     const amountToBeTransferred = 10;
     const amountLeftForRestAccounts = 9;
-    await transactionPage.ensureAccountExists(globalCredentials.password);
+    await transactionPage.ensureAccountExists();
     const receiverAccount = await transactionPage.getFirstAccountFromList();
     await loginPage.waitForToastToDisappear();
 
@@ -291,10 +284,12 @@ test.describe('Transaction tests', () => {
       (amountToBeTransferred - amountLeftForRestAccounts).toString(),
     );
     expect(secondReceiverAmount).toContain(amountLeftForRestAccounts.toString());
+    await transactionPage.clickOnTransactionsMenuButton();
+    await transactionPage.closeDraftModal();
   });
 
   test('Verify sign button is disabled when receiver amount is higher than payer amount when doing transfer tx', async () => {
-    await transactionPage.ensureAccountExists(globalCredentials.password);
+    await transactionPage.ensureAccountExists();
     const receiverAccount = await transactionPage.getFirstAccountFromList();
     await loginPage.waitForToastToDisappear();
 
@@ -310,16 +305,17 @@ test.describe('Transaction tests', () => {
 
     const isButtonEnabled = await transactionPage.isSignAndSubmitButtonEnabled();
     expect(isButtonEnabled).toBe(false);
+    await transactionPage.clickOnTransactionsMenuButton();
+    await transactionPage.closeDraftModal();
   });
 
   test('Verify user can execute approve allowance tx', async () => {
-    await transactionPage.ensureAccountExists(globalCredentials.password);
+    await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const amountToBeApproved = '10';
     const transactionId = await transactionPage.approveAllowance(
       accountFromList,
       amountToBeApproved,
-      globalCredentials.password,
     );
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
@@ -344,10 +340,12 @@ test.describe('Transaction tests', () => {
 
     const isAllElementsVisible = await transactionPage.verifyFileCreateTransactionElements();
     expect(isAllElementsVisible).toBe(true);
+    await transactionPage.clickOnTransactionsMenuButton();
+    await transactionPage.closeDraftModal();
   });
 
   test('Verify user can execute file create tx', async () => {
-    const { transactionId } = await transactionPage.createFile('test', globalCredentials.password);
+    const { transactionId } = await transactionPage.createFile('test');
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
     const transactionType = transactionDetails.transactions[0]?.name;
@@ -357,7 +355,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify file is stored in the db after file create tx', async () => {
-    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    await transactionPage.ensureFileExists('test');
     const fileId = await transactionPage.getFirsFileIdFromCache();
 
     const isExistingInDb = await transactionPage.verifyFileExists(fileId);
@@ -366,24 +364,20 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify user can execute file read tx', async () => {
-    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    await transactionPage.ensureFileExists('test');
     const fileId = await transactionPage.getFirsFileIdFromCache();
     const textFromCache = await transactionPage.getTextFromCache(fileId);
 
-    const readContent = await transactionPage.readFile(fileId, globalCredentials.password);
+    const readContent = await transactionPage.readFile(fileId);
 
     expect(readContent).toBe(textFromCache);
   });
 
   test('Verify user can execute file update tx', async () => {
     const newText = 'Lorem Ipsum';
-    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    await transactionPage.ensureFileExists('test');
     const fileId = await transactionPage.getFirsFileIdFromCache();
-    const transactionId = await transactionPage.updateFile(
-      fileId,
-      newText,
-      globalCredentials.password,
-    );
+    const transactionId = await transactionPage.updateFile(fileId, newText);
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
     const transactionType = transactionDetails.transactions[0]?.name;
@@ -392,20 +386,16 @@ test.describe('Transaction tests', () => {
     expect(result).toBe('SUCCESS');
 
     //Verify file content is updated
-    const readContent = await transactionPage.readFile(fileId, globalCredentials.password);
+    const readContent = await transactionPage.readFile(fileId);
     const textFromCache = await transactionPage.getTextFromCache(fileId);
     expect(readContent).toBe(textFromCache);
   });
 
   test('Verify user can execute file append tx', async () => {
     const newText = ' extra text to append';
-    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    await transactionPage.ensureFileExists('test');
     const fileId = await transactionPage.getFirsFileIdFromCache();
-    const transactionId = await transactionPage.appendFile(
-      fileId,
-      newText,
-      globalCredentials.password,
-    );
+    const transactionId = await transactionPage.appendFile(fileId, newText);
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
     const transactionType = transactionDetails.transactions[0]?.name;
@@ -414,7 +404,7 @@ test.describe('Transaction tests', () => {
     expect(result).toBe('SUCCESS');
 
     //Verify file content is appended
-    const readContent = await transactionPage.readFile(fileId, globalCredentials.password);
+    const readContent = await transactionPage.readFile(fileId);
     const textFromCache = await transactionPage.getTextFromCache(fileId);
     expect(readContent).toBe(textFromCache);
   });
@@ -461,7 +451,7 @@ test.describe('Transaction tests', () => {
     await transactionPage.saveDraft();
 
     await transactionPage.clickOnFirstDraftContinueButton();
-    await transactionPage.createNewAccount(globalCredentials.password, {}, true);
+    await transactionPage.createNewAccount({}, true);
     await transactionPage.clickOnTransactionsMenuButton();
 
     const isContinueButtonVisible = await transactionPage.isFirstDraftContinueButtonVisible();
@@ -476,7 +466,7 @@ test.describe('Transaction tests', () => {
 
     await transactionPage.clickOnFirstDraftIsTemplateCheckbox();
     await transactionPage.clickOnFirstDraftContinueButton();
-    await transactionPage.createNewAccount(globalCredentials.password, {}, true);
+    await transactionPage.createNewAccount({}, true);
     await transactionPage.clickOnTransactionsMenuButton();
     await transactionPage.navigateToDrafts();
 
@@ -658,7 +648,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify draft transaction contains the saved info for update file tx', async () => {
-    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    await transactionPage.ensureFileExists('test');
     const fileId = await transactionPage.getFirsFileIdFromCache();
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnFileServiceLink();
@@ -688,7 +678,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify draft transaction contains the saved info for append file tx', async () => {
-    await transactionPage.ensureFileExists('test', globalCredentials.password);
+    await transactionPage.ensureFileExists('test');
     const fileId = await transactionPage.getFirsFileIdFromCache();
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnFileServiceLink();

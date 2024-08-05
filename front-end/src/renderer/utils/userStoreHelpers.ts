@@ -34,6 +34,17 @@ export const isLoggedInWithPassword = (
   return isUserLoggedIn(user) && user.password !== null && user.password.trim() !== '';
 };
 
+export const isLoggedInWithValidPassword = (
+  user: PersonalUser | null,
+): user is LoggedInUserWithPassword => {
+  const hasPassword = isLoggedInWithPassword(user);
+  if (!hasPassword) return false;
+
+  const isExpired = user.passwordExpiresAt && new Date(user.passwordExpiresAt) < new Date();
+
+  return !isExpired;
+};
+
 export const isOrganizationActive = (organization: ConnectedOrganization | null): boolean => {
   return organization !== null && organization.isServerActive;
 };

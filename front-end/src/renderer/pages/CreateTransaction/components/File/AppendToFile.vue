@@ -19,11 +19,12 @@ import {
   isAccountId,
   formatAccountId,
 } from '@renderer/utils';
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import KeyField from '@renderer/components/KeyField.vue';
-import FileTransactionProcessor from '@renderer/components/Transaction/FileTransactionProcessor.vue';
+import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
@@ -37,7 +38,7 @@ const router = useRouter();
 const payerData = useAccountId();
 
 /* State */
-const transactionProcessor = ref<typeof FileTransactionProcessor | null>(null);
+const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
 
 const transaction = ref<Transaction | null>(null);
 const validStart = ref(new Date());
@@ -53,7 +54,6 @@ const content = ref('');
 
 const transactionMemo = ref('');
 const chunkSize = ref(2048);
-const chunksAmount = ref<number | null>(null);
 
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
@@ -159,10 +159,10 @@ const handleLocalStored = (id: string) => {
   redirectToDetails(id);
 };
 
-// const handleSubmit = async (id: number) => {
-//   isSubmitted.value = true;
-//   redirectToDetails(id);
-// };
+const handleSubmit = async (id: number) => {
+  isSubmitted.value = true;
+  redirectToDetails(id);
+};
 
 /* Functions */
 function createTransaction() {
@@ -221,7 +221,11 @@ const columnClass = 'col-4 col-xxxl-3';
             color="primary"
             type="submit"
             data-testid="button-sign-and-submit-file-append"
-            :disabled="!ownerKey || !payerData.isValid.value || !fileId"
+            :disabled="
+              (!isLoggedInOrganization(user.selectedOrganization) && !ownerKey) ||
+              !payerData.isValid.value ||
+              !fileId
+            "
           >
             <span class="bi bi-send"></span>
             {{
@@ -272,7 +276,7 @@ const columnClass = 'col-4 col-xxxl-3';
           </div>
         </div>
 
-        <div class="row mt-6">
+        <div v-if="!isLoggedInOrganization(user.selectedOrganization)" class="row mt-6">
           <div class="form-group col-8 col-xxxl-6">
             <KeyField
               :model-key="ownerKey"
@@ -336,28 +340,16 @@ const columnClass = 'col-4 col-xxxl-3';
       </div>
     </form>
 
-    <FileTransactionProcessor
+    <TransactionProcessor
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"
       :on-executed="
-        (_success, _response, _receipt, chunkAmount) => {
+        () => {
           isExecuted = true;
-          chunksAmount = chunkAmount || null;
         }
       "
       :on-local-stored="handleLocalStored"
-    >
-      <template #successHeading>Appended to file successfully</template>
-      <template #successContent>
-        <p class="text-small d-flex justify-content-between align-items mt-2">
-          <span class="text-bold text-secondary">File ID:</span>
-          <span>{{ fileId }}</span>
-        </p>
-        <p v-if="chunksAmount" class="text-small d-flex justify-content-between align-items mt-2">
-          <span class="text-bold text-secondary">Number of Chunks</span>
-          <span>{{ chunksAmount }}</span>
-        </p>
-      </template>
-    </FileTransactionProcessor>
+      :on-submitted="handleSubmit"
+    />
   </div>
 </template>

@@ -216,7 +216,7 @@ class OrganizationPage extends BasePage {
       );
       await this.registrationPage.clickOnFinalNextButtonWithRetry();
 
-      await setupEnvironmentForTransactions(window, encryptionPassword, privateKey);
+      await setupEnvironmentForTransactions(window, privateKey);
       await this.clickByTestId(this.logoutButtonSelector);
       await this.waitForElementToBeVisible(this.emailForOrganizationInputSelector);
     }
@@ -236,9 +236,9 @@ class OrganizationPage extends BasePage {
     await this.registrationPage.clickOnFinalNextButtonWithRetry();
   }
 
-  async recoverPrivateKey(window, encryptionPassword) {
+  async recoverPrivateKey(window) {
     // for the purposes of settings tests we are recovering User#1 which has PRIVATE_KEY_2 in the database
-    await setupEnvironmentForTransactions(window, encryptionPassword, process.env.PRIVATE_KEY_2);
+    await setupEnvironmentForTransactions(window, process.env.PRIVATE_KEY_2);
   }
 
   getUser(index) {
@@ -684,7 +684,7 @@ class OrganizationPage extends BasePage {
     await this.transactionPage.clickOnDoneButtonForComplexKeyCreation();
 
     await this.transactionPage.clickOnSignAndSubmitButton();
-    await this.transactionPage.clickSignTransactionButton(false);
+    await this.transactionPage.clickSignTransactionButton();
     const transactionId = await this.getTransactionDetailsId();
     await this.clickOnSignTransactionButton();
     const transactionResponse =
@@ -693,7 +693,7 @@ class OrganizationPage extends BasePage {
   }
 
   async clickOnSignTransactionButton() {
-    await this.clickByTestId(this.signTransactionButtonSelector, 2500);
+    await this.clickByTestId(this.signTransactionButtonSelector, 5000);
   }
 
   async getTransactionDetailsId() {
@@ -737,7 +737,7 @@ class OrganizationPage extends BasePage {
       30000,
     );
     await this.transactionPage.clickOnSignAndSubmitUpdateButton();
-    await this.transactionPage.clickSignTransactionButton(false);
+    await this.transactionPage.clickSignTransactionButton();
     const txId = await this.getTransactionDetailsId();
     const validStart = await this.getValidStart();
     if (isSignRequiredFromCreator) {
@@ -763,7 +763,7 @@ class OrganizationPage extends BasePage {
   }
 
   async clickOnSubmitSignButtonByIndex(index) {
-    await this.clickByTestId(this.readyForSignSubmitSignButtonIndexSelector + index);
+    await this.clickByTestId(this.readyForSignSubmitSignButtonIndexSelector + index, 5000);
   }
 
   async getInProgressTransactionIdByIndex(index) {

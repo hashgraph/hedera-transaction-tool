@@ -14,11 +14,7 @@ import { uploadKey } from '@renderer/services/organization';
 
 import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
-import {
-  isLoggedInOrganization,
-  isLoggedInWithPassword,
-  isUserLoggedIn,
-} from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 import { getWidthOfElementWithText } from '@renderer/utils/dom';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -115,7 +111,8 @@ const handleSave = async () => {
   if (keys.value.length === 0) throw Error('No key pairs to save');
 
   if (!isUserLoggedIn(user.personal)) throw Error('User is logged in');
-  if (!isLoggedInWithPassword(user.personal)) {
+  const personalPassword = user.getPassword();
+  if (!personalPassword) {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     userPasswordModalRef.value?.open(
       'Enter personal password',
@@ -158,7 +155,7 @@ const handleSave = async () => {
         }
       }
 
-      await user.storeKey(keyPair, user.personal.password, Boolean(props.selectedPersonalKeyPair));
+      await user.storeKey(keyPair, personalPassword, Boolean(props.selectedPersonalKeyPair));
       user.secretHashes.push(
         user.recoveryPhrase?.hash || props.selectedPersonalKeyPair?.secret_hash || '',
       );
@@ -167,7 +164,6 @@ const handleSave = async () => {
     toast.success(`Key Pair${keys.value.length > 1 ? 's' : ''} saved successfully`, {
       position: 'bottom-right',
     });
-    user.personal.password = '';
     router.push({ name: 'settingsKeys' });
   } catch (err: any) {
     let message = `Failed to store key pair${keys.value.length > 1 ? 's' : ''}`;

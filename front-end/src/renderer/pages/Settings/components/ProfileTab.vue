@@ -10,11 +10,7 @@ import { changePassword as organizationChangePassword } from '@renderer/services
 
 import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
-import {
-  isLoggedInOrganization,
-  isLoggedInWithPassword,
-  isUserLoggedIn,
-} from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -49,9 +45,9 @@ const handleChangePassword = async () => {
     if (currentPassword.value.length === 0 || newPassword.value.length === 0) {
       throw new Error('Password cannot be empty');
     }
-
     if (isLoggedInOrganization(user.selectedOrganization)) {
-      if (!isLoggedInWithPassword(user.personal)) {
+      const personalPassword = user.getPassword();
+      if (!personalPassword) {
         if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
         userPasswordModalRef.value?.open(
           'Enter your application password',
@@ -72,12 +68,12 @@ const handleChangePassword = async () => {
         newPassword.value,
         user.selectedOrganization.id,
         user.personal.id,
-        user.personal.password,
+        personalPassword,
         true,
       );
     } else {
       await changePassword(user.personal.id, currentPassword.value, newPassword.value);
-      user.personal.password = newPassword.value;
+      user.setPassword(newPassword.value);
       await user.refetchKeys();
     }
 

@@ -12,11 +12,7 @@ import { updateOrganizationCredentials } from '@renderer/services/organizationCr
 
 import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
-import {
-  isLoggedInOrganization,
-  isLoggedInWithPassword,
-  isUserLoggedIn,
-} from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -56,11 +52,9 @@ const handleFormSubmit = async (event: Event) => {
 };
 
 const handleChangePassword = async () => {
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
-
-  if (!isLoggedInWithPassword(user.personal)) {
+  if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+  const personalPassword = user.getPassword();
+  if (!personalPassword) {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     userPasswordModalRef.value?.open(
       'Enter personal password',
@@ -97,7 +91,7 @@ const handleChangePassword = async () => {
         user.personal.id,
         undefined,
         newPassword.value,
-        user.personal.password,
+        personalPassword,
       );
 
       await user.refetchUserState();

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue';
+import { inject, reactive, ref, watch } from 'vue';
 
 import { Prisma } from '@prisma/client';
 
@@ -13,6 +13,8 @@ import { uploadKey } from '@renderer/services/organization';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
+import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -23,6 +25,9 @@ const user = useUserStore();
 /* Composables */
 const toast = useToast();
 
+/* Injected */
+const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
+
 /* State */
 const isImportECDSAKeyModalShown = ref(false);
 const isImportED25519KeyModalShown = ref(false);
@@ -32,72 +37,90 @@ const ecdsaKey = reactive<{ privateKey: string; nickname?: string }>({
 const ed25519Key = reactive<{ privateKey: string; nickname?: string }>({
   privateKey: '',
 });
-const userPassword = ref('');
 
 /* Handlers */
 const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
-  try {
-    const privateKey = type === 'ED25519' ? ed25519Key.privateKey : ecdsaKey.privateKey;
-    const nickname = type === 'ED25519' ? ed25519Key.nickname : ecdsaKey.nickname;
+  const privateKey = type === 'ED25519' ? ed25519Key.privateKey : ecdsaKey.privateKey;
+  const nickname = type === 'ED25519' ? ed25519Key.nickname : ecdsaKey.nickname;
 
-    const keyPair: Prisma.KeyPairUncheckedCreateInput = {
-      user_id: user.personal.id,
-      ...generateExternalKeyPairFromString(privateKey, type, nickname || ''),
-      organization_id: null,
-      organization_user_id: null,
-      type: type,
-      secret_hash: null,
-    };
-
-    if (user.keyPairs.find(kp => kp.public_key === keyPair.public_key)) {
-      throw new Error('Key pair already exists');
+  const callback = async () => {
+    /* Verify user is logged in with password */
+    if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+    const personalPassword = user.getPassword();
+    if (!personalPassword) {
+      if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+      isImportED25519KeyModalShown.value = false;
+      isImportECDSAKeyModalShown.value = false;
+      userPasswordModalRef.value?.open(
+        'Enter personal password',
+        'Private key/s will be encrypted with this password',
+        callback,
+      );
+      return;
     }
 
-    if (!(await comparePasswords(user.personal.id, userPassword.value))) {
-      throw new Error('Incorrect password');
-    }
+    try {
+      const keyPair: Prisma.KeyPairUncheckedCreateInput = {
+        user_id: user.personal.id,
+        ...generateExternalKeyPairFromString(privateKey, type, nickname || ''),
+        organization_id: null,
+        organization_user_id: null,
+        type: type,
+        secret_hash: null,
+      };
 
-    if (isLoggedInOrganization(user.selectedOrganization)) {
-      if (
-        user.selectedOrganization.userKeys.some(k => k.publicKey === keyPair.public_key) &&
-        user.keyPairs.find(kp => kp.public_key === keyPair.public_key)
-      ) {
+      if (user.keyPairs.find(kp => kp.public_key === keyPair.public_key)) {
         throw new Error('Key pair already exists');
       }
 
-      keyPair.organization_id = user.selectedOrganization.id;
-      keyPair.organization_user_id = user.selectedOrganization.userId;
+      if (!(await comparePasswords(user.personal.id, personalPassword))) {
+        throw new Error('Incorrect password');
+      }
 
-      await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
-        publicKey: keyPair.public_key,
+      if (isLoggedInOrganization(user.selectedOrganization)) {
+        if (
+          user.selectedOrganization.userKeys.some(k => k.publicKey === keyPair.public_key) &&
+          user.keyPairs.find(kp => kp.public_key === keyPair.public_key)
+        ) {
+          throw new Error('Key pair already exists');
+        }
+
+        keyPair.organization_id = user.selectedOrganization.id;
+        keyPair.organization_user_id = user.selectedOrganization.userId;
+
+        await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
+          publicKey: keyPair.public_key,
+        });
+      }
+
+      await user.storeKey(keyPair, personalPassword, false);
+
+      await user.refetchUserState();
+
+      isImportED25519KeyModalShown.value = false;
+      isImportECDSAKeyModalShown.value = false;
+
+      toast.success(`${type} private key imported successfully`, { position: 'bottom-right' });
+    } catch (err: any) {
+      toast.error(err.message || `Failed to import ${type} private key`, {
+        position: 'bottom-right',
       });
     }
+  };
 
-    await user.storeKey(keyPair, userPassword.value, false);
-
-    await user.refetchUserState();
-
-    isImportED25519KeyModalShown.value = false;
-    isImportECDSAKeyModalShown.value = false;
-
-    toast.success(`${type} private key imported successfully`, { position: 'bottom-right' });
-  } catch (err: any) {
-    toast.error(err.message || `Failed to import ${type} private key`, {
-      position: 'bottom-right',
-    });
-  }
+  await callback();
 };
 
 /* Watchers */
-watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
-  userPassword.value = '';
-  ecdsaKey.nickname = '';
-  ecdsaKey.privateKey = '';
-  ed25519Key.nickname = '';
-  ed25519Key.privateKey = '';
+watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], (ecdsa, ed25519) => {
+  if (ecdsa) {
+    ecdsaKey.nickname = '';
+    ecdsaKey.privateKey = '';
+  }
+  if (ed25519) {
+    ed25519Key.nickname = '';
+    ed25519Key.privateKey = '';
+  }
 });
 </script>
 <template>
@@ -165,17 +188,6 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
             />
           </div>
 
-          <div class="form-group mt-4">
-            <label class="form-label">Enter your password</label>
-            <AppInput
-              data-testid="input-ecdsa-private-key-password"
-              v-model="userPassword"
-              type="password"
-              :filled="true"
-              size="small"
-              placeholder="Type your password"
-            />
-          </div>
           <hr class="separator my-5" />
 
           <div class="d-grid">
@@ -223,17 +235,7 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], () => {
               placeholder="Type nickname"
             />
           </div>
-          <div class="form-group mt-4">
-            <label class="form-label">Enter your password</label>
-            <AppInput
-              data-testid="input-ed25519-private-key-password"
-              v-model="userPassword"
-              type="password"
-              :filled="true"
-              size="small"
-              placeholder="Type your password"
-            />
-          </div>
+
           <hr class="separator my-5" />
 
           <div class="d-grid">
