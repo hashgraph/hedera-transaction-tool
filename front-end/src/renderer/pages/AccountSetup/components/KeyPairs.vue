@@ -121,7 +121,11 @@ const handleSave = async () => {
     );
     return;
   }
-  if (!user.recoveryPhrase && !props.selectedPersonalKeyPair) {
+
+  if (
+    (!user.recoveryPhrase || user.recoveryPhrase.words.length === 0) &&
+    !props.selectedPersonalKeyPair
+  ) {
     throw new Error('Recovery phrase is not set or personal key pair is not selected');
   }
 
@@ -155,7 +159,14 @@ const handleSave = async () => {
         }
       }
 
-      await user.storeKey(keyPair, personalPassword, Boolean(props.selectedPersonalKeyPair));
+      const recoveryWords = user.recoveryPhrase?.words || []; //TS cannot assert that recoveryPhrase is set
+
+      await user.storeKey(
+        keyPair,
+        props.selectedPersonalKeyPair ? props.selectedPersonalKeyPair.secret_hash : recoveryWords,
+        personalPassword,
+        Boolean(props.selectedPersonalKeyPair),
+      );
       user.secretHashes.push(
         user.recoveryPhrase?.hash || props.selectedPersonalKeyPair?.secret_hash || '',
       );

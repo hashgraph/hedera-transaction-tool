@@ -49,12 +49,6 @@ export const decryptPrivateKey = async (userId: string, password: string, public
     return await window.electronAPI.local.keyPairs.decryptPrivateKey(userId, password, publicKey);
   }, 'Failed to decrypt private key/s');
 
-/* Hash recovery phrase */
-export const hashRecoveryPhrase = async (words: string[]) =>
-  commonIPCHandler(async () => {
-    return await window.electronAPI.local.utils.hash(words.toString());
-  }, 'Failed to hash recovery phrase');
-
 /* Delete all stored key pairs */
 export const clearKeys = async (userId: string, organizationId?: string) =>
   commonIPCHandler(async () => {

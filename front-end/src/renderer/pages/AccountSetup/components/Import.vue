@@ -3,7 +3,8 @@ import { onBeforeMount, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { hashRecoveryPhrase, validateMnemonic } from '@renderer/services/keyPairService';
+import { validateMnemonic } from '@renderer/services/keyPairService';
+import { compareDataToHashes } from '@renderer/services/electronUtilsService';
 
 import AppRecoveryPhraseWord from '@renderer/components/ui/AppRecoveryPhraseWord.vue';
 
@@ -25,10 +26,9 @@ const isSecretHashValid = ref(true);
 const validateMatchingSecretHash = async () => {
   if (!isMnenmonicValid.value) return;
 
-  const secretHash = await hashRecoveryPhrase(words.value);
-
-  if (props.secretHashes.length > 0 && !props.secretHashes.includes(secretHash)) {
-    isSecretHashValid.value = false;
+  if (props.secretHashes.length > 0) {
+    const matchedHash = await compareDataToHashes(words.value.toString(), props.secretHashes);
+    isSecretHashValid.value = Boolean(matchedHash);
     return;
   }
 

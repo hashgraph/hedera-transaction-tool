@@ -25,6 +25,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
+import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
 /* Stores */
 const user = useUserStore();
@@ -33,6 +34,11 @@ const user = useUserStore();
 const toast = useToast();
 const router = useRouter();
 const createTooltips = useCreateTooltips();
+useSetDynamicLayout({
+  loggedInClass: false,
+  shouldSetupAccountClass: false,
+  showMenu: false,
+});
 
 /* Injected */
 const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);
@@ -41,6 +47,7 @@ const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADE
 const inputEmail = ref('');
 const inputPassword = ref('');
 const inputConfirmPassword = ref('');
+const buttonLoading = ref(false);
 
 const inputEmailInvalid = ref(false);
 const inputPasswordInvalid = ref(false);
@@ -79,6 +86,7 @@ const handleOnFormSubmit = async (event: Event) => {
       toast.error('Password too weak', { position: 'bottom-right' });
       return;
     }
+    buttonLoading.value = true;
     const { id, email } = await registerLocal(
       inputEmail.value.trim(),
       inputPassword.value,
@@ -95,6 +103,7 @@ const handleOnFormSubmit = async (event: Event) => {
     let userData: { id: string; email: string } | null = null;
 
     try {
+      buttonLoading.value = true;
       userData = await loginLocal(
         inputEmail.value.trim(),
         inputPassword.value,
@@ -111,6 +120,8 @@ const handleOnFormSubmit = async (event: Event) => {
       if (error.message.includes('password')) {
         inputPasswordInvalid.value = true;
       }
+    } finally {
+      buttonLoading.value = false;
     }
 
     if (userData) {
@@ -128,8 +139,8 @@ const handleOnFormSubmit = async (event: Event) => {
             router.previousPath ? { path: router.previousPath } : { name: 'transactions' },
           );
         }
-        globalModalLoaderRef?.value?.close();
-      } catch (error) {
+      } finally {
+        buttonLoading.value = false;
         globalModalLoaderRef?.value?.close();
       }
     }
@@ -349,6 +360,7 @@ watch(inputEmail, pass => {
               color="primary"
               type="submit"
               class="w-100"
+              :loading="buttonLoading"
               :disabled="inputEmail.length === 0 || inputPassword.length === 0"
               >{{ shouldRegister ? 'Next' : 'Sign in' }}</AppButton
             >

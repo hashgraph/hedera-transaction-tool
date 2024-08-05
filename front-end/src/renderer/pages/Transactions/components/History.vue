@@ -198,7 +198,7 @@ watch(orgFilters, async () => {
       />
     </div>
     <template v-if="isLoading">
-      <AppLoader />
+      <AppLoader class="h-100" />
     </template>
     <template v-else>
       <template

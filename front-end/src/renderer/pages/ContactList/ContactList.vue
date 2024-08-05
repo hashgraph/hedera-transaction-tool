@@ -10,6 +10,8 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
 
 import { useToast } from 'vue-toast-notification';
+import useRedirectOnOnlyOrganization from '@renderer/composables/useRedirectOnOnlyOrganization';
+import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
 import { deleteUser } from '@renderer/services/organization';
 import { removeContact } from '@renderer/services/contactsService';
@@ -21,7 +23,6 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import ContactDetails from '@renderer/components/Contacts/ContactDetails.vue';
 import DeleteContactModal from '@renderer/components/Contacts/DeleteContactModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
-import useRedirectOnOnlyOrganization from '@renderer/composables/useRedirectOnOnlyOrganization';
 
 /* Stores */
 const user = useUserStore();
@@ -29,8 +30,13 @@ const network = useNetworkStore();
 const contacts = useContactsStore();
 
 /* Composables */
-useRedirectOnOnlyOrganization();
 const toast = useToast();
+useRedirectOnOnlyOrganization();
+useSetDynamicLayout({
+  loggedInClass: true,
+  shouldSetupAccountClass: false,
+  showMenu: true,
+});
 
 /* State */
 const fetching = ref(false);

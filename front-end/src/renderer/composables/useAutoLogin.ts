@@ -1,10 +1,14 @@
 import { onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 
 export default function useAutoLogin() {
   /* Stores */
   const user = useUserStore();
+
+  /* Composables */
+  const router = useRouter();
 
   /* Hooks */
   onMounted(async () => {
@@ -15,6 +19,9 @@ export default function useAutoLogin() {
 
       setTimeout(async () => {
         await user.login(userId, email);
+        if (user.shouldSetupAccount) {
+          router.push({ name: 'accountSetup' });
+        }
       }, 100);
     } else {
       await user.logout();

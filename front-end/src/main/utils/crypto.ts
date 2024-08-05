@@ -1,17 +1,17 @@
 import crypto from 'crypto';
 
-export function hash(data) {
+function hash(data) {
   return crypto.createHash('sha256').update(data).digest();
 }
 
 export function createCredentials(password: string) {
   let temp = hash(password);
 
-  const iv = temp.slice(0, 16);
+  const iv = temp.subarray(0, 16);
 
   temp = hash(temp);
 
-  const key = temp.slice(8);
+  const key = temp.subarray(0, 24);
 
   return [key, iv];
 }

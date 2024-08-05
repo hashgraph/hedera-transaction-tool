@@ -17,12 +17,18 @@ import ReadyToSign from './components/ReadyToSign.vue';
 import InProgress from './components/InProgress.vue';
 import ReadyForExecution from './components/ReadyForExecution.vue';
 import ReadyForReview from './components/ReadyForReview.vue';
+import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
 /* Stores */
 const user = useUserStore();
 
 /* Composables */
 const route = useRoute();
+useSetDynamicLayout({
+  loggedInClass: true,
+  shouldSetupAccountClass: false,
+  showMenu: true,
+});
 
 /* State */
 const organizationTabs: TabItem[] = [

@@ -93,7 +93,7 @@ const handleImportExternalKey = async (type: 'ED25519' | 'ECDSA') => {
         });
       }
 
-      await user.storeKey(keyPair, personalPassword, false);
+      await user.storeKey(keyPair, null, personalPassword, false);
 
       await user.refetchUserState();
 

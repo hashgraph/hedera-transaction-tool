@@ -10,6 +10,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
+import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
 import { getAll, remove, showContentInTemp, update } from '@renderer/services/filesService';
 import { flattenKeyList, getKeyListLevels } from '@renderer/services/keyPairService';
@@ -33,6 +34,11 @@ const network = useNetworkStore();
 
 /* Composables */
 const createTooltips = useCreateTooltips();
+useSetDynamicLayout({
+  loggedInClass: true,
+  shouldSetupAccountClass: false,
+  showMenu: true,
+});
 
 // TODO: Replace with real data from SQLite (temp solution) or BE DB
 // const specialFiles: HederaFile[] = [

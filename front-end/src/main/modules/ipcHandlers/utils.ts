@@ -5,8 +5,8 @@ import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
 
 import { Key, KeyList } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
+import * as bcrypt from 'bcrypt';
 
-import { hash } from '@main/utils/crypto';
 import { getNumberArrayFromString, saveContentToPath } from '@main/utils';
 
 const createChannelName = (...props: string[]) => ['utils', ...props].join(':');
@@ -24,13 +24,25 @@ export default () => {
     },
   );
 
-  ipcMain.handle(createChannelName('hash'), (_e, data): string => {
-    const hashBuffer = hash(Buffer.from(data));
-
-    const str = hashBuffer.toString('hex');
-
-    return str;
+  ipcMain.handle(createChannelName('hash'), (_e, data: string): string => {
+    return bcrypt.hashSync(data, 10);
   });
+
+  ipcMain.handle(createChannelName('compareHash'), (_e, data: string, hash: string): boolean => {
+    return bcrypt.compareSync(data, hash);
+  });
+
+  ipcMain.handle(
+    createChannelName('compareDataToHashes'),
+    (_e, data: string, hashes: string[]): string | null => {
+      for (const hash of hashes) {
+        const matched = bcrypt.compareSync(data, hash);
+        if (matched) return hash;
+      }
+
+      return null;
+    },
+  );
 
   ipcMain.handle(createChannelName('uint8ArrayToHex'), (_e, data: string): string => {
     return Buffer.from(getNumberArrayFromString(data)).toString('hex');

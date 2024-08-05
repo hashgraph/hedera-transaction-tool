@@ -6,6 +6,7 @@ import { KeyPair } from '@prisma/client';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { deleteKey } from '@renderer/services/organization';
+import { compareDataToHashes } from '@renderer/services/electronUtilsService';
 
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
@@ -55,10 +56,16 @@ const handleNextWithValidation = async () => {
 
   if (
     isLoggedInOrganization(user.selectedOrganization) &&
-    user.selectedOrganization.secretHashes.length > 0 &&
-    !user.selectedOrganization.secretHashes.includes(user.recoveryPhrase.hash)
+    user.selectedOrganization.secretHashes.length > 0
   ) {
-    differentSecretHashModalShown.value = true;
+    const inSecretHashes = await compareDataToHashes(user.recoveryPhrase.words.toString(), [
+      ...user.selectedOrganization.secretHashes,
+    ]);
+    if (!inSecretHashes) {
+      differentSecretHashModalShown.value = true;
+    } else {
+      props.handleNext();
+    }
   } else {
     props.handleNext();
   }

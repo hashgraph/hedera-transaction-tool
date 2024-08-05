@@ -1,5 +1,14 @@
 <script setup lang="ts">
 import txTypeComponentMapping from './txTypeComponentMapping';
+
+import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
+
+/* Composables */
+useSetDynamicLayout({
+  loggedInClass: true,
+  shouldSetupAccountClass: false,
+  showMenu: true,
+});
 </script>
 
 <template>

@@ -21,6 +21,15 @@ export function addGuards(router: Router) {
     }
 
     if (
+      userIsLoggedIn &&
+      userIsLoggedInOrganization &&
+      user.shouldSetupAccount &&
+      to.name !== 'accountSetup'
+    ) {
+      return { name: 'accountSetup' };
+    }
+
+    if (
       (!userIsLoggedIn && to.name === 'accountSetup') ||
       (userIsLoggedIn && to.name === 'login') ||
       (!user.shouldSetupAccount && to.name === 'accountSetup') ||

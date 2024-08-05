@@ -125,7 +125,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
 <template>
   <div class="fill-remaining overflow-x-auto">
     <template v-if="isLoading">
-      <AppLoader />
+      <AppLoader class="h-100" />
     </template>
     <template v-else>
       <template v-if="transactions.length > 0">

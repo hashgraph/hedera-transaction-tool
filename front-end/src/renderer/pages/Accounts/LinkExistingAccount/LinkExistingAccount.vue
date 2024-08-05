@@ -8,14 +8,15 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
+import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
 import { add } from '@renderer/services/accountsService';
 
 import { formatAccountId } from '@renderer/utils';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 /* Stores */
 const user = useUserStore();
@@ -25,6 +26,11 @@ const network = useNetworkStore();
 const router = useRouter();
 const toast = useToast();
 useCreateTooltips();
+useSetDynamicLayout({
+  loggedInClass: true,
+  shouldSetupAccountClass: false,
+  showMenu: true,
+});
 
 /* State */
 const accountData = useAccountId();

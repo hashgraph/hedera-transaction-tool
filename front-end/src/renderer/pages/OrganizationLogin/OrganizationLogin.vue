@@ -5,13 +5,20 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
+import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
 import { login } from '@renderer/services/organization';
 import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
 import { isLoggedOutOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { withLoader } from '@renderer/utils';
 
-import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+import {
+  GLOBAL_MODAL_LOADER_KEY,
+  GLOBAL_MODAL_LOADER_TYPE,
+  USER_PASSWORD_MODAL_KEY,
+  USER_PASSWORD_MODAL_TYPE,
+} from '@renderer/providers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -23,9 +30,15 @@ const user = useUserStore();
 /* Composables */
 const router = useRouter();
 const toast = useToast();
+useSetDynamicLayout({
+  loggedInClass: false,
+  shouldSetupAccountClass: false,
+  showMenu: false,
+});
 
 /* Injected */
 const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
+const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);
 
 /* State */
 const loading = ref(false);
@@ -62,7 +75,6 @@ const handleLogin = async () => {
 
   try {
     loading.value = true;
-    await login(user.selectedOrganization.serverUrl, inputEmail.value.trim(), inputPassword.value);
 
     await addOrganizationCredentials(
       inputEmail.value.trim(),
@@ -73,10 +85,18 @@ const handleLogin = async () => {
       true,
     );
 
+    await login(user.selectedOrganization.serverUrl, inputEmail.value.trim(), inputPassword.value);
     toast.success('Successfully signed in');
 
     const { id, serverUrl, nickname, key } = user.selectedOrganization;
-    await user.selectOrganization({ id, serverUrl, nickname, key });
+    loading.value = false;
+
+    await withLoader(
+      user.selectOrganization.bind(null, { id, serverUrl, nickname, key }),
+      toast,
+      globalModalLoaderRef?.value,
+      'Failed to change user mode',
+    )();
   } catch (error: any) {
     inputEmailInvalid.value = true;
     inputPasswordInvalid.value = true;

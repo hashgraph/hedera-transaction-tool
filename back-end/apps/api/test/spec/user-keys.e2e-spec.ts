@@ -121,22 +121,6 @@ describe('User Keys (e2e)', () => {
         .expect(400);
     });
 
-    it('(POST) should not update mnemonic if uploading existing key and is users', async () => {
-      const { mnemonicHash, publicKeyRaw, index } = await generatePrivateKey();
-
-      await endpoint
-        .post({ mnemonicHash, publicKey: publicKeyRaw, index }, '/2/keys', userAuthCookie)
-        .expect(201);
-
-      await endpoint
-        .post({ mnemonicHash: '123', publicKey: publicKeyRaw, index }, '/2/keys', userAuthCookie)
-        .expect(400);
-
-      const actualUserKeys = await getUserKeys(user.id);
-
-      expect(actualUserKeys[actualUserKeys.length - 1].mnemonicHash).toEqual(mnemonicHash);
-    });
-
     it('(POST) should not update index if uploading existing key and is users', async () => {
       const { mnemonicHash, publicKeyRaw, index } = await generatePrivateKey();
 
@@ -155,7 +139,28 @@ describe('User Keys (e2e)', () => {
       expect(actualUserKeys[actualUserKeys.length - 1].index).toEqual(index);
     });
 
-    it('(POST) should set mnemonic if uploading existing key and is users', async () => {
+    it('(POST) should update mnemonic if uploading existing key and is users', async () => {
+      const { mnemonicHash, publicKeyRaw, index } = await generatePrivateKey();
+      const newMnemonic = '123';
+
+      await endpoint
+        .post({ mnemonicHash, publicKey: publicKeyRaw, index }, '/2/keys', userAuthCookie)
+        .expect(201);
+
+      await endpoint
+        .post(
+          { mnemonicHash: newMnemonic, publicKey: publicKeyRaw, index },
+          '/2/keys',
+          userAuthCookie,
+        )
+        .expect(201);
+
+      const actualUserKeys = await getUserKeys(user.id);
+
+      expect(actualUserKeys[actualUserKeys.length - 1].mnemonicHash).toEqual(newMnemonic);
+    });
+
+    it('(POST) should set mnemonic if uploading existing key that has not set mnemonic and is users', async () => {
       const { mnemonicHash, publicKeyRaw, index } = await generatePrivateKey();
 
       await endpoint.post({ publicKey: publicKeyRaw }, '/2/keys', userAuthCookie).expect(201);
@@ -210,9 +215,14 @@ describe('User Keys (e2e)', () => {
 
       await endpoint.delete(`/2/keys/${id}`, userAuthCookie).expect(200);
 
-      await endpoint
-        .post({ mnemonicHash, publicKey: publicKey, index }, '/2/keys', userAuthCookie)
-        .expect(201);
+      const { status, body } = await endpoint.post(
+        { mnemonicHash, publicKey: publicKey, index },
+        '/2/keys',
+        userAuthCookie,
+      );
+
+      expect(status).toEqual(201);
+      expect(body.mnemonicHash).toEqual(mnemonicHash);
     });
 
     it('(POST) should recover key WITHOUT mnemonic if key is deleted', async () => {

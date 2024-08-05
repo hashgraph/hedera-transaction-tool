@@ -5,13 +5,16 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
+import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
+
+import { signUp } from '@renderer/services/organization';
+import { addContact } from '@renderer/services/contactsService';
+
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isEmail } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
-import { isEmail } from '@renderer/utils';
-import { signUp } from '@renderer/services/organization';
-import { addContact } from '@renderer/services/contactsService';
 
 /* Stores */
 const user = useUserStore();
@@ -19,6 +22,11 @@ const user = useUserStore();
 /* Composables */
 const router = useRouter();
 const toast = useToast();
+useSetDynamicLayout({
+  loggedInClass: true,
+  shouldSetupAccountClass: false,
+  showMenu: true,
+});
 
 /* State */
 const email = ref('');

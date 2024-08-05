@@ -16,12 +16,14 @@ import {
 } from '@renderer/types';
 
 import { getUserState, healthCheck } from '@renderer/services/organization';
-import { getKeyPairs, hashRecoveryPhrase } from '@renderer/services/keyPairService';
 import { getAccountsByPublicKey } from '@renderer/services/mirrorNodeDataService';
-import { storeKeyPair as storeKey } from '@renderer/services/keyPairService';
-import { shouldSignInOrganization } from '@renderer/services/organizationCredentials';
-import { deleteOrganizationCredentials } from '@renderer/services/organizationCredentials';
+import { storeKeyPair as storeKey, getKeyPairs } from '@renderer/services/keyPairService';
+import {
+  shouldSignInOrganization,
+  deleteOrganizationCredentials,
+} from '@renderer/services/organizationCredentials';
 import { deleteOrganization, getOrganizations } from '@renderer/services/organizationsService';
+import { hashData, compareDataToHashes } from '@renderer/services/electronUtilsService';
 
 /* Flags */
 export const isUserLoggedIn = (user: PersonalUser | null): user is LoggedInUser => {
@@ -117,7 +119,7 @@ export const createPersonalUser = (id?: string, email?: string): PersonalUser =>
 export const createRecoveryPhrase = async (words: string[]): Promise<RecoveryPhrase> => {
   try {
     const mnemonic = await Mnemonic.fromWords(words);
-    const hash = await hashRecoveryPhrase(words);
+    const hash = await hashData(words.toString());
 
     return {
       mnemonic,
@@ -132,15 +134,23 @@ export const createRecoveryPhrase = async (words: string[]): Promise<RecoveryPhr
 export const storeKeyPair = async (
   keyPair: Prisma.KeyPairUncheckedCreateInput,
   secretHashes: string[],
+  mnemonic: string[] | string | null,
   password: string,
   encrypted: boolean,
 ) => {
-  if (
-    secretHashes.length > 0 &&
-    keyPair.secret_hash &&
-    !secretHashes.includes(keyPair.secret_hash)
-  ) {
-    throw Error('Different recovery phrase is used!');
+  if (secretHashes.length > 0 && mnemonic) {
+    if (Array.isArray(mnemonic)) {
+      const matchedHash = await compareDataToHashes([...mnemonic].toString(), [...secretHashes]);
+      if (!matchedHash) {
+        throw Error('Different recovery phrase is used!');
+      }
+      keyPair.secret_hash = matchedHash;
+    } else {
+      if (!secretHashes.includes(mnemonic)) {
+        throw Error('Different recovery phrase is used!');
+      }
+      keyPair.secret_hash = mnemonic;
+    }
   }
 
   await storeKey(keyPair, password, encrypted);
