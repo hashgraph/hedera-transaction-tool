@@ -4,17 +4,24 @@ import { computed, ref, watch } from 'vue';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter, RouterView } from 'vue-router';
+import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
+
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppTabs, { TabItem } from '@renderer/components/ui/AppTabs.vue';
 import ImportExternalPrivateKeyDropDown from '@renderer/components/ImportExternalPrivateKeyDropDown.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 /* Stores */
 const user = useUserStore();
 
 /* Composables */
 const router = useRouter();
+useSetDynamicLayout({
+  loggedInClass: true,
+  shouldSetupAccountClass: false,
+  showMenu: true,
+});
 
 /* Misc */
 const generalTitle = 'General';

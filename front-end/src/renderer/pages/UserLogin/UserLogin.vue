@@ -25,6 +25,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
+import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
 /* Stores */
 const user = useUserStore();
@@ -33,6 +34,11 @@ const user = useUserStore();
 const toast = useToast();
 const router = useRouter();
 const createTooltips = useCreateTooltips();
+useSetDynamicLayout({
+  loggedInClass: false,
+  shouldSetupAccountClass: false,
+  showMenu: false,
+});
 
 /* Injected */
 const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);
@@ -133,11 +139,9 @@ const handleOnFormSubmit = async (event: Event) => {
             router.previousPath ? { path: router.previousPath } : { name: 'transactions' },
           );
         }
-        globalModalLoaderRef?.value?.close();
-      } catch (error) {
-        globalModalLoaderRef?.value?.close();
       } finally {
         buttonLoading.value = false;
+        globalModalLoaderRef?.value?.close();
       }
     }
   }
