@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 
@@ -12,7 +12,11 @@ import useAutoLogin from '@renderer/composables/useAutoLogin';
 import { getExchangeRateSet } from './services/mirrorNodeDataService';
 import { setClient } from './services/transactionService';
 
-import { provideGlobalModalLoaderlRef, provideUserModalRef } from '@renderer/providers';
+import {
+  provideDynamicLayout,
+  provideGlobalModalLoaderlRef,
+  provideUserModalRef,
+} from '@renderer/providers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppMenu from '@renderer/components/Menu.vue';
@@ -35,6 +39,11 @@ useAutoLogin();
 /* State */
 const userPasswordModalRef = ref<InstanceType<typeof UserPasswordModal> | null>(null);
 const globalModalLoaderRef = ref<InstanceType<typeof GlobalModalLoader> | null>(null);
+const dynamicLayout = reactive({
+  loggedInClass: false,
+  shouldSetupAccountClass: false,
+  showMenu: false,
+});
 
 /* Handlers */
 async function handleThemeChange() {
@@ -62,13 +71,14 @@ onMounted(async () => {
 /* Providers */
 provideUserModalRef(userPasswordModalRef);
 provideGlobalModalLoaderlRef(globalModalLoaderRef);
+provideDynamicLayout(dynamicLayout);
 </script>
 
 <template>
   <AppHeader
     :class="{
-      'logged-in': user.personal?.isLoggedIn && !user.selectedOrganization?.loginRequired,
-      'should-setup-account': user.shouldSetupAccount,
+      'logged-in': dynamicLayout.loggedInClass,
+      'should-setup-account': dynamicLayout.shouldSetupAccountClass,
     }"
   />
 
@@ -77,17 +87,11 @@ provideGlobalModalLoaderlRef(globalModalLoaderRef);
       v-if="user.personal"
       class="container-main"
       :class="{
-        'logged-in': user.personal?.isLoggedIn && !user.selectedOrganization?.loginRequired,
-        'should-setup-account': user.shouldSetupAccount,
+        'logged-in': dynamicLayout.loggedInClass,
+        'should-setup-account': dynamicLayout.shouldSetupAccountClass,
       }"
     >
-      <AppMenu
-        v-if="
-          user.personal?.isLoggedIn &&
-          !user.selectedOrganization?.loginRequired &&
-          !user.shouldSetupAccount
-        "
-      />
+      <AppMenu v-if="dynamicLayout.showMenu" />
       <RouterView v-slot="{ Component }" class="flex-1 overflow-hidden container-main-content">
         <Transition name="fade" mode="out-in">
           <component :is="Component" />
