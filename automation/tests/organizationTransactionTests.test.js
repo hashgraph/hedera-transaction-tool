@@ -387,7 +387,6 @@ test.describe('Organization Settings tests', () => {
   });
 
   test('Verify user can add multiple observers', async () => {
-    test.slow();
     const { selectedObservers } = await organizationPage.createAccount(60, 2, false);
     const firstObserver = await organizationPage.getObserverEmail(0);
     const secondObserver = await organizationPage.getObserverEmail(1);
