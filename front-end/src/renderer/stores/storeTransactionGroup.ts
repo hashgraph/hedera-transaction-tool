@@ -105,17 +105,22 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     groupItems.value = newGroupItems;
   }
 
-  async function saveGroup(userId: string, description: string, groupId?: string) {
+  async function saveGroup(userId: string, description: string) {
     // Alter this when we know what 'atomic' does
-    if (groupId) {
-      await updateGroup(groupId, userId, { description, atomic: false }, groupItems.value);
-    } else {
+    if (groupItems.value[0].groupId === undefined) {
       const newGroupId = await addGroupWithDrafts(userId, description, false, groupItems.value);
       const items = await getGroupItems(newGroupId!);
       for (const [index, groupItem] of groupItems.value.entries()) {
         groupItem.groupId = newGroupId;
         groupItem.seq = items[index].seq;
       }
+    } else {
+      await updateGroup(
+        groupItems.value[0].groupId,
+        userId,
+        { description, atomic: false },
+        groupItems.value,
+      );
     }
   }
 

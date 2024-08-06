@@ -151,7 +151,6 @@ const columnClass = 'col-4 col-xxxl-3';
         calendar-class-name="is-fill"
         input-class-name="is-fill"
         calendar-cell-class-name="is-fill"
-        enable-seconds
       >
         <template #action-row>
           <div class="d-flex justify-content-end gap-4 w-100">
