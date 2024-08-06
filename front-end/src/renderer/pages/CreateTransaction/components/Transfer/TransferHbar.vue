@@ -167,37 +167,41 @@ const handleLoadFromDraft = async () => {
     transaction.value = draftTransaction;
     transactionMemo.value = draftTransaction.transactionMemo || '';
 
-    const draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
+    if (!route.query.group) {
+      const draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
 
-    if (draft.details) {
-      try {
-        const details = JSON.parse(draft.details);
-        const loadedTransfers = details.transfers.map(
-          ({
-            accountId,
-            amount,
-            isApproved,
-          }: {
-            accountId: string;
-            amount: string;
-            isApproved: boolean;
-          }) => new Transfer({ accountId, amount: Hbar.fromTinybars(amount), isApproved }),
-        );
-
-        const accountIds = loadedTransfers.map(t => t.accountId.toString());
-        for (const accountId of accountIds) {
-          if (!accountInfos.value[accountId]) {
-            accountInfos.value[accountId] = await getAccountInfo(
+      if (draft.details) {
+        try {
+          const details = JSON.parse(draft.details);
+          const loadedTransfers = details.transfers.map(
+            ({
               accountId,
-              network.mirrorNodeBaseURL,
-            );
-          }
-        }
+              amount,
+              isApproved,
+            }: {
+              accountId: string;
+              amount: string;
+              isApproved: boolean;
+            }) => new Transfer({ accountId, amount: Hbar.fromTinybars(amount), isApproved }),
+          );
 
-        transfers.value = loadedTransfers;
-      } catch {
-        /* Empty */
+          const accountIds = loadedTransfers.map(t => t.accountId.toString());
+          for (const accountId of accountIds) {
+            if (!accountInfos.value[accountId]) {
+              accountInfos.value[accountId] = await getAccountInfo(
+                accountId,
+                network.mirrorNodeBaseURL,
+              );
+            }
+          }
+
+          transfers.value = loadedTransfers;
+        } catch {
+          /* Empty */
+        }
       }
+    } else {
+      transfers.value = (transaction.value as TransferTransaction).hbarTransfersList;
     }
   }
 };

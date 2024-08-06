@@ -10,9 +10,10 @@ import { useRouter, useRoute } from 'vue-router';
 import useUserStore from '@renderer/stores/storeUser';
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 import { getPropagationButtonLabel } from '@renderer/utils';
-import { KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
+import { Hbar, KeyList, PublicKey, Transaction, TransferTransaction } from '@hashgraph/sdk';
 import { useToast } from 'vue-toast-notification';
 import { createTransactionId } from '@renderer/services/transactionService';
+import useAccountId from '@renderer/composables/useAccountId';
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
@@ -22,11 +23,13 @@ const user = useUserStore();
 const router = useRouter();
 const route = useRoute();
 const toast = useToast();
+const payerData = useAccountId();
 
 /* State */
 const groupName = ref('');
 const isTransactionSelectionModalShown = ref(false);
 const transactionGroupProcessor = ref<typeof TransactionGroupProcessor | null>(null);
+const file = ref<HTMLInputElement | null>(null);
 
 const groupEmpty = computed(() => transactionGroup.groupItems.length == 0);
 
@@ -132,6 +135,74 @@ function handleClose() {
   router.push({ name: 'transactions' });
 }
 
+function handleOnImportClick() {
+  console.log('hello');
+  if (file.value != null) {
+    file.value.click();
+  }
+}
+
+async function handleOnFileChanged(e: Event) {
+  transactionGroup.clearGroup();
+  const reader = new FileReader();
+  const maxTransactionFee = ref<Hbar>(new Hbar(2));
+  const target = e.target as HTMLInputElement;
+  reader.readAsText(target.files![0]);
+  reader.onload = () => {
+    const result = (reader.result as string).replace(/['"]+/g, '');
+    console.log(result);
+    const rows = result.split(/\r?\n|\r|\n/g);
+    console.log(rows);
+    let senderAccount = '';
+    let sendingTime = '';
+    for (const row of rows) {
+      if (row.startsWith('Sender Account')) {
+        senderAccount = row.split(',')[1];
+        console.log(senderAccount);
+      } else if (row.startsWith('Sending Time')) {
+        sendingTime = row.split(',')[1];
+      } else if (row.startsWith('Node IDs')) {
+        console.log();
+      } else if (row.startsWith('AccountID')) {
+        console.log();
+      } else if (row === '') {
+        console.log();
+      } else {
+        const startDate = row.split(',')[2];
+        const validStart = new Date(`${startDate} ${sendingTime}`);
+        const transaction = new TransferTransaction()
+          .setTransactionValidDuration(180)
+          .setMaxTransactionFee(maxTransactionFee.value);
+
+        transaction.setTransactionId(createTransactionId(senderAccount, validStart));
+        console.log(row.split(',')[0]);
+        transaction.addHbarTransfer(row.split(',')[0], row.split(',')[1]);
+        transaction.addHbarTransfer(senderAccount, Number.parseFloat(row.split(',')[1]) * -1);
+        transaction.setTransactionMemo(row.split(',')[3]);
+
+        const transactionBytes = transaction.toBytes();
+        const keys = new Array<string>();
+        if (payerData.key.value instanceof KeyList) {
+          for (const key of payerData.key.value.toArray()) {
+            keys.push(key.toString());
+          }
+        }
+        transactionGroup.addGroupItem({
+          transactionBytes: transactionBytes,
+          type: 'TransferTransaction',
+          accountId: '',
+          seq: transactionGroup.groupItems.length.toString(),
+          keyList: keys,
+          observers: [],
+          approvers: [],
+          payerAccountId: payerData.accountId.value,
+          validStart: validStart,
+        });
+      }
+    }
+  };
+}
+
 function addTransactionIds() {
   for (const groupItem of transactionGroup.groupItems) {
     const transaction = Transaction.fromBytes(groupItem.transactionBytes);
@@ -168,7 +239,12 @@ onMounted(async () => {
       </div>
       <hr class="separator my-5 w-100" />
       <div class="d-flex justify-content-between">
-        <div />
+        <div>
+          <input type="file" accept=".csv" ref="file" @change="handleOnFileChanged" />
+          <AppButton type="button" class="text-main text-primary" @click="handleOnImportClick"
+            >Import CSV</AppButton
+          >
+        </div>
         <AppButton
           type="button"
           class="text-main text-primary"
