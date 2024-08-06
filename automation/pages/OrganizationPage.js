@@ -1,5 +1,6 @@
-import { queryDatabase, queryPostgresDatabase, createTestUser } from '../utils/databaseUtil';
+import { createTestUser, queryDatabase, queryPostgresDatabase } from '../utils/databaseUtil';
 import { generateMnemonic } from '../utils/keyUtil';
+
 const BasePage = require('./BasePage');
 const RegistrationPage = require('./RegistrationPage');
 const SettingsPage = require('./SettingsPage');
@@ -71,13 +72,8 @@ class OrganizationPage extends BasePage {
   // Texts
   organizationErrorMessageSelector = 'p-organization-error-message';
   organizationNicknameTextSelector = 'span-organization-nickname';
-  firstUserOfListSelector = 'span-email-0';
   transactionDetailsIdSelector = 'p-transaction-details-id';
   transactionValidStartSelector = 'p-transaction-details-valid-start';
-  createdStageSelector = 'stepper-title-0';
-  collectingSignaturesSelector = 'stepper-title-1';
-  awaitingExecutionSelector = 'stepper-title-2';
-  executedSelector = 'stepper-title-3';
   firstSignerThresholdPublicKeySelector = 'span-public-key-0-0';
   secondSignerThresholdPublicKeySelector = 'span-public-key-1-0';
   thirdSignerThresholdPublicKeySelector = 'span-public-key-1-1';
@@ -109,8 +105,9 @@ class OrganizationPage extends BasePage {
   historyTransactionStatusIndexSelector = 'td-transaction-status-';
   historyCreatedAtIndexSelector = 'td-transaction-createdAt-';
   historyDetailsButtonIndexSelector = 'button-transaction-details-';
-
   stageBubbleIndexSelector = 'div-stepper-nav-item-bubble-';
+  observerIndexSelector = 'span-group-email-';
+  userListSelector = 'span-email-';
 
   async clickOnAddNewOrganizationButton() {
     await this.clickByTestId(this.addNewOrganizationButtonSelector);
@@ -246,6 +243,14 @@ class OrganizationPage extends BasePage {
       throw new Error('Invalid user index');
     }
     return this.users[index];
+  }
+
+  getUserPasswordByEmail(email) {
+    const user = this.users.find(user => user.email === email);
+    if (!user) {
+      throw new Error(`User with email ${email} is not defined`);
+    }
+    return user.password;
   }
 
   changeUserPassword(email, newPassword) {
@@ -548,35 +553,71 @@ class OrganizationPage extends BasePage {
     }
   }
 
-  //TODO - Align the below methods based on new implementation
+  /**
+   * Retrieves all transaction IDs from the transaction table for a user identified by the given userId.
+   *
+   * @param {number} userId - The user ID to verify.
+   * @return {Promise<string[]>} A promise that resolves to an array of transaction IDs if the user ID exists in transaction_observer.
+   * @throws {Error} If there is an error executing the query.
+   */
+  async getAllTransactionIdsForUserObserver(userId) {
+    const query = `
+    SELECT t."transactionId"
+    FROM public.transaction t
+    INNER JOIN public.transaction_observer tobs ON t.id = tobs."transactionId"
+    WHERE tobs."userId" = $1;
+  `;
 
-  // async clickOnAddApproverButton() {
-  //   await this.clickByTestId(this.addApproverButtonSelector);
-  // }
-  //
-  // async clickOnAddObserverButton() {
-  //   await this.clickByTestId(this.addObserverButtonSelector);
-  // }
-  //
-  // async clickOnSelectUserButton() {
-  //   await this.clickByTestId(this.selectUserButtonSelector);
-  // }
-  //
-  // async clickOnAddUserButton() {
-  //   await this.clickByTestIdWithIndex(this.addUserButtonSelector);
-  // }
-  //
-  // async clickOnDoneButton() {
-  //   await this.clickByTestId(this.doneButtonSelector);
-  // }
-  //
-  // async clickOnFirstUserOfList() {
-  //   await this.clickByTestIdWithIndex(this.firstUserOfListSelector);
-  // }
-  //
-  // async getFirstUserOfList() {
-  //   return await this.getTextByTestIdWithIndex(this.firstUserOfListSelector);
-  // }
+    try {
+      const result = await queryPostgresDatabase(query, [userId]);
+      return result.map(row => row.transactionId);
+    } catch (error) {
+      console.error('Error fetching transaction IDs for user observer:', error);
+      return [];
+    }
+  }
+
+  //TODO - Align the below methods based on new implementation(approver)
+
+  async clickOnAddApproverButton() {
+    await this.clickByTestId(this.addApproverButtonSelector);
+  }
+
+  async clickOnSelectUserButton() {
+    await this.clickByTestId(this.selectUserButtonSelector);
+  }
+
+  async clickOnAddUserButtonForApprover() {
+    await this.clickByTestIdWithIndex(this.addUserButtonSelector);
+  }
+
+  async clickOnAddObserverButton() {
+    await this.clickByTestId(this.addObserverButtonSelector);
+  }
+
+  async clickOnDoneButton() {
+    await this.clickByTestId(this.doneButtonSelector);
+  }
+
+  async clickOnUserOfListForApprover(index) {
+    await this.clickByTestIdWithIndex(this.userListSelector + index);
+  }
+
+  async clickOnAddUserButtonForObserver() {
+    await this.clickByTestId(this.addUserButtonSelector);
+  }
+
+  async getFirstUserOfListForApprover(index) {
+    return await this.getTextByTestIdWithIndex(this.userListSelector + index);
+  }
+
+  async clickOnUserOfObserverList(index) {
+    await this.clickByTestId(this.userListSelector + index);
+  }
+
+  async getUserOfObserverList(index) {
+    return await this.getTextByTestId(this.userListSelector + index);
+  }
 
   /**
    * Opens the date picker.
@@ -675,12 +716,6 @@ class OrganizationPage extends BasePage {
     const publicKey3 = await this.getPublicKeyByEmail(this.users[2].email);
     await this.transactionPage.addPublicKeyAtDepth('0-1', publicKey3);
 
-    //select threshold value to be 1 out of 2
-    await this.selectOptionByValue(
-      this.transactionPage.selectThresholdValueIndexSelector + '0-1',
-      '1',
-    );
-
     await this.transactionPage.clickOnDoneButtonForComplexKeyCreation();
 
     await this.transactionPage.clickOnSignAndSubmitButton();
@@ -690,6 +725,33 @@ class OrganizationPage extends BasePage {
     const transactionResponse =
       await this.transactionPage.mirrorGetTransactionResponse(transactionId);
     this.complexAccountId.push(transactionResponse.transactions[0].entity_id);
+  }
+
+  async createAccount(timeForExecution = 60, numberOfObservers = 1, isSignRequired = true) {
+    let selectedObservers = [];
+    await this.transactionPage.clickOnTransactionsMenuButton();
+    await this.transactionPage.clickOnCreateNewTransactionButton();
+    await this.transactionPage.clickOnCreateAccountTransaction();
+    await this.setDateTimeAheadBy(timeForExecution);
+
+    for (let i = 0; i < numberOfObservers; i++) {
+      await this.clickOnAddObserverButton();
+      const observerEmail = await this.getUserOfObserverList(0);
+      selectedObservers.push(observerEmail);
+      await this.clickOnUserOfObserverList(0);
+      await this.clickOnAddUserButtonForObserver();
+    }
+
+    await this.transactionPage.clickOnSignAndSubmitButton();
+    await this.transactionPage.clickSignTransactionButton();
+    if (isSignRequired) {
+      await this.clickOnSignTransactionButton();
+    }
+    const txId = await this.getTransactionDetailsId();
+    return {
+      txId,
+      selectedObservers: numberOfObservers === 1 ? selectedObservers[0] : selectedObservers,
+    };
   }
 
   async clickOnSignTransactionButton() {
@@ -969,6 +1031,34 @@ class OrganizationPage extends BasePage {
     }
   }
 
+  async isTransactionIdVisibleInProgress(transactionId, attempts = 10) {
+    for (let attempt = 0; attempt < attempts; attempt++) {
+      const count = await this.countElementsByTestId(this.inProgressTransactionIdIndexSelector);
+      for (let i = 0; i < count; i++) {
+        if ((await this.getInProgressTransactionIdByIndex(i)) === transactionId) {
+          return true;
+        }
+      }
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    return false;
+  }
+
+  async isTransactionIdVisibleReadyForExecution(transactionId, attempts = 10) {
+    for (let attempt = 0; attempt < attempts; attempt++) {
+      const count = await this.countElementsByTestId(
+        this.readyForExecutionTransactionIdIndexSelector,
+      );
+      for (let i = 0; i < count; i++) {
+        if ((await this.getReadyForExecutionTransactionIdByIndex(i)) === transactionId) {
+          return true;
+        }
+      }
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    return false;
+  }
+
   async getOrCreateUpdateTransaction(
     accountId,
     memo,
@@ -1015,6 +1105,10 @@ class OrganizationPage extends BasePage {
 
   async isThirdSignerCheckmarkVisible() {
     return await this.isElementVisible(this.thirdSignerCheckmarkSelector);
+  }
+
+  async getObserverEmail(index) {
+    return await this.getTextByTestId(this.observerIndexSelector + index);
   }
 }
 

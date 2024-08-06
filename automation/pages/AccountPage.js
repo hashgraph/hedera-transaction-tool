@@ -170,6 +170,7 @@ class AccountPage extends BasePage {
       await this.clickOnAccountsLink();
       await this.clickOnRemoveButton();
       await this.unlinkAccounts(newAccountId);
+      await this.addAccountToUnliked(newAccountId);
     }
   }
 
