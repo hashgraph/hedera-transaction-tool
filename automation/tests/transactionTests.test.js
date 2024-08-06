@@ -51,7 +51,7 @@ test.describe('Transaction tests', () => {
   test.beforeEach(async () => {
     // await transactionPage.closeCompletedTransaction();
     await transactionPage.clickOnTransactionsMenuButton();
-    // await transactionPage.closeDraftModal();
+    await transactionPage.closeDraftModal();
   });
 
   test('Verify that all elements on account create page are correct', async () => {
@@ -61,8 +61,6 @@ test.describe('Transaction tests', () => {
     const allElementsAreVisible = await transactionPage.verifyAccountCreateTransactionElements();
 
     expect(allElementsAreVisible).toBe(true);
-    await transactionPage.clickOnTransactionsMenuButton();
-    await transactionPage.closeDraftModal();
   });
 
   test('Verify confirm transaction modal is displayed with valid information for Account Create tx', async () => {
@@ -75,8 +73,6 @@ test.describe('Transaction tests', () => {
     await transactionPage.clickOnCancelTransaction();
 
     expect(confirmTransactionIsDisplayedAndCorrect).toBe(true);
-    await transactionPage.clickOnTransactionsMenuButton();
-    await transactionPage.closeDraftModal();
   });
 
   test('Verify user can execute create account transaction with single key', async () => {
@@ -284,8 +280,6 @@ test.describe('Transaction tests', () => {
       (amountToBeTransferred - amountLeftForRestAccounts).toString(),
     );
     expect(secondReceiverAmount).toContain(amountLeftForRestAccounts.toString());
-    await transactionPage.clickOnTransactionsMenuButton();
-    await transactionPage.closeDraftModal();
   });
 
   test('Verify sign button is disabled when receiver amount is higher than payer amount when doing transfer tx', async () => {
@@ -305,8 +299,6 @@ test.describe('Transaction tests', () => {
 
     const isButtonEnabled = await transactionPage.isSignAndSubmitButtonEnabled();
     expect(isButtonEnabled).toBe(false);
-    await transactionPage.clickOnTransactionsMenuButton();
-    await transactionPage.closeDraftModal();
   });
 
   test('Verify user can execute approve allowance tx', async () => {
@@ -340,8 +332,6 @@ test.describe('Transaction tests', () => {
 
     const isAllElementsVisible = await transactionPage.verifyFileCreateTransactionElements();
     expect(isAllElementsVisible).toBe(true);
-    await transactionPage.clickOnTransactionsMenuButton();
-    await transactionPage.closeDraftModal();
   });
 
   test('Verify user can execute file create tx', async () => {
