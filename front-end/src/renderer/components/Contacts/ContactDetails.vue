@@ -40,6 +40,8 @@ const toast = useToast();
 const isNicknameInputShown = ref(false);
 const nicknameInputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const publicKeyToAccounts = ref<{ [key: string]: AccountInfo[] }>({});
+const areAssociatedAccountsShown = ref(false);
+const areLinkedAccountsShown = ref(false);
 
 /* Computed */
 const publicKeyToAccountsLinked = computed(() => {
@@ -211,7 +213,17 @@ watch(
             "
             class="mt-4 row"
           >
-            <div class="col-5">
+            <div class="col-5 d-flex gap-2 flex-grow-1">
+              <span
+                v-if="areAssociatedAccountsShown"
+                class="bi bi-chevron-up cursor-pointer"
+                @click="areAssociatedAccountsShown = !areAssociatedAccountsShown"
+              ></span>
+              <span
+                v-else
+                class="bi bi-chevron-down cursor-pointer"
+                @click="areAssociatedAccountsShown = !areAssociatedAccountsShown"
+              ></span>
               <p class="text-small text-semi-bold">
                 Associated Accounts
                 <span class="text-secondary"
@@ -219,40 +231,42 @@ watch(
                 >
               </p>
             </div>
-            <div class="col-7">
-              <ul class="d-flex flex-wrap gap-3">
-                <template
-                  v-for="account in publicKeyToAccounts[key.publicKey]"
-                  :key="`${key.publicKey}${account.account}`"
-                >
-                  <li
-                    v-if="!linkedAccounts.some(a => a.account_id === account.account)"
-                    class="flex-centered text-center badge-bg rounded py-2 px-3"
+            <Transition name="fade" mode="out-in">
+              <div class="col-7" v-show="areAssociatedAccountsShown">
+                <ul class="d-flex flex-wrap gap-3">
+                  <template
+                    v-for="account in publicKeyToAccounts[key.publicKey]"
+                    :key="`${key.publicKey}${account.account}`"
                   >
-                    <p class="text-small text-secondary">
-                      {{ account.account }}
-                      <span
-                        v-if="
-                          (
-                            linkedAccounts
-                              .find(a => a.account_id === account.account)
-                              ?.nickname?.trim() || ''
-                          ).length > 0
-                        "
-                        >({{
-                          linkedAccounts.find(a => a.account_id === account.account)?.nickname
-                        }})</span
-                      >
-                    </p>
-                    <span
+                    <li
                       v-if="!linkedAccounts.some(a => a.account_id === account.account)"
-                      class="bi bi-link d-flex cursor-pointer ms-2"
-                      @click="account.account && handleLinkAccount(account.account)"
-                    ></span>
-                  </li>
-                </template>
-              </ul>
-            </div>
+                      class="flex-centered text-center badge-bg rounded py-2 px-3"
+                    >
+                      <p class="text-small text-secondary">
+                        {{ account.account }}
+                        <span
+                          v-if="
+                            (
+                              linkedAccounts
+                                .find(a => a.account_id === account.account)
+                                ?.nickname?.trim() || ''
+                            ).length > 0
+                          "
+                          >({{
+                            linkedAccounts.find(a => a.account_id === account.account)?.nickname
+                          }})</span
+                        >
+                      </p>
+                      <span
+                        v-if="!linkedAccounts.some(a => a.account_id === account.account)"
+                        class="bi bi-link d-flex cursor-pointer ms-2"
+                        @click="account.account && handleLinkAccount(account.account)"
+                      ></span>
+                    </li>
+                  </template>
+                </ul>
+              </div>
+            </Transition>
           </div>
         </Transition>
 
@@ -264,7 +278,17 @@ watch(
             "
             class="mt-4 row"
           >
-            <div class="col-5">
+            <div class="col-5 d-flex gap-2 flex-grow-1">
+              <span
+                v-if="areLinkedAccountsShown"
+                class="bi bi-chevron-up cursor-pointer"
+                @click="areLinkedAccountsShown = !areLinkedAccountsShown"
+              ></span>
+              <span
+                v-else
+                class="bi bi-chevron-down cursor-pointer"
+                @click="areLinkedAccountsShown = !areLinkedAccountsShown"
+              ></span>
               <p class="text-small text-semi-bold">
                 Linked Accounts
                 <span class="text-secondary"
@@ -272,35 +296,37 @@ watch(
                 >
               </p>
             </div>
-            <div class="col-7">
-              <ul class="d-flex flex-wrap gap-3">
-                <template
-                  v-for="account in publicKeyToAccounts[key.publicKey]"
-                  :key="`${key.publicKey}${account.account}`"
-                >
-                  <li
-                    v-if="linkedAccounts.find(a => a.account_id === account.account)"
-                    class="flex-centered text-center badge-bg rounded py-2 px-3"
+            <Transition name="fade" mode="out-in">
+              <div v-show="areLinkedAccountsShown" class="col-7">
+                <ul class="d-flex flex-wrap gap-3">
+                  <template
+                    v-for="account in publicKeyToAccounts[key.publicKey]"
+                    :key="`${key.publicKey}${account.account}`"
                   >
-                    <p class="text-small text-secondary">
-                      {{ account.account }}
-                      <span
-                        v-if="
-                          (
-                            linkedAccounts
-                              .find(a => a.account_id === account.account)
-                              ?.nickname?.trim() || ''
-                          ).length > 0
-                        "
-                        >({{
-                          linkedAccounts.find(a => a.account_id === account.account)?.nickname
-                        }})</span
-                      >
-                    </p>
-                  </li>
-                </template>
-              </ul>
-            </div>
+                    <li
+                      v-if="linkedAccounts.find(a => a.account_id === account.account)"
+                      class="flex-centered text-center badge-bg rounded py-2 px-3"
+                    >
+                      <p class="text-small text-secondary">
+                        {{ account.account }}
+                        <span
+                          v-if="
+                            (
+                              linkedAccounts
+                                .find(a => a.account_id === account.account)
+                                ?.nickname?.trim() || ''
+                            ).length > 0
+                          "
+                          >({{
+                            linkedAccounts.find(a => a.account_id === account.account)?.nickname
+                          }})</span
+                        >
+                      </p>
+                    </li>
+                  </template>
+                </ul>
+              </div>
+            </Transition>
           </div>
         </Transition>
       </div>
