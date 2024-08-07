@@ -100,7 +100,7 @@ describe('Initialize database', () => {
     prisma.migration.findFirst.mockResolvedValue({
       id: 1,
       name: '20240207141145_init',
-      created_at: 1707307905,
+      created_at: 1707315105,
     });
 
     vi.spyOn(fsp, 'readdir')
@@ -144,7 +144,7 @@ describe('Initialize database', () => {
     prisma.migration.findFirst.mockResolvedValue({
       id: 1,
       name: '20240207141145_init',
-      created_at: 1707307905,
+      created_at: 1707315105,
     });
 
     vi.spyOn(fsp, 'readdir')
@@ -192,7 +192,7 @@ describe('Initialize database', () => {
     prisma.migration.findFirst.mockResolvedValue({
       id: 1,
       name: '20240207141145_init',
-      created_at: 1707307905,
+      created_at: 1707315105,
     });
 
     vi.spyOn(fsp, 'readdir')
