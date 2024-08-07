@@ -56,7 +56,7 @@ const handleRemoveObserver = (userId: number) => {
     </div>
     <div class="mt-3">
       <ul class="d-flex flex-wrap gap-3">
-        <template v-for="{ user, nickname } in users" :key="user.email">
+        <template v-for="({ user, nickname }, i) in users" :key="user.email">
           <li class="text-center badge-bg rounded py-2 px-3">
             <p class="text-small text-nowrap">
               <span
@@ -64,7 +64,7 @@ const handleRemoveObserver = (userId: number) => {
                 class="bi bi-x-lg text-micro cursor-pointer me-2"
                 @click="handleRemoveObserver(user.id)"
               ></span>
-              <span>
+              <span :data-testid="`span-group-email-${i}`">
                 {{ user.email }}
               </span>
               <span v-if="nickname.trim().length > 0"> ({{ nickname }})</span>
