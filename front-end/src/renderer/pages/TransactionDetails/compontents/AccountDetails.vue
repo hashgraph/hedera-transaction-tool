@@ -191,6 +191,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
 
     <!-- Key -->
     <div
+      v-if="transaction.key"
       class="col-12 my-3"
       :class="{ 'mt-3': transaction instanceof AccountUpdateTransaction && transaction.accountId }"
     >
@@ -215,7 +216,10 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
 
     <!-- Memo -->
     <div
-      v-if="transaction.accountMemo && transaction.accountMemo.trim().length > 0"
+      v-if="
+        transaction instanceof AccountCreateTransaction ||
+        (transaction.accountMemo !== null && transaction.accountMemo.trim().length > 0)
+      "
       class="col-12 my-3"
     >
       <h4 :class="detailItemLabelClass">Memo</h4>
@@ -225,7 +229,14 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
     </div>
 
     <!-- Staking -->
-    <div :class="commonColClass">
+    <div
+      v-if="
+        transaction instanceof AccountCreateTransaction ||
+        transaction.stakedNodeId !== null ||
+        transaction.stakedAccountId !== null
+      "
+      :class="commonColClass"
+    >
       <h4 :class="detailItemLabelClass">Staking</h4>
       <p :class="detailItemValueClass" data-testid="p-account-details-staking">
         {{
@@ -233,13 +244,21 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
             ? `Account ${transaction.stakedAccountId.toString()}`
             : transaction.stakedNodeId && isAccountId(transaction.stakedNodeId.toString())
               ? `Node ${transaction.stakedNodeId.toString()}`
-              : 'None'
+              : transaction instanceof AccountCreateTransaction
+                ? 'None'
+                : 'Unstaked'
         }}
       </p>
     </div>
 
     <!-- Decline staking rewards -->
-    <div :class="commonColClass">
+    <div
+      v-if="
+        transaction instanceof AccountCreateTransaction ||
+        transaction.declineStakingRewards !== null
+      "
+      :class="commonColClass"
+    >
       <h4 :class="detailItemLabelClass">Decline Staking Rewards</h4>
       <p :class="detailItemValueClass" data-testid="p-account-details-decline-rewards">
         {{ transaction.declineStakingRewards ? 'Yes' : 'No' }}
@@ -247,7 +266,13 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
     </div>
 
     <!-- Receiver signature required -->
-    <div :class="commonColClass">
+    <div
+      v-if="
+        transaction instanceof AccountCreateTransaction ||
+        transaction.receiverSignatureRequired !== null
+      "
+      :class="commonColClass"
+    >
       <h4 :class="detailItemLabelClass">Receiver Signature Required</h4>
       <p :class="detailItemValueClass" data-testid="p-account-details-receiver-sig-required">
         {{ transaction.receiverSignatureRequired ? 'Yes' : 'No' }}
@@ -266,7 +291,13 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
     </div>
 
     <!-- Max automatic token associations -->
-    <div v-if="transaction.maxAutomaticTokenAssociations" :class="commonColClass">
+    <div
+      v-if="
+        transaction instanceof AccountCreateTransaction ||
+        transaction.maxAutomaticTokenAssociations !== null
+      "
+      :class="commonColClass"
+    >
       <h4 :class="detailItemLabelClass">Max Automatic Token Associations</h4>
       <p :class="detailItemValueClass">
         {{ transaction.maxAutomaticTokenAssociations }}

@@ -190,19 +190,35 @@ const handleLocalStored = (id: string) => {
 
 /* Functions */
 function createTransaction() {
+  const oldData = accountData.accountInfo.value;
+
   const transaction = new AccountUpdateTransaction()
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(maxTransactionFee.value)
-    .setReceiverSignatureRequired(newAccountData.receiverSignatureRequired)
-    .setDeclineStakingReward(!newAccountData.acceptStakingRewards)
-    .setMaxAutomaticTokenAssociations(Number(newAccountData.maxAutomaticTokenAssociations))
-    .setAccountMemo(newAccountData.memo || '');
+    .setMaxTransactionFee(maxTransactionFee.value);
 
   if (isAccountId(payerData.accountId.value)) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
   }
 
   isAccountId(accountData.accountId.value) && transaction.setAccountId(accountData.accountId.value);
+
+  if (oldData?.receiverSignatureRequired !== newAccountData.receiverSignatureRequired) {
+    transaction.setReceiverSignatureRequired(newAccountData.receiverSignatureRequired);
+  }
+
+  if (oldData?.declineReward !== !newAccountData.acceptStakingRewards) {
+    transaction.setDeclineStakingReward(!newAccountData.acceptStakingRewards);
+  }
+
+  if (oldData?.maxAutomaticTokenAssociations !== newAccountData.maxAutomaticTokenAssociations) {
+    transaction.setMaxAutomaticTokenAssociations(
+      Number(newAccountData.maxAutomaticTokenAssociations),
+    );
+  }
+
+  if (oldData?.memo !== newAccountData.memo) {
+    transaction.setAccountMemo(newAccountData.memo || '');
+  }
 
   if (newOwnerKey.value && accountData.key.value) {
     !compareKeys(newOwnerKey.value, accountData.key.value) && transaction.setKey(newOwnerKey.value);
@@ -211,21 +227,24 @@ function createTransaction() {
   }
 
   if (stakeType.value === 'None') {
-    transaction.clearStakedAccountId();
-    transaction.clearStakedNodeId();
+    oldData?.stakedAccountId && transaction.clearStakedAccountId();
+    oldData?.stakedNodeId !== null && transaction.clearStakedNodeId();
   } else if (stakeType.value === 'Account') {
     if (
       !isAccountId(newAccountData.stakedAccountId) ||
       newAccountData.stakedAccountId === '0.0.0'
     ) {
       transaction.clearStakedAccountId();
-    } else if (isAccountId(newAccountData.stakedAccountId)) {
+    } else if (
+      isAccountId(newAccountData.stakedAccountId) &&
+      oldData?.stakedAccountId?.toString() !== newAccountData.stakedAccountId
+    ) {
       transaction.setStakedAccountId(newAccountData.stakedAccountId);
     }
   } else if (stakeType.value === 'Node') {
     if (newAccountData.stakedNodeId === null) {
       transaction.clearStakedNodeId();
-    } else {
+    } else if (oldData?.stakedNodeId !== newAccountData.stakedNodeId) {
       transaction.setStakedNodeId(newAccountData.stakedNodeId);
     }
   }
@@ -270,7 +289,7 @@ watch(accountData.accountInfo, accountInfo => {
     newAccountData.stakedNodeId = accountInfo.stakedNodeId;
     stakeType.value = accountInfo.stakedAccountId
       ? 'Account'
-      : accountInfo.stakedNodeId
+      : accountInfo.stakedNodeId !== null
         ? 'Node'
         : 'None';
     newAccountData.acceptStakingRewards = !accountInfo.declineReward;
