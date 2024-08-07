@@ -3,8 +3,10 @@ import { computed, ref, watch, onMounted } from 'vue';
 import { FileAppendTransaction, Hbar, Key, KeyList, Transaction } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 import { useToast } from 'vue-toast-notification';
 import { useRoute, useRouter } from 'vue-router';
@@ -28,8 +30,6 @@ import TransactionProcessor from '@renderer/components/Transaction/TransactionPr
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
-import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
-import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 /* Stores */
 const user = useUserStore();
