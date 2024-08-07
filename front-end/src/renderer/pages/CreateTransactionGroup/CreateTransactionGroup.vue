@@ -1,19 +1,26 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
+
+import { Hbar, KeyList, PublicKey, Transaction, TransferTransaction } from '@hashgraph/sdk';
+
+import useUserStore from '@renderer/stores/storeUser';
+import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
+
+import { useToast } from 'vue-toast-notification';
+import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router';
+import useAccountId from '@renderer/composables/useAccountId';
+import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
+
+import { createTransactionId } from '@renderer/services/transactionService';
+
+import { getPropagationButtonLabel } from '@renderer/utils';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import TransactionSelectionModal from '@renderer/components/TransactionSelectionModal.vue';
 import TransactionGroupProcessor from '@renderer/components/Transaction/TransactionGroupProcessor.vue';
-import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
-import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router';
-import useUserStore from '@renderer/stores/storeUser';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
-import { getPropagationButtonLabel } from '@renderer/utils';
-import { Hbar, KeyList, PublicKey, Transaction, TransferTransaction } from '@hashgraph/sdk';
-import { useToast } from 'vue-toast-notification';
-import { createTransactionId } from '@renderer/services/transactionService';
-import useAccountId from '@renderer/composables/useAccountId';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
@@ -26,6 +33,11 @@ const router = useRouter();
 const route = useRoute();
 const toast = useToast();
 const payerData = useAccountId();
+useSetDynamicLayout({
+  loggedInClass: true,
+  shouldSetupAccountClass: false,
+  showMenu: true,
+});
 
 /* State */
 const groupName = ref('');
