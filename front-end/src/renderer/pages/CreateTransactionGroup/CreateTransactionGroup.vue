@@ -230,9 +230,13 @@ onMounted(async () => {
   groupName.value = transactionGroup.description;
 });
 
-onBeforeRouteLeave(async () => {
+onBeforeRouteLeave(async to => {
   if (transactionGroup.groupItems.length == 0 || route.query.id) {
     transactionGroup.clearGroup();
+    return true;
+  }
+
+  if (to.fullPath.startsWith('/create-transaction/')) {
     return true;
   }
 
