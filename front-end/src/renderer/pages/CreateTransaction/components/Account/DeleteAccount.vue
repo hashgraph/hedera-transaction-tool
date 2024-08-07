@@ -7,7 +7,7 @@ import { TransactionApproverDto } from '@main/shared/interfaces/organization/app
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 

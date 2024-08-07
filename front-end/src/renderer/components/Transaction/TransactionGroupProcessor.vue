@@ -44,11 +44,7 @@ import AppLoader from '@renderer/components/ui/AppLoader.vue';
 const props = defineProps<{
   observers?: number[];
   approvers?: TransactionApproverDto[];
-  onExecuted?: (
-    response: TransactionResponse,
-    receipt: TransactionReceipt,
-    chunksAmount?: number,
-  ) => void;
+  onExecuted?: (id: string) => void;
   onSubmitted?: (id: number, body: string) => void;
   onCloseSuccessModalClick?: () => void;
   watchExecutedModalShown?: (shown: boolean) => void;
@@ -215,8 +211,6 @@ async function executeTransaction(transactionBytes: Uint8Array, groupItem?: Grou
 
     isExecutedModalShown.value = true;
 
-    // props.onExecuted && props.onExecuted(response, receipt);
-
     // if (route.query.draftId) {
     //   try {
     //     const draft = await getDraft(route.query.draftId.toString());
@@ -282,8 +276,8 @@ async function executeTransaction(transactionBytes: Uint8Array, groupItem?: Grou
     }
     await addGroupItem(groupItem, newGroupId.value, storedTransaction.id);
   }
-  // Modify transaction group items using transactionGroup.groupId and transactionGroup.seq and storedTransaction.id
-  // Delete drafts
+
+  props.onExecuted && props.onExecuted(storedTransaction.id);
 }
 
 async function sendSignedTransactionsToOrganization() {
@@ -369,8 +363,6 @@ async function sendSignedTransactionsToOrganization() {
       }
     });
   }
-
-  transactionGroup.clearGroup();
 }
 
 async function uploadObservers(transactionId: number, seqId: number) {

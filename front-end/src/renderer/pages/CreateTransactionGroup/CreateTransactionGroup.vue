@@ -133,11 +133,16 @@ async function handleSignSubmit() {
   }
 }
 
-function handleExecuted(id: number) {
-  router.push({
-    name: 'transactionGroupDetails',
-    params: { id },
-  });
+function handleExecuted(id: string) {
+  transactionGroup.clearGroup();
+  if (user.selectedOrganization) {
+    router.push({
+      name: 'transactionGroupDetails',
+      params: { id },
+    });
+  } else {
+    router.push({ name: 'transactions' });
+  }
 }
 
 function handleSubmit(id: number) {
@@ -236,7 +241,10 @@ onBeforeRouteLeave(async to => {
     return true;
   }
 
-  if (to.fullPath.startsWith('/create-transaction/')) {
+  if (
+    to.fullPath.startsWith('/create-transaction/') ||
+    to.fullPath.startsWith('/transaction-group/')
+  ) {
     return true;
   }
 
@@ -247,7 +255,7 @@ onBeforeRouteLeave(async to => {
 </script>
 <template>
   <div>
-    <div class="p-5 overflow-y-auto">
+    <div class="p-5 overflow-y-auto" style="height: 100%">
       <div class="d-flex align-items-center">
         <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">
           <i class="bi bi-arrow-left"></i>
@@ -285,11 +293,12 @@ onBeforeRouteLeave(async to => {
           <div
             v-for="(groupItem, index) in transactionGroup.groupItems"
             :key="groupItem.transactionBytes.toString()"
+            class="pb-3"
           >
             <div class="d-flex justify-content-between p-4 transaction-group-row">
-              <div>
+              <div class="align-self-center">
                 <div>{{ groupItem.type }}</div>
-                <div>{{ groupItem.accountId }}</div>
+                <div v-if="groupItem.accountId">{{ groupItem.accountId }}</div>
               </div>
               <div class="d-flex">
                 <AppButton
@@ -316,7 +325,7 @@ onBeforeRouteLeave(async to => {
               </div>
             </div>
           </div>
-          <div class="mt-5">
+          <div class="mt-4">
             <AppButton color="primary" type="submit">Save Group</AppButton>
             <AppButton color="primary" type="button" @click="handleSignSubmit" class="ms-4">
               <span class="bi bi-send"></span>

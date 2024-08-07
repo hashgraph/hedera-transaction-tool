@@ -56,7 +56,6 @@ model Organization {
   keyPairs                KeyPair[]
   OrganizationCredentials OrganizationCredentials[]
   Contact                 Contact[]
-  Transaction             Transaction[]
 }
 
 model OrganizationCredentials {
@@ -92,8 +91,6 @@ model Transaction {
   creator_public_key String?
   network            String
   user               User          @relation(fields: [user_id], references: [id])
-  organization_id    String?
-  organization       Organization? @relation(fields: [organization_id], references: [id])
 
   GroupItem GroupItem[]
 }
