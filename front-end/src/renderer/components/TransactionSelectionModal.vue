@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import { transactionTypeKeys } from '@renderer/pages/CreateTransaction/txTypeComponentMapping';
 
+import useUserStore from '@renderer/stores/storeUser';
+
 import AppModal from '@renderer/components/ui/AppModal.vue';
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 /* Props */
 const props = defineProps<{
@@ -13,40 +16,54 @@ const props = defineProps<{
 /* Emits */
 const emit = defineEmits(['update:show']);
 
+/* Stores */
+const user = useUserStore();
+
 /* State */
 const show = ref(props.show);
 const activeGroupIndex = ref(0);
 
-/* Misc */
-const transactionGroups = [
-  {
-    groupTitle: 'Account',
-    items: [
-      { label: 'Create Account', name: transactionTypeKeys.createAccount },
-      { label: 'Update Account', name: transactionTypeKeys.updateAccount },
-      { label: 'Transfer Tokens', name: transactionTypeKeys.transfer },
-      { label: 'Delete Account', name: transactionTypeKeys.deleteAccount },
-      { label: 'Approve Allowance', name: transactionTypeKeys.approveAllowance },
-      // { label: 'Account Info', name: transactionTypeKeys.accountInfo },
-    ],
-  },
-  {
-    groupTitle: 'File',
-    items: [
-      { label: 'Create File', name: transactionTypeKeys.createFile },
-      { label: 'Update File', name: transactionTypeKeys.updateFile },
-      { label: 'Read File', name: transactionTypeKeys.readFile },
-      { label: 'Append to File', name: transactionTypeKeys.appendToFile },
-      // { label: 'Delete File', name: transactionTypeKeys.deleteFile },
-    ],
-  },
-  // { groupTitle: 'Token Service', items: [] },
-  // { groupTitle: 'Smart Contract Service', items: [] },
-  { groupTitle: 'Node', items: [{ label: 'Freeze', name: transactionTypeKeys.freeze }] },
-  // { groupTitle: 'Token Service', items: [] },
-  // { groupTitle: 'Schedule Service', items: [] },
-  // { groupTitle: 'Freeze Service', items: [] },
-];
+/* Computed */
+const transactionGroups = computed(() => {
+  const groups = [
+    {
+      groupTitle: 'Account',
+      items: [
+        { label: 'Create Account', name: transactionTypeKeys.createAccount },
+        { label: 'Update Account', name: transactionTypeKeys.updateAccount },
+        { label: 'Transfer Tokens', name: transactionTypeKeys.transfer },
+        { label: 'Delete Account', name: transactionTypeKeys.deleteAccount },
+        { label: 'Approve Allowance', name: transactionTypeKeys.approveAllowance },
+        // { label: 'Account Info', name: transactionTypeKeys.accountInfo },
+      ],
+    },
+    {
+      groupTitle: 'File',
+      items: [
+        { label: 'Create File', name: transactionTypeKeys.createFile },
+        { label: 'Update File', name: transactionTypeKeys.updateFile },
+        { label: 'Read File', name: transactionTypeKeys.readFile },
+        { label: 'Append to File', name: transactionTypeKeys.appendToFile },
+        // { label: 'Delete File', name: transactionTypeKeys.deleteFile },
+      ],
+    },
+    // { groupTitle: 'Token Service', items: [] },
+    // { groupTitle: 'Smart Contract Service', items: [] },
+    { groupTitle: 'Node', items: [{ label: 'Freeze', name: transactionTypeKeys.freeze }] },
+    // { groupTitle: 'Token Service', items: [] },
+    // { groupTitle: 'Schedule Service', items: [] },
+    // { groupTitle: 'Freeze Service', items: [] },
+  ];
+
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    const fileGroup = groups.find(group => group.groupTitle === 'File');
+    if (fileGroup) {
+      const toRemove = [transactionTypeKeys.appendToFile, transactionTypeKeys.updateFile];
+      fileGroup.items = fileGroup.items.filter(item => !toRemove.includes(item.name));
+    }
+  }
+  return groups;
+});
 
 /* Watchers */
 watch(show, value => {
