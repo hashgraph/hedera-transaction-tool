@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, ref, watch } from 'vue';
+import { onBeforeMount, ref, watch } from 'vue';
 
 import { HederaAccount } from '@prisma/client';
 
@@ -11,16 +11,15 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
 
-import { useToast } from 'vue-toast-notification';
-
 import { addContact, updateContact } from '@renderer/services/contactsService';
 import { getAccountsByPublicKeysParallel } from '@renderer/services/mirrorNodeDataService';
-import { add, getAll } from '@renderer/services/accountsService';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import ContactDetailsAssociatedAccounts from '@renderer/components/Contacts/ContactDetailsAssociatedAccounts.vue';
+import ContactDetailsLinkedAccounts from '@renderer/components/Contacts/ContactDetailsLinkedAccounts.vue';
 
 /* Props */
 const props = defineProps<{
@@ -33,30 +32,10 @@ const user = useUserStore();
 const network = useNetworkStore();
 const contacts = useContactsStore();
 
-/* Composables */
-const toast = useToast();
-
 /* State */
 const isNicknameInputShown = ref(false);
 const nicknameInputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const publicKeyToAccounts = ref<{ [key: string]: AccountInfo[] }>({});
-
-/* Computed */
-const publicKeyToAccountsLinked = computed(() => {
-  const result: { [key: string]: AccountInfo[] } = {};
-
-  Object.keys(publicKeyToAccounts.value).forEach(key => {
-    const linkedAccs = publicKeyToAccounts.value[key].filter(account =>
-      props.linkedAccounts.some(linkedAccount => linkedAccount.account_id === account.account),
-    );
-
-    if (linkedAccs.length > 0) {
-      result[key] = linkedAccs;
-    }
-  });
-
-  return result;
-});
 
 /* Emits */
 const emit = defineEmits(['update:linkedAccounts', 'update:remove']);
@@ -108,26 +87,6 @@ const handleAccountsLookup = async () => {
   publicKeyToAccounts.value = await getAccountsByPublicKeysParallel(
     network.mirrorNodeBaseURL,
     props.contact.userKeys.map(key => key.publicKey),
-  );
-};
-
-const handleLinkAccount = async (accountId: string) => {
-  if (!isUserLoggedIn(user.personal) || !isLoggedInOrganization(user.selectedOrganization)) {
-    throw new Error('User is not logged in an organization');
-  }
-
-  await add(user.personal.id, accountId, network.network, '');
-
-  toast.success('Account linked successfully');
-
-  emit(
-    'update:linkedAccounts',
-    await getAll({
-      where: {
-        user_id: user.personal.id,
-        network: network.network,
-      },
-    }),
   );
 };
 
@@ -204,105 +163,21 @@ watch(
             </p>
           </div>
         </div>
-        <Transition name="fade" mode="out-in">
-          <div
-            v-if="
-              publicKeyToAccounts[key.publicKey] && publicKeyToAccounts[key.publicKey].length > 0
-            "
-            class="mt-4 row"
-          >
-            <div class="col-5">
-              <p class="text-small text-semi-bold">
-                Associated Accounts
-                <span class="text-secondary"
-                  >({{ publicKeyToAccounts[key.publicKey].length }})</span
-                >
-              </p>
-            </div>
-            <div class="col-7">
-              <ul class="d-flex flex-wrap gap-3">
-                <template
-                  v-for="account in publicKeyToAccounts[key.publicKey]"
-                  :key="`${key.publicKey}${account.account}`"
-                >
-                  <li
-                    v-if="!linkedAccounts.some(a => a.account_id === account.account)"
-                    class="flex-centered text-center badge-bg rounded py-2 px-3"
-                  >
-                    <p class="text-small text-secondary">
-                      {{ account.account }}
-                      <span
-                        v-if="
-                          (
-                            linkedAccounts
-                              .find(a => a.account_id === account.account)
-                              ?.nickname?.trim() || ''
-                          ).length > 0
-                        "
-                        >({{
-                          linkedAccounts.find(a => a.account_id === account.account)?.nickname
-                        }})</span
-                      >
-                    </p>
-                    <span
-                      v-if="!linkedAccounts.some(a => a.account_id === account.account)"
-                      class="bi bi-link d-flex cursor-pointer ms-2"
-                      @click="account.account && handleLinkAccount(account.account)"
-                    ></span>
-                  </li>
-                </template>
-              </ul>
-            </div>
-          </div>
-        </Transition>
 
-        <Transition name="fade" mode="out-in">
-          <div
-            v-if="
-              publicKeyToAccountsLinked[key.publicKey] &&
-              publicKeyToAccountsLinked[key.publicKey].length
-            "
-            class="mt-4 row"
-          >
-            <div class="col-5">
-              <p class="text-small text-semi-bold">
-                Linked Accounts
-                <span class="text-secondary"
-                  >({{ publicKeyToAccountsLinked[key.publicKey].length }})</span
-                >
-              </p>
-            </div>
-            <div class="col-7">
-              <ul class="d-flex flex-wrap gap-3">
-                <template
-                  v-for="account in publicKeyToAccounts[key.publicKey]"
-                  :key="`${key.publicKey}${account.account}`"
-                >
-                  <li
-                    v-if="linkedAccounts.find(a => a.account_id === account.account)"
-                    class="flex-centered text-center badge-bg rounded py-2 px-3"
-                  >
-                    <p class="text-small text-secondary">
-                      {{ account.account }}
-                      <span
-                        v-if="
-                          (
-                            linkedAccounts
-                              .find(a => a.account_id === account.account)
-                              ?.nickname?.trim() || ''
-                          ).length > 0
-                        "
-                        >({{
-                          linkedAccounts.find(a => a.account_id === account.account)?.nickname
-                        }})</span
-                      >
-                    </p>
-                  </li>
-                </template>
-              </ul>
-            </div>
-          </div>
-        </Transition>
+        <ContactDetailsAssociatedAccounts
+          :publicKey="key.publicKey"
+          :accounts="publicKeyToAccounts[key.publicKey]"
+          :linkedAccounts="linkedAccounts"
+          @update:linkedAccounts="emit('update:linkedAccounts', $event)"
+          class="mt-4"
+        />
+
+        <ContactDetailsLinkedAccounts
+          :publicKey="key.publicKey"
+          :accounts="publicKeyToAccounts[key.publicKey]"
+          :allLinkedAccounts="linkedAccounts"
+          class="mt-4"
+        />
       </div>
     </template>
   </div>
