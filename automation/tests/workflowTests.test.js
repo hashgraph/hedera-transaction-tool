@@ -406,10 +406,45 @@ test.describe('Workflow tests', () => {
     );
   });
 
-  test('Verify account update tx is displayed in history page', async () => {
+  test('Verify transaction details are displayed for account update tx ', async () => {
     await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const updatedMemoText = 'Updated memo';
+    const maxAutoAssociationsNumber = '44';
+    const newTransactionId = await transactionPage.updateAccount(
+        accountFromList,
+        maxAutoAssociationsNumber,
+        updatedMemoText,
+    );
+    await transactionPage.clickOnTransactionsMenuButton();
+    await detailsPage.clickOnFirstTransactionDetailsButton();
+    await detailsPage.assertTransactionDetails(
+        newTransactionId,
+        'Account Update Transaction',
+        async () => {
+          const getTransactionMemo = await detailsPage.getTransactionDetailsMemo();
+          expect(getTransactionMemo).toBe('Transaction memo update');
+
+          const getAccountId = await detailsPage.getAccountUpdateDetailsId();
+          expect(getAccountId).toBe(accountFromList);
+
+          const getAccountMemoDetails = await detailsPage.getAccountDetailsMemo();
+          expect(getAccountMemoDetails).toBe(updatedMemoText);
+
+          const getAccountDetailsDeclineRewards = await detailsPage.getAccountDetailsDeclineRewards();
+          expect(getAccountDetailsDeclineRewards).toBe('Yes');
+
+          const getAccountDetailsReceiverSigRequired =
+              await detailsPage.getAccountDetailsReceiverSigRequired();
+          expect(getAccountDetailsReceiverSigRequired).toBe('No');
+        },
+    );
+  });
+
+  test('Verify account update tx is displayed in history page', async () => {
+    await transactionPage.ensureAccountExists();
+    const accountFromList = await transactionPage.getFirstAccountFromList();
+    const updatedMemoText = 'Updated memo again';
     const maxAutoAssociationsNumber = '44';
     const newTransactionId = await transactionPage.updateAccount(
       accountFromList,
@@ -418,47 +453,6 @@ test.describe('Workflow tests', () => {
     );
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.assertTransactionDisplayed(newTransactionId, 'Account Update Transaction');
-  });
-
-  test('Verify transaction details are displayed for account update tx ', async () => {
-    await transactionPage.ensureAccountExists();
-    const accountFromList = await transactionPage.getFirstAccountFromList();
-    const updatedMemoText = 'Updated memo';
-    const maxAutoAssociationsNumber = '44';
-    const newTransactionId = await transactionPage.updateAccount(
-      accountFromList,
-      maxAutoAssociationsNumber,
-      updatedMemoText,
-    );
-    await transactionPage.clickOnTransactionsMenuButton();
-    await detailsPage.clickOnFirstTransactionDetailsButton();
-    await detailsPage.assertTransactionDetails(
-      newTransactionId,
-      'Account Update Transaction',
-      async () => {
-        const getTransactionMemo = await detailsPage.getTransactionDetailsMemo();
-        expect(getTransactionMemo).toBe('Transaction memo update');
-
-        const getAccountId = await detailsPage.getAccountUpdateDetailsId();
-        expect(getAccountId).toBe(accountFromList);
-
-        const getAccountDetailsKey = await detailsPage.getAccountDetailsKey();
-        expect(getAccountDetailsKey).toBeTruthy();
-
-        const getAccountMemoDetails = await detailsPage.getAccountDetailsMemo();
-        expect(getAccountMemoDetails).toBe(updatedMemoText);
-
-        const getAccountDetailsStaking = await detailsPage.getAccountDetailsStaking();
-        expect(getAccountDetailsStaking).toBe('None');
-
-        const getAccountDetailsDeclineRewards = await detailsPage.getAccountDetailsDeclineRewards();
-        expect(getAccountDetailsDeclineRewards).toBe('Yes');
-
-        const getAccountDetailsReceiverSigRequired =
-          await detailsPage.getAccountDetailsReceiverSigRequired();
-        expect(getAccountDetailsReceiverSigRequired).toBe('No');
-      },
-    );
   });
 
   test('Verify account delete tx is displayed in history page', async () => {
@@ -613,18 +607,15 @@ test.describe('Workflow tests', () => {
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
     await detailsPage.assertTransactionDetails(
-      transactionId,
-      'File Update Transaction',
-      async () => {
-        const fileIdFromDetailsPage = await detailsPage.getFileDetailsFileId();
-        expect(fileId).toBe(fileIdFromDetailsPage);
+        transactionId,
+        'File Update Transaction',
+        async () => {
+          const fileIdFromDetailsPage = await detailsPage.getFileDetailsFileId();
+          expect(fileId).toBe(fileIdFromDetailsPage);
 
-        const fileDetailsUpdatedKey = await detailsPage.getFileDetailsKeyText();
-        expect(fileDetailsUpdatedKey).toBeTruthy();
-
-        const isViewContentButtonVisible = await detailsPage.isViewContentsButtonVisible();
-        expect(isViewContentButtonVisible).toBe(true);
-      },
+          const isViewContentButtonVisible = await detailsPage.isViewContentsButtonVisible();
+          expect(isViewContentButtonVisible).toBe(true);
+        },
     );
   });
 

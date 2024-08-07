@@ -155,6 +155,7 @@ const handleCreate = async e => {
     }
 
     transaction.value = newTransaction;
+
     await transactionProcessor.value?.process(transactionKey.value, chunkSize.value, 1);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
@@ -208,8 +209,11 @@ const handleSubmit = async (id: number) => {
 function createTransaction() {
   const transaction = new FileUpdateTransaction()
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(maxTransactionFee.value)
-    .setFileMemo(memo.value);
+    .setMaxTransactionFee(maxTransactionFee.value);
+
+  if (memo.value.length > 0 && memo.value.length <= MEMO_MAX_LENGTH) {
+    transaction.setFileMemo(memo.value);
+  }
 
   if (isAccountId(payerData.accountId.value)) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));

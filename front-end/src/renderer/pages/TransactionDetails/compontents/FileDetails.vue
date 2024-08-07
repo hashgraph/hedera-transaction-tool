@@ -193,7 +193,9 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
     <!-- Key -->
     <div
       v-if="
-        transaction instanceof FileUpdateTransaction || transaction instanceof FileCreateTransaction
+        (transaction instanceof FileUpdateTransaction ||
+          transaction instanceof FileCreateTransaction) &&
+        transaction.keys !== null
       "
       class="col-12 mb-3"
       :class="{ 'mt-3': transaction instanceof FileUpdateTransaction && transaction.fileId }"
@@ -244,7 +246,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
     </div>
 
     <!-- Contents -->
-    <div v-if="transaction.contents" :class="commonColClass">
+    <div v-if="transaction.contents !== null" :class="commonColClass">
       <h4 :class="detailItemLabelClass">Contents</h4>
       <p :class="detailItemValueClass">
         <span

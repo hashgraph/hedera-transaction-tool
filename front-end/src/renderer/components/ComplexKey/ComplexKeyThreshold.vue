@@ -44,7 +44,9 @@ const handleThresholdChange = (e: Event) => {
 };
 
 const handleSelectAccount = (key: Key) => {
-  if (key instanceof PublicKey && isPublicKeyInKeyList(key, props.keyList)) {
+  const keys = new KeyList(props.keyList.toArray().filter(key => key instanceof PublicKey));
+
+  if (key instanceof PublicKey && isPublicKeyInKeyList(key, keys)) {
     toast.error('Public key already exists in the key list');
   } else {
     const keys = props.keyList.toArray();
@@ -55,7 +57,9 @@ const handleSelectAccount = (key: Key) => {
 };
 
 const handleAddPublicKey = (publicKey: PublicKey) => {
-  if (!isPublicKeyInKeyList(publicKey, props.keyList)) {
+  const keys = new KeyList(props.keyList.toArray().filter(key => key instanceof PublicKey));
+
+  if (!isPublicKeyInKeyList(publicKey, keys)) {
     const keys = props.keyList.toArray();
     keys.push(publicKey);
     emitNewKeyList(keys, props.keyList.threshold);
