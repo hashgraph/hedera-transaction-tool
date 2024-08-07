@@ -25,7 +25,7 @@ let registrationPage, loginPage, transactionPage, organizationPage, settingsPage
 let firstUser, secondUser, thirdUser;
 let complexKeyAccountId;
 
-test.describe('Organization Settings tests', () => {
+test.describe('Organization Transaction tests', () => {
   test.beforeAll(async () => {
     test.slow();
     await resetDbState();
@@ -292,7 +292,7 @@ test.describe('Organization Settings tests', () => {
     await organizationPage.clickOnReadyToSignTab();
     await organizationPage.clickOnSubmitSignButtonByTransactionId(txId);
     await organizationPage.clickOnSignTransactionButton();
-    await delay(3000);
+    await delay(6000);
     await transactionPage.mirrorGetTransactionResponse(txId);
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnHistoryTab();
@@ -317,5 +317,81 @@ test.describe('Organization Settings tests', () => {
 
     const isStageFourCompleted = await organizationPage.isTransactionStageCompleted(3);
     expect(isStageFourCompleted).toBe(true);
+  });
+
+  test('Verify transaction is not visible if user is not an observer', async () => {
+    const txId = await organizationPage.createAccount();
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.logoutFromOrganization();
+
+    await organizationPage.signInOrganization(
+      secondUser.email,
+      secondUser.password,
+      globalCredentials.password,
+    );
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.clickOnInProgressTab();
+    const isTransactionVisible = await organizationPage.isTransactionIdVisibleInProgress(txId, 5);
+    expect(isTransactionVisible).toBe(false);
+  });
+
+  test('Verify observer is listed in the transaction details', async () => {
+    const { selectedObservers } = await organizationPage.createAccount(60, 1);
+    const firstObserver = await organizationPage.getObserverEmail(0);
+    expect(selectedObservers).toBe(firstObserver);
+    await transactionPage.clickOnTransactionsMenuButton();
+  });
+
+  test('Verify transaction is visible for an observer while transaction is "In progress"', async () => {
+    const { txId, selectedObservers } = await organizationPage.createAccount(60, 1, false);
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.logoutFromOrganization();
+
+    await organizationPage.signInOrganization(
+      selectedObservers,
+      organizationPage.getUserPasswordByEmail(selectedObservers),
+      globalCredentials.password,
+    );
+
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.clickOnInProgressTab();
+    const isTransactionVisible = await organizationPage.isTransactionIdVisibleInProgress(txId);
+    expect(isTransactionVisible).toBe(true);
+  });
+
+  test('Verify transaction is visible for an observer while transaction is "Ready for execution"', async () => {
+    const { txId, selectedObservers } = await organizationPage.createAccount(60, 1, true);
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.logoutFromOrganization();
+
+    await organizationPage.signInOrganization(
+      selectedObservers,
+      organizationPage.getUserPasswordByEmail(selectedObservers),
+      globalCredentials.password,
+    );
+
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.clickOnReadyForExecutionTab();
+    const isTransactionVisible =
+      await organizationPage.isTransactionIdVisibleReadyForExecution(txId);
+    expect(isTransactionVisible).toBe(true);
+  });
+
+  test('Verify observer is saved in the db for the correct transaction id', async () => {
+    const { txId, selectedObservers } = await organizationPage.createAccount(60, 1);
+    const firstObserver = await organizationPage.getObserverEmail(0);
+    const userIdInDb = await organizationPage.getUserIdByEmail(selectedObservers);
+    const txIdForObserver = await organizationPage.getAllTransactionIdsForUserObserver(userIdInDb);
+    expect(txIdForObserver).toContain(txId);
+    await transactionPage.clickOnTransactionsMenuButton();
+  });
+
+  test('Verify user can add multiple observers', async () => {
+    const { selectedObservers } = await organizationPage.createAccount(60, 2, false);
+    const firstObserver = await organizationPage.getObserverEmail(0);
+    const secondObserver = await organizationPage.getObserverEmail(1);
+    expect(selectedObservers[0]).toBe(firstObserver);
+    expect(selectedObservers[1]).toBe(secondObserver);
+    await transactionPage.clickOnTransactionsMenuButton();
   });
 });

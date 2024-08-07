@@ -57,7 +57,7 @@ test.describe('Workflow tests', () => {
   test.beforeEach(async () => {
     // await transactionPage.closeCompletedTransaction();
     await transactionPage.clickOnTransactionsMenuButton();
-    // await transactionPage.closeDraftModal();
+    await transactionPage.closeDraftModal();
   });
 
   test('Verify account card is visible with valid information', async () => {
@@ -143,8 +143,6 @@ test.describe('Workflow tests', () => {
     const isSignAndSubmitButtonVisible =
       await transactionPage.isSignAndSubmitCreateAccountButtonVisible();
     expect(isSignAndSubmitButtonVisible).toBe(true);
-    await transactionPage.clickOnTransactionsMenuButton();
-    await transactionPage.closeDraftModal();
   });
 
   test('Verify clicking on "Edit" and "Update" navigates the user on update account tx page with prefilled account', async () => {
@@ -162,8 +160,6 @@ test.describe('Workflow tests', () => {
 
     const isAccountIdPrefilled = await transactionPage.getPrefilledAccountIdInUpdatePage();
     expect(isAccountIdPrefilled).toBe(accountFromList);
-    await transactionPage.clickOnTransactionsMenuButton();
-    await transactionPage.closeDraftModal();
   });
 
   test('Verify clicking on "Edit" and "Delete" navigates the user on update account tx page with prefilled account', async () => {
@@ -180,8 +176,6 @@ test.describe('Workflow tests', () => {
 
     const isAccountIdPrefilled = await transactionPage.getPrefilledAccountIdInDeletePage();
     expect(isAccountIdPrefilled).toBe(accountFromList);
-    await transactionPage.clickOnTransactionsMenuButton();
-    await transactionPage.closeDraftModal();
   });
 
   test('Verify user can unlink accounts', async () => {
@@ -265,8 +259,6 @@ test.describe('Workflow tests', () => {
 
     const transactionHeaderText = await transactionPage.getTransactionTypeHeaderText();
     expect(transactionHeaderText).toBe('Update File Transaction');
-    await transactionPage.clickOnTransactionsMenuButton();
-    await transactionPage.closeDraftModal();
   });
 
   test('Verify file card append flow leads to append page with prefilled fileid', async () => {
@@ -281,8 +273,6 @@ test.describe('Workflow tests', () => {
 
     const transactionHeaderText = await transactionPage.getTransactionTypeHeaderText();
     expect(transactionHeaderText).toBe('Append File Transaction');
-    await transactionPage.clickOnTransactionsMenuButton();
-    await transactionPage.closeDraftModal();
   });
 
   test('Verify file card read flow leads to read page with prefilled fileid', async () => {
@@ -306,8 +296,6 @@ test.describe('Workflow tests', () => {
 
     const transactionHeaderText = await transactionPage.getTransactionTypeHeaderText();
     expect(transactionHeaderText).toBe('Create File Transaction');
-    await transactionPage.clickOnTransactionsMenuButton();
-    await transactionPage.closeDraftModal();
   });
 
   test('Verify clicking on "Add new" and "Update" navigates the user to update file transaction page w/o prefilled id', async () => {
@@ -320,8 +308,6 @@ test.describe('Workflow tests', () => {
 
     const fileIdFromUpdatePage = await transactionPage.getFileIdFromUpdatePage();
     expect(fileIdFromUpdatePage).toBe('');
-    await transactionPage.clickOnTransactionsMenuButton();
-    await transactionPage.closeDraftModal();
   });
 
   test('Verify clicking on "Add new" and "Append" navigates the user to update file transaction page w/o prefilled id', async () => {
@@ -334,8 +320,6 @@ test.describe('Workflow tests', () => {
 
     const fileIdFromUpdatePage = await transactionPage.getFileIdFromAppendPage();
     expect(fileIdFromUpdatePage).toBe('');
-    await transactionPage.clickOnTransactionsMenuButton();
-    await transactionPage.closeDraftModal();
   });
 
   test('Verify clicking on "Add new" and "Read" navigates the user to update file transaction page w/o prefilled id', async () => {
