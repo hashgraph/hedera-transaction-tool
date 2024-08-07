@@ -159,7 +159,8 @@ export const getAccountInfo = async (
     stakedAccountId: rawAccountInfo.staked_account_id
       ? AccountId.fromString(rawAccountInfo.staked_account_id)
       : null,
-    stakedNodeId: rawAccountInfo.staked_node_id ? Number(rawAccountInfo.staked_node_id) : null,
+    stakedNodeId:
+      rawAccountInfo.staked_node_id !== null ? Number(rawAccountInfo.staked_node_id) : null,
     autoRenewPeriod: rawAccountInfo.auto_renew_period,
   };
 
