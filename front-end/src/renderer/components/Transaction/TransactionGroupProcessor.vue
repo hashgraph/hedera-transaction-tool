@@ -1,49 +1,20 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, inject } from 'vue';
 
-import {
-  FileAppendTransaction,
-  FileUpdateTransaction,
-  Hbar,
-  Key,
-  KeyList,
-  Transaction,
-  TransactionReceipt,
-  TransactionResponse,
-} from '@hashgraph/sdk';
+import { Key, KeyList, Transaction, TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
+
+import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useTransactionGroupStore, { GroupItem } from '@renderer/stores/storeTransactionGroup';
 
 import { useToast } from 'vue-toast-notification';
-import { useRoute } from 'vue-router';
 
-import {
-  createTransactionId,
-  execute,
-  signTransaction,
-  storeTransaction,
-} from '@renderer/services/transactionService';
+import { execute, signTransaction, storeTransaction } from '@renderer/services/transactionService';
 import { decryptPrivateKey, flattenKeyList } from '@renderer/services/keyPairService';
-import { deleteDraft, getDraft } from '@renderer/services/transactionDraftsService';
-
-import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
-
-import { ableToSign, getPrivateKey, getStatusFromCode, getTransactionType } from '@renderer/utils';
-import {
-  isLoggedInOrganization,
-  isLoggedInWithPassword,
-  isUserLoggedIn,
-} from '@renderer/utils/userStoreHelpers';
-
-import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppModal from '@renderer/components/ui/AppModal.vue';
-import AppLoader from '@renderer/components/ui/AppLoader.vue';
-import AppInput from '@renderer/components/ui/AppInput.vue';
-import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
-import useTransactionGroupStore, { GroupItem } from '@renderer/stores/storeTransactionGroup';
-import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
+import { deleteDraft } from '@renderer/services/transactionDraftsService';
 import { addGroupItem, editGroupItem } from '@renderer/services/transactionGroupsService';
 import { addGroup, getGroupItem } from '@renderer/services/transactionGroupsService';
 import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
@@ -55,7 +26,19 @@ import {
   getApiGroupById,
   IGroup,
 } from '@renderer/services/organization';
-import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+
+import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+
+import { ableToSign, getPrivateKey, getStatusFromCode, getTransactionType } from '@renderer/utils';
+import {
+  isLoggedInOrganization,
+  isLoggedInWithValidPassword,
+  isUserLoggedIn,
+} from '@renderer/utils/userStoreHelpers';
+
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppLoader from '@renderer/components/ui/AppLoader.vue';
 
 /* Props */
 const props = defineProps<{
@@ -78,7 +61,6 @@ const transactionGroup = useTransactionGroupStore();
 
 /* Composables */
 const toast = useToast();
-const route = useRoute();
 
 /* Injected */
 const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
@@ -88,16 +70,10 @@ const transactionResult = ref<{
   response: TransactionResponse;
   receipt: TransactionReceipt;
 } | null>();
-const chunksAmount = ref<number | null>(null);
-const chunkSize = ref(1024);
-// const chunkInterval = ref(0.1);
-const userPassword = ref('');
 const signatureKey = ref<Key | KeyList | null>(null);
 const isConfirmShown = ref(false);
 const isSigning = ref(false);
 const isSignModalShown = ref(false);
-const isChunkingModalShown = ref(false);
-const processedChunks = ref(0);
 const isExecuting = ref(false);
 const isExecutedModalShown = ref(false);
 const unmounted = ref(false);
@@ -127,8 +103,7 @@ async function handleConfirmTransaction(e: Event) {
   if (user.selectedOrganization) {
     await sendSignedTransactionsToOrganization();
   } else if (localPublicKeysReq.value.length > 0) {
-    isConfirmShown.value = false;
-    isSignModalShown.value = true;
+    await signAfterConfirm();
   } else {
     throw new Error(
       'Unable to execute, all of the required signatures should be with your keys. You are currently in Personal mode.',
@@ -136,7 +111,7 @@ async function handleConfirmTransaction(e: Event) {
   }
 }
 
-async function handleSignTransactions() {
+async function signAfterConfirm() {
   if (!transactionGroup.groupItems) {
     throw new Error('Transaction not provided');
   }
@@ -151,7 +126,21 @@ async function handleSignTransactions() {
     );
   }
 
+  /* Verifies the user has entered his password */
+  const personalPassword = user.getPassword();
+  if (!personalPassword) {
+    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+    isConfirmShown.value = false;
+    userPasswordModalRef.value?.open(
+      'Enter your application password',
+      'Enter your application password to sign the transaction',
+      signAfterConfirm,
+    );
+    return;
+  }
+
   try {
+    isConfirmShown.value = true;
     isSigning.value = true;
 
     for (const groupItem of transactionGroup.groupItems) {
@@ -159,35 +148,11 @@ async function handleSignTransactions() {
         groupItem.transactionBytes,
         localPublicKeysReq.value,
         user.personal.id,
-        userPassword.value,
+        personalPassword,
       );
+      isConfirmShown.value = false;
 
-      isSignModalShown.value = false;
-
-      const signedTransaction = Transaction.fromBytes(signedTransactionBytes);
-
-      if (
-        signedTransaction instanceof FileUpdateTransaction ||
-        signedTransaction instanceof FileAppendTransaction
-      ) {
-        if (
-          signedTransactionBytes.length > TRANSACTION_MAX_SIZE &&
-          signedTransaction.contents !== null
-        ) {
-          isChunkingModalShown.value = true;
-          const chunks = chunkBuffer(signedTransaction.contents, chunkSize.value);
-          isChunkingModalShown.value = false;
-
-          if (!user.selectedOrganization) {
-            await executeFileTransactions(signedTransaction, chunks);
-          }
-        } else if (!user.selectedOrganization) {
-          await executeTransaction(signedTransactionBytes, groupItem);
-        }
-      } else {
-        await executeTransaction(signedTransactionBytes, groupItem);
-        console.log('transaction completed execution');
-      }
+      await executeTransaction(signedTransactionBytes, groupItem);
     }
   } catch (err: any) {
     toast.error(err.message || 'Transaction signing failed', { position: 'bottom-right' });
@@ -330,7 +295,8 @@ async function sendSignedTransactionsToOrganization() {
   }
 
   /* Verifies the user has entered his password */
-  if (!isLoggedInWithPassword(user.personal)) {
+  const personalPassword = user.getPassword();
+  if (!isLoggedInWithValidPassword(user.personal) || !personalPassword) {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     userPasswordModalRef.value?.open(
       'Enter your application password',
@@ -352,11 +318,7 @@ async function sendSignedTransactionsToOrganization() {
   /* Signs the unfrozen transaction */
   const keyToSignWith = user.keyPairs[0].public_key;
 
-  const privateKeyRaw = await decryptPrivateKey(
-    user.personal.id,
-    user.personal.password,
-    keyToSignWith,
-  );
+  const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, keyToSignWith);
   const privateKey = getPrivateKey(keyToSignWith, privateKeyRaw);
 
   const groupSignatureHex = new Array<string>();
@@ -460,346 +422,11 @@ async function deleteDraftsIfNotTemplate() {
   // }
 }
 
-async function executeFileTransactions(
-  transaction: FileUpdateTransaction | FileAppendTransaction,
-  chunks: Uint8Array[],
-) {
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
-
-  isExecuting.value = true;
-  let firstTransactionResult: {
-    response: TransactionResponse;
-    receipt: TransactionReceipt;
-  } | null = null;
-  processedChunks.value = 0;
-  let hasFailed = false;
-
-  validateTransaction(transaction);
-
-  for (let i = 0; i < chunks.length; i++) {
-    if (hasFailed) {
-      isExecuting.value = false;
-      return;
-    }
-
-    let status = 0;
-    let chunkTransaction: FileUpdateTransaction | FileAppendTransaction = transaction;
-    let chunkTransactionType = '';
-
-    let transactionHash: Uint8Array | null = null;
-
-    try {
-      if (transaction instanceof FileUpdateTransaction && i === 0) {
-        chunkTransactionType = 'File Update Transaction';
-        chunkTransaction = new FileUpdateTransaction()
-          .setTransactionId(createTransactionId(transaction.transactionId!.accountId!, new Date()))
-          .setTransactionValidDuration(180)
-          .setMaxTransactionFee(transaction.maxTransactionFee || new Hbar(2))
-          .setFileId(transaction.fileId!)
-          .setContents(chunks[0]);
-        transaction.fileMemo && chunkTransaction.setFileMemo(transaction.fileMemo);
-        transaction.keys &&
-          transaction.keys.length > 0 &&
-          chunkTransaction.setKeys(transaction.keys);
-        transaction.expirationTime &&
-          chunkTransaction.setExpirationTime(transaction.expirationTime);
-      } else {
-        chunkTransactionType = 'File Append Transaction';
-        const newValidStart = new Date();
-        newValidStart.setSeconds(0);
-
-        chunkTransaction = new FileAppendTransaction()
-          .setTransactionId(
-            createTransactionId(transaction.transactionId!.accountId!, newValidStart),
-          )
-          .setTransactionValidDuration(180)
-          .setMaxTransactionFee(transaction.maxTransactionFee || new Hbar(2))
-          .setFileId(transaction.fileId!)
-          .setContents(chunks[i])
-          .setMaxChunks(1)
-          .setChunkSize(chunkSize.value);
-      }
-
-      const signedTransactionBytes = await signTransaction(
-        chunkTransaction.toBytes(),
-        localPublicKeysReq.value,
-        user.personal.id,
-        userPassword.value,
-      );
-
-      const executedTransaction = Transaction.fromBytes(signedTransactionBytes);
-      transactionHash = await executedTransaction.getTransactionHash();
-
-      const { response, receipt } = await execute(signedTransactionBytes);
-
-      if (i === 0) firstTransactionResult = { response, receipt };
-
-      status = receipt.status._code;
-
-      processedChunks.value++;
-    } catch (error: any) {
-      console.log(error);
-      hasFailed = true;
-
-      let message = error.message;
-      try {
-        const data = JSON.parse(error.message);
-        status = data.status;
-        message = data.message;
-      } catch {
-        /* empty */
-      }
-
-      toast.error(message, { position: 'bottom-right' });
-    }
-
-    if (chunkTransaction === null || !transactionHash) {
-      throw new Error('No transaction to save');
-    }
-
-    const transactionToStore: Prisma.TransactionUncheckedCreateInput = {
-      name: `${chunkTransactionType} (${chunkTransaction.transactionId?.toString()})`,
-      type: chunkTransactionType,
-      description: '',
-      transaction_id: chunkTransaction.transactionId?.toString() || '',
-      transaction_hash: transactionHash.toString(),
-      body: chunkTransaction.toBytes().toString(),
-      status: getStatusFromCode(status)!,
-      status_code: status,
-      user_id: user.personal.id,
-      creator_public_key: null,
-      signature: '',
-      valid_start: chunkTransaction.transactionId?.validStart?.toString() || '',
-      executed_at: new Date().getTime() / 1000,
-      network: network.network,
-    };
-
-    await storeTransaction(transactionToStore);
-  }
-
-  isExecuting.value = false;
-
-  if (firstTransactionResult) {
-    transactionResult.value = firstTransactionResult;
-    props.onExecuted &&
-      props.onExecuted(
-        firstTransactionResult.response,
-        firstTransactionResult.receipt,
-        chunksAmount.value || undefined,
-      );
-    isExecutedModalShown.value = true;
-  }
-
-  if (route.query.draftId) {
-    try {
-      const draft = await getDraft(route.query.draftId.toString());
-
-      if (!draft.isTemplate) {
-        await deleteDraft(route.query.draftId.toString());
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  if (unmounted.value) {
-    toast.success('Transaction executed', { position: 'bottom-right' });
-  }
-}
-
-// async function chunkFileTransactionForOrganization(
-//   transaction: FileUpdateTransaction | FileAppendTransaction,
-//   chunks: Uint8Array[],
-// ) {
-//   if (!transaction.contents) return [transaction.toBytes()];
-
-//   if (!isUserLoggedIn(user.personal)) {
-//     throw new Error('User is not logged in');
-//   }
-
-//   validateTransaction(transaction);
-
-//   const transactions: Uint8Array[] = [];
-//   const isUpdateTransaction = transaction instanceof FileUpdateTransaction;
-
-//   isChunkingModalShown.value = true;
-//   processedChunks.value = 0;
-
-//   if (isUpdateTransaction) {
-//     const updateTransaction = new FileUpdateTransaction()
-//       .setTransactionId(transaction.transactionId!)
-//       .setTransactionValidDuration(180)
-//       .setMaxTransactionFee(transaction.maxTransactionFee || new Hbar(2))
-//       .setFileId(transaction.fileId!)
-//       .setContents(chunks[0]);
-//     transaction.fileMemo && updateTransaction.setFileMemo(transaction.fileMemo);
-//     transaction.keys && transaction.keys.length > 0 && updateTransaction.setKeys(transaction.keys);
-//     transaction.expirationTime && updateTransaction.setExpirationTime(transaction.expirationTime);
-
-//     transactions[0] = await signTransaction(
-//       updateTransaction.toBytes(),
-//       localPublicKeysReq.value,
-//       user.personal.id,
-//       userPassword.value,
-//     );
-
-//     processedChunks.value++;
-//   }
-
-//   for (let i = isUpdateTransaction ? 1 : 0; i < chunks.length; i++) {
-//     if (!transaction.transactionId) throw new Error('Transaction ID is missing');
-//     if (!transaction.transactionId.accountId)
-//       throw new Error('Account ID in Transaction ID is missing');
-
-//     const transactionId = createTransactionId(
-//       transaction.transactionId.accountId,
-//       transaction.transactionId.validStart?.plusNanos(i * chunkInterval.value * 1000000000) ||
-//         new Date(),
-//     );
-
-//     const appendTransaction = new FileAppendTransaction()
-//       .setTransactionId(transactionId)
-//       .setTransactionValidDuration(180)
-//       .setMaxTransactionFee(transaction.maxTransactionFee || new Hbar(2))
-//       .setFileId(transaction.fileId!)
-//       .setContents(chunks[i])
-//       .setMaxChunks(1)
-//       .setChunkSize(chunkSize.value);
-
-//     transactions.push(
-//       await signTransaction(
-//         appendTransaction.toBytes(),
-//         localPublicKeysReq.value,
-//         user.personal.id,
-//         userPassword.value,
-//       ),
-//     );
-
-//     processedChunks.value++;
-//   }
-
-//   isChunkingModalShown.value = false;
-
-//   return transactions;
-// }
-
-// async function sendSignedFileTransactionToOrganization(transactionBytes?: Uint8Array) {
-//   console.log(transactionBytes);
-//   console.log('Send to back end signed along with required', externalPublicKeysReq.value);
-// }
-
-// async function sendSignedTransactionToOrganization() {
-//   isConfirmShown.value = false;
-
-//   /* Verifies the user is logged in organization */
-//   if (!isLoggedInOrganization(user.selectedOrganization)) {
-//     throw new Error('Please select an organization');
-//   }
-
-//   /* Verifies the user has entered his password */
-//   if (!isLoggedInWithPassword(user.personal)) {
-//     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-//     userPasswordModalRef.value?.open(
-//       'Enter your personal account password',
-//       'Enter your personal to sign as a creator',
-//       sendSignedTransactionToOrganization,
-//     );
-//     return;
-//   }
-
-//   /* Verifies there is actual transaction to process */
-//   if (!props.transactionBytes) throw new Error('Transaction not provided');
-
-//   /* User Serializes the Transaction */
-//   const hexTransactionBytes = await uint8ArrayToHex(props.transactionBytes);
-
-//   /* Signs the unfrozen transaction */
-//   const keyToSignWith = user.keyPairs[0].public_key;
-
-//   const privateKeyRaw = await decryptPrivateKey(
-//     user.personal.id,
-//     user.personal.password,
-//     keyToSignWith,
-//   );
-//   const privateKey = getPrivateKey(keyToSignWith, privateKeyRaw);
-
-//   const signature = privateKey.sign(props.transactionBytes);
-//   const signatureHex = await uint8ArrayToHex(signature);
-
-//   /* Submit the transaction to the back end */
-//   const { id, body } = await submitTransaction(
-//     user.selectedOrganization.serverUrl,
-//     transaction.value?.transactionMemo || `New ${type.value}`,
-//     transaction.value?.transactionMemo || '',
-//     hexTransactionBytes,
-//     signatureHex,
-//     user.selectedOrganization.userKeys.find(k => k.publicKey === keyToSignWith)?.id || -1,
-//   );
-
-//   toast.success('Transaction submitted successfully');
-//   props.onSubmitted && props.onSubmitted(id, body);
-
-//   const bodyBytes = await hexToUint8Array(body);
-
-//   /* Delete if draft and not template */
-//   if (route.query.draftId) {
-//     try {
-//       const draft = await getDraft(route.query.draftId.toString());
-//       if (!draft.isTemplate) await deleteDraft(route.query.draftId.toString());
-//     } catch (error) {
-//       console.log(error);
-//     }
-//   }
-
-//   /* Deserialize the transaction */
-//   const sdkTransaction = Transaction.fromBytes(bodyBytes);
-
-//   /* Check if should sign */
-//   const publicKeysRequired = await publicRequiredToSign(
-//     sdkTransaction,
-//     user.selectedOrganization.userKeys,
-//     network.mirrorNodeBaseURL,
-//   );
-//   if (publicKeysRequired.length === 0) return;
-
-//   await fullUploadSignatures(
-//     user.personal,
-//     user.selectedOrganization,
-//     publicKeysRequired,
-//     sdkTransaction,
-//     id,
-//   );
-
-//   toast.success('Transaction signed successfully');
-// }
-
-// async function sendSignedChunksToOrganization(transactions: Uint8Array[]) {
-//   console.log(transactions);
-//   console.log('Send to back end signed along with required', externalPublicKeysReq.value);
-// }
-
-function validateTransaction(transaction: FileUpdateTransaction | FileAppendTransaction) {
-  if (!transaction.transactionId) throw new Error('Transaction ID is missing');
-  if (!transaction.fileId) throw new Error('Transaction file ID is missing');
-}
-
-function chunkBuffer(buffer: Uint8Array, chunkSize: number): Uint8Array[] {
-  const chunks: Uint8Array[] = [];
-  for (let i = 0; i < buffer.length; i += chunkSize) {
-    chunks.push(buffer.slice(i, i + chunkSize));
-  }
-  return chunks;
-}
-
 function resetData() {
-  userPassword.value = '';
   transactionResult.value = null;
   isSigning.value = false;
   isExecuting.value = false;
   isExecutedModalShown.value = false;
-  isChunkingModalShown.value = false;
   isSignModalShown.value = false;
   signatureKey.value = null;
 }
@@ -837,7 +464,7 @@ defineExpose({
         >
           <div class="d-flex p-4 transaction-group-row">
             <div class="me-4">{{ index + 1 }}</div>
-            <div>{{ groupItem.type }}</div>
+            <div>{{ getTransactionType(groupItem.transactionBytes) }}</div>
           </div>
         </div>
 
@@ -851,42 +478,6 @@ defineExpose({
             >Sign All</AppButton
           >
         </div>
-      </div>
-    </AppModal>
-    <!-- Sign modal -->
-    <AppModal
-      v-model:show="isSignModalShown"
-      class="common-modal"
-      :close-on-click-outside="false"
-      :close-on-escape="false"
-    >
-      <div class="p-5">
-        <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="isSignModalShown = false"></i>
-        </div>
-        <div class="text-center">
-          <AppCustomIcon :name="'lock'" style="height: 160px" />
-        </div>
-        <form class="mt-3" @submit.prevent="handleSignTransactions">
-          <h3 class="text-center text-title text-bold">Enter your password</h3>
-          <div class="form-group mt-5 mb-4">
-            <label class="form-label">Password</label>
-            <AppInput v-model="userPassword" size="small" type="password" :filled="true" />
-          </div>
-          <hr class="separator my-5" />
-          <div class="flex-between-centered gap-4">
-            <AppButton color="borderless" type="button" @click="isSignModalShown = false"
-              >Cancel</AppButton
-            >
-            <AppButton
-              color="primary"
-              :loading="isSigning"
-              :disabled="userPassword.length === 0 || isSigning"
-              type="submit"
-              >Continue</AppButton
-            >
-          </div>
-        </form>
       </div>
     </AppModal>
     <!-- Executing modal -->

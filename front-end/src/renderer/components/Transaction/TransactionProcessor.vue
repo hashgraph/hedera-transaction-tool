@@ -86,7 +86,6 @@ const signatureKey = ref<Key | KeyList | null>(null);
 const isConfirmShown = ref(false);
 const isSigning = ref(false);
 // const isSignModalShown = ref(false);
-const isChunkingModalShown = ref(false);
 const isExecuting = ref(false);
 const isExecutedModalShown = ref(false);
 const unmounted = ref(false);
@@ -179,7 +178,6 @@ async function process(requiredKey: Key) {
   signatureKey.value = requiredKey;
 
   await nextTick();
-
   await user.refetchKeys();
 
   validateProcess();
@@ -314,9 +312,6 @@ async function sendSignedTransactionToOrganization() {
   const signature = privateKey.sign(props.transactionBytes);
   const signatureHex = await uint8ArrayToHex(signature);
 
-  console.log(await uint8ArrayToHex(props.transactionBytes));
-  console.log(signatureHex);
-
   /* Submit the transaction to the back end */
   const { id, body } = await submitTransaction(
     user.selectedOrganization.serverUrl,
@@ -425,7 +420,6 @@ function resetData() {
   isSigning.value = false;
   isExecuting.value = false;
   isExecutedModalShown.value = false;
-  isChunkingModalShown.value = false;
   signatureKey.value = null;
 }
 
@@ -508,49 +502,6 @@ defineExpose({
         </form>
       </div>
     </AppModal>
-    <!-- Sign modal -->
-    <!-- <AppModal
-      v-model:show="isSignModalShown"
-      class="common-modal"
-      :close-on-click-outside="false"
-      :close-on-escape="false"
-    >
-      <div class="p-5">
-        <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="isSignModalShown = false"></i>
-        </div>
-        <div class="text-center">
-          <AppCustomIcon :name="'lock'" style="height: 160px" />
-        </div>
-        <form class="mt-3" @submit="handleSignTransaction">
-          <h3 class="text-center text-title text-bold">Enter your password</h3>
-          <div class="form-group mt-5 mb-4">
-            <label class="form-label">Password</label>
-            <AppInput
-              v-model="userPassword"
-              size="small"
-              data-testid="input-password-transaction"
-              type="password"
-              :filled="true"
-            />
-          </div>
-          <hr class="separator my-5" />
-          <div class="flex-between-centered gap-4">
-            <AppButton color="borderless" type="button" @click="isSignModalShown = false"
-              >Cancel</AppButton
-            >
-            <AppButton
-              color="primary"
-              data-testid="button-password-continue"
-              :loading="isSigning"
-              :disabled="userPassword.length === 0 || isSigning"
-              type="submit"
-              >Continue</AppButton
-            >
-          </div>
-        </form>
-      </div>
-    </AppModal> -->
     <!-- Executing modal -->
     <AppModal
       v-model:show="isExecuting"
