@@ -717,11 +717,11 @@ class OrganizationPage extends BasePage {
     await this.transactionPage.addPublicKeyAtDepth('0-1', publicKey3);
 
     await this.transactionPage.clickOnDoneButtonForComplexKeyCreation();
-
     await this.transactionPage.clickOnSignAndSubmitButton();
     await this.transactionPage.clickSignTransactionButton();
     const transactionId = await this.getTransactionDetailsId();
     await this.clickOnSignTransactionButton();
+    await new Promise(resolve => setTimeout(resolve, 6000));
     const transactionResponse =
       await this.transactionPage.mirrorGetTransactionResponse(transactionId);
     this.complexAccountId.push(transactionResponse.transactions[0].entity_id);

@@ -25,7 +25,7 @@ let registrationPage, loginPage, transactionPage, organizationPage, settingsPage
 let firstUser, secondUser, thirdUser;
 let complexKeyAccountId;
 
-test.describe('Organization Settings tests', () => {
+test.describe('Organization Transaction tests', () => {
   test.beforeAll(async () => {
     test.slow();
     await resetDbState();
