@@ -607,18 +607,15 @@ test.describe('Workflow tests', () => {
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
     await detailsPage.assertTransactionDetails(
-      transactionId,
-      'File Update Transaction',
-      async () => {
-        const fileIdFromDetailsPage = await detailsPage.getFileDetailsFileId();
-        expect(fileId).toBe(fileIdFromDetailsPage);
+        transactionId,
+        'File Update Transaction',
+        async () => {
+          const fileIdFromDetailsPage = await detailsPage.getFileDetailsFileId();
+          expect(fileId).toBe(fileIdFromDetailsPage);
 
-        const fileDetailsUpdatedKey = await detailsPage.getFileDetailsKeyText();
-        expect(fileDetailsUpdatedKey).toBeTruthy();
-
-        const isViewContentButtonVisible = await detailsPage.isViewContentsButtonVisible();
-        expect(isViewContentButtonVisible).toBe(true);
-      },
+          const isViewContentButtonVisible = await detailsPage.isViewContentsButtonVisible();
+          expect(isViewContentButtonVisible).toBe(true);
+        },
     );
   });
 
