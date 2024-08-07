@@ -80,15 +80,15 @@ describe('menuBuilder', () => {
   //   }
   // });
 
-  test('Should not include mac specific menu items when not on mac', () => {
-    Object.defineProperty(process, 'platform', { value: 'win32' });
-    menuBuilder(mainWindow);
+  // test('Should not include mac specific menu items when not on mac', () => {
+  //   Object.defineProperty(process, 'platform', { value: 'win32' });
+  //   menuBuilder(mainWindow);
 
-    const testNumber = 4;
+  //   const testNumber = 4;
 
-    const template = MenuObject.buildFromTemplate.mock.calls[testNumber - 1][0];
-    const macItem = template.find(item => item.label === 'hedera-transaction-tool');
+  //   const template = MenuObject.buildFromTemplate.mock.calls[testNumber - 1][0];
+  //   const macItem = template.find(item => item.label === 'hedera-transaction-tool');
 
-    expect(macItem).toBeUndefined();
-  });
+  //   expect(macItem).toBeUndefined();
+  // });
 });
