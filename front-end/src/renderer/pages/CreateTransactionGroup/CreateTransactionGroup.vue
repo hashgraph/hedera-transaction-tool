@@ -45,6 +45,7 @@ const isTransactionSelectionModalShown = ref(false);
 const transactionGroupProcessor = ref<typeof TransactionGroupProcessor | null>(null);
 const file = ref<HTMLInputElement | null>(null);
 const isSaveGroupModalShown = ref(false);
+const isNotSavedModalShown = ref(false);
 
 const groupEmpty = computed(() => transactionGroup.groupItems.length == 0);
 
@@ -123,9 +124,11 @@ const handleLoadGroup = async () => {
 
 async function handleSignSubmit() {
   try {
-    const ownerKey = PublicKey.fromString(user.keyPairs[0].public_key);
-
-    const requiredKey = new KeyList([ownerKey]);
+    const ownerKeys = new Array<PublicKey>();
+    for (const key of user.keyPairs) {
+      ownerKeys.push(PublicKey.fromString(key.public_key));
+    }
+    const requiredKey = new KeyList(ownerKeys);
     addTransactionIds();
     await transactionGroupProcessor.value?.process(requiredKey);
   } catch (err: any) {
@@ -146,6 +149,7 @@ function handleExecuted(id: string) {
 }
 
 function handleSubmit(id: number) {
+  transactionGroup.clearGroup();
   router.push({
     name: 'transactionGroupDetails',
     params: { id },
@@ -236,7 +240,7 @@ onMounted(async () => {
 });
 
 onBeforeRouteLeave(async to => {
-  if (transactionGroup.groupItems.length == 0 || route.query.id) {
+  if (transactionGroup.groupItems.length == 0 && !transactionGroup.description) {
     transactionGroup.clearGroup();
     return true;
   }
@@ -246,6 +250,11 @@ onBeforeRouteLeave(async to => {
     to.fullPath.startsWith('/transaction-group/')
   ) {
     return true;
+  }
+
+  if (!to.fullPath.startsWith('/create-transaction/') && transactionGroup.description) {
+    isNotSavedModalShown.value = true;
+    return false;
   }
 
   isSaveGroupModalShown.value = true;
@@ -386,6 +395,38 @@ onBeforeRouteLeave(async to => {
           <AppButton color="primary" data-testid="button-save-draft-modal" type="submit"
             >Save</AppButton
           >
+        </div>
+      </form>
+    </AppModal>
+    <AppModal
+      :show="isNotSavedModalShown"
+      :close-on-click-outside="false"
+      :close-on-escape="false"
+      class="small-modal"
+    >
+      <form class="text-center p-4" @submit.prevent="isNotSavedModalShown = false">
+        <div class="text-start">
+          <i class="bi bi-x-lg cursor-pointer" @click="isNotSavedModalShown = false"></i>
+        </div>
+        <h2 class="text-title text-semi-bold mt-3">No Transactions Added</h2>
+        <p class="text-small text-secondary mt-3">
+          Transaction group will discarded unless a transaction is added.
+        </p>
+
+        <hr class="separator my-5" />
+
+        <div class="flex-between-centered gap-4">
+          <AppButton
+            color="borderless"
+            data-testid="button-discard-draft-modal"
+            type="button"
+            @click="handleDiscard"
+          >
+            Discard
+          </AppButton>
+          <AppButton color="primary" data-testid="button-save-draft-modal" type="submit">
+            Continue
+          </AppButton>
         </div>
       </form>
     </AppModal>

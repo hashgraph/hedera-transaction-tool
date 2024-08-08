@@ -39,10 +39,9 @@ const organizationTabs: TabItem[] = [
   { title: 'In Progress' },
   { title: 'Ready for Execution' },
   { title: 'History' },
+  { title: 'Groups' },
 ];
-const sharedTabs: TabItem[] = [{ title: 'Drafts' }, { title: 'History' }];
-
-const localOnlyTabs: TabItem[] = [{ title: 'Groups' }];
+const sharedTabs: TabItem[] = [{ title: 'Drafts' }, { title: 'History' }, { title: 'Groups' }];
 
 const activeTabIndex = ref(1);
 const tabItems = ref<TabItem[]>(sharedTabs);
@@ -61,7 +60,7 @@ function setTabItems() {
   } else {
     const newIndex = sharedTabs.findIndex(tab => tab.title === activeTabTitle.value);
     activeTabIndex.value = newIndex >= 0 ? newIndex : 0;
-    tabItems.value = [...sharedTabs, ...localOnlyTabs];
+    tabItems.value = [...sharedTabs];
   }
 }
 

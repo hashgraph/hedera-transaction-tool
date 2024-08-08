@@ -137,6 +137,26 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     return KeyList.from(returningKeys);
   }
 
+  function hasObservers(seq: number) {
+    if (
+      groupItems.value[seq].observers === undefined ||
+      groupItems.value[seq].observers.length === 0
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  function hasApprovers(seq: number) {
+    if (
+      groupItems.value[seq].approvers === undefined ||
+      groupItems.value[seq].approvers.length === 0
+    ) {
+      return false;
+    }
+    return true;
+  }
+
   // function getObservers() {
   //   const observers = new Array<number>();
   //   for (const groupItem of groupItems.value) {
@@ -162,6 +182,8 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     description,
     getRequiredKeys,
     editGroupItem,
+    hasObservers,
+    hasApprovers,
   };
 });
 

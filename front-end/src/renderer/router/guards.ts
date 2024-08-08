@@ -7,7 +7,7 @@ import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 export function addGuards(router: Router) {
   const user = useUserStore();
 
-  router.beforeEach((to, from) => {
+  router.beforeEach(to => {
     const userIsLoggedIn = user.personal?.isLoggedIn;
     const userIsLoggedInOrganization = isLoggedInOrganization(user.selectedOrganization);
     const userIsAdmin =
@@ -38,12 +38,8 @@ export function addGuards(router: Router) {
       return router.previousPath ? { path: router.previousPath } : { name: 'transactions' };
     }
 
-    if (
-      from.name !== 'login' &&
-      from.name !== 'organizationLogin' &&
-      from.name !== 'accountSetup'
-    ) {
-      router.previousPath = from.path;
+    if (to.name !== 'login' && to.name !== 'organizationLogin' && to.name !== 'accountSetup') {
+      router.previousPath = to.path;
     }
 
     if (!to.meta.withoutAuth && userIsLoggedIn === false) {

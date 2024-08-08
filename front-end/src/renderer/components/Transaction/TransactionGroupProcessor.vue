@@ -348,7 +348,6 @@ async function sendSignedTransactionsToOrganization() {
   const group: IGroup = await getApiGroupById(user.selectedOrganization.serverUrl, id);
 
   toast.success('Transaction submitted successfully');
-  props.onSubmitted && props.onSubmitted(id, body);
 
   for (const groupItem of group.groupItems) {
     const results = await Promise.allSettled([
@@ -363,13 +362,13 @@ async function sendSignedTransactionsToOrganization() {
       }
     });
   }
+  props.onSubmitted && props.onSubmitted(id, body);
 }
 
 async function uploadObservers(transactionId: number, seqId: number) {
-  if (
-    !transactionGroup.groupItems[seqId].observers ||
-    transactionGroup.groupItems[seqId].observers.length === 0
-  ) {
+  const hasObservers = transactionGroup.hasObservers(seqId);
+
+  if (!hasObservers) {
     return;
   }
 
@@ -384,10 +383,9 @@ async function uploadObservers(transactionId: number, seqId: number) {
 }
 
 async function uploadApprovers(transactionId: number, seqId: number) {
-  if (
-    !transactionGroup.groupItems[seqId].approvers ||
-    transactionGroup.groupItems[seqId].approvers.length === 0
-  ) {
+  const hasApprovers = transactionGroup.hasApprovers(seqId);
+
+  if (hasApprovers) {
     return;
   }
 
@@ -466,8 +464,8 @@ defineExpose({
           <AppButton type="button" color="borderless" @click="isConfirmShown = false"
             >Cancel</AppButton
           >
-          <AppButton color="primary" type="button" @click="handleConfirmTransaction"
-            >Sign All</AppButton
+          <AppButton color="primary" type="button" @click.prevent="handleConfirmTransaction"
+            >Submit</AppButton
           >
         </div>
       </div>

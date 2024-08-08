@@ -69,7 +69,6 @@ async function handleFetchGroup(id: string | number) {
           publicKeysRequiredToSign.value = publicKeysRequiredToSign.value!.concat(newKeys);
         }
       }
-      console.log(publicKeysRequiredToSign.value);
     } catch (error) {
       router.previousPath ? router.back() : router.push({ name: 'transactions' });
       throw error;
