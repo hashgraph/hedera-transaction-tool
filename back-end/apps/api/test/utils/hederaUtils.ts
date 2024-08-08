@@ -13,6 +13,7 @@ import {
   Transaction,
   TransactionId,
 } from '@hashgraph/sdk';
+import { proto } from '@hashgraph/proto';
 
 import { Network, TransactionType } from '../../../../libs/common/src/database/entities';
 
@@ -167,4 +168,23 @@ export const updateAccount = async (
     response,
     receipt,
   };
+};
+
+export const getSignatures = (privateKey: PrivateKey, transaction: Transaction) => {
+  const signatures: {
+    [key: string]: string;
+  } = {};
+
+  for (const { bodyBytes } of transaction._signedTransactions.list) {
+    if (!bodyBytes) continue;
+    const { nodeAccountID } = proto.TransactionBody.decode(bodyBytes);
+
+    if (!nodeAccountID) continue;
+    const nodeAccountId = AccountId._fromProtobuf(nodeAccountID);
+
+    const signature = privateKey.sign(bodyBytes);
+    signatures[nodeAccountId.toString()] = Buffer.from(signature).toString('hex');
+  }
+
+  return signatures;
 };
