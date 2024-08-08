@@ -65,6 +65,14 @@ spec:
               value: '20'
             - name: REDIS_URL
               value: 'redis://redis-master:6379'
+            - name: ANONYMOUS_MINUTE_LIMIT
+              value: '3'
+            - name: ANONYMOUS_FIVE_SECOND_LIMIT
+              value: '1'
+            - name: GLOBAL_MINUTE_LIMIT
+              value: '10000'
+            - name: GLOBAL_SECOND_LIMIT
+              value: '1000'
             - name: NODE_ENV
               value: 'production'
           ports:
