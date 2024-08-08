@@ -61,6 +61,10 @@ export class ObserversService {
       }
     }
 
+    if (observers.length === 0) {
+      return [];
+    }
+
     try {
       const result = await this.repo.save(observers);
 

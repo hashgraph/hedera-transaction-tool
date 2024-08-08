@@ -72,11 +72,15 @@ describe('ObserversService', () => {
   });
 
   describe('createTransactionObservers', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
     it('should create transaction observers', async () => {
       const transactionId = 1;
       const dto = { userIds: [2] };
 
-      const transaction = { creatorKey: { user } };
+      const transaction = { creatorKey: { user }, observers: [] };
       entityManager.findOne.mockResolvedValue(transaction);
 
       const observer = { userId: 2, transactionId, role: Role.FULL } as TransactionObserver;
@@ -86,10 +90,30 @@ describe('ObserversService', () => {
 
       expect(entityManager.findOne).toHaveBeenCalledWith(Transaction, {
         where: { id: transactionId },
-        relations: ['creatorKey', 'creatorKey.user'],
+        relations: ['creatorKey', 'creatorKey.user', 'observers'],
       });
       expect(observersRepo.create).toHaveBeenCalledWith(observer);
       expect(observersRepo.save).toHaveBeenCalledWith([observer]);
+    });
+
+    it('should not add an observer if already added', async () => {
+      console.log('PROBLEMATIC TEST');
+
+      const transactionId = 1;
+      const dto = { userIds: [3] };
+
+      const transaction = { creatorKey: { user }, observers: [{ userId: 3 }] };
+      entityManager.findOne.mockResolvedValue(transaction);
+
+      const result = await service.createTransactionObservers(user, transactionId, dto);
+
+      expect(result).toEqual([]);
+      expect(entityManager.findOne).toHaveBeenCalledWith(Transaction, {
+        where: { id: transactionId },
+        relations: ['creatorKey', 'creatorKey.user', 'observers'],
+      });
+      expect(observersRepo.create).not.toHaveBeenCalled();
+      expect(observersRepo.save).not.toHaveBeenCalled();
     });
 
     it('should throw not found exception', async () => {
@@ -119,7 +143,7 @@ describe('ObserversService', () => {
       const transactionId = 1;
       const dto = { userIds: [2] };
 
-      const transaction = { creatorKey: { user } };
+      const transaction = { creatorKey: { user }, observers: [] };
       entityManager.findOne.mockResolvedValue(transaction);
 
       const observer = { userId: 2, transactionId, role: Role.FULL } as TransactionObserver;
