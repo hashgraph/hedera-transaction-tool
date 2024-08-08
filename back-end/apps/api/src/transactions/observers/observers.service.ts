@@ -44,7 +44,7 @@ export class ObserversService {
   ): Promise<TransactionObserver[]> {
     const transaction = await this.entityManager.findOne(Transaction, {
       where: { id: transactionId },
-      relations: ['creatorKey', 'creatorKey.user'],
+      relations: ['creatorKey', 'creatorKey.user', 'observers'],
     });
 
     if (!transaction) throw new NotFoundException('Transaction not found');
@@ -55,8 +55,10 @@ export class ObserversService {
     const observers: TransactionObserver[] = [];
 
     for (const userId of dto.userIds) {
-      const observer = this.repo.create({ userId, transactionId, role: Role.FULL });
-      observers.push(observer);
+      if (!transaction.observers.some(o => o.userId === userId)) {
+        const observer = this.repo.create({ userId, transactionId, role: Role.FULL });
+        observers.push(observer);
+      }
     }
 
     try {
