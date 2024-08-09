@@ -128,6 +128,7 @@ watch(
     <div class="d-flex gap-3">
       <AppButton
         v-if="isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin"
+        data-testid="button-remove-account-from-contact-list"
         class="min-w-unset"
         color="danger"
         @click="$emit('update:remove')"
@@ -140,7 +141,7 @@ watch(
       <p class="text-main text-semi-bold">Email</p>
     </div>
     <div class="col-7">
-      <p class="text-secondary overflow-hidden">
+      <p class="text-secondary overflow-hidden" data-testid="p-contact-email">
         {{ contact.user.email }}
       </p>
     </div>
@@ -155,10 +156,16 @@ watch(
             <p class="text-small text-semi-bold">Public Key</p>
           </div>
           <div class="col-7">
-            <p class="text-secondary text-small overflow-hidden">
+            <p
+              class="text-secondary text-small overflow-hidden"
+              :data-testid="'p-contact-public-key-' + index"
+            >
               {{ PublicKey.fromString(key.publicKey).toStringRaw() }}
             </p>
-            <p class="text-small text-semi-bold text-pink mt-3">
+            <p
+              class="text-small text-semi-bold text-pink mt-3"
+              :data-testid="'p-contact-public-key-type-' + index"
+            >
               {{ PublicKey.fromString(key.publicKey)._key._type }}
             </p>
           </div>
@@ -168,6 +175,7 @@ watch(
           :publicKey="key.publicKey"
           :accounts="publicKeyToAccounts[key.publicKey]"
           :linkedAccounts="linkedAccounts"
+          :index="index"
           @update:linkedAccounts="emit('update:linkedAccounts', $event)"
           class="mt-4"
         />
@@ -176,6 +184,7 @@ watch(
           :publicKey="key.publicKey"
           :accounts="publicKeyToAccounts[key.publicKey]"
           :allLinkedAccounts="linkedAccounts"
+          :index="index"
           class="mt-4"
         />
       </div>
