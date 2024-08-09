@@ -40,6 +40,29 @@ spec:
                 secretKeyRef:
                   name: brevo-secret
                   key: password
+            - name: REDIS_URL
+              value: 'redis://redis-master:6379'
+            - name: POSTGRES_HOST
+              value: 'postgres-service'
+            - name: POSTGRES_PORT
+              value: '5432'
+            - name: POSTGRES_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: database
+            - name: POSTGRES_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: password
+            - name: POSTGRES_SYNCHRONIZE
+              value: 'false'
 ---
 apiVersion: v1
 kind: Service
