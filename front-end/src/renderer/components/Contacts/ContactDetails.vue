@@ -164,7 +164,7 @@ watch(
             </p>
             <p
               class="text-small text-semi-bold text-pink mt-3"
-              :data-testid="'p-contact-public-key-type-' + index"
+              :data-testid="'p-contact-public_type_key-' + index"
             >
               {{ PublicKey.fromString(key.publicKey)._key._type }}
             </p>
