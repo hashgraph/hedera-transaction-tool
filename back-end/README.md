@@ -30,7 +30,7 @@ If you use another version, please use [n](https://github.com/tj/n) to manage.
 pnpm install
 ```
 
-Before running the project please create `.env` in `apps/api`, `apps/chain`,
+Before running the project please create `.env` in `back-end`, `apps/api`, `apps/chain`,
 and `apps/notifications`. See the example.env in each location for the required variables.
 Or copy the existing example.env in each location.
 
