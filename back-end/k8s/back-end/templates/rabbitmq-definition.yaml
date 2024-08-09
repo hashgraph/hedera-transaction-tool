@@ -4,6 +4,7 @@ metadata:
   name: rabbitmq
   namespace: hedera-transaction-tool
 spec:
+  replicas: 1
   rabbitmq:
     additionalConfig: |
       default_user = tool-back-end
