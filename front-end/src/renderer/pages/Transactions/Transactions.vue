@@ -94,13 +94,17 @@ watch(
         >
         <ul class="dropdown-menu mt-3">
           <li class="dropdown-item cursor-pointer" @click="isTransactionSelectionModalShown = true">
-            <span class="text-small text-bold">Transaction</span>
+            <span class="text-small text-bold" data-testid="span-single-transaction"
+              >Transaction</span
+            >
           </li>
           <li
             class="dropdown-item cursor-pointer mt-3"
             @click="$router.push('create-transaction-group')"
           >
-            <span class="text-small text-bold">Transaction Group</span>
+            <span class="text-small text-bold" data-testid="span-group-transaction"
+              >Transaction Group</span
+            >
           </li>
         </ul>
       </div>

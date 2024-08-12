@@ -102,6 +102,7 @@ class TransactionPage extends BasePage {
   draftDeleteButtonIndexSelector = 'button-draft-delete-';
   draftContinueButtonIndexSelector = 'button-draft-continue-';
   confirmDeleteAccountButtonSelector = 'button-confirm-delete-account';
+  singleTransactionButtonSelector = 'span-single-transaction';
 
   //Other
   modalTransactionSuccessSelector = 'modal-transaction-success';
@@ -222,12 +223,17 @@ class TransactionPage extends BasePage {
     await this.clickByTestId(this.transactionsMenuButtonSelector, 2500);
   }
 
+  async clickOnSingleTransactionButton() {
+    await this.clickByTestId(this.singleTransactionButtonSelector);
+  }
+
   async clickOnAccountsMenuButton() {
     await this.clickByTestId(this.accountsMenuButtonSelector);
   }
 
   async clickOnCreateNewTransactionButton() {
     await this.clickByTestId(this.createNewTransactionButtonSelector);
+    await this.clickOnSingleTransactionButton();
   }
 
   /**
