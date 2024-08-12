@@ -89,12 +89,7 @@ watch(
     <div class="d-flex justify-content-between">
       <h1 class="text-title text-bold">Transactions</h1>
       <div class="dropdown">
-        <AppButton
-          color="primary"
-          data-testid="button-create-new"
-          size="large"
-          class="w-100 d-flex align-items-center justify-content-center"
-          data-bs-toggle="dropdown"
+        <AppButton color="primary" data-testid="button-create-new" data-bs-toggle="dropdown"
           ><i class="bi bi-plus-lg"></i> <span>Create New</span></AppButton
         >
         <ul class="dropdown-menu mt-3">
