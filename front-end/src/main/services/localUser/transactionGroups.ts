@@ -160,3 +160,16 @@ export async function editGroupItem(groupItem: GroupItem) {
     },
   });
 }
+
+export async function deleteGroupItem(transaction_group_id: string, seq: string) {
+  const prisma = getPrismaClient();
+
+  await prisma.groupItem.delete({
+    where: {
+      transaction_group_id_seq: {
+        transaction_group_id,
+        seq,
+      },
+    },
+  });
+}

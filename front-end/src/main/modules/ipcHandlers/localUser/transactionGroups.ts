@@ -13,6 +13,7 @@ import {
   editGroupItem,
   getGroupItem,
   updateGroup,
+  deleteGroupItem,
 } from '@main/services/localUser';
 
 const createChannelName = (...props) => ['transactionGroups', ...props].join(':');
@@ -57,5 +58,9 @@ export default () => {
 
   ipcMain.handle(createChannelName('editGroupItem'), (_e, groupItem: GroupItem) =>
     editGroupItem(groupItem),
+  );
+
+  ipcMain.handle(createChannelName('deleteGroupItem'), (_e, id: string, seq: string) =>
+    deleteGroupItem(id, seq),
   );
 };

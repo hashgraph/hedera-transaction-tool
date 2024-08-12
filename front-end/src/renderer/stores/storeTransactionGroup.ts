@@ -29,10 +29,14 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   /* State */
   const groupItems = ref<GroupItem[]>([]);
   const description = ref('');
+  const modified = ref(false);
 
   // TODO: keylists, approvers and observers must be saved in local drafts
   /* Actions */
   async function fetchGroup(id: string, findArgs: Prisma.TransactionDraftFindManyArgs) {
+    if (modified.value) {
+      return;
+    }
     groupItems.value = [];
     const group = await getGroup(id);
     description.value = group.description;
@@ -62,10 +66,12 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   function clearGroup() {
     groupItems.value = [];
     description.value = '';
+    modified.value = false;
   }
 
   function addGroupItem(groupItem: GroupItem) {
     groupItems.value.push(groupItem);
+    setModified();
   }
 
   function editGroupItem(newGroupItem: GroupItem) {
@@ -74,10 +80,12 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
         groupItems.value[i] = newGroupItem;
       }
     }
+    setModified();
   }
 
   function removeGroupItem(index: number) {
     groupItems.value.splice(index, 1);
+    setModified();
   }
 
   function duplicateGroupItem(index: number) {
@@ -91,7 +99,6 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
           transactionBytes: groupItem.transactionBytes,
           type: groupItem.type,
           accountId: groupItem.accountId,
-          groupId: groupItem.groupId,
           seq: groupItem.seq + 1,
           keyList: groupItem.keyList,
           observers: groupItem.observers,
@@ -103,6 +110,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       }
     });
     groupItems.value = newGroupItems;
+    setModified();
   }
 
   async function saveGroup(userId: string, description: string) {
@@ -157,6 +165,14 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     return true;
   }
 
+  function setModified() {
+    modified.value = true;
+  }
+
+  function isModified() {
+    return modified.value;
+  }
+
   // function getObservers() {
   //   const observers = new Array<number>();
   //   for (const groupItem of groupItems.value) {
@@ -184,6 +200,8 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     editGroupItem,
     hasObservers,
     hasApprovers,
+    setModified,
+    isModified,
   };
 });
 

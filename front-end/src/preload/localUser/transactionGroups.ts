@@ -24,5 +24,7 @@ export default {
       ipcRenderer.invoke('transactionGroups:getGroupsCount', userId),
     editGroupItem: (groupItem: GroupItem): Promise<void> =>
       ipcRenderer.invoke('transactionGroups:editGroupItem', groupItem),
+    deleteGroupItem: (id: string, seq: string): Promise<void> =>
+      ipcRenderer.invoke('transactionGroups:deleteGroupItem', id, seq),
   },
 };

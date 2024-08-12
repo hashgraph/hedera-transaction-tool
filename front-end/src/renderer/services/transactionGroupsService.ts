@@ -3,6 +3,7 @@ import { GroupItem as StoreGroupItem } from '@renderer/stores/storeTransactionGr
 
 import { getMessageFromIPCError } from '@renderer/utils';
 import { getTransactionType } from '@renderer/utils/transactions';
+import { deleteDraft, getDraft } from './transactionDraftsService';
 
 /* Transaction Groups Service */
 
@@ -114,6 +115,18 @@ export async function updateGroup(
 ) {
   try {
     await window.electronAPI.local.transactionGroups.updateGroup(id, group);
+    const fetchedItems = await window.electronAPI.local.transactionGroups.getGroupItems(id);
+    if (fetchedItems.length > groupItems.length) {
+      for (const [index, item] of fetchedItems.entries()) {
+        if (index < groupItems.length) {
+          continue;
+        }
+        if (item.transaction_draft_id) {
+          await deleteDraft(item.transaction_draft_id);
+        }
+        await window.electronAPI.local.transactionGroups.deleteGroupItem(id, index.toString());
+      }
+    }
     for (const [index, item] of groupItems.entries()) {
       const transactionDraft: Prisma.TransactionDraftUncheckedUpdateInput = {
         created_at: new Date(),
@@ -142,6 +155,13 @@ export async function updateGroup(
           transaction_group_id: id,
           seq: index.toString(),
         };
+        if (fetchedItems[index]) {
+          if (fetchedItems[index].transaction_draft_id) {
+            // @ts-ignore We check for null above
+            await deleteDraft(fetchedItems[index].transaction_draft_id);
+          }
+          await window.electronAPI.local.transactionGroups.deleteGroupItem(id, index.toString());
+        }
         await window.electronAPI.local.transactionGroups.addGroupItem(groupItem);
       }
     }

@@ -23,6 +23,7 @@ import TransactionSelectionModal from '@renderer/components/TransactionSelection
 import TransactionGroupProcessor from '@renderer/components/Transaction/TransactionGroupProcessor.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import { deleteGroup } from '@renderer/services/transactionGroupsService';
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
@@ -45,7 +46,7 @@ const isTransactionSelectionModalShown = ref(false);
 const transactionGroupProcessor = ref<typeof TransactionGroupProcessor | null>(null);
 const file = ref<HTMLInputElement | null>(null);
 const isSaveGroupModalShown = ref(false);
-const isNotSavedModalShown = ref(false);
+const wantToDeleteModalShown = ref(false);
 
 const groupEmpty = computed(() => transactionGroup.groupItems.length == 0);
 
@@ -72,6 +73,7 @@ async function handleSaveGroup() {
 
 function nameUpdated() {
   transactionGroup.description = groupName.value;
+  transactionGroup.setModified();
 }
 
 function handleDeleteGroupItem(index: number) {
@@ -95,7 +97,15 @@ function handleBack() {
   router.push('transactions');
 }
 
-function handleDiscard() {
+async function handleDiscard() {
+  transactionGroup.clearGroup();
+  router.push('transactions');
+}
+
+async function handleDelete() {
+  if (route.query.id) {
+    await deleteGroup(route.query.id.toString());
+  }
   transactionGroup.clearGroup();
   router.push('transactions');
 }
@@ -239,27 +249,30 @@ onMounted(async () => {
   groupName.value = transactionGroup.description;
 });
 
+// onBeforeRouteLeave(async to => {
 onBeforeRouteLeave(async to => {
+  if (transactionGroup.isModified() && transactionGroup.groupItems.length == 0) {
+    wantToDeleteModalShown.value = true;
+    return false;
+  }
+
   if (transactionGroup.groupItems.length == 0 && !transactionGroup.description) {
     transactionGroup.clearGroup();
     return true;
   }
 
-  if (
-    to.fullPath.startsWith('/create-transaction/') ||
-    to.fullPath.startsWith('/transaction-group/')
-  ) {
+  if (to.fullPath.startsWith('/create-transaction/')) {
     return true;
   }
 
-  if (!to.fullPath.startsWith('/create-transaction/') && transactionGroup.description) {
-    isNotSavedModalShown.value = true;
+  if (transactionGroup.isModified()) {
+    isSaveGroupModalShown.value = true;
     return false;
+  } else {
+    transactionGroup.clearGroup();
   }
 
-  isSaveGroupModalShown.value = true;
-
-  return false;
+  return true;
 });
 </script>
 <template>
@@ -399,19 +412,17 @@ onBeforeRouteLeave(async to => {
       </form>
     </AppModal>
     <AppModal
-      :show="isNotSavedModalShown"
+      :show="wantToDeleteModalShown"
       :close-on-click-outside="false"
       :close-on-escape="false"
       class="small-modal"
     >
-      <form class="text-center p-4" @submit.prevent="isNotSavedModalShown = false">
+      <form class="text-center p-4" @submit.prevent="wantToDeleteModalShown = false">
         <div class="text-start">
-          <i class="bi bi-x-lg cursor-pointer" @click="isNotSavedModalShown = false"></i>
+          <i class="bi bi-x-lg cursor-pointer" @click="wantToDeleteModalShown = false"></i>
         </div>
-        <h2 class="text-title text-semi-bold mt-3">No Transactions Added</h2>
-        <p class="text-small text-secondary mt-3">
-          Transaction group will discarded unless a transaction is added.
-        </p>
+        <h2 class="text-title text-semi-bold mt-3">Group Contains No Transactions</h2>
+        <p class="text-small text-secondary mt-3">Would you like to delete this group?</p>
 
         <hr class="separator my-5" />
 
@@ -420,12 +431,12 @@ onBeforeRouteLeave(async to => {
             color="borderless"
             data-testid="button-discard-draft-modal"
             type="button"
-            @click="handleDiscard"
+            @click="handleDelete"
           >
-            Discard
+            Delete Group
           </AppButton>
           <AppButton color="primary" data-testid="button-save-draft-modal" type="submit">
-            Continue
+            Continue Editing
           </AppButton>
         </div>
       </form>
