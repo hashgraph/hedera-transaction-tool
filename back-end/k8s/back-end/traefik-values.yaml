@@ -1,0 +1,16 @@
+# values.yaml
+service:
+  type: LoadBalancer
+  loadBalancerIP: 34.135.21.171
+providers:
+  kubernetesCRD:
+    allowCrossNamespace: true
+  kubernetesIngress:
+    publishedService:
+      enabled: true
+ingressRoute:
+  dashboard:
+    enabled: false
+rbac:
+  enabled: true
+  namespaced: false
