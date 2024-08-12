@@ -179,8 +179,10 @@ Until then, use the following commands once connected to a cluster:
 
    ```bash
    helm repo add bitnami https://charts.bitnami.com/bitnami
-   helm install back-end bitnami/rabbitmq-cluster-operator --namespace hedera-transaction-tool
-
+   helm install back-end bitnami/rabbitmq-cluster-operator \
+     --namespace hedera-transaction-tool 
+   
+   kubectl apply -f ./rabbitmq-secret.yaml
    kubectl apply -f ./rabbitmq-definition.yaml
    ```
 
@@ -191,42 +193,35 @@ Until then, use the following commands once connected to a cluster:
    ```
 
 5. Apply the required secrets:
+
    ```bash
    kubectl apply -f ./jwt-secret.yaml
    kubectl apply -f ./otp-secret.yaml
    kubectl apply -f ./brevo-secret.yaml
    ```
+   
 6. Deploy the services. Until migration is properly in place, the first time the api service is deployed, ensure that POSTGRES_SYNCHRONIZE is set to true in the yaml:
    ```bash
-   kubectl apply -f ./api/deployment.yaml
-   kubectl apply -f ./chain/deployment.yaml
-   kubectl apply -f ./notifications/deployment.yaml
+   kubectl apply -f ./api-deployment.yaml
+   kubectl apply -f ./chain-deployment.yaml
+   kubectl apply -f ./notifications-deployment.yaml
    ```
-7. Setup SSL. The [cert-manager guide](https://cert-manager.io/docs/tutorials/getting-started-with-cert-manager-on-google-kubernetes-engine-using-lets-encrypt-for-ingress-ssl/) describes the process, but in short:
+
+7. The IP for the ingress can be set by the controller, or it can be set as a static IP. Either remove the loadBalancerIp value, or set it with a reserved IP.
+
+8. Install the ingress controller, and ingress.  
 
    ```bash
-   kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.5/cert-manager.yaml --namespace hedera-transaction-tool
+   helm repo add traefik https://helm.traefik.io/traefik
+   helm repo update
+   helm install traefik traefik/traefik -f traefik-values.yaml
    ```
 
-   Install the issuer (this issuer uses Lets Encrypt's production service, use the staging service for testing):
+    Apply the ingress:
 
-   ```bash
-   kubectl apply -f ./issuer-lets-encrypt-production.yaml
-   ```
-
-   Install the secret that holds the key and cert:
-
-   ```bash
-   kubectl apply -f ./ssl-secret.yaml
-   ```
-
-8. The ingress uses the name of a previously reserved static ip (named 'web-ip'). If using the GCP console, this can be done in VPC Network -> IP Addresses. Deploy the ingress:
-
-   ```bash
-   kubectl apply -f ./ingress.yaml
-   ```
-
-   Note: if there are issues with the issuer and ingress, the ingress may have to be applied without ssl options before step 7.
+    ```bash
+    kubectl apply -f ./ingress.yaml
+    ```
 
 9. Using the actual name of the Postgres pod, connect to Postgres to create the admin user:
 
