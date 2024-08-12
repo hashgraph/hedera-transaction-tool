@@ -60,7 +60,7 @@ export class TransactionNotificationsService {
 
     if (emails.length > 0) {
       this.emailService.notifyEmail({
-        subject: 'Action Required: Review and Sign Hedera Transaction',
+        subject: 'Action Required: Review and Sign Transaction',
         email: emails,
         text: `A new transaction requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction using the following ID: ${transaction.transactionId}.`,
       });
