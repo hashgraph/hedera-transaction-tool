@@ -271,9 +271,9 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
               </template>
 
               <template v-else>
-                <template v-for="tx of group[1]" :key="tx.transactionRaw.id">
+                <template v-for="(tx, index) in group[1]" :key="tx.transactionRaw.id">
                   <tr>
-                    <td>
+                    <td :data-testid="`td-transaction-id-for-sign-${index}`">
                       {{
                         tx.transaction instanceof Transaction
                           ? getTransactionId(tx.transaction)

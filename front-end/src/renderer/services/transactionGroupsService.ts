@@ -3,7 +3,7 @@ import { GroupItem as StoreGroupItem } from '@renderer/stores/storeTransactionGr
 
 import { getMessageFromIPCError } from '@renderer/utils';
 import { getTransactionType } from '@renderer/utils/transactions';
-import { deleteDraft, getDraft } from './transactionDraftsService';
+import { deleteDraft } from './transactionDraftsService';
 
 /* Transaction Groups Service */
 
