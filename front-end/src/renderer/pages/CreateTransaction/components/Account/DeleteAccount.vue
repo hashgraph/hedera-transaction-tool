@@ -290,7 +290,13 @@ const columnClass = 'col-4 col-xxxl-3';
               color="primary"
               type="submit"
               data-testid="button-sign-and-submit-delete"
-              :disabled="!accountData.key || !payerData.isValid.value"
+              :disabled="
+                !payerData.isValid.value ||
+                !accountData.isValid.value ||
+                !transferAccountData.isValid.value ||
+                accountData.accountInfo.value?.deleted ||
+                transferAccountData.accountInfo.value?.deleted
+              "
             >
               <span class="bi bi-send"></span>
               {{

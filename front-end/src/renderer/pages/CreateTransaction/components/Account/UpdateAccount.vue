@@ -390,7 +390,13 @@ const columnClass = 'col-4 col-xxxl-3';
               color="primary"
               type="submit"
               data-testid="button-sign-and-submit-update"
-              :disabled="!accountData.key || !payerData.isValid.value"
+              :disabled="
+                !accountData.accountId.value ||
+                !payerData.isValid.value ||
+                !accountData.isValid.value ||
+                (stakeType === 'Account' && !isAccountId(newAccountData.stakedAccountId)) ||
+                (stakeType === 'Node' && newAccountData.stakedNodeId === null)
+              "
             >
               <span class="bi bi-send"></span>
               {{

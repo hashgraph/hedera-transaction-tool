@@ -288,11 +288,7 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
               :get-transaction-bytes="() => createTransaction().toBytes()"
               :is-executed="isExecuted || isSubmitted"
             />
-            <AppButton
-              color="primary"
-              type="submit"
-              :disabled="!payerData.key || !payerData.isValid.value"
-            >
+            <AppButton color="primary" type="submit" :disabled="!payerData.isValid.value">
               <span class="bi bi-send"></span>
               {{
                 getPropagationButtonLabel(

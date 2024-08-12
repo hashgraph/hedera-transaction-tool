@@ -436,7 +436,12 @@ onMounted(async () => {
               color="primary"
               type="submit"
               data-testid="button-sign-and-submit-transfer"
-              :disabled="!payerData.key || !payerData.isValid.value"
+              :disabled="
+                !payerData.accountId.value ||
+                !totalBalance.toBigNumber().isEqualTo(0) ||
+                totalBalanceAdjustments > 10 ||
+                totalBalanceAdjustments === 0
+              "
             >
               <span class="bi bi-send"></span>
               {{
