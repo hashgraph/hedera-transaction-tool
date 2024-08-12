@@ -251,7 +251,11 @@ onMounted(async () => {
 
 // onBeforeRouteLeave(async to => {
 onBeforeRouteLeave(async to => {
-  if (transactionGroup.isModified() && transactionGroup.groupItems.length == 0) {
+  if (
+    transactionGroup.isModified() &&
+    transactionGroup.groupItems.length == 0 &&
+    !to.fullPath.startsWith('/create-transaction/')
+  ) {
     wantToDeleteModalShown.value = true;
     return false;
   }

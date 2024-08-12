@@ -90,16 +90,19 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
 
   function duplicateGroupItem(index: number) {
     const newGroupItems = new Array<GroupItem>();
+    let newIndex = 0;
     groupItems.value.forEach((groupItem, i) => {
+      groupItem.seq = newIndex.toString();
+      newIndex++;
       newGroupItems.push(groupItem);
       if (i == index) {
-        const newDate = new Date(groupItem.validStart);
-        newDate.setTime(newDate.getTime() + 5);
+        const newDate = new Date();
+        newDate.setTime(newDate.getTime());
         const newItem = {
           transactionBytes: groupItem.transactionBytes,
           type: groupItem.type,
           accountId: groupItem.accountId,
-          seq: groupItem.seq + 1,
+          seq: (Number.parseInt(groupItem.seq) + 1).toString(),
           keyList: groupItem.keyList,
           observers: groupItem.observers,
           approvers: groupItem.approvers,
@@ -107,9 +110,11 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
           validStart: newDate,
         };
         newGroupItems.push(newItem);
+        newIndex++;
       }
     });
     groupItems.value = newGroupItems;
+    console.log(groupItems.value);
     setModified();
   }
 

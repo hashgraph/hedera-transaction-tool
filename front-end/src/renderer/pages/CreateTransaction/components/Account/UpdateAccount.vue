@@ -328,7 +328,7 @@ async function redirectToDetails(id: string | number) {
 
 /* Hooks */
 onMounted(async () => {
-  if (router.currentRoute.value.query.draftId) {
+  if (router.currentRoute.value.query.draftId || route.query.groupIndex) {
     await handleLoadFromDraft();
   } else if (router.currentRoute.value.query.accountId) {
     accountData.accountId.value = router.currentRoute.value.query.accountId.toString();

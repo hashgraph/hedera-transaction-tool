@@ -15,7 +15,11 @@ import { useToast } from 'vue-toast-notification';
 import { execute, signTransaction, storeTransaction } from '@renderer/services/transactionService';
 import { decryptPrivateKey, flattenKeyList } from '@renderer/services/keyPairService';
 import { deleteDraft } from '@renderer/services/transactionDraftsService';
-import { addGroupItem, editGroupItem } from '@renderer/services/transactionGroupsService';
+import {
+  addGroupItem,
+  deleteGroup,
+  editGroupItem,
+} from '@renderer/services/transactionGroupsService';
 import { addGroup, getGroupItem } from '@renderer/services/transactionGroupsService';
 import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
 import {
@@ -355,6 +359,9 @@ async function sendSignedTransactionsToOrganization() {
       uploadObservers(groupItem.transaction.id, groupItem.seq),
       uploadApprovers(groupItem.transaction.id, groupItem.seq),
       deleteDraftsIfNotTemplate(),
+      transactionGroup.groupItems[0].groupId
+        ? deleteGroup(transactionGroup.groupItems[0].groupId)
+        : null,
     ]);
     results.forEach(result => {
       if (result.status === 'rejected') {

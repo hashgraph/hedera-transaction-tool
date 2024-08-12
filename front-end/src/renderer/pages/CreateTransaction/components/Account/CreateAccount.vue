@@ -100,6 +100,7 @@ const transactionKey = computed(() => {
 
   return new KeyList(keyList);
 });
+
 /* Handlers */
 const handleStakeTypeChange = (e: Event) => {
   const selectEl = e.target as HTMLSelectElement;

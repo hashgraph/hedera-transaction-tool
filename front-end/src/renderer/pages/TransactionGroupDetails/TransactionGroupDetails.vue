@@ -43,6 +43,7 @@ const groupEmpty = computed(() => group.value?.groupItems.length == 0);
 const shouldApprove = ref(false);
 const isConfirmModalShown = ref(false);
 const publicKeysRequiredToSign = ref<string[] | null>([]);
+const disableSignAll = ref(false);
 
 /* Injected */
 const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
@@ -157,6 +158,7 @@ const handleSignGroup = async () => {
       }
     }
     toast.success('Transactions signed successfully');
+    disableSignAll.value = true;
   } catch {
     toast.error('Transactions not signed');
   }
@@ -332,7 +334,8 @@ onMounted(async () => {
           v-if="
             isLoggedInOrganization(user.selectedOrganization) &&
             publicKeysRequiredToSign &&
-            publicKeysRequiredToSign.length > 0
+            publicKeysRequiredToSign.length > 0 &&
+            !disableSignAll
           "
           color="primary"
           type="button"

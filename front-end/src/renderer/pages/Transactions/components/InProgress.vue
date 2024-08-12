@@ -227,7 +227,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                   </td>
                   <td class="text-center">
                     <AppButton @click="handleGroupDetails(group[0])" color="secondary"
-                      >Sign</AppButton
+                      >Details</AppButton
                     >
                   </td>
                 </tr>
