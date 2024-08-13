@@ -1,0 +1,8 @@
+# values.yaml
+rabbitmq:
+  auth:
+    existingPasswordSecret: rabbitmq-secret
+    existingErlangSecret: rabbitmq-secret
+    username: RABBITMQ_USERNAME
+    password: RABBITMQ_PASSWORD
+    erlangCookie: RABBITMQ_ERLANG_COOKIE

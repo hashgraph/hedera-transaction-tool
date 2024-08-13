@@ -5,18 +5,19 @@ metadata:
   namespace: hedera-transaction-tool
 spec:
   replicas: 1
-  rabbitmq:
-    env:
-      - name: RABBITMQ_USERNAME
-        valueFrom:
-          secretKeyRef:
-            name: rabbitmq-credentials
-            key: username
-      - name: RABBITMQ_PASSWORD
-        valueFrom:
-          secretKeyRef:
-            name: rabbitmq-credentials
-            key: password
-    additionalConfig: |
-      default_user = $(RABBITMQ_USERNAME)
-      default_pass = $(RABBITMQ_PASSWORD)
+#  rabbitmq:
+#    override:
+#      env:
+#        - name: RABBITMQ_USERNAME
+#          valueFrom:
+#            secretKeyRef:
+#              name: rabbitmq-secret
+#              key: username
+#        - name: RABBITMQ_PASSWORD
+#          valueFrom:
+#            secretKeyRef:
+#              name: rabbitmq-secret
+#              key: password
+#    additionalConfig: |
+#      default_user = thing
+#      default_pass = thing

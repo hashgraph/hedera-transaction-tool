@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: notifications
-          image: gcr.io/transaction-tool-dev/notifications
+          image: notifications:local
           env:
             - name: HTTP_PORT
               value: '3020'
@@ -28,12 +28,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: rabbitmq-secret
-                  key: username
+                  key: RABBITMQ_USERNAME
             - name: RABBITMQ_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: rabbitmq-secret
-                  key: password
+                  key: RABBITMQ_PASSWORD
             - name: RABBITMQ_URI
               value: 'amqp://$(RABBITMQ_USERNAME):$(RABBITMQ_PASSWORD)@rabbitmq:5672'
             - name: BREVO_USERNAME

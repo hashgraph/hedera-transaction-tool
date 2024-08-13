@@ -1,7 +1,8 @@
 # values.yaml
 service:
   type: LoadBalancer
-  loadBalancerIP: 34.135.21.171
+# If a static IP is obtained from the cloud provider, it can be used to assign a static IP to the Traefik service.
+#  loadBalancerIP: <static IP>
 providers:
   kubernetesCRD:
     allowCrossNamespace: true
