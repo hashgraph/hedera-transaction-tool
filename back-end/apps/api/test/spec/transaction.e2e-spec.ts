@@ -15,6 +15,9 @@ import {
   UserStatus,
   Transaction,
   TransactionType,
+  UserKey,
+  TransactionSigner,
+  TransactionObserver,
 } from '@entities';
 
 import { closeApp, createNestApp, login, sleep } from '../utils';
@@ -32,6 +35,8 @@ import { Endpoint } from '../utils/httpUtils';
 import {
   createAccount,
   createTransactionId,
+  getSignatures,
+  localnet1002,
   localnet1003,
   localnet2,
   updateAccount,
@@ -49,6 +54,7 @@ describe('Transactions (e2e)', () => {
   let userNewAuthCookie: string;
   let admin: User;
   let user: User;
+  let adminKey1002: UserKey;
 
   let addedTransactions: Awaited<ReturnType<typeof addTransactions>>;
 
@@ -98,6 +104,8 @@ describe('Transactions (e2e)', () => {
 
     admin = await getUser('admin');
     user = await getUser('user');
+
+    adminKey1002 = await getUserKey(admin.id, localnet1002.publicKeyRaw);
   });
 
   afterEach(async () => {
@@ -646,7 +654,42 @@ describe('Transactions (e2e)', () => {
     it('(GET) should get empty array if transaction does not exist', async () =>
       endpoint.get('999', userAuthCookie).expect(200).expect([]));
 
-    it.todo('(GET) should get empty array if the transaction is already signed');
+    it('(GET) should get empty array if the transaction is already signed', async () => {
+      const transactionsEndpoint = new Endpoint(server, '/transactions');
+
+      /* A transaction created by user that requires the admin to sign */
+      const transaction = addedTransactions.userTransactions[1];
+
+      const beforeSignRes = await endpoint.get(transaction.id.toString(), adminAuthCookie);
+      expect(beforeSignRes.status).toBe(200);
+      expect(beforeSignRes.body).toEqual([adminKey1002.id]);
+
+      /* Sign transaction (ADMIN) */
+      const sdkTransaction = AccountUpdateTransaction.fromBytes(transaction.body);
+      const signatures = getSignatures(localnet1002.privateKey, sdkTransaction);
+
+      await transactionsEndpoint
+        .post(
+          {
+            publicKeyId: adminKey1002.id,
+            signatures,
+          },
+          `/${transaction.id}/signers`,
+          adminAuthCookie,
+        )
+        .expect(201);
+
+      /* Get observers (ADMIN) */
+      const afterSignRes = await endpoint.get(transaction.id.toString(), adminAuthCookie);
+      expect(afterSignRes.status).toBe(200);
+      expect(afterSignRes.body).toEqual([]);
+
+      /* Delete the signer entity */
+      const signersRepo = await getRepository(TransactionSigner);
+      await signersRepo.delete({ transactionId: transaction.id });
+
+      expect(await signersRepo.count({ where: { transactionId: transaction.id } })).toBe(0);
+    });
   });
 
   describe('/transactions/cancel/:transactionId', () => {
@@ -751,10 +794,74 @@ describe('Transactions (e2e)', () => {
       expect(body.id).toEqual(id);
     });
 
-    it.todo('(GET) should get a transaction by id if has access (is observer)');
-    it.todo('(GET) should get a transaction by id if has access (is reviewer)');
-    it.todo('(GET) should get a transaction by id if has access (is signer)');
-    it.todo('(GET) should get a transaction by id if has access (should sign)');
+    it('(GET) should get a transaction by id if has access (is observer)', async () => {
+      /* A transaction created by user that requires the admin to sign */
+      const transaction = addedTransactions.userTransactions[0];
+
+      /* Add user as observer (USER) */
+      await endpoint
+        .post(
+          {
+            userIds: [admin.id],
+          },
+          `/${transaction.id}/observers`,
+          userAuthCookie,
+        )
+        .expect(201);
+
+      /* Get observers (ADMIN) */
+      const { status, body } = await endpoint.get(transaction.id.toString(), adminAuthCookie);
+
+      expect(status).toBe(200);
+      expect(body.id).toEqual(transaction.id);
+
+      /* Delete the signer entity */
+      const observersRepo = await getRepository(TransactionObserver);
+      await observersRepo.delete({ transactionId: transaction.id });
+
+      expect(await observersRepo.count({ where: { transactionId: transaction.id } })).toBe(0);
+    });
+
+    it('(GET) should get a transaction by id if has access (is signer)', async () => {
+      /* A transaction created by user that requires the admin to sign */
+      const transaction = addedTransactions.userTransactions[1];
+
+      /* Sign transaction (ADMIN) */
+      const sdkTransaction = AccountUpdateTransaction.fromBytes(transaction.body);
+      const signatures = getSignatures(localnet1002.privateKey, sdkTransaction);
+
+      await endpoint
+        .post(
+          {
+            publicKeyId: adminKey1002.id,
+            signatures,
+          },
+          `/${transaction.id}/signers`,
+          adminAuthCookie,
+        )
+        .expect(201);
+
+      /* Get observers (ADMIN) */
+      const { status, body } = await endpoint.get(transaction.id.toString(), adminAuthCookie);
+
+      expect(status).toBe(200);
+      expect(body.id).toEqual(transaction.id);
+
+      /* Delete the signer entity */
+      const signersRepo = await getRepository(TransactionSigner);
+      await signersRepo.delete({ transactionId: transaction.id });
+
+      expect(await signersRepo.count({ where: { transactionId: transaction.id } })).toBe(0);
+    });
+
+    it('(GET) should get a transaction by id if has access (should sign)', async () => {
+      const transaction = addedTransactions.userTransactions[1];
+
+      const { status, body } = await endpoint.get(transaction.id.toString(), adminAuthCookie);
+
+      expect(status).toBe(200);
+      expect(body.id).toEqual(transaction.id);
+    });
 
     it('(GET) should get a transaction by id if has access (is in a status visible for everyone)', async () => {
       const transaction = await createTransaction(user, localnet1003);
