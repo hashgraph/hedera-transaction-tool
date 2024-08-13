@@ -244,7 +244,7 @@ describe('TransactionStatusService', () => {
     expect(transactionRepo.manager.update).toHaveBeenCalled();
   });
 
-  describe('update transactions', () => {
+  describe('updateTransactionss', () => {
     beforeEach(() => {
       jest.resetAllMocks();
     });
@@ -355,7 +355,7 @@ describe('TransactionStatusService', () => {
     });
   });
 
-  describe('update transaction status', () => {
+  describe('updateTransactionStatus', () => {
     beforeEach(() => {
       jest.resetAllMocks();
     });
@@ -427,6 +427,24 @@ describe('TransactionStatusService', () => {
       transactionRepo.findOne.mockResolvedValue(undefined);
 
       await service.updateTransactionStatus({ id: 1 });
+
+      expect(transactionRepo.findOne).toHaveBeenCalled();
+      expect(transactionRepo.update).not.toHaveBeenCalled();
+      expect(notificationsService.emit).not.toHaveBeenCalled();
+    });
+
+    it('should return if transaction status is the same', async () => {
+      const transaction = {
+        id: 1,
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+        body: new AccountCreateTransaction().toBytes(),
+      };
+      transactionRepo.findOne.mockResolvedValue(transaction as Transaction);
+
+      jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
+      jest.mocked(ableToSign).mockReturnValueOnce(true);
+
+      await service.updateTransactionStatus({ id: transaction.id });
 
       expect(transactionRepo.findOne).toHaveBeenCalled();
       expect(transactionRepo.update).not.toHaveBeenCalled();
