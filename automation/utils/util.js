@@ -7,13 +7,15 @@ async function setupApp() {
   console.log(asciiArt); // Display ASCII art as the app starts
   const app = await launchHederaTransactionTool();
   const window = await app.firstWindow();
+  const loginPage = new LoginPage(window);
 
   await window.evaluate(() => {
     window.localStorage.clear();
-    window.localStorage.setItem('important-note-accepted', 'true');
+    // window.localStorage.setItem('important-note-accepted', 'true');
   });
 
   expect(window).not.toBeNull();
+  await loginPage.closeImportantNoteModal();
   return { app, window };
 }
 
