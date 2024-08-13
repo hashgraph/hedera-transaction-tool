@@ -1,6 +1,6 @@
 # values.yaml
-service:
-  type: LoadBalancer
+#service:
+#  type: LoadBalancer
 # If a static IP is obtained from the cloud provider, it can be used to assign a static IP to the Traefik service.
 #  loadBalancerIP: <static IP>
 providers:
