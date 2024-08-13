@@ -76,7 +76,7 @@ jobs:
         run: npm i -g @hashgraph/hedera-local
 
       - name: run hedera local
-        run: hedera start -d
+        run: hedera start -d --verbose=trace
 
       - name: Restore Build Artifacts
         uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
