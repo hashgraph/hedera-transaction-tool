@@ -147,11 +147,13 @@ export class TransactionStatusService {
           },
         );
       }
-    });
 
-    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
+      if (transactions.length > 0) {
+        this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+          message: TRANSACTION_ACTION,
+          content: '',
+        });
+      }
     });
   }
 
@@ -262,6 +264,8 @@ export class TransactionStatusService {
     const newStatus = isAbleToSign
       ? TransactionStatus.WAITING_FOR_EXECUTION
       : TransactionStatus.WAITING_FOR_SIGNATURES;
+
+    if (transaction.status === newStatus) return;
 
     await this.transactionRepo.update(
       {
