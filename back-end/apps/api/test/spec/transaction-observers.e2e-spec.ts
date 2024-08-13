@@ -1,9 +1,16 @@
 import { NestExpressApplication } from '@nestjs/platform-express';
 
 import { Repository } from 'typeorm';
-import { AccountCreateTransaction } from '@hashgraph/sdk';
+import { AccountCreateTransaction, AccountUpdateTransaction } from '@hashgraph/sdk';
 
-import { TransactionStatus, User, Transaction, Role, TransactionObserver } from '@entities';
+import {
+  TransactionStatus,
+  User,
+  Transaction,
+  Role,
+  TransactionObserver,
+  UserKey,
+} from '@entities';
 
 import { closeApp, createNestApp, login } from '../utils';
 import {
@@ -16,7 +23,12 @@ import {
   resetUsersState,
 } from '../utils/databaseUtil';
 import { Endpoint } from '../utils/httpUtils';
-import { createTransactionId, localnet1002, localnet1003 } from '../utils/hederaUtils';
+import {
+  createTransactionId,
+  getSignatures,
+  localnet1002,
+  localnet1003,
+} from '../utils/hederaUtils';
 import { HederaAccount } from '../utils/models';
 
 describe('Transaction Observers (e2e)', () => {
@@ -30,7 +42,9 @@ describe('Transaction Observers (e2e)', () => {
   let userAuthCookie: string;
   let userNewAuthCookie: string;
   let user: User;
+  let admin: User;
   let userNew: User;
+  let adminKey1002: UserKey;
 
   let addedTransactions: Awaited<ReturnType<typeof addTransactions>>;
 
@@ -79,7 +93,10 @@ describe('Transaction Observers (e2e)', () => {
     userNewAuthCookie = await login(app, 'userNew');
 
     user = await getUser('user');
+    admin = await getUser('admin');
     userNew = await getUser('userNew');
+
+    adminKey1002 = await getUserKey(admin.id, localnet1002.publicKeyRaw);
   });
 
   afterEach(async () => {
@@ -214,7 +231,52 @@ describe('Transaction Observers (e2e)', () => {
       );
     });
 
-    it.todo('(GET) should get transaction observers if user has access (is signer)');
+    it('(GET) should get transaction observers if user has access (is signer)', async () => {
+      /* A transaction created by user that requires the admin to sign */
+      const transaction = addedTransactions.userTransactions[1];
+
+      /* Add user as observer (USER) */
+      await endpoint
+        .post(
+          {
+            userIds: [user.id],
+          },
+          `/${transaction.id}/observers`,
+          userAuthCookie,
+        )
+        .expect(201);
+
+      /* Sign transaction (ADMIN) */
+      const sdkTransaction = AccountUpdateTransaction.fromBytes(transaction.body);
+      const signatures = getSignatures(localnet1002.privateKey, sdkTransaction);
+
+      await endpoint
+        .post(
+          {
+            publicKeyId: adminKey1002.id,
+            signatures,
+          },
+          `/${transaction.id}/signers`,
+          adminAuthCookie,
+        )
+        .expect(201);
+
+      /* Get observers (ADMIN) */
+      const { status, body } = await endpoint.get(`/${transaction.id}/observers`, adminAuthCookie);
+
+      expect(status).toBe(200);
+      expect(body).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: expect.any(Number),
+            transactionId: transaction.id,
+            userId: user.id,
+            role: Role.FULL,
+            createdAt: expect.any(String),
+          }),
+        ]),
+      );
+    });
 
     it('(GET) should get transaction observers if user has access (is observer)', async () => {
       const transaction = addedTransactions.adminTransactions[0];
@@ -375,8 +437,6 @@ describe('Transaction Observers (e2e)', () => {
         }),
       );
     });
-
-    it.todo('(GET) should get transaction observers if user has access (is approver)');
 
     it('(PATCH) should update transaction observer', async () => {
       const transaction = addedTransactions.adminTransactions[0];
