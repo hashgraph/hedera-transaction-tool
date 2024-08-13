@@ -178,11 +178,13 @@ Until then, use the following commands once connected to a cluster:
 3. Install the helm chart and apply the rabbitmq definition:
 
    ```bash
+   kubectl apply -f ./rabbitmq-secret.yaml
+   
    helm repo add bitnami https://charts.bitnami.com/bitnami
    helm install back-end bitnami/rabbitmq-cluster-operator \
+     -f ./rabbitmq-values.yaml \
      --namespace hedera-transaction-tool 
    
-   kubectl apply -f ./rabbitmq-secret.yaml
    kubectl apply -f ./rabbitmq-definition.yaml
    ```
 
