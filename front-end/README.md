@@ -63,6 +63,12 @@ Run the tests
 npm run test:main # run tests for the main folder
 ```
 
+Run the tests with coverage
+
+```bash
+npm run test:main:coverage # run tests for the main folder
+```
+
 ## Publish
 
 1. Create Draft release with the proper tag (version in `package.json` needs to match) and prefix `v`
