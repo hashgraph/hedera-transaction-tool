@@ -37,7 +37,6 @@ class DetailsPage extends BasePage {
   accountUpdateDetailsIdSelector = 'p-account-details-id';
   accountDeleteDetailsDeletedAccountIdSelector = 'p-account-delete-details-account-id';
   accountDeleteDetailsTransferIdSelector = 'p-account-delete-details-transfer-account-id';
-  accountDeleteDetailsTransferAmountSelector = 'p-account-delete-details-transfer-amount';
   transferDetailsFromAccountSelector = 'p-transfer-from-account-details';
   transferDetailsFromAmountSelector = 'p-transfer-from-amount-details';
   transferDetailsToAccountSelector = 'p-transfer-to-account-details';
@@ -135,10 +134,6 @@ class DetailsPage extends BasePage {
 
   async getAccountDeleteDetailsTransferId() {
     return await this.getTextByTestId(this.accountDeleteDetailsTransferIdSelector);
-  }
-
-  async getAccountDeleteDetailsTransferAmount() {
-    return await this.getTextByTestId(this.accountDeleteDetailsTransferAmountSelector);
   }
 
   async getTransferDetailsFromAccount() {
