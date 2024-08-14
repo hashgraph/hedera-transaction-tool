@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   test:
-    name: ${{ matrix.test-suite.name }} unit tests
+    name: Unit Tests | ${{ matrix.test-suite.name }}
     runs-on: [self-hosted, Linux, medium, ephemeral]
     strategy:
       fail-fast: false
