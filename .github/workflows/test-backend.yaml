@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   test:
-    name: ${{ matrix.test-suite }} unit tests
+    name: ${{ matrix.test-name }} unit tests
     runs-on: [self-hosted, Linux, medium, ephemeral]
     strategy:
       fail-fast: false
@@ -24,6 +24,10 @@ jobs:
           - api
           - chain
           - notifications
+        test-name:
+          - API
+          - Chain
+          - Notifications
     steps:
       - name: Checkout code
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
