@@ -44,7 +44,7 @@ jobs:
           path: front-end/release/linux-unpacked
           key: build-artifacts-${{ github.sha }}
   test:
-    name: Automation | ${{ matrix.test-suite }}
+    name: Automation | ${{ matrix.test-suite.name }}
     runs-on: [self-hosted, Linux, medium, ephemeral]
     needs: build
     strategy:
