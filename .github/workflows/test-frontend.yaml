@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build front-end
+    name: Build | Front-end
     runs-on: [self-hosted, Linux, medium, ephemeral]
 
     steps:
@@ -44,18 +44,23 @@ jobs:
           path: front-end/release/linux-unpacked
           key: build-artifacts-${{ github.sha }}
   test:
-    name: ${{ matrix.test-suite }}
+    name: Automation | ${{ matrix.test-suite.name }}
     runs-on: [self-hosted, Linux, medium, ephemeral]
     needs: build
     strategy:
       fail-fast: false
       matrix:
         test-suite:
-          - RegistrationTests
-          - LoginTests
-          - SettingsTests
-          - TransactionTests
-          - WorkflowTests
+          - name: Registration
+            command: RegistrationTests
+          - name: Login
+            command: LoginTests
+          - name: Settings
+            command: SettingsTests
+          - name: Transactions
+            command: TransactionTests
+          - name: Workflow
+            command: WorkflowTests
     steps:
       - name: Checkout code
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
@@ -97,17 +102,18 @@ jobs:
           PRIVATE_KEY: "0x9a07bbdbb62e24686d2a4259dc88e38438e2c7a1ba167b147ad30ac540b0a3cd"
           ENVIRONMENT: LOCALNET
 
-        run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite }}
+        run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite.command }}
         working-directory: automation
 
   unit-test:
-    name: ${{ matrix.test-suite }} unit tests
+    name: Unit Tests | ${{ matrix.test-suite.name }}
     runs-on: [self-hosted, Linux, medium, ephemeral]
     strategy:
       fail-fast: false
       matrix:
         test-suite:
-          - main
+          - name: Main Process
+            command: main
     steps:
       - name: Checkout code
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
@@ -125,7 +131,7 @@ jobs:
         working-directory: front-end
 
       - name: Run unit tests
-        run: npm run test:${{ matrix.test-suite }}:coverage
+        run: npm run test:${{ matrix.test-suite.command }}:coverage
         working-directory: front-end
 
       - name: Upload coverage to Codecov

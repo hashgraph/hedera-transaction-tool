@@ -15,15 +15,18 @@ concurrency:
 
 jobs:
   test:
-    name: ${{ matrix.test-suite }} unit tests
+    name: Unit Tests | ${{ matrix.test-suite.name }}
     runs-on: [self-hosted, Linux, medium, ephemeral]
     strategy:
       fail-fast: false
       matrix:
         test-suite:
-          - api
-          - chain
-          - notifications
+          - name: API
+            command: api
+          - name: Chain
+            command: chain
+          - name: Notifications
+            command: notifications
     steps:
       - name: Checkout code
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
@@ -46,7 +49,7 @@ jobs:
         working-directory: back-end
 
       - name: Run unit tests
-        run: pnpm --filter ${{ matrix.test-suite }} test:cov
+        run: pnpm --filter ${{ matrix.test-suite.command }} test:cov
         working-directory: back-end
 
       - name: Upload coverage to Codecov
