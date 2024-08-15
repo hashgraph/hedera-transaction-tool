@@ -1,5 +1,64 @@
 const { queryPostgresDatabase, queryDatabase } = require('./databaseUtil');
 
+async function verifyUserExists(email) {
+  const query = `
+        SELECT *
+        FROM User
+        WHERE email = ?`;
+  const user = await queryDatabase(query, [email]);
+  return user !== undefined;
+}
+
+async function getPublicKeyByEmail(email) {
+  const query = `
+        SELECT kp.public_key
+        FROM KeyPair kp
+                 JOIN User u ON u.id = kp.user_id
+        WHERE u.email = ?`;
+
+  try {
+    const row = await queryDatabase(query, [email]);
+    return row ? row.public_key : null;
+  } catch (error) {
+    console.error('Error fetching public key:', error);
+    return null;
+  }
+}
+
+async function verifyPrivateKeyExistsByEmail(email) {
+  const query = `
+        SELECT kp.private_key
+        FROM KeyPair kp
+                 JOIN User u ON u.id = kp.user_id
+        WHERE u.email = ?
+          AND kp.private_key IS NOT NULL`;
+
+  try {
+    const row = await queryDatabase(query, [email]);
+    return row !== undefined;
+  } catch (error) {
+    console.error('Error checking for private key:', error);
+    return false;
+  }
+}
+
+async function verifyPublicKeyExistsByEmail(email) {
+  const query = `
+        SELECT kp.public_key
+        FROM KeyPair kp
+                 JOIN User u ON u.id = kp.user_id
+        WHERE u.email = ?
+          AND kp.private_key IS NOT NULL`;
+
+  try {
+    const row = await queryDatabase(query, [email]);
+    return row !== undefined;
+  } catch (error) {
+    console.error('Error checking for private key:', error);
+    return false;
+  }
+}
+
 /**
  * Retrieves the public key for a user identified by the given email.
  *
@@ -238,6 +297,10 @@ async function isUserDeleted(email) {
 }
 
 module.exports = {
+  verifyUserExists,
+  getPublicKeyByEmail,
+  verifyPrivateKeyExistsByEmail,
+  verifyPublicKeyExistsByEmail,
   getFirstPublicKeyByEmail,
   getUserIdByEmail,
   isKeyDeleted,
