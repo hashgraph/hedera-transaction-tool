@@ -109,6 +109,7 @@ watch(
       <AppInput
         v-if="isNicknameInputShown"
         ref="nicknameInputRef"
+        data-testid="input-change-nickname"
         @blur="handleChangeNickname"
         :filled="true"
       />
@@ -121,6 +122,7 @@ watch(
 
         <span
           class="bi bi-pencil-square text-primary text-main cursor-pointer ms-1"
+          data-testid="span-change-nickname"
           @click="handleStartNicknameEdit"
         ></span>
       </p>

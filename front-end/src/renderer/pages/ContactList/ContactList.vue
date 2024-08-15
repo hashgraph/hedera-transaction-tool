@@ -142,7 +142,12 @@ onBeforeMount(async () => {
                   }"
                   @click="handleSelectContact(c.user.id)"
                 >
-                  <p class="text-small text-semi-bold overflow-hidden">{{ c.nickname }}</p>
+                  <p
+                    class="text-small text-semi-bold overflow-hidden"
+                    :data-testid="`p-contact-nickname-${c.nickname}`"
+                  >
+                    {{ c.nickname }}
+                  </p>
                   <div class="d-flex justify-content-between align-items-center">
                     <p
                       class="text-micro text-secondary overflow-hidden mt-2"
