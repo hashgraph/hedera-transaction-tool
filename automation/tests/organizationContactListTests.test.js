@@ -50,7 +50,7 @@ test.describe('Organization Contact List tests', () => {
 
     adminUser = organizationPage.getUser(0);
     regularUser = organizationPage.getUser(1);
-    await organizationPage.upgradeUserToAdmin(adminUser.email);
+    await contactListPage.upgradeUserToAdmin(adminUser.email);
 
     // Setup Organization
     await organizationPage.setupOrganization();

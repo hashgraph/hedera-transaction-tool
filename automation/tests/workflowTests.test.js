@@ -412,32 +412,32 @@ test.describe('Workflow tests', () => {
     const updatedMemoText = 'Updated memo';
     const maxAutoAssociationsNumber = '44';
     const newTransactionId = await transactionPage.updateAccount(
-        accountFromList,
-        maxAutoAssociationsNumber,
-        updatedMemoText,
+      accountFromList,
+      maxAutoAssociationsNumber,
+      updatedMemoText,
     );
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
     await detailsPage.assertTransactionDetails(
-        newTransactionId,
-        'Account Update Transaction',
-        async () => {
-          const getTransactionMemo = await detailsPage.getTransactionDetailsMemo();
-          expect(getTransactionMemo).toBe('Transaction memo update');
+      newTransactionId,
+      'Account Update Transaction',
+      async () => {
+        const getTransactionMemo = await detailsPage.getTransactionDetailsMemo();
+        expect(getTransactionMemo).toBe('Transaction memo update');
 
-          const getAccountId = await detailsPage.getAccountUpdateDetailsId();
-          expect(getAccountId).toBe(accountFromList);
+        const getAccountId = await detailsPage.getAccountUpdateDetailsId();
+        expect(getAccountId).toBe(accountFromList);
 
-          const getAccountMemoDetails = await detailsPage.getAccountDetailsMemo();
-          expect(getAccountMemoDetails).toBe(updatedMemoText);
+        const getAccountMemoDetails = await detailsPage.getAccountDetailsMemo();
+        expect(getAccountMemoDetails).toBe(updatedMemoText);
 
-          const getAccountDetailsDeclineRewards = await detailsPage.getAccountDetailsDeclineRewards();
-          expect(getAccountDetailsDeclineRewards).toBe('Yes');
+        const getAccountDetailsDeclineRewards = await detailsPage.getAccountDetailsDeclineRewards();
+        expect(getAccountDetailsDeclineRewards).toBe('Yes');
 
-          const getAccountDetailsReceiverSigRequired =
-              await detailsPage.getAccountDetailsReceiverSigRequired();
-          expect(getAccountDetailsReceiverSigRequired).toBe('No');
-        },
+        const getAccountDetailsReceiverSigRequired =
+          await detailsPage.getAccountDetailsReceiverSigRequired();
+        expect(getAccountDetailsReceiverSigRequired).toBe('No');
+      },
     );
   });
 
@@ -607,15 +607,15 @@ test.describe('Workflow tests', () => {
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
     await detailsPage.assertTransactionDetails(
-        transactionId,
-        'File Update Transaction',
-        async () => {
-          const fileIdFromDetailsPage = await detailsPage.getFileDetailsFileId();
-          expect(fileId).toBe(fileIdFromDetailsPage);
+      transactionId,
+      'File Update Transaction',
+      async () => {
+        const fileIdFromDetailsPage = await detailsPage.getFileDetailsFileId();
+        expect(fileId).toBe(fileIdFromDetailsPage);
 
-          const isViewContentButtonVisible = await detailsPage.isViewContentsButtonVisible();
-          expect(isViewContentButtonVisible).toBe(true);
-        },
+        const isViewContentButtonVisible = await detailsPage.isViewContentsButtonVisible();
+        expect(isViewContentButtonVisible).toBe(true);
+      },
     );
   });
 

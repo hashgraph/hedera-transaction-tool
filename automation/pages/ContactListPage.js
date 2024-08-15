@@ -3,6 +3,7 @@ const {
   getAllPublicKeysByEmail,
   verifyUserExistsInOrganization,
   isUserDeleted,
+  upgradeUserToAdmin,
 } = require('../utils/databaseQueries');
 const { getAssociatedAccounts } = require('../utils/mirrorNodeAPI');
 
@@ -93,6 +94,10 @@ class ContactListPage extends BasePage {
 
   async clickOnConfirmRemoveContactButton() {
     await this.clickByTestId(this.confirmRemovingContactButtonSelector);
+  }
+
+  async upgradeUserToAdmin(email) {
+    return await upgradeUserToAdmin(email);
   }
 
   async comparePublicKeys(email) {

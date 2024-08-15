@@ -450,10 +450,6 @@ class OrganizationPage extends BasePage {
     return await getAllTransactionIdsForUserObserver(userId);
   }
 
-  async upgradeUserToAdmin(email) {
-    return await upgradeUserToAdmin(email);
-  }
-
   async clickOnAddObserverButton() {
     await this.clickByTestId(this.addObserverButtonSelector);
   }
