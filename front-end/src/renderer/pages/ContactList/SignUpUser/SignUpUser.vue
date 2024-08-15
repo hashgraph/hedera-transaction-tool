@@ -80,13 +80,20 @@ watch(
     <form class="mt-5 col-12 col-md-8 col-lg-6 col-xxl-4" @submit="handleLinkAccount">
       <div class="form-group">
         <label class="form-label">Email <span class="text-danger">*</span></label>
-        <AppInput v-model="email" data-testid="input-new-user-email" :filled="true" placeholder="Enter email" />
+        <AppInput
+          v-model="email"
+          data-testid="input-new-user-email"
+          :filled="true"
+          placeholder="Enter email"
+        />
       </div>
       <div class="form-group mt-5">
         <label class="form-label">Nickname</label>
         <AppInput v-model="nickname" :filled="true" placeholder="Enter nickname" />
       </div>
-      <AppButton color="primary" data-testid="button-register-user" type="submit" class="mt-5">Register User</AppButton>
+      <AppButton color="primary" data-testid="button-register-user" type="submit" class="mt-5"
+        >Register User</AppButton
+      >
     </form>
   </div>
 </template>
