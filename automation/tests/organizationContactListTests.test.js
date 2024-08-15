@@ -12,12 +12,13 @@ const LoginPage = require('../pages/LoginPage');
 const TransactionPage = require('../pages/TransactionPage');
 const OrganizationPage = require('../pages/OrganizationPage');
 const SettingsPage = require('../pages/SettingsPage');
+const ContactListPage = require('../pages/ContactListPage');
 const { resetDbState, resetPostgresDbState } = require('../utils/databaseUtil');
 const { getAssociatedAccounts } = require('../utils/mirrorNodeAPI');
 
 let app, window;
 let globalCredentials = { email: '', password: '' };
-let registrationPage, loginPage, transactionPage, organizationPage, settingsPage;
+let registrationPage, loginPage, transactionPage, organizationPage, settingsPage, contactListPage;
 let adminUser, regularUser;
 
 test.describe('Organization Contact List tests', () => {
@@ -30,6 +31,7 @@ test.describe('Organization Contact List tests', () => {
     organizationPage = new OrganizationPage(window);
     settingsPage = new SettingsPage(window);
     registrationPage = new RegistrationPage(window);
+    contactListPage = new ContactListPage(window);
 
     // Generate credentials and store them globally
     globalCredentials.email = generateRandomEmail();
@@ -73,8 +75,8 @@ test.describe('Organization Contact List tests', () => {
     );
 
     await organizationPage.clickOnContactListButton();
-    await organizationPage.clickOnAccountInContactListByEmail(regularUser.email);
-    expect(await organizationPage.isRemoveContactButtonVisible()).toBe(true);
+    await contactListPage.clickOnAccountInContactListByEmail(regularUser.email);
+    expect(await contactListPage.isRemoveContactButtonVisible()).toBe(true);
   });
 
   test('Verify "Add new" button is enabled for an admin role', async () => {
@@ -85,7 +87,7 @@ test.describe('Organization Contact List tests', () => {
     );
 
     await organizationPage.clickOnContactListButton();
-    expect(await organizationPage.isAddNewContactButtonEnabled()).toBe(true);
+    expect(await contactListPage.isAddNewContactButtonEnabled()).toBe(true);
   });
 
   test('Verify "Remove" contact list button is not visible for a regular role', async () => {
@@ -95,8 +97,8 @@ test.describe('Organization Contact List tests', () => {
       globalCredentials.password,
     );
     await organizationPage.clickOnContactListButton();
-    await organizationPage.clickOnAccountInContactListByEmail(adminUser.email);
-    expect(await organizationPage.isRemoveContactButtonVisible()).toBe(false);
+    await contactListPage.clickOnAccountInContactListByEmail(adminUser.email);
+    expect(await contactListPage.isRemoveContactButtonVisible()).toBe(false);
   });
 
   test('Verify "Add new" button is enabled for a regular role', async () => {
@@ -107,7 +109,7 @@ test.describe('Organization Contact List tests', () => {
     );
 
     await organizationPage.clickOnContactListButton();
-    expect(await organizationPage.isAddNewContactButtonEnabled()).toBe(false);
+    expect(await contactListPage.isAddNewContactButtonEnabled()).toBe(false);
   });
 
   test('Verify contact email and public keys are displayed', async () => {
@@ -118,13 +120,13 @@ test.describe('Organization Contact List tests', () => {
     );
 
     await organizationPage.clickOnContactListButton();
-    await organizationPage.clickOnAccountInContactListByEmail(regularUser.email);
+    await contactListPage.clickOnAccountInContactListByEmail(regularUser.email);
 
-    const contactEmail = await organizationPage.getContactListEmailText();
+    const contactEmail = await contactListPage.getContactListEmailText();
     expect(contactEmail).toBe(regularUser.email);
 
     // verifying that public keys displayed for the contact are matching the public keys in the database
-    const isPublicKeyCorrect = await organizationPage.comparePublicKeys(regularUser.email);
+    const isPublicKeyCorrect = await contactListPage.comparePublicKeys(regularUser.email);
     expect(isPublicKeyCorrect).toBe(true);
   });
 
@@ -137,9 +139,62 @@ test.describe('Organization Contact List tests', () => {
     );
 
     await organizationPage.clickOnContactListButton();
-    await organizationPage.clickOnAccountInContactListByEmail(adminUser.email);
+    await contactListPage.clickOnAccountInContactListByEmail(adminUser.email);
 
-    const result = await organizationPage.verifyAssociatedAccounts();
+    const result = await contactListPage.verifyAssociatedAccounts();
     expect(result).toBe(true);
+  });
+
+  test('Verify user can change nickname', async () => {
+    const newNickname = 'Test-Nickname';
+    await organizationPage.signInOrganization(
+      regularUser.email,
+      regularUser.password,
+      globalCredentials.password,
+    );
+
+    await organizationPage.clickOnContactListButton();
+    await contactListPage.clickOnAccountInContactListByEmail(adminUser.email);
+    await contactListPage.clickOnChangeNicknameButton();
+    await contactListPage.fillInContactNickname(newNickname);
+    await contactListPage.clickOnAccountInContactListByEmail(adminUser.email);
+    const nickNameText = await contactListPage.getContactNicknameText(newNickname);
+    expect(nickNameText).toBe(newNickname);
+  });
+
+  test('Verify admin user can add new user to the organization', async () => {
+    const newUserEmail = generateRandomEmail();
+    await organizationPage.signInOrganization(
+      adminUser.email,
+      adminUser.password,
+      globalCredentials.password,
+    );
+
+    await organizationPage.clickOnContactListButton();
+    await contactListPage.clickOnAddNewContactButton();
+    await contactListPage.inputNewUserEmail(newUserEmail);
+    await contactListPage.clickOnRegisterNewUserButton();
+    const isUserAdded = await contactListPage.verifyUserExistsInOrganization(newUserEmail);
+    expect(isUserAdded).toBe(true);
+  });
+
+  test('Verify admin user can remove user from the organization', async () => {
+    const newUserEmail = generateRandomEmail();
+    await organizationPage.signInOrganization(
+      adminUser.email,
+      adminUser.password,
+      globalCredentials.password,
+    );
+
+    await organizationPage.clickOnContactListButton();
+    await contactListPage.clickOnAddNewContactButton();
+    await contactListPage.inputNewUserEmail(newUserEmail);
+    await contactListPage.clickOnRegisterNewUserButton();
+    await contactListPage.clickOnAccountInContactListByEmail(newUserEmail);
+    await contactListPage.clickOnRemoveContactButton();
+    await contactListPage.clickOnConfirmRemoveContactButton();
+
+    const isUsedDeleted = await contactListPage.isUserDeleted(newUserEmail);
+    expect(isUsedDeleted).toBe(true);
   });
 });

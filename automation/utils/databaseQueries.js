@@ -190,6 +190,53 @@ async function verifyOrganizationExists(nickname) {
   }
 }
 
+/**
+ * Verifies if a user with the given email exists.
+ *
+ * @param {string} email - The email of the user to verify.
+ * @return {Promise<boolean>} A promise that resolves to true if the user exists, or false if not.
+ * @throws {Error} If there is an error executing the query.
+ */
+async function verifyUserExistsInOrganization(email) {
+  const query = `
+      SELECT COUNT(*) AS count
+      FROM public."user"
+      WHERE email = $1
+  `;
+
+  try {
+    const result = await queryPostgresDatabase(query, [email]);
+    return result[0]?.count > 0;
+  } catch (error) {
+    console.error('Error verifying user:', error);
+    return false;
+  }
+}
+
+/**
+ * Checks if the user with the given email has been marked as deleted.
+ *
+ * @param {string} email - The email of the user to check.
+ * @return {Promise<boolean>} A promise that resolves to true if the user has been marked as deleted, or false if not.
+ * @throws {Error} If there is an error executing the query.
+ */
+async function isUserDeleted(email) {
+  const query = `
+    SELECT "deletedAt"
+    FROM public."user"
+    WHERE email = $1;
+  `;
+
+  try {
+    const result = await queryPostgresDatabase(query, [email]);
+    // If the result has a "deletedAt" value that is not null, return true.
+    return result[0]?.deletedAt !== null;
+  } catch (error) {
+    console.error('Error checking if user is deleted:', error);
+    return false;
+  }
+}
+
 module.exports = {
   getFirstPublicKeyByEmail,
   getUserIdByEmail,
@@ -199,4 +246,6 @@ module.exports = {
   upgradeUserToAdmin,
   verifyOrganizationExists,
   getAllPublicKeysByEmail,
+  verifyUserExistsInOrganization,
+  isUserDeleted,
 };
