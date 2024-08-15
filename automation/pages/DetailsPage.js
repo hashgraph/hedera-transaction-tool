@@ -46,7 +46,6 @@ class DetailsPage extends BasePage {
   allowanceDetailsAmountSelector = 'p-account-approve-details-amount';
   fileDetailsExpirationTimeSelector = 'p-file-details-expiration-time';
   fileDetailsFileIdSelector = 'p-file-details-file-id';
-  fileDetailsKeyTextSelector = 'p-file-details-key-text';
 
   async clickOnFirstTransactionDetailsButton() {
     await this.clickByTestId(this.transactionDetailsButtonIndexSelector + '0');
@@ -178,10 +177,6 @@ class DetailsPage extends BasePage {
 
   async getFileDetailsFileId() {
     return await this.getTextByTestId(this.fileDetailsFileIdSelector);
-  }
-
-  async getFileDetailsKeyText() {
-    return await this.getTextByTestId(this.fileDetailsKeyTextSelector);
   }
 
   async assertTransactionDisplayed(expectedId, expectedType) {

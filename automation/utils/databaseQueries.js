@@ -1,5 +1,80 @@
 const { queryPostgresDatabase, queryDatabase } = require('./databaseUtil');
 
+/**
+ * Verifies if a transaction with the given ID and type exists in the database.
+ *
+ * @param {string} transactionId - The ID of the transaction to verify.
+ * @param {string} transactionType - The type of the transaction to verify.
+ * @return {Promise<boolean>} A promise that resolves to true if the transaction exists, or false if not.
+ * @throws {Error} If there is an error executing the query.
+ */
+async function verifyTransactionExists(transactionId, transactionType) {
+  const query = `
+        SELECT COUNT(*) AS count
+        FROM "Transaction"
+        WHERE transaction_id = ? AND type = ?`;
+
+  try {
+    const row = await queryDatabase(query, [transactionId, transactionType]);
+    return row ? row.count > 0 : false;
+  } catch (error) {
+    console.error('Error verifying transaction:', error);
+    return false;
+  }
+}
+
+/**
+ * Verifies if an account with the given account ID exists in the database.
+ *
+ * @param {string} accountId - The ID of the account to verify.
+ * @return {Promise<boolean>} A promise that resolves to true if the account exists, or false if not.
+ * @throws {Error} If there is an error executing the query.
+ */
+async function verifyAccountExists(accountId) {
+  const query = `
+        SELECT COUNT(*) AS count
+        FROM HederaAccount
+        WHERE account_id = ?`;
+
+  try {
+    const row = await queryDatabase(query, [accountId]);
+    return row ? row.count > 0 : false;
+  } catch (error) {
+    console.error('Error verifying account:', error);
+    return false;
+  }
+}
+
+/**
+ * Verifies if a file with the given file ID exists in the database.
+ *
+ * @param {string} fileId - The ID of the file to verify.
+ * @return {Promise<boolean>} A promise that resolves to true if the file exists, or false if not.
+ * @throws {Error} If there is an error executing the query.
+ */
+async function verifyFileExists(fileId) {
+  const query = `
+        SELECT COUNT(*) AS count
+        FROM HederaFile
+        WHERE file_id = ?`;
+
+  try {
+    const row = await queryDatabase(query, [fileId]);
+    return row ? row.count > 0 : false;
+  } catch (error) {
+    console.error('Error verifying file:', error);
+    return false;
+  }
+}
+
+/**
+ * Verifies if a user with the given email exists in the database.
+ *
+ * @param {string} email - The email of the user to verify.
+ * @return {Promise<boolean>} A promise that resolves to true if the user exists, or false if not.
+ * @throws {Error} If there is an error executing the query.
+ */
+
 async function verifyUserExists(email) {
   const query = `
         SELECT *
@@ -9,6 +84,13 @@ async function verifyUserExists(email) {
   return user !== undefined;
 }
 
+/**
+ * Retrieves the public key associated with the user identified by the given email.
+ *
+ * @param {string} email - The email of the user whose public key is to be retrieved.
+ * @return {Promise<string|null>} A promise that resolves to the public key if found, or null if not found.
+ * @throws {Error} If there is an error executing the query.
+ */
 async function getPublicKeyByEmail(email) {
   const query = `
         SELECT kp.public_key
@@ -25,6 +107,13 @@ async function getPublicKeyByEmail(email) {
   }
 }
 
+/**
+ * Verifies if a private key exists for the user identified by the given email.
+ *
+ * @param {string} email - The email of the user whose private key existence is to be verified.
+ * @return {Promise<boolean>} A promise that resolves to true if a private key exists, or false if not.
+ * @throws {Error} If there is an error executing the query.
+ */
 async function verifyPrivateKeyExistsByEmail(email) {
   const query = `
         SELECT kp.private_key
@@ -42,6 +131,13 @@ async function verifyPrivateKeyExistsByEmail(email) {
   }
 }
 
+/**
+ * Verifies if a public key exists for the user identified by the given email.
+ *
+ * @param {string} email - The email of the user whose public key existence is to be verified.
+ * @return {Promise<boolean>} A promise that resolves to true if a public key exists, or false if not.
+ * @throws {Error} If there is an error executing the query.
+ */
 async function verifyPublicKeyExistsByEmail(email) {
   const query = `
         SELECT kp.public_key
@@ -297,6 +393,9 @@ async function isUserDeleted(email) {
 }
 
 module.exports = {
+  verifyTransactionExists,
+  verifyAccountExists,
+  verifyFileExists,
   verifyUserExists,
   getPublicKeyByEmail,
   verifyPrivateKeyExistsByEmail,

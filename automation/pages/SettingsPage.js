@@ -11,17 +11,12 @@ class SettingsPage extends BasePage {
   /* Selectors */
 
   // Inputs
-  nodeAccountidInputSelector = 'input-node-accountid';
-  passwordInputSelector = 'input-password';
   indexInputSelector = 'input-index';
   nicknameInputSelector = 'input-nickname';
   ed25519PrivateKeyInputSelector = 'input-ed25519-private-key';
   ed25519PNicknameInputSelector = 'input-ed25519-private-key-nickname';
-  ed25519PasswordInputSelector = 'input-ed25519-private-key-password';
   ecdsaPrivateKeyInputSelector = 'input-ecdsa-private-key';
   ecdsaNicknameInputSelector = 'input-ecdsa-private-key-nickname';
-  ecdsaPasswordInputSelector = 'input-ecdsa-private-key-password';
-  decryptPasswordInputSelector = 'input-decrypt-password';
   currentPasswordInputSelector = 'input-current-password';
   newPasswordInputSelector = 'input-new-password';
 
@@ -40,7 +35,6 @@ class SettingsPage extends BasePage {
   systemTabButtonSelector = 'tab-appearance-system';
   restoreButtonSelector = 'button-restore';
   continueButtonSelector = 'button-continue';
-  continuePasswordButtonSelector = 'button-continue-password';
   continueIndexButtonSelector = 'button-continue-index';
   continueNicknameButtonSelector = 'button-continue-nickname';
   continuePhraseButtonSelector = 'button-continue-phrase';
@@ -50,7 +44,6 @@ class SettingsPage extends BasePage {
   ed25519ImportButtonSelector = 'button-ed25519-private-key-import';
   ecdsaImportButtonSelector = 'button-ecdsa-private-key-import';
   decryptMainPrivateKeyButtonSelector = 'span-show-modal-0';
-  decryptPasswordButtonSelector = 'button-decrypt';
   deleteKeyPairButton = 'button-delete-keypair';
   deleteKeyButtonPrefix = 'button-delete-key-';
   changePasswordButtonSelector = 'button-change-password';
@@ -163,14 +156,6 @@ class SettingsPage extends BasePage {
     await this.clickByTestId(this.continueButtonSelector, 25000);
   }
 
-  async fillInPassword(password) {
-    await this.fillByTestId(this.passwordInputSelector, password);
-  }
-
-  async clickOnPasswordContinueButton() {
-    await this.clickByTestId(this.continuePasswordButtonSelector);
-  }
-
   async fillInIndex(index = 1) {
     await this.fillByTestId(this.indexInputSelector, index);
   }
@@ -223,14 +208,6 @@ class SettingsPage extends BasePage {
     await this.fillByTestId(this.ed25519PNicknameInputSelector, ecdsaNickname);
   }
 
-  async fillInECDSAPassword(password) {
-    await this.fillByTestId(this.ecdsaPasswordInputSelector, password);
-  }
-
-  async fillInED25519Password(password) {
-    await this.fillByTestId(this.ed25519PasswordInputSelector, password);
-  }
-
   async clickOnECDSAImportButton() {
     await this.clickByTestId(this.ecdsaImportButtonSelector);
   }
@@ -241,14 +218,6 @@ class SettingsPage extends BasePage {
 
   async clickOnEyeDecryptIcon() {
     await this.clickByTestId(this.decryptMainPrivateKeyButtonSelector);
-  }
-
-  async fillInDecryptPassword(password) {
-    await this.fillByTestId(this.decryptPasswordInputSelector, password);
-  }
-
-  async clickOnDecryptButton() {
-    await this.clickByTestId(this.decryptPasswordButtonSelector);
   }
 
   async getPrivateKeyText() {
