@@ -69,7 +69,6 @@ class OrganizationPage extends BasePage {
   minutesOverlayButtonSelector = 'button[aria-label="Open minutes overlay"]';
   hoursOverlayButtonSelector = 'button[aria-label="Open hours overlay"]';
   signTransactionButtonSelector = 'button-sign-org-transaction';
-  confirmRemovingContactButtonSelector = 'button-confirm-removing-contact';
 
   // Inputs
   organizationNicknameInputSelector = 'input-organization-nickname';
@@ -78,27 +77,17 @@ class OrganizationPage extends BasePage {
   emailForOrganizationInputSelector = 'input-login-email-for-organization';
   passwordForOrganizationInputSelector = 'input-login-password-for-organization';
   editOrganizationNicknameInputSelector = 'input-edit-nickname';
-  inputPublicComplexKeySelector = 'input-complex-public-key';
 
   // Texts
   organizationErrorMessageSelector = 'p-organization-error-message';
   organizationNicknameTextSelector = 'span-organization-nickname';
   transactionDetailsIdSelector = 'p-transaction-details-id';
   transactionValidStartSelector = 'p-transaction-details-valid-start';
-  firstSignerThresholdPublicKeySelector = 'span-public-key-0-0';
-  secondSignerThresholdPublicKeySelector = 'span-public-key-1-0';
-  thirdSignerThresholdPublicKeySelector = 'span-public-key-1-1';
-  firstSignerCheckmarkSelector = 'span-checkmark-public-key-0-0';
   secondSignerCheckmarkSelector = 'span-checkmark-public-key-1-0';
-  thirdSignerCheckmarkSelector = 'span-checkmark-public-key-1-1';
 
   // Indexes
   modeSelectionIndexSelector = 'dropdown-item-';
   firstMissingKeyIndexSelector = 'cell-index-missing-0';
-  readyForReviewTransactionIdIndexSelector = 'td-review-transaction-id-';
-  readyForReviewTransactionTypeIndexSelector = 'td-review-transaction-type-';
-  readyForReviewValidStartIndexSelector = 'td-review-transaction-valid-start-';
-  readyForReviewSubmitApprovalButtonIndexSelector = 'button-review-transaction-approve-';
   readyForSignTransactionIdIndexSelector = 'td-transaction-id-for-sign-';
   readyForSignTransactionTypeIndexSelector = 'td-transaction-type-for-sign-';
   readyForSignValidStartIndexSelector = 'td-transaction-valid-start-for-sign-';
@@ -463,32 +452,6 @@ class OrganizationPage extends BasePage {
 
   async upgradeUserToAdmin(email) {
     return await upgradeUserToAdmin(email);
-  }
-
-  //TODO - Align the below methods based on new implementation(approver)
-
-  async clickOnAddApproverButton() {
-    await this.clickByTestId(this.addApproverButtonSelector);
-  }
-
-  async clickOnSelectUserButton() {
-    await this.clickByTestId(this.selectUserButtonSelector);
-  }
-
-  async clickOnAddUserButtonForApprover() {
-    await this.clickByTestIdWithIndex(this.addUserButtonSelector);
-  }
-
-  async clickOnDoneButton() {
-    await this.clickByTestId(this.doneButtonSelector);
-  }
-
-  async clickOnUserOfListForApprover(index) {
-    await this.clickByTestIdWithIndex(this.userListIndexSelector + index);
-  }
-
-  async getFirstUserOfListForApprover(index) {
-    return await this.getTextByTestIdWithIndex(this.userListIndexSelector + index);
   }
 
   async clickOnAddObserverButton() {
