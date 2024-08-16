@@ -87,7 +87,7 @@ jobs:
         working-directory: automation
 
       - name: Install hedera globally
-        run: npm i -g @hashgraph/hedera-local
+        run: npm i -g @hashgraph/hedera-local@2.28.1
 
       - name: run hedera local
         run: hedera start -d --verbose=trace --network-tag 0.51.5
