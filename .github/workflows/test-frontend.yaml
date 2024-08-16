@@ -87,10 +87,10 @@ jobs:
         working-directory: automation
 
       - name: Install hedera globally
-        run: npm i -g @hashgraph/hedera-local@2.27.1
+        run: npm i -g @hashgraph/hedera-local
 
       - name: run hedera local
-        run: hedera start -d --verbose=trace --network-tag 0.51.5 --mirror-tag 0.110.2
+        run: hedera start -d --verbose=trace
 
       - name: Restore Build Artifacts
         uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
