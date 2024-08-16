@@ -154,11 +154,11 @@ const handleLoadFromDraft = async () => {
 
     accountData.accountId.value = draftTransaction.accountId?.toString() || '';
 
-    newAccountData.receiverSignatureRequired = draftTransaction.receiverSignatureRequired;
+    newAccountData.receiverSignatureRequired = draftTransaction.receiverSignatureRequired || false;
     newAccountData.acceptStakingRewards = !draftTransaction.declineStakingRewards;
 
     newAccountData.maxAutomaticTokenAssociations =
-      draftTransaction.maxAutomaticTokenAssociations.toNumber();
+      draftTransaction.maxAutomaticTokenAssociations?.toNumber() || 0;
     newAccountData.memo = draftTransaction.accountMemo || '';
     transactionMemo.value = draftTransaction.transactionMemo || '';
 
