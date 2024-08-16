@@ -20,7 +20,7 @@ concurrency:
 jobs:
   build:
     name: Build | Front-end
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: transaction-tools-linux-medium
 
     steps:
       - name: Checkout code
@@ -49,7 +49,7 @@ jobs:
           key: build-artifacts-${{ github.sha }}
   test:
     name: Automation | ${{ matrix.test-suite.name }}
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: transaction-tools-linux-medium
     needs: build
     strategy:
       fail-fast: false
@@ -76,6 +76,11 @@ jobs:
           cache: "npm"
           cache-dependency-path: |
             automation/package-lock.json
+
+      - name: Install Docker Compose Plugin
+        run: |
+          sudo curl -fLo /usr/local/lib/docker/cli-plugins/docker-compose https://github.com/docker/compose/releases/download/v2.29.1/docker-compose-linux-x86_64
+          sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
       - name: Install automation dependencies
         run: npm ci
@@ -111,7 +116,7 @@ jobs:
 
   unit-test:
     name: Unit Tests | ${{ matrix.test-suite.name }}
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: transaction-tools-linux-medium
     strategy:
       fail-fast: false
       matrix:
