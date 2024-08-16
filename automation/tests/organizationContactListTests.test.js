@@ -171,9 +171,7 @@ test.describe('Organization Contact List tests', () => {
     );
 
     await organizationPage.clickOnContactListButton();
-    await contactListPage.clickOnAddNewContactButton();
-    await contactListPage.inputNewUserEmail(newUserEmail);
-    await contactListPage.clickOnRegisterNewUserButton();
+    await contactListPage.addNewUser(newUserEmail);
     const isUserAdded = await contactListPage.verifyUserExistsInOrganization(newUserEmail);
     expect(isUserAdded).toBe(true);
   });
@@ -187,9 +185,7 @@ test.describe('Organization Contact List tests', () => {
     );
 
     await organizationPage.clickOnContactListButton();
-    await contactListPage.clickOnAddNewContactButton();
-    await contactListPage.inputNewUserEmail(newUserEmail);
-    await contactListPage.clickOnRegisterNewUserButton();
+    await contactListPage.addNewUser(newUserEmail);
     await contactListPage.clickOnAccountInContactListByEmail(newUserEmail);
     await contactListPage.clickOnRemoveContactButton();
     await contactListPage.clickOnConfirmRemoveContactButton();

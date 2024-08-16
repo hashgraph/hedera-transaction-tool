@@ -16,9 +16,7 @@ const {
   isKeyDeleted,
   findNewKey,
   getAllTransactionIdsForUserObserver,
-  upgradeUserToAdmin,
   verifyOrganizationExists,
-  isUserDeleted,
 } = require('../utils/databaseQueries');
 const { getAssociatedAccounts } = require('../utils/mirrorNodeAPI');
 

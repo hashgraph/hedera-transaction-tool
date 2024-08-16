@@ -100,6 +100,13 @@ class ContactListPage extends BasePage {
     return await upgradeUserToAdmin(email);
   }
 
+  async addNewUser(email) {
+    await this.clickOnAddNewContactButton();
+    await this.inputNewUserEmail(email);
+    await this.clickOnRegisterNewUserButton();
+  }
+
+  // This method will compare the public keys from the contact list with the public keys from the database.
   async comparePublicKeys(email) {
     const pagePublicKeys = await this.getAllPublicKeysFromContactList();
     const dbPublicKeys = await getAllPublicKeysByEmail(email);
@@ -121,6 +128,10 @@ class ContactListPage extends BasePage {
     return publicKeys;
   }
 
+  /**
+   * Verifies that the associated accounts displayed in the UI match the associated accounts from Mirror node.
+   * @returns {Promise<boolean>} True if the associated accounts match, false otherwise.
+   */
   async verifyAssociatedAccounts() {
     const associatedAccounts = await this.getAssociatedAccounts();
 
@@ -203,8 +214,8 @@ class ContactListPage extends BasePage {
     return associatedAccountsMap;
   }
 
+  // This method will get the associated accounts from the Mirror node.
   async mirrorGetAssociatedAccounts(publicKey) {
-    // Fetch all associated accounts for the provided public key
     const accountIds = await getAssociatedAccounts(publicKey);
 
     if (accountIds.length > 0) {
@@ -216,6 +227,7 @@ class ContactListPage extends BasePage {
     return accountIds;
   }
 
+  // This method will compare two arrays of account IDs.
   compareAccountLists(array1, array2) {
     const sortedArray1 = array1.map(id => id.trim()).sort();
     const sortedArray2 = array2.map(id => id.trim()).sort();
