@@ -176,7 +176,7 @@ class OrganizationPage extends BasePage {
     }
   }
 
-  async setUpUsers(window, encryptionPassword) {
+  async setUpUsers(window, encryptionPassword, setPrivateKey = true) {
     const privateKeys = [
       process.env.PRIVATE_KEY_2,
       process.env.PRIVATE_KEY_3,
@@ -206,7 +206,9 @@ class OrganizationPage extends BasePage {
       );
       await this.registrationPage.clickOnFinalNextButtonWithRetry();
 
-      await setupEnvironmentForTransactions(window, privateKey);
+      if (setPrivateKey) {
+        await setupEnvironmentForTransactions(window, privateKey);
+      }
       await this.clickByTestId(this.logoutButtonSelector);
       await this.waitForElementToBeVisible(this.emailForOrganizationInputSelector);
     }
@@ -559,6 +561,60 @@ class OrganizationPage extends BasePage {
     const transactionId = await this.getTransactionDetailsId();
     await this.clickOnSignTransactionButton();
     await new Promise(resolve => setTimeout(resolve, 6000));
+    const transactionResponse =
+      await this.transactionPage.mirrorGetTransactionResponse(transactionId);
+    this.complexAccountId.push(transactionResponse.transactions[0].entity_id);
+  }
+
+  async logInAndSignTransactionByAllUsers(encryptionPassword, txId) {
+    for (let i = 1; i < this.users.length; i++) {
+      console.log(`Signing transaction for user ${i}`);
+      const user = this.users[i];
+      await this.signInOrganization(user.email, user.password, encryptionPassword);
+      await this.transactionPage.clickOnTransactionsMenuButton();
+      await this.clickOnReadyToSignTab();
+      await this.clickOnSubmitSignButtonByTransactionId(txId);
+      await this.clickOnSignTransactionButton();
+
+      await this.logoutFromOrganization();
+    }
+  }
+
+  async addComplexKeyAccountWithMultipleThresholds(users = 99) {
+    await this.transactionPage.clickOnTransactionsMenuButton();
+    await this.transactionPage.clickOnCreateNewTransactionButton();
+    await this.transactionPage.clickOnCreateAccountTransaction();
+    await this.transactionPage.clickOnComplexTab();
+    await this.transactionPage.clickOnCreateNewComplexKeyButton();
+
+    // Start at depth 0
+    let currentDepth = '0';
+
+    // Divide the users into groups of 3
+    for (let i = 0; i < users / 3; i++) {
+      // Add a threshold
+      await this.transactionPage.addThresholdKeyAtDepth(currentDepth);
+
+      // Add 3 public keys to this threshold
+      for (let j = 0; j < 3; j++) {
+        const publicKey = await this.getFirstPublicKeyByEmail(
+          this.users[(i * 3 + j) % this.users.length].email,
+        );
+        await this.transactionPage.addPublicKeyAtDepth(`${currentDepth}-${i}`, publicKey);
+      }
+    }
+
+    // Complete the transaction
+    await this.transactionPage.clickOnDoneButtonForComplexKeyCreation();
+    await this.transactionPage.clickOnSignAndSubmitButton();
+    await this.transactionPage.clickSignTransactionButton();
+
+    // Retrieve and store the transaction ID
+    const transactionId = await this.getTransactionDetailsId();
+    await this.clickOnSignTransactionButton();
+    await new Promise(resolve => setTimeout(resolve, 6000));
+
+    // Store the complex account ID
     const transactionResponse =
       await this.transactionPage.mirrorGetTransactionResponse(transactionId);
     this.complexAccountId.push(transactionResponse.transactions[0].entity_id);

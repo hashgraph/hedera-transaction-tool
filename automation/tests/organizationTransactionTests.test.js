@@ -54,7 +54,7 @@ test.describe('Organization Transaction tests', () => {
 
     // Setup Organization
     await organizationPage.setupOrganization();
-    await organizationPage.setUpUsers(window);
+    await organizationPage.setUpUsers(window, globalCredentials.password);
 
     // Disable notifications for test users
     await disableNotificationsForTestUsers();
