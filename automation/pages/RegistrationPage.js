@@ -1,6 +1,11 @@
 const BasePage = require('./BasePage');
 const { expect } = require('playwright/test');
-const { queryDatabase } = require('../utils/databaseUtil');
+const {
+  verifyUserExists,
+  getPublicKeyByEmail,
+  verifyPrivateKeyExistsByEmail,
+  verifyPublicKeyExistsByEmail,
+} = require('../utils/databaseQueries');
 
 class RegistrationPage extends BasePage {
   constructor(window) {
@@ -268,62 +273,19 @@ class RegistrationPage extends BasePage {
   }
 
   async verifyUserExists(email) {
-    const query = `
-        SELECT *
-        FROM User
-        WHERE email = ?`;
-    const user = await queryDatabase(query, [email]);
-    return user !== undefined;
-  }
-
-  async getPublicKeyByEmail(email) {
-    const query = `
-        SELECT kp.public_key
-        FROM KeyPair kp
-                 JOIN User u ON u.id = kp.user_id
-        WHERE u.email = ?`;
-
-    try {
-      const row = await queryDatabase(query, [email]);
-      return row ? row.public_key : null;
-    } catch (error) {
-      console.error('Error fetching public key:', error);
-      return null;
-    }
-  }
-
-  async verifyPrivateKeyExistsByEmail(email) {
-    const query = `
-        SELECT kp.private_key
-        FROM KeyPair kp
-                 JOIN User u ON u.id = kp.user_id
-        WHERE u.email = ?
-          AND kp.private_key IS NOT NULL`;
-
-    try {
-      const row = await queryDatabase(query, [email]);
-      return row !== undefined;
-    } catch (error) {
-      console.error('Error checking for private key:', error);
-      return false;
-    }
+    return await verifyUserExists(email);
   }
 
   async verifyPublicKeyExistsByEmail(email) {
-    const query = `
-        SELECT kp.public_key
-        FROM KeyPair kp
-                 JOIN User u ON u.id = kp.user_id
-        WHERE u.email = ?
-          AND kp.private_key IS NOT NULL`;
+    return await verifyPublicKeyExistsByEmail(email);
+  }
 
-    try {
-      const row = await queryDatabase(query, [email]);
-      return row !== undefined;
-    } catch (error) {
-      console.error('Error checking for private key:', error);
-      return false;
-    }
+  async verifyPrivateKeyExistsByEmail(email) {
+    return await verifyPrivateKeyExistsByEmail(email);
+  }
+
+  async getPublicKeyByEmail(email) {
+    return await getPublicKeyByEmail(email);
   }
 
   async typeEmail(email) {

@@ -1,6 +1,10 @@
 const BasePage = require('./BasePage');
 const { getAccountDetails, getTransactionDetails } = require('../utils/mirrorNodeAPI');
-const { queryDatabase } = require('../utils/databaseUtil');
+const {
+  verifyTransactionExists,
+  verifyAccountExists,
+  verifyFileExists,
+} = require('../utils/databaseQueries');
 const { decodeAndFlattenKeys } = require('../utils/keyUtil');
 
 class TransactionPage extends BasePage {
@@ -19,7 +23,6 @@ class TransactionPage extends BasePage {
   maxAutoAssociationsInputSelector = 'input-max-auto-associations';
   accountMemoInputSelector = 'input-account-memo';
   nicknameInputSelector = 'input-nickname';
-  passwordSignTransactionInputSelector = 'input-password-transaction';
   publicKeyComplexInputSelector = 'input-complex-public-key';
   deletedAccountInputSelector = 'input-delete-account-id';
   transferAccountInputSelector = 'input-transfer-account-id';
@@ -37,11 +40,9 @@ class TransactionPage extends BasePage {
   fileContentTextFieldSelector = 'textarea-file-content';
   fileIdInputForReadSelector = 'input-file-id-for-read';
   fileContentReadTextFieldSelector = 'text-area-read-file-content';
-  signPasswordForReadInputFieldSelector = 'input-password-for-sign-query';
   publicKeyInputSelector = 'input-public-key';
   fileIdUpdateInputSelector = 'input-file-id-for-update';
   fileContentUpdateTextFieldSelector = 'textarea-update-file-content';
-  signPasswordForFileUpdateInputSelector = 'input-password-sign-file-update';
   fileIdInputForAppendSelector = 'input-file-id-append';
   fileContentAppendTextFieldSelector = 'textarea-file-content-for-append';
   fileCreateTransactionMemoInputSelector = 'input-transaction-memo-for-file-create';
@@ -81,7 +82,6 @@ class TransactionPage extends BasePage {
   discardModalDraftButtonSelector = 'button-discard-draft-modal';
   buttonSignTransactionSelector = 'button-sign-transaction';
   buttonCancelTransactionSelector = 'button-cancel-transaction';
-  passwordContinueButtonSelector = 'button-password-continue';
   closeCompletedTxButtonSelector = 'button-close-completed-tx';
   addComplexButtonIndex = 'button-complex-key-add-element-';
   selectThresholdNumberIndex = 'button-complex-key-add-element-threshold-';
@@ -96,10 +96,7 @@ class TransactionPage extends BasePage {
   signAndSubmitAllowanceSelector = 'button-sign-and-submit-allowance';
   signAndSubmitFileCreateSelector = 'button-sign-and-submit-file-create';
   signAndReadFileButtonSelector = 'button-sign-and-read-file';
-  signReadQueryButtonSelector = 'button-sign-read-query';
   signAndSubmitUpdateFileSelector = 'button-sign-and-submit-update-file';
-  signFileUpdateButtonSelector = 'button-sign-file-update';
-  continueSignFileUpdateButtonSelector = 'button-continue-sign-file-update-transaction';
   signAndSubmitFileAppendButtonSelector = 'button-sign-and-submit-file-append';
   draftsTabSelector = 'tab-0';
   draftDeleteButtonIndexSelector = 'button-draft-delete-';
@@ -126,11 +123,9 @@ class TransactionPage extends BasePage {
 
   //Indexes
   accountIdPrefixSelector = 'p-account-id-';
-  transactionStatusIndexSelector = 'td-transaction-status-';
   draftDetailsDateIndexSelector = 'span-draft-tx-date-';
   draftDetailsTypeIndexSelector = 'span-draft-tx-type-';
   draftDetailsIsTemplateCheckboxSelector = 'checkbox-is-template-';
-  selectThresholdValueIndexSelector = 'select-complex-key-threshold-';
 
   // Method to close the 'Save Draft' modal if it appears
   async closeDraftModal() {
@@ -353,48 +348,15 @@ class TransactionPage extends BasePage {
   }
 
   async verifyTransactionExists(transactionId, transactionType) {
-    const query = `
-        SELECT COUNT(*) AS count
-        FROM "Transaction"
-        WHERE transaction_id = ? AND type = ?`;
-
-    try {
-      const row = await queryDatabase(query, [transactionId, transactionType]);
-      return row ? row.count > 0 : false;
-    } catch (error) {
-      console.error('Error verifying transaction:', error);
-      return false;
-    }
+    return await verifyTransactionExists(transactionId, transactionType);
   }
 
   async verifyAccountExists(accountId) {
-    const query = `
-        SELECT COUNT(*) AS count
-        FROM HederaAccount
-        WHERE account_id = ?`;
-
-    try {
-      const row = await queryDatabase(query, [accountId]);
-      return row ? row.count > 0 : false;
-    } catch (error) {
-      console.error('Error verifying account:', error);
-      return false;
-    }
+    return await verifyAccountExists(accountId);
   }
 
   async verifyFileExists(fileId) {
-    const query = `
-        SELECT COUNT(*) AS count
-        FROM HederaFile
-        WHERE file_id = ?`;
-
-    try {
-      const row = await queryDatabase(query, [fileId]);
-      return row ? row.count > 0 : false;
-    } catch (error) {
-      console.error('Error verifying file:', error);
-      return false;
-    }
+    return await verifyFileExists(fileId);
   }
 
   async addPublicKeyAtDepth(depth, publicKey = null) {
@@ -725,10 +687,6 @@ class TransactionPage extends BasePage {
     return await this.isSwitchToggledOn(this.receiverSigRequiredSwitchSelector);
   }
 
-  async isReceiverSigRequiredSwitchToggledOnUpdatePage() {
-    return await this.isSwitchToggledOn(this.receiverSigRequiredSwitchForUpdateSelector);
-  }
-
   async isReceiverSigRequiredSwitchToggledOnForUpdatePage() {
     return await this.isSwitchToggledOn(this.receiverSigRequiredSwitchForUpdateSelector);
   }
@@ -800,16 +758,8 @@ class TransactionPage extends BasePage {
     await this.window.click(signButtonSelector);
   }
 
-  async clickOnPasswordContinue() {
-    await this.clickByTestId(this.passwordContinueButtonSelector);
-  }
-
   async clickOnCloseButtonForCompletedTransaction() {
     await this.clickByTestId(this.closeCompletedTxButtonSelector);
-  }
-
-  async fillInPassword(password) {
-    await this.fillByTestId(this.passwordSignTransactionInputSelector, password);
   }
 
   async clickOnCancelTransaction() {
@@ -1165,14 +1115,6 @@ class TransactionPage extends BasePage {
     await this.clickByTestId(this.signAndReadFileButtonSelector);
   }
 
-  async fillInPasswordForRead(password) {
-    await this.fillByTestId(this.signPasswordForReadInputFieldSelector, password);
-  }
-
-  async clickOnSignReadQueryButton() {
-    await this.clickByTestId(this.signReadQueryButtonSelector);
-  }
-
   async getPublicKeyText() {
     return await this.getTextFromInputFieldByTestIdWithIndex(this.publicKeyInputSelector);
   }
@@ -1195,18 +1137,6 @@ class TransactionPage extends BasePage {
 
   async clickOnSignAndSubmitUpdateFileButton() {
     await this.clickByTestId(this.signAndSubmitUpdateFileSelector);
-  }
-
-  async clickOnSignFileButton() {
-    await this.clickByTestId(this.signFileUpdateButtonSelector);
-  }
-
-  async fillInPasswordForFile(password) {
-    await this.fillByTestId(this.signPasswordForFileUpdateInputSelector, password);
-  }
-
-  async clickOnContinueSignFileButton() {
-    await this.clickByTestId(this.continueSignFileUpdateButtonSelector);
   }
 
   async clickOnSignAndSubmitFileAppendButton() {
@@ -1287,14 +1217,6 @@ class TransactionPage extends BasePage {
 
   async getFileUpdateMemo() {
     return await this.getTextFromInputFieldByTestId(this.fileUpdateMemoInputSelector);
-  }
-
-  async getNewAccountIdDetailsText() {
-    return await this.getTextByTestId(this.newAccountIdDetailsSelector, 15000);
-  }
-
-  async getFirstTransactionStatus() {
-    return await this.getTextByTestId(this.transactionStatusIndexSelector + '0');
   }
 
   async getFirstDraftDate() {

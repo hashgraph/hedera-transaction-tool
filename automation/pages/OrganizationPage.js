@@ -1,4 +1,4 @@
-import { createTestUser, queryDatabase, queryPostgresDatabase } from '../utils/databaseUtil';
+import { createTestUser } from '../utils/databaseUtil';
 import { generateMnemonic } from '../utils/keyUtil';
 
 const BasePage = require('./BasePage');
@@ -10,6 +10,15 @@ const {
   generateRandomPassword,
   setupEnvironmentForTransactions,
 } = require('../utils/util');
+const {
+  getFirstPublicKeyByEmail,
+  getUserIdByEmail,
+  isKeyDeleted,
+  findNewKey,
+  getAllTransactionIdsForUserObserver,
+  verifyOrganizationExists,
+} = require('../utils/databaseQueries');
+const { getAssociatedAccounts } = require('../utils/mirrorNodeAPI');
 
 class OrganizationPage extends BasePage {
   constructor(window) {
@@ -17,9 +26,9 @@ class OrganizationPage extends BasePage {
     this.window = window;
     this.users = []; // List to store user credentials
     this.transactions = []; // List to store transactions
-    this.organizationRecoveryWords = [];
-    this.badOrganizationList = [];
-    this.complexAccountId = [];
+    this.organizationRecoveryWords = []; // List to store recovery phrase words for organization
+    this.badOrganizationList = []; // List to store bad organizations
+    this.complexAccountId = []; // List to store complex account ids
     this.registrationPage = new RegistrationPage(window);
     this.settingsPage = new SettingsPage(window);
     this.transactionPage = new TransactionPage(window);
@@ -57,7 +66,6 @@ class OrganizationPage extends BasePage {
   secondsOverlayButtonSelector = 'button[aria-label="Open seconds overlay"]';
   minutesOverlayButtonSelector = 'button[aria-label="Open minutes overlay"]';
   hoursOverlayButtonSelector = 'button[aria-label="Open hours overlay"]';
-  insertComplexKeyButtonSelector = 'button-insert-public-key';
   signTransactionButtonSelector = 'button-sign-org-transaction';
 
   // Inputs
@@ -67,27 +75,17 @@ class OrganizationPage extends BasePage {
   emailForOrganizationInputSelector = 'input-login-email-for-organization';
   passwordForOrganizationInputSelector = 'input-login-password-for-organization';
   editOrganizationNicknameInputSelector = 'input-edit-nickname';
-  inputPublicComplexKeySelector = 'input-complex-public-key';
 
   // Texts
   organizationErrorMessageSelector = 'p-organization-error-message';
   organizationNicknameTextSelector = 'span-organization-nickname';
   transactionDetailsIdSelector = 'p-transaction-details-id';
   transactionValidStartSelector = 'p-transaction-details-valid-start';
-  firstSignerThresholdPublicKeySelector = 'span-public-key-0-0';
-  secondSignerThresholdPublicKeySelector = 'span-public-key-1-0';
-  thirdSignerThresholdPublicKeySelector = 'span-public-key-1-1';
-  firstSignerCheckmarkSelector = 'span-checkmark-public-key-0-0';
   secondSignerCheckmarkSelector = 'span-checkmark-public-key-1-0';
-  thirdSignerCheckmarkSelector = 'span-checkmark-public-key-1-1';
 
   // Indexes
   modeSelectionIndexSelector = 'dropdown-item-';
   firstMissingKeyIndexSelector = 'cell-index-missing-0';
-  readyForReviewTransactionIdIndexSelector = 'td-review-transaction-id-';
-  readyForReviewTransactionTypeIndexSelector = 'td-review-transaction-type-';
-  readyForReviewValidStartIndexSelector = 'td-review-transaction-valid-start-';
-  readyForReviewSubmitApprovalButtonIndexSelector = 'button-review-transaction-approve-';
   readyForSignTransactionIdIndexSelector = 'td-transaction-id-for-sign-';
   readyForSignTransactionTypeIndexSelector = 'td-transaction-type-for-sign-';
   readyForSignValidStartIndexSelector = 'td-transaction-valid-start-for-sign-';
@@ -107,7 +105,8 @@ class OrganizationPage extends BasePage {
   historyDetailsButtonIndexSelector = 'button-transaction-details-';
   stageBubbleIndexSelector = 'div-stepper-nav-item-bubble-';
   observerIndexSelector = 'span-group-email-';
-  userListSelector = 'span-email-';
+  userListIndexSelector = 'span-email-';
+  contactListPublicKeyTypeIndexSelector = 'p-contact-public-type-key-';
 
   async clickOnAddNewOrganizationButton() {
     await this.clickByTestId(this.addNewOrganizationButtonSelector);
@@ -177,12 +176,6 @@ class OrganizationPage extends BasePage {
     }
   }
 
-  /**
-   * Method to set up users for the organization
-   *
-   * @param {Object} window - The window object
-   * @param {string} encryptionPassword - The encryption password
-   */
   async setUpUsers(window, encryptionPassword) {
     const privateKeys = [
       process.env.PRIVATE_KEY_2,
@@ -201,11 +194,11 @@ class OrganizationPage extends BasePage {
       await this.registrationPage.clickOnUnderstandCheckbox();
       await this.registrationPage.clickOnGenerateButton();
 
-      await this.captureRecoveryPhraseWords();
+      await this.captureRecoveryPhraseWordsForUser(i);
       await this.registrationPage.clickOnUnderstandCheckbox();
       await this.registrationPage.clickOnVerifyButton();
 
-      await this.fillAllMissingRecoveryPhraseWords();
+      await this.fillAllMissingRecoveryPhraseWordsForUser(i);
       await this.registrationPage.clickOnNextButton();
 
       await this.registrationPage.waitForElementToDisappear(
@@ -219,8 +212,8 @@ class OrganizationPage extends BasePage {
     }
   }
 
-  async recoverAccount() {
-    await this.fillAllMissingRecoveryPhraseWords();
+  async recoverAccount(userIndex) {
+    await this.fillAllMissingRecoveryPhraseWordsForUser(userIndex);
     await this.registrationPage.clickOnNextImportButton();
 
     await this.registrationPage.waitForElementToDisappear(
@@ -334,46 +327,35 @@ class OrganizationPage extends BasePage {
   }
 
   async verifyOrganizationExists(nickname) {
-    const query = `
-      SELECT COUNT(*) AS count
-      FROM main.Organization
-      WHERE nickname = ?`;
-
-    try {
-      const row = await queryDatabase(query, [nickname]);
-      return row ? row.count > 0 : false;
-    } catch (error) {
-      console.error('Error verifying organization:', error);
-      return false;
-    }
+    return await verifyOrganizationExists(nickname);
   }
 
   // Method to capture all the recovery phrase words and their indexes
-  async captureRecoveryPhraseWords() {
-    this.organizationRecoveryWords = {};
+  async captureRecoveryPhraseWordsForUser(userIndex) {
+    this.organizationRecoveryWords[userIndex] = {};
     for (let i = 1; i <= 24; i++) {
       const selector = this.registrationPage.getRecoveryWordSelector(i);
       const wordElement = await this.window.getByTestId(selector);
-      this.organizationRecoveryWords[i] = await wordElement.inputValue();
+      this.organizationRecoveryWords[userIndex][i] = await wordElement.inputValue();
     }
   }
 
   // Method to fill a missing recovery phrase word by index
-  async fillRecoveryPhraseWord(index, word) {
+  async fillRecoveryPhraseWordForUser(userIndex, index, word) {
     const selector = this.registrationPage.getRecoveryWordSelector(index);
     await this.fillByTestId(selector, word);
   }
 
   // Method to fill in all missing recovery phrase words based on the saved recoveryPhraseWords
-  async fillAllMissingRecoveryPhraseWords() {
+  async fillAllMissingRecoveryPhraseWordsForUser(userIndex) {
     for (let i = 1; i <= 24; i++) {
       const selector = this.registrationPage.getRecoveryWordSelector(i);
       const wordElement = await this.window.getByTestId(selector);
       const value = await wordElement.inputValue();
       if (!value) {
-        const word = this.organizationRecoveryWords[i];
+        const word = this.organizationRecoveryWords[userIndex][i];
         if (word) {
-          await this.fillRecoveryPhraseWord(i, word);
+          await this.fillRecoveryPhraseWordForUser(userIndex, i, word);
         }
       }
     }
@@ -388,10 +370,10 @@ class OrganizationPage extends BasePage {
       throw new Error('Generated mnemonic does not have exactly 24 words');
     }
 
-    // Update organizationRecoveryWords
-    this.organizationRecoveryWords = {};
+    // Update organizationRecoveryWords for user 0 (admin user)
+    this.organizationRecoveryWords[0] = {};
     words.forEach((word, index) => {
-      this.organizationRecoveryWords[index + 1] = word; // Using 1-based index for recovery words
+      this.organizationRecoveryWords[0][index + 1] = word; // Using 1-based index for recovery words
     });
   }
 
@@ -446,177 +428,40 @@ class OrganizationPage extends BasePage {
     return await this.isElementVisible(this.deleteNextButtonSelector);
   }
 
-  /**
-   * Retrieves the public key for a user identified by the given email.
-   *
-   * @param {string} email - The email of the user whose public key is to be retrieved.
-   * @return {Promise<string|null>} A promise that resolves to the public key if found, or null if not found.
-   * @throws {Error} If there is an error executing the query.
-   */
-  async getPublicKeyByEmail(email) {
-    const query = `
-      SELECT uk."publicKey"
-      FROM public."user" u
-      JOIN public.user_key uk ON u.id = uk."userId"
-      WHERE u.email = $1 AND uk.index = 0;
-    `;
-
-    try {
-      const result = await queryPostgresDatabase(query, [email]);
-      return result[0]?.publicKey || null;
-    } catch (error) {
-      console.error('Error fetching public key by email:', error);
-      return null;
-    }
+  async getFirstPublicKeyByEmail(email) {
+    return await getFirstPublicKeyByEmail(email);
   }
 
-  /**
-   * Retrieves the user ID for a user identified by the given email.
-   *
-   * @param {string} email - The email of the user whose ID is to be retrieved.
-   * @return {Promise<number|null>} A promise that resolves to the user ID if found, or null if not found.
-   * @throws {Error} If there is an error executing the query.
-   */
   async getUserIdByEmail(email) {
-    const query = `
-      SELECT id
-      FROM public."user"
-      WHERE email = $1;
-    `;
-
-    try {
-      const result = await queryPostgresDatabase(query, [email]);
-      return result[0]?.id || null;
-    } catch (error) {
-      console.error('Error fetching user ID by email:', error);
-      return null;
-    }
+    return await getUserIdByEmail(email);
   }
 
-  /**
-   * Checks if the given public key is marked as deleted.
-   *
-   * @param {string} publicKey - The public key to check.
-   * @return {Promise<boolean>} A promise that resolves to true if the key is deleted, or false if not.
-   * @throws {Error} If there is an error executing the query.
-   */
   async isKeyDeleted(publicKey) {
-    const checkDeletionQuery = `
-    SELECT "deletedAt"
-    FROM public.user_key
-    WHERE "publicKey" = $1;
-  `;
-
-    try {
-      const deletionResult = await queryPostgresDatabase(checkDeletionQuery, [publicKey]);
-      const isDeleted = deletionResult[0]?.deletedAt !== null;
-
-      if (isDeleted) {
-        console.log('The key is marked as deleted.');
-        return true;
-      } else {
-        console.log('The key is not deleted.');
-        return false;
-      }
-    } catch (error) {
-      console.error('Error checking if key is deleted:', error);
-      return false;
-    }
+    return await isKeyDeleted(publicKey);
   }
 
-  /**
-   * Finds a new public key for the user identified by the given user ID, where the key index is 0 and the key is not deleted.
-   *
-   * @param {number} userId - The ID of the user whose new public key is to be found.
-   * @return {Promise<boolean>} A promise that resolves to true if a new key is found, or false if not.
-   * @throws {Error} If there is an error executing the query.
-   */
   async findNewKey(userId) {
-    const findNewKeyQuery = `
-    SELECT "publicKey"
-    FROM public.user_key
-    WHERE "userId" = $1 AND index = 0 AND "deletedAt" IS NULL;
-  `;
-
-    try {
-      const newKeyResult = await queryPostgresDatabase(findNewKeyQuery, [userId]);
-      if (newKeyResult.length > 0) {
-        console.log('A new key has been found for the user:', newKeyResult[0].publicKey);
-        return true;
-      } else {
-        console.log('No new key found for the user.');
-        return false;
-      }
-    } catch (error) {
-      console.error('Error finding new key for user:', error);
-      return false;
-    }
+    return await findNewKey(userId);
   }
 
-  /**
-   * Retrieves all transaction IDs from the transaction table for a user identified by the given userId.
-   *
-   * @param {number} userId - The user ID to verify.
-   * @return {Promise<string[]>} A promise that resolves to an array of transaction IDs if the user ID exists in transaction_observer.
-   * @throws {Error} If there is an error executing the query.
-   */
   async getAllTransactionIdsForUserObserver(userId) {
-    const query = `
-    SELECT t."transactionId"
-    FROM public.transaction t
-    INNER JOIN public.transaction_observer tobs ON t.id = tobs."transactionId"
-    WHERE tobs."userId" = $1;
-  `;
-
-    try {
-      const result = await queryPostgresDatabase(query, [userId]);
-      return result.map(row => row.transactionId);
-    } catch (error) {
-      console.error('Error fetching transaction IDs for user observer:', error);
-      return [];
-    }
-  }
-
-  //TODO - Align the below methods based on new implementation(approver)
-
-  async clickOnAddApproverButton() {
-    await this.clickByTestId(this.addApproverButtonSelector);
-  }
-
-  async clickOnSelectUserButton() {
-    await this.clickByTestId(this.selectUserButtonSelector);
-  }
-
-  async clickOnAddUserButtonForApprover() {
-    await this.clickByTestIdWithIndex(this.addUserButtonSelector);
+    return await getAllTransactionIdsForUserObserver(userId);
   }
 
   async clickOnAddObserverButton() {
     await this.clickByTestId(this.addObserverButtonSelector);
   }
 
-  async clickOnDoneButton() {
-    await this.clickByTestId(this.doneButtonSelector);
-  }
-
-  async clickOnUserOfListForApprover(index) {
-    await this.clickByTestIdWithIndex(this.userListSelector + index);
-  }
-
   async clickOnAddUserButtonForObserver() {
     await this.clickByTestId(this.addUserButtonSelector);
   }
 
-  async getFirstUserOfListForApprover(index) {
-    return await this.getTextByTestIdWithIndex(this.userListSelector + index);
-  }
-
   async clickOnUserOfObserverList(index) {
-    await this.clickByTestId(this.userListSelector + index);
+    await this.clickByTestId(this.userListIndexSelector + index);
   }
 
   async getUserOfObserverList(index) {
-    return await this.getTextByTestId(this.userListSelector + index);
+    return await this.getTextByTestId(this.userListIndexSelector + index);
   }
 
   /**
@@ -686,14 +531,6 @@ class OrganizationPage extends BasePage {
     await this.moveTimeAheadBySeconds(time);
   }
 
-  async fillInComplexPublicKey(publicKey) {
-    await this.fillByTestId(this.inputPublicComplexKeySelector, publicKey);
-  }
-
-  async clickOnInsertComplexKeyButton() {
-    await this.clickByTestId(this.insertComplexKeyButtonSelector);
-  }
-
   async addComplexKeyAccountForTransactions() {
     await this.transactionPage.clickOnTransactionsMenuButton();
     await this.transactionPage.clickOnCreateNewTransactionButton();
@@ -702,18 +539,18 @@ class OrganizationPage extends BasePage {
     await this.transactionPage.clickOnCreateNewComplexKeyButton();
 
     //add account#1
-    const publicKey = await this.getPublicKeyByEmail(this.users[0].email);
+    const publicKey = await this.getFirstPublicKeyByEmail(this.users[0].email);
     await this.transactionPage.addPublicKeyAtDepth('0', publicKey);
 
     //add threshold
     await this.transactionPage.addThresholdKeyAtDepth('0');
 
     //add account#2
-    const publicKey2 = await this.getPublicKeyByEmail(this.users[1].email);
+    const publicKey2 = await this.getFirstPublicKeyByEmail(this.users[1].email);
     await this.transactionPage.addPublicKeyAtDepth('0-1', publicKey2);
 
     //add account#3
-    const publicKey3 = await this.getPublicKeyByEmail(this.users[2].email);
+    const publicKey3 = await this.getFirstPublicKeyByEmail(this.users[2].email);
     await this.transactionPage.addPublicKeyAtDepth('0-1', publicKey3);
 
     await this.transactionPage.clickOnDoneButtonForComplexKeyCreation();
@@ -842,10 +679,6 @@ class OrganizationPage extends BasePage {
 
   async isInProgressDetailsButtonVisibleByIndex(index) {
     return await this.isElementVisible(this.inProgressDetailsButtonIndexSelector + index);
-  }
-
-  async clickOnInProgressDetailsButtonByIndex(index) {
-    await this.clickByTestId(this.inProgressDetailsButtonIndexSelector + index);
   }
 
   async getReadyForExecutionTransactionIdByIndex(index) {
@@ -1095,16 +928,8 @@ class OrganizationPage extends BasePage {
     return bubbleContent.trim().includes('bi-check-lg');
   }
 
-  async isFirstSignerCheckmarkVisible() {
-    return await this.isElementVisible(this.firstSignerCheckmarkSelector);
-  }
-
   async isSecondSignerCheckmarkVisible() {
     return await this.isElementVisible(this.secondSignerCheckmarkSelector);
-  }
-
-  async isThirdSignerCheckmarkVisible() {
-    return await this.isElementVisible(this.thirdSignerCheckmarkSelector);
   }
 
   async getObserverEmail(index) {

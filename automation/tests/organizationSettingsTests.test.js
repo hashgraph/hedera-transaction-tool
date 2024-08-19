@@ -30,9 +30,6 @@ test.describe('Organization Settings tests', () => {
     settingsPage = new SettingsPage(window);
     registrationPage = new RegistrationPage(window);
 
-    // Ensure transactionPage generatedAccounts is empty
-    transactionPage.generatedAccounts = [];
-
     // Generate credentials and store them globally
     globalCredentials.email = generateRandomEmail();
     globalCredentials.password = generateRandomPassword();
@@ -51,6 +48,8 @@ test.describe('Organization Settings tests', () => {
     // Setup Organization
     await organizationPage.setupOrganization();
     await organizationPage.setUpUsers(window, globalCredentials.password);
+
+    // Log in with the organization user
     firstUser = organizationPage.getUser(0);
     await organizationPage.signInOrganization(
       firstUser.email,
@@ -60,8 +59,6 @@ test.describe('Organization Settings tests', () => {
   });
 
   test.afterAll(async () => {
-    // Ensure transactionPage generatedAccounts is empty
-    transactionPage.generatedAccounts = [];
     await closeApp(app);
     await resetDbState();
     await resetPostgresDbState();
@@ -115,7 +112,7 @@ test.describe('Organization Settings tests', () => {
     await organizationPage.clickOnDeleteFirstOrganization();
     await organizationPage.setupOrganization();
     await organizationPage.fillInLoginDetailsAndClickSignIn(firstUser.email, firstUser.password);
-    await organizationPage.recoverAccount();
+    await organizationPage.recoverAccount(0);
     await organizationPage.recoverPrivateKey(window);
     const isContactListVisible = await organizationPage.isContactListButtonVisible();
     expect(isContactListVisible).toBe(true);
@@ -131,7 +128,7 @@ test.describe('Organization Settings tests', () => {
       firstUser.password,
       globalCredentials.password,
     );
-    await organizationPage.recoverAccount();
+    await organizationPage.recoverAccount(0);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
     const missingKey = await organizationPage.isFirstMissingKeyVisible();
@@ -149,7 +146,7 @@ test.describe('Organization Settings tests', () => {
       firstUser.password,
       globalCredentials.password,
     );
-    await organizationPage.recoverAccount();
+    await organizationPage.recoverAccount(0);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
     await organizationPage.recoverPrivateKey(window);
@@ -188,7 +185,7 @@ test.describe('Organization Settings tests', () => {
   });
 
   test('Verify user can restore account with new mnemonic phrase', async () => {
-    const publicKeyBeforeReset = await organizationPage.getPublicKeyByEmail(firstUser.email);
+    const publicKeyBeforeReset = await organizationPage.getFirstPublicKeyByEmail(firstUser.email);
     const userId = await organizationPage.getUserIdByEmail(firstUser.email);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnOrganisationsTab();
@@ -200,7 +197,7 @@ test.describe('Organization Settings tests', () => {
       globalCredentials.password,
     );
     organizationPage.generateAndSetRecoveryWords();
-    await organizationPage.recoverAccount();
+    await organizationPage.recoverAccount(0);
 
     const isKeyDeleted = await organizationPage.isKeyDeleted(publicKeyBeforeReset);
     expect(isKeyDeleted).toBe(true);

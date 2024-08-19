@@ -91,7 +91,42 @@ const getTransactionDetails = async transactionId => {
   );
 };
 
+const getAssociatedAccounts = async publicKey => {
+  let allAccounts = [];
+  let params = { 'account.publickey': publicKey, order: 'asc' };
+  let endpoint = 'accounts';
+  const baseURL = getBaseURL();
+
+  do {
+    const response = await pollWithRetry(
+      endpoint,
+      params,
+      result => result && result.accounts && result.accounts.length > 0,
+    );
+
+    // Extract the account IDs from the response
+    const accounts = response.accounts.map(account => account.account);
+    allAccounts = allAccounts.concat(accounts);
+
+    // Check if there is a next link in the response to fetch more data
+    if (response.links && response.links.next) {
+      const nextLink = response.links.next;
+
+      // Dynamically construct the full URL using the base URL
+      const nextUrl = new URL(nextLink, baseURL);
+      endpoint = nextUrl.pathname.replace('/api/v1/', ''); // Correctly adjust the endpoint
+      params = Object.fromEntries(nextUrl.searchParams.entries());
+    } else {
+      params = null; // Exit loop if there's no next link
+    }
+  } while (params); // Continue looping if there's more data to fetch
+
+  console.log('Collected all associated accounts:', allAccounts);
+  return allAccounts;
+};
+
 module.exports = {
   getAccountDetails,
   getTransactionDetails,
+  getAssociatedAccounts,
 };
