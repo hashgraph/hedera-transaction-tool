@@ -112,3 +112,9 @@ npx playwright test tests/OrganizationSettingsTests
 ```bash
 npx playwright test tests/OrganizationTransactionTests
 ```
+
+### 8. Organization Contact list tests
+
+```bash
+npx playwright test tests/OrganizationContactListTests
+```
