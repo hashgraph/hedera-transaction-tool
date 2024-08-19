@@ -19,6 +19,7 @@ const props = defineProps<{
   publicKey: string;
   accounts?: AccountInfo[];
   linkedAccounts?: HederaAccount[];
+  index: number;
 }>();
 
 /* Emits */
@@ -77,6 +78,7 @@ const handleLinkAccount = async (accountId: string) => {
         <span
           v-else
           class="bi bi-chevron-down cursor-pointer"
+          :data-testid="'span-expand-associated-accounts-' + index"
           @click="isCollapsed = !isCollapsed"
         ></span>
         <p class="text-small text-semi-bold">
@@ -87,9 +89,15 @@ const handleLinkAccount = async (accountId: string) => {
       <Transition name="fade" mode="out-in">
         <div class="col-7" v-show="isCollapsed">
           <ul class="d-flex flex-wrap gap-3">
-            <template v-for="account in filteredAccounts" :key="`${publicKey}${account.account}`">
+            <template
+              v-for="(account, accountIndex) in filteredAccounts"
+              :key="`${publicKey}${account.account}`"
+            >
               <li class="flex-centered text-center badge-bg rounded py-2 px-3">
-                <p class="text-small text-secondary">
+                <p
+                  class="text-small text-secondary"
+                  :data-testid="'p-associated-account-id-' + index + '-' + accountIndex"
+                >
                   {{ account.account }}
                   <span
                     v-if="

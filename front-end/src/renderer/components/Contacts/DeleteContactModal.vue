@@ -48,7 +48,12 @@ function handleDeleteAccount() {
           >
         </div>
         <div class="col-6 d-grid">
-          <AppButton color="danger" @click="handleDeleteAccount">Remove</AppButton>
+          <AppButton
+            color="danger"
+            data-testid="button-confirm-removing-contact"
+            @click="handleDeleteAccount"
+            >Remove</AppButton
+          >
         </div>
       </div>
     </div>

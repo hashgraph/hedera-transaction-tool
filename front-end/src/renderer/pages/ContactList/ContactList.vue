@@ -115,6 +115,7 @@ onBeforeMount(async () => {
         <div class="col-4 col-xxl-3 flex-column-100 overflow-hidden with-border-end pe-4 ps-0">
           <AppButton
             color="primary"
+            data-testid="button-add-new-contact"
             size="large"
             class="w-100"
             :disabled="
@@ -141,9 +142,19 @@ onBeforeMount(async () => {
                   }"
                   @click="handleSelectContact(c.user.id)"
                 >
-                  <p class="text-small text-semi-bold overflow-hidden">{{ c.nickname }}</p>
+                  <p
+                    class="text-small text-semi-bold overflow-hidden"
+                    :data-testid="`p-contact-nickname-${c.nickname}`"
+                  >
+                    {{ c.nickname }}
+                  </p>
                   <div class="d-flex justify-content-between align-items-center">
-                    <p class="text-micro text-secondary overflow-hidden mt-2">{{ c.user.email }}</p>
+                    <p
+                      class="text-micro text-secondary overflow-hidden mt-2"
+                      :data-testid="`p-contact-email-${c.user.email}`"
+                    >
+                      {{ c.user.email }}
+                    </p>
                   </div>
                 </div>
               </template>
