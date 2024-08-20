@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 
-import { NOTIFICATIONS_NEW } from '@app/common';
+import { NOTIFICATIONS_INDICATORS_DELETE, NOTIFICATIONS_NEW } from '@app/common';
 import { Notification, NotificationReceiver } from '@entities';
 
 import { NotificationReceiverDto } from './dtos';
@@ -12,7 +12,7 @@ import { WebsocketGateway } from '../websocket/websocket.gateway';
 export class InAppProcessorService {
   constructor(private readonly websocket: WebsocketGateway) {}
 
-  processNotification(notification: Notification, receivers: NotificationReceiver[]) {
+  processNewNotification(notification: Notification, receivers: NotificationReceiver[]) {
     if (!receivers || receivers.length === 0) return;
 
     const userIds = receivers.map(r => r.userId);
@@ -29,6 +29,17 @@ export class InAppProcessorService {
       });
 
       this.websocket.notifyUser(user, NOTIFICATIONS_NEW, dto);
+    }
+  }
+
+  processNotificationDelete(userIdToNotificationReceiversId: { [userId: number]: number[] }) {
+    const userIds = Object.keys(userIdToNotificationReceiversId).map(Number);
+
+    for (const user of userIds) {
+      const notificationReceiverIds = userIdToNotificationReceiversId[user];
+      this.websocket.notifyUser(user, NOTIFICATIONS_INDICATORS_DELETE, {
+        notificationReceiverIds,
+      });
     }
   }
 }

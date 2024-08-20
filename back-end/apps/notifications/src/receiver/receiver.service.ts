@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
-import { EntityManager, In, Not } from 'typeorm';
+import { EntityManager, In } from 'typeorm';
 
 import {
   keysRequiredToSign,
@@ -115,6 +115,7 @@ export class ReceiverService {
   async updateIndicatorNotification({ transactionId, transactionStatus }: UpdateIndicatorDto) {
     let newIndicatorType: NotificationType | null = null;
 
+    /* Determine new indicator type */
     switch (transactionStatus) {
       case TransactionStatus.WAITING_FOR_SIGNATURES:
         newIndicatorType = NotificationType.TRANSACTION_INDICATOR_SIGN;
@@ -130,21 +131,29 @@ export class ReceiverService {
         break;
     }
 
-    const notificationReceiversToDelete = await this.entityManager.find(NotificationReceiver, {
+    /* Get notification indicator entities to delete */
+    const indicatorTypes = Object.values(NotificationType).filter(t => t.includes('INDICATOR'));
+    const inTypes = indicatorTypes.filter(t => t !== newIndicatorType);
+
+    const notificationToDelete = await this.entityManager.find(Notification, {
       where: {
-        notification: {
-          entityId: transactionId,
-          type: Not(In([NotificationType.TRANSACTION_INDICATOR_APPROVE, newIndicatorType])),
-        },
+        entityId: transactionId,
+        type: In(inTypes),
       },
       relations: {
-        notification: true,
+        notificationReceivers: true,
       },
     });
+
+    const notificationReceiversToDelete = notificationToDelete.reduce((acc, val) => {
+      acc.push(...val.notificationReceivers);
+      return acc;
+    }, []);
 
     const distinctUsersToNotify = notificationReceiversToDelete
       .map(nr => nr.userId)
       .filter((v, i, a) => a.indexOf(v) === i);
+
     const userIdToNotificationReceiversId: {
       [userId: number]: number[];
     } = notificationReceiversToDelete.reduce((acc, nr) => {
@@ -155,12 +164,18 @@ export class ReceiverService {
       return acc;
     }, {});
 
+    /* Delete old indicator notifications */
     await this.entityManager.delete(NotificationReceiver, {
       id: In(notificationReceiversToDelete.map(nr => nr.id)),
     });
+    await this.entityManager.delete(Notification, {
+      id: In(notificationToDelete.map(n => n.id)),
+    });
 
+    /* Fan out */
     this.fanOutService.fanOutIndicatorsDelete(userIdToNotificationReceiversId);
 
+    /* Notify if new indicator */
     if (newIndicatorType) {
       await this.notifyGeneral({
         type: newIndicatorType,

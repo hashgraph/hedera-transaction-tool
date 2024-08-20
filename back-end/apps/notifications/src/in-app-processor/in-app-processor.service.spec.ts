@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
-import { NOTIFICATIONS_NEW } from '@app/common';
+import { NOTIFICATIONS_INDICATORS_DELETE, NOTIFICATIONS_NEW } from '@app/common';
 import { Notification, NotificationReceiver, NotificationType, User, UserStatus } from '@entities';
 
 import { InAppProcessorService } from './in-app-processor.service';
@@ -31,105 +31,134 @@ describe('In App Processor Service', () => {
     expect(service).toBeDefined();
   });
 
-  it('should process in-app notification', async () => {
-    const now = new Date();
-
-    const notification: Notification = {
-      id: 1,
-      type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
-      content: `A new transaction requires your review and signature.`,
-      entityId: 2,
-      actorId: null,
-      createdAt: now,
-      notificationReceivers: [],
-    };
-
-    const user: User = {
-      id: 1,
-      email: 'test@test.com',
-      password: 'hash',
-      admin: false,
-      status: UserStatus.NONE,
-      createdAt: now,
-      updatedAt: now,
-      deletedAt: null,
-      keys: [],
-      signerForTransactions: [],
-      observableTransactions: [],
-      approvableTransactions: [],
-      comments: [],
-      issuedNotifications: [],
-      receivedNotifications: [],
-      notificationPreferences: [],
-    };
-
-    const receivers: NotificationReceiver[] = [
-      {
-        id: 1,
-        userId: 1,
-        notificationId: notification.id,
-        isRead: false,
-        isEmailSent: false,
-        isInAppNotified: false,
-        notification,
-        user,
-        updatedAt: now,
-      },
-      {
-        id: 2,
-        userId: 2,
-        notificationId: notification.id,
-        isRead: false,
-        isEmailSent: false,
-        isInAppNotified: false,
-        notification,
-        user,
-        updatedAt: now,
-      },
-    ];
-
-    service.processNotification(notification, receivers);
-
-    expect(websocketGateway.notifyUser).toHaveBeenCalledTimes(2);
-    expect(websocketGateway.notifyUser).toHaveBeenCalledWith(1, NOTIFICATIONS_NEW, {
-      id: 1,
-      notification: {
-        id: 1,
-        type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
-        content: `A new transaction requires your review and signature.`,
-        entityId: 2,
-        actorId: null,
-        createdAt: now,
-      },
-      notificationId: notification.id,
+  describe('processNewNotification', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
     });
-    expect(websocketGateway.notifyUser).toHaveBeenCalledWith(2, NOTIFICATIONS_NEW, {
-      id: 2,
-      notification: {
+
+    it('should process in-app notification', async () => {
+      const now = new Date();
+
+      const notification: Notification = {
         id: 1,
         type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
         content: `A new transaction requires your review and signature.`,
         entityId: 2,
         actorId: null,
         createdAt: now,
-      },
-      notificationId: notification.id,
+        notificationReceivers: [],
+      };
+
+      const user: User = {
+        id: 1,
+        email: 'test@test.com',
+        password: 'hash',
+        admin: false,
+        status: UserStatus.NONE,
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: null,
+        keys: [],
+        signerForTransactions: [],
+        observableTransactions: [],
+        approvableTransactions: [],
+        comments: [],
+        issuedNotifications: [],
+        receivedNotifications: [],
+        notificationPreferences: [],
+      };
+
+      const receivers: NotificationReceiver[] = [
+        {
+          id: 1,
+          userId: 1,
+          notificationId: notification.id,
+          isRead: false,
+          isEmailSent: false,
+          isInAppNotified: false,
+          notification,
+          user,
+          updatedAt: now,
+        },
+        {
+          id: 2,
+          userId: 2,
+          notificationId: notification.id,
+          isRead: false,
+          isEmailSent: false,
+          isInAppNotified: false,
+          notification,
+          user,
+          updatedAt: now,
+        },
+      ];
+
+      service.processNewNotification(notification, receivers);
+
+      expect(websocketGateway.notifyUser).toHaveBeenCalledTimes(2);
+      expect(websocketGateway.notifyUser).toHaveBeenCalledWith(1, NOTIFICATIONS_NEW, {
+        id: 1,
+        notification: {
+          id: 1,
+          type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
+          content: `A new transaction requires your review and signature.`,
+          entityId: 2,
+          actorId: null,
+          createdAt: now,
+        },
+        notificationId: notification.id,
+      });
+      expect(websocketGateway.notifyUser).toHaveBeenCalledWith(2, NOTIFICATIONS_NEW, {
+        id: 2,
+        notification: {
+          id: 1,
+          type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
+          content: `A new transaction requires your review and signature.`,
+          entityId: 2,
+          actorId: null,
+          createdAt: now,
+        },
+        notificationId: notification.id,
+      });
+    });
+
+    it('should not process in-app notification if there are no receivers', async () => {
+      const notification: Notification = {
+        id: 1,
+        type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
+        content: `A new transaction requires your review and signature.`,
+        entityId: 2,
+        actorId: null,
+        createdAt: new Date(),
+        notificationReceivers: [],
+      };
+
+      service.processNewNotification(notification, []);
+
+      expect(websocketGateway.notifyUser).not.toHaveBeenCalled();
     });
   });
 
-  it('should not process in-app notification if there are no receivers', async () => {
-    const notification: Notification = {
-      id: 1,
-      type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
-      content: `A new transaction requires your review and signature.`,
-      entityId: 2,
-      actorId: null,
-      createdAt: new Date(),
-      notificationReceivers: [],
-    };
+  describe('processNotificationDelete', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
 
-    service.processNotification(notification, []);
+    it('should process notification delete', async () => {
+      const userIdToNotificationReceiversId = {
+        1: [1, 2],
+        2: [3, 4],
+      };
 
-    expect(websocketGateway.notifyUser).not.toHaveBeenCalled();
+      service.processNotificationDelete(userIdToNotificationReceiversId);
+
+      expect(websocketGateway.notifyUser).toHaveBeenCalledTimes(2);
+      expect(websocketGateway.notifyUser).toHaveBeenCalledWith(1, NOTIFICATIONS_INDICATORS_DELETE, {
+        notificationReceiverIds: [1, 2],
+      });
+      expect(websocketGateway.notifyUser).toHaveBeenCalledWith(2, NOTIFICATIONS_INDICATORS_DELETE, {
+        notificationReceiverIds: [3, 4],
+      });
+    });
   });
 });

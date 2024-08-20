@@ -89,7 +89,7 @@ describe('Fan Out Service', () => {
     },
   ];
 
-  describe('fanOut', () => {
+  describe('fanOutNew', () => {
     beforeEach(() => {
       jest.resetAllMocks();
     });
@@ -97,10 +97,10 @@ describe('Fan Out Service', () => {
     it('should do nothing if there are no receivers', async () => {
       const receivers: NotificationReceiver[] = [];
 
-      await service.fanOut(notification, receivers);
-      await service.fanOut(notification, undefined);
-      await service.fanOut(notification, null);
-      await service.fanOut(null, null);
+      await service.fanOutNew(notification, receivers);
+      await service.fanOutNew(notification, undefined);
+      await service.fanOutNew(notification, null);
+      await service.fanOutNew(null, null);
 
       expect(entityManager.find).not.toHaveBeenCalled();
     });
@@ -113,7 +113,7 @@ describe('Fan Out Service', () => {
       entityManager.find.mockResolvedValueOnce([user]);
       entityManager.find.mockResolvedValueOnce(preferences);
 
-      await service.fanOut(notification, receivers);
+      await service.fanOutNew(notification, receivers);
 
       expect(emailService.processEmail).toHaveBeenCalledWith({
         from: '"Transaction Tool" info@transactiontool.com',
@@ -121,7 +121,7 @@ describe('Fan Out Service', () => {
         subject: NotificationTypeEmailSubjects.TRANSCATION_EXECUTED,
         text: notification.content,
       });
-      expect(inAppProcessorService.processNotification).not.toHaveBeenCalled();
+      expect(inAppProcessorService.processNewNotification).not.toHaveBeenCalled();
       expect(entityManager.update).toHaveBeenCalledTimes(2); //1 to mark email sent as false, 1 to mark email sent as true
       expect(entityManager.update).toHaveBeenNthCalledWith(
         1,
@@ -153,7 +153,7 @@ describe('Fan Out Service', () => {
       entityManager.find.mockResolvedValueOnce([user]);
       entityManager.find.mockResolvedValueOnce(preferences);
 
-      await service.fanOut(notification, receivers);
+      await service.fanOutNew(notification, receivers);
 
       expect(emailService.processEmail).toHaveBeenCalledWith({
         from: '"Transaction Tool" info@transactiontool.com',
@@ -161,7 +161,7 @@ describe('Fan Out Service', () => {
         subject: NotificationTypeEmailSubjects.TRANSCATION_EXECUTED,
         text: notification.content,
       });
-      expect(inAppProcessorService.processNotification).toHaveBeenCalledWith(
+      expect(inAppProcessorService.processNewNotification).toHaveBeenCalledWith(
         notification,
         receivers,
       );
@@ -220,10 +220,10 @@ describe('Fan Out Service', () => {
       entityManager.find.mockResolvedValueOnce([user]);
       entityManager.find.mockResolvedValueOnce(preferences);
 
-      await service.fanOut(notification, receivers);
+      await service.fanOutNew(notification, receivers);
 
       expect(emailService.processEmail).not.toHaveBeenCalled();
-      expect(inAppProcessorService.processNotification).toHaveBeenCalledWith(
+      expect(inAppProcessorService.processNewNotification).toHaveBeenCalledWith(
         notification,
         receivers,
       );
@@ -260,7 +260,7 @@ describe('Fan Out Service', () => {
       entityManager.find.mockResolvedValueOnce([user]);
       entityManager.find.mockResolvedValueOnce(preferences);
 
-      await service.fanOut(notification, receivers);
+      await service.fanOutNew(notification, receivers);
 
       expect(emailService.processEmail).toHaveBeenCalledWith({
         from: '"Transaction Tool" info@transactiontool.com',
@@ -302,7 +302,7 @@ describe('Fan Out Service', () => {
       entityManager.find.mockResolvedValueOnce(preferences);
       emailService.processEmail.mockRejectedValueOnce(new Error('Email failed'));
 
-      await service.fanOut(notification, receivers);
+      await service.fanOutNew(notification, receivers);
 
       expect(emailService.processEmail).toHaveBeenCalledWith({
         from: '"Transaction Tool" info@transactiontool.com',
@@ -329,13 +329,13 @@ describe('Fan Out Service', () => {
 
       entityManager.find.mockResolvedValueOnce([user]);
       entityManager.find.mockResolvedValueOnce(preferences);
-      inAppProcessorService.processNotification.mockImplementationOnce(() => {
+      inAppProcessorService.processNewNotification.mockImplementationOnce(() => {
         throw new Error('In-app failed');
       });
 
-      await service.fanOut(notification, receivers);
+      await service.fanOutNew(notification, receivers);
 
-      expect(inAppProcessorService.processNotification).toHaveBeenCalledWith(
+      expect(inAppProcessorService.processNewNotification).toHaveBeenCalledWith(
         notification,
         receivers,
       );
@@ -368,13 +368,21 @@ describe('Fan Out Service', () => {
       entityManager.find.mockResolvedValueOnce([user]);
       entityManager.find.mockResolvedValueOnce(preferences);
 
-      await service.fanOut(notification, receivers);
+      await service.fanOutNew(notification, receivers);
 
       expect(emailService.processEmail).not.toHaveBeenCalled();
-      expect(inAppProcessorService.processNotification).toHaveBeenCalledWith(
+      expect(inAppProcessorService.processNewNotification).toHaveBeenCalledWith(
         notification,
         receivers,
       );
+    });
+  });
+
+  describe('fanOutIndicatorsDelete', () => {
+    it('should call inAppProcessorService.processNotificationDelete', () => {
+      service.fanOutIndicatorsDelete({ 1: [1] });
+
+      expect(inAppProcessorService.processNotificationDelete).toHaveBeenCalledWith({ 1: [1] });
     });
   });
 });

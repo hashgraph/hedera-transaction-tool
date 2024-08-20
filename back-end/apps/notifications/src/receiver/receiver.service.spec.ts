@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { EntityManager } from 'typeorm';
+import { EntityManager, In } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
 import {
@@ -7,12 +7,14 @@ import {
   MirrorNodeService,
   NotifyForTransactionDto,
   NotifyGeneralDto,
+  UpdateIndicatorDto,
 } from '@app/common';
 import {
   Notification,
   NotificationReceiver,
   NotificationType,
   Transaction,
+  TransactionStatus,
   UserKey,
 } from '@entities';
 
@@ -198,6 +200,105 @@ describe('ReceiverService', () => {
       await expect(service.notifyTransactionRequiredSigners(dto)).rejects.toThrow(
         'Transaction not found',
       );
+    });
+  });
+
+  describe('updateIndicatorNotification', () => {
+    const transactionId = 1;
+    const notificationReceivers1 = [
+      { id: 13, userId: 1 },
+      { id: 24, userId: 2 },
+    ];
+    const notificationReceivers2 = [
+      { id: 23, userId: 1 },
+      { id: 35, userId: 2 },
+    ];
+    const notificationReceivers = [...notificationReceivers1, ...notificationReceivers2];
+    const notifications = [
+      { id: 1, notificationReceivers: notificationReceivers1 },
+      { id: 2, notificationReceivers: notificationReceivers2 },
+    ];
+
+    it('should set the correct indicator type based on transaction status', async () => {
+      const dto: UpdateIndicatorDto = {
+        transactionId,
+        transactionStatus: TransactionStatus.WAITING_FOR_SIGNATURES,
+      };
+
+      entityManager.find.mockResolvedValueOnce(notifications);
+      entityManager.find.mockResolvedValueOnce(notificationReceivers);
+
+      await service.updateIndicatorNotification(dto);
+
+      expect(entityManager.find).toHaveBeenCalledWith(Notification, {
+        where: {
+          entityId: transactionId,
+          type: In([
+            NotificationType.TRANSACTION_INDICATOR_APPROVE,
+            NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
+            NotificationType.TRANSACTION_INDICATOR_EXECUTED,
+            NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+          ]),
+        },
+        relations: {
+          notificationReceivers: true,
+        },
+      });
+    });
+
+    it('should delete old indicator notifications', async () => {
+      const dto: UpdateIndicatorDto = {
+        transactionId,
+        transactionStatus: TransactionStatus.EXPIRED,
+      };
+
+      entityManager.find.mockResolvedValueOnce(notifications);
+
+      await service.updateIndicatorNotification(dto);
+
+      expect(entityManager.delete).toHaveBeenCalledWith(NotificationReceiver, {
+        id: In(notificationReceivers.map(nr => nr.id)),
+      });
+      expect(entityManager.delete).toHaveBeenCalledWith(Notification, {
+        id: In(notifications.map(n => n.id)),
+      });
+    });
+
+    it('should call fanOutIndicatorsDelete with correct parameters', async () => {
+      const dto: UpdateIndicatorDto = {
+        transactionId,
+        transactionStatus: TransactionStatus.EXECUTED,
+      };
+
+      entityManager.find.mockResolvedValueOnce(notifications);
+
+      await service.updateIndicatorNotification(dto);
+
+      expect(fanOutService.fanOutIndicatorsDelete).toHaveBeenCalledWith({
+        1: [13, 23],
+        2: [24, 35],
+      });
+    });
+
+    it('should create a new indicator notification and call notifyGeneral if new indicator type is set', async () => {
+      const dto: UpdateIndicatorDto = {
+        transactionId,
+        transactionStatus: TransactionStatus.WAITING_FOR_EXECUTION,
+      };
+
+      entityManager.create.mockImplementation((_, data) => data);
+      mockTransaction();
+
+      entityManager.find.mockResolvedValueOnce(notifications);
+
+      await service.updateIndicatorNotification(dto);
+
+      expect(entityManager.create).toHaveBeenCalledWith(Notification, {
+        type: NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
+        content: '',
+        entityId: transactionId,
+        actorId: null,
+      });
     });
   });
 });

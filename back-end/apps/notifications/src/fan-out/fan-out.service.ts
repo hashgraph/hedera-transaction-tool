@@ -32,7 +32,7 @@ export class FanOutService {
     private readonly inAppProcessorService: InAppProcessorService,
   ) {}
 
-  async fanOut(notification: Notification, receivers: NotificationReceiver[]) {
+  async fanOutNew(notification: Notification, receivers: NotificationReceiver[]) {
     /* If no receivers, nothing to do */
     if (!receivers || receivers.length === 0 || !notification) return;
 
@@ -50,16 +50,20 @@ export class FanOutService {
 
     /* Process notifications */
     try {
-      await this.sendToEmailProcessor(email.emails, notification, email.userIds);
+      await this.sendNewToEmailProcessor(email.emails, notification, email.userIds);
     } catch (error) {
       console.log(error);
     }
 
     try {
-      await this.sendToInAppProcessor(notification, inApp.receivers);
+      await this.sendNewToInAppProcessor(notification, inApp.receivers);
     } catch (error) {
       console.log(error);
     }
+  }
+
+  async fanOutIndicatorsDelete(userIdToNotificationReceiversId: { [userId: number]: number[] }) {
+    this.inAppProcessorService.processNotificationDelete(userIdToNotificationReceiversId);
   }
 
   private async categorizeReceivers(notification: Notification, receivers: NotificationReceiver[]) {
@@ -110,7 +114,8 @@ export class FanOutService {
     };
   }
 
-  private async sendToEmailProcessor(
+  /* Send to Processors */
+  private async sendNewToEmailProcessor(
     emails: string[],
     notification: Notification,
     userIds: number[],
@@ -131,17 +136,18 @@ export class FanOutService {
     }
   }
 
-  private async sendToInAppProcessor(
+  private async sendNewToInAppProcessor(
     notification: Notification,
     receivers: NotificationReceiver[],
   ) {
     if (receivers && receivers.length > 0) {
       const userIds = receivers.map(r => r.userId);
-      this.inAppProcessorService.processNotification(notification, receivers);
+      this.inAppProcessorService.processNewNotification(notification, receivers);
       await this.updateIsInAppNotified(notification.id, userIds, true);
     }
   }
 
+  /* Database utilities */
   private async updateIsEmailSent(notificationId: number, userIds: number[], isEmailSent: boolean) {
     if (userIds && userIds.length > 0) {
       await this.entityManager.update(

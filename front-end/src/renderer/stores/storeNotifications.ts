@@ -1,7 +1,7 @@
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
 
-import { NOTIFICATIONS_NEW } from '@main/shared/constants';
+import { NOTIFICATIONS_INDICATORS_DELETE, NOTIFICATIONS_NEW } from '@main/shared/constants';
 
 import {
   getUserNotificationPreferences,
@@ -94,6 +94,13 @@ const useNotificationsStore = defineStore('notifications', () => {
     ws.on(NOTIFICATIONS_NEW, async e => {
       const notification: INotificationReceiver = e.data;
       notifications.value = [...notifications.value, notification];
+    });
+
+    ws.on(NOTIFICATIONS_INDICATORS_DELETE, async e => {
+      const notificationReceiverIds: number[] = e.data.notificationReceiverIds;
+      notifications.value = notifications.value.filter(
+        nr => !notificationReceiverIds.includes(nr.id),
+      );
     });
   }
 
