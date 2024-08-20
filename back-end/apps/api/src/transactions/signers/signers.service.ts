@@ -10,9 +10,11 @@ import {
   NOTIFICATIONS_SERVICE,
   NOTIFY_CLIENT,
   TRANSACTION_ACTION,
+  SYNC_SIGN_INDICATOR_NOTIFICATION,
   MirrorNodeService,
   NotifyClientDto,
   PaginatedResourceDto,
+  SyncSignIndicatorNotificationDto,
   Pagination,
   addTransactionSignatures,
   isAlreadySigned,
@@ -186,6 +188,12 @@ export class SignersService {
         message: TRANSACTION_ACTION,
         content: '',
       });
+      this.notificationService.emit<undefined, SyncSignIndicatorNotificationDto>(
+        SYNC_SIGN_INDICATOR_NOTIFICATION,
+        {
+          transactionId: transactionId,
+        },
+      );
 
       return signer;
     } catch (error) {
@@ -295,6 +303,12 @@ export class SignersService {
         message: TRANSACTION_ACTION,
         content: '',
       });
+      this.notificationService.emit<undefined, SyncSignIndicatorNotificationDto>(
+        SYNC_SIGN_INDICATOR_NOTIFICATION,
+        {
+          transactionId: transactionId,
+        },
+      );
       return signers;
     } catch (error) {
       await queryRunner.rollbackTransaction();

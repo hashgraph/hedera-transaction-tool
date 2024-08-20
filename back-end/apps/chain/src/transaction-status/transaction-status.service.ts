@@ -17,9 +17,11 @@ import {
   NOTIFY_GENERAL,
   UPDATE_INDICATOR_NOTIFICATION,
   TRANSACTION_ACTION,
+  NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
   NotifyClientDto,
   UpdateIndicatorDto,
   NotifyGeneralDto,
+  NotifyForTransactionDto,
   ableToSign,
   computeSignatureKey,
 } from '@app/common';
@@ -239,6 +241,15 @@ export class TransactionStatusService {
             });
           }
 
+          if (newStatus === TransactionStatus.WAITING_FOR_SIGNATURES) {
+            this.notificationsService.emit<undefined, NotifyForTransactionDto>(
+              NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
+              {
+                transactionId: transaction.id,
+              },
+            );
+          }
+
           atLeastOneUpdated = true;
         } catch (error) {
           console.log(error);
@@ -315,6 +326,15 @@ export class TransactionStatusService {
         content: `Transaction ${transaction.transactionId} is ready for execution`,
         userIds: [transaction.creatorKey?.userId],
       });
+    }
+
+    if (newStatus === TransactionStatus.WAITING_FOR_SIGNATURES) {
+      this.notificationsService.emit<undefined, NotifyForTransactionDto>(
+        NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
+        {
+          transactionId: transaction.id,
+        },
+      );
     }
 
     this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
