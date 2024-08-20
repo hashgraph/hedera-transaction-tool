@@ -79,7 +79,6 @@ const loadFromDraft = async (id: string) => {
 };
 
 function handleUpdateValidStart(v: Date) {
-  console.log(v);
   emit('update:validStart', v);
 }
 

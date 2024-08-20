@@ -114,7 +114,6 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       }
     });
     groupItems.value = newGroupItems;
-    console.log(groupItems.value);
     setModified();
   }
 

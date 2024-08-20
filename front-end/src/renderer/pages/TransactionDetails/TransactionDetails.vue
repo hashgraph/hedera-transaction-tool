@@ -490,7 +490,6 @@ function redirectToHistory() {
 
 /* Hooks */
 onBeforeMount(async () => {
-  console.log(router.previousPath);
   const id = router.currentRoute.value.params.id;
   if (!id) {
     router.back();
