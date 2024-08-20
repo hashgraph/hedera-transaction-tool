@@ -93,9 +93,9 @@ describe('Transaction Notifications Service', () => {
       await service.notifyTransactionRequiredSigners(dto);
 
       expect(emailService.notifyEmail).toHaveBeenCalledWith({
-        subject: 'Hedera Transaction Tool | Transaction to sign',
+        subject: 'Action Required: Review and Sign Transaction',
         email: ['user@example.com'],
-        text: `You have a transaction to sign. Please visit the Hedera Transaction Tool to sign the transaction 0x123.`,
+        text: `A new transaction requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction using the following ID: 0x123.`,
       });
     });
 
@@ -128,9 +128,9 @@ describe('Transaction Notifications Service', () => {
         },
       });
       expect(emailService.notifyEmail).toHaveBeenCalledWith({
-        subject: 'Hedera Transaction Tool | Transaction to sign',
+        subject: 'Action Required: Review and Sign Transaction',
         email: ['user@example.com'],
-        text: `You have a transaction to sign. Please visit the Hedera Transaction Tool to sign the transaction 0x123.`,
+        text: `A new transaction requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction using the following ID: 0x123.`,
       });
     });
 

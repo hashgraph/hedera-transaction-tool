@@ -60,9 +60,9 @@ export class TransactionNotificationsService {
 
     if (emails.length > 0) {
       this.emailService.notifyEmail({
-        subject: 'Hedera Transaction Tool | Transaction to sign',
+        subject: 'Action Required: Review and Sign Transaction',
         email: emails,
-        text: `You have a transaction to sign. Please visit the Hedera Transaction Tool to sign the transaction ${transaction.transactionId}.`,
+        text: `A new transaction requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction using the following ID: ${transaction.transactionId}.`,
       });
     }
   }
