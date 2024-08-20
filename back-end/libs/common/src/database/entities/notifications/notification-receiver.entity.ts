@@ -34,3 +34,13 @@ export class NotificationReceiver {
   @UpdateDateColumn()
   updatedAt: Date;
 }
+
+export const notificationReceiverProperties: (keyof NotificationReceiver)[] = [
+  'id',
+  'notificationId',
+  'userId',
+  'isRead',
+  'updatedAt',
+];
+
+export const notificationReceiverDateProperties: (keyof NotificationReceiver)[] = ['updatedAt'];

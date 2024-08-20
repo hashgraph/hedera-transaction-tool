@@ -47,3 +47,15 @@ export class Notification {
   @OneToMany(() => NotificationReceiver, notificationReceiver => notificationReceiver.notification)
   notificationReceivers: NotificationReceiver[];
 }
+
+export const notificationProperties: (keyof Notification)[] = [
+  'id',
+  'type',
+  'content',
+  'entityId',
+  'actorId',
+  'isEmailSent',
+  'createdAt',
+];
+
+export const notificationDateProperties: (keyof Notification)[] = ['createdAt'];
