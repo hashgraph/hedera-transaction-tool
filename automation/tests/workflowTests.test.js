@@ -60,6 +60,14 @@ test.describe('Workflow tests', () => {
     await transactionPage.closeDraftModal();
   });
 
+  test.afterEach(async ({}, testInfo) => {
+    if (testInfo.status !== 'passed') {
+      const screenshotPath = `./test-results/screenshots/${testInfo.title.replace(/\s+/g, '_')}.png`;
+      await window.screenshot({ path: screenshotPath });
+      console.log(`Screenshot saved: ${screenshotPath}`);
+    }
+  });
+
   test('Verify account card is visible with valid information', async () => {
     const initialHbarFunds = '1';
     const memoText = 'test memo';
