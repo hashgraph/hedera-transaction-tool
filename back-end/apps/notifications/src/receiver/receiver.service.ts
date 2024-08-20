@@ -341,17 +341,17 @@ export class ReceiverService {
   private async getTransactionParticipants(entityManager: EntityManager, transactionId: number) {
     const transaction = await entityManager.findOne(Transaction, {
       where: { id: transactionId },
-      relations: {
-        creatorKey: true,
-        observers: true,
-        signers: true,
-      },
+      // relations: {
+      //   creatorKey: true,
+      //   observers: true,
+      //   signers: true,
+      // },
     });
     const approvers = await this.getApproversByTransactionId(entityManager, transactionId);
 
-    const creatorId = transaction.creatorKey.userId;
-    const signerUserIds = transaction.signers.map(s => s.userId);
-    const observerUserIds = transaction.observers.map(o => o.userId);
+    // const creatorId = transaction.creatorKey.userId;
+    // const signerUserIds = transaction.signers.map(s => s.userId);
+    // const observerUserIds = transaction.observers.map(o => o.userId);
     const requiredUserIds = await this.getUsersIdsRequiredToSign(entityManager, transaction);
     const approversUserIds = approvers.map(a => a.userId);
     const approversGaveChoiceUserIds = approvers
@@ -364,9 +364,9 @@ export class ReceiverService {
       .filter(Boolean);
 
     const participants = [
-      creatorId,
-      ...signerUserIds,
-      ...observerUserIds,
+      // creatorId,
+      // ...signerUserIds,
+      // ...observerUserIds,
       ...approversUserIds,
       ...requiredUserIds,
     ]
@@ -374,9 +374,9 @@ export class ReceiverService {
       .filter((v, i, a) => a.indexOf(v) === i);
 
     return {
-      creatorId,
-      signerUserIds,
-      observerUserIds,
+      // creatorId,
+      // signerUserIds,
+      // observerUserIds,
       approversUserIds,
       requiredUserIds,
       approversGaveChoiceUserIds,
