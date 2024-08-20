@@ -3,7 +3,6 @@ import { EventPattern, Payload } from '@nestjs/microservices';
 
 import {
   NOTIFY_GENERAL,
-  NOTIFY_TRANSACTION_CREATOR_ON_READY_FOR_EXECUTION,
   NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
   UPDATE_INDICATOR_NOTIFICATION,
   NotifyForTransactionDto,
@@ -25,11 +24,6 @@ export class ReceiverController {
   @EventPattern(NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES)
   async notifyTransactionSigners(@Payload() payload: NotifyForTransactionDto) {
     return this.receiverService.notifyTransactionRequiredSigners(payload);
-  }
-
-  @EventPattern(NOTIFY_TRANSACTION_CREATOR_ON_READY_FOR_EXECUTION)
-  async notifyTransactionCreatorOnReadyForExecution(@Payload() payload: NotifyForTransactionDto) {
-    return this.receiverService.notifyTransactionCreatorOnReadyForExecution(payload);
   }
 
   @EventPattern(UPDATE_INDICATOR_NOTIFICATION)

@@ -52,14 +52,4 @@ describe('Receiver Controller', () => {
 
     expect(receiverService.notifyTransactionRequiredSigners).toHaveBeenCalledWith(dto);
   });
-
-  it('should invoke notifyTransactionCreatorOnReadyForExecution with correct params', async () => {
-    const dto: NotifyForTransactionDto = {
-      transactionId: 1,
-    };
-
-    await controller.notifyTransactionCreatorOnReadyForExecution(dto);
-
-    expect(receiverService.notifyTransactionCreatorOnReadyForExecution).toHaveBeenCalledWith(dto);
-  });
 });

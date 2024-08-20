@@ -106,7 +106,7 @@ describe('ReceiverService', () => {
           isInAppNotified: null,
         }),
       );
-      expect(fanOutService.fanOut).toHaveBeenCalled();
+      expect(fanOutService.fanOutNew).toHaveBeenCalled();
     });
   });
 
@@ -188,7 +188,7 @@ describe('ReceiverService', () => {
           isInAppNotified: null,
         }),
       );
-      expect(fanOutService.fanOut).toHaveBeenCalledTimes(2);
+      expect(fanOutService.fanOutNew).toHaveBeenCalledTimes(2);
     });
 
     it('should throw an error if transaction not found', async () => {
@@ -196,75 +196,6 @@ describe('ReceiverService', () => {
       entityManager.findOne.mockResolvedValueOnce(null);
 
       await expect(service.notifyTransactionRequiredSigners(dto)).rejects.toThrow(
-        'Transaction not found',
-      );
-    });
-  });
-
-  describe('notifyTransactionCreatorOnReadyForExecution', () => {
-    it('should notify transaction creator when ready for execution', async () => {
-      const dto: NotifyForTransactionDto = { transactionId: 1 };
-
-      const transaction = {
-        id: 1,
-        creatorKey: { user: { id: 1 } },
-      } as Transaction;
-      entityManager.findOne.mockResolvedValueOnce(transaction);
-
-      entityManager.create.mockImplementation((_, data) => data);
-      mockTransaction();
-
-      await service.notifyTransactionCreatorOnReadyForExecution(dto);
-
-      expect(entityManager.findOne).toHaveBeenCalledWith(Transaction, {
-        where: { id: dto.transactionId },
-        relations: { creatorKey: { user: true } },
-      });
-      expect(entityManager.create).toHaveBeenCalledWith(Notification, {
-        type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
-        content: `Transaction ${transaction.transactionId} is ready for execution`,
-        entityId: transaction.id,
-        actorId: null,
-      });
-      expect(entityManager.save).toHaveBeenNthCalledWith(1, Notification, {
-        type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
-        content: `Transaction ${transaction.transactionId} is ready for execution`,
-        entityId: transaction.id,
-        actorId: null,
-      });
-      expect(entityManager.create).toHaveBeenCalledTimes(4); // 2 for notification, 2 for receiver
-      expect(entityManager.create).toHaveBeenNthCalledWith(
-        1,
-        Notification,
-        expect.objectContaining({
-          type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
-          entityId: transaction.id,
-        }),
-      );
-      expect(entityManager.create).toHaveBeenNthCalledWith(
-        2,
-        Notification,
-        expect.objectContaining({
-          type: NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
-          entityId: transaction.id,
-        }),
-      );
-      expect(entityManager.create).toHaveBeenNthCalledWith(
-        3,
-        NotificationReceiver,
-        expect.objectContaining({
-          isEmailSent: null,
-          isInAppNotified: null,
-        }),
-      );
-      expect(fanOutService.fanOut).toHaveBeenCalledTimes(2);
-    });
-
-    it('should throw an error if transaction not found', async () => {
-      const dto: NotifyForTransactionDto = { transactionId: 1 };
-      entityManager.findOne.mockResolvedValueOnce(null);
-
-      await expect(service.notifyTransactionCreatorOnReadyForExecution(dto)).rejects.toThrow(
         'Transaction not found',
       );
     });

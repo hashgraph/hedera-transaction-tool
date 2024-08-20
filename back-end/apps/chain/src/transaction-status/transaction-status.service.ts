@@ -14,16 +14,16 @@ import {
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
   NOTIFY_CLIENT,
-  NOTIFY_TRANSACTION_CREATOR_ON_READY_FOR_EXECUTION,
+  NOTIFY_GENERAL,
   UPDATE_INDICATOR_NOTIFICATION,
   TRANSACTION_ACTION,
   NotifyClientDto,
-  NotifyForTransactionDto,
   UpdateIndicatorDto,
+  NotifyGeneralDto,
   ableToSign,
   computeSignatureKey,
 } from '@app/common';
-import { Transaction, TransactionStatus } from '@entities';
+import { NotificationType, Transaction, TransactionStatus } from '@entities';
 
 import { UpdateTransactionStatusDto } from './dto';
 import { ExecuteService } from '../execute/execute.service';
@@ -176,6 +176,9 @@ export class TransactionStatusService {
         ]),
         validStart: to ? Between(from, to) : MoreThan(from),
       },
+      relations: {
+        creatorKey: true,
+      },
     });
 
     let atLeastOneUpdated = false;
@@ -227,12 +230,13 @@ export class TransactionStatusService {
           );
 
           if (newStatus === TransactionStatus.WAITING_FOR_EXECUTION) {
-            this.notificationsService.emit<undefined, NotifyForTransactionDto>(
-              NOTIFY_TRANSACTION_CREATOR_ON_READY_FOR_EXECUTION,
-              {
-                transactionId: transaction.id,
-              },
-            );
+            this.notificationsService.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
+              entityId: transaction.id,
+              type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
+              actorId: null,
+              content: `Transaction ${transaction.transactionId} is ready for execution`,
+              userIds: [transaction.creatorKey?.userId],
+            });
           }
 
           atLeastOneUpdated = true;
@@ -254,7 +258,12 @@ export class TransactionStatusService {
 
   /* Checks if the signers are enough to sign the transaction and update its status */
   async updateTransactionStatus({ id }: UpdateTransactionStatusDto) {
-    const transaction = await this.transactionRepo.findOne({ where: { id } });
+    const transaction = await this.transactionRepo.findOne({
+      where: { id },
+      relations: {
+        creatorKey: true,
+      },
+    });
 
     /* Returns if the transaction is not found */
     if (!transaction) return;
@@ -299,12 +308,13 @@ export class TransactionStatusService {
     });
 
     if (newStatus === TransactionStatus.WAITING_FOR_EXECUTION) {
-      this.notificationsService.emit<undefined, NotifyForTransactionDto>(
-        NOTIFY_TRANSACTION_CREATOR_ON_READY_FOR_EXECUTION,
-        {
-          transactionId: transaction.id,
-        },
-      );
+      this.notificationsService.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
+        entityId: transaction.id,
+        type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
+        actorId: null,
+        content: `Transaction ${transaction.transactionId} is ready for execution`,
+        userIds: [transaction.creatorKey?.userId],
+      });
     }
 
     this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
