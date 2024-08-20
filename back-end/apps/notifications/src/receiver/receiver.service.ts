@@ -88,12 +88,19 @@ export class ReceiverService {
       entityId: transaction.id,
       actorId: null,
     });
+    const indicatorNotification = this.entityManager.create(Notification, {
+      type: NotificationType.TRANSACTION_INDICATOR_SIGN,
+      content: '',
+      entityId: transaction.id,
+      actorId: null,
+    });
 
     /* Create receivers */
     const notificationReceivers: NotificationReceiver[] = [];
 
     await this.entityManager.transaction(async manager => {
       await manager.save(Notification, notification);
+      await manager.save(Notification, indicatorNotification);
 
       for (const userId of distinctUserIds) {
         const notificationReceiver = manager.create(NotificationReceiver, {
@@ -103,10 +110,19 @@ export class ReceiverService {
           isInAppNotified: null,
           isEmailSent: null,
         });
+        const notificationIndicatorReceiver = manager.create(NotificationReceiver, {
+          notificationId: indicatorNotification.id,
+          userId,
+          isRead: false,
+          isInAppNotified: null,
+          isEmailSent: null,
+        });
 
         await manager.save(NotificationReceiver, notificationReceiver);
+        await manager.save(NotificationReceiver, notificationIndicatorReceiver);
 
         notificationReceivers.push(notificationReceiver);
+        notificationReceivers.push(notificationIndicatorReceiver);
       }
     });
 
@@ -136,6 +152,12 @@ export class ReceiverService {
       entityId: transaction.id,
       actorId: null,
     });
+    const indicatorNotification = this.entityManager.create(Notification, {
+      type: NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
+      content: '',
+      entityId: transaction.id,
+      actorId: null,
+    });
 
     /* Create receiver */
     const notificationReceiver = this.entityManager.create(NotificationReceiver, {
@@ -144,14 +166,26 @@ export class ReceiverService {
       isInAppNotified: null,
       isEmailSent: null,
     });
+    const notificationIndicatorReceiver = this.entityManager.create(NotificationReceiver, {
+      userId: transaction.creatorKey.userId,
+      isRead: false,
+      isInAppNotified: null,
+      isEmailSent: null,
+    });
 
     await this.entityManager.transaction(async manager => {
       await manager.save(Notification, notification);
+      await manager.save(Notification, indicatorNotification);
       notificationReceiver.notificationId = notification.id;
+      notificationIndicatorReceiver.notificationId = indicatorNotification.id;
       await manager.save(NotificationReceiver, notificationReceiver);
+      await manager.save(NotificationReceiver, notificationIndicatorReceiver);
     });
 
     /* Fan out */
-    await this.fanOutService.fanOut(notification, [notificationReceiver]);
+    await this.fanOutService.fanOut(notification, [
+      notificationReceiver,
+      notificationIndicatorReceiver,
+    ]);
   }
 }

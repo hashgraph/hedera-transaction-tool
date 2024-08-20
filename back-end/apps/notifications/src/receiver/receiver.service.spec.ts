@@ -155,9 +155,25 @@ describe('ReceiverService', () => {
         entityId: 1,
         actorId: null,
       });
-      expect(entityManager.create).toHaveBeenCalledTimes(3); // 1 for notification, 2 for receivers
+      expect(entityManager.create).toHaveBeenCalledTimes(6); // 2 for notification, 4 for receivers
+      expect(entityManager.create).toHaveBeenNthCalledWith(
+        1,
+        Notification,
+        expect.objectContaining({
+          type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
+          entityId: transaction.id,
+        }),
+      );
       expect(entityManager.create).toHaveBeenNthCalledWith(
         2,
+        Notification,
+        expect.objectContaining({
+          type: NotificationType.TRANSACTION_INDICATOR_SIGN,
+          entityId: transaction.id,
+        }),
+      );
+      expect(entityManager.create).toHaveBeenNthCalledWith(
+        3,
         NotificationReceiver,
         expect.objectContaining({
           isEmailSent: null,
@@ -165,7 +181,7 @@ describe('ReceiverService', () => {
         }),
       );
       expect(entityManager.create).toHaveBeenNthCalledWith(
-        3,
+        4,
         NotificationReceiver,
         expect.objectContaining({
           isEmailSent: null,
@@ -216,9 +232,25 @@ describe('ReceiverService', () => {
         entityId: transaction.id,
         actorId: null,
       });
-      expect(entityManager.create).toHaveBeenCalledTimes(2); // 1 for notification, 1 for receiver
+      expect(entityManager.create).toHaveBeenCalledTimes(4); // 2 for notification, 2 for receiver
+      expect(entityManager.create).toHaveBeenNthCalledWith(
+        1,
+        Notification,
+        expect.objectContaining({
+          type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
+          entityId: transaction.id,
+        }),
+      );
       expect(entityManager.create).toHaveBeenNthCalledWith(
         2,
+        Notification,
+        expect.objectContaining({
+          type: NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
+          entityId: transaction.id,
+        }),
+      );
+      expect(entityManager.create).toHaveBeenNthCalledWith(
+        3,
         NotificationReceiver,
         expect.objectContaining({
           isEmailSent: null,
