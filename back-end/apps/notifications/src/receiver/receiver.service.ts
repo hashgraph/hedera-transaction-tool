@@ -97,6 +97,7 @@ export class ReceiverService {
 
     /* Create receivers */
     const notificationReceivers: NotificationReceiver[] = [];
+    const notificationIndicatorReceivers: NotificationReceiver[] = [];
 
     await this.entityManager.transaction(async manager => {
       await manager.save(Notification, notification);
@@ -122,12 +123,13 @@ export class ReceiverService {
         await manager.save(NotificationReceiver, notificationIndicatorReceiver);
 
         notificationReceivers.push(notificationReceiver);
-        notificationReceivers.push(notificationIndicatorReceiver);
+        notificationIndicatorReceivers.push(notificationIndicatorReceiver);
       }
     });
 
     /* Fan out */
     await this.fanOutService.fanOut(notification, notificationReceivers);
+    await this.fanOutService.fanOut(indicatorNotification, notificationIndicatorReceivers);
   }
 
   async notifyTransactionCreatorOnReadyForExecution(dto: NotifyForTransactionDto) {
@@ -183,9 +185,7 @@ export class ReceiverService {
     });
 
     /* Fan out */
-    await this.fanOutService.fanOut(notification, [
-      notificationReceiver,
-      notificationIndicatorReceiver,
-    ]);
+    await this.fanOutService.fanOut(notification, [notificationReceiver]);
+    await this.fanOutService.fanOut(indicatorNotification, [notificationIndicatorReceiver]);
   }
 }

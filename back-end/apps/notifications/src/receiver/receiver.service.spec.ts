@@ -188,7 +188,7 @@ describe('ReceiverService', () => {
           isInAppNotified: null,
         }),
       );
-      expect(fanOutService.fanOut).toHaveBeenCalled();
+      expect(fanOutService.fanOut).toHaveBeenCalledTimes(2);
     });
 
     it('should throw an error if transaction not found', async () => {
@@ -257,7 +257,7 @@ describe('ReceiverService', () => {
           isInAppNotified: null,
         }),
       );
-      expect(fanOutService.fanOut).toHaveBeenCalled();
+      expect(fanOutService.fanOut).toHaveBeenCalledTimes(2);
     });
 
     it('should throw an error if transaction not found', async () => {
