@@ -47,7 +47,7 @@ export class ReceiverService {
         notificationReceivers.push(notificationReceiver);
       }
 
-      await this.fanOutService.fanOut(notificationReceivers);
+      await this.fanOutService.fanOut(notification, notificationReceivers);
     });
   }
 
@@ -104,7 +104,7 @@ export class ReceiverService {
         notificationReceivers.push(notificationReceiver);
       }
 
-      await this.fanOutService.fanOut(notificationReceivers);
+      await this.fanOutService.fanOut(notification, notificationReceivers);
     });
   }
 
@@ -144,7 +144,7 @@ export class ReceiverService {
 
       await manager.save(NotificationReceiver, notificationReceiver);
 
-      await this.fanOutService.fanOut([notificationReceiver]);
+      await this.fanOutService.fanOut(notification, [notificationReceiver]);
     });
   }
 }

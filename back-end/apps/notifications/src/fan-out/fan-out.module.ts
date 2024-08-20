@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { LoggerModule, MirrorNodeModule } from '@app/common';
+import { LoggerModule } from '@app/common';
 import {
   Notification,
   NotificationPreferences,
@@ -17,9 +17,7 @@ import {
   UserKey,
 } from '@entities';
 
-import { ReceiverController } from './receiver.controller';
-import { ReceiverService } from './receiver.service';
-import { FanOutModule } from '../fan-out/fan-out.module';
+import { FanOutService } from './fan-out.service';
 
 @Module({
   imports: [
@@ -38,10 +36,9 @@ import { FanOutModule } from '../fan-out/fan-out.module';
       NotificationReceiver,
       NotificationPreferences,
     ]),
-    MirrorNodeModule,
-    FanOutModule,
   ],
-  controllers: [ReceiverController],
-  providers: [ReceiverService],
+  controllers: [],
+  providers: [FanOutService],
+  exports: [FanOutService],
 })
-export class ReceiverModule {}
+export class FanOutModule {}
