@@ -83,20 +83,13 @@ export class NotificationsController {
   @HttpCode(200)
   async getNotificationsCount(
     @GetUser() user: User,
-    @PaginationParams() paginationParams: Pagination,
-    @SortingParams([...notificationReceiverProperties, ...notificationProperties]) sort?: Sorting[],
     @FilteringParams({
       validProperties: [...notificationReceiverProperties, ...notificationProperties],
       dateProperties: [...notificationReceiverDateProperties, ...notificationDateProperties],
     })
     filter?: Filtering[],
   ): Promise<number> {
-    return this.notificationsService.getReceivedNotificationsCount(
-      user,
-      paginationParams,
-      sort,
-      filter,
-    );
+    return this.notificationsService.getReceivedNotificationsCount(user, filter);
   }
 
   @ApiOperation({

@@ -78,19 +78,13 @@ describe('NotificationsController', () => {
 
   describe('getNotificationsCount', () => {
     it('should return the count of received notifications', async () => {
-      const pagination: Pagination = { page: 1, size: 10, offset: 0, limit: 10 };
       const count = 1;
 
       jest.spyOn(service, 'getReceivedNotificationsCount').mockResolvedValue(count);
 
-      const result = await controller.getNotificationsCount(user, pagination);
+      const result = await controller.getNotificationsCount(user);
 
-      expect(service.getReceivedNotificationsCount).toHaveBeenCalledWith(
-        user,
-        pagination,
-        undefined,
-        undefined,
-      );
+      expect(service.getReceivedNotificationsCount).toHaveBeenCalledWith(user, undefined);
       expect(result).toBe(count);
     });
   });

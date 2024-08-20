@@ -106,10 +106,9 @@ describe('NotificationReceiverService', () => {
 
   describe('getReceivedNotificationsCount', () => {
     it('should return the count of received notifications', async () => {
-      const pagination: Pagination = { page: 1, size: 10, offset: 0, limit: 10 };
       repo.count.mockResolvedValue(1);
 
-      const result = await service.getReceivedNotificationsCount(user, pagination);
+      const result = await service.getReceivedNotificationsCount(user);
 
       expect(repo.count).toHaveBeenCalled();
       expect(result).toBe(1);
@@ -225,6 +224,19 @@ describe('NotificationReceiverService', () => {
         },
         skip: 0,
         take: 10,
+      });
+    });
+
+    it('should return find options without pagination', () => {
+      const result = service.getFindOptionsForNotifications(user);
+
+      expect(result).toEqual({
+        where: {
+          userId: user.id,
+        },
+        relations: {
+          notification: true,
+        },
       });
     });
   });

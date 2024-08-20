@@ -45,15 +45,8 @@ export class NotificationReceiverService {
     };
   }
 
-  async getReceivedNotificationsCount(
-    user: User,
-    pagination: Pagination,
-    sort?: Sorting[],
-    filter?: Filtering[],
-  ): Promise<number> {
-    return await this.repo.count(
-      this.getFindOptionsForNotifications(user, pagination, sort, filter),
-    );
+  async getReceivedNotificationsCount(user: User, filter?: Filtering[]): Promise<number> {
+    return await this.repo.count(this.getFindOptionsForNotifications(user, null, null, filter));
   }
 
   async getReceivedNotification(user: User, id: number) {
@@ -101,7 +94,7 @@ export class NotificationReceiverService {
 
   getFindOptionsForNotifications(
     user: User,
-    { limit, offset }: Pagination,
+    pagination?: Pagination,
     sort?: Sorting[],
     filter?: Filtering[],
   ): FindManyOptions<NotificationReceiver> {
@@ -162,9 +155,14 @@ export class NotificationReceiverService {
       relations: {
         notification: true,
       },
-      skip: offset,
-      take: limit,
     };
+
+    if (pagination && typeof pagination.offset === 'number') {
+      findOptions.skip = pagination.offset;
+    }
+    if (pagination && typeof pagination.limit === 'number') {
+      findOptions.take = pagination.limit;
+    }
 
     if (Object.keys(order).length === 0) {
       delete findOptions.order;
