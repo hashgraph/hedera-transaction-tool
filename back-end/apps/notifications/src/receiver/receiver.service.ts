@@ -126,6 +126,7 @@ export class ReceiverService {
         newIndicatorType = NotificationType.TRANSACTION_INDICATOR_EXECUTABLE;
         break;
       case TransactionStatus.EXECUTED:
+      case TransactionStatus.FAILED:
         newIndicatorType = NotificationType.TRANSACTION_INDICATOR_EXECUTED;
         break;
       case TransactionStatus.EXPIRED:
