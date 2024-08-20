@@ -47,6 +47,7 @@ export const notificationReceiverProperties: (keyof NotificationReceiver)[] = [
   'userId',
   'isRead',
   'isEmailSent',
+  'isInAppNotified',
   'updatedAt',
 ];
 
