@@ -53,14 +53,14 @@ describe('Receiver Controller', () => {
     expect(receiverService.notifyTransactionRequiredSigners).toHaveBeenCalledWith(dto);
   });
 
-  it('should invoke updateIndicatorNotification with correct params', async () => {
+  it('should invoke updateNewStatusIndicatorNotification with correct params', async () => {
     const dto: UpdateIndicatorDto = {
       transactionId: 1,
       transactionStatus: TransactionStatus.WAITING_FOR_EXECUTION,
     };
 
-    await controller.updateIndicatorNotification(dto);
+    await controller.updateNewStatusIndicatorNotification(dto);
 
-    expect(receiverService.updateIndicatorNotification).toHaveBeenCalledWith(dto);
+    expect(receiverService.updateNewStatusIndicatorNotification).toHaveBeenCalledWith(dto);
   });
 });

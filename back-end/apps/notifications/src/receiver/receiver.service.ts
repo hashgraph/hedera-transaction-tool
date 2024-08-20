@@ -14,6 +14,7 @@ import {
   NotificationReceiver,
   NotificationType,
   Transaction,
+  TransactionSigner,
   TransactionStatus,
 } from '@entities';
 
@@ -49,6 +50,7 @@ export class ReceiverService {
 
     if (!transaction) throw new Error('Transaction not found');
 
+    /* Get all keys required to sign */
     const allKeys = await keysRequiredToSign(
       transaction,
       this.mirrorNodeService,
@@ -58,7 +60,6 @@ export class ReceiverService {
     const distinctUserIds = allKeys
       .map(k => k.userId)
       .filter((v, i, a) => a.indexOf(v) === i)
-      // .filter(id => id !== transaction.creatorKey?.user?.id)
       .filter(Boolean);
 
     /* Create notification */
@@ -114,7 +115,10 @@ export class ReceiverService {
     await this.fanOutService.fanOutNew(indicatorNotification, notificationIndicatorReceivers);
   }
 
-  async updateIndicatorNotification({ transactionId, transactionStatus }: UpdateIndicatorDto) {
+  async updateNewStatusIndicatorNotification({
+    transactionId,
+    transactionStatus,
+  }: UpdateIndicatorDto) {
     let newIndicatorType: NotificationType | null = null;
 
     /* Determine new indicator type */

@@ -203,7 +203,7 @@ describe('ReceiverService', () => {
     });
   });
 
-  describe('updateIndicatorNotification', () => {
+  describe('updateNewStatusIndicatorNotification', () => {
     const transactionId = 1;
     const notificationReceivers1 = [
       { id: 13, userId: 1 },
@@ -228,7 +228,7 @@ describe('ReceiverService', () => {
       entityManager.find.mockResolvedValueOnce(notifications);
       entityManager.find.mockResolvedValueOnce(notificationReceivers);
 
-      await service.updateIndicatorNotification(dto);
+      await service.updateNewStatusIndicatorNotification(dto);
 
       expect(entityManager.find).toHaveBeenCalledWith(Notification, {
         where: {
@@ -254,7 +254,7 @@ describe('ReceiverService', () => {
 
       entityManager.find.mockResolvedValueOnce(notifications);
 
-      await service.updateIndicatorNotification(dto);
+      await service.updateNewStatusIndicatorNotification(dto);
 
       expect(entityManager.delete).toHaveBeenCalledWith(NotificationReceiver, {
         id: In(notificationReceivers.map(nr => nr.id)),
@@ -272,7 +272,7 @@ describe('ReceiverService', () => {
 
       entityManager.find.mockResolvedValueOnce(notifications);
 
-      await service.updateIndicatorNotification(dto);
+      await service.updateNewStatusIndicatorNotification(dto);
 
       expect(fanOutService.fanOutIndicatorsDelete).toHaveBeenCalledWith({
         1: [13, 23],
@@ -291,7 +291,7 @@ describe('ReceiverService', () => {
 
       entityManager.find.mockResolvedValueOnce(notifications);
 
-      await service.updateIndicatorNotification(dto);
+      await service.updateNewStatusIndicatorNotification(dto);
 
       expect(entityManager.create).toHaveBeenCalledWith(Notification, {
         type: NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,

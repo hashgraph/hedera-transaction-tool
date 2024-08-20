@@ -27,7 +27,7 @@ export class ReceiverController {
   }
 
   @EventPattern(UPDATE_INDICATOR_NOTIFICATION)
-  async updateIndicatorNotification(@Payload() payload: UpdateIndicatorDto) {
-    return this.receiverService.updateIndicatorNotification(payload);
+  async updateNewStatusIndicatorNotification(@Payload() payload: UpdateIndicatorDto) {
+    return this.receiverService.updateNewStatusIndicatorNotification(payload);
   }
 }
