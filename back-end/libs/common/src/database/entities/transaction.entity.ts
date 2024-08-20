@@ -44,9 +44,9 @@ export enum TransactionType {
 }
 
 export enum TransactionStatus {
-  NEW = 'NEW',
+  NEW = 'NEW', // unused
   CANCELED = 'CANCELED',
-  REJECTED = 'REJECTED',
+  REJECTED = 'REJECTED', // unused
   WAITING_FOR_SIGNATURES = 'WAITING FOR SIGNATURES',
   WAITING_FOR_EXECUTION = 'WAITING FOR EXECUTION',
   EXECUTED = 'EXECUTED',
