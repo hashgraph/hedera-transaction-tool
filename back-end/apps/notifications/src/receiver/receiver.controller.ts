@@ -5,9 +5,11 @@ import {
   NOTIFY_GENERAL,
   NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
   UPDATE_INDICATOR_NOTIFICATION,
+  SYNC_SIGN_INDICATOR_NOTIFICATION,
   NotifyForTransactionDto,
   NotifyGeneralDto,
   UpdateIndicatorDto,
+  SyncSignIndicatorNotificationDto,
 } from '@app/common';
 
 import { ReceiverService } from './receiver.service';
@@ -29,5 +31,12 @@ export class ReceiverController {
   @EventPattern(UPDATE_INDICATOR_NOTIFICATION)
   async updateNewStatusIndicatorNotification(@Payload() payload: UpdateIndicatorDto) {
     return this.receiverService.updateNewStatusIndicatorNotification(payload);
+  }
+
+  @EventPattern(SYNC_SIGN_INDICATOR_NOTIFICATION)
+  async syncSignIndicatorNotification(
+    @Payload() { transactionId }: SyncSignIndicatorNotificationDto,
+  ) {
+    return this.receiverService.syncSignIndicators(transactionId, null);
   }
 }
