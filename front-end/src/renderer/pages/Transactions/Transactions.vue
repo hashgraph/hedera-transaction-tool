@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, ref, watch } from 'vue';
 
+import { NotificationType } from '@main/shared/interfaces';
+
 import useUserStore from '@renderer/stores/storeUser';
+import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 import { useRoute } from 'vue-router';
+import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
 import { isOrganizationActive } from '@renderer/utils/userStoreHelpers';
 
@@ -18,10 +22,10 @@ import ReadyToSign from './components/ReadyToSign.vue';
 import InProgress from './components/InProgress.vue';
 import ReadyForExecution from './components/ReadyForExecution.vue';
 import ReadyForReview from './components/ReadyForReview.vue';
-import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
 /* Stores */
 const user = useUserStore();
+const notifications = useNotificationsStore();
 
 /* Composables */
 const route = useRoute();
@@ -48,6 +52,33 @@ const tabItems = ref<TabItem[]>(sharedTabs);
 const isTransactionSelectionModalShown = ref(false);
 
 /* Computed */
+const activeTabs = computed(() => {
+  const rawTabItems = tabItems.value;
+
+  const readyToSignNotifications = notifications.notifications.filter(
+    nr => nr.notification.type === NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
+  );
+
+  const readyForExecutionNotifications = notifications.notifications.filter(
+    nr => nr.notification.type === NotificationType.TRANSACTION_READY_FOR_EXECUTION,
+  );
+
+  const readyForReviewNotifications = notifications.notifications.filter(
+    nr => nr.notification.type === NotificationType.TRANSCATION_EXECUTED,
+  );
+
+  rawTabItems.forEach(tab => {
+    if (tab.title === 'Ready to Sign') {
+      tab.notifications = readyToSignNotifications.length || undefined;
+    } else if (tab.title === 'Ready for Execution') {
+      tab.notifications = readyForExecutionNotifications.length || undefined;
+    } else if (tab.title === 'Ready for Review') {
+      tab.notifications = readyForReviewNotifications.length || undefined;
+    }
+  });
+
+  return rawTabItems;
+});
 const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title);
 
 /* Function */
@@ -112,7 +143,7 @@ watch(
 
     <div class="position-relative flex-column-100 overflow-hidden mt-4">
       <div class="mb-3">
-        <AppTabs :items="tabItems" v-model:active-index="activeTabIndex"></AppTabs>
+        <AppTabs :items="activeTabs" v-model:active-index="activeTabIndex"></AppTabs>
       </div>
       <template v-if="activeTabTitle === 'Ready for Review'"><ReadyForReview /></template>
       <template v-if="activeTabTitle === 'Ready to Sign'"> <ReadyToSign /> </template>

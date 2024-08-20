@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
+import { computed, onBeforeMount, onMounted, reactive, ref, watch } from 'vue';
 
 import { Transaction } from '@hashgraph/sdk';
 
-import { ITransaction } from '@main/shared/interfaces';
+import { ITransaction, NotificationType } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
@@ -29,6 +30,7 @@ import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const notifications = useNotificationsStore();
 
 /* Composables */
 const router = useRouter();
@@ -175,6 +177,10 @@ onBeforeMount(async () => {
     await fetchTransactions();
   });
   await fetchTransactions();
+});
+
+onMounted(async () => {
+  await notifications.markAsRead(NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES);
 });
 
 /* Watchers */
