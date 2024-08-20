@@ -579,6 +579,25 @@
   }
 
   tbody {
+    tr.highlight {
+      td {
+        position: relative;
+        background-color: var(--#{$prefix}input-fill-focus-bg-color);
+
+        &:first-child::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          border-left: 10px solid $error-400;
+          border-top: 10px solid $error-400;
+          border-right: 10px solid transparent;
+          border-bottom: 10px solid transparent;
+          border-top-left-radius: 12px;
+        }
+      }
+    }
+
     tr[hoverable] {
       &[selected],
       &:hover {
