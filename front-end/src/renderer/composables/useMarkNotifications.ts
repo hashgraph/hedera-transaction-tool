@@ -22,12 +22,21 @@ export default function useMarkNotifications(notificationTypes: NotificationType
     }
   }
 
-  /* Hooks */
-  onMounted(async () => {
-    oldNotifications.value = notifications.notifications.filter(nr =>
+  function setOldNotifications(addPrevious = false) {
+    const data = notifications.notifications.filter(nr =>
       notificationTypes.includes(nr.notification.type),
     );
 
+    if (addPrevious) {
+      oldNotifications.value = oldNotifications.value.concat(data);
+    } else {
+      oldNotifications.value = data;
+    }
+  }
+
+  /* Hooks */
+  onMounted(async () => {
+    setOldNotifications(true);
     await markAsRead();
   });
 
@@ -38,19 +47,12 @@ export default function useMarkNotifications(notificationTypes: NotificationType
   /* Watchers */
   watch(
     () => user.selectedOrganization,
-    async (organization, oldOrganization) => {
-      if (
-        isLoggedInOrganization(organization) &&
-        oldOrganization?.serverUrl !== organization.serverUrl
-      ) {
-        oldNotifications.value = notifications.notifications.filter(nr =>
-          notificationTypes.includes(nr.notification.type),
-        );
-
+    async organization => {
+      if (isLoggedInOrganization(organization)) {
+        setOldNotifications(false);
         await markAsRead();
       }
     },
   );
-
   return { oldNotifications };
 }

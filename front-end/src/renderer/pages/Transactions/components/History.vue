@@ -132,6 +132,17 @@ function createFindArgs(): Prisma.TransactionFindManyArgs {
   };
 }
 
+function setNotifiedTransactions() {
+  notifiedTransactionIds.value = getNotifiedTransactions(
+    notifications.notifications.concat(oldNotifications.value),
+    organizationTransactions.value.map(t => t.transactionRaw),
+    [
+      NotificationType.TRANSACTION_INDICATOR_EXECUTED,
+      NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+    ],
+  );
+}
+
 async function fetchTransactions() {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
@@ -150,19 +161,14 @@ async function fetchTransactions() {
         [{ property: orgSort.field, direction: orgSort.direction }],
       );
       totalItems.value = totalItemsCount;
+
       const transactionsBytes = await hexToUint8ArrayBatch(rawTransactions.map(t => t.body));
       organizationTransactions.value = rawTransactions.map((transaction, i) => ({
         transactionRaw: transaction,
         transaction: SDKTransaction.fromBytes(transactionsBytes[i]),
       }));
-      notifiedTransactionIds.value = getNotifiedTransactions(
-        notifications.notifications.concat(oldNotifications.value),
-        rawTransactions,
-        [
-          NotificationType.TRANSACTION_INDICATOR_EXECUTED,
-          NotificationType.TRANSACTION_INDICATOR_EXPIRED,
-        ],
-      );
+
+      setNotifiedTransactions();
     } else {
       notifiedTransactionIds.value = [];
       totalItems.value = await getTransactionsCount(user.personal.id);
@@ -182,7 +188,7 @@ onBeforeMount(async () => {
 });
 
 /* Watchers */
-watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
+watch([currentPage, pageSize, () => user.selectedOrganization, orgFilters], async () => {
   await fetchTransactions();
 });
 
@@ -196,9 +202,12 @@ watch(
   },
 );
 
-watch(orgFilters, async () => {
-  await fetchTransactions();
-});
+watch(
+  () => notifications.notifications,
+  () => {
+    setNotifiedTransactions();
+  },
+);
 </script>
 
 <template>

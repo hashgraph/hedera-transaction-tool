@@ -83,6 +83,14 @@ const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') 
 };
 
 /* Functions */
+function setNotifiedTransactions() {
+  notifiedTransactionIds.value = getNotifiedTransactions(
+    notifications.notifications.concat(oldNotifications.value),
+    transactions.value.map(t => t.transactionRaw),
+    [NotificationType.TRANSACTION_INDICATOR_EXECUTABLE],
+  );
+}
+
 async function fetchTransactions() {
   if (!isLoggedInOrganization(user.selectedOrganization)) {
     notifiedTransactionIds.value = [];
@@ -102,16 +110,14 @@ async function fetchTransactions() {
       [{ property: sort.field, direction: sort.direction }],
     );
     totalItems.value = totalItemsCount;
+
     const transactionsBytes = await hexToUint8ArrayBatch(rawTransactions.map(t => t.body));
     transactions.value = rawTransactions.map((transaction, i) => ({
       transactionRaw: transaction,
       transaction: Transaction.fromBytes(transactionsBytes[i]),
     }));
-    notifiedTransactionIds.value = getNotifiedTransactions(
-      notifications.notifications.concat(oldNotifications.value),
-      rawTransactions,
-      [NotificationType.TRANSACTION_INDICATOR_EXECUTABLE],
-    );
+
+    setNotifiedTransactions();
   } finally {
     isLoading.value = false;
   }
@@ -133,6 +139,13 @@ onBeforeMount(async () => {
 watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
   await fetchTransactions();
 });
+
+watch(
+  () => notifications.notifications,
+  () => {
+    setNotifiedTransactions();
+  },
+);
 </script>
 
 <template>

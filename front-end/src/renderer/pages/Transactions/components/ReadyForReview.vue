@@ -117,6 +117,16 @@ const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') 
 };
 
 /* Functions */
+function setNotifiedTransactions() {
+  const flatTransactions = [...transactions.value.values()].flat();
+
+  notifiedTransactionIds.value = getNotifiedTransactions(
+    notifications.notifications.concat(oldNotifications.value),
+    flatTransactions.map(t => t.transactionRaw),
+    [NotificationType.TRANSACTION_INDICATOR_APPROVE],
+  );
+}
+
 async function fetchTransactions() {
   transactions.value = new Map();
   if (!isLoggedInOrganization(user.selectedOrganization)) {
@@ -136,6 +146,7 @@ async function fetchTransactions() {
       [{ property: sort.field, direction: sort.direction }],
     );
     totalItems.value = total;
+
     const transactionsBytes = await hexToUint8ArrayBatch(rawTransactions.map(t => t.body));
 
     for (const [i, transaction] of rawTransactions.entries()) {
@@ -160,6 +171,8 @@ async function fetchTransactions() {
       [NotificationType.TRANSACTION_INDICATOR_APPROVE],
     );
 
+    setNotifiedTransactions();
+
     groups.value = await getApiGroups(user.selectedOrganization.serverUrl);
   } finally {
     isLoading.value = false;
@@ -182,6 +195,13 @@ onBeforeMount(async () => {
 watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
   await fetchTransactions();
 });
+
+watch(
+  () => notifications.notifications,
+  () => {
+    setNotifiedTransactions();
+  },
+);
 </script>
 
 <template>
