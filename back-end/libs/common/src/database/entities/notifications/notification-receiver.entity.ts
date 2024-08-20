@@ -32,6 +32,9 @@ export class NotificationReceiver {
   isRead: boolean;
 
   @Column({ default: false, nullable: true })
+  isInAppNotified?: boolean;
+
+  @Column({ default: false, nullable: true })
   isEmailSent?: boolean;
 
   @UpdateDateColumn()
