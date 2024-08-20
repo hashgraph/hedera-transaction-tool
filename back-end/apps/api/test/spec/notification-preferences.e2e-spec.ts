@@ -49,7 +49,7 @@ describe('Notification Preferences (e2e)', () => {
     return await entityManager.find(NotificationPreferences, { where: { userId } });
   };
 
-  describe('notification-preferences', () => {
+  describe('/notification-preferences', () => {
     let endpoint: Endpoint;
 
     beforeEach(async () => {
