@@ -136,6 +136,7 @@ const useUserStore = defineStore('user', () => {
     if (!organization) {
       selectedOrganization.value = null;
       await ush.afterOrganizationSelection(personal.value, selectedOrganization, keyPairs, router);
+      await Promise.allSettled([contacts.fetch(), notifications.setup()]);
     } else {
       selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
 
@@ -159,7 +160,14 @@ const useUserStore = defineStore('user', () => {
           keyPairs,
           router,
         );
-        await Promise.allSettled([contacts.fetch(), notifications.fetchPreferences()]);
+
+        const results = await Promise.allSettled([contacts.fetch(), notifications.setup()]);
+
+        results.forEach(result => {
+          if (result.status === 'rejected') {
+            throw result.reason;
+          }
+        });
       } catch (error) {
         await selectOrganization(null);
       }
