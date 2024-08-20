@@ -95,6 +95,9 @@ importers:
       express:
         specifier: ^4.19.2
         version: 4.19.2
+      ioredis:
+        specifier: ^5.4.1
+        version: 5.4.1
       joi:
         specifier: ^17.12.3
         version: 17.13.3
@@ -119,9 +122,6 @@ importers:
       readline-sync:
         specifier: ^1.4.10
         version: 1.4.10
-      redis:
-        specifier: ^4.6.13
-        version: 4.7.0
       reflect-metadata:
         specifier: ^0.1.14
         version: 0.1.14
