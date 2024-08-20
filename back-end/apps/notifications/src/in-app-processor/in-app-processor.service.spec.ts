@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
+import { NOTIFICATIONS_NEW } from '@app/common';
 import { Notification, NotificationType } from '@entities';
 
 import { InAppProcessorService } from './in-app-processor.service';
@@ -46,12 +47,12 @@ describe('In App Processor Service', () => {
     expect(websocketGateway.notifyUser).toHaveBeenCalledTimes(2);
     expect(websocketGateway.notifyUser).toHaveBeenCalledWith(
       1,
-      'notifications:new',
+      NOTIFICATIONS_NEW,
       expect.any(Object),
     );
     expect(websocketGateway.notifyUser).toHaveBeenCalledWith(
       2,
-      'notifications:new',
+      NOTIFICATIONS_NEW,
       expect.any(Object),
     );
   });

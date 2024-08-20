@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 
+import { NOTIFICATIONS_NEW } from '@app/common';
 import { Notification } from '@entities';
 
 import { WebsocketGateway } from '../websocket/websocket.gateway';
@@ -19,7 +20,7 @@ export class InAppProcessorService {
 
     /* Notify users */
     for (const user of userIds) {
-      this.websocket.notifyUser(user, 'notifications:new', dto);
+      this.websocket.notifyUser(user, NOTIFICATIONS_NEW, dto);
     }
   }
 }
