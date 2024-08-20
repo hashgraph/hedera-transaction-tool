@@ -67,8 +67,10 @@ const activeTabs = computed(() => {
     nr => nr.notification.type === NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
   );
 
-  const executedNotifications = notifications.notifications.filter(
-    nr => nr.notification.type === NotificationType.TRANSACTION_INDICATOR_EXECUTED,
+  const historyNotifications = notifications.notifications.filter(
+    nr =>
+      nr.notification.type === NotificationType.TRANSACTION_INDICATOR_EXECUTED ||
+      nr.notification.type === NotificationType.TRANSACTION_INDICATOR_EXPIRED,
   );
 
   rawTabItems.forEach(tab => {
@@ -83,7 +85,7 @@ const activeTabs = computed(() => {
         tab.notifications = readyForExecutionNotifications.length || undefined;
         break;
       case 'History':
-        tab.notifications = executedNotifications.length || undefined;
+        tab.notifications = historyNotifications.length || undefined;
         break;
     }
   });

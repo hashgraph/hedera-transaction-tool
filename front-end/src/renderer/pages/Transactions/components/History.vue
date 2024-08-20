@@ -168,6 +168,7 @@ onBeforeMount(async () => {
 onMounted(async () => {
   if (isLoggedInOrganization(user.selectedOrganization)) {
     await notifications.markAsRead(NotificationType.TRANSACTION_INDICATOR_EXECUTED);
+    await notifications.markAsRead(NotificationType.TRANSACTION_INDICATOR_EXPIRED);
   }
 });
 
