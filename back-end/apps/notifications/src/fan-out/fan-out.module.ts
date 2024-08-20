@@ -1,42 +1,13 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { LoggerModule } from '@app/common';
-import {
-  Notification,
-  NotificationPreferences,
-  NotificationReceiver,
-  Transaction,
-  TransactionApprover,
-  TransactionComment,
-  TransactionGroup,
-  TransactionGroupItem,
-  TransactionObserver,
-  TransactionSigner,
-  User,
-  UserKey,
-} from '@entities';
+
+import { EmailModule } from '../email/email.module';
 
 import { FanOutService } from './fan-out.service';
 
 @Module({
-  imports: [
-    LoggerModule,
-    TypeOrmModule.forFeature([
-      User,
-      UserKey,
-      Transaction,
-      TransactionSigner,
-      TransactionApprover,
-      TransactionObserver,
-      TransactionComment,
-      TransactionGroup,
-      TransactionGroupItem,
-      Notification,
-      NotificationReceiver,
-      NotificationPreferences,
-    ]),
-  ],
+  imports: [LoggerModule, EmailModule],
   controllers: [],
   providers: [FanOutService],
   exports: [FanOutService],
