@@ -31,6 +31,8 @@ export class ReceiverService {
 
   @MurLock(5000, 'entityId')
   async notifyGeneral({ type, content, entityId, actorId, userIds }: NotifyGeneralDto) {
+    if (!userIds || userIds.length === 0) return;
+
     const { notification, notificationReceivers } = await this.entityManager.transaction(
       async transactionalEntityManager => {
         /* Get notification if exists */
@@ -85,9 +87,7 @@ export class ReceiverService {
         id: transactionId,
       },
       relations: {
-        creatorKey: {
-          user: true,
-        },
+        creatorKey: true,
       },
     });
 
@@ -114,7 +114,6 @@ export class ReceiverService {
 
   @MurLock(5000, 'transactionId')
   async syncIndicators({ transactionId, transactionStatus }: SyncIndicatorsDto) {
-    console.log('SYNC START');
     let newIndicatorType: NotificationType | null = null;
 
     /* Determine new indicator type */
@@ -150,18 +149,22 @@ export class ReceiverService {
       const notificationReceiversToDelete = notificationsToDelete.flatMap(
         n => n.notificationReceivers,
       );
-      console.log('notificationsToDelete', notificationsToDelete);
-      console.log('notificationReceiversToDelete', notificationReceiversToDelete);
 
-      await transactionalEntityManager.delete(NotificationReceiver, {
-        id: In(notificationReceiversToDelete.map(nr => nr.id)),
-      });
-      await transactionalEntityManager.delete(Notification, {
-        id: In(notificationsToDelete.map(n => n.id)),
-      });
+      if (notificationReceiversToDelete.length > 0) {
+        await transactionalEntityManager.delete(NotificationReceiver, {
+          id: In(notificationReceiversToDelete.map(nr => nr.id)),
+        });
+      }
+      if (notificationsToDelete.length > 0) {
+        await transactionalEntityManager.delete(Notification, {
+          id: In(notificationsToDelete.map(n => n.id)),
+        });
+      }
 
       /* Fan out deletion message */
-      this.fanOutIndicatorsDelete(notificationReceiversToDelete);
+      if (notificationReceiversToDelete.length > 0) {
+        this.fanOutIndicatorsDelete(notificationReceiversToDelete);
+      }
 
       /* Notify if new indicator */
       if (!newIndicatorType) return;
@@ -204,7 +207,6 @@ export class ReceiverService {
         approversShouldChooseUserIds,
       );
     });
-    console.log('SYNC END');
   }
 
   private async syncActionIndicators(
@@ -214,19 +216,17 @@ export class ReceiverService {
     transactionId: number,
     userIds: number[],
   ) {
-    console.log(type);
-    console.log(notification);
-
     /* Create new if not exists */
     if (!notification) {
       notification = await this.createNotification(entityManager, type, '', transactionId, null);
     }
 
-    /* Remove indicator notification for users that should not sign */
+    /* Remove indicator notification for users that should not take action */
     try {
       const notificationReceiversToDelete = notification.notificationReceivers.filter(
         nr => !userIds.includes(nr.userId),
       );
+
       if (notificationReceiversToDelete.length > 0) {
         await entityManager.delete(NotificationReceiver, {
           id: In(notificationReceiversToDelete.map(nr => nr.id)),
@@ -239,12 +239,10 @@ export class ReceiverService {
       console.log(error);
     }
 
-    /* Create new indicator notification for users that should sign and haven't received */
+    /* Create new indicator notification for users that should take action and haven't received indicator */
     const userIdsToCreate = userIds.filter(
       id => !notification.notificationReceivers.some(nr => nr.userId === id),
     );
-    console.log('Unfiltered', userIds);
-    console.log('Send to', userIdsToCreate);
 
     const notificationReceivers = await this.createReceivers(
       entityManager,
@@ -352,8 +350,8 @@ export class ReceiverService {
     const approvers = await this.getApproversByTransactionId(entityManager, transactionId);
 
     const creatorId = transaction.creatorKey.userId;
-    const signerIds = transaction.signers.map(s => s.userId);
-    const observerIds = transaction.observers.map(o => o.userId);
+    const signerUserIds = transaction.signers.map(s => s.userId);
+    const observerUserIds = transaction.observers.map(o => o.userId);
     const requiredUserIds = await this.getUsersIdsRequiredToSign(entityManager, transaction);
     const approversUserIds = approvers.map(a => a.userId);
     const approversGaveChoiceUserIds = approvers
@@ -367,8 +365,8 @@ export class ReceiverService {
 
     const participants = [
       creatorId,
-      ...signerIds,
-      ...observerIds,
+      ...signerUserIds,
+      ...observerUserIds,
       ...approversUserIds,
       ...requiredUserIds,
     ]
@@ -377,8 +375,8 @@ export class ReceiverService {
 
     return {
       creatorId,
-      signerIds,
-      observerIds,
+      signerUserIds,
+      observerUserIds,
       approversUserIds,
       requiredUserIds,
       approversGaveChoiceUserIds,
@@ -405,7 +403,7 @@ export class ReceiverService {
     entityManager: EntityManager,
     transactionId: number,
   ): Promise<TransactionApprover[]> {
-    if (typeof transactionId !== 'number') return null;
+    if (typeof transactionId !== 'number') return [];
 
     return entityManager.query(
       `

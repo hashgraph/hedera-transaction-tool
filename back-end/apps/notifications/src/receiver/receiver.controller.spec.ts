@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 
-import { NotifyForTransactionDto, NotifyGeneralDto, UpdateIndicatorDto } from '@app/common';
+import { NotifyForTransactionDto, NotifyGeneralDto, SyncIndicatorsDto } from '@app/common';
 import { NotificationType, TransactionStatus } from '@entities';
 
 import { ReceiverController } from './receiver.controller';
@@ -53,14 +53,14 @@ describe('Receiver Controller', () => {
     expect(receiverService.notifyTransactionRequiredSigners).toHaveBeenCalledWith(dto);
   });
 
-  it('should invoke updateNewStatusIndicatorNotification with correct params', async () => {
-    const dto: UpdateIndicatorDto = {
+  it('should invoke syncIndicators with correct params', async () => {
+    const dto: SyncIndicatorsDto = {
       transactionId: 1,
       transactionStatus: TransactionStatus.WAITING_FOR_EXECUTION,
     };
 
-    await controller.updateNewStatusIndicatorNotification(dto);
+    await controller.syncIndicators(dto);
 
-    expect(receiverService.updateNewStatusIndicatorNotification).toHaveBeenCalledWith(dto);
+    expect(receiverService.syncIndicators).toHaveBeenCalledWith(dto);
   });
 });
