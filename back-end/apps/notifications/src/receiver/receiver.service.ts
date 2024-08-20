@@ -135,7 +135,7 @@ export class ReceiverService {
 
     await this.entityManager.transaction(async transactionalEntityManager => {
       /* Get transaction participants */
-      const { participants, approversShouldChooseUserIds, requiredUserIds } =
+      const { approversShouldChooseUserIds, requiredUserIds } =
         await this.getTransactionParticipants(transactionalEntityManager, transactionId);
 
       /* Get notification indicator entities to delete */
@@ -186,13 +186,13 @@ export class ReceiverService {
           requiredUserIds,
         );
       } else {
-        await this.notifyGeneral({
-          type: newIndicatorType,
-          content: '',
-          entityId: transactionId,
-          actorId: null,
-          userIds: participants,
-        });
+        // await this.notifyGeneral({
+        //   type: newIndicatorType,
+        //   content: '',
+        //   entityId: transactionId,
+        //   actorId: null,
+        //   userIds: participants,
+        // });
       }
 
       /* Sync approve indicators */
