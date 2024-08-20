@@ -129,7 +129,7 @@ function setNotifiedTransactions() {
   notifiedTransactionIds.value = getNotifiedTransactions(
     notifications.notifications.concat(oldNotifications.value),
     flatTransactions.map(t => t.transactionRaw),
-    [NotificationType.TRANSACTION_INDICATOR_APPROVE],
+    [NotificationType.TRANSACTION_INDICATOR_SIGN],
   );
 }
 

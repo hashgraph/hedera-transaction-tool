@@ -165,12 +165,6 @@ async function fetchTransactions() {
       }
     }
 
-    notifiedTransactionIds.value = getNotifiedTransactions(
-      notifications.notifications.concat(oldNotifications.value),
-      rawTransactions,
-      [NotificationType.TRANSACTION_INDICATOR_APPROVE],
-    );
-
     setNotifiedTransactions();
 
     groups.value = await getApiGroups(user.selectedOrganization.serverUrl);
