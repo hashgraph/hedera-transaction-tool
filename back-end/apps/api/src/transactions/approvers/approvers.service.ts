@@ -388,6 +388,8 @@ export class ApproversService {
     user: User,
   ): Promise<TransactionApprover> {
     try {
+      let updated = false;
+
       const approver = await this.dataSource.transaction(async transactionalEntityManager => {
         /* Check if the dto updates only one thing */
         if (Object.keys(dto).length > 1 || Object.keys(dto).length === 0)
@@ -427,6 +429,7 @@ export class ApproversService {
             });
             approver.listId = null;
             approver.transactionId = rootNode.transactionId;
+            updated = true;
 
             if (parent) {
               const newParentApproversLength = parent.approvers.length - 1;
@@ -475,6 +478,7 @@ export class ApproversService {
           });
           approver.listId = dto.listId;
           approver.transactionId = null;
+          updated = true;
 
           return approver;
         } else if (typeof dto.threshold === 'number') {
@@ -495,6 +499,7 @@ export class ApproversService {
               threshold: dto.threshold,
             });
             approver.threshold = dto.threshold;
+            updated = true;
 
             return approver;
           }
@@ -523,6 +528,7 @@ export class ApproversService {
 
             await transactionalEntityManager.update(TransactionApprover, approver.id, data);
             approver.userId = dto.userId;
+            updated = true;
 
             return approver;
           }
@@ -531,12 +537,14 @@ export class ApproversService {
         return approver;
       });
 
-      this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-        message: TRANSACTION_ACTION,
-        content: '',
-      });
+      if (updated) {
+        this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+          message: TRANSACTION_ACTION,
+          content: '',
+        });
 
-      await this.emitSyncIndicators(transactionId);
+        await this.emitSyncIndicators(transactionId);
+      }
 
       return approver;
     } catch (error) {
