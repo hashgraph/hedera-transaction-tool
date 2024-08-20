@@ -84,13 +84,17 @@ export class ReceiverService {
       await manager.save(Notification, indicatorNotification);
 
       for (const userId of distinctUserIds) {
-        const notificationReceiver = manager.create(NotificationReceiver, {
-          notificationId: notification.id,
-          userId,
-          isRead: false,
-          isInAppNotified: null,
-          isEmailSent: null,
-        });
+        if (userId !== transaction.creatorKey.userId) {
+          const notificationReceiver = manager.create(NotificationReceiver, {
+            notificationId: notification.id,
+            userId,
+            isRead: false,
+            isInAppNotified: null,
+            isEmailSent: null,
+          });
+          await manager.save(NotificationReceiver, notificationReceiver);
+          notificationReceivers.push(notificationReceiver);
+        }
         const notificationIndicatorReceiver = manager.create(NotificationReceiver, {
           notificationId: indicatorNotification.id,
           userId,
@@ -99,10 +103,8 @@ export class ReceiverService {
           isEmailSent: null,
         });
 
-        await manager.save(NotificationReceiver, notificationReceiver);
         await manager.save(NotificationReceiver, notificationIndicatorReceiver);
 
-        notificationReceivers.push(notificationReceiver);
         notificationIndicatorReceivers.push(notificationIndicatorReceiver);
       }
     });
