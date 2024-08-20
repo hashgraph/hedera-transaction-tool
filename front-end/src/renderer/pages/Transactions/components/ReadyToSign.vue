@@ -11,7 +11,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 
-import { getTransactionsToSign } from '@renderer/services/organization';
+import { getApiGroups, getTransactionsToSign } from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
 import {
@@ -36,12 +36,17 @@ const ws = useDisposableWs();
 
 /* State */
 const transactions = ref<
-  {
-    transactionRaw: ITransaction;
-    transaction: Transaction;
-    keysToSign: number[];
-  }[]
->([]);
+  Map<
+    number,
+    {
+      transactionRaw: ITransaction;
+      transaction: Transaction;
+      keysToSign: number[];
+    }[]
+  >
+>(new Map());
+
+const groups = ref();
 const totalItems = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
@@ -71,6 +76,40 @@ const handleSign = async (id: number) => {
   });
 };
 
+const handleDetails = async (id: number) => {
+  router.push({
+    name: 'transactionGroupDetails',
+    params: { id },
+    query: {
+      sign: 'true',
+    },
+  });
+};
+
+// const handleSignGroup = async (id: number) => {
+//   try {
+//     if (transactions.value.get(id) != undefined) {
+//       const txs = transactions.value.get(id);
+//       if (txs != undefined) {
+//         if (!txs[0].transaction || !(txs[0].transaction instanceof Transaction)) {
+//           throw new Error('Transaction not provided');
+//         }
+
+//         for (const transaction of txs) {
+//           tx.value = transaction;
+
+//           await handleSignSingle();
+//         }
+//       }
+//     }
+//     toast.success('Transactions signed successfully');
+
+//     await fetchTransactions();
+//   } catch {
+//     toast.error('Transactions not signed');
+//   }
+// };
+
 const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') => {
   sort.field = field;
   sort.direction = direction;
@@ -79,6 +118,7 @@ const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') 
 
 /* Functions */
 async function fetchTransactions() {
+  transactions.value = new Map();
   if (!isLoggedInOrganization(user.selectedOrganization)) {
     return;
   }
@@ -94,15 +134,32 @@ async function fetchTransactions() {
       pageSize.value,
       [{ property: sort.field, direction: sort.direction }],
     );
+
     totalItems.value = rawTransactions.length;
     const transactionsBytes = await hexToUint8ArrayBatch(
       rawTransactions.map(t => t.transaction.body),
     );
-    transactions.value = rawTransactions.map((transaction, i) => ({
-      transactionRaw: transaction.transaction,
-      transaction: Transaction.fromBytes(transactionsBytes[i]),
-      keysToSign: transaction.keysToSign,
-    }));
+
+    for (const [i, transaction] of rawTransactions.entries()) {
+      const currentGroup =
+        transaction.transaction.groupItem?.groupId != null
+          ? transaction.transaction.groupItem.groupId
+          : -1;
+      const currentVal = transactions.value.get(currentGroup);
+      const newVal = {
+        transactionRaw: transaction.transaction,
+        transaction: Transaction.fromBytes(transactionsBytes[i]),
+        keysToSign: transaction.keysToSign,
+      };
+      if (currentVal != undefined) {
+        currentVal.push(newVal);
+        transactions.value.set(currentGroup, currentVal);
+      } else {
+        transactions.value.set(currentGroup, new Array(newVal));
+      }
+    }
+
+    groups.value = await getApiGroups(user.selectedOrganization.serverUrl);
   } finally {
     isLoading.value = false;
   }
@@ -132,7 +189,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
       <AppLoader class="h-100" />
     </template>
     <template v-else>
-      <template v-if="transactions.length > 0">
+      <template v-if="transactions.size > 0">
         <table class="table-custom">
           <thead>
             <tr>
@@ -191,9 +248,65 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
             </tr>
           </thead>
           <tbody>
-            <template v-for="(tx, index) in transactions" :key="tx.transactionRaw.id">
-              <tr>
-                <td :data-testid="`td-transaction-id-for-sign-${index}`">
+            <template v-for="group of transactions" :key="group[0]">
+              <template v-if="group[0] != -1">
+                <tr>
+                  <td>
+                    <i class="bi bi-stack" />
+                  </td>
+                  <td>{{ groups[group[0] - 1].description }}</td>
+                  <td>
+                    {{
+                      group[1][0].transaction instanceof Transaction
+                        ? getTransactionDateExtended(group[1][0].transaction)
+                        : 'N/A'
+                    }}
+                  </td>
+                  <td class="text-center">
+                    <AppButton @click="handleDetails(group[0])" color="secondary"
+                      >Details</AppButton
+                    >
+                  </td>
+                </tr>
+              </template>
+
+              <template v-else>
+                <template v-for="(tx, index) in group[1]" :key="tx.transactionRaw.id">
+                  <tr>
+                    <td :data-testid="`td-transaction-id-for-sign-${index}`">
+                      {{
+                        tx.transaction instanceof Transaction
+                          ? getTransactionId(tx.transaction)
+                          : 'N/A'
+                      }}
+                    </td>
+                    <td>
+                      <span class="text-bold">{{
+                        tx.transaction instanceof Transaction
+                          ? getTransactionType(tx.transaction)
+                          : 'N/A'
+                      }}</span>
+                    </td>
+                    <td>
+                      {{
+                        tx.transaction instanceof Transaction
+                          ? getTransactionDateExtended(tx.transaction)
+                          : 'N/A'
+                      }}
+                    </td>
+                    <td class="text-center">
+                      <AppButton @click="handleSign(tx.transactionRaw.id)" color="secondary"
+                        >Sign</AppButton
+                      >
+                    </td>
+                  </tr>
+                </template>
+              </template>
+            </template>
+
+            <!-- <template v-for="[groupId, tx] of transactions.entries()" :key="tx">
+              <tr v-if="groupId == -1">
+                <td>
                   {{
                     tx.transaction instanceof Transaction ? getTransactionId(tx.transaction) : 'N/A'
                   }}
@@ -222,7 +335,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                   >
                 </td>
               </tr>
-            </template>
+            </template> -->
           </tbody>
           <tfoot class="d-table-caption">
             <tr class="d-inline">

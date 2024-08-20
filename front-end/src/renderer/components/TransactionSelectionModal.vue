@@ -11,6 +11,7 @@ import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 /* Props */
 const props = defineProps<{
   show: boolean;
+  group?: boolean;
 }>();
 
 /* Emits */
@@ -117,7 +118,13 @@ watch(
               <a
                 :data-testid="`menu-sublink-${i}`"
                 class="link-menu cursor-pointer"
-                @click="$router.push({ name: 'createTransaction', params: { type: item.name } })"
+                @click="
+                  $router.push({
+                    name: 'createTransaction',
+                    params: { type: item.name },
+                    query: { group: `${group}` },
+                  })
+                "
               >
                 {{ item.label }}
               </a>

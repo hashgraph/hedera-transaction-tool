@@ -11,7 +11,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 
-import { getTransactionsToApprove } from '@renderer/services/organization';
+import { getApiGroups, getTransactionsToApprove } from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
 import {
@@ -36,11 +36,15 @@ const ws = useDisposableWs();
 
 /* State */
 const transactions = ref<
-  {
-    transactionRaw: ITransaction;
-    transaction: Transaction;
-  }[]
->([]);
+  Map<
+    number,
+    {
+      transactionRaw: ITransaction;
+      transaction: Transaction;
+    }[]
+  >
+>(new Map());
+const groups = ref();
 const totalItems = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
@@ -70,6 +74,35 @@ const handleApprove = async (id: number) => {
   });
 };
 
+const handleDetails = async (id: number) => {
+  router.push({
+    name: 'transactionGroupDetails',
+    params: { id },
+  });
+};
+
+// const handleDetails = async (id: number) => {
+//   try {
+//     if (transactions.value.get(id) != undefined) {
+//       const txs = transactions.value.get(id);
+//       if (txs != undefined) {
+//         if (!txs[0].transaction || !(txs[0].transaction instanceof Transaction)) {
+//           throw new Error('Transaction not provided');
+//         }
+
+//         for (const transaction of txs) {
+//           tx.value = transaction;
+
+//           await handleApproveSingle();
+//         }
+//       }
+//     }
+//     toast.success('Transactions signed successfully');
+//   } catch {
+//     toast.error('Transactions not approved');
+//   }
+// };
+
 const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') => {
   sort.field = field;
   sort.direction = direction;
@@ -78,6 +111,7 @@ const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') 
 
 /* Functions */
 async function fetchTransactions() {
+  transactions.value = new Map();
   if (!isLoggedInOrganization(user.selectedOrganization)) {
     return;
   }
@@ -95,10 +129,24 @@ async function fetchTransactions() {
     );
     totalItems.value = total;
     const transactionsBytes = await hexToUint8ArrayBatch(rawTransactions.map(t => t.body));
-    transactions.value = rawTransactions.map((transaction, i) => ({
-      transactionRaw: transaction,
-      transaction: Transaction.fromBytes(transactionsBytes[i]),
-    }));
+
+    for (const [i, transaction] of rawTransactions.entries()) {
+      const currentGroup =
+        transaction.groupItem?.groupId != null ? transaction.groupItem.groupId : -1;
+      const currentVal = transactions.value.get(currentGroup);
+      const newVal = {
+        transactionRaw: transaction,
+        transaction: Transaction.fromBytes(transactionsBytes[i]),
+      };
+      if (currentVal != undefined) {
+        currentVal.push(newVal);
+        transactions.value.set(currentGroup, currentVal);
+      } else {
+        transactions.value.set(currentGroup, new Array(newVal));
+      }
+    }
+
+    groups.value = await getApiGroups(user.selectedOrganization.serverUrl);
   } finally {
     isLoading.value = false;
   }
@@ -128,7 +176,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
       <AppLoader class="h-100" />
     </template>
     <template v-else>
-      <template v-if="transactions.length > 0">
+      <template v-if="transactions.size > 0">
         <table class="table-custom">
           <thead>
             <tr>
@@ -187,37 +235,66 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
             </tr>
           </thead>
           <tbody>
-            <template v-for="(tx, index) in transactions" :key="tx.transactionRaw.id">
-              <tr>
-                <td :data-testid="`td-review-transaction-id-${index}`">
-                  {{
-                    tx.transaction instanceof Transaction ? getTransactionId(tx.transaction) : 'N/A'
-                  }}
-                </td>
-                <td :data-testid="`td-review-transaction-type-${index}`">
-                  <span class="text-bold">{{
-                    tx.transaction instanceof Transaction
-                      ? getTransactionType(tx.transaction)
-                      : 'N/A'
-                  }}</span>
-                </td>
-                <td :data-testid="`td-review-transaction-valid-start-${index}`">
-                  {{
-                    tx.transaction instanceof Transaction
-                      ? getTransactionDateExtended(tx.transaction)
-                      : 'N/A'
-                  }}
-                </td>
-                <td class="text-center">
-                  <AppButton
-                    @click="handleApprove(tx.transactionRaw.id)"
-                    :data-testid="`button-review-transaction-approve-${index}`"
-                    color="secondary"
-                    class="min-w-unset"
-                    >Submit Approval</AppButton
-                  >
-                </td>
-              </tr>
+            <template v-for="group of transactions" :key="group[0]">
+              <template v-if="group[0] != -1">
+                <tr>
+                  <td>
+                    <i class="bi bi-stack" />
+                  </td>
+                  <td>{{ groups[group[0] - 1].description }}</td>
+                  <td>
+                    {{
+                      group[1][0].transaction instanceof Transaction
+                        ? getTransactionDateExtended(group[1][0].transaction)
+                        : 'N/A'
+                    }}
+                  </td>
+                  <td class="text-center">
+                    <AppButton
+                      @click="handleDetails(group[0])"
+                      color="secondary"
+                      class="min-w-unset"
+                      >Details</AppButton
+                    >
+                  </td>
+                </tr>
+              </template>
+
+              <template v-else>
+                <template v-for="(tx, index) in group[1]" :key="tx.transactionRaw.id">
+                  <tr>
+                    <td :data-testid="`td-review-transaction-id-${index}`">
+                      {{
+                        tx.transaction instanceof Transaction
+                          ? getTransactionId(tx.transaction)
+                          : 'N/A'
+                      }}
+                    </td>
+                    <td :data-testid="`td-review-transaction-type-${index}`">
+                      <span class="text-bold">{{
+                        tx.transaction instanceof Transaction
+                          ? getTransactionType(tx.transaction)
+                          : 'N/A'
+                      }}</span>
+                    </td>
+                    <td :data-testid="`td-review-transaction-valid-start-${index}`">
+                      {{
+                        tx.transaction instanceof Transaction
+                          ? getTransactionDateExtended(tx.transaction)
+                          : 'N/A'
+                      }}
+                    </td>
+                    <td class="text-center">
+                      <AppButton
+                        @click="handleApprove(tx.transactionRaw.id)"
+                        :data-testid="`button-review-transaction-approve-${index}`"
+                        color="secondary"
+                        >Submit Approval</AppButton
+                      >
+                    </td>
+                  </tr>
+                </template>
+              </template>
             </template>
           </tbody>
           <tfoot class="d-table-caption">

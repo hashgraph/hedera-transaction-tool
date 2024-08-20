@@ -212,6 +212,18 @@ const handleBack = () => {
     const status = orgTransaction.value?.status;
     let tab: string = '';
 
+    if (router.previousPath.startsWith('/transaction-group/')) {
+      const groupId = orgTransaction.value?.groupItem.groupId;
+      router.push({
+        name: 'transactionGroupDetails',
+        params: { id: groupId },
+        query: {
+          sign: 'true',
+        },
+      });
+      return;
+    }
+
     switch (status) {
       case TransactionStatus.EXECUTED:
       case TransactionStatus.FAILED:

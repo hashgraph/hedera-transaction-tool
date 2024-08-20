@@ -4,6 +4,8 @@ import { attachMeta } from './meta';
 
 import Transactions from '@renderer/pages/Transactions';
 import UserLogin from '@renderer/pages/UserLogin';
+import CreateTransactionGroup from '@renderer/pages/CreateTransactionGroup/CreateTransactionGroup.vue';
+import TransactionGroupDetails from '@renderer/pages/TransactionGroupDetails/TransactionGroupDetails.vue';
 
 const StyleGuide = () => import('@renderer/pages/Styleguide');
 const Accounts = () => import('@renderer/pages/Accounts');
@@ -48,12 +50,26 @@ const routes: RouteRecordRaw[] = [
   { path: '/help', name: 'help', component: Help },
   { path: '/account-setup', name: 'accountSetup', component: AccountSetup },
   { path: '/restore-key', name: 'restoreKey', component: RestoreKey },
-  { path: '/create-transaction/:type', name: 'createTransaction', component: CreateTransaction },
+  {
+    path: '/create-transaction/:type/:seq?',
+    name: 'createTransaction',
+    component: CreateTransaction,
+  },
+  {
+    path: '/create-transaction-group',
+    name: 'createTransactionGroup',
+    component: CreateTransactionGroup,
+  },
   { path: '/forgot-password', name: 'forgotPassword', component: ForgotPassword },
   {
     path: '/transaction/:id',
     name: 'transactionDetails',
     component: TransactionDetails,
+  },
+  {
+    path: '/transaction-group/:id',
+    name: 'transactionGroupDetails',
+    component: TransactionGroupDetails,
   },
   {
     path: '/settings',

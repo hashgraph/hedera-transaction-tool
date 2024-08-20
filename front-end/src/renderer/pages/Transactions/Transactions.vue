@@ -13,6 +13,7 @@ import TransactionSelectionModal from '@renderer/components/TransactionSelection
 
 import History from './components/History.vue';
 import Drafts from './components/Drafts.vue';
+import Groups from './components/Groups.vue';
 import ReadyToSign from './components/ReadyToSign.vue';
 import InProgress from './components/InProgress.vue';
 import ReadyForExecution from './components/ReadyForExecution.vue';
@@ -38,8 +39,9 @@ const organizationTabs: TabItem[] = [
   { title: 'In Progress' },
   { title: 'Ready for Execution' },
   { title: 'History' },
+  { title: 'Groups' },
 ];
-const sharedTabs: TabItem[] = [{ title: 'Drafts' }, { title: 'History' }];
+const sharedTabs: TabItem[] = [{ title: 'Drafts' }, { title: 'History' }, { title: 'Groups' }];
 
 const activeTabIndex = ref(1);
 const tabItems = ref<TabItem[]>(sharedTabs);
@@ -86,13 +88,26 @@ watch(
   <div class="flex-column-100 p-5">
     <div class="d-flex justify-content-between">
       <h1 class="text-title text-bold">Transactions</h1>
-      <AppButton
-        color="primary"
-        data-testid="button-create-new"
-        @click="isTransactionSelectionModalShown = true"
-      >
-        <i class="bi bi-plus-lg"></i> <span>Create New</span>
-      </AppButton>
+      <div class="dropdown">
+        <AppButton color="primary" data-testid="button-create-new" data-bs-toggle="dropdown"
+          ><i class="bi bi-plus-lg"></i> <span>Create New</span></AppButton
+        >
+        <ul class="dropdown-menu mt-3">
+          <li class="dropdown-item cursor-pointer" @click="isTransactionSelectionModalShown = true">
+            <span class="text-small text-bold" data-testid="span-single-transaction"
+              >Transaction</span
+            >
+          </li>
+          <li
+            class="dropdown-item cursor-pointer mt-3"
+            @click="$router.push('create-transaction-group')"
+          >
+            <span class="text-small text-bold" data-testid="span-group-transaction"
+              >Transaction Group</span
+            >
+          </li>
+        </ul>
+      </div>
     </div>
 
     <div class="position-relative flex-column-100 overflow-hidden mt-4">
@@ -105,8 +120,9 @@ watch(
       <template v-if="activeTabTitle === 'Ready for Execution'"><ReadyForExecution /></template>
       <template v-if="activeTabTitle === 'Drafts'"><Drafts /></template>
       <template v-if="activeTabTitle === 'History'"><History /></template>
+      <template v-if="activeTabTitle === 'Groups'"><Groups /></template>
     </div>
 
-    <TransactionSelectionModal v-model:show="isTransactionSelectionModalShown" />
+    <TransactionSelectionModal v-model:show="isTransactionSelectionModalShown" :group="false" />
   </div>
 </template>

@@ -4,6 +4,7 @@ import listenForAccountsEvents from './accounts';
 import listenForTransactionsEvents from './transactions';
 import listenForFilesEvents from './files';
 import listenForTransactionDraftsEvents from './transactionDrafts';
+import listenForTransactionGroupsEvents from './transactionGroups';
 import listenForComplexKeyEvents from './complexKeys';
 import listenForOrganizationEvents from './organizations';
 import listenForOrganizationCredentialsEvents from './organizationCredentials';
@@ -17,6 +18,7 @@ export default () => {
   listenForTransactionsEvents();
   listenForFilesEvents();
   listenForTransactionDraftsEvents();
+  listenForTransactionGroupsEvents();
   listenForComplexKeyEvents();
   listenForOrganizationEvents();
   listenForOrganizationCredentialsEvents();

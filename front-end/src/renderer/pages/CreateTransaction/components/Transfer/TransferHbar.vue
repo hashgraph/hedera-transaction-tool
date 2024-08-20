@@ -10,9 +10,10 @@ import { IAccountInfoParsed } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 import { useToast } from 'vue-toast-notification';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
@@ -41,10 +42,12 @@ import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const transactionGroup = useTransactionGroupStore();
 
 /* Composables */
 const toast = useToast();
 const router = useRouter();
+const route = useRoute();
 const payerData = useAccountId();
 
 /* State */
@@ -155,45 +158,56 @@ const handleDraftAdded = async (id: string) => {
 };
 
 const handleLoadFromDraft = async () => {
-  if (!router.currentRoute.value.query.draftId) return;
+  if (!router.currentRoute.value.query.draftId && !route.query.groupIndex) return;
+  let draftTransactionBytes: string | null = null;
+  if (!route.query.group) {
+    const draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
+    draftTransactionBytes = draft.transactionBytes;
+  } else if (route.query.groupIndex) {
+    draftTransactionBytes =
+      transactionGroup.groupItems[Number(route.query.groupIndex)].transactionBytes.toString();
+  }
 
-  const draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
-  const draftTransaction = getTransactionFromBytes<TransferTransaction>(draft.transactionBytes);
-  savedDraft.value = draft;
-
-  if (draft) {
+  if (draftTransactionBytes) {
+    const draftTransaction = getTransactionFromBytes<TransferTransaction>(draftTransactionBytes);
     transaction.value = draftTransaction;
     transactionMemo.value = draftTransaction.transactionMemo || '';
 
-    if (draft.details) {
-      try {
-        const details = JSON.parse(draft.details);
-        const loadedTransfers = details.transfers.map(
-          ({
-            accountId,
-            amount,
-            isApproved,
-          }: {
-            accountId: string;
-            amount: string;
-            isApproved: boolean;
-          }) => new Transfer({ accountId, amount: Hbar.fromTinybars(amount), isApproved }),
-        );
+    if (!route.query.group) {
+      const draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
 
-        const accountIds = loadedTransfers.map(t => t.accountId.toString());
-        for (const accountId of accountIds) {
-          if (!accountInfos.value[accountId]) {
-            accountInfos.value[accountId] = await getAccountInfo(
+      if (draft.details) {
+        try {
+          const details = JSON.parse(draft.details);
+          const loadedTransfers = details.transfers.map(
+            ({
               accountId,
-              network.mirrorNodeBaseURL,
-            );
-          }
-        }
+              amount,
+              isApproved,
+            }: {
+              accountId: string;
+              amount: string;
+              isApproved: boolean;
+            }) => new Transfer({ accountId, amount: Hbar.fromTinybars(amount), isApproved }),
+          );
 
-        transfers.value = loadedTransfers;
-      } catch {
-        /* Empty */
+          const accountIds = loadedTransfers.map(t => t.accountId.toString());
+          for (const accountId of accountIds) {
+            if (!accountInfos.value[accountId]) {
+              accountInfos.value[accountId] = await getAccountInfo(
+                accountId,
+                network.mirrorNodeBaseURL,
+              );
+            }
+          }
+
+          transfers.value = loadedTransfers;
+        } catch {
+          /* Empty */
+        }
       }
+    } else {
+      transfers.value = (transaction.value as TransferTransaction).hbarTransfersList;
     }
   }
 };
@@ -282,13 +296,64 @@ const handleSubmit = (id: number) => {
   redirectToDetails(id);
 };
 
+function handleAddToGroup() {
+  if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
+    throw Error('Invalid Payer ID');
+  }
+
+  const transactionBytes = createTransaction().toBytes();
+  const keys = new Array<string>();
+  if (payerData.key.value instanceof KeyList) {
+    for (const key of payerData.key.value.toArray()) {
+      keys.push(key.toString());
+    }
+  }
+  // TODO: handle single key?
+  transactionGroup.addGroupItem({
+    transactionBytes: transactionBytes,
+    type: 'TransferTransaction',
+    accountId: '',
+    seq: transactionGroup.groupItems.length.toString(),
+    keyList: keys,
+    observers: observers.value,
+    approvers: approvers.value,
+    payerAccountId: payerData.accountId.value,
+    validStart: validStart.value,
+  });
+  router.push({ name: 'createTransactionGroup' });
+}
+
+function handleEditGroupItem() {
+  const transactionBytes = createTransaction().toBytes();
+  const keys = new Array<string>();
+  if (payerData.key.value instanceof KeyList) {
+    for (const key of payerData.key.value.toArray()) {
+      keys.push(key.toString());
+    }
+  }
+
+  transactionGroup.editGroupItem({
+    transactionBytes: transactionBytes,
+    type: 'TransferTransaction',
+    accountId: '',
+    seq: route.params.seq[0],
+    groupId: transactionGroup.groupItems[Number(route.query.groupIndex)].groupId,
+    keyList: keys,
+    observers: observers.value,
+    approvers: approvers.value,
+    payerAccountId: payerData.accountId.value,
+    validStart: validStart.value,
+  });
+  router.push({ name: 'createTransactionGroup' });
+}
+
 /* Functions */
 function createTransaction() {
   const transaction = new TransferTransaction()
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(maxTransactionFee.value);
 
-  if (isAccountId(payerData.accountId.value)) {
+  if (isAccountId(payerData.accountId.value) && !route.params.seq) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
   }
 
@@ -365,32 +430,52 @@ onMounted(async () => {
     <form @submit="handleCreate" class="flex-column-100">
       <TransactionHeaderControls heading-text="Transfer Hbar Transaction">
         <template #buttons>
-          <SaveDraftButton
-            :get-transaction-bytes="() => createTransaction().toBytes()"
-            :handle-draft-added="handleDraftAdded"
-            :handle-draft-updated="handleDraftAdded"
-            :is-executed="isExecuted || isSubmitted"
-          />
-          <AppButton
-            color="primary"
-            type="submit"
-            data-testid="button-sign-and-submit-transfer"
-            :disabled="
-              !payerData.accountId.value ||
-              !totalBalance.toBigNumber().isEqualTo(0) ||
-              totalBalanceAdjustments > 10 ||
-              totalBalanceAdjustments === 0
-            "
+          <div
+            v-if="!($route.query.group === 'true')"
+            class="flex-centered justify-content-end flex-wrap gap-3 mt-3"
           >
-            <span class="bi bi-send"></span>
-            {{
-              getPropagationButtonLabel(
-                transactionKey,
-                user.keyPairs,
-                Boolean(user.selectedOrganization),
-              )
-            }}</AppButton
-          >
+            <SaveDraftButton
+              :get-transaction-bytes="() => createTransaction().toBytes()"
+              :handle-draft-added="handleDraftAdded"
+              :handle-draft-updated="handleDraftAdded"
+              :is-executed="isExecuted || isSubmitted"
+            />
+            <AppButton
+              color="primary"
+              type="submit"
+              data-testid="button-sign-and-submit-transfer"
+              :disabled="
+                !payerData.accountId.value ||
+                !totalBalance.toBigNumber().isEqualTo(0) ||
+                totalBalanceAdjustments > 10 ||
+                totalBalanceAdjustments === 0
+              "
+            >
+              <span class="bi bi-send"></span>
+              {{
+                getPropagationButtonLabel(
+                  transactionKey,
+                  user.keyPairs,
+                  Boolean(user.selectedOrganization),
+                )
+              }}</AppButton
+            >
+          </div>
+          <div v-else>
+            <AppButton
+              v-if="$route.params.seq"
+              color="primary"
+              type="button"
+              @click="handleEditGroupItem"
+            >
+              <span class="bi bi-plus-lg" />
+              Edit Group Item
+            </AppButton>
+            <AppButton v-else color="primary" type="button" @click="handleAddToGroup">
+              <span class="bi bi-plus-lg" />
+              Add to Group
+            </AppButton>
+          </div>
         </template>
       </TransactionHeaderControls>
 

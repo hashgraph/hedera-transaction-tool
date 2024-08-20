@@ -15,7 +15,7 @@ import { TransactionApproverDto } from '@main/shared/interfaces/organization/app
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
@@ -40,13 +40,16 @@ import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
+import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 /* Stores */
 const user = useUserStore();
+const transactionGroup = useTransactionGroupStore();
 
 /* Composables */
 const toast = useToast();
 const router = useRouter();
+const route = useRoute();
 const payerData = useAccountId();
 const ownerData = useAccountId();
 const spenderData = useAccountId();
@@ -104,14 +107,19 @@ const handleCreate = async e => {
 };
 
 const handleLoadFromDraft = async () => {
-  if (!router.currentRoute.value.query.draftId) return;
+  if (!router.currentRoute.value.query.draftId && !route.query.groupIndex) return;
+  let draftTransactionBytes: string | null = null;
+  if (!route.query.group) {
+    const draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
+    draftTransactionBytes = draft.transactionBytes;
+  } else if (route.query.groupIndex) {
+    draftTransactionBytes =
+      transactionGroup.groupItems[Number(route.query.groupIndex)].transactionBytes.toString();
+  }
 
-  const draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
-  const draftTransaction = getTransactionFromBytes<AccountAllowanceApproveTransaction>(
-    draft.transactionBytes,
-  );
-
-  if (draft) {
+  if (draftTransactionBytes) {
+    const draftTransaction =
+      getTransactionFromBytes<AccountAllowanceApproveTransaction>(draftTransactionBytes);
     transaction.value = draftTransaction;
 
     if (draftTransaction.hbarApprovals.length > 0) {
@@ -136,13 +144,71 @@ const handleSubmit = (id: number) => {
   redirectToDetails(id);
 };
 
+function handleAddToGroup() {
+  if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
+    throw Error('Invalid Payer ID');
+  }
+
+  if (!isAccountId(ownerData.accountId.value) || !ownerData.key.value) {
+    throw Error('Invalid Owner ID');
+  }
+
+  if (!isAccountId(spenderData.accountId.value)) {
+    throw Error('Invalid Spender ID');
+  }
+  const transactionBytes = createTransaction().toBytes();
+  const keys = new Array<string>();
+  if (ownerData.key.value instanceof KeyList) {
+    for (const key of ownerData.key.value.toArray()) {
+      keys.push(key.toString());
+    }
+  }
+  // TODO: handle single key?
+  transactionGroup.addGroupItem({
+    transactionBytes: transactionBytes,
+    type: 'AccountAllowanceApproveTransaction',
+    accountId: '',
+    seq: transactionGroup.groupItems.length.toString(),
+    keyList: keys,
+    observers: observers.value,
+    approvers: approvers.value,
+    payerAccountId: payerData.accountId.value,
+    validStart: validStart.value,
+  });
+  router.push({ name: 'createTransactionGroup' });
+}
+
+function handleEditGroupItem() {
+  const transactionBytes = createTransaction().toBytes();
+  const keys = new Array<string>();
+  if (ownerData.key.value instanceof KeyList) {
+    for (const key of ownerData.key.value.toArray()) {
+      keys.push(key.toString());
+    }
+  }
+
+  transactionGroup.editGroupItem({
+    transactionBytes: transactionBytes,
+    type: 'AccountAllowanceApproveTransaction',
+    accountId: '',
+    seq: route.params.seq[0],
+    groupId: transactionGroup.groupItems[Number(route.query.groupIndex)].groupId,
+    keyList: keys,
+    observers: observers.value,
+    approvers: approvers.value,
+    payerAccountId: payerData.accountId.value,
+    validStart: validStart.value,
+  });
+  router.push({ name: 'createTransactionGroup' });
+}
+
 /* Functions */
 function createTransaction() {
   const transaction = new AccountAllowanceApproveTransaction()
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(maxTransactionFee.value);
 
-  if (isAccountId(payerData.accountId.value)) {
+  if (isAccountId(payerData.accountId.value) && !route.params.seq) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
   }
 
@@ -181,30 +247,45 @@ const columnClass = 'col-4 col-xxxl-3';
     <form @submit="handleCreate" class="flex-column-100">
       <TransactionHeaderControls heading-text="Approve Hbar Allowance Transaction">
         <template #buttons>
-          <SaveDraftButton
-            :get-transaction-bytes="() => createTransaction().toBytes()"
-            :is-executed="isExecuted || isSubmitted"
-          />
-          <AppButton
-            color="primary"
-            type="submit"
-            data-testid="button-sign-and-submit-allowance"
-            :disabled="
-              !payerData.isValid.value ||
-              !ownerData.isValid.value ||
-              !spenderData.isValid.value ||
-              amount.toBigNumber().isLessThan(0)
-            "
+          <div
+            v-if="!($route.query.group === 'true')"
+            class="flex-centered justify-content-end flex-wrap gap-3 mt-3"
           >
-            <span class="bi bi-send"></span>
-            {{
-              getPropagationButtonLabel(
-                transactionKey,
-                user.keyPairs,
-                Boolean(user.selectedOrganization),
-              )
-            }}</AppButton
-          >
+            <SaveDraftButton
+              :get-transaction-bytes="() => createTransaction().toBytes()"
+              :is-executed="isExecuted || isSubmitted"
+            />
+            <AppButton
+              color="primary"
+              type="submit"
+              data-testid="button-sign-and-submit-allowance"
+              :disabled="!ownerData.key || !payerData.isValid.value"
+            >
+              <span class="bi bi-send"></span>
+              {{
+                getPropagationButtonLabel(
+                  transactionKey,
+                  user.keyPairs,
+                  Boolean(user.selectedOrganization),
+                )
+              }}</AppButton
+            >
+          </div>
+          <div v-else>
+            <AppButton
+              v-if="$route.params.seq"
+              color="primary"
+              type="button"
+              @click="handleEditGroupItem"
+            >
+              <span class="bi bi-plus-lg" />
+              Edit Group Item
+            </AppButton>
+            <AppButton v-else color="primary" type="button" @click="handleAddToGroup">
+              <span class="bi bi-plus-lg" />
+              Add to Group
+            </AppButton>
+          </div>
         </template>
       </TransactionHeaderControls>
 

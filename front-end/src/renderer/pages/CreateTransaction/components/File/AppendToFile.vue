@@ -3,11 +3,13 @@ import { computed, ref, watch, onMounted } from 'vue';
 import { FileAppendTransaction, Hbar, Key, KeyList, Transaction } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 import { useToast } from 'vue-toast-notification';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
@@ -31,10 +33,12 @@ import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 
 /* Stores */
 const user = useUserStore();
+const transactionGroup = useTransactionGroupStore();
 
 /* Composables */
 const toast = useToast();
 const router = useRouter();
+const route = useRoute();
 const payerData = useAccountId();
 
 /* State */
@@ -57,6 +61,9 @@ const chunkSize = ref(2048);
 
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
+
+const observers = ref<number[]>([]);
+const approvers = ref<TransactionApproverDto[]>([]);
 
 /* Computed */
 const transactionKey = computed(() => {
@@ -135,12 +142,18 @@ const handleCreate = async e => {
 };
 
 const handleLoadFromDraft = async () => {
-  if (!router.currentRoute.value.query.draftId) return;
+  if (!router.currentRoute.value.query.draftId && !route.query.groupIndex) return;
+  let draftTransactionBytes: string | null = null;
+  if (!route.query.group) {
+    const draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
+    draftTransactionBytes = draft.transactionBytes;
+  } else if (route.query.groupIndex) {
+    draftTransactionBytes =
+      transactionGroup.groupItems[Number(route.query.groupIndex)].transactionBytes.toString();
+  }
 
-  const draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
-  const draftTransaction = getTransactionFromBytes<FileAppendTransaction>(draft.transactionBytes);
-
-  if (draft) {
+  if (draftTransactionBytes) {
+    const draftTransaction = getTransactionFromBytes<FileAppendTransaction>(draftTransactionBytes);
     transaction.value = draftTransaction;
     transactionMemo.value = draftTransaction.transactionMemo || '';
 
@@ -171,7 +184,7 @@ function createTransaction() {
     .setChunkSize(Number(chunkSize.value))
     .setMaxChunks(9999999999999);
 
-  if (isAccountId(payerData.accountId.value)) {
+  if (isAccountId(payerData.accountId.value) && !route.params.seq) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
   }
 
@@ -191,6 +204,67 @@ async function redirectToDetails(id: string | number) {
     name: 'transactionDetails',
     params: { id },
   });
+}
+
+function handleAddToGroup() {
+  if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
+    throw Error('Invalid Payer ID');
+  }
+
+  if (!isAccountId(fileId.value)) {
+    throw Error('Invalid File ID');
+  }
+
+  if (!ownerKey.value) {
+    throw Error('Signature key is required');
+  }
+
+  observers.value = [];
+  approvers.value = [];
+  const transactionBytes = createTransaction().toBytes();
+  const keys = new Array<string>();
+  if (ownerKey.value instanceof KeyList) {
+    for (const key of ownerKey.value.toArray()) {
+      keys.push(key.toString());
+    }
+  }
+  // TODO: handle single key?
+  transactionGroup.addGroupItem({
+    transactionBytes: transactionBytes,
+    type: 'FileAppendTransaction',
+    accountId: '',
+    seq: transactionGroup.groupItems.length.toString(),
+    groupId: transactionGroup.groupItems[Number(route.query.groupIndex)].groupId,
+    keyList: keys,
+    observers: observers.value,
+    approvers: approvers.value,
+    payerAccountId: payerData.accountId.value,
+    validStart: validStart.value,
+  });
+  router.push({ name: 'createTransactionGroup' });
+}
+
+function handleEditGroupItem() {
+  const transactionBytes = createTransaction().toBytes();
+  const keys = new Array<string>();
+  if (ownerKey.value instanceof KeyList) {
+    for (const key of ownerKey.value.toArray()) {
+      keys.push(key.toString());
+    }
+  }
+
+  transactionGroup.editGroupItem({
+    transactionBytes: transactionBytes,
+    type: 'AccountAllowanceApproveTransaction',
+    accountId: '',
+    seq: route.params.seq[0],
+    keyList: keys,
+    observers: observers.value,
+    approvers: approvers.value,
+    payerAccountId: payerData.accountId.value,
+    validStart: validStart.value,
+  });
+  router.push({ name: 'createTransactionGroup' });
 }
 
 /* Hooks */
@@ -213,29 +287,49 @@ const columnClass = 'col-4 col-xxxl-3';
     <form @submit="handleCreate" class="flex-column-100">
       <TransactionHeaderControls heading-text="Append File Transaction">
         <template #buttons>
-          <SaveDraftButton
-            :get-transaction-bytes="() => createTransaction().toBytes()"
-            :is-executed="isExecuted || isSubmitted"
-          />
-          <AppButton
-            color="primary"
-            type="submit"
-            data-testid="button-sign-and-submit-file-append"
-            :disabled="
-              (!isLoggedInOrganization(user.selectedOrganization) && !ownerKey) ||
-              !payerData.isValid.value ||
-              !fileId
-            "
+          <div
+            v-if="!($route.query.group === 'true')"
+            class="flex-centered justify-content-end flex-wrap gap-3 mt-3"
           >
-            <span class="bi bi-send"></span>
-            {{
-              getPropagationButtonLabel(
-                transactionKey,
-                user.keyPairs,
-                Boolean(user.selectedOrganization),
-              )
-            }}</AppButton
-          >
+            <SaveDraftButton
+              :get-transaction-bytes="() => createTransaction().toBytes()"
+              :is-executed="isExecuted || isSubmitted"
+            />
+            <AppButton
+              color="primary"
+              type="submit"
+              data-testid="button-sign-and-submit-file-append"
+              :disabled="
+                (!isLoggedInOrganization(user.selectedOrganization) && !ownerKey) ||
+                !payerData.isValid.value ||
+                !fileId
+              "
+            >
+              <span class="bi bi-send"></span>
+              {{
+                getPropagationButtonLabel(
+                  transactionKey,
+                  user.keyPairs,
+                  Boolean(user.selectedOrganization),
+                )
+              }}</AppButton
+            >
+          </div>
+          <div v-else>
+            <AppButton
+              v-if="$route.params.seq"
+              color="primary"
+              type="button"
+              @click="handleEditGroupItem"
+            >
+              <span class="bi bi-plus-lg" />
+              Edit Group Item
+            </AppButton>
+            <AppButton v-else color="primary" type="button" @click="handleAddToGroup">
+              <span class="bi bi-plus-lg" />
+              Add to Group
+            </AppButton>
+          </div>
         </template>
       </TransactionHeaderControls>
 

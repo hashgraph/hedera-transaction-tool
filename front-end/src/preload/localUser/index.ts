@@ -8,6 +8,7 @@ import complexKeysAPI from './complexKeys';
 import localUserAPI from './localUser';
 import transactionsAPI from './transactions';
 import transactionDraftsAPI from './transactionDrafts';
+import transactionGroupsAPI from './transactionGroups';
 import organizationsAPI from './organizations';
 import organizationCredentialsAPI from './organizationCredentials';
 import deepLinkAPI from './deepLink';
@@ -25,6 +26,7 @@ export default {
   ...localUserAPI,
   ...transactionsAPI,
   ...transactionDraftsAPI,
+  ...transactionGroupsAPI,
   ...organizationsAPI,
   ...organizationCredentialsAPI,
   ...deepLinkAPI,

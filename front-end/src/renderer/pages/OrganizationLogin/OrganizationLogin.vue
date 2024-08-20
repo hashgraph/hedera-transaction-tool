@@ -97,6 +97,9 @@ const handleLogin = async () => {
       globalModalLoaderRef?.value,
       'Failed to change user mode',
     )();
+
+    await user.selectOrganization({ id, serverUrl, nickname, key });
+    router.push(router.previousPath);
   } catch (error: any) {
     inputEmailInvalid.value = true;
     inputPasswordInvalid.value = true;

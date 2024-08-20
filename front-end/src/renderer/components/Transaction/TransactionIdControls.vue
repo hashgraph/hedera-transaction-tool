@@ -78,6 +78,10 @@ const loadFromDraft = async (id: string) => {
   }
 };
 
+function handleUpdateValidStart(v: Date) {
+  emit('update:validStart', v);
+}
+
 /* Hooks */
 onMounted(async () => {
   if (route.query.draftId) {
@@ -132,7 +136,7 @@ const columnClass = 'col-4 col-xxxl-3';
         ref="datePicker"
         data-testid="date-picker-valid-start"
         :model-value="validStart"
-        @update:model-value="v => $emit('update:validStart', v)"
+        @update:model-value="handleUpdateValidStart"
         :clearable="false"
         :auto-apply="true"
         :config="{

@@ -8,36 +8,32 @@ import { TransactionApproverDto } from '@main/shared/interfaces/organization/app
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useTransactionGroupStore, { GroupItem } from '@renderer/stores/storeTransactionGroup';
 
 import { useToast } from 'vue-toast-notification';
-import { useRoute } from 'vue-router';
 
 import { execute, signTransaction, storeTransaction } from '@renderer/services/transactionService';
-import {
-  // hexToUint8Array,
-  // openExternal,
-  uint8ArrayToHex,
-} from '@renderer/services/electronUtilsService';
-import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 import { decryptPrivateKey, flattenKeyList } from '@renderer/services/keyPairService';
-import { deleteDraft, getDraft } from '@renderer/services/transactionDraftsService';
+import { deleteDraft } from '@renderer/services/transactionDraftsService';
+import {
+  addGroupItem,
+  deleteGroup,
+  editGroupItem,
+} from '@renderer/services/transactionGroupsService';
+import { addGroup, getGroupItem } from '@renderer/services/transactionGroupsService';
+import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
 import {
   addApprovers,
   addObservers,
-  // fullUploadSignatures,
-  submitTransaction,
+  ApiGroupItem,
+  submitTransactionGroup,
+  getApiGroupById,
+  IGroup,
 } from '@renderer/services/organization';
 
 import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
-import {
-  ableToSign,
-  stringifyHbar,
-  getStatusFromCode,
-  getTransactionType,
-  getPrivateKey,
-} from '@renderer/utils';
-// import { publicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
+import { ableToSign, getPrivateKey, getStatusFromCode, getTransactionType } from '@renderer/utils';
 import {
   isLoggedInOrganization,
   isLoggedInWithValidPassword,
@@ -47,21 +43,13 @@ import {
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
-// import AppInput from '@renderer/components/ui/AppInput.vue';
-// import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Props */
 const props = defineProps<{
-  transactionBytes: Uint8Array | null;
   observers?: number[];
   approvers?: TransactionApproverDto[];
-  onExecuted?: (
-    success: boolean,
-    response?: TransactionResponse,
-    receipt?: TransactionReceipt,
-  ) => void;
+  onExecuted?: (id: string) => void;
   onSubmitted?: (id: number, body: string) => void;
-  onLocalStored?: (id: string) => void;
   onCloseSuccessModalClick?: () => void;
   watchExecutedModalShown?: (shown: boolean) => void;
 }>();
@@ -69,10 +57,10 @@ const props = defineProps<{
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const transactionGroup = useTransactionGroupStore();
 
 /* Composables */
 const toast = useToast();
-const route = useRoute();
 
 /* Injected */
 const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
@@ -85,22 +73,19 @@ const transactionResult = ref<{
 const signatureKey = ref<Key | KeyList | null>(null);
 const isConfirmShown = ref(false);
 const isSigning = ref(false);
-// const isSignModalShown = ref(false);
+const isSignModalShown = ref(false);
 const isExecuting = ref(false);
 const isExecutedModalShown = ref(false);
 const unmounted = ref(false);
+const newGroupId = ref('');
 
 /* Computed */
-const transaction = computed(() =>
-  props.transactionBytes ? Transaction.fromBytes(props.transactionBytes) : null,
-);
 const flattenedSignatureKey = computed(() =>
   signatureKey.value ? flattenKeyList(signatureKey.value).map(pk => pk.toStringRaw()) : [],
 );
 const localPublicKeysReq = computed(() =>
   flattenedSignatureKey.value.filter(pk => user.publicKeys.includes(pk)),
 );
-const type = computed(() => transaction.value && getTransactionType(transaction.value));
 
 /* Handlers */
 async function handleConfirmTransaction(e: Event) {
@@ -116,7 +101,7 @@ async function handleConfirmTransaction(e: Event) {
   //  without local but external -> SEND
 
   if (user.selectedOrganization) {
-    await sendSignedTransactionToOrganization();
+    await sendSignedTransactionsToOrganization();
   } else if (localPublicKeysReq.value.length > 0) {
     await signAfterConfirm();
   } else {
@@ -127,7 +112,9 @@ async function handleConfirmTransaction(e: Event) {
 }
 
 async function signAfterConfirm() {
-  if (!props.transactionBytes) throw new Error('Transaction not provided');
+  if (!transactionGroup.groupItems) {
+    throw new Error('Transaction not provided');
+  }
 
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
@@ -156,15 +143,17 @@ async function signAfterConfirm() {
     isConfirmShown.value = true;
     isSigning.value = true;
 
-    const signedTransactionBytes = await signTransaction(
-      props.transactionBytes,
-      localPublicKeysReq.value,
-      user.personal.id,
-      personalPassword,
-    );
-    isConfirmShown.value = false;
+    for (const groupItem of transactionGroup.groupItems) {
+      const signedTransactionBytes = await signTransaction(
+        groupItem.transactionBytes,
+        localPublicKeysReq.value,
+        user.personal.id,
+        personalPassword,
+      );
+      isConfirmShown.value = false;
 
-    await executeTransaction(signedTransactionBytes);
+      await executeTransaction(signedTransactionBytes, groupItem);
+    }
   } catch (err: any) {
     toast.error(err.message || 'Transaction signing failed', { position: 'bottom-right' });
   } finally {
@@ -174,6 +163,7 @@ async function signAfterConfirm() {
 
 /* Functions */
 async function process(requiredKey: Key) {
+  // Should fix to work without nextTicks if possible
   resetData();
   signatureKey.value = requiredKey;
 
@@ -185,31 +175,29 @@ async function process(requiredKey: Key) {
   await nextTick();
 
   isConfirmShown.value = true;
+}
 
-  await user.refetchAccounts();
+function validateProcess() {
+  if (!transactionGroup.groupItems) {
+    throw new Error('Transaction Group not provided');
+  }
 
-  function validateProcess() {
-    if (!transaction.value) {
-      throw new Error('Transaction not provided');
-    }
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
 
-    if (!isUserLoggedIn(user.personal)) {
-      throw new Error('User is not logged in');
-    }
-
-    if (
-      signatureKey.value &&
-      !ableToSign(user.publicKeys, signatureKey.value) &&
-      !user.selectedOrganization
-    ) {
-      throw new Error(
-        'Unable to execute, all of the required signatures should be with your keys. You are currently in Personal mode.',
-      );
-    }
+  if (
+    signatureKey.value &&
+    !ableToSign(user.publicKeys, signatureKey.value) &&
+    !user.selectedOrganization
+  ) {
+    throw new Error(
+      'Unable to execute, all of the required signatures should be with your keys. You are currently in Personal mode.',
+    );
   }
 }
 
-async function executeTransaction(transactionBytes: Uint8Array) {
+async function executeTransaction(transactionBytes: Uint8Array, groupItem?: GroupItem) {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
@@ -222,22 +210,22 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     const { response, receipt } = await execute(transactionBytes);
 
     transactionResult.value = { response, receipt };
+
     status = receipt.status._code;
 
     isExecutedModalShown.value = true;
-    props.onExecuted && props.onExecuted(true, response, receipt);
 
-    if (route.query.draftId) {
-      try {
-        const draft = await getDraft(route.query.draftId.toString());
+    // if (route.query.draftId) {
+    //   try {
+    //     const draft = await getDraft(route.query.draftId.toString());
 
-        if (!draft.isTemplate) {
-          await deleteDraft(route.query.draftId.toString());
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    }
+    //     if (!draft.isTemplate) {
+    //       await deleteDraft(route.query.draftId.toString());
+    //     }
+    //   } catch (error) {
+    //     console.log(error);
+    //   }
+    // }
 
     if (unmounted.value) {
       toast.success('Transaction executed', { position: 'bottom-right' });
@@ -246,7 +234,6 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     const data = JSON.parse(err.message);
     status = data.status;
 
-    props.onExecuted && props.onExecuted(false);
     toast.error(data.message, { position: 'bottom-right' });
   } finally {
     isExecuting.value = false;
@@ -254,16 +241,18 @@ async function executeTransaction(transactionBytes: Uint8Array) {
 
   const executedTransaction = Transaction.fromBytes(transactionBytes);
 
-  if (!type.value || !executedTransaction.transactionId) throw new Error('Cannot save transaction');
+  const type = getTransactionType(executedTransaction);
+
+  if (!type || !executedTransaction.transactionId) throw new Error('Cannot save transaction');
 
   const tx: Prisma.TransactionUncheckedCreateInput = {
-    name: `${type.value} (${executedTransaction.transactionId.toString()})`,
-    type: type.value,
+    name: `${type} (${executedTransaction.transactionId.toString()})`,
+    type: type,
     description: '',
     transaction_id: executedTransaction.transactionId.toString(),
     transaction_hash: (await executedTransaction.getTransactionHash()).toString(),
     body: transactionBytes.toString(),
-    status: getStatusFromCode(status) || 'UNKNOWN',
+    status: getStatusFromCode(status)!,
     status_code: status,
     user_id: user.personal.id,
     creator_public_key: null,
@@ -273,11 +262,29 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     network: network.network,
   };
 
-  const { id } = await storeTransaction(tx);
-  props.onLocalStored && props.onLocalStored(id);
+  const storedTransaction = await storeTransaction(tx);
+
+  if (groupItem?.groupId != undefined) {
+    const savedGroupItem = await getGroupItem(groupItem.groupId, groupItem.seq);
+    await editGroupItem({
+      transaction_id: storedTransaction.id,
+      transaction_group_id: groupItem.groupId,
+      transaction_draft_id: null,
+      seq: groupItem.seq,
+    });
+    await deleteDraft(savedGroupItem.transaction_draft_id!);
+  } else if (groupItem) {
+    if (newGroupId.value === '') {
+      const newGroup = await addGroup('', false);
+      newGroupId.value = newGroup.id;
+    }
+    await addGroupItem(groupItem, newGroupId.value, storedTransaction.id);
+  }
+
+  props.onExecuted && props.onExecuted(storedTransaction.id);
 }
 
-async function sendSignedTransactionToOrganization() {
+async function sendSignedTransactionsToOrganization() {
   isConfirmShown.value = false;
 
   /* Verifies the user is logged in organization */
@@ -292,16 +299,19 @@ async function sendSignedTransactionToOrganization() {
     userPasswordModalRef.value?.open(
       'Enter your application password',
       'Enter your application password to sign as a creator',
-      sendSignedTransactionToOrganization,
+      sendSignedTransactionsToOrganization,
     );
     return;
   }
 
   /* Verifies there is actual transaction to process */
-  if (!props.transactionBytes) throw new Error('Transaction not provided');
+  if (!transactionGroup.groupItems[0].transactionBytes) throw new Error('No Transactions provided');
 
-  /* User Serializes the Transaction */
-  const hexTransactionBytes = await uint8ArrayToHex(props.transactionBytes);
+  /* User Serializes each Transaction */
+  const groupBytesHex = new Array<string>();
+  for (const groupItem of transactionGroup.groupItems) {
+    groupBytesHex.push(await uint8ArrayToHex(groupItem.transactionBytes));
+  }
 
   /* Signs the unfrozen transaction */
   const keyToSignWith = user.keyPairs[0].public_key;
@@ -309,110 +319,104 @@ async function sendSignedTransactionToOrganization() {
   const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, keyToSignWith);
   const privateKey = getPrivateKey(keyToSignWith, privateKeyRaw);
 
-  const signature = privateKey.sign(props.transactionBytes);
-  const signatureHex = await uint8ArrayToHex(signature);
+  const groupSignatureHex = new Array<string>();
+  for (const groupItem of transactionGroup.groupItems) {
+    groupSignatureHex.push(await uint8ArrayToHex(privateKey.sign(groupItem.transactionBytes)));
+  }
 
-  /* Submit the transaction to the back end */
-  const { id, body } = await submitTransaction(
+  /* Submit transactions to the back end */
+  const apiGroupItems = new Array<ApiGroupItem>();
+  for (const [i, groupItem] of transactionGroup.groupItems.entries()) {
+    const transaction = Transaction.fromBytes(groupItem.transactionBytes);
+    apiGroupItems.push({
+      seq: i,
+      transaction: {
+        name: transaction.transactionMemo || `New ${getTransactionType(transaction)}`,
+        description: transaction.transactionMemo || '',
+        body: groupBytesHex[i],
+        network: network.network,
+        signature: groupSignatureHex[i],
+        creatorKeyId:
+          user.selectedOrganization.userKeys.find(k => k.publicKey === keyToSignWith)?.id || -1,
+      },
+    });
+  }
+
+  const { id, body } = await submitTransactionGroup(
     user.selectedOrganization.serverUrl,
-    transaction.value?.transactionMemo || `New ${type.value}`,
-    transaction.value?.transactionMemo || '',
-    hexTransactionBytes,
-    network.network,
-    signatureHex,
-    user.selectedOrganization.userKeys.find(k => k.publicKey === keyToSignWith)?.id || -1,
+    transactionGroup.description,
+    false,
+    apiGroupItems,
   );
 
+  const group: IGroup = await getApiGroupById(user.selectedOrganization.serverUrl, id);
+
   toast.success('Transaction submitted successfully');
-  props.onSubmitted && props.onSubmitted(id, body);
 
-  const results = await Promise.allSettled([
-    // uploadSignatures(body, id),
-    uploadObservers(id),
-    uploadApprovers(id),
-    deleteDraftIfNotTemplate(),
-  ]);
-
-  results.forEach(result => {
-    if (result.status === 'rejected') {
-      toast.error(result.reason.message);
-    }
-  });
-}
-
-// async function uploadSignatures(
-//   organizationTransactionBody: string,
-//   organizationTransactionId: number,
-// ) {
-//   const callback = async () => {
-//     /* Verifies the user has entered his password */
-//     if (!isLoggedInOrganization(user.selectedOrganization))
-//       throw new Error('User is not logged in organization');
-
-//     if (!isLoggedInWithValidPassword(user.personal)) {
-//       if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-//       userPasswordModalRef.value?.open(
-//         'Enter your application password',
-//         'Enter your application password to sign as a creator',
-//         callback,
-//       );
-//       return;
-//     }
-
-//     const bodyBytes = await hexToUint8Array(organizationTransactionBody);
-
-//     /* Deserialize the transaction */
-//     const sdkTransaction = Transaction.fromBytes(bodyBytes);
-
-//     /* Check if should sign */
-//     const publicKeysRequired = await publicRequiredToSign(
-//       sdkTransaction,
-//       user.selectedOrganization.userKeys,
-//       network.mirrorNodeBaseURL,
-//     );
-//     if (publicKeysRequired.length === 0) return;
-
-//     await fullUploadSignatures(
-//       user.personal,
-//       user.selectedOrganization,
-//       publicKeysRequired,
-//       sdkTransaction,
-//       organizationTransactionId,
-//     );
-
-//     toast.success('Transaction signed successfully');
-//   };
-//   await callback();
-// }
-
-async function uploadObservers(transactionId: number) {
-  if (!props.observers || props.observers.length === 0) return;
-
-  if (!isLoggedInOrganization(user.selectedOrganization))
-    throw new Error('User is not logged in organization');
-
-  await addObservers(user.selectedOrganization.serverUrl, transactionId, props.observers);
-}
-
-async function uploadApprovers(transactionId: number) {
-  if (!props.approvers || props.approvers.length === 0) return;
-
-  if (!isLoggedInOrganization(user.selectedOrganization))
-    throw new Error('User is not logged in organization');
-
-  await addApprovers(user.selectedOrganization.serverUrl, transactionId, props.approvers);
-}
-
-async function deleteDraftIfNotTemplate() {
-  /* Delete if draft and not template */
-  if (route.query.draftId) {
-    try {
-      const draft = await getDraft(route.query.draftId.toString());
-      if (!draft.isTemplate) await deleteDraft(route.query.draftId.toString());
-    } catch (error) {
-      console.log(error);
-    }
+  for (const groupItem of group.groupItems) {
+    const results = await Promise.allSettled([
+      // uploadSignatures(body, id),
+      uploadObservers(groupItem.transaction.id, groupItem.seq),
+      uploadApprovers(groupItem.transaction.id, groupItem.seq),
+      deleteDraftsIfNotTemplate(),
+      transactionGroup.groupItems[0].groupId
+        ? deleteGroup(transactionGroup.groupItems[0].groupId)
+        : null,
+    ]);
+    results.forEach(result => {
+      if (result.status === 'rejected') {
+        toast.error(result.reason.message);
+      }
+    });
   }
+  props.onSubmitted && props.onSubmitted(id, body);
+}
+
+async function uploadObservers(transactionId: number, seqId: number) {
+  const hasObservers = transactionGroup.hasObservers(seqId);
+
+  if (!hasObservers) {
+    return;
+  }
+
+  if (!isLoggedInOrganization(user.selectedOrganization))
+    throw new Error('User is not logged in organization');
+
+  await addObservers(
+    user.selectedOrganization.serverUrl,
+    transactionId,
+    transactionGroup.groupItems[seqId].observers,
+  );
+}
+
+async function uploadApprovers(transactionId: number, seqId: number) {
+  const hasApprovers = transactionGroup.hasApprovers(seqId);
+
+  if (hasApprovers) {
+    return;
+  }
+
+  if (!isLoggedInOrganization(user.selectedOrganization))
+    throw new Error('User is not logged in organization');
+
+  await addApprovers(
+    user.selectedOrganization.serverUrl,
+    transactionId,
+    transactionGroup.groupItems[seqId].approvers,
+  );
+}
+
+async function deleteDraftsIfNotTemplate() {
+  // TODO
+  /* Delete if draft and not template */
+  // if (route.query.draftId) {
+  //   try {
+  //     const draft = await getDraft(route.query.draftId.toString());
+  //     if (!draft.isTemplate) await deleteDraft(route.query.draftId.toString());
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // }
 }
 
 function resetData() {
@@ -420,6 +424,7 @@ function resetData() {
   isSigning.value = false;
   isExecuting.value = false;
   isExecutedModalShown.value = false;
+  isSignModalShown.value = false;
   signatureKey.value = null;
 }
 
@@ -448,58 +453,28 @@ defineExpose({
         <div class="text-center">
           <i class="bi bi-arrow-left-right large-icon"></i>
         </div>
-        <form @submit="handleConfirmTransaction">
-          <h3 class="text-center text-title text-bold mt-5">Confirm Transaction</h3>
-          <div class="container-main-bg text-small p-4 mt-5">
-            <div class="d-flex justify-content-between p-3">
-              <p>Type of Transaction</p>
-              <p data-testid="p-type-transaction">{{ type }}</p>
-            </div>
-            <div class="d-flex justify-content-between p-3 mt-3">
-              <p>Transaction ID</p>
-              <p class="text-secondary" data-testid="p-transaction-id">
-                {{ transaction?.transactionId }}
-              </p>
-            </div>
-            <div class="d-flex justify-content-between p-3 mt-3">
-              <p>Valid Start</p>
-              <p class="">
-                {{ transaction?.transactionId?.validStart?.toDate().toDateString() }}
-              </p>
-            </div>
-            <div
-              v-if="transaction?.maxTransactionFee"
-              class="d-flex justify-content-between p-3 mt-3"
-            >
-              <p>Max Transaction Fee</p>
-              <p class="" data-testid="p-max-tx-fee">
-                {{ stringifyHbar(transaction.maxTransactionFee) }} ({{
-                  getDollarAmount(network.currentRate, transaction.maxTransactionFee.toBigNumber())
-                }})
-              </p>
-            </div>
+        <h3 class="text-center text-title text-bold mt-5">Confirm Transaction Group</h3>
+        <hr class="separator my-5" />
+        <div
+          v-for="(groupItem, index) in transactionGroup.groupItems"
+          :key="groupItem.transactionBytes.toString()"
+        >
+          <div class="d-flex p-4 transaction-group-row">
+            <div class="me-4">{{ index + 1 }}</div>
+            <div>{{ getTransactionType(groupItem.transactionBytes) }}</div>
           </div>
+        </div>
 
-          <hr class="separator my-5" />
+        <hr class="separator my-5" />
 
-          <div class="flex-between-centered gap-4">
-            <AppButton
-              type="button"
-              color="borderless"
-              data-testid="button-cancel-transaction"
-              @click="isConfirmShown = false"
-              >Cancel</AppButton
-            >
-            <AppButton
-              color="primary"
-              type="submit"
-              data-testid="button-sign-transaction"
-              :loading="isSigning"
-              :disabled="isSigning"
-              >Sign</AppButton
-            >
-          </div>
-        </form>
+        <div class="flex-between-centered gap-4">
+          <AppButton type="button" color="borderless" @click="isConfirmShown = false"
+            >Cancel</AppButton
+          >
+          <AppButton color="primary" type="button" @click.prevent="handleConfirmTransaction"
+            >Submit</AppButton
+          >
+        </div>
       </div>
     </AppModal>
     <!-- Executing modal -->
@@ -516,10 +491,7 @@ defineExpose({
         <div class="text-center">
           <AppLoader />
         </div>
-        <h3 class="text-center text-title text-bold mt-5">
-          Executing
-          {{ type }}
-        </h3>
+        <h3 class="text-center text-title text-bold mt-5">Executing Group</h3>
         <hr class="separator my-5" />
 
         <div class="d-grid">
@@ -527,10 +499,9 @@ defineExpose({
         </div>
       </div>
     </AppModal>
-    <!-- Executed modal
+    <!-- Executed modal -->
     <AppModal
       v-model:show="isExecutedModalShown"
-      data-testid="modal-transaction-success"
       class="transaction-success-modal"
       :close-on-click-outside="false"
       :close-on-escape="false"
@@ -540,15 +511,14 @@ defineExpose({
           <i class="bi bi-x-lg cursor-pointer" @click="isExecutedModalShown = false"></i>
         </div>
         <div class="text-center">
-          <i class="bi bi-check-lg large-icon" data-testid="icon-success-checkmark"></i>
+          <i class="bi bi-check-lg large-icon"></i>
         </div>
         <h3 class="text-center text-title text-bold mt-5"><slot name="successHeading"></slot></h3>
-        <p
+        <!-- <p
           class="d-flex justify-content-between align-items text-center text-small text-secondary mt-4"
         >
           <span class="text-bold text-secondary">Transaction ID:</span>
           <a
-            data-testid="a-transaction-id"
             class="link-primary cursor-pointer"
             @click="
               network.network !== 'custom' &&
@@ -557,7 +527,7 @@ defineExpose({
             "
             >{{ transactionResult?.response.transactionId }}</a
           >
-        </p>
+        </p> -->
         <slot name="successContent"></slot>
 
         <hr class="separator my-5" />
@@ -565,7 +535,6 @@ defineExpose({
         <div class="d-grid">
           <AppButton
             color="primary"
-            data-testid="button-close-completed-tx"
             @click="
               () => {
                 isExecutedModalShown = false;
@@ -576,6 +545,6 @@ defineExpose({
           >
         </div>
       </div>
-    </AppModal> -->
+    </AppModal>
   </div>
 </template>

@@ -15,9 +15,10 @@ import { MEMO_MAX_LENGTH } from '@main/shared/constants';
 import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 import { useToast } from 'vue-toast-notification';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { createTransactionId } from '@renderer/services/transactionService';
@@ -45,10 +46,12 @@ import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
 
 /* Stores */
 const user = useUserStore();
+const transactionGroup = useTransactionGroupStore();
 
 /* Composables */
 const toast = useToast();
 const router = useRouter();
+const route = useRoute();
 
 const payerData = useAccountId();
 
@@ -99,12 +102,18 @@ const handleCreate = async e => {
 };
 
 const handleLoadFromDraft = async () => {
-  if (!router.currentRoute.value.query.draftId) return;
+  if (!router.currentRoute.value.query.draftId && !route.query.groupIndex) return;
+  let draftTransactionBytes: string | null = null;
+  if (!route.query.group) {
+    const draft = await getDraft(router.currentRoute.value.query.draftId?.toString() || '');
+    draftTransactionBytes = draft.transactionBytes;
+  } else if (route.query.groupIndex) {
+    draftTransactionBytes =
+      transactionGroup.groupItems[Number(route.query.groupIndex)].transactionBytes.toString();
+  }
 
-  const draft = await getDraft(router.currentRoute.value.query.draftId.toString());
-  const draftTransaction = getTransactionFromBytes<FreezeTransaction>(draft.transactionBytes);
-
-  if (draft) {
+  if (draftTransactionBytes) {
+    const draftTransaction = getTransactionFromBytes<FreezeTransaction>(draftTransactionBytes);
     transaction.value = draftTransaction;
     transactionMemo.value = draftTransaction.transactionMemo || '';
 
@@ -136,6 +145,57 @@ const handleSubmit = (id: number) => {
   redirectToDetails(id);
 };
 
+function handleAddToGroup() {
+  if (!isAccountId(payerData.accountId.value)) {
+    throw new Error('Invalid Payer ID');
+  }
+
+  const transactionBytes = createTransaction().toBytes();
+  const keys = new Array<string>();
+  if (payerData.key.value instanceof KeyList) {
+    for (const key of payerData.key.value.toArray()) {
+      keys.push(key.toString());
+    }
+  }
+  // TODO: handle single key?
+  transactionGroup.addGroupItem({
+    transactionBytes: transactionBytes,
+    type: 'FileCreateTransaction',
+    accountId: '',
+    seq: transactionGroup.groupItems.length.toString(),
+    keyList: keys,
+    observers: observers.value,
+    approvers: approvers.value,
+    payerAccountId: payerData.accountId.value,
+    validStart: validStart.value,
+  });
+  router.push({ name: 'createTransactionGroup' });
+}
+
+function handleEditGroupItem() {
+  const transactionBytes = createTransaction().toBytes();
+  const keys = new Array<string>();
+  if (payerData.key.value instanceof KeyList) {
+    for (const key of payerData.key.value.toArray()) {
+      keys.push(key.toString());
+    }
+  }
+
+  transactionGroup.editGroupItem({
+    transactionBytes: transactionBytes,
+    type: 'FreezeTransaction',
+    accountId: '',
+    seq: route.params.seq[0],
+    groupId: transactionGroup.groupItems[Number(route.query.groupIndex)].groupId,
+    keyList: keys,
+    observers: observers.value,
+    approvers: approvers.value,
+    payerAccountId: payerData.accountId.value,
+    validStart: validStart.value,
+  });
+  router.push({ name: 'createTransactionGroup' });
+}
+
 /* Hooks */
 onMounted(async () => {
   await handleLoadFromDraft();
@@ -147,7 +207,7 @@ function createTransaction() {
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(maxTransactionfee.value);
 
-  if (isAccountId(payerData.accountId.value)) {
+  if (isAccountId(payerData.accountId.value) && !route.params.seq) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
   }
 
@@ -220,20 +280,40 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
       <!-- :create-requirements to be updated -->
       <TransactionHeaderControls heading-text="Freeze Transaction">
         <template #buttons>
-          <SaveDraftButton
-            :get-transaction-bytes="() => createTransaction().toBytes()"
-            :is-executed="isExecuted || isSubmitted"
-          />
-          <AppButton color="primary" type="submit" :disabled="!payerData.isValid.value">
-            <span class="bi bi-send"></span>
-            {{
-              getPropagationButtonLabel(
-                transactionKey,
-                user.keyPairs,
-                Boolean(user.selectedOrganization),
-              )
-            }}</AppButton
+          <div
+            v-if="!($route.query.group === 'true')"
+            class="flex-centered justify-content-end flex-wrap gap-3 mt-3"
           >
+            <SaveDraftButton
+              :get-transaction-bytes="() => createTransaction().toBytes()"
+              :is-executed="isExecuted || isSubmitted"
+            />
+            <AppButton color="primary" type="submit" :disabled="!payerData.isValid.value">
+              <span class="bi bi-send"></span>
+              {{
+                getPropagationButtonLabel(
+                  transactionKey,
+                  user.keyPairs,
+                  Boolean(user.selectedOrganization),
+                )
+              }}</AppButton
+            >
+          </div>
+          <div v-else>
+            <AppButton
+              v-if="$route.params.seq"
+              color="primary"
+              type="button"
+              @click="handleEditGroupItem"
+            >
+              <span class="bi bi-plus-lg" />
+              Edit Group Item
+            </AppButton>
+            <AppButton v-else color="primary" type="button" @click="handleAddToGroup">
+              <span class="bi bi-plus-lg" />
+              Add to Group
+            </AppButton>
+          </div>
         </template>
       </TransactionHeaderControls>
 

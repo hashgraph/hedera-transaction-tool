@@ -4,6 +4,11 @@ import { ref } from 'vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionSelectionModal from '@renderer/components/TransactionSelectionModal.vue';
 
+/* Props */
+defineProps<{
+  group?: boolean;
+}>();
+
 /* State */
 const isTransactionSelectionModalShown = ref(false);
 </script>
@@ -26,5 +31,5 @@ const isTransactionSelectionModalShown = ref(false);
       >
     </div>
   </div>
-  <TransactionSelectionModal v-model:show="isTransactionSelectionModalShown" />
+  <TransactionSelectionModal v-model:show="isTransactionSelectionModalShown" :group="group" />
 </template>
