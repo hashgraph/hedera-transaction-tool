@@ -1,21 +1,32 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
 import { EntityManager } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
-import { MirrorNodeService } from '@app/common';
+import {
+  keysRequiredToSign,
+  MirrorNodeService,
+  NotifyForTransactionDto,
+  NotifyGeneralDto,
+} from '@app/common';
+import { Notification, NotificationType, Transaction, UserKey } from '@entities';
 
 import { ReceiverService } from './receiver.service';
-import { EmailService } from '../email/email.service';
+import { FanOutService } from '../fan-out/fan-out.service';
 
 jest.mock('@app/common/utils');
 
-describe('Receiver Service', () => {
+describe('ReceiverService', () => {
   let service: ReceiverService;
-  const configService = mockDeep<ConfigService>();
-  const emailService = mockDeep<EmailService>();
-  const mirrorNodeService = mockDeep<MirrorNodeService>();
   const entityManager = mockDeep<EntityManager>();
+  const mirrorNodeService = mockDeep<MirrorNodeService>();
+  const fanOutService = mockDeep<FanOutService>();
+
+  const mockTransaction = () => {
+    const transactionMock = jest.fn(async passedFunction => {
+      await passedFunction(entityManager);
+    });
+    entityManager.transaction.mockImplementation(transactionMock);
+  };
 
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -24,20 +35,16 @@ describe('Receiver Service', () => {
       providers: [
         ReceiverService,
         {
-          provide: ConfigService,
-          useValue: configService,
-        },
-        {
-          provide: EmailService,
-          useValue: emailService,
+          provide: EntityManager,
+          useValue: entityManager,
         },
         {
           provide: MirrorNodeService,
           useValue: mirrorNodeService,
         },
         {
-          provide: EntityManager,
-          useValue: entityManager,
+          provide: FanOutService,
+          useValue: fanOutService,
         },
       ],
     }).compile();
@@ -47,5 +54,141 @@ describe('Receiver Service', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('notifyGeneral', () => {
+    it('should create a custom notification', async () => {
+      const dto: NotifyGeneralDto = {
+        userIds: [1, 2],
+        type: NotificationType.TRANSACTION_CREATED,
+        content: 'General notification content',
+        entityId: 1,
+        actorId: null,
+      };
+
+      entityManager.create.mockImplementation((_, data) => data);
+      mockTransaction();
+
+      await service.notifyGeneral(dto);
+
+      expect(entityManager.create).toHaveBeenCalledWith(Notification, {
+        type: dto.type,
+        content: dto.content,
+        entityId: dto.entityId,
+        actorId: dto.actorId,
+      });
+      expect(entityManager.save).toHaveBeenNthCalledWith(1, Notification, {
+        type: NotificationType.TRANSACTION_CREATED,
+        content: 'General notification content',
+        entityId: 1,
+        actorId: null,
+      });
+      expect(entityManager.create).toHaveBeenCalledTimes(3); // 1 for notification, 2 for receivers
+      expect(fanOutService.fanOut).toHaveBeenCalled();
+    });
+  });
+
+  describe('notifyTransactionRequiredSigners', () => {
+    it('should throw an error if transaction not found', async () => {
+      entityManager.findOne.mockResolvedValueOnce(null);
+
+      const dto: NotifyForTransactionDto = { transactionId: 1 };
+
+      await expect(service.notifyTransactionRequiredSigners(dto)).rejects.toThrow(
+        'Transaction not found',
+      );
+    });
+
+    it('should notify required signers for a transaction', async () => {
+      const dto: NotifyForTransactionDto = { transactionId: 1 };
+
+      const transaction = {
+        id: 1,
+        transactionId: '0.0.215914@1618316800',
+        creatorKey: { user: { id: 1 } },
+      } as Transaction;
+      entityManager.findOne.mockResolvedValueOnce(transaction);
+
+      const keys = [{ userId: 2 }, { userId: 3 }] as UserKey[];
+      jest.mocked(keysRequiredToSign).mockResolvedValueOnce(keys);
+
+      entityManager.create.mockImplementation((_, data) => data);
+      mockTransaction();
+
+      await service.notifyTransactionRequiredSigners(dto);
+
+      expect(entityManager.findOne).toHaveBeenCalledWith(Transaction, {
+        where: { id: dto.transactionId },
+        relations: { creatorKey: { user: true } },
+      });
+      expect(entityManager.create).toHaveBeenNthCalledWith(1, Notification, {
+        type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
+        content: `Transaction ${transaction.transactionId} requires your signature`,
+        entityId: transaction.id,
+        actorId: null,
+      });
+      expect(entityManager.save).toHaveBeenNthCalledWith(1, Notification, {
+        type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
+        content: `Transaction ${transaction.transactionId} requires your signature`,
+        entityId: 1,
+        actorId: null,
+      });
+      expect(entityManager.create).toHaveBeenCalledTimes(3); // 1 for notification, 2 for receivers
+      expect(fanOutService.fanOut).toHaveBeenCalled();
+    });
+
+    it('should throw an error if transaction not found', async () => {
+      const dto: NotifyForTransactionDto = { transactionId: 1 };
+      entityManager.findOne.mockResolvedValueOnce(null);
+
+      await expect(service.notifyTransactionRequiredSigners(dto)).rejects.toThrow(
+        'Transaction not found',
+      );
+    });
+  });
+
+  describe('notifyTransactionCreatorOnReadyForExecution', () => {
+    it('should notify transaction creator when ready for execution', async () => {
+      const dto: NotifyForTransactionDto = { transactionId: 1 };
+
+      const transaction = {
+        id: 1,
+        creatorKey: { user: { id: 1 } },
+      } as Transaction;
+      entityManager.findOne.mockResolvedValueOnce(transaction);
+
+      entityManager.create.mockImplementation((_, data) => data);
+      mockTransaction();
+
+      await service.notifyTransactionCreatorOnReadyForExecution(dto);
+
+      expect(entityManager.findOne).toHaveBeenCalledWith(Transaction, {
+        where: { id: dto.transactionId },
+        relations: { creatorKey: { user: true } },
+      });
+      expect(entityManager.create).toHaveBeenCalledWith(Notification, {
+        type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
+        content: `Transaction ${transaction.transactionId} is ready for execution`,
+        entityId: transaction.id,
+        actorId: null,
+      });
+      expect(entityManager.save).toHaveBeenNthCalledWith(1, Notification, {
+        type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
+        content: `Transaction ${transaction.transactionId} is ready for execution`,
+        entityId: transaction.id,
+        actorId: null,
+      });
+      expect(entityManager.create).toHaveBeenCalledTimes(2); // 1 for notification, 1 for receiver
+      expect(fanOutService.fanOut).toHaveBeenCalled();
+    });
+
+    it('should throw an error if transaction not found', async () => {
+      const dto: NotifyForTransactionDto = { transactionId: 1 };
+      entityManager.findOne.mockResolvedValueOnce(null);
+
+      await expect(service.notifyTransactionCreatorOnReadyForExecution(dto)).rejects.toThrow(
+        'Transaction not found',
+      );
+    });
   });
 });

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
-import { EntityManager, In } from 'typeorm';
+import { EntityManager } from 'typeorm';
 
 import {
   keysRequiredToSign,
@@ -8,19 +8,48 @@ import {
   NotifyForTransactionDto,
   NotifyGeneralDto,
 } from '@app/common';
-import { NotificationPreferencesOptions, Transaction, User } from '@entities';
+import { Notification, NotificationReceiver, NotificationType, Transaction } from '@entities';
 
-import { EmailService } from '../email/email.service';
+import { FanOutService } from '../fan-out/fan-out.service';
 
 @Injectable()
 export class ReceiverService {
   constructor(
-    private readonly emailService: EmailService,
-    private readonly mirrorNodeService: MirrorNodeService,
     @InjectEntityManager() private entityManager: EntityManager,
+    private readonly mirrorNodeService: MirrorNodeService,
+    private readonly fanOutService: FanOutService,
   ) {}
 
-  async notifyGeneral(dto: NotifyGeneralDto) {}
+  async notifyGeneral(dto: NotifyGeneralDto) {
+    /* Create notification */
+    const notification = this.entityManager.create(Notification, {
+      type: dto.type,
+      content: dto.content,
+      entityId: dto.entityId,
+      actorId: dto.actorId,
+    });
+
+    /* Create & fan out to receivers */
+    await this.entityManager.transaction(async manager => {
+      await manager.save(Notification, notification);
+
+      const notificationReceivers: NotificationReceiver[] = [];
+      for (const id of dto.userIds) {
+        const notificationReceiver = manager.create(NotificationReceiver, {
+          notificationId: notification.id,
+          userId: id,
+          isRead: false,
+          isEmailSent: null,
+        });
+
+        await manager.save(NotificationReceiver, notificationReceiver);
+
+        notificationReceivers.push(notificationReceiver);
+      }
+
+      await this.fanOutService.fanOut(notificationReceivers);
+    });
+  }
 
   async notifyTransactionRequiredSigners(dto: NotifyForTransactionDto) {
     /* Get transaction */
@@ -49,27 +78,34 @@ export class ReceiverService {
       .filter(id => id !== transaction.creatorKey?.user?.id)
       .filter(Boolean);
 
-    /* Get users by keys */
-    const users = await this.entityManager.find(User, {
-      where: {
-        id: In(distinctUserIds),
-      },
-      relations: {
-        notificationPreferences: true,
-      },
+    /* Create notification */
+    const notification = this.entityManager.create(Notification, {
+      type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
+      content: `Transaction ${transaction.transactionId} requires your signature`,
+      entityId: transaction.id,
+      actorId: null,
     });
 
-    const emails = this.filterByNotificationPreferences(users, 'transactionRequiredSignature').map(
-      u => u.email,
-    );
+    /* Create & fan out to receivers */
+    await this.entityManager.transaction(async manager => {
+      await manager.save(Notification, notification);
 
-    if (emails.length > 0) {
-      this.emailService.notifyEmail({
-        subject: 'Action Required: Review and Sign Transaction',
-        email: emails,
-        text: `A new transaction requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction using the following ID: ${transaction.transactionId}.`,
-      });
-    }
+      const notificationReceivers: NotificationReceiver[] = [];
+      for (const userId of distinctUserIds) {
+        const notificationReceiver = manager.create(NotificationReceiver, {
+          notificationId: notification.id,
+          userId,
+          isRead: false,
+          isEmailSent: null,
+        });
+
+        await manager.save(NotificationReceiver, notificationReceiver);
+
+        notificationReceivers.push(notificationReceiver);
+      }
+
+      await this.fanOutService.fanOut(notificationReceivers);
+    });
   }
 
   async notifyTransactionCreatorOnReadyForExecution(dto: NotifyForTransactionDto) {
@@ -87,37 +123,28 @@ export class ReceiverService {
 
     if (!transaction) throw new Error('Transaction not found');
 
-    /* Get user */
-    let user = await this.entityManager.findOne(User, {
-      where: {
-        id: transaction.creatorKey?.user?.id,
-      },
-      relations: {
-        notificationPreferences: true,
-      },
+    /* Create notification */
+    const notification = this.entityManager.create(Notification, {
+      type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
+      content: `Transaction ${transaction.transactionId} is ready for execution`,
+      entityId: transaction.id,
+      actorId: null,
     });
 
-    if (!user) throw new Error('User not found');
+    /* Create & fan out to receiver */
+    await this.entityManager.transaction(async manager => {
+      await manager.save(Notification, notification);
 
-    [user] = this.filterByNotificationPreferences([user], 'transactionReadyForExecution');
-
-    if (user && user.email) {
-      this.emailService.notifyEmail({
-        subject: 'Hedera Transaction Tool | Transaction ready for execution',
-        email: user.email,
-        text: `Your transaction ${transaction.transactionId} is ready for execution.`,
+      const notificationReceiver = manager.create(NotificationReceiver, {
+        notificationId: notification.id,
+        userId: transaction.creatorKey.userId,
+        isRead: false,
+        isEmailSent: null,
       });
-    }
-  }
 
-  filterByNotificationPreferences(
-    users: User[],
-    notificationType: keyof NotificationPreferencesOptions,
-  ) {
-    return users.filter(u => {
-      if (!u.notificationPreferences || u.notificationPreferences[notificationType]) return true;
+      await manager.save(NotificationReceiver, notificationReceiver);
 
-      return false;
+      await this.fanOutService.fanOut([notificationReceiver]);
     });
   }
 }
