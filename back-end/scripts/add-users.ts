@@ -19,7 +19,9 @@ import {
   TransactionGroupItem,
   TransactionGroup,
   UserStatus,
+  Notification,
   NotificationPreferences,
+  NotificationReceiver,
 } from '../libs/common/src/database/entities';
 
 dotenv.config({
@@ -111,7 +113,9 @@ async function connectDatabase() {
       TransactionComment,
       TransactionGroupItem,
       TransactionGroup,
+      Notification,
       NotificationPreferences,
+      NotificationReceiver,
     ],
   });
 
