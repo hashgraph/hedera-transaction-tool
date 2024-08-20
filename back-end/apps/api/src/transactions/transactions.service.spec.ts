@@ -27,7 +27,7 @@ import {
   NOTIFY_CLIENT,
   NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
   TRANSACTION_ACTION,
-  UPDATE_INDICATOR_NOTIFICATION,
+  SYNC_INDICATORS,
 } from '@app/common';
 import { getClientFromName, isExpired, userKeysRequiredToSign } from '@app/common/utils';
 import {
@@ -499,7 +499,7 @@ describe('TransactionsService', () => {
     await service.removeTransaction(user as User, 123, true);
 
     expect(transactionsRepo.softRemove).toHaveBeenCalledWith(transaction);
-    expect(notificationsService.emit).toHaveBeenCalledWith(UPDATE_INDICATOR_NOTIFICATION, {
+    expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
       transactionId: transaction.id,
       transactionStatus: TransactionStatus.CANCELED,
     });
@@ -517,7 +517,7 @@ describe('TransactionsService', () => {
     await service.removeTransaction(user as User, 123, false);
 
     expect(transactionsRepo.remove).toHaveBeenCalledWith(transaction);
-    expect(notificationsService.emit).toHaveBeenCalledWith(UPDATE_INDICATOR_NOTIFICATION, {
+    expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
       transactionId: transaction.id,
       transactionStatus: TransactionStatus.CANCELED,
     });
@@ -574,7 +574,7 @@ describe('TransactionsService', () => {
       { status: TransactionStatus.CANCELED },
     );
     expect(result).toBe(true);
-    expect(notificationsService.emit).toHaveBeenCalledWith(UPDATE_INDICATOR_NOTIFICATION, {
+    expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
       transactionId: transaction.id,
       transactionStatus: TransactionStatus.CANCELED,
     });
