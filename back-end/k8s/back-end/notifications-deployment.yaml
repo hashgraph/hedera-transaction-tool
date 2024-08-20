@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: notifications
-          image: gcr.io/transaction-tool-dev/notifications
+          image: notifications:local
           env:
             - name: HTTP_PORT
               value: '3020'
@@ -25,9 +25,15 @@ spec:
             - name: AUTH_PORT
               value: '3001'
             - name: RABBITMQ_USERNAME
-              value: 'tool-back-end'
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-secret
+                  key: RABBITMQ_USERNAME
             - name: RABBITMQ_PASSWORD
-              value: 'plainpass'
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-secret
+                  key: RABBITMQ_PASSWORD
             - name: RABBITMQ_URI
               value: 'amqp://$(RABBITMQ_USERNAME):$(RABBITMQ_PASSWORD)@rabbitmq:5672'
             - name: BREVO_USERNAME
@@ -69,8 +75,8 @@ kind: Service
 metadata:
   name: notifications
   namespace: hedera-transaction-tool
-  annotations:
-    cloud.google.com/backend-config: '{"default": "ws-backendconfig"}'
+#  annotations:
+#    cloud.google.com/backend-config: '{"default": "ws-backendconfig"}'
 spec:
   ports:
     - name: 'http'
@@ -81,10 +87,10 @@ spec:
     app: notifications
   type: NodePort
 ---
-apiVersion: cloud.google.com/v1
-kind: BackendConfig
-metadata:
-  name: ws-backendconfig
-  namespace: hedera-transaction-tool
-spec:
-  timeoutSec: 3600
+#apiVersion: cloud.google.com/v1
+#kind: BackendConfig
+#metadata:
+#  name: ws-backendconfig
+#  namespace: hedera-transaction-tool
+#spec:
+#  timeoutSec: 3600

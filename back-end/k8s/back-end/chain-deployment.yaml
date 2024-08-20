@@ -16,12 +16,18 @@ spec:
     spec:
       containers:
         - name: chain
-          image: gcr.io/transaction-tool-dev/chain
+          image: chain:local
           env:
             - name: RABBITMQ_USERNAME
-              value: 'tool-back-end'
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-secret
+                  key: RABBITMQ_USERNAME
             - name: RABBITMQ_PASSWORD
-              value: 'plainpass'
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-secret
+                  key: RABBITMQ_PASSWORD
             - name: RABBITMQ_URI
               value: 'amqp://$(RABBITMQ_USERNAME):$(RABBITMQ_PASSWORD)@rabbitmq:5672'
             - name: POSTGRES_HOST

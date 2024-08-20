@@ -16,16 +16,22 @@ spec:
     spec:
       containers:
         - name: api
-          image: gcr.io/transaction-tool-dev/api
+          image: api:local
           env:
             - name: HTTP_PORT
               value: '3000'
             - name: TCP_PORT
               value: '3001'
             - name: RABBITMQ_USERNAME
-              value: 'tool-back-end'
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-secret
+                  key: RABBITMQ_USERNAME
             - name: RABBITMQ_PASSWORD
-              value: 'plainpass'
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-secret
+                  key: RABBITMQ_PASSWORD
             - name: RABBITMQ_URI
               value: 'amqp://$(RABBITMQ_USERNAME):$(RABBITMQ_PASSWORD)@rabbitmq:5672'
             - name: POSTGRES_HOST

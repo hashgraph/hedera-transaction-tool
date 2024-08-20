@@ -1,0 +1,23 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: rabbitmq
+  namespace: hedera-transaction-tool
+spec:
+  replicas: 1
+#  rabbitmq:
+#    override:
+#      env:
+#        - name: RABBITMQ_USERNAME
+#          valueFrom:
+#            secretKeyRef:
+#              name: rabbitmq-secret
+#              key: username
+#        - name: RABBITMQ_PASSWORD
+#          valueFrom:
+#            secretKeyRef:
+#              name: rabbitmq-secret
+#              key: password
+#    additionalConfig: |
+#      default_user = thing
+#      default_pass = thing
