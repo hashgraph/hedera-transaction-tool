@@ -28,6 +28,6 @@ export class ReceiverController {
 
   @EventPattern(SYNC_INDICATORS)
   async updateNewStatusIndicatorNotification(@Payload() payload: SyncIndicatorsDto) {
-    return this.receiverService.syncIndicators(payload);
+    await this.receiverService.syncIndicators(payload);
   }
 }

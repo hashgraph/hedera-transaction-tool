@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { LoggerModule, MirrorNodeModule } from '@app/common';
+import { LoggerModule, MirrorNodeModule, RedisMurlockModule } from '@app/common';
 import {
   Notification,
   NotificationPreferences,
@@ -40,6 +40,7 @@ import { FanOutModule } from '../fan-out/fan-out.module';
     ]),
     MirrorNodeModule,
     FanOutModule,
+    RedisMurlockModule,
   ],
   controllers: [ReceiverController],
   providers: [ReceiverService],

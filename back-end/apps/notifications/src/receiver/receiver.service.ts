@@ -19,6 +19,7 @@ import {
 } from '@entities';
 
 import { FanOutService } from '../fan-out/fan-out.service';
+import { MurLock } from 'murlock';
 
 @Injectable()
 export class ReceiverService {
@@ -28,35 +29,55 @@ export class ReceiverService {
     private readonly fanOutService: FanOutService,
   ) {}
 
+  @MurLock(5000)
   async notifyGeneral({ type, content, entityId, actorId, userIds }: NotifyGeneralDto) {
-    /* Get notification if exists */
-    let notification = await this.entityManager.findOne(Notification, {
-      where: {
-        entityId,
-        type,
-        content,
-        actorId,
-      },
-      relations: {
-        notificationReceivers: true,
-      },
-    });
+    const { notification, notificationReceivers } = await this.entityManager.transaction(
+      async transactionalEntityManager => {
+        /* Get notification if exists */
+        let notification = await transactionalEntityManager.findOne(Notification, {
+          where: {
+            entityId,
+            type,
+            content,
+            actorId,
+          },
+          relations: {
+            notificationReceivers: true,
+          },
+        });
 
-    /* Create notification */
-    if (!notification) {
-      notification = await this.createNotification(type, content, entityId, actorId);
-    }
+        /* Create notification */
+        if (!notification) {
+          notification = await this.createNotification(
+            transactionalEntityManager,
+            type,
+            content,
+            entityId,
+            actorId,
+          );
+        }
 
-    /* Create receivers */
-    userIds = userIds.filter(
-      userId => !notification.notificationReceivers.some(nr => nr.userId === userId),
+        /* Create receivers */
+        userIds = userIds.filter(
+          userId => !notification.notificationReceivers.some(nr => nr.userId === userId),
+        );
+        const notificationReceivers = await this.createReceivers(
+          transactionalEntityManager,
+          notification.id,
+          userIds,
+        );
+
+        return { notification, notificationReceivers };
+      },
     );
-    const notificationReceivers = await this.createReceivers(notification.id, userIds);
 
     /* Fan out */
-    await this.fanOutService.fanOutNew(notification, notificationReceivers);
+    if (notification && notificationReceivers.length > 0) {
+      await this.fanOutService.fanOutNew(notification, notificationReceivers);
+    }
   }
 
+  @MurLock(5000)
   async notifyTransactionRequiredSigners(dto: NotifyForTransactionDto) {
     /* Get transaction */
     const transaction = await this.entityManager.findOne(Transaction, {
@@ -73,7 +94,7 @@ export class ReceiverService {
     if (!transaction) throw new Error('Transaction not found');
 
     /* Get users required to sign */
-    const userIds = await this.getUsersIdsRequiredToSign(transaction);
+    const userIds = await this.getUsersIdsRequiredToSign(this.entityManager, transaction);
 
     /* Notify */
     await this.notifyGeneral({
@@ -91,7 +112,9 @@ export class ReceiverService {
     });
   }
 
+  @MurLock(5000)
   async syncIndicators({ transactionId, transactionStatus }: SyncIndicatorsDto) {
+    console.log('SYNC START');
     let newIndicatorType: NotificationType | null = null;
 
     /* Determine new indicator type */
@@ -111,112 +134,122 @@ export class ReceiverService {
         break;
     }
 
-    /* Get transaction participants */
-    const { participants, requiredUserIds } = await this.getTransactionParticipants(transactionId);
+    await this.entityManager.transaction(async transactionalEntityManager => {
+      /* Get transaction participants */
+      const { participants, approversShouldChooseUserIds, requiredUserIds } =
+        await this.getTransactionParticipants(transactionalEntityManager, transactionId);
 
-    /* Get notification indicator entities to delete */
-    const indicatorTypes = Object.values(NotificationType).filter(t => t.includes('INDICATOR'));
-    const indicatorNotifications = await this.entityManager.find(Notification, {
-      where: {
-        entityId: transactionId,
-        type: In(indicatorTypes),
-      },
-      relations: {
-        notificationReceivers: true,
-      },
-    });
-    const notificationsToDelete = indicatorNotifications.filter(n => n.type !== newIndicatorType);
-
-    /* Delete old indicator notifications */
-    const notificationReceiversToDelete = notificationsToDelete.flatMap(
-      n => n.notificationReceivers,
-    );
-    await this.entityManager.delete(NotificationReceiver, {
-      id: In(notificationReceiversToDelete.map(nr => nr.id)),
-    });
-    await this.entityManager.delete(Notification, {
-      id: In(notificationsToDelete.map(n => n.id)),
-    });
-
-    /* Fan out deletion message */
-    const userIdToNotificationReceiversId: {
-      [userId: number]: number[];
-    } = notificationReceiversToDelete.reduce((acc, nr) => {
-      if (!acc[nr.userId]) {
-        acc[nr.userId] = [];
-      }
-      acc[nr.userId].push(nr.id);
-      return acc;
-    }, {});
-    this.fanOutService.fanOutIndicatorsDelete(userIdToNotificationReceiversId);
-
-    /* Notify if new indicator */
-    if (!newIndicatorType) return;
-
-    if (newIndicatorType === NotificationType.TRANSACTION_INDICATOR_SIGN) {
-      const indicatorNotification = indicatorNotifications.find(
-        n => n.type === NotificationType.TRANSACTION_INDICATOR_SIGN,
+      /* Get notification indicator entities to delete */
+      let indicatorNotifications = await this.getIndicatorNotifications(
+        transactionalEntityManager,
+        transactionId,
       );
-      await this.syncSignIndicators(indicatorNotification, transactionId, requiredUserIds);
-    } else {
-      await this.notifyGeneral({
-        type: newIndicatorType,
-        content: '',
-        entityId: transactionId,
-        actorId: null,
-        userIds: participants,
+      const notificationsToDelete = indicatorNotifications.filter(n => n.type !== newIndicatorType);
+
+      /* Delete old indicator notifications */
+      const notificationReceiversToDelete = notificationsToDelete.flatMap(
+        n => n.notificationReceivers,
+      );
+      console.log('notificationsToDelete', notificationsToDelete);
+      console.log('notificationReceiversToDelete', notificationReceiversToDelete);
+
+      await transactionalEntityManager.delete(NotificationReceiver, {
+        id: In(notificationReceiversToDelete.map(nr => nr.id)),
       });
-    }
+      await transactionalEntityManager.delete(Notification, {
+        id: In(notificationsToDelete.map(n => n.id)),
+      });
+
+      /* Fan out deletion message */
+      this.fanOutIndicatorsDelete(notificationReceiversToDelete);
+
+      /* Notify if new indicator */
+      if (!newIndicatorType) return;
+
+      indicatorNotifications = await this.getIndicatorNotifications(
+        transactionalEntityManager,
+        transactionId,
+      );
+
+      if (newIndicatorType === NotificationType.TRANSACTION_INDICATOR_SIGN) {
+        const indicatorNotification = indicatorNotifications.find(
+          n => n.type === NotificationType.TRANSACTION_INDICATOR_SIGN,
+        );
+        await this.syncActionIndicators(
+          transactionalEntityManager,
+          NotificationType.TRANSACTION_INDICATOR_SIGN,
+          indicatorNotification,
+          transactionId,
+          requiredUserIds,
+        );
+      } else {
+        await this.notifyGeneral({
+          type: newIndicatorType,
+          content: '',
+          entityId: transactionId,
+          actorId: null,
+          userIds: participants,
+        });
+      }
+
+      /* Sync approve indicators */
+      const indicatorApproveNotification = indicatorNotifications.find(
+        n => n.type === NotificationType.TRANSACTION_INDICATOR_APPROVE,
+      );
+      await this.syncActionIndicators(
+        transactionalEntityManager,
+        NotificationType.TRANSACTION_INDICATOR_APPROVE,
+        indicatorApproveNotification,
+        transactionId,
+        approversShouldChooseUserIds,
+      );
+    });
+    console.log('SYNC END');
   }
 
-  private async syncSignIndicators(
+  private async syncActionIndicators(
+    entityManager: EntityManager,
+    type: NotificationType,
     notification: Notification,
     transactionId: number,
-    userIdsRequired: number[],
+    userIds: number[],
   ) {
+    console.log(type);
+    console.log(notification);
+
     /* Create new if not exists */
     if (!notification) {
-      notification = await this.createNotification(
-        NotificationType.TRANSACTION_INDICATOR_SIGN,
-        '',
-        transactionId,
-        null,
-      );
+      notification = await this.createNotification(entityManager, type, '', transactionId, null);
     }
 
     /* Remove indicator notification for users that should not sign */
     try {
       const notificationReceiversToDelete = notification.notificationReceivers.filter(
-        nr => !userIdsRequired.includes(nr.userId),
+        nr => !userIds.includes(nr.userId),
       );
       if (notificationReceiversToDelete.length > 0) {
-        await this.entityManager.delete(NotificationReceiver, {
+        await entityManager.delete(NotificationReceiver, {
           id: In(notificationReceiversToDelete.map(nr => nr.id)),
         });
       }
 
       /* Fan out deletion message */
-      const userIdToNotificationReceiversId: {
-        [userId: number]: number[];
-      } = notificationReceiversToDelete.reduce((acc, nr) => {
-        if (!acc[nr.userId]) {
-          acc[nr.userId] = [];
-        }
-        acc[nr.userId].push(nr.id);
-        return acc;
-      }, {});
-      this.fanOutService.fanOutIndicatorsDelete(userIdToNotificationReceiversId);
+      this.fanOutIndicatorsDelete(notificationReceiversToDelete);
     } catch (error) {
       console.log(error);
     }
 
     /* Create new indicator notification for users that should sign and haven't received */
-    const notificationReceiversToCreate = userIdsRequired.filter(
+    const userIdsToCreate = userIds.filter(
       id => !notification.notificationReceivers.some(nr => nr.userId === id),
     );
+    console.log('Unfiltered', userIds);
+    console.log('Send to', userIdsToCreate);
+
     const notificationReceivers = await this.createReceivers(
+      entityManager,
       notification.id,
-      notificationReceiversToCreate,
+      userIdsToCreate,
     );
 
     if (notificationReceivers.length > 0) {
@@ -224,26 +257,46 @@ export class ReceiverService {
     }
   }
 
+  /* Fan out deletion message */
+  private fanOutIndicatorsDelete(notificationReceivers: NotificationReceiver[]) {
+    if (!Array.isArray(notificationReceivers) || notificationReceivers.length === 0) return;
+
+    const userIdToNotificationReceiversId: {
+      [userId: number]: number[];
+    } = notificationReceivers.reduce((acc, nr) => {
+      if (!acc[nr.userId]) {
+        acc[nr.userId] = [];
+      }
+      acc[nr.userId].push(nr.id);
+      return acc;
+    }, {});
+    this.fanOutService.fanOutIndicatorsDelete(userIdToNotificationReceiversId);
+  }
+
+  /* Create notification */
   private async createNotification(
+    entityManager: EntityManager,
     type: NotificationType,
     content: string,
     entityId: number,
     actorId: number,
   ) {
     /* Create notification */
-    const notification = this.entityManager.create(Notification, {
+    const notification = entityManager.create(Notification, {
       type: type,
       content: content,
       entityId: entityId,
       actorId: actorId,
       notificationReceivers: [],
     });
-    await this.entityManager.save(Notification, notification);
+    await entityManager.save(Notification, notification);
 
     return notification;
   }
 
+  /* Create notification receivers */
   private async createReceivers(
+    entityManager: EntityManager,
     notificationId: number,
     userIds: number[],
     isInAppNotified: boolean | null = null,
@@ -252,7 +305,7 @@ export class ReceiverService {
     const notificationReceivers: NotificationReceiver[] = [];
     for (const id of userIds) {
       try {
-        const notificationReceiver = this.entityManager.create(NotificationReceiver, {
+        const notificationReceiver = entityManager.create(NotificationReceiver, {
           notificationId,
           userId: id,
           isRead: false,
@@ -260,7 +313,7 @@ export class ReceiverService {
           isEmailSent,
         });
 
-        await this.entityManager.save(NotificationReceiver, notificationReceiver);
+        await entityManager.save(NotificationReceiver, notificationReceiver);
 
         notificationReceivers.push(notificationReceiver);
       } catch (error) {
@@ -271,8 +324,24 @@ export class ReceiverService {
     return notificationReceivers;
   }
 
-  private async getTransactionParticipants(transactionId: number) {
-    const transaction = await this.entityManager.findOne(Transaction, {
+  /* Get all indicator notifications for a transaction */
+  private async getIndicatorNotifications(entityManager: EntityManager, transactionId: number) {
+    const indicatorTypes = Object.values(NotificationType).filter(t => t.includes('INDICATOR'));
+
+    return entityManager.find(Notification, {
+      where: {
+        entityId: transactionId,
+        type: In(indicatorTypes),
+      },
+      relations: {
+        notificationReceivers: true,
+      },
+    });
+  }
+
+  /* Get all participants of a transaction */
+  private async getTransactionParticipants(entityManager: EntityManager, transactionId: number) {
+    const transaction = await entityManager.findOne(Transaction, {
       where: { id: transactionId },
       relations: {
         creatorKey: true,
@@ -280,13 +349,21 @@ export class ReceiverService {
         signers: true,
       },
     });
-    const approvers = await this.getApproversByTransactionId(transactionId);
+    const approvers = await this.getApproversByTransactionId(entityManager, transactionId);
 
     const creatorId = transaction.creatorKey.userId;
     const signerIds = transaction.signers.map(s => s.userId);
     const observerIds = transaction.observers.map(o => o.userId);
+    const requiredUserIds = await this.getUsersIdsRequiredToSign(entityManager, transaction);
     const approversUserIds = approvers.map(a => a.userId);
-    const requiredUserIds = await this.getUsersIdsRequiredToSign(transaction);
+    const approversGaveChoiceUserIds = approvers
+      .filter(a => a.approved !== null)
+      .map(a => a.userId)
+      .filter(Boolean);
+    const approversShouldChooseUserIds = approvers
+      .filter(a => a.approved === null)
+      .map(a => a.userId)
+      .filter(Boolean);
 
     const participants = [
       creatorId,
@@ -304,17 +381,16 @@ export class ReceiverService {
       observerIds,
       approversUserIds,
       requiredUserIds,
+      approversGaveChoiceUserIds,
+      approversShouldChooseUserIds,
       participants,
     };
   }
 
-  private async getUsersIdsRequiredToSign(transaction: Transaction) {
+  /* Get all user ids required to sign a transaction */
+  private async getUsersIdsRequiredToSign(entityManager: EntityManager, transaction: Transaction) {
     /* Get all keys required to sign */
-    const allKeys = await keysRequiredToSign(
-      transaction,
-      this.mirrorNodeService,
-      this.entityManager,
-    );
+    const allKeys = await keysRequiredToSign(transaction, this.mirrorNodeService, entityManager);
 
     const distinctUserIds = allKeys
       .map(k => k.userId)
@@ -325,10 +401,13 @@ export class ReceiverService {
   }
 
   /* Get the full list of approvers by transactionId. This will return an array of approvers that may be trees */
-  private async getApproversByTransactionId(transactionId: number): Promise<TransactionApprover[]> {
+  private async getApproversByTransactionId(
+    entityManager: EntityManager,
+    transactionId: number,
+  ): Promise<TransactionApprover[]> {
     if (typeof transactionId !== 'number') return null;
 
-    return this.entityManager.query(
+    return entityManager.query(
       `
       with recursive approverList as
         (

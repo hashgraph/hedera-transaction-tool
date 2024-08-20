@@ -24,6 +24,8 @@ import {
   NOTIFICATIONS_SERVICE,
   NOTIFY_CLIENT,
   NotifyClientDto,
+  SYNC_INDICATORS,
+  SyncIndicatorsDto,
   TRANSACTION_ACTION,
   userKeysRequiredToSign,
   verifyTransactionBodyWithoutNodeAccountIdSignature,
@@ -363,12 +365,14 @@ export class ApproversService {
         for (const approver of dto.approversArray) {
           await createApprover(approver);
         }
-
-        this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-          message: TRANSACTION_ACTION,
-          content: '',
-        });
       });
+
+      this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+        message: TRANSACTION_ACTION,
+        content: '',
+      });
+
+      await this.emitSyncIndicators(transactionId);
     } catch (error) {
       throw new BadRequestException(error.message);
     }
@@ -532,6 +536,8 @@ export class ApproversService {
         content: '',
       });
 
+      await this.emitSyncIndicators(transactionId);
+
       return approver;
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -630,6 +636,11 @@ export class ApproversService {
       content: '',
     });
 
+    this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
+      transactionId: transaction.id,
+      transactionStatus: transaction.status,
+    });
+
     return true;
   }
 
@@ -676,6 +687,20 @@ export class ApproversService {
 
     const count = await (entityManager || this.repo).count(TransactionApprover, find);
     return count > 0 && typeof approver.userId === 'number' ? true : false;
+  }
+
+  /* Emit sync indicators */
+  async emitSyncIndicators(transactionId: number) {
+    const transaction = await this.dataSource.manager.findOne(Transaction, {
+      where: { id: transactionId },
+    });
+
+    if (!transaction) return;
+
+    this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
+      transactionId: transactionId,
+      transactionStatus: transaction.status,
+    });
   }
 
   /* Get the tree structure of the approvers */
