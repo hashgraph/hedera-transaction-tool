@@ -19,7 +19,7 @@ export const getAllInAppNotifications = async (
 
     try {
       let page = 1;
-      const pageSize = 1;
+      const pageSize = 100;
       let final = false;
       while (!final) {
         const paginationQuery = `page=${page}&size=${pageSize}`;
