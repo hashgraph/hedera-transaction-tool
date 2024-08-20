@@ -7,7 +7,13 @@ import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { Transaction, TransactionSigner, TransactionStatus, User } from '@entities';
 
 import { AccountCreateTransaction } from '@hashgraph/sdk';
-import { CHAIN_SERVICE, MirrorNodeService } from '@app/common';
+import {
+  CHAIN_SERVICE,
+  MirrorNodeService,
+  NOTIFICATIONS_SERVICE,
+  NOTIFY_CLIENT,
+  TRANSACTION_ACTION,
+} from '@app/common';
 import {
   addTransactionSignatures,
   isAlreadySigned,
@@ -26,6 +32,7 @@ describe('SignaturesService', () => {
   const signersRepo = mockDeep<Repository<TransactionSigner>>();
   const dataSource = mockDeep<DataSource>();
   const chainService = mock<ClientProxy>();
+  const notificationService = mock<ClientProxy>();
   const mirrorNodeService = mock<MirrorNodeService>();
 
   const defaultPagination = {
@@ -56,6 +63,10 @@ describe('SignaturesService', () => {
         {
           provide: CHAIN_SERVICE,
           useValue: chainService,
+        },
+        {
+          provide: NOTIFICATIONS_SERVICE,
+          useValue: notificationService,
         },
         {
           provide: MirrorNodeService,
@@ -234,6 +245,10 @@ describe('SignaturesService', () => {
 
       expect(chainService.emit).toHaveBeenCalledWith('update-transaction-status', {
         id: transactionId,
+      });
+      expect(notificationService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, {
+        message: TRANSACTION_ACTION,
+        content: '',
       });
     });
 
@@ -499,6 +514,10 @@ describe('SignaturesService', () => {
 
       expect(chainService.emit).toHaveBeenCalledWith('update-transaction-status', {
         id: transactionId,
+      });
+      expect(notificationService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, {
+        message: TRANSACTION_ACTION,
+        content: '',
       });
     });
 

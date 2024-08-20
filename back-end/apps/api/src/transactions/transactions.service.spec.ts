@@ -26,6 +26,8 @@ import {
   MirrorNodeService,
   NOTIFY_CLIENT,
   NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
+  TRANSACTION_ACTION,
+  UPDATE_INDICATOR_NOTIFICATION,
 } from '@app/common';
 import { getClientFromName, isExpired, userKeysRequiredToSign } from '@app/common/utils';
 import {
@@ -357,7 +359,10 @@ describe('TransactionsService', () => {
         transactionId: 1,
       },
     );
-    expect(notificationsService.emit).toHaveBeenNthCalledWith(2, NOTIFY_CLIENT, expect.anything());
+    expect(notificationsService.emit).toHaveBeenNthCalledWith(2, NOTIFY_CLIENT, {
+      message: TRANSACTION_ACTION,
+      content: '',
+    });
 
     client.close();
   });
@@ -494,7 +499,14 @@ describe('TransactionsService', () => {
     await service.removeTransaction(user as User, 123, true);
 
     expect(transactionsRepo.softRemove).toHaveBeenCalledWith(transaction);
-    expect(notificationsService.emit).toHaveBeenCalled();
+    expect(notificationsService.emit).toHaveBeenCalledWith(UPDATE_INDICATOR_NOTIFICATION, {
+      transactionId: transaction.id,
+      transactionStatus: TransactionStatus.CANCELED,
+    });
+    expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, {
+      message: TRANSACTION_ACTION,
+      content: '',
+    });
   });
 
   it('should hard remove the transaction', async () => {
@@ -505,7 +517,14 @@ describe('TransactionsService', () => {
     await service.removeTransaction(user as User, 123, false);
 
     expect(transactionsRepo.remove).toHaveBeenCalledWith(transaction);
-    expect(notificationsService.emit).toHaveBeenCalled();
+    expect(notificationsService.emit).toHaveBeenCalledWith(UPDATE_INDICATOR_NOTIFICATION, {
+      transactionId: transaction.id,
+      transactionStatus: TransactionStatus.CANCELED,
+    });
+    expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, {
+      message: TRANSACTION_ACTION,
+      content: '',
+    });
   });
 
   it('should throw if transaction not found', async () => {
@@ -555,6 +574,14 @@ describe('TransactionsService', () => {
       { status: TransactionStatus.CANCELED },
     );
     expect(result).toBe(true);
+    expect(notificationsService.emit).toHaveBeenCalledWith(UPDATE_INDICATOR_NOTIFICATION, {
+      transactionId: transaction.id,
+      transactionStatus: TransactionStatus.CANCELED,
+    });
+    expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, {
+      message: TRANSACTION_ACTION,
+      content: '',
+    });
   });
 
   it('should throw if transaction ID is not provided', async () => {
