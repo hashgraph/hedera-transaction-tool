@@ -19,9 +19,7 @@ export const keysRequiredToSign = async (
 ): Promise<UserKey[]> => {
   const userKeyIdsRequired: Set<number> = new Set<number>();
 
-  if (!transaction) {
-    return [];
-  }
+  if (!transaction) return [];
 
   /* Deserialize the transaction */
   const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
@@ -66,7 +64,7 @@ export const keysRequiredToSign = async (
   );
   userKeysIncludedInTransaction.forEach(userKey => userKeyIdsRequired.add(userKey.id));
 
-  const userKeyInKeyOrIsKey = (key: Key) =>
+  const userKeysInKeyOrIsKey = (key: Key) =>
     (key instanceof PublicKey &&
       userKeys.filter(
         userKey =>
@@ -86,7 +84,7 @@ export const keysRequiredToSign = async (
     const key = parseAccountProperty(accountInfo, 'key');
     if (!key) continue;
 
-    userKeyInKeyOrIsKey(key).forEach(userKey => userKeyIdsRequired.add(userKey.id));
+    userKeysInKeyOrIsKey(key).forEach(userKey => userKeyIdsRequired.add(userKey.id));
   }
 
   /* Check if user has a key included in a receiver account that required signature */
@@ -98,7 +96,7 @@ export const keysRequiredToSign = async (
     const key = parseAccountProperty(accountInfo, 'key');
     if (!key) continue;
 
-    userKeyInKeyOrIsKey(key).forEach(userKey => userKeyIdsRequired.add(userKey.id));
+    userKeysInKeyOrIsKey(key).forEach(userKey => userKeyIdsRequired.add(userKey.id));
   }
 
   return userKeys.filter(userKey => userKeyIdsRequired.has(userKey.id));
