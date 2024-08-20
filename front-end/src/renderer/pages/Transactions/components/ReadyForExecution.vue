@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 
 import { Transaction } from '@hashgraph/sdk';
 
@@ -12,10 +12,12 @@ import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
+import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 
 import { getTransactionsForUser } from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
+import { getNotifiedTransactions } from '@renderer/utils';
 import {
   getTransactionDateExtended,
   getTransactionId,
@@ -36,6 +38,7 @@ const notifications = useNotificationsStore();
 /* Composables */
 const router = useRouter();
 const ws = useDisposableWs();
+useMarkNotifications([NotificationType.TRANSACTION_INDICATOR_EXECUTABLE]);
 
 /* State */
 const transactions = ref<
@@ -44,6 +47,7 @@ const transactions = ref<
     transaction: Transaction;
   }[]
 >([]);
+const notifiedTransactionIds = ref<number[]>([]);
 const totalItems = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
@@ -79,6 +83,7 @@ const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') 
 /* Functions */
 async function fetchTransactions() {
   if (!isLoggedInOrganization(user.selectedOrganization)) {
+    notifiedTransactionIds.value = [];
     return;
   }
 
@@ -100,6 +105,11 @@ async function fetchTransactions() {
       transactionRaw: transaction,
       transaction: Transaction.fromBytes(transactionsBytes[i]),
     }));
+    notifiedTransactionIds.value = getNotifiedTransactions(
+      notifications.notifications,
+      rawTransactions,
+      [NotificationType.TRANSACTION_INDICATOR_EXECUTABLE],
+    );
   } finally {
     isLoading.value = false;
   }
@@ -115,10 +125,6 @@ onBeforeMount(async () => {
     await fetchTransactions();
   });
   await fetchTransactions();
-});
-
-onMounted(async () => {
-  await notifications.markAsRead(NotificationType.TRANSACTION_INDICATOR_EXECUTABLE);
 });
 
 /* Watchers */
@@ -193,7 +199,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
           </thead>
           <tbody>
             <template v-for="(tx, index) in transactions" :key="tx.transactionRaw.id">
-              <tr>
+              <tr :class="{ highlight: notifiedTransactionIds.includes(tx.transactionRaw.id) }">
                 <td :data-testid="`td-transaction-id-ready-execution-${index}`">
                   {{
                     tx.transaction instanceof Transaction ? getTransactionId(tx.transaction) : 'N/A'

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 import { Prisma, Transaction } from '@prisma/client';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
@@ -13,11 +13,13 @@ import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
+import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 
 import { getTransactions, getTransactionsCount } from '@renderer/services/transactionService';
 import { getHistoryTransactions } from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
+import { getNotifiedTransactions } from '@renderer/utils';
 import {
   getTransactionStatus,
   getTransactionId,
@@ -41,6 +43,10 @@ const notifications = useNotificationsStore();
 /* Composables */
 const router = useRouter();
 const ws = useDisposableWs();
+useMarkNotifications([
+  NotificationType.TRANSACTION_INDICATOR_EXECUTED,
+  NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+]);
 
 /* State */
 const organizationTransactions = ref<
@@ -50,6 +56,7 @@ const organizationTransactions = ref<
   }[]
 >([]);
 const transactions = ref<Transaction[]>([]);
+const notifiedTransactionIds = ref<number[]>([]);
 const localSort = reactive<{
   field: Prisma.TransactionScalarFieldEnum;
   direction: Prisma.SortOrder;
@@ -148,7 +155,16 @@ async function fetchTransactions() {
         transactionRaw: transaction,
         transaction: SDKTransaction.fromBytes(transactionsBytes[i]),
       }));
+      notifiedTransactionIds.value = getNotifiedTransactions(
+        notifications.notifications,
+        rawTransactions,
+        [
+          NotificationType.TRANSACTION_INDICATOR_EXECUTED,
+          NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+        ],
+      );
     } else {
+      notifiedTransactionIds.value = [];
       totalItems.value = await getTransactionsCount(user.personal.id);
       transactions.value = await getTransactions(createFindArgs());
     }
@@ -163,13 +179,6 @@ onBeforeMount(async () => {
     await fetchTransactions();
   });
   await fetchTransactions();
-});
-
-onMounted(async () => {
-  if (isLoggedInOrganization(user.selectedOrganization)) {
-    await notifications.markAsRead(NotificationType.TRANSACTION_INDICATOR_EXECUTED);
-    await notifications.markAsRead(NotificationType.TRANSACTION_INDICATOR_EXPIRED);
-  }
 });
 
 /* Watchers */
@@ -358,7 +367,13 @@ watch(orgFilters, async () => {
                 v-for="(transactionData, index) in organizationTransactions"
                 :key="transactionData.transactionRaw.id"
               >
-                <tr v-if="transactionData.transaction instanceof SDKTransaction && true">
+                <tr
+                  v-if="transactionData.transaction instanceof SDKTransaction && true"
+                  :class="{
+                    highlight: notifiedTransactionIds.includes(transactionData.transactionRaw.id),
+                  }"
+                  :id="transactionData.transactionRaw.id.toString()"
+                >
                   <td :data-testid="`td-transaction-id-${index}`">
                     {{ sdkTransactionUtils.getTransactionId(transactionData.transaction) }}
                   </td>

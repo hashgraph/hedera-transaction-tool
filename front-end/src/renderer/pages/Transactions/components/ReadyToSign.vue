@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 
 import { Transaction } from '@hashgraph/sdk';
 
@@ -12,10 +12,12 @@ import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
+import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 
 import { getApiGroups, getTransactionsToSign } from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
+import { getNotifiedTransactions } from '@renderer/utils';
 import {
   getTransactionDateExtended,
   getTransactionId,
@@ -36,6 +38,7 @@ const notifications = useNotificationsStore();
 /* Composables */
 const router = useRouter();
 const ws = useDisposableWs();
+useMarkNotifications([NotificationType.TRANSACTION_INDICATOR_SIGN]);
 
 /* State */
 const transactions = ref<
@@ -48,8 +51,8 @@ const transactions = ref<
     }[]
   >
 >(new Map());
-
 const groups = ref();
+const notifiedTransactionIds = ref<number[]>([]);
 const totalItems = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
@@ -123,6 +126,7 @@ const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') 
 async function fetchTransactions() {
   transactions.value = new Map();
   if (!isLoggedInOrganization(user.selectedOrganization)) {
+    notifiedTransactionIds.value = [];
     return;
   }
 
@@ -162,6 +166,12 @@ async function fetchTransactions() {
       }
     }
 
+    notifiedTransactionIds.value = getNotifiedTransactions(
+      notifications.notifications,
+      rawTransactions.map(t => t.transaction),
+      [NotificationType.TRANSACTION_INDICATOR_SIGN],
+    );
+
     groups.value = await getApiGroups(user.selectedOrganization.serverUrl);
   } finally {
     isLoading.value = false;
@@ -178,10 +188,6 @@ onBeforeMount(async () => {
     await fetchTransactions();
   });
   await fetchTransactions();
-});
-
-onMounted(async () => {
-  await notifications.markAsRead(NotificationType.TRANSACTION_INDICATOR_SIGN);
 });
 
 /* Watchers */
@@ -279,7 +285,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
 
               <template v-else>
                 <template v-for="(tx, index) in group[1]" :key="tx.transactionRaw.id">
-                  <tr>
+                  <tr :class="{ highlight: notifiedTransactionIds.includes(tx.transactionRaw.id) }">
                     <td :data-testid="`td-transaction-id-for-sign-${index}`">
                       {{
                         tx.transaction instanceof Transaction
