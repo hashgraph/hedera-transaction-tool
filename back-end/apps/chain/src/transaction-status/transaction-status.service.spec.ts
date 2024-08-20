@@ -13,7 +13,8 @@ import {
   NOTIFY_CLIENT,
   NOTIFY_GENERAL,
   TRANSACTION_ACTION,
-  UPDATE_INDICATOR_NOTIFICATION,
+  SYNC_INDICATORS,
+  NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
 } from '@app/common';
 import { NotificationType, Transaction, TransactionStatus } from '@entities';
 
@@ -246,6 +247,18 @@ describe('TransactionStatusService', () => {
 
     expect(transactionRepo.manager.transaction).toHaveBeenCalled();
     expect(transactionRepo.manager.update).toHaveBeenCalled();
+
+    for (const transaction of expiredTransactions) {
+      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
+        transactionId: transaction.id,
+        transactionStatus: TransactionStatus.EXPIRED,
+      });
+    }
+    expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, {
+      message: TRANSACTION_ACTION,
+      content: '',
+    });
+    expect(notificationsService.emit).toHaveBeenCalledTimes(4);
   });
 
   describe('updateTransactions', () => {
@@ -301,7 +314,7 @@ describe('TransactionStatusService', () => {
           status: TransactionStatus.WAITING_FOR_SIGNATURES,
         },
       );
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(1, UPDATE_INDICATOR_NOTIFICATION, {
+      expect(notificationsService.emit).toHaveBeenNthCalledWith(1, SYNC_INDICATORS, {
         transactionId: transactions[0].id,
         transactionStatus: TransactionStatus.WAITING_FOR_EXECUTION,
       });
@@ -312,15 +325,22 @@ describe('TransactionStatusService', () => {
         content: `Transaction ${transactions[0].transactionId} is ready for execution`,
         userIds: [transactions[0].creatorKey?.userId],
       });
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(3, UPDATE_INDICATOR_NOTIFICATION, {
+      expect(notificationsService.emit).toHaveBeenNthCalledWith(3, SYNC_INDICATORS, {
         transactionId: transactions[1].id,
         transactionStatus: TransactionStatus.WAITING_FOR_SIGNATURES,
       });
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(4, NOTIFY_CLIENT, {
+      expect(notificationsService.emit).toHaveBeenNthCalledWith(
+        4,
+        NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
+        {
+          transactionId: transactions[1].id,
+        },
+      );
+      expect(notificationsService.emit).toHaveBeenNthCalledWith(5, NOTIFY_CLIENT, {
         message: TRANSACTION_ACTION,
         content: '',
       });
-      expect(notificationsService.emit).toHaveBeenCalledTimes(4);
+      expect(notificationsService.emit).toHaveBeenCalledTimes(5);
     });
 
     it('should not emit notifications event if no transactions updated', async () => {
@@ -382,15 +402,22 @@ describe('TransactionStatusService', () => {
       await service.updateTransactions(new Date(), new Date());
 
       expect(transactionRepo.update).toHaveBeenCalledTimes(1);
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(1, UPDATE_INDICATOR_NOTIFICATION, {
+      expect(notificationsService.emit).toHaveBeenNthCalledWith(1, SYNC_INDICATORS, {
         transactionId: transactions[1].id,
         transactionStatus: TransactionStatus.WAITING_FOR_SIGNATURES,
       });
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(2, NOTIFY_CLIENT, {
+      expect(notificationsService.emit).toHaveBeenNthCalledWith(
+        2,
+        NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
+        {
+          transactionId: transactions[1].id,
+        },
+      );
+      expect(notificationsService.emit).toHaveBeenNthCalledWith(3, NOTIFY_CLIENT, {
         message: TRANSACTION_ACTION,
         content: '',
       });
-      expect(notificationsService.emit).toHaveBeenCalledTimes(2);
+      expect(notificationsService.emit).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -425,7 +452,7 @@ describe('TransactionStatusService', () => {
           status: TransactionStatus.WAITING_FOR_EXECUTION,
         },
       );
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(1, UPDATE_INDICATOR_NOTIFICATION, {
+      expect(notificationsService.emit).toHaveBeenNthCalledWith(1, SYNC_INDICATORS, {
         transactionId: transaction.id,
         transactionStatus: TransactionStatus.WAITING_FOR_EXECUTION,
       });

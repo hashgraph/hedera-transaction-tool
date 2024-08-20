@@ -221,29 +221,7 @@ export class TransactionStatusService {
 
         transaction.status = newStatus;
 
-        this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
-          transactionId: transaction.id,
-          transactionStatus: newStatus,
-        });
-
-        if (newStatus === TransactionStatus.WAITING_FOR_EXECUTION) {
-          this.notificationsService.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
-            entityId: transaction.id,
-            type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
-            actorId: null,
-            content: `Transaction ${transaction.transactionId} is ready for execution`,
-            userIds: [transaction.creatorKey?.userId],
-          });
-        }
-
-        if (newStatus === TransactionStatus.WAITING_FOR_SIGNATURES) {
-          this.notificationsService.emit<undefined, NotifyForTransactionDto>(
-            NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
-            {
-              transactionId: transaction.id,
-            },
-          );
-        }
+        this.emitNotificationEvents(transaction, newStatus);
 
         atLeastOneUpdated = true;
       } catch (error) {
@@ -307,6 +285,15 @@ export class TransactionStatusService {
       },
     );
 
+    this.emitNotificationEvents(transaction, newStatus);
+
+    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+      message: TRANSACTION_ACTION,
+      content: '',
+    });
+  }
+
+  private emitNotificationEvents(transaction: Transaction, newStatus: TransactionStatus) {
     this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
       transactionId: transaction.id,
       transactionStatus: newStatus,
@@ -330,11 +317,6 @@ export class TransactionStatusService {
         },
       );
     }
-
-    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
-    });
   }
 
   addExecutionTimeout(transaction: Transaction) {
