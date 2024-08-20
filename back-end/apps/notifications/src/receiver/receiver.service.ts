@@ -29,11 +29,12 @@ export class ReceiverService {
       actorId: dto.actorId,
     });
 
-    /* Create & fan out to receivers */
+    /* Create receivers */
+    const notificationReceivers: NotificationReceiver[] = [];
+
     await this.entityManager.transaction(async manager => {
       await manager.save(Notification, notification);
 
-      const notificationReceivers: NotificationReceiver[] = [];
       for (const id of dto.userIds) {
         const notificationReceiver = manager.create(NotificationReceiver, {
           notificationId: notification.id,
@@ -46,9 +47,10 @@ export class ReceiverService {
 
         notificationReceivers.push(notificationReceiver);
       }
-
-      await this.fanOutService.fanOut(notification, notificationReceivers);
     });
+
+    /* Fan out */
+    await this.fanOutService.fanOut(notification, notificationReceivers);
   }
 
   async notifyTransactionRequiredSigners(dto: NotifyForTransactionDto) {
@@ -81,16 +83,17 @@ export class ReceiverService {
     /* Create notification */
     const notification = this.entityManager.create(Notification, {
       type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
-      content: `Transaction ${transaction.transactionId} requires your signature`,
+      content: `A new transaction requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction using the following ID: ${transaction.transactionId}.`,
       entityId: transaction.id,
       actorId: null,
     });
 
-    /* Create & fan out to receivers */
+    /* Create receivers */
+    const notificationReceivers: NotificationReceiver[] = [];
+
     await this.entityManager.transaction(async manager => {
       await manager.save(Notification, notification);
 
-      const notificationReceivers: NotificationReceiver[] = [];
       for (const userId of distinctUserIds) {
         const notificationReceiver = manager.create(NotificationReceiver, {
           notificationId: notification.id,
@@ -103,9 +106,10 @@ export class ReceiverService {
 
         notificationReceivers.push(notificationReceiver);
       }
-
-      await this.fanOutService.fanOut(notification, notificationReceivers);
     });
+
+    /* Fan out */
+    await this.fanOutService.fanOut(notification, notificationReceivers);
   }
 
   async notifyTransactionCreatorOnReadyForExecution(dto: NotifyForTransactionDto) {
@@ -131,20 +135,20 @@ export class ReceiverService {
       actorId: null,
     });
 
-    /* Create & fan out to receiver */
+    /* Create receiver */
+    const notificationReceiver = this.entityManager.create(NotificationReceiver, {
+      userId: transaction.creatorKey.userId,
+      isRead: false,
+      isEmailSent: null,
+    });
+
     await this.entityManager.transaction(async manager => {
       await manager.save(Notification, notification);
-
-      const notificationReceiver = manager.create(NotificationReceiver, {
-        notificationId: notification.id,
-        userId: transaction.creatorKey.userId,
-        isRead: false,
-        isEmailSent: null,
-      });
-
+      notificationReceiver.notificationId = notification.id;
       await manager.save(NotificationReceiver, notificationReceiver);
-
-      await this.fanOutService.fanOut(notification, [notificationReceiver]);
     });
+
+    /* Fan out */
+    await this.fanOutService.fanOut(notification, [notificationReceiver]);
   }
 }

@@ -123,13 +123,13 @@ describe('ReceiverService', () => {
       });
       expect(entityManager.create).toHaveBeenNthCalledWith(1, Notification, {
         type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
-        content: `Transaction ${transaction.transactionId} requires your signature`,
+        content: `A new transaction requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction using the following ID: ${transaction.transactionId}.`,
         entityId: transaction.id,
         actorId: null,
       });
       expect(entityManager.save).toHaveBeenNthCalledWith(1, Notification, {
         type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
-        content: `Transaction ${transaction.transactionId} requires your signature`,
+        content: `A new transaction requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction using the following ID: ${transaction.transactionId}.`,
         entityId: 1,
         actorId: null,
       });
