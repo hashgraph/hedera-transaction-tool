@@ -8,7 +8,13 @@ import {
   NotifyForTransactionDto,
   NotifyGeneralDto,
 } from '@app/common';
-import { Notification, NotificationType, Transaction, UserKey } from '@entities';
+import {
+  Notification,
+  NotificationReceiver,
+  NotificationType,
+  Transaction,
+  UserKey,
+} from '@entities';
 
 import { ReceiverService } from './receiver.service';
 import { FanOutService } from '../fan-out/fan-out.service';
@@ -84,6 +90,22 @@ describe('ReceiverService', () => {
         actorId: null,
       });
       expect(entityManager.create).toHaveBeenCalledTimes(3); // 1 for notification, 2 for receivers
+      expect(entityManager.create).toHaveBeenNthCalledWith(
+        2,
+        NotificationReceiver,
+        expect.objectContaining({
+          isEmailSent: null,
+          isInAppNotified: null,
+        }),
+      );
+      expect(entityManager.create).toHaveBeenNthCalledWith(
+        3,
+        NotificationReceiver,
+        expect.objectContaining({
+          isEmailSent: null,
+          isInAppNotified: null,
+        }),
+      );
       expect(fanOutService.fanOut).toHaveBeenCalled();
     });
   });
@@ -134,6 +156,22 @@ describe('ReceiverService', () => {
         actorId: null,
       });
       expect(entityManager.create).toHaveBeenCalledTimes(3); // 1 for notification, 2 for receivers
+      expect(entityManager.create).toHaveBeenNthCalledWith(
+        2,
+        NotificationReceiver,
+        expect.objectContaining({
+          isEmailSent: null,
+          isInAppNotified: null,
+        }),
+      );
+      expect(entityManager.create).toHaveBeenNthCalledWith(
+        3,
+        NotificationReceiver,
+        expect.objectContaining({
+          isEmailSent: null,
+          isInAppNotified: null,
+        }),
+      );
       expect(fanOutService.fanOut).toHaveBeenCalled();
     });
 
@@ -179,6 +217,14 @@ describe('ReceiverService', () => {
         actorId: null,
       });
       expect(entityManager.create).toHaveBeenCalledTimes(2); // 1 for notification, 1 for receiver
+      expect(entityManager.create).toHaveBeenNthCalledWith(
+        2,
+        NotificationReceiver,
+        expect.objectContaining({
+          isEmailSent: null,
+          isInAppNotified: null,
+        }),
+      );
       expect(fanOutService.fanOut).toHaveBeenCalled();
     });
 

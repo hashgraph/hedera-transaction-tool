@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { EntityManager } from 'typeorm';
+import { EntityManager, In } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
 import { NotificationTypeEmailSubjects } from '@app/common';
@@ -115,16 +115,36 @@ describe('Fan Out Service', () => {
 
       await service.fanOut(notification, receivers);
 
-      expect(emailService.processEmail).toHaveBeenCalledWith(
-        {
-          from: '"Transaction Tool" info@transactiontool.com',
-          to: [receivers[0].user.email],
-          subject: NotificationTypeEmailSubjects.TRANSCATION_EXECUTED,
-          text: notification.content,
-        },
-        [receivers[0].id],
-      );
+      expect(emailService.processEmail).toHaveBeenCalledWith({
+        from: '"Transaction Tool" info@transactiontool.com',
+        to: [receivers[0].user.email],
+        subject: NotificationTypeEmailSubjects.TRANSCATION_EXECUTED,
+        text: notification.content,
+      });
       expect(inAppProcessorService.processNotification).not.toHaveBeenCalled();
+      expect(entityManager.update).toHaveBeenCalledTimes(2); //1 to mark email sent as false, 1 to mark email sent as true
+      expect(entityManager.update).toHaveBeenNthCalledWith(
+        1,
+        NotificationReceiver,
+        {
+          notificationId: notification.id,
+          userId: In([receivers[0].id]),
+        },
+        {
+          isEmailSent: false,
+        },
+      );
+      expect(entityManager.update).toHaveBeenNthCalledWith(
+        2,
+        NotificationReceiver,
+        {
+          notificationId: notification.id,
+          userId: In([receivers[0].id]),
+        },
+        {
+          isEmailSent: true,
+        },
+      );
     });
 
     it('should add user to receivers if preference is not found', async () => {
@@ -135,18 +155,60 @@ describe('Fan Out Service', () => {
 
       await service.fanOut(notification, receivers);
 
-      expect(emailService.processEmail).toHaveBeenCalledWith(
-        {
-          from: '"Transaction Tool" info@transactiontool.com',
-          to: [receivers[0].user.email],
-          subject: NotificationTypeEmailSubjects.TRANSCATION_EXECUTED,
-          text: notification.content,
-        },
-        [receivers[0].id],
-      );
+      expect(emailService.processEmail).toHaveBeenCalledWith({
+        from: '"Transaction Tool" info@transactiontool.com',
+        to: [receivers[0].user.email],
+        subject: NotificationTypeEmailSubjects.TRANSCATION_EXECUTED,
+        text: notification.content,
+      });
       expect(inAppProcessorService.processNotification).toHaveBeenCalledWith(notification, [
         receivers[0].userId,
       ]);
+      expect(entityManager.update).toHaveBeenCalledTimes(4);
+      expect(entityManager.update).toHaveBeenNthCalledWith(
+        1,
+        NotificationReceiver,
+        {
+          notificationId: notification.id,
+          userId: In([receivers[0].id]),
+        },
+        {
+          isEmailSent: false,
+        },
+      );
+      expect(entityManager.update).toHaveBeenNthCalledWith(
+        2,
+        NotificationReceiver,
+        {
+          notificationId: notification.id,
+          userId: In([receivers[0].userId]),
+        },
+        {
+          isInAppNotified: false,
+        },
+      );
+      expect(entityManager.update).toHaveBeenNthCalledWith(
+        3,
+        NotificationReceiver,
+        {
+          notificationId: notification.id,
+          userId: In([receivers[0].id]),
+        },
+        {
+          isEmailSent: true,
+        },
+      );
+      expect(entityManager.update).toHaveBeenNthCalledWith(
+        4,
+        NotificationReceiver,
+        {
+          notificationId: notification.id,
+          userId: In([receivers[0].userId]),
+        },
+        {
+          isInAppNotified: true,
+        },
+      );
     });
 
     it('should filter out receivers that do not want email notifications', async () => {
@@ -163,6 +225,29 @@ describe('Fan Out Service', () => {
       expect(inAppProcessorService.processNotification).toHaveBeenCalledWith(notification, [
         receivers[0].userId,
       ]);
+      expect(entityManager.update).toHaveBeenCalledTimes(2);
+      expect(entityManager.update).toHaveBeenNthCalledWith(
+        1,
+        NotificationReceiver,
+        {
+          notificationId: notification.id,
+          userId: In([receivers[0].userId]),
+        },
+        {
+          isInAppNotified: false,
+        },
+      );
+      expect(entityManager.update).toHaveBeenNthCalledWith(
+        2,
+        NotificationReceiver,
+        {
+          notificationId: notification.id,
+          userId: In([receivers[0].userId]),
+        },
+        {
+          isInAppNotified: true,
+        },
+      );
     });
 
     it('should filter out receivers that do not want in-app notifications', async () => {
@@ -175,14 +260,91 @@ describe('Fan Out Service', () => {
 
       await service.fanOut(notification, receivers);
 
-      expect(emailService.processEmail).toHaveBeenCalledWith(
+      expect(emailService.processEmail).toHaveBeenCalledWith({
+        from: '"Transaction Tool" info@transactiontool.com',
+        to: [receivers[0].user.email],
+        subject: NotificationTypeEmailSubjects.TRANSCATION_EXECUTED,
+        text: notification.content,
+      });
+      expect(entityManager.update).toHaveBeenCalledTimes(2);
+      expect(entityManager.update).toHaveBeenNthCalledWith(
+        1,
+        NotificationReceiver,
         {
-          from: '"Transaction Tool" info@transactiontool.com',
-          to: [receivers[0].user.email],
-          subject: NotificationTypeEmailSubjects.TRANSCATION_EXECUTED,
-          text: notification.content,
+          notificationId: notification.id,
+          userId: In([receivers[0].id]),
         },
-        [receivers[0].id],
+        {
+          isEmailSent: false,
+        },
+      );
+      expect(entityManager.update).toHaveBeenNthCalledWith(
+        2,
+        NotificationReceiver,
+        {
+          notificationId: notification.id,
+          userId: In([receivers[0].id]),
+        },
+        {
+          isEmailSent: true,
+        },
+      );
+    });
+
+    it('should not mark isEmailSent as true if email processing fails', async () => {
+      const preferences: NotificationPreferences[] = [
+        { id: 1, userId: 1, email: true, inApp: false, user, type: notification.type },
+      ];
+
+      entityManager.find.mockResolvedValueOnce([user]);
+      entityManager.find.mockResolvedValueOnce(preferences);
+      emailService.processEmail.mockRejectedValueOnce(new Error('Email failed'));
+
+      await service.fanOut(notification, receivers);
+
+      expect(emailService.processEmail).toHaveBeenCalledWith({
+        from: '"Transaction Tool" info@transactiontool.com',
+        to: [receivers[0].user.email],
+        subject: NotificationTypeEmailSubjects.TRANSCATION_EXECUTED,
+        text: notification.content,
+      });
+      expect(entityManager.update).not.toHaveBeenCalledWith(
+        NotificationReceiver,
+        {
+          notificationId: notification.id,
+          userId: In([receivers[0].id]),
+        },
+        {
+          isEmailSent: true,
+        },
+      );
+    });
+
+    it('should not mark isInAppNotified as true if in-app processing fails', async () => {
+      const preferences: NotificationPreferences[] = [
+        { id: 1, userId: 1, email: false, inApp: true, user, type: notification.type },
+      ];
+
+      entityManager.find.mockResolvedValueOnce([user]);
+      entityManager.find.mockResolvedValueOnce(preferences);
+      inAppProcessorService.processNotification.mockImplementationOnce(() => {
+        throw new Error('In-app failed');
+      });
+
+      await service.fanOut(notification, receivers);
+
+      expect(inAppProcessorService.processNotification).toHaveBeenCalledWith(notification, [
+        receivers[0].userId,
+      ]);
+      expect(entityManager.update).not.toHaveBeenCalledWith(
+        NotificationReceiver,
+        {
+          notificationId: notification.id,
+          userId: In([receivers[0].userId]),
+        },
+        {
+          isInAppNotified: true,
+        },
       );
     });
   });

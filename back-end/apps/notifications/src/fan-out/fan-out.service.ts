@@ -24,6 +24,30 @@ export class FanOutService {
     /* Ensure all receivers are for this notification */
     receivers = receivers.filter(r => r.notificationId === notification.id);
 
+    /* Categorized receivers based on preferences */
+    const { email, inApp } = await this.categorizeReceivers(notification, receivers);
+
+    /* Mark isEmailSent false to receivers who should receive email */
+    await this.updateIsEmailSent(notification.id, email.userIds, false);
+
+    /* Mark isInAppNotified false to receivers who should receive in-app notification */
+    await this.updateIsInAppNotified(notification.id, inApp.userIds, false);
+
+    /* Process notifications */
+    try {
+      await this.sendToEmailProcessor(email.emails, notification, email.userIds);
+    } catch (error) {
+      console.log(error);
+    }
+
+    try {
+      await this.sendToInAppProcessor(inApp.userIds, notification);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  private async categorizeReceivers(notification: Notification, receivers: NotificationReceiver[]) {
     /* Get users */
     const userIds = receivers.map(r => r.userId);
     const users = await this.entityManager.find(User, {
@@ -40,8 +64,8 @@ export class FanOutService {
       },
     });
 
-    /* Categorized receivers based on preferences */
     const emailReceivers: string[] = [];
+    const emailReceiversUserIds: number[] = [];
     const inAppReceivers: number[] = [];
 
     receivers.forEach(r => {
@@ -50,6 +74,7 @@ export class FanOutService {
 
       if (preference ? preference.email : true) {
         emailReceivers.push(user.email);
+        emailReceiversUserIds.push(user.id);
       }
 
       if (preference ? preference.inApp : true) {
@@ -57,23 +82,69 @@ export class FanOutService {
       }
     });
 
-    /* Add to Job queues */
-    if (emailReceivers.length > 0) {
+    return {
+      email: {
+        emails: emailReceivers,
+        userIds: emailReceiversUserIds,
+      },
+      inApp: {
+        userIds: inAppReceivers,
+      },
+    };
+  }
+
+  private async sendToEmailProcessor(
+    emails: string[],
+    notification: Notification,
+    userIds: number[],
+  ) {
+    if (emails.length > 0) {
       const mailOptions: SendMailOptions = {
         from: '"Transaction Tool" info@transactiontool.com',
-        to: emailReceivers,
+        to: emails,
         subject: NotificationTypeEmailSubjects[notification.type],
         text: notification.content,
       };
-      /* Add to email processor queue, but currently it is not in queue */
-      await this.emailService.processEmail(
-        mailOptions,
-        receivers.map(r => r.id),
+
+      await this.emailService.processEmail(mailOptions);
+      await this.updateIsEmailSent(notification.id, userIds, true);
+    }
+  }
+
+  private async sendToInAppProcessor(userIds: number[], notification: Notification) {
+    if (userIds.length > 0) {
+      this.inAppProcessorService.processNotification(notification, userIds);
+      await this.updateIsInAppNotified(notification.id, userIds, true);
+    }
+  }
+
+  private async updateIsEmailSent(notificationId: number, userIds: number[], isEmailSent: boolean) {
+    if (userIds && userIds.length > 0) {
+      await this.entityManager.update(
+        NotificationReceiver,
+        {
+          notificationId,
+          userId: In(userIds),
+        },
+        { isEmailSent },
       );
     }
+  }
 
-    if (inAppReceivers.length > 0) {
-      this.inAppProcessorService.processNotification(notification, inAppReceivers);
+  private async updateIsInAppNotified(
+    notificationId: number,
+    userIds: number[],
+    isInAppNotified: boolean,
+  ) {
+    if (userIds && userIds.length > 0) {
+      await this.entityManager.update(
+        NotificationReceiver,
+        {
+          notificationId,
+          userId: In(userIds),
+        },
+        { isInAppNotified },
+      );
     }
   }
 }

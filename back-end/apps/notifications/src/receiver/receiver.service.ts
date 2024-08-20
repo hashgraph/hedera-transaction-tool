@@ -40,6 +40,7 @@ export class ReceiverService {
           notificationId: notification.id,
           userId: id,
           isRead: false,
+          isInAppNotified: null,
           isEmailSent: null,
         });
 
@@ -77,7 +78,7 @@ export class ReceiverService {
     const distinctUserIds = allKeys
       .map(k => k.userId)
       .filter((v, i, a) => a.indexOf(v) === i)
-      .filter(id => id !== transaction.creatorKey?.user?.id)
+      // .filter(id => id !== transaction.creatorKey?.user?.id)
       .filter(Boolean);
 
     /* Create notification */
@@ -99,6 +100,7 @@ export class ReceiverService {
           notificationId: notification.id,
           userId,
           isRead: false,
+          isInAppNotified: null,
           isEmailSent: null,
         });
 
@@ -139,6 +141,7 @@ export class ReceiverService {
     const notificationReceiver = this.entityManager.create(NotificationReceiver, {
       userId: transaction.creatorKey.userId,
       isRead: false,
+      isInAppNotified: null,
       isEmailSent: null,
     });
 

@@ -1,19 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectEntityManager } from '@nestjs/typeorm';
-import { EntityManager, In } from 'typeorm';
 
 import * as nodemailer from 'nodemailer';
 
 import { NotifyEmailDto } from '@app/common';
-import { NotificationReceiver } from '@entities';
 
 @Injectable()
 export class EmailService {
-  constructor(
-    private readonly configService: ConfigService,
-    @InjectEntityManager() private entityManager: EntityManager,
-  ) {}
+  constructor(private readonly configService: ConfigService) {}
 
   private readonly transporter = nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
@@ -37,28 +31,12 @@ export class EmailService {
     console.log(`Message sent: ${info.messageId}`);
   }
 
-  async processEmail(options: nodemailer.SendMailOptions, receiverEntityIds: number[]) {
+  async processEmail(options: nodemailer.SendMailOptions) {
     /* 
       TODO Add to email processor queue
       Currently, just send the email
     */
     const info = await this.transporter.sendMail(options);
     console.log(`Message sent: ${info.messageId}`);
-
-    try {
-      await this.markAsSent(receiverEntityIds);
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  async markAsSent(receiverEntityIds: number[]) {
-    await this.entityManager.update(
-      NotificationReceiver,
-      {
-        id: In(receiverEntityIds),
-      },
-      { isEmailSent: true },
-    );
   }
 }
