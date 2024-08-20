@@ -46,6 +46,7 @@ describe('UsersController', () => {
       comments: [],
       issuedNotifications: [],
       receivedNotifications: [],
+      notificationPreferences: [],
     };
   });
 

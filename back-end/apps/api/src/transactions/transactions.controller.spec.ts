@@ -58,6 +58,7 @@ describe('TransactionsController', () => {
       comments: [],
       issuedNotifications: [],
       receivedNotifications: [],
+      notificationPreferences: [],
     };
     transaction = {
       id: 1,

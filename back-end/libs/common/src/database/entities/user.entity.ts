@@ -4,7 +4,6 @@ import {
   DeleteDateColumn,
   Entity,
   OneToMany,
-  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -69,6 +68,6 @@ export class User {
   @OneToMany(() => NotificationReceiver, notificationReceiver => notificationReceiver.notification)
   receivedNotifications: NotificationReceiver[];
 
-  @OneToOne(() => NotificationPreferences, preferences => preferences.user)
-  notificationPreferences?: NotificationPreferences;
+  @OneToMany(() => NotificationPreferences, preferences => preferences.user)
+  notificationPreferences: NotificationPreferences[];
 }

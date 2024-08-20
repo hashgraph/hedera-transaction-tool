@@ -47,6 +47,7 @@ describe('ObserversController', () => {
       comments: [],
       issuedNotifications: [],
       receivedNotifications: [],
+      notificationPreferences: [],
     };
     observer = {
       id: 1,

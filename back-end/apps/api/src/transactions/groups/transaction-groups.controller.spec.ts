@@ -47,6 +47,7 @@ describe('TransactionGroupsController', () => {
       comments: [],
       issuedNotifications: [],
       receivedNotifications: [],
+      notificationPreferences: [],
     };
     transactionGroup = {
       id: 1,
@@ -79,6 +80,16 @@ describe('TransactionGroupsController', () => {
       transactionGroupsService.getTransactionGroups.mockResolvedValue(result);
 
       expect(await controller.getTransactionGroups()).toEqual(result);
+    });
+  });
+
+  describe('getTransactionGroup', () => {
+    it('should return a transaction group', async () => {
+      const result = transactionGroup;
+
+      transactionGroupsService.getTransactionGroup.mockResolvedValue(result);
+
+      expect(await controller.getTransactionGroup(user, 1)).toEqual(result);
     });
   });
 
