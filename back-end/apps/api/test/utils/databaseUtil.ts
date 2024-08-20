@@ -23,7 +23,9 @@ import {
   TransactionGroup,
   UserStatus,
   TransactionStatus,
+  Notification,
   NotificationPreferences,
+  NotificationReceiver,
 } from '../../../../libs/common/src/database/entities';
 
 import {
@@ -475,6 +477,8 @@ async function connectDatabase() {
       TransactionComment,
       TransactionGroupItem,
       TransactionGroup,
+      Notification,
+      NotificationReceiver,
       NotificationPreferences,
     ],
   });
