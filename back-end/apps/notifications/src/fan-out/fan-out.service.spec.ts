@@ -350,5 +350,31 @@ describe('Fan Out Service', () => {
         },
       );
     });
+
+    it('should not send email if notification type is in blacklist', async () => {
+      const notification: Notification = {
+        id: 1,
+        type: NotificationType.TRANSACTION_INDICATOR_SIGN,
+        actorId: null,
+        content: '',
+        createdAt: new Date(),
+        notificationReceivers: [],
+      };
+
+      const preferences: NotificationPreferences[] = [
+        { id: 1, userId: 1, email: true, inApp: true, user, type: notification.type },
+      ];
+
+      entityManager.find.mockResolvedValueOnce([user]);
+      entityManager.find.mockResolvedValueOnce(preferences);
+
+      await service.fanOut(notification, receivers);
+
+      expect(emailService.processEmail).not.toHaveBeenCalled();
+      expect(inAppProcessorService.processNotification).toHaveBeenCalledWith(
+        notification,
+        receivers,
+      );
+    });
   });
 });

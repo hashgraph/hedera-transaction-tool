@@ -4,13 +4,28 @@ import { EntityManager, In } from 'typeorm';
 import { SendMailOptions } from 'nodemailer';
 
 import { NotificationTypeEmailSubjects } from '@app/common';
-import { Notification, NotificationPreferences, NotificationReceiver, User } from '@entities';
+import {
+  Notification,
+  NotificationPreferences,
+  NotificationReceiver,
+  NotificationType,
+  User,
+} from '@entities';
 
 import { EmailService } from '../email/email.service';
 import { InAppProcessorService } from '../in-app-processor/in-app-processor.service';
 
 @Injectable()
 export class FanOutService {
+  emailBlacklistTypes = [
+    NotificationType.TRANSACTION_INDICATOR_APPROVE,
+    NotificationType.TRANSACTION_INDICATOR_SIGN,
+    NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
+    NotificationType.TRANSACTION_INDICATOR_EXECUTED,
+    NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+    NotificationType.TRANSCATION_EXPIRED,
+  ];
+
   constructor(
     @InjectEntityManager() private entityManager: EntityManager,
     private readonly emailService: EmailService,
@@ -100,6 +115,9 @@ export class FanOutService {
     notification: Notification,
     userIds: number[],
   ) {
+    /* If notification type is in blacklist, do not send email */
+    if (this.emailBlacklistTypes.includes(notification.type)) return;
+
     if (emails.length > 0) {
       const mailOptions: SendMailOptions = {
         from: '"Transaction Tool" info@transactiontool.com',
