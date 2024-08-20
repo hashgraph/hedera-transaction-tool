@@ -1,0 +1,159 @@
+import { NotFoundException } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { mockDeep } from 'jest-mock-extended';
+
+import { Pagination, PaginatedResourceDto, guardMock } from '@app/common';
+import { NotificationReceiver, NotificationType, User } from '@entities';
+
+import { JwtAuthGuard, VerifiedUserGuard } from '../guards';
+
+import { UpdateNotificationReceiverDto } from './dtos';
+
+import { NotificationsController } from './notification-receiver.controller';
+import { NotificationReceiverService } from './notification-receiver.service';
+
+describe('NotificationsController', () => {
+  let controller: NotificationsController;
+  let service: NotificationReceiverService;
+  const user: User = { id: 1 } as User;
+  const notificationReceiver: NotificationReceiver = {
+    id: 1,
+    userId: user.id,
+    isRead: false,
+    notification: {
+      actor: {},
+      type: NotificationType.TRANSACTION_CREATED,
+      content: 'this-is-content',
+    },
+  } as NotificationReceiver;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [NotificationsController],
+      providers: [
+        {
+          provide: NotificationReceiverService,
+          useValue: mockDeep<NotificationReceiverService>(),
+        },
+      ],
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue(guardMock())
+      .overrideGuard(VerifiedUserGuard)
+      .useValue(guardMock())
+      .compile();
+
+    controller = module.get<NotificationsController>(NotificationsController);
+    service = module.get<NotificationReceiverService>(NotificationReceiverService);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  describe('getNotifications', () => {
+    it('should return paginated notifications', async () => {
+      const pagination: Pagination = { page: 1, size: 10, offset: 0, limit: 10 };
+      const notifications = [notificationReceiver];
+      const paginatedResult: PaginatedResourceDto<NotificationReceiver> = {
+        page: pagination.page,
+        size: pagination.size,
+        totalItems: 1,
+        items: notifications,
+      };
+
+      jest.spyOn(service, 'getReceivedNotifications').mockResolvedValue(paginatedResult);
+
+      const result = await controller.getNotifications(user, pagination);
+
+      expect(service.getReceivedNotifications).toHaveBeenCalledWith(
+        user,
+        pagination,
+        undefined,
+        undefined,
+      );
+      expect(result).toEqual(paginatedResult);
+    });
+  });
+
+  describe('getNotificationsCount', () => {
+    it('should return the count of received notifications', async () => {
+      const pagination: Pagination = { page: 1, size: 10, offset: 0, limit: 10 };
+      const count = 1;
+
+      jest.spyOn(service, 'getReceivedNotificationsCount').mockResolvedValue(count);
+
+      const result = await controller.getNotificationsCount(user, pagination);
+
+      expect(service.getReceivedNotificationsCount).toHaveBeenCalledWith(
+        user,
+        pagination,
+        undefined,
+        undefined,
+      );
+      expect(result).toBe(count);
+    });
+  });
+
+  describe('getReceivedNotification', () => {
+    it('should return a notification receiver', async () => {
+      jest.spyOn(service, 'getReceivedNotification').mockResolvedValue(notificationReceiver);
+
+      const result = await controller.getReceivedNotification(user, 1);
+
+      expect(service.getReceivedNotification).toHaveBeenCalledWith(user, 1);
+      expect(result).toEqual(notificationReceiver);
+    });
+
+    it('should throw NotFoundException if notification receiver not found', async () => {
+      jest.spyOn(service, 'getReceivedNotification').mockRejectedValue(new NotFoundException());
+
+      await expect(controller.getReceivedNotification(user, 1)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('updateReceivedNotification', () => {
+    it('should update the notification receiver', async () => {
+      const dto: UpdateNotificationReceiverDto = { isRead: true };
+      const updatedNotificationReceiver = { ...notificationReceiver, isRead: true };
+
+      jest
+        .spyOn(service, 'updateReceivedNotification')
+        .mockResolvedValue(updatedNotificationReceiver);
+
+      const result = await controller.updateReceivedNotification(user, 1, dto);
+
+      expect(service.updateReceivedNotification).toHaveBeenCalledWith(user, 1, dto);
+      expect(result).toEqual(updatedNotificationReceiver);
+    });
+
+    it('should throw NotFoundException if notification receiver not found', async () => {
+      const dto: UpdateNotificationReceiverDto = { isRead: true };
+
+      jest.spyOn(service, 'updateReceivedNotification').mockRejectedValue(new NotFoundException());
+
+      await expect(controller.updateReceivedNotification(user, 1, dto)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('deleteReceivedNotification', () => {
+    it('should delete the notification receiver', async () => {
+      jest.spyOn(service, 'deleteReceivedNotification').mockResolvedValue(true);
+
+      const result = await controller.deleteReceivedNotification(user, 1);
+
+      expect(service.deleteReceivedNotification).toHaveBeenCalledWith(user, 1);
+      expect(result).toBe(true);
+    });
+
+    it('should throw NotFoundException if notification receiver not found', async () => {
+      jest.spyOn(service, 'deleteReceivedNotification').mockRejectedValue(new NotFoundException());
+
+      await expect(controller.deleteReceivedNotification(user, 1)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+});
