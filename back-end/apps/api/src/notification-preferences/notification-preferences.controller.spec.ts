@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
 import { guardMock } from '@app/common';
-import { NotificationPreferences, User } from '@entities';
+import { NotificationPreferences, NotificationType, User } from '@entities';
 
 import { JwtAuthGuard, VerifiedUserGuard } from '../guards';
 import { UpdateNotificationPreferencesDto } from './dtos';
@@ -43,11 +43,12 @@ describe('NotificationPreferencesController', () => {
   });
 
   describe('updatePreferences', () => {
-    it('should update the notification preferences for the current user', async () => {
+    it('should update the notification preference for the current user', async () => {
       const user = { id: 1 } as User;
       const dto: UpdateNotificationPreferencesDto = {
-        transactionRequiredSignature: true,
-        transactionReadyForExecution: false,
+        type: NotificationType.TRANSACTION_CREATED,
+        email: true,
+        inApp: false,
       };
       const updatedPreferences = { userId: user.id, ...dto } as NotificationPreferences;
 
@@ -61,9 +62,11 @@ describe('NotificationPreferencesController', () => {
   });
 
   describe('getPreferencesOrCreate', () => {
-    it("should get the user's notification preferences", async () => {
+    it("should get the user's all notification preferences", async () => {
       const user = { id: 1 } as User;
-      const preferences = { userId: user.id } as NotificationPreferences;
+      const preferences = [
+        { userId: user.id, type: NotificationType.TRANSACTION_CREATED },
+      ] as NotificationPreferences[];
 
       jest.spyOn(service, 'getPreferencesOrCreate').mockResolvedValue(preferences);
 
@@ -71,6 +74,19 @@ describe('NotificationPreferencesController', () => {
 
       expect(service.getPreferencesOrCreate).toHaveBeenCalledWith(user);
       expect(result).toEqual(preferences);
+    });
+
+    it('should get the user notification preferences by type', async () => {
+      const user = { id: 1 } as User;
+      const type = NotificationType.TRANSACTION_CREATED;
+      const preferences = { userId: user.id, type } as NotificationPreferences;
+
+      jest.spyOn(service, 'getPreferenceOrCreate').mockResolvedValue(preferences);
+
+      const result = await controller.getPreferencesOrCreate(user, type);
+
+      expect(service.getPreferenceOrCreate).toHaveBeenCalledWith(user, type);
+      expect(result).toEqual([preferences]);
     });
 
     it('should return null if no preferences found', async () => {

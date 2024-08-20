@@ -45,6 +45,8 @@ describe('ObserversController', () => {
       observableTransactions: [],
       approvableTransactions: [],
       comments: [],
+      issuedNotifications: [],
+      receivedNotifications: [],
     };
     observer = {
       id: 1,

@@ -18,14 +18,14 @@ describe('TransactionGroupsController', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-        controllers: [TransactionGroupsController],
-        providers: [
-          {
-            provide: TransactionGroupsService,
-            useValue: transactionGroupsService,
-          },
-        ],
-      })
+      controllers: [TransactionGroupsController],
+      providers: [
+        {
+          provide: TransactionGroupsService,
+          useValue: transactionGroupsService,
+        },
+      ],
+    })
       .overrideGuard(VerifiedUserGuard)
       .useValue(guardMock())
       .compile();
@@ -45,6 +45,8 @@ describe('TransactionGroupsController', () => {
       observableTransactions: [],
       approvableTransactions: [],
       comments: [],
+      issuedNotifications: [],
+      receivedNotifications: [],
     };
     transactionGroup = {
       id: 1,
