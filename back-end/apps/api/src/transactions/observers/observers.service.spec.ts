@@ -97,8 +97,6 @@ describe('ObserversService', () => {
     });
 
     it('should not add an observer if already added', async () => {
-      console.log('PROBLEMATIC TEST');
-
       const transactionId = 1;
       const dto = { userIds: [3] };
 
