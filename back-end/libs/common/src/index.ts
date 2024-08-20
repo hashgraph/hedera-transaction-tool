@@ -4,7 +4,7 @@ export * from './database';
 export * from './logger';
 export * from './utils';
 export * from './transformers';
-export * from './mirrorNode';
+export * from './mirror-node';
 export * from './schemas';
 export * from './types';
 export * from './decorators';
