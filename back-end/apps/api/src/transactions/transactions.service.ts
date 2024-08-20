@@ -44,7 +44,7 @@ import {
   PaginatedResourceDto,
   TRANSACTION_ACTION,
   NotifyClientDto,
-  NOTIFY_TRANSACTION_REQUIRED_SIGNERS,
+  NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
   NotifyForTransactionDto,
   userKeysRequiredToSign,
 } from '@app/common';
@@ -390,7 +390,7 @@ export class TransactionsService {
     }
 
     this.notificationsService.emit<undefined, NotifyForTransactionDto>(
-      NOTIFY_TRANSACTION_REQUIRED_SIGNERS,
+      NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
       {
         transactionId: transaction.id,
       },

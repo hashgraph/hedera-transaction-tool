@@ -1,21 +1,26 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager, In } from 'typeorm';
 
-import { keysRequiredToSign, MirrorNodeService, NotifyForTransactionDto } from '@app/common';
+import {
+  keysRequiredToSign,
+  MirrorNodeService,
+  NotifyForTransactionDto,
+  NotifyGeneralDto,
+} from '@app/common';
 import { NotificationPreferencesOptions, Transaction, User } from '@entities';
 
 import { EmailService } from '../email/email.service';
 
 @Injectable()
-export class TransactionNotificationsService {
+export class ReceiverService {
   constructor(
-    private readonly configService: ConfigService,
     private readonly emailService: EmailService,
     private readonly mirrorNodeService: MirrorNodeService,
     @InjectEntityManager() private entityManager: EntityManager,
   ) {}
+
+  async notifyGeneral(dto: NotifyGeneralDto) {}
 
   async notifyTransactionRequiredSigners(dto: NotifyForTransactionDto) {
     /* Get transaction */

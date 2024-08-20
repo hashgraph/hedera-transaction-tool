@@ -15,7 +15,7 @@ import getEnvFilePaths from './config/envFilePaths';
 
 import { WebsocketModule } from './websocket/websocket.module';
 import { EmailModule } from './email/email.module';
-import { TransactionNotificationsModule } from './notifications/transactionNotifications.module';
+import { ReceiverModule } from './receiver/receiver.module';
 
 export const config = ConfigModule.forRoot({
   envFilePath: getEnvFilePaths(),
@@ -42,7 +42,7 @@ export const config = ConfigModule.forRoot({
     config,
     DatabaseModule,
     EmailModule,
-    TransactionNotificationsModule,
+    ReceiverModule,
     LoggerModule,
     WebsocketModule,
     ApiProxyModule,

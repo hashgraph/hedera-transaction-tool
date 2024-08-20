@@ -1,26 +1,27 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 
-import { TransactionNotificationsController } from './transactionNotifications.controller';
-import { TransactionNotificationsService } from './transactionNotifications.service';
 import { NotifyForTransactionDto } from '@app/common';
 
-describe('Transaction Notifications Controller', () => {
-  let controller: TransactionNotificationsController;
-  const notificationsService = mockDeep<TransactionNotificationsService>();
+import { ReceiverController } from './receiver.controller';
+import { ReceiverService } from './receiver.service';
+
+describe('Receiver Controller', () => {
+  let controller: ReceiverController;
+  const receiverService = mockDeep<ReceiverService>();
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
-      controllers: [TransactionNotificationsController],
+      controllers: [ReceiverController],
       providers: [
         {
-          provide: TransactionNotificationsService,
-          useValue: notificationsService,
+          provide: ReceiverService,
+          useValue: receiverService,
         },
       ],
     }).compile();
 
-    controller = app.get<TransactionNotificationsController>(TransactionNotificationsController);
+    controller = app.get<ReceiverController>(ReceiverController);
   });
 
   it('should be defined', () => {
@@ -34,7 +35,7 @@ describe('Transaction Notifications Controller', () => {
 
     await controller.notifyTransactionSigners(dto);
 
-    expect(notificationsService.notifyTransactionRequiredSigners).toHaveBeenCalledWith(dto);
+    expect(receiverService.notifyTransactionRequiredSigners).toHaveBeenCalledWith(dto);
   });
 
   it('should invoke notify transaction required signer with correct params', async () => {
@@ -44,8 +45,6 @@ describe('Transaction Notifications Controller', () => {
 
     await controller.notifyTransactionCreatorOnReadyForExecution(dto);
 
-    expect(notificationsService.notifyTransactionCreatorOnReadyForExecution).toHaveBeenCalledWith(
-      dto,
-    );
+    expect(receiverService.notifyTransactionCreatorOnReadyForExecution).toHaveBeenCalledWith(dto);
   });
 });

@@ -25,7 +25,7 @@ import {
   NOTIFICATIONS_SERVICE,
   MirrorNodeService,
   NOTIFY_CLIENT,
-  NOTIFY_TRANSACTION_REQUIRED_SIGNERS,
+  NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
 } from '@app/common';
 import { getClientFromName, isExpired, userKeysRequiredToSign } from '@app/common/utils';
 import {
@@ -352,7 +352,7 @@ describe('TransactionsService', () => {
     expect(transactionsRepo.save).toHaveBeenCalled();
     expect(notificationsService.emit).toHaveBeenNthCalledWith(
       1,
-      NOTIFY_TRANSACTION_REQUIRED_SIGNERS,
+      NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
       {
         transactionId: 1,
       },

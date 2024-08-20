@@ -17,8 +17,8 @@ import {
   UserKey,
 } from '@entities';
 
-import { TransactionNotificationsController } from './transactionNotifications.controller';
-import { TransactionNotificationsService } from './transactionNotifications.service';
+import { ReceiverController } from './receiver.controller';
+import { ReceiverService } from './receiver.service';
 
 @Module({
   imports: [
@@ -39,7 +39,7 @@ import { TransactionNotificationsService } from './transactionNotifications.serv
     ]),
     MirrorNodeModule,
   ],
-  controllers: [TransactionNotificationsController],
-  providers: [TransactionNotificationsService],
+  controllers: [ReceiverController],
+  providers: [ReceiverService],
 })
-export class TransactionNotificationsModule {}
+export class ReceiverModule {}
