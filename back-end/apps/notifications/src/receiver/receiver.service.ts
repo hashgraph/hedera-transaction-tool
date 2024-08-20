@@ -133,80 +133,88 @@ export class ReceiverService {
         break;
     }
 
-    await this.entityManager.transaction(async transactionalEntityManager => {
-      /* Get transaction participants */
-      const { approversShouldChooseUserIds, requiredUserIds } =
-        await this.getTransactionParticipants(transactionalEntityManager, transactionId);
-
-      /* Get notification indicator entities to delete */
-      let indicatorNotifications = await this.getIndicatorNotifications(
-        transactionalEntityManager,
-        transactionId,
-      );
-      const notificationsToDelete = indicatorNotifications.filter(n => n.type !== newIndicatorType);
-
-      /* Delete old indicator notifications */
-      const notificationReceiversToDelete = notificationsToDelete.flatMap(
-        n => n.notificationReceivers,
-      );
-
-      if (notificationReceiversToDelete.length > 0) {
-        await transactionalEntityManager.delete(NotificationReceiver, {
-          id: In(notificationReceiversToDelete.map(nr => nr.id)),
-        });
-      }
-      if (notificationsToDelete.length > 0) {
-        await transactionalEntityManager.delete(Notification, {
-          id: In(notificationsToDelete.map(n => n.id)),
-        });
-      }
-
-      /* Fan out deletion message */
-      if (notificationReceiversToDelete.length > 0) {
-        this.fanOutIndicatorsDelete(notificationReceiversToDelete);
-      }
-
-      /* Notify if new indicator */
-      if (!newIndicatorType) return;
-
-      indicatorNotifications = await this.getIndicatorNotifications(
-        transactionalEntityManager,
-        transactionId,
-      );
-
-      if (newIndicatorType === NotificationType.TRANSACTION_INDICATOR_SIGN) {
-        const indicatorNotification = indicatorNotifications.find(
-          n => n.type === NotificationType.TRANSACTION_INDICATOR_SIGN,
-        );
-        await this.syncActionIndicators(
+    const notificationReceiversToDelete = await this.entityManager.transaction(
+      async transactionalEntityManager => {
+        /* Get notification indicator entities to delete */
+        const indicatorNotifications = await this.getIndicatorNotifications(
           transactionalEntityManager,
-          NotificationType.TRANSACTION_INDICATOR_SIGN,
-          indicatorNotification,
           transactionId,
-          requiredUserIds,
         );
-      } else {
-        // await this.notifyGeneral({
-        //   type: newIndicatorType,
-        //   content: '',
-        //   entityId: transactionId,
-        //   actorId: null,
-        //   userIds: participants,
-        // });
-      }
+        const notificationsToDelete = indicatorNotifications.filter(
+          n => n.type !== newIndicatorType,
+        );
 
-      /* Sync approve indicators */
-      const indicatorApproveNotification = indicatorNotifications.find(
-        n => n.type === NotificationType.TRANSACTION_INDICATOR_APPROVE,
+        /* Delete old indicator notifications */
+        const notificationReceiversToDelete = notificationsToDelete.flatMap(
+          n => n.notificationReceivers,
+        );
+
+        if (notificationReceiversToDelete.length > 0) {
+          await transactionalEntityManager.delete(NotificationReceiver, {
+            id: In(notificationReceiversToDelete.map(nr => nr.id)),
+          });
+        }
+        if (notificationsToDelete.length > 0) {
+          await transactionalEntityManager.delete(Notification, {
+            id: In(notificationsToDelete.map(n => n.id)),
+          });
+        }
+
+        return notificationReceiversToDelete;
+      },
+    );
+
+    /* Fan out deletion message */
+    if (notificationReceiversToDelete.length > 0) {
+      this.fanOutIndicatorsDelete(notificationReceiversToDelete);
+    }
+
+    /* Notify if new indicator */
+    if (!newIndicatorType) return;
+
+    /* Get transaction participants */
+    const { approversShouldChooseUserIds, requiredUserIds } = await this.getTransactionParticipants(
+      this.entityManager,
+      transactionId,
+    );
+
+    const indicatorNotifications = await this.getIndicatorNotifications(
+      this.entityManager,
+      transactionId,
+    );
+
+    if (newIndicatorType === NotificationType.TRANSACTION_INDICATOR_SIGN) {
+      const indicatorNotification = indicatorNotifications.find(
+        n => n.type === NotificationType.TRANSACTION_INDICATOR_SIGN,
       );
       await this.syncActionIndicators(
-        transactionalEntityManager,
-        NotificationType.TRANSACTION_INDICATOR_APPROVE,
-        indicatorApproveNotification,
+        this.entityManager,
+        NotificationType.TRANSACTION_INDICATOR_SIGN,
+        indicatorNotification,
         transactionId,
-        approversShouldChooseUserIds,
+        requiredUserIds,
       );
-    });
+    } else {
+      // await this.notifyGeneral({
+      //   type: newIndicatorType,
+      //   content: '',
+      //   entityId: transactionId,
+      //   actorId: null,
+      //   userIds: participants,
+      // });
+    }
+
+    /* Sync approve indicators */
+    const indicatorApproveNotification = indicatorNotifications.find(
+      n => n.type === NotificationType.TRANSACTION_INDICATOR_APPROVE,
+    );
+    await this.syncActionIndicators(
+      this.entityManager,
+      NotificationType.TRANSACTION_INDICATOR_APPROVE,
+      indicatorApproveNotification,
+      transactionId,
+      approversShouldChooseUserIds,
+    );
   }
 
   private async syncActionIndicators(
