@@ -26,6 +26,7 @@ import {
   Notification,
   NotificationPreferences,
   NotificationReceiver,
+  NotificationType,
 } from '../../../../libs/common/src/database/entities';
 
 import {
@@ -403,6 +404,70 @@ export async function getTransactions() {
 
   try {
     return await transactionRepo.find();
+  } catch (error) {
+    console.log(chalk.red(error.message));
+  }
+}
+
+export async function addNotifications() {
+  const notificationsRepo = await getRepository(Notification);
+  const notificationReceiverRepo = await getRepository(NotificationReceiver);
+
+  const notification = notificationsRepo.create({
+    content: 'A transaction #1 has been created',
+    entityId: 1,
+    type: NotificationType.TRANSACTION_CREATED,
+  });
+  const notification2 = notificationsRepo.create({
+    content: 'A transaction #2 has been created',
+    entityId: 2,
+    type: NotificationType.TRANSACTION_CREATED,
+  });
+  const notification3 = notificationsRepo.create({
+    content: 'A transaction #2 is ready for execution',
+    entityId: 2,
+    type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
+  });
+
+  try {
+    await notificationsRepo.save(notification);
+    await notificationsRepo.save(notification2);
+    await notificationsRepo.save(notification3);
+    console.log(chalk.green('Notifications added successfully \n'));
+  } catch (error) {
+    console.log(chalk.red(error.message));
+    return;
+  }
+
+  const user = await getUser('user');
+  const admin = await getUser('admin');
+
+  if (!user || !admin) {
+    console.log(chalk.red('Failed to add notifications'));
+    return;
+  }
+
+  const notificationReceiver = notificationReceiverRepo.create({
+    userId: admin.id,
+    notificationId: notification.id,
+    isRead: false,
+  });
+  const notificationReceiver2 = notificationReceiverRepo.create({
+    userId: user.id,
+    notificationId: notification2.id,
+    isRead: false,
+  });
+  const notificationReceiver3 = notificationReceiverRepo.create({
+    userId: user.id,
+    notificationId: notification3.id,
+    isRead: false,
+  });
+
+  try {
+    await notificationReceiverRepo.save(notificationReceiver);
+    await notificationReceiverRepo.save(notificationReceiver2);
+    await notificationReceiverRepo.save(notificationReceiver3);
+    console.log(chalk.green('Notification receivers added successfully \n'));
   } catch (error) {
     console.log(chalk.red(error.message));
   }
