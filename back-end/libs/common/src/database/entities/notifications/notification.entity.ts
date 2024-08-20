@@ -28,17 +28,17 @@ export class Notification {
   @Column()
   content: string;
 
-  @Column()
+  @Column({ nullable: true })
   entityId?: number;
 
   @ManyToOne(() => User, user => user.issuedNotifications)
   @JoinColumn({ name: 'actorId' })
   actor?: User;
 
-  @Column()
+  @Column({ nullable: true })
   actorId?: number;
 
-  @Column({ default: false })
+  @Column({ default: false, nullable: true })
   isEmailSent?: boolean;
 
   @CreateDateColumn()
