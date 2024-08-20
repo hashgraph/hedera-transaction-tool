@@ -7,4 +7,4 @@ export * from './transaction-observer.entity';
 export * from './transaction-signer.entity';
 export * from './user.entity';
 export * from './user-key.entity';
-export * from './notification-preferences.entity';
+export * from './notifications';

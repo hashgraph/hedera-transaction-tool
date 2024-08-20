@@ -1,5 +1,6 @@
 import { Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { User } from './user.entity';
+import { User } from '../user.entity';
+import { NotificationType } from './notification.entity';
 
 @Entity()
 export class NotificationPreferences {
@@ -13,11 +14,14 @@ export class NotificationPreferences {
   @Column()
   userId: number;
 
-  @Column({ default: true })
-  transactionRequiredSignature: boolean;
+  @Column()
+  type: NotificationType;
 
   @Column({ default: true })
-  transactionReadyForExecution: boolean;
+  email: boolean;
+
+  @Column({ default: true })
+  inApp: boolean;
 }
 
 export type NotificationPreferencesOptions = Omit<

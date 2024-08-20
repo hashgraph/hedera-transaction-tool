@@ -3,6 +3,7 @@ import { TransactionsController } from './transactions.controller';
 import { TransactionsService } from './transactions.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
+  Notification,
   Transaction,
   TransactionApprover,
   TransactionComment,
@@ -10,6 +11,7 @@ import {
   TransactionGroupItem,
   TransactionObserver,
   TransactionSigner,
+  NotificationReceiver,
 } from '@entities';
 
 import { ChainProxyModule, MirrorNodeModule } from '@app/common';
@@ -31,6 +33,8 @@ import { ApproversController, ApproversService } from './approvers';
       TransactionSigner,
       TransactionApprover,
       TransactionObserver,
+      Notification,
+      NotificationReceiver,
     ]),
     MirrorNodeModule,
     UserKeysModule,

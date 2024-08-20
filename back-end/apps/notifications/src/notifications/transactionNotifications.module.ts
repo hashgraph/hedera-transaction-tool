@@ -3,7 +3,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { LoggerModule, MirrorNodeModule } from '@app/common';
 import {
+  Notification,
   NotificationPreferences,
+  NotificationReceiver,
   Transaction,
   TransactionApprover,
   TransactionComment,
@@ -31,6 +33,8 @@ import { TransactionNotificationsService } from './transactionNotifications.serv
       TransactionComment,
       TransactionGroup,
       TransactionGroupItem,
+      Notification,
+      NotificationReceiver,
       NotificationPreferences,
     ]),
     MirrorNodeModule,

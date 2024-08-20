@@ -13,7 +13,8 @@ import { TransactionComment } from './transaction-comment.entity';
 import { TransactionObserver } from './transaction-observer.entity';
 import { TransactionSigner } from './transaction-signer.entity';
 import { TransactionApprover } from './transaction-approver.entity';
-import { NotificationPreferences } from './notification-preferences.entity';
+import { Notification, NotificationPreferences } from './notifications';
+import { NotificationReceiver } from './notifications/notification-receiver.entity';
 
 export enum UserStatus {
   NEW = 'NEW',
@@ -61,6 +62,12 @@ export class User {
 
   @OneToMany(() => TransactionComment, comment => comment.user)
   comments: TransactionComment[];
+
+  @OneToMany(() => Notification, notification => notification.actor)
+  issuedNotifications: Notification[];
+
+  @OneToMany(() => NotificationReceiver, notificationReceiver => notificationReceiver.notification)
+  receivedNotifications: NotificationReceiver[];
 
   @OneToOne(() => NotificationPreferences, preferences => preferences.user)
   notificationPreferences?: NotificationPreferences;
