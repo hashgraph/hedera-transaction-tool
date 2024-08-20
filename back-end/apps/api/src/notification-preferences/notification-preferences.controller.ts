@@ -1,9 +1,9 @@
-import { Body, Controller, Get, HttpCode, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Patch, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { Serialize } from '@app/common';
 
-import { NotificationPreferences, User } from '@entities';
+import { NotificationPreferences, NotificationType, User } from '@entities';
 
 import { JwtAuthGuard, VerifiedUserGuard } from '../guards';
 
@@ -12,6 +12,7 @@ import { GetUser } from '../decorators';
 import { NotificationPreferencesService } from './notification-preferences.service';
 
 import { UpdateNotificationPreferencesDto, NotificationPreferencesDto } from './dtos';
+import { EnumValidationPipe } from '@app/common/pipes';
 
 @ApiTags('Notification Preferences')
 @Controller('notification-preferences')
@@ -45,11 +46,18 @@ export class NotificationPreferencesController {
   })
   @ApiResponse({
     status: 200,
-    type: NotificationPreferencesDto,
+    type: [NotificationPreferencesDto],
   })
   @Get()
   @HttpCode(200)
-  getPreferencesOrCreate(@GetUser() user: User): Promise<NotificationPreferences> {
-    return this.notificationPreferencesService.getPreferencesOrCreate(user);
+  async getPreferencesOrCreate(
+    @GetUser() user: User,
+    @Query('type', new EnumValidationPipe(NotificationType, true)) type?: NotificationType,
+  ): Promise<NotificationPreferences[]> {
+    if (type) {
+      return [await this.notificationPreferencesService.getPreferenceOrCreate(user, type)];
+    } else {
+      return this.notificationPreferencesService.getPreferencesOrCreate(user);
+    }
   }
 }

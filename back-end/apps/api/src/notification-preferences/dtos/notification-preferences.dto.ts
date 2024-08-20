@@ -1,5 +1,7 @@
 import { Expose } from 'class-transformer';
 
+import { NotificationType } from '@entities';
+
 export class NotificationPreferencesDto {
   @Expose()
   id: number;
@@ -8,8 +10,11 @@ export class NotificationPreferencesDto {
   userId: number;
 
   @Expose()
-  transactionRequiredSignature: boolean;
+  type: NotificationType;
 
   @Expose()
-  transactionReadyForExecution: boolean;
+  email: boolean;
+
+  @Expose()
+  inApp: boolean;
 }

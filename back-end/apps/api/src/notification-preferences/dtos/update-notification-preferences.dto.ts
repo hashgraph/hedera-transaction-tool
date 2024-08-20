@@ -1,11 +1,17 @@
-import { IsBoolean, IsOptional } from 'class-validator';
+import { IsBoolean, IsEnum, IsNotEmpty, IsOptional } from 'class-validator';
+
+import { NotificationType } from '@entities';
 
 export class UpdateNotificationPreferencesDto {
-  @IsBoolean()
-  @IsOptional()
-  transactionRequiredSignature?: boolean;
+  @IsNotEmpty()
+  @IsEnum(NotificationType)
+  type: NotificationType;
 
   @IsBoolean()
   @IsOptional()
-  transactionReadyForExecution?: boolean;
+  email?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  inApp?: boolean;
 }

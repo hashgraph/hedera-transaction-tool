@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DeepPartial, Repository } from 'typeorm';
 
-import { NotificationPreferences, User } from '@entities';
+import { NotificationPreferences, NotificationType, User } from '@entities';
 
 import { UpdateNotificationPreferencesDto } from './dtos';
 
@@ -16,21 +16,21 @@ export class NotificationPreferencesService {
     user: User,
     dto: UpdateNotificationPreferencesDto,
   ): Promise<NotificationPreferences> {
-    const updateTxReqSignature = typeof dto.transactionRequiredSignature === 'boolean';
-    const updateTxReadyForExecution = typeof dto.transactionReadyForExecution === 'boolean';
+    const updateTxEmail = typeof dto.email === 'boolean';
+    const updateTxInApp = typeof dto.inApp === 'boolean';
 
     const updatePreferences: DeepPartial<NotificationPreferences> = {};
 
-    if (updateTxReqSignature) {
-      updatePreferences.transactionRequiredSignature = dto.transactionRequiredSignature;
+    if (updateTxEmail) {
+      updatePreferences.email = dto.email;
     }
-    if (updateTxReadyForExecution) {
-      updatePreferences.transactionReadyForExecution = dto.transactionReadyForExecution;
+    if (updateTxInApp) {
+      updatePreferences.inApp = dto.inApp;
     }
 
-    const preferences = await this.getPreferences(user);
+    const preferences = await this.getPreferences(user, dto.type);
 
-    if (!updateTxReqSignature && !updateTxReadyForExecution) return preferences;
+    if (!updateTxEmail && !updateTxInApp) return preferences;
 
     if (preferences) {
       await this.repo.update(
@@ -40,26 +40,17 @@ export class NotificationPreferencesService {
         updatePreferences,
       );
 
-      preferences.transactionRequiredSignature = updateTxReqSignature
-        ? dto.transactionRequiredSignature
-        : preferences.transactionRequiredSignature;
-      preferences.transactionReadyForExecution = updateTxReadyForExecution
-        ? dto.transactionReadyForExecution
-        : preferences.transactionReadyForExecution;
+      preferences.email = updateTxEmail ? dto.email : preferences.email;
+      preferences.inApp = updateTxInApp ? dto.inApp : preferences.inApp;
 
       return preferences;
     }
 
     const newPreferences = this.repo.create({
       userId: user.id,
-      transactionRequiredSignature:
-        typeof updatePreferences.transactionRequiredSignature === 'boolean'
-          ? updatePreferences.transactionRequiredSignature
-          : true,
-      transactionReadyForExecution:
-        typeof updatePreferences.transactionReadyForExecution === 'boolean'
-          ? updatePreferences.transactionReadyForExecution
-          : true,
+      type: dto.type,
+      email: typeof updatePreferences.email === 'boolean' ? updatePreferences.email : true,
+      inApp: typeof updatePreferences.inApp === 'boolean' ? updatePreferences.inApp : true,
     });
 
     await this.repo.insert(newPreferences);
@@ -67,15 +58,19 @@ export class NotificationPreferencesService {
     return newPreferences;
   }
 
-  async getPreferencesOrCreate(user: User): Promise<NotificationPreferences> {
-    const preferences = await this.getPreferences(user);
+  async getPreferenceOrCreate(
+    user: User,
+    type: NotificationType,
+  ): Promise<NotificationPreferences> {
+    const preferences = await this.getPreferences(user, type);
 
     if (preferences) return preferences;
 
     const newPreferences = this.repo.create({
       userId: user.id,
-      transactionRequiredSignature: true,
-      transactionReadyForExecution: true,
+      type,
+      email: true,
+      inApp: true,
     });
 
     await this.repo.insert(newPreferences);
@@ -83,10 +78,28 @@ export class NotificationPreferencesService {
     return newPreferences;
   }
 
-  async getPreferences(user: User): Promise<NotificationPreferences> {
+  async getPreferencesOrCreate(user: User): Promise<NotificationPreferences[]> {
+    const types = Object.values(NotificationType);
+    const preferences: NotificationPreferences[] = await this.repo.find({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    const missingTypes = types.filter(t => !preferences.some(p => p.type === t));
+
+    for (const type of missingTypes) {
+      preferences.push(await this.getPreferenceOrCreate(user, type));
+    }
+
+    return preferences;
+  }
+
+  async getPreferences(user: User, type: NotificationType): Promise<NotificationPreferences> {
     return this.repo.findOne({
       where: {
         userId: user.id,
+        type,
       },
     });
   }
