@@ -29,7 +29,7 @@ export class ReceiverService {
     private readonly fanOutService: FanOutService,
   ) {}
 
-  @MurLock(5000)
+  @MurLock(5000, 'entityId')
   async notifyGeneral({ type, content, entityId, actorId, userIds }: NotifyGeneralDto) {
     const { notification, notificationReceivers } = await this.entityManager.transaction(
       async transactionalEntityManager => {
@@ -77,12 +77,12 @@ export class ReceiverService {
     }
   }
 
-  @MurLock(5000)
-  async notifyTransactionRequiredSigners(dto: NotifyForTransactionDto) {
+  @MurLock(5000, 'transactionId')
+  async notifyTransactionRequiredSigners({ transactionId }: NotifyForTransactionDto) {
     /* Get transaction */
     const transaction = await this.entityManager.findOne(Transaction, {
       where: {
-        id: dto.transactionId,
+        id: transactionId,
       },
       relations: {
         creatorKey: {
@@ -107,12 +107,12 @@ export class ReceiverService {
 
     /* Sync indicators */
     await this.syncIndicators({
-      transactionId: dto.transactionId,
+      transactionId,
       transactionStatus: transaction.status,
     });
   }
 
-  @MurLock(5000)
+  @MurLock(5000, 'transactionId')
   async syncIndicators({ transactionId, transactionStatus }: SyncIndicatorsDto) {
     console.log('SYNC START');
     let newIndicatorType: NotificationType | null = null;
