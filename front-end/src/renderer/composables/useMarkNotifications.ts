@@ -1,6 +1,6 @@
-import { onBeforeUnmount, onMounted } from 'vue';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
-import { NotificationType } from '@main/shared/interfaces';
+import { INotificationReceiver, NotificationType } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
@@ -12,15 +12,45 @@ export default function useMarkNotifications(notificationTypes: NotificationType
   const user = useUserStore();
   const notifications = useNotificationsStore();
 
-  onMounted(async () => {
+  /* State */
+  const oldNotifications = ref<INotificationReceiver[]>([]);
+
+  /* Functions */
+  async function markAsRead() {
     if (isLoggedInOrganization(user.selectedOrganization)) {
       await Promise.allSettled(notificationTypes.map(type => notifications.markAsRead(type)));
     }
+  }
+
+  /* Hooks */
+  onMounted(async () => {
+    oldNotifications.value = notifications.notifications.filter(nr =>
+      notificationTypes.includes(nr.notification.type),
+    );
+
+    await markAsRead();
   });
 
   onBeforeUnmount(async () => {
-    if (isLoggedInOrganization(user.selectedOrganization)) {
-      await Promise.allSettled(notificationTypes.map(type => notifications.markAsRead(type)));
-    }
+    await markAsRead();
   });
+
+  /* Watchers */
+  watch(
+    () => user.selectedOrganization,
+    async (organization, oldOrganization) => {
+      if (
+        isLoggedInOrganization(organization) &&
+        oldOrganization?.serverUrl !== organization.serverUrl
+      ) {
+        oldNotifications.value = notifications.notifications.filter(nr =>
+          notificationTypes.includes(nr.notification.type),
+        );
+
+        await markAsRead();
+      }
+    },
+  );
+
+  return { oldNotifications };
 }

@@ -43,7 +43,7 @@ const notifications = useNotificationsStore();
 /* Composables */
 const router = useRouter();
 const ws = useDisposableWs();
-useMarkNotifications([
+const { oldNotifications } = useMarkNotifications([
   NotificationType.TRANSACTION_INDICATOR_EXECUTED,
   NotificationType.TRANSACTION_INDICATOR_EXPIRED,
 ]);
@@ -156,7 +156,7 @@ async function fetchTransactions() {
         transaction: SDKTransaction.fromBytes(transactionsBytes[i]),
       }));
       notifiedTransactionIds.value = getNotifiedTransactions(
-        notifications.notifications,
+        notifications.notifications.concat(oldNotifications.value),
         rawTransactions,
         [
           NotificationType.TRANSACTION_INDICATOR_EXECUTED,

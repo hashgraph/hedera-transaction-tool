@@ -38,7 +38,7 @@ const notifications = useNotificationsStore();
 /* Composables */
 const router = useRouter();
 const ws = useDisposableWs();
-useMarkNotifications([NotificationType.TRANSACTION_INDICATOR_SIGN]);
+const { oldNotifications } = useMarkNotifications([NotificationType.TRANSACTION_INDICATOR_SIGN]);
 
 /* State */
 const transactions = ref<
@@ -167,7 +167,7 @@ async function fetchTransactions() {
     }
 
     notifiedTransactionIds.value = getNotifiedTransactions(
-      notifications.notifications,
+      notifications.notifications.concat(oldNotifications.value),
       rawTransactions.map(t => t.transaction),
       [NotificationType.TRANSACTION_INDICATOR_SIGN],
     );
