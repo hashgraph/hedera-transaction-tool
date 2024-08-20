@@ -5,6 +5,7 @@ import { Prisma, Transaction } from '@prisma/client';
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import { ITransaction, NotificationType, TransactionStatus } from '@main/shared/interfaces';
+import { TRANSACTION_ACTION } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -158,7 +159,7 @@ async function fetchTransactions() {
 
 /* Hooks */
 onBeforeMount(async () => {
-  ws.on('transaction_action', async () => {
+  ws.on(TRANSACTION_ACTION, async () => {
     await fetchTransactions();
   });
   await fetchTransactions();
@@ -178,8 +179,8 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
 watch(
   () => user.selectedOrganization,
   async () => {
-    ws.off('transaction_action');
-    ws.on('transaction_action', async () => {
+    ws.off(TRANSACTION_ACTION);
+    ws.on(TRANSACTION_ACTION, async () => {
       await fetchTransactions();
     });
   },
