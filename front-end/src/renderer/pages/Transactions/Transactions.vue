@@ -55,25 +55,36 @@ const isTransactionSelectionModalShown = ref(false);
 const activeTabs = computed(() => {
   const rawTabItems = tabItems.value;
 
+  const readyToApproveNotifications = notifications.notifications.filter(
+    nr => nr.notification.type === NotificationType.TRANSACTION_INDICATOR_APPROVE,
+  );
+
   const readyToSignNotifications = notifications.notifications.filter(
-    nr => nr.notification.type === NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
+    nr => nr.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN,
   );
 
   const readyForExecutionNotifications = notifications.notifications.filter(
-    nr => nr.notification.type === NotificationType.TRANSACTION_READY_FOR_EXECUTION,
+    nr => nr.notification.type === NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
   );
 
   const executedNotifications = notifications.notifications.filter(
-    nr => nr.notification.type === NotificationType.TRANSCATION_EXECUTED,
+    nr => nr.notification.type === NotificationType.TRANSACTION_INDICATOR_EXECUTED,
   );
 
   rawTabItems.forEach(tab => {
-    if (tab.title === 'Ready to Sign') {
-      tab.notifications = readyToSignNotifications.length || undefined;
-    } else if (tab.title === 'Ready for Execution') {
-      tab.notifications = readyForExecutionNotifications.length || undefined;
-    } else if (tab.title === 'History') {
-      tab.notifications = executedNotifications.length || undefined;
+    switch (tab.title) {
+      case 'Ready for Review':
+        tab.notifications = readyToApproveNotifications.length || undefined;
+        break;
+      case 'Ready to Sign':
+        tab.notifications = readyToSignNotifications.length || undefined;
+        break;
+      case 'Ready for Execution':
+        tab.notifications = readyForExecutionNotifications.length || undefined;
+        break;
+      case 'History':
+        tab.notifications = executedNotifications.length || undefined;
+        break;
     }
   });
 
