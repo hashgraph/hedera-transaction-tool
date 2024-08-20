@@ -7,7 +7,7 @@ export class NotificationReceiverDto {
 
   @Expose()
   @Type(() => NotificationDto)
-  notification: Notification;
+  notification: NotificationDto;
 
   @Expose()
   notificationId: number;
