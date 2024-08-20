@@ -4,12 +4,10 @@ import { EventPattern, Payload } from '@nestjs/microservices';
 import {
   NOTIFY_GENERAL,
   NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
-  UPDATE_INDICATOR_NOTIFICATION,
-  SYNC_SIGN_INDICATOR_NOTIFICATION,
+  SYNC_INDICATORS,
   NotifyForTransactionDto,
   NotifyGeneralDto,
-  UpdateIndicatorDto,
-  SyncSignIndicatorNotificationDto,
+  SyncIndicatorsDto,
 } from '@app/common';
 
 import { ReceiverService } from './receiver.service';
@@ -28,15 +26,8 @@ export class ReceiverController {
     return this.receiverService.notifyTransactionRequiredSigners(payload);
   }
 
-  @EventPattern(UPDATE_INDICATOR_NOTIFICATION)
-  async updateNewStatusIndicatorNotification(@Payload() payload: UpdateIndicatorDto) {
-    return this.receiverService.updateNewStatusIndicatorNotification(payload);
-  }
-
-  @EventPattern(SYNC_SIGN_INDICATOR_NOTIFICATION)
-  async syncSignIndicatorNotification(
-    @Payload() { transactionId }: SyncSignIndicatorNotificationDto,
-  ) {
-    return this.receiverService.syncSignIndicators(transactionId, null);
+  @EventPattern(SYNC_INDICATORS)
+  async updateNewStatusIndicatorNotification(@Payload() payload: SyncIndicatorsDto) {
+    return this.receiverService.syncIndicators(payload);
   }
 }

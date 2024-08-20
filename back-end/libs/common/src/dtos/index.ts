@@ -4,5 +4,4 @@ export * from './notifications-notify-client.dto';
 export * from './notifications-notify-email.dto';
 export * from './notifications-notify-for-transaction.dto';
 export * from './notifications-notify-general.dto';
-export * from './notifications-update-indicator.dto';
-export * from './notifications-sync-sign-indicator.dto';
+export * from './notifications-sync-indicators.dto';

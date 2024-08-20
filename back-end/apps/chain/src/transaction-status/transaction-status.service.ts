@@ -15,11 +15,11 @@ import {
   NOTIFICATIONS_SERVICE,
   NOTIFY_CLIENT,
   NOTIFY_GENERAL,
-  UPDATE_INDICATOR_NOTIFICATION,
+  SYNC_INDICATORS,
   TRANSACTION_ACTION,
   NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
   NotifyClientDto,
-  UpdateIndicatorDto,
+  SyncIndicatorsDto,
   NotifyGeneralDto,
   NotifyForTransactionDto,
   ableToSign,
@@ -150,13 +150,10 @@ export class TransactionStatusService {
           },
         );
 
-        this.notificationsService.emit<undefined, UpdateIndicatorDto>(
-          UPDATE_INDICATOR_NOTIFICATION,
-          {
-            transactionId: transaction.id,
-            transactionStatus: TransactionStatus.EXPIRED,
-          },
-        );
+        this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
+          transactionId: transaction.id,
+          transactionStatus: TransactionStatus.EXPIRED,
+        });
       }
 
       if (transactions.length > 0) {
@@ -210,50 +207,47 @@ export class TransactionStatusService {
         ? TransactionStatus.WAITING_FOR_EXECUTION
         : TransactionStatus.WAITING_FOR_SIGNATURES;
 
-      if (transaction.status !== newStatus) {
-        try {
-          await this.transactionRepo.update(
-            {
-              id: transaction.id,
-            },
-            {
-              status: newStatus,
-            },
-          );
+      if (transaction.status === newStatus) continue;
 
-          transaction.status = newStatus;
+      try {
+        await this.transactionRepo.update(
+          {
+            id: transaction.id,
+          },
+          {
+            status: newStatus,
+          },
+        );
 
-          this.notificationsService.emit<undefined, UpdateIndicatorDto>(
-            UPDATE_INDICATOR_NOTIFICATION,
+        transaction.status = newStatus;
+
+        this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
+          transactionId: transaction.id,
+          transactionStatus: newStatus,
+        });
+
+        if (newStatus === TransactionStatus.WAITING_FOR_EXECUTION) {
+          this.notificationsService.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
+            entityId: transaction.id,
+            type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
+            actorId: null,
+            content: `Transaction ${transaction.transactionId} is ready for execution`,
+            userIds: [transaction.creatorKey?.userId],
+          });
+        }
+
+        if (newStatus === TransactionStatus.WAITING_FOR_SIGNATURES) {
+          this.notificationsService.emit<undefined, NotifyForTransactionDto>(
+            NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
             {
               transactionId: transaction.id,
-              transactionStatus: newStatus,
             },
           );
-
-          if (newStatus === TransactionStatus.WAITING_FOR_EXECUTION) {
-            this.notificationsService.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
-              entityId: transaction.id,
-              type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
-              actorId: null,
-              content: `Transaction ${transaction.transactionId} is ready for execution`,
-              userIds: [transaction.creatorKey?.userId],
-            });
-          }
-
-          if (newStatus === TransactionStatus.WAITING_FOR_SIGNATURES) {
-            this.notificationsService.emit<undefined, NotifyForTransactionDto>(
-              NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
-              {
-                transactionId: transaction.id,
-              },
-            );
-          }
-
-          atLeastOneUpdated = true;
-        } catch (error) {
-          console.log(error);
         }
+
+        atLeastOneUpdated = true;
+      } catch (error) {
+        console.log(error);
       }
     }
 
@@ -313,7 +307,7 @@ export class TransactionStatusService {
       },
     );
 
-    this.notificationsService.emit<undefined, UpdateIndicatorDto>(UPDATE_INDICATOR_NOTIFICATION, {
+    this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
       transactionId: transaction.id,
       transactionStatus: newStatus,
     });

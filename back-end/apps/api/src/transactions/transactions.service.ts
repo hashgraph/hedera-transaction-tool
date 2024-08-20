@@ -32,7 +32,7 @@ import {
   NOTIFICATIONS_SERVICE,
   NOTIFY_CLIENT,
   NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
-  UPDATE_INDICATOR_NOTIFICATION,
+  SYNC_INDICATORS,
   TRANSACTION_ACTION,
   MirrorNodeService,
   encodeUint8Array,
@@ -48,7 +48,7 @@ import {
   PaginatedResourceDto,
   NotifyClientDto,
   NotifyForTransactionDto,
-  UpdateIndicatorDto,
+  SyncIndicatorsDto,
 } from '@app/common';
 
 import { UserDto } from '../users/dtos';
@@ -424,7 +424,7 @@ export class TransactionsService {
       await this.repo.remove(transaction);
     }
 
-    this.notificationsService.emit<undefined, UpdateIndicatorDto>(UPDATE_INDICATOR_NOTIFICATION, {
+    this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
       transactionId: transaction.id,
       transactionStatus: TransactionStatus.CANCELED,
     });
@@ -461,7 +461,7 @@ export class TransactionsService {
 
     await this.repo.update({ id }, { status: TransactionStatus.CANCELED });
 
-    this.notificationsService.emit<undefined, UpdateIndicatorDto>(UPDATE_INDICATOR_NOTIFICATION, {
+    this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
       transactionId: transaction.id,
       transactionStatus: TransactionStatus.CANCELED,
     });
