@@ -63,7 +63,7 @@ const activeTabs = computed(() => {
     nr => nr.notification.type === NotificationType.TRANSACTION_READY_FOR_EXECUTION,
   );
 
-  const readyForReviewNotifications = notifications.notifications.filter(
+  const executedNotifications = notifications.notifications.filter(
     nr => nr.notification.type === NotificationType.TRANSCATION_EXECUTED,
   );
 
@@ -72,8 +72,8 @@ const activeTabs = computed(() => {
       tab.notifications = readyToSignNotifications.length || undefined;
     } else if (tab.title === 'Ready for Execution') {
       tab.notifications = readyForExecutionNotifications.length || undefined;
-    } else if (tab.title === 'Ready for Review') {
-      tab.notifications = readyForReviewNotifications.length || undefined;
+    } else if (tab.title === 'History') {
+      tab.notifications = executedNotifications.length || undefined;
     }
   });
 

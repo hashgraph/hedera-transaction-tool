@@ -118,7 +118,7 @@ onBeforeMount(async () => {
 });
 
 onMounted(async () => {
-  await notifications.markAsRead(NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES);
+  await notifications.markAsRead(NotificationType.TRANSACTION_READY_FOR_EXECUTION);
 });
 
 /* Watchers */

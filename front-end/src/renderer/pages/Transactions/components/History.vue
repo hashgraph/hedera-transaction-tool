@@ -167,7 +167,7 @@ onBeforeMount(async () => {
 
 onMounted(async () => {
   if (isLoggedInOrganization(user.selectedOrganization)) {
-    await notifications.markAsRead(NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES);
+    await notifications.markAsRead(NotificationType.TRANSCATION_EXECUTED);
   }
 });
 
