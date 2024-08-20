@@ -51,4 +51,8 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   notifyClient({ message, content }: NotifyClientDto) {
     this.io.emit(message, { content });
   }
+
+  notifyUser(userId: number, message: string, data) {
+    this.io.to(roomKeys.USER_KEY(userId)).emit(message, { data });
+  }
 }

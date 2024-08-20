@@ -7,7 +7,8 @@ import { WebsocketGateway } from './websocket.gateway';
 
 @Module({
   imports: [LoggerModule],
-  providers: [WebsocketGateway],
   controllers: [WebsocketController],
+  providers: [WebsocketGateway],
+  exports: [WebsocketGateway],
 })
 export class WebsocketModule {}
