@@ -8,8 +8,6 @@ export enum NotificationType {
 export interface INotificationReceiverCore {
   id: number;
   notificationId: number;
-  isRead: boolean;
-  updatedAt: Date;
 }
 
 export interface INotificationReceiver extends INotificationReceiverCore {

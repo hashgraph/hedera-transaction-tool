@@ -161,9 +161,10 @@ describe('Fan Out Service', () => {
         subject: NotificationTypeEmailSubjects.TRANSCATION_EXECUTED,
         text: notification.content,
       });
-      expect(inAppProcessorService.processNotification).toHaveBeenCalledWith(notification, [
-        receivers[0].userId,
-      ]);
+      expect(inAppProcessorService.processNotification).toHaveBeenCalledWith(
+        notification,
+        receivers,
+      );
       expect(entityManager.update).toHaveBeenCalledTimes(4);
       expect(entityManager.update).toHaveBeenNthCalledWith(
         1,
@@ -222,9 +223,10 @@ describe('Fan Out Service', () => {
       await service.fanOut(notification, receivers);
 
       expect(emailService.processEmail).not.toHaveBeenCalled();
-      expect(inAppProcessorService.processNotification).toHaveBeenCalledWith(notification, [
-        receivers[0].userId,
-      ]);
+      expect(inAppProcessorService.processNotification).toHaveBeenCalledWith(
+        notification,
+        receivers,
+      );
       expect(entityManager.update).toHaveBeenCalledTimes(2);
       expect(entityManager.update).toHaveBeenNthCalledWith(
         1,
@@ -333,9 +335,10 @@ describe('Fan Out Service', () => {
 
       await service.fanOut(notification, receivers);
 
-      expect(inAppProcessorService.processNotification).toHaveBeenCalledWith(notification, [
-        receivers[0].userId,
-      ]);
+      expect(inAppProcessorService.processNotification).toHaveBeenCalledWith(
+        notification,
+        receivers,
+      );
       expect(entityManager.update).not.toHaveBeenCalledWith(
         NotificationReceiver,
         {

@@ -41,7 +41,7 @@ export class FanOutService {
     }
 
     try {
-      await this.sendToInAppProcessor(inApp.userIds, notification);
+      await this.sendToInAppProcessor(notification, inApp.receivers);
     } catch (error) {
       console.log(error);
     }
@@ -64,31 +64,33 @@ export class FanOutService {
       },
     });
 
-    const emailReceivers: string[] = [];
-    const emailReceiversUserIds: number[] = [];
-    const inAppReceivers: number[] = [];
+    const emails: string[] = [];
+    const emailReceivers: NotificationReceiver[] = [];
+    const inAppReceivers: NotificationReceiver[] = [];
 
     receivers.forEach(r => {
       const preference = preferences.find(pr => pr.userId === r.userId);
       const user = users.find(u => u.id === r.userId);
 
       if (preference ? preference.email : true) {
-        emailReceivers.push(user.email);
-        emailReceiversUserIds.push(user.id);
+        emails.push(user.email);
+        emailReceivers.push(r);
       }
 
       if (preference ? preference.inApp : true) {
-        inAppReceivers.push(user.id);
+        inAppReceivers.push(r);
       }
     });
 
     return {
       email: {
-        emails: emailReceivers,
-        userIds: emailReceiversUserIds,
+        emails: emails,
+        userIds: emailReceivers.map(r => r.userId),
+        receivers: emailReceivers,
       },
       inApp: {
-        userIds: inAppReceivers,
+        userIds: inAppReceivers.map(r => r.userId),
+        receivers: inAppReceivers,
       },
     };
   }
@@ -111,9 +113,13 @@ export class FanOutService {
     }
   }
 
-  private async sendToInAppProcessor(userIds: number[], notification: Notification) {
-    if (userIds.length > 0) {
-      this.inAppProcessorService.processNotification(notification, userIds);
+  private async sendToInAppProcessor(
+    notification: Notification,
+    receivers: NotificationReceiver[],
+  ) {
+    if (receivers && receivers.length > 0) {
+      const userIds = receivers.map(r => r.userId);
+      this.inAppProcessorService.processNotification(notification, receivers);
       await this.updateIsInAppNotified(notification.id, userIds, true);
     }
   }

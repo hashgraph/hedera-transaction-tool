@@ -1,4 +1,5 @@
 import { Expose, Type } from 'class-transformer';
+
 import { NotificationDto } from './notification.dto';
 
 export class NotificationReceiverDto {
