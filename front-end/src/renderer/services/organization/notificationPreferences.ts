@@ -12,7 +12,7 @@ const controller = 'notification-preferences';
 /* Get keys for a user from organization */
 export const getUserNotificationPreferences = async (
   organizationServerUrl: string,
-): Promise<INotificationPreferencesCore> =>
+): Promise<INotificationPreferencesCore[]> =>
   commonRequestHandler(async () => {
     const response = await axiosWithCredentials.get(`${organizationServerUrl}/${controller}`);
     return response.data;

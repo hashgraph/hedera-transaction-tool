@@ -1,10 +1,12 @@
+import { NotificationType } from '../notification-receiver';
 import { IUser } from '../user';
 
 export interface INotificationPreferencesCore {
   id: number;
   userId: number;
-  transactionRequiredSignature: boolean;
-  transactionReadyForExecution: boolean;
+  type: NotificationType;
+  email: boolean;
+  inApp: boolean;
 }
 
 export interface INotificationPreferences extends INotificationPreferencesCore {
@@ -12,6 +14,7 @@ export interface INotificationPreferences extends INotificationPreferencesCore {
 }
 
 export interface IUpdateNotificationPreferencesDto {
-  transactionRequiredSignature?: boolean;
-  transactionReadyForExecution?: boolean;
+  type: NotificationType;
+  email?: boolean;
+  inApp?: boolean;
 }

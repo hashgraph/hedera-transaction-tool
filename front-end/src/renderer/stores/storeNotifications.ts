@@ -1,4 +1,4 @@
-import { reactive } from 'vue';
+import { ref } from 'vue';
 import { defineStore } from 'pinia';
 
 import {
@@ -11,15 +11,16 @@ import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 import {
   INotificationPreferencesCore,
   IUpdateNotificationPreferencesDto,
+  NotificationType,
 } from '@main/shared/interfaces';
 
 const useNotificationsStore = defineStore('notifications', () => {
   const user = useUserStore();
 
   /* State */
-  const notifications = reactive({
-    'threshold-reached': true,
-    'required-signatures': true,
+  const notificationsPreferences = ref({
+    [NotificationType.TRANSACTION_READY_FOR_EXECUTION]: true,
+    [NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES]: true,
   });
 
   /* Actions */
@@ -29,6 +30,7 @@ const useNotificationsStore = defineStore('notifications', () => {
     }
 
     const preferences = await getUserNotificationPreferences(user.selectedOrganization?.serverUrl);
+
     updatePreference(preferences);
   }
 
@@ -42,16 +44,24 @@ const useNotificationsStore = defineStore('notifications', () => {
       data,
     );
 
-    updatePreference(newPreferences);
+    notificationsPreferences.value = {
+      ...notificationsPreferences.value,
+      [newPreferences.type]: newPreferences.email,
+    };
   }
 
-  function updatePreference(preferences: INotificationPreferencesCore) {
-    notifications['threshold-reached'] = preferences.transactionReadyForExecution;
-    notifications['required-signatures'] = preferences.transactionRequiredSignature;
+  function updatePreference(preferences: INotificationPreferencesCore[]) {
+    const newPreferences = { ...notificationsPreferences.value };
+
+    for (const preference of preferences) {
+      newPreferences[preference.type] = preference.email;
+    }
+
+    notificationsPreferences.value = newPreferences;
   }
 
   return {
-    notifications,
+    notificationsPreferences,
     fetchPreferences,
     updatePreferences,
   };
