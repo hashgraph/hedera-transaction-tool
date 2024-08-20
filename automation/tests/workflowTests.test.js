@@ -217,6 +217,7 @@ test.describe('Workflow tests', () => {
     await accountPage.clickOnAddNewButton();
     await accountPage.clickOnAddExistingLink();
     await accountPage.fillInExistingAccountId(accountFromList);
+    await transactionPage.mirrorGetAccountResponse(accountFromList);
     await accountPage.clickOnLinkAccountButton();
     await transactionPage.clickOnTransactionsMenuButton();
     await accountPage.clickOnAccountsLink();
