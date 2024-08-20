@@ -31,6 +31,9 @@ import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from
 import {
   NOTIFICATIONS_SERVICE,
   NOTIFY_CLIENT,
+  NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
+  UPDATE_INDICATOR_NOTIFICATION,
+  TRANSACTION_ACTION,
   MirrorNodeService,
   encodeUint8Array,
   getClientFromName,
@@ -41,12 +44,11 @@ import {
   Filtering,
   getWhere,
   getOrder,
-  PaginatedResourceDto,
-  TRANSACTION_ACTION,
-  NotifyClientDto,
-  NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
-  NotifyForTransactionDto,
   userKeysRequiredToSign,
+  PaginatedResourceDto,
+  NotifyClientDto,
+  NotifyForTransactionDto,
+  UpdateIndicatorDto,
 } from '@app/common';
 
 import { UserDto } from '../users/dtos';
@@ -422,6 +424,11 @@ export class TransactionsService {
       await this.repo.remove(transaction);
     }
 
+    this.notificationsService.emit<undefined, UpdateIndicatorDto>(UPDATE_INDICATOR_NOTIFICATION, {
+      transactionId: transaction.id,
+      transactionStatus: TransactionStatus.CANCELED,
+    });
+
     this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
       message: TRANSACTION_ACTION,
       content: '',
@@ -453,6 +460,11 @@ export class TransactionsService {
     }
 
     await this.repo.update({ id }, { status: TransactionStatus.CANCELED });
+
+    this.notificationsService.emit<undefined, UpdateIndicatorDto>(UPDATE_INDICATOR_NOTIFICATION, {
+      transactionId: transaction.id,
+      transactionStatus: TransactionStatus.CANCELED,
+    });
 
     this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
       message: TRANSACTION_ACTION,

@@ -5,8 +5,10 @@ import {
   NOTIFY_GENERAL,
   NOTIFY_TRANSACTION_CREATOR_ON_READY_FOR_EXECUTION,
   NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
+  UPDATE_INDICATOR_NOTIFICATION,
   NotifyForTransactionDto,
   NotifyGeneralDto,
+  UpdateIndicatorDto,
 } from '@app/common';
 
 import { ReceiverService } from './receiver.service';
@@ -28,5 +30,10 @@ export class ReceiverController {
   @EventPattern(NOTIFY_TRANSACTION_CREATOR_ON_READY_FOR_EXECUTION)
   async notifyTransactionCreatorOnReadyForExecution(@Payload() payload: NotifyForTransactionDto) {
     return this.receiverService.notifyTransactionCreatorOnReadyForExecution(payload);
+  }
+
+  @EventPattern(UPDATE_INDICATOR_NOTIFICATION)
+  async updateIndicatorNotification(@Payload() payload: UpdateIndicatorDto) {
+    return this.receiverService.updateIndicatorNotification(payload);
   }
 }

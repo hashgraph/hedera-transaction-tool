@@ -15,13 +15,14 @@ import {
   NOTIFICATIONS_SERVICE,
   NOTIFY_CLIENT,
   NOTIFY_TRANSACTION_CREATOR_ON_READY_FOR_EXECUTION,
+  UPDATE_INDICATOR_NOTIFICATION,
+  TRANSACTION_ACTION,
   NotifyClientDto,
   NotifyForTransactionDto,
-  TRANSACTION_ACTION,
+  UpdateIndicatorDto,
   ableToSign,
   computeSignatureKey,
 } from '@app/common';
-
 import { Transaction, TransactionStatus } from '@entities';
 
 import { UpdateTransactionStatusDto } from './dto';
@@ -146,6 +147,14 @@ export class TransactionStatusService {
             status: TransactionStatus.EXPIRED,
           },
         );
+
+        this.notificationsService.emit<undefined, UpdateIndicatorDto>(
+          UPDATE_INDICATOR_NOTIFICATION,
+          {
+            transactionId: transaction.id,
+            transactionStatus: TransactionStatus.EXPIRED,
+          },
+        );
       }
 
       if (transactions.length > 0) {
@@ -208,6 +217,14 @@ export class TransactionStatusService {
           );
 
           transaction.status = newStatus;
+
+          this.notificationsService.emit<undefined, UpdateIndicatorDto>(
+            UPDATE_INDICATOR_NOTIFICATION,
+            {
+              transactionId: transaction.id,
+              transactionStatus: newStatus,
+            },
+          );
 
           if (newStatus === TransactionStatus.WAITING_FOR_EXECUTION) {
             this.notificationsService.emit<undefined, NotifyForTransactionDto>(
@@ -275,6 +292,11 @@ export class TransactionStatusService {
         status: newStatus,
       },
     );
+
+    this.notificationsService.emit<undefined, UpdateIndicatorDto>(UPDATE_INDICATOR_NOTIFICATION, {
+      transactionId: transaction.id,
+      transactionStatus: newStatus,
+    });
 
     if (newStatus === TransactionStatus.WAITING_FOR_EXECUTION) {
       this.notificationsService.emit<undefined, NotifyForTransactionDto>(
