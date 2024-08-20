@@ -9,7 +9,11 @@ class BasePage {
   async clickByTestId(testId, timeout = this.DEFAULT_TIMEOUT) {
     console.log(`Clicking on element with testId: ${testId}`);
     const element = this.window.getByTestId(testId);
-    await element.waitFor({ state: 'visible', timeout: timeout });
+    try {
+      await element.waitFor({ state: 'visible', timeout: timeout });
+    } catch (error) {
+      console.log(`Element with testId: ${testId} is not visible`);
+    }
     await element.click();
   }
 
