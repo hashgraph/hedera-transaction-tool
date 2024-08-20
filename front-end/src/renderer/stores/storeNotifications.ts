@@ -1,6 +1,8 @@
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
 
+import { NOTIFICATIONS_NEW } from '@main/shared/constants';
+
 import {
   getUserNotificationPreferences,
   updateUserNotificationPreferences,
@@ -18,9 +20,11 @@ import {
   getAllInAppNotifications,
   updateNotifications,
 } from '@renderer/services/organization/notifications';
+import useWebsocketConnection from './storeWebsocketConnection';
 
 const useNotificationsStore = defineStore('notifications', () => {
   const user = useUserStore();
+  const ws = useWebsocketConnection();
 
   /* State */
   const notificationsPreferences = ref({
@@ -33,6 +37,7 @@ const useNotificationsStore = defineStore('notifications', () => {
   async function setup() {
     await fetchPreferences();
     await fetchNotifications();
+    await listenForUpdates();
   }
 
   /** Preferences **/
@@ -85,6 +90,13 @@ const useNotificationsStore = defineStore('notifications', () => {
     }
   }
 
+  async function listenForUpdates() {
+    ws.on(NOTIFICATIONS_NEW, async e => {
+      const notification: INotificationReceiver = e.data;
+      notifications.value = [...notifications.value, notification];
+    });
+  }
+
   async function markAsRead(type: NotificationType) {
     if (!isLoggedInOrganization(user.selectedOrganization)) {
       throw new Error('No organization selected');
@@ -97,7 +109,7 @@ const useNotificationsStore = defineStore('notifications', () => {
 
     await updateNotifications(user.selectedOrganization.serverUrl, notificationIds, dtos);
 
-    await fetchNotifications();
+    notifications.value = notifications.value.filter(nr => !notificationIds.includes(nr.id));
   }
 
   return {
