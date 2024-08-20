@@ -46,10 +46,6 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
         console.log(reason);
       }
     });
-
-    socket.value.onAny((event, ...args) => {
-      console.log('ONANY', event, args);
-    });
   }
 
   function connect() {
