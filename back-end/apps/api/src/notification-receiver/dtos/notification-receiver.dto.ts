@@ -11,4 +11,7 @@ export class NotificationReceiverDto {
 
   @Expose()
   notificationId: number;
+
+  @Expose()
+  isRead: boolean;
 }

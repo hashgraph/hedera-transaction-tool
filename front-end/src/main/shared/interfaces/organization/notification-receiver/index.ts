@@ -14,6 +14,7 @@ export enum NotificationType {
 export interface INotificationReceiverCore {
   id: number;
   notificationId: number;
+  isRead: boolean;
 }
 
 export interface INotificationReceiver extends INotificationReceiverCore {
