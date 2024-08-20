@@ -31,6 +31,9 @@ export class NotificationReceiver {
   @Column({ default: false })
   isRead: boolean;
 
+  @Column({ default: false, nullable: true })
+  isEmailSent?: boolean;
+
   @UpdateDateColumn()
   updatedAt: Date;
 }
@@ -40,6 +43,7 @@ export const notificationReceiverProperties: (keyof NotificationReceiver)[] = [
   'notificationId',
   'userId',
   'isRead',
+  'isEmailSent',
   'updatedAt',
 ];
 

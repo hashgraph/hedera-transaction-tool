@@ -38,9 +38,6 @@ export class Notification {
   @Column({ nullable: true })
   actorId?: number;
 
-  @Column({ default: false, nullable: true })
-  isEmailSent?: boolean;
-
   @CreateDateColumn()
   createdAt: Date;
 
@@ -54,7 +51,6 @@ export const notificationProperties: (keyof Notification)[] = [
   'content',
   'entityId',
   'actorId',
-  'isEmailSent',
   'createdAt',
 ];
 
