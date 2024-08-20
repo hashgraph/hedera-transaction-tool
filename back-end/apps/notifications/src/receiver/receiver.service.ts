@@ -14,7 +14,6 @@ import {
   NotificationReceiver,
   NotificationType,
   Transaction,
-  TransactionSigner,
   TransactionStatus,
 } from '@entities';
 
@@ -28,8 +27,30 @@ export class ReceiverService {
     private readonly fanOutService: FanOutService,
   ) {}
 
-  async notifyGeneral(dto: NotifyGeneralDto) {
-    const { notification, notificationReceivers } = await this.createNotificationAndReceivers(dto);
+  async notifyGeneral({ type, content, entityId, actorId, userIds }: NotifyGeneralDto) {
+    /* Get notification if exists */
+    let notification = await this.entityManager.findOne(Notification, {
+      where: {
+        entityId,
+        type,
+        content,
+        actorId,
+      },
+      relations: {
+        notificationReceivers: true,
+      },
+    });
+
+    /* Create notification */
+    if (!notification) {
+      notification = await this.createNotification(type, content, entityId, actorId);
+    }
+
+    /* Create receivers */
+    userIds = userIds.filter(
+      userId => !notification.notificationReceivers.some(nr => nr.userId === userId),
+    );
+    const notificationReceivers = await this.createReceivers(notification.id, userIds);
 
     /* Fan out */
     await this.fanOutService.fanOutNew(notification, notificationReceivers);
@@ -50,69 +71,20 @@ export class ReceiverService {
 
     if (!transaction) throw new Error('Transaction not found');
 
-    /* Get all keys required to sign */
-    const allKeys = await keysRequiredToSign(
-      transaction,
-      this.mirrorNodeService,
-      this.entityManager,
-    );
+    /* Get users required to sign */
+    const userIds = await this.getUsersIdsRequiredToSign(transaction);
 
-    const distinctUserIds = allKeys
-      .map(k => k.userId)
-      .filter((v, i, a) => a.indexOf(v) === i)
-      .filter(Boolean);
-
-    /* Create notification */
-    const notification = this.entityManager.create(Notification, {
+    /* Notify */
+    await this.notifyGeneral({
       type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
       content: `A new transaction requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction using the following ID: ${transaction.transactionId}.`,
       entityId: transaction.id,
       actorId: null,
-    });
-    const indicatorNotification = this.entityManager.create(Notification, {
-      type: NotificationType.TRANSACTION_INDICATOR_SIGN,
-      content: '',
-      entityId: transaction.id,
-      actorId: null,
+      userIds: userIds.filter(id => id !== transaction.creatorKey?.userId),
     });
 
-    /* Create receivers */
-    const notificationReceivers: NotificationReceiver[] = [];
-    const notificationIndicatorReceivers: NotificationReceiver[] = [];
-
-    await this.entityManager.transaction(async manager => {
-      await manager.save(Notification, notification);
-      await manager.save(Notification, indicatorNotification);
-
-      for (const userId of distinctUserIds) {
-        if (userId !== transaction.creatorKey.userId) {
-          const notificationReceiver = manager.create(NotificationReceiver, {
-            notificationId: notification.id,
-            userId,
-            isRead: false,
-            isInAppNotified: null,
-            isEmailSent: null,
-          });
-          await manager.save(NotificationReceiver, notificationReceiver);
-          notificationReceivers.push(notificationReceiver);
-        }
-        const notificationIndicatorReceiver = manager.create(NotificationReceiver, {
-          notificationId: indicatorNotification.id,
-          userId,
-          isRead: false,
-          isInAppNotified: null,
-          isEmailSent: null,
-        });
-
-        await manager.save(NotificationReceiver, notificationIndicatorReceiver);
-
-        notificationIndicatorReceivers.push(notificationIndicatorReceiver);
-      }
-    });
-
-    /* Fan out */
-    await this.fanOutService.fanOutNew(notification, notificationReceivers);
-    await this.fanOutService.fanOutNew(indicatorNotification, notificationIndicatorReceivers);
+    /* Sync indicators */
+    await this.syncSignIndicators(transaction, userIds);
   }
 
   async updateNewStatusIndicatorNotification({
@@ -141,7 +113,6 @@ export class ReceiverService {
     /* Get notification indicator entities to delete */
     const indicatorTypes = Object.values(NotificationType).filter(t => t.includes('INDICATOR'));
     const inTypes = indicatorTypes.filter(t => t !== newIndicatorType);
-
     const notificationToDelete = await this.entityManager.find(Notification, {
       where: {
         entityId: transactionId,
@@ -152,15 +123,19 @@ export class ReceiverService {
       },
     });
 
-    const notificationReceiversToDelete = notificationToDelete.reduce((acc, val) => {
-      acc.push(...val.notificationReceivers);
-      return acc;
-    }, []);
+    /* Delete old indicator notifications */
+    const notificationReceiversToDelete = notificationToDelete.flatMap(
+      n => n.notificationReceivers,
+    );
 
-    const distinctUsersToNotify = notificationReceiversToDelete
-      .map(nr => nr.userId)
-      .filter((v, i, a) => a.indexOf(v) === i);
+    await this.entityManager.delete(NotificationReceiver, {
+      id: In(notificationReceiversToDelete.map(nr => nr.id)),
+    });
+    await this.entityManager.delete(Notification, {
+      id: In(notificationToDelete.map(n => n.id)),
+    });
 
+    /* Fan out deletion message */
     const userIdToNotificationReceiversId: {
       [userId: number]: number[];
     } = notificationReceiversToDelete.reduce((acc, nr) => {
@@ -170,64 +145,170 @@ export class ReceiverService {
       acc[nr.userId].push(nr.id);
       return acc;
     }, {});
-
-    /* Delete old indicator notifications */
-    await this.entityManager.delete(NotificationReceiver, {
-      id: In(notificationReceiversToDelete.map(nr => nr.id)),
-    });
-    await this.entityManager.delete(Notification, {
-      id: In(notificationToDelete.map(n => n.id)),
-    });
-
-    /* Fan out */
     this.fanOutService.fanOutIndicatorsDelete(userIdToNotificationReceiversId);
 
     /* Notify if new indicator */
+    const usersIdsToNotify = notificationReceiversToDelete
+      .map(nr => nr.userId)
+      .filter((v, i, a) => a.indexOf(v) === i);
+
     if (newIndicatorType) {
       await this.notifyGeneral({
         type: newIndicatorType,
         content: '',
         entityId: transactionId,
         actorId: null,
-        userIds: distinctUsersToNotify,
+        userIds: usersIdsToNotify,
       });
+    }
+
+    /* Sync sign indicators */
+    await this.syncSignIndicators(transactionId, null);
+  }
+
+  async syncSignIndicators(transaction: number | Transaction, userIdsRequired: number[] | null) {
+    if (typeof transaction === 'number') {
+      /* Get transaction */
+      transaction = await this.entityManager.findOne(Transaction, {
+        where: {
+          id: transaction,
+        },
+        relations: {
+          creatorKey: {
+            user: true,
+          },
+        },
+      });
+
+      if (!transaction) throw new Error('Transaction not found');
+    }
+
+    /* Get users required to sign */
+    if (!Array.isArray(userIdsRequired)) {
+      userIdsRequired = await this.getUsersIdsRequiredToSign(transaction);
+    }
+
+    /* Get the indicator notification */
+    let notification = await this.entityManager.findOne(Notification, {
+      where: {
+        entityId: transaction.id,
+        type: NotificationType.TRANSACTION_INDICATOR_SIGN,
+      },
+      relations: {
+        notificationReceivers: true,
+      },
+    });
+
+    /* Create new if not exists */
+    if (!notification) {
+      notification = await this.createNotification(
+        NotificationType.TRANSACTION_INDICATOR_SIGN,
+        '',
+        transaction.id,
+        null,
+      );
+    }
+
+    /* Remove indicator notification for users that should not sign */
+    try {
+      const notificationReceiversToDelete = notification.notificationReceivers.filter(
+        nr => !userIdsRequired.includes(nr.userId),
+      );
+      if (notificationReceiversToDelete.length > 0) {
+        await this.entityManager.delete(NotificationReceiver, {
+          id: In(notificationReceiversToDelete.map(nr => nr.id)),
+        });
+      }
+
+      /* Fan out deletion message */
+      const userIdToNotificationReceiversId: {
+        [userId: number]: number[];
+      } = notificationReceiversToDelete.reduce((acc, nr) => {
+        if (!acc[nr.userId]) {
+          acc[nr.userId] = [];
+        }
+        acc[nr.userId].push(nr.id);
+        return acc;
+      }, {});
+      this.fanOutService.fanOutIndicatorsDelete(userIdToNotificationReceiversId);
+    } catch (error) {
+      console.error(error);
+    }
+
+    /* Create new indicator notification for users that should sign and haven't received */
+    const notificationReceiversToCreate = userIdsRequired.filter(
+      id => !notification.notificationReceivers.some(nr => nr.userId === id),
+    );
+    const notificationReceivers = await this.createReceivers(
+      notification.id,
+      notificationReceiversToCreate,
+    );
+
+    if (notificationReceivers.length > 0) {
+      await this.fanOutService.fanOutNew(notification, notificationReceivers);
     }
   }
 
-  private async createNotificationAndReceivers(
-    dto: NotifyGeneralDto,
-    isInAppNotified = null,
-    isEmailSent = null,
+  private async createNotification(
+    type: NotificationType,
+    content: string,
+    entityId: number,
+    actorId: number,
   ) {
     /* Create notification */
     const notification = this.entityManager.create(Notification, {
-      type: dto.type,
-      content: dto.content,
-      entityId: dto.entityId,
-      actorId: dto.actorId,
+      type: type,
+      content: content,
+      entityId: entityId,
+      actorId: actorId,
+      notificationReceivers: [],
     });
+    await this.entityManager.save(Notification, notification);
 
-    /* Create receivers */
+    return notification;
+  }
+
+  private async createReceivers(
+    notificationId: number,
+    userIds: number[],
+    isInAppNotified: boolean | null = null,
+    isEmailSent: boolean | null = null,
+  ) {
     const notificationReceivers: NotificationReceiver[] = [];
-
-    await this.entityManager.transaction(async manager => {
-      await manager.save(Notification, notification);
-
-      for (const id of dto.userIds) {
-        const notificationReceiver = manager.create(NotificationReceiver, {
-          notificationId: notification.id,
+    for (const id of userIds) {
+      try {
+        const notificationReceiver = this.entityManager.create(NotificationReceiver, {
+          notificationId,
           userId: id,
           isRead: false,
           isInAppNotified,
           isEmailSent,
         });
 
-        await manager.save(NotificationReceiver, notificationReceiver);
+        await this.entityManager.save(NotificationReceiver, notificationReceiver);
 
         notificationReceivers.push(notificationReceiver);
+      } catch (error) {
+        console.error(error);
       }
-    });
+    }
 
-    return { notification, notificationReceivers };
+    return notificationReceivers;
+  }
+
+  private async getUsersIdsRequiredToSign(transaction: Transaction) {
+    /* Get all keys required to sign */
+    const allKeys = await keysRequiredToSign(
+      transaction,
+      this.mirrorNodeService,
+      this.entityManager,
+    );
+
+    const distinctUserIds = allKeys
+      .map(k => k.userId)
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .filter(Boolean);
+
+    return distinctUserIds;
   }
 }
