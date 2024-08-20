@@ -271,93 +271,94 @@ describe('ReceiverService', () => {
   });
 
   describe('getTransactionParticipants', () => {
-    it('should return transaction participants', async () => {
-      const now = new Date();
-      const transaction: Partial<Transaction> = {
+    const now = new Date();
+
+    const transaction: Partial<Transaction> = {
+      id: 1,
+      status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      transactionId: '0.0.215914@1618316800',
+      creatorKey: {
         id: 1,
-        status: TransactionStatus.WAITING_FOR_SIGNATURES,
-        transactionId: '0.0.215914@1618316800',
-        creatorKey: {
-          id: 1,
-          user: null,
-          userId: 1,
-          mnemonicHash: null,
-          publicKey: '',
-          index: null,
-          deletedAt: null,
-          approvedTransactions: [],
-          signedTransactions: [],
-          createdTransactions: [],
-        },
-        approvers: null,
-        observers: [
-          {
-            id: 2,
-            user: null,
-            userId: 2,
-            role: Role.FULL,
-            transaction: null,
-            transactionId: 1,
-            createdAt: now,
-          },
-        ],
-        signers: [
-          {
-            id: 1,
-            user: null,
-            userId: 8,
-            transaction: null,
-            transactionId: 1,
-            createdAt: now,
-            userKey: null,
-            userKeyId: 3,
-          },
-        ],
-        createdAt: now,
-        updatedAt: now,
+        user: null,
+        userId: 1,
+        mnemonicHash: null,
+        publicKey: '',
+        index: null,
         deletedAt: null,
-      };
-      const approvers: TransactionApprover[] = [
-        {
-          id: 1,
-          user: null,
-          userId: 1,
-          approved: null,
-          transaction: transaction as Transaction,
-          transactionId: 1,
-          approvers: [],
-          createdAt: now,
-          updatedAt: now,
-          deletedAt: null,
-        },
+        approvedTransactions: [],
+        signedTransactions: [],
+        createdTransactions: [],
+      },
+      approvers: null,
+      observers: [
         {
           id: 2,
           user: null,
-          userId: null,
-          listId: 1,
-          transaction: transaction as Transaction,
+          userId: 2,
+          role: Role.FULL,
+          transaction: null,
           transactionId: 1,
-          approvers: [],
           createdAt: now,
-          updatedAt: now,
-          deletedAt: null,
         },
+      ],
+      signers: [
         {
-          id: 3,
+          id: 1,
           user: null,
-          userId: 5,
-          approved: true,
-          transaction: transaction as Transaction,
+          userId: 8,
+          transaction: null,
           transactionId: 1,
-          approvers: [],
           createdAt: now,
-          updatedAt: now,
-          deletedAt: null,
+          userKey: null,
+          userKeyId: 3,
         },
-      ];
-      const transactionId = 1;
-      const usersIdsRequiredToSign = [1, 2, 3];
+      ],
+      createdAt: now,
+      updatedAt: now,
+      deletedAt: null,
+    };
+    const approvers: TransactionApprover[] = [
+      {
+        id: 1,
+        user: null,
+        userId: 1,
+        approved: null,
+        transaction: transaction as Transaction,
+        transactionId: 1,
+        approvers: [],
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: null,
+      },
+      {
+        id: 2,
+        user: null,
+        userId: null,
+        listId: 1,
+        transaction: transaction as Transaction,
+        transactionId: 1,
+        approvers: [],
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: null,
+      },
+      {
+        id: 3,
+        user: null,
+        userId: 5,
+        approved: true,
+        transaction: transaction as Transaction,
+        transactionId: 1,
+        approvers: [],
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: null,
+      },
+    ];
+    const transactionId = 1;
+    const usersIdsRequiredToSign = [1, 2, 3];
 
+    it('should return transaction participants', async () => {
       entityManager.findOne.mockResolvedValueOnce(transaction);
 
       const getApproversByTransactionId: jest.SpyInstance = jest.spyOn(
@@ -398,6 +399,57 @@ describe('ReceiverService', () => {
         requiredUserIds: expect.arrayContaining([1, 2, 3]),
         approversGaveChoiceUserIds: expect.arrayContaining([5]),
         approversShouldChooseUserIds: expect.arrayContaining([1]),
+        participants: expect.arrayContaining([1, 2, 3, 5]),
+      });
+      expect(entityManager.findOne).toHaveBeenCalledWith(Transaction, {
+        where: { id: transactionId },
+      });
+      expect(getApproversByTransactionId).toHaveBeenCalledWith(entityManager, transactionId);
+    });
+
+    it('should return empty approver should choose if expired', async () => {
+      const expiredTransaction = { ...transaction, status: TransactionStatus.EXPIRED };
+
+      entityManager.findOne.mockResolvedValueOnce(expiredTransaction);
+
+      const getApproversByTransactionId: jest.SpyInstance = jest.spyOn(
+        service,
+        //@ts-expect-error getApproversByTransactionId is private
+        'getApproversByTransactionId',
+      );
+      getApproversByTransactionId.mockResolvedValueOnce(approvers);
+
+      const getUsersIdsRequiredToSign: jest.SpyInstance = jest
+        //@ts-expect-error getUsersIdsRequiredToSign is private
+        .spyOn(service, 'getUsersIdsRequiredToSign');
+      getUsersIdsRequiredToSign.mockResolvedValueOnce(usersIdsRequiredToSign);
+
+      //@ts-expect-error getTransactionParticipants is private
+      const result = await service.getTransactionParticipants(entityManager, transactionId);
+
+      // expect(result).toEqual({
+      //   creatorId: 1,
+      //   signerUserIds: expect.arrayContaining([8]),
+      //   observerUserIds: expect.arrayContaining([2]),
+      //   approversUserIds: expect.arrayContaining([1, 5]),
+      //   requiredUserIds: expect.arrayContaining([1, 2, 3]),
+      //   approversGaveChoiceUserIds: expect.arrayContaining([5]),
+      //   approversShouldChooseUserIds: [],
+      //   participants: expect.arrayContaining([1, 2, 3, 5, 8]),
+      // });
+      // expect(entityManager.findOne).toHaveBeenCalledWith(Transaction, {
+      //   where: { id: transactionId },
+      //   relations: {
+      //     creatorKey: true,
+      //     observers: true,
+      //     signers: true,
+      //   },
+      // });
+      expect(result).toEqual({
+        approversUserIds: expect.arrayContaining([1, 5]),
+        requiredUserIds: expect.arrayContaining([1, 2, 3]),
+        approversGaveChoiceUserIds: expect.arrayContaining([5]),
+        approversShouldChooseUserIds: [],
         participants: expect.arrayContaining([1, 2, 3, 5]),
       });
       expect(entityManager.findOne).toHaveBeenCalledWith(Transaction, {

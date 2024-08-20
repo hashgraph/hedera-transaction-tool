@@ -208,6 +208,7 @@ export class ReceiverService {
     const indicatorApproveNotification = indicatorNotifications.find(
       n => n.type === NotificationType.TRANSACTION_INDICATOR_APPROVE,
     );
+
     await this.syncActionIndicators(
       this.entityManager,
       NotificationType.TRANSACTION_INDICATOR_APPROVE,
@@ -366,10 +367,15 @@ export class ReceiverService {
       .filter(a => a.approved !== null)
       .map(a => a.userId)
       .filter(Boolean);
-    const approversShouldChooseUserIds = approvers
-      .filter(a => a.approved === null)
-      .map(a => a.userId)
-      .filter(Boolean);
+    const approversShouldChooseUserIds = [
+      TransactionStatus.WAITING_FOR_EXECUTION,
+      TransactionStatus.WAITING_FOR_SIGNATURES,
+    ].includes(transaction.status)
+      ? approvers
+          .filter(a => a.approved === null)
+          .map(a => a.userId)
+          .filter(Boolean)
+      : [];
 
     const participants = [
       // creatorId,
