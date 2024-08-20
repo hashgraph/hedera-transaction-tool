@@ -15,11 +15,13 @@ import {
 import { FanOutService } from './fan-out.service';
 
 import { EmailService } from '../email/email.service';
+import { InAppProcessorService } from '../in-app-processor/in-app-processor.service';
 
 describe('Fan Out Service', () => {
   let service: FanOutService;
   const entityManager = mockDeep<EntityManager>();
   const emailService = mockDeep<EmailService>();
+  const inAppProcessorService = mockDeep<InAppProcessorService>();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -32,6 +34,10 @@ describe('Fan Out Service', () => {
         {
           provide: EmailService,
           useValue: emailService,
+        },
+        {
+          provide: InAppProcessorService,
+          useValue: inAppProcessorService,
         },
       ],
     }).compile();
@@ -107,8 +113,6 @@ describe('Fan Out Service', () => {
       entityManager.find.mockResolvedValueOnce([user]);
       entityManager.find.mockResolvedValueOnce(preferences);
 
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-
       await service.fanOut(notification, receivers);
 
       expect(emailService.processEmail).toHaveBeenCalledWith(
@@ -120,7 +124,7 @@ describe('Fan Out Service', () => {
         },
         [receivers[0].id],
       );
-      expect(consoleSpy).not.toHaveBeenCalledWith('In-app receivers', []);
+      expect(inAppProcessorService.processNotification).not.toHaveBeenCalled();
     });
 
     it('should add user to receivers if preference is not found', async () => {
@@ -129,8 +133,6 @@ describe('Fan Out Service', () => {
       entityManager.find.mockResolvedValueOnce([user]);
       entityManager.find.mockResolvedValueOnce(preferences);
 
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-
       await service.fanOut(notification, receivers);
 
       expect(emailService.processEmail).toHaveBeenCalledWith(
@@ -142,7 +144,9 @@ describe('Fan Out Service', () => {
         },
         [receivers[0].id],
       );
-      expect(consoleSpy).toHaveBeenCalledWith('In-app receivers', [receivers[0].userId]);
+      expect(inAppProcessorService.processNotification).toHaveBeenCalledWith(notification, [
+        receivers[0].userId,
+      ]);
     });
 
     it('should filter out receivers that do not want email notifications', async () => {
@@ -150,15 +154,15 @@ describe('Fan Out Service', () => {
         { id: 1, userId: 1, email: false, inApp: true, user, type: notification.type },
       ];
 
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-
       entityManager.find.mockResolvedValueOnce([user]);
       entityManager.find.mockResolvedValueOnce(preferences);
 
       await service.fanOut(notification, receivers);
 
       expect(emailService.processEmail).not.toHaveBeenCalled();
-      expect(consoleSpy).toHaveBeenCalledWith('In-app receivers', [receivers[0].userId]);
+      expect(inAppProcessorService.processNotification).toHaveBeenCalledWith(notification, [
+        receivers[0].userId,
+      ]);
     });
 
     it('should filter out receivers that do not want in-app notifications', async () => {

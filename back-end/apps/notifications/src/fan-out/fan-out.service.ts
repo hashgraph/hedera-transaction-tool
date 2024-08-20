@@ -7,12 +7,14 @@ import { NotificationTypeEmailSubjects } from '@app/common';
 import { Notification, NotificationPreferences, NotificationReceiver, User } from '@entities';
 
 import { EmailService } from '../email/email.service';
+import { InAppProcessorService } from '../in-app-processor/in-app-processor.service';
 
 @Injectable()
 export class FanOutService {
   constructor(
     @InjectEntityManager() private entityManager: EntityManager,
     private readonly emailService: EmailService,
+    private readonly inAppProcessorService: InAppProcessorService,
   ) {}
 
   async fanOut(notification: Notification, receivers: NotificationReceiver[]) {
@@ -71,7 +73,7 @@ export class FanOutService {
     }
 
     if (inAppReceivers.length > 0) {
-      console.log('In-app receivers', inAppReceivers);
+      this.inAppProcessorService.processNotification(notification, inAppReceivers);
     }
   }
 }
