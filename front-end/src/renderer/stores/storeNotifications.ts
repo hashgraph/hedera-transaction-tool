@@ -7,12 +7,17 @@ import {
 } from '@renderer/services/organization';
 
 import useUserStore from './storeUser';
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 import {
-  INotificationPreferencesCore,
+  INotificationReceiver,
   IUpdateNotificationPreferencesDto,
+  IUpdateNotificationReceiver,
   NotificationType,
 } from '@main/shared/interfaces';
+import {
+  getAllInAppNotifications,
+  updateNotifications,
+} from '@renderer/services/organization/notifications';
 
 const useNotificationsStore = defineStore('notifications', () => {
   const user = useUserStore();
@@ -22,16 +27,31 @@ const useNotificationsStore = defineStore('notifications', () => {
     [NotificationType.TRANSACTION_READY_FOR_EXECUTION]: true,
     [NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES]: true,
   });
+  const notifications = ref<INotificationReceiver[]>([]);
 
   /* Actions */
+  async function setup() {
+    await fetchPreferences();
+    await fetchNotifications();
+  }
+
+  /** Preferences **/
   async function fetchPreferences() {
-    if (!isLoggedInOrganization(user.selectedOrganization)) {
-      throw new Error('No organization selected');
+    if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+
+    if (isLoggedInOrganization(user.selectedOrganization)) {
+      const userPreferences = await getUserNotificationPreferences(
+        user.selectedOrganization?.serverUrl,
+      );
+
+      const newPreferences = { ...notificationsPreferences.value };
+
+      for (const preference of userPreferences) {
+        newPreferences[preference.type] = preference.email;
+      }
+
+      notificationsPreferences.value = newPreferences;
     }
-
-    const preferences = await getUserNotificationPreferences(user.selectedOrganization?.serverUrl);
-
-    updatePreference(preferences);
   }
 
   async function updatePreferences(data: IUpdateNotificationPreferencesDto) {
@@ -50,20 +70,44 @@ const useNotificationsStore = defineStore('notifications', () => {
     };
   }
 
-  function updatePreference(preferences: INotificationPreferencesCore[]) {
-    const newPreferences = { ...notificationsPreferences.value };
+  /** Notifications **/
+  async function fetchNotifications() {
+    if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
 
-    for (const preference of preferences) {
-      newPreferences[preference.type] = preference.email;
+    if (isLoggedInOrganization(user.selectedOrganization)) {
+      const newNotifications = await getAllInAppNotifications(
+        user.selectedOrganization.serverUrl,
+        true,
+      );
+      notifications.value = newNotifications;
+    } else {
+      notifications.value = [];
+    }
+  }
+
+  async function markAsRead(type: NotificationType) {
+    if (!isLoggedInOrganization(user.selectedOrganization)) {
+      throw new Error('No organization selected');
     }
 
-    notificationsPreferences.value = newPreferences;
+    const notificationIds = notifications.value
+      .filter(nr => nr.notification.type === type)
+      .map(nr => nr.id);
+    const dtos = notificationIds.map((): IUpdateNotificationReceiver => ({ isRead: true }));
+
+    await updateNotifications(user.selectedOrganization.serverUrl, notificationIds, dtos);
+
+    await fetchNotifications();
   }
 
   return {
     notificationsPreferences,
+    notifications,
+    setup,
     fetchPreferences,
+    fetchNotifications,
     updatePreferences,
+    markAsRead,
   };
 });
 
