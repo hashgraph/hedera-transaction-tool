@@ -132,7 +132,7 @@ class TransactionPage extends BasePage {
   async closeDraftModal() {
     // Wait for the button to be visible with a timeout
     const modalButton = this.window.getByTestId(this.discardModalDraftButtonSelector);
-    await modalButton.waitFor({ state: 'visible', timeout: 500 }).catch(e => {});
+    await modalButton.waitFor({ state: 'visible', timeout: 1500 }).catch(e => {});
 
     // If the modal is visible, then click the button to close the modal
     if (await modalButton.isVisible()) {
@@ -455,7 +455,7 @@ class TransactionPage extends BasePage {
   async isAccountCardVisible(accountId) {
     const sanitizedTitle = 'isAccountCardVisible';
     const screenshotPath = `./test-results/screenshots/${sanitizedTitle}.png`;
-    await window.screenshot({ path: screenshotPath });
+    await this.window.screenshot({ path: screenshotPath });
     await this.waitForElementToBeVisible(this.addNewAccountButtonSelector);
     const index = await this.findAccountIndexById(accountId);
     if (index === -1) {
