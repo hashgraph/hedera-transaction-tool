@@ -312,14 +312,14 @@ watch(
                           : 'N/A'
                       }}
                     </td>
-                    <td>
+                    <td :data-testid="`td-transaction-type-for-sign-${index}`">
                       <span class="text-bold">{{
                         tx.transaction instanceof Transaction
                           ? getTransactionType(tx.transaction)
                           : 'N/A'
                       }}</span>
                     </td>
-                    <td>
+                    <td :data-testid="`td-transaction-valid-start-for-sign-${index}`">
                       {{
                         tx.transaction instanceof Transaction
                           ? getTransactionDateExtended(tx.transaction)
@@ -327,7 +327,10 @@ watch(
                       }}
                     </td>
                     <td class="text-center">
-                      <AppButton @click="handleSign(tx.transactionRaw.id)" color="secondary"
+                      <AppButton
+                        @click="handleSign(tx.transactionRaw.id)"
+                        :data-testid="`button-transaction-sign-${index}`"
+                        color="secondary"
                         >Sign</AppButton
                       >
                     </td>
