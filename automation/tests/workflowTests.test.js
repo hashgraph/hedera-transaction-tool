@@ -54,31 +54,12 @@ test.describe('Workflow tests', () => {
     await resetDbState();
   });
 
-  test.beforeEach(async ({}, testInfo) => {
-    // Add a timestamp to the test name
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    // Remove double quotes from the test name
-    const sanitizedTitle = testInfo.title.replace(/["]/g, '').replace(/\s+/g, '_');
-    const testNameWithTimestamp = `${sanitizedTitle}_${timestamp}`;
-
-    // Take a screenshot before closing the draft modal
-    const screenshotPathBefore = `./test-results/screenshots/${testNameWithTimestamp}_before.png`;
-    await window.screenshot({ path: screenshotPathBefore });
-    console.log(`Screenshot saved: ${screenshotPathBefore}`);
-
+  test.beforeEach(async () => {
+    await new Promise(r => setTimeout(r, 1000));
     await transactionPage.clickOnTransactionsMenuButton();
-
-    // Take a screenshot after clicking on Transactions Menu Button
-    const screenshotPathBetween = `./test-results/screenshots/${testNameWithTimestamp}_between.png`;
-    await window.screenshot({ path: screenshotPathBetween });
-    console.log(`Screenshot saved: ${screenshotPathBetween}`);
-
+    await new Promise(r => setTimeout(r, 1000));
     await transactionPage.closeDraftModal();
     await new Promise(r => setTimeout(r, 1000));
-    // Take a screenshot after closing the draft modal
-    const screenshotPathAfter = `./test-results/screenshots/${testNameWithTimestamp}_after.png`;
-    await window.screenshot({ path: screenshotPathAfter });
-    console.log(`Screenshot saved: ${screenshotPathAfter}`);
   });
 
   test.afterEach(async ({}, testInfo) => {

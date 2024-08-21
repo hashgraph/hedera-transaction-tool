@@ -452,10 +452,7 @@ class TransactionPage extends BasePage {
   }
 
   async isAccountCardVisible(accountId) {
-    const sanitizedTitle = 'isAccountCardVisible';
-    const screenshotPath = `./test-results/screenshots/${sanitizedTitle}.png`;
-    await this.window.screenshot({ path: screenshotPath });
-    await this.waitForElementToBeVisible(this.addNewAccountButtonSelector);
+    await this.waitForElementToBeVisible(this.addNewAccountButtonSelector, 8000);
     const index = await this.findAccountIndexById(accountId);
     if (index === -1) {
       return false; // account not found
@@ -537,6 +534,10 @@ class TransactionPage extends BasePage {
     await this.fillInTransferAccountId();
     await this.fillInDeletedAccountId(accountId);
     await this.clickOnSignAndSubmitDeleteButton();
+    const sanitizedTitle = 'isConfirmedDeleteAccountButton';
+    const screenshotPath = `./test-results/screenshots/${sanitizedTitle}.png`;
+    await window.screenshot({ path: screenshotPath });
+    await this.window.screenshot({ path: screenshotPath });
     await this.clickOnConfirmDeleteAccountButton();
     await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();
@@ -1310,7 +1311,7 @@ class TransactionPage extends BasePage {
   }
 
   async clickOnConfirmDeleteAccountButton() {
-    await this.clickByTestId(this.confirmDeleteAccountButtonSelector);
+    await this.clickByTestId(this.confirmDeleteAccountButtonSelector, 5000);
   }
 }
 module.exports = TransactionPage;
