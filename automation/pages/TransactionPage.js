@@ -536,7 +536,6 @@ class TransactionPage extends BasePage {
     await this.clickOnSignAndSubmitDeleteButton();
     const sanitizedTitle = 'isConfirmedDeleteAccountButton';
     const screenshotPath = `./test-results/screenshots/${sanitizedTitle}.png`;
-    await window.screenshot({ path: screenshotPath });
     await this.window.screenshot({ path: screenshotPath });
     await this.clickOnConfirmDeleteAccountButton();
     await this.clickSignTransactionButton();

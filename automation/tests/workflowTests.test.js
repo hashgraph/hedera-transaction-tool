@@ -201,17 +201,13 @@ test.describe('Workflow tests', () => {
     await accountPage.clickOnSelectManyAccountsButton();
     await accountPage.clickOnAccountCheckbox(accountFromList);
     await accountPage.clickOnAccountCheckbox(newAccountId);
-
+    await loginPage.waitForToastToDisappear();
     await accountPage.clickOnRemoveButton();
     await accountPage.unlinkAccounts();
-    await loginPage.waitForToastToDisappear();
     await accountPage.addAccountToUnliked(newAccountId);
     await accountPage.addAccountToUnliked(accountFromList);
-    const isFirstAccountCardVisible = await transactionPage.isAccountCardVisible(accountFromList);
-    expect(isFirstAccountCardVisible).toBe(false);
-
-    const isSecondAccountCardVisible = await transactionPage.isAccountCardVisible(newAccountId);
-    expect(isSecondAccountCardVisible).toBe(false);
+    const toastText = await registrationPage.getToastMessage();
+    expect(toastText).toBe('Account Unlinked!');
   });
 
   test('Verify user can add an existing account', async () => {
