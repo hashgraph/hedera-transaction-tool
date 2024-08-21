@@ -1024,12 +1024,12 @@
 }
 
 .transaction-group-button {
-    color: $black;
-    min-width: 0;
-    background-color: $light-blue-50;
+  color: $black;
+  min-width: 0;
+  background-color: $light-blue-50;
 
-    @media (prefers-color-scheme: dark) {
-      color: $white;
-      background-color: $dark-blue-600
-    }
+  @media (prefers-color-scheme: dark) {
+    color: $white;
+    background-color: $dark-blue-600;
+  }
 }
