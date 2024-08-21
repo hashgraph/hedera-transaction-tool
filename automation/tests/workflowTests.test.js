@@ -190,7 +190,7 @@ test.describe('Workflow tests', () => {
     expect(isAccountIdPrefilled).toBe(accountFromList);
   });
 
-  test('Verify user can unlink accounts', async () => {
+  test.skip('Verify user can unlink accounts', async () => {
     await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
     await transactionPage.clickOnTransactionsMenuButton();

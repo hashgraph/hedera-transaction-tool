@@ -46,6 +46,27 @@ async function verifyAccountExists(accountId) {
 }
 
 /**
+ * Deletes an account from the HederaAccount table by the given account ID.
+ *
+ * @param {string} accountId - The ID of the account to delete.
+ * @return {Promise<boolean>} A promise that resolves to true if the account was deleted, or false if not.
+ * @throws {Error} If there is an error executing the query.
+ */
+async function deleteAccountById(accountId) {
+  const query = `
+        DELETE FROM HederaAccount
+        WHERE account_id = ?`;
+
+  try {
+    const result = await queryDatabase(query, [accountId]);
+    return result > 0;
+  } catch (error) {
+    console.error('Error deleting account:', error);
+    return false;
+  }
+}
+
+/**
  * Verifies if a file with the given file ID exists in the database.
  *
  * @param {string} fileId - The ID of the file to verify.
@@ -410,4 +431,5 @@ module.exports = {
   getAllPublicKeysByEmail,
   verifyUserExistsInOrganization,
   isUserDeleted,
+  deleteAccountById,
 };

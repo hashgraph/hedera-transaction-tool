@@ -1,3 +1,5 @@
+import { deleteAccountById } from '../utils/databaseQueries';
+
 const BasePage = require('./BasePage');
 const TransactionPage = require('./TransactionPage');
 
@@ -213,9 +215,10 @@ class AccountPage extends BasePage {
       const { newAccountId } = await this.transactionPage.createNewAccount();
       await this.transactionPage.mirrorGetAccountResponse(newAccountId);
       await this.transactionPage.clickOnTransactionsMenuButton();
-      await this.clickOnAccountsLink();
-      await this.clickOnRemoveButton();
-      await this.unlinkAccounts(newAccountId);
+      // await this.clickOnAccountsLink();
+      // await this.clickOnRemoveButton();
+      // await this.unlinkAccounts(newAccountId);
+      await deleteAccountById(newAccountId);
       await this.addAccountToUnliked(newAccountId);
     }
   }
