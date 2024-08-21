@@ -55,14 +55,37 @@ test.describe('Workflow tests', () => {
   });
 
   test.beforeEach(async ({}, testInfo) => {
+    // Add a timestamp to the test name
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    // Remove double quotes from the test name
+    const sanitizedTitle = testInfo.title.replace(/["]/g, '').replace(/\s+/g, '_');
+    const testNameWithTimestamp = `${sanitizedTitle}_${timestamp}`;
+
+    // Take a screenshot before closing the draft modal
+    const screenshotPathBefore = `./test-results/screenshots/${testNameWithTimestamp}_before.png`;
+    await window.screenshot({ path: screenshotPathBefore });
+    console.log(`Screenshot saved: ${screenshotPathBefore}`);
+
     await transactionPage.clickOnTransactionsMenuButton();
+
+    // Take a screenshot after clicking on Transactions Menu Button
+    const screenshotPathBetween = `./test-results/screenshots/${testNameWithTimestamp}_between.png`;
+    await window.screenshot({ path: screenshotPathBetween });
+    console.log(`Screenshot saved: ${screenshotPathBetween}`);
+
     await transactionPage.closeDraftModal();
     await new Promise(r => setTimeout(r, 1000));
+    // Take a screenshot after closing the draft modal
+    const screenshotPathAfter = `./test-results/screenshots/${testNameWithTimestamp}_after.png`;
+    await window.screenshot({ path: screenshotPathAfter });
+    console.log(`Screenshot saved: ${screenshotPathAfter}`);
   });
 
   test.afterEach(async ({}, testInfo) => {
     if (testInfo.status !== 'passed') {
-      const screenshotPath = `./test-results/screenshots/${testInfo.title.replace(/\s+/g, '_')}.png`;
+      // Remove double quotes from the test name
+      const sanitizedTitle = testInfo.title.replace(/["]/g, '').replace(/\s+/g, '_');
+      const screenshotPath = `./test-results/screenshots/${sanitizedTitle}.png`;
       await window.screenshot({ path: screenshotPath });
       console.log(`Screenshot saved: ${screenshotPath}`);
     }
@@ -202,7 +225,6 @@ test.describe('Workflow tests', () => {
     await accountPage.unlinkAccounts();
     await accountPage.addAccountToUnliked(newAccountId);
     await accountPage.addAccountToUnliked(accountFromList);
-    await transactionPage.clickOnTransactionsMenuButton();
     await accountPage.clickOnAccountsLink();
     const isFirstAccountCardVisible = await transactionPage.isAccountCardVisible(accountFromList);
     expect(isFirstAccountCardVisible).toBe(false);
