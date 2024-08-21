@@ -90,6 +90,42 @@ class BasePage {
     );
   }
 
+  async getTextByTestIdWithRetry(
+    testId,
+    timeout = this.DEFAULT_TIMEOUT,
+    retries = 5,
+    retryDelay = 1000,
+  ) {
+    console.log(`Getting text for element with testId: ${testId}`);
+    let attempt = 0;
+    let textContent = '';
+
+    while (attempt < retries) {
+      const element = this.window.getByTestId(testId);
+      await element.waitFor({ state: 'visible', timeout: timeout });
+
+      textContent = await element.textContent();
+      console.log(
+        `Attempt ${attempt + 1}: Retrieved text content: "${textContent}" for element with testId: ${testId}`,
+      );
+
+      if (textContent && textContent.trim() !== '') {
+        return textContent;
+      }
+
+      // Increment the attempt counter and delay before retrying
+      attempt++;
+      if (attempt < retries) {
+        console.log(`Text content is empty or invalid, retrying after ${retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+    }
+
+    throw new Error(
+      `Failed to retrieve valid text content for element with testId: ${testId} after ${retries} attempts.`,
+    );
+  }
+
   async getTextByCssSelector(selector, timeout = this.DEFAULT_TIMEOUT) {
     console.log(`Getting text for element with CSS selector: ${selector}`);
     const element = this.window.locator(selector);

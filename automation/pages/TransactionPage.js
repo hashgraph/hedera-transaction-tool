@@ -884,7 +884,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInTransferAccountId() {
-    const allAccountIdsText = await this.getTextByTestId(this.payerDropdownSelector);
+    const allAccountIdsText = await this.getTextByTestIdWithRetry(this.payerDropdownSelector);
     console.log('All Account IDs:', allAccountIdsText);
     console.log('All Account IDs:', allAccountIdsText);
     console.log('All Account IDs:', allAccountIdsText);
