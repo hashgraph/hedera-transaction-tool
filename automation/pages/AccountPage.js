@@ -147,7 +147,53 @@ class AccountPage extends BasePage {
   }
 
   async fillInExistingAccountId(accountId) {
-    await this.fillByTestId(this.existingAccountIdInputSelector, accountId);
+    await this.fillInAccountId(
+      accountId,
+      this.existingAccountIdInputSelector,
+      this.linkAccountButtonSelector,
+    );
+  }
+
+  /**
+   * Generalized function to fill in the account ID input field, remove the last character,
+   * type it again to trigger UI updates, and retry until the target button is enabled.
+   * @param {string} accountId - The account ID to be filled in.
+   * @param {string} inputSelector - The test ID selector for the input field.
+   * @param {string} buttonSelector - The test ID selector for the button to check.
+   */
+  async fillInAccountId(accountId, inputSelector, buttonSelector) {
+    const maxRetries = 100; // Maximum number of retries before giving up
+    let attempt = 0;
+
+    while (attempt < maxRetries) {
+      // Fill the input normally
+      const element = this.window.getByTestId(inputSelector);
+      await element.fill(accountId);
+
+      // Grab the last character of accountId and prepare the version without the last char
+      const lastChar = accountId.slice(-1);
+      const withoutLastChar = accountId.slice(0, -1);
+
+      // Clear the input and retype it without the last character
+      await element.fill(withoutLastChar);
+
+      // Type the last character
+      await this.window.keyboard.type(lastChar);
+
+      // Check if the target button is enabled
+      if (await this.isButtonEnabled(buttonSelector)) {
+        return; // Exit the function if the button is enabled
+      }
+
+      // Wait a short period before retrying to allow for UI updates
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      attempt++; // Increment the attempt counter
+    }
+
+    throw new Error(
+      `Failed to enable the button after multiple attempts. Selector: ${buttonSelector}`,
+    );
   }
 
   async clickOnLinkAccountButton() {
