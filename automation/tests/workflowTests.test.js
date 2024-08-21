@@ -56,6 +56,7 @@ test.describe('Workflow tests', () => {
 
   test.beforeEach(async () => {
     await transactionPage.clickOnTransactionsMenuButton();
+    await new Promise(resolve => setTimeout(resolve, 1000));
     await transactionPage.closeDraftModal();
   });
 
