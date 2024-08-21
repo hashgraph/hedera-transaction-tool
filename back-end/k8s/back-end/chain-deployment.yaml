@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: chain
-          image: chain:local
+          image: gcr.io/transaction-tool-dev/chain
           env:
             - name: RABBITMQ_USERNAME
               valueFrom:

@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: notifications
-          image: notifications:local
+          image: gcr.io/transaction-tool-dev/notifications
           env:
             - name: HTTP_PORT
               value: '3020'

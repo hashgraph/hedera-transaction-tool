@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: api:local
+          image: gcr.io/transaction-tool-dev/api
           env:
             - name: HTTP_PORT
               value: '3000'
