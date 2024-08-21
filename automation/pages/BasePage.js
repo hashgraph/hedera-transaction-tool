@@ -109,6 +109,43 @@ class BasePage {
     await element.fill(value);
   }
 
+  async fillAndVerifyByTestId(testId, value, retries = 5) {
+    let attempt = 0;
+    let currentValue = '';
+
+    while (attempt < retries) {
+      // Fill the input field with the provided value
+      console.log(
+        `Attempt ${attempt + 1}: Filling element with testId: ${testId} with value: ${value}`,
+      );
+      await this.fillByTestId(testId, value);
+
+      // Verify the value in the input field
+      currentValue = await this.getTextFromInputFieldByTestId(testId);
+      console.log(
+        `Attempt ${attempt + 1}: Verifying element with testId: ${testId}, expected value: ${value}, current value: ${currentValue}`,
+      );
+
+      if (currentValue === value) {
+        // Value is correct, break out of the loop
+        console.log(
+          `Successfully filled element with testId: ${testId} with value: ${value} on attempt ${attempt + 1}`,
+        );
+        break;
+      }
+
+      // Increment the attempt counter
+      attempt++;
+      await new Promise(resolve => setTimeout(resolve, 500)); // Wait for 500 milliseconds before retrying
+    }
+
+    if (currentValue !== value) {
+      throw new Error(
+        `Failed to correctly fill element with testId: ${testId} after ${retries} attempts. Expected: ${value}, Found: ${currentValue}`,
+      );
+    }
+  }
+
   async isElementVisibleAndEditable(testId, timeout = this.DEFAULT_TIMEOUT) {
     console.log(`Checking if element with testId: ${testId} is visible and editable`);
     const element = this.window.getByTestId(testId);
