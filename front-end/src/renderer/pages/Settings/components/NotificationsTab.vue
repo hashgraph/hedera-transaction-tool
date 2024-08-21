@@ -4,12 +4,18 @@ import useNotificationsStore from '@renderer/stores/storeNotifications';
 import useRedirectOnOnlyOrganization from '@renderer/composables/useRedirectOnOnlyOrganization';
 
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
+import { NotificationType } from '@main/shared/interfaces';
 
 /* Stores */
 const notifications = useNotificationsStore();
 
 /* Composable */
 useRedirectOnOnlyOrganization();
+
+/* Handlers */
+const handlePreferenceChange = (type: NotificationType, email: boolean) => {
+  notifications.updatePreferences({ type, email });
+};
 </script>
 
 <template>
@@ -18,9 +24,11 @@ useRedirectOnOnlyOrganization();
       <p>Email notifications</p>
       <div class="mt-4">
         <AppSwitch
-          :checked="notifications.notifications['threshold-reached']"
+          :checked="
+            notifications.notificationsPreferences[NotificationType.TRANSACTION_READY_FOR_EXECUTION]
+          "
           @update:checked="
-            notifications.updatePreferences({ transactionReadyForExecution: $event })
+            handlePreferenceChange(NotificationType.TRANSACTION_READY_FOR_EXECUTION, $event)
           "
           name="threshold-reached"
           label="Transaction Threshold Reached"
@@ -32,9 +40,13 @@ useRedirectOnOnlyOrganization();
       </div>
       <div class="mt-6">
         <AppSwitch
-          :checked="notifications.notifications['required-signatures']"
+          :checked="
+            notifications.notificationsPreferences[
+              NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES
+            ]
+          "
           @update:checked="
-            notifications.updatePreferences({ transactionRequiredSignature: $event })
+            handlePreferenceChange(NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, $event)
           "
           name="required-signatures"
           label="Required Signature"

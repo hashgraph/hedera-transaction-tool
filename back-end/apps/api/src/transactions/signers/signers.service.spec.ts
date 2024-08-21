@@ -7,7 +7,14 @@ import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { Transaction, TransactionSigner, TransactionStatus, User } from '@entities';
 
 import { AccountCreateTransaction } from '@hashgraph/sdk';
-import { CHAIN_SERVICE, MirrorNodeService } from '@app/common';
+import {
+  CHAIN_SERVICE,
+  MirrorNodeService,
+  NOTIFICATIONS_SERVICE,
+  NOTIFY_CLIENT,
+  SYNC_INDICATORS,
+  TRANSACTION_ACTION,
+} from '@app/common';
 import {
   addTransactionSignatures,
   isAlreadySigned,
@@ -26,6 +33,7 @@ describe('SignaturesService', () => {
   const signersRepo = mockDeep<Repository<TransactionSigner>>();
   const dataSource = mockDeep<DataSource>();
   const chainService = mock<ClientProxy>();
+  const notificationService = mock<ClientProxy>();
   const mirrorNodeService = mock<MirrorNodeService>();
 
   const defaultPagination = {
@@ -56,6 +64,10 @@ describe('SignaturesService', () => {
         {
           provide: CHAIN_SERVICE,
           useValue: chainService,
+        },
+        {
+          provide: NOTIFICATIONS_SERVICE,
+          useValue: notificationService,
         },
         {
           provide: MirrorNodeService,
@@ -235,6 +247,15 @@ describe('SignaturesService', () => {
       expect(chainService.emit).toHaveBeenCalledWith('update-transaction-status', {
         id: transactionId,
       });
+      expect(notificationService.emit).toHaveBeenNthCalledWith(1, NOTIFY_CLIENT, {
+        message: TRANSACTION_ACTION,
+        content: '',
+      });
+      expect(notificationService.emit).toHaveBeenNthCalledWith(2, SYNC_INDICATORS, {
+        transactionId,
+        transactionStatus: transaction.status,
+      });
+      expect(notificationService.emit).toHaveBeenCalledTimes(2);
     });
 
     it('should throw if signature public key does not belong to sender', async () => {
@@ -244,6 +265,7 @@ describe('SignaturesService', () => {
       await expect(
         service.uploadSignature(transactionId, { publicKeyId, signatures }, user),
       ).rejects.toThrow('Transaction can be signed only with your own key');
+      expect(notificationService.emit).not.toHaveBeenCalled();
     });
 
     it('should throw if transaction is not found', async () => {
@@ -255,6 +277,7 @@ describe('SignaturesService', () => {
       await expect(
         service.uploadSignature(transactionId, { publicKeyId, signatures }, user),
       ).rejects.toThrow('Transaction not found');
+      expect(notificationService.emit).not.toHaveBeenCalled();
     });
 
     it('should throw if transaction is expired', async () => {
@@ -274,6 +297,7 @@ describe('SignaturesService', () => {
       await expect(
         service.uploadSignature(transactionId, { publicKeyId, signatures }, user),
       ).rejects.toThrow('Transaction is expired');
+      expect(notificationService.emit).not.toHaveBeenCalled();
     });
 
     it('should throw if transaction is canceled', async () => {
@@ -293,6 +317,7 @@ describe('SignaturesService', () => {
       await expect(
         service.uploadSignature(transactionId, { publicKeyId, signatures }, user),
       ).rejects.toThrow('Transaction has been canceled');
+      expect(notificationService.emit).not.toHaveBeenCalled();
     });
 
     it('should throw if some signature is invalid', async () => {
@@ -313,6 +338,7 @@ describe('SignaturesService', () => {
       await expect(
         service.uploadSignature(transactionId, { publicKeyId, signatures }, user),
       ).rejects.toThrow();
+      expect(notificationService.emit).not.toHaveBeenCalled();
     });
 
     it('should throw if transaction is already signed', async () => {
@@ -334,6 +360,7 @@ describe('SignaturesService', () => {
       await expect(
         service.uploadSignature(transactionId, { publicKeyId, signatures }, user),
       ).rejects.toThrow('Signature already added');
+      expect(notificationService.emit).not.toHaveBeenCalled();
     });
 
     it('should throw if the provided key should not sign the transaction', async () => {
@@ -356,6 +383,7 @@ describe('SignaturesService', () => {
       await expect(
         service.uploadSignature(transactionId, { publicKeyId, signatures }, user),
       ).rejects.toThrow('This key is not required to sign this transaction');
+      expect(notificationService.emit).not.toHaveBeenCalled();
     });
 
     it('should throw if the adding of the signatures fails', async () => {
@@ -381,6 +409,7 @@ describe('SignaturesService', () => {
       await expect(
         service.uploadSignature(transactionId, { publicKeyId, signatures }, user),
       ).rejects.toThrow('An Error');
+      expect(notificationService.emit).not.toHaveBeenCalled();
     });
 
     it('should throw if the database update fails', async () => {
@@ -408,6 +437,7 @@ describe('SignaturesService', () => {
       await expect(
         service.uploadSignature(transactionId, { publicKeyId, signatures }, user),
       ).rejects.toThrow('Failed to update transaction');
+      expect(notificationService.emit).not.toHaveBeenCalled();
     });
 
     it('should throw if the database signer creation fails', async () => {
@@ -435,6 +465,7 @@ describe('SignaturesService', () => {
       await expect(
         service.uploadSignature(transactionId, { publicKeyId, signatures }, user),
       ).rejects.toThrow('Failed to save transaction');
+      expect(notificationService.emit).not.toHaveBeenCalled();
     });
   });
 
@@ -500,6 +531,15 @@ describe('SignaturesService', () => {
       expect(chainService.emit).toHaveBeenCalledWith('update-transaction-status', {
         id: transactionId,
       });
+      expect(notificationService.emit).toHaveBeenNthCalledWith(1, NOTIFY_CLIENT, {
+        message: TRANSACTION_ACTION,
+        content: '',
+      });
+      expect(notificationService.emit).toHaveBeenNthCalledWith(2, SYNC_INDICATORS, {
+        transactionId,
+        transactionStatus: transaction.status,
+      });
+      expect(notificationService.emit).toHaveBeenCalledTimes(2);
     });
 
     it('should throw if signature public key does not belong to sender', async () => {
@@ -513,6 +553,7 @@ describe('SignaturesService', () => {
           user,
         ),
       ).rejects.toThrow('Transaction can be signed only with your own key');
+      expect(notificationService.emit).not.toHaveBeenCalled();
     });
 
     it('should throw if transaction is not found', async () => {
@@ -528,6 +569,7 @@ describe('SignaturesService', () => {
           user,
         ),
       ).rejects.toThrow('Transaction not found');
+      expect(notificationService.emit).not.toHaveBeenCalled();
     });
 
     it('should throw if transaction is expired', async () => {
@@ -551,6 +593,7 @@ describe('SignaturesService', () => {
           user,
         ),
       ).rejects.toThrow('Transaction is expired');
+      expect(notificationService.emit).not.toHaveBeenCalled();
     });
 
     it('should throw if transaction is canceled', async () => {
@@ -574,6 +617,7 @@ describe('SignaturesService', () => {
           user,
         ),
       ).rejects.toThrow('Transaction has been canceled');
+      expect(notificationService.emit).not.toHaveBeenCalled();
     });
 
     it('should throw if some signature is invalid', async () => {
@@ -598,6 +642,7 @@ describe('SignaturesService', () => {
           user,
         ),
       ).rejects.toThrow();
+      expect(notificationService.emit).not.toHaveBeenCalled();
     });
 
     it('should throw if transaction is already signed', async () => {
@@ -623,6 +668,7 @@ describe('SignaturesService', () => {
           user,
         ),
       ).rejects.toThrow('Signature already added');
+      expect(notificationService.emit).not.toHaveBeenCalled();
     });
 
     // it('should throw if the provided key should not sign the transaction', async () => {
@@ -678,6 +724,7 @@ describe('SignaturesService', () => {
           user,
         ),
       ).rejects.toThrow('An Error');
+      expect(notificationService.emit).not.toHaveBeenCalled();
     });
 
     it('should throw if the database update fails', async () => {
@@ -709,6 +756,7 @@ describe('SignaturesService', () => {
           user,
         ),
       ).rejects.toThrow('Failed to update transaction');
+      expect(notificationService.emit).not.toHaveBeenCalled();
     });
 
     it('should throw if the database signer creation fails', async () => {
@@ -740,6 +788,7 @@ describe('SignaturesService', () => {
           user,
         ),
       ).rejects.toThrow('Failed to save transaction');
+      expect(notificationService.emit).not.toHaveBeenCalled();
     });
   });
 

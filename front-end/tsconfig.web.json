@@ -2,7 +2,7 @@
   "extends": "@electron-toolkit/tsconfig/tsconfig.web.json",
   "include": [
     "node_modules/@prisma/client",
-    "src/main/shared",
+    "src/main/shared/**/*",
     "src/renderer/env.d.ts",
     "src/renderer/**/*",
     "src/renderer/**/*.vue",
@@ -13,12 +13,8 @@
     "types": ["vitest/globals"],
     "baseUrl": ".",
     "paths": {
-      "@renderer/*": [
-        "src/renderer/*"
-      ],
-      "@main/*": [
-        "src/main/*"
-      ]
+      "@renderer/*": ["src/renderer/*"],
+      "@main/*": ["src/main/*"]
     }
   }
 }

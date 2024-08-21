@@ -24,6 +24,8 @@ import {
   NOTIFICATIONS_SERVICE,
   NOTIFY_CLIENT,
   NotifyClientDto,
+  SYNC_INDICATORS,
+  SyncIndicatorsDto,
   TRANSACTION_ACTION,
   userKeysRequiredToSign,
   verifyTransactionBodyWithoutNodeAccountIdSignature,
@@ -363,12 +365,14 @@ export class ApproversService {
         for (const approver of dto.approversArray) {
           await createApprover(approver);
         }
-
-        this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-          message: TRANSACTION_ACTION,
-          content: '',
-        });
       });
+
+      this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+        message: TRANSACTION_ACTION,
+        content: '',
+      });
+
+      await this.emitSyncIndicators(transactionId);
     } catch (error) {
       throw new BadRequestException(error.message);
     }
@@ -384,6 +388,8 @@ export class ApproversService {
     user: User,
   ): Promise<TransactionApprover> {
     try {
+      let updated = false;
+
       const approver = await this.dataSource.transaction(async transactionalEntityManager => {
         /* Check if the dto updates only one thing */
         if (Object.keys(dto).length > 1 || Object.keys(dto).length === 0)
@@ -423,6 +429,7 @@ export class ApproversService {
             });
             approver.listId = null;
             approver.transactionId = rootNode.transactionId;
+            updated = true;
 
             if (parent) {
               const newParentApproversLength = parent.approvers.length - 1;
@@ -471,6 +478,7 @@ export class ApproversService {
           });
           approver.listId = dto.listId;
           approver.transactionId = null;
+          updated = true;
 
           return approver;
         } else if (typeof dto.threshold === 'number') {
@@ -491,6 +499,7 @@ export class ApproversService {
               threshold: dto.threshold,
             });
             approver.threshold = dto.threshold;
+            updated = true;
 
             return approver;
           }
@@ -519,6 +528,7 @@ export class ApproversService {
 
             await transactionalEntityManager.update(TransactionApprover, approver.id, data);
             approver.userId = dto.userId;
+            updated = true;
 
             return approver;
           }
@@ -527,10 +537,14 @@ export class ApproversService {
         return approver;
       });
 
-      this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-        message: TRANSACTION_ACTION,
-        content: '',
-      });
+      if (updated) {
+        this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+          message: TRANSACTION_ACTION,
+          content: '',
+        });
+
+        await this.emitSyncIndicators(transactionId);
+      }
 
       return approver;
     } catch (error) {
@@ -630,6 +644,11 @@ export class ApproversService {
       content: '',
     });
 
+    this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
+      transactionId: transaction.id,
+      transactionStatus: transaction.status,
+    });
+
     return true;
   }
 
@@ -676,6 +695,20 @@ export class ApproversService {
 
     const count = await (entityManager || this.repo).count(TransactionApprover, find);
     return count > 0 && typeof approver.userId === 'number' ? true : false;
+  }
+
+  /* Emit sync indicators */
+  async emitSyncIndicators(transactionId: number) {
+    const transaction = await this.dataSource.manager.findOne(Transaction, {
+      where: { id: transactionId },
+    });
+
+    if (!transaction) return;
+
+    this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
+      transactionId: transactionId,
+      transactionStatus: transaction.status,
+    });
   }
 
   /* Get the tree structure of the approvers */

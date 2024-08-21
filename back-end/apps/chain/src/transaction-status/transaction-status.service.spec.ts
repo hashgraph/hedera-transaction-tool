@@ -10,8 +10,13 @@ import {
   computeSignatureKey,
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
+  NOTIFY_CLIENT,
+  NOTIFY_GENERAL,
+  TRANSACTION_ACTION,
+  SYNC_INDICATORS,
+  NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
 } from '@app/common';
-import { Transaction, TransactionStatus } from '@entities';
+import { NotificationType, Transaction, TransactionStatus } from '@entities';
 
 import { TransactionStatusService } from './transaction-status.service';
 import { ExecuteService } from '../execute/execute.service';
@@ -242,9 +247,21 @@ describe('TransactionStatusService', () => {
 
     expect(transactionRepo.manager.transaction).toHaveBeenCalled();
     expect(transactionRepo.manager.update).toHaveBeenCalled();
+
+    for (const transaction of expiredTransactions) {
+      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
+        transactionId: transaction.id,
+        transactionStatus: TransactionStatus.EXPIRED,
+      });
+    }
+    expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, {
+      message: TRANSACTION_ACTION,
+      content: '',
+    });
+    expect(notificationsService.emit).toHaveBeenCalledTimes(4);
   });
 
-  describe('updateTransactionss', () => {
+  describe('updateTransactions', () => {
     beforeEach(() => {
       jest.resetAllMocks();
     });
@@ -255,11 +272,19 @@ describe('TransactionStatusService', () => {
           id: 1,
           status: TransactionStatus.WAITING_FOR_SIGNATURES,
           body: new AccountCreateTransaction().toBytes(),
+          transactionId: '0.0.1',
+          creatorKey: {
+            userId: 23,
+          },
         },
         {
           id: 2,
           status: TransactionStatus.WAITING_FOR_EXECUTION,
           body: new AccountCreateTransaction().toBytes(),
+          transactionId: '0.0.2',
+          creatorKey: {
+            userId: 24,
+          },
         },
       ];
 
@@ -289,7 +314,33 @@ describe('TransactionStatusService', () => {
           status: TransactionStatus.WAITING_FOR_SIGNATURES,
         },
       );
-      expect(notificationsService.emit).toHaveBeenCalledTimes(2);
+      expect(notificationsService.emit).toHaveBeenNthCalledWith(1, SYNC_INDICATORS, {
+        transactionId: transactions[0].id,
+        transactionStatus: TransactionStatus.WAITING_FOR_EXECUTION,
+      });
+      expect(notificationsService.emit).toHaveBeenNthCalledWith(2, NOTIFY_GENERAL, {
+        entityId: transactions[0].id,
+        type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
+        actorId: null,
+        content: `Transaction ${transactions[0].transactionId} is ready for execution`,
+        userIds: [transactions[0].creatorKey?.userId],
+      });
+      expect(notificationsService.emit).toHaveBeenNthCalledWith(3, SYNC_INDICATORS, {
+        transactionId: transactions[1].id,
+        transactionStatus: TransactionStatus.WAITING_FOR_SIGNATURES,
+      });
+      expect(notificationsService.emit).toHaveBeenNthCalledWith(
+        4,
+        NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
+        {
+          transactionId: transactions[1].id,
+        },
+      );
+      expect(notificationsService.emit).toHaveBeenNthCalledWith(5, NOTIFY_CLIENT, {
+        message: TRANSACTION_ACTION,
+        content: '',
+      });
+      expect(notificationsService.emit).toHaveBeenCalledTimes(5);
     });
 
     it('should not emit notifications event if no transactions updated', async () => {
@@ -351,7 +402,22 @@ describe('TransactionStatusService', () => {
       await service.updateTransactions(new Date(), new Date());
 
       expect(transactionRepo.update).toHaveBeenCalledTimes(1);
-      expect(notificationsService.emit).toHaveBeenCalledTimes(1);
+      expect(notificationsService.emit).toHaveBeenNthCalledWith(1, SYNC_INDICATORS, {
+        transactionId: transactions[1].id,
+        transactionStatus: TransactionStatus.WAITING_FOR_SIGNATURES,
+      });
+      expect(notificationsService.emit).toHaveBeenNthCalledWith(
+        2,
+        NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
+        {
+          transactionId: transactions[1].id,
+        },
+      );
+      expect(notificationsService.emit).toHaveBeenNthCalledWith(3, NOTIFY_CLIENT, {
+        message: TRANSACTION_ACTION,
+        content: '',
+      });
+      expect(notificationsService.emit).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -365,6 +431,10 @@ describe('TransactionStatusService', () => {
         id: 1,
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         body: new AccountCreateTransaction().toBytes(),
+        transactionId: '0.0.1',
+        creatorKey: {
+          userId: 23,
+        },
       };
       transactionRepo.findOne.mockResolvedValue(transaction as Transaction);
 
@@ -382,7 +452,22 @@ describe('TransactionStatusService', () => {
           status: TransactionStatus.WAITING_FOR_EXECUTION,
         },
       );
-      expect(notificationsService.emit).toHaveBeenCalledTimes(2);
+      expect(notificationsService.emit).toHaveBeenNthCalledWith(1, SYNC_INDICATORS, {
+        transactionId: transaction.id,
+        transactionStatus: TransactionStatus.WAITING_FOR_EXECUTION,
+      });
+      expect(notificationsService.emit).toHaveBeenNthCalledWith(2, NOTIFY_GENERAL, {
+        entityId: transaction.id,
+        type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
+        actorId: null,
+        content: `Transaction ${transaction.transactionId} is ready for execution`,
+        userIds: [transaction.creatorKey?.userId],
+      });
+      expect(notificationsService.emit).toHaveBeenNthCalledWith(3, NOTIFY_CLIENT, {
+        message: TRANSACTION_ACTION,
+        content: '',
+      });
+      expect(notificationsService.emit).toHaveBeenCalledTimes(3);
     });
 
     it('should not emit notifications event if no transactions updated', async () => {

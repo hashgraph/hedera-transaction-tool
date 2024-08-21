@@ -82,6 +82,10 @@ const useNetworkStore = defineStore('network', () => {
   });
 
   /* Actions */
+  async function setup() {
+    await setNetwork(Network.TESTNET);
+  }
+
   async function setNetwork(newNetwork: Network, _customNetworkSettings?: CustomNetworkSettings) {
     if (newNetwork === 'custom') {
       if (!_customNetworkSettings) {
@@ -134,6 +138,7 @@ const useNetworkStore = defineStore('network', () => {
     client,
     currentRate,
     nodeNumbers,
+    setup,
     setNetwork,
     getMirrorNodeLinkByNetwork,
   };

@@ -7,8 +7,14 @@ import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
   CHAIN_SERVICE,
+  NOTIFICATIONS_SERVICE,
+  NOTIFY_CLIENT,
+  TRANSACTION_ACTION,
+  SYNC_INDICATORS,
   MirrorNodeService,
+  NotifyClientDto,
   PaginatedResourceDto,
+  SyncIndicatorsDto,
   Pagination,
   addTransactionSignatures,
   isAlreadySigned,
@@ -28,6 +34,7 @@ export class SignersService {
     private repo: Repository<TransactionSigner>,
     @InjectDataSource() private dataSource: DataSource,
     @Inject(CHAIN_SERVICE) private readonly chainService: ClientProxy,
+    @Inject(NOTIFICATIONS_SERVICE) private readonly notificationService: ClientProxy,
     private readonly mirrorNodeService: MirrorNodeService,
   ) {}
 
@@ -177,6 +184,14 @@ export class SignersService {
 
       /* Check if ready to execute */
       this.chainService.emit('update-transaction-status', { id: transactionId });
+      this.notificationService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+        message: TRANSACTION_ACTION,
+        content: '',
+      });
+      this.notificationService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
+        transactionId: transactionId,
+        transactionStatus: transaction.status,
+      });
 
       return signer;
     } catch (error) {
@@ -282,7 +297,14 @@ export class SignersService {
 
       /* Check if ready to execute */
       this.chainService.emit('update-transaction-status', { id: transactionId });
-
+      this.notificationService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+        message: TRANSACTION_ACTION,
+        content: '',
+      });
+      this.notificationService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
+        transactionId: transactionId,
+        transactionStatus: transaction.status,
+      });
       return signers;
     } catch (error) {
       await queryRunner.rollbackTransaction();

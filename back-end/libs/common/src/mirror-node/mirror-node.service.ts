@@ -11,7 +11,6 @@ import { AccountInfo, MirrorNodeBaseURL } from '@app/common';
 
 @Injectable()
 export class MirrorNodeService {
-  /* Temporary manual cache */
   private cacheExpirationMs = 5 * 60 * 1_000;
 
   constructor(

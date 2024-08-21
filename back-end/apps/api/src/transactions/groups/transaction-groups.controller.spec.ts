@@ -18,14 +18,14 @@ describe('TransactionGroupsController', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-        controllers: [TransactionGroupsController],
-        providers: [
-          {
-            provide: TransactionGroupsService,
-            useValue: transactionGroupsService,
-          },
-        ],
-      })
+      controllers: [TransactionGroupsController],
+      providers: [
+        {
+          provide: TransactionGroupsService,
+          useValue: transactionGroupsService,
+        },
+      ],
+    })
       .overrideGuard(VerifiedUserGuard)
       .useValue(guardMock())
       .compile();
@@ -45,6 +45,9 @@ describe('TransactionGroupsController', () => {
       observableTransactions: [],
       approvableTransactions: [],
       comments: [],
+      issuedNotifications: [],
+      receivedNotifications: [],
+      notificationPreferences: [],
     };
     transactionGroup = {
       id: 1,
@@ -77,6 +80,16 @@ describe('TransactionGroupsController', () => {
       transactionGroupsService.getTransactionGroups.mockResolvedValue(result);
 
       expect(await controller.getTransactionGroups()).toEqual(result);
+    });
+  });
+
+  describe('getTransactionGroup', () => {
+    it('should return a transaction group', async () => {
+      const result = transactionGroup;
+
+      transactionGroupsService.getTransactionGroup.mockResolvedValue(result);
+
+      expect(await controller.getTransactionGroup(user, 1)).toEqual(result);
     });
   });
 

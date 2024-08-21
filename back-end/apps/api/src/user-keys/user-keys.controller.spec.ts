@@ -46,6 +46,9 @@ describe('UserKeysController', () => {
       observableTransactions: [],
       approvableTransactions: [],
       comments: [],
+      issuedNotifications: [],
+      receivedNotifications: [],
+      notificationPreferences: [],
     };
 
     userKey = {

@@ -3,17 +3,21 @@ import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 
 import { Transaction } from '@hashgraph/sdk';
 
-import { ITransaction } from '@main/shared/interfaces';
+import { ITransaction, NotificationType } from '@main/shared/interfaces';
+import { TRANSACTION_ACTION } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
+import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 
 import { getApiGroups, getTransactionsToApprove } from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
+import { getNotifiedTransactions } from '@renderer/utils';
 import {
   getTransactionDateExtended,
   getTransactionId,
@@ -29,10 +33,12 @@ import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const notifications = useNotificationsStore();
 
 /* Composables */
 const router = useRouter();
 const ws = useDisposableWs();
+const { oldNotifications } = useMarkNotifications([NotificationType.TRANSACTION_INDICATOR_APPROVE]);
 
 /* State */
 const transactions = ref<
@@ -45,6 +51,7 @@ const transactions = ref<
   >
 >(new Map());
 const groups = ref();
+const notifiedTransactionIds = ref<number[]>([]);
 const totalItems = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
@@ -110,9 +117,20 @@ const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') 
 };
 
 /* Functions */
+function setNotifiedTransactions() {
+  const flatTransactions = [...transactions.value.values()].flat();
+
+  notifiedTransactionIds.value = getNotifiedTransactions(
+    notifications.notifications.concat(oldNotifications.value),
+    flatTransactions.map(t => t.transactionRaw),
+    [NotificationType.TRANSACTION_INDICATOR_APPROVE],
+  );
+}
+
 async function fetchTransactions() {
   transactions.value = new Map();
   if (!isLoggedInOrganization(user.selectedOrganization)) {
+    notifiedTransactionIds.value = [];
     return;
   }
 
@@ -128,6 +146,7 @@ async function fetchTransactions() {
       [{ property: sort.field, direction: sort.direction }],
     );
     totalItems.value = total;
+
     const transactionsBytes = await hexToUint8ArrayBatch(rawTransactions.map(t => t.body));
 
     for (const [i, transaction] of rawTransactions.entries()) {
@@ -146,6 +165,8 @@ async function fetchTransactions() {
       }
     }
 
+    setNotifiedTransactions();
+
     groups.value = await getApiGroups(user.selectedOrganization.serverUrl);
   } finally {
     isLoading.value = false;
@@ -158,7 +179,7 @@ function getOpositeDirection() {
 
 /* Hooks */
 onBeforeMount(async () => {
-  ws.on('transaction_action', async () => {
+  ws.on(TRANSACTION_ACTION, async () => {
     await fetchTransactions();
   });
   await fetchTransactions();
@@ -168,6 +189,13 @@ onBeforeMount(async () => {
 watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
   await fetchTransactions();
 });
+
+watch(
+  () => notifications.notifications,
+  () => {
+    setNotifiedTransactions();
+  },
+);
 </script>
 
 <template>
@@ -262,7 +290,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
 
               <template v-else>
                 <template v-for="(tx, index) in group[1]" :key="tx.transactionRaw.id">
-                  <tr>
+                  <tr :class="{ highlight: notifiedTransactionIds.includes(tx.transactionRaw.id) }">
                     <td :data-testid="`td-review-transaction-id-${index}`">
                       {{
                         tx.transaction instanceof Transaction

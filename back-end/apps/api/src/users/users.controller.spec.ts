@@ -44,6 +44,9 @@ describe('UsersController', () => {
       observableTransactions: [],
       approvableTransactions: [],
       comments: [],
+      issuedNotifications: [],
+      receivedNotifications: [],
+      notificationPreferences: [],
     };
   });
 

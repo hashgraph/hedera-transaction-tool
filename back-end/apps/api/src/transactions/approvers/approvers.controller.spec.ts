@@ -45,6 +45,9 @@ describe('ApproversController', () => {
       observableTransactions: [],
       approvableTransactions: [],
       comments: [],
+      issuedNotifications: [],
+      receivedNotifications: [],
+      notificationPreferences: [],
     };
     transactionApprover = {
       id: 1,
@@ -102,6 +105,7 @@ describe('ApproversController', () => {
       const result = true;
 
       expect(await controller.removeTransactionApprover(user, 1, 1)).toBe(result);
+      expect(approversService.emitSyncIndicators).toHaveBeenCalled();
     });
   });
 

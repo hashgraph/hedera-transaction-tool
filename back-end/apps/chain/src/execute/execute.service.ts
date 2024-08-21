@@ -18,9 +18,11 @@ import {
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
   NOTIFY_CLIENT,
-  NotifyClientDto,
+  SYNC_INDICATORS,
   TRANSACTION_ACTION,
+  NotifyClientDto,
   TransactionExecutedDto,
+  SyncIndicatorsDto,
   ableToSign,
   computeSignatureKey,
   getClientFromName,
@@ -117,6 +119,11 @@ export class ExecuteService {
       );
 
       client.close();
+
+      this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
+        transactionId: transaction.id,
+        transactionStatus: transaction.status,
+      });
 
       this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
         message: TRANSACTION_ACTION,

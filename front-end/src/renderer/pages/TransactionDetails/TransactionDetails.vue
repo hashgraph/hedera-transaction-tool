@@ -6,6 +6,7 @@ import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 import { Transaction } from '@prisma/client';
 
 import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
+import { TRANSACTION_ACTION } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
@@ -496,7 +497,7 @@ onBeforeMount(async () => {
     return;
   }
 
-  ws.on('transaction_action', async () => {
+  ws.on(TRANSACTION_ACTION, async () => {
     await fetchTransaction(Array.isArray(id) ? id[0] : id);
   });
 

@@ -30,4 +30,13 @@ export class EmailService {
 
     console.log(`Message sent: ${info.messageId}`);
   }
+
+  async processEmail(options: nodemailer.SendMailOptions) {
+    /* 
+      TODO Add to email processor queue
+      Currently, just send the email
+    */
+    const info = await this.transporter.sendMail(options);
+    console.log(`Message sent: ${info.messageId}`);
+  }
 }

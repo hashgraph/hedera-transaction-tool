@@ -45,6 +45,9 @@ describe('SignaturesController', () => {
       observableTransactions: [],
       approvableTransactions: [],
       comments: [],
+      issuedNotifications: [],
+      receivedNotifications: [],
+      notificationPreferences: [],
     };
     signer = {
       id: 1,

@@ -14,15 +14,18 @@ import {
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
   NOTIFY_CLIENT,
-  NOTIFY_TRANSACTION_CREATOR_ON_READY_FOR_EXECUTION,
-  NotifyClientDto,
-  NotifyForTransactionDto,
+  NOTIFY_GENERAL,
+  SYNC_INDICATORS,
   TRANSACTION_ACTION,
+  NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
+  NotifyClientDto,
+  SyncIndicatorsDto,
+  NotifyGeneralDto,
+  NotifyForTransactionDto,
   ableToSign,
   computeSignatureKey,
 } from '@app/common';
-
-import { Transaction, TransactionStatus } from '@entities';
+import { NotificationType, Transaction, TransactionStatus } from '@entities';
 
 import { UpdateTransactionStatusDto } from './dto';
 import { ExecuteService } from '../execute/execute.service';
@@ -146,6 +149,11 @@ export class TransactionStatusService {
             status: TransactionStatus.EXPIRED,
           },
         );
+
+        this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
+          transactionId: transaction.id,
+          transactionStatus: TransactionStatus.EXPIRED,
+        });
       }
 
       if (transactions.length > 0) {
@@ -166,6 +174,9 @@ export class TransactionStatusService {
           TransactionStatus.WAITING_FOR_EXECUTION,
         ]),
         validStart: to ? Between(from, to) : MoreThan(from),
+      },
+      relations: {
+        creatorKey: true,
       },
     });
 
@@ -196,32 +207,25 @@ export class TransactionStatusService {
         ? TransactionStatus.WAITING_FOR_EXECUTION
         : TransactionStatus.WAITING_FOR_SIGNATURES;
 
-      if (transaction.status !== newStatus) {
-        try {
-          await this.transactionRepo.update(
-            {
-              id: transaction.id,
-            },
-            {
-              status: newStatus,
-            },
-          );
+      if (transaction.status === newStatus) continue;
 
-          transaction.status = newStatus;
+      try {
+        await this.transactionRepo.update(
+          {
+            id: transaction.id,
+          },
+          {
+            status: newStatus,
+          },
+        );
 
-          if (newStatus === TransactionStatus.WAITING_FOR_EXECUTION) {
-            this.notificationsService.emit<undefined, NotifyForTransactionDto>(
-              NOTIFY_TRANSACTION_CREATOR_ON_READY_FOR_EXECUTION,
-              {
-                transactionId: transaction.id,
-              },
-            );
-          }
+        transaction.status = newStatus;
 
-          atLeastOneUpdated = true;
-        } catch (error) {
-          console.log(error);
-        }
+        this.emitNotificationEvents(transaction, newStatus);
+
+        atLeastOneUpdated = true;
+      } catch (error) {
+        console.log(error);
       }
     }
 
@@ -237,7 +241,12 @@ export class TransactionStatusService {
 
   /* Checks if the signers are enough to sign the transaction and update its status */
   async updateTransactionStatus({ id }: UpdateTransactionStatusDto) {
-    const transaction = await this.transactionRepo.findOne({ where: { id } });
+    const transaction = await this.transactionRepo.findOne({
+      where: { id },
+      relations: {
+        creatorKey: true,
+      },
+    });
 
     /* Returns if the transaction is not found */
     if (!transaction) return;
@@ -276,19 +285,38 @@ export class TransactionStatusService {
       },
     );
 
-    if (newStatus === TransactionStatus.WAITING_FOR_EXECUTION) {
-      this.notificationsService.emit<undefined, NotifyForTransactionDto>(
-        NOTIFY_TRANSACTION_CREATOR_ON_READY_FOR_EXECUTION,
-        {
-          transactionId: transaction.id,
-        },
-      );
-    }
+    this.emitNotificationEvents(transaction, newStatus);
 
     this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
       message: TRANSACTION_ACTION,
       content: '',
     });
+  }
+
+  private emitNotificationEvents(transaction: Transaction, newStatus: TransactionStatus) {
+    this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
+      transactionId: transaction.id,
+      transactionStatus: newStatus,
+    });
+
+    if (newStatus === TransactionStatus.WAITING_FOR_EXECUTION) {
+      this.notificationsService.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
+        entityId: transaction.id,
+        type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
+        actorId: null,
+        content: `Transaction ${transaction.transactionId} is ready for execution`,
+        userIds: [transaction.creatorKey?.userId],
+      });
+    }
+
+    if (newStatus === TransactionStatus.WAITING_FOR_SIGNATURES) {
+      this.notificationsService.emit<undefined, NotifyForTransactionDto>(
+        NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
+        {
+          transactionId: transaction.id,
+        },
+      );
+    }
   }
 
   addExecutionTimeout(transaction: Transaction) {

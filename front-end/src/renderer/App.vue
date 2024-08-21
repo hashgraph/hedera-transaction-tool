@@ -9,7 +9,6 @@ import useThemeStore from '@renderer/stores/storeTheme';
 
 import useAutoLogin from '@renderer/composables/useAutoLogin';
 
-import { getExchangeRateSet } from './services/mirrorNodeDataService';
 import { setClient } from './services/transactionService';
 
 import {
@@ -64,7 +63,7 @@ onMounted(async () => {
 
 /* Hooks */
 onMounted(async () => {
-  network.exchangeRateSet = await getExchangeRateSet(network.mirrorNodeBaseURL);
+  await network.setup();
   await setClient(network.network);
 });
 

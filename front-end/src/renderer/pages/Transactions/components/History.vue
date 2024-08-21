@@ -4,18 +4,22 @@ import { Prisma, Transaction } from '@prisma/client';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
-import { ITransaction, TransactionStatus } from '@main/shared/interfaces';
+import { ITransaction, NotificationType, TransactionStatus } from '@main/shared/interfaces';
+import { TRANSACTION_ACTION } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
+import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 
 import { getTransactions, getTransactionsCount } from '@renderer/services/transactionService';
 import { getHistoryTransactions } from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
+import { getNotifiedTransactions } from '@renderer/utils';
 import {
   getTransactionStatus,
   getTransactionId,
@@ -34,10 +38,15 @@ import TransactionsFilter from '@renderer/components/Filter/TransactionsFilter.v
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const notifications = useNotificationsStore();
 
 /* Composables */
 const router = useRouter();
 const ws = useDisposableWs();
+const { oldNotifications } = useMarkNotifications([
+  NotificationType.TRANSACTION_INDICATOR_EXECUTED,
+  NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+]);
 
 /* State */
 const organizationTransactions = ref<
@@ -47,6 +56,7 @@ const organizationTransactions = ref<
   }[]
 >([]);
 const transactions = ref<Transaction[]>([]);
+const notifiedTransactionIds = ref<number[]>([]);
 const localSort = reactive<{
   field: Prisma.TransactionScalarFieldEnum;
   direction: Prisma.SortOrder;
@@ -122,6 +132,17 @@ function createFindArgs(): Prisma.TransactionFindManyArgs {
   };
 }
 
+function setNotifiedTransactions() {
+  notifiedTransactionIds.value = getNotifiedTransactions(
+    notifications.notifications.concat(oldNotifications.value),
+    organizationTransactions.value.map(t => t.transactionRaw),
+    [
+      NotificationType.TRANSACTION_INDICATOR_EXECUTED,
+      NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+    ],
+  );
+}
+
 async function fetchTransactions() {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
@@ -140,12 +161,16 @@ async function fetchTransactions() {
         [{ property: orgSort.field, direction: orgSort.direction }],
       );
       totalItems.value = totalItemsCount;
+
       const transactionsBytes = await hexToUint8ArrayBatch(rawTransactions.map(t => t.body));
       organizationTransactions.value = rawTransactions.map((transaction, i) => ({
         transactionRaw: transaction,
         transaction: SDKTransaction.fromBytes(transactionsBytes[i]),
       }));
+
+      setNotifiedTransactions();
     } else {
+      notifiedTransactionIds.value = [];
       totalItems.value = await getTransactionsCount(user.personal.id);
       transactions.value = await getTransactions(createFindArgs());
     }
@@ -156,40 +181,38 @@ async function fetchTransactions() {
 
 /* Hooks */
 onBeforeMount(async () => {
-  ws.on('transaction_action', async () => {
+  ws.on(TRANSACTION_ACTION, async () => {
     await fetchTransactions();
   });
   await fetchTransactions();
 });
 
 /* Watchers */
-watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
+watch([currentPage, pageSize, () => user.selectedOrganization, orgFilters], async () => {
   await fetchTransactions();
 });
 
 watch(
   () => user.selectedOrganization,
   async () => {
-    ws.off('transaction_action');
-    ws.on('transaction_action', async () => {
+    ws.off(TRANSACTION_ACTION);
+    ws.on(TRANSACTION_ACTION, async () => {
       await fetchTransactions();
     });
   },
 );
 
-watch(orgFilters, async () => {
-  await fetchTransactions();
-});
+watch(
+  () => notifications.notifications,
+  () => {
+    setNotifiedTransactions();
+  },
+);
 </script>
 
 <template>
   <div class="fill-remaining overflow-x-auto">
-    <div
-      v-if="
-        isLoggedInOrganization(user.selectedOrganization) && organizationTransactions.length > 0
-      "
-      class="mt-3 mb-3"
-    >
+    <div v-if="isLoggedInOrganization(user.selectedOrganization)" class="mt-3 mb-3">
       <TransactionsFilter
         v-model:filters="orgFilters"
         toggler-class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
@@ -353,7 +376,13 @@ watch(orgFilters, async () => {
                 v-for="(transactionData, index) in organizationTransactions"
                 :key="transactionData.transactionRaw.id"
               >
-                <tr v-if="transactionData.transaction instanceof SDKTransaction && true">
+                <tr
+                  v-if="transactionData.transaction instanceof SDKTransaction && true"
+                  :class="{
+                    highlight: notifiedTransactionIds.includes(transactionData.transactionRaw.id),
+                  }"
+                  :id="transactionData.transactionRaw.id.toString()"
+                >
                   <td :data-testid="`td-transaction-id-${index}`">
                     {{ sdkTransactionUtils.getTransactionId(transactionData.transaction) }}
                   </td>

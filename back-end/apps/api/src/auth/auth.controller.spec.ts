@@ -47,6 +47,9 @@ describe('AuthController', () => {
       observableTransactions: [],
       approvableTransactions: [],
       comments: [],
+      issuedNotifications: [],
+      receivedNotifications: [],
+      notificationPreferences: [],
     };
     res = {
       status: jest.fn().mockReturnThis(),

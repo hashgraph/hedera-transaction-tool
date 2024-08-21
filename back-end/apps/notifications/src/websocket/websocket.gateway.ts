@@ -12,6 +12,7 @@ import { Server } from 'socket.io';
 import { AUTH_SERVICE, NotifyClientDto } from '@app/common';
 
 import { AuthWebsocket, AuthWebsocketMiddleware } from './middlewares/auth-websocket.middleware';
+import { roomKeys } from './helpers';
 
 @WebSocketGateway({
   path: '/ws',
@@ -24,21 +25,34 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   constructor(@Inject(AUTH_SERVICE) private readonly authService: ClientProxy) {}
 
   @WebSocketServer()
-  private server: Server;
+  private io: Server;
 
-  afterInit(server: Server) {
-    server.use(AuthWebsocketMiddleware(this.authService));
+  afterInit(io: Server) {
+    io.use(AuthWebsocketMiddleware(this.authService));
   }
 
-  handleConnection(client: AuthWebsocket, ...args) {
-    this.logger.log(`client connected for userId: ${client.user.id}`);
+  async handleConnection(socket: AuthWebsocket) {
+    /* Connection logs */
+    this.logger.log(`Socket client connected for User ID: ${socket.user.id}`);
+    // console.log('Socket client connected with initial transport', socket.conn.transport.name);
+    // socket.conn.once('upgrade', () => {
+    //   /* called when the transport is upgraded (i.e. from HTTP long-polling to WebSocket) */
+    //   console.log('upgraded transport', socket.conn.transport.name);
+    // });
+
+    /* Join user room */
+    socket.join(roomKeys.USER_KEY(socket.user.id));
   }
 
-  handleDisconnect(client: AuthWebsocket) {
-    this.logger.log(`client disconnected for userId: ${client.user.id}`);
+  handleDisconnect(socket: AuthWebsocket) {
+    this.logger.log(`Socket socket disconnected for User ID: ${socket.user.id}`);
   }
 
   notifyClient({ message, content }: NotifyClientDto) {
-    this.server.emit(message, { content });
+    this.io.emit(message, { content });
+  }
+
+  notifyUser(userId: number, message: string, data) {
+    this.io.to(roomKeys.USER_KEY(userId)).emit(message, { data });
   }
 }

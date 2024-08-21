@@ -3,17 +3,21 @@ import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 
 import { Transaction } from '@hashgraph/sdk';
 
-import { ITransaction, TransactionStatus } from '@main/shared/interfaces';
+import { ITransaction, TransactionStatus, NotificationType } from '@main/shared/interfaces';
+import { TRANSACTION_ACTION } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
+import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 
 import { getTransactionsForUser } from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
+import { getNotifiedTransactions } from '@renderer/utils';
 import {
   getTransactionDateExtended,
   getTransactionId,
@@ -29,10 +33,14 @@ import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const notifications = useNotificationsStore();
 
 /* Composables */
 const router = useRouter();
 const ws = useDisposableWs();
+const { oldNotifications } = useMarkNotifications([
+  NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
+]);
 
 /* State */
 const transactions = ref<
@@ -41,6 +49,7 @@ const transactions = ref<
     transaction: Transaction;
   }[]
 >([]);
+const notifiedTransactionIds = ref<number[]>([]);
 const totalItems = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
@@ -74,8 +83,17 @@ const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') 
 };
 
 /* Functions */
+function setNotifiedTransactions() {
+  notifiedTransactionIds.value = getNotifiedTransactions(
+    notifications.notifications.concat(oldNotifications.value),
+    transactions.value.map(t => t.transactionRaw),
+    [NotificationType.TRANSACTION_INDICATOR_EXECUTABLE],
+  );
+}
+
 async function fetchTransactions() {
   if (!isLoggedInOrganization(user.selectedOrganization)) {
+    notifiedTransactionIds.value = [];
     return;
   }
 
@@ -92,11 +110,14 @@ async function fetchTransactions() {
       [{ property: sort.field, direction: sort.direction }],
     );
     totalItems.value = totalItemsCount;
+
     const transactionsBytes = await hexToUint8ArrayBatch(rawTransactions.map(t => t.body));
     transactions.value = rawTransactions.map((transaction, i) => ({
       transactionRaw: transaction,
       transaction: Transaction.fromBytes(transactionsBytes[i]),
     }));
+
+    setNotifiedTransactions();
   } finally {
     isLoading.value = false;
   }
@@ -108,7 +129,7 @@ function getOpositeDirection() {
 
 /* Hooks */
 onBeforeMount(async () => {
-  ws.on('transaction_action', async () => {
+  ws.on(TRANSACTION_ACTION, async () => {
     await fetchTransactions();
   });
   await fetchTransactions();
@@ -118,6 +139,13 @@ onBeforeMount(async () => {
 watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
   await fetchTransactions();
 });
+
+watch(
+  () => notifications.notifications,
+  () => {
+    setNotifiedTransactions();
+  },
+);
 </script>
 
 <template>
@@ -186,7 +214,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
           </thead>
           <tbody>
             <template v-for="(tx, index) in transactions" :key="tx.transactionRaw.id">
-              <tr>
+              <tr :class="{ highlight: notifiedTransactionIds.includes(tx.transactionRaw.id) }">
                 <td :data-testid="`td-transaction-id-ready-execution-${index}`">
                   {{
                     tx.transaction instanceof Transaction ? getTransactionId(tx.transaction) : 'N/A'

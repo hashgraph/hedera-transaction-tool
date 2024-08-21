@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { LoggerModule, MirrorNodeModule } from '@app/common';
+import { LoggerModule, MirrorNodeModule, RedisMurlockModule } from '@app/common';
 import {
+  Notification,
   NotificationPreferences,
+  NotificationReceiver,
   Transaction,
   TransactionApprover,
   TransactionComment,
@@ -15,8 +17,9 @@ import {
   UserKey,
 } from '@entities';
 
-import { TransactionNotificationsController } from './transactionNotifications.controller';
-import { TransactionNotificationsService } from './transactionNotifications.service';
+import { ReceiverController } from './receiver.controller';
+import { ReceiverService } from './receiver.service';
+import { FanOutModule } from '../fan-out/fan-out.module';
 
 @Module({
   imports: [
@@ -31,11 +34,15 @@ import { TransactionNotificationsService } from './transactionNotifications.serv
       TransactionComment,
       TransactionGroup,
       TransactionGroupItem,
+      Notification,
+      NotificationReceiver,
       NotificationPreferences,
     ]),
     MirrorNodeModule,
+    FanOutModule,
+    RedisMurlockModule,
   ],
-  controllers: [TransactionNotificationsController],
-  providers: [TransactionNotificationsService],
+  controllers: [ReceiverController],
+  providers: [ReceiverService],
 })
-export class TransactionNotificationsModule {}
+export class ReceiverModule {}

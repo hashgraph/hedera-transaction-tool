@@ -106,6 +106,8 @@ export class ApproversController {
   ) {
     await this.approversService.getCreatorsTransaction(transactionId, user);
     await this.approversService.removeTransactionApprover(id);
+    await this.approversService.emitSyncIndicators(transactionId);
+
     return true;
   }
 

@@ -2,7 +2,9 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import {
+  Notification,
   NotificationPreferences,
+  NotificationReceiver,
   Transaction,
   TransactionApprover,
   TransactionComment,
@@ -31,6 +33,8 @@ import { ExecuteService } from './execute.service';
       TransactionComment,
       TransactionGroup,
       TransactionGroupItem,
+      Notification,
+      NotificationReceiver,
       NotificationPreferences,
     ]),
     MirrorNodeModule,

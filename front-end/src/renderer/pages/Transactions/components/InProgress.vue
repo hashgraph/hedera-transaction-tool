@@ -4,6 +4,7 @@ import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 import { Transaction } from '@hashgraph/sdk';
 
 import { ITransaction, TransactionStatus } from '@main/shared/interfaces';
+import { TRANSACTION_ACTION } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -134,7 +135,7 @@ function getOpositeDirection() {
 
 /* Hooks */
 onBeforeMount(async () => {
-  ws.on('transaction_action', async () => {
+  ws.on(TRANSACTION_ACTION, async () => {
     await fetchTransactions();
   });
   await fetchTransactions();
