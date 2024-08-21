@@ -57,7 +57,9 @@ test.describe('Workflow tests', () => {
   test.beforeEach(async ({}, testInfo) => {
     // Add a timestamp to the test name
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const testNameWithTimestamp = `${testInfo.title.replace(/\s+/g, '_')}_${timestamp}`;
+    // Remove double quotes from the test name
+    const sanitizedTitle = testInfo.title.replace(/["]/g, '').replace(/\s+/g, '_');
+    const testNameWithTimestamp = `${sanitizedTitle}_${timestamp}`;
 
     // Take a screenshot before closing the draft modal
     const screenshotPathBefore = `./test-results/screenshots/${testNameWithTimestamp}_before.png`;
@@ -79,13 +81,15 @@ test.describe('Workflow tests', () => {
     console.log(`Screenshot saved: ${screenshotPathAfter}`);
   });
 
-  // test.afterEach(async ({}, testInfo) => {
-  //   if (testInfo.status !== 'passed') {
-  //     const screenshotPath = `./test-results/screenshots/${testInfo.title.replace(/\s+/g, '_')}.png`;
-  //     await window.screenshot({ path: screenshotPath });
-  //     console.log(`Screenshot saved: ${screenshotPath}`);
-  //   }
-  // });
+  test.afterEach(async ({}, testInfo) => {
+    if (testInfo.status !== 'passed') {
+      // Remove double quotes from the test name
+      const sanitizedTitle = testInfo.title.replace(/["]/g, '').replace(/\s+/g, '_');
+      const screenshotPath = `./test-results/screenshots/${sanitizedTitle}.png`;
+      await window.screenshot({ path: screenshotPath });
+      console.log(`Screenshot saved: ${screenshotPath}`);
+    }
+  });
 
   test('Verify account card is visible with valid information', async () => {
     const initialHbarFunds = '1';

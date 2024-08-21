@@ -137,6 +137,7 @@ class TransactionPage extends BasePage {
     // If the modal is visible, then click the button to close the modal
     if (await modalButton.isVisible()) {
       await modalButton.click();
+      await new Promise(r => setTimeout(r, 1000)); // Wait for the modal to close
     }
   }
 
