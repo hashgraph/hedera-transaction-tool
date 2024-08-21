@@ -453,6 +453,9 @@ class TransactionPage extends BasePage {
   }
 
   async isAccountCardVisible(accountId) {
+    const sanitizedTitle = 'isAccountCardVisible';
+    const screenshotPath = `./test-results/screenshots/${sanitizedTitle}.png`;
+    await window.screenshot({ path: screenshotPath });
     await this.waitForElementToBeVisible(this.addNewAccountButtonSelector);
     const index = await this.findAccountIndexById(accountId);
     if (index === -1) {
