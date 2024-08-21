@@ -223,9 +223,9 @@ test.describe('Workflow tests', () => {
 
     await accountPage.clickOnRemoveButton();
     await accountPage.unlinkAccounts();
+    await loginPage.waitForToastToDisappear();
     await accountPage.addAccountToUnliked(newAccountId);
     await accountPage.addAccountToUnliked(accountFromList);
-    await accountPage.clickOnAccountsLink();
     const isFirstAccountCardVisible = await transactionPage.isAccountCardVisible(accountFromList);
     expect(isFirstAccountCardVisible).toBe(false);
 
