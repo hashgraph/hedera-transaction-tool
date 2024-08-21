@@ -56,8 +56,8 @@ test.describe('Workflow tests', () => {
 
   test.beforeEach(async () => {
     await transactionPage.clickOnTransactionsMenuButton();
+    await new Promise(r => setTimeout(r, 250));
     await transactionPage.closeDraftModal();
-    await new Promise(r => setTimeout(r, 1000));
   });
 
   test('Verify account card is visible with valid information', async () => {
@@ -145,22 +145,6 @@ test.describe('Workflow tests', () => {
     expect(isSignAndSubmitButtonVisible).toBe(true);
   });
 
-  test('Verify clicking on "Edit" and "Delete" navigates the user on update account tx page with prefilled account', async () => {
-    await transactionPage.ensureAccountExists();
-    const accountFromList = await transactionPage.getFirstAccountFromList();
-    await transactionPage.mirrorGetAccountResponse(accountFromList);
-    await transactionPage.clickOnTransactionsMenuButton();
-    await accountPage.clickOnAccountsLink();
-    await accountPage.clickOnEditButton();
-    await accountPage.clickOnDeleteFromNetworkLink();
-
-    const isTransferAccountIdVisible = await transactionPage.isTransferAccountIdVisible();
-    expect(isTransferAccountIdVisible).toBe(true);
-
-    const isAccountIdPrefilled = await transactionPage.getPrefilledAccountIdInDeletePage();
-    expect(isAccountIdPrefilled).toBe(accountFromList);
-  });
-
   test('Verify clicking on "Edit" and "Update" navigates the user on update account tx page with prefilled account', async () => {
     await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
@@ -175,6 +159,22 @@ test.describe('Workflow tests', () => {
     expect(isSignAndSubmitButtonVisible).toBe(true);
 
     const isAccountIdPrefilled = await transactionPage.getPrefilledAccountIdInUpdatePage();
+    expect(isAccountIdPrefilled).toBe(accountFromList);
+  });
+
+  test('Verify clicking on "Edit" and "Delete" navigates the user on update account tx page with prefilled account', async () => {
+    await transactionPage.ensureAccountExists();
+    const accountFromList = await transactionPage.getFirstAccountFromList();
+    await transactionPage.mirrorGetAccountResponse(accountFromList);
+    await transactionPage.clickOnTransactionsMenuButton();
+    await accountPage.clickOnAccountsLink();
+    await accountPage.clickOnEditButton();
+    await accountPage.clickOnDeleteFromNetworkLink();
+
+    const isTransferAccountIdVisible = await transactionPage.isTransferAccountIdVisible();
+    expect(isTransferAccountIdVisible).toBe(true);
+
+    const isAccountIdPrefilled = await transactionPage.getPrefilledAccountIdInDeletePage();
     expect(isAccountIdPrefilled).toBe(accountFromList);
   });
 
