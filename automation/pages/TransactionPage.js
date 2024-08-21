@@ -131,12 +131,12 @@ class TransactionPage extends BasePage {
   // Method to close the 'Save Draft' modal if it appears
   async closeDraftModal() {
     // Wait for the button to be visible with a timeout
-    const modalButton = this.window.getByTestId(this.discardModalDraftButtonSelector);
-    await modalButton.waitFor({ state: 'visible', timeout: 500 }).catch(e => {});
+    // const modalButton = this.window.getByTestId(this.discardModalDraftButtonSelector);
+    // await modalButton.waitFor({ state: 'visible', timeout: 500 }).catch(e => {});
 
     // If the modal is visible, then click the button to close the modal
-    if (await modalButton.isVisible()) {
-      await modalButton.click();
+    if (await this.isElementVisible(this.discardModalDraftButtonSelector, 1500)) {
+      await this.clickByTestId(this.discardModalDraftButtonSelector);
     }
   }
 
