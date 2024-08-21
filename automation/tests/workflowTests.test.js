@@ -55,21 +55,10 @@ test.describe('Workflow tests', () => {
   });
 
   test.beforeEach(async () => {
-    await new Promise(r => setTimeout(r, 1000));
     await transactionPage.clickOnTransactionsMenuButton();
     await new Promise(r => setTimeout(r, 1000));
     await transactionPage.closeDraftModal();
     await new Promise(r => setTimeout(r, 1000));
-  });
-
-  test.afterEach(async ({}, testInfo) => {
-    if (testInfo.status !== 'passed') {
-      // Remove double quotes from the test name
-      const sanitizedTitle = testInfo.title.replace(/["]/g, '').replace(/\s+/g, '_');
-      const screenshotPath = `./test-results/screenshots/${sanitizedTitle}.png`;
-      await window.screenshot({ path: screenshotPath });
-      console.log(`Screenshot saved: ${screenshotPath}`);
-    }
   });
 
   test('Verify account card is visible with valid information', async () => {
