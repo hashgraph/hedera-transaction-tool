@@ -397,14 +397,14 @@ class TransactionPage extends BasePage {
     await this.addThresholdKeyAtDepth(currentDepth);
 
     await this.addPublicKeyAtDepth(`0-0-2`);
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const sanitizedTitle = 'BeforeAddingLastPubKey' + timestamp;
-    const screenshotPath = `./test-results/screenshots/${sanitizedTitle}.png`;
+    const sanitizedTitle = 'beforeAddingLastPubKey';
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // Generates a timestamp and replaces characters that are not filesystem friendly
+    const screenshotPath = `./test-results/screenshots/${sanitizedTitle}-${timestamp}.png`;
     await this.window.screenshot({ path: screenshotPath });
     await this.addPublicKeyAtDepth(`0-0-2`);
-    const newTime = new Date().toISOString().replace(/[:.]/g, '-');
-    const sanTitle = 'AfterAddingLastPubKey' + newTime;
-    const ssPath = `./test-results/screenshots/${sanTitle}.png`;
+    const sanTitle = 'afterAddingLastPubKey';
+    const time = new Date().toISOString().replace(/[:.]/g, '-'); // Generates a timestamp and replaces characters that are not filesystem friendly
+    const ssPath = `./test-results/screenshots/${sanTitle}-${time}.png`;
     await this.window.screenshot({ path: ssPath });
   }
 
@@ -514,10 +514,10 @@ class TransactionPage extends BasePage {
     }
 
     await this.clickOnSignAndSubmitButton();
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const sanTitle = 'AfterClickingSignAndSubmitButton' + timestamp;
-    const ssPath = `./test-results/screenshots/${sanTitle}.png`;
-    await this.window.screenshot({ path: ssPath });
+    const sanitizedTitle = 'afterClickingSignAndSubmitButton';
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // Generates a timestamp and replaces characters that are not filesystem friendly
+    const screenshotPath = `./test-results/screenshots/${sanitizedTitle}-${timestamp}.png`;
+    await this.window.screenshot({ path: screenshotPath });
     await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();
 
@@ -537,10 +537,10 @@ class TransactionPage extends BasePage {
     await this.clickOnCreateNewComplexKeyButton();
     await this.createComplexKeyStructure();
     await this.clickOnDoneButton();
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const sanTitle = 'AfterClickingDoneButton' + timestamp;
-    const ssPath = `./test-results/screenshots/${sanTitle}.png`;
-    await this.window.screenshot({ path: ssPath });
+    const sanitizedTitle = 'afterClickingDoneButton';
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // Generates a timestamp and replaces characters that are not filesystem friendly
+    const screenshotPath = `./test-results/screenshots/${sanitizedTitle}-${timestamp}.png`;
+    await this.window.screenshot({ path: screenshotPath });
   }
 
   async deleteAccount(accountId) {
