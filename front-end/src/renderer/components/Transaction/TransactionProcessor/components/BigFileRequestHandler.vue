@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Transaction, FileCreateTransaction } from '@hashgraph/sdk';
+import { Transaction, FileCreateTransaction, FileUpdateTransaction } from '@hashgraph/sdk';
 
 import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
 
@@ -26,10 +26,10 @@ async function handle(request: TransactionRequest) {
   const size = transaction.toBytes().length;
   const sizeBufferBytes = 200;
 
-  if (
-    !(transaction instanceof FileCreateTransaction) ||
-    size <= TRANSACTION_MAX_SIZE - sizeBufferBytes
-  ) {
+  const fileCreateOrUpdate =
+    transaction instanceof FileCreateTransaction || transaction instanceof FileUpdateTransaction;
+
+  if (!fileCreateOrUpdate || size <= TRANSACTION_MAX_SIZE - sizeBufferBytes) {
     await nextHandler.value?.handle(request);
     return;
   }
