@@ -41,7 +41,6 @@ const transaction = computed(() =>
 /* Handlers */
 const handleConfirmTransaction = (e: Event) => {
   e.preventDefault();
-
   assertPassword();
 };
 
@@ -61,9 +60,9 @@ function assertPassword() {
 }
 
 /* Actions */
-function next() {
+async function next() {
   if (nextHandler.value && request.value) {
-    nextHandler.value.handle(request.value);
+    await nextHandler.value.handle(request.value);
   }
 }
 
