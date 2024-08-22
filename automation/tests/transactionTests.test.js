@@ -51,6 +51,7 @@ test.describe('Transaction tests', () => {
   test.beforeEach(async () => {
     // await transactionPage.closeCompletedTransaction();
     await transactionPage.clickOnTransactionsMenuButton();
+    await new Promise(resolve => setTimeout(resolve, 750));
     await transactionPage.closeDraftModal();
   });
 
