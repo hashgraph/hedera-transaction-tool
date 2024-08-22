@@ -120,10 +120,6 @@ class BasePage {
         await new Promise(resolve => setTimeout(resolve, retryDelay));
       }
     }
-
-    throw new Error(
-      `Failed to retrieve valid text content for element with testId: ${testId} after ${retries} attempts.`,
-    );
   }
 
   async getTextByCssSelector(selector, timeout = this.DEFAULT_TIMEOUT) {

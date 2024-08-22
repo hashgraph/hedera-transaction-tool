@@ -566,11 +566,11 @@ test.describe('Transaction tests', () => {
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnDeleteAccountTransaction();
 
+    const transferAccountId = await transactionPage.fillInTransferAccountId();
     const transactionMemoText = 'test memo';
     const accountIdToBeDeleted = '0.0.1234';
     await transactionPage.fillInDeleteAccountTransactionMemo(transactionMemoText);
     await transactionPage.fillInDeleteAccountIdNormally(accountIdToBeDeleted);
-    const transferAccountId = await transactionPage.fillInTransferAccountId();
 
     await transactionPage.saveDraft();
     await transactionPage.clickOnFirstDraftContinueButton();

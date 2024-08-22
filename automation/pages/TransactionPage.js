@@ -900,7 +900,21 @@ class TransactionPage extends BasePage {
   }
 
   async fillInTransferAccountId() {
-    const allAccountIdsText = await this.getTextByTestIdWithRetry(this.payerDropdownSelector);
+    const attempt = 0;
+    const retries = 5;
+    let allAccountIdsText;
+    while (attempt < retries) {
+      allAccountIdsText = await this.getTextByTestIdWithRetry(this.payerDropdownSelector);
+      if (allAccountIdsText && allAccountIdsText.trim() !== '') {
+        break;
+      } else {
+        await this.clickOnTransactionsMenuButton();
+        await new Promise(r => setTimeout(r, 1000));
+        await this.closeDraftModal();
+        await this.clickOnCreateNewTransactionButton();
+        await this.clickOnTransferTokensTransaction();
+      }
+    }
     const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
     await this.fillAndVerifyByTestId(this.transferAccountInputSelector, firstAccountId);
     return firstAccountId;
