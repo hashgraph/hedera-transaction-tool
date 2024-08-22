@@ -182,6 +182,7 @@ async function createTestUser(email, password) {
 async function resetPostgresDbState() {
   const client = await connectPostgresDatabase();
   const tablesToReset = [
+    'notification_receiver',
     'transaction_approver',
     'transaction_comment',
     'transaction_group_item',
