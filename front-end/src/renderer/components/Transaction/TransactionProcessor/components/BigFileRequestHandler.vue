@@ -11,13 +11,14 @@ import {
 
 import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
 
+import useUserStore from '@renderer/stores/storeUser';
+
+import { createTransactionId } from '@renderer/services/transactionService';
+
 import SignPersonalRequestHandler from './SignPersonalRequestHandler.vue';
 import ExecutePersonalRequestHandler from './ExecutePersonalRequestHandler.vue';
 
-import useUserStore from '@renderer/stores/storeUser';
-
 import { assertHandlerExists, Handler, TransactionRequest } from '..';
-import { createTransactionId } from '@renderer/services/transactionService';
 
 /* Constants */
 const firstChunkSize = 100;

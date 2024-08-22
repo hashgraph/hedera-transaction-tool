@@ -17,6 +17,24 @@ const user = useUserStore();
 /* State */
 const nextHandler = ref<Handler | null>(null);
 
+/* Actions */
+function setNext(next: Handler) {
+  nextHandler.value = next;
+}
+
+async function handle(request: TransactionRequest) {
+  const transaction = Transaction.fromBytes(request.transactionBytes);
+  if (!transaction) throw new Error('Transaction not provided');
+
+  assertUserLoggedIn(user.personal);
+
+  validate(request, transaction);
+
+  if (nextHandler.value) {
+    await nextHandler.value.handle(request);
+  }
+}
+
 /* Functions */
 function validate(request: TransactionRequest, transaction: Transaction) {
   validateSignableInPersonal(request);
@@ -51,24 +69,6 @@ function validateBigFile(transaction: FileCreateTransaction | FileUpdateTransact
     throw new Error(
       `${getTransactionType(transaction)} size exceeds max transaction size. It has to be split.`,
     );
-  }
-}
-
-/* Actions */
-function setNext(next: Handler) {
-  nextHandler.value = next;
-}
-
-async function handle(request: TransactionRequest) {
-  const transaction = Transaction.fromBytes(request.transactionBytes);
-  if (!transaction) throw new Error('Transaction not provided');
-
-  assertUserLoggedIn(user.personal);
-
-  validate(request, transaction);
-
-  if (nextHandler.value) {
-    await nextHandler.value.handle(request);
   }
 }
 

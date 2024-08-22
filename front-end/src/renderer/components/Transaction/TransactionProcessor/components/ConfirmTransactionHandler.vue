@@ -38,6 +38,26 @@ const transaction = computed(() =>
   request.value ? Transaction.fromBytes(request.value.transactionBytes) : null,
 );
 
+/* Actions */
+async function next() {
+  if (nextHandler.value && request.value) {
+    await nextHandler.value.handle(request.value);
+  }
+}
+
+function setNext(next: Handler) {
+  nextHandler.value = next;
+}
+
+function handle(req: TransactionRequest) {
+  request.value = req;
+  show.value = true;
+}
+
+function setShow(value: boolean) {
+  show.value = value;
+}
+
 /* Handlers */
 const handleConfirmTransaction = async (e: Event) => {
   e.preventDefault();
@@ -63,26 +83,6 @@ function assertPassword() {
   }
 
   return true;
-}
-
-/* Actions */
-async function next() {
-  if (nextHandler.value && request.value) {
-    await nextHandler.value.handle(request.value);
-  }
-}
-
-function setNext(next: Handler) {
-  nextHandler.value = next;
-}
-
-function handle(req: TransactionRequest) {
-  request.value = req;
-  show.value = true;
-}
-
-function setShow(value: boolean) {
-  show.value = value;
 }
 
 /* Expose */

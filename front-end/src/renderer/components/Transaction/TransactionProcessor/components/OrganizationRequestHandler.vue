@@ -48,12 +48,11 @@ const transaction = computed(() =>
   request.value ? Transaction.fromBytes(request.value.transactionBytes) : null,
 );
 
-/* Set Next */
+/* Actions */
 function setNext(next: Handler) {
   nextHandler.value = next;
 }
 
-/* Handle */
 async function handle(req: TransactionRequest) {
   if (!user.selectedOrganization) {
     await nextHandler.value?.handle(req);
