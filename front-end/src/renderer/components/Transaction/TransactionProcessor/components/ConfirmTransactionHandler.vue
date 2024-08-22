@@ -41,7 +41,10 @@ const transaction = computed(() =>
 /* Handlers */
 const handleConfirmTransaction = (e: Event) => {
   e.preventDefault();
-  assertPassword();
+
+  const hasPassword = assertPassword();
+  if (!hasPassword) return;
+
   next();
 };
 
@@ -56,8 +59,10 @@ function assertPassword() {
       'Enter your application password to sign the transaction',
       next,
     );
-    return;
+    return false;
   }
+
+  return true;
 }
 
 /* Actions */
