@@ -14,14 +14,14 @@ import OrganizationRequestHandler from './components/OrganizationRequestHandler.
 import SignPersonalRequestHandler from './components/SignPersonalRequestHandler.vue';
 import ExecutePersonalRequestHandler from './components/ExecutePersonalRequestHandler.vue';
 
-import { TransactionRequest } from '.';
+import { assertHandlerExists, TransactionRequest } from '.';
 
 /* Props */
 const props = defineProps<{
   onExecuted?: (
     success: boolean,
-    response?: TransactionResponse,
-    receipt?: TransactionReceipt,
+    response: TransactionResponse | null,
+    receipt: TransactionReceipt | null,
   ) => void;
   onSubmitted?: (id: number, body: string) => void;
   onLocalStored?: (id: string) => void;
@@ -41,7 +41,6 @@ const organizationHandler = ref<InstanceType<typeof OrganizationRequestHandler> 
 const signPersonalHandler = ref<InstanceType<typeof SignPersonalRequestHandler> | null>(null);
 const executePersonalHandler = ref<InstanceType<typeof ExecutePersonalRequestHandler> | null>(null);
 
-const transactionBytes = ref<Uint8Array | null>(null);
 const observers = ref<number[]>([]);
 const approvers = ref<TransactionApproverDto[]>([]);
 
@@ -79,8 +78,8 @@ const handleSignFail = () => {
 
 const handleTransactionExecuted = (
   success: boolean,
-  response?: TransactionResponse,
-  receipt?: TransactionReceipt,
+  response: TransactionResponse | null,
+  receipt: TransactionReceipt | null,
 ) => {
   props.onExecuted && props.onExecuted(success, response, receipt);
 };
@@ -97,7 +96,6 @@ async function process(
 ) {
   resetData();
 
-  transactionBytes.value = request.transactionBytes;
   observers.value = observerUserIds || [];
   approvers.value = approverDtos || [];
 
@@ -128,15 +126,7 @@ function buildChain() {
   signPersonalHandler.value.setNext(executePersonalHandler.value);
 }
 
-function assertHandlerExists<T extends abstract new (...args: any) => any>(
-  handler,
-  name,
-): asserts handler is InstanceType<T> {
-  if (!handler) throw new Error(`${name} handler is not provided`);
-}
-
 function resetData() {
-  transactionBytes.value = null;
   observers.value = [];
   approvers.value = [];
   isSigning.value = false;
@@ -156,9 +146,16 @@ defineExpose({
     <ConfirmTransactionHandler ref="confirmHandler" :signing="isSigning" />
 
     <!-- Handler #3: File Create (has sub-chain) -->
-    <BigFileRequestHandler ref="fileCreateHandler" />
+    <BigFileRequestHandler
+      ref="fileCreateHandler"
+      @transaction:sign:begin="handleSignBegin"
+      @transaction:sign:success="handleSignSuccess"
+      @transaction:sign:fail="handleSignFail"
+      @transaction:executed="handleTransactionExecuted"
+      @transaction:stored="handleTransactionStore"
+    />
 
-    <!-- Handler #4: Orgnization  -->
+    <!-- Handler #4: Organization  -->
     <OrganizationRequestHandler
       ref="organizationHandler"
       :observers="observers"

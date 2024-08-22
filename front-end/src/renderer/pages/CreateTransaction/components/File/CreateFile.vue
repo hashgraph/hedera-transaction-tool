@@ -8,6 +8,7 @@ import {
   Timestamp,
   Transaction,
   TransactionReceipt,
+  TransactionResponse,
 } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
@@ -157,7 +158,11 @@ const handleCreate = async e => {
   }
 };
 
-const handleExecuted = async (success: boolean, _response?, receipt?: TransactionReceipt) => {
+const handleExecuted = async (
+  success: boolean,
+  _response: TransactionResponse | null,
+  receipt: TransactionReceipt | null,
+) => {
   isExecuted.value = true;
 
   if (!success || !receipt) return;

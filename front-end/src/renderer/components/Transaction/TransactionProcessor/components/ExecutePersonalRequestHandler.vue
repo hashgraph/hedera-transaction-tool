@@ -26,8 +26,8 @@ const emit = defineEmits<{
   (
     event: 'transaction:executed',
     success: boolean,
-    response?: TransactionResponse,
-    receipt?: TransactionReceipt,
+    response: TransactionResponse | null,
+    receipt: TransactionReceipt | null,
   ): void;
   (event: 'transaction:stored', id: string): void;
 }>();
@@ -93,7 +93,7 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     const data = JSON.parse(err.message);
     status = data.status;
 
-    emit('transaction:executed', false);
+    emit('transaction:executed', false, null, null);
     toast.error(data.message, { position: 'bottom-right' });
   } finally {
     isExecuting.value = false;
