@@ -219,15 +219,21 @@ async function disableNotificationPreferences(userIds) {
   try {
     for (const userId of userIds) {
       const query = `
-        INSERT INTO public.notification_preferences ("userId", "transactionRequiredSignature", "transactionReadyForExecution")
-        VALUES ($1, false, false)
-        ON CONFLICT ("userId")
-        DO UPDATE SET "transactionRequiredSignature" = EXCLUDED."transactionRequiredSignature",
-                      "transactionReadyForExecution" = EXCLUDED."transactionReadyForExecution";
+          UPDATE public.notification_preferences
+          SET email = false,
+              "inApp" = false
+          WHERE "userId" = $1;
       `;
       const values = [userId];
-      await client.query(query, values);
-      console.log(`Notification preferences disabled for user ID: ${userId}`);
+
+      const result = await client.query(query, values);
+      console.log(
+        `Notification preferences disabled for user ID: ${userId}. Rows affected: ${result.rowCount}`,
+      );
+
+      if (result.rowCount === 0) {
+        console.warn(`No records were updated for user ID: ${userId}.`);
+      }
     }
   } catch (err) {
     console.error('Error disabling notification preferences:', err);
