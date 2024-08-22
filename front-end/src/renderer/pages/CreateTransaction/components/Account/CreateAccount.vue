@@ -9,6 +9,7 @@ import {
   Key,
   HbarUnit,
   KeyList,
+  TransactionResponse,
 } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
@@ -40,7 +41,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
-import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
+import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import KeyField from '@renderer/components/KeyField.vue';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
@@ -59,7 +60,7 @@ const route = useRoute();
 const payerData = useAccountId();
 
 /* State */
-const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
+const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
 
 const transaction = ref<Transaction | null>(null);
 const validStart = ref(new Date());
@@ -139,13 +140,24 @@ const handleCreate = async e => {
     }
 
     transaction.value = createTransaction();
-    await transactionProcessor.value?.process(transactionKey.value);
+    await transactionProcessor.value?.process(
+      {
+        transactionKey: transactionKey.value,
+        transactionBytes: transaction.value.toBytes(),
+      },
+      observers.value,
+      approvers.value,
+    );
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
 
-const handleExecuted = async (success: boolean, _response?, receipt?: TransactionReceipt) => {
+const handleExecuted = async (
+  success: boolean,
+  _response: TransactionResponse | null,
+  receipt: TransactionReceipt | null,
+) => {
   isExecuted.value = true;
 
   if (success && receipt) {
@@ -573,28 +585,9 @@ const columnClass = 'col-4 col-xxxl-3';
 
     <TransactionProcessor
       ref="transactionProcessor"
-      :transaction-bytes="transaction?.toBytes() || null"
-      :observers="observers"
-      :approvers="approvers"
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"
       :on-local-stored="redirectToDetails"
-    >
-      <template #successHeading>Account created successfully</template>
-      <template #successContent>
-        <p
-          v-if="transactionProcessor?.transactionResult"
-          class="text-small d-flex justify-content-between align-items mt-2"
-        >
-          <span class="text-bold text-secondary">Account ID:</span>
-          <span data-testid="p-new-crated-account-id">{{
-            getEntityIdFromTransactionReceipt(
-              transactionProcessor?.transactionResult.receipt,
-              'accountId',
-            )
-          }}</span>
-        </p>
-      </template>
-    </TransactionProcessor>
+    />
   </div>
 </template>

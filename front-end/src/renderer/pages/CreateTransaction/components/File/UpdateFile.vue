@@ -35,7 +35,7 @@ import DatePicker, { DatePickerInstance } from '@vuepic/vue-datepicker';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import KeyField from '@renderer/components/KeyField.vue';
-import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
+import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
@@ -52,7 +52,7 @@ const router = useRouter();
 const route = useRoute();
 
 /* State */
-const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
+const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
 const datePicker = ref<DatePickerInstance>(null);
 
 const transaction = ref<Transaction | null>(null);
@@ -62,7 +62,7 @@ const maxTransactionFee = ref<Hbar>(new Hbar(2));
 const fileId = ref('');
 const memo = ref('');
 const expirationTimestamp = ref();
-const chunkSize = ref(2048);
+// const chunkSize = ref(4096);
 const ownerKey = ref<Key | null>(null);
 const newOwnerKey = ref<Key | null>(null);
 const transactionMemo = ref('');
@@ -163,7 +163,14 @@ const handleCreate = async e => {
 
     transaction.value = newTransaction;
 
-    await transactionProcessor.value?.process(transactionKey.value, chunkSize.value, 1);
+    await transactionProcessor.value?.process(
+      {
+        transactionKey: transactionKey.value,
+        transactionBytes: transaction.value.toBytes(),
+      },
+      observers.value,
+      approvers.value,
+    );
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
@@ -516,7 +523,7 @@ const columnClass = 'col-4 col-xxxl-3';
           </div>
         </div>
 
-        <div class="row mt-6">
+        <!-- <div class="row mt-6">
           <div class="form-group" :class="[columnClass]">
             <label class="form-label">Chunk Size (If File is large)</label>
             <AppInput
@@ -528,7 +535,7 @@ const columnClass = 'col-4 col-xxxl-3';
               placeholder="Enter Chunk Size"
             />
           </div>
-        </div>
+        </div> -->
 
         <div class="mt-4 form-group">
           <label for="fileUpload" class="form-label">

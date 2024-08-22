@@ -8,9 +8,10 @@ import {
   Timestamp,
   Transaction,
   TransactionReceipt,
+  TransactionResponse,
 } from '@hashgraph/sdk';
 
-import { MEMO_MAX_LENGTH, TRANSACTION_MAX_SIZE } from '@main/shared/constants';
+import { MEMO_MAX_LENGTH } from '@main/shared/constants';
 import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import { Prisma } from '@prisma/client';
@@ -35,7 +36,6 @@ import {
   getTransactionFromBytes,
   getPropagationButtonLabel,
   isAccountId,
-  convertBytes,
 } from '@renderer/utils';
 import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
@@ -44,7 +44,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import KeyField from '@renderer/components/KeyField.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
-import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
+import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
@@ -62,7 +62,7 @@ const route = useRoute();
 const payerData = useAccountId();
 
 /* State */
-const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
+const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
 const datePicker = ref<DatePickerInstance>(null);
 
 const transaction = ref<Transaction | null>(null);
@@ -112,14 +112,6 @@ const handleFileImport = async (e: Event) => {
   const file = fileImportEl.files && fileImportEl.files[0];
 
   if (file) {
-    if (file.size >= TRANSACTION_MAX_SIZE) {
-      toast.error(
-        `File too large (${convertBytes(file.size)}), Hedera max transaction size is: ${convertBytes(TRANSACTION_MAX_SIZE)}`,
-        { position: 'bottom-right' },
-      );
-      return;
-    }
-
     fileMeta.value = file;
 
     fileReader.value = new FileReader();
@@ -153,13 +145,24 @@ const handleCreate = async e => {
     }
 
     transaction.value = createTransaction();
-    await transactionProcessor.value?.process(transactionKey.value);
+    await transactionProcessor.value?.process(
+      {
+        transactionKey: transactionKey.value,
+        transactionBytes: transaction.value.toBytes(),
+      },
+      observers.value,
+      approvers.value,
+    );
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
 };
 
-const handleExecuted = async (success: boolean, _response?, receipt?: TransactionReceipt) => {
+const handleExecuted = async (
+  success: boolean,
+  _response: TransactionResponse | null,
+  receipt: TransactionReceipt | null,
+) => {
   isExecuted.value = true;
 
   if (!success || !receipt) return;
@@ -592,22 +595,6 @@ watch(payerData.isValid, isValid => {
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"
       :on-local-stored="handleLocalStored"
-    >
-      <template #successHeading>File created successfully</template>
-      <template #successContent>
-        <p
-          v-if="transactionProcessor?.transactionResult"
-          class="text-small d-flex justify-content-between align-items mt-2"
-        >
-          <span class="text-bold text-secondary">File ID:</span>
-          <span>{{
-            getEntityIdFromTransactionReceipt(
-              transactionProcessor.transactionResult.receipt,
-              'fileId',
-            )
-          }}</span>
-        </p>
-      </template>
-    </TransactionProcessor>
+    />
   </div>
 </template>

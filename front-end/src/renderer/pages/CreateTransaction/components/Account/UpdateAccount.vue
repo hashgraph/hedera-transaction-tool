@@ -36,7 +36,7 @@ import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import KeyField from '@renderer/components/KeyField.vue';
-import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
+import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
@@ -57,7 +57,7 @@ const payerData = useAccountId();
 const accountData = useAccountId();
 
 /* State */
-const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
+const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
 
 const transaction = ref<Transaction | null>(null);
 const validStart = ref(new Date());
@@ -138,7 +138,14 @@ const handleCreate = async e => {
     }
 
     transaction.value = createTransaction();
-    await transactionProcessor.value?.process(transactionKey.value);
+    await transactionProcessor.value?.process(
+      {
+        transactionKey: transactionKey.value,
+        transactionBytes: transaction.value.toBytes(),
+      },
+      observers.value,
+      approvers.value,
+    );
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
@@ -192,7 +199,6 @@ const handleSubmit = (id: number) => {
 };
 
 const handleLocalStored = (id: string) => {
-  toast.success('Account Update Transaction Executed', { position: 'bottom-right' });
   redirectToDetails(id);
 };
 
@@ -596,16 +602,6 @@ const columnClass = 'col-4 col-xxxl-3';
       :on-submitted="handleSubmit"
       :on-local-stored="handleLocalStored"
     >
-      <template #successHeading>Account updated successfully</template>
-      <template #successContent>
-        <p
-          v-if="transactionProcessor?.transactionResult"
-          class="text-small d-flex justify-content-between align-items mt-2"
-        >
-          <span class="text-bold text-secondary">Account ID:</span>
-          <span>{{ accountData.accountIdFormatted.value }}</span>
-        </p>
-      </template>
     </TransactionProcessor>
 
     <KeyStructureModal
