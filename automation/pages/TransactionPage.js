@@ -482,24 +482,10 @@ class TransactionPage extends BasePage {
       memo = null,
     } = options;
     if (!isComingFromDraft) {
-      let attempts = 0;
-      const retries = 5;
       await this.clickOnCreateNewTransactionButton();
       await this.clickOnCreateAccountTransaction();
-      while (attempts < retries) {
-        const payerAccount = await this.getTextByTestIdWithRetry(this.payerDropdownSelector);
-        if (payerAccount && payerAccount.trim() !== '') {
-          break;
-        } else {
-          await this.clickOnTransactionsMenuButton();
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          await this.closeDraftModal();
-          await this.clickOnCreateNewTransactionButton();
-          await this.clickOnCreateAccountTransaction();
-          attempts++;
-        }
-      }
     }
+
     // Handle complex key creation
     if (isComplex) {
       await this.handleComplexKeyCreation();
@@ -899,22 +885,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInTransferAccountId() {
-    let attempt = 0;
-    const retries = 5;
-    let allAccountIdsText;
-    while (attempt < retries) {
-      allAccountIdsText = await this.getTextByTestIdWithRetry(this.payerDropdownSelector);
-      if (allAccountIdsText && allAccountIdsText.trim() !== '') {
-        break;
-      } else {
-        await this.clickOnTransactionsMenuButton();
-        await new Promise(r => setTimeout(r, 1000));
-        await this.closeDraftModal();
-        await this.clickOnCreateNewTransactionButton();
-        await this.clickOnTransferTokensTransaction();
-        attempt++;
-      }
-    }
+    const allAccountIdsText = await this.getTextByTestIdWithRetry(this.payerDropdownSelector);
     const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
     await this.fillAndVerifyByTestId(this.transferAccountInputSelector, firstAccountId);
     return firstAccountId;
