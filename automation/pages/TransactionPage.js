@@ -397,15 +397,7 @@ class TransactionPage extends BasePage {
     await this.addThresholdKeyAtDepth(currentDepth);
 
     await this.addPublicKeyAtDepth(`0-0-2`);
-    const sanitizedTitle = 'beforeAddingLastPubKey';
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // Generates a timestamp and replaces characters that are not filesystem friendly
-    const screenshotPath = `./test-results/screenshots/${sanitizedTitle}-${timestamp}.png`;
-    await this.window.screenshot({ path: screenshotPath });
     await this.addPublicKeyAtDepth(`0-0-2`);
-    const sanTitle = 'afterAddingLastPubKey';
-    const time = new Date().toISOString().replace(/[:.]/g, '-'); // Generates a timestamp and replaces characters that are not filesystem friendly
-    const ssPath = `./test-results/screenshots/${sanTitle}-${time}.png`;
-    await this.window.screenshot({ path: ssPath });
   }
 
   async decodeByteCode(bytecode) {
@@ -514,10 +506,6 @@ class TransactionPage extends BasePage {
     }
 
     await this.clickOnSignAndSubmitButton();
-    const sanitizedTitle = 'afterClickingSignAndSubmitButton';
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // Generates a timestamp and replaces characters that are not filesystem friendly
-    const screenshotPath = `./test-results/screenshots/${sanitizedTitle}-${timestamp}.png`;
-    await this.window.screenshot({ path: screenshotPath });
     await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();
 
@@ -537,10 +525,6 @@ class TransactionPage extends BasePage {
     await this.clickOnCreateNewComplexKeyButton();
     await this.createComplexKeyStructure();
     await this.clickOnDoneButton();
-    const sanitizedTitle = 'afterClickingDoneButton';
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // Generates a timestamp and replaces characters that are not filesystem friendly
-    const screenshotPath = `./test-results/screenshots/${sanitizedTitle}-${timestamp}.png`;
-    await this.window.screenshot({ path: screenshotPath });
   }
 
   async deleteAccount(accountId) {
