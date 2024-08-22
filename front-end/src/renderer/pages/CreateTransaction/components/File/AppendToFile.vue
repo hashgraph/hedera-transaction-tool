@@ -42,7 +42,7 @@ const route = useRoute();
 const payerData = useAccountId();
 
 /* State */
-const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
+const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
 
 const transaction = ref<Transaction | null>(null);
 const validStart = ref(new Date());
@@ -57,7 +57,7 @@ const loadPercentage = ref(0);
 const content = ref('');
 
 const transactionMemo = ref('');
-const chunkSize = ref(2048);
+const chunkSize = ref(4096);
 
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
@@ -134,8 +134,12 @@ const handleCreate = async e => {
       newTransaction.setContents(fileBuffer.value);
     }
 
+    if (chunkSize.value) {
+      newTransaction.setChunkSize(chunkSize.value);
+    }
+
     transaction.value = newTransaction;
-    await transactionProcessor.value?.process(transactionKey.value, chunkSize.value, 1);
+    await transactionProcessor.value?.process(transactionKey.value);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
