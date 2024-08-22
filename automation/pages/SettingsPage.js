@@ -108,7 +108,18 @@ class SettingsPage extends BasePage {
   }
 
   async getKeyRowCount() {
-    return await this.countElementsByTestId(this.indexCellSelectorPrefix);
+    const maxRetries = 3;
+    let attempt = 0;
+    while (attempt < maxRetries) {
+      try {
+        return await this.countElementsByTestId(this.indexCellSelectorPrefix);
+      } catch (error) {
+        console.log(`Attempt ${attempt + 1} failed: ${error.message}`);
+        attempt++;
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+    throw new Error('Failed to get key row count after multiple attempts');
   }
 
   async getRowDataByIndex(index) {
