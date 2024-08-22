@@ -1302,6 +1302,8 @@ class TransactionPage extends BasePage {
   }
 
   async clickOnConfirmDeleteAccountButton() {
+    const modalSelector = `[data-testid="${this.confirmTransactionModalSelector}"][style*="display: block"]`;
+    await this.window.waitForSelector(modalSelector, { state: 'visible', timeout: 15000 });
     await this.clickByTestId(this.confirmDeleteAccountButtonSelector, 5000);
   }
 }
