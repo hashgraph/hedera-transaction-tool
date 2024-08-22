@@ -44,8 +44,8 @@ const handleConfirmTransaction = (e: Event) => {
   assertPassword();
 };
 
+/* Functions */
 function assertPassword() {
-  /* Verifies the user has entered his password */
   const personalPassword = user.getPassword();
   if (!personalPassword) {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
