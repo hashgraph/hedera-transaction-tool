@@ -157,8 +157,7 @@ test.describe('Settings tests', () => {
     await settingsPage.clickOnDeleteKeyPairButton();
 
     // going back and forth as delete is quick, and it does not pick the change
-    await settingsPage.clickOnSettingsButton();
-    await settingsPage.clickOnKeysTab();
+    await loginPage.waitForToastToDisappear();
 
     const rowCountAfterDelete = await settingsPage.getKeyRowCount();
 
