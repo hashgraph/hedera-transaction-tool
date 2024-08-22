@@ -32,8 +32,8 @@ const transactionGroups = computed(() => {
       items: [
         { label: 'Create Account', name: transactionTypeKeys.createAccount },
         { label: 'Update Account', name: transactionTypeKeys.updateAccount },
-        { label: 'Transfer Tokens', name: transactionTypeKeys.transfer },
         { label: 'Delete Account', name: transactionTypeKeys.deleteAccount },
+        { label: 'Transfer Tokens', name: transactionTypeKeys.transfer },
         { label: 'Approve Allowance', name: transactionTypeKeys.approveAllowance },
         // { label: 'Account Info', name: transactionTypeKeys.accountInfo },
       ],
