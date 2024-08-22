@@ -62,7 +62,7 @@ const route = useRoute();
 const payerData = useAccountId();
 
 /* State */
-const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
+const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
 const datePicker = ref<DatePickerInstance>(null);
 
 const transaction = ref<Transaction | null>(null);
@@ -112,7 +112,7 @@ const handleFileImport = async (e: Event) => {
   const file = fileImportEl.files && fileImportEl.files[0];
 
   if (file) {
-    if (file.size >= TRANSACTION_MAX_SIZE) {
+    if (file.size >= TRANSACTION_MAX_SIZE && isLoggedInOrganization(user.selectedOrganization)) {
       toast.error(
         `File too large (${convertBytes(file.size)}), Hedera max transaction size is: ${convertBytes(TRANSACTION_MAX_SIZE)}`,
         { position: 'bottom-right' },
