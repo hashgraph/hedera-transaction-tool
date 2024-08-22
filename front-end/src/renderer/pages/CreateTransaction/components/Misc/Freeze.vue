@@ -319,27 +319,27 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
 
       <hr class="separator my-5" />
 
-      <TransactionIdControls
-        v-model:payer-id="payerData.accountId.value"
-        v-model:valid-start="validStart"
-        v-model:max-transaction-fee="maxTransactionfee as Hbar"
-      />
-
-      <div class="row mt-6">
-        <div class="form-group col-8 col-xxxl-6">
-          <label class="form-label">Transaction Memo</label>
-          <AppInput
-            v-model="transactionMemo"
-            :filled="true"
-            maxlength="100"
-            placeholder="Enter Transaction Memo"
-          />
-        </div>
-      </div>
-
-      <hr class="separator my-5" />
-
       <div class="fill-remaining">
+        <TransactionIdControls
+          v-model:payer-id="payerData.accountId.value"
+          v-model:valid-start="validStart"
+          v-model:max-transaction-fee="maxTransactionfee as Hbar"
+        />
+
+        <div class="row mt-6">
+          <div class="form-group col-8 col-xxxl-6">
+            <label class="form-label">Transaction Memo</label>
+            <AppInput
+              v-model="transactionMemo"
+              :filled="true"
+              maxlength="100"
+              placeholder="Enter Transaction Memo"
+            />
+          </div>
+        </div>
+
+        <hr class="separator my-5" />
+
         <div class="row">
           <div :class="[columnClass]">
             <label class="form-label">Freeze Type<span class="text-danger">*</span></label>
