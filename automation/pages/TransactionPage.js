@@ -482,8 +482,23 @@ class TransactionPage extends BasePage {
       memo = null,
     } = options;
     if (!isComingFromDraft) {
+      let attempts = 0;
+      const retries = 5;
       await this.clickOnCreateNewTransactionButton();
       await this.clickOnCreateAccountTransaction();
+      while (attempts < retries) {
+        const payerAccount = await this.getTextByTestIdWithRetry(this.payerDropdownSelector);
+        if (payerAccount && payerAccount.trim() !== '') {
+          break;
+        } else {
+          await this.clickOnTransactionsMenuButton();
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          await this.closeDraftModal();
+          await this.clickOnCreateNewTransactionButton();
+          await this.clickOnCreateAccountTransaction();
+          attempts++;
+        }
+      }
     }
     // Handle complex key creation
     if (isComplex) {
@@ -884,7 +899,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInTransferAccountId() {
-    const attempt = 0;
+    let attempt = 0;
     const retries = 5;
     let allAccountIdsText;
     while (attempt < retries) {
@@ -897,6 +912,7 @@ class TransactionPage extends BasePage {
         await this.closeDraftModal();
         await this.clickOnCreateNewTransactionButton();
         await this.clickOnTransferTokensTransaction();
+        attempt++;
       }
     }
     const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
