@@ -6,12 +6,11 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
-import { useRoute } from 'vue-router';
+import useDraft from '@renderer/composables/useDraft';
 
 import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { addApprovers, addObservers, submitTransaction } from '@renderer/services/organization';
-import { deleteDraft, getDraft } from '@renderer/services/transactionDraftsService';
 
 import { getPrivateKey, getTransactionType } from '@renderer/utils';
 import { assertIsLoggedInOrganization, assertUserLoggedIn } from '@renderer/utils/userStoreHelpers';
@@ -30,7 +29,7 @@ const network = useNetwork();
 
 /* Composables */
 const toast = useToast();
-const route = useRoute();
+const draft = useDraft();
 
 /* State */
 const request = ref<TransactionRequest | null>(null);
@@ -63,7 +62,7 @@ async function handle(req: TransactionRequest) {
   const results = await Promise.allSettled([
     upload('observers', id),
     upload('observers', id),
-    deleteDraftIfNotTemplate(),
+    draft.deleteIfNotTemplate(),
   ]);
 
   results.forEach(result => {
@@ -129,17 +128,6 @@ async function upload(type: 'observers' | 'approvers', id: number) {
     await addObservers(user.selectedOrganization.serverUrl, id, request.value.observers);
   } else {
     await addApprovers(user.selectedOrganization.serverUrl, id, request.value.approvers);
-  }
-}
-
-async function deleteDraftIfNotTemplate() {
-  if (route.query.draftId) {
-    try {
-      const draft = await getDraft(route.query.draftId.toString());
-      if (!draft.isTemplate) await deleteDraft(route.query.draftId.toString());
-    } catch (error) {
-      console.log(error);
-    }
   }
 }
 
