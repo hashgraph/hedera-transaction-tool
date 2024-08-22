@@ -12,4 +12,11 @@ export interface Handler {
   handle: (transactionRequest: TransactionRequest) => void;
 }
 
+export function assertHandlerExists<T extends abstract new (...args: any) => any>(
+  handler,
+  name,
+): asserts handler is InstanceType<T> {
+  if (!handler) throw new Error(`${name} handler is not provided`);
+}
+
 export default TransactionProcessor;
