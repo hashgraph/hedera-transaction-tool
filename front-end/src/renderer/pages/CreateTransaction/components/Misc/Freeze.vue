@@ -37,7 +37,7 @@ import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 import DatePicker, { DatePickerInstance } from '@vuepic/vue-datepicker';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
+import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';

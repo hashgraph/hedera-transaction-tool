@@ -33,7 +33,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
-import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
+import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
 import TransferCard from '@renderer/components/TransferCard.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';

@@ -28,7 +28,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
-import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
+import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';

@@ -26,7 +26,7 @@ import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import KeyField from '@renderer/components/KeyField.vue';
-import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
+import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
