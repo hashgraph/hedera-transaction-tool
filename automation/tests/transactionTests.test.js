@@ -55,6 +55,16 @@ test.describe('Transaction tests', () => {
     await transactionPage.closeDraftModal();
   });
 
+  test.afterEach(async ({}, testInfo) => {
+    if (testInfo.status !== 'passed') {
+      // Remove double quotes from the test name
+      const sanitizedTitle = testInfo.title.replace(/["]/g, '').replace(/\s+/g, '_');
+      const screenshotPath = `./test-results/screenshots/${sanitizedTitle}.png`;
+      await window.screenshot({ path: screenshotPath });
+      console.log(`Screenshot saved: ${screenshotPath}`);
+    }
+  });
+
   test('Verify that all elements on account create page are correct', async () => {
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnCreateAccountTransaction();
