@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Transaction } from '@hashgraph/sdk';
+import { FileCreateTransaction, Transaction } from '@hashgraph/sdk';
+
+import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -21,13 +23,29 @@ function setNext(next: Handler) {
 }
 
 /* Handle */
-function handle(request: TransactionRequest) {
+async function handle(request: TransactionRequest) {
   const transaction = Transaction.fromBytes(request.transactionBytes);
-
   if (!transaction) throw new Error('Transaction not provided');
 
   assertUserLoggedIn(user.personal);
 
+  validate(request, transaction);
+
+  if (nextHandler.value) {
+    await nextHandler.value.handle(request);
+  }
+}
+
+/* Functions */
+function validate(request: TransactionRequest, transaction: Transaction) {
+  validateSignableInPersonal(request);
+
+  if (transaction instanceof FileCreateTransaction) {
+    validateFileCreate(transaction);
+  }
+}
+
+function validateSignableInPersonal(request: TransactionRequest) {
   if (
     request.transactionKey &&
     !ableToSign(user.publicKeys, request.transactionKey) &&
@@ -37,9 +55,18 @@ function handle(request: TransactionRequest) {
       'Unable to execute, all of the required signatures should be with your keys. You are currently in Personal mode.',
     );
   }
+}
 
-  if (nextHandler.value) {
-    nextHandler.value.handle(request);
+function validateFileCreate(transaction: FileCreateTransaction) {
+  const size = transaction.toBytes().length;
+  const bufferBytes = 200;
+
+  if (size <= TRANSACTION_MAX_SIZE - bufferBytes) return;
+
+  if (user.selectedOrganization) {
+    throw new Error(
+      'File Create transaction size exceeds max transaction size. It has to be split.',
+    );
   }
 }
 
