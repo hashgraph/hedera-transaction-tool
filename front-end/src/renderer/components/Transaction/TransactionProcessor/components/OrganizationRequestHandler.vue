@@ -37,12 +37,9 @@ const request = ref<TransactionRequest | null>(null);
 const nextHandler = ref<Handler | null>(null);
 
 /* Computed */
-const transaction = computed(() => {
-  const req = request.value;
-  if (!req) return null;
-
-  return Transaction.fromBytes(req.transactionBytes);
-});
+const transaction = computed(() =>
+  request.value ? Transaction.fromBytes(request.value.transactionBytes) : null,
+);
 
 /* Set Next */
 function setNext(next: Handler) {
