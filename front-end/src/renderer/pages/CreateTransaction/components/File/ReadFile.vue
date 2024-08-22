@@ -206,40 +206,41 @@ const columnClass = 'col-4 col-xxxl-3';
 
       <hr class="separator my-5" />
 
-      <div class="row align-items-end">
-        <div class="form-group" :class="[columnClass]">
-          <label class="form-label">Payer ID <span class="text-danger">*</span></label>
-          <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
-            >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
-          >
-          <template v-if="!user.selectedOrganization">
-            <AccountIdsSelect
-              v-model:account-id="payerData.accountId.value"
-              :select-default="true"
-            />
-          </template>
-          <template v-else>
-            <AppAutoComplete
-              :model-value="payerData.isValid.value ? payerData.accountIdFormatted.value : ''"
-              @update:model-value="payerData.accountId.value = formatAccountId($event)"
-              :filled="true"
-              :items="accoundIds"
-              placeholder="Enter Payer ID"
-            />
-          </template>
-        </div>
-        <div class="form-group" :class="[columnClass]">
-          <label class="form-label">Max Query Fee {{ HbarUnit.Hbar._symbol }}</label>
-          <AppHbarInput
-            v-model:model-value="maxQueryFee as Hbar"
-            :filled="true"
-            placeholder="Enter Max Transaction Fee"
-          />
-        </div>
-      </div>
-
-      <hr class="separator my-5" />
       <div class="fill-remaining">
+        <div class="row align-items-end">
+          <div class="form-group" :class="[columnClass]">
+            <label class="form-label">Payer ID <span class="text-danger">*</span></label>
+            <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
+              >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
+            >
+            <template v-if="!user.selectedOrganization">
+              <AccountIdsSelect
+                v-model:account-id="payerData.accountId.value"
+                :select-default="true"
+              />
+            </template>
+            <template v-else>
+              <AppAutoComplete
+                :model-value="payerData.isValid.value ? payerData.accountIdFormatted.value : ''"
+                @update:model-value="payerData.accountId.value = formatAccountId($event)"
+                :filled="true"
+                :items="accoundIds"
+                placeholder="Enter Payer ID"
+              />
+            </template>
+          </div>
+          <div class="form-group" :class="[columnClass]">
+            <label class="form-label">Max Query Fee {{ HbarUnit.Hbar._symbol }}</label>
+            <AppHbarInput
+              v-model:model-value="maxQueryFee as Hbar"
+              :filled="true"
+              placeholder="Enter Max Transaction Fee"
+            />
+          </div>
+        </div>
+
+        <hr class="separator my-5" />
+
         <div class="row">
           <div class="form-group" :class="[columnClass]">
             <label class="form-label">File ID <span class="text-danger">*</span></label>

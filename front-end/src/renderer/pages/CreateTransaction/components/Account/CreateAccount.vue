@@ -396,42 +396,42 @@ const columnClass = 'col-4 col-xxxl-3';
 
       <hr class="separator my-5" />
 
-      <div class="row mb-6">
-        <div v-if="!user.selectedOrganization" class="form-group" :class="[columnClass]">
-          <label class="form-label">Nickname</label>
-          <div class="">
+      <div class="fill-remaining">
+        <div class="row mb-6">
+          <div v-if="!user.selectedOrganization" class="form-group" :class="[columnClass]">
+            <label class="form-label">Nickname</label>
+            <div class="">
+              <AppInput
+                v-model="nickname"
+                :filled="true"
+                data-testid="input-nickname"
+                placeholder="Enter Nickname"
+              />
+            </div>
+          </div>
+        </div>
+
+        <TransactionIdControls
+          v-model:payer-id="payerData.accountId.value"
+          v-model:valid-start="validStart"
+          v-model:max-transaction-fee="maxTransactionFee as Hbar"
+        />
+
+        <div class="row mt-6">
+          <div class="form-group col-8 col-xxxl-6">
+            <label class="form-label">Transaction Memo</label>
             <AppInput
-              v-model="nickname"
+              data-testid="input-transaction-memo"
+              v-model="transactionMemo"
               :filled="true"
-              data-testid="input-nickname"
-              placeholder="Enter Nickname"
+              maxlength="100"
+              placeholder="Enter Transaction Memo"
             />
           </div>
         </div>
-      </div>
 
-      <TransactionIdControls
-        v-model:payer-id="payerData.accountId.value"
-        v-model:valid-start="validStart"
-        v-model:max-transaction-fee="maxTransactionFee as Hbar"
-      />
+        <hr class="separator my-5" />
 
-      <div class="row mt-6">
-        <div class="form-group col-8 col-xxxl-6">
-          <label class="form-label">Transaction Memo</label>
-          <AppInput
-            data-testid="input-transaction-memo"
-            v-model="transactionMemo"
-            :filled="true"
-            maxlength="100"
-            placeholder="Enter Transaction Memo"
-          />
-        </div>
-      </div>
-
-      <hr class="separator my-5" />
-
-      <div class="fill-remaining">
         <div class="row">
           <div class="form-group col-8 col-xxxl-6">
             <KeyField :model-key="ownerKey" @update:model-key="handleOwnerKeyUpdate" is-required />

@@ -395,28 +395,28 @@ const columnClass = 'col-4 col-xxxl-3';
 
       <hr class="separator my-5" />
 
-      <TransactionIdControls
-        v-model:payer-id="payerData.accountId.value"
-        v-model:valid-start="validStart"
-        v-model:max-transaction-fee="maxTransactionFee as Hbar"
-      />
-
-      <div class="row mt-6">
-        <div class="form-group col-8 col-xxxl-6">
-          <label class="form-label">Transaction Memo</label>
-          <AppInput
-            v-model="transactionMemo"
-            :filled="true"
-            data-testid="input-transaction-memo-for-file-update"
-            maxlength="100"
-            placeholder="Enter Transaction Memo"
-          />
-        </div>
-      </div>
-
-      <hr class="separator my-5" />
-
       <div class="fill-remaining">
+        <TransactionIdControls
+          v-model:payer-id="payerData.accountId.value"
+          v-model:valid-start="validStart"
+          v-model:max-transaction-fee="maxTransactionFee as Hbar"
+        />
+
+        <div class="row mt-6">
+          <div class="form-group col-8 col-xxxl-6">
+            <label class="form-label">Transaction Memo</label>
+            <AppInput
+              v-model="transactionMemo"
+              :filled="true"
+              data-testid="input-transaction-memo-for-file-update"
+              maxlength="100"
+              placeholder="Enter Transaction Memo"
+            />
+          </div>
+        </div>
+
+        <hr class="separator my-5" />
+
         <div class="row">
           <div class="form-group" :class="[columnClass]">
             <label class="form-label">File ID <span class="text-danger">*</span></label>
