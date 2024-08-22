@@ -51,7 +51,12 @@ test.describe('Transaction tests', () => {
   test.beforeEach(async () => {
     // await transactionPage.closeCompletedTransaction();
     await transactionPage.clickOnTransactionsMenuButton();
-    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    //this is needed because tests fail in CI environment
+    if (process.env.CI) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
     await transactionPage.closeDraftModal();
   });
 
@@ -158,10 +163,11 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify account is displayed in the account card section', async () => {
-    const { newAccountId } = await transactionPage.createNewAccount();
+    await transactionPage.ensureAccountExists();
+    const accountFromList = await transactionPage.getFirstAccountFromList();
 
     await transactionPage.clickOnAccountsMenuButton();
-    const isAccountVisible = await transactionPage.isAccountCardVisible(newAccountId);
+    const isAccountVisible = await transactionPage.isAccountCardVisible(accountFromList);
 
     expect(isAccountVisible).toBe(true);
   });

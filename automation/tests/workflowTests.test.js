@@ -56,7 +56,12 @@ test.describe('Workflow tests', () => {
 
   test.beforeEach(async () => {
     await transactionPage.clickOnTransactionsMenuButton();
-    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    //this is needed because tests fail in CI environment
+    if (process.env.CI) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
     await transactionPage.closeDraftModal();
   });
 
