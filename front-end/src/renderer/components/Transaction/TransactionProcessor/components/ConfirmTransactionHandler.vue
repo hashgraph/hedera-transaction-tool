@@ -42,6 +42,7 @@ const transaction = computed(() =>
 const handleConfirmTransaction = (e: Event) => {
   e.preventDefault();
   assertPassword();
+  next();
 };
 
 /* Functions */
