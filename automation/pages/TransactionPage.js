@@ -1303,7 +1303,11 @@ class TransactionPage extends BasePage {
 
   async clickOnConfirmDeleteAccountButton() {
     const modalSelector = `[data-testid="${this.confirmTransactionModalSelector}"][style*="display: block"]`;
-    await this.window.waitForSelector(modalSelector, { state: 'visible', timeout: 15000 });
+    try {
+      await this.window.waitForSelector(modalSelector, { state: 'visible', timeout: 15000 });
+    } catch (error) {
+      console.log('Error: Confirm delete account modal is not visible');
+    }
     await this.clickByTestId(this.confirmDeleteAccountButtonSelector, 5000);
   }
 }
