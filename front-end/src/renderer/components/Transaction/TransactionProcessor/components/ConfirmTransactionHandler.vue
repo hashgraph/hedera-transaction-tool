@@ -39,13 +39,13 @@ const transaction = computed(() =>
 );
 
 /* Handlers */
-const handleConfirmTransaction = (e: Event) => {
+const handleConfirmTransaction = async (e: Event) => {
   e.preventDefault();
 
   const hasPassword = assertPassword();
   if (!hasPassword) return;
 
-  next();
+  await next();
 };
 
 /* Functions */
