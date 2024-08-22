@@ -398,12 +398,12 @@ class TransactionPage extends BasePage {
 
     await this.addPublicKeyAtDepth(`0-0-2`);
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const sanitizedTitle = 'BeforeAddingLastPubKey_{timestamp}';
+    const sanitizedTitle = 'BeforeAddingLastPubKey' + timestamp;
     const screenshotPath = `./test-results/screenshots/${sanitizedTitle}.png`;
     await this.window.screenshot({ path: screenshotPath });
     await this.addPublicKeyAtDepth(`0-0-2`);
     const newTime = new Date().toISOString().replace(/[:.]/g, '-');
-    const sanTitle = 'AfterAddingLastPubKey_{newTime}';
+    const sanTitle = 'AfterAddingLastPubKey' + newTime;
     const ssPath = `./test-results/screenshots/${sanTitle}.png`;
     await this.window.screenshot({ path: ssPath });
   }
@@ -515,7 +515,7 @@ class TransactionPage extends BasePage {
 
     await this.clickOnSignAndSubmitButton();
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const sanTitle = 'AfterClickingSignAndSubmitButton_{timestamp}';
+    const sanTitle = 'AfterClickingSignAndSubmitButton' + timestamp;
     const ssPath = `./test-results/screenshots/${sanTitle}.png`;
     await this.window.screenshot({ path: ssPath });
     await this.clickSignTransactionButton();
@@ -538,7 +538,7 @@ class TransactionPage extends BasePage {
     await this.createComplexKeyStructure();
     await this.clickOnDoneButton();
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const sanTitle = 'AfterClickingDoneButton_{timestamp}';
+    const sanTitle = 'AfterClickingDoneButton' + timestamp;
     const ssPath = `./test-results/screenshots/${sanTitle}.png`;
     await this.window.screenshot({ path: ssPath });
   }
