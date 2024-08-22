@@ -51,18 +51,8 @@ test.describe('Transaction tests', () => {
   test.beforeEach(async () => {
     // await transactionPage.closeCompletedTransaction();
     await transactionPage.clickOnTransactionsMenuButton();
-    await new Promise(resolve => setTimeout(resolve, 750));
+    await new Promise(resolve => setTimeout(resolve, 1000));
     await transactionPage.closeDraftModal();
-  });
-
-  test.afterEach(async ({}, testInfo) => {
-    if (testInfo.status !== 'passed') {
-      // Remove double quotes from the test name
-      const sanitizedTitle = testInfo.title.replace(/["]/g, '').replace(/\s+/g, '_');
-      const screenshotPath = `./test-results/screenshots/${sanitizedTitle}.png`;
-      await this.window.screenshot({ path: screenshotPath });
-      console.log(`Screenshot saved: ${screenshotPath}`);
-    }
   });
 
   test('Verify that all elements on account create page are correct', async () => {
