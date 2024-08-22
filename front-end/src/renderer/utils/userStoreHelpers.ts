@@ -26,6 +26,10 @@ import { deleteOrganization, getOrganizations } from '@renderer/services/organiz
 import { hashData, compareDataToHashes } from '@renderer/services/electronUtilsService';
 
 /* Flags */
+export function assertUserLoggedIn(user: PersonalUser | null): asserts user is LoggedInUser {
+  if (!isUserLoggedIn(user)) throw Error('User is not logged in');
+}
+
 export const isUserLoggedIn = (user: PersonalUser | null): user is LoggedInUser => {
   return user !== null && user.isLoggedIn;
 };
@@ -56,6 +60,12 @@ export const isLoggedOutOrganization = (
 ): organization is Organization & LoggedOutOrganization => {
   return organization !== null && organization.isServerActive && organization.loginRequired;
 };
+
+export function assertIsLoggedInOrganization(
+  organization: ConnectedOrganization | null,
+): asserts organization is Organization & LoggedInOrganization {
+  if (!isLoggedInOrganization(organization)) throw Error('User is not logged in an organization');
+}
 
 export const isLoggedInOrganization = (
   organization: ConnectedOrganization | null,
