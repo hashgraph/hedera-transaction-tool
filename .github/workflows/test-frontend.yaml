@@ -125,14 +125,6 @@ jobs:
         run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite.command }}
         working-directory: automation
 
-      - name: Upload screenshots
-        if: always() && !cancelled()
-        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
-        with:
-          name: screenshots-${{ matrix.test-suite.name }}
-          path: automation/test-results/screenshots/
-          retention-days: 3
-
   unit-test:
     name: Unit Tests | ${{ matrix.test-suite.name }}
     runs-on: transaction-tools-linux-medium
