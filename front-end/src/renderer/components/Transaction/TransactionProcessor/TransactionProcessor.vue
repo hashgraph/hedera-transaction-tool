@@ -1,42 +1,23 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, inject } from 'vue';
+import { ref } from 'vue';
 
-import { Key, KeyList, Transaction, TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
-import { Prisma } from '@prisma/client';
+import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
 
 import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
-import useUserStore from '@renderer/stores/storeUser';
-import useNetworkStore from '@renderer/stores/storeNetwork';
-
 import { useToast } from 'vue-toast-notification';
-import { useRoute } from 'vue-router';
 
-import { execute, signTransaction, storeTransaction } from '@renderer/services/transactionService';
-import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
-import { decryptPrivateKey, flattenKeyList } from '@renderer/services/keyPairService';
-import { deleteDraft, getDraft } from '@renderer/services/transactionDraftsService';
-import { addApprovers, addObservers, submitTransaction } from '@renderer/services/organization';
+import ConfirmTransactionHandler from './components/ConfirmTransactionHandler.vue';
+import ValidateRequestHandler from './components/ValidateRequestHandler.vue';
+import BigFileRequestHandler from './components/BigFileRequestHandler.vue';
+import OrganizationRequestHandler from './components/OrganizationRequestHandler.vue';
+import SignPersonalRequestHandler from './components/SignPersonalRequestHandler.vue';
+import ExecutePersonalRequestHandler from './components/ExecutePersonalRequestHandler.vue';
 
-import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
-
-import { ableToSign, getStatusFromCode, getTransactionType, getPrivateKey } from '@renderer/utils';
-import {
-  isLoggedInOrganization,
-  isLoggedInWithValidPassword,
-  isUserLoggedIn,
-} from '@renderer/utils/userStoreHelpers';
-
-import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppModal from '@renderer/components/ui/AppModal.vue';
-import AppLoader from '@renderer/components/ui/AppLoader.vue';
-import ConfirmTransaction from '@renderer/components/Transaction/ConfirmTransaction.vue';
+import { TransactionRequest } from '.';
 
 /* Props */
 const props = defineProps<{
-  transactionBytes: Uint8Array | null;
-  observers?: number[];
-  approvers?: TransactionApproverDto[];
   onExecuted?: (
     success: boolean,
     response?: TransactionResponse,
@@ -48,350 +29,151 @@ const props = defineProps<{
   watchExecutedModalShown?: (shown: boolean) => void;
 }>();
 
-/* Stores */
-const user = useUserStore();
-const network = useNetworkStore();
-
 /* Composables */
 const toast = useToast();
-const route = useRoute();
-
-/* Injected */
-const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
 
 /* State */
-const transactionResult = ref<{
-  response: TransactionResponse;
-  receipt: TransactionReceipt;
-} | null>();
-const signatureKey = ref<Key | KeyList | null>(null);
-const isConfirmShown = ref(false);
-const isSigning = ref(false);
-const isExecuting = ref(false);
-const isExecutedModalShown = ref(false);
-const unmounted = ref(false);
+/** Handlers */
+const validateHandler = ref<InstanceType<typeof ValidateRequestHandler> | null>(null);
+const confirmHandler = ref<InstanceType<typeof ConfirmTransactionHandler> | null>(null);
+const fileCreateHandler = ref<InstanceType<typeof BigFileRequestHandler> | null>(null);
+const organizationHandler = ref<InstanceType<typeof OrganizationRequestHandler> | null>(null);
+const signPersonalHandler = ref<InstanceType<typeof SignPersonalRequestHandler> | null>(null);
+const executePersonalHandler = ref<InstanceType<typeof ExecutePersonalRequestHandler> | null>(null);
 
-/* Computed */
-const transaction = computed(() =>
-  props.transactionBytes ? Transaction.fromBytes(props.transactionBytes) : null,
-);
-const flattenedSignatureKey = computed(() =>
-  signatureKey.value ? flattenKeyList(signatureKey.value).map(pk => pk.toStringRaw()) : [],
-);
-const localPublicKeysReq = computed(() =>
-  flattenedSignatureKey.value.filter(pk => user.publicKeys.includes(pk)),
-);
-const type = computed(() => transaction.value && getTransactionType(transaction.value));
+const transactionBytes = ref<Uint8Array | null>(null);
+const observers = ref<number[]>([]);
+const approvers = ref<TransactionApproverDto[]>([]);
+
+const isSigning = ref(false);
 
 /* Handlers */
-async function handleTransactionConfirm() {
-  if (user.selectedOrganization) {
-    await sendSignedTransactionToOrganization();
-  } else if (localPublicKeysReq.value.length > 0) {
-    await signAfterConfirm();
-  } else {
-    throw new Error(
-      'Unable to execute, all of the required signatures should be with your keys. You are currently in Personal mode.',
-    );
-  }
-}
-
-async function signAfterConfirm() {
-  if (!props.transactionBytes) throw new Error('Transaction not provided');
-
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
-
-  if (user.selectedOrganization) {
-    throw new Error(
-      "User is in organization mode, shouldn't be able to sign before submitting to organization",
-    );
-  }
-
-  /* Verifies the user has entered his password */
-  const personalPassword = user.getPassword();
-  if (!personalPassword) {
-    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-    isConfirmShown.value = false;
-    userPasswordModalRef.value?.open(
-      'Enter your application password',
-      'Enter your application password to sign the transaction',
-      signAfterConfirm,
-    );
-    return;
-  }
-
-  try {
-    isConfirmShown.value = true;
-    isSigning.value = true;
-
-    const signedTransactionBytes = await signTransaction(
-      props.transactionBytes,
-      localPublicKeysReq.value,
-      user.personal.id,
-      personalPassword,
-    );
-    isConfirmShown.value = false;
-
-    await executeTransaction(signedTransactionBytes);
-  } catch (err: any) {
-    toast.error(err.message || 'Transaction signing failed', { position: 'bottom-right' });
-  } finally {
-    isSigning.value = false;
-  }
-}
-
-/* Functions */
-async function process(requiredKey: Key) {
-  resetData();
-  signatureKey.value = requiredKey;
-
-  await nextTick();
-  await user.refetchKeys();
-
-  validateProcess();
-
-  await nextTick();
-
-  isConfirmShown.value = true;
-
-  await user.refetchAccounts();
-
-  function validateProcess() {
-    if (!transaction.value) {
-      throw new Error('Transaction not provided');
-    }
-
-    if (!isUserLoggedIn(user.personal)) {
-      throw new Error('User is not logged in');
-    }
-
-    if (
-      signatureKey.value &&
-      !ableToSign(user.publicKeys, signatureKey.value) &&
-      !user.selectedOrganization
-    ) {
-      throw new Error(
-        'Unable to execute, all of the required signatures should be with your keys. You are currently in Personal mode.',
-      );
-    }
-  }
-}
-
-async function executeTransaction(transactionBytes: Uint8Array) {
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
-
-  let status = 0;
-
-  try {
-    isExecuting.value = true;
-
-    const { response, receipt } = await execute(transactionBytes);
-
-    transactionResult.value = { response, receipt };
-    status = receipt.status._code;
-
-    isExecutedModalShown.value = true;
-    props.onExecuted && props.onExecuted(true, response, receipt);
-
-    if (route.query.draftId) {
-      try {
-        const draft = await getDraft(route.query.draftId.toString());
-
-        if (!draft.isTemplate) {
-          await deleteDraft(route.query.draftId.toString());
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    }
-
-    if (unmounted.value) {
-      toast.success('Transaction executed', { position: 'bottom-right' });
-    }
-  } catch (err: any) {
-    const data = JSON.parse(err.message);
-    status = data.status;
-
-    props.onExecuted && props.onExecuted(false);
-    toast.error(data.message, { position: 'bottom-right' });
-  } finally {
-    isExecuting.value = false;
-  }
-
-  const executedTransaction = Transaction.fromBytes(transactionBytes);
-
-  if (!type.value || !executedTransaction.transactionId) throw new Error('Cannot save transaction');
-
-  const tx: Prisma.TransactionUncheckedCreateInput = {
-    name: `${type.value} (${executedTransaction.transactionId.toString()})`,
-    type: type.value,
-    description: '',
-    transaction_id: executedTransaction.transactionId.toString(),
-    transaction_hash: (await executedTransaction.getTransactionHash()).toString(),
-    body: transactionBytes.toString(),
-    status: getStatusFromCode(status) || 'UNKNOWN',
-    status_code: status,
-    user_id: user.personal.id,
-    creator_public_key: null,
-    signature: '',
-    valid_start: executedTransaction.transactionId.validStart?.toString() || '',
-    executed_at: new Date().getTime() / 1000,
-    network: network.network,
-  };
-
-  const { id } = await storeTransaction(tx);
-  props.onLocalStored && props.onLocalStored(id);
-}
-
-async function sendSignedTransactionToOrganization() {
-  isConfirmShown.value = false;
-
-  /* Verifies the user is logged in organization */
-  if (!isLoggedInOrganization(user.selectedOrganization)) {
-    throw new Error('Please select an organization');
-  }
-
-  /* Verifies the user has entered his password */
-  const personalPassword = user.getPassword();
-  if (!isLoggedInWithValidPassword(user.personal) || !personalPassword) {
-    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-    userPasswordModalRef.value?.open(
-      'Enter your application password',
-      'Enter your application password to sign as a creator',
-      sendSignedTransactionToOrganization,
-    );
-    return;
-  }
-
-  /* Verifies there is actual transaction to process */
-  if (!props.transactionBytes) throw new Error('Transaction not provided');
-
-  /* User Serializes the Transaction */
-  const hexTransactionBytes = await uint8ArrayToHex(props.transactionBytes);
-
-  /* Signs the unfrozen transaction */
-  const keyToSignWith = user.keyPairs[0].public_key;
-
-  const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, keyToSignWith);
-  const privateKey = getPrivateKey(keyToSignWith, privateKeyRaw);
-
-  const signature = privateKey.sign(props.transactionBytes);
-  const signatureHex = await uint8ArrayToHex(signature);
-
-  /* Submit the transaction to the back end */
-  const { id, body } = await submitTransaction(
-    user.selectedOrganization.serverUrl,
-    transaction.value?.transactionMemo || `New ${type.value}`,
-    transaction.value?.transactionMemo || '',
-    hexTransactionBytes,
-    network.network,
-    signatureHex,
-    user.selectedOrganization.userKeys.find(k => k.publicKey === keyToSignWith)?.id || -1,
-  );
+const handleSubmitSuccess = async (id: number, body: string) => {
+  assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Validate');
+  confirmHandler.value.setShow(false);
 
   toast.success('Transaction submitted successfully');
-  props.onSubmitted && props.onSubmitted(id, body);
+  props.onSubmitted && (await props.onSubmitted(id, body));
+};
 
-  const results = await Promise.allSettled([
-    // uploadSignatures(body, id),
-    uploadObservers(id),
-    uploadApprovers(id),
-    deleteDraftIfNotTemplate(),
-  ]);
+const handleSubmitFail = () => {
+  assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Validate');
+  confirmHandler.value.setShow(true);
+};
 
-  results.forEach(result => {
-    if (result.status === 'rejected') {
-      toast.error(result.reason.message);
-    }
-  });
+const handleSignBegin = () => {
+  isSigning.value = true;
+  assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Validate');
+  confirmHandler.value.setShow(true);
+};
+
+const handleSignSuccess = () => {
+  isSigning.value = false;
+  assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Validate');
+  confirmHandler.value.setShow(false);
+};
+
+const handleSignFail = () => {
+  isSigning.value = false;
+};
+
+const handleTransactionExecuted = (
+  success: boolean,
+  response?: TransactionResponse,
+  receipt?: TransactionReceipt,
+) => {
+  props.onExecuted && props.onExecuted(success, response, receipt);
+};
+
+const handleTransactionStore = (id: string) => {
+  props.onLocalStored && props.onLocalStored(id);
+};
+
+/* Functions */
+async function process(request: TransactionRequest) {
+  resetData();
+
+  transactionBytes.value = request.transactionBytes;
+  observers.value = request.observers || [];
+  approvers.value = request.approvers || [];
+
+  buildChain();
+
+  assertHandlerExists<typeof ValidateRequestHandler>(validateHandler.value, 'Validate');
+  await validateHandler.value.handle(request);
 }
 
-async function uploadObservers(transactionId: number) {
-  if (!props.observers || props.observers.length === 0) return;
+function buildChain() {
+  assertHandlerExists<typeof ValidateRequestHandler>(validateHandler.value, 'Validate');
+  assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Confirm');
+  assertHandlerExists<typeof BigFileRequestHandler>(fileCreateHandler.value, 'File Create');
+  assertHandlerExists<typeof OrganizationRequestHandler>(organizationHandler.value, 'Organization');
+  assertHandlerExists<typeof SignPersonalRequestHandler>(
+    signPersonalHandler.value,
+    'Sign Personal',
+  );
+  assertHandlerExists<typeof ExecutePersonalRequestHandler>(
+    executePersonalHandler.value,
+    'Execute Personal',
+  );
 
-  if (!isLoggedInOrganization(user.selectedOrganization))
-    throw new Error('User is not logged in organization');
-
-  await addObservers(user.selectedOrganization.serverUrl, transactionId, props.observers);
+  validateHandler.value.setNext(confirmHandler.value);
+  confirmHandler.value.setNext(fileCreateHandler.value);
+  fileCreateHandler.value.setNext(organizationHandler.value);
+  organizationHandler.value.setNext(signPersonalHandler.value);
+  signPersonalHandler.value.setNext(executePersonalHandler.value);
 }
 
-async function uploadApprovers(transactionId: number) {
-  if (!props.approvers || props.approvers.length === 0) return;
-
-  if (!isLoggedInOrganization(user.selectedOrganization))
-    throw new Error('User is not logged in organization');
-
-  await addApprovers(user.selectedOrganization.serverUrl, transactionId, props.approvers);
-}
-
-async function deleteDraftIfNotTemplate() {
-  /* Delete if draft and not template */
-  if (route.query.draftId) {
-    try {
-      const draft = await getDraft(route.query.draftId.toString());
-      if (!draft.isTemplate) await deleteDraft(route.query.draftId.toString());
-    } catch (error) {
-      console.log(error);
-    }
-  }
+function assertHandlerExists<T extends abstract new (...args: any) => any>(
+  handler,
+  name,
+): asserts handler is InstanceType<T> {
+  if (!handler) throw new Error(`${name} handler is not provided`);
 }
 
 function resetData() {
-  transactionResult.value = null;
+  transactionBytes.value = null;
+  observers.value = [];
+  approvers.value = [];
   isSigning.value = false;
-  isExecuting.value = false;
-  isExecutedModalShown.value = false;
-  signatureKey.value = null;
 }
-
-/* Hooks */
-onBeforeUnmount(() => (unmounted.value = true));
 
 /* Expose */
 defineExpose({
-  transactionResult,
   process,
 });
 </script>
 <template>
   <div>
-    <!-- Confirm modal -->
-    <template v-if="transaction">
-      <ConfirmTransaction
-        v-model:show="isConfirmShown"
-        :transaction="transaction"
-        :signing="isSigning"
-        @transaction:confirm="handleTransactionConfirm"
-      />
-    </template>
-    <!-- Executing modal -->
-    <AppModal
-      v-model:show="isExecuting"
-      class="common-modal"
-      :close-on-click-outside="false"
-      :close-on-escape="false"
-    >
-      <div class="p-5">
-        <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="isExecuting = false"></i>
-        </div>
-        <div class="text-center">
-          <AppLoader />
-        </div>
-        <h3 class="text-center text-title text-bold mt-5">
-          Executing
-          {{ type }}
-        </h3>
-        <hr class="separator my-5" />
+    <!-- Handler #1: Validation -->
+    <ValidateRequestHandler ref="validateHandler" />
 
-        <div class="d-grid">
-          <AppButton color="primary" @click="isExecuting = false">Close</AppButton>
-        </div>
-      </div>
-    </AppModal>
+    <!-- Handler #2: Confirm modal -->
+    <ConfirmTransactionHandler ref="confirmHandler" :signing="isSigning" />
+
+    <!-- Handler #3: File Create (has sub-chain) -->
+    <BigFileRequestHandler ref="fileCreateHandler" />
+
+    <!-- Handler #4: Orgnization  -->
+    <OrganizationRequestHandler
+      ref="organizationHandler"
+      @transaction:submit:success="handleSubmitSuccess"
+      @transaction:submit:fail="handleSubmitFail"
+    />
+
+    <!-- Handler #5: Sign in Personal -->
+    <SignPersonalRequestHandler
+      ref="signPersonalHandler"
+      @transaction:sign:begin="handleSignBegin"
+      @transaction:sign:success="handleSignSuccess"
+      @transaction:sign:fail="handleSignFail"
+    />
+
+    <!-- Handler #6: Execute Personal -->
+    <ExecutePersonalRequestHandler
+      ref="executePersonalHandler"
+      @transaction:executed="handleTransactionExecuted"
+      @transaction:stored="handleTransactionStore"
+    />
   </div>
 </template>
