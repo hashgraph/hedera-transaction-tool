@@ -23,6 +23,11 @@ jobs:
     runs-on: transaction-tools-linux-medium
 
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        with:
+          egress-policy: audit
+
       - name: Checkout code
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
@@ -47,6 +52,7 @@ jobs:
         with:
           path: front-end/release/linux-unpacked
           key: build-artifacts-${{ github.sha }}
+
   test:
     name: Automation | ${{ matrix.test-suite.name }}
     runs-on: transaction-tools-linux-medium
@@ -66,6 +72,11 @@ jobs:
           - name: Workflow
             command: WorkflowTests
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        with:
+          egress-policy: audit
+
       - name: Checkout code
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
@@ -124,6 +135,11 @@ jobs:
           - name: Main Process
             command: main
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        with:
+          egress-policy: audit
+
       - name: Checkout code
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
