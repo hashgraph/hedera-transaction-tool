@@ -40,9 +40,9 @@ function validateSignableInPersonal(request: TransactionRequest) {
 
 function validateFileCreate(transaction: FileCreateTransaction) {
   const size = transaction.toBytes().length;
-  const bufferBytes = 200;
+  const sizeBufferBytes = 200;
 
-  if (size <= TRANSACTION_MAX_SIZE - bufferBytes) return;
+  if (size <= TRANSACTION_MAX_SIZE - sizeBufferBytes) return;
 
   if (user.selectedOrganization) {
     throw new Error(
