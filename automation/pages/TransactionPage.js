@@ -61,8 +61,8 @@ class TransactionPage extends BasePage {
   createNewTransactionButtonSelector = 'button-create-new';
   createAccountSublinkSelector = 'menu-sublink-0';
   updateAccountSublinkSelector = 'menu-sublink-1';
-  transferTokensSublinkSelector = 'menu-sublink-2';
-  deleteAccountSublinkSelector = 'menu-sublink-3';
+  deleteAccountSublinkSelector = 'menu-sublink-2';
+  transferTokensSublinkSelector = 'menu-sublink-3';
   allowanceSublinkSelector = 'menu-sublink-4';
   fileServiceLinkSelector = 'menu-link-1';
   createFileSublinkSelector = 'menu-sublink-0';
