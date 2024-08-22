@@ -118,21 +118,6 @@ const totalBalanceAdjustments = computed(
   () => [...new Set(transfers.value.map(t => t.accountId.toString()))].length,
 );
 
-const balanceAdjustmentsPerAccount = computed(() => {
-  return transfers.value.reduce((acc, transfer) => {
-    const accountId = transfer.accountId.toString();
-    const amount = transfer.amount.toBigNumber();
-
-    if (acc[accountId]) {
-      acc[accountId] = acc[accountId].plus(amount);
-    } else {
-      acc[accountId] = amount;
-    }
-
-    return acc;
-  }, {});
-});
-
 /* Handlers */
 const handleCreate = async e => {
   e.preventDefault();
@@ -142,8 +127,14 @@ const handleCreate = async e => {
     }
 
     transaction.value = createTransaction();
-
-    await transactionProcessor.value?.process(await getRequiredKeys());
+    await transactionProcessor.value?.process(
+      {
+        transactionKey: await getRequiredKeys(),
+        transactionBytes: transaction.value.toBytes(),
+      },
+      observers.value,
+      approvers.value,
+    );
   } catch (err: any) {
     console.log(err);
 
@@ -704,27 +695,6 @@ onMounted(async () => {
       "
       :on-submitted="handleSubmit"
       :on-local-stored="handleLocalStored"
-    >
-      <template #successHeading>Hbar transferred successfully</template>
-      <template #successContent>
-        <div class="mt-4">
-          <template
-            v-for="account of Object.entries(balanceAdjustmentsPerAccount)"
-            :key="account.accountId"
-          >
-            <div class="mt-3">
-              <p class="text-small d-flex justify-content-between align-items">
-                <span class="text-bold text-secondary">Account ID:</span>
-                <span>{{ account[0] }}</span>
-              </p>
-              <p class="text-small d-flex justify-content-between align-items">
-                <span class="text-bold text-secondary">Balance:</span>
-                <span>{{ new Hbar(account[1]) }}</span>
-              </p>
-            </div>
-          </template>
-        </div>
-      </template>
-    </TransactionProcessor>
+    />
   </div>
 </template>

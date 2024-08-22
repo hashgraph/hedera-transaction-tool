@@ -95,7 +95,14 @@ const handleCreate = async e => {
     }
 
     transaction.value = createTransaction();
-    await transactionProcessor.value?.process(transactionKey.value);
+    await transactionProcessor.value?.process(
+      {
+        transactionKey: transactionKey.value,
+        transactionBytes: transaction.value.toBytes(),
+      },
+      observers.value,
+      approvers.value,
+    );
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
@@ -455,17 +462,6 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
       :transaction-bytes="transaction?.toBytes() || null"
       :observers="observers"
       :approvers="approvers"
-    >
-      <template #successHeading>Freeze executed successfully</template>
-      <template #successContent>
-        <p
-          v-if="transactionProcessor?.transactionResult"
-          class="text-small d-flex justify-content-between align-items mt-2"
-        >
-          <span class="text-bold text-secondary">File ID:</span>
-          <span>{{ fileId?.toString() }}</span>
-        </p>
-      </template>
-    </TransactionProcessor>
+    />
   </div>
 </template>

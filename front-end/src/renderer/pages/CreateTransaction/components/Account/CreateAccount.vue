@@ -139,7 +139,14 @@ const handleCreate = async e => {
     }
 
     transaction.value = createTransaction();
-    await transactionProcessor.value?.process(transactionKey.value);
+    await transactionProcessor.value?.process(
+      {
+        transactionKey: transactionKey.value,
+        transactionBytes: transaction.value.toBytes(),
+      },
+      observers.value,
+      approvers.value,
+    );
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
@@ -573,28 +580,9 @@ const columnClass = 'col-4 col-xxxl-3';
 
     <TransactionProcessor
       ref="transactionProcessor"
-      :transaction-bytes="transaction?.toBytes() || null"
-      :observers="observers"
-      :approvers="approvers"
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"
       :on-local-stored="redirectToDetails"
-    >
-      <template #successHeading>Account created successfully</template>
-      <template #successContent>
-        <p
-          v-if="transactionProcessor?.transactionResult"
-          class="text-small d-flex justify-content-between align-items mt-2"
-        >
-          <span class="text-bold text-secondary">Account ID:</span>
-          <span data-testid="p-new-crated-account-id">{{
-            getEntityIdFromTransactionReceipt(
-              transactionProcessor?.transactionResult.receipt,
-              'accountId',
-            )
-          }}</span>
-        </p>
-      </template>
-    </TransactionProcessor>
+    />
   </div>
 </template>

@@ -10,7 +10,7 @@ import {
   TransactionReceipt,
 } from '@hashgraph/sdk';
 
-import { MEMO_MAX_LENGTH, TRANSACTION_MAX_SIZE } from '@main/shared/constants';
+import { MEMO_MAX_LENGTH } from '@main/shared/constants';
 import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import { Prisma } from '@prisma/client';
@@ -35,7 +35,6 @@ import {
   getTransactionFromBytes,
   getPropagationButtonLabel,
   isAccountId,
-  convertBytes,
 } from '@renderer/utils';
 import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
@@ -112,14 +111,6 @@ const handleFileImport = async (e: Event) => {
   const file = fileImportEl.files && fileImportEl.files[0];
 
   if (file) {
-    if (file.size >= TRANSACTION_MAX_SIZE && isLoggedInOrganization(user.selectedOrganization)) {
-      toast.error(
-        `File too large (${convertBytes(file.size)}), Hedera max transaction size is: ${convertBytes(TRANSACTION_MAX_SIZE)}`,
-        { position: 'bottom-right' },
-      );
-      return;
-    }
-
     fileMeta.value = file;
 
     fileReader.value = new FileReader();
@@ -153,7 +144,14 @@ const handleCreate = async e => {
     }
 
     transaction.value = createTransaction();
-    await transactionProcessor.value?.process(transactionKey.value);
+    await transactionProcessor.value?.process(
+      {
+        transactionKey: transactionKey.value,
+        transactionBytes: transaction.value.toBytes(),
+      },
+      observers.value,
+      approvers.value,
+    );
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
@@ -592,22 +590,6 @@ watch(payerData.isValid, isValid => {
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"
       :on-local-stored="handleLocalStored"
-    >
-      <template #successHeading>File created successfully</template>
-      <template #successContent>
-        <p
-          v-if="transactionProcessor?.transactionResult"
-          class="text-small d-flex justify-content-between align-items mt-2"
-        >
-          <span class="text-bold text-secondary">File ID:</span>
-          <span>{{
-            getEntityIdFromTransactionReceipt(
-              transactionProcessor.transactionResult.receipt,
-              'fileId',
-            )
-          }}</span>
-        </p>
-      </template>
-    </TransactionProcessor>
+    />
   </div>
 </template>

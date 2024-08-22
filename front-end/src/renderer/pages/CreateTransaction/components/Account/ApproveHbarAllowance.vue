@@ -100,7 +100,14 @@ const handleCreate = async e => {
     }
 
     transaction.value = createTransaction();
-    await transactionProcessor.value?.process(transactionKey.value);
+    await transactionProcessor.value?.process(
+      {
+        transactionKey: transactionKey.value,
+        transactionBytes: transaction.value.toBytes(),
+      },
+      observers.value,
+      approvers.value,
+    );
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
   }
