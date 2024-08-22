@@ -56,7 +56,7 @@ const route = useRoute();
 const payerData = useAccountId();
 
 /* State */
-const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
+const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
 const datePicker = ref<DatePickerInstance>(null);
 
 const transaction = ref<FreezeTransaction | null>(null);

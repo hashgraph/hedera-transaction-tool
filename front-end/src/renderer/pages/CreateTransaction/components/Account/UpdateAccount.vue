@@ -57,7 +57,7 @@ const payerData = useAccountId();
 const accountData = useAccountId();
 
 /* State */
-const transactionProcessor = ref<typeof TransactionProcessor | null>(null);
+const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
 
 const transaction = ref<Transaction | null>(null);
 const validStart = ref(new Date());
