@@ -2,6 +2,8 @@
 import { computed, ref } from 'vue';
 import { Transaction } from '@hashgraph/sdk';
 
+import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 
@@ -16,6 +18,12 @@ import { getPrivateKey, getTransactionType } from '@renderer/utils';
 import { assertIsLoggedInOrganization, assertUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import { Handler, TransactionRequest } from '..';
+
+/* Props */
+const props = defineProps<{
+  observers: number[];
+  approvers: TransactionApproverDto[];
+}>();
 
 /* Emits */
 const emit = defineEmits<{
@@ -61,7 +69,7 @@ async function handle(req: TransactionRequest) {
 
   const results = await Promise.allSettled([
     upload('observers', id),
-    upload('observers', id),
+    upload('approvers', id),
     draft.deleteIfNotTemplate(),
   ]);
 
@@ -119,15 +127,16 @@ async function submit(publicKey: string, signature: string) {
 async function upload(type: 'observers' | 'approvers', id: number) {
   if (!request.value) throw new Error('Request is required to sign');
 
-  const entities = type === 'observers' ? request.value.observers : request.value.approvers;
+  const entities = type === 'observers' ? props.observers : props.approvers;
+
   if (!entities || entities.length === 0) return;
 
   assertIsLoggedInOrganization(user.selectedOrganization);
 
   if (type === 'observers') {
-    await addObservers(user.selectedOrganization.serverUrl, id, request.value.observers);
+    await addObservers(user.selectedOrganization.serverUrl, id, props.observers);
   } else {
-    await addApprovers(user.selectedOrganization.serverUrl, id, request.value.approvers);
+    await addApprovers(user.selectedOrganization.serverUrl, id, props.approvers);
   }
 }
 

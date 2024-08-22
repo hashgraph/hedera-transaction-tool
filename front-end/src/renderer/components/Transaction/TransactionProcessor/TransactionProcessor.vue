@@ -90,12 +90,16 @@ const handleTransactionStore = (id: string) => {
 };
 
 /* Functions */
-async function process(request: TransactionRequest) {
+async function process(
+  request: TransactionRequest,
+  observerUserIds?: number[],
+  approverDtos?: TransactionApproverDto[],
+) {
   resetData();
 
   transactionBytes.value = request.transactionBytes;
-  observers.value = request.observers || [];
-  approvers.value = request.approvers || [];
+  observers.value = observerUserIds || [];
+  approvers.value = approverDtos || [];
 
   buildChain();
 
@@ -157,6 +161,8 @@ defineExpose({
     <!-- Handler #4: Orgnization  -->
     <OrganizationRequestHandler
       ref="organizationHandler"
+      :observers="observers"
+      :approvers="approvers"
       @transaction:submit:success="handleSubmitSuccess"
       @transaction:submit:fail="handleSubmitFail"
     />
