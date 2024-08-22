@@ -397,7 +397,13 @@ class TransactionPage extends BasePage {
     await this.addThresholdKeyAtDepth(currentDepth);
 
     await this.addPublicKeyAtDepth(`0-0-2`);
+    const sanitizedTitle = 'BeforeAddingLastPubKey';
+    const screenshotPath = `./test-results/screenshots/${sanitizedTitle}.png`;
+    await this.window.screenshot({ path: screenshotPath });
     await this.addPublicKeyAtDepth(`0-0-2`);
+    const sanTitle = 'AfterAddingLastPubKey';
+    const ssPath = `./test-results/screenshots/${sanTitle}.png`;
+    await this.window.screenshot({ path: ssPath });
   }
 
   async decodeByteCode(bytecode) {
@@ -506,6 +512,9 @@ class TransactionPage extends BasePage {
     }
 
     await this.clickOnSignAndSubmitButton();
+    const sanTitle = 'AfterClickingSignAndSubmitButton';
+    const ssPath = `./test-results/screenshots/${sanTitle}.png`;
+    await this.window.screenshot({ path: ssPath });
     await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();
 
@@ -525,6 +534,9 @@ class TransactionPage extends BasePage {
     await this.clickOnCreateNewComplexKeyButton();
     await this.createComplexKeyStructure();
     await this.clickOnDoneButton();
+    const sanTitle = 'AfterClickingDoneButton';
+    const ssPath = `./test-results/screenshots/${sanTitle}.png`;
+    await this.window.screenshot({ path: ssPath });
   }
 
   async deleteAccount(accountId) {
