@@ -91,37 +91,6 @@ test.describe('Settings tests', () => {
     await settingsPage.incrementIndex();
   });
 
-  test('Verify user restored key pair is saved in the local database', async () => {
-    await settingsPage.clickOnSettingsButton();
-    await settingsPage.clickOnKeysTab();
-
-    await settingsPage.clickOnRestoreButton();
-    await settingsPage.clickOnContinueButton();
-
-    const isMnemonicRequired = settingsPage.isElementVisible(
-      registrationPage.getRecoveryWordSelector(1),
-    );
-    if (isMnemonicRequired) {
-      await registrationPage.fillAllMissingRecoveryPhraseWords();
-      await settingsPage.clickOnContinuePhraseButton();
-    }
-    const currentIndex = settingsPage.currentIndex;
-    await settingsPage.fillInIndex(settingsPage.currentIndex);
-    await settingsPage.clickOnIndexContinueButton();
-
-    await settingsPage.fillInNickname('testNickname' + settingsPage.currentIndex);
-    await settingsPage.clickOnNicknameContinueButton();
-
-    const isKeyPairSavedInDatabase = await settingsPage.verifyKeysExistByIndexAndEmail(
-      globalCredentials.email,
-      currentIndex,
-    );
-    expect(isKeyPairSavedInDatabase).toBe(true);
-
-    // key pair was successfully restored, so we increment the index
-    await settingsPage.incrementIndex();
-  });
-
   test('Verify user can delete key', async () => {
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
@@ -166,6 +135,37 @@ test.describe('Settings tests', () => {
 
     // key pair was successfully deleted, so we decrease the index
     await settingsPage.decrementIndex();
+  });
+
+  test('Verify user restored key pair is saved in the local database', async () => {
+    await settingsPage.clickOnSettingsButton();
+    await settingsPage.clickOnKeysTab();
+
+    await settingsPage.clickOnRestoreButton();
+    await settingsPage.clickOnContinueButton();
+
+    const isMnemonicRequired = settingsPage.isElementVisible(
+      registrationPage.getRecoveryWordSelector(1),
+    );
+    if (isMnemonicRequired) {
+      await registrationPage.fillAllMissingRecoveryPhraseWords();
+      await settingsPage.clickOnContinuePhraseButton();
+    }
+    const currentIndex = settingsPage.currentIndex;
+    await settingsPage.fillInIndex(settingsPage.currentIndex);
+    await settingsPage.clickOnIndexContinueButton();
+
+    await settingsPage.fillInNickname('testNickname' + settingsPage.currentIndex);
+    await settingsPage.clickOnNicknameContinueButton();
+
+    const isKeyPairSavedInDatabase = await settingsPage.verifyKeysExistByIndexAndEmail(
+      globalCredentials.email,
+      currentIndex,
+    );
+    expect(isKeyPairSavedInDatabase).toBe(true);
+
+    // key pair was successfully restored, so we increment the index
+    await settingsPage.incrementIndex();
   });
 
   test('Verify user can import ECDSA key', async () => {
