@@ -18,7 +18,6 @@ import {
   // openExternal,
   uint8ArrayToHex,
 } from '@renderer/services/electronUtilsService';
-import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 import { decryptPrivateKey, flattenKeyList } from '@renderer/services/keyPairService';
 import { deleteDraft, getDraft } from '@renderer/services/transactionDraftsService';
 import {
@@ -30,13 +29,7 @@ import {
 
 import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
-import {
-  ableToSign,
-  stringifyHbar,
-  getStatusFromCode,
-  getTransactionType,
-  getPrivateKey,
-} from '@renderer/utils';
+import { ableToSign, getStatusFromCode, getTransactionType, getPrivateKey } from '@renderer/utils';
 // import { publicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
 import {
   isLoggedInOrganization,
@@ -47,6 +40,7 @@ import {
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
+import ConfirmTransaction from '@renderer/components/Transaction/ConfirmTransaction.vue';
 // import AppInput from '@renderer/components/ui/AppInput.vue';
 // import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
@@ -85,7 +79,6 @@ const transactionResult = ref<{
 const signatureKey = ref<Key | KeyList | null>(null);
 const isConfirmShown = ref(false);
 const isSigning = ref(false);
-// const isSignModalShown = ref(false);
 const isExecuting = ref(false);
 const isExecutedModalShown = ref(false);
 const unmounted = ref(false);
@@ -103,9 +96,7 @@ const localPublicKeysReq = computed(() =>
 const type = computed(() => transaction.value && getTransactionType(transaction.value));
 
 /* Handlers */
-async function handleConfirmTransaction(e: Event) {
-  e.preventDefault();
-
+async function handleTransactionConfirm() {
   // Personal user:
   //  with all local keys -> Execute
   //  with local and external -> FAIL
@@ -435,73 +426,14 @@ defineExpose({
 <template>
   <div>
     <!-- Confirm modal -->
-    <AppModal
-      v-model:show="isConfirmShown"
-      class="large=modal"
-      :close-on-click-outside="false"
-      :close-on-escape="false"
-    >
-      <div class="p-5">
-        <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="isConfirmShown = false"></i>
-        </div>
-        <div class="text-center">
-          <i class="bi bi-arrow-left-right large-icon"></i>
-        </div>
-        <form @submit="handleConfirmTransaction">
-          <h3 class="text-center text-title text-bold mt-5">Confirm Transaction</h3>
-          <div class="container-main-bg text-small p-4 mt-5">
-            <div class="d-flex justify-content-between p-3">
-              <p>Type of Transaction</p>
-              <p data-testid="p-type-transaction">{{ type }}</p>
-            </div>
-            <div class="d-flex justify-content-between p-3 mt-3">
-              <p>Transaction ID</p>
-              <p class="text-secondary" data-testid="p-transaction-id">
-                {{ transaction?.transactionId }}
-              </p>
-            </div>
-            <div class="d-flex justify-content-between p-3 mt-3">
-              <p>Valid Start</p>
-              <p class="">
-                {{ transaction?.transactionId?.validStart?.toDate().toDateString() }}
-              </p>
-            </div>
-            <div
-              v-if="transaction?.maxTransactionFee"
-              class="d-flex justify-content-between p-3 mt-3"
-            >
-              <p>Max Transaction Fee</p>
-              <p class="" data-testid="p-max-tx-fee">
-                {{ stringifyHbar(transaction.maxTransactionFee) }} ({{
-                  getDollarAmount(network.currentRate, transaction.maxTransactionFee.toBigNumber())
-                }})
-              </p>
-            </div>
-          </div>
-
-          <hr class="separator my-5" />
-
-          <div class="flex-between-centered gap-4">
-            <AppButton
-              type="button"
-              color="borderless"
-              data-testid="button-cancel-transaction"
-              @click="isConfirmShown = false"
-              >Cancel</AppButton
-            >
-            <AppButton
-              color="primary"
-              type="submit"
-              data-testid="button-sign-transaction"
-              :loading="isSigning"
-              :disabled="isSigning"
-              >Sign</AppButton
-            >
-          </div>
-        </form>
-      </div>
-    </AppModal>
+    <template v-if="transaction">
+      <ConfirmTransaction
+        v-model:show="isConfirmShown"
+        :transaction="transaction"
+        :signing="isSigning"
+        @transaction:confirm="handleTransactionConfirm"
+      />
+    </template>
     <!-- Executing modal -->
     <AppModal
       v-model:show="isExecuting"
@@ -527,55 +459,5 @@ defineExpose({
         </div>
       </div>
     </AppModal>
-    <!-- Executed modal
-    <AppModal
-      v-model:show="isExecutedModalShown"
-      data-testid="modal-transaction-success"
-      class="transaction-success-modal"
-      :close-on-click-outside="false"
-      :close-on-escape="false"
-    >
-      <div class="p-5">
-        <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="isExecutedModalShown = false"></i>
-        </div>
-        <div class="text-center">
-          <i class="bi bi-check-lg large-icon" data-testid="icon-success-checkmark"></i>
-        </div>
-        <h3 class="text-center text-title text-bold mt-5"><slot name="successHeading"></slot></h3>
-        <p
-          class="d-flex justify-content-between align-items text-center text-small text-secondary mt-4"
-        >
-          <span class="text-bold text-secondary">Transaction ID:</span>
-          <a
-            data-testid="a-transaction-id"
-            class="link-primary cursor-pointer"
-            @click="
-              network.network !== 'custom' &&
-                openExternal(`
-            https://hashscan.io/${network.network}/transaction/${transactionResult?.response.transactionId}`)
-            "
-            >{{ transactionResult?.response.transactionId }}</a
-          >
-        </p>
-        <slot name="successContent"></slot>
-
-        <hr class="separator my-5" />
-
-        <div class="d-grid">
-          <AppButton
-            color="primary"
-            data-testid="button-close-completed-tx"
-            @click="
-              () => {
-                isExecutedModalShown = false;
-                onCloseSuccessModalClick && onCloseSuccessModalClick();
-              }
-            "
-            >Close</AppButton
-          >
-        </div>
-      </div>
-    </AppModal> -->
   </div>
 </template>
