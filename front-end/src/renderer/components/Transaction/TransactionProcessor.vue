@@ -13,24 +13,14 @@ import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
 
 import { execute, signTransaction, storeTransaction } from '@renderer/services/transactionService';
-import {
-  // hexToUint8Array,
-  // openExternal,
-  uint8ArrayToHex,
-} from '@renderer/services/electronUtilsService';
+import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
 import { decryptPrivateKey, flattenKeyList } from '@renderer/services/keyPairService';
 import { deleteDraft, getDraft } from '@renderer/services/transactionDraftsService';
-import {
-  addApprovers,
-  addObservers,
-  // fullUploadSignatures,
-  submitTransaction,
-} from '@renderer/services/organization';
+import { addApprovers, addObservers, submitTransaction } from '@renderer/services/organization';
 
 import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
 import { ableToSign, getStatusFromCode, getTransactionType, getPrivateKey } from '@renderer/utils';
-// import { publicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
 import {
   isLoggedInOrganization,
   isLoggedInWithValidPassword,
@@ -41,8 +31,6 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import ConfirmTransaction from '@renderer/components/Transaction/ConfirmTransaction.vue';
-// import AppInput from '@renderer/components/ui/AppInput.vue';
-// import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Props */
 const props = defineProps<{
@@ -97,15 +85,6 @@ const type = computed(() => transaction.value && getTransactionType(transaction.
 
 /* Handlers */
 async function handleTransactionConfirm() {
-  // Personal user:
-  //  with all local keys -> Execute
-  //  with local and external -> FAIL
-  //  without local keys but external -> FAIL
-  // Organization user:
-  //  with all local -> SIGN AND SEND
-  //  with local and external -> SIGN AND SEND
-  //  without local but external -> SEND
-
   if (user.selectedOrganization) {
     await sendSignedTransactionToOrganization();
   } else if (localPublicKeysReq.value.length > 0) {
@@ -330,51 +309,6 @@ async function sendSignedTransactionToOrganization() {
     }
   });
 }
-
-// async function uploadSignatures(
-//   organizationTransactionBody: string,
-//   organizationTransactionId: number,
-// ) {
-//   const callback = async () => {
-//     /* Verifies the user has entered his password */
-//     if (!isLoggedInOrganization(user.selectedOrganization))
-//       throw new Error('User is not logged in organization');
-
-//     if (!isLoggedInWithValidPassword(user.personal)) {
-//       if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-//       userPasswordModalRef.value?.open(
-//         'Enter your application password',
-//         'Enter your application password to sign as a creator',
-//         callback,
-//       );
-//       return;
-//     }
-
-//     const bodyBytes = await hexToUint8Array(organizationTransactionBody);
-
-//     /* Deserialize the transaction */
-//     const sdkTransaction = Transaction.fromBytes(bodyBytes);
-
-//     /* Check if should sign */
-//     const publicKeysRequired = await publicRequiredToSign(
-//       sdkTransaction,
-//       user.selectedOrganization.userKeys,
-//       network.mirrorNodeBaseURL,
-//     );
-//     if (publicKeysRequired.length === 0) return;
-
-//     await fullUploadSignatures(
-//       user.personal,
-//       user.selectedOrganization,
-//       publicKeysRequired,
-//       sdkTransaction,
-//       organizationTransactionId,
-//     );
-
-//     toast.success('Transaction signed successfully');
-//   };
-//   await callback();
-// }
 
 async function uploadObservers(transactionId: number) {
   if (!props.observers || props.observers.length === 0) return;
