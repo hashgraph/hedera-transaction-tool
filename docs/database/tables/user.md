@@ -19,7 +19,6 @@
 
 ```sql
 SELECT * FROM "user" WHERE "id" = '1';
-
 ```
 
 ### Example Response
@@ -44,6 +43,5 @@ createdAt: 2024-05-24 00:55:18.452957
 updatedAt: 2024-06-20 16:15:45.583935
 
 deletedAt:
-
 
 ```

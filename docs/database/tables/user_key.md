@@ -16,8 +16,7 @@
 ### Example Query
 
 ```sql
-SELECT * FROM "user_key" WHERE "id" = '1' ;
-
+SELECT * FROM "user_key" WHERE "id" = '1';
 ```
 
 ### Example Response
