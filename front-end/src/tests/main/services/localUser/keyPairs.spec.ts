@@ -13,6 +13,7 @@ import {
   getKeyPairs,
   getSecretHashes,
   storeKeyPair,
+  updateNickname,
 } from '@main/services/localUser/keyPairs';
 import { getOrganization } from '@main/services/localUser/organizations';
 import { getCurrentUser } from '@main/services/localUser/organizationCredentials';
@@ -273,6 +274,23 @@ describe('Services Local User Key Pairs', () => {
 
       expect(prisma.keyPair.deleteMany).toHaveBeenCalledWith({
         where: { user_id, organization_id: null },
+      });
+    });
+  });
+
+  describe('updateNickname', () => {
+    beforeEach(() => {
+      vi.resetAllMocks();
+    });
+
+    test('Should update the nickname of the key pair', async () => {
+      const nickname = 'new-nickname';
+
+      await updateNickname(keyPair.id, nickname);
+
+      expect(prisma.keyPair.update).toHaveBeenCalledWith({
+        where: { id: keyPair.id },
+        data: { nickname },
       });
     });
   });

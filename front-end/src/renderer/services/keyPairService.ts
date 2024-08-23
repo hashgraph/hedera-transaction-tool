@@ -70,6 +70,12 @@ export const deleteKeyPair = async (keyPairId: string) =>
     return await window.electronAPI.local.keyPairs.deleteKeyPair(keyPairId);
   }, 'Failed to delete keys pair');
 
+/* Update nickname of a key pair */
+export const updateNickname = async (keyPairId: string, nickname: string) =>
+  commonIPCHandler(async () => {
+    return await window.electronAPI.local.keyPairs.updateNickname(keyPairId, nickname);
+  }, 'Failed to update nickname');
+
 /* Validates if the provided recovery phrase is valid according to BIP-39 */
 export const validateMnemonic = async (words: string[]) => {
   try {

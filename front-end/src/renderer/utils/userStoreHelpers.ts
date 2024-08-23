@@ -257,6 +257,11 @@ export const getNickname = (publicKey: string, keyPairs: KeyPair[]): string | un
   return keyPair?.nickname || undefined;
 };
 
+export const getNicknameById = (id: string, keyPairs: KeyPair[]): string | undefined => {
+  const keyPair = keyPairs.find(kp => kp.id === id);
+  return keyPair?.nickname || undefined;
+};
+
 export const flattenAccountIds = (
   publicKeyToAccounts: PublicKeyAccounts[],
   withDeleted = false,

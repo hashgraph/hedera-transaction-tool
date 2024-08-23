@@ -11,6 +11,7 @@ import {
   getKeyPairs,
   getSecretHashes,
   deleteKeyPair,
+  updateNickname,
 } from '@main/services/localUser';
 
 const createChannelName = (...props) => ['keyPairs', ...props].join(':');
@@ -74,5 +75,13 @@ export default () => {
   // Delete key pair
   ipcMain.handle(createChannelName('deleteKeyPair'), async (_e, keyPairId: string) =>
     deleteKeyPair(keyPairId),
+  );
+
+  // Update key pair nickname
+  ipcMain.handle(
+    createChannelName('updateNickname'),
+    async (_e, keyPairId: string, nickname: string) => {
+      await updateNickname(keyPairId, nickname);
+    },
   );
 };

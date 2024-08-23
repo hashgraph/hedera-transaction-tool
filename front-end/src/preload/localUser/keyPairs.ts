@@ -27,5 +27,7 @@ export default {
       ipcRenderer.invoke('keyPairs:clear', userId, organizationId),
     deleteKeyPair: (keyPairId: string): Promise<void> =>
       ipcRenderer.invoke('keyPairs:deleteKeyPair', keyPairId),
+    updateNickname: (keyPairId: string, nickname: string): Promise<void> =>
+      ipcRenderer.invoke('keyPairs:updateNickname', keyPairId, nickname),
   },
 };
