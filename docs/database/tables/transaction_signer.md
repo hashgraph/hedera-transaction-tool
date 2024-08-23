@@ -21,7 +21,13 @@ SELECT * FROM "transaction_signer" WHERE "id" = 1;
 ### Example Response
 
 ```
- id | transactionId | userKeyId | userId |         createdAt
-----+---------------+-----------+--------+----------------------------
-  1 |             2 |         1 |      1 | 2024-05-24 18:31:42.249219
+id: 1
+
+transactionId: 2
+
+userKeyid: 3
+
+userId: 4
+
+createAt: 2024-05-24 19:12:06.743835
 ```

@@ -21,10 +21,6 @@ SELECT * FROM "user_key" WHERE "id" = '1';
 
 ### Example Response
 
-```sql
-1 | 7a40e67733edaec462d6b4a31f026cc37f96f767d6a581e41f71785516d42929 |     0 | 5a7245ff4fbbc301ec0a4b4c9d04117d7527759431d8fab1729a7dbfb715094f |           |      1
-```
-
 ```
 id: 1
 

@@ -17,3 +17,13 @@
 ```sql
 SELECT * FROM "transaction_group_item";
 ```
+
+### Example Response
+
+```
+seq: 1
+
+transactionId: 2
+
+groupId: 3
+```
