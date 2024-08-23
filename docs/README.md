@@ -10,4 +10,4 @@ Comming soon...
 
 List of DB tables
 
-Tables, columnd, queries and responses
+Tables, columns, queries and responses
