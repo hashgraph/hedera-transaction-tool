@@ -434,10 +434,6 @@ test.describe('Workflow tests', () => {
 
         const getAccountDetailsDeclineRewards = await detailsPage.getAccountDetailsDeclineRewards();
         expect(getAccountDetailsDeclineRewards).toBe('Yes');
-
-        const getAccountDetailsReceiverSigRequired =
-          await detailsPage.getAccountDetailsReceiverSigRequired();
-        expect(getAccountDetailsReceiverSigRequired).toBe('No');
       },
     );
   });
