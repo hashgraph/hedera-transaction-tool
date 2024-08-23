@@ -56,16 +56,21 @@ const handleSelectAccount = (key: Key) => {
   }
 };
 
-const handleAddPublicKey = (publicKey: PublicKey) => {
-  const keys = new KeyList(props.keyList.toArray().filter(key => key instanceof PublicKey));
+const handleAddPublicKey = (publicKeys: PublicKey[]) => {
+  const publicKeysInKeyList = new KeyList(
+    props.keyList.toArray().filter(key => key instanceof PublicKey),
+  );
+  const keys = props.keyList.toArray();
 
-  if (!isPublicKeyInKeyList(publicKey, keys)) {
-    const keys = props.keyList.toArray();
-    keys.push(publicKey);
-    emitNewKeyList(keys, props.keyList.threshold);
-  } else {
-    toast.error('Public key already exists in the key list');
+  for (const publicKey of publicKeys) {
+    if (!isPublicKeyInKeyList(publicKey, publicKeysInKeyList)) {
+      keys.push(publicKey);
+    } else {
+      toast.error(`${publicKey.toStringRaw()} already exists in the key list`);
+    }
   }
+
+  emitNewKeyList(keys, props.keyList.threshold);
 };
 
 const handleRemovePublicKey = (publicKey: PublicKey) => {
@@ -226,7 +231,14 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
   <ComplexKeyAddPublicKeyModal
     v-if="addPublicKeyModalShown"
     v-model:show="addPublicKeyModalShown"
-    :on-public-key-add="handleAddPublicKey"
+    :multiple="true"
+    :already-added="
+      keyList
+        .toArray()
+        .filter(key => key instanceof PublicKey)
+        .map(key => key.toStringRaw())
+    "
+    @selected:multiple="handleAddPublicKey"
   />
   <ComplexKeySelectAccountModal
     v-if="selectAccountModalShown"

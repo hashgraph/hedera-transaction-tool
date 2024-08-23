@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 
 import { PublicKey } from '@hashgraph/sdk';
 
@@ -7,21 +7,26 @@ import useUserStore from '@renderer/stores/storeUser';
 import useContactsStore from '@renderer/stores/storeContacts';
 
 import { isPublicKey } from '@renderer/utils/validator';
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppListItem from '@renderer/components/ui/AppListItem.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 /* Props */
 const props = defineProps<{
   show: boolean;
-  onPublicKeyAdd: (publicKey: PublicKey) => void;
+  alreadyAdded?: string[];
+  multiple?: boolean;
 }>();
 
 /* Emits */
-const emit = defineEmits(['update:show']);
+const emit = defineEmits<{
+  (event: 'update:show', show: boolean): void;
+  (event: 'selected:single', publicKey: PublicKey): void;
+  (event: 'selected:multiple', publicKeys: PublicKey[]): void;
+}>();
 
 /* Stores */
 const user = useUserStore();
@@ -29,7 +34,7 @@ const contacts = useContactsStore();
 
 /* State */
 const publicKey = ref('');
-const type = ref<'ED25519' | 'ECDSA'>('ED25519');
+const selectedPublicKeys = ref<string[]>([]);
 
 /* Computed */
 const keyList = computed(() => {
@@ -39,43 +44,52 @@ const keyList = computed(() => {
 
   return keys.filter(k => keys.findIndex(k2 => k2.publicKey === k.publicKey) === keys.indexOf(k));
 });
+const listedKeyList = computed(() => {
+  if (props.alreadyAdded && props.alreadyAdded.length > 0) {
+    return keyList.value.filter(k => !props.alreadyAdded?.includes(k.publicKey));
+  } else {
+    return keyList.value;
+  }
+});
 
 /* Handlers */
-const handleShowUpdate = show => emit('update:show', show);
-
 const handleInsert = (e: Event) => {
   e.preventDefault();
 
-  if (!isPublicKey(publicKey.value.trim())) {
+  if (props.multiple && selectedPublicKeys.value.length === 0 && publicKey.value.trim() === '')
+    return;
+
+  if (!props.multiple && !isPublicKey(publicKey.value.trim())) {
     throw new Error('Invalid public key');
   }
 
   try {
-    const publicKeyInstance =
-      type.value === 'ED25519'
-        ? PublicKey.fromStringED25519(publicKey.value.trim())
-        : PublicKey.fromStringECDSA(publicKey.value.trim());
+    const manualKey = publicKey.value.trim()
+      ? PublicKey.fromString(publicKey.value.trim())
+      : undefined;
 
-    props.onPublicKeyAdd(publicKeyInstance);
-    handleShowUpdate(false);
+    if (!props.multiple) {
+      if (!manualKey) {
+        throw new Error('Invalid public key');
+      }
+      emit('selected:single', manualKey);
+    } else {
+      const publicKeys = selectedPublicKeys.value.map(pk => PublicKey.fromString(pk));
+      manualKey && publicKeys.push(manualKey);
+
+      emit('selected:multiple', publicKeys);
+    }
+
+    publicKey.value = '';
+    selectedPublicKeys.value = [];
+    emit('update:show', false);
   } catch (error) {
-    throw new Error('Invalid public key. Make sure you are using the correct key type.');
+    throw new Error('Invalid public key/s');
   }
 };
-
-/* Watchers */
-watch(
-  () => props.show,
-  show => {
-    if (show) {
-      publicKey.value = '';
-      type.value = 'ED25519';
-    }
-  },
-);
 </script>
 <template>
-  <AppModal :show="show" @update:show="handleShowUpdate" class="medium-modal">
+  <AppModal :show="show" @update:show="$emit('update:show', $event)" class="medium-modal">
     <div class="p-4">
       <form @submit="handleInsert">
         <div>
@@ -92,69 +106,64 @@ watch(
             placeholder="Enter Public Key"
           />
         </div>
-        <div class="text-center mt-3">
-          <div class="btn-group d-flex">
-            <AppButton
-              size="small"
-              color="secondary"
-              type="button"
-              data-testid="button-key-type-ed25519"
-              :class="{ active: type === 'ED25519' }"
-              @click="type = 'ED25519'"
-              >ED25519</AppButton
-            >
-            <AppButton
-              size="small"
-              color="secondary"
-              type="button"
-              data-testid="button-key-type-ecdsa"
-              :class="{ active: type === 'ECDSA' }"
-              @click="type = 'ECDSA'"
-              >ECDSA</AppButton
-            >
-          </div>
-        </div>
         <hr class="separator my-5" />
         <div>
           <h3 class="text-small">Recent</h3>
-          <div class="mt-4 overflow-auto" :style="{ height: '158px' }">
-            <template v-for="kp in keyList" :key="kp.public_key">
-              <AppListItem
-                class="mt-3"
-                :selected="publicKey === kp.publicKey"
-                :value="kp.publicKey"
-                @click="publicKey = kp.publicKey"
-              >
-                <div class="d-flex overflow-hidden">
-                  <p class="text-nowrap">
-                    <span class="bi bi-key m-2"></span>
-                    <span class="ms-2 text-nowrap">{{
-                      kp.nickname ||
-                      contacts.getContactByPublicKey(kp.publicKey)?.nickname.trim() ||
-                      contacts.getContactByPublicKey(kp.publicKey)?.user.email ||
-                      'Public Key'
-                    }}</span>
-                  </p>
-                  <div class="border-start px-4 mx-4">
-                    <span>{{ kp.publicKey }}</span>
+          <template v-if="listedKeyList.length > 0">
+            <div class="mt-4 overflow-auto" :style="{ height: '158px' }">
+              <template v-for="kp in listedKeyList" :key="kp.public_key">
+                <AppListItem
+                  class="mt-3"
+                  :selected="
+                    multiple
+                      ? selectedPublicKeys.includes(kp.publicKey)
+                      : publicKey === kp.publicKey
+                  "
+                  :value="kp.publicKey"
+                  @click="
+                    multiple
+                      ? (selectedPublicKeys = selectedPublicKeys.includes(kp.publicKey)
+                          ? selectedPublicKeys.filter(id => id !== kp.publicKey)
+                          : [...selectedPublicKeys, kp.publicKey])
+                      : (publicKey = kp.publicKey)
+                  "
+                >
+                  <div class="d-flex overflow-hidden">
+                    <p class="text-nowrap">
+                      <span class="bi bi-key m-2"></span>
+                      <span class="ms-2 text-nowrap">{{
+                        kp.nickname ||
+                        contacts.getContactByPublicKey(kp.publicKey)?.nickname.trim() ||
+                        contacts.getContactByPublicKey(kp.publicKey)?.user.email ||
+                        'Public Key'
+                      }}</span>
+                    </p>
+                    <div class="border-start px-4 mx-4">
+                      <span>{{ kp.publicKey }}</span>
+                    </div>
                   </div>
-                </div>
-              </AppListItem>
-            </template>
-          </div>
+                </AppListItem>
+              </template>
+            </div>
+          </template>
+          <template v-else>
+            <div class="flex-centered flex-column mt-4" :style="{ height: '158px' }">
+              <p class="text-muted">There are no selectable public keys</p>
+            </div>
+          </template>
         </div>
 
         <hr class="separator my-5" />
 
         <div class="flex-between-centered gap-4">
-          <AppButton color="secondary" type="button" @click="handleShowUpdate(false)"
+          <AppButton color="secondary" type="button" @click="$emit('update:show', false)"
             >Cancel</AppButton
           >
           <AppButton
             color="primary"
             data-testid="button-insert-public-key"
             type="submit"
-            :disabled="!isPublicKey(publicKey)"
+            :disabled="!isPublicKey(publicKey) && selectedPublicKeys.length === 0"
             >Insert</AppButton
           >
         </div>

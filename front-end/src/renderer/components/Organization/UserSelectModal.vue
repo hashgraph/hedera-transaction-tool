@@ -4,10 +4,11 @@ import { computed, ref } from 'vue';
 import useContactsStore from '@renderer/stores/storeContacts';
 import useUserStore from '@renderer/stores/storeUser';
 
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppListItem from '@renderer/components/ui/AppListItem.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 /* Props */
 const props = defineProps<{
