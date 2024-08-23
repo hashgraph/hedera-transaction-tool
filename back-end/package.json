@@ -21,8 +21,8 @@
     "create-users": "npx ts-node ./scripts/add-users.ts"
   },
   "dependencies": {
-    "@hashgraph/proto": "2.14.0-beta.5",
-    "@hashgraph/sdk": "2.44.0",
+    "@hashgraph/proto": "2.15.0-beta.3",
+    "@hashgraph/sdk": "2.50.0",
     "@nestjs/axios": "^3.0.2",
     "@nestjs/cache-manager": "^2.2.2",
     "@nestjs/common": "10.3.7",
