@@ -18,6 +18,7 @@ import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/pro
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import UpdateNicknameModal from '@renderer/components/KeyPair/UpdateNicknameModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -38,10 +39,12 @@ enum Tabs {
 
 /* State */
 const isDeleteModalShown = ref(false);
+const isUpdateNicknameModalShown = ref(false);
 
 const decryptedKeys = ref<{ decrypted: string | null; publicKey: string }[]>([]);
 const publicKeysPrivateKeyToDecrypt = ref('');
 const keyPairIdToDelete = ref<string | null>(null);
+const keyPairIdToEdit = ref<string | null>(null);
 const missingKeyPairIdToDelete = ref<number | null>(null);
 const currentTab = ref(Tabs.ALL);
 const isDeletingKey = ref(false);
@@ -179,6 +182,11 @@ const handleCopy = (text: string, message: string) => {
   toast.success(message, { position: 'bottom-right' });
 };
 
+const handleStartNicknameEdit = (id: string) => {
+  keyPairIdToEdit.value = id;
+  isUpdateNicknameModalShown.value = true;
+};
+
 /* Functions */
 function getUserKeyToDelete() {
   const localKey = user.keyPairs.find(kp => kp.id === keyPairIdToDelete.value);
@@ -266,6 +274,10 @@ watch(isDeleteModalShown, newVal => {
                   {{ keyPair.index >= 0 ? keyPair.index : 'N/A' }}
                 </td>
                 <td :data-testid="`cell-nickname-${index}`">
+                  <span
+                    class="bi bi-pencil-square text-main text-primary me-3 cursor-pointer"
+                    @click="handleStartNicknameEdit(keyPair.id)"
+                  ></span>
                   {{ keyPair.nickname || 'N/A' }}
                 </td>
                 <td :data-testid="`cell-account-${index}`">
@@ -472,6 +484,11 @@ watch(isDeleteModalShown, newVal => {
           </form>
         </div>
       </AppModal>
+
+      <UpdateNicknameModal
+        v-model:show="isUpdateNicknameModalShown"
+        :key-pair-id="keyPairIdToEdit || ''"
+      />
     </div>
   </div>
 </template>
