@@ -192,7 +192,7 @@ test.describe('Settings tests', () => {
     const { index, nickname, accountID, keyType, publicKey } =
       await settingsPage.getRowDataByIndex(lastRowIndex);
     expect(index).toBe('N/A');
-    expect(nickname).toBe('Test-ECDSA-Import');
+    expect(nickname.trim()).toBe('Test-ECDSA-Import');
     expect(accountID).toBeTruthy();
     expect(keyType).toBe('ECDSA');
     expect(publicKey).toBeTruthy();
@@ -221,7 +221,7 @@ test.describe('Settings tests', () => {
     const { index, nickname, accountID, keyType, publicKey } =
       await settingsPage.getRowDataByIndex(lastRowIndex);
     expect(index).toBe('N/A');
-    expect(nickname).toBe('Test-ED25519-Import');
+    expect(nickname.trim()).toBe('Test-ED25519-Import');
     expect(accountID).toBeTruthy();
     expect(keyType).toBe('ED25519');
     expect(publicKey).toBeTruthy();
