@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@hashgraph/proto':
-        specifier: 2.14.0-beta.5
-        version: 2.14.0-beta.5
+        specifier: 2.15.0-beta.3
+        version: 2.15.0-beta.3
       '@hashgraph/sdk':
-        specifier: 2.44.0
-        version: 2.44.0
+        specifier: 2.50.0
+        version: 2.50.0
       '@nestjs/axios':
         specifier: ^3.0.2
         version: 3.0.2(@nestjs/common@10.3.7(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.1.14)(rxjs@7.8.1))(axios@1.7.2)(rxjs@7.8.1)
@@ -556,8 +556,8 @@ packages:
   '@hapi/topo@5.1.0':
     resolution: {integrity: sha512-foQZKJig7Ob0BMAYBfcJk8d77QtOe7Wo4ox7ff1lQYoNNAb6jwcY1ncdoy2e9wQZzvNy7ODZCYJkK8kzmcAnAg==}
 
-  '@hashgraph/cryptography@1.4.8-beta.5':
-    resolution: {integrity: sha512-soq2vGLRkdl2Evr+gIvIjCXJjqA1hOAjysBGG+dhP6tKx2PEgEjb3hON/sMbxm3Q4qQdkML/vEthdAV707+flw==}
+  '@hashgraph/cryptography@1.4.8-beta.7':
+    resolution: {integrity: sha512-FoffVo/UdhkqQUhbh/G+0lcmBYexvVs/RQqilyhzCuNzPB9lRWrJmKPT1pesFoWVC6j3kbbFcWezr9xbm9WrUA==}
     engines: {node: '>=12.0.0'}
     peerDependencies:
       expo: ^49.0.16
@@ -575,25 +575,12 @@ packages:
     resolution: {integrity: sha512-RoCanG69B47kwvr9jUGhXsYWiibhEpG8HBlNhybpt00RuupdSWgv+yfb49CL7c8AiAf+6HKou490wv9k5Bj9Pg==}
     hasBin: true
 
-  '@hashgraph/proto@2.14.0-beta.5':
-    resolution: {integrity: sha512-UrIbLdctpD//Ua99Z4PnknbR8220nc1Pzv0nkDJ1emZE9EAi7YOOry2Dw660azQHWfVw/HhqECPdiKrTIZ2b+Q==}
+  '@hashgraph/proto@2.15.0-beta.3':
+    resolution: {integrity: sha512-/95cydqBQRaO1gagBOenNpcfJIcnRx+vzefhuzSFNp4pfl0AM3oXau39hM2raKLhFHoKZysSjkXkMp24AaCE5w==}
     engines: {node: '>=10.0.0'}
 
-  '@hashgraph/proto@2.15.0-beta.2':
-    resolution: {integrity: sha512-vtkW8rZccnch3FKmNj1bLRZsS0YO3w7PuCj8LNq9HgMP6KzzA7scRk8yLm/XyiD7UHJS/l1cFg0Cj/DDRSwGxQ==}
-    engines: {node: '>=10.0.0'}
-
-  '@hashgraph/sdk@2.44.0':
-    resolution: {integrity: sha512-F+fASqp/8Wp27HFXi2E60qY0Zp60UJWtTonqbIT+TCFbslItbLDJR+p+2FEz3wVCWRq2gJw+1ZMi/CMWtOHYpA==}
-    engines: {node: '>=14.0.0'}
-    peerDependencies:
-      expo: ^49.0.16
-    peerDependenciesMeta:
-      expo:
-        optional: true
-
-  '@hashgraph/sdk@2.48.1':
-    resolution: {integrity: sha512-ZizLBcgu7bBIx+EuwRWFkBQugAQAkH5ZvKe+dTf53TCVoUw3LPIta+u/hpVIhB9Xm9PJmA9F23DSo+Bmken46Q==}
+  '@hashgraph/sdk@2.50.0':
+    resolution: {integrity: sha512-TsklSXxXpyinVo4hOENOtm4e1jgYALeY8S8W+0SlMlbya/azzW0UZcJuriRElFGZhFzE1uqFTc7cN0ZMP059mQ==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
       expo: ^49.0.16
@@ -5076,7 +5063,7 @@ snapshots:
     dependencies:
       '@hapi/hoek': 9.3.0
 
-  '@hashgraph/cryptography@1.4.8-beta.5':
+  '@hashgraph/cryptography@1.4.8-beta.7':
     dependencies:
       asn1js: 3.0.5
       bignumber.js: 9.1.2
@@ -5092,7 +5079,7 @@ snapshots:
 
   '@hashgraph/hedera-local@2.28.0(mocha@10.7.0)':
     dependencies:
-      '@hashgraph/sdk': 2.48.1
+      '@hashgraph/sdk': 2.50.0
       blessed: 0.1.81
       blessed-terminal: 0.1.22
       csv-parser: 3.0.0
@@ -5116,50 +5103,20 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@hashgraph/proto@2.14.0-beta.5':
+  '@hashgraph/proto@2.15.0-beta.3':
     dependencies:
       long: 4.0.0
       protobufjs: 7.3.2
 
-  '@hashgraph/proto@2.15.0-beta.2':
-    dependencies:
-      long: 4.0.0
-      protobufjs: 7.3.2
-
-  '@hashgraph/sdk@2.44.0':
+  '@hashgraph/sdk@2.50.0':
     dependencies:
       '@ethersproject/abi': 5.7.0
       '@ethersproject/bignumber': 5.7.0
       '@ethersproject/bytes': 5.7.0
       '@ethersproject/rlp': 5.7.0
       '@grpc/grpc-js': 1.8.2
-      '@hashgraph/cryptography': 1.4.8-beta.5
-      '@hashgraph/proto': 2.14.0-beta.5
-      axios: 1.7.2
-      bignumber.js: 9.1.2
-      bn.js: 5.2.1
-      crypto-js: 4.2.0
-      js-base64: 3.7.7
-      long: 4.0.0
-      pino: 8.21.0
-      pino-pretty: 10.3.1
-      protobufjs: 7.3.2
-      rfc4648: 1.5.3
-      utf8: 3.0.0
-    transitivePeerDependencies:
-      - debug
-      - expo-crypto
-      - expo-random
-
-  '@hashgraph/sdk@2.48.1':
-    dependencies:
-      '@ethersproject/abi': 5.7.0
-      '@ethersproject/bignumber': 5.7.0
-      '@ethersproject/bytes': 5.7.0
-      '@ethersproject/rlp': 5.7.0
-      '@grpc/grpc-js': 1.8.2
-      '@hashgraph/cryptography': 1.4.8-beta.5
-      '@hashgraph/proto': 2.15.0-beta.2
+      '@hashgraph/cryptography': 1.4.8-beta.7
+      '@hashgraph/proto': 2.15.0-beta.3
       axios: 1.7.2
       bignumber.js: 9.1.2
       bn.js: 5.2.1
