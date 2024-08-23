@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -93,7 +94,9 @@ export class UsersController {
   })
   @UseGuards(AdminGuard)
   @Delete('/:id')
-  removeUser(@Param('id', ParseIntPipe) id: number): Promise<boolean> {
+  removeUser(@GetUser() user: User, @Param('id', ParseIntPipe) id: number): Promise<boolean> {
+    if (user.id === id)
+      throw new BadRequestException('You cannot remove yourself from the organization.');
     return this.usersService.removeUser(id);
   }
 }
