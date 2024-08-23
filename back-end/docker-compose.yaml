@@ -1,15 +1,15 @@
 services:
-  traefik-reverse-proxy:
-    image: traefik:v3.1
-    container_name: traefik-reverse-proxy
-    # Enable the Web UI and set provider to docker
-    command: --api.insecure=true --providers.docker
-    ports:
-      - "80:80"
-      - "8080:8080" # Web UI Port
-    volumes:
-      # Listen to the Docker events
-      - /var/run/docker.sock:/var/run/docker.sock
+  # traefik-reverse-proxy:
+  #   image: traefik:v3.1
+  #   container_name: traefik-reverse-proxy
+  #   # Enable the Web UI and set provider to docker
+  #   command: --api.insecure=true --providers.docker
+  #   ports:
+  #     - "80:80"
+  #     - "8080:8080" # Web UI Port
+  #   volumes:
+  #     # Listen to the Docker events
+  #     - /var/run/docker.sock:/var/run/docker.sock
   api:
     build:
       context: .
