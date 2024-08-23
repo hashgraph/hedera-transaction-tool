@@ -126,14 +126,22 @@ describe('UsersController', () => {
     it('should remove a user', async () => {
       userService.removeUser.mockResolvedValue(true);
 
-      expect(await controller.removeUser(1)).toBe(true);
+      expect(await controller.removeUser(user, 2)).toBe(true);
     });
 
     it('should throw an error if the user does not exist', async () => {
       userService.removeUser.mockResolvedValue(null);
 
       try {
-        await controller.removeUser(1);
+        await controller.removeUser(user, 2);
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+      }
+    });
+
+    it('should throw an error if the user tries to remove themselves', async () => {
+      try {
+        await controller.removeUser(user, 1);
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
       }

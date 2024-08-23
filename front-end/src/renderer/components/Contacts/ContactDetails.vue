@@ -129,7 +129,11 @@ watch(
     </div>
     <div class="d-flex gap-3">
       <AppButton
-        v-if="isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin"
+        v-if="
+          isLoggedInOrganization(user.selectedOrganization) &&
+          user.selectedOrganization.admin &&
+          contact.user.id !== user.selectedOrganization.userId
+        "
         data-testid="button-remove-account-from-contact-list"
         class="min-w-unset"
         color="danger"

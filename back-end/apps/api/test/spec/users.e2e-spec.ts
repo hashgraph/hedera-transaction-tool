@@ -2,7 +2,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 
 import { closeApp, createNestApp, login } from '../utils';
 import { Endpoint } from '../utils/httpUtils';
-import { getUsers, resetDatabase, resetUsersState } from '../utils/databaseUtil';
+import { getUser, getUsers, resetDatabase, resetUsersState } from '../utils/databaseUtil';
 
 describe('Users (e2e)', () => {
   let app: NestExpressApplication;
@@ -158,6 +158,12 @@ describe('Users (e2e)', () => {
 
     it('(DELETE) should throw if a user id ', async () => {
       await endpoint.delete('asdasd', adminAuthCookie).expect(400);
+    });
+
+    it('(DELETE) should throw if try to remove themselves', async () => {
+      const admin = await getUser('admin');
+
+      await endpoint.delete(admin.id.toString(), adminAuthCookie).expect(400);
     });
   });
 });
