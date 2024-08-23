@@ -226,7 +226,7 @@ async function handleOnFileChanged(e: Event) {
           keyList: keys,
           observers: [],
           approvers: [],
-          payerAccountId: payerData.accountId.value,
+          payerAccountId: senderAccount,
           validStart: validStart,
         });
       }
