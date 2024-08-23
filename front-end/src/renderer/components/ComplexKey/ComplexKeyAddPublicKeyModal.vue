@@ -56,20 +56,28 @@ const listedKeyList = computed(() => {
 const handleInsert = (e: Event) => {
   e.preventDefault();
 
-  if (props.multiple && selectedPublicKeys.value.length === 0) return;
+  if (props.multiple && selectedPublicKeys.value.length === 0 && publicKey.value.trim() === '')
+    return;
 
   if (!props.multiple && !isPublicKey(publicKey.value.trim())) {
     throw new Error('Invalid public key');
   }
 
   try {
+    const manualKey = publicKey.value.trim()
+      ? PublicKey.fromString(publicKey.value.trim())
+      : undefined;
+
     if (!props.multiple) {
-      emit('selected:single', PublicKey.fromString(publicKey.value.trim()));
+      if (!manualKey) {
+        throw new Error('Invalid public key');
+      }
+      emit('selected:single', manualKey);
     } else {
-      emit(
-        'selected:multiple',
-        selectedPublicKeys.value.map(pk => PublicKey.fromString(pk)),
-      );
+      const publicKeys = selectedPublicKeys.value.map(pk => PublicKey.fromString(pk));
+      manualKey && publicKeys.push(manualKey);
+
+      emit('selected:multiple', publicKeys);
     }
 
     publicKey.value = '';
