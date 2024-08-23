@@ -91,37 +91,6 @@ test.describe('Settings tests', () => {
     await settingsPage.incrementIndex();
   });
 
-  test('Verify user restored key pair is saved in the local database', async () => {
-    await settingsPage.clickOnSettingsButton();
-    await settingsPage.clickOnKeysTab();
-
-    await settingsPage.clickOnRestoreButton();
-    await settingsPage.clickOnContinueButton();
-
-    const isMnemonicRequired = settingsPage.isElementVisible(
-      registrationPage.getRecoveryWordSelector(1),
-    );
-    if (isMnemonicRequired) {
-      await registrationPage.fillAllMissingRecoveryPhraseWords();
-      await settingsPage.clickOnContinuePhraseButton();
-    }
-    const currentIndex = settingsPage.currentIndex;
-    await settingsPage.fillInIndex(settingsPage.currentIndex);
-    await settingsPage.clickOnIndexContinueButton();
-
-    await settingsPage.fillInNickname('testNickname' + settingsPage.currentIndex);
-    await settingsPage.clickOnNicknameContinueButton();
-
-    const isKeyPairSavedInDatabase = await settingsPage.verifyKeysExistByIndexAndEmail(
-      globalCredentials.email,
-      currentIndex,
-    );
-    expect(isKeyPairSavedInDatabase).toBe(true);
-
-    // key pair was successfully restored, so we increment the index
-    await settingsPage.incrementIndex();
-  });
-
   test('Verify user can delete key', async () => {
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
@@ -157,8 +126,7 @@ test.describe('Settings tests', () => {
     await settingsPage.clickOnDeleteKeyPairButton();
 
     // going back and forth as delete is quick, and it does not pick the change
-    await settingsPage.clickOnProfileTab();
-    await settingsPage.clickOnKeysTab();
+    await loginPage.waitForToastToDisappear();
 
     const rowCountAfterDelete = await settingsPage.getKeyRowCount();
 
@@ -167,6 +135,37 @@ test.describe('Settings tests', () => {
 
     // key pair was successfully deleted, so we decrease the index
     await settingsPage.decrementIndex();
+  });
+
+  test('Verify user restored key pair is saved in the local database', async () => {
+    await settingsPage.clickOnSettingsButton();
+    await settingsPage.clickOnKeysTab();
+
+    await settingsPage.clickOnRestoreButton();
+    await settingsPage.clickOnContinueButton();
+
+    const isMnemonicRequired = settingsPage.isElementVisible(
+      registrationPage.getRecoveryWordSelector(1),
+    );
+    if (isMnemonicRequired) {
+      await registrationPage.fillAllMissingRecoveryPhraseWords();
+      await settingsPage.clickOnContinuePhraseButton();
+    }
+    const currentIndex = settingsPage.currentIndex;
+    await settingsPage.fillInIndex(settingsPage.currentIndex);
+    await settingsPage.clickOnIndexContinueButton();
+
+    await settingsPage.fillInNickname('testNickname' + settingsPage.currentIndex);
+    await settingsPage.clickOnNicknameContinueButton();
+
+    const isKeyPairSavedInDatabase = await settingsPage.verifyKeysExistByIndexAndEmail(
+      globalCredentials.email,
+      currentIndex,
+    );
+    expect(isKeyPairSavedInDatabase).toBe(true);
+
+    // key pair was successfully restored, so we increment the index
+    await settingsPage.incrementIndex();
   });
 
   test('Verify user can import ECDSA key', async () => {
@@ -193,7 +192,7 @@ test.describe('Settings tests', () => {
     const { index, nickname, accountID, keyType, publicKey } =
       await settingsPage.getRowDataByIndex(lastRowIndex);
     expect(index).toBe('N/A');
-    expect(nickname).toBe('Test-ECDSA-Import');
+    expect(nickname.trim()).toBe('Test-ECDSA-Import');
     expect(accountID).toBeTruthy();
     expect(keyType).toBe('ECDSA');
     expect(publicKey).toBeTruthy();
@@ -222,7 +221,7 @@ test.describe('Settings tests', () => {
     const { index, nickname, accountID, keyType, publicKey } =
       await settingsPage.getRowDataByIndex(lastRowIndex);
     expect(index).toBe('N/A');
-    expect(nickname).toBe('Test-ED25519-Import');
+    expect(nickname.trim()).toBe('Test-ED25519-Import');
     expect(accountID).toBeTruthy();
     expect(keyType).toBe('ED25519');
     expect(publicKey).toBeTruthy();

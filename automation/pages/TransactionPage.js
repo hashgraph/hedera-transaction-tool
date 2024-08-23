@@ -61,8 +61,8 @@ class TransactionPage extends BasePage {
   createNewTransactionButtonSelector = 'button-create-new';
   createAccountSublinkSelector = 'menu-sublink-0';
   updateAccountSublinkSelector = 'menu-sublink-1';
-  transferTokensSublinkSelector = 'menu-sublink-2';
-  deleteAccountSublinkSelector = 'menu-sublink-3';
+  deleteAccountSublinkSelector = 'menu-sublink-2';
+  transferTokensSublinkSelector = 'menu-sublink-3';
   allowanceSublinkSelector = 'menu-sublink-4';
   fileServiceLinkSelector = 'menu-link-1';
   createFileSublinkSelector = 'menu-sublink-0';
@@ -452,7 +452,7 @@ class TransactionPage extends BasePage {
   }
 
   async isAccountCardVisible(accountId) {
-    await this.waitForElementToBeVisible(this.addNewAccountButtonSelector);
+    await this.waitForElementToBeVisible(this.addNewAccountButtonSelector, 8000);
     const index = await this.findAccountIndexById(accountId);
     if (index === -1) {
       return false; // account not found
@@ -485,6 +485,7 @@ class TransactionPage extends BasePage {
       await this.clickOnCreateNewTransactionButton();
       await this.clickOnCreateAccountTransaction();
     }
+
     // Handle complex key creation
     if (isComplex) {
       await this.handleComplexKeyCreation();
@@ -884,9 +885,9 @@ class TransactionPage extends BasePage {
   }
 
   async fillInTransferAccountId() {
-    const allAccountIdsText = await this.getTextByTestId(this.payerDropdownSelector);
+    const allAccountIdsText = await this.getTextByTestIdWithRetry(this.payerDropdownSelector);
     const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
-    await this.fillByTestId(this.transferAccountInputSelector, firstAccountId);
+    await this.fillAndVerifyByTestId(this.transferAccountInputSelector, firstAccountId);
     return firstAccountId;
   }
 
@@ -1301,7 +1302,13 @@ class TransactionPage extends BasePage {
   }
 
   async clickOnConfirmDeleteAccountButton() {
-    await this.clickByTestId(this.confirmDeleteAccountButtonSelector);
+    const modalSelector = `[data-testid="${this.confirmTransactionModalSelector}"][style*="display: block"]`;
+    try {
+      await this.window.waitForSelector(modalSelector, { state: 'visible', timeout: 15000 });
+    } catch (error) {
+      console.log('Error: Confirm delete account modal is not visible');
+    }
+    await this.clickByTestId(this.confirmDeleteAccountButtonSelector, 5000);
   }
 }
 module.exports = TransactionPage;

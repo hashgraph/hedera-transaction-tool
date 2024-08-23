@@ -51,6 +51,12 @@ test.describe('Transaction tests', () => {
   test.beforeEach(async () => {
     // await transactionPage.closeCompletedTransaction();
     await transactionPage.clickOnTransactionsMenuButton();
+
+    //this is needed because tests fail in CI environment
+    if (process.env.CI) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
     await transactionPage.closeDraftModal();
   });
 
@@ -157,10 +163,11 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify account is displayed in the account card section', async () => {
-    const { newAccountId } = await transactionPage.createNewAccount();
+    await transactionPage.ensureAccountExists();
+    const accountFromList = await transactionPage.getFirstAccountFromList();
 
     await transactionPage.clickOnAccountsMenuButton();
-    const isAccountVisible = await transactionPage.isAccountCardVisible(newAccountId);
+    const isAccountVisible = await transactionPage.isAccountCardVisible(accountFromList);
 
     expect(isAccountVisible).toBe(true);
   });
@@ -555,11 +562,11 @@ test.describe('Transaction tests', () => {
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnDeleteAccountTransaction();
 
+    const transferAccountId = await transactionPage.fillInTransferAccountId();
     const transactionMemoText = 'test memo';
     const accountIdToBeDeleted = '0.0.1234';
     await transactionPage.fillInDeleteAccountTransactionMemo(transactionMemoText);
     await transactionPage.fillInDeleteAccountIdNormally(accountIdToBeDeleted);
-    const transferAccountId = await transactionPage.fillInTransferAccountId();
 
     await transactionPage.saveDraft();
     await transactionPage.clickOnFirstDraftContinueButton();

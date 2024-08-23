@@ -44,9 +44,6 @@ test.describe('Organization Transaction tests', () => {
     // Generate test users in PostgreSQL database for organizations
     await organizationPage.createUsers(3);
 
-    // Disable notifications for test users
-    await disableNotificationsForTestUsers();
-
     // Perform registration with the generated credentials
     await registrationPage.completeRegistration(
       globalCredentials.email,
@@ -58,6 +55,10 @@ test.describe('Organization Transaction tests', () => {
     // Setup Organization
     await organizationPage.setupOrganization();
     await organizationPage.setUpUsers(window);
+
+    // Disable notifications for test users
+    await disableNotificationsForTestUsers();
+
     firstUser = organizationPage.getUser(0);
     secondUser = organizationPage.getUser(1);
     thirdUser = organizationPage.getUser(2);

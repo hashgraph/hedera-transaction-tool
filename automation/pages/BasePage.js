@@ -9,7 +9,11 @@ class BasePage {
   async clickByTestId(testId, timeout = this.DEFAULT_TIMEOUT) {
     console.log(`Clicking on element with testId: ${testId}`);
     const element = this.window.getByTestId(testId);
-    await element.waitFor({ state: 'visible', timeout: timeout });
+    try {
+      await element.waitFor({ state: 'visible', timeout: timeout });
+    } catch (error) {
+      console.log(`Element with testId: ${testId} is not visible`);
+    }
     await element.click();
   }
 
@@ -86,6 +90,38 @@ class BasePage {
     );
   }
 
+  async getTextByTestIdWithRetry(
+    testId,
+    timeout = this.DEFAULT_TIMEOUT,
+    retries = 5,
+    retryDelay = 1000,
+  ) {
+    console.log(`Getting text for element with testId: ${testId}`);
+    let attempt = 0;
+    let textContent = '';
+
+    while (attempt < retries) {
+      const element = this.window.getByTestId(testId);
+      await element.waitFor({ state: 'visible', timeout: timeout });
+
+      textContent = await element.textContent();
+      console.log(
+        `Attempt ${attempt + 1}: Retrieved text content: "${textContent}" for element with testId: ${testId}`,
+      );
+
+      if (textContent && textContent.trim() !== '') {
+        return textContent;
+      }
+
+      // Increment the attempt counter and delay before retrying
+      attempt++;
+      if (attempt < retries) {
+        console.log(`Text content is empty or invalid, retrying after ${retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+    }
+  }
+
   async getTextByCssSelector(selector, timeout = this.DEFAULT_TIMEOUT) {
     console.log(`Getting text for element with CSS selector: ${selector}`);
     const element = this.window.locator(selector);
@@ -103,6 +139,43 @@ class BasePage {
     console.log(`Filling element with testId: ${testId} with value: ${value}`);
     const element = this.window.getByTestId(testId).nth(1);
     await element.fill(value);
+  }
+
+  async fillAndVerifyByTestId(testId, value, retries = 5) {
+    let attempt = 0;
+    let currentValue = '';
+
+    while (attempt < retries) {
+      // Fill the input field with the provided value
+      console.log(
+        `Attempt ${attempt + 1}: Filling element with testId: ${testId} with value: ${value}`,
+      );
+      await this.fillByTestId(testId, value);
+
+      // Verify the value in the input field
+      currentValue = await this.getTextFromInputFieldByTestId(testId);
+      console.log(
+        `Attempt ${attempt + 1}: Verifying element with testId: ${testId}, expected value: ${value}, current value: ${currentValue}`,
+      );
+
+      if (currentValue === value) {
+        // Value is correct, break out of the loop
+        console.log(
+          `Successfully filled element with testId: ${testId} with value: ${value} on attempt ${attempt + 1}`,
+        );
+        break;
+      }
+
+      // Increment the attempt counter
+      attempt++;
+      await new Promise(resolve => setTimeout(resolve, 500)); // Wait for 500 milliseconds before retrying
+    }
+
+    if (currentValue !== value) {
+      throw new Error(
+        `Failed to correctly fill element with testId: ${testId} after ${retries} attempts. Expected: ${value}, Found: ${currentValue}`,
+      );
+    }
   }
 
   async isElementVisibleAndEditable(testId, timeout = this.DEFAULT_TIMEOUT) {
