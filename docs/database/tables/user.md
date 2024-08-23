@@ -23,10 +23,6 @@ SELECT * FROM "user" WHERE "id" = '1';
 
 ### Example Response
 
-```sql
-1 | test@test.com | $2a$10********************** | t     | NONE   | 2024-05-24 00:55:18.452957 | 2024-06-20 16:15:45.583935 |          |
-```
-
 ```
 id: 1
 
@@ -34,7 +30,7 @@ email: test@test.com
 
 password: $2a$10**********************
 
-admin: t
+admin: TRUE
 
 status: NONE
 
@@ -43,5 +39,4 @@ createdAt: 2024-05-24 00:55:18.452957
 updatedAt: 2024-06-20 16:15:45.583935
 
 deletedAt:
-
 ```

@@ -23,14 +23,10 @@
 ### Example Query
 
 ```sql
-SELECT * FROM "transaction_approver" WHERE "id" = `1`;
+SELECT * FROM "transaction_approver" WHERE "id" = '1';
 ```
 
 ### Example Response
-
-```
-1  |             1            |         |                   |                   |                   |      3   |                   | 2024-05-24 18:13:28.925457 | 2024-05-24 18:13:28.925457 |
-```
 
 ```
 id: 1
@@ -54,5 +50,4 @@ createdAt: 2024-05-24 18:13:28.925457
 updatedAt: 2024-05-24 18:13:28.925457
 
 deletedAt:
-
 ```
