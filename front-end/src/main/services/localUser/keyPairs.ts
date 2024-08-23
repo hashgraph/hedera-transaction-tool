@@ -165,6 +165,20 @@ export const deleteKeyPair = async (keyPairId: string) => {
   });
 };
 
+// Update key pair nickname
+export const updateNickname = async (keyPairId: string, nickname: string) => {
+  const prisma = getPrismaClient();
+
+  await prisma.keyPair.update({
+    where: {
+      id: keyPairId,
+    },
+    data: {
+      nickname,
+    },
+  });
+};
+
 async function extendWhere(where: Prisma.KeyPairWhereInput, organization_id?: string | null) {
   if (organization_id !== undefined) {
     if (organization_id === null) {

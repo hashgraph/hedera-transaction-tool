@@ -11,6 +11,7 @@ import {
   getKeyPairs,
   getSecretHashes,
   deleteKeyPair,
+  updateNickname,
 } from '@main/services/localUser';
 import { MockedObject } from 'vitest';
 import { mockDeep } from 'vitest-mock-extended';
@@ -28,6 +29,7 @@ vi.mock('@main/services/localUser', () => ({
   getKeyPairs: vi.fn(),
   getSecretHashes: vi.fn(),
   deleteKeyPair: vi.fn(),
+  updateNickname: vi.fn(),
 }));
 
 describe('IPC handlers Key Pairs', () => {
@@ -161,5 +163,16 @@ describe('IPC handlers Key Pairs', () => {
     vi.mocked(deleteSecretHashes).mockRejectedValueOnce(new Error('Error'));
     const result = await handler[1](event, userId, organizationId);
     expect(result).toBe(false);
+  });
+
+  test('Should set up updateNickname handler', async () => {
+    const handler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'keyPairs:updateNickname');
+    expect(handler).toBeDefined();
+
+    const keyPairId = 'keyPairId';
+    const nickname = 'nickname';
+
+    handler && (await handler[1](event, keyPairId, nickname));
+    expect(updateNickname).toHaveBeenCalledWith(keyPairId, nickname);
   });
 });
