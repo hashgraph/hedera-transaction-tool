@@ -102,11 +102,14 @@ onMounted(async () => {
 
 onUnmounted(() => {
   stopInterval();
-})
-
-watch(() => props.validStart, (newValidStart) => {
-  localValidStart.value = newValidStart;
 });
+
+watch(
+  () => props.validStart,
+  newValidStart => {
+    localValidStart.value = newValidStart;
+  },
+);
 
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
@@ -123,7 +126,6 @@ function startInterval() {
 function stopInterval() {
   clearInterval(intervalId);
 }
-
 </script>
 <template>
   <div class="row flex-wrap align-items-end">
