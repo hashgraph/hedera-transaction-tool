@@ -41,6 +41,7 @@ const account = useAccountId();
 /* State */
 const localValidStart = ref<Date>(props.validStart);
 const datePicker = ref<DatePickerInstance>(null);
+const intervalId = ref<ReturnType<typeof setInterval> | null>(null);
 
 /* Computed */
 const accoundIds = computed<string[]>(() => flattenAccountIds(user.publicKeyToAccounts));
@@ -55,6 +56,10 @@ const handlePayerChange = payerId => {
   emit('update:payerId', formatAccountId(payerId));
   account.accountId.value = formatAccountId(payerId);
 };
+
+function handleUpdateValidStart(v: Date) {
+  emit('update:validStart', v);
+}
 
 /* Functions */
 const loadFromDraft = async (id: string) => {
@@ -79,8 +84,17 @@ const loadFromDraft = async (id: string) => {
   }
 };
 
-function handleUpdateValidStart(v: Date) {
-  emit('update:validStart', v);
+function startInterval() {
+  intervalId.value = setInterval(() => {
+    const now = new Date();
+    if (localValidStart.value < now) {
+      emit('update:validStart', now);
+    }
+  }, 1000);
+}
+
+function stopInterval() {
+  intervalId.value && clearInterval(intervalId.value);
 }
 
 /* Hooks */
@@ -102,6 +116,7 @@ onUnmounted(() => {
   stopInterval();
 });
 
+/* Watchers */
 watch(
   () => props.validStart,
   newValidStart => {
@@ -111,21 +126,6 @@ watch(
 
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
-
-const intervalId = ref<ReturnType<typeof setInterval> | null>(null);
-
-function startInterval() {
-  intervalId.value = setInterval(() => {
-    const now = new Date();
-    if (localValidStart.value < now) {
-      emit('update:validStart', now);
-    }
-  }, 1000);
-}
-
-function stopInterval() {
-  clearInterval(intervalId);
-}
 </script>
 <template>
   <div class="row flex-wrap align-items-end">
