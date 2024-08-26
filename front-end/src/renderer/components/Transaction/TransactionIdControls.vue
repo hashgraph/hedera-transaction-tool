@@ -84,8 +84,6 @@ function handleUpdateValidStart(v: Date) {
 }
 
 /* Hooks */
-let intervalId;
-
 onMounted(async () => {
   if (route.query.draftId) {
     await loadFromDraft(route.query.draftId.toString());
@@ -114,8 +112,10 @@ watch(
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
 
+const intervalId = ref<ReturnType<typeof setInterval> | null>(null);
+
 function startInterval() {
-  intervalId = setInterval(() => {
+  intervalId.value = setInterval(() => {
     const now = new Date();
     if (localValidStart.value < now) {
       emit('update:validStart', now);
