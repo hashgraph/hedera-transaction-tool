@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
@@ -22,7 +22,7 @@ import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 
 /* Props */
-defineProps<{
+const props = defineProps<{
   payerId: string;
   validStart: Date;
   maxTransactionFee: Hbar;
@@ -39,6 +39,7 @@ const route = useRoute();
 const account = useAccountId();
 
 /* State */
+const localValidStart = ref<Date>(props.validStart);
 const datePicker = ref<DatePickerInstance>(null);
 
 /* Computed */
@@ -83,6 +84,8 @@ function handleUpdateValidStart(v: Date) {
 }
 
 /* Hooks */
+let intervalId;
+
 onMounted(async () => {
   if (route.query.draftId) {
     await loadFromDraft(route.query.draftId.toString());
@@ -93,10 +96,34 @@ onMounted(async () => {
       emit('update:payerId', allAccounts[0].account || '');
     }
   }
+
+  startInterval();
+});
+
+onUnmounted(() => {
+  stopInterval();
+})
+
+watch(() => props.validStart, (newValidStart) => {
+  localValidStart.value = newValidStart;
 });
 
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
+
+function startInterval() {
+  intervalId = setInterval(() => {
+    const now = new Date();
+    if (localValidStart.value < now) {
+      emit('update:validStart', now);
+    }
+  }, 1000);
+}
+
+function stopInterval() {
+  clearInterval(intervalId);
+}
+
 </script>
 <template>
   <div class="row flex-wrap align-items-end">
