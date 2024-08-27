@@ -13,6 +13,7 @@ import {
   updateFile,
 } from '@main/services/localUser/files';
 import { ipcMain } from 'electron';
+import { decodeProto } from '@main/utils/hederaSpecialFiles';
 
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
 vi.mock('electron', () => ({
@@ -25,6 +26,9 @@ vi.mock('@main/services/localUser/files', () => ({
   removeFiles: vi.fn(),
   showContentInTemp: vi.fn(),
   updateFile: vi.fn(),
+}));
+vi.mock('@main/utils/hederaSpecialFiles', () => ({
+  decodeProto: vi.fn(),
 }));
 
 describe('IPC handlers Files', () => {
@@ -104,5 +108,16 @@ describe('IPC handlers Files', () => {
 
     updateHandler && (await updateHandler[1](event, userId, filedId, file));
     expect(updateFile).toHaveBeenCalledWith(userId, filedId, file);
+  });
+
+  test('Should set up decodeProto handler', async () => {
+    const decodeProtoHandler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'files:decodeProto');
+    expect(decodeProtoHandler).toBeDefined();
+
+    const fileId = '0.0.111';
+    const bytes = new Uint8Array([8, 1, 18, 1, 8, 1]);
+
+    decodeProtoHandler && (await decodeProtoHandler[1](event, fileId, bytes));
+    expect(decodeProto).toHaveBeenCalledWith(fileId, bytes);
   });
 });
