@@ -41,7 +41,8 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
-import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
+import TransactionInfoControls from '@renderer/components/Transaction/TransactionInfoControls.vue';
+import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import KeyField from '@renderer/components/KeyField.vue';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
@@ -88,6 +89,8 @@ const stakeType = ref<'Account' | 'Node' | 'None'>('None');
 const ownerKey = ref<Key | null>(null);
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
+const transactionName = ref('');
+const transactionDescription = ref('');
 const nickname = ref('');
 const transactionMemo = ref('');
 
@@ -408,30 +411,15 @@ const columnClass = 'col-4 col-xxxl-3';
 
       <hr class="separator my-5" />
 
-      <div class="fill-remaining">
-        <div class="row mb-6">
-          <div v-if="!user.selectedOrganization" class="form-group" :class="[columnClass]">
-            <label class="form-label">Nickname</label>
-            <div class="">
-              <AppInput
-                v-model="nickname"
-                :filled="true"
-                data-testid="input-nickname"
-                placeholder="Enter Nickname"
-              />
-            </div>
-          </div>
-        </div>
+      <TransactionInfoControls
+        v-model:name="transactionName"
+        v-model:description="transactionDescription"
+      />
 
-        <TransactionIdControls
-          v-model:payer-id="payerData.accountId.value"
-          v-model:valid-start="validStart"
-          v-model:max-transaction-fee="maxTransactionFee as Hbar"
-        />
-
-        <div class="row mt-6">
-          <div class="form-group col-8 col-xxxl-6">
-            <label class="form-label">Transaction Memo</label>
+      <div class="row mb-6">
+        <div v-if="!user.selectedOrganization" class="form-group" :class="[columnClass]">
+          <label class="form-label">Nickname</label>
+          <div class="">
             <AppInput
               data-testid="input-transaction-memo"
               v-model="transactionMemo"
