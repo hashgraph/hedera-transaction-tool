@@ -123,19 +123,7 @@ const handleFileImport = async (e: Event) => {
       const data = fileReader.value?.result;
       if (data && data instanceof ArrayBuffer) {
         fileBuffer.value = new Uint8Array(data);
-
-        if (fileMeta.value && fileMeta.value?.size > DISPLAY_FILE_SIZE_LIMIT) {
-          uploadedFileText.value = '';
-          return;
-        }
-
-        if (isHederaSpecialFileId(fileId.value)) {
-          uploadedFileText.value =
-            (await window.electronAPI.local.files.decodeProto(fileId.value, fileBuffer.value)) ||
-            '';
-        } else {
-          uploadedFileText.value = new TextDecoder().decode(fileBuffer.value);
-        }
+        await syncDisplayedContent();
       }
     });
     fileReader.value.addEventListener(
@@ -350,6 +338,25 @@ function handleEditGroupItem() {
   router.push({ name: 'createTransactionGroup' });
 }
 
+async function syncDisplayedContent() {
+  if (fileBuffer.value === null) {
+    uploadedFileText.value = null;
+    return;
+  }
+
+  if (fileMeta.value && fileMeta.value?.size > DISPLAY_FILE_SIZE_LIMIT) {
+    uploadedFileText.value = '';
+    return;
+  }
+
+  if (isHederaSpecialFileId(fileId.value)) {
+    uploadedFileText.value =
+      (await window.electronAPI.local.files.decodeProto(fileId.value, fileBuffer.value)) || '';
+  } else {
+    uploadedFileText.value = new TextDecoder().decode(fileBuffer.value);
+  }
+}
+
 /* Hooks */
 onMounted(async () => {
   if (router.currentRoute.value.query.fileId) {
@@ -360,7 +367,9 @@ onMounted(async () => {
 });
 
 /* Watchers */
-watch(fileMeta, () => (content.value = ''));
+watch(fileMeta, () => {
+  content.value = '';
+});
 watch(content, () => {
   if (content.value.length > 0) {
     removeContent.value = false;
@@ -370,6 +379,9 @@ watch(fileBuffer, buffer => {
   if (buffer && buffer.length > 0) {
     removeContent.value = false;
   }
+});
+watch(fileId, async () => {
+  await syncDisplayedContent();
 });
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
