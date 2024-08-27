@@ -52,6 +52,9 @@ const payerData = useAccountId();
 const router = useRouter();
 const route = useRoute();
 
+/* Constants */
+const DISPLAY_FILE_SIZE_LIMIT = 512 * 1024;
+
 /* State */
 const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
 const datePicker = ref<DatePickerInstance>(null);
@@ -93,6 +96,7 @@ const transactionKey = computed(() => {
 
   return new KeyList(keyList);
 });
+const uploadedFileText = ref<string | null>(null);
 
 /* Handlers */
 const handleRemoveFile = async () => {
@@ -100,6 +104,7 @@ const handleRemoveFile = async () => {
   fileMeta.value = null;
   fileReader.value = null;
   fileBuffer.value = null;
+  uploadedFileText.value = null;
   content.value = '';
 };
 
@@ -109,6 +114,7 @@ const handleFileImport = async (e: Event) => {
 
   if (file) {
     fileMeta.value = file;
+    uploadedFileText.value = null;
 
     fileReader.value = new FileReader();
 
@@ -117,6 +123,7 @@ const handleFileImport = async (e: Event) => {
       const data = fileReader.value?.result;
       if (data && data instanceof ArrayBuffer) {
         fileBuffer.value = new Uint8Array(data);
+        await syncDisplayedContent();
       }
     });
     fileReader.value.addEventListener(
@@ -331,6 +338,25 @@ function handleEditGroupItem() {
   router.push({ name: 'createTransactionGroup' });
 }
 
+async function syncDisplayedContent() {
+  if (fileBuffer.value === null) {
+    uploadedFileText.value = null;
+    return;
+  }
+
+  if (fileMeta.value && fileMeta.value?.size > DISPLAY_FILE_SIZE_LIMIT) {
+    uploadedFileText.value = '';
+    return;
+  }
+
+  if (isHederaSpecialFileId(fileId.value)) {
+    uploadedFileText.value =
+      (await window.electronAPI.local.files.decodeProto(fileId.value, fileBuffer.value)) || '';
+  } else {
+    uploadedFileText.value = new TextDecoder().decode(fileBuffer.value);
+  }
+}
+
 /* Hooks */
 onMounted(async () => {
   if (router.currentRoute.value.query.fileId) {
@@ -341,7 +367,9 @@ onMounted(async () => {
 });
 
 /* Watchers */
-watch(fileMeta, () => (content.value = ''));
+watch(fileMeta, () => {
+  content.value = '';
+});
 watch(content, () => {
   if (content.value.length > 0) {
     removeContent.value = false;
@@ -351,6 +379,9 @@ watch(fileBuffer, buffer => {
   if (buffer && buffer.length > 0) {
     removeContent.value = false;
   }
+});
+watch(fileId, async () => {
+  await syncDisplayedContent();
 });
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
@@ -578,7 +609,12 @@ const columnClass = 'col-4 col-xxxl-3';
 
         <div class="row mt-6">
           <div class="form-group col-12 col-xl-8">
-            <label class="form-label">File Contents</label>
+            <label class="form-label"
+              >File Contents
+              <span v-if="fileMeta && fileMeta?.size > DISPLAY_FILE_SIZE_LIMIT">
+                - the content is too big to be displayed</span
+              ></label
+            >
             <Transition name="fade" mode="out-in">
               <AppCheckBox
                 v-if="content.length === 0 && !fileBuffer"
@@ -588,6 +624,15 @@ const columnClass = 'col-4 col-xxxl-3';
               />
             </Transition>
             <textarea
+              v-if="Boolean(fileBuffer)"
+              :value="uploadedFileText"
+              data-testid="textarea-update-file-read-content"
+              :disabled="true"
+              class="form-control is-fill py-3"
+              rows="10"
+            ></textarea>
+            <textarea
+              v-else
               v-model="content"
               data-testid="textarea-update-file-content"
               :disabled="Boolean(fileBuffer) || removeContent"

@@ -62,6 +62,9 @@ const router = useRouter();
 const route = useRoute();
 const payerData = useAccountId();
 
+/* Constants */
+const DISPLAY_FILE_SIZE_LIMIT = 512 * 1024;
+
 /* State */
 const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
 const datePicker = ref<DatePickerInstance>(null);
@@ -72,7 +75,6 @@ const maxTransactionFee = ref<Hbar>(new Hbar(2));
 
 const memo = ref('');
 const expirationTimestamp = ref();
-const content = ref('');
 const ownerKey = ref<Key | null>(null);
 const fileName = ref('');
 const description = ref('');
@@ -81,6 +83,8 @@ const fileMeta = ref<File | null>(null);
 const fileReader = ref<FileReader | null>(null);
 const fileBuffer = ref<Uint8Array | null>(null);
 const loadPercentage = ref(0);
+const content = ref('');
+const uploadedFileText = ref<string | null>(null);
 
 const observers = ref<number[]>([]);
 const approvers = ref<TransactionApproverDto[]>([]);
@@ -109,6 +113,7 @@ const handleRemoveFile = async () => {
   fileReader.value = null;
   fileBuffer.value = null;
   content.value = '';
+  uploadedFileText.value = null;
 };
 
 const handleFileImport = async (e: Event) => {
@@ -117,6 +122,7 @@ const handleFileImport = async (e: Event) => {
 
   if (file) {
     fileMeta.value = file;
+    uploadedFileText.value = null;
 
     fileReader.value = new FileReader();
 
@@ -125,6 +131,7 @@ const handleFileImport = async (e: Event) => {
       const data = fileReader.value?.result;
       if (data && data instanceof ArrayBuffer) {
         fileBuffer.value = new Uint8Array(data);
+        await syncDisplayedContent();
       }
     });
     fileReader.value.addEventListener(
@@ -347,6 +354,20 @@ function createTransaction() {
   return transaction;
 }
 
+async function syncDisplayedContent() {
+  if (fileBuffer.value === null) {
+    uploadedFileText.value = null;
+    return;
+  }
+
+  if (fileMeta.value && fileMeta.value?.size > DISPLAY_FILE_SIZE_LIMIT) {
+    uploadedFileText.value = '';
+    return;
+  }
+
+  uploadedFileText.value = new TextDecoder().decode(fileBuffer.value);
+}
+
 async function redirectToDetails(id: string | number) {
   router.push({
     name: 'transactionDetails',
@@ -545,8 +566,22 @@ watch(payerData.isValid, isValid => {
 
         <div class="row mt-6">
           <div class="form-group col-12 col-xl-8">
-            <label class="form-label">File Contents</label>
+            <label class="form-label"
+              >File Contents
+              <span v-if="fileMeta && fileMeta?.size > DISPLAY_FILE_SIZE_LIMIT">
+                - the content is too big to be displayed</span
+              ></label
+            >
             <textarea
+              v-if="Boolean(fileBuffer)"
+              :value="uploadedFileText"
+              data-testid="textarea-update-file-read-content"
+              :disabled="true"
+              class="form-control is-fill py-3"
+              rows="10"
+            ></textarea>
+            <textarea
+              v-else
               v-model="content"
               :disabled="Boolean(fileBuffer)"
               class="form-control is-fill"
