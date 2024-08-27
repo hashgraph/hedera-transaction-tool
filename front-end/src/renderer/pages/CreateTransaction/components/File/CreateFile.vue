@@ -377,6 +377,7 @@ watch(payerData.isValid, isValid => {
           >
             <SaveDraftButton
               :get-transaction-bytes="() => createTransaction().toBytes()"
+              :description="transactionDescription"
               :is-executed="isExecuted || isSubmitted"
             />
             <AppButton

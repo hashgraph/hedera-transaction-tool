@@ -49,6 +49,7 @@ describe('Services Local User Public Keys Linked', () => {
         created_at: new Date(),
         updated_at: new Date(),
         isTemplate: false,
+        description: 'description',
         details: '',
         type: 'type1',
       };
@@ -80,6 +81,7 @@ describe('Services Local User Public Keys Linked', () => {
         user_id: 'user1',
         transactionBytes: 'bytes1',
         isTemplate: false,
+        description: 'description',
         details: '',
         type: 'type1',
       };
@@ -94,6 +96,7 @@ describe('Services Local User Public Keys Linked', () => {
         user_id: 'user1',
         transactionBytes: 'bytes1',
         isTemplate: false,
+        description: 'description',
         details: '',
         type: 'type1',
       };

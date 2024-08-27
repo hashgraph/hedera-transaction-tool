@@ -372,6 +372,7 @@ const columnClass = 'col-4 col-xxxl-3';
           >
             <SaveDraftButton
               :get-transaction-bytes="() => createTransaction().toBytes()"
+              :description="transactionDescription"
               :is-executed="isExecuted || isSubmitted"
             />
             <AppButton

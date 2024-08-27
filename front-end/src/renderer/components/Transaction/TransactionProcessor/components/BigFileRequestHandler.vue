@@ -166,6 +166,8 @@ async function processOriginal() {
   await startChain({
     transactionBytes: transaction.toBytes(),
     transactionKey: request.value.transactionKey,
+    name: request.value.name,
+    description: request.value.description,
   });
 }
 
@@ -177,6 +179,8 @@ async function processAppend() {
   await startChain({
     transactionBytes: transaction.toBytes(),
     transactionKey: request.value.transactionKey,
+    name: request.value.name,
+    description: request.value.description,
   });
 }
 

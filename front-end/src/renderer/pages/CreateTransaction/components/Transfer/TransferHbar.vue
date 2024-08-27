@@ -433,6 +433,7 @@ onMounted(async () => {
           >
             <SaveDraftButton
               :get-transaction-bytes="() => createTransaction().toBytes()"
+              :description="transactionDescription"
               :handle-draft-added="handleDraftAdded"
               :handle-draft-updated="handleDraftAdded"
               :is-executed="isExecuted || isSubmitted"

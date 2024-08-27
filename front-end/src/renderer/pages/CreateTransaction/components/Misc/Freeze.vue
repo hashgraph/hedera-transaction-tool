@@ -298,6 +298,7 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
           >
             <SaveDraftButton
               :get-transaction-bytes="() => createTransaction().toBytes()"
+              :description="transactionDescription"
               :is-executed="isExecuted || isSubmitted"
             />
             <AppButton color="primary" type="submit" :disabled="!payerData.isValid.value">

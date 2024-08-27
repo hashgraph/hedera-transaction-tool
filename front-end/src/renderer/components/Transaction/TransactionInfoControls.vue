@@ -2,7 +2,7 @@
 import { useRoute } from 'vue-router';
 import { onMounted } from 'vue';
 
-// import { getDraft } from '@renderer/services/transactionDraftsService';
+import { getDraft } from '@renderer/services/transactionDraftsService';
 
 import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
 
@@ -13,21 +13,21 @@ defineProps<{
 }>();
 
 /* Emits */
-// const emit = defineEmits(['update:description']);
+const emit = defineEmits(['update:description']);
 
 /* Composables */
 const route = useRoute();
 
 /* Functions */
-// const loadFromDraft = async (id: string) => {
-//   const { description } = await getDraft(id.toString());
-//   if (description) emit('update:description', description);
-// };
+const loadFromDraft = async (id: string) => {
+  const { description } = await getDraft(id.toString());
+  if (description) emit('update:description', description);
+};
 
 /* Hooks */
 onMounted(async () => {
   if (route.query.draftId) {
-    // await loadFromDraft(route.query.draftId.toString());
+    await loadFromDraft(route.query.draftId.toString());
   }
 });
 
