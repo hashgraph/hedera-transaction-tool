@@ -596,30 +596,40 @@ const cancel = 'Cancel';
             </div>
 
             <div class="fill-remaining mt-5">
-              <!-- Name -->
-              <div
-                v-if="
-                  (orgTransaction?.name.trim() || localTransaction?.name.trim() || '').length > 0
-                "
-              >
-                <h4 :class="detailItemLabelClass">Name</h4>
-                <p :class="detailItemValueClass" data-testid="p-transaction-details-name">
-                  {{ orgTransaction?.name || localTransaction?.name }}
-                </p>
-              </div>
+              <div class="row flex-wrap">
+                <!-- Name -->
+                <div :class="commonColClass">
+                  <div
+                    v-if="
+                      (orgTransaction?.name.trim() || localTransaction?.name.trim() || '').length >
+                      0
+                    "
+                  >
+                    <h4 :class="detailItemLabelClass">Name</h4>
+                    <p :class="detailItemValueClass" data-testid="p-transaction-details-name">
+                      {{ orgTransaction?.name || localTransaction?.name }}
+                    </p>
+                  </div>
+                </div>
 
-              <!-- Description -->
-              <div
-                v-if="
-                  (orgTransaction?.description.trim() || localTransaction?.description.trim() || '')
-                    .length > 0
-                "
-                class="mt-5"
-              >
-                <h4 :class="detailItemLabelClass">Description</h4>
-                <p :class="detailItemValueClass">
-                  {{ orgTransaction?.description || localTransaction?.description }}
-                </p>
+                <!-- Description -->
+                <div class="col-6 col-lg-7 col-xl-8 col-xxl-9">
+                  <div
+                    v-if="
+                      (
+                        orgTransaction?.description.trim() ||
+                        localTransaction?.description.trim() ||
+                        ''
+                      ).length > 0
+                    "
+                    class="mt-5"
+                  >
+                    <h4 :class="detailItemLabelClass">Description</h4>
+                    <p :class="detailItemValueClass">
+                      {{ orgTransaction?.description || localTransaction?.description }}
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <!-- Transaction Status -->
@@ -649,7 +659,7 @@ const cancel = 'Cancel';
               <!-- CREATION DETAILS -->
               <h2 class="text-title text-bold mt-5">Creation Details</h2>
 
-              <div class="row flex-wrap">
+              <div class="row flex-wrap mt-5">
                 <!-- Creator -->
                 <template v-if="creator">
                   <div :class="commonColClass">

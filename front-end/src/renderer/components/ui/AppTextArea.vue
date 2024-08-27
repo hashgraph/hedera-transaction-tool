@@ -26,7 +26,7 @@ defineExpose({
     ref="inputRef"
     :value="modelValue"
     @input="$emit('update:modelValue', ($event.target! as HTMLInputElement).value)"
-    :class="['form-control',fillClass]"
+    :class="['form-control', fillClass]"
     rows="4"
     v-bind:maxlength="limit || undefined"
   />
