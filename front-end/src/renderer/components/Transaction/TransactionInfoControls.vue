@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router';
-import { computed, onMounted, ref } from 'vue';
+import { onMounted } from 'vue';
 
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
@@ -43,7 +43,6 @@ onMounted(async () => {
 });
 
 /* Misc */
-
 </script>
 <template>
   <div class="row">
@@ -58,7 +57,7 @@ onMounted(async () => {
       />
     </div>
   </div>
-  <div class="row">
+  <div class="row mt-6">
     <div class="form-group" :class="['col-8 col-xxxl-6']">
       <label class="form-label">Transaction Description</label>
       <AppTextArea
