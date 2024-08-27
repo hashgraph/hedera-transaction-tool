@@ -102,6 +102,7 @@ model TransactionDraft {
   user_id          String
   type             String
   transactionBytes String
+  description      String
   isTemplate       Boolean? @default(false)
   details          String?
   user             User     @relation(fields: [user_id], references: [id])
