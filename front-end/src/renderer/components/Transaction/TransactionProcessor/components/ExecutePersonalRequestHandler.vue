@@ -108,9 +108,9 @@ async function store(status: number) {
   if (!type.value || !transaction.value) throw new Error('Cannot save transaction');
 
   const tx: Prisma.TransactionUncheckedCreateInput = {
-    name: `${type.value} (${transaction.value.transactionId?.toString()})`,
+    name: request.value?.name || '',
     type: type.value,
-    description: '',
+    description: request.value?.description || '',
     transaction_id: transaction.value.transactionId?.toString() || '',
     transaction_hash: (await transaction.value.getTransactionHash()).toString(),
     body: transaction.value.toBytes().toString(),

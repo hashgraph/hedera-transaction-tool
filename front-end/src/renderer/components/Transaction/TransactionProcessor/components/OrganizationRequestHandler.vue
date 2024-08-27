@@ -14,7 +14,7 @@ import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { addApprovers, addObservers, submitTransaction } from '@renderer/services/organization';
 
-import { getPrivateKey, getTransactionType } from '@renderer/utils';
+import { getPrivateKey } from '@renderer/utils';
 import { assertIsLoggedInOrganization, assertUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import { Handler, TransactionRequest } from '..';
@@ -110,8 +110,8 @@ async function submit(publicKey: string, signature: string) {
 
     return await submitTransaction(
       user.selectedOrganization.serverUrl,
-      transaction.value?.transactionMemo || `New ${getTransactionType(transaction.value)}`,
-      transaction.value?.transactionMemo || '',
+      request.value?.name || '',
+      request.value?.description || '',
       hexTransactionBytes,
       network.network,
       signature,
