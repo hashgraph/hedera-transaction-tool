@@ -42,11 +42,12 @@ import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStor
 import DatePicker, { DatePickerInstance } from '@vuepic/vue-datepicker';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import KeyField from '@renderer/components/KeyField.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
-import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
-import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
+import KeyField from '@renderer/components/KeyField.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
+import TransactionInfoControls from '@renderer/components/Transaction/TransactionInfoControls.vue';
+import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
+import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
 
@@ -75,7 +76,6 @@ const content = ref('');
 const ownerKey = ref<Key | null>(null);
 const fileName = ref('');
 const description = ref('');
-const transactionMemo = ref('');
 
 const fileMeta = ref<File | null>(null);
 const fileReader = ref<FileReader | null>(null);
@@ -87,6 +87,10 @@ const approvers = ref<TransactionApproverDto[]>([]);
 
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
+
+const transactionMemo = ref('');
+const transactionName = ref('');
+const transactionDescription = ref('');
 
 /* Computed */
 const transactionKey = computed(() => {
@@ -149,6 +153,8 @@ const handleCreate = async e => {
       {
         transactionKey: transactionKey.value,
         transactionBytes: transaction.value.toBytes(),
+        name: transactionName.value,
+        description: transactionDescription.value,
       },
       observers.value,
       approvers.value,
@@ -371,6 +377,7 @@ watch(payerData.isValid, isValid => {
           >
             <SaveDraftButton
               :get-transaction-bytes="() => createTransaction().toBytes()"
+              :description="transactionDescription"
               :is-executed="isExecuted || isSubmitted"
             />
             <AppButton
@@ -410,10 +417,16 @@ watch(payerData.isValid, isValid => {
       <hr class="separator my-5" />
 
       <div class="fill-remaining">
+        <TransactionInfoControls
+          v-model:name="transactionName"
+          v-model:description="transactionDescription"
+        />
+
         <TransactionIdControls
           v-model:payer-id="payerData.accountId.value"
           v-model:valid-start="validStart"
           v-model:max-transaction-fee="maxTransactionFee as Hbar"
+          class="mt-6"
         />
 
         <div class="row mt-6">

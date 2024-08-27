@@ -20,6 +20,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 import { useRoute, useRouter } from 'vue-router';
 
@@ -40,13 +41,13 @@ import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
+import KeyField from '@renderer/components/KeyField.vue';
+import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
+import TransactionInfoControls from '@renderer/components/Transaction/TransactionInfoControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
-import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
-import KeyField from '@renderer/components/KeyField.vue';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
-import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 /* Stores */
 const user = useUserStore();
@@ -88,11 +89,15 @@ const stakeType = ref<'Account' | 'Node' | 'None'>('None');
 const ownerKey = ref<Key | null>(null);
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
+
 const nickname = ref('');
-const transactionMemo = ref('');
 
 const observers = ref<number[]>([]);
 const approvers = ref<TransactionApproverDto[]>([]);
+
+const transactionName = ref('');
+const transactionDescription = ref('');
+const transactionMemo = ref('');
 
 /* Computed */
 const transactionKey = computed(() => {
@@ -144,6 +149,8 @@ const handleCreate = async e => {
       {
         transactionKey: transactionKey.value,
         transactionBytes: transaction.value.toBytes(),
+        name: transactionName.value,
+        description: transactionDescription.value,
       },
       observers.value,
       approvers.value,
@@ -365,6 +372,7 @@ const columnClass = 'col-4 col-xxxl-3';
           >
             <SaveDraftButton
               :get-transaction-bytes="() => createTransaction().toBytes()"
+              :description="transactionDescription"
               :is-executed="isExecuted || isSubmitted"
             />
             <AppButton
@@ -409,7 +417,12 @@ const columnClass = 'col-4 col-xxxl-3';
       <hr class="separator my-5" />
 
       <div class="fill-remaining">
-        <div class="row mb-6">
+        <TransactionInfoControls
+          v-model:name="transactionName"
+          v-model:description="transactionDescription"
+        />
+
+        <div class="row my-6">
           <div v-if="!user.selectedOrganization" class="form-group" :class="[columnClass]">
             <label class="form-label">Nickname</label>
             <div class="">
@@ -417,7 +430,7 @@ const columnClass = 'col-4 col-xxxl-3';
                 v-model="nickname"
                 :filled="true"
                 data-testid="input-nickname"
-                placeholder="Enter Nickname"
+                placeholder="Enter Account Nickname"
               />
             </div>
           </div>

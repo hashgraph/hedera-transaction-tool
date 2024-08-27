@@ -25,11 +25,12 @@ import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import KeyField from '@renderer/components/KeyField.vue';
-import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
-import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
-import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
+import KeyField from '@renderer/components/KeyField.vue';
+import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
+import TransactionInfoControls from '@renderer/components/Transaction/TransactionInfoControls.vue';
+import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
+import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
 
 /* Stores */
 const user = useUserStore();
@@ -56,7 +57,6 @@ const fileBuffer = ref<Uint8Array | null>(null);
 const loadPercentage = ref(0);
 const content = ref('');
 
-const transactionMemo = ref('');
 const chunkSize = ref(4096);
 
 const isExecuted = ref(false);
@@ -64,6 +64,10 @@ const isSubmitted = ref(false);
 
 const observers = ref<number[]>([]);
 const approvers = ref<TransactionApproverDto[]>([]);
+
+const transactionMemo = ref('');
+const transactionName = ref('');
+const transactionDescription = ref('');
 
 /* Computed */
 const transactionKey = computed(() => {
@@ -143,6 +147,8 @@ const handleCreate = async e => {
       {
         transactionKey: transactionKey.value,
         transactionBytes: transaction.value.toBytes(),
+        name: transactionName.value,
+        description: transactionDescription.value,
       },
       observers.value,
       approvers.value,
@@ -304,6 +310,7 @@ const columnClass = 'col-4 col-xxxl-3';
           >
             <SaveDraftButton
               :get-transaction-bytes="() => createTransaction().toBytes()"
+              :description="transactionDescription"
               :is-executed="isExecuted || isSubmitted"
             />
             <AppButton
@@ -347,10 +354,16 @@ const columnClass = 'col-4 col-xxxl-3';
       <hr class="separator my-5" />
 
       <div class="fill-remaining">
+        <TransactionInfoControls
+          v-model:name="transactionName"
+          v-model:description="transactionDescription"
+        />
+
         <TransactionIdControls
           v-model:payer-id="payerData.accountId.value"
           v-model:valid-start="validStart"
           v-model:max-transaction-fee="maxTransactionFee as Hbar"
+          class="mt-6"
         />
 
         <div class="row mt-6">

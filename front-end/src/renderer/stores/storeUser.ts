@@ -160,17 +160,17 @@ const useUserStore = defineStore('user', () => {
           keyPairs,
           router,
         );
-
-        const results = await Promise.allSettled([contacts.fetch(), notifications.setup()]);
-
-        results.forEach(result => {
-          if (result.status === 'rejected') {
-            throw result.reason;
-          }
-        });
       } catch (error) {
         await selectOrganization(null);
       }
+
+      const results = await Promise.allSettled([contacts.fetch(), notifications.setup()]);
+
+      results.forEach(result => {
+        if (result.status === 'rejected') {
+          throw result.reason;
+        }
+      });
     }
 
     refetchAccounts();

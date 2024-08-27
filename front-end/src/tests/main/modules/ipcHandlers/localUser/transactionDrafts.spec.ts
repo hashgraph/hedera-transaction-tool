@@ -83,6 +83,7 @@ describe('IPC handlers transaction drafts', () => {
       user_id: 'userId',
       type: 'someType',
       transactionBytes: 'transactionBytes',
+      description: 'description',
     };
 
     handler && (await handler[1](event, transactionDraft));

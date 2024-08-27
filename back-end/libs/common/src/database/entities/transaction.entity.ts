@@ -59,13 +59,13 @@ export class Transaction {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ length: 50 })
   name: string;
 
   @Column()
   type: TransactionType;
 
-  @Column()
+  @Column({ length: 256 })
   description: string;
 
   @Column({ unique: true })

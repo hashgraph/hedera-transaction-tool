@@ -6,6 +6,7 @@ import { MEMO_MAX_LENGTH } from '@main/shared/constants';
 import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
@@ -27,14 +28,14 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
-import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
-import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
-import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
-import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
+import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
+import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
+import TransactionInfoControls from '@renderer/components/Transaction/TransactionInfoControls.vue';
+import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
+import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
-import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 /* Stores */
 const user = useUserStore();
@@ -55,7 +56,6 @@ const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | nul
 const transaction = ref<Transaction | null>(null);
 const validStart = ref(new Date());
 const maxTransactionFee = ref<Hbar>(new Hbar(2));
-const transactionMemo = ref('');
 
 const observers = ref<number[]>([]);
 const approvers = ref<TransactionApproverDto[]>([]);
@@ -66,6 +66,10 @@ const isConfirmModalShown = ref(false);
 
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
+
+const transactionMemo = ref('');
+const transactionName = ref('');
+const transactionDescription = ref('');
 
 /* Computed */
 const transactionKey = computed(() => {
@@ -114,6 +118,8 @@ const handleCreate = async e => {
       {
         transactionKey: transactionKey.value,
         transactionBytes: transaction.value.toBytes(),
+        name: transactionName.value,
+        description: transactionDescription.value,
       },
       observers.value,
       approvers.value,
@@ -291,6 +297,7 @@ const columnClass = 'col-4 col-xxxl-3';
           >
             <SaveDraftButton
               :get-transaction-bytes="() => createTransaction().toBytes()"
+              :description="transactionDescription"
               :is-executed="isExecuted || isSubmitted"
             />
             <AppButton
@@ -336,10 +343,16 @@ const columnClass = 'col-4 col-xxxl-3';
       <hr class="separator my-5" />
 
       <div class="fill-remaining">
+        <TransactionInfoControls
+          v-model:name="transactionName"
+          v-model:description="transactionDescription"
+        />
+
         <TransactionIdControls
           v-model:payer-id="payerData.accountId.value"
           v-model:valid-start="validStart"
           v-model:max-transaction-fee="maxTransactionFee as Hbar"
+          class="mt-6"
         />
 
         <div class="row mt-6">

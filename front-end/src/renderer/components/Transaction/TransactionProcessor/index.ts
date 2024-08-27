@@ -5,6 +5,8 @@ import TransactionProcessor from './TransactionProcessor.vue';
 export interface TransactionRequest {
   transactionKey: Key;
   transactionBytes: Uint8Array;
+  name: string;
+  description: string;
 }
 
 export interface Handler {

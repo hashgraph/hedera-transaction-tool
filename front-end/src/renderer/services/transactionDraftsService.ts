@@ -15,13 +15,19 @@ export const getDraft = async (id: string) =>
     return await window.electronAPI.local.transactionDrafts.getDraft(id);
   }, `Failed to fetch transaction with id: ${id}`);
 
-export const addDraft = async (userId: string, transactionBytes: Uint8Array, details?: string) => {
+export const addDraft = async (
+  userId: string,
+  transactionBytes: Uint8Array,
+  description: string,
+  details?: string,
+) => {
   const transactionDraft: Prisma.TransactionDraftUncheckedCreateInput = {
     created_at: new Date(),
     updated_at: new Date(),
     user_id: userId,
     transactionBytes: transactionBytes.toString(),
     type: getTransactionType(transactionBytes),
+    description: description || '',
     details: details || null,
   };
 

@@ -27,6 +27,7 @@ const props = defineProps<{
   handleDraftAdded?: (id: string) => void;
   handleDraftUpdated?: (id: string) => void;
   getTransactionBytes?: () => Uint8Array;
+  description: string;
   isExecuted: boolean;
 }>();
 
@@ -56,7 +57,10 @@ const saveDraft = async () => {
       const loadedDraft = await getDraft(route.query.draftId.toString());
 
       if (getTransactionFromBytes(loadedDraft.transactionBytes).toBytes() != transactionBytes) {
-        await updateDraft(loadedDraft.id, { transactionBytes: transactionBytes.toString() });
+        await updateDraft(loadedDraft.id, {
+          transactionBytes: transactionBytes.toString(),
+          description: props.description,
+        });
         toast.success('Draft updated', { position: 'bottom-right' });
         props.handleDraftUpdated && props.handleDraftUpdated(loadedDraft.id);
       } else {
@@ -79,7 +83,7 @@ const handleModalSaveDraftSubmit = (e: Event) => {
 
 /* Functions */
 async function sendAddDraft(userId: string, transactionBytes: Uint8Array) {
-  const { id } = await addDraft(userId, transactionBytes);
+  const { id } = await addDraft(userId, transactionBytes, props.description);
   props.handleDraftAdded && props.handleDraftAdded(id);
   toast.success('Draft saved', { position: 'bottom-right' });
 }
@@ -96,7 +100,10 @@ onBeforeRouteLeave(async to => {
       const loadedDraft = await getDraft(route.query.draftId.toString());
 
       if (getTransactionFromBytes(loadedDraft.transactionBytes).toBytes() != transactionBytes) {
-        await updateDraft(loadedDraft.id, { transactionBytes: transactionBytes.toString() });
+        await updateDraft(loadedDraft.id, {
+          transactionBytes: transactionBytes.toString(),
+          description: props.description,
+        });
         props.handleDraftUpdated && props.handleDraftUpdated(loadedDraft.id);
       }
     } catch (error) {

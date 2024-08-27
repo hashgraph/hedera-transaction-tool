@@ -32,7 +32,7 @@ import {
   User,
 } from '@entities';
 
-import { JwtAuthGuard, VerifiedUserGuard } from '../guards';
+import { JwtAuthGuard } from '../guards';
 
 import { GetUser } from '../decorators';
 
@@ -43,7 +43,7 @@ import { UpdateNotificationReceiverDto } from './dtos';
 
 @ApiTags('Notification')
 @Controller('notifications')
-@UseGuards(JwtAuthGuard, VerifiedUserGuard)
+@UseGuards(JwtAuthGuard)
 export class NotificationsController {
   constructor(private notificationsService: NotificationReceiverService) {}
 
