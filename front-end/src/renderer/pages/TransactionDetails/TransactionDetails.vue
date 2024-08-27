@@ -597,7 +597,7 @@ const cancel = 'Cancel';
 
             <div class="fill-remaining mt-5">
               <!-- Name -->
-              <!-- <div
+              <div
                 v-if="
                   (orgTransaction?.name.trim() || localTransaction?.name.trim() || '').length > 0
                 "
@@ -606,10 +606,10 @@ const cancel = 'Cancel';
                 <p :class="detailItemValueClass" data-testid="p-transaction-details-name">
                   {{ orgTransaction?.name || localTransaction?.name }}
                 </p>
-              </div> -->
+              </div>
 
               <!-- Description -->
-              <!-- <div
+              <div
                 v-if="
                   (orgTransaction?.description.trim() || localTransaction?.description.trim() || '')
                     .length > 0
@@ -620,7 +620,7 @@ const cancel = 'Cancel';
                 <p :class="detailItemValueClass">
                   {{ orgTransaction?.description || localTransaction?.description }}
                 </p>
-              </div> -->
+              </div>
 
               <!-- Transaction Status -->
               <div v-if="orgTransaction" class="mt-5">
@@ -647,7 +647,7 @@ const cancel = 'Cancel';
               <hr v-if="isLoggedInOrganization(user.selectedOrganization)" class="separator my-8" />
 
               <!-- CREATION DETAILS -->
-              <h2 class="text-title text-bold">Creation Details</h2>
+              <h2 class="text-title text-bold mt-5">Creation Details</h2>
 
               <div class="row flex-wrap">
                 <!-- Creator -->
