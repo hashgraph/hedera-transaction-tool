@@ -13,6 +13,7 @@ import { MEMO_MAX_LENGTH } from '@main/shared/constants';
 import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 import { useToast } from 'vue-toast-notification';
 import { useRoute, useRouter } from 'vue-router';
@@ -33,14 +34,14 @@ import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
-import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
-import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
-import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
-import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
+import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
+import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
+import TransactionInfoControls from '@renderer/components/Transaction/TransactionInfoControls.vue';
+import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
+import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
-import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 /* Stores */
 const user = useUserStore();
@@ -62,7 +63,6 @@ const validStart = ref(new Date());
 const maxTransactionFee = ref<Hbar>(new Hbar(2));
 
 const amount = ref<Hbar>(new Hbar(0));
-const transactionMemo = ref('');
 const keyStructureComponentKey = ref<Key | null>(null);
 
 const observers = ref<number[]>([]);
@@ -72,6 +72,10 @@ const isKeyStructureModalShown = ref(false);
 
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
+
+const transactionMemo = ref('');
+const transactionName = ref('');
+const transactionDescription = ref('');
 
 /* Computed */
 const transactionKey = computed(() => {
@@ -299,10 +303,16 @@ const columnClass = 'col-4 col-xxxl-3';
       <hr class="separator my-5" />
 
       <div class="fill-remaining">
+        <TransactionInfoControls
+          v-model:name="transactionName"
+          v-model:description="transactionDescription"
+        />
+
         <TransactionIdControls
           v-model:payer-id="payerData.accountId.value"
           v-model:valid-start="validStart"
           v-model:max-transaction-fee="maxTransactionFee as Hbar"
+          class="mt-6"
         />
 
         <div class="row mt-6">
