@@ -597,21 +597,6 @@ const cancel = 'Cancel';
 
             <div class="fill-remaining mt-5">
               <div class="row flex-wrap">
-                <!-- Name -->
-                <div :class="commonColClass">
-                  <div
-                    v-if="
-                      (orgTransaction?.name.trim() || localTransaction?.name.trim() || '').length >
-                      0
-                    "
-                  >
-                    <h4 :class="detailItemLabelClass">Name</h4>
-                    <p :class="detailItemValueClass" data-testid="p-transaction-details-name">
-                      {{ orgTransaction?.name || localTransaction?.name }}
-                    </p>
-                  </div>
-                </div>
-
                 <!-- Description -->
                 <div class="col-6 col-lg-7 col-xl-8 col-xxl-9">
                   <div
