@@ -20,6 +20,7 @@ import {
   getPropagationButtonLabel,
   isAccountId,
   formatAccountId,
+  isHederaSpecialFileId,
 } from '@renderer/utils';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
@@ -42,6 +43,9 @@ const router = useRouter();
 const route = useRoute();
 const payerData = useAccountId();
 
+/* Constants */
+const DISPLAY_FILE_SIZE_LIMIT = 512 * 1024;
+
 /* State */
 const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
 
@@ -56,6 +60,7 @@ const fileReader = ref<FileReader | null>(null);
 const fileBuffer = ref<Uint8Array | null>(null);
 const loadPercentage = ref(0);
 const content = ref('');
+const uploadedFileText = ref<string | null>(null);
 
 const chunkSize = ref(4096);
 
@@ -86,6 +91,7 @@ const handleRemoveFile = async () => {
   fileReader.value = null;
   fileBuffer.value = null;
   content.value = '';
+  uploadedFileText.value = null;
 };
 
 const handleFileImport = async (e: Event) => {
@@ -94,6 +100,7 @@ const handleFileImport = async (e: Event) => {
 
   if (file) {
     fileMeta.value = file;
+    uploadedFileText.value = null;
 
     fileReader.value = new FileReader();
 
@@ -102,6 +109,7 @@ const handleFileImport = async (e: Event) => {
       const data = fileReader.value?.result;
       if (data && data instanceof ArrayBuffer) {
         fileBuffer.value = new Uint8Array(data);
+        await syncDisplayedContent();
       }
     });
     fileReader.value.addEventListener(
@@ -223,6 +231,25 @@ async function redirectToDetails(id: string | number) {
   });
 }
 
+async function syncDisplayedContent() {
+  if (fileBuffer.value === null) {
+    uploadedFileText.value = null;
+    return;
+  }
+
+  if (fileMeta.value && fileMeta.value?.size > DISPLAY_FILE_SIZE_LIMIT) {
+    uploadedFileText.value = '';
+    return;
+  }
+
+  if (isHederaSpecialFileId(fileId.value)) {
+    uploadedFileText.value =
+      (await window.electronAPI.local.files.decodeProto(fileId.value, fileBuffer.value)) || '';
+  } else {
+    uploadedFileText.value = new TextDecoder().decode(fileBuffer.value);
+  }
+}
+
 function handleAddToGroup() {
   if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
     throw Error('Invalid Payer ID');
@@ -295,6 +322,9 @@ onMounted(async () => {
 
 /* Watchers */
 watch(fileMeta, () => (content.value = ''));
+watch(fileId, async () => {
+  await syncDisplayedContent();
+});
 
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
@@ -445,8 +475,22 @@ const columnClass = 'col-4 col-xxxl-3';
 
         <div class="row mt-6">
           <div class="form-group col-12 col-xl-8">
-            <label class="form-label">File Contents</label>
+            <label class="form-label"
+              >File Contents
+              <span v-if="fileMeta && fileMeta?.size > DISPLAY_FILE_SIZE_LIMIT">
+                - the content is too big to be displayed</span
+              ></label
+            >
             <textarea
+              v-if="Boolean(fileBuffer)"
+              :value="uploadedFileText"
+              data-testid="textarea-update-file-read-content"
+              :disabled="true"
+              class="form-control is-fill py-3"
+              rows="10"
+            ></textarea>
+            <textarea
+              v-else
               v-model="content"
               data-testid="textarea-file-content-for-append"
               :disabled="Boolean(fileBuffer)"
