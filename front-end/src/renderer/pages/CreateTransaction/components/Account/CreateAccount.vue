@@ -41,6 +41,7 @@ import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
+import KeyField from '@renderer/components/KeyField.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionInfoControls from '@renderer/components/Transaction/TransactionInfoControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
@@ -148,6 +149,8 @@ const handleCreate = async e => {
       {
         transactionKey: transactionKey.value,
         transactionBytes: transaction.value.toBytes(),
+        name: transactionName.value,
+        description: transactionDescription.value,
       },
       observers.value,
       approvers.value,

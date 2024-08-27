@@ -135,6 +135,8 @@ const handleCreate = async e => {
       {
         transactionKey: await getRequiredKeys(),
         transactionBytes: transaction.value.toBytes(),
+        name: transactionName.value,
+        description: transactionDescription.value,
       },
       observers.value,
       approvers.value,

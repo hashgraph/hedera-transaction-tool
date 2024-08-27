@@ -31,7 +31,11 @@ async function handle(request: TransactionRequest) {
   validate(request, transaction);
 
   if (nextHandler.value) {
-    await nextHandler.value.handle(request);
+    await nextHandler.value.handle({
+      ...request,
+      name: request.name || '',
+      description: request.description || '',
+    });
   }
 }
 
@@ -44,6 +48,14 @@ function validate(request: TransactionRequest, transaction: Transaction) {
     transaction instanceof FileUpdateTransaction
   ) {
     validateBigFile(transaction);
+  }
+
+  if (request.name && request.name?.length > 50) {
+    throw new Error('Transaction name is too long');
+  }
+
+  if (request.description && request.description?.length > 256) {
+    throw new Error('Transaction description is too long');
   }
 }
 
