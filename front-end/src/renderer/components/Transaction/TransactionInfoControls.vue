@@ -2,9 +2,8 @@
 import { useRoute } from 'vue-router';
 import { onMounted } from 'vue';
 
-import { getDraft } from '@renderer/services/transactionDraftsService';
+// import { getDraft } from '@renderer/services/transactionDraftsService';
 
-import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
 
 /* Props */
@@ -14,31 +13,21 @@ defineProps<{
 }>();
 
 /* Emits */
-const emit = defineEmits(['update:name', 'update:description']);
+// const emit = defineEmits(['update:description']);
 
-// /* Stores */
-// const user = useUserStore();
-//
 /* Composables */
 const route = useRoute();
 
 /* Functions */
-const loadFromDraft = async (id: string) => {
-  const draft = await getDraft(id.toString());
-
-  if (draft.name) {
-    // name = draft.name;
-  }
-
-  if (draft.description) {
-    // emit('update:maxTransactionFee', draftTransaction.maxTransactionFee);
-  }
-};
+// const loadFromDraft = async (id: string) => {
+//   const { description } = await getDraft(id.toString());
+//   if (description) emit('update:description', description);
+// };
 
 /* Hooks */
 onMounted(async () => {
   if (route.query.draftId) {
-    await loadFromDraft(route.query.draftId.toString());
+    // await loadFromDraft(route.query.draftId.toString());
   }
 });
 
@@ -46,18 +35,6 @@ onMounted(async () => {
 </script>
 <template>
   <div class="row">
-    <div class="form-group" :class="['col-4 col-xxxl-3']">
-      <label class="form-label">Transaction Name</label>
-      <AppInput
-        :model-value="name"
-        @update:model-value="v => $emit('update:name', v)"
-        :filled="true"
-        maxlength="50"
-        placeholder="Enter a name for the transaction"
-      />
-    </div>
-  </div>
-  <div class="row mt-6">
     <div class="form-group" :class="['col-8 col-xxxl-6']">
       <label class="form-label">Transaction Description</label>
       <AppTextArea
