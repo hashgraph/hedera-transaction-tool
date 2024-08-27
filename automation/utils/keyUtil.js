@@ -1,4 +1,3 @@
-const crypto = require('crypto');
 const { proto } = require('@hashgraph/proto');
 const { PublicKey, KeyList, Key } = require('@hashgraph/sdk');
 const bip39 = require('bip39');

@@ -13,11 +13,8 @@ const LoginPage = require('../pages/LoginPage');
 const TransactionPage = require('../pages/TransactionPage');
 const OrganizationPage = require('../pages/OrganizationPage');
 const SettingsPage = require('../pages/SettingsPage');
-const {
-  resetDbState,
-  resetPostgresDbState,
-  disableNotificationsForTestUsers,
-} = require('../utils/databaseUtil');
+const { resetDbState, resetPostgresDbState } = require('../utils/databaseUtil');
+const { disableNotificationsForTestUsers } = require('../utils/databaseQueries');
 
 let app, window;
 let globalCredentials = { email: '', password: '' };

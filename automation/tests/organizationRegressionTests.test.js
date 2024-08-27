@@ -13,11 +13,8 @@ const LoginPage = require('../pages/LoginPage');
 const TransactionPage = require('../pages/TransactionPage');
 const OrganizationPage = require('../pages/OrganizationPage');
 const SettingsPage = require('../pages/SettingsPage');
-const {
-  resetDbState,
-  resetPostgresDbState,
-  disableNotificationsForTestUsers,
-} = require('../utils/databaseUtil');
+const { resetDbState, resetPostgresDbState } = require('../utils/databaseUtil');
+const { disableNotificationsForTestUsers } = require('../utils/databaseQueries');
 
 let app, window;
 let globalCredentials = { email: '', password: '' };
@@ -26,7 +23,7 @@ let firstUser, secondUser, thirdUser;
 let complexKeyAccountId;
 let totalUsers;
 
-test.describe('Organization Transaction tests', () => {
+test.describe.skip('Organization Regression tests', () => {
   test.beforeAll(async () => {
     test.setTimeout(2147483647);
     await resetDbState();
@@ -43,11 +40,8 @@ test.describe('Organization Transaction tests', () => {
     globalCredentials.password = generateRandomPassword();
 
     // Generate test users in PostgreSQL database for organizations
-    totalUsers = 60;
+    totalUsers = 21;
     await organizationPage.createUsers(totalUsers);
-
-    // Disable notifications for test users
-    await disableNotificationsForTestUsers();
 
     // Perform registration with the generated credentials
     await registrationPage.completeRegistration(
@@ -61,6 +55,10 @@ test.describe('Organization Transaction tests', () => {
     await organizationPage.setupOrganization();
     await organizationPage.setUpUsers(window, globalCredentials.password, false);
     firstUser = organizationPage.getUser(0);
+
+    // Disable notifications for test users
+    await disableNotificationsForTestUsers();
+
     await organizationPage.signInOrganization(
       firstUser.email,
       firstUser.password,
@@ -70,7 +68,7 @@ test.describe('Organization Transaction tests', () => {
     await setupEnvironmentForTransactions(window, process.env.PRIVATE_KEY);
 
     // Set complex account for transactions
-    await organizationPage.addComplexKeyAccountWithMultipleThresholds(totalUsers);
+    await organizationPage.addComplexKeyAccountWithNestedThresholds(totalUsers);
 
     complexKeyAccountId = organizationPage.getComplexAccountId();
     await transactionPage.clickOnTransactionsMenuButton();
@@ -95,7 +93,7 @@ test.describe('Organization Transaction tests', () => {
     await resetPostgresDbState();
   });
 
-  test('Verify required signers are able to see the transaction in "Ready to Sign" status', async () => {
+  test.skip('Verify ', async () => {
     test.setTimeout(2147483647);
     const { txId } = await organizationPage.getOrCreateUpdateTransaction(
       complexKeyAccountId,

@@ -84,6 +84,7 @@ class TransactionPage extends BasePage {
   buttonCancelTransactionSelector = 'button-cancel-transaction';
   closeCompletedTxButtonSelector = 'button-close-completed-tx';
   addComplexButtonIndex = 'button-complex-key-add-element-';
+  selectThresholdValueByIndex = 'select-complex-key-threshold-';
   selectThresholdNumberIndex = 'button-complex-key-add-element-threshold-';
   addPublicKeyButtonIndex = 'button-complex-key-add-element-public-key-';
   insertPublicKeyButtonSelector = 'button-insert-public-key';

@@ -1,4 +1,5 @@
 const { queryPostgresDatabase, queryDatabase } = require('./databaseUtil');
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Verifies if a transaction with the given ID and type exists in the database.
@@ -413,6 +414,148 @@ async function isUserDeleted(email) {
   }
 }
 
+/**
+ * Inserts a mnemonic hash and public key into the user_key table.
+ *
+ * @param {number} userId - The ID of the user.
+ * @param {string} mnemonicHash - The hashed mnemonic phrase.
+ * @param {number} index - The index of the key (typically 0).
+ * @param {string} publicKey - The public key derived from the mnemonic phrase.
+ * @return {Promise<number|null>} A promise that resolves to the inserted record's ID if successful, or null if not.
+ * @throws {Error} If there is an error executing the query.
+ */
+async function insertUserKey(userId, mnemonicHash, index, publicKey) {
+  const query = `
+    INSERT INTO public.user_key ("userId", "mnemonicHash", "index", "publicKey")
+    VALUES ($1, $2, $3, $4)
+    RETURNING id;
+  `;
+
+  try {
+    const result = await queryPostgresDatabase(query, [userId, mnemonicHash, index, publicKey]);
+    return result[0]?.id || null;
+  } catch (error) {
+    console.error('Error inserting user key:', error);
+    return null;
+  }
+}
+
+/**
+ * Inserts a new key pair into the KeyPair table.
+ * @param publicKey - the public key
+ * @param privateKey - the private key
+ * @param secretHash - the secret hash
+ * @param organizationUserId - the organization user id
+ * @returns {Promise<void>} - a promise that resolves when the key pair is inserted
+ */
+async function insertKeyPair(publicKey, privateKey, secretHash, organizationUserId) {
+  const query = `
+      INSERT INTO KeyPair (id, user_id, "index", public_key, private_key, type, organization_id, secret_hash, organization_user_id)
+      VALUES (
+                 ?,
+                 (SELECT id FROM User), -- user_id is always the id of the user
+                 0,  -- keyIndex is always 0
+                 ?,
+                 ?,
+                 'ED25519',  -- keyType is always ED25519
+                 (SELECT id FROM Organization), -- organization_id is always the id of the organization
+                 ?,
+                 ?
+             );
+  `;
+
+  // Generate a UUID for the id field
+  const generatedId = uuidv4();
+
+  try {
+    await queryDatabase(query, [
+      generatedId,
+      publicKey,
+      privateKey,
+      secretHash,
+      organizationUserId,
+    ]);
+    console.log('KeyPair record inserted successfully');
+  } catch (error) {
+    console.error('Error inserting KeyPair record:', error);
+  }
+}
+
+async function getUserIds() {
+  const query = 'SELECT id FROM public."user"';
+  return await queryPostgresDatabase(query);
+}
+
+async function ensureNotificationTypesForUsers(userIds) {
+  const notificationTypes = [
+    'TRANSACTION_CREATED',
+    'TRANSACTION_WAITING_FOR_SIGNATURES',
+    'TRANSACTION_READY_FOR_EXECUTION',
+    'TRANSACTION_EXECUTED',
+    'TRANSACTION_EXPIRED',
+    'TRANSACTION_INDICATOR_APPROVE',
+    'TRANSACTION_INDICATOR_SIGN',
+    'TRANSACTION_INDICATOR_EXECUTABLE',
+    'TRANSACTION_INDICATOR_EXECUTED',
+    'TRANSACTION_INDICATOR_EXPIRED',
+  ];
+
+  try {
+    for (const userId of userIds) {
+      for (const type of notificationTypes) {
+        const query = `
+            INSERT INTO public.notification_preferences ("userId", type, email, "inApp")
+            SELECT $1, $2::varchar, false, false
+            WHERE NOT EXISTS (
+              SELECT 1 FROM public.notification_preferences 
+              WHERE "userId" = $1 AND type = $2::varchar
+            );
+        `;
+        const values = [userId, type];
+        await queryPostgresDatabase(query, values);
+      }
+    }
+  } catch (err) {
+    console.error('Error ensuring notification types for users:', err);
+  }
+}
+
+async function disableNotificationPreferences(userIds) {
+  try {
+    for (const userId of userIds) {
+      const query = `
+        UPDATE public.notification_preferences
+        SET email = false,
+            "inApp" = false
+        WHERE "userId" = $1;
+      `;
+      const values = [userId];
+
+      const result = await queryPostgresDatabase(query, values);
+      console.log(
+        `Notification preferences disabled for user ID: ${userId}. Rows affected: ${result.rowCount}`,
+      );
+
+      if (result.rowCount === 0) {
+        console.warn(`No records were updated for user ID: ${userId}.`);
+      }
+    }
+  } catch (err) {
+    console.error('Error disabling notification preferences:', err);
+  }
+}
+
+async function disableNotificationsForTestUsers() {
+  try {
+    const userIds = await getUserIds();
+    const userIdValues = userIds.map(user => user.id);
+    await ensureNotificationTypesForUsers(userIdValues);
+    await disableNotificationPreferences(userIdValues);
+  } catch (err) {
+    console.error('Error disabling notifications for test users:', err);
+  }
+}
+
 module.exports = {
   verifyTransactionExists,
   verifyAccountExists,
@@ -432,4 +575,7 @@ module.exports = {
   verifyUserExistsInOrganization,
   isUserDeleted,
   deleteAccountById,
+  insertUserKey,
+  insertKeyPair,
+  disableNotificationsForTestUsers,
 };
