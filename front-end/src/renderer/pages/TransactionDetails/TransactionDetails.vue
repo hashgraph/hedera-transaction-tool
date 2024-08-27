@@ -598,7 +598,7 @@ const cancel = 'Cancel';
             <div class="fill-remaining mt-5">
               <div class="row flex-wrap">
                 <!-- Description -->
-                <div class="col-6 col-lg-7 col-xl-8 col-xxl-9">
+                <div :class="commonColClass">
                   <div
                     v-if="
                       (
@@ -607,7 +607,6 @@ const cancel = 'Cancel';
                         ''
                       ).length > 0
                     "
-                    class="mt-5"
                   >
                     <h4 :class="detailItemLabelClass">Description</h4>
                     <p :class="detailItemValueClass">
