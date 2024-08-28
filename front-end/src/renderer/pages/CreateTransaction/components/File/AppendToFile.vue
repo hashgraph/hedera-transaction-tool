@@ -322,7 +322,11 @@ onMounted(async () => {
 
 /* Watchers */
 watch(fileMeta, () => (content.value = ''));
-watch(fileId, async () => {
+watch(fileId, async id => {
+  if (isHederaSpecialFileId(id) && !fileMeta.value?.name.endsWith('.bin')) {
+    handleRemoveFile();
+  }
+
   await syncDisplayedContent();
 });
 
@@ -461,6 +465,7 @@ const columnClass = 'col-4 col-xxxl-3';
             id="fileUpload"
             name="fileUpload"
             type="file"
+            :accept="isHederaSpecialFileId(fileId) ? '.bin' : '*'"
             :disabled="content.length > 0"
             @change="handleFileImport"
           />

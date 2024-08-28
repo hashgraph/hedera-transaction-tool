@@ -12,10 +12,7 @@ import { useToast } from 'vue-toast-notification';
 import { useRoute, useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import {
-  createTransactionId,
-  encodeSpecialFileContent,
-} from '@renderer/services/transactionService';
+import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
 import {
@@ -158,14 +155,6 @@ const handleCreate = async e => {
     }
     if (fileBuffer.value) {
       newTransaction.setContents(fileBuffer.value);
-    }
-
-    if (isHederaSpecialFileId(newTransaction.fileId?.toString()) && newTransaction.contents) {
-      const getEncodedContent = await encodeSpecialFileContent(
-        newTransaction.contents,
-        newTransaction.fileId?.toString(),
-      );
-      newTransaction.setContents(getEncodedContent);
     }
 
     if (removeContent.value) {
@@ -380,7 +369,11 @@ watch(fileBuffer, buffer => {
     removeContent.value = false;
   }
 });
-watch(fileId, async () => {
+watch(fileId, async id => {
+  if (isHederaSpecialFileId(id) && !fileMeta.value?.name.endsWith('.bin')) {
+    handleRemoveFile();
+  }
+
   await syncDisplayedContent();
 });
 /* Misc */
@@ -595,6 +588,7 @@ const columnClass = 'col-4 col-xxxl-3';
             id="fileUpload"
             name="fileUpload"
             type="file"
+            :accept="isHederaSpecialFileId(fileId) ? '.bin' : '*'"
             :disabled="content.length > 0 || removeContent"
             @change="handleFileImport"
           />
