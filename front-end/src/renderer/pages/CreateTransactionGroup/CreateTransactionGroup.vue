@@ -301,12 +301,13 @@ onBeforeRouteLeave(async to => {
         </div>
         <hr class="separator my-5 w-100" />
         <div class="d-flex justify-content-between">
-          <div>
+          <div v-if="user.selectedOrganization">
             <input type="file" accept=".csv" ref="file" @change="handleOnFileChanged" />
             <AppButton type="button" class="text-main text-primary" @click="handleOnImportClick"
               >Import CSV</AppButton
             >
           </div>
+          <div v-else />
           <AppButton
             type="button"
             class="text-main text-primary"
