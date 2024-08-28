@@ -81,7 +81,7 @@ export class Transaction {
   transactionBytes: Buffer;
 
   @ApiProperty({
-    description: 'The transaction in bytes. This tranaction does not contain any signatures.',
+    description: 'The transaction in bytes. This transaction does not contain any signatures.',
   })
   @Column({ type: 'bytea'})
   unsignedTransactionBytes: Buffer;
