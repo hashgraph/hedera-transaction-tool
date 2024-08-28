@@ -42,6 +42,7 @@ import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStor
 import DatePicker, { DatePickerInstance } from '@vuepic/vue-datepicker';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppUploadFile from '@renderer/components/ui/AppUploadFile.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 import KeyField from '@renderer/components/KeyField.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
@@ -79,12 +80,13 @@ const ownerKey = ref<Key | null>(null);
 const fileName = ref('');
 const description = ref('');
 
-const fileMeta = ref<File | null>(null);
-const fileReader = ref<FileReader | null>(null);
-const fileBuffer = ref<Uint8Array | null>(null);
-const loadPercentage = ref(0);
-const content = ref('');
-const uploadedFileText = ref<string | null>(null);
+const file = ref<{
+  meta: File;
+  content: Uint8Array;
+  loadPercentage: number;
+} | null>(null);
+const displayedFileText = ref<string | null>(null);
+const manualContent = ref('');
 
 const observers = ref<number[]>([]);
 const approvers = ref<TransactionApproverDto[]>([]);
@@ -107,40 +109,12 @@ const transactionKey = computed(() => {
 });
 
 /* Handlers */
-const handleRemoveFile = async () => {
-  fileReader.value?.abort();
-  fileMeta.value = null;
-  fileReader.value = null;
-  fileBuffer.value = null;
-  content.value = '';
-  uploadedFileText.value = null;
+const handleFileLoadStart = () => {
+  displayedFileText.value = null;
 };
 
-const handleFileImport = async (e: Event) => {
-  const fileImportEl = e.target as HTMLInputElement;
-  const file = fileImportEl.files && fileImportEl.files[0];
-
-  if (file) {
-    fileMeta.value = file;
-    uploadedFileText.value = null;
-
-    fileReader.value = new FileReader();
-
-    fileReader.value.readAsArrayBuffer(file);
-    fileReader.value.addEventListener('loadend', async () => {
-      const data = fileReader.value?.result;
-      if (data && data instanceof ArrayBuffer) {
-        fileBuffer.value = new Uint8Array(data);
-        await syncDisplayedContent();
-      }
-    });
-    fileReader.value.addEventListener(
-      'progress',
-      e => (loadPercentage.value = (100 * e.loaded) / e.total),
-    );
-    fileReader.value.addEventListener('error', () => console.log('Error'));
-    fileReader.value.addEventListener('abort', () => console.log('Aborted'));
-  }
+const handleFileLoadEnd = async () => {
+  await syncDisplayedContent();
 };
 
 const handleCreate = async e => {
@@ -233,7 +207,7 @@ const handleLoadFromDraft = async () => {
       ownerKey.value = new KeyList(draftTransaction.keys);
     }
 
-    content.value = draftTransaction.contents
+    manualContent.value = draftTransaction.contents
       ? new TextDecoder().decode(draftTransaction.contents)
       : '';
     memo.value = draftTransaction.fileMemo || '';
@@ -343,29 +317,29 @@ function createTransaction() {
     transaction.setTransactionMemo(transactionMemo.value);
   }
 
-  if (content.value.length > 0) {
-    transaction.setContents(content.value);
+  if (manualContent.value.length > 0) {
+    transaction.setContents(manualContent.value);
   }
 
-  if (fileBuffer.value) {
-    transaction.setContents(fileBuffer.value);
+  if (file.value) {
+    transaction.setContents(file.value.content);
   }
 
   return transaction;
 }
 
 async function syncDisplayedContent() {
-  if (fileBuffer.value === null) {
-    uploadedFileText.value = null;
+  if (file.value === null) {
+    displayedFileText.value = null;
     return;
   }
 
-  if (fileMeta.value && fileMeta.value?.size > DISPLAY_FILE_SIZE_LIMIT) {
-    uploadedFileText.value = '';
+  if (file.value && file.value.meta.size > DISPLAY_FILE_SIZE_LIMIT) {
+    displayedFileText.value = '';
     return;
   }
 
-  uploadedFileText.value = new TextDecoder().decode(fileBuffer.value);
+  displayedFileText.value = new TextDecoder().decode(file.value.content);
 }
 
 async function redirectToDetails(id: string | number) {
@@ -542,39 +516,28 @@ watch(payerData.isValid, isValid => {
         </div>
 
         <div class="mt-6 form-group">
-          <label for="fileUpload" class="form-label">
-            <span for="fileUpload" class="btn btn-primary" :class="{ disabled: content.length > 0 }"
-              >Upload File</span
-            >
-          </label>
-          <AppInput
-            class="form-control form-control-sm is-fill"
-            id="fileUpload"
-            name="fileUpload"
-            type="file"
-            :disabled="content.length > 0"
-            @change="handleFileImport"
+          <AppUploadFile
+            id="create-transaction-file"
+            show-name
+            show-progress
+            v-model:file="file"
+            :disabled="manualContent.length > 0"
+            @load:start="handleFileLoadStart"
+            @load:end="handleFileLoadEnd"
           />
-          <template v-if="fileMeta">
-            <span v-if="fileMeta" class="ms-3">{{ fileMeta.name }}</span>
-            <span v-if="loadPercentage < 100" class="ms-3">{{ loadPercentage.toFixed(2) }}%</span>
-            <span v-if="fileMeta" class="ms-3 cursor-pointer" @click="handleRemoveFile"
-              ><i class="bi bi-x-lg"></i
-            ></span>
-          </template>
         </div>
 
         <div class="row mt-6">
           <div class="form-group col-12 col-xl-8">
             <label class="form-label"
               >File Contents
-              <span v-if="fileMeta && fileMeta?.size > DISPLAY_FILE_SIZE_LIMIT">
+              <span v-if="file && file.meta?.size > DISPLAY_FILE_SIZE_LIMIT">
                 - the content is too big to be displayed</span
               ></label
             >
             <textarea
-              v-if="Boolean(fileBuffer)"
-              :value="uploadedFileText"
+              v-if="Boolean(file)"
+              :value="displayedFileText"
               data-testid="textarea-update-file-read-content"
               :disabled="true"
               class="form-control is-fill py-3"
@@ -582,8 +545,8 @@ watch(payerData.isValid, isValid => {
             ></textarea>
             <textarea
               v-else
-              v-model="content"
-              :disabled="Boolean(fileBuffer)"
+              v-model="manualContent"
+              :disabled="Boolean(file)"
               class="form-control is-fill"
               rows="10"
               data-testid="textarea-file-content"

@@ -26,6 +26,7 @@ import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppUploadFile from '@renderer/components/ui/AppUploadFile.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 import KeyField from '@renderer/components/KeyField.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
@@ -55,12 +56,13 @@ const maxTransactionFee = ref<Hbar>(new Hbar(2));
 const fileId = ref('');
 const ownerKey = ref<Key | null>(null);
 
-const fileMeta = ref<File | null>(null);
-const fileReader = ref<FileReader | null>(null);
-const fileBuffer = ref<Uint8Array | null>(null);
-const loadPercentage = ref(0);
-const content = ref('');
-const uploadedFileText = ref<string | null>(null);
+const file = ref<{
+  meta: File;
+  content: Uint8Array;
+  loadPercentage: number;
+} | null>(null);
+const displayedFileText = ref<string | null>(null);
+const manualContent = ref('');
 
 const chunkSize = ref(4096);
 
@@ -85,40 +87,12 @@ const transactionKey = computed(() => {
 });
 
 /* Handlers */
-const handleRemoveFile = async () => {
-  fileReader.value?.abort();
-  fileMeta.value = null;
-  fileReader.value = null;
-  fileBuffer.value = null;
-  content.value = '';
-  uploadedFileText.value = null;
+const handleFileLoadStart = () => {
+  displayedFileText.value = null;
 };
 
-const handleFileImport = async (e: Event) => {
-  const fileImportEl = e.target as HTMLInputElement;
-  const file = fileImportEl.files && fileImportEl.files[0];
-
-  if (file) {
-    fileMeta.value = file;
-    uploadedFileText.value = null;
-
-    fileReader.value = new FileReader();
-
-    fileReader.value.readAsArrayBuffer(file);
-    fileReader.value.addEventListener('loadend', async () => {
-      const data = fileReader.value?.result;
-      if (data && data instanceof ArrayBuffer) {
-        fileBuffer.value = new Uint8Array(data);
-        await syncDisplayedContent();
-      }
-    });
-    fileReader.value.addEventListener(
-      'progress',
-      e => (loadPercentage.value = (100 * e.loaded) / e.total),
-    );
-    fileReader.value.addEventListener('error', () => toast.error('Failed to upload file'));
-    fileReader.value.addEventListener('abort', () => toast.error('File upload aborted'));
-  }
+const handleFileLoadEnd = async () => {
+  await syncDisplayedContent();
 };
 
 const handleCreate = async e => {
@@ -139,11 +113,11 @@ const handleCreate = async e => {
 
     const newTransaction = createTransaction();
 
-    if (content.value.length > 0) {
-      newTransaction.setContents(content.value);
+    if (manualContent.value.length > 0) {
+      newTransaction.setContents(manualContent.value);
     }
-    if (fileBuffer.value) {
-      newTransaction.setContents(fileBuffer.value);
+    if (file.value) {
+      newTransaction.setContents(file.value.content);
     }
 
     if (chunkSize.value) {
@@ -192,6 +166,10 @@ const handleLoadFromDraft = async () => {
   }
 };
 
+const handleExecuted = () => {
+  isExecuted.value = true;
+};
+
 const handleLocalStored = (id: string) => {
   toast.success('Append to File Transaction Executed', { position: 'bottom-right' });
   redirectToDetails(id);
@@ -232,21 +210,21 @@ async function redirectToDetails(id: string | number) {
 }
 
 async function syncDisplayedContent() {
-  if (fileBuffer.value === null) {
-    uploadedFileText.value = null;
+  if (file.value === null) {
+    displayedFileText.value = null;
     return;
   }
 
-  if (fileMeta.value && fileMeta.value?.size > DISPLAY_FILE_SIZE_LIMIT) {
-    uploadedFileText.value = '';
+  if (file.value && file.value.meta.size > DISPLAY_FILE_SIZE_LIMIT) {
+    displayedFileText.value = '';
     return;
   }
 
   if (isHederaSpecialFileId(fileId.value)) {
-    uploadedFileText.value =
-      (await window.electronAPI.local.files.decodeProto(fileId.value, fileBuffer.value)) || '';
+    displayedFileText.value =
+      (await window.electronAPI.local.files.decodeProto(fileId.value, file.value.content)) || '';
   } else {
-    uploadedFileText.value = new TextDecoder().decode(fileBuffer.value);
+    displayedFileText.value = new TextDecoder().decode(file.value.content);
   }
 }
 
@@ -321,8 +299,13 @@ onMounted(async () => {
 });
 
 /* Watchers */
-watch(fileMeta, () => (content.value = ''));
-watch(fileId, async () => {
+watch(file, () => (manualContent.value = ''));
+watch(fileId, async id => {
+  if (isHederaSpecialFileId(id) && !file.value?.meta.name.endsWith('.bin')) {
+    file.value = null;
+    manualContent.value = '';
+  }
+
   await syncDisplayedContent();
 });
 
@@ -450,40 +433,29 @@ const columnClass = 'col-4 col-xxxl-3';
         </div>
 
         <div class="form-group mt-4">
-          <label for="fileUpload" class="form-label">
-            <span for="fileUpload" class="btn btn-primary" :class="{ disabled: content.length > 0 }"
-              >Upload File</span
-            >
-          </label>
-          <AppInput
-            :filled="true"
-            size="small"
-            id="fileUpload"
-            name="fileUpload"
-            type="file"
-            :disabled="content.length > 0"
-            @change="handleFileImport"
+          <AppUploadFile
+            id="append-transaction-file"
+            show-name
+            show-progress
+            v-model:file="file"
+            :accept="isHederaSpecialFileId(fileId) ? '.bin' : '*'"
+            :disabled="manualContent.length > 0"
+            @load:start="handleFileLoadStart"
+            @load:end="handleFileLoadEnd"
           />
-          <template v-if="fileMeta">
-            <span v-if="fileMeta" class="ms-3">{{ fileMeta.name }}</span>
-            <span v-if="loadPercentage < 100" class="ms-3">{{ loadPercentage.toFixed(2) }}%</span>
-            <span v-if="fileMeta" class="ms-3 cursor-pointer" @click="handleRemoveFile"
-              ><i class="bi bi-x-lg"></i
-            ></span>
-          </template>
         </div>
 
         <div class="row mt-6">
           <div class="form-group col-12 col-xl-8">
             <label class="form-label"
               >File Contents
-              <span v-if="fileMeta && fileMeta?.size > DISPLAY_FILE_SIZE_LIMIT">
+              <span v-if="file && file.meta.size > DISPLAY_FILE_SIZE_LIMIT">
                 - the content is too big to be displayed</span
               ></label
             >
             <textarea
-              v-if="Boolean(fileBuffer)"
-              :value="uploadedFileText"
+              v-if="Boolean(file?.content)"
+              :value="displayedFileText"
               data-testid="textarea-update-file-read-content"
               :disabled="true"
               class="form-control is-fill py-3"
@@ -491,9 +463,9 @@ const columnClass = 'col-4 col-xxxl-3';
             ></textarea>
             <textarea
               v-else
-              v-model="content"
+              v-model="manualContent"
               data-testid="textarea-file-content-for-append"
-              :disabled="Boolean(fileBuffer)"
+              :disabled="Boolean(file)"
               class="form-control is-fill py-3"
               rows="10"
             ></textarea>
@@ -505,11 +477,7 @@ const columnClass = 'col-4 col-xxxl-3';
     <TransactionProcessor
       ref="transactionProcessor"
       :transaction-bytes="transaction?.toBytes() || null"
-      :on-executed="
-        () => {
-          isExecuted = true;
-        }
-      "
+      :on-executed="handleExecuted"
       :on-local-stored="handleLocalStored"
       :on-submitted="handleSubmit"
     />
