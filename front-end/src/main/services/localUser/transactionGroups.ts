@@ -5,9 +5,7 @@ export const getGroups = async (findArgs: Prisma.TransactionGroupFindManyArgs) =
   const prisma = getPrismaClient();
 
   try {
-    const groups = await prisma.transactionGroup.findMany(findArgs);
-
-    return groups;
+    return await prisma.transactionGroup.findMany(findArgs);
   } catch (error: any) {
     throw new Error(error.message || 'Failed to fetch transaction groups');
   }
