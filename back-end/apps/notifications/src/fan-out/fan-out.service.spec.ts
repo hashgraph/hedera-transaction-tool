@@ -51,7 +51,7 @@ describe('Fan Out Service', () => {
 
   const notification: Notification = {
     id: 1,
-    type: NotificationType.TRANSCATION_EXECUTED,
+    type: NotificationType.TRANSACTION_EXECUTED,
     actorId: null,
     content: '',
     createdAt: new Date(),
@@ -118,7 +118,7 @@ describe('Fan Out Service', () => {
       expect(emailService.processEmail).toHaveBeenCalledWith({
         from: '"Transaction Tool" info@transactiontool.com',
         to: [receivers[0].user.email],
-        subject: NotificationTypeEmailSubjects.TRANSCATION_EXECUTED,
+        subject: NotificationTypeEmailSubjects.TRANSACTION_EXECUTED,
         text: notification.content,
       });
       expect(inAppProcessorService.processNewNotification).not.toHaveBeenCalled();
@@ -158,7 +158,7 @@ describe('Fan Out Service', () => {
       expect(emailService.processEmail).toHaveBeenCalledWith({
         from: '"Transaction Tool" info@transactiontool.com',
         to: [receivers[0].user.email],
-        subject: NotificationTypeEmailSubjects.TRANSCATION_EXECUTED,
+        subject: NotificationTypeEmailSubjects.TRANSACTION_EXECUTED,
         text: notification.content,
       });
       expect(inAppProcessorService.processNewNotification).toHaveBeenCalledWith(
@@ -265,7 +265,7 @@ describe('Fan Out Service', () => {
       expect(emailService.processEmail).toHaveBeenCalledWith({
         from: '"Transaction Tool" info@transactiontool.com',
         to: [receivers[0].user.email],
-        subject: NotificationTypeEmailSubjects.TRANSCATION_EXECUTED,
+        subject: NotificationTypeEmailSubjects.TRANSACTION_EXECUTED,
         text: notification.content,
       });
       expect(entityManager.update).toHaveBeenCalledTimes(2);
@@ -307,7 +307,7 @@ describe('Fan Out Service', () => {
       expect(emailService.processEmail).toHaveBeenCalledWith({
         from: '"Transaction Tool" info@transactiontool.com',
         to: [receivers[0].user.email],
-        subject: NotificationTypeEmailSubjects.TRANSCATION_EXECUTED,
+        subject: NotificationTypeEmailSubjects.TRANSACTION_EXECUTED,
         text: notification.content,
       });
       expect(entityManager.update).not.toHaveBeenCalledWith(
