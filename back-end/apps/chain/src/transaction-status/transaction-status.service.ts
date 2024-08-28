@@ -184,7 +184,7 @@ export class TransactionStatusService {
 
     for (const transaction of transactions) {
       /* Gets the SDK transaction from the transaction body */
-      const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
+      const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
       /* Throws an error if the transaction is a file update/append transaction */
       if (
@@ -252,7 +252,7 @@ export class TransactionStatusService {
     if (!transaction) return;
 
     /* Gets the SDK transaction from the transaction body */
-    const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
+    const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
     /* Throws an error if the transaction is a file update/append transaction */
     if (

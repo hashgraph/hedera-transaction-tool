@@ -58,7 +58,7 @@ export class ExecuteService {
     this.validateTransactionStatus(transaction);
 
     /* Gets the SDK transaction from the transaction body */
-    const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
+    const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
     /* Throws an error if the transaction is a file update/append transaction */
     if (

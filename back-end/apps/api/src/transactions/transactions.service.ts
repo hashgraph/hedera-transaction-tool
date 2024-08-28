@@ -362,7 +362,7 @@ export class TransactionsService {
 
     /* Check if the transaction already exists */
     const countExisting = await this.repo.count({
-      where: [{ transactionId: sdkTransaction.transactionId.toString() }, { body: dto.body }],
+      where: [{ transactionId: sdkTransaction.transactionId.toString() }, { transactionBytes: dto.body }],
     });
     if (countExisting > 0) throw new BadRequestException('Transaction already exists');
 
@@ -375,7 +375,7 @@ export class TransactionsService {
       description: dto.description,
       transactionId: sdkTransaction.transactionId.toString(),
       transactionHash: encodeUint8Array(await sdkTransaction.getTransactionHash()),
-      body: sdkTransaction.toBytes(),
+      transactionBytes: sdkTransaction.toBytes(),
       status: TransactionStatus.WAITING_FOR_SIGNATURES,
       creatorKey,
       signature: dto.signature,

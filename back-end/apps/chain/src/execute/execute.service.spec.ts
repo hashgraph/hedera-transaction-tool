@@ -50,20 +50,20 @@ describe('ExecuteService', () => {
     baseTransaction: Partial<Transaction>,
   ): Partial<Transaction> => ({
     ...baseTransaction,
-    body: new AccountCreateTransaction().toBytes() as Buffer,
+    transactionBytes: new AccountCreateTransaction().toBytes() as Buffer,
     status: TransactionStatus.WAITING_FOR_EXECUTION,
   });
 
   const getFileTransaction = (baseTransaction: Partial<Transaction>): Partial<Transaction> => ({
     ...baseTransaction,
-    body: new FileUpdateTransaction().toBytes() as Buffer,
+    transactionBytes: new FileUpdateTransaction().toBytes() as Buffer,
   });
 
   const getAccountUpdateTransaction = (
     baseTransaction: Partial<Transaction>,
   ): Partial<Transaction> => ({
     ...baseTransaction,
-    body: new AccountUpdateTransaction().setAccountId('0.0.2').toBytes() as Buffer,
+    transactionBytes: new AccountUpdateTransaction().setAccountId('0.0.2').toBytes() as Buffer,
   });
 
   const getTransaction = (type: 'executable' | 'file' | 'account_update'): Partial<Transaction> => {
