@@ -610,46 +610,6 @@ class OrganizationPage extends BasePage {
     }
   }
 
-  async addComplexKeyAccountWithMultipleThresholds(users = 99) {
-    await this.transactionPage.clickOnTransactionsMenuButton();
-    await this.transactionPage.clickOnCreateNewTransactionButton();
-    await this.transactionPage.clickOnCreateAccountTransaction();
-    await this.transactionPage.clickOnComplexTab();
-    await this.transactionPage.clickOnCreateNewComplexKeyButton();
-
-    // Start at depth 0
-    let currentDepth = '0';
-
-    // Divide the users into groups of 3
-    for (let i = 0; i < users / 3; i++) {
-      // Add a threshold
-      await this.transactionPage.addThresholdKeyAtDepth(currentDepth);
-
-      // Add 3 public keys to this threshold
-      for (let j = 0; j < 3; j++) {
-        const publicKey = await this.getFirstPublicKeyByEmail(
-          this.users[(i * 3 + j) % this.users.length].email,
-        );
-        await this.transactionPage.addPublicKeyAtDepth(`${currentDepth}-${i}`, publicKey);
-      }
-    }
-
-    // Complete the transaction
-    await this.transactionPage.clickOnDoneButtonForComplexKeyCreation();
-    await this.transactionPage.clickOnSignAndSubmitButton();
-    await this.transactionPage.clickSignTransactionButton();
-
-    // Retrieve and store the transaction ID
-    const transactionId = await this.getTransactionDetailsId();
-    await this.clickOnSignTransactionButton();
-    await new Promise(resolve => setTimeout(resolve, 6000));
-
-    // Store the complex account ID
-    const transactionResponse =
-      await this.transactionPage.mirrorGetTransactionResponse(transactionId);
-    this.complexAccountId.push(transactionResponse.transactions[0].entity_id);
-  }
-
   async addComplexKeyAccountWithNestedThresholds(users = 99) {
     // Ensure we have enough users
     if (users < 3) {
