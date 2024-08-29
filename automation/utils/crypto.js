@@ -1,13 +1,13 @@
-import crypto from 'crypto';
+const crypto = require('node:crypto');
 
-export function deriveKey(password: string, salt: Buffer) {
+function deriveKey(password, salt) {
   const iterations = 2560;
   const keyLength = 32;
 
   return crypto.pbkdf2Sync(password, salt, iterations, keyLength, 'sha512');
 }
 
-export function encrypt(data: string, password: string) {
+function encrypt(data, password) {
   const iv = crypto.randomBytes(16);
   const salt = crypto.randomBytes(64);
 
@@ -22,7 +22,7 @@ export function encrypt(data: string, password: string) {
   return Buffer.concat([salt, iv, tag, encrypted]).toString('base64');
 }
 
-export function decrypt(data: string, password: string) {
+function decrypt(data, password) {
   const bData = Buffer.from(data, 'base64');
 
   const salt = bData.subarray(0, 64);
@@ -35,7 +35,7 @@ export function decrypt(data: string, password: string) {
   const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
   decipher.setAuthTag(tag);
 
-  const decrypted = decipher.update(text, 'base64', 'utf8') + decipher.final('utf8');
-
-  return decrypted;
+  return decipher.update(text, 'base64', 'utf8') + decipher.final('utf8');
 }
+
+module.exports = { encrypt, decrypt };

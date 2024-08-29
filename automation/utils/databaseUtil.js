@@ -156,26 +156,37 @@ async function queryPostgresDatabase(query, params = []) {
   }
 }
 
-async function createTestUser(email, password) {
-  const client = await connectPostgresDatabase();
+async function createTestUsersBatch(usersData, client = null) {
+  let localClient = client;
+  let shouldDisconnect = false;
+
+  if (!localClient) {
+    localClient = await connectPostgresDatabase();
+    shouldDisconnect = true;
+  }
 
   try {
-    const salt = await bcrypt.genSalt();
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const queries = [];
+    for (const { email, password } of usersData) {
+      const salt = await bcrypt.genSalt();
+      const hashedPassword = await bcrypt.hash(password, salt);
+      const query = {
+        text: `INSERT INTO "user" (email, password, status) VALUES ($1, $2, $3) RETURNING id;`,
+        values: [email, hashedPassword, 'NONE'],
+      };
+      queries.push(localClient.query(query.text, query.values));
+    }
 
-    const query = `
-        INSERT INTO "user" (email, password, status)
-        VALUES ($1, $2, $3)
-            RETURNING id;
-    `;
-    const values = [email, hashedPassword, 'NONE'];
-
-    const res = await client.query(query, values);
-    console.log(`User created with ID: ${res.rows[0].id}`);
+    const results = await Promise.all(queries);
+    results.forEach((res, index) => {
+      console.log(`User ${index + 1} created with ID: ${res.rows[0].id}`);
+    });
   } catch (err) {
-    console.error('Error creating test user:', err);
+    console.error('Error creating test users:', err);
   } finally {
-    await disconnectPostgresDatabase(client);
+    if (shouldDisconnect) {
+      await disconnectPostgresDatabase(localClient);
+    }
   }
 }
 
@@ -208,55 +219,12 @@ async function resetPostgresDbState() {
   }
 }
 
-async function getUserIds() {
-  const query = 'SELECT id FROM public."user"';
-  return await queryPostgresDatabase(query);
-}
-
-async function disableNotificationPreferences(userIds) {
-  const client = await connectPostgresDatabase();
-
-  try {
-    for (const userId of userIds) {
-      const query = `
-          UPDATE public.notification_preferences
-          SET email = false,
-              "inApp" = false
-          WHERE "userId" = $1;
-      `;
-      const values = [userId];
-
-      const result = await client.query(query, values);
-      console.log(
-        `Notification preferences disabled for user ID: ${userId}. Rows affected: ${result.rowCount}`,
-      );
-
-      if (result.rowCount === 0) {
-        console.warn(`No records were updated for user ID: ${userId}.`);
-      }
-    }
-  } catch (err) {
-    console.error('Error disabling notification preferences:', err);
-  } finally {
-    await disconnectPostgresDatabase(client);
-  }
-}
-
-async function disableNotificationsForTestUsers() {
-  try {
-    const userIds = await getUserIds();
-    const userIdValues = userIds.map(user => user.id);
-    await disableNotificationPreferences(userIdValues);
-  } catch (err) {
-    console.error('Error disabling notifications for test users:', err);
-  }
-}
-
 module.exports = {
   queryDatabase,
-  createTestUser,
+  createTestUsersBatch,
   resetDbState,
   resetPostgresDbState,
   queryPostgresDatabase,
-  disableNotificationsForTestUsers,
+  connectPostgresDatabase,
+  disconnectPostgresDatabase,
 };
