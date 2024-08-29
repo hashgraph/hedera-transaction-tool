@@ -8,10 +8,18 @@ describe('Crypto utilities', () => {
     const password = 'you-cannot-decrypt-it';
 
     const encrypted = encrypt(text, password);
-
     const decryped = decrypt(encrypted, password);
-    console.log('decrtpted', decryped);
 
     expect(decryped).toEqual(text);
+  });
+
+  test('encrypt & decrypt: cannot decrypt with different password', () => {
+    const text = 'my-private-key';
+    const password = 'you-cannot-decrypt-it';
+    const wrongPassword = 'you-can-decrypt-it';
+
+    const encrypted = encrypt(text, password);
+
+    expect(() => decrypt(encrypted, wrongPassword)).to.throw();
   });
 });

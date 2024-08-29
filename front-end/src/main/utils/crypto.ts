@@ -1,39 +1,41 @@
 import crypto from 'crypto';
 
-function hash(data) {
-  return crypto.createHash('sha256').update(data).digest();
+export function deriveKey(password: string, salt: Buffer) {
+  const iterations = 2560;
+  const keyLength = 32;
+
+  return crypto.pbkdf2Sync(password, salt, iterations, keyLength, 'sha512');
 }
 
-export function createCredentials(password: string) {
-  let temp = hash(password);
+export function encrypt(data: string, password: string) {
+  const iv = crypto.randomBytes(16);
+  const salt = crypto.randomBytes(64);
 
-  const iv = temp.subarray(0, 16);
+  const key = deriveKey(password, salt);
 
-  temp = hash(temp);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
 
-  const key = temp.subarray(0, 24);
+  const encrypted = Buffer.concat([cipher.update(data, 'utf8'), cipher.final()]);
 
-  return [key, iv];
+  const tag = cipher.getAuthTag();
+
+  return Buffer.concat([salt, iv, tag, encrypted]).toString('base64');
 }
 
-export function encrypt(data, password: string) {
-  data = Buffer.from(data, 'utf-8').toString('hex');
+export function decrypt(data: string, password: string) {
+  const bData = Buffer.from(data, 'base64');
 
-  const [key, iv] = createCredentials(password);
+  const salt = bData.subarray(0, 64);
+  const iv = bData.subarray(64, 80);
+  const tag = bData.subarray(80, 96);
+  const text = bData.subarray(96).toString('base64');
 
-  const cipher = crypto.createCipheriv('aes-192-cbc', key, iv);
+  const key = deriveKey(password, salt);
 
-  const encrypted = cipher.update(data, 'utf8', 'hex') + cipher.final('hex');
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+  decipher.setAuthTag(tag);
 
-  return encrypted;
-}
+  const decrypted = decipher.update(text, 'base64', 'utf8') + decipher.final('utf8');
 
-export function decrypt(data, password: string) {
-  const [key, iv] = createCredentials(password);
-
-  const decipher = crypto.createDecipheriv('aes-192-cbc', key, iv);
-
-  const hex = decipher.update(data, 'hex', 'utf8') + decipher.final('utf8');
-
-  return Buffer.from(hex, 'hex').toString('utf-8');
+  return decrypted;
 }
