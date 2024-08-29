@@ -23,6 +23,7 @@ let firstUser;
 let complexKeyAccountId;
 
 // Total number of users to be used as complex key
+// It should be divisible by 3
 let totalUsers = 57;
 
 test.describe('Organization Regression tests', () => {
