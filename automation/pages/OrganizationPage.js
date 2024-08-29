@@ -23,7 +23,6 @@ const {
   insertUserKey,
   insertKeyPair,
 } = require('../utils/databaseQueries');
-const { getAssociatedAccounts } = require('../utils/mirrorNodeAPI');
 
 class OrganizationPage extends BasePage {
   constructor(window) {
@@ -188,7 +187,7 @@ class OrganizationPage extends BasePage {
       const privateKey = process.env.PRIVATE_KEY;
 
       if (i === 0) {
-        // Full setup for the first user (index 0)
+        // Full setup for the first user (index 0) who is payer
         await this.signInOrganization(user.email, user.password, encryptionPassword);
 
         await this.waitForElementToBeVisible(this.registrationPage.createNewTabSelector);
@@ -215,7 +214,6 @@ class OrganizationPage extends BasePage {
         await this.clickByTestId(this.logoutButtonSelector);
         await this.waitForElementToBeVisible(this.emailForOrganizationInputSelector);
       } else {
-        // Use generateAndStoreUserKey for all other users (index 1+)
         await this.generateAndStoreUserKey(user.email, encryptionPassword);
       }
     }
@@ -231,17 +229,19 @@ class OrganizationPage extends BasePage {
     const privateKey = await mnemonic.toStandardEd25519PrivateKey('', 0);
 
     const privateKeyString = privateKey.toStringRaw();
-    const publicKey = privateKey.publicKey.toStringRaw();
+    const publicKeyString = privateKey.publicKey.toStringRaw();
 
+    // Encrypt the private key
     const encryptedPrivateKey = encrypt(privateKeyString, password);
 
     // Get the user ID by email
     const userId = await getUserIdByEmail(email);
 
     // Insert the mnemonic hash and public key into the user_key table
-    await insertUserKey(userId, mnemonicHash, 0, publicKey);
+    await insertUserKey(userId, mnemonicHash, 0, publicKeyString);
 
-    await insertKeyPair(publicKey, encryptedPrivateKey, mnemonicHash, userId);
+    // Insert the public key and encrypted private key into the key_pair table
+    await insertKeyPair(publicKeyString, encryptedPrivateKey, mnemonicHash, userId);
   }
 
   async recoverAccount(userIndex) {
@@ -549,9 +549,9 @@ class OrganizationPage extends BasePage {
 
     const newHours = (currentHours + extraHours + 24) % 24;
 
-    await increment(this.incrementSecondsButtonSelector, newSeconds - currentSeconds);
-    await increment(this.incrementMinutesButtonSelector, newMinutes - currentMinutes);
     await increment(this.incrementHourButtonSelector, newHours - currentHours);
+    await increment(this.incrementMinutesButtonSelector, newMinutes - currentMinutes);
+    await increment(this.incrementSecondsButtonSelector, newSeconds - currentSeconds);
   }
 
   /**
@@ -702,9 +702,10 @@ class OrganizationPage extends BasePage {
     }
 
     // Selecting the threshold to be the half of the total number of thresholds
+    const primaryThresholdValue = Math.max(Math.floor(primaryThresholds / 2), 1).toString();
     await this.selectOptionByValue(
       this.transactionPage.selectThresholdValueByIndex + `0-0`,
-      Math.floor(primaryThresholds / 2).toString(),
+      primaryThresholdValue,
     );
 
     // Adding thresholds and public keys under "Secondary"
@@ -729,13 +730,15 @@ class OrganizationPage extends BasePage {
     }
 
     // Selecting the threshold to be the half of the total number of thresholds
+    const secondaryThresholdValue = Math.max(Math.floor(secondaryThresholds / 2), 1).toString();
     await this.selectOptionByValue(
       this.transactionPage.selectThresholdValueByIndex + `0-1`,
-      Math.floor(secondaryThresholds / 2).toString(),
+      secondaryThresholdValue,
     );
 
     // Step 3: Complete the transaction
     await this.transactionPage.clickOnDoneButtonForComplexKeyCreation();
+    await this.transactionPage.fillInInitialFunds('100');
     await this.transactionPage.clickOnSignAndSubmitButton();
     await this.transactionPage.clickSignTransactionButton();
 
@@ -829,6 +832,61 @@ class OrganizationPage extends BasePage {
       await this.clickOnSignTransactionButton();
     }
     return { txId, validStart };
+  }
+
+  async transferAmountBetweenAccounts(
+    fromAccountId,
+    amount,
+    timeForExecution = 10,
+    isSignRequiredFromCreator = false,
+  ) {
+    await this.transactionPage.clickOnTransactionsMenuButton();
+    await this.transactionPage.clickOnCreateNewTransactionButton();
+    await this.transactionPage.clickOnTransferTokensTransaction();
+    await this.setDateTimeAheadBy(timeForExecution);
+    await this.fillByTestId(this.transactionPage.transferFromAccountIdInputSelector, fromAccountId);
+    await this.transactionPage.fillInTransferAmountFromAccount(amount);
+    const payerAccountId = await this.getTextFromInputFieldByTestId(
+      this.transactionPage.payerDropdownSelector,
+    );
+    await this.transactionPage.fillInTransferToAccountId(payerAccountId);
+    await this.transactionPage.clickOnAddTransferFromButton();
+    await this.transactionPage.fillInTransferAmountToAccount(amount);
+    await this.transactionPage.clickOnAddTransferToButton();
+
+    await this.transactionPage.clickOnSignAndSubmitTransferButton();
+    await this.transactionPage.clickSignTransactionButton();
+
+    const txId = await this.getTransactionDetailsId();
+    const validStart = await this.getValidStart();
+
+    if (isSignRequiredFromCreator) {
+      await this.clickOnSignTransactionButton();
+    }
+
+    return { txId, validStart };
+  }
+
+  async waitForValidStart(dateTimeString, bufferSeconds = 15) {
+    // Convert the dateTimeString to a Date object
+    const targetDate = new Date(dateTimeString);
+
+    // Get the current time
+    const currentDate = new Date();
+
+    // Calculate the difference in milliseconds
+    const timeDifference = targetDate - currentDate;
+
+    // Add buffer time (in milliseconds)
+    const waitTime = Math.max(timeDifference + bufferSeconds * 1000, 0); // Ensure non-negative
+
+    // Wait for the calculated time
+    if (waitTime > 0) {
+      console.log(`Waiting for ${waitTime / 1000} seconds until the valid start time...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    } else {
+      console.log('The target time has already passed.');
+    }
   }
 
   async getReadyForSignTransactionIdByIndex(index) {

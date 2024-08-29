@@ -92,6 +92,10 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function calculateTimeout(totalUsers, timePerUser) {
+  return totalUsers * timePerUser * 2000;
+}
+
 const asciiArt =
   '\n' +
   ' ________ __    __        ________ ______   ______  __               ______  __    __ ________ ______  __       __  ______  ________ ______  ______  __    __ \n' +
@@ -113,4 +117,5 @@ module.exports = {
   setupEnvironmentForTransactions,
   formatTransactionId,
   delay,
+  calculateTimeout,
 };

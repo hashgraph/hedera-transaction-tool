@@ -1,4 +1,9 @@
-const { queryPostgresDatabase, queryDatabase } = require('./databaseUtil');
+const {
+  queryPostgresDatabase,
+  queryDatabase,
+  connectPostgresDatabase,
+  disconnectPostgresDatabase,
+} = require('./databaseUtil');
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -464,7 +469,6 @@ async function insertKeyPair(publicKey, privateKey, secretHash, organizationUser
              );
   `;
 
-  // Generate a UUID for the id field
   const generatedId = uuidv4();
 
   try {
@@ -481,11 +485,23 @@ async function insertKeyPair(publicKey, privateKey, secretHash, organizationUser
   }
 }
 
+/**
+ * Retrieves all User ids from the user table.
+ * @returns {Promise<*|undefined>} - a promise that resolves to an array of user ids
+ */
 async function getUserIds() {
   const query = 'SELECT id FROM public."user"';
   return await queryPostgresDatabase(query);
 }
 
+/**
+ * Ensures that each user has the required notification types in their preferences.
+ * If a notification type does not exist for a user, it will be inserted with default values (email: false, inApp: false).
+ *
+ * @param {number[]} userIds - An array of user IDs for whom the notification preferences should be ensured.
+ * @return {Promise<void>} A promise that resolves when the operation is complete.
+ * @throws {Error} If there is an error executing the query.
+ */
 async function ensureNotificationTypesForUsers(userIds) {
   const notificationTypes = [
     'TRANSACTION_CREATED',
@@ -500,51 +516,66 @@ async function ensureNotificationTypesForUsers(userIds) {
     'TRANSACTION_INDICATOR_EXPIRED',
   ];
 
+  const client = await connectPostgresDatabase();
+
   try {
     for (const userId of userIds) {
       for (const type of notificationTypes) {
         const query = `
-            INSERT INTO public.notification_preferences ("userId", type, email, "inApp")
-            SELECT $1, $2::varchar, false, false
-            WHERE NOT EXISTS (
-              SELECT 1 FROM public.notification_preferences 
-              WHERE "userId" = $1 AND type = $2::varchar
-            );
+          INSERT INTO public.notification_preferences ("userId", type, email, "inApp")
+          SELECT $1, $2::varchar, false, false
+          WHERE NOT EXISTS (
+            SELECT 1 FROM public.notification_preferences 
+            WHERE "userId" = $1 AND type = $2::varchar
+          );
         `;
         const values = [userId, type];
-        await queryPostgresDatabase(query, values);
+        await client.query(query, values);
       }
     }
   } catch (err) {
     console.error('Error ensuring notification types for users:', err);
+  } finally {
+    await disconnectPostgresDatabase(client);
   }
 }
 
+/**
+ * Disables the email and in-app notifications for a list of users by setting the corresponding flags to false.
+ *
+ * @param {number[]} userIds - An array of user IDs for whom the notification preferences should be disabled.
+ * @return {Promise<void>} A promise that resolves when the operation is complete.
+ * @throws {Error} If there is an error executing the query.
+ */
 async function disableNotificationPreferences(userIds) {
+  const client = await connectPostgresDatabase();
+
   try {
-    for (const userId of userIds) {
-      const query = `
-        UPDATE public.notification_preferences
-        SET email = false,
-            "inApp" = false
-        WHERE "userId" = $1;
-      `;
-      const values = [userId];
-
-      const result = await queryPostgresDatabase(query, values);
-      console.log(
-        `Notification preferences disabled for user ID: ${userId}. Rows affected: ${result.rowCount}`,
-      );
-
-      if (result.rowCount === 0) {
-        console.warn(`No records were updated for user ID: ${userId}.`);
-      }
-    }
+    const query = `
+      UPDATE public.notification_preferences
+      SET email = false,
+          "inApp" = false
+      WHERE "userId" = ANY($1::int[]);
+    `;
+    const values = [userIds];
+    const result = await client.query(query, values);
+    console.log(
+      `Notification preferences disabled for user IDs. Rows affected: ${result.rowCount}`,
+    );
   } catch (err) {
     console.error('Error disabling notification preferences:', err);
+  } finally {
+    await disconnectPostgresDatabase(client);
   }
 }
 
+/**
+ * Disables all notification preferences for test users by ensuring that all necessary notification types exist
+ * and then setting their email and in-app notification flags to false.
+ *
+ * @return {Promise<void>} A promise that resolves when the operation is complete.
+ * @throws {Error} If there is an error during the process.
+ */
 async function disableNotificationsForTestUsers() {
   try {
     const userIds = await getUserIds();

@@ -5,7 +5,7 @@ const {
   generateRandomEmail,
   generateRandomPassword,
   setupEnvironmentForTransactions,
-  delay,
+  calculateTimeout,
 } = require('../utils/util');
 const RegistrationPage = require('../pages/RegistrationPage.js');
 const { expect } = require('playwright/test');
@@ -19,13 +19,15 @@ const { disableNotificationsForTestUsers } = require('../utils/databaseQueries')
 let app, window;
 let globalCredentials = { email: '', password: '' };
 let registrationPage, loginPage, transactionPage, organizationPage, settingsPage;
-let firstUser, secondUser, thirdUser;
+let firstUser;
 let complexKeyAccountId;
-let totalUsers;
 
-test.describe.skip('Organization Regression tests', () => {
+// Total number of users to be used as complex key
+let totalUsers = 57;
+
+test.describe('Organization Regression tests', () => {
   test.beforeAll(async () => {
-    test.setTimeout(2147483647);
+    test.slow();
     await resetDbState();
     await resetPostgresDbState();
     ({ app, window } = await setupApp());
@@ -40,7 +42,6 @@ test.describe.skip('Organization Regression tests', () => {
     globalCredentials.password = generateRandomPassword();
 
     // Generate test users in PostgreSQL database for organizations
-    totalUsers = 21;
     await organizationPage.createUsers(totalUsers);
 
     // Perform registration with the generated credentials
@@ -93,12 +94,12 @@ test.describe.skip('Organization Regression tests', () => {
     await resetPostgresDbState();
   });
 
-  test.skip('Verify ', async () => {
-    test.setTimeout(2147483647);
-    const { txId } = await organizationPage.getOrCreateUpdateTransaction(
+  test('Verify user can execute update account tx for complex key account similar to council account', async () => {
+    test.setTimeout(calculateTimeout(totalUsers, 5));
+    const { txId, validStart } = await organizationPage.updateAccount(
       complexKeyAccountId,
       'update',
-      totalUsers * 4.6,
+      totalUsers * 5,
       true,
     );
     await transactionPage.clickOnTransactionsMenuButton();
@@ -110,6 +111,56 @@ test.describe.skip('Organization Regression tests', () => {
       firstUser.password,
       globalCredentials.password,
     );
-    console.log(txId);
+
+    await organizationPage.waitForValidStart(validStart);
+
+    const transactionResponse = await transactionPage.mirrorGetTransactionResponse(txId);
+    const transactionType = transactionResponse.transactions[0]?.name;
+    const result = transactionResponse.transactions[0]?.result;
+    expect(transactionType).toBe('CRYPTOUPDATEACCOUNT');
+    expect(result).toBe('SUCCESS');
+
+    await organizationPage.clickOnHistoryTab();
+    const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId);
+    expect(transactionDetails.transactionId).toBe(txId);
+    expect(transactionDetails.transactionType).toBe('Account Update Transaction');
+    expect(transactionDetails.validStart).toBeTruthy();
+    expect(transactionDetails.detailsButton).toBe(true);
+    expect(transactionDetails.status).toBe('SUCCESS');
+  });
+
+  test('Verify user can execute transfer tx for complex key account similar to council account', async () => {
+    test.setTimeout(calculateTimeout(totalUsers, 5));
+    const { txId, validStart } = await organizationPage.transferAmountBetweenAccounts(
+      complexKeyAccountId,
+      '10',
+      totalUsers * 5,
+      true,
+    );
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.logoutFromOrganization();
+
+    await organizationPage.logInAndSignTransactionByAllUsers(globalCredentials.password, txId);
+    await organizationPage.signInOrganization(
+      firstUser.email,
+      firstUser.password,
+      globalCredentials.password,
+    );
+
+    await organizationPage.waitForValidStart(validStart);
+
+    const transactionResponse = await transactionPage.mirrorGetTransactionResponse(txId);
+    const transactionType = transactionResponse.transactions[0]?.name;
+    const result = transactionResponse.transactions[0]?.result;
+    expect(transactionType).toBe('CRYPTOTRANSFER');
+    expect(result).toBe('SUCCESS');
+
+    await organizationPage.clickOnHistoryTab();
+    const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId);
+    expect(transactionDetails.transactionId).toBe(txId);
+    expect(transactionDetails.transactionType).toBe('Transfer Transaction');
+    expect(transactionDetails.validStart).toBeTruthy();
+    expect(transactionDetails.detailsButton).toBe(true);
+    expect(transactionDetails.status).toBe('SUCCESS');
   });
 });

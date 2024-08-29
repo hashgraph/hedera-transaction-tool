@@ -225,4 +225,6 @@ module.exports = {
   resetDbState,
   resetPostgresDbState,
   queryPostgresDatabase,
+  connectPostgresDatabase,
+  disconnectPostgresDatabase,
 };
