@@ -23,7 +23,6 @@ let adminUser, regularUser;
 
 test.describe('Organization Contact List tests', () => {
   test.beforeAll(async () => {
-    test.slow();
     await resetDbState();
     await resetPostgresDbState();
     ({ app, window } = await setupApp());
