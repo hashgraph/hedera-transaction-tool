@@ -1,39 +1,41 @@
 const crypto = require('node:crypto');
 
-function hash(data) {
-  return crypto.createHash('sha256').update(data).digest();
-}
+function deriveKey(password, salt) {
+  const iterations = 2560;
+  const keyLength = 32;
 
-function createCredentials(password) {
-  let temp = hash(password);
-
-  const iv = temp.subarray(0, 16);
-
-  temp = hash(temp);
-
-  const key = temp.subarray(0, 24);
-
-  return [key, iv];
+  return crypto.pbkdf2Sync(password, salt, iterations, keyLength, 'sha512');
 }
 
 function encrypt(data, password) {
-  data = Buffer.from(data, 'utf-8').toString('hex');
+  const iv = crypto.randomBytes(16);
+  const salt = crypto.randomBytes(64);
 
-  const [key, iv] = createCredentials(password);
+  const key = deriveKey(password, salt);
 
-  const cipher = crypto.createCipheriv('aes-192-cbc', key, iv);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
 
-  return cipher.update(data, 'utf8', 'hex') + cipher.final('hex');
+  const encrypted = Buffer.concat([cipher.update(data, 'utf8'), cipher.final()]);
+
+  const tag = cipher.getAuthTag();
+
+  return Buffer.concat([salt, iv, tag, encrypted]).toString('base64');
 }
 
 function decrypt(data, password) {
-  const [key, iv] = createCredentials(password);
+  const bData = Buffer.from(data, 'base64');
 
-  const decipher = crypto.createDecipheriv('aes-192-cbc', key, iv);
+  const salt = bData.subarray(0, 64);
+  const iv = bData.subarray(64, 80);
+  const tag = bData.subarray(80, 96);
+  const text = bData.subarray(96).toString('base64');
 
-  const hex = decipher.update(data, 'hex', 'utf8') + decipher.final('utf8');
+  const key = deriveKey(password, salt);
 
-  return Buffer.from(hex, 'hex').toString('utf-8');
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+  decipher.setAuthTag(tag);
+
+  return decipher.update(text, 'base64', 'utf8') + decipher.final('utf8');
 }
 
 module.exports = { encrypt, decrypt };
