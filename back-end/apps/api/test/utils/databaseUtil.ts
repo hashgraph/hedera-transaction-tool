@@ -330,6 +330,7 @@ export async function addTransactions() {
       name: '#1 Simple Account Create Transaction',
       description: 'This is a simple account create transaction',
       transactionBytes: Buffer.from(accountCreate.toBytes()),
+      unsignedTransactionBytes: Buffer.from(accountCreate.toBytes()),
       creatorKey: { id: userKey1003.id },
       signature: Buffer.from(localnet1003.privateKey.sign(accountCreate.toBytes())),
       network: localnet1003.network,
@@ -338,6 +339,7 @@ export async function addTransactions() {
       name: '#2 Simple Account Update Transaction',
       description: 'This is a simple account update transaction',
       transactionBytes: Buffer.from(accountUpdate.toBytes()),
+      unsignedTransactionBytes: Buffer.from(accountUpdate.toBytes()),
       creatorKey: { id: userKey1004.id },
       signature: Buffer.from(localnet1004.privateKey.sign(accountUpdate.toBytes())),
       network: localnet1004.network,
@@ -346,6 +348,7 @@ export async function addTransactions() {
       name: '#4 Second simple File Create Transaction',
       description: 'This is a second simple file create transaction',
       transactionBytes: Buffer.from(fileCreate2.toBytes()),
+      unsignedTransactionBytes: Buffer.from(fileCreate2.toBytes()),
       creatorKey: { id: userKey1003.id },
       signature: Buffer.from(localnet1003.privateKey.sign(fileCreate.toBytes())),
       network: localnet1003.network,
@@ -357,6 +360,7 @@ export async function addTransactions() {
       name: '#3 Simple File Create Transaction',
       description: 'This is a simple file create transaction',
       transactionBytes: Buffer.from(fileCreate.toBytes()),
+      unsignedTransactionBytes: Buffer.from(fileCreate.toBytes()),
       creatorKey: { id: adminKey1002.id },
       signature: Buffer.from(localnet1002.privateKey.sign(fileCreate.toBytes())),
       network: localnet1002.network,
@@ -372,6 +376,7 @@ export async function addTransactions() {
     transaction.type = getTransactionTypeEnumValue(sdkTransaction);
     transaction.transactionId = sdkTransaction.transactionId.toString();
     transaction.transactionBytes = Buffer.from(sdkTransaction.toBytes());
+    transaction.unsignedTransactionBytes = Buffer.from(sdkTransaction.toBytes());
     transaction.transactionHash = Buffer.from(await sdkTransaction.getTransactionHash()).toString(
       'hex',
     );
