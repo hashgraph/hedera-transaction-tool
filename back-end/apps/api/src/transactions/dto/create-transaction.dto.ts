@@ -1,5 +1,5 @@
 import { IsDate, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 
 import { Network } from '@entities';
 
@@ -16,6 +16,7 @@ export class CreateTransactionDto {
 
   @IsNotEmpty()
   @TransformBuffer()
+  @Expose({ name: 'body' })
   transactionBytes: Buffer;
 
   @IsNumber()
