@@ -1,5 +1,8 @@
-import { createTestUser } from '../utils/databaseUtil';
+import { createTestUsersBatch } from '../utils/databaseUtil';
 import { generateMnemonic } from '../utils/keyUtil';
+const bcrypt = require('bcryptjs');
+const { Mnemonic } = require('@hashgraph/sdk');
+const { encrypt } = require('../utils/crypto');
 
 const BasePage = require('./BasePage');
 const RegistrationPage = require('./RegistrationPage');
@@ -17,8 +20,9 @@ const {
   findNewKey,
   getAllTransactionIdsForUserObserver,
   verifyOrganizationExists,
+  insertUserKey,
+  insertKeyPair,
 } = require('../utils/databaseQueries');
-const { getAssociatedAccounts } = require('../utils/mirrorNodeAPI');
 
 class OrganizationPage extends BasePage {
   constructor(window) {
@@ -164,52 +168,80 @@ class OrganizationPage extends BasePage {
    */
 
   async createUsers(numUsers = 1) {
+    const usersData = [];
+
     for (let i = 0; i < numUsers; i++) {
       const email = generateRandomEmail();
       const password = generateRandomPassword();
-
-      // Create test user in PostgreSQL database
-      await createTestUser(email, password);
-
-      // Store user credentials in the list
+      usersData.push({ email, password });
       this.users.push({ email, password });
+    }
+
+    // Pass the batch of user data to the database utility function
+    await createTestUsersBatch(usersData);
+  }
+
+  async setUpUsers(window, encryptionPassword, setPrivateKey = true) {
+    for (let i = 0; i < this.users.length; i++) {
+      const user = this.users[i];
+      const privateKey = process.env.PRIVATE_KEY;
+
+      if (i === 0) {
+        // Full setup for the first user (index 0) who is payer
+        await this.signInOrganization(user.email, user.password, encryptionPassword);
+
+        await this.waitForElementToBeVisible(this.registrationPage.createNewTabSelector);
+        await this.registrationPage.clickOnCreateNewTab();
+        await this.registrationPage.clickOnUnderstandCheckbox();
+        await this.registrationPage.clickOnGenerateButton();
+
+        await this.captureRecoveryPhraseWordsForUser(i);
+        await this.registrationPage.clickOnUnderstandCheckbox();
+        await this.registrationPage.clickOnVerifyButton();
+
+        await this.fillAllMissingRecoveryPhraseWordsForUser(i);
+        await this.registrationPage.clickOnNextButton();
+
+        await this.registrationPage.waitForElementToDisappear(
+          this.registrationPage.toastMessageSelector,
+        );
+        await this.registrationPage.clickOnFinalNextButtonWithRetry();
+
+        if (setPrivateKey) {
+          await setupEnvironmentForTransactions(window, privateKey);
+        }
+
+        await this.clickByTestId(this.logoutButtonSelector);
+        await this.waitForElementToBeVisible(this.emailForOrganizationInputSelector);
+      } else {
+        await this.generateAndStoreUserKey(user.email, encryptionPassword);
+      }
     }
   }
 
-  async setUpUsers(window, encryptionPassword) {
-    const privateKeys = [
-      process.env.PRIVATE_KEY_2,
-      process.env.PRIVATE_KEY_3,
-      process.env.PRIVATE_KEY_4,
-    ];
+  async generateAndStoreUserKey(email, password) {
+    // Generate a 24-word mnemonic phrase
+    const mnemonic = await Mnemonic.generate();
 
-    for (let i = 0; i < this.users.length; i++) {
-      const user = this.users[i];
-      const privateKey = privateKeys[i % privateKeys.length];
+    // Hash the mnemonic phrase
+    const mnemonicHash = bcrypt.hashSync(mnemonic._mnemonic.words.toString(), 10);
 
-      await this.signInOrganization(user.email, user.password, encryptionPassword);
+    const privateKey = await mnemonic.toStandardEd25519PrivateKey('', 0);
 
-      await this.waitForElementToBeVisible(this.registrationPage.createNewTabSelector);
-      await this.registrationPage.clickOnCreateNewTab();
-      await this.registrationPage.clickOnUnderstandCheckbox();
-      await this.registrationPage.clickOnGenerateButton();
+    const privateKeyString = privateKey.toStringRaw();
+    const publicKeyString = privateKey.publicKey.toStringRaw();
 
-      await this.captureRecoveryPhraseWordsForUser(i);
-      await this.registrationPage.clickOnUnderstandCheckbox();
-      await this.registrationPage.clickOnVerifyButton();
+    // Encrypt the private key
+    const encryptedPrivateKey = encrypt(privateKeyString, password);
 
-      await this.fillAllMissingRecoveryPhraseWordsForUser(i);
-      await this.registrationPage.clickOnNextButton();
+    // Get the user ID by email
+    const userId = await getUserIdByEmail(email);
 
-      await this.registrationPage.waitForElementToDisappear(
-        this.registrationPage.toastMessageSelector,
-      );
-      await this.registrationPage.clickOnFinalNextButtonWithRetry();
+    // Insert the mnemonic hash and public key into the user_key table
+    await insertUserKey(userId, mnemonicHash, 0, publicKeyString);
 
-      await setupEnvironmentForTransactions(window, privateKey);
-      await this.clickByTestId(this.logoutButtonSelector);
-      await this.waitForElementToBeVisible(this.emailForOrganizationInputSelector);
-    }
+    // Insert the public key and encrypted private key into the key_pair table
+    await insertKeyPair(publicKeyString, encryptedPrivateKey, mnemonicHash, userId);
   }
 
   async recoverAccount(userIndex) {
@@ -228,7 +260,7 @@ class OrganizationPage extends BasePage {
 
   async recoverPrivateKey(window) {
     // for the purposes of settings tests we are recovering User#1 which has PRIVATE_KEY_2 in the database
-    await setupEnvironmentForTransactions(window, process.env.PRIVATE_KEY_2);
+    await setupEnvironmentForTransactions(window, process.env.PRIVATE_KEY);
   }
 
   getUser(index) {
@@ -517,9 +549,9 @@ class OrganizationPage extends BasePage {
 
     const newHours = (currentHours + extraHours + 24) % 24;
 
-    await increment(this.incrementSecondsButtonSelector, newSeconds - currentSeconds);
-    await increment(this.incrementMinutesButtonSelector, newMinutes - currentMinutes);
     await increment(this.incrementHourButtonSelector, newHours - currentHours);
+    await increment(this.incrementMinutesButtonSelector, newMinutes - currentMinutes);
+    await increment(this.incrementSecondsButtonSelector, newSeconds - currentSeconds);
   }
 
   /**
@@ -559,6 +591,123 @@ class OrganizationPage extends BasePage {
     const transactionId = await this.getTransactionDetailsId();
     await this.clickOnSignTransactionButton();
     await new Promise(resolve => setTimeout(resolve, 6000));
+    const transactionResponse =
+      await this.transactionPage.mirrorGetTransactionResponse(transactionId);
+    this.complexAccountId.push(transactionResponse.transactions[0].entity_id);
+  }
+
+  async logInAndSignTransactionByAllUsers(encryptionPassword, txId) {
+    for (let i = 1; i < this.users.length; i++) {
+      console.log(`Signing transaction for user ${i}`);
+      const user = this.users[i];
+      await this.signInOrganization(user.email, user.password, encryptionPassword);
+      await this.transactionPage.clickOnTransactionsMenuButton();
+      await this.clickOnReadyToSignTab();
+      await this.clickOnSubmitSignButtonByTransactionId(txId);
+      await this.clickOnSignTransactionButton();
+
+      await this.logoutFromOrganization();
+    }
+  }
+
+  async addComplexKeyAccountWithNestedThresholds(users = 99) {
+    // Ensure we have enough users
+    if (users < 3) {
+      throw new Error('You need at least 3 users to proceed with this function.');
+    }
+
+    await this.transactionPage.clickOnTransactionsMenuButton();
+    await this.transactionPage.clickOnCreateNewTransactionButton();
+    await this.transactionPage.clickOnCreateAccountTransaction();
+    await this.transactionPage.clickOnComplexTab();
+    await this.transactionPage.clickOnCreateNewComplexKeyButton();
+
+    // Start at depth 0 for the major threshold
+    let currentDepth = '0';
+
+    // Step 1: Create Primary and Secondary thresholds
+    await this.transactionPage.addThresholdKeyAtDepth(currentDepth);
+    await this.transactionPage.addThresholdKeyAtDepth(currentDepth);
+    // Select 1 of 2 for the major threshold
+    await this.selectOptionByValue(
+      this.transactionPage.selectThresholdValueByIndex + currentDepth,
+      '1',
+    );
+
+    // Step 2: Calculate how to divide the users between Primary & Secondary
+    const primaryThresholds = Math.ceil((2 / 3) * (users / 3)); // Approximately 2/3 of the thresholds for Primary
+    const secondaryThresholds = Math.floor((1 / 3) * (users / 3)); // Approximately 1/3 of the thresholds for Secondary
+
+    let userIndex = 0;
+
+    // Adding thresholds and public keys under "Primary"
+    for (let i = 0; i < primaryThresholds; i++) {
+      // Add a threshold under "Primary"
+      await this.transactionPage.addThresholdKeyAtDepth(`0-0`);
+
+      // Add 3 public keys to this threshold
+      for (let j = 0; j < 3; j++) {
+        const publicKey = await this.getFirstPublicKeyByEmail(
+          this.users[userIndex % this.users.length].email,
+        );
+        await this.transactionPage.addPublicKeyAtDepth(`0-0-${i}`, publicKey);
+        userIndex++;
+      }
+
+      // Changing the threshold to be 1 of 3
+      await this.selectOptionByValue(
+        this.transactionPage.selectThresholdValueByIndex + `0-0-${i}`,
+        '1',
+      );
+    }
+
+    // Selecting the threshold to be the half of the total number of thresholds
+    const primaryThresholdValue = Math.max(Math.floor(primaryThresholds / 2), 1).toString();
+    await this.selectOptionByValue(
+      this.transactionPage.selectThresholdValueByIndex + `0-0`,
+      primaryThresholdValue,
+    );
+
+    // Adding thresholds and public keys under "Secondary"
+    for (let i = 0; i < secondaryThresholds; i++) {
+      // Add a threshold under "Secondary"
+      await this.transactionPage.addThresholdKeyAtDepth(`0-1`);
+
+      // Add 3 public keys to this threshold
+      for (let j = 0; j < 3; j++) {
+        const publicKey = await this.getFirstPublicKeyByEmail(
+          this.users[userIndex % this.users.length].email,
+        );
+        await this.transactionPage.addPublicKeyAtDepth(`0-1-${i}`, publicKey);
+        userIndex++;
+      }
+
+      // Changing the threshold to be 1 of 3
+      await this.selectOptionByValue(
+        this.transactionPage.selectThresholdValueByIndex + `0-1-${i}`,
+        '1',
+      );
+    }
+
+    // Selecting the threshold to be the half of the total number of thresholds
+    const secondaryThresholdValue = Math.max(Math.floor(secondaryThresholds / 2), 1).toString();
+    await this.selectOptionByValue(
+      this.transactionPage.selectThresholdValueByIndex + `0-1`,
+      secondaryThresholdValue,
+    );
+
+    // Step 3: Complete the transaction
+    await this.transactionPage.clickOnDoneButtonForComplexKeyCreation();
+    await this.transactionPage.fillInInitialFunds('100');
+    await this.transactionPage.clickOnSignAndSubmitButton();
+    await this.transactionPage.clickSignTransactionButton();
+
+    // Retrieve and store the transaction ID
+    const transactionId = await this.getTransactionDetailsId();
+    await this.clickOnSignTransactionButton();
+    await new Promise(resolve => setTimeout(resolve, 6000));
+
+    // Store the complex account ID
     const transactionResponse =
       await this.transactionPage.mirrorGetTransactionResponse(transactionId);
     this.complexAccountId.push(transactionResponse.transactions[0].entity_id);
@@ -643,6 +792,61 @@ class OrganizationPage extends BasePage {
       await this.clickOnSignTransactionButton();
     }
     return { txId, validStart };
+  }
+
+  async transferAmountBetweenAccounts(
+    fromAccountId,
+    amount,
+    timeForExecution = 10,
+    isSignRequiredFromCreator = false,
+  ) {
+    await this.transactionPage.clickOnTransactionsMenuButton();
+    await this.transactionPage.clickOnCreateNewTransactionButton();
+    await this.transactionPage.clickOnTransferTokensTransaction();
+    await this.setDateTimeAheadBy(timeForExecution);
+    await this.fillByTestId(this.transactionPage.transferFromAccountIdInputSelector, fromAccountId);
+    await this.transactionPage.fillInTransferAmountFromAccount(amount);
+    const payerAccountId = await this.getTextFromInputFieldByTestId(
+      this.transactionPage.payerDropdownSelector,
+    );
+    await this.transactionPage.fillInTransferToAccountId(payerAccountId);
+    await this.transactionPage.clickOnAddTransferFromButton();
+    await this.transactionPage.fillInTransferAmountToAccount(amount);
+    await this.transactionPage.clickOnAddTransferToButton();
+
+    await this.transactionPage.clickOnSignAndSubmitTransferButton();
+    await this.transactionPage.clickSignTransactionButton();
+
+    const txId = await this.getTransactionDetailsId();
+    const validStart = await this.getValidStart();
+
+    if (isSignRequiredFromCreator) {
+      await this.clickOnSignTransactionButton();
+    }
+
+    return { txId, validStart };
+  }
+
+  async waitForValidStart(dateTimeString, bufferSeconds = 15) {
+    // Convert the dateTimeString to a Date object
+    const targetDate = new Date(dateTimeString);
+
+    // Get the current time
+    const currentDate = new Date();
+
+    // Calculate the difference in milliseconds
+    const timeDifference = targetDate - currentDate;
+
+    // Add buffer time (in milliseconds)
+    const waitTime = Math.max(timeDifference + bufferSeconds * 1000, 0); // Ensure non-negative
+
+    // Wait for the calculated time
+    if (waitTime > 0) {
+      console.log(`Waiting for ${waitTime / 1000} seconds until the valid start time...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    } else {
+      console.log('The target time has already passed.');
+    }
   }
 
   async getReadyForSignTransactionIdByIndex(index) {
