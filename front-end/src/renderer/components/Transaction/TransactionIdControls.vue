@@ -152,7 +152,7 @@ const columnClass = 'col-4 col-xxxl-3';
             @update:model-value="handlePayerChange"
             :filled="true"
             :items="accoundIds"
-            data-testid='dropdown-payer'
+            data-testid="dropdown-payer"
             placeholder="Enter Payer ID"
           />
         </div>
