@@ -39,9 +39,6 @@ to run the tests.
    ```env
    EXECUTABLE_PATH='/path/to/Hedera Transaction Tool'
    PRIVATE_KEY='your_private_key_here'
-   PRIVATE_KEY_2='additional_private_key_here'
-   PRIVATE_KEY_3='additional_private_key_here'
-   PRIVATE_KEY_4='additional_private_key_here'
    ENVIRONMENT='LOCALNET'
    ORGANIZATION_URL: URL for your organization, e.g., https://localhost:3001.
 
