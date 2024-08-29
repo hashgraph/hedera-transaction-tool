@@ -19,7 +19,7 @@ import {
 import { NotificationType, Transaction, TransactionStatus } from '@entities';
 
 import { TransactionStatusService } from './transaction-status.service';
-import { ExecuteService } from '../execute';
+import { ExecuteService } from '../execute/execute.service';
 import {
   AccountCreateTransaction,
   FileAppendTransaction,
