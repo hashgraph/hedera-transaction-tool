@@ -166,7 +166,7 @@ watch([currentPage, pageSize], async () => {
                   ></i>
                 </div>
               </th>
-              <th class="text-center">
+              <th>
                 <span>Name</span>
               </th>
               <th class="text-center">
