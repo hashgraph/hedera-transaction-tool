@@ -617,7 +617,7 @@ export class ApproversService {
     if (transaction.status === TransactionStatus.CANCELED)
       throw new BadRequestException('Transaction has been canceled');
 
-    const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
+    const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
     /* Verify the signature matches the transaction */
     if (

@@ -347,12 +347,12 @@ export class TransactionsService {
     const publicKey = PublicKey.fromString(creatorKey.publicKey);
 
     /* Verify the signature matches the transaction */
-    const validSignature = publicKey.verify(dto.body, dto.signature);
+    const validSignature = publicKey.verify(dto.transactionBytes, dto.signature);
     if (!validSignature)
       throw new BadRequestException('The signature does not match the public key');
 
     /* Check if the transaction is expired */
-    const sdkTransaction = SDKTransaction.fromBytes(dto.body);
+    const sdkTransaction = SDKTransaction.fromBytes(dto.transactionBytes);
     if (
       sdkTransaction instanceof FileUpdateTransaction ||
       sdkTransaction instanceof FileAppendTransaction
@@ -362,7 +362,7 @@ export class TransactionsService {
 
     /* Check if the transaction already exists */
     const countExisting = await this.repo.count({
-      where: [{ transactionId: sdkTransaction.transactionId.toString() }, { transactionBytes: dto.body }],
+      where: [{ transactionId: sdkTransaction.transactionId.toString() }, { transactionBytes: dto.transactionBytes }],
     });
     if (countExisting > 0) throw new BadRequestException('Transaction already exists');
 
@@ -376,6 +376,7 @@ export class TransactionsService {
       transactionId: sdkTransaction.transactionId.toString(),
       transactionHash: encodeUint8Array(await sdkTransaction.getTransactionHash()),
       transactionBytes: sdkTransaction.toBytes(),
+      unsignedTransactionBytes: sdkTransaction.toBytes(),
       status: TransactionStatus.WAITING_FOR_SIGNATURES,
       creatorKey,
       signature: dto.signature,

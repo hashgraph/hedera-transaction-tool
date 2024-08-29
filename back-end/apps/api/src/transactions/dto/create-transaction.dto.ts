@@ -16,7 +16,7 @@ export class CreateTransactionDto {
 
   @IsNotEmpty()
   @TransformBuffer()
-  body: Buffer;
+  transactionBytes: Buffer;
 
   @IsNumber()
   creatorKeyId: number;

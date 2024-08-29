@@ -203,7 +203,7 @@ describe('SignaturesService', () => {
       const sdkTransaction = new AccountCreateTransaction();
       const transaction = {
         id: transactionId,
-        body: sdkTransaction.toBytes(),
+        transactionBytes: sdkTransaction.toBytes(),
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       };
 
@@ -287,7 +287,7 @@ describe('SignaturesService', () => {
       const sdkTransaction = new AccountCreateTransaction();
       const transaction = {
         id: transactionId,
-        body: sdkTransaction.toBytes(),
+        transactionBytes: sdkTransaction.toBytes(),
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       };
 
@@ -307,7 +307,7 @@ describe('SignaturesService', () => {
       const sdkTransaction = new AccountCreateTransaction();
       const transaction = {
         id: transactionId,
-        body: sdkTransaction.toBytes(),
+        transactionBytes: sdkTransaction.toBytes(),
         status: TransactionStatus.CANCELED,
       };
 
@@ -327,7 +327,7 @@ describe('SignaturesService', () => {
       const sdkTransaction = new AccountCreateTransaction();
       const transaction = {
         id: transactionId,
-        body: sdkTransaction.toBytes(),
+        transactionBytes: sdkTransaction.toBytes(),
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       };
 
@@ -348,7 +348,7 @@ describe('SignaturesService', () => {
       const sdkTransaction = new AccountCreateTransaction();
       const transaction = {
         id: transactionId,
-        body: sdkTransaction.toBytes(),
+        transactionBytes: sdkTransaction.toBytes(),
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       };
 
@@ -370,7 +370,7 @@ describe('SignaturesService', () => {
       const sdkTransaction = new AccountCreateTransaction();
       const transaction = {
         id: transactionId,
-        body: sdkTransaction.toBytes(),
+        transactionBytes: sdkTransaction.toBytes(),
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       };
 
@@ -393,7 +393,7 @@ describe('SignaturesService', () => {
       const sdkTransaction = new AccountCreateTransaction();
       const transaction = {
         id: transactionId,
-        body: sdkTransaction.toBytes(),
+        transactionBytes: sdkTransaction.toBytes(),
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       };
 
@@ -419,7 +419,7 @@ describe('SignaturesService', () => {
       const sdkTransaction = new AccountCreateTransaction();
       const transaction = {
         id: transactionId,
-        body: sdkTransaction.toBytes(),
+        transactionBytes: sdkTransaction.toBytes(),
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       };
 
@@ -447,7 +447,7 @@ describe('SignaturesService', () => {
       const sdkTransaction = new AccountCreateTransaction();
       const transaction = {
         id: transactionId,
-        body: sdkTransaction.toBytes(),
+        transactionBytes: sdkTransaction.toBytes(),
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       };
 
@@ -481,7 +481,7 @@ describe('SignaturesService', () => {
       const sdkTransaction = new AccountCreateTransaction();
       const transaction = {
         id: transactionId,
-        body: sdkTransaction.toBytes(),
+        transactionBytes: sdkTransaction.toBytes(),
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       };
 
@@ -579,7 +579,7 @@ describe('SignaturesService', () => {
       const sdkTransaction = new AccountCreateTransaction();
       const transaction = {
         id: transactionId,
-        body: sdkTransaction.toBytes(),
+        transactionBytes: sdkTransaction.toBytes(),
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       };
 
@@ -603,7 +603,7 @@ describe('SignaturesService', () => {
       const sdkTransaction = new AccountCreateTransaction();
       const transaction = {
         id: transactionId,
-        body: sdkTransaction.toBytes(),
+        transactionBytes: sdkTransaction.toBytes(),
         status: TransactionStatus.CANCELED,
       };
 
@@ -627,7 +627,7 @@ describe('SignaturesService', () => {
       const sdkTransaction = new AccountCreateTransaction();
       const transaction = {
         id: transactionId,
-        body: sdkTransaction.toBytes(),
+        transactionBytes: sdkTransaction.toBytes(),
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       };
 
@@ -652,7 +652,7 @@ describe('SignaturesService', () => {
       const sdkTransaction = new AccountCreateTransaction();
       const transaction = {
         id: transactionId,
-        body: sdkTransaction.toBytes(),
+        transactionBytes: sdkTransaction.toBytes(),
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       };
 
@@ -678,7 +678,7 @@ describe('SignaturesService', () => {
     //   const sdkTransaction = new AccountCreateTransaction();
     //   const transaction = {
     //     id: transactionId,
-    //     body: sdkTransaction.toBytes(),
+    //     transactionBytes: sdkTransaction.toBytes(),
     //     status: TransactionStatus.WAITING_FOR_EXECUTION,
     //   };
 
@@ -704,7 +704,7 @@ describe('SignaturesService', () => {
       const sdkTransaction = new AccountCreateTransaction();
       const transaction = {
         id: transactionId,
-        body: sdkTransaction.toBytes(),
+        transactionBytes: sdkTransaction.toBytes(),
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       };
 
@@ -734,7 +734,7 @@ describe('SignaturesService', () => {
       const sdkTransaction = new AccountCreateTransaction();
       const transaction = {
         id: transactionId,
-        body: sdkTransaction.toBytes(),
+        transactionBytes: sdkTransaction.toBytes(),
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       };
 
@@ -766,7 +766,7 @@ describe('SignaturesService', () => {
       const sdkTransaction = new AccountCreateTransaction();
       const transaction = {
         id: transactionId,
-        body: sdkTransaction.toBytes(),
+        transactionBytes: sdkTransaction.toBytes(),
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       };
 
