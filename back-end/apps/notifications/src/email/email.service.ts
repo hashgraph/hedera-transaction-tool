@@ -22,7 +22,7 @@ export class EmailService {
   async notifyEmail({ email, subject, text }: NotifyEmailDto) {
     // send mail with defined transport object
     const info = await this.transporter.sendMail({
-      from: '"Transaction Tool" no-reply@transactiontool.com', // sender address
+      from: '"Transaction Tool" no-reply@hederatransactiontool.com', // sender address
       to: email, // list of receivers
       subject: subject, // Subject line
       text: text, // plain text body
