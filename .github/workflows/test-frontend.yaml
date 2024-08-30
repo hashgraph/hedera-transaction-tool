@@ -42,9 +42,6 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm
 
-      - name: Install pnpm
-        run: npm install -g pnpm
-
       - name: Install front-end dependencies
         run: pnpm install --frozen-lockfile
         working-directory: front-end
