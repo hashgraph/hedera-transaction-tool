@@ -665,7 +665,7 @@ describe('Transactions (e2e)', () => {
       expect(beforeSignRes.body).toEqual([adminKey1002.id]);
 
       /* Sign transaction (ADMIN) */
-      const sdkTransaction = AccountUpdateTransaction.fromBytes(transaction.body);
+      const sdkTransaction = AccountUpdateTransaction.fromBytes(transaction.transactionBytes);
       const signatures = getSignatures(localnet1002.privateKey, sdkTransaction);
 
       await transactionsEndpoint
@@ -827,7 +827,7 @@ describe('Transactions (e2e)', () => {
       const transaction = addedTransactions.userTransactions[1];
 
       /* Sign transaction (ADMIN) */
-      const sdkTransaction = AccountUpdateTransaction.fromBytes(transaction.body);
+      const sdkTransaction = AccountUpdateTransaction.fromBytes(transaction.transactionBytes);
       const signatures = getSignatures(localnet1002.privateKey, sdkTransaction);
 
       await endpoint

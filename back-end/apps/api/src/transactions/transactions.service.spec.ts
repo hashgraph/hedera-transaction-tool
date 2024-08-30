@@ -328,7 +328,7 @@ describe('TransactionsService', () => {
     const dto: CreateTransactionDto = {
       name: 'Transaction 1',
       description: 'Description',
-      body: Buffer.from(sdkTransaction.toBytes()),
+      transactionBytes: Buffer.from(sdkTransaction.toBytes()),
       creatorKeyId: 1,
       signature: Buffer.from('0xabc02'),
       network: Network.TESTNET,
@@ -371,7 +371,7 @@ describe('TransactionsService', () => {
     const dto: CreateTransactionDto = {
       name: 'Transaction 1',
       description: 'Description',
-      body: Buffer.from('as'),
+      transactionBytes: Buffer.from('as'),
       creatorKeyId: 2,
       signature: Buffer.from('0xabc02'),
       network: Network.TESTNET,
@@ -388,7 +388,7 @@ describe('TransactionsService', () => {
     const dto: CreateTransactionDto = {
       name: 'Transaction 1',
       description: 'Description',
-      body: Buffer.from('0x1234acf12e'),
+      transactionBytes: Buffer.from('0x1234acf12e'),
       creatorKeyId: 1,
       signature: Buffer.from('0xabc02'),
       network: Network.TESTNET,
@@ -408,7 +408,7 @@ describe('TransactionsService', () => {
     const dto: CreateTransactionDto = {
       name: 'Transaction 1',
       description: 'Description',
-      body: Buffer.from(sdkTransaction.toBytes()),
+      transactionBytes: Buffer.from(sdkTransaction.toBytes()),
       creatorKeyId: 1,
       signature: Buffer.from('0xabc02'),
       network: Network.TESTNET,
@@ -428,7 +428,7 @@ describe('TransactionsService', () => {
     const dto: CreateTransactionDto = {
       name: 'Transaction 1',
       description: 'Description',
-      body: Buffer.from(sdkTransaction.toBytes()),
+      transactionBytes: Buffer.from(sdkTransaction.toBytes()),
       creatorKeyId: 1,
       signature: Buffer.from('0xabc02'),
       network: Network.TESTNET,
@@ -451,7 +451,7 @@ describe('TransactionsService', () => {
     const dto: CreateTransactionDto = {
       name: 'Transaction 1',
       description: 'Description',
-      body: Buffer.from(sdkTransaction.toBytes()),
+      transactionBytes: Buffer.from(sdkTransaction.toBytes()),
       creatorKeyId: 1,
       signature: Buffer.from('0xabc02'),
       network: Network.TESTNET,

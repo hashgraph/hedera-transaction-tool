@@ -74,7 +74,7 @@ describe('Transactions (e2e)', () => {
 
     it('(POST) should upload a signature for a transaction when required to sign', async () => {
       const transaction = addedTransactions.userTransactions[0];
-      const sdkTransaction = AccountCreateTransaction.fromBytes(transaction.body);
+      const sdkTransaction = AccountCreateTransaction.fromBytes(transaction.transactionBytes);
       const signatures = getSignatures(localnet1003.privateKey, sdkTransaction);
 
       const response = await endpoint.post(
@@ -104,7 +104,7 @@ describe('Transactions (e2e)', () => {
 
     it('(POST) should NOT upload a signature for a transaction when not required to sign', async () => {
       const transaction = addedTransactions.userTransactions[0];
-      const sdkTransaction = AccountCreateTransaction.fromBytes(transaction.body);
+      const sdkTransaction = AccountCreateTransaction.fromBytes(transaction.transactionBytes);
       const userKey1002 = await getUserKey(admin.id, localnet1002.publicKeyRaw);
       const signatures = getSignatures(localnet1003.privateKey, sdkTransaction);
 
@@ -136,7 +136,7 @@ describe('Transactions (e2e)', () => {
 
     it('(POST) should NOT upload a signature for a transaction when already signed', async () => {
       const transaction = addedTransactions.userTransactions[0];
-      const sdkTransaction = AccountCreateTransaction.fromBytes(transaction.body);
+      const sdkTransaction = AccountCreateTransaction.fromBytes(transaction.transactionBytes);
       const signatures = getSignatures(localnet1003.privateKey, sdkTransaction);
 
       /* User has already signed in a previous test */
@@ -160,7 +160,7 @@ describe('Transactions (e2e)', () => {
 
     it('(POST) should NOT upload a signature for a transaction with a key that does not belong to the user', async () => {
       const transaction = addedTransactions.userTransactions[0];
-      const sdkTransaction = AccountCreateTransaction.fromBytes(transaction.body);
+      const sdkTransaction = AccountCreateTransaction.fromBytes(transaction.transactionBytes);
       const userKey1002 = await getUserKey(admin.id, localnet1002.publicKeyRaw);
       const signatures = getSignatures(localnet1003.privateKey, sdkTransaction);
 
@@ -211,7 +211,7 @@ describe('Transactions (e2e)', () => {
       );
       const signatures = getSignatures(
         localnet1003.privateKey,
-        AccountCreateTransaction.fromBytes(transaction.body),
+        AccountCreateTransaction.fromBytes(transaction.transactionBytes),
       );
 
       const { status, body } = await endpoint.post(

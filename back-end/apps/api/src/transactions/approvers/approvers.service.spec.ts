@@ -1303,7 +1303,7 @@ describe('ApproversService', () => {
       const transaction = {
         id: 1,
         status: TransactionStatus.WAITING_FOR_EXECUTION,
-        body: sdkTransaction.toBytes(),
+        transactionBytes: sdkTransaction.toBytes(),
       };
 
       mockTransaction();
@@ -1520,7 +1520,7 @@ describe('ApproversService', () => {
       const transaction = {
         id: 1,
         status: TransactionStatus.WAITING_FOR_EXECUTION,
-        body: sdkTransaction.toBytes(),
+        transactionBytes: sdkTransaction.toBytes(),
       };
 
       jest.spyOn(service, 'getVerifiedApproversByTransactionId').mockResolvedValueOnce([

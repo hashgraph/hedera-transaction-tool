@@ -247,7 +247,7 @@ describe('Transaction Observers (e2e)', () => {
         .expect(201);
 
       /* Sign transaction (ADMIN) */
-      const sdkTransaction = AccountUpdateTransaction.fromBytes(transaction.body);
+      const sdkTransaction = AccountUpdateTransaction.fromBytes(transaction.transactionBytes);
       const signatures = getSignatures(localnet1002.privateKey, sdkTransaction);
 
       await endpoint

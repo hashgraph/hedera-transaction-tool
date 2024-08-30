@@ -26,7 +26,7 @@ describe('keysRequiredToSign', () => {
     jest.resetAllMocks();
 
     const accounCreatetTx = new AccountCreateTransaction();
-    transaction = { id: 1, body: accounCreatetTx.toBytes(), network: 'testnet' };
+    transaction = { id: 1, transactionBytes: accounCreatetTx.toBytes(), network: 'testnet' };
   });
 
   it('should return an empty array if transaction is not provided', async () => {
@@ -222,7 +222,7 @@ describe('userKeysRequiredToSign', () => {
     jest.resetAllMocks();
 
     const accounCreatetTx = new AccountCreateTransaction();
-    transaction = { id: 1, body: accounCreatetTx.toBytes(), network: 'testnet' };
+    transaction = { id: 1, transactionBytes: accounCreatetTx.toBytes(), network: 'testnet' };
     user = { id: 1, keys: [] };
     mirrorNodeService = { getAccountInfo: jest.fn() };
     entityManager = { find: jest.fn() };
