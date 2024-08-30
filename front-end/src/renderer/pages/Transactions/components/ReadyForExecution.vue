@@ -111,7 +111,9 @@ async function fetchTransactions() {
     );
     totalItems.value = totalItemsCount;
 
-    const transactionsBytes = await hexToUint8ArrayBatch(rawTransactions.map(t => t.body));
+    const transactionsBytes = await hexToUint8ArrayBatch(
+      rawTransactions.map(t => t.transactionBytes),
+    );
     transactions.value = rawTransactions.map((transaction, i) => ({
       transactionRaw: transaction,
       transaction: Transaction.fromBytes(transactionsBytes[i]),

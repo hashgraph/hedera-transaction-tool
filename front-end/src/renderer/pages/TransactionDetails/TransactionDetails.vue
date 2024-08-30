@@ -436,7 +436,7 @@ async function fetchTransaction(id: string | number) {
         user.selectedOrganization?.serverUrl || '',
         Number(id),
       );
-      transactionBytes = await hexToUint8Array(orgTransaction.value.body);
+      transactionBytes = await hexToUint8Array(orgTransaction.value.transactionBytes);
       publicKeysRequiredToSign.value = await publicRequiredToSign(
         SDKTransaction.fromBytes(transactionBytes),
         user.selectedOrganization.userKeys,

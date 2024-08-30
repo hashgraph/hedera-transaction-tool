@@ -154,7 +154,7 @@ async function fetchTransactions() {
 
     totalItems.value = rawTransactions.length;
     const transactionsBytes = await hexToUint8ArrayBatch(
-      rawTransactions.map(t => t.transaction.body),
+      rawTransactions.map(t => t.transaction.transactionBytes),
     );
 
     for (const [i, transaction] of rawTransactions.entries()) {

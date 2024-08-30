@@ -105,7 +105,9 @@ async function fetchTransactions() {
       [{ property: sort.field, direction: sort.direction }],
     );
     totalItems.value = totalItemsCount;
-    const transactionsBytes = await hexToUint8ArrayBatch(rawTransactions.map(t => t.body));
+    const transactionsBytes = await hexToUint8ArrayBatch(
+      rawTransactions.map(t => t.transactionBytes),
+    );
 
     for (const [i, transaction] of rawTransactions.entries()) {
       const currentGroup =

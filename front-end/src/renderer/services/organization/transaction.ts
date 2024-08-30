@@ -34,7 +34,7 @@ export const submitTransaction = async (
   serverUrl: string,
   name: string,
   description: string,
-  body: string,
+  transactionBytes: string,
   network: Network,
   signature: string,
   creatorKeyId: number,
@@ -43,7 +43,7 @@ export const submitTransaction = async (
     const { data } = await axiosWithCredentials.post(`${serverUrl}/${controller}`, {
       name,
       description,
-      body,
+      transactionBytes,
       network,
       signature,
       creatorKeyId,

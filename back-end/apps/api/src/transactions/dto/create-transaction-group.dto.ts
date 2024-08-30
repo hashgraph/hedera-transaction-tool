@@ -4,14 +4,13 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  ValidateNested
+  ValidateNested,
 } from 'class-validator';
 import { CreateTransactionGroupItemDto } from './create-transaction-group-item.dto';
 import { Type } from 'class-transformer';
 
 export class CreateTransactionGroupDto {
   @IsString()
-  @IsNotEmpty()
   description: string;
 
   @IsOptional()

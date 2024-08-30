@@ -162,7 +162,9 @@ async function fetchTransactions() {
       );
       totalItems.value = totalItemsCount;
 
-      const transactionsBytes = await hexToUint8ArrayBatch(rawTransactions.map(t => t.body));
+      const transactionsBytes = await hexToUint8ArrayBatch(
+        rawTransactions.map(t => t.transactionBytes),
+      );
       organizationTransactions.value = rawTransactions.map((transaction, i) => ({
         transactionRaw: transaction,
         transaction: SDKTransaction.fromBytes(transactionsBytes[i]),

@@ -77,7 +77,7 @@ describe('Transactions (e2e)', () => {
     return {
       name: 'TEST Simple Account Create Transaction',
       description: 'TEST This is a simple account create transaction',
-      body: buffer,
+      transactionBytes: buffer,
       creatorKeyId: userKey.id,
       signature: Buffer.from(
         (account || localnet1003).privateKey.sign(transaction.toBytes()),
@@ -127,7 +127,7 @@ describe('Transactions (e2e)', () => {
       testsAddedTransactionsCountUser++;
 
       expect(status).toEqual(201);
-      expect(body.body).not.toEqual(transaction.body);
+      expect(body.transactionBytes).not.toEqual(transaction.transactionBytes);
       expect(body).toMatchObject(
         expect.objectContaining({
           name: transaction.name,
@@ -295,7 +295,7 @@ describe('Transactions (e2e)', () => {
       const dto = {
         name: 'Simple Account Create Transaction',
         description: 'This is a simple account create transaction',
-        body: buffer,
+        transactionBytes: buffer,
         creatorKeyId: userKey.id,
         signature: Buffer.from(localnet1003.privateKey.sign(transaction.toBytes())).toString('hex'),
         network: localnet1003.network,
@@ -537,7 +537,7 @@ describe('Transactions (e2e)', () => {
       const dto = {
         name: 'In Test #1 Account Update Transaction',
         description: 'TEST This is a account update transaction',
-        body: buffer,
+        transactionBytes: buffer,
         creatorKeyId: userKey.id,
         signature: Buffer.from(localnet2.privateKey.sign(transaction.toBytes())).toString('hex'),
         network: localnet2.network,
@@ -566,7 +566,7 @@ describe('Transactions (e2e)', () => {
       const dto = {
         name: 'In Test #2 Simple Account Create Transaction',
         description: 'TEST This is a simple account create transaction',
-        body: buffer,
+        transactionBytes: buffer,
         creatorKeyId: userKey.id,
         signature: Buffer.from(localnet1003.privateKey.sign(transaction.toBytes())).toString('hex'),
         network: localnet2.network,
@@ -608,7 +608,7 @@ describe('Transactions (e2e)', () => {
       const dto = {
         name: 'In Test #3 TEST Transfer Transaction',
         description: 'TEST This is a transfer transaction',
-        body: buffer,
+        transactionBytes: buffer,
         creatorKeyId: userKey.id,
         signature: Buffer.from(localnet2.privateKey.sign(transaction.toBytes())).toString('hex'),
         network: localnet2.network,

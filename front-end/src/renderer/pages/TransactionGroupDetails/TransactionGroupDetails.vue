@@ -59,7 +59,7 @@ async function handleFetchGroup(id: string | number) {
             shouldApprove.value ||
             (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id));
 
-          const transactionBytes = await hexToUint8Array(item.transaction.body);
+          const transactionBytes = await hexToUint8Array(item.transaction.transactionBytes);
 
           const newKeys = await publicRequiredToSign(
             Transaction.fromBytes(transactionBytes),
@@ -141,7 +141,7 @@ const handleSignGroup = async () => {
   try {
     if (group.value != undefined) {
       for (const groupItem of group.value.groupItems) {
-        const transactionBytes = await hexToUint8Array(groupItem.transaction.body);
+        const transactionBytes = await hexToUint8Array(groupItem.transaction.transactionBytes);
         const transaction = Transaction.fromBytes(transactionBytes);
         const publicKeysRequired = await publicRequiredToSign(
           transaction,
@@ -196,7 +196,7 @@ const handleApproveAll = async (approved: boolean, showModal?: boolean) => {
     if (group.value != undefined) {
       for (const item of group.value.groupItems) {
         if (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id)) {
-          const transactionBytes = await hexToUint8Array(item.transaction.body);
+          const transactionBytes = await hexToUint8Array(item.transaction.transactionBytes);
           const transaction = Transaction.fromBytes(transactionBytes);
           const signature = await getTransactionBodySignatureWithoutNodeAccountId(
             privateKey,
