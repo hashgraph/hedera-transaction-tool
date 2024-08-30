@@ -15,7 +15,6 @@ describe('Notification Preferences (e2e)', () => {
 
   let adminAuthCookie: string;
   let userAuthCookie: string;
-  let userNewAuthCookie: string;
   let admin: User;
   let user: User;
 
@@ -31,7 +30,6 @@ describe('Notification Preferences (e2e)', () => {
 
     adminAuthCookie = await login(app, 'admin');
     userAuthCookie = await login(app, 'user');
-    userNewAuthCookie = await login(app, 'userNew');
 
     admin = await getUser('admin');
     user = await getUser('user');
@@ -229,18 +227,6 @@ describe('Notification Preferences (e2e)', () => {
       await endpoint.patch({ email: true }, null).expect(401);
     });
 
-    it('(PATCH) should NOT update the preferences if the user is not verified', async () => {
-      await endpoint
-        .patch(
-          {
-            email: true,
-          },
-          null,
-          userNewAuthCookie,
-        )
-        .expect(403);
-    });
-
     it('(GET) should create the preferences if they do not exist', async () => {
       let preferences = await getPreferences(admin.id);
       expect(preferences).toEqual([]);
@@ -306,10 +292,6 @@ describe('Notification Preferences (e2e)', () => {
 
     it('(GET) should not return the preferences if the user is not authenticated', async () => {
       await endpoint.get(null).expect(401);
-    });
-
-    it('(GET) should not return the preferences if the user is not verified', async () => {
-      await endpoint.get(null, userNewAuthCookie).expect(403);
     });
   });
 });

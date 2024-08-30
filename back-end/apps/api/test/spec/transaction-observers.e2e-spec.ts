@@ -68,7 +68,7 @@ describe('Transaction Observers (e2e)', () => {
     return {
       name: 'TEST Simple Account Create Transaction',
       description: 'TEST This is a simple account create transaction',
-      body: buffer,
+      transactionBytes: buffer,
       creatorKeyId: userKey.id,
       signature: Buffer.from(usrAccount.privateKey.sign(transaction.toBytes())).toString('hex'),
       network: usrAccount.network,

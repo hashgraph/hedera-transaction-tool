@@ -311,7 +311,7 @@ describe('Transactions (e2e)', () => {
       const transactionBody = {
         name: 'TEST Simple Account Create Transaction',
         description: 'TEST This is a simple account create transaction',
-        body: buffer,
+        transactionBytes: buffer,
         creatorKeyId: userKey1003.id,
         signature: Buffer.from(localnet1003.privateKey.sign(sdkTransaction.toBytes())).toString(
           'hex',
