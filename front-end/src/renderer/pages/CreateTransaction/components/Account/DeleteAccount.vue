@@ -493,6 +493,7 @@ const columnClass = 'col-4 col-xxxl-3';
     />
 
     <AppModal
+      v-if="isConfirmModalShown"
       class="common-modal"
       v-model:show="isConfirmModalShown"
       :close-on-click-outside="false"
