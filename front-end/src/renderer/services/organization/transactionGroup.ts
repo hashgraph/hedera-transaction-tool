@@ -6,7 +6,7 @@ import { commonRequestHandler } from '@renderer/utils';
 export interface ApiTransaction {
   name: string;
   description: string;
-  body: string;
+  transactionBytes: string;
   network: Network;
   signature: string;
   creatorKeyId: number;

@@ -115,7 +115,7 @@ export const decryptPrivateKey = async (user_id: string, password: string, publi
     },
   });
 
-  return decrypt(keyPair?.private_key, password);
+  return decrypt(keyPair?.private_key || '', password);
 };
 
 // Delete encrypted private keys

@@ -333,7 +333,7 @@ async function sendSignedTransactionsToOrganization() {
       transaction: {
         name: transaction.transactionMemo || `New ${getTransactionType(transaction)}`,
         description: transaction.transactionMemo || '',
-        body: groupBytesHex[i],
+        transactionBytes: groupBytesHex[i],
         network: network.network,
         signature: groupSignatureHex[i],
         creatorKeyId:
