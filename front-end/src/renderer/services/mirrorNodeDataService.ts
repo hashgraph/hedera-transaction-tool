@@ -16,13 +16,24 @@ import {
 /* Mirror node data service */
 
 /* Get users account id by a public key */
-export const getAccountId = async (mirrorNodeURL: string, publicKey: string): Promise<string[]> => {
+export const getAccountIds = async (
+  mirrorNodeURL: string,
+  publicKey: string,
+  nextUrl: string | null,
+) => {
   try {
-    const { data } = await axios.get(`${mirrorNodeURL}/accounts/?account.publickey=${publicKey}`);
-    return data.accounts.map(acc => acc.account);
+    const { data } = await axios.get(
+      nextUrl || `${mirrorNodeURL}/accounts/?account.publickey=${publicKey}&limit=100&order=asc`,
+    );
+    return {
+      accounts: data.accounts,
+      nextUrl: data.links?.next
+        ? `${mirrorNodeURL}${data.links.next.slice(data.links.next.indexOf('/accounts'))}`
+        : null,
+    };
   } catch (error) {
     console.log(error);
-    return [];
+    return { accounts: [], nextUrl: null };
   }
 };
 
@@ -35,7 +46,7 @@ export const getAccountsByPublicKey = async (
 
   try {
     let nextUrl: string | null =
-      `${mirrorNodeURL}/accounts/?account.publickey=${publicKey}&limit=25&order=asc`;
+      `${mirrorNodeURL}/accounts/?account.publickey=${publicKey}&limit=100&order=asc`;
 
     while (nextUrl) {
       const { data } = await axios.get(nextUrl);

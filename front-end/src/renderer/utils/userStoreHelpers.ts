@@ -16,7 +16,7 @@ import {
 } from '@renderer/types';
 
 import { getUserState, healthCheck } from '@renderer/services/organization';
-import { getAccountsByPublicKey } from '@renderer/services/mirrorNodeDataService';
+import { getAccountIds, getAccountsByPublicKey } from '@renderer/services/mirrorNodeDataService';
 import { storeKeyPair as storeKey, getKeyPairs } from '@renderer/services/keyPairService';
 import {
   shouldSignInOrganization,
@@ -238,6 +238,35 @@ export const getPublicKeysToAccounts = async (keyPairs: KeyPair[], mirrorNodeBas
   });
 
   return publicKeyToAccounts;
+};
+
+export const setPublicKeyToAccounts = async (
+  publicKeyToAccounts: Ref<PublicKeyAccounts[]>,
+  keyPairs: KeyPair[],
+  mirrorNodeBaseURL: string,
+) => {
+  for (const { public_key } of keyPairs) {
+    let next: string | null = null;
+
+    do {
+      const { accounts, nextUrl } = await getAccountIds(mirrorNodeBaseURL, public_key, next);
+      next = nextUrl;
+
+      const publicKeyPair = publicKeyToAccounts.value.findIndex(
+        pkToAcc => pkToAcc.publicKey === public_key,
+      );
+
+      if (publicKeyPair >= 0) {
+        publicKeyToAccounts.value[publicKeyPair].accounts?.push(...accounts);
+      } else {
+        publicKeyToAccounts.value.push({
+          publicKey: public_key,
+          accounts,
+        });
+      }
+      publicKeyToAccounts.value = [...publicKeyToAccounts.value];
+    } while (next);
+  }
 };
 
 /* Computations */
