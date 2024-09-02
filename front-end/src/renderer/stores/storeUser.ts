@@ -107,7 +107,8 @@ const useUserStore = defineStore('user', () => {
   };
 
   const refetchAccounts = async () => {
-    publicKeyToAccounts.value = await ush.getPublicKeysToAccounts(
+    await ush.setPublicKeyToAccounts(
+      publicKeyToAccounts,
       keyPairs.value,
       network.mirrorNodeBaseURL,
     );
