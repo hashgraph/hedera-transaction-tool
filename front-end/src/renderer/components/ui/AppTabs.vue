@@ -35,7 +35,7 @@ defineEmits(['update:active-index']);
           {{ item.title }}
           <span
             v-if="item.notifications"
-            class="notification d-inline-block rounded-circle bg-primary text-white"
+            class="notification d-inline-block rounded-circle bg-danger text-white"
             >{{ item.notifications.toFixed(0) }}</span
           >
         </AppButton>
