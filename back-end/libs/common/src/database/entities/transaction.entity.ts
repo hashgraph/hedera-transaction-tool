@@ -74,11 +74,17 @@ export class Transaction {
   @Column()
   transactionHash: string;
 
+  @ApiProperty({
+    description: 'The transaction in bytes',
+  })
   @Column({ type: 'bytea' })
-  body: Buffer;
+  transactionBytes: Buffer;
 
-  @Column({ type: 'bytea', nullable: true })
-  collatedBody?: Buffer;
+  @ApiProperty({
+    description: 'The transaction in bytes. This transaction does not contain any signatures.',
+  })
+  @Column({ type: 'bytea'})
+  unsignedTransactionBytes: Buffer;
 
   @Column()
   status: TransactionStatus;

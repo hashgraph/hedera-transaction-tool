@@ -23,9 +23,9 @@ export class TransactionDto {
   @Expose()
   description: string;
 
-  @Transform(({ obj }) => obj.body.toString('hex'))
+  @Transform(({ obj }) => obj.transactionBytes.toString('hex'))
   @Expose()
-  body: Buffer;
+  transactionBytes: Buffer;
 
   @Expose()
   status: TransactionStatus;

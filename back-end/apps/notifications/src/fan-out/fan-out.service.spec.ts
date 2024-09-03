@@ -116,7 +116,7 @@ describe('Fan Out Service', () => {
       await service.fanOutNew(notification, receivers);
 
       expect(emailService.processEmail).toHaveBeenCalledWith({
-        from: '"Transaction Tool" info@transactiontool.com',
+        from: '"Transaction Tool" no-reply@hederatransactiontool.com',
         to: [receivers[0].user.email],
         subject: NotificationTypeEmailSubjects.TRANSACTION_EXECUTED,
         text: notification.content,
@@ -156,7 +156,7 @@ describe('Fan Out Service', () => {
       await service.fanOutNew(notification, receivers);
 
       expect(emailService.processEmail).toHaveBeenCalledWith({
-        from: '"Transaction Tool" info@transactiontool.com',
+        from: '"Transaction Tool" no-reply@hederatransactiontool.com',
         to: [receivers[0].user.email],
         subject: NotificationTypeEmailSubjects.TRANSACTION_EXECUTED,
         text: notification.content,
@@ -263,7 +263,7 @@ describe('Fan Out Service', () => {
       await service.fanOutNew(notification, receivers);
 
       expect(emailService.processEmail).toHaveBeenCalledWith({
-        from: '"Transaction Tool" info@transactiontool.com',
+        from: '"Transaction Tool" no-reply@hederatransactiontool.com',
         to: [receivers[0].user.email],
         subject: NotificationTypeEmailSubjects.TRANSACTION_EXECUTED,
         text: notification.content,
@@ -305,7 +305,7 @@ describe('Fan Out Service', () => {
       await service.fanOutNew(notification, receivers);
 
       expect(emailService.processEmail).toHaveBeenCalledWith({
-        from: '"Transaction Tool" info@transactiontool.com',
+        from: '"Transaction Tool" no-reply@hederatransactiontool.com',
         to: [receivers[0].user.email],
         subject: NotificationTypeEmailSubjects.TRANSACTION_EXECUTED,
         text: notification.content,

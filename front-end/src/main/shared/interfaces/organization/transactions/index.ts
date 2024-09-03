@@ -34,7 +34,7 @@ export interface ITransaction {
   transactionId: string;
   type: BackEndTransactionType;
   description: string;
-  body: string;
+  transactionBytes: string;
   status: TransactionStatus;
   statusCode?: number;
   signature: string;

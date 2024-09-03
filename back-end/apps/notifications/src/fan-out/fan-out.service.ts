@@ -125,7 +125,7 @@ export class FanOutService {
 
     if (emails.length > 0) {
       const mailOptions: SendMailOptions = {
-        from: '"Transaction Tool" info@transactiontool.com',
+        from: '"Transaction Tool" no-reply@hederatransactiontool.com',
         to: emails,
         subject: NotificationTypeEmailSubjects[notification.type],
         text: notification.content,

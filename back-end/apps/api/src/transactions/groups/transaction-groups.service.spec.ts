@@ -89,7 +89,7 @@ describe('TransactionGroupsService', () => {
             transaction: {
               name: 'Transaction 1',
               description: 'Description',
-              body: Buffer.from('0xabc01'),
+              transactionBytes: Buffer.from('0xabc01'),
               creatorKeyId: 1,
               signature: Buffer.from('0xabc02'),
               network: Network.TESTNET,
@@ -100,7 +100,7 @@ describe('TransactionGroupsService', () => {
             transaction: {
               name: 'Transaction 2',
               description: 'Description',
-              body: Buffer.from('0xabc03'),
+              transactionBytes: Buffer.from('0xabc03'),
               creatorKeyId: 1,
               signature: Buffer.from('0xabc04'),
               network: Network.TESTNET,

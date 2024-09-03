@@ -117,7 +117,7 @@ export class SignersService {
     const transaction = await this.dataSource.manager.findOneBy(Transaction, { id: transactionId });
     if (!transaction) throw new BadRequestException('Transaction not found');
 
-    const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
+    const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
     if (isExpired(sdkTransaction)) throw new BadRequestException('Transaction is expired');
 
     /* Checks if the transaction is canceled */
@@ -161,7 +161,7 @@ export class SignersService {
     /* Update the transaction */
     try {
       Object.assign(transaction, {
-        body: sdkTransaction.toBytes(),
+        transactionBytes: sdkTransaction.toBytes(),
       });
       await this.dataSource.manager.update(Transaction, { id: transactionId }, transaction);
     } catch (error) {
@@ -218,7 +218,7 @@ export class SignersService {
     const transaction = await this.dataSource.manager.findOneBy(Transaction, { id: transactionId });
     if (!transaction) throw new BadRequestException('Transaction not found');
 
-    const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
+    const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
     if (isExpired(sdkTransaction)) throw new BadRequestException('Transaction is expired');
 
     /* Checks if the transaction is canceled */
@@ -269,7 +269,7 @@ export class SignersService {
     /* Update the transaction */
     try {
       Object.assign(transaction, {
-        body: sdkTransaction.toBytes(),
+        transactionBytes: sdkTransaction.toBytes(),
       });
       await this.dataSource.manager.save(Transaction, transaction);
     } catch (error) {

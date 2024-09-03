@@ -271,7 +271,7 @@ describe('TransactionStatusService', () => {
         {
           id: 1,
           status: TransactionStatus.WAITING_FOR_SIGNATURES,
-          body: new AccountCreateTransaction().toBytes(),
+          transactionBytes: new AccountCreateTransaction().toBytes(),
           transactionId: '0.0.1',
           creatorKey: {
             userId: 23,
@@ -280,7 +280,7 @@ describe('TransactionStatusService', () => {
         {
           id: 2,
           status: TransactionStatus.WAITING_FOR_EXECUTION,
-          body: new AccountCreateTransaction().toBytes(),
+          transactionBytes: new AccountCreateTransaction().toBytes(),
           transactionId: '0.0.2',
           creatorKey: {
             userId: 24,
@@ -348,17 +348,17 @@ describe('TransactionStatusService', () => {
         {
           id: 1,
           status: TransactionStatus.WAITING_FOR_EXECUTION,
-          body: new AccountCreateTransaction().toBytes(),
+          transactionBytes: new AccountCreateTransaction().toBytes(),
         },
         {
           id: 2,
           status: TransactionStatus.WAITING_FOR_SIGNATURES,
-          body: new AccountCreateTransaction().toBytes(),
+          transactionBytes: new AccountCreateTransaction().toBytes(),
         },
         {
           id: 3,
           status: TransactionStatus.WAITING_FOR_EXECUTION,
-          body: new AccountCreateTransaction().toBytes(),
+          transactionBytes: new AccountCreateTransaction().toBytes(),
         },
       ];
 
@@ -380,17 +380,17 @@ describe('TransactionStatusService', () => {
         {
           id: 1,
           status: TransactionStatus.WAITING_FOR_SIGNATURES,
-          body: new FileUpdateTransaction().toBytes(),
+          transactionBytes: new FileUpdateTransaction().toBytes(),
         },
         {
           id: 2,
           status: TransactionStatus.WAITING_FOR_EXECUTION,
-          body: new AccountCreateTransaction().toBytes(),
+          transactionBytes: new AccountCreateTransaction().toBytes(),
         },
         {
           id: 3,
           status: TransactionStatus.WAITING_FOR_EXECUTION,
-          body: new FileAppendTransaction().toBytes(),
+          transactionBytes: new FileAppendTransaction().toBytes(),
         },
       ];
 
@@ -430,7 +430,7 @@ describe('TransactionStatusService', () => {
       const transaction = {
         id: 1,
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
-        body: new AccountCreateTransaction().toBytes(),
+        transactionBytes: new AccountCreateTransaction().toBytes(),
         transactionId: '0.0.1',
         creatorKey: {
           userId: 23,
@@ -474,7 +474,7 @@ describe('TransactionStatusService', () => {
       const transaction = {
         id: 1,
         status: TransactionStatus.WAITING_FOR_EXECUTION,
-        body: new AccountCreateTransaction().toBytes(),
+        transactionBytes: new AccountCreateTransaction().toBytes(),
       };
 
       transactionRepo.findOne.mockResolvedValue(transaction as Transaction);
@@ -494,7 +494,7 @@ describe('TransactionStatusService', () => {
       const transaction = {
         id: 1,
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
-        body: new FileUpdateTransaction().toBytes(),
+        transactionBytes: new FileUpdateTransaction().toBytes(),
       };
 
       transactionRepo.findOne.mockResolvedValue(transaction as Transaction);
@@ -522,7 +522,7 @@ describe('TransactionStatusService', () => {
       const transaction = {
         id: 1,
         status: TransactionStatus.WAITING_FOR_EXECUTION,
-        body: new AccountCreateTransaction().toBytes(),
+        transactionBytes: new AccountCreateTransaction().toBytes(),
       };
       transactionRepo.findOne.mockResolvedValue(transaction as Transaction);
 

@@ -22,7 +22,7 @@ export const keysRequiredToSign = async (
   if (!transaction) return [];
 
   /* Deserialize the transaction */
-  const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
+  const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
   /* Ignore if expired */
   if (isExpired(sdkTransaction)) return [];

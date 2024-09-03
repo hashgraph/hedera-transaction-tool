@@ -68,7 +68,10 @@ describe('TransactionsController', () => {
       transactionId: '0.0.123@15648433.112315',
       validStart: new Date(),
       transactionHash: '5a381df6a8s4f9e0asd8f46aw8e1f0asdd',
-      body: Buffer.from(
+      transactionBytes: Buffer.from(
+        '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      ),
+      unsignedTransactionBytes: Buffer.from(
         '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
       ),
       signature: Buffer.from(
