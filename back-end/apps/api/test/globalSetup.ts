@@ -1,9 +1,8 @@
 /* eslint-disable no-var */
 import { exec } from 'child_process';
 import * as util from 'util';
-import * as path from 'path';
 
-import { GenericContainer, StartedTestContainer } from 'testcontainers';
+import { StartedTestContainer } from 'testcontainers';
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import { RedisContainer } from '@testcontainers/redis';
 import { RabbitMQContainer } from '@testcontainers/rabbitmq';
@@ -15,8 +14,8 @@ const execPromise = util.promisify(exec);
 const redisContainerName = 'Redis';
 const postgresContainerName = 'Postgres';
 const rabbitMQContainerName = 'RabbitMQ';
-const notificationsServiceContainerName = 'Notifications_Service';
-const chainServiceContainerName = 'Chain_Service';
+// const notificationsServiceContainerName = 'Notifications_Service';
+// const chainServiceContainerName = 'Chain_Service';
 
 export default async function globalSetup() {
   /* Stops the containers if they are already running */
@@ -85,74 +84,74 @@ async function startRabbitMQ() {
   process.env.RABBITMQ_URI = global.RABBITMQ_CONTAINER.getAmqpUrl();
 }
 
-async function startNotificationsService() {
-  console.log(`Starting ${notificationsServiceContainerName} container...`);
+// async function startNotificationsService() {
+//   console.log(`Starting ${notificationsServiceContainerName} container...`);
 
-  const container = await GenericContainer.fromDockerfile(
-    path.join(__dirname, '../../../'),
-    'apps/notifications/Dockerfile',
-  )
-    .withTarget('development')
-    .build();
+//   const container = await GenericContainer.fromDockerfile(
+//     path.join(__dirname, '../../../'),
+//     'apps/notifications/Dockerfile',
+//   )
+//     .withTarget('development')
+//     .build();
 
-  const startedContainer = await container
-    .withName(notificationsServiceContainerName)
-    .withCommand(['npm', 'run', 'start:dev', 'notifications'])
-    .withEnvironment({
-      HTTP_PORT: '3020',
-      RABBITMQ_URI: process.env.RABBITMQ_URI.replace('localhost', process.env.RABBITMQ_GATEWAY),
-      /* Non essential environment variables */
-      AUTH_HOST: 'unknown', // This is not required as we won't be checking the token
-      AUTH_PORT: '3001', // This is not required as we won't be checking the token
-      BREVO_USERNAME: 'brevo_credentials', // This is not required as we are unable to check email
-      BREVO_PASSWORD: 'brevo_credentials', // This is not required as we are unable to check email
-    })
-    .withExposedPorts(3020)
-    .start();
-  console.log('Started container:', startedContainer.getName());
+//   const startedContainer = await container
+//     .withName(notificationsServiceContainerName)
+//     .withCommand(['npm', 'run', 'start:dev', 'notifications'])
+//     .withEnvironment({
+//       HTTP_PORT: '3020',
+//       RABBITMQ_URI: process.env.RABBITMQ_URI.replace('localhost', process.env.RABBITMQ_GATEWAY),
+//       /* Non essential environment variables */
+//       AUTH_HOST: 'unknown', // This is not required as we won't be checking the token
+//       AUTH_PORT: '3001', // This is not required as we won't be checking the token
+//       BREVO_USERNAME: 'brevo_credentials', // This is not required as we are unable to check email
+//       BREVO_PASSWORD: 'brevo_credentials', // This is not required as we are unable to check email
+//     })
+//     .withExposedPorts(3020)
+//     .start();
+//   console.log('Started container:', startedContainer.getName());
 
-  global.NOTIFICATIONS_SERVICE_CONTAINER = startedContainer;
+//   global.NOTIFICATIONS_SERVICE_CONTAINER = startedContainer;
 
-  console.log(
-    `${notificationsServiceContainerName} container started at ${global.NOTIFICATIONS_SERVICE_CONTAINER.getHost()}:${startedContainer.getMappedPort(3020)}`,
-  );
+//   console.log(
+//     `${notificationsServiceContainerName} container started at ${global.NOTIFICATIONS_SERVICE_CONTAINER.getHost()}:${startedContainer.getMappedPort(3020)}`,
+//   );
 
-  process.env.NOTIFICATIONS_SERVICE_URL = `http://${global.NOTIFICATIONS_SERVICE_CONTAINER.getHost()}:${startedContainer.getMappedPort(3020)}`;
-}
+//   process.env.NOTIFICATIONS_SERVICE_URL = `http://${global.NOTIFICATIONS_SERVICE_CONTAINER.getHost()}:${startedContainer.getMappedPort(3020)}`;
+// }
 
-async function startChainService() {
-  console.log(`Starting ${chainServiceContainerName} container...`);
+// async function startChainService() {
+//   console.log(`Starting ${chainServiceContainerName} container...`);
 
-  const container = await GenericContainer.fromDockerfile(
-    path.join(__dirname, '../../../'),
-    'apps/chain/Dockerfile',
-  )
-    .withTarget('development')
-    .build();
+//   const container = await GenericContainer.fromDockerfile(
+//     path.join(__dirname, '../../../'),
+//     'apps/chain/Dockerfile',
+//   )
+//     .withTarget('development')
+//     .build();
 
-  const startedContainer = await container
-    .withCommand(['npm', 'run', 'start:dev', 'chain'])
-    .withEnvironment({
-      RABBITMQ_URI: process.env.RABBITMQ_URI.replace('localhost', process.env.RABBITMQ_GATEWAY),
-      REDIS_URL: process.env.REDIS_URL.replace('localhost', process.env.REDIS_GETAWAY),
-      POSTGRES_HOST: process.env.POSTGRES_GETAWAY,
-      POSTGRES_PORT: process.env.POSTGRES_PORT,
-      POSTGRES_DATABASE: process.env.POSTGRES_DATABASE,
-      POSTGRES_USERNAME: process.env.POSTGRES_USERNAME,
-      POSTGRES_PASSWORD: process.env.POSTGRES_PASSWORD,
-      POSTGRES_SYNCHRONIZE: 'true',
-    })
-    .start();
-  console.log('Started container:', startedContainer.getName());
+//   const startedContainer = await container
+//     .withCommand(['npm', 'run', 'start:dev', 'chain'])
+//     .withEnvironment({
+//       RABBITMQ_URI: process.env.RABBITMQ_URI.replace('localhost', process.env.RABBITMQ_GATEWAY),
+//       REDIS_URL: process.env.REDIS_URL.replace('localhost', process.env.REDIS_GETAWAY),
+//       POSTGRES_HOST: process.env.POSTGRES_GETAWAY,
+//       POSTGRES_PORT: process.env.POSTGRES_PORT,
+//       POSTGRES_DATABASE: process.env.POSTGRES_DATABASE,
+//       POSTGRES_USERNAME: process.env.POSTGRES_USERNAME,
+//       POSTGRES_PASSWORD: process.env.POSTGRES_PASSWORD,
+//       POSTGRES_SYNCHRONIZE: 'true',
+//     })
+//     .start();
+//   console.log('Started container:', startedContainer.getName());
 
-  global.CHAIN_SERVICE_CONTAINER = startedContainer;
+//   global.CHAIN_SERVICE_CONTAINER = startedContainer;
 
-  console.log(
-    `${chainServiceContainerName} container started at ${global.CHAIN_SERVICE_CONTAINER.getHost()}:${startedContainer.getMappedPort(3020)}`,
-  );
+//   console.log(
+//     `${chainServiceContainerName} container started at ${global.CHAIN_SERVICE_CONTAINER.getHost()}:${startedContainer.getMappedPort(3020)}`,
+//   );
 
-  process.env.CHAIN_SERVICE_URL = `http://${global.CHAIN_SERVICE_CONTAINER.getHost()}:${startedContainer.getMappedPort(3020)}`;
-}
+//   process.env.CHAIN_SERVICE_URL = `http://${global.CHAIN_SERVICE_CONTAINER.getHost()}:${startedContainer.getMappedPort(3020)}`;
+// }
 
 async function startHederaLocalnet() {
   console.log('Starting Hedera Localnet...');

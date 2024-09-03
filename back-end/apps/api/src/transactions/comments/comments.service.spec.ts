@@ -46,7 +46,7 @@ describe('CommentsService', () => {
       const dto: CreateCommentDto = { message: 'This is a test comment' };
       const expectedComment = {
         ...dto,
-        transaction: transactionId,
+        transaction: { id: transactionId },
         user: user,
       } as unknown as TransactionComment;
 
