@@ -13,7 +13,7 @@
     "test": "tests"
   },
   "dependencies": {
-    "@playwright/test": "^1.41.2",
+    "@playwright/test": "^1.46.0",
     "playwright-core": "^1.41.2",
     "dotenv": "16.4.5",
     "sqlite3": "5.1.7",
