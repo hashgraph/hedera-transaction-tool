@@ -104,7 +104,7 @@ jobs:
         working-directory: automation
 
       - name: Install hedera globally
-        run: pnpm i -g @hashgraph/hedera-local
+        run: npm i -g @hashgraph/hedera-local
 
       - name: run hedera local
         run: hedera start -d --verbose=trace
