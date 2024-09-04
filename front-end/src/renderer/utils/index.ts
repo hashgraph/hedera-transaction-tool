@@ -1,4 +1,4 @@
-import { ToastPluginApi } from 'vue-toast-notification';
+import type { ToastPluginApi } from 'vue-toast-notification';
 
 import GlobalModalLoader from '@renderer/components/GlobalModalLoader.vue';
 
@@ -13,7 +13,7 @@ export * from './notifications';
 export const getDateTimeLocalInputValue = (date: Date) => {
   const tzo = -date.getTimezoneOffset();
   const dif = tzo >= 0 ? '+' : '-';
-  const pad = function (num) {
+  const pad = function (num: number) {
     return (num < 10 ? '0' : '') + num;
   };
 
@@ -81,7 +81,7 @@ export const withLoader = (
   loaderRef: InstanceType<typeof GlobalModalLoader> | null | undefined,
   defaultErrorMessage = 'Failed to perform operation',
 ) => {
-  return async (...args) => {
+  return async (...args: any[]) => {
     try {
       loaderRef?.open();
       return await fn(...args);

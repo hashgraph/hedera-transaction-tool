@@ -1,4 +1,5 @@
-import { Ref, provide, readonly } from 'vue';
+import type { Ref } from 'vue';
+import { provide, readonly } from 'vue';
 
 import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
 

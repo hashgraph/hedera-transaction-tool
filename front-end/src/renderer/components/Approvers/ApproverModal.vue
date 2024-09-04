@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
+import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+import type { TabItem } from '@renderer/components/ui/AppTabs.vue';
 
-import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+import { computed, nextTick, ref, watch } from 'vue';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
-import AppTabs, { TabItem } from '@renderer/components/ui/AppTabs.vue';
+import AppTabs from '@renderer/components/ui/AppTabs.vue';
 import ApproverStructureEdit from '@renderer/components/Approvers/ApproverStructureEdit.vue';
 import ApproverSingleEdit from '@renderer/components/Approvers/ApproverSingleEdit.vue';
 import ApproverStructure from '@renderer/components/Approvers/ApproverStructure.vue';
@@ -57,7 +58,7 @@ const handleApproverUpdate = (newApprover: TransactionApproverDto) =>
 const handleSingleApproverUpdate = (newApprover: TransactionApproverDto[]) =>
   (currentSingleApprover.value = newApprover);
 
-const handleDoneClick = async e => {
+const handleDoneClick = async (e: Event) => {
   e.preventDefault();
 
   if (currentApproverInvalid.value) {

@@ -1,6 +1,8 @@
+import type { HederaAccount } from '@prisma/client';
+
 import { ipcRenderer } from 'electron';
 
-import { HederaAccount, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import { Network } from '@main/shared/enums';
 

@@ -1,4 +1,4 @@
-import { IUser, IUserKey } from './organization';
+import type { IUser, IUserKey } from './organization';
 
 export interface Contact {
   user: IUser;

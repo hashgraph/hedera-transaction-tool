@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+
 import { inject, onUnmounted, ref, watch } from 'vue';
 import { Mnemonic } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
@@ -13,7 +15,7 @@ import { uploadKey } from '@renderer/services/organization';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
-import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -43,12 +45,12 @@ const importRef = ref<InstanceType<typeof Import> | null>(null);
 const restoredKey = ref<{ privateKey: string; publicKey: string } | null>(null);
 
 /* Handlers */
-const handleFinish = e => {
+const handleFinish = (e: Event) => {
   e.preventDefault();
   step.value++;
 };
 
-const handleRestoreKey = async e => {
+const handleRestoreKey = async (e: Event) => {
   e.preventDefault();
 
   if (!user.recoveryPhrase) {
@@ -88,7 +90,7 @@ const handleRestoreKey = async e => {
   }
 };
 
-const handleSaveKey = async e => {
+const handleSaveKey = async (e: Event) => {
   e.preventDefault();
 
   const callback = async () => {

@@ -1,6 +1,7 @@
+import type { ITransaction } from '@main/shared/interfaces';
+
 import { Network } from '@main/shared/enums';
 import axios from 'axios';
-import { ITransaction } from '@main/shared/interfaces';
 import { commonRequestHandler } from '@renderer/utils';
 
 export interface ApiTransaction {

@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import type { RouteLocationNormalized } from 'vue-router';
+
 import { ref } from 'vue';
-import { RouteLocationNormalized, onBeforeRouteLeave } from 'vue-router';
+import { onBeforeRouteLeave } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 

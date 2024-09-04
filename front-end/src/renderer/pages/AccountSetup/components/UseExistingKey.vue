@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import type { KeyPair } from '@prisma/client';
+
 import { onBeforeMount, ref } from 'vue';
 
 import { PublicKey } from '@hashgraph/sdk';
-
-import { KeyPair } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 

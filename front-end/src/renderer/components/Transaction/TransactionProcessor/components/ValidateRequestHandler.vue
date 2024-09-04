@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { Handler, TransactionRequest } from '..';
+
 import { ref } from 'vue';
 import { FileCreateTransaction, FileUpdateTransaction, Transaction } from '@hashgraph/sdk';
 
@@ -8,8 +10,6 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { ableToSign, getTransactionType } from '@renderer/utils';
 import { assertUserLoggedIn } from '@renderer/utils/userStoreHelpers';
-
-import { Handler, TransactionRequest } from '..';
 
 /* Stores */
 const user = useUserStore();

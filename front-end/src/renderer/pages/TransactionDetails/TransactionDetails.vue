@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import type { Transaction } from '@prisma/client';
+import type { ITransactionFull } from '@main/shared/interfaces';
+import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+
 import { computed, inject, onBeforeMount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
-import { Transaction } from '@prisma/client';
 
-import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
+import { TransactionStatus } from '@main/shared/interfaces';
 import { TRANSACTION_ACTION } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -27,7 +30,7 @@ import { getTransaction } from '@renderer/services/transactionService';
 import { hexToUint8Array } from '@renderer/services/electronUtilsService';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 
-import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
 import {
   isLoggedInOrganization,
@@ -92,7 +95,7 @@ const isConfirmModalShown = ref(false);
 const confirmModalTitle = ref('');
 const confirmModalText = ref('');
 const confirmModalButtonText = ref('');
-const confirmCallback = ref<((...any) => void) | null>(null);
+const confirmCallback = ref<((...args: any[]) => void) | null>(null);
 const isSigning = ref(false);
 const isApproving = ref(false);
 const isConfirmModalLoadingState = ref(false);
@@ -411,12 +414,12 @@ const handleCancel = async (showModal?: boolean) => {
   redirectToHistory();
 };
 
-const handleSubmit = async e => {
+const handleSubmit = async (e: Event) => {
   e.preventDefault();
 
   if (!isLoggedInOrganization(user.selectedOrganization)) return;
 
-  const buttonContent = e.submitter?.textContent;
+  const buttonContent = (e as SubmitEvent).submitter?.textContent || '';
 
   if ([reject, approve].includes(buttonContent)) {
     await handleApprove(buttonContent === approve, true);
@@ -452,7 +455,7 @@ async function fetchTransaction(id: string | number) {
     }
   } else {
     try {
-      localTransaction.value = await getTransaction(id);
+      localTransaction.value = await getTransaction(id.toString());
       transactionBytes = getUInt8ArrayFromBytesString(localTransaction.value.body);
       publicKeysRequiredToSign.value = null;
     } catch (error) {

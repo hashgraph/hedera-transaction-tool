@@ -1,4 +1,4 @@
-import { IUserKey } from '@main/shared/interfaces';
+import type { IUserKey } from '@main/shared/interfaces';
 
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 

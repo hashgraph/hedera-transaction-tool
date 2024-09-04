@@ -1,6 +1,8 @@
+import type { GroupItem, TransactionGroup } from '@prisma/client';
+
 import { ipcRenderer } from 'electron';
 
-import { GroupItem, Prisma, TransactionGroup } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 export default {
   transactionGroups: {

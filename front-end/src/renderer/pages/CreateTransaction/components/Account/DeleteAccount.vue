@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+
 import { computed, onMounted, ref } from 'vue';
 import { Hbar, AccountDeleteTransaction, Key, Transaction, KeyList } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
-import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
@@ -89,13 +90,13 @@ const transactionKey = computed(() => {
 });
 
 /* Handlers */
-const handleFormSubmit = e => {
+const handleFormSubmit = (e: Event) => {
   e.preventDefault();
 
   isConfirmModalShown.value = true;
 };
 
-const handleCreate = async e => {
+const handleCreate = async (e: Event) => {
   e.preventDefault();
 
   isConfirmModalShown.value = false;

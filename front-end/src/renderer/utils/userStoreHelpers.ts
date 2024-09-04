@@ -1,10 +1,7 @@
-import { Ref, nextTick } from 'vue';
-import { Router } from 'vue-router';
-
-import { KeyPair, Organization, Prisma } from '@prisma/client';
-import { Mnemonic } from '@hashgraph/sdk';
-
-import {
+import type { Ref } from 'vue';
+import type { Router } from 'vue-router';
+import type { KeyPair, Organization } from '@prisma/client';
+import type {
   ConnectedOrganization,
   LoggedInOrganization,
   LoggedOutOrganization,
@@ -14,6 +11,11 @@ import {
   RecoveryPhrase,
   LoggedInUserWithPassword,
 } from '@renderer/types';
+
+import { nextTick } from 'vue';
+
+import { Prisma } from '@prisma/client';
+import { Mnemonic } from '@hashgraph/sdk';
 
 import { getUserState, healthCheck } from '@renderer/services/organization';
 import { getAccountIds, getAccountsByPublicKey } from '@renderer/services/mirrorNodeDataService';

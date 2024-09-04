@@ -1,3 +1,5 @@
+import type { KeyPair } from '@prisma/client';
+
 import {
   AccountId,
   PrivateKey,
@@ -9,7 +11,7 @@ import {
   TransactionResponse,
 } from '@hashgraph/sdk';
 
-import { KeyPair, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import { commonIPCHandler } from '@renderer/utils';
 
@@ -153,7 +155,7 @@ export const getTransactions = async (findArgs: Prisma.TransactionFindManyArgs) 
   }, 'Getting transactions Failed');
 
 /* Returns saved transaction by id */
-export const getTransaction = async id =>
+export const getTransaction = async (id: string) =>
   commonIPCHandler(async () => {
     return await window.electronAPI.local.transactions.getTransaction(id);
   }, `Failed to get transaction with id: ${id}`);

@@ -1,5 +1,8 @@
+import type { PublicKeyLinked } from '@prisma/client';
+
 import { ipcRenderer } from 'electron';
-import { Prisma, PublicKeyLinked } from '@prisma/client';
+
+import { Prisma } from '@prisma/client';
 
 export default {
   linkedPublicKeys: {

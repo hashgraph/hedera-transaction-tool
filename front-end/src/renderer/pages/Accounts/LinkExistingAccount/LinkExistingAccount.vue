@@ -36,7 +36,7 @@ useSetDynamicLayout({
 const accountData = useAccountId();
 const nickname = ref('');
 
-const handleLinkAccount = async e => {
+const handleLinkAccount = async (e: Event) => {
   e.preventDefault();
 
   if (accountData.isValid.value) {

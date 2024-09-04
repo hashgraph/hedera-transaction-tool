@@ -1,5 +1,9 @@
 <script setup lang="ts">
+import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
+
 import { inject, nextTick, onUpdated } from 'vue';
+
+import { Network } from '@main/shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -11,7 +15,7 @@ import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import { logout } from '@renderer/services/organization';
 
-import { GLOBAL_MODAL_LOADER_KEY, GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
+import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
 
 import { withLoader } from '@renderer/utils';
 
@@ -20,17 +24,27 @@ import LogoText from '@renderer/components/LogoText.vue';
 import UserModeSelect from './UserModeSelect.vue';
 
 /* Mappings */
-const networkMapping = {
-  testnet: {
+const networkMapping: {
+  [key in Network]: { label: string; className: string };
+} = {
+  [Network.TESTNET]: {
     label: 'TESTNET',
     className: 'text-testnet',
   },
-  mainnet: {
+  [Network.MAINNET]: {
     label: 'MAINNET',
     className: 'text-mainnet',
   },
-  'local-node': {
+  [Network.PREVIEWNET]: {
+    label: 'PREVIEWNET',
+    className: 'text-previewnet',
+  },
+  [Network.LOCAL_NODE]: {
     label: 'LOCAL NODE',
+    className: 'text-info',
+  },
+  [Network.CUSTOM]: {
+    label: 'CUSTOM',
     className: 'text-info',
   },
 };

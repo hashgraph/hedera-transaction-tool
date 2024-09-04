@@ -1,4 +1,5 @@
-import { INotificationReceiver, ITransaction, NotificationType } from '@main/shared/interfaces';
+import type { INotificationReceiver, ITransaction } from '@main/shared/interfaces';
+import { NotificationType } from '@main/shared/interfaces';
 
 export const getNotifiedTransactions = (
   notifications: INotificationReceiver[],

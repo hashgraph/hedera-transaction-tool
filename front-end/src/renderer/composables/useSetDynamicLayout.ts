@@ -1,6 +1,8 @@
+import type { DYNAMIC_LAYOUT_TYPE } from '@renderer/providers';
+
 import { inject, onBeforeMount } from 'vue';
 
-import { DYNAMIC_LAYOUT_KEY, DYNAMIC_LAYOUT_TYPE, setSettings } from '@renderer/providers';
+import { DYNAMIC_LAYOUT_KEY, setSettings } from '@renderer/providers';
 
 export default function useSetDynamicLayout(settings: DYNAMIC_LAYOUT_TYPE) {
   /* Injected */

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import type { ITransactionApprover } from '@main/shared/interfaces/organization/approvers';
 
-import { ITransactionApprover } from '@main/shared/interfaces/organization/approvers';
+import { computed, ref } from 'vue';
 
 import useContactsStore from '@renderer/stores/storeContacts';
 

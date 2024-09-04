@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import type { KeyPair } from '@prisma/client';
+import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+
 import { inject, onBeforeMount, onUpdated, ref } from 'vue';
 
-import { KeyPair, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -12,7 +15,7 @@ import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import { restorePrivateKey } from '@renderer/services/keyPairService';
 import { uploadKey } from '@renderer/services/organization';
 
-import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 import { getWidthOfElementWithText } from '@renderer/utils/dom';

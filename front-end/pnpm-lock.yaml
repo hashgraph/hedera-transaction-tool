@@ -99,6 +99,9 @@ importers:
       '@vue/eslint-config-typescript':
         specifier: 13.0.0
         version: 13.0.0(eslint-plugin-vue@9.27.0(eslint@8.57.0))(eslint@8.57.0)(typescript@5.4.5)
+      '@vue/tsconfig':
+        specifier: 0.5.1
+        version: 0.5.1
       electron:
         specifier: 28.2.5
         version: 28.2.5
@@ -943,6 +946,9 @@ packages:
 
   '@vue/shared@3.4.38':
     resolution: {integrity: sha512-q0xCiLkuWWQLzVrecPb0RMsNWyxICOjPrcrwxTUEHb1fsnvni4dcuyG7RT/Ie7VPTvnjzIaWzRMUBsrqNj/hhw==}
+
+  '@vue/tsconfig@0.5.1':
+    resolution: {integrity: sha512-VcZK7MvpjuTPx2w6blwnwZAu5/LgBUtejFOi3pPGQFXQN5Ela03FUtd2Qtg4yWGGissVL0dr6Ro1LfOFh+PCuQ==}
 
   '@vuepic/vue-datepicker@9.0.2':
     resolution: {integrity: sha512-VDAexzBJSvpErld1cZdGsBc+W/iU+Z+I98YNtEEboSSHUKHRi1s/h8s5D+wciZHLxgQ6P/tj6loNi4W7DgkYSQ==}
@@ -4266,6 +4272,8 @@ snapshots:
       vue: 3.4.38(typescript@5.4.5)
 
   '@vue/shared@3.4.38': {}
+
+  '@vue/tsconfig@0.5.1': {}
 
   '@vuepic/vue-datepicker@9.0.2(vue@3.4.38(typescript@5.4.5))':
     dependencies:

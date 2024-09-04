@@ -33,9 +33,9 @@ const nickname = ref('');
 const isUpdating = ref(false);
 
 /* Handlers */
-const handleShow = show => emit('update:show', show);
+const handleShow = (show: boolean) => emit('update:show', show);
 
-const handleUpdate = async e => {
+const handleUpdate = async (e: Event) => {
   e.preventDefault();
 
   const oldNickname = getNicknameById(props.keyPairId, user.keyPairs);

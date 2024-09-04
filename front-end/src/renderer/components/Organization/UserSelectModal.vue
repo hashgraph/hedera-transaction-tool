@@ -43,7 +43,7 @@ const listedContacts = computed(() =>
 );
 
 /* Handlers */
-const handleShowUpdate = show => emit('update:show', show);
+const handleShowUpdate = (show: boolean) => emit('update:show', show);
 
 const handleInsert = (e: Event) => {
   e.preventDefault();

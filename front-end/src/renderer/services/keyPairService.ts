@@ -159,10 +159,16 @@ export const generateExternalKeyPairFromString = (
 } => {
   try {
     let privateKeyInstance;
-    if (type === 'ECDSA') {
-      privateKeyInstance = PrivateKey.fromStringECDSA(privateKey);
-    } else if (type === 'ED25519') {
-      privateKeyInstance = PrivateKey.fromStringED25519(privateKey);
+
+    switch (type) {
+      case 'ECDSA':
+        privateKeyInstance = PrivateKey.fromStringECDSA(privateKey);
+        break;
+      case 'ED25519':
+        privateKeyInstance = PrivateKey.fromStringED25519(privateKey);
+        break;
+      default:
+        throw new Error('Invalid key type');
     }
 
     return {

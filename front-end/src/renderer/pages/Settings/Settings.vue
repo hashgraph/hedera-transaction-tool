@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { TabItem } from '@renderer/components/ui/AppTabs.vue';
+
 import { computed, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -8,7 +10,7 @@ import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
-import AppTabs, { TabItem } from '@renderer/components/ui/AppTabs.vue';
+import AppTabs from '@renderer/components/ui/AppTabs.vue';
 import ImportExternalPrivateKeyDropDown from '@renderer/components/ImportExternalPrivateKeyDropDown.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 
@@ -37,7 +39,7 @@ const tabItems: TabItem[] = [
   { title: profileTitle },
   { title: notificationsTitle },
 ];
-const tabTitles = tabItems.map(t => t.title.toLocaleLowerCase().replaceAll(' ', '-'));
+const tabTitles = tabItems.map(t => t.title.toLocaleLowerCase().split(' ').join('-'));
 
 const propTabIndex = tabTitles.findIndex(
   t =>

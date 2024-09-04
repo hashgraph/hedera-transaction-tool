@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
+
 import { inject, onMounted, reactive, ref, watch } from 'vue';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
@@ -15,7 +17,7 @@ import {
   getUsersCount,
 } from '@renderer/services/userService';
 
-import { GLOBAL_MODAL_LOADER_KEY, GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
+import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
 
 import { isEmail } from '@renderer/utils/validator';
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+
 import { computed, onMounted, ref } from 'vue';
 import {
   Hbar,
@@ -10,7 +12,6 @@ import {
 } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
-import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
@@ -87,7 +88,7 @@ const transactionKey = computed(() => {
 });
 
 /* Handlers */
-const handleCreate = async e => {
+const handleCreate = async (e: Event) => {
   e.preventDefault();
 
   try {

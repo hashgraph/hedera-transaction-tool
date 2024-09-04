@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { DatePickerInstance } from '@vuepic/vue-datepicker';
+
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
@@ -14,7 +16,7 @@ import { getDraft } from '@renderer/services/transactionDraftsService';
 import { formatAccountId, getTransactionFromBytes, stringifyHbar } from '@renderer/utils';
 import { flattenAccountIds } from '@renderer/utils/userStoreHelpers';
 
-import DatePicker, { DatePickerInstance } from '@vuepic/vue-datepicker';
+import DatePicker from '@vuepic/vue-datepicker';
 
 import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
@@ -47,12 +49,12 @@ const intervalId = ref<ReturnType<typeof setInterval> | null>(null);
 const accoundIds = computed<string[]>(() => flattenAccountIds(user.publicKeyToAccounts));
 
 /* Handlers */
-const handlePayerSelect = payerId => {
+const handlePayerSelect = (payerId: string) => {
   account.accountId.value = payerId;
   emit('update:payerId', payerId || '');
 };
 
-const handlePayerChange = payerId => {
+const handlePayerChange = (payerId: string) => {
   emit('update:payerId', formatAccountId(payerId));
   account.accountId.value = formatAccountId(payerId);
 };

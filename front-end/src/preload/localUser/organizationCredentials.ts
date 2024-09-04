@@ -1,6 +1,6 @@
-import { ipcRenderer } from 'electron';
+import type { Organization } from '@prisma/client';
 
-import { Organization } from '@prisma/client';
+import { ipcRenderer } from 'electron';
 
 export default {
   organizationCredentials: {

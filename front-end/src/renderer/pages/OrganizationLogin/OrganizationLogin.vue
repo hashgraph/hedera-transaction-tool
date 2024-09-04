@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { GLOBAL_MODAL_LOADER_TYPE, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 import { inject, onMounted, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -13,12 +14,7 @@ import { addOrganizationCredentials } from '@renderer/services/organizationCrede
 import { isLoggedOutOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 import { withLoader } from '@renderer/utils';
 
-import {
-  GLOBAL_MODAL_LOADER_KEY,
-  GLOBAL_MODAL_LOADER_TYPE,
-  USER_PASSWORD_MODAL_KEY,
-  USER_PASSWORD_MODAL_TYPE,
-} from '@renderer/providers';
+import { GLOBAL_MODAL_LOADER_KEY, USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';

@@ -1,5 +1,6 @@
+import type { ProgressInfo, UpdateInfo } from 'electron-updater';
+
 import { ipcRenderer } from 'electron';
-import { ProgressInfo, UpdateInfo } from 'electron-updater';
 
 export default {
   update: {

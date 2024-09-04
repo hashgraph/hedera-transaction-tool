@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+
 import { computed, ref, reactive, watch, onMounted } from 'vue';
 import {
   AccountId,
@@ -10,7 +12,6 @@ import {
 } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
-import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useUserStore from '@renderer/stores/storeUser';
@@ -129,7 +130,7 @@ const handleNodeNumberChange = (e: Event) => {
   }
 };
 
-const handleCreate = async e => {
+const handleCreate = async (e: Event) => {
   e.preventDefault();
 
   try {

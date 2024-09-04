@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import type { HederaAccount } from '@prisma/client';
+
 import { computed, onMounted, ref } from 'vue';
 
 import { Key } from '@hashgraph/sdk';
-
-import { HederaAccount } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -55,7 +55,7 @@ const accountIdsList = computed(() => {
     .concat(keyPairsAccountIds);
 });
 /* Handlers */
-const handleShowUpdate = show => emit('update:show', show);
+const handleShowUpdate = (show: boolean) => emit('update:show', show);
 
 const handleInsert = async (e: Event) => {
   e.preventDefault();

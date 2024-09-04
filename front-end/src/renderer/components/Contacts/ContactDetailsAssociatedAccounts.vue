@@ -1,9 +1,8 @@
 <script setup lang="ts">
+import type { HederaAccount } from '@prisma/client';
+import type { AccountInfo } from '@main/shared/interfaces';
+
 import { computed, ref } from 'vue';
-
-import { HederaAccount } from '@prisma/client';
-
-import { AccountInfo } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';

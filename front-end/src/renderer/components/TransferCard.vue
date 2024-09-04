@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import type { HederaAccount } from '@prisma/client';
+
 import { nextTick, onBeforeMount, ref, watch } from 'vue';
 
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
-
-import { HederaAccount } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';

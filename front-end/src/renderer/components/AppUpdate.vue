@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ProgressInfo, UpdateInfo } from 'electron-updater';
+import type { ProgressInfo, UpdateInfo } from 'electron-updater';
+
 import { computed, onBeforeMount, ref } from 'vue';
 
 import { useToast } from 'vue-toast-notification';

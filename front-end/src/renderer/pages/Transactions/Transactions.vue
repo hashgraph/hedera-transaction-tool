@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { TabItem } from '@renderer/components/ui/AppTabs.vue';
+
 import { computed, onBeforeMount, ref, watch } from 'vue';
 
 import { NotificationType } from '@main/shared/interfaces';
@@ -11,7 +13,7 @@ import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
 import { isOrganizationActive } from '@renderer/utils/userStoreHelpers';
 
-import AppTabs, { TabItem } from '@renderer/components/ui/AppTabs.vue';
+import AppTabs from '@renderer/components/ui/AppTabs.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionSelectionModal from '@renderer/components/TransactionSelectionModal.vue';
 

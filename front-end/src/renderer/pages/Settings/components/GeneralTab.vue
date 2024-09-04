@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import type { Theme } from '@main/shared/interfaces';
+
 import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
 
-import { Theme } from '@main/shared/interfaces';
 import { Network } from '@main/shared/enums';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';

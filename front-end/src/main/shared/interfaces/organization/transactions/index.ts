@@ -1,7 +1,7 @@
 import { Network } from '@main/shared/enums';
-import { ITransactionApprover } from '../approvers';
-import { ITransactionObserverUserId } from '../observers';
-import { ITransactionSignerUserKey } from '../signers';
+import type { ITransactionApprover } from '../approvers';
+import type { ITransactionObserverUserId } from '../observers';
+import type { ITransactionSignerUserKey } from '../signers';
 
 export enum BackEndTransactionType {
   ACCOUNT_CREATE = 'ACCOUNT CREATE',

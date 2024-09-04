@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { Handler, TransactionRequest } from '..';
+
 import { computed, ref } from 'vue';
 import { Transaction } from '@hashgraph/sdk';
 
@@ -8,8 +10,6 @@ import { flattenKeyList } from '@renderer/services/keyPairService';
 import { signTransaction } from '@renderer/services/transactionService';
 
 import { assertUserLoggedIn } from '@renderer/utils/userStoreHelpers';
-
-import { Handler, TransactionRequest } from '..';
 
 /* Emits */
 const emit = defineEmits<{

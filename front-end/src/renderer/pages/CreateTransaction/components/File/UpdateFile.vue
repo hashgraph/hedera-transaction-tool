@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import type { DatePickerInstance } from '@vuepic/vue-datepicker';
+import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+
 import { ref, watch, onMounted, computed } from 'vue';
 import { FileUpdateTransaction, Hbar, Key, KeyList, Timestamp, Transaction } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
-import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
@@ -28,7 +30,7 @@ import {
 } from '@renderer/utils/sdk';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
-import DatePicker, { DatePickerInstance } from '@vuepic/vue-datepicker';
+import DatePicker from '@vuepic/vue-datepicker';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -107,7 +109,7 @@ const handleFileLoadEnd = async () => {
   await syncDisplayedContent();
 };
 
-const handleCreate = async e => {
+const handleCreate = async (e: Event) => {
   e.preventDefault();
 
   try {

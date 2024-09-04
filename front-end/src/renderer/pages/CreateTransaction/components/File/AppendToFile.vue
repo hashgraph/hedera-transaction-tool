@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+
 import { computed, ref, watch, onMounted } from 'vue';
 import { FileAppendTransaction, Hbar, Key, KeyList, Transaction } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
-import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
@@ -95,7 +96,7 @@ const handleFileLoadEnd = async () => {
   await syncDisplayedContent();
 };
 
-const handleCreate = async e => {
+const handleCreate = async (e: Event) => {
   e.preventDefault();
 
   try {

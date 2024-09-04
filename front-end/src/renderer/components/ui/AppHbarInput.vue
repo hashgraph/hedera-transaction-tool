@@ -21,7 +21,7 @@ const appInputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const appInputValue = ref(formatHbar(props.modelValue));
 
 /* Handlers */
-const handleUpdateValue = async value => {
+const handleUpdateValue = async (value: string) => {
   value = value.trim();
   setInputValue(value);
 
@@ -52,7 +52,7 @@ const handleUpdateValue = async value => {
   }
 };
 
-const handleKeyDown = e => {
+const handleKeyDown = (e: KeyboardEvent) => {
   const regex = /^[0-9.]+$/;
 
   if (

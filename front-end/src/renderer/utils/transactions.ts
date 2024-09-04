@@ -1,3 +1,5 @@
+import type { KeyPair, Transaction } from '@prisma/client';
+
 import {
   Timestamp,
   Status,
@@ -6,7 +8,6 @@ import {
   TransactionId,
   Key,
 } from '@hashgraph/sdk';
-import { KeyPair, Transaction } from '@prisma/client';
 
 import { Network } from '@main/shared/enums';
 

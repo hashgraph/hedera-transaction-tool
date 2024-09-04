@@ -1,17 +1,18 @@
+import type {
+  AccountInfo,
+  IAccountInfoParsed,
+  CryptoAllowance,
+  NetworkExchangeRateSetResponse,
+  Transaction,
+  AccountsResponse,
+} from '../../main/shared/interfaces';
+
 import axios from 'axios';
 
 import { AccountId, EvmAddress, Hbar, HbarUnit, Key, PublicKey, Timestamp } from '@hashgraph/sdk';
 import { BigNumber } from 'bignumber.js';
 
 import { decodeProtobuffKey } from './electronUtilsService';
-
-import {
-  AccountInfo,
-  IAccountInfoParsed,
-  CryptoAllowance,
-  NetworkExchangeRateSetResponse,
-  Transaction,
-} from '../../main/shared/interfaces';
 
 /* Mirror node data service */
 
@@ -22,7 +23,7 @@ export const getAccountIds = async (
   nextUrl: string | null,
 ) => {
   try {
-    const { data } = await axios.get(
+    const { data } = await axios.get<AccountsResponse>(
       nextUrl || `${mirrorNodeURL}/accounts/?account.publickey=${publicKey}&limit=100&order=asc`,
     );
     return {
@@ -49,8 +50,9 @@ export const getAccountsByPublicKey = async (
       `${mirrorNodeURL}/accounts/?account.publickey=${publicKey}&limit=100&order=asc`;
 
     while (nextUrl) {
-      const { data } = await axios.get(nextUrl);
-      accounts = accounts.concat(data.accounts);
+      const res = await axios.get<AccountsResponse>(nextUrl);
+      const data: AccountsResponse = res.data;
+      accounts = accounts.concat(data.accounts || []);
 
       if (data.links?.next) {
         nextUrl = `${mirrorNodeURL}${data.links.next.slice(data.links.next.indexOf('/accounts'))}`;

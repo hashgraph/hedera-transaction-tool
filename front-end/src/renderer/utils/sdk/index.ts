@@ -1,3 +1,6 @@
+import type { HederaSpecialFileId } from '@main/shared/interfaces';
+import type { ITransactionApprover } from '@main/shared/interfaces/organization/approvers';
+
 import {
   AccountId,
   FileId,
@@ -15,10 +18,7 @@ import {
 } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
-import { HederaSpecialFileId } from '@main/shared/interfaces';
-
 import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
-import { ITransactionApprover } from '@main/shared/interfaces/organization/approvers';
 
 export const createFileInfo = (props: {
   fileId: FileId | string;
@@ -123,7 +123,7 @@ export function getMaximumExpirationTime() {
   return now;
 }
 
-export function isPublicKeyInKeyList(publicKey: PublicKey | string, keyList: KeyList) {
+export function isPublicKeyInKeyList(publicKey: PublicKey | string, keyList: KeyList): boolean {
   publicKey = publicKey instanceof PublicKey ? publicKey.toStringRaw() : publicKey;
 
   const keys = keyList.toArray();

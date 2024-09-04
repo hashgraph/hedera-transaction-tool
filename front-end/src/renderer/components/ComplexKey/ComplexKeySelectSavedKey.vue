@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, ref } from 'vue';
+import type { ComplexKey } from '@prisma/client';
 
-import { ComplexKey } from '@prisma/client';
+import { computed, onBeforeMount, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -39,19 +39,19 @@ const complexKeyToDeleteId = ref<string | null>(null);
 const complexKey = computed(() => keyLists.value.find(kl => kl.id === complexKeyId.value) || null);
 
 /* Handlers */
-const handleShowUpdate = show => emit('update:show', show);
+const handleShowUpdate = (show: boolean) => emit('update:show', show);
 
 const handleSelectKeyList = (id: string) => {
   complexKeyId.value = id;
 };
 
-const handleTrashClick = (e, id: string) => {
+const handleTrashClick = (e: Event, id: string) => {
   e.stopPropagation();
   complexKeyToDeleteId.value = id;
   deleteSavedKeyModalShown.value = true;
 };
 
-const handleDeleteSavedKey = async e => {
+const handleDeleteSavedKey = async (e: Event) => {
   e.preventDefault();
 
   if (!isUserLoggedIn(user.personal)) {

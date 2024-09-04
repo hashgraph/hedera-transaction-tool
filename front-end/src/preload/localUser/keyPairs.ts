@@ -1,6 +1,8 @@
+import type { KeyPair } from '@prisma/client';
+
 import { ipcRenderer } from 'electron';
 
-import { KeyPair, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 export default {
   keyPairs: {

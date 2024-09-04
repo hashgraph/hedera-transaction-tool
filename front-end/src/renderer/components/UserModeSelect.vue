@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { inject, onUpdated, ref, watch } from 'vue';
+import type { Organization } from '@prisma/client';
+import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
 
-import { Organization } from '@prisma/client';
+import { inject, onUpdated, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import { useToast } from 'vue-toast-notification';
 
-import { GLOBAL_MODAL_LOADER_KEY, GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
+import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
 
 import { withLoader } from '@renderer/utils';
 

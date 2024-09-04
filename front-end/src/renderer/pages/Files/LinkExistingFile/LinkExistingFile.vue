@@ -32,7 +32,7 @@ const fileId = ref('');
 const nickname = ref('');
 const description = ref('');
 
-const handleLinkFile = async e => {
+const handleLinkFile = async (e: Event) => {
   e.preventDefault();
 
   if (isAccountId(fileId.value)) {

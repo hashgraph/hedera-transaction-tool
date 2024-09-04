@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import type { DatePickerInstance } from '@vuepic/vue-datepicker';
+import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+
 import { computed, onMounted, ref, watch } from 'vue';
 import {
   FileCreateTransaction,
@@ -12,7 +15,6 @@ import {
 } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
-import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import { Prisma } from '@prisma/client';
 
@@ -39,7 +41,7 @@ import {
 } from '@renderer/utils';
 import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
-import DatePicker, { DatePickerInstance } from '@vuepic/vue-datepicker';
+import DatePicker from '@vuepic/vue-datepicker';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppUploadFile from '@renderer/components/ui/AppUploadFile.vue';
@@ -117,7 +119,7 @@ const handleFileLoadEnd = async () => {
   await syncDisplayedContent();
 };
 
-const handleCreate = async e => {
+const handleCreate = async (e: Event) => {
   e.preventDefault();
 
   try {

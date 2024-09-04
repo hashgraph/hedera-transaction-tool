@@ -1,4 +1,4 @@
-import { IUser, IUserKey } from '@main/shared/interfaces';
+import type { IUser, IUserKey } from '@main/shared/interfaces';
 
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 
@@ -59,7 +59,7 @@ export const getUsers = (organizationServerUrl: string): Promise<IUser[]> =>
   }, 'Failed to get organization users');
 
 /* ADMIN ONLY: Delete a user */
-export const deleteUser = (organizationServerUrl: string, id) =>
+export const deleteUser = (organizationServerUrl: string, id: number) =>
   commonRequestHandler(async () => {
     const response = await axiosWithCredentials.delete(
       `${organizationServerUrl}/${controller}/${id}`,
