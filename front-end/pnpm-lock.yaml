@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@electron-toolkit/utils':
         specifier: ^3.0.0
-        version: 3.0.0(electron@28.2.5)
+        version: 3.0.0(electron@32.0.1)
       '@hashgraph/proto':
         specifier: 2.15.0-beta.3
         version: 2.15.0-beta.3
@@ -100,8 +100,8 @@ importers:
         specifier: 0.5.1
         version: 0.5.1
       electron:
-        specifier: 28.2.5
-        version: 28.2.5
+        specifier: 32.0.1
+        version: 32.0.1
       electron-builder:
         specifier: 24.13.3
         version: 24.13.3(electron-builder-squirrel-windows@24.13.3(dmg-builder@24.13.3))
@@ -880,9 +880,6 @@ packages:
   '@types/ms@0.7.34':
     resolution: {integrity: sha512-nG96G3Wp6acyAgJqGasjODb+acrI7KltPiRxzHPXnP3NgI28bpQDRv53olbqGXbfcgF5aiiHmO3xpwEpS5Ld9g==}
 
-  '@types/node@18.19.47':
-    resolution: {integrity: sha512-1f7dB3BL/bpd9tnDJrrHb66Y+cVrhxSOTGorRNdHwYTUlTay3HuTDPKo9a/4vX9pMQkhYBcAbL4jQdNlhCFP9A==}
-
   '@types/node@20.14.8':
     resolution: {integrity: sha512-DO+2/jZinXfROG7j7WKFn/3C6nFwxy2lLpgLjEXJz+0XKphZlTLJ14mo8Vfg8X5BWN6XjyESXq+LcYdT7tR3bA==}
 
@@ -1612,8 +1609,8 @@ packages:
   electron-updater@6.3.4:
     resolution: {integrity: sha512-uZUo7p1Y53G4tl6Cgw07X1yF8Jlz6zhaL7CQJDZ1fVVkOaBfE2cWtx80avwDVi8jHp+I/FWawrMgTAeCCNIfAg==}
 
-  electron@28.2.5:
-    resolution: {integrity: sha512-qlvQkDNVAzN647NpiJJw7GYJqE0NwK4+1evkhrQ0Xv6Qgab1EtN50G4oDr4/x/+O5pGUG2P5d3isXu+37O3RDw==}
+  electron@32.0.1:
+    resolution: {integrity: sha512-5Hd5Jaf9niYVR2hZxoRd3gOrcxPOxQV1XPV5WaoSfT9jLJHFadhlKtuSDIk3U6rQZke+aC7GqPPAv55nWFCMsA==}
     engines: {node: '>= 12.20.55'}
     hasBin: true
 
@@ -3563,9 +3560,9 @@ snapshots:
     dependencies:
       '@types/node': 20.14.8
 
-  '@electron-toolkit/utils@3.0.0(electron@28.2.5)':
+  '@electron-toolkit/utils@3.0.0(electron@32.0.1)':
     dependencies:
-      electron: 28.2.5
+      electron: 32.0.1
 
   '@electron/asar@3.2.10':
     dependencies:
@@ -4142,10 +4139,6 @@ snapshots:
       '@types/node': 20.14.8
 
   '@types/ms@0.7.34': {}
-
-  '@types/node@18.19.47':
-    dependencies:
-      undici-types: 5.26.5
 
   '@types/node@20.14.8':
     dependencies:
@@ -5086,10 +5079,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  electron@28.2.5:
+  electron@32.0.1:
     dependencies:
       '@electron/get': 2.0.3
-      '@types/node': 18.19.47
+      '@types/node': 20.14.8
       extract-zip: 2.0.1
     transitivePeerDependencies:
       - supports-color
