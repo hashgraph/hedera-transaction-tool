@@ -12,8 +12,8 @@ importers:
         specifier: ^3.0.0
         version: 3.0.0(electron@28.2.5)
       '@hashgraph/proto':
-        specifier: ^2.15.0
-        version: 2.15.0
+        specifier: 2.15.0-beta.3
+        version: 2.15.0-beta.3
       '@hashgraph/sdk':
         specifier: 2.50.0
         version: 2.50.0
@@ -479,10 +479,6 @@ packages:
         optional: true
       expo-random:
         optional: true
-
-  '@hashgraph/proto@2.15.0':
-    resolution: {integrity: sha512-ULSNIwQZIroTssrEfNoUcIcWEJ9BIwKZiAsaRvJ2+Rr3XIr+np7UXv6sEkJU+jSyzk97LrTdiRAoc/hJO9Vx8Q==}
-    engines: {node: '>=10.0.0'}
 
   '@hashgraph/proto@2.15.0-beta.3':
     resolution: {integrity: sha512-/95cydqBQRaO1gagBOenNpcfJIcnRx+vzefhuzSFNp4pfl0AM3oXau39hM2raKLhFHoKZysSjkXkMp24AaCE5w==}
@@ -3891,11 +3887,6 @@ snapshots:
       spark-md5: 3.0.2
       tweetnacl: 1.0.3
       utf8: 3.0.0
-
-  '@hashgraph/proto@2.15.0':
-    dependencies:
-      long: 4.0.0
-      protobufjs: 7.4.0
 
   '@hashgraph/proto@2.15.0-beta.3':
     dependencies:
