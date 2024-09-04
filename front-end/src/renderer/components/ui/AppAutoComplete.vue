@@ -79,12 +79,12 @@ const handleInputClick = () => {
   toggleDropdown(true);
 };
 
-function handleResize() {
+const handleResize = () => {
   if (!inputRef.value?.inputRef || !dropdownRef.value) return;
   dropdownRef.value.style.width = `${inputRef.value.inputRef.offsetWidth}px`;
-}
+};
 
-function handleWindowClick(e: Event) {
+const handleWindowClick = (e: Event) => {
   if (!dropdownRef.value) return;
   if (!inputRef.value?.inputRef) return;
 
@@ -92,7 +92,18 @@ function handleWindowClick(e: Event) {
   if (inputRef.value.inputRef.contains(target) || dropdownRef.value.contains(target)) return;
 
   toggleDropdown(false);
-}
+};
+
+const handleMove = () => {
+  if (!inputRef.value?.inputRef || !dropdownRef.value) return;
+
+  const inputRect = inputRef.value?.inputRef.getBoundingClientRect();
+  if (!inputRect || !dropdownRef.value) return;
+
+  dropdownRef.value.style.top = `${inputRect.bottom}px`;
+  dropdownRef.value.style.left = `${inputRect.left}px`;
+  dropdownRef.value.style.width = `${inputRect.width}px`;
+};
 
 /* Functions */
 function toggleDropdown(show: boolean) {
@@ -116,11 +127,13 @@ onMounted(() => {
 
   window.addEventListener('resize', handleResize);
   window.addEventListener('click', handleWindowClick);
+  document.addEventListener('scroll', handleMove, true);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize);
   window.removeEventListener('click', handleWindowClick);
+  document.removeEventListener('scroll', handleMove, true);
 });
 </script>
 

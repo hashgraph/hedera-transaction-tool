@@ -934,7 +934,7 @@
 
   border-radius: $border-radius;
 
-  transition: all 0.1s ease-in;
+  transition: opacity 0.1s ease-in;
 
   background-color: var(--#{$prefix}input-fill-bg-color);
 
