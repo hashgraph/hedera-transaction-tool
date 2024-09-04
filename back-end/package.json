@@ -56,7 +56,7 @@
     "murlock": "4.0.0",
     "nestjs-pino": "4.1.0",
     "pg": "8.12.0",
-    "pino-http": "10.0.0",
+    "pino-http": "10.3.0",
     "pino-pretty": "11.2.2",
     "readline-sync": "1.4.10",
     "reflect-metadata": "0.1.14",
