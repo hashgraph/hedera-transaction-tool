@@ -33,7 +33,7 @@
     "@hashgraph/sdk": "2.50.0",
     "@prisma/client": "5.19.0",
     "@vuepic/vue-datepicker": "9.0.2",
-    "axios": "1.6.7",
+    "axios": "1.7.7",
     "bcrypt": "5.1.1",
     "better-sqlite3": "9.4.3",
     "bignumber.js": "^9.1.2",
