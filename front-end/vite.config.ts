@@ -8,6 +8,7 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import electron from 'vite-plugin-electron/simple';
 import eslint from 'vite-plugin-eslint';
+import vueDevTools from 'vite-plugin-vue-devtools';
 
 import pkg from './package.json';
 
@@ -28,6 +29,7 @@ export default defineConfig(({ command }) => {
     },
     plugins: [
       vue(),
+      vueDevTools(),
       electron({
         main: {
           // Shortcut of `build.lib.entry`

@@ -25,12 +25,6 @@ npm install -g pnpm@latest
 pnpm install
 ```
 
-### Run the following command to start Vue devtools
-
-```bash
-pnpm run devTools
-```
-
 ### Start developing ⚒️
 
 Generate prisma client:
