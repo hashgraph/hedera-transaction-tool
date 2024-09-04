@@ -8,7 +8,7 @@ framework for testing web applications across different browsers.
 
 Before you begin, ensure you have the following installed on your system:
 
-- Node.js: `20.9.0`
+- Node.js: `20.17.0`
 
 Additionally, you should have the Hedera Transaction Tool executable installed and know its path, as it will be required
 to run the tests.
@@ -30,7 +30,7 @@ to run the tests.
 3. **Install dependencies** by running:
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 4. **Configure the environment variables** by creating a `.env` file in the root of the project and setting the path to
