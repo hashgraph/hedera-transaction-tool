@@ -397,6 +397,7 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
                 keepActionRow: true,
               }"
               :min-date="new Date()"
+              :teleport="true"
               class="is-fill"
               :ui="{
                 calendar: 'is-fill',

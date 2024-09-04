@@ -483,6 +483,7 @@ watch(payerData.isValid, isValid => {
               }"
               :min-date="getMinimumExpirationTime()"
               :max-date="getMaximumExpirationTime()"
+              :teleport="true"
               class="is-fill"
               :ui="{
                 calendar: 'is-fill',

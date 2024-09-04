@@ -175,6 +175,7 @@ const columnClass = 'col-4 col-xxxl-3';
           keepActionRow: true,
         }"
         :min-date="new Date()"
+        :teleport="true"
         enable-seconds
         class="is-fill"
         :ui="{

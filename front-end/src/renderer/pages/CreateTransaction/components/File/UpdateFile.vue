@@ -506,6 +506,7 @@ const columnClass = 'col-4 col-xxxl-3';
               }"
               :min-date="getMinimumExpirationTime()"
               :max-date="getMaximumExpirationTime()"
+              :teleport="true"
               class="is-fill"
               :ui="{
                 calendar: 'is-fill',
