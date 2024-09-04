@@ -479,14 +479,15 @@ watch(payerData.isValid, isValid => {
               :config="{
                 keepActionRow: true,
               }"
-              :teleport="true"
               :min-date="getMinimumExpirationTime()"
               :max-date="getMaximumExpirationTime()"
               class="is-fill"
-              menu-class-name="is-fill"
-              calendar-class-name="is-fill"
-              input-class-name="is-fill"
-              calendar-cell-class-name="is-fill"
+              :ui="{
+                calendar: 'is-fill',
+                calendarCell: 'is-fill',
+                menu: 'is-fill',
+                input: 'is-fill',
+              }"
             >
               <template #action-row>
                 <div class="d-flex justify-content-end gap-4 w-100">

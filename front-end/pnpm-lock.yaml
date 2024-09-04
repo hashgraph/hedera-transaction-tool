@@ -21,8 +21,8 @@ importers:
         specifier: 5.19.0
         version: 5.19.0(prisma@5.19.0)
       '@vuepic/vue-datepicker':
-        specifier: 8.3.1
-        version: 8.3.1(vue@3.4.21(typescript@5.3.3))
+        specifier: 9.0.2
+        version: 9.0.2(vue@3.4.21(typescript@5.3.3))
       axios:
         specifier: 1.6.7
         version: 1.6.7
@@ -986,8 +986,8 @@ packages:
       '@vue/server-renderer':
         optional: true
 
-  '@vuepic/vue-datepicker@8.3.1':
-    resolution: {integrity: sha512-xuUje2tgVewHGVLQWzYApmcCU9oYy7adflONH++GHdItKIkmxUj2HH3mM1hOsaXTEWoCVG/GUBD2dhn72Gl3+g==}
+  '@vuepic/vue-datepicker@9.0.2':
+    resolution: {integrity: sha512-VDAexzBJSvpErld1cZdGsBc+W/iU+Z+I98YNtEEboSSHUKHRi1s/h8s5D+wciZHLxgQ6P/tj6loNi4W7DgkYSQ==}
     engines: {node: '>=18.12.0'}
     peerDependencies:
       vue: '>=3.2.0'
@@ -4494,7 +4494,7 @@ snapshots:
     optionalDependencies:
       '@vue/server-renderer': 3.4.21(vue@3.4.21(typescript@5.3.3))
 
-  '@vuepic/vue-datepicker@8.3.1(vue@3.4.21(typescript@5.3.3))':
+  '@vuepic/vue-datepicker@9.0.2(vue@3.4.21(typescript@5.3.3))':
     dependencies:
       date-fns: 3.6.0
       vue: 3.4.21(typescript@5.3.3)
