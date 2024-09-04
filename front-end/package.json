@@ -61,7 +61,6 @@
     "@vue/devtools": "6.5.1",
     "@vue/eslint-config-prettier": "9.0.0",
     "@vue/eslint-config-typescript": "12.0.0",
-    "@vue/test-utils": "2.4.4",
     "electron": "28.2.5",
     "electron-builder": "24.13.3",
     "eslint": "8.57.0",
