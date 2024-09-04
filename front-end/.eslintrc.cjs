@@ -5,9 +5,9 @@ module.exports = {
   extends: [
     'eslint:recommended',
     'plugin:vue/vue3-essential',
-    '@electron-toolkit',
     '@vue/eslint-config-typescript/recommended',
-    '@vue/eslint-config-prettier',
+    '@vue/eslint-config-prettier/skip-formatting',
+    '@electron-toolkit',
   ],
   rules: {
     'vue/require-default-prop': 'off',

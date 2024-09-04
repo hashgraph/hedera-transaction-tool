@@ -593,7 +593,6 @@ export interface ServiceEndPoint {
 
 export function makeShortNodeDescription(description: string): string {
   const separator = description.indexOf('|') ?? -1;
-  // eslint-disable-next-line prettier/prettier
   return separator !== -1 ? description.slice(0, separator) ?? null : description;
 }
 
