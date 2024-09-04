@@ -14,7 +14,11 @@ withDefaults(
 );
 
 /* Emits */
-defineEmits(['update:sliderValue']);
+const emit = defineEmits(['update:sliderValue']);
+
+/* Handlers */
+const handleSliderChange = (e: Event) =>
+  emit('update:sliderValue', Number((e.target as HTMLInputElement)?.value));
 
 /* Misc */
 const buttonValues = ['25', '50', '75', '100'];
@@ -41,9 +45,7 @@ const buttonValues = ['25', '50', '75', '100'];
     <div class="mt-3">
       <input
         :value="sliderValue"
-        @[updateValueOn]="
-          $emit('update:sliderValue', Number(($event.target as HTMLInputElement)?.value))
-        "
+        @[updateValueOn]="handleSliderChange"
         type="range"
         min="0"
         max="100"

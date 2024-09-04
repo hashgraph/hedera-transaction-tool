@@ -163,7 +163,7 @@ watch([amount, accountData.isValid], async ([newAmount]) => {
         >
         <!-- @vue-ignore Broken type inference -->
         <AppHbarInput
-          v-model:model-value="amount"
+          v-model:model-value="amount as Hbar"
           placeholder="Enter Amount"
           :filled="true"
           :data-testid="dataTestIdHbarInput"
