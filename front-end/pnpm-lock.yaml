@@ -57,8 +57,8 @@ importers:
         specifier: 4.7.5
         version: 4.7.5(utf-8-validate@5.0.10)
       vue-router:
-        specifier: 4.3.0
-        version: 4.3.0(vue@3.4.38(typescript@5.4.5))
+        specifier: 4.4.0
+        version: 4.4.0(vue@3.4.38(typescript@5.4.5))
       vue-toast-notification:
         specifier: 3.1.2
         version: 3.1.2(vue@3.4.38(typescript@5.4.5))
@@ -3222,8 +3222,8 @@ packages:
     peerDependencies:
       eslint: '>=6.0.0'
 
-  vue-router@4.3.0:
-    resolution: {integrity: sha512-dqUcs8tUeG+ssgWhcPbjHvazML16Oga5w34uCUmsk7i0BcnskoLGwjpa15fqMr2Fa5JgVBrdL2MEgqz6XZ/6IQ==}
+  vue-router@4.4.0:
+    resolution: {integrity: sha512-HB+t2p611aIZraV2aPSRNXf0Z/oLZFrlygJm+sZbdJaW6lcFqEDQwnzUBXn+DApw+/QzDU/I9TeWx9izEjTmsA==}
     peerDependencies:
       vue: ^3.2.0
 
@@ -6801,7 +6801,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  vue-router@4.3.0(vue@3.4.38(typescript@5.4.5)):
+  vue-router@4.4.0(vue@3.4.38(typescript@5.4.5)):
     dependencies:
       '@vue/devtools-api': 6.6.3
       vue: 3.4.38(typescript@5.4.5)
