@@ -247,6 +247,8 @@ export const setPublicKeyToAccounts = async (
   keyPairs: KeyPair[],
   mirrorNodeBaseURL: string,
 ) => {
+  publicKeyToAccounts.value = [];
+
   for (const { public_key } of keyPairs) {
     let next: string | null = null;
 
@@ -302,6 +304,28 @@ export const flattenAccountIds = (
   publicKeyToAccounts.forEach(pkToAcc => {
     pkToAcc.accounts
       .filter(acc => acc.account !== null && (withDeleted ? true : !acc.deleted))
+      .sort((a, b) => {
+        // If both balances are null, they are considered equal
+        if (a.balance === null && b.balance === null) return 0;
+
+        // If a's balance is null, it should come after b
+        if (a.balance === null) return 1;
+
+        // If b's balance is null, it should come after a
+        if (b.balance === null) return -1;
+
+        // If both balances exist but are null numbers, they are considered equal
+        if (a.balance.balance === null && b.balance.balance === null) return 0;
+
+        // If a's balance is null, it should come after b
+        if (a.balance.balance === null) return 1;
+
+        // If b's balance is null, it should come after a
+        if (b.balance.balance === null) return -1;
+
+        // Both balances are numbers, compare them in descending order
+        return b.balance.balance - a.balance.balance;
+      })
       .forEach(acc => {
         acc.account && accountIds.push(acc.account);
       });

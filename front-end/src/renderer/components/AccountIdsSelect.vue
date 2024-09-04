@@ -59,7 +59,9 @@ onBeforeMount(async () => {
 watch(
   () => user.publicKeyToAccounts,
   () => {
-    if ((!props.accountId || props.accountId?.length === 0) && props.selectDefault) {
+    const accountId = props.accountId?.trim() || '';
+
+    if ((accountId.length === 0 && props.selectDefault) || !accoundIds.value.includes(accountId)) {
       emit('update:accountId', accoundIds.value[0]);
     }
   },
