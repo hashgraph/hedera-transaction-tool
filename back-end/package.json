@@ -59,6 +59,7 @@
     "pino-http": "10.3.0",
     "pino-pretty": "11.2.2",
     "readline-sync": "1.4.10",
+    "redis": "4.7.0",
     "reflect-metadata": "0.1.14",
     "rxjs": "7.8.1",
     "typeorm": "0.3.20"
