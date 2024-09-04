@@ -52,7 +52,8 @@ export class NotificationPreferencesController {
   @HttpCode(200)
   async getPreferencesOrCreate(
     @GetUser() user: User,
-    @Query('type', new EnumValidationPipe(NotificationType, true)) type?: NotificationType,
+    @Query('type', new EnumValidationPipe<NotificationType>(NotificationType, true))
+    type?: NotificationType,
   ): Promise<NotificationPreferences[]> {
     if (type) {
       return [await this.notificationPreferencesService.getPreferenceOrCreate(user, type)];

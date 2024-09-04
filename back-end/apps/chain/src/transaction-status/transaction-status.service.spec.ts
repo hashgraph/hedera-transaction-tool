@@ -541,7 +541,6 @@ describe('TransactionStatusService', () => {
     let transaction: Transaction;
     let name: string;
     let timeToValidStart: number;
-    let callback: jest.Mock;
 
     beforeEach(() => {
       transaction = {
@@ -550,7 +549,6 @@ describe('TransactionStatusService', () => {
       } as Transaction;
       name = `execution_timeout_${transaction.id}`;
       timeToValidStart = transaction.validStart.getTime() - Date.now();
-      callback = jest.fn();
 
       jest.useFakeTimers();
       jest.spyOn(global, 'setTimeout');

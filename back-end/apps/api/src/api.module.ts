@@ -37,6 +37,7 @@ export const config = ConfigModule.forRoot({
     OTP_SECRET: Joi.string().required(),
     OTP_EXPIRATION: Joi.number().required(),
     REDIS_URL: Joi.string().required(),
+    REDIS_DEFAULT_TTL_MS: Joi.number().optional(),
   }),
 });
 

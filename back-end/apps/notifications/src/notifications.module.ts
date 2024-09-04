@@ -34,6 +34,7 @@ export const config = ConfigModule.forRoot({
     POSTGRES_PASSWORD: Joi.string().required(),
     POSTGRES_SYNCHRONIZE: Joi.boolean().required(),
     REDIS_URL: Joi.string().required(),
+    REDIS_DEFAULT_TTL_MS: Joi.number().optional(),
   }),
 });
 
