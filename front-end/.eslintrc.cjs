@@ -6,7 +6,6 @@ module.exports = {
     'eslint:recommended',
     'plugin:vue/vue3-essential',
     '@electron-toolkit',
-    '@electron-toolkit/eslint-config-ts/eslint-recommended',
     '@vue/eslint-config-typescript/recommended',
     '@vue/eslint-config-prettier',
   ],
@@ -15,6 +14,7 @@ module.exports = {
     'vue/multi-word-component-names': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-unused-vars': 'warn',
+    '@typescript-eslint/ban-ts-comment': 'off',
     'newline-per-chained-call': 'off',
   },
 };
