@@ -76,8 +76,8 @@ importers:
         specifier: 5.0.2
         version: 5.0.2
       '@types/better-sqlite3':
-        specifier: 7.6.9
-        version: 7.6.9
+        specifier: 7.6.11
+        version: 7.6.11
       '@types/bootstrap':
         specifier: 5.2.10
         version: 5.2.10
@@ -847,8 +847,8 @@ packages:
   '@types/bcrypt@5.0.2':
     resolution: {integrity: sha512-6atioO8Y75fNcbmj0G7UjI9lXN2pQ/IGJ2FWT4a/btd0Lk9lQalHLKhkgKVZ3r+spnmWUKfbMi1GEe9wyHQfNQ==}
 
-  '@types/better-sqlite3@7.6.9':
-    resolution: {integrity: sha512-FvktcujPDj9XKMJQWFcl2vVl7OdRIqsSRX9b0acWwTmwLK9CF2eqo/FRcmMLNpugKoX/avA6pb7TorDLmpgTnQ==}
+  '@types/better-sqlite3@7.6.11':
+    resolution: {integrity: sha512-i8KcD3PgGtGBLl3+mMYA8PdKkButvPyARxA7IQAd6qeslht13qxb1zzO8dRCtE7U3IoJS782zDBAeoKiM695kg==}
 
   '@types/bootstrap@5.2.10':
     resolution: {integrity: sha512-F2X+cd6551tep0MvVZ6nM8v7XgGN/twpdNDjqS1TUM7YFNEtQYWk+dKAnH+T1gr6QgCoGMPl487xw/9hXooa2g==}
@@ -4103,7 +4103,7 @@ snapshots:
     dependencies:
       '@types/node': 20.14.8
 
-  '@types/better-sqlite3@7.6.9':
+  '@types/better-sqlite3@7.6.11':
     dependencies:
       '@types/node': 20.14.8
 
