@@ -178,6 +178,21 @@ describe('Services Local User Key Pairs', () => {
       expect(decrypt).toHaveBeenCalledWith(keyPair.private_key, password);
       expect(result).toBe('decryptedPrivateKey');
     });
+
+    test("Should pass empty string if key pair can't be found", async () => {
+      const password = 'password1';
+
+      prisma.keyPair.findFirst.mockResolvedValue(null);
+      vi.mocked(decrypt).mockReturnValue('decryptedPrivateKey');
+
+      await decryptPrivateKey(keyPair.user_id, password, keyPair.public_key);
+
+      expect(prisma.keyPair.findFirst).toHaveBeenCalledWith({
+        where: { user_id: keyPair.user_id, public_key: keyPair.public_key },
+        select: { private_key: true },
+      });
+      expect(decrypt).toHaveBeenCalledWith('', password);
+    });
   });
 
   describe('deleteEncryptedPrivateKeys', () => {
