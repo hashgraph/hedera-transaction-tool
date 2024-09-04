@@ -114,9 +114,6 @@ importers:
       eslint-plugin-vue:
         specifier: 9.27.0
         version: 9.27.0(eslint@8.57.0)
-      happy-dom:
-        specifier: 13.6.2
-        version: 13.6.2
       prebuild-install:
         specifier: 7.1.2
         version: 7.1.2
@@ -5498,6 +5495,7 @@ snapshots:
       entities: 4.5.0
       webidl-conversions: 7.0.0
       whatwg-mimetype: 3.0.0
+    optional: true
 
   has-flag@4.0.0: {}
 
@@ -6831,9 +6829,11 @@ snapshots:
 
   webidl-conversions@3.0.1: {}
 
-  webidl-conversions@7.0.0: {}
+  webidl-conversions@7.0.0:
+    optional: true
 
-  whatwg-mimetype@3.0.0: {}
+  whatwg-mimetype@3.0.0:
+    optional: true
 
   whatwg-url@5.0.0:
     dependencies:
