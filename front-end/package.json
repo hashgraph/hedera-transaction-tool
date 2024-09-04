@@ -50,7 +50,7 @@
   "devDependencies": {
     "@electron-toolkit/eslint-config": "1.0.2",
     "@electron-toolkit/tsconfig": "1.0.1",
-    "@rushstack/eslint-patch": "1.7.2",
+    "@rushstack/eslint-patch": "1.10.4",
     "@types/bcrypt": "5.0.2",
     "@types/better-sqlite3": "7.6.9",
     "@types/bootstrap": "5.2.10",
