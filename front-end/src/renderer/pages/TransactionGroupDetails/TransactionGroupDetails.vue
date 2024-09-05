@@ -26,7 +26,11 @@ import { hexToUint8Array } from '@renderer/services/electronUtilsService';
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 import { TransactionStatus } from '@main/shared/interfaces';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
-import { getPrivateKey, getTransactionBodySignatureWithoutNodeAccountId } from '@renderer/utils';
+import {
+  getDateStringExtended,
+  getPrivateKey,
+  getTransactionBodySignatureWithoutNodeAccountId,
+} from '@renderer/utils';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
@@ -299,7 +303,7 @@ onMounted(async () => {
                 <span class="text-bold">{{ groupItem.transaction.name }}</span>
               </td>
               <td>
-                {{ groupItem.transaction.validStart }}
+                {{ getDateStringExtended(new Date(groupItem.transaction.validStart)) }}
               </td>
               <td class="text-center">
                 <AppButton
