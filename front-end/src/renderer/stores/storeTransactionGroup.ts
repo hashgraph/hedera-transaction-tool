@@ -90,32 +90,45 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   }
 
   function duplicateGroupItem(index: number) {
-    const newGroupItems = new Array<GroupItem>();
-    let newIndex = 0;
-    groupItems.value.forEach((groupItem, i) => {
-      groupItem.seq = newIndex.toString();
-      newIndex++;
-      newGroupItems.push(groupItem);
-      if (i == index) {
-        const newDate = new Date();
-        newDate.setTime(newDate.getTime());
-        const newItem = {
-          transactionBytes: groupItem.transactionBytes,
-          type: groupItem.type,
-          accountId: groupItem.accountId,
-          seq: (Number.parseInt(groupItem.seq) + 1).toString(),
-          keyList: groupItem.keyList,
-          observers: groupItem.observers,
-          approvers: groupItem.approvers,
-          payerAccountId: groupItem.payerAccountId,
-          validStart: newDate,
-        };
-        newGroupItems.push(newItem);
-        newIndex++;
-      }
-    });
-    groupItems.value = newGroupItems;
+    const baseItem = groupItems.value[index];
+    const newDate = findUniqueValidStart(baseItem.payerAccountId, baseItem.validStart);
+    const newItem = {
+      transactionBytes: baseItem.transactionBytes,
+      type: baseItem.type,
+      accountId: baseItem.accountId,
+      seq: (Number.parseInt(baseItem.seq) + 1).toString(),
+      keyList: baseItem.keyList,
+      observers: baseItem.observers,
+      approvers: baseItem.approvers,
+      payerAccountId: baseItem.payerAccountId,
+      validStart: newDate,
+    };
+    groupItems.value.splice(index + 1, 0, newItem);
     setModified();
+  }
+
+  function findUniqueValidStart(payerAccountId: string, validStart: Date): Date {
+    let validStartMillis = validStart.getTime();
+    let isUnique = false;
+
+    while (!isUnique) {
+      isUnique = true;
+
+      for (const item of groupItems.value) {
+        if (
+          item.payerAccountId === payerAccountId &&
+          item.validStart.getTime() === validStartMillis
+        ) {
+          isUnique = false;
+          // Not unique, add 1 millisecond and break the loop
+          validStartMillis += 1;
+          break;
+        }
+      }
+    }
+
+    // Convert milliseconds back to Date and return
+    return new Date(validStartMillis);
   }
 
   async function saveGroup(userId: string, description: string) {
