@@ -89,9 +89,15 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     setModified();
   }
 
+  /**
+   * Duplicates a group item at the specified index.
+   * The resulting transaction will be identical to the original,
+   * except for the validStart date and seq number.
+   * @param index
+   */
   function duplicateGroupItem(index: number) {
     const baseItem = groupItems.value[index];
-    const newDate = findUniqueValidStart(baseItem.payerAccountId, baseItem.validStart);
+    const newDate = findUniqueValidStart(baseItem.payerAccountId, baseItem.validStart.getTime()+1);
     const newItem = {
       transactionBytes: baseItem.transactionBytes,
       type: baseItem.type,
@@ -107,8 +113,13 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     setModified();
   }
 
-  function findUniqueValidStart(payerAccountId: string, validStart: Date): Date {
-    let validStartMillis = validStart.getTime();
+  /**
+   * Finds a unique validStart date for a group item.
+   * @param payerAccountId
+   * @param validStartMillis - The milliseconds of the desired validStart date .
+   * @returns A unique validStart date.
+   */
+  function findUniqueValidStart(payerAccountId: string, validStartMillis: number): Date {
     let isUnique = false;
 
     while (!isUnique) {
