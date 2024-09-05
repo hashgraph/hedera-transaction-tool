@@ -126,6 +126,13 @@ watch(
   },
 );
 
+watch(
+  () => user.publicKeyToAccounts,
+  () => {
+    handlePayerSelect(accoundIds.value[0]);
+  },
+);
+
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
 </script>

@@ -2,7 +2,7 @@
 import type { HederaFile } from '@prisma/client';
 import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
-import { computed, inject, onMounted, ref, watch } from 'vue';
+import { inject, onMounted, ref, watch } from 'vue';
 import { FileContentsQuery, FileId, FileInfoQuery, Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -17,7 +17,7 @@ import { executeQuery } from '@renderer/services/transactionService';
 import { add, getAll, update } from '@renderer/services/filesService';
 
 import { isFileId, isHederaSpecialFileId, formatAccountId, encodeString } from '@renderer/utils';
-import { isUserLoggedIn, flattenAccountIds } from '@renderer/utils/userStoreHelpers';
+import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
@@ -25,7 +25,6 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
-import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 
 /* Stores */
@@ -46,9 +45,6 @@ const fileId = ref('');
 const content = ref('');
 const isLoading = ref(false);
 const storedFiles = ref<HederaFile[]>([]);
-
-/* Computed */
-const accoundIds = computed<string[]>(() => flattenAccountIds(user.publicKeyToAccounts));
 
 /* Handlers */
 const readFile = async () => {
@@ -214,21 +210,10 @@ const columnClass = 'col-4 col-xxxl-3';
             <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
               >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
             >
-            <template v-if="!user.selectedOrganization">
-              <AccountIdsSelect
-                v-model:account-id="payerData.accountId.value"
-                :select-default="true"
-              />
-            </template>
-            <template v-else>
-              <AppAutoComplete
-                :model-value="payerData.isValid.value ? payerData.accountIdFormatted.value : ''"
-                @update:model-value="payerData.accountId.value = formatAccountId($event)"
-                :filled="true"
-                :items="accoundIds"
-                placeholder="Enter Payer ID"
-              />
-            </template>
+            <AccountIdsSelect
+              v-model:account-id="payerData.accountId.value"
+              :select-default="true"
+            />
           </div>
           <div class="form-group" :class="[columnClass]">
             <label class="form-label">Max Query Fee {{ HbarUnit.Hbar._symbol }}</label>
