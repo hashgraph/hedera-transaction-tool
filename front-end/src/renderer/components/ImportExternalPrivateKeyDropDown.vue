@@ -168,17 +168,6 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], (ecdsa, ed2551
           "
         >
           <div class="form-group mt-4">
-            <label class="form-label">Enter ECDSA Private key</label>
-            <AppInput
-              data-testid="input-ecdsa-private-key"
-              v-model="ecdsaKey.privateKey"
-              :filled="true"
-              size="small"
-              name="private-key"
-              placeholder="Type ECDSA Private key"
-            />
-          </div>
-          <div class="form-group mt-4">
             <label class="form-label">Enter nickname (optional)</label>
             <AppInput
               data-testid="input-ecdsa-private-key-nickname"
@@ -187,6 +176,17 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], (ecdsa, ed2551
               size="small"
               name="nickname"
               placeholder="Type nickname"
+            />
+          </div>
+          <div class="form-group mt-4">
+            <label class="form-label">Enter ECDSA Private key</label>
+            <AppInput
+              data-testid="input-ecdsa-private-key"
+              v-model="ecdsaKey.privateKey"
+              :filled="true"
+              size="small"
+              name="private-key"
+              placeholder="Type ECDSA Private key"
             />
           </div>
 
@@ -216,17 +216,6 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], (ecdsa, ed2551
           "
         >
           <div class="form-group mt-4">
-            <label class="form-label">Enter ED25519 Private key</label>
-            <AppInput
-              data-testid="input-ed25519-private-key"
-              v-model="ed25519Key.privateKey"
-              :filled="true"
-              size="small"
-              name="private-key"
-              placeholder="Type ED25519 Private key"
-            />
-          </div>
-          <div class="form-group mt-4">
             <label class="form-label">Enter nickname (optional)</label>
             <AppInput
               data-testid="input-ed25519-private-key-nickname"
@@ -235,6 +224,17 @@ watch([isImportECDSAKeyModalShown, isImportED25519KeyModalShown], (ecdsa, ed2551
               size="small"
               name="nickname"
               placeholder="Type nickname"
+            />
+          </div>
+          <div class="form-group mt-4">
+            <label class="form-label">Enter ED25519 Private key</label>
+            <AppInput
+              data-testid="input-ed25519-private-key"
+              v-model="ed25519Key.privateKey"
+              :filled="true"
+              size="small"
+              name="private-key"
+              placeholder="Type ED25519 Private key"
             />
           </div>
 
