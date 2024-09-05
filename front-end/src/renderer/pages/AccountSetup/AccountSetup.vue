@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import type { KeyPair } from '@prisma/client';
+
 import { onBeforeMount, ref } from 'vue';
 import { onBeforeRouteLeave } from 'vue-router';
-
-import { KeyPair } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 

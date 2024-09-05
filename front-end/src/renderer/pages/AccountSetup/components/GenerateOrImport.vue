@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, ref, watch } from 'vue';
+import type { KeyPair } from '@prisma/client';
+import type { TabItem } from '@renderer/components/ui/AppTabs.vue';
 
-import { KeyPair } from '@prisma/client';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -10,7 +11,7 @@ import { compareDataToHashes } from '@renderer/services/electronUtilsService';
 
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
-import AppTabs, { TabItem } from '@renderer/components/ui/AppTabs.vue';
+import AppTabs from '@renderer/components/ui/AppTabs.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';

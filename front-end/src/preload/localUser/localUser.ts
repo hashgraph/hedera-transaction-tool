@@ -1,6 +1,6 @@
-import { ipcRenderer } from 'electron';
+import type { User } from '@prisma/client';
 
-import { User } from '@prisma/client';
+import { ipcRenderer } from 'electron';
 
 export default {
   localUser: {

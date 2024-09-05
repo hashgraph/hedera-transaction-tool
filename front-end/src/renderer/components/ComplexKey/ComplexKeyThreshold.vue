@@ -236,7 +236,7 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
       keyList
         .toArray()
         .filter(key => key instanceof PublicKey)
-        .map(key => key.toStringRaw())
+        .map(key => (key as PublicKey).toStringRaw())
     "
     @selected:multiple="handleAddPublicKey"
   />

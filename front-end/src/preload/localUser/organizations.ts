@@ -1,6 +1,8 @@
+import type { Organization } from '@prisma/client';
+
 import { ipcRenderer } from 'electron';
 
-import { Organization, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 export default {
   organizations: {

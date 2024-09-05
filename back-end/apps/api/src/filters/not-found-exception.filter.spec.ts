@@ -1,5 +1,5 @@
 import { NotFoundExceptionFilter } from './not-found-exception.filter';
-import { NotFoundException } from '@nestjs/common';
+import { ArgumentsHost, NotFoundException } from '@nestjs/common';
 
 describe('NotFoundExceptionFilter', () => {
   let filter: NotFoundExceptionFilter;
@@ -15,7 +15,7 @@ describe('NotFoundExceptionFilter', () => {
     const switchToHttp = jest.fn().mockReturnValue({ getResponse });
     const host = { switchToHttp };
 
-    filter.catch(new NotFoundException(), host as any);
+    filter.catch(new NotFoundException(), host as unknown as ArgumentsHost);
 
     expect(status).toHaveBeenCalledWith(404);
     expect(json).toHaveBeenCalledWith({

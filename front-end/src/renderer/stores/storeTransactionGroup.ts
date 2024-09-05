@@ -1,5 +1,6 @@
+import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+
 import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
-import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 import { Prisma } from '@prisma/client';
 import { getDrafts } from '@renderer/services/transactionDraftsService';
 import {

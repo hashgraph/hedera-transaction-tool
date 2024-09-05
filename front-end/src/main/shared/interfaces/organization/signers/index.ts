@@ -1,5 +1,5 @@
-import { ITransaction } from '../transactions';
-import { IUserKey } from '../userKeys';
+import type { ITransaction } from '../transactions';
+import type { IUserKey } from '../userKeys';
 
 interface IBaseTransactionSigner {
   id: number;

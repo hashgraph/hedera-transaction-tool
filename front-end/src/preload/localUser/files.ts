@@ -1,8 +1,9 @@
+import type { HederaFile } from '@prisma/client';
+import type { HederaSpecialFileId } from '@main/shared/interfaces';
+
 import { ipcRenderer } from 'electron';
 
-import { HederaFile, Prisma } from '@prisma/client';
-
-import { HederaSpecialFileId } from '@main/shared/interfaces';
+import { Prisma } from '@prisma/client';
 
 export default {
   files: {

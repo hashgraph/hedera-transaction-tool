@@ -14,7 +14,7 @@ defineProps<{
 const emit = defineEmits(['update:show']);
 
 /* Handlers */
-const handleShowUpdate = show => emit('update:show', show);
+const handleShowUpdate = (show: boolean) => emit('update:show', show);
 </script>
 <template>
   <AppModal :show="show" @update:show="handleShowUpdate" class="modal-fit-content">

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
-import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+import { onMounted, ref } from 'vue';
 
 import ApproverThreshold from '@renderer/components/Approvers/ApproverThreshold.vue';
 

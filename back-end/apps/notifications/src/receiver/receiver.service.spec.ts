@@ -816,7 +816,7 @@ describe('ReceiverService', () => {
 
       const actAssert = async (
         transactionStatus: TransactionStatus,
-        notifyType: NotificationType,
+        // notifyType: NotificationType,
       ) => {
         const getTransactionParticipants: jest.SpyInstance = jest
           //@ts-expect-error getTransactionParticipants is private
@@ -858,13 +858,17 @@ describe('ReceiverService', () => {
         );
       };
 
-      await actAssert(TransactionStatus.EXECUTED, NotificationType.TRANSACTION_INDICATOR_EXECUTED);
-      await actAssert(TransactionStatus.FAILED, NotificationType.TRANSACTION_INDICATOR_EXECUTED);
-      await actAssert(TransactionStatus.EXPIRED, NotificationType.TRANSACTION_INDICATOR_EXPIRED);
-      await actAssert(
-        TransactionStatus.WAITING_FOR_EXECUTION,
-        NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
-      );
+      // await actAssert(TransactionStatus.EXECUTED);
+      // await actAssert(TransactionStatus.FAILED, NotificationType.TRANSACTION_INDICATOR_EXECUTED);
+      // await actAssert(TransactionStatus.EXPIRED, NotificationType.TRANSACTION_INDICATOR_EXPIRED);
+      // await actAssert(
+      //   TransactionStatus.WAITING_FOR_EXECUTION,
+      //   NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
+      // );
+      await actAssert(TransactionStatus.EXECUTED);
+      await actAssert(TransactionStatus.FAILED);
+      await actAssert(TransactionStatus.EXPIRED);
+      await actAssert(TransactionStatus.WAITING_FOR_EXECUTION);
     });
 
     it('should delete previuos notifications and do nothing more if there is not new indicator type', async () => {

@@ -1,5 +1,7 @@
-import { Prisma, GroupItem } from '@prisma/client';
-import { GroupItem as StoreGroupItem } from '@renderer/stores/storeTransactionGroup';
+import type { GroupItem as StoreGroupItem } from '@renderer/stores/storeTransactionGroup';
+import type { GroupItem } from '@prisma/client';
+
+import { Prisma } from '@prisma/client';
 
 import { getMessageFromIPCError } from '@renderer/utils';
 import { getTransactionType } from '@renderer/utils/transactions';

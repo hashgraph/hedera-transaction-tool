@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { inject, ref, watch } from 'vue';
+import type { Organization } from '@prisma/client';
+import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
-import { Organization } from '@prisma/client';
+import { inject, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
 import { tryAutoSignIn } from '@renderer/services/organizationCredentials';
 
-import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 

@@ -1,6 +1,8 @@
+import type { INotificationReceiver } from '@main/shared/interfaces';
+
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
-import { INotificationReceiver, NotificationType } from '@main/shared/interfaces';
+import { NotificationType } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNotificationsStore from '@renderer/stores/storeNotifications';

@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+import type { TransactionRequest } from '.';
+
 import { ref } from 'vue';
 
 import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
-
-import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import { useToast } from 'vue-toast-notification';
 
@@ -14,7 +15,7 @@ import OrganizationRequestHandler from './components/OrganizationRequestHandler.
 import SignPersonalRequestHandler from './components/SignPersonalRequestHandler.vue';
 import ExecutePersonalRequestHandler from './components/ExecutePersonalRequestHandler.vue';
 
-import { assertHandlerExists, TransactionRequest } from '.';
+import { assertHandlerExists } from '.';
 
 /* Props */
 const props = defineProps<{

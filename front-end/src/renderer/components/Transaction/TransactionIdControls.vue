@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { DatePickerInstance } from '@vuepic/vue-datepicker';
+
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
@@ -14,7 +16,7 @@ import { getDraft } from '@renderer/services/transactionDraftsService';
 import { formatAccountId, getTransactionFromBytes, stringifyHbar } from '@renderer/utils';
 import { flattenAccountIds } from '@renderer/utils/userStoreHelpers';
 
-import DatePicker, { DatePickerInstance } from '@vuepic/vue-datepicker';
+import DatePicker from '@vuepic/vue-datepicker';
 
 import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
@@ -47,12 +49,12 @@ const intervalId = ref<ReturnType<typeof setInterval> | null>(null);
 const accoundIds = computed<string[]>(() => flattenAccountIds(user.publicKeyToAccounts));
 
 /* Handlers */
-const handlePayerSelect = payerId => {
+const handlePayerSelect = (payerId: string) => {
   account.accountId.value = payerId;
   emit('update:payerId', payerId || '');
 };
 
-const handlePayerChange = payerId => {
+const handlePayerChange = (payerId: string) => {
   emit('update:payerId', formatAccountId(payerId));
   account.accountId.value = formatAccountId(payerId);
 };
@@ -173,13 +175,15 @@ const columnClass = 'col-4 col-xxxl-3';
           keepActionRow: true,
         }"
         :min-date="new Date()"
-        enable-seconds
         :teleport="true"
+        enable-seconds
         class="is-fill"
-        menu-class-name="is-fill"
-        calendar-class-name="is-fill"
-        input-class-name="is-fill"
-        calendar-cell-class-name="is-fill"
+        :ui="{
+          calendar: 'is-fill',
+          calendarCell: 'is-fill',
+          menu: 'is-fill',
+          input: 'is-fill',
+        }"
       >
         <template #action-row>
           <div class="d-flex justify-content-end gap-4 w-100">

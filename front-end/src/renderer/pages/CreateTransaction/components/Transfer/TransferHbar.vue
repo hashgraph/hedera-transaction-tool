@@ -1,12 +1,12 @@
 <script setup lang="ts">
+import type { HederaAccount } from '@prisma/client';
+import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+import type { IAccountInfoParsed } from '@main/shared/interfaces';
+
 import { ref, onMounted, computed } from 'vue';
 import { Hbar, KeyList, Transaction, TransferTransaction, Transfer, Key } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
-import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
-
-import { HederaAccount } from '@prisma/client';
-import { IAccountInfoParsed } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -123,7 +123,7 @@ const totalBalanceAdjustments = computed(
 );
 
 /* Handlers */
-const handleCreate = async e => {
+const handleCreate = async (e: Event) => {
   e.preventDefault();
   try {
     if (!isAccountId(payerData.accountId.value) || !payerData.key.value) {
@@ -189,7 +189,7 @@ const handleLoadFromDraft = async () => {
             }) => new Transfer({ accountId, amount: Hbar.fromTinybars(amount), isApproved }),
           );
 
-          const accountIds = loadedTransfers.map(t => t.accountId.toString());
+          const accountIds = loadedTransfers.map((t: any) => t.accountId.toString());
           for (const accountId of accountIds) {
             if (!accountInfos.value[accountId]) {
               accountInfos.value[accountId] = await getAccountInfo(

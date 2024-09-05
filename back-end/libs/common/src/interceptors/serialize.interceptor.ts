@@ -2,33 +2,23 @@ import { CallHandler, ExecutionContext, NestInterceptor, UseInterceptors } from 
 import { map, Observable } from 'rxjs';
 import { plainToInstance } from 'class-transformer';
 
-interface ClassConstructor {
-  new (...args: any[]): {};
-}
+type ClassConstructor<T> = new (...args) => T;
 
-export function Serialize(dto: ClassConstructor) {
+export function Serialize<T>(dto: ClassConstructor<T>) {
   return UseInterceptors(new SerializeInterceptor(dto));
 }
 
-class SerializeInterceptor implements NestInterceptor {
-  constructor(private dto: ClassConstructor) {}
+class SerializeInterceptor<T> implements NestInterceptor {
+  constructor(private dto: ClassConstructor<T>) {}
 
-  intercept(context: ExecutionContext, handler: CallHandler): Observable<any> {
-    // run something before a request is handled
-    // by the request handler
-
+  intercept(context: ExecutionContext, handler: CallHandler): Observable<unknown> {
     return handler.handle().pipe(
-      map((data: ClassConstructor) => {
-        // Run something before the response is sent out
-        // Note: if there is no response due to nothing found, this breaks stuff.
-
-        // are there any unset fields that should be exposed? trying out exposeUnsetFields
-        // to hide 'deletedAt' if it is not set. Could just hide the field entirely, too.
-        return plainToInstance(this.dto, data, {
+      map((data: ClassConstructor<T>) =>
+        plainToInstance(this.dto, data, {
           excludeExtraneousValues: true,
           exposeUnsetFields: false,
-        });
-      }),
+        }),
+      ),
     );
   }
 }

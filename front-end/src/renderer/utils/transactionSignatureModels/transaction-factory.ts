@@ -1,4 +1,5 @@
 import { Transaction } from '@hashgraph/sdk';
+import { TransactionBaseModel } from './transaction.model';
 import TransferTransactionModel from './transfer-transaction.model';
 import AccountCreateTransactionModel from './account-create-transaction.model';
 import AccountUpdateTransactionModel from './account-update-transaction.model';
@@ -9,7 +10,6 @@ import FileAppendTransactionModel from './file-append-transaction.model';
 import AccountDeleteTransactionModel from './account-delete-transaction.model';
 import AccountAllowanceApproveTransactionModel from './approve-allowance-transaction.model';
 import FileCreateTransactionModel from './file-create-transaction.model';
-import { TransactionBaseModel } from './transaction.model';
 
 export default class TransactionFactory {
   static fromBytes(bytes: Buffer) {
@@ -33,10 +33,12 @@ export default class TransactionFactory {
 
     const transactionType = transaction.constructor.name.slice(
       transaction.constructor.name.startsWith('_') ? 1 : 0,
-    );
+    ) as keyof typeof transactionModelMap;
 
     if (transactionModelMap[transactionType]) {
-      return new transactionModelMap[transactionType](transaction);
+      const Model = transactionModelMap[transactionType];
+      //@ts-expect-error typescript
+      return new Model(transaction);
     } else {
       throw new Error('Transaction type unknown');
     }

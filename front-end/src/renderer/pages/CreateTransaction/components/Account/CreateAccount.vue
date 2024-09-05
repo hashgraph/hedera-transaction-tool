@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import {
   AccountId,
@@ -13,7 +15,6 @@ import {
 } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
-import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
@@ -132,7 +133,7 @@ const handleNodeNumberChange = (e: Event) => {
   }
 };
 
-const handleCreate = async e => {
+const handleCreate = async (e: Event) => {
   e.preventDefault();
 
   try {
@@ -221,7 +222,7 @@ const handleLoadFromDraft = async () => {
   }
 };
 
-const handleOwnerKeyUpdate = key => {
+const handleOwnerKeyUpdate = (key: Key) => {
   ownerKey.value = key;
 };
 

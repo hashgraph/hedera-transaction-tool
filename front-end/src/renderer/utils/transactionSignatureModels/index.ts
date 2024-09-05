@@ -1,6 +1,6 @@
-import { Key, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
+import type { IUserKey } from '@main/shared/interfaces';
 
-import { IUserKey } from '@main/shared/interfaces';
+import { Key, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
 
 import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
 

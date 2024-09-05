@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { Handler, TransactionRequest } from '..';
+
 import { computed, ref } from 'vue';
 import {
   Transaction,
@@ -18,7 +20,7 @@ import { createTransactionId } from '@renderer/services/transactionService';
 import SignPersonalRequestHandler from './SignPersonalRequestHandler.vue';
 import ExecutePersonalRequestHandler from './ExecutePersonalRequestHandler.vue';
 
-import { assertHandlerExists, Handler, TransactionRequest } from '..';
+import { assertHandlerExists } from '..';
 
 /* Constants */
 const firstChunkSize = 100;

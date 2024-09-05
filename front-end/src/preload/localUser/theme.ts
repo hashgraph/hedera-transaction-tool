@@ -1,6 +1,6 @@
-import { ipcRenderer } from 'electron';
+import type { Theme } from '@main/shared/interfaces';
 
-import { Theme } from '@main/shared/interfaces';
+import { ipcRenderer } from 'electron';
 
 export default {
   theme: {
@@ -10,8 +10,10 @@ export default {
     onThemeUpdate: (
       callback: (theme: { themeSource: Theme; shouldUseDarkColors: boolean }) => void,
     ) => {
-      const subscription = (_e, theme: { themeSource: Theme; shouldUseDarkColors: boolean }) =>
-        callback(theme);
+      const subscription = (
+        _e: Electron.IpcRendererEvent,
+        theme: { themeSource: Theme; shouldUseDarkColors: boolean },
+      ) => callback(theme);
       ipcRenderer.on('theme:update', subscription);
       return () => {
         ipcRenderer.removeListener('theme:update', subscription);

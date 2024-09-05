@@ -1,14 +1,16 @@
-import { computed, ref, watch, nextTick } from 'vue';
-import { defineStore } from 'pinia';
+import type { KeyPair, Organization } from '@prisma/client';
 
-import { KeyPair, Organization, Prisma } from '@prisma/client';
-
-import {
+import type {
   PersonalUser,
   PublicKeyAccounts,
   RecoveryPhrase,
   ConnectedOrganization,
 } from '@renderer/types';
+
+import { computed, ref, watch, nextTick } from 'vue';
+import { defineStore } from 'pinia';
+
+import { Prisma } from '@prisma/client';
 
 import { useRouter } from 'vue-router';
 

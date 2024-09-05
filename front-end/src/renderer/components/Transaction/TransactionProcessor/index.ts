@@ -15,8 +15,8 @@ export interface Handler {
 }
 
 export function assertHandlerExists<T extends abstract new (...args: any) => any>(
-  handler,
-  name,
+  handler: InstanceType<T> | null,
+  name: string,
 ): asserts handler is InstanceType<T> {
   if (!handler) throw new Error(`${name} handler is not provided`);
 }

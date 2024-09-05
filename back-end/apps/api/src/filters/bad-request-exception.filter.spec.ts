@@ -1,5 +1,5 @@
 import { BadRequestExceptionFilter } from './bad-request-exception.filter';
-import { BadRequestException } from '@nestjs/common';
+import { ArgumentsHost, BadRequestException } from '@nestjs/common';
 
 describe('BadRequestExceptionFilter', () => {
   let filter: BadRequestExceptionFilter;
@@ -15,7 +15,7 @@ describe('BadRequestExceptionFilter', () => {
     const switchToHttp = jest.fn().mockReturnValue({ getResponse });
     const host = { switchToHttp };
 
-    filter.catch(new BadRequestException(), host as any);
+    filter.catch(new BadRequestException(), host as unknown as ArgumentsHost);
 
     expect(status).toHaveBeenCalledWith(400);
     expect(json).toHaveBeenCalledWith({

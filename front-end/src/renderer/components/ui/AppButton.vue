@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /* Props */
 const props = defineProps<{
-  color?: 'primary' | 'secondary' | 'borderless' | 'danger' | 'alternate';
+  color?: 'primary' | 'secondary' | 'borderless' | 'danger';
   loading?: boolean;
   loadingText?: string;
   disabled?: boolean;
@@ -28,7 +28,6 @@ const colorMapping = {
   <button
     :disabled="loading || disabled"
     :class="['btn', color ? colorMapping[color] : '', sizeMapping[size || 'default']]"
-    :style="color == 'alternate' ? 'background-color: #dcdfff' : ''"
   >
     <template v-if="loading">
       <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span

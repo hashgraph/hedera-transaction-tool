@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ITransactionApprover } from '@main/shared/interfaces/organization/approvers';
+import type { ITransactionApprover } from '@main/shared/interfaces/organization/approvers';
 
 import useContactsStore from '@renderer/stores/storeContacts';
 

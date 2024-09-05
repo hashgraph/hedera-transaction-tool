@@ -1,6 +1,8 @@
+import type { TransactionDraft } from '@prisma/client';
+
 import { ipcRenderer } from 'electron';
 
-import { Prisma, TransactionDraft } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 export default {
   transactionDrafts: {

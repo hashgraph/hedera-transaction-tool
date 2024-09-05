@@ -18,7 +18,7 @@ export class CommentsService {
     dto: CreateCommentDto,
   ): Promise<TransactionComment> {
     const comment = this.repo.create(dto);
-    comment['transaction' as any] = transactionId;
+    comment['transaction'].id = transactionId;
     comment.user = user;
     return this.repo.save(comment);
   }

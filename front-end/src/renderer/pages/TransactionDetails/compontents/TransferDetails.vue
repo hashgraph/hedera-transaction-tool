@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import type { HederaAccount } from '@prisma/client';
+
 import { onBeforeMount, ref } from 'vue';
 
 import { TransferTransaction, Transaction } from '@hashgraph/sdk';
-
-import { HederaAccount } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';

@@ -43,10 +43,3 @@ app.component('DatePicker', DatePicker);
 
 /* App mount */
 app.mount('#app');
-
-/* Vue Dev Tools */
-// if (import.meta.env.DEV) {
-//   import('@vue/devtools').then(module => {
-//     module.connect('http://localhost');
-//   });
-// }

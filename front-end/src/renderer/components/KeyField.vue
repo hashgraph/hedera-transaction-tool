@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import type { ComplexKey } from '@prisma/client';
 
-import { ComplexKey } from '@prisma/client';
+import { ref, watch } from 'vue';
 
 import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 

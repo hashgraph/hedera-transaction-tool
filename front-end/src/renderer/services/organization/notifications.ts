@@ -1,4 +1,4 @@
-import {
+import type {
   INotificationReceiver,
   IUpdateNotificationReceiver,
 } from '@main/shared/interfaces/organization';

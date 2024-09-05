@@ -100,9 +100,10 @@ function getOTP() {
 
   inputs.forEach(input => {
     const index = input.getAttribute('index');
+    const indexNum = Number(index);
 
-    if (index && !isNaN(Number(index))) {
-      otp[index] = input.value;
+    if (index && !isNaN(indexNum)) {
+      otp[indexNum] = input.value;
     }
   });
 

@@ -1,14 +1,17 @@
 <script setup lang="ts">
+import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+import type { GroupItem } from '@renderer/stores/storeTransactionGroup';
+import type { ApiGroupItem, IGroup } from '@renderer/services/organization';
+import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+
 import { computed, nextTick, onBeforeUnmount, ref, inject } from 'vue';
 
 import { Key, KeyList, Transaction, TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 
-import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
-
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
-import useTransactionGroupStore, { GroupItem } from '@renderer/stores/storeTransactionGroup';
+import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 import { useToast } from 'vue-toast-notification';
 
@@ -25,13 +28,11 @@ import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
 import {
   addApprovers,
   addObservers,
-  ApiGroupItem,
   submitTransactionGroup,
   getApiGroupById,
-  IGroup,
 } from '@renderer/services/organization';
 
-import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
 import { ableToSign, getPrivateKey, getStatusFromCode, getTransactionType } from '@renderer/utils';
 import {

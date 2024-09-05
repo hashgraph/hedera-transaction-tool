@@ -1,4 +1,4 @@
-import {
+import type {
   INotificationPreferencesCore,
   IUpdateNotificationPreferencesDto,
 } from '@main/shared/interfaces/organization';

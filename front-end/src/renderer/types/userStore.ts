@@ -1,6 +1,7 @@
+import type { AccountInfo, IUserKey } from '@main/shared/interfaces';
+import type { Organization } from '@prisma/client';
+
 import { Mnemonic } from '@hashgraph/sdk';
-import { AccountInfo, IUserKey } from '@main/shared/interfaces';
-import { Organization } from '@prisma/client';
 
 type LoggedOutUser = {
   isLoggedIn: false;

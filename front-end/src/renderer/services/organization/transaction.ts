@@ -1,22 +1,16 @@
-import { Transaction } from '@hashgraph/sdk';
-
-import { Organization } from '@prisma/client';
-
-import { Network } from '@main/shared/enums';
-
-import { LoggedInOrganization, LoggedInUserWithPassword } from '@renderer/types';
-
-import {
-  ITransaction,
-  ITransactionFull,
-  ObserverRole,
-  PaginatedResourceDto,
-  TransactionStatus,
-} from '@main/shared/interfaces';
-import {
+import type { Organization } from '@prisma/client';
+import type { LoggedInOrganization, LoggedInUserWithPassword } from '@renderer/types';
+import type { ITransaction, ITransactionFull, PaginatedResourceDto } from '@main/shared/interfaces';
+import type {
   ITransactionApprover,
   TransactionApproverDto,
 } from '@main/shared/interfaces/organization/approvers';
+
+import { Transaction } from '@hashgraph/sdk';
+
+import { Network } from '@main/shared/enums';
+
+import { ObserverRole, TransactionStatus } from '@main/shared/interfaces';
 
 import {
   axiosWithCredentials,

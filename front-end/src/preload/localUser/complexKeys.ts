@@ -1,6 +1,6 @@
-import { ipcRenderer } from 'electron';
+import type { ComplexKey } from '@prisma/client';
 
-import { ComplexKey } from '@prisma/client';
+import { ipcRenderer } from 'electron';
 
 export default {
   complexKeys: {

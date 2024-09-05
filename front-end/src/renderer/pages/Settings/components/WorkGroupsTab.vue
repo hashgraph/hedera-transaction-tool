@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onBeforeMount, ref } from 'vue';
+import type { Organization } from '@prisma/client';
 
-import { Organization } from '@prisma/client';
+import { onBeforeMount, ref } from 'vue';
 
 import { useToast } from 'vue-toast-notification';
 
@@ -24,7 +24,7 @@ const newOrganizationServerPublicKey = ref('');
 const organizations = ref<Organization[]>();
 
 /* Handlers */
-const handleAddOrganization = async e => {
+const handleAddOrganization = async (e: Event) => {
   e.preventDefault();
 
   if (newOrganizationName.value !== '' && newOrganizationServerUrl.value !== '') {

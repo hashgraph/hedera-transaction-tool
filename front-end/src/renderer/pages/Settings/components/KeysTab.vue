@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+
 import { computed, inject, ref, watch } from 'vue';
 import { PublicKey } from '@hashgraph/sdk';
 
@@ -13,7 +15,7 @@ import { decryptPrivateKey, deleteKeyPair } from '@renderer/services/keyPairServ
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
-import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -122,7 +124,7 @@ const handleMissingKeyDeleteModal = (id: number) => {
   isDeleteModalShown.value = true;
 };
 
-const handleDelete = async e => {
+const handleDelete = async (e: Event) => {
   e.preventDefault();
 
   try {

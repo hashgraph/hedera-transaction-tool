@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import type { ComplexKey } from '@prisma/client';
+
 import { ref } from 'vue';
 
 import { KeyList } from '@hashgraph/sdk';
-import { ComplexKey } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -37,9 +38,9 @@ const toast = useToast();
 const nickname = ref('');
 
 /* Handlers */
-const handleShowUpdate = show => emit('update:show', show);
+const handleShowUpdate = (show: boolean) => emit('update:show', show);
 
-const handleSaveKeyList = async e => {
+const handleSaveKeyList = async (e: Event) => {
   e.preventDefault();
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');

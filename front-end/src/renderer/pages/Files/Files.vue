@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import type { HederaFile } from '@prisma/client';
+
 import { computed, onMounted, ref, watch } from 'vue';
 
 import { FileId, FileInfo } from '@hashgraph/sdk';
 
-import { HederaFile, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';

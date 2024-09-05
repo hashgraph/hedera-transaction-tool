@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+
 import { inject, reactive, ref, watch } from 'vue';
 
 import { Prisma } from '@prisma/client';
@@ -13,7 +15,7 @@ import { uploadKey } from '@renderer/services/organization';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
-import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';

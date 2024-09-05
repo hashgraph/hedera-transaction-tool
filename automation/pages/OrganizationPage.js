@@ -67,9 +67,9 @@ class OrganizationPage extends BasePage {
   incrementSecondsButtonSelector = 'button[aria-label="Increment seconds"]';
   incrementMinutesButtonSelector = 'button[aria-label="Increment minutes"]';
   incrementHourButtonSelector = 'button[aria-label="Increment hours"]';
-  secondsOverlayButtonSelector = 'button[aria-label="Open seconds overlay"]';
-  minutesOverlayButtonSelector = 'button[aria-label="Open minutes overlay"]';
-  hoursOverlayButtonSelector = 'button[aria-label="Open hours overlay"]';
+  secondsOverlayButtonSelector = 'button[data-test="seconds-toggle-overlay-btn-0"]';
+  minutesOverlayButtonSelector = 'button[data-test="minutes-toggle-overlay-btn-0"]';
+  hoursOverlayButtonSelector = 'button[data-test="hours-toggle-overlay-btn-0"]';
   signTransactionButtonSelector = 'button-sign-org-transaction';
 
   // Inputs

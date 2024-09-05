@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+import type { DatePickerInstance } from '@vuepic/vue-datepicker';
+
 import { computed, onMounted, ref, watch } from 'vue';
 import {
   Hbar,
@@ -12,7 +15,6 @@ import {
 } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
-import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
@@ -34,7 +36,7 @@ import {
 } from '@renderer/utils';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
-import DatePicker, { DatePickerInstance } from '@vuepic/vue-datepicker';
+import DatePicker from '@vuepic/vue-datepicker';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
@@ -89,7 +91,7 @@ const transactionKey = computed(() => {
 });
 
 /* Handlers */
-const handleCreate = async e => {
+const handleCreate = async (e: Event) => {
   e.preventDefault();
 
   try {
@@ -387,20 +389,22 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
             <DatePicker
               ref="datePicker"
               :model-value="startTimestamp"
-              @update:model-value="v => (startTimestamp = v)"
+              @update:model-value="(v: Date) => (startTimestamp = v)"
               placeholder="Select Start Time"
               :clearable="false"
               :auto-apply="true"
               :config="{
                 keepActionRow: true,
               }"
-              :teleport="true"
               :min-date="new Date()"
+              :teleport="true"
               class="is-fill"
-              menu-class-name="is-fill"
-              calendar-class-name="is-fill"
-              input-class-name="is-fill"
-              calendar-cell-class-name="is-fill"
+              :ui="{
+                calendar: 'is-fill',
+                calendarCell: 'is-fill',
+                menu: 'is-fill',
+                input: 'is-fill',
+              }"
             >
               <template #action-row>
                 <div class="d-flex justify-content-end gap-4 w-100">

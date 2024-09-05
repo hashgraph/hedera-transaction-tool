@@ -1,5 +1,6 @@
+import type { IUser } from '../user';
+
 import { NotificationType } from '../notification-receiver';
-import { IUser } from '../user';
 
 export interface INotificationPreferencesCore {
   id: number;

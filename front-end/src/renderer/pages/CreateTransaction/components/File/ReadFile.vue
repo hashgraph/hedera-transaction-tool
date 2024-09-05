@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import type { HederaFile } from '@prisma/client';
+import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+
 import { computed, inject, onMounted, ref, watch } from 'vue';
 import { FileContentsQuery, FileId, FileInfoQuery, Hbar, HbarUnit } from '@hashgraph/sdk';
-
-import { HederaFile } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -18,7 +19,7 @@ import { add, getAll, update } from '@renderer/services/filesService';
 import { isFileId, isHederaSpecialFileId, formatAccountId, encodeString } from '@renderer/utils';
 import { isUserLoggedIn, flattenAccountIds } from '@renderer/utils/userStoreHelpers';
 
-import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -154,7 +155,7 @@ const readFile = async () => {
   }
 };
 
-const handleSubmit = async e => {
+const handleSubmit = async (e: Event) => {
   e.preventDefault();
   await readFile();
 };

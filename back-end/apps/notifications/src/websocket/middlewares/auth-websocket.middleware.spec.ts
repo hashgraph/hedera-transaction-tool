@@ -5,7 +5,7 @@ import { AuthWebsocketMiddleware } from './auth-websocket.middleware';
 
 describe('AuthWebsocketMiddleware', () => {
   let apiServiceMock: Partial<ClientProxy>;
-  let socketMock: any;
+  let socketMock;
   let nextFunction: jest.Mock;
 
   beforeEach(async () => {

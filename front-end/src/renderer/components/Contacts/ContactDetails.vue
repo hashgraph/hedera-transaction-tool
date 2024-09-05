@@ -1,11 +1,10 @@
 <script setup lang="ts">
+import type { HederaAccount } from '@prisma/client';
+import type { AccountInfo, Contact } from '@main/shared/interfaces';
+
 import { onBeforeMount, ref, watch } from 'vue';
 
-import { HederaAccount } from '@prisma/client';
-
 import { PublicKey } from '@hashgraph/sdk';
-
-import { AccountInfo, Contact } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';

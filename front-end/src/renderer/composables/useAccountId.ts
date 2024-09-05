@@ -1,8 +1,7 @@
+import type { IAccountInfoParsed, CryptoAllowance } from '@main/shared/interfaces';
+
 import { computed, ref, watch } from 'vue';
-
 import { AccountId, Hbar } from '@hashgraph/sdk';
-
-import { IAccountInfoParsed, CryptoAllowance } from '@main/shared/interfaces';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 

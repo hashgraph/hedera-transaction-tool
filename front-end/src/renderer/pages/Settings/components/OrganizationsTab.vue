@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import type { Organization } from '@prisma/client';
 
-import { Organization } from '@prisma/client';
+import { ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -54,7 +54,7 @@ const handleStartNicknameEdit = (index: number) => {
   }, 100);
 };
 
-const handleChangeNickname = async e => {
+const handleChangeNickname = async (e: Event) => {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
@@ -62,7 +62,7 @@ const handleChangeNickname = async e => {
   const index = editedIndex.value;
   editedIndex.value = -1;
 
-  const nickname = e.target?.value?.trim() || '';
+  const nickname = (e.target as HTMLInputElement)?.value?.trim() || '';
 
   if (nickname.length === 0) {
     toast.error('Nickname cannot be empty');

@@ -1,3 +1,9 @@
+import type {
+  INotificationReceiver,
+  IUpdateNotificationPreferencesDto,
+  IUpdateNotificationReceiver,
+} from '@main/shared/interfaces';
+
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
 
@@ -10,12 +16,7 @@ import {
 
 import useUserStore from './storeUser';
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
-import {
-  INotificationReceiver,
-  IUpdateNotificationPreferencesDto,
-  IUpdateNotificationReceiver,
-  NotificationType,
-} from '@main/shared/interfaces';
+import { NotificationType } from '@main/shared/interfaces';
 import {
   getAllInAppNotifications,
   updateNotifications,
@@ -51,8 +52,8 @@ const useNotificationsStore = defineStore('notifications', () => {
 
       const newPreferences = { ...notificationsPreferences.value };
 
-      for (const preference of userPreferences) {
-        newPreferences[preference.type] = preference.email;
+      for (const preference of userPreferences.filter(p => p.type in newPreferences)) {
+        newPreferences[preference.type as keyof typeof newPreferences] = preference.email;
       }
 
       notificationsPreferences.value = newPreferences;

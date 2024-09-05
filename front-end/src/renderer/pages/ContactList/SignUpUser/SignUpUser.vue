@@ -32,7 +32,7 @@ useSetDynamicLayout({
 const email = ref('');
 const nickname = ref('');
 
-const handleLinkAccount = async e => {
+const handleLinkAccount = async (e: Event) => {
   e.preventDefault();
 
   if (!isEmail(email.value)) throw new Error('Invalid email');

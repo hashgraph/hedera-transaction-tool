@@ -34,7 +34,7 @@ const currentKeyInvalid = computed(
 );
 
 /* Handlers */
-const handleShowUpdate = show => emit('update:show', show);
+const handleShowUpdate = (show: boolean) => emit('update:show', show);
 
 const handleComplexKeyUpdate = (key: KeyList) => (currentKey.value = key);
 
@@ -51,7 +51,7 @@ const handleSaveComplexKeyButtonClick = () => {
   }
 };
 
-const handleSaveButtonClick = async e => {
+const handleSaveButtonClick = async (e: Event) => {
   e.preventDefault();
 
   if (currentKeyInvalid.value) {

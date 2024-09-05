@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onBeforeMount, ref } from 'vue';
+import type { Organization } from '@prisma/client';
 
-import { Organization } from '@prisma/client';
+import { onBeforeMount, ref } from 'vue';
 
 import { getOrganizations } from '@renderer/services/organizationsService';
 
@@ -27,7 +27,7 @@ const selectedOrganization = ref<Organization | null>(null);
 const organizations = ref<Organization[]>([]);
 
 /* Handlers */
-const handleShowUpdate = show => emit('update:show', show);
+const handleShowUpdate = (show: boolean) => emit('update:show', show);
 
 const handleSelect = (e: Event) => {
   e.preventDefault();

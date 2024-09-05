@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ITransactionApprover } from '@main/shared/interfaces/organization/approvers';
+import type { ITransactionApprover } from '@main/shared/interfaces/organization/approvers';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import ApproverStructureStatus from '@renderer/components/Approvers/ApproverStructureStatus.vue';
@@ -14,7 +14,7 @@ defineProps<{
 const emit = defineEmits(['update:show']);
 
 /* Handlers */
-const handleShowUpdate = show => emit('update:show', show);
+const handleShowUpdate = (show: boolean) => emit('update:show', show);
 </script>
 <template>
   <AppModal :show="show" @update:show="handleShowUpdate" class="modal-fit-content">

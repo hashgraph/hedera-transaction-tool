@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import type { TransactionGroup } from '@prisma/client';
+
 import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 
-import { Prisma, TransactionGroup } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import type { IGroup } from '@renderer/services/organization';
+import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+
 import { computed, inject, onMounted, ref } from 'vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import { useRouter } from 'vue-router';
@@ -13,7 +16,6 @@ import { useToast } from 'vue-toast-notification';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 import useNetwork from '@renderer/stores/storeNetwork';
 import {
-  IGroup,
   fullUploadSignatures,
   getApiGroupById,
   getUserShouldApprove,
@@ -21,7 +23,7 @@ import {
 } from '@renderer/services/organization';
 import { publicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
 import { hexToUint8Array } from '@renderer/services/electronUtilsService';
-import { USER_PASSWORD_MODAL_TYPE, USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
+import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 import { TransactionStatus } from '@main/shared/interfaces';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { getPrivateKey, getTransactionBodySignatureWithoutNodeAccountId } from '@renderer/utils';

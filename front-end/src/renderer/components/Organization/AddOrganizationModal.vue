@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import type { Organization } from '@prisma/client';
+
 import { watch, ref } from 'vue';
 
-import { Organization } from '@prisma/client';
 import { useToast } from 'vue-toast-notification';
 
 import { addOrganization } from '@renderer/services/organizationsService';

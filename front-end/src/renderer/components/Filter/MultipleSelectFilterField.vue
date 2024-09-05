@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import type { ITransaction } from '@main/shared/interfaces';
 
-import { ITransaction } from '@main/shared/interfaces';
+import { computed } from 'vue';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
@@ -37,7 +37,7 @@ const handleSelectItem = (item: string) => {
   }
 };
 
-const handleRemoveFilter = e => {
+const handleRemoveFilter = (e: Event) => {
   e.stopPropagation();
   emit('update:filter', null);
 };

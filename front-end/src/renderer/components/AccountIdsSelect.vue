@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import type { HederaAccount } from '@prisma/client';
+
 import { computed, onBeforeMount, ref, watch } from 'vue';
-import { HederaAccount } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -16,7 +17,9 @@ const props = defineProps<{
 }>();
 
 /* Emits */
-const emit = defineEmits(['update:accountId']);
+const emit = defineEmits<{
+  (event: 'update:accountId', accountId: string): void;
+}>();
 
 /* Stores */
 const user = useUserStore();

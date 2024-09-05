@@ -1,9 +1,9 @@
+import type { Contact } from '@main/shared/interfaces';
+
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 
 import { PublicKey } from '@hashgraph/sdk';
-
-import { Contact } from '@main/shared/interfaces';
 
 import useUserStore from './storeUser';
 
@@ -20,7 +20,7 @@ const useContactsStore = defineStore('contacts', () => {
 
   /* Computed */
   const publicKeys = computed(() => {
-    const publicKeys: { publicKey; nickname: string }[] = [];
+    const publicKeys: { publicKey: string; nickname: string }[] = [];
 
     contacts.value.forEach(c => {
       c.userKeys.forEach(k => {

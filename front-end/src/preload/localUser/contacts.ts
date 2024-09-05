@@ -1,6 +1,8 @@
+import type { Contact } from '@prisma/client';
+
 import { ipcRenderer } from 'electron';
 
-import { Contact, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 export default {
   contacts: {

@@ -7,28 +7,22 @@ and is at your own risk.
 
 ## Prerequisites
 
-Node version: `20.9.0`
+Node version: `20.17.0`
 
 If you use another version, please use [n](https://github.com/tj/n) to manage.
+
+`pnpm` version: `9.9.0`
+
+To upgrade to the latest pnpm version please run:
+
+```bash
+npm install -g pnpm@latest
+```
 
 ### Install dependencies ⏬
 
 ```bash
-npm install
-```
-
-### Prebuild binaries
-
-Replace the `--arch` argument with your architecture
-
-```bash
-npm run postinstall -- --arch arm64
-```
-
-### Run the following command to start Vue devtools
-
-```bash
-npm run devTools
+pnpm install
 ```
 
 ### Start developing ⚒️
@@ -42,7 +36,7 @@ npx prisma generate
 Run in development mode:
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 ### Additional Commands
@@ -50,23 +44,23 @@ npm run dev
 Build the app localy
 
 ```bash
-npm run build # builds application, distributable files can be found in "dist" folder
+pnpm run build # builds application, distributable files can be found in "dist" folder
 
 # OR
 
-npm run build:mac # uses mac as build target
+pnpm run build:mac # uses mac as build target
 ```
 
 Run the tests
 
 ```bash
-npm run test:main # run tests for the main folder
+pnpm run test:main # run tests for the main folder
 ```
 
 Run the tests with coverage
 
 ```bash
-npm run test:main:coverage # run tests for the main folder
+pnpm run test:main:coverage # run tests for the main folder
 ```
 
 ## Publish
@@ -74,5 +68,5 @@ npm run test:main:coverage # run tests for the main folder
 1. Create Draft release with the proper tag (version in `package.json` needs to match) and prefix `v`
 2. Genereate Classic access token (check the `repo` option)
 3. Generate self sign certificate (TBD)
-4. Run in terminal `GH_TOKEN=<ACCESS_TOKEN> npm run publish`
+4. Run in terminal `GH_TOKEN=<ACCESS_TOKEN> pnpm run publish`
 5. Go to Releases and click `Publish release`

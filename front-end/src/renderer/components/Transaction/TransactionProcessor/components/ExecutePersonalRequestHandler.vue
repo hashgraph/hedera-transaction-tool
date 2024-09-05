@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { Handler, TransactionRequest } from '..';
+
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { Transaction, TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
 
@@ -18,8 +20,6 @@ import { getStatusFromCode, getTransactionType } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
-
-import { Handler, TransactionRequest } from '..';
 
 /* Emits */
 const emit = defineEmits<{

@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+import type { Handler, TransactionRequest } from '..';
+
 import { computed, ref } from 'vue';
 import { Transaction } from '@hashgraph/sdk';
-
-import { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
@@ -16,8 +17,6 @@ import { addApprovers, addObservers, submitTransaction } from '@renderer/service
 
 import { getPrivateKey } from '@renderer/utils';
 import { assertIsLoggedInOrganization, assertUserLoggedIn } from '@renderer/utils/userStoreHelpers';
-
-import { Handler, TransactionRequest } from '..';
 
 /* Props */
 const props = defineProps<{

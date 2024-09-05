@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+import type { Handler, TransactionRequest } from '..';
+
 import { computed, inject, ref } from 'vue';
 import { Transaction } from '@hashgraph/sdk';
 
@@ -9,12 +12,10 @@ import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 
 import { getTransactionType, stringifyHbar } from '@renderer/utils';
 
-import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-
-import { Handler, TransactionRequest } from '..';
 
 /* Props */
 defineProps<{

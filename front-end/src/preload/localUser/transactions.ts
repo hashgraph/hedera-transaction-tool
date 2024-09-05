@@ -1,6 +1,8 @@
+import type { Transaction } from '@prisma/client';
+
 import { ipcRenderer } from 'electron';
 
-import { Prisma, Transaction } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 export default {
   transactions: {

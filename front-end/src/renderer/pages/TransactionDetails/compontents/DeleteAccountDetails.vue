@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import type { ITransactionFull } from '@main/shared/interfaces';
+
 import { onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
 
 import { Transaction, AccountDeleteTransaction, Hbar, HbarUnit } from '@hashgraph/sdk';
 
-import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
+import { TransactionStatus } from '@main/shared/interfaces';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
