@@ -22,6 +22,7 @@ import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 /* Props */
 const props = defineProps<{
@@ -35,6 +36,7 @@ const emit = defineEmits(['update:payerId', 'update:validStart', 'update:maxTran
 
 /* Stores */
 const user = useUserStore();
+const transactionGroup = useTransactionGroupStore();
 
 /* Composables */
 const route = useRoute();
@@ -64,9 +66,8 @@ function handleUpdateValidStart(v: Date) {
 }
 
 /* Functions */
-const loadFromDraft = async (id: string) => {
-  const draft = await getDraft(id.toString());
-  const draftTransaction = getTransactionFromBytes(draft.transactionBytes);
+const loadFromDraftBytes = async (transactionBytes: string) => {
+    const draftTransaction = getTransactionFromBytes(transactionBytes);
 
   if (draftTransaction.transactionId) {
     const transactionId = draftTransaction.transactionId;
@@ -101,8 +102,14 @@ function stopInterval() {
 
 /* Hooks */
 onMounted(async () => {
+  // Check if this is loading from draft, or group item, or is a
+  // new transaction. Set values accordingly
   if (route.query.draftId) {
-    await loadFromDraft(route.query.draftId.toString());
+    const draft = await getDraft(route.query.draftId.toString());
+    await loadFromDraftBytes(draft.transactionBytes);
+  } else if (route.query.groupIndex) {
+    await loadFromDraftBytes(
+      transactionGroup.groupItems[Number(route.query.groupIndex)].transactionBytes.toString());
   } else {
     const allAccounts = user.publicKeyToAccounts.map(a => a.accounts).flat();
     if (allAccounts.length > 0 && allAccounts[0].account) {
