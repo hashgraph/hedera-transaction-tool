@@ -129,7 +129,6 @@ const handleLoadFromDraft = async () => {
   } else if (route.query.groupIndex) {
     draftTransactionBytes =
       transactionGroup.groupItems[Number(route.query.groupIndex)].transactionBytes.toString();
-    validStart.value = transactionGroup.groupItems[Number(route.query.groupIndex)].validStart;
   }
 
   if (draftTransactionBytes) {
@@ -223,7 +222,7 @@ function createTransaction() {
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(maxTransactionFee.value);
 
-  if (isAccountId(payerData.accountId.value) && !route.params.seq) {
+  if (isAccountId(payerData.accountId.value)) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
   }
 
