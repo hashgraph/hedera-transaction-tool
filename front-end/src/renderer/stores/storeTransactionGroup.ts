@@ -1,6 +1,6 @@
 import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
-import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
+import { Key, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 import { getDrafts } from '@renderer/services/transactionDraftsService';
 import {
@@ -12,6 +12,7 @@ import {
 import { getTransactionFromBytes } from '@renderer/utils/transactions';
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
+import { createTransactionId } from '../services/transactionService';
 
 export interface GroupItem {
   transactionBytes: Uint8Array;
@@ -98,8 +99,10 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   function duplicateGroupItem(index: number) {
     const baseItem = groupItems.value[index];
     const newDate = findUniqueValidStart(baseItem.payerAccountId, baseItem.validStart.getTime()+1);
+    const transaction = Transaction.fromBytes(baseItem.transactionBytes);
+    transaction.setTransactionId(createTransactionId(baseItem.payerAccountId, newDate));
     const newItem = {
-      transactionBytes: baseItem.transactionBytes,
+      transactionBytes: transaction.toBytes(),
       type: baseItem.type,
       accountId: baseItem.accountId,
       seq: (Number.parseInt(baseItem.seq) + 1).toString(),
