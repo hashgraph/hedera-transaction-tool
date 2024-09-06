@@ -64,8 +64,6 @@ async function handleSaveGroup() {
     isSaveGroupModalShown.value = false;
   }
 
-  addTransactionIds();
-
   await transactionGroup.saveGroup(user.personal.id, groupName.value);
   transactionGroup.clearGroup();
   router.push('transactions');
@@ -139,7 +137,7 @@ async function handleSignSubmit() {
       ownerKeys.push(PublicKey.fromString(key.public_key));
     }
     const requiredKey = new KeyList(ownerKeys);
-    addTransactionIds();
+
     await transactionGroupProcessor.value?.process(requiredKey);
   } catch (err: any) {
     toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
@@ -188,6 +186,7 @@ async function handleOnFileChanged(e: Event) {
     const rows = result.split(/\r?\n|\r|\n/g);
     let senderAccount = '';
     let sendingTime = '';
+    let validStart: Date | null = null;
     for (const row of rows) {
       if (row.startsWith('Sender Account')) {
         senderAccount = row.split(',')[1];
@@ -200,8 +199,16 @@ async function handleOnFileChanged(e: Event) {
       } else if (row === '') {
         console.log();
       } else {
-        const startDate = row.split(',')[2];
-        const validStart = new Date(`${startDate} ${sendingTime}`);
+        // Create the new validStart value, or add 1 millisecond to the existing one for subsequent transactions
+        if (!validStart) {
+          const startDate = row.split(',')[2];
+          validStart = new Date(`${startDate} ${sendingTime}`)
+          if (validStart < new Date()) {
+            validStart = new Date();
+          }
+        } else {
+          validStart.setMilliseconds(validStart.getMilliseconds() + 1);
+        }
         const transaction = new TransferTransaction()
           .setTransactionValidDuration(180)
           .setMaxTransactionFee(maxTransactionFee.value);
@@ -219,7 +226,7 @@ async function handleOnFileChanged(e: Event) {
           }
         }
         transactionGroup.addGroupItem({
-          transactionBytes: transactionBytes,
+          transactionBytes,
           type: 'TransferTransaction',
           accountId: '',
           seq: transactionGroup.groupItems.length.toString(),
@@ -227,22 +234,13 @@ async function handleOnFileChanged(e: Event) {
           observers: [],
           approvers: [],
           payerAccountId: senderAccount,
-          validStart: validStart,
+          validStart: new Date(validStart.getTime()),
         });
       }
     }
   };
 }
 
-function addTransactionIds() {
-  for (const groupItem of transactionGroup.groupItems) {
-    const transaction = Transaction.fromBytes(groupItem.transactionBytes);
-    transaction.setTransactionId(
-      createTransactionId(groupItem.payerAccountId, groupItem.validStart),
-    );
-    groupItem.transactionBytes = transaction.toBytes();
-  }
-}
 /* Hooks */
 onMounted(async () => {
   await handleLoadGroup();
