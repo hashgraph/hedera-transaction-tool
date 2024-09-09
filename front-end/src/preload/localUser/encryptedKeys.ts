@@ -8,10 +8,19 @@ export default {
     decryptEncryptedKey: (
       filePath: string,
       password: string,
+      skipIndexes: number[] | null,
+      skipHashCode: number | null,
     ): Promise<{
       privateKey: string;
       recoveryPhraseHashCode: number | null;
       index: number | null;
-    }> => ipcRenderer.invoke('encryptedKeys:decryptEncryptedKey', filePath, password),
+    }> =>
+      ipcRenderer.invoke(
+        'encryptedKeys:decryptEncryptedKey',
+        filePath,
+        password,
+        skipIndexes,
+        skipHashCode,
+      ),
   },
 };

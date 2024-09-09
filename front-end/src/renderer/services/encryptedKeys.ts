@@ -12,9 +12,19 @@ export const abortFileSearch = () => {
 };
 
 /* Decrypts the encrypted key */
-export const decryptEncryptedKey = async (filePath: string, password: string) =>
+export const decryptEncryptedKey = async (
+  filePath: string,
+  password: string,
+  skipIndexes: number[] | null,
+  skipHashCode: number | null,
+) =>
   commonIPCHandler(async () => {
-    return await window.electronAPI.local.encryptedKeys.decryptEncryptedKey(filePath, password);
+    return await window.electronAPI.local.encryptedKeys.decryptEncryptedKey(
+      filePath,
+      password,
+      skipIndexes,
+      skipHashCode,
+    );
   }, 'Decrypting encrypted key failed');
 
 /* Calculates the hash code of the recovery phrase */

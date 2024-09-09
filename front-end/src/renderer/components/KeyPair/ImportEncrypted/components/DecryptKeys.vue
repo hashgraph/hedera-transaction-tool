@@ -5,7 +5,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { hashData } from '@renderer/services/electronUtilsService';
 
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { getKeysFromSecretHash, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
@@ -23,6 +23,7 @@ const isDecryptKeyModalShown = ref(false);
 const allKeyPaths = ref<string[]>([]);
 const mnemonic = ref<string[] | null>(null);
 const mnemomicHash = ref<string | null>(null);
+const indexesFromMnemonic = ref<number[]>([]);
 
 const currentKeyPath = ref<string | null>(null);
 
@@ -44,6 +45,12 @@ async function process(keyPaths: string[], words: string[] | null) {
   allKeyPaths.value = keyPaths;
   mnemonic.value = words;
   mnemomicHash.value = words ? await hashData(words.toString()) : null;
+
+  if (words) {
+    indexesFromMnemonic.value = (await getKeysFromSecretHash(user.keyPairs, words)).map(
+      key => key.index,
+    );
+  }
 
   /* Verify user is logged in with password */
   if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
@@ -96,6 +103,7 @@ defineExpose({ process });
       :keys-left="allKeyPaths.length - currentIndex - 1"
       :mnemonic="mnemonic"
       :mnemonic-hash="mnemomicHash"
+      :indexes-from-mnemonic="indexesFromMnemonic"
       @skip:all="handleSkipAll"
       @skip:one="handleSkipOne"
       @stored="handleStored"

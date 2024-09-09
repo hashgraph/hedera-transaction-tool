@@ -5,6 +5,8 @@ import EventEmitter from 'events';
 import { app } from 'electron';
 import * as forge from 'node-forge';
 
+import { ENCRYPTED_KEY_ALREADY_IMPORTED } from '@main/shared/constants';
+
 import { copyFile, getFilePaths, getUniquePath, unzip } from '@main/utils/files';
 
 let fileStreamEventEmitter: EventEmitter | null = null;
@@ -146,6 +148,8 @@ export class EncryptedKeysSearcher {
 export const decryptPrivateKeyFromPath = async (
   filePath: string,
   password: string,
+  skipIndexes: number[] | null,
+  skipHashCode: number | null,
 ): Promise<{
   privateKey: string;
   recoveryPhraseHashCode: number | null;
@@ -154,6 +158,16 @@ export const decryptPrivateKeyFromPath = async (
   const fileContent = await fsp.readFile(filePath, 'utf-8');
 
   const info = getRecoveryPhraseInfo(fileContent);
+
+  if (
+    info &&
+    skipIndexes &&
+    skipIndexes.includes(info.index) &&
+    skipHashCode &&
+    skipHashCode === info.hashCode
+  ) {
+    throw new Error(ENCRYPTED_KEY_ALREADY_IMPORTED);
+  }
 
   try {
     const privateKey = decryptPrivateKeyFromPem(fileContent, password);

@@ -4,12 +4,15 @@ import { computed, ref, watch } from 'vue';
 import { Prisma } from '@prisma/client';
 import { PrivateKey } from '@hashgraph/sdk';
 
+import { ENCRYPTED_KEY_ALREADY_IMPORTED } from '@main/shared/constants';
+
 import useUserStore from '@renderer/stores/storeUser';
 
 import {
   calculateRecoveryPhraseHashCode,
   decryptEncryptedKey,
 } from '@renderer/services/encryptedKeys';
+import { storeKeyPair } from '@renderer/services/keyPairService';
 import { uploadKey } from '@renderer/services/organization';
 
 import { assertUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
@@ -17,7 +20,6 @@ import { assertUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/user
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import { storeKeyPair } from '@renderer/services/keyPairService';
 
 /* Props */
 const props = defineProps<{
@@ -26,6 +28,7 @@ const props = defineProps<{
   keysLeft: number;
   mnemonic: string[] | null;
   mnemonicHash: string | null;
+  indexesFromMnemonic: number[];
 }>();
 
 /* Emits */
@@ -45,7 +48,7 @@ const decrypting = ref<boolean>(false);
 const error = ref<string | null>(null);
 
 const decryptedKeys = ref<string[]>([]);
-const alreadyExisitngPaths = ref<string[]>([]);
+const recoveredKeys = ref<{ publicKey: string; index: number }[]>([]);
 
 /* Computed */
 const fileName = computed(() => {
@@ -84,9 +87,23 @@ async function decrypt() {
   error.value = null;
 
   try {
-    key = await decryptEncryptedKey(props.keyPath, decryptPassword.value);
+    key = await decryptEncryptedKey(
+      props.keyPath,
+      decryptPassword.value,
+      hashCode.value ? [...props.indexesFromMnemonic] : null,
+      hashCode.value,
+    );
   } catch (err) {
-    error.value = err instanceof Error && err.message ? err.message : 'Failed to decrypt key';
+    if (err instanceof Error) {
+      if (err.message === ENCRYPTED_KEY_ALREADY_IMPORTED) {
+        emit('skip:one');
+        return;
+      }
+      error.value = err.message;
+    } else {
+      error.value = 'Failed to decrypt key';
+    }
+
     decrypting.value = false;
   }
 
@@ -116,10 +133,8 @@ async function storeKey(key: {
   if (
     user.keyPairs.some(k => k.public_key === publicKey.toStringRaw()) ||
     decryptedKeys.value.includes(publicKey.toStringRaw())
-  ) {
-    alreadyExisitngPaths.value.push(props.keyPath || '');
-    throw new Error(`${publicKey.toStringRaw()} already exists`);
-  }
+  )
+    return;
 
   const matchedRecoveryPhraseHashCode =
     key.recoveryPhraseHashCode !== null &&
@@ -157,6 +172,7 @@ async function storeKey(key: {
   await storeKeyPair(keyPair, personalPassword, false);
 
   decryptedKeys.value.push(publicKey.toStringRaw());
+  recoveredKeys.value.push({ publicKey: keyPair.public_key, index: keyPair.index || -1 });
 }
 
 function reset() {
@@ -246,11 +262,7 @@ watch(
               color="primary"
               type="submit"
               class="min-w-unset"
-              :disabled="
-                decryptPassword.trim().length === 0 ||
-                decrypting ||
-                alreadyExisitngPaths.includes(props.keyPath || '')
-              "
+              :disabled="decryptPassword.trim().length === 0 || decrypting"
               :loading="decrypting"
               loading-text="Decrypting..."
               >Decrypt</AppButton

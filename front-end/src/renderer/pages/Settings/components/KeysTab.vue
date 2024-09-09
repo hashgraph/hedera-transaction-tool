@@ -149,14 +149,13 @@ const handleDelete = async (e: Event) => {
       await deleteKeyPair(keyPairIdToDelete.value);
       toast.success(`Private key deleted successfully`, { position: 'bottom-right' });
       await user.refetchKeys();
+      user.refetchAccounts();
 
       isDeleteModalShown.value = false;
 
       if (user.shouldSetupAccount) {
         router.push({ name: 'accountSetup' });
       }
-
-      await user.refetchAccounts();
     } else if (
       missingKeyPairIdToDelete.value &&
       isLoggedInOrganization(user.selectedOrganization)

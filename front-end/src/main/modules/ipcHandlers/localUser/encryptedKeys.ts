@@ -29,8 +29,14 @@ export default () => {
   // Decrypts the encrypted key in the given file path
   ipcMain.handle(
     createChannelName('decryptEncryptedKey'),
-    async (_e, filePath: string, password: string) => {
-      return await decryptPrivateKeyFromPath(filePath, password);
+    async (
+      _e,
+      filePath: string,
+      password: string,
+      skipIndexes: number[] | null,
+      skipHashCode: number | null,
+    ) => {
+      return await decryptPrivateKeyFromPath(filePath, password, skipIndexes, skipHashCode);
     },
   );
 };
