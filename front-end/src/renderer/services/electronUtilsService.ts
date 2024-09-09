@@ -1,3 +1,5 @@
+import { FileFilter, OpenDialogReturnValue } from 'electron';
+
 import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 import * as HashgraphProto from '@hashgraph/proto';
 
@@ -142,5 +144,26 @@ export const saveFile = async (data: Uint8Array) => {
     await window.electronAPI.local.utils.saveFile(data.join(','));
   } catch (error) {
     throw new Error('Failed to save file');
+  }
+};
+
+/* Opens an open dialog */
+export const showOpenDialog = async (
+  title: string,
+  buttonLabel: string,
+  filters: FileFilter[],
+  properties: ('openFile' | 'openDirectory' | 'multiSelections')[],
+  message: string,
+): Promise<OpenDialogReturnValue> => {
+  try {
+    return await window.electronAPI.local.utils.showOpenDialog(
+      title,
+      buttonLabel,
+      filters,
+      properties,
+      message,
+    );
+  } catch (error) {
+    throw new Error('Failed to open the dialog');
   }
 };

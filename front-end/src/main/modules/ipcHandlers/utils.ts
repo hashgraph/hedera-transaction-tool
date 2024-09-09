@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs/promises';
 
-import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
+import { BrowserWindow, app, dialog, ipcMain, shell, FileFilter } from 'electron';
 
 import { Key, KeyList } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
@@ -107,4 +107,27 @@ export default () => {
       dialog.showErrorBox('Failed to save file', error?.message || 'Unknown error');
     }
   });
+
+  ipcMain.handle(
+    createChannelName('showOpenDialog'),
+    async (
+      _e,
+      title: string,
+      buttonLabel: string,
+      filters: FileFilter[],
+      properties: ('openFile' | 'openDirectory' | 'multiSelections')[],
+      message: string,
+    ) => {
+      const windows = BrowserWindow.getAllWindows();
+      if (windows.length === 0) return;
+
+      return await dialog.showOpenDialog(windows[0], {
+        title,
+        buttonLabel,
+        filters,
+        properties,
+        message,
+      });
+    },
+  );
 };

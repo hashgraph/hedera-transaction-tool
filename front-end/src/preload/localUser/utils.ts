@@ -1,4 +1,4 @@
-import { ipcRenderer } from 'electron';
+import { ipcRenderer, FileFilter, OpenDialogReturnValue } from 'electron';
 
 import { proto } from '@hashgraph/proto';
 
@@ -22,5 +22,13 @@ export default {
       ipcRenderer.invoke('utils:openBufferInTempFile', name, uint8ArrayString),
     saveFile: (uint8ArrayString: string): Promise<void> =>
       ipcRenderer.invoke('utils:saveFile', uint8ArrayString),
+    showOpenDialog: (
+      title: string,
+      buttonLabel: string,
+      filters: FileFilter[],
+      properties: ('openFile' | 'openDirectory' | 'multiSelections')[],
+      message: string,
+    ): Promise<OpenDialogReturnValue> =>
+      ipcRenderer.invoke('utils:showOpenDialog', title, buttonLabel, filters, properties, message),
   },
 };
