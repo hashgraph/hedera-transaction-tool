@@ -16,3 +16,17 @@ export const decryptEncryptedKey = async (filePath: string, password: string) =>
   commonIPCHandler(async () => {
     return await window.electronAPI.local.encryptedKeys.decryptEncryptedKey(filePath, password);
   }, 'Decrypting encrypted key failed');
+
+/* Calculates the hash code of the recovery phrase */
+export const calculateRecoveryPhraseHashCode = (words: string[]) => {
+  let hashCode = 1;
+  for (const word of words) {
+    let wordHashCode = 0;
+    for (let i = 0; i < word.length; i++) {
+      const char = word.charCodeAt(i);
+      wordHashCode = (31 * wordHashCode + char) | 0 | 0;
+    }
+    hashCode = (31 * hashCode + wordHashCode) | 0 | 0;
+  }
+  return hashCode;
+};

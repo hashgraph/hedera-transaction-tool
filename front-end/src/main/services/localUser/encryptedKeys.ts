@@ -143,11 +143,26 @@ export class EncryptedKeysSearcher {
   }
 }
 
-export const decryptPrivateKeyFromPath = async (filePath: string, password: string) => {
+export const decryptPrivateKeyFromPath = async (
+  filePath: string,
+  password: string,
+): Promise<{
+  privateKey: string;
+  recoveryPhraseHashCode: number | null;
+  index: number | null;
+}> => {
   const fileContent = await fsp.readFile(filePath, 'utf-8');
 
+  const info = getRecoveryPhraseInfo(fileContent);
+
   try {
-    return decryptPrivateKeyFromPem(fileContent, password);
+    const privateKey = decryptPrivateKeyFromPem(fileContent, password);
+
+    return {
+      privateKey,
+      recoveryPhraseHashCode: info ? info.hashCode : null,
+      index: info ? info.index : null,
+    };
   } catch (error) {
     throw new Error('Incorrect encryption password');
   }
@@ -170,4 +185,21 @@ export const decryptPrivateKeyFromPem = (pem: string, password: string): string 
   const hex = asn1PrivateKey.toHex();
 
   return hex;
+};
+
+export const getRecoveryPhraseInfo = (pem: string): { hashCode: number; index: number } | null => {
+  const indexName = 'Index: ';
+  const recoveryPhraseHashName = 'Recovery Phrase Hash: ';
+
+  const pemLines = pem.split('\n');
+
+  const recoveryPhraseLine = pemLines.find(line => line.includes(recoveryPhraseHashName));
+  const indexLine = pemLines.find(line => line.includes(indexName));
+
+  if (!recoveryPhraseLine || !indexLine) return null;
+
+  const recoveryPhraseHashCode = recoveryPhraseLine.split(recoveryPhraseHashName)[1];
+  const index = indexLine.split(indexName)[1];
+
+  return { hashCode: Number(recoveryPhraseHashCode), index: Number(index) };
 };

@@ -6,7 +6,10 @@ import { PrivateKey } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { decryptEncryptedKey } from '@renderer/services/encryptedKeys';
+import {
+  calculateRecoveryPhraseHashCode,
+  decryptEncryptedKey,
+} from '@renderer/services/encryptedKeys';
 import { uploadKey } from '@renderer/services/organization';
 
 import { assertUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
@@ -49,6 +52,9 @@ const fileName = computed(() => {
   if (!props.keyPath) return '';
   return props.keyPath.split('/').pop();
 });
+const hashCode = computed(() =>
+  props.mnemonic ? calculateRecoveryPhraseHashCode(props.mnemonic) : null,
+);
 
 /* Handlers */
 const handleSkipAll = () => emit('skip:all');
@@ -68,21 +74,25 @@ const handleClose = (show: boolean) => {
 async function decrypt() {
   if (!props.keyPath) throw new Error('Key path is not provided');
 
-  let privateKeyDer: string | null = null;
+  let key: {
+    privateKey: string;
+    recoveryPhraseHashCode: number | null;
+    index: number | null;
+  } | null = null;
 
   decrypting.value = true;
   error.value = null;
 
   try {
-    privateKeyDer = await decryptEncryptedKey(props.keyPath, decryptPassword.value);
+    key = await decryptEncryptedKey(props.keyPath, decryptPassword.value);
   } catch (err) {
     error.value = err instanceof Error && err.message ? err.message : 'Failed to decrypt key';
     decrypting.value = false;
   }
 
-  if (privateKeyDer) {
+  if (key) {
     try {
-      await storeKey(privateKeyDer);
+      await storeKey(key);
       emit('stored');
     } catch (error) {
       decrypting.value = false;
@@ -91,12 +101,16 @@ async function decrypt() {
   }
 }
 
-async function storeKey(privateKeyDer: string) {
+async function storeKey(key: {
+  privateKey: string;
+  recoveryPhraseHashCode: number | null;
+  index: number | null;
+}) {
   assertUserLoggedIn(user.personal);
   const personalPassword = user.getPassword();
   if (!personalPassword) throw new Error('Personal password not found');
 
-  const privateKey = PrivateKey.fromStringDer(privateKeyDer);
+  const privateKey = PrivateKey.fromStringDer(key.privateKey);
   const publicKey = privateKey.publicKey;
 
   if (
@@ -107,15 +121,20 @@ async function storeKey(privateKeyDer: string) {
     throw new Error(`${publicKey.toStringRaw()} already exists`);
   }
 
+  const matchedRecoveryPhraseHashCode =
+    key.recoveryPhraseHashCode !== null &&
+    key.recoveryPhraseHashCode === hashCode.value &&
+    props.mnemonicHash;
+
   const keyPair: Prisma.KeyPairUncheckedCreateInput = {
     user_id: user.personal.id,
-    index: -1,
+    index: matchedRecoveryPhraseHashCode && key.index !== null ? key.index : -1,
     private_key: privateKey.toStringRaw(),
     public_key: publicKey.toStringRaw(),
     type: publicKey._key._type === 'secp256k1' ? 'ECDSA' : 'ED25519',
     organization_id: null,
     organization_user_id: null,
-    secret_hash: null,
+    secret_hash: matchedRecoveryPhraseHashCode && key.index !== null ? props.mnemonicHash : null,
     nickname: null,
   };
 
@@ -129,8 +148,9 @@ async function storeKey(privateKeyDer: string) {
 
     await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
       publicKey: publicKey.toStringRaw(),
-      // index: keyPair.index,
-      // mnemonicHash: props.mnemonicHash || undefined,
+      index: matchedRecoveryPhraseHashCode && key.index !== null ? key.index : undefined,
+      mnemonicHash:
+        matchedRecoveryPhraseHashCode && key.index !== null ? props.mnemonicHash : undefined,
     });
   }
 
