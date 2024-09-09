@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 
-import { Hbar, KeyList, PublicKey, Transaction, TransferTransaction } from '@hashgraph/sdk';
+import { Hbar, KeyList, PublicKey, TransferTransaction } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
@@ -202,7 +202,7 @@ async function handleOnFileChanged(e: Event) {
         // Create the new validStart value, or add 1 millisecond to the existing one for subsequent transactions
         if (!validStart) {
           const startDate = row.split(',')[2];
-          validStart = new Date(`${startDate} ${sendingTime}`)
+          validStart = new Date(`${startDate} ${sendingTime}`);
           if (validStart < new Date()) {
             validStart = new Date();
           }
