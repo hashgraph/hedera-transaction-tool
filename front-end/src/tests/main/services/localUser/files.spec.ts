@@ -8,6 +8,7 @@ import prisma from '@main/db/__mocks__/prisma';
 
 import {
   addFile,
+  deleteAllTempFolders,
   deleteTempFolder,
   getFiles,
   removeFiles,
@@ -205,15 +206,43 @@ describe('Services Local User Files', () => {
 
       vi.mocked(app.getPath).mockReturnValue(tempPath);
 
-      await deleteTempFolder();
+      await deleteTempFolder('electronHederaFiles');
 
-      expect(deleteDirectory).toHaveBeenCalledWith(path.join(tempPath));
+      expect(deleteDirectory).toHaveBeenCalledWith(path.join(tempPath, 'electronHederaFiles'));
     });
 
     test('Should do nothing if deleteDirectory fails', async () => {
       vi.mocked(deleteDirectory).mockRejectedValue('An error');
 
-      const result = await deleteTempFolder();
+      const result = await deleteTempFolder('electronHederaFiles');
+
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe('deleteAllTempFolders', () => {
+    beforeEach(() => {
+      vi.resetAllMocks();
+    });
+
+    test('Should delete all temp folders', async () => {
+      const tempPath = '/tmp';
+
+      vi.mocked(app.getPath).mockReturnValue(tempPath);
+
+      await deleteAllTempFolders();
+
+      expect(deleteDirectory).toHaveBeenNthCalledWith(
+        1,
+        path.join(tempPath, 'electronHederaFiles'),
+      );
+      expect(deleteDirectory).toHaveBeenNthCalledWith(2, path.join(tempPath, 'encryptedKeys'));
+    });
+
+    test('Should do nothing if deleteDirectory fails', async () => {
+      vi.mocked(deleteDirectory).mockRejectedValue('An error');
+
+      const result = await deleteAllTempFolders();
 
       expect(result).toBeUndefined();
     });

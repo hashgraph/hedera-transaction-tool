@@ -2,7 +2,7 @@ import { app, BrowserWindow } from 'electron';
 
 import { PROTOCOL_NAME } from '@main/modules/deepLink';
 import * as path from 'path';
-import { deleteTempFolder } from '@main/services/localUser';
+import { deleteAllTempFolders } from '@main/services/localUser';
 import { MockedObject } from 'vitest';
 
 vi.mock('path', () => ({
@@ -20,7 +20,7 @@ vi.mock('electron', () => {
   };
 });
 vi.mock('@main/db/init', () => ({ default: vi.fn() }));
-vi.mock('@main/services/localUser', () => ({ deleteTempFolder: vi.fn() }));
+vi.mock('@main/services/localUser', () => ({ deleteAllTempFolders: vi.fn() }));
 vi.mock('@main/modules/logger', () => ({ default: vi.fn() }));
 vi.mock('@main/modules/menu', () => ({
   default: vi.fn(),
@@ -56,7 +56,7 @@ describe('Electron entry file', async () => {
   test('Should delete temp folder on before-quit event', async () => {
     const appMO = app as unknown as MockedObject<Electron.App>;
 
-    vi.mocked(deleteTempFolder).mockResolvedValueOnce();
+    vi.mocked(deleteAllTempFolders).mockResolvedValueOnce();
     //@ts-expect-error Incorrect type definition
     const beforeQuitHandler = appMO.on.mock.calls.find(([event]) => event === 'before-quit');
     expect(beforeQuitHandler).toBeDefined();
@@ -64,6 +64,6 @@ describe('Electron entry file', async () => {
 
     beforeQuitHandler && (await beforeQuitHandler[1]({ preventDefault: vi.fn() }));
 
-    expect(deleteTempFolder).toHaveBeenCalledOnce();
+    expect(deleteAllTempFolders).toHaveBeenCalledOnce();
   });
 });

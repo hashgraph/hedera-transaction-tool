@@ -133,11 +133,19 @@ export const showContentInTemp = async (userId: string, fileId: string) => {
   }
 };
 
-export const deleteTempFolder = async () => {
+export const deleteTempFolder = async (folder: string) => {
   try {
-    const directoryPath = path.join(app.getPath('temp'));
+    const directoryPath = path.join(app.getPath('temp'), folder);
     await deleteDirectory(directoryPath);
   } catch {
     /* Empty */
+  }
+};
+
+export const deleteAllTempFolders = async () => {
+  const tempFolders = ['electronHederaFiles', 'encryptedKeys'];
+
+  for (const folder of tempFolders) {
+    await deleteTempFolder(folder);
   }
 };

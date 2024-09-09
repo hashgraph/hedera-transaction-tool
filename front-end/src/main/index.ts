@@ -11,7 +11,7 @@ import registerIpcListeners from '@main/modules/ipcHandlers';
 
 import { restoreOrCreateWindow } from '@main/windows/mainWindow';
 
-import { deleteTempFolder } from './services/localUser';
+import { deleteAllTempFolders } from './services/localUser';
 
 let mainWindow: BrowserWindow | null;
 
@@ -67,7 +67,7 @@ function attachAppEvents() {
 
       deleteRetires++;
       try {
-        await deleteTempFolder();
+        await deleteAllTempFolders();
       } catch {
         /* Empty */
       }
