@@ -6,7 +6,7 @@ import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 import { In, Between, MoreThan, Repository, LessThanOrEqual } from 'typeorm';
 import {
   FileAppendTransaction,
-  FileUpdateTransaction,
+  FileUpdateTransaction, Key, KeyList, PublicKey,
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
@@ -18,8 +18,8 @@ import {
   NotifyClientDto,
   NotifyForTransactionDto,
   TRANSACTION_ACTION,
-  ableToSign,
-  computeSignatureKey,
+  hasValidSignatureKey,
+  computeSignatureKey, computeShortenedPublicKeyList, isTransactionOverMaxSize,
 } from '@app/common';
 
 import { Transaction, TransactionStatus } from '@entities';
@@ -52,7 +52,7 @@ export class TransactionStatusService {
         this.isValidStartExecutable(t.validStart) &&
         t.status === TransactionStatus.WAITING_FOR_EXECUTION,
     )) {
-      this.addExecutionTimeout(transaction);
+      this.prepareAndExecute(transaction);
     }
   }
 
@@ -111,7 +111,7 @@ export class TransactionStatusService {
         t.status === TransactionStatus.WAITING_FOR_EXECUTION &&
         this.isValidStartExecutable(t.validStart),
     )) {
-      this.addExecutionTimeout(transaction);
+      this.prepareAndExecute(transaction);
     }
   }
 
@@ -183,16 +183,16 @@ export class TransactionStatusService {
         continue;
 
       /* Gets the signature key */
-      const sigantureKey = await computeSignatureKey(
+      const signatureKey = await computeSignatureKey(
         sdkTransaction,
         this.mirrorNodeService,
         transaction.network,
       );
 
-      /* Checks if the transaction has valid siganture */
-      const isAbleToSign = ableToSign([...sdkTransaction._signerPublicKeys], sigantureKey);
+      /* Checks if the transaction has valid signature */
+      const isValidSignatureKey = hasValidSignatureKey([...sdkTransaction._signerPublicKeys], signatureKey);
 
-      const newStatus = isAbleToSign
+      const newStatus = isValidSignatureKey
         ? TransactionStatus.WAITING_FOR_EXECUTION
         : TransactionStatus.WAITING_FOR_SIGNATURES;
 
@@ -260,7 +260,7 @@ export class TransactionStatusService {
     );
 
     /* Checks if the transaction has valid siganture */
-    const isAbleToSign = ableToSign([...sdkTransaction._signerPublicKeys], sigantureKey);
+    const isAbleToSign = hasValidSignatureKey([...sdkTransaction._signerPublicKeys], sigantureKey);
     const newStatus = isAbleToSign
       ? TransactionStatus.WAITING_FOR_EXECUTION
       : TransactionStatus.WAITING_FOR_SIGNATURES;
@@ -289,6 +289,59 @@ export class TransactionStatusService {
       message: TRANSACTION_ACTION,
       content: '',
     });
+  }
+
+  // comment and tests
+  prepareAndExecute(transaction: Transaction) {
+    const name = `smart_collate_timeout_${transaction.id}`;
+
+    if (this.schedulerRegistry.doesExist('timeout', name)) return;
+
+    const timeToValidStart = transaction.validStart.getTime() - Date.now();
+
+    const callback = async () => {
+      const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
+
+      if (isTransactionOverMaxSize(sdkTransaction)) {
+        const signatureKey = await computeSignatureKey(
+          sdkTransaction,
+          this.mirrorNodeService,
+          transaction.network,
+        );
+
+        /* Checks if smart collating is possible. Requires a KeyList */
+        if (!(signatureKey instanceof KeyList)) {
+          throw new Error('Signed transaction exceeds size limit.');
+        }
+
+        const publicKeys = computeShortenedPublicKeyList(
+          [...sdkTransaction._signerPublicKeys],
+          signatureKey,
+        );
+
+        const sigDictionary = sdkTransaction.removeAllSignatures();
+
+        for (const key of publicKeys) {
+          const sigArray = sigDictionary[key];
+          sdkTransaction.addSignature(key, sigArray);
+        }
+
+        if (isTransactionOverMaxSize(sdkTransaction)) {
+          throw new Error('Signed transaction exceeds size limit.');
+        }
+      }
+
+      // the problem is that execute is repulling the data for teh transaction, I want to send the sdk.transactionbytes
+      // to execute and let it execute, not id and repull. maybe id is still needed somewhere else. The reason for this
+      // is that i can keep the tranasction as is in the database, without removing sigs
+      //
+      // then make sure that front end doesn't allow chunks larger than 2k'
+      this.addExecutionTimeout(transaction);
+      this.schedulerRegistry.deleteTimeout(name);
+    };
+
+    const timeout = setTimeout(callback, timeToValidStart - 10 * 1_000);
+    this.schedulerRegistry.addTimeout(name, timeout);
   }
 
   addExecutionTimeout(transaction: Transaction) {
