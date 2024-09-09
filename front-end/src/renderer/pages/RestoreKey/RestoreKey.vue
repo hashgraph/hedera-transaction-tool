@@ -82,7 +82,7 @@ const handleRestoreKey = async (e: Event) => {
 
     step.value++;
   } catch (err: any) {
-    let message = 'Failed to restore privatek key';
+    let message = 'Failed to restore private key';
     if (err.message && typeof err.message === 'string') {
       message = err.message;
     }

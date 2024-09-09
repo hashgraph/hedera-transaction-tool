@@ -1,6 +1,6 @@
 import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
-import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
+import { Key, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 import { getDrafts } from '@renderer/services/transactionDraftsService';
 import {
@@ -12,6 +12,7 @@ import {
 import { getTransactionFromBytes } from '@renderer/utils/transactions';
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
+import { createTransactionId } from '../services/transactionService';
 
 export interface GroupItem {
   transactionBytes: Uint8Array;
@@ -89,33 +90,59 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     setModified();
   }
 
+  /**
+   * Duplicates a group item at the specified index.
+   * The resulting transaction will be identical to the original,
+   * except for the validStart date and seq number.
+   * @param index
+   */
   function duplicateGroupItem(index: number) {
-    const newGroupItems = new Array<GroupItem>();
-    let newIndex = 0;
-    groupItems.value.forEach((groupItem, i) => {
-      groupItem.seq = newIndex.toString();
-      newIndex++;
-      newGroupItems.push(groupItem);
-      if (i == index) {
-        const newDate = new Date();
-        newDate.setTime(newDate.getTime());
-        const newItem = {
-          transactionBytes: groupItem.transactionBytes,
-          type: groupItem.type,
-          accountId: groupItem.accountId,
-          seq: (Number.parseInt(groupItem.seq) + 1).toString(),
-          keyList: groupItem.keyList,
-          observers: groupItem.observers,
-          approvers: groupItem.approvers,
-          payerAccountId: groupItem.payerAccountId,
-          validStart: newDate,
-        };
-        newGroupItems.push(newItem);
-        newIndex++;
-      }
-    });
-    groupItems.value = newGroupItems;
+    const baseItem = groupItems.value[index];
+    const newDate = findUniqueValidStart(baseItem.payerAccountId, baseItem.validStart.getTime()+1);
+    const transaction = Transaction.fromBytes(baseItem.transactionBytes);
+    transaction.setTransactionId(createTransactionId(baseItem.payerAccountId, newDate));
+    const newItem = {
+      transactionBytes: transaction.toBytes(),
+      type: baseItem.type,
+      accountId: baseItem.accountId,
+      seq: (Number.parseInt(baseItem.seq) + 1).toString(),
+      keyList: baseItem.keyList,
+      observers: baseItem.observers,
+      approvers: baseItem.approvers,
+      payerAccountId: baseItem.payerAccountId,
+      validStart: newDate,
+    };
+    groupItems.value.splice(index + 1, 0, newItem);
     setModified();
+  }
+
+  /**
+   * Finds a unique validStart date for a group item.
+   * @param payerAccountId
+   * @param validStartMillis - The milliseconds of the desired validStart date .
+   * @returns A unique validStart date.
+   */
+  function findUniqueValidStart(payerAccountId: string, validStartMillis: number): Date {
+    let isUnique = false;
+
+    while (!isUnique) {
+      isUnique = true;
+
+      for (const item of groupItems.value) {
+        if (
+          item.payerAccountId === payerAccountId &&
+          item.validStart.getTime() === validStartMillis
+        ) {
+          isUnique = false;
+          // Not unique, add 1 millisecond and break the loop
+          validStartMillis += 1;
+          break;
+        }
+      }
+    }
+
+    // Convert milliseconds back to Date and return
+    return new Date(validStartMillis);
   }
 
   async function saveGroup(userId: string, description: string) {

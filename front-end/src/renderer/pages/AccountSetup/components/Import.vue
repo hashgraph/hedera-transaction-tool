@@ -19,12 +19,12 @@ const user = useUserStore();
 /* State */
 const words = ref<string[]>(Array(24).fill(''));
 
-const isMnenmonicValid = ref(false);
+const isMnemonicValid = ref(false);
 const isSecretHashValid = ref(true);
 
 /* Misc Functions */
 const validateMatchingSecretHash = async () => {
-  if (!isMnenmonicValid.value) return;
+  if (!isMnemonicValid.value) return;
 
   if (props.secretHashes.length > 0) {
     const matchedHash = await compareDataToHashes(words.value.toString(), props.secretHashes);
@@ -46,20 +46,20 @@ const handlePaste = async (e: Event, index: number) => {
 
   const items = await navigator.clipboard.readText();
 
-  const mnenmonic = items
+  const mnemonic = items
     .toLocaleLowerCase()
     .split(/[\s,]+|,\s*|\n/)
     .filter(w => w)
     .slice(0, 24);
 
-  const isValid = await validateMnemonic(mnenmonic);
+  const isValid = await validateMnemonic(mnemonic);
 
-  if (isValid && Array.isArray(mnenmonic)) {
-    words.value = mnenmonic;
+  if (isValid && Array.isArray(mnemonic)) {
+    words.value = mnemonic;
 
     await validateMatchingSecretHash();
-  } else if (mnenmonic.length === 1) {
-    handleWordChange(mnenmonic[0], index);
+  } else if (mnemonic.length === 1) {
+    handleWordChange(mnemonic[0], index);
   }
 };
 
@@ -76,10 +76,10 @@ onBeforeMount(() => {
 
 /* Watchers */
 watch(words, async newWords => {
-  isMnenmonicValid.value = await validateMnemonic(newWords.map(w => w.toLocaleLowerCase()));
+  isMnemonicValid.value = await validateMnemonic(newWords.map(w => w.toLocaleLowerCase()));
   await validateMatchingSecretHash();
 
-  if (isMnenmonicValid.value && isSecretHashValid.value) {
+  if (isMnemonicValid.value && isSecretHashValid.value) {
     return await user.setRecoveryPhrase(words.value.map(w => w.toLocaleLowerCase()));
   }
   user.recoveryPhrase = null;
