@@ -29,6 +29,7 @@ const allKeyPaths = ref<string[]>([]);
 const mnemonic = ref<string[] | null>(null);
 const mnemomicHash = ref<string | null>(null);
 const indexesFromMnemonic = ref<number[]>([]);
+const atLeastOneKeyDecrypted = ref(false);
 
 const currentKeyPath = ref<string | null>(null);
 
@@ -41,7 +42,10 @@ const currentIndex = computed(() => {
 /* Handlers */
 const handleSkipAll = () => end();
 const handleSkipOne = () => nextKey();
-const handleStored = () => nextKey();
+const handleStored = () => {
+  atLeastOneKeyDecrypted.value = true;
+  nextKey();
+};
 
 /* Functions */
 async function process(keyPaths: string[], words: string[] | null) {
@@ -87,7 +91,9 @@ async function nextKey() {
 async function end() {
   isDecryptKeyModalShown.value = false;
 
-  toast.success('Keys imported successfully', { position: 'bottom-right' });
+  if (atLeastOneKeyDecrypted.value) {
+    toast.success('Keys imported successfully', { position: 'bottom-right' });
+  }
 
   await user.refetchKeys();
   user.refetchAccounts();
