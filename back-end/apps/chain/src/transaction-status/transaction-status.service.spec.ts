@@ -6,7 +6,7 @@ import { mockDeep } from 'jest-mock-extended';
 import { Repository } from 'typeorm';
 
 import {
-  ableToSign,
+  hasValidSignatureKey,
   computeSignatureKey,
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
@@ -266,8 +266,8 @@ describe('TransactionStatusService', () => {
       transactionRepo.find.mockResolvedValue(transactions as Transaction[]);
 
       jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
-      jest.mocked(ableToSign).mockReturnValueOnce(true);
-      jest.mocked(ableToSign).mockReturnValueOnce(false);
+      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
+      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(false);
 
       await service.updateTransactions(new Date(), new Date());
 
@@ -314,9 +314,9 @@ describe('TransactionStatusService', () => {
       transactionRepo.find.mockResolvedValue(transactions as Transaction[]);
 
       jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
-      jest.mocked(ableToSign).mockReturnValueOnce(false);
-      jest.mocked(ableToSign).mockReturnValueOnce(false);
-      jest.mocked(ableToSign).mockReturnValueOnce(true);
+      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(false);
+      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(false);
+      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
       jest.spyOn(transactionRepo, 'update').mockRejectedValueOnce('Error');
 
       await service.updateTransactions(new Date(), new Date());
@@ -346,7 +346,7 @@ describe('TransactionStatusService', () => {
       transactionRepo.find.mockResolvedValue(transactions as Transaction[]);
 
       jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
-      jest.mocked(ableToSign).mockReturnValueOnce(false);
+      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(false);
 
       await service.updateTransactions(new Date(), new Date());
 
@@ -369,7 +369,7 @@ describe('TransactionStatusService', () => {
       transactionRepo.findOne.mockResolvedValue(transaction as Transaction);
 
       jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
-      jest.mocked(ableToSign).mockReturnValueOnce(true);
+      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
 
       await service.updateTransactionStatus({ id: transaction.id });
 
@@ -395,7 +395,7 @@ describe('TransactionStatusService', () => {
       transactionRepo.findOne.mockResolvedValue(transaction as Transaction);
 
       jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
-      jest.mocked(ableToSign).mockReturnValueOnce(false);
+      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(false);
       jest.spyOn(transactionRepo, 'update').mockRejectedValueOnce(new Error('Error'));
 
       await expect(service.updateTransactionStatus({ id: transaction.id })).rejects.toThrow(
@@ -415,7 +415,7 @@ describe('TransactionStatusService', () => {
       transactionRepo.findOne.mockResolvedValue(transaction as Transaction);
 
       jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
-      jest.mocked(ableToSign).mockReturnValueOnce(false);
+      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(false);
 
       await service.updateTransactionStatus({ id: transaction.id });
 
@@ -442,7 +442,7 @@ describe('TransactionStatusService', () => {
       transactionRepo.findOne.mockResolvedValue(transaction as Transaction);
 
       jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
-      jest.mocked(ableToSign).mockReturnValueOnce(true);
+      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
 
       await service.updateTransactionStatus({ id: transaction.id });
 

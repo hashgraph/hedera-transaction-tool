@@ -21,7 +21,7 @@ import {
   NotifyClientDto,
   TRANSACTION_ACTION,
   TransactionExecutedDto,
-  ableToSign,
+  hasValidSignatureKey,
   computeSignatureKey,
   getClientFromName,
   getStatusCodeFromMessage,
@@ -73,7 +73,7 @@ export class ExecuteService {
     );
 
     /* Checks if the transaction has valid siganture */
-    if (!ableToSign([...sdkTransaction._signerPublicKeys], sigantureKey))
+    if (!hasValidSignatureKey([...sdkTransaction._signerPublicKeys], sigantureKey))
       throw new Error('Transaction has invalid signature.');
 
     /* Execute the transaction */
