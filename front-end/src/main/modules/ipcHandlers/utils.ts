@@ -95,7 +95,7 @@ export default () => {
       const { filePath, canceled } = await dialog.showSaveDialog(windows[0], {
         defaultPath: app.getPath('documents'),
       });
-      if (filePath === undefined || canceled) return;
+      if (!filePath.trim() || canceled) return;
 
       try {
         await fs.writeFile(filePath, content);

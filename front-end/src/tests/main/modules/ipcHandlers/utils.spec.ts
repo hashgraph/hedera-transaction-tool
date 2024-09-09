@@ -291,13 +291,14 @@ describe('registerUtilsListeners', () => {
     const windows = [{}];
     const uint8ArrayString = 'testString';
     const numberArray = [1, 2, 3];
-    const filePath = 'testPath';
-    const canceled = false;
 
     vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
     vi.mocked(getNumberArrayFromString).mockReturnValue(numberArray);
-    vi.mocked(dialog.showSaveDialog).mockResolvedValueOnce({ filePath, canceled });
-    vi.mocked(dialog.showSaveDialog).mockResolvedValueOnce({ filePath, canceled: true });
+    vi.mocked(dialog.showSaveDialog).mockResolvedValueOnce({ filePath: '', canceled: false });
+    vi.mocked(dialog.showSaveDialog).mockResolvedValueOnce({
+      filePath: 'testPath',
+      canceled: true,
+    });
 
     const saveFileHandler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'utils:saveFile');
 
