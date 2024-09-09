@@ -15,7 +15,7 @@ import {
 } from '@hashgraph/sdk';
 
 import {
-  ableToSign,
+  hasValidSignatureKey,
   computeSignatureKey,
   getClientFromName,
   getStatusCodeFromMessage,
@@ -141,7 +141,7 @@ describe('ExecuteService', () => {
 
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
     jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
-    jest.mocked(ableToSign).mockReturnValueOnce(true);
+    jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
     jest.mocked(getClientFromName).mockReturnValueOnce(client);
     const { receipt, response } = mockSDKTransactionExecution();
 
@@ -165,7 +165,7 @@ describe('ExecuteService', () => {
 
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
     jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
-    jest.mocked(ableToSign).mockReturnValueOnce(true);
+    jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
     jest.mocked(getClientFromName).mockReturnValueOnce(client);
     jest.spyOn(SDKTransaction.prototype, 'execute').mockImplementation(async () => {
       return {
@@ -199,7 +199,7 @@ describe('ExecuteService', () => {
 
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
     jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
-    jest.mocked(ableToSign).mockReturnValueOnce(true);
+    jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
     jest.mocked(getClientFromName).mockReturnValueOnce(client);
     jest.spyOn(SDKTransaction.prototype, 'execute').mockRejectedValueOnce({
       message: 'Transaction failed',
@@ -225,7 +225,7 @@ describe('ExecuteService', () => {
 
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
     jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
-    jest.mocked(ableToSign).mockReturnValueOnce(true);
+    jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
     jest.mocked(getClientFromName).mockReturnValueOnce(client);
     jest.spyOn(SDKTransaction.prototype, 'execute').mockRejectedValueOnce({
       message: 'Transaction failed',
@@ -254,7 +254,7 @@ describe('ExecuteService', () => {
 
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
     jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
-    jest.mocked(ableToSign).mockReturnValueOnce(true);
+    jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
     jest.mocked(getClientFromName).mockReturnValueOnce(client);
 
     jest.useFakeTimers();
@@ -282,7 +282,7 @@ describe('ExecuteService', () => {
 
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
     jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
-    jest.mocked(ableToSign).mockReturnValueOnce(false);
+    jest.mocked(hasValidSignatureKey).mockReturnValueOnce(false);
 
     await expect(service.executeTransaction(transaction.id)).rejects.toThrow(
       'Transaction has invalid signature.',
