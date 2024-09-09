@@ -2,12 +2,17 @@
 import { ref } from 'vue';
 
 import SelectEncryptedKeysModal from '@renderer/components/KeyPair/ImportEncrypted/components/SelectEncryptedKeysModal.vue';
+import RecoveryPhraseModal from '@renderer/components/KeyPair/ImportEncrypted/components/RecoveryPhraseModal.vue';
+import DecryptKeys from '@renderer/components/KeyPair/ImportEncrypted/components/DecryptKeys.vue';
 
 /* State */
+const decryptKeysRef = ref<InstanceType<typeof DecryptKeys> | null>(null);
+
 const isSelectEncryptedKeysModalShown = ref(false);
 const isRecoveryPhraseModalShown = ref(false);
 
 const keyPaths = ref<string[] | null>(null);
+const mnemonic = ref<string[] | null>(null);
 
 /* Handlers */
 const handleEncryptedKeysSelected = () => {
@@ -15,6 +20,11 @@ const handleEncryptedKeysSelected = () => {
 
   isSelectEncryptedKeysModalShown.value = false;
   isRecoveryPhraseModalShown.value = true;
+};
+
+const handleRecoveryPhraseContinue = async () => {
+  isRecoveryPhraseModalShown.value = false;
+  await decryptKeysRef.value?.process(keyPaths.value || [], mnemonic.value);
 };
 
 /* Functions */
@@ -38,5 +48,15 @@ defineExpose({ process });
       v-model:show="isSelectEncryptedKeysModalShown"
       @continue="handleEncryptedKeysSelected"
     />
+
+    <!-- Step #2 (Optional): Recovery phrase  -->
+    <RecoveryPhraseModal
+      v-model:show="isRecoveryPhraseModalShown"
+      v-model:mnemonic="mnemonic"
+      @continue="handleRecoveryPhraseContinue"
+    />
+
+    <!-- Step #3: Decrypt Keys -->
+    <DecryptKeys ref="decryptKeysRef" />
   </div>
 </template>
