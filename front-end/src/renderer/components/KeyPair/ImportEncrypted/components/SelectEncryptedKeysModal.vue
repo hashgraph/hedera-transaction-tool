@@ -90,7 +90,7 @@ watch(
   >
     <div class="p-5">
       <i class="bi bi-x-lg cursor-pointer" @click="handleClose(false)"></i>
-      <div class="text-center mt-5">
+      <div class="text-center mt-4">
         <i class="bi bi-key large-icon" style="line-height: 16px"></i>
       </div>
       <form @submit="handleSubmit">
