@@ -207,7 +207,7 @@ describe('Services Local User Files', () => {
 
       await deleteTempFolder();
 
-      expect(deleteDirectory).toHaveBeenCalledWith(path.join(tempPath, 'electronHederaFiles'));
+      expect(deleteDirectory).toHaveBeenCalledWith(path.join(tempPath));
     });
 
     test('Should do nothing if deleteDirectory fails', async () => {

@@ -135,7 +135,7 @@ export const showContentInTemp = async (userId: string, fileId: string) => {
 
 export const deleteTempFolder = async () => {
   try {
-    const directoryPath = path.join(app.getPath('temp'), 'electronHederaFiles');
+    const directoryPath = path.join(app.getPath('temp'));
     await deleteDirectory(directoryPath);
   } catch {
     /* Empty */
