@@ -1,7 +1,7 @@
-import { AccountId, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
+import { AccountId, KeyList, PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
-import { Network, TransactionType } from '@entities';
+import { Network, MAX_TRANSACTION_BYTE_SIZE, TransactionType } from '@entities';
 import {
   MirrorNodeService,
   decode,
@@ -10,7 +10,7 @@ import {
   parseAccountProperty,
 } from '@app/common';
 
-export const isExpired = (transaction: Transaction) => {
+export const isExpired = (transaction: SDKTransaction) => {
   if (!transaction.transactionId?.validStart) {
     return true;
   }
@@ -21,7 +21,7 @@ export const isExpired = (transaction: Transaction) => {
   return new Date().getTime() >= validStart.getTime() + duration * 1_000;
 };
 
-export const getTransactionTypeEnumValue = (transaction: Transaction): TransactionType => {
+export const getTransactionTypeEnumValue = (transaction: SDKTransaction): TransactionType => {
   const sdkType = transaction.constructor.name
     .slice(transaction.constructor.name.startsWith('_') ? 1 : 0)
     .split(/(?=[A-Z])/)
@@ -61,16 +61,16 @@ export const getTransactionTypeEnumValue = (transaction: Transaction): Transacti
 };
 
 export const validateSignature = (
-  transaction: string | Buffer | Transaction,
+  transaction: string | Buffer | SDKTransaction,
   nodeAccountId: string | AccountId,
   signature: string | Buffer,
   publicKey: string | PublicKey,
 ) => {
   /* Deserialize Transaction */
   transaction =
-    transaction instanceof Transaction
+    transaction instanceof SDKTransaction
       ? transaction
-      : Transaction.fromBytes(transaction instanceof Buffer ? transaction : decode(transaction));
+      : SDKTransaction.fromBytes(transaction instanceof Buffer ? transaction : decode(transaction));
 
   /* Deserialize Node Account Id */
   nodeAccountId =
@@ -96,15 +96,15 @@ export const validateSignature = (
 };
 
 export const addTransactionSignatures = (
-  transaction: string | Buffer | Transaction,
+  transaction: string | Buffer | SDKTransaction,
   signatures: { [key: string]: Buffer },
   publicKey: string | PublicKey,
 ) => {
   /* Deserialize Transaction */
   transaction =
-    transaction instanceof Transaction
+    transaction instanceof SDKTransaction
       ? transaction
-      : Transaction.fromBytes(transaction instanceof Buffer ? transaction : decode(transaction));
+      : SDKTransaction.fromBytes(transaction instanceof Buffer ? transaction : decode(transaction));
 
   /* Deserialize Public Key */
   publicKey = publicKey instanceof PublicKey ? publicKey : PublicKey.fromString(publicKey);
@@ -173,7 +173,7 @@ export const isSignatureMap = value => {
   return true;
 };
 
-export const isAlreadySigned = (transaction: Transaction, publicKey: string | PublicKey) => {
+export const isAlreadySigned = (transaction: SDKTransaction, publicKey: string | PublicKey) => {
   publicKey =
     publicKey instanceof PublicKey
       ? publicKey.toStringRaw()
@@ -192,7 +192,7 @@ export const getStatusCodeFromMessage = (message: string) => {
 
 /* Computes the signature key for the transaction */
 export const computeSignatureKey = async (
-  transaction: Transaction,
+  transaction: SDKTransaction,
   mirrorNodeService: MirrorNodeService,
   network: Network,
 ) => {
@@ -230,7 +230,7 @@ export const computeSignatureKey = async (
 };
 
 /* Get transaction body bytes without node account id */
-export const getTransactionBodyBytes = (transaction: Transaction) => {
+export const getTransactionBodyBytes = (transaction: SDKTransaction) => {
   // @ts-expect-error - _makeTransactionBody is a private method
   const transactionBody = transaction._makeTransactionBody(null);
   return proto.TransactionBody.encode(transactionBody).finish();
@@ -238,7 +238,7 @@ export const getTransactionBodyBytes = (transaction: Transaction) => {
 
 /* Verify the signature of the transaction body without node account id */
 export const verifyTransactionBodyWithoutNodeAccountIdSignature = (
-  transaction: Transaction,
+  transaction: SDKTransaction,
   signature: string | Buffer,
   publicKey: string | PublicKey,
 ) => {
@@ -257,3 +257,10 @@ export const verifyTransactionBodyWithoutNodeAccountIdSignature = (
     return false;
   }
 };
+
+export async function isTransactionOverMaxSize(transaction: SDKTransaction) {
+  // This says it is protected, not sure how it is supposed to be used to check size.
+  // const request = await transaction._makeRequestAsync();
+  // return proto.Transaction.encode(request).finish().length > MAX_TRANSACTION_BYTE_SIZE;
+  return transaction.toBytes().length > MAX_TRANSACTION_BYTE_SIZE;
+}
