@@ -3,16 +3,20 @@ import { ref } from 'vue';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import ImportExternalPrivateKeyModal from '@renderer/components/ImportExternalPrivateKeyModal.vue';
+import ImportEncrypted from '@renderer/components/KeyPair/ImportEncrypted';
 
 /* State */
+const importEncryptedRef = ref<InstanceType<typeof ImportEncrypted> | null>(null);
 const keyType = ref<'ED25519' | 'ECDSA'>('ED25519');
-const isImportModalShown = ref(false);
+const isImportExternalModalShown = ref(false);
 
 /* Handlers */
 const handleImportExternal = (type: 'ED25519' | 'ECDSA') => {
   keyType.value = type;
-  isImportModalShown.value = true;
+  isImportExternalModalShown.value = true;
 };
+
+const handleImportEncrypted = () => importEncryptedRef.value?.process();
 </script>
 <template>
   <div class="dropdown">
@@ -38,11 +42,19 @@ const handleImportExternal = (type: 'ED25519' | 'ECDSA') => {
       >
         <span class="text-small">ECDSA Key</span>
       </li>
+      <li
+        data-testid="link-import-encrypted-key"
+        class="dropdown-item cursor-pointer mt-3"
+        @click="handleImportEncrypted"
+      >
+        <span class="text-small">Encrypted keys</span>
+      </li>
     </ul>
   </div>
   <ImportExternalPrivateKeyModal
     class="min-w-unset"
-    v-model:show="isImportModalShown"
+    v-model:show="isImportExternalModalShown"
     :key-type="keyType"
   />
+  <ImportEncrypted ref="importEncryptedRef" />
 </template>
