@@ -2,18 +2,23 @@ import { ipcMain } from 'electron';
 
 import {
   getFileStreamEventEmitter,
-  searchEncryptedKeys,
   searchEncryptedKeysAbort,
-  withStreamStatus,
+  EncryptedKeysSearcher,
+  Abortable,
 } from '@main/services/localUser';
 
 const createChannelName = (...props) => ['encryptedKeys', ...props].join(':');
 
 export default () => {
   // Searches for encrypted keys in the given file paths
-  ipcMain.handle(createChannelName('searchEncryptedKeys'), (_e, filePaths: string[]) =>
-    withStreamStatus(searchEncryptedKeys)(filePaths),
-  );
+  ipcMain.handle(createChannelName('searchEncryptedKeys'), async (_e, filePaths: string[]) => {
+    const encryptedFilesExtension = ['.pem'];
+
+    const abortable = new Abortable(searchEncryptedKeysAbort);
+    const searcher = new EncryptedKeysSearcher(abortable, encryptedFilesExtension);
+
+    return await searcher.search(filePaths);
+  });
 
   // Aborts the search for encrypted keys
   ipcMain.on(createChannelName('searchEncryptedKeys:abort'), () => {

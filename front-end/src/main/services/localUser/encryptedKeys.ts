@@ -1,172 +1,143 @@
-import * as fs from 'fs';
 import * as fsp from 'fs/promises';
 import * as path from 'path';
+import EventEmitter from 'events';
 
 import { app } from 'electron';
 
-import * as unzipper from 'unzipper';
-// import * as forge from 'node-forge';
+import { copyFile, getFilePaths, getUniquePath, unzip } from '@main/utils/files';
+
+let fileStreamEventEmitter: EventEmitter | null = null;
+export const searchEncryptedKeysAbort = 'file:searchEncryptedKeys:abort';
+
+export function getFileStreamEventEmitter() {
+  if (!fileStreamEventEmitter) {
+    fileStreamEventEmitter = new EventEmitter();
+    fileStreamEventEmitter.setMaxListeners(0);
+  }
+  return fileStreamEventEmitter;
+}
 
 /* The directory name in the temp folder that stores encrypted files per search */
 export const encryptedKeysDirName = 'encryptedKeys';
 
-/* Get the files with encrypted private key */
-export const searchEncryptedKeys = async (filePaths: string[]) => {
-  const currentSearchDir = await createDirForCurrentSearch();
+/* Abortable State */
+export type AbortableState = { aborted: boolean };
 
-  for (const filePath of filePaths) {
-    await storePemFromPath(filePath, currentSearchDir);
+/* Class that listens to an abort event and sets the aborted property to true */
+export class Abortable {
+  state: AbortableState;
+
+  constructor(abortEvent: string) {
+    this.state = { aborted: false };
+
+    getFileStreamEventEmitter().once(abortEvent, () => {
+      this.abort();
+    });
   }
 
-  return await getFilePaths(currentSearchDir, ['.pem']);
-};
-
-export const createDirForCurrentSearch = async () => {
-  const now = Date.now();
-  const tempDir = app.getPath('temp');
-
-  const searchFolderName = `encryptedKeys_${now}`;
-
-  const currentSearchDir = path.join(tempDir, encryptedKeysDirName, searchFolderName);
-  await fsp.mkdir(currentSearchDir, { recursive: true });
-
-  return currentSearchDir;
-};
-
-export const storePemFromPath = async (filePath: string, storePath: string) => {
-  const pathStat = await fsp.stat(filePath);
-  const extention = path.extname(filePath);
-
-  const isDirectory = pathStat.isDirectory();
-  const isFile = pathStat.isFile();
-  const isZip = isFile && extention === '.zip';
-  const isPem = isFile && extention === '.pem';
-
-  if (isDirectory) {
-    await storePemsFromDir(filePath, storePath);
-  } else if (isZip) {
-    await storePemFromZip(filePath, storePath);
-  } else if (isPem) {
-    await storePem(filePath, storePath);
+  abort() {
+    this.state = { aborted: true };
   }
-};
+}
 
-export const storePemsFromDir = async (dir: string, storePath: string) => {
-  try {
-    const dirFileName = await fsp.readdir(dir);
+/* Class that searches for encrypted keys in files with provided extensions */
+export class EncryptedKeysSearcher {
+  private _abortable: Abortable;
 
-    for (const fileName of dirFileName) {
-      const filePath = path.join(dir, fileName);
-      await storePemFromPath(filePath, storePath);
+  extensions: string[];
+  searchDir: string;
+  unzipDirs: string[];
+
+  constructor(abortable: Abortable, extensions: string[]) {
+    this._abortable = abortable;
+    this.extensions = extensions;
+    this.searchDir = '';
+    this.unzipDirs = [];
+  }
+
+  /* Searches encrypted files in the given paths and returns paths for all found files */
+  async search(filePaths: string[]) {
+    await this._createSearchDir();
+
+    for (const filePath of filePaths) {
+      if (this._abortable.state.aborted) break;
+      await this._searchFromPath(filePath);
     }
-  } catch (error) {
-    console.log(error);
+
+    if (this._abortable.state.aborted) {
+      await this.deleteSearchDirs();
+      return [];
+    }
+
+    return await getFilePaths(this.searchDir, this.extensions);
   }
-};
 
-export const storePem = async (filePath: string, storePath: string) => {
-  try {
-    /* Check if the file already exists */
-    await fsp.access(path.join(storePath, path.basename(filePath)));
-  } catch (error) {
-    await fsp.copyFile(filePath, path.join(storePath, path.basename(filePath)));
+  /* Deletes the search directory */
+  async deleteSearchDirs() {
+    const dirs = [this.searchDir, ...this.unzipDirs];
+    const results = await Promise.allSettled(dirs.map(dir => fsp.rm(dir, { recursive: true })));
+
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        console.log(`Delete search dirs error:`, result.reason);
+      }
+    }
   }
-};
 
-export const storePemFromZip = async (zipPath: string, storePath: string) => {
-  try {
-    const dist = await unzipInTemp(zipPath, ['.pem']);
-    await storePemsFromDir(dist, storePath);
-  } catch (error) {
-    console.log(error);
-  }
-};
+  /* Searches encrypted files in the given path */
+  private async _searchFromPath(filePath: string) {
+    const pathStat = await fsp.stat(filePath);
+    const extention = path.extname(filePath);
 
-let aborted = false;
+    const isDirectory = pathStat.isDirectory();
+    const isFile = pathStat.isFile();
+    const isZip = isFile && extention === '.zip';
+    const isEncryptedFile = isFile && this.extensions.includes(extention);
 
-export const unzipInTemp = async (zipPath: string, extensions: string[]) => {
-  const macosx = '__MACOSX';
-
-  const now = Date.now();
-  const tempDir = app.getPath('temp');
-  const dist = path.join(tempDir, encryptedKeysDirName, `unzipped_${now}`);
-
-  await fsp.mkdir(dist, { recursive: true });
-
-  const directory = await unzipper.Open.file(zipPath);
-
-  const pemFiles = directory.files
-    .filter(f => !f.path.startsWith(macosx))
-    .filter(f => (extensions.length > 0 ? extensions.some(ext => f.path.endsWith(ext)) : true));
-
-  setTimeout(() => {
-    aborted = true;
-  }, 2000);
-  for (const file of pemFiles) {
     try {
-      // if (aborted) return dist;
-
-      await extractFile(file, dist);
+      if (isDirectory) {
+        await this._searchFromDir(filePath);
+      } else if (isZip) {
+        await this._searchFromZip(filePath);
+      } else if (isEncryptedFile) {
+        const fileDist = await getUniquePath(this.searchDir, path.basename(filePath));
+        await copyFile(filePath, fileDist, this._abortable.state);
+      }
     } catch (error) {
       console.log(error);
     }
   }
 
-  return dist;
-};
+  /* Searches encrypted files in the given paths */
+  private async _searchFromDir(dir: string) {
+    const dirFileName = await fsp.readdir(dir);
 
-function extractFile(file: unzipper.File, dist: string) {
-  return new Promise((resolve, reject) => {
-    let fileName = path.basename(file.path);
-    let fileDist = path.join(dist, fileName);
-    let count = 1;
-
-    while (fs.existsSync(fileDist)) {
-      fileName = `${count}_${path.basename(file.path)}`;
-      fileDist = path.join(dist, fileName);
-      count++;
-    }
-    console.log(fileName);
-
-    const stream = file.stream();
-
-    stream
-      .on('data', () => {
-        console.log('chunk');
-        if (aborted) {
-          stream.destroy();
-          fs.rm(fileDist, () => {
-            reject('aborted');
-          });
-        }
-      })
-      .pipe(fs.createWriteStream(fileDist))
-      .on('close', () => {
-        console.log('close');
-      })
-      .on('finish', () => {
-        setTimeout(() => {
-          resolve(fileDist);
-        }, 100);
-      })
-      .on('error', e => {
-        console.log('ERROR IN WRITE');
-
-        reject(e);
-      });
-  });
-}
-
-export const getFilePaths = async (searchPath: string, extensions: string[]) => {
-  const filePaths: string[] = [];
-
-  const files = await fsp.readdir(searchPath);
-
-  for (const file of files) {
-    if (extensions.some(ext => file.endsWith(ext))) {
-      filePaths.push(path.join(searchPath, file));
+    for (const fileName of dirFileName) {
+      if (this._abortable.state.aborted) return;
+      try {
+        await this._searchFromPath(path.join(dir, fileName));
+      } catch (error) {
+        console.log(error);
+      }
     }
   }
 
-  return filePaths;
-};
+  /* Searches encrypted files in the ZIP */
+  private async _searchFromZip(zipPath: string) {
+    const dist = path.join(app.getPath('temp'), encryptedKeysDirName, `unzipped_${Date.now()}`);
+    this.unzipDirs.push(dist);
+
+    await unzip(zipPath, dist, this.extensions, this._abortable.state);
+    await this._searchFromDir(dist);
+  }
+
+  /* Creates a directory in the temp folder to store the encrypted PEM files */
+  private async _createSearchDir() {
+    const now = Date.now();
+    const searchFolderName = `encryptedKeys_${now}`;
+    const tempDir = app.getPath('temp');
+
+    this.searchDir = path.join(tempDir, encryptedKeysDirName, searchFolderName);
+    await fsp.mkdir(this.searchDir, { recursive: true });
+  }
+}
