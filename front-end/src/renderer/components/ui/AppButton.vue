@@ -1,13 +1,19 @@
 <script setup lang="ts">
 /* Props */
-const props = defineProps<{
-  color?: 'primary' | 'secondary' | 'borderless' | 'danger';
-  loading?: boolean;
-  loadingText?: string;
-  disabled?: boolean;
-  size?: 'small' | 'large' | 'default';
-  outline?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    color?: 'primary' | 'secondary' | 'borderless' | 'danger';
+    loading?: boolean;
+    loadingText?: string;
+    disabled?: boolean;
+    disableOnLoading?: boolean;
+    size?: 'small' | 'large' | 'default';
+    outline?: boolean;
+  }>(),
+  {
+    disableOnLoading: true,
+  },
+);
 
 /* Misc */
 const sizeMapping = {
@@ -26,7 +32,7 @@ const colorMapping = {
 </script>
 <template>
   <button
-    :disabled="loading || disabled"
+    :disabled="disabled || (loading && disableOnLoading)"
     :class="['btn', color ? colorMapping[color] : '', sizeMapping[size || 'default']]"
   >
     <template v-if="loading">

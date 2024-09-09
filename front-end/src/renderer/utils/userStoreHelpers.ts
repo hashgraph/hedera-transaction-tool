@@ -25,7 +25,11 @@ import {
   deleteOrganizationCredentials,
 } from '@renderer/services/organizationCredentials';
 import { deleteOrganization, getOrganizations } from '@renderer/services/organizationsService';
-import { hashData, compareDataToHashes } from '@renderer/services/electronUtilsService';
+import {
+  hashData,
+  compareDataToHashes,
+  compareHash,
+} from '@renderer/services/electronUtilsService';
 
 /* Flags */
 export function assertUserLoggedIn(user: PersonalUser | null): asserts user is LoggedInUser {
@@ -261,11 +265,11 @@ export const setPublicKeyToAccounts = async (
       );
 
       if (publicKeyPair >= 0) {
-        publicKeyToAccounts.value[publicKeyPair].accounts?.push(...accounts);
+        publicKeyToAccounts.value[publicKeyPair].accounts?.push(...(accounts || []));
       } else {
         publicKeyToAccounts.value.push({
           publicKey: public_key,
-          accounts,
+          accounts: accounts || [],
         });
       }
       publicKeyToAccounts.value = [...publicKeyToAccounts.value];
@@ -283,6 +287,23 @@ export const getSecretHashesFromKeys = (keys: KeyPair[]): string[] => {
   });
 
   return secretHashes;
+};
+
+export const getKeysFromSecretHash = async (
+  keys: KeyPair[],
+  secretHash: string[],
+): Promise<KeyPair[]> => {
+  const keysWithSecretHash: KeyPair[] = [];
+
+  for (const key of keys.filter(k => k.secret_hash)) {
+    if (!key.secret_hash) continue;
+
+    const matchedHash = await compareHash([...secretHash].toString(), key.secret_hash);
+
+    if (matchedHash) keysWithSecretHash.push(key);
+  }
+
+  return keysWithSecretHash;
 };
 
 export const getNickname = (publicKey: string, keyPairs: KeyPair[]): string | undefined => {

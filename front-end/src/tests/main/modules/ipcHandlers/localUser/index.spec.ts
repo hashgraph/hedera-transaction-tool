@@ -9,6 +9,7 @@ import listenForOrganizationEvents from '@main/modules/ipcHandlers/localUser/org
 import listenForOrganizationCredentialsEvents from '@main/modules/ipcHandlers/localUser/organizationCredentials';
 import listenForContactEvents from '@main/modules/ipcHandlers/localUser/contacts';
 import listenForPublicKeyLinkedEvents from '@main/modules/ipcHandlers/localUser/publicKeyLinked';
+import listenForPublicEncryptedKeysEvents from '@main/modules/ipcHandlers/localUser/encryptedKeys';
 
 vi.mock('@main/db/prisma', () => ({ getPath: vi.fn() }));
 
@@ -29,6 +30,7 @@ vi.mock('@main/modules/ipcHandlers/localUser/organizationCredentials', () => ({
 }));
 vi.mock('@main/modules/ipcHandlers/localUser/contacts', () => ({ default: vi.fn() }));
 vi.mock('@main/modules/ipcHandlers/localUser/publicKeyLinked', () => ({ default: vi.fn() }));
+vi.mock('@main/modules/ipcHandlers/localUser/encryptedKeys', () => ({ default: vi.fn() }));
 
 describe('index', () => {
   it('should call all event listeners', () => {
@@ -44,5 +46,6 @@ describe('index', () => {
     expect(listenForOrganizationCredentialsEvents).toHaveBeenCalled();
     expect(listenForContactEvents).toHaveBeenCalled();
     expect(listenForPublicKeyLinkedEvents).toHaveBeenCalled();
+    expect(listenForPublicEncryptedKeysEvents).toHaveBeenCalled();
   });
 });

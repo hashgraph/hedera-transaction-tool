@@ -183,10 +183,13 @@ describe('Services Local User Key Pairs', () => {
       const password = 'password1';
 
       prisma.keyPair.findFirst.mockResolvedValue(null);
-      vi.mocked(decrypt).mockReturnValue('decryptedPrivateKey');
+      vi.mocked(decrypt).mockImplementationOnce(() => {
+        throw new Error('Error');
+      });
 
-      await decryptPrivateKey(keyPair.user_id, password, keyPair.public_key);
-
+      await expect(
+        decryptPrivateKey(keyPair.user_id, password, keyPair.public_key),
+      ).rejects.toThrow('Error');
       expect(prisma.keyPair.findFirst).toHaveBeenCalledWith({
         where: { user_id: keyPair.user_id, public_key: keyPair.public_key },
         select: { private_key: true },

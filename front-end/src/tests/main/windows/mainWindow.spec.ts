@@ -24,7 +24,7 @@ vi.mock('electron', () => {
 
   bw.prototype.on = vi.fn<any>((e, c) => {
     callbacks[e as keyof typeof callbacks] = c;
-  });
+  }) as any;
   bw.prototype.destroy = vi.fn();
   bw.prototype.isDestroyed = vi.fn();
   bw.prototype.isMinimized = vi.fn();

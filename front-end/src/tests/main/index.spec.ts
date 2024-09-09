@@ -12,7 +12,7 @@ import registerIpcListeners from '@main/modules/ipcHandlers';
 
 import { restoreOrCreateWindow } from '@main/windows/mainWindow';
 
-import { deleteTempFolder } from '@main/services/localUser';
+import { deleteAllTempFolders } from '@main/services/localUser';
 
 vi.mock('path', () => ({
   default: {
@@ -63,7 +63,7 @@ vi.mock('electron', () => {
   };
 });
 vi.mock('@main/db/init', () => ({ default: vi.fn() }));
-vi.mock('@main/services/localUser', () => ({ deleteTempFolder: vi.fn() }));
+vi.mock('@main/services/localUser', () => ({ deleteAllTempFolders: vi.fn() }));
 vi.mock('@main/modules/logger', () => ({ default: vi.fn() }));
 vi.mock('@main/modules/menu', () => ({
   default: vi.fn(),
@@ -144,7 +144,7 @@ describe('Electron entry file', async () => {
   });
 
   test('Should delete temp folder on before-quit event', async () => {
-    vi.mocked(deleteTempFolder).mockRejectedValueOnce("Can't delete temp folder");
+    vi.mocked(deleteAllTempFolders).mockRejectedValueOnce("Can't delete temp folder");
     //@ts-expect-error Incorrect type definition
     const beforeQuitHandler = appMO.on.mock.calls.find(([event]) => event === 'before-quit');
     expect(beforeQuitHandler).toBeDefined();
@@ -152,7 +152,7 @@ describe('Electron entry file', async () => {
 
     beforeQuitHandler && (await beforeQuitHandler[1]({ preventDefault: vi.fn() }));
 
-    expect(deleteTempFolder).toHaveBeenCalledOnce();
+    expect(deleteAllTempFolders).toHaveBeenCalledOnce();
   });
 
   test("Should handle deep link on 'open-url' event", async () => {

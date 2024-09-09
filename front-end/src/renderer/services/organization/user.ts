@@ -33,12 +33,12 @@ export const getUserState = async (organizationServerUrl: string) => {
 
   user.userKeys.push(...keys);
   user.secretHashes.push(
-    ...keys.reduce((acc, curr) => {
+    ...keys.reduce<string[]>((acc, curr) => {
       if (curr.mnemonicHash && !acc.includes(curr.mnemonicHash)) {
         acc.push(curr.mnemonicHash);
       }
       return acc;
-    }, [] as string[]),
+    }, []),
   );
 
   return user;

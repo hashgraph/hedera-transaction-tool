@@ -11,8 +11,8 @@ import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppTabs from '@renderer/components/ui/AppTabs.vue';
-import ImportExternalPrivateKeyDropDown from '@renderer/components/ImportExternalPrivateKeyDropDown.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import ImportDropDown from './components/ImportDropDown.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -114,7 +114,7 @@ watch(router.currentRoute, newRoute => {
           >
             Restore
           </AppButton>
-          <ImportExternalPrivateKeyDropDown class="min-w-unset" />
+          <ImportDropDown />
         </div>
       </div>
       <div class="overflow-hidden mt-7">

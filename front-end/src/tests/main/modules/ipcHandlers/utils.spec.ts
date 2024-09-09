@@ -37,7 +37,7 @@ vi.mock('electron', () => {
     app: {
       getPath: vi.fn(),
     },
-    dialog: { showSaveDialog: vi.fn(), showErrorBox: vi.fn() },
+    dialog: { showSaveDialog: vi.fn(), showErrorBox: vi.fn(), showOpenDialog: vi.fn() },
   };
 });
 vi.mock('fs/promises', () => ({
@@ -291,13 +291,14 @@ describe('registerUtilsListeners', () => {
     const windows = [{}];
     const uint8ArrayString = 'testString';
     const numberArray = [1, 2, 3];
-    const filePath = 'testPath';
-    const canceled = false;
 
     vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
     vi.mocked(getNumberArrayFromString).mockReturnValue(numberArray);
-    vi.mocked(dialog.showSaveDialog).mockResolvedValueOnce({ canceled });
-    vi.mocked(dialog.showSaveDialog).mockResolvedValueOnce({ filePath, canceled: true });
+    vi.mocked(dialog.showSaveDialog).mockResolvedValueOnce({ filePath: '', canceled: false });
+    vi.mocked(dialog.showSaveDialog).mockResolvedValueOnce({
+      filePath: 'testPath',
+      canceled: true,
+    });
 
     const saveFileHandler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'utils:saveFile');
 
@@ -424,6 +425,117 @@ describe('registerUtilsListeners', () => {
       const result = compareHashHandler[1](event, data, hash);
 
       expect(result).toEqual(null);
+    }
+  });
+
+  test('Should call showOpenDialog with correct parameters in util:showOpenDialog', async () => {
+    const windows = [{}];
+    const title = 'Open File';
+    const buttonLabel = 'Open';
+    const filters = [{ name: 'Text Files', extensions: ['txt'] }];
+    const properties = ['openFile'];
+    const message = 'Select a file to open';
+
+    const showOpenDialogHandler = ipcMainMO.handle.mock.calls.find(
+      ([e]) => e === 'utils:showOpenDialog',
+    );
+
+    expect(showOpenDialogHandler).toBeDefined();
+
+    if (showOpenDialogHandler) {
+      const dialogReturnValue = { filePaths: ['/path/to/file.txt'], canceled: false };
+      vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
+      vi.mocked(dialog.showOpenDialog).mockResolvedValue(dialogReturnValue);
+
+      const result = await showOpenDialogHandler[1](
+        event,
+        title,
+        buttonLabel,
+        filters,
+        properties,
+        message,
+      );
+
+      expect(BrowserWindow.getAllWindows).toHaveBeenCalled();
+      expect(dialog.showOpenDialog).toHaveBeenCalledWith(windows[0], {
+        title,
+        buttonLabel,
+        filters,
+        properties,
+        message,
+      });
+      expect(result).toEqual(dialogReturnValue);
+    }
+  });
+
+  test('Should return undefined if no windows in util:showOpenDialog', async () => {
+    const title = 'Open File';
+    const buttonLabel = 'Open';
+    const filters = [{ name: 'Text Files', extensions: ['txt'] }];
+    const properties = ['openFile'];
+    const message = 'Select a file to open';
+
+    const showOpenDialogHandler = ipcMainMO.handle.mock.calls.find(
+      ([e]) => e === 'utils:showOpenDialog',
+    );
+
+    expect(showOpenDialogHandler).toBeDefined();
+
+    if (showOpenDialogHandler) {
+      vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([]);
+
+      const result = await showOpenDialogHandler[1](
+        event,
+        title,
+        buttonLabel,
+        filters,
+        properties,
+        message,
+      );
+
+      expect(BrowserWindow.getAllWindows).toHaveBeenCalled();
+      expect(dialog.showOpenDialog).not.toHaveBeenCalled();
+      expect(result).toBeUndefined();
+    }
+  });
+
+  test('Should return undefined if dialog is canceled in util:showOpenDialog', async () => {
+    const windows = [{}];
+    const title = 'Open File';
+    const buttonLabel = 'Open';
+    const filters = [{ name: 'Text Files', extensions: ['txt'] }];
+    const properties = ['openFile'];
+    const message = 'Select a file to open';
+
+    const showOpenDialogHandler = ipcMainMO.handle.mock.calls.find(
+      ([e]) => e === 'utils:showOpenDialog',
+    );
+
+    expect(showOpenDialogHandler).toBeDefined();
+
+    if (showOpenDialogHandler) {
+      const dialogReturnValue = { filePaths: [], canceled: true };
+      vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
+      vi.mocked(dialog.showOpenDialog).mockResolvedValue(dialogReturnValue);
+
+      const result = await showOpenDialogHandler[1](
+        event,
+        title,
+        buttonLabel,
+        filters,
+        properties,
+        message,
+      );
+
+      expect(BrowserWindow.getAllWindows).toHaveBeenCalled();
+      expect(dialog.showOpenDialog).toHaveBeenCalledWith(windows[0], {
+        title,
+        buttonLabel,
+        filters,
+        properties,
+        message,
+      });
+      expect(result).toBe(dialogReturnValue);
     }
   });
 });
