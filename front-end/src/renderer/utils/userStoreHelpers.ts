@@ -265,11 +265,11 @@ export const setPublicKeyToAccounts = async (
       );
 
       if (publicKeyPair >= 0) {
-        publicKeyToAccounts.value[publicKeyPair].accounts?.push(...accounts);
+        publicKeyToAccounts.value[publicKeyPair].accounts?.push(...(accounts || []));
       } else {
         publicKeyToAccounts.value.push({
           publicKey: public_key,
-          accounts,
+          accounts: accounts || [],
         });
       }
       publicKeyToAccounts.value = [...publicKeyToAccounts.value];

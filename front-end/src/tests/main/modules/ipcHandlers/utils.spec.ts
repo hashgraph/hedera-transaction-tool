@@ -296,7 +296,7 @@ describe('registerUtilsListeners', () => {
 
     vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
     vi.mocked(getNumberArrayFromString).mockReturnValue(numberArray);
-    vi.mocked(dialog.showSaveDialog).mockResolvedValueOnce({ canceled });
+    vi.mocked(dialog.showSaveDialog).mockResolvedValueOnce({ filePath, canceled });
     vi.mocked(dialog.showSaveDialog).mockResolvedValueOnce({ filePath, canceled: true });
 
     const saveFileHandler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'utils:saveFile');

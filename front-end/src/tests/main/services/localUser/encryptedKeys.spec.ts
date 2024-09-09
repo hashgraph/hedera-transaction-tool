@@ -157,7 +157,7 @@ describe('Encrypted Keys Utilities', () => {
       const tempDir = '/temp';
       vi.mocked(app.getPath).mockReturnValue(tempDir);
 
-      vi.spyOn(searcher, '_searchFromPath' as any).mockImplementation(vi.fn);
+      vi.spyOn(searcher, '_searchFromPath' as any).mockImplementation(vi.fn());
       vi.spyOn(searcher, '_searchFromDir' as any).mockImplementation(vi.fn());
       vi.spyOn(searcher, '_searchFromZip' as any).mockImplementation(vi.fn());
 

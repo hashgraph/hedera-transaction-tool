@@ -1,4 +1,4 @@
-import { FileFilter, OpenDialogReturnValue } from 'electron';
+import type { FileFilter, OpenDialogReturnValue } from 'electron';
 
 import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 import * as HashgraphProto from '@hashgraph/proto';

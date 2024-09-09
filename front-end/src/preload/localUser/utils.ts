@@ -1,4 +1,5 @@
-import { ipcRenderer, FileFilter, OpenDialogReturnValue } from 'electron';
+import type { FileFilter, OpenDialogReturnValue } from 'electron';
+import { ipcRenderer } from 'electron';
 
 import { proto } from '@hashgraph/proto';
 

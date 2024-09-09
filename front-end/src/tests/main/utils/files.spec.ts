@@ -69,7 +69,7 @@ describe('Files utilities', () => {
       for (const file of files) {
         file.stream.mockReturnValue(stream);
         stream.pipe.mockImplementation(() => stream);
-        stream.on.mockImplementation((event, callback) => {
+        stream.on.mockImplementation((_event, callback) => {
           callback();
           return stream;
         });

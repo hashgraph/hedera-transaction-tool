@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+
 import { computed, inject, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -9,7 +11,7 @@ import { hashData } from '@renderer/services/electronUtilsService';
 
 import { getKeysFromSecretHash, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
-import { USER_PASSWORD_MODAL_KEY, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
 import DecryptKeyModal from '@renderer/components/KeyPair/ImportEncrypted/components/DecryptKeyModal.vue';
 
