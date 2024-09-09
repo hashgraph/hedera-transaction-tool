@@ -22,8 +22,8 @@ import {
   TRANSACTION_ACTION,
   NotifyClientDto,
   TransactionExecutedDto,
+  hasValidSignatureKey,
   SyncIndicatorsDto,
-  ableToSign,
   computeSignatureKey,
   getClientFromName,
   getStatusCodeFromMessage,
@@ -68,14 +68,14 @@ export class ExecuteService {
       throw new Error('File transactions are not currently supported for execution.');
 
     /* Gets the signature key */
-    const sigantureKey = await computeSignatureKey(
+    const signatureKey = await computeSignatureKey(
       sdkTransaction,
       this.mirrorNodeService,
       transaction.network,
     );
 
-    /* Checks if the transaction has valid siganture */
-    if (!ableToSign([...sdkTransaction._signerPublicKeys], sigantureKey))
+    /* Checks if the transaction has valid signatureKey */
+    if (!hasValidSignatureKey([...sdkTransaction._signerPublicKeys], signatureKey))
       throw new Error('Transaction has invalid signature.');
 
     /* Execute the transaction */
