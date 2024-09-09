@@ -3,6 +3,7 @@ import * as path from 'path';
 import EventEmitter from 'events';
 
 import { app } from 'electron';
+import * as forge from 'node-forge';
 
 import { copyFile, getFilePaths, getUniquePath, unzip } from '@main/utils/files';
 
@@ -141,3 +142,32 @@ export class EncryptedKeysSearcher {
     await fsp.mkdir(this.searchDir, { recursive: true });
   }
 }
+
+export const decryptPrivateKeyFromPath = async (filePath: string, password: string) => {
+  const fileContent = await fsp.readFile(filePath, 'utf-8');
+
+  try {
+    return decryptPrivateKeyFromPem(fileContent, password);
+  } catch (error) {
+    throw new Error('Incorrect encryption password');
+  }
+};
+
+/* Decrypts encrypted private key from PEM */
+export const decryptPrivateKeyFromPem = (pem: string, password: string): string => {
+  /* Parse the PEM file to get the encrypted private key info */
+  const encryptedPrivateKeyInfo = forge.pki.encryptedPrivateKeyFromPem(pem);
+
+  /* Decrypt the private key */
+  const privateKeyInfo = forge.pki.decryptPrivateKeyInfo(encryptedPrivateKeyInfo, password);
+
+  if (!privateKeyInfo) throw new Error('Incorrect encryption password');
+
+  /* Convert the private key to DER bytes */
+  const asn1PrivateKey = forge.asn1.toDer(privateKeyInfo);
+
+  /* Format the private key in hex */
+  const hex = asn1PrivateKey.toHex();
+
+  return hex;
+};

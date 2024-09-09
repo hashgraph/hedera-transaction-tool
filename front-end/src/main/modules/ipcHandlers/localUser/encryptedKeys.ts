@@ -5,6 +5,7 @@ import {
   searchEncryptedKeysAbort,
   EncryptedKeysSearcher,
   Abortable,
+  decryptPrivateKeyFromPath,
 } from '@main/services/localUser';
 
 const createChannelName = (...props) => ['encryptedKeys', ...props].join(':');
@@ -24,4 +25,12 @@ export default () => {
   ipcMain.on(createChannelName('searchEncryptedKeys:abort'), () => {
     getFileStreamEventEmitter().emit(searchEncryptedKeysAbort);
   });
+
+  // Decrypts the encrypted key in the given file path
+  ipcMain.handle(
+    createChannelName('decryptEncryptedKey'),
+    async (_e, filePath: string, password: string) => {
+      return await decryptPrivateKeyFromPath(filePath, password);
+    },
+  );
 };
