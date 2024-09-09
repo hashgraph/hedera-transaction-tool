@@ -10,6 +10,7 @@ export * from './organizations';
 export * from './organizationCredentials';
 export * from './contacts';
 export * from './publicKeyLinked';
+export * from './encryptedKeys';
 
 import { session } from 'electron';
 

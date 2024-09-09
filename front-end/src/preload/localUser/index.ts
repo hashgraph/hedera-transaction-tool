@@ -14,6 +14,7 @@ import organizationCredentialsAPI from './organizationCredentials';
 import deepLinkAPI from './deepLink';
 import contactsAPI from './contacts';
 import contactPublicKeys from './linkedPublicKeys';
+import encryptedKeys from './encryptedKeys';
 
 export default {
   ...updateAPI,
@@ -32,4 +33,5 @@ export default {
   ...deepLinkAPI,
   ...contactsAPI,
   ...contactPublicKeys,
+  ...encryptedKeys,
 };
