@@ -54,6 +54,8 @@ export enum TransactionStatus {
   EXPIRED = 'EXPIRED',
 }
 
+export const MAX_TRANSACTION_BYTE_SIZE = 6_144;
+
 @Entity()
 export class Transaction {
   @PrimaryGeneratedColumn()
