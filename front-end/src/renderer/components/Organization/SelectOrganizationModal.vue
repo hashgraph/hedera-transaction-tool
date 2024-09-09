@@ -61,7 +61,7 @@ onBeforeMount(async () => {
         </div>
         <hr class="separator my-5" />
         <div>
-          <h3 class="text-small">Recent</h3>
+          <!-- <h3 class="text-small">Recent</h3> -->
           <div class="mt-4 overflow-auto" :style="{ height: '158px' }">
             <template
               v-for="organization in organizations.filter(
