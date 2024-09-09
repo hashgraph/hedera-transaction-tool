@@ -3,6 +3,8 @@ import { computed, inject, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
+import { useToast } from 'vue-toast-notification';
+
 import { hashData } from '@renderer/services/electronUtilsService';
 
 import { getKeysFromSecretHash, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
@@ -13,6 +15,9 @@ import DecryptKeyModal from '@renderer/components/KeyPair/ImportEncrypted/compon
 
 /* Stores */
 const user = useUserStore();
+
+/* Composables */
+const toast = useToast();
 
 /* Injected */
 const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
@@ -81,6 +86,8 @@ async function nextKey() {
 
 async function end() {
   isDecryptKeyModalShown.value = false;
+
+  toast.success('Keys imported successfully', { position: 'bottom-right' });
 
   await user.refetchKeys();
   user.refetchAccounts();
