@@ -2,9 +2,10 @@
 import type { Organization } from '@prisma/client';
 import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
 
-import { inject, onUpdated, ref, watch } from 'vue';
+import { computed, inject, onUpdated, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import { useToast } from 'vue-toast-notification';
@@ -16,8 +17,12 @@ import { withLoader } from '@renderer/utils';
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
 import AppButton from './ui/AppButton.vue';
 
+/* Misc */
+const personalModeText = 'My Transactions';
+
 /* Stores */
 const user = useUserStore();
+const notifications = useNotificationsStore();
 
 /* Composables */
 const createTooltips = useCreateTooltips();
@@ -29,7 +34,18 @@ const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADE
 /* State */
 const selectedMode = ref<string>('personal');
 const addOrganizationModalShown = ref(false);
-const defaultDropDownValue = ref<string>('My Transactions');
+const defaultDropDownValue = ref<string>(personalModeText);
+
+/* Computed */
+const indicatorNotifications = computed(() => {
+  const allNotifications = { ...notifications.notifications };
+  for (const serverUrl of Object.keys(allNotifications)) {
+    allNotifications[serverUrl] = allNotifications[serverUrl].filter(n =>
+      n.notification.type.toLocaleLowerCase().includes('indicator'),
+    );
+  }
+  return allNotifications;
+});
 
 /* Handlers */
 const handleUserModeChange = async (e: Event) => {
@@ -39,7 +55,7 @@ const handleUserModeChange = async (e: Event) => {
 
   if (newValue === 'personal') {
     selectedMode.value = 'personal';
-    defaultDropDownValue.value = 'My Transactions';
+    defaultDropDownValue.value = personalModeText;
     await user.selectOrganization(null);
   } else {
     selectedMode.value = org ? org.id : 'personal';
@@ -104,7 +120,7 @@ watch(
         defaultDropDownValue.value = user.selectedOrganization.nickname;
       }
     } else {
-      defaultDropDownValue.value = 'My Transactions';
+      defaultDropDownValue.value = personalModeText;
     }
   },
 );
@@ -118,7 +134,7 @@ watch(
       defaultDropDownValue.value = current.nickname;
     } else {
       selectedMode.value = 'personal';
-      defaultDropDownValue.value = 'My Transactions';
+      defaultDropDownValue.value = personalModeText;
     }
   },
 );
@@ -134,8 +150,17 @@ watch(
         data-bs-toggle="dropdown"
         v-bind="$attrs"
         style="min-width: 200px"
-        >{{ defaultDropDownValue }} <i class="bi bi-chevron-down ms-3"></i
-      ></AppButton>
+      >
+        <div
+          class="flex-centered gap-3 position-relative"
+          :class="{
+            'indicator-circle-before': Object.values(indicatorNotifications).flat().length > 0,
+          }"
+        >
+          {{ defaultDropDownValue }}
+        </div>
+        <i class="bi bi-chevron-down ms-3"></i>
+      </AppButton>
       <ul class="dropdown-menu w-100 mt-3">
         <li
           data-testid="dropdown-item-0"
@@ -150,7 +175,7 @@ watch(
             )()
           "
         >
-          <span class="text-small">My Transactions</span>
+          <span class="text-small">{{ personalModeText }}</span>
         </li>
         <template v-for="(organization, index) in user.organizations" :key="organization.id">
           <li
@@ -166,24 +191,19 @@ watch(
             "
             :data-value="organization.id"
           >
-            <span class="text-small">{{ organization.nickname }}</span>
+            <span
+              class="text-small position-relative"
+              :class="{
+                'indicator-circle-before':
+                  (indicatorNotifications[organization.serverUrl] || []).length > 0,
+              }"
+              >{{ organization.nickname }}</span
+            >
           </li>
         </template>
       </ul>
     </div>
-    <!-- <select
-      ref="selectElRef"
-      class="form-select with-border is-fill lh-base"
-      :value="selectedMode"
-      @change="handleUserModeChange"
-    >
-      <option value="personal">My Transactions</option>
-      <template v-for="organization in user.organizations" :key="organization.id">
-        <option :value="organization.id">
-          {{ organization.nickname }}
-        </option>
-      </template>
-    </select> -->
+
     <AppButton
       class="ms-3 min-w-unset ws-no-wrap text-title"
       color="secondary"
