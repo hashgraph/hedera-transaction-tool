@@ -25,9 +25,11 @@ export default function useMarkNotifications(notificationTypes: NotificationType
   }
 
   function setOldNotifications(addPrevious = false) {
-    const data = notifications.notifications.filter(nr =>
-      notificationTypes.includes(nr.notification.type),
-    );
+    const notificationsKey = user.selectedOrganization?.serverUrl || '';
+    const data =
+      notifications.notifications[notificationsKey]?.filter(nr =>
+        notificationTypes.includes(nr.notification.type),
+      ) || [];
 
     if (addPrevious) {
       oldNotifications.value = oldNotifications.value.concat(data);

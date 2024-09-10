@@ -136,8 +136,10 @@ function createFindArgs(): Prisma.TransactionFindManyArgs {
 }
 
 function setNotifiedTransactions() {
+  const notificationsKey = user.selectedOrganization?.serverUrl || '';
+
   notifiedTransactionIds.value = getNotifiedTransactions(
-    notifications.notifications.concat(oldNotifications.value),
+    notifications.notifications[notificationsKey]?.concat(oldNotifications.value) || [],
     organizationTransactions.value.map(t => t.transactionRaw),
     [
       NotificationType.TRANSACTION_INDICATOR_EXECUTED,

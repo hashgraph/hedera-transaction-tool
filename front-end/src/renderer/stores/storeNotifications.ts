@@ -32,7 +32,7 @@ const useNotificationsStore = defineStore('notifications', () => {
     [NotificationType.TRANSACTION_READY_FOR_EXECUTION]: true,
     [NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES]: true,
   });
-  const notifications = ref<INotificationReceiver[]>([]);
+  const notifications = ref<{ [serverUrl: string]: INotificationReceiver[] }>({});
 
   /* Actions */
   async function setup() {
@@ -80,28 +80,45 @@ const useNotificationsStore = defineStore('notifications', () => {
   async function fetchNotifications() {
     if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
 
-    if (isLoggedInOrganization(user.selectedOrganization)) {
-      const newNotifications = await getAllInAppNotifications(
-        user.selectedOrganization.serverUrl,
-        true,
-      );
-      notifications.value = newNotifications;
-    } else {
-      notifications.value = [];
+    notifications.value = {};
+
+    const severUrls = user.organizations.map(o => o.serverUrl);
+    const results = await Promise.allSettled(
+      user.organizations.map(o => getAllInAppNotifications(o.serverUrl, true)),
+    );
+
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      result.status === 'fulfilled' && (notifications.value[severUrls[i]] = result.value);
     }
+
+    notifications.value = { ...notifications.value };
   }
 
   async function listenForUpdates() {
     ws.on(NOTIFICATIONS_NEW, async e => {
       const notification: INotificationReceiver = e.data;
-      notifications.value = [...notifications.value, notification];
+      const notificationsKey = user.selectedOrganization?.serverUrl || '';
+
+      if (!notificationsKey) return;
+
+      notifications.value[notificationsKey] = [
+        ...notifications.value[notificationsKey],
+        notification,
+      ];
+      notifications.value = { ...notifications.value };
     });
 
     ws.on(NOTIFICATIONS_INDICATORS_DELETE, async e => {
       const notificationReceiverIds: number[] = e.data.notificationReceiverIds;
-      notifications.value = notifications.value.filter(
+      const notificationsKey = user.selectedOrganization?.serverUrl || '';
+
+      if (!notificationsKey) return;
+
+      notifications.value[notificationsKey] = notifications.value[notificationsKey].filter(
         nr => !notificationReceiverIds.includes(nr.id),
       );
+      notifications.value = { ...notifications.value };
     });
   }
 
@@ -110,14 +127,21 @@ const useNotificationsStore = defineStore('notifications', () => {
       throw new Error('No organization selected');
     }
 
-    const notificationIds = notifications.value
+    const notificationsKey = user.selectedOrganization?.serverUrl || '';
+
+    if (!notificationsKey) return;
+
+    const notificationIds = notifications.value[notificationsKey]
       .filter(nr => nr.notification.type === type)
       .map(nr => nr.id);
     const dtos = notificationIds.map((): IUpdateNotificationReceiver => ({ isRead: true }));
 
-    await updateNotifications(user.selectedOrganization.serverUrl, notificationIds, dtos);
+    await updateNotifications(notificationsKey, notificationIds, dtos);
 
-    notifications.value = notifications.value.filter(nr => !notificationIds.includes(nr.id));
+    notifications.value[notificationsKey] = notifications.value[notificationsKey].filter(
+      nr => !notificationIds.includes(nr.id),
+    );
+    notifications.value = { ...notifications.value };
   }
 
   return {

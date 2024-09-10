@@ -55,25 +55,31 @@ const isTransactionSelectionModalShown = ref(false);
 
 /* Computed */
 const activeTabs = computed(() => {
+  const notificationsKey = user.selectedOrganization?.serverUrl || '';
+
   const rawTabItems = tabItems.value;
 
-  const readyToApproveNotifications = notifications.notifications.filter(
-    nr => nr.notification.type === NotificationType.TRANSACTION_INDICATOR_APPROVE,
-  );
+  const readyToApproveNotifications =
+    notifications.notifications[notificationsKey]?.filter(
+      nr => nr.notification.type === NotificationType.TRANSACTION_INDICATOR_APPROVE,
+    ) || [];
 
-  const readyToSignNotifications = notifications.notifications.filter(
-    nr => nr.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN,
-  );
+  const readyToSignNotifications =
+    notifications.notifications[notificationsKey]?.filter(
+      nr => nr.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN,
+    ) || [];
 
-  const readyForExecutionNotifications = notifications.notifications.filter(
-    nr => nr.notification.type === NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
-  );
+  const readyForExecutionNotifications =
+    notifications.notifications[notificationsKey]?.filter(
+      nr => nr.notification.type === NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
+    ) || [];
 
-  const historyNotifications = notifications.notifications.filter(
-    nr =>
-      nr.notification.type === NotificationType.TRANSACTION_INDICATOR_EXECUTED ||
-      nr.notification.type === NotificationType.TRANSACTION_INDICATOR_EXPIRED,
-  );
+  const historyNotifications =
+    notifications.notifications[notificationsKey]?.filter(
+      nr =>
+        nr.notification.type === NotificationType.TRANSACTION_INDICATOR_EXECUTED ||
+        nr.notification.type === NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+    ) || [];
 
   rawTabItems.forEach(tab => {
     switch (tab.title) {

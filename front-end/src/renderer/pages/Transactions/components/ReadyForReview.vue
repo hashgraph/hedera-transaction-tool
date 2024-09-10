@@ -121,9 +121,10 @@ const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') 
 /* Functions */
 function setNotifiedTransactions() {
   const flatTransactions = [...transactions.value.values()].flat();
+  const notificationsKey = user.selectedOrganization?.serverUrl || '';
 
   notifiedTransactionIds.value = getNotifiedTransactions(
-    notifications.notifications.concat(oldNotifications.value),
+    notifications.notifications[notificationsKey]?.concat(oldNotifications.value) || [],
     flatTransactions.map(t => t.transactionRaw),
     [NotificationType.TRANSACTION_INDICATOR_APPROVE],
   );

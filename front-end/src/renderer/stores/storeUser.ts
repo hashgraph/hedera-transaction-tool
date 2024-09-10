@@ -57,9 +57,8 @@ const useUserStore = defineStore('user', () => {
   /** Personal */
   const login = async (id: string, email: string) => {
     personal.value = ush.createPersonalUser(id, email);
-    await refetchKeys();
-    refetchAccounts();
     await refetchOrganizations();
+    await selectOrganization(null);
   };
 
   const logout = async () => {
