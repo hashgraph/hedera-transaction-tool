@@ -37,36 +37,48 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
     const currentSocket = sockets.value[serverUrl];
 
     if (currentSocket) {
-      currentSocket.disconnect();
+      const listeners = {
+        connect: currentSocket.listeners('connect')[0],
+        connect_error: currentSocket.listeners('connect_error')[0],
+        disconnect: currentSocket.listeners('disconnect')[0],
+      };
+
       currentSocket.off();
+
+      currentSocket.on('connect', listeners.connect);
+      currentSocket.on('connect_error', listeners.connect_error);
+      currentSocket.on('disconnect', listeners.disconnect);
+
+      currentSocket.connect();
+
+      return currentSocket;
+    } else {
+      const newSocket = io(url, {
+        path: '/ws',
+        withCredentials: true,
+      });
+
+      newSocket.on('connect', () => {
+        console.log(`Connected to server ${url} with id: ${newSocket?.id}`);
+      });
+
+      newSocket.on('connect_error', error => {
+        if (newSocket?.active) {
+          // temporary failure, the socket will automatically try to reconnect
+        } else {
+          console.log(`Socket for ${serverUrl}: ${error.message}`);
+        }
+      });
+
+      newSocket.on('disconnect', reason => {
+        if (newSocket?.active) {
+          // temporary disconnection, the socket will automatically try to reconnect
+        } else {
+          console.log(`Socket for ${serverUrl}: ${reason}`);
+        }
+      });
+      return newSocket;
     }
-
-    const newSocket = io(url, {
-      path: '/ws',
-      withCredentials: true,
-    });
-
-    newSocket.on('connect', () => {
-      console.log(`Connected to server ${url} with id: ${newSocket?.id}`);
-    });
-
-    newSocket.on('connect_error', error => {
-      if (newSocket?.active) {
-        // temporary failure, the socket will automatically try to reconnect
-      } else {
-        console.log(`Socket for ${serverUrl}: ${error.message}`);
-      }
-    });
-
-    newSocket.on('disconnect', reason => {
-      if (newSocket?.active) {
-        // temporary disconnection, the socket will automatically try to reconnect
-      } else {
-        console.log(`Socket for ${serverUrl}: ${reason}`);
-      }
-    });
-
-    return newSocket;
   }
 
   function on(serverUrl: string, event: string, callback: (...args: any[]) => void) {

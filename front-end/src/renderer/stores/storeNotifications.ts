@@ -79,8 +79,6 @@ const useNotificationsStore = defineStore('notifications', () => {
   async function fetchNotifications() {
     if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
 
-    notifications.value = {};
-
     const severUrls = user.organizations.map(o => o.serverUrl);
     const results = await Promise.allSettled(
       user.organizations.map(o => getAllInAppNotifications(o.serverUrl, true)),
