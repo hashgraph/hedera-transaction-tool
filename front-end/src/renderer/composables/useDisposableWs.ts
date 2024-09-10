@@ -1,4 +1,4 @@
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { onBeforeUnmount, ref } from 'vue';
 
 import useWebsocketStore from '@renderer/stores/storeWebsocketConnection';
 
@@ -8,20 +8,14 @@ export default function useDisposableWs() {
   const disposers = ref<(() => void)[]>([]);
 
   /* Methods */
-  function on(event: string, callback: (data: any) => void) {
-    disposers.value.push(ws.on(event, callback));
-  }
-
-  function off(event: string) {
-    ws.fullOffEvent(event);
+  function on(serverUrl: string, event: string, callback: (data: any) => void) {
+    disposers.value.push(ws.on(serverUrl, event, callback));
   }
 
   /* Hooks */
-  onMounted(async () => {});
-
   onBeforeUnmount(() => {
     disposers.value.forEach(dispose => dispose());
   });
 
-  return { on, off };
+  return { on };
 }

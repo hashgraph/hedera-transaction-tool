@@ -3,40 +3,50 @@ import type { IGroup } from '@renderer/services/organization';
 import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
 import { computed, inject, onMounted, ref } from 'vue';
-import AppButton from '@renderer/components/ui/AppButton.vue';
 import { useRouter } from 'vue-router';
-import useUserStore from '@renderer/stores/storeUser';
-import {
-  isLoggedInOrganization,
-  isLoggedInWithPassword,
-  isUserLoggedIn,
-} from '@renderer/utils/userStoreHelpers';
 import { Transaction } from '@hashgraph/sdk';
+
+import { TRANSACTION_ACTION } from '@main/shared/constants';
+import { TransactionStatus } from '@main/shared/interfaces';
+
+import useUserStore from '@renderer/stores/storeUser';
+import useNetwork from '@renderer/stores/storeNetwork';
+import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
+
 import { useToast } from 'vue-toast-notification';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
-import useNetwork from '@renderer/stores/storeNetwork';
+
 import {
   fullUploadSignatures,
   getApiGroupById,
   getUserShouldApprove,
   sendApproverChoice,
 } from '@renderer/services/organization';
-import { publicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
 import { hexToUint8Array } from '@renderer/services/electronUtilsService';
-import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
-import { TransactionStatus } from '@main/shared/interfaces';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
+
 import {
   getDateStringExtended,
   getPrivateKey,
   getTransactionBodySignatureWithoutNodeAccountId,
 } from '@renderer/utils';
+import {
+  isLoggedInOrganization,
+  isLoggedInWithPassword,
+  isUserLoggedIn,
+} from '@renderer/utils/userStoreHelpers';
+import { publicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
+
+import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
+
+import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Stores */
 const user = useUserStore();
 const network = useNetwork();
+const wsStore = useWebsocketConnection();
 
 /* Composables */
 const router = useRouter();
@@ -234,6 +244,14 @@ const handleApproveAll = async (approved: boolean, showModal?: boolean) => {
   await callback();
 };
 
+const subscribeToTransactionAction = () => {
+  if (!user.selectedOrganization?.serverUrl) return;
+  ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
+    const id = router.currentRoute.value.params.id;
+    await handleFetchGroup(Array.isArray(id) ? id[0] : id);
+  });
+};
+
 /* Hooks */
 onMounted(async () => {
   const id = router.currentRoute.value.params.id;
@@ -242,11 +260,14 @@ onMounted(async () => {
     return;
   }
 
-  ws.on('transaction_action', async () => {
-    await handleFetchGroup(Array.isArray(id) ? id[0] : id);
-  });
-
+  subscribeToTransactionAction();
   await handleFetchGroup(Array.isArray(id) ? id[0] : id);
+});
+
+/* Watchers */
+wsStore.$onAction(ctx => {
+  if (ctx.name !== 'setup') return;
+  ctx.after(() => subscribeToTransactionAction());
 });
 </script>
 <template>

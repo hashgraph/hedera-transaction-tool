@@ -38,7 +38,6 @@ const useNotificationsStore = defineStore('notifications', () => {
   async function setup() {
     await fetchPreferences();
     await fetchNotifications();
-    await listenForUpdates();
   }
 
   /** Preferences **/
@@ -95,31 +94,25 @@ const useNotificationsStore = defineStore('notifications', () => {
     notifications.value = { ...notifications.value };
   }
 
-  async function listenForUpdates() {
-    ws.on(NOTIFICATIONS_NEW, async e => {
-      const notification: INotificationReceiver = e.data;
-      const notificationsKey = user.selectedOrganization?.serverUrl || '';
+  function listenForUpdates() {
+    const severUrls = user.organizations.map(o => o.serverUrl);
+    for (const severUrl of severUrls) {
+      ws.on(severUrl, NOTIFICATIONS_NEW, e => {
+        const notification: INotificationReceiver = e.data;
 
-      if (!notificationsKey) return;
+        notifications.value[severUrl] = [...notifications.value[severUrl], notification];
+        notifications.value = { ...notifications.value };
+      });
 
-      notifications.value[notificationsKey] = [
-        ...notifications.value[notificationsKey],
-        notification,
-      ];
-      notifications.value = { ...notifications.value };
-    });
+      ws.on(severUrl, NOTIFICATIONS_INDICATORS_DELETE, e => {
+        const notificationReceiverIds: number[] = e.data.notificationReceiverIds;
 
-    ws.on(NOTIFICATIONS_INDICATORS_DELETE, async e => {
-      const notificationReceiverIds: number[] = e.data.notificationReceiverIds;
-      const notificationsKey = user.selectedOrganization?.serverUrl || '';
-
-      if (!notificationsKey) return;
-
-      notifications.value[notificationsKey] = notifications.value[notificationsKey].filter(
-        nr => !notificationReceiverIds.includes(nr.id),
-      );
-      notifications.value = { ...notifications.value };
-    });
+        notifications.value[severUrl] = notifications.value[severUrl].filter(
+          nr => !notificationReceiverIds.includes(nr.id),
+        );
+        notifications.value = { ...notifications.value };
+      });
+    }
   }
 
   async function markAsRead(type: NotificationType) {
@@ -143,6 +136,12 @@ const useNotificationsStore = defineStore('notifications', () => {
     );
     notifications.value = { ...notifications.value };
   }
+
+  ws.$onAction(ctx => {
+    if (ctx.name === 'setup') {
+      ctx.after(() => listenForUpdates());
+    }
+  });
 
   return {
     notificationsPreferences,

@@ -14,6 +14,7 @@ import { TRANSACTION_ACTION } from '@main/shared/constants';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
+import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 
 import { useToast } from 'vue-toast-notification';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
@@ -70,6 +71,7 @@ import ReadOnlyApproversList from '@renderer/components/Approvers/ReadOnlyApprov
 const user = useUserStore();
 const network = useNetwork();
 const contacts = useContactsStore();
+const wsStore = useWebsocketConnection();
 
 /* Composables */
 const router = useRouter();
@@ -492,6 +494,14 @@ function redirectToHistory() {
   });
 }
 
+const subscribeToTransactionAction = () => {
+  if (!user.selectedOrganization?.serverUrl) return;
+  ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
+    const id = router.currentRoute.value.params.id;
+    await fetchTransaction(Array.isArray(id) ? id[0] : id);
+  });
+};
+
 /* Hooks */
 onBeforeMount(async () => {
   const id = router.currentRoute.value.params.id;
@@ -500,14 +510,17 @@ onBeforeMount(async () => {
     return;
   }
 
-  ws.on(TRANSACTION_ACTION, async () => {
-    await fetchTransaction(Array.isArray(id) ? id[0] : id);
-  });
+  subscribeToTransactionAction();
 
   await fetchTransaction(Array.isArray(id) ? id[0] : id);
 });
 
 /* Watchers */
+wsStore.$onAction(ctx => {
+  if (ctx.name !== 'setup') return;
+  ctx.after(() => subscribeToTransactionAction());
+});
+
 watch(
   () => user.selectedOrganization,
   () => {

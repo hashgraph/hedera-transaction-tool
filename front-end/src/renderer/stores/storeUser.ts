@@ -132,28 +132,14 @@ const useUserStore = defineStore('user', () => {
 
   /* Organization */
   const selectOrganization = async (organization: Organization | null) => {
-    ws.setSocket(null);
     await nextTick();
 
     if (!organization) {
       selectedOrganization.value = null;
       await ush.afterOrganizationSelection(personal.value, selectedOrganization, keyPairs, router);
-      await Promise.allSettled([contacts.fetch(), notifications.setup()]);
+      await Promise.allSettled([contacts.fetch(), notifications.setup(), ws.setup()]);
     } else {
       selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
-
-      const NOTIFICATIONS_SERVICE_PORT = 3020; // See docker-compose.yml in the back-end folder
-      if (selectedOrganization.value.isServerActive && !selectedOrganization.value.loginRequired) {
-        try {
-          ws.setSocket(
-            selectedOrganization.value.serverUrl.includes('localhost')
-              ? `ws://localhost:${NOTIFICATIONS_SERVICE_PORT}/`
-              : `${selectedOrganization.value.serverUrl}/`,
-          );
-        } catch (error) {
-          console.log(error);
-        }
-      }
 
       try {
         await ush.afterOrganizationSelection(
@@ -166,7 +152,11 @@ const useUserStore = defineStore('user', () => {
         await selectOrganization(null);
       }
 
-      const results = await Promise.allSettled([contacts.fetch(), notifications.setup()]);
+      const results = await Promise.allSettled([
+        contacts.fetch(),
+        notifications.setup(),
+        ws.setup(),
+      ]);
 
       results.forEach(result => {
         if (result.status === 'rejected') {
