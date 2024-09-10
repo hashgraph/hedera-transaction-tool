@@ -13,6 +13,7 @@ import { TRANSACTION_ACTION } from '@main/shared/constants';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
+import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
@@ -42,6 +43,7 @@ import TransactionsFilter from '@renderer/components/Filter/TransactionsFilter.v
 const user = useUserStore();
 const network = useNetworkStore();
 const notifications = useNotificationsStore();
+const wsStore = useWebsocketConnection();
 
 /* Composables */
 const router = useRouter();
@@ -136,8 +138,10 @@ function createFindArgs(): Prisma.TransactionFindManyArgs {
 }
 
 function setNotifiedTransactions() {
+  const notificationsKey = user.selectedOrganization?.serverUrl || '';
+
   notifiedTransactionIds.value = getNotifiedTransactions(
-    notifications.notifications.concat(oldNotifications.value),
+    notifications.notifications[notificationsKey]?.concat(oldNotifications.value) || [],
     organizationTransactions.value.map(t => t.transactionRaw),
     [
       NotificationType.TRANSACTION_INDICATOR_EXECUTED,
@@ -184,28 +188,28 @@ async function fetchTransactions() {
   }
 }
 
-/* Hooks */
-onBeforeMount(async () => {
-  ws.on(TRANSACTION_ACTION, async () => {
+const subscribeToTransactionAction = () => {
+  if (!user.selectedOrganization?.serverUrl) return;
+  ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
     await fetchTransactions();
   });
+};
+
+/* Hooks */
+onBeforeMount(async () => {
+  subscribeToTransactionAction();
   await fetchTransactions();
 });
 
 /* Watchers */
+wsStore.$onAction(ctx => {
+  if (ctx.name !== 'setup') return;
+  ctx.after(() => subscribeToTransactionAction());
+});
+
 watch([currentPage, pageSize, () => user.selectedOrganization, orgFilters], async () => {
   await fetchTransactions();
 });
-
-watch(
-  () => user.selectedOrganization,
-  async () => {
-    ws.off(TRANSACTION_ACTION);
-    ws.on(TRANSACTION_ACTION, async () => {
-      await fetchTransactions();
-    });
-  },
-);
 
 watch(
   () => notifications.notifications,

@@ -7,7 +7,6 @@ import { Network } from '@main/shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
-import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
@@ -52,7 +51,6 @@ const networkMapping: {
 /* Stores */
 const user = useUserStore();
 const networkStore = useNetworkStore();
-const ws = useWebsocketConnection();
 
 /* Composables */
 const router = useRouter();
@@ -65,7 +63,6 @@ const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADE
 /* Handlers */
 const handleLogout = async () => {
   if (user.selectedOrganization) {
-    ws.setSocket(null);
     await nextTick();
 
     const { id, nickname, serverUrl, key } = user.selectedOrganization;
