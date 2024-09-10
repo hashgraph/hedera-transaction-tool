@@ -288,14 +288,29 @@ onBeforeRouteLeave(async to => {
         <h2 class="text-title text-bold">Create Transaction Group</h2>
       </div>
       <form class="mt-5" @submit.prevent="handleSaveGroup">
-        <div class="form-group col-6">
-          <label class="form-label">Transaction Group Name</label>
-          <AppInput
-            v-model="groupName"
-            @update:modelValue="nameUpdated"
-            filled
-            placeholder="Enter Name"
-          />
+        <div class="d-flex justify-content-between">
+          <div class="form-group col-6">
+            <label class="form-label">Transaction Group Name</label>
+            <AppInput
+              v-model="groupName"
+              @update:modelValue="nameUpdated"
+              filled
+              placeholder="Enter Name"
+            />
+          </div>
+          <div class="mt-4 align-self-end">
+            <AppButton color="primary" type="submit">Save Group</AppButton>
+            <AppButton color="primary" type="button" @click="handleSignSubmit" class="ms-4">
+              <span class="bi bi-send"></span>
+              {{
+                getPropagationButtonLabel(
+                  transactionKey,
+                  user.keyPairs,
+                  Boolean(user.selectedOrganization),
+                )
+              }}</AppButton
+            >
+          </div>
         </div>
         <hr class="separator my-5 w-100" />
         <div class="d-flex justify-content-between">
@@ -349,19 +364,6 @@ onBeforeRouteLeave(async to => {
                 </AppButton>
               </div>
             </div>
-          </div>
-          <div class="mt-4">
-            <AppButton color="primary" type="submit">Save Group</AppButton>
-            <AppButton color="primary" type="button" @click="handleSignSubmit" class="ms-4">
-              <span class="bi bi-send"></span>
-              {{
-                getPropagationButtonLabel(
-                  transactionKey,
-                  user.keyPairs,
-                  Boolean(user.selectedOrganization),
-                )
-              }}</AppButton
-            >
           </div>
         </div>
       </form>
