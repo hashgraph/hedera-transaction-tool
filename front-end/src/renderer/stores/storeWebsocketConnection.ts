@@ -28,7 +28,7 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
     });
 
     socket.value.on('connect', () => {
-      console.log(`Connected to server with id: ${socket.value?.id}`);
+      console.log(`Connected to server ${url} with id: ${socket.value?.id}`);
     });
 
     socket.value.on('connect_error', error => {
