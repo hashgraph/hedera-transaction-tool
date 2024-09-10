@@ -61,7 +61,6 @@ onMounted(async () => {
   );
 });
 
-/* Hooks */
 onMounted(async () => {
   await network.setup();
   await setClient(network.network);
