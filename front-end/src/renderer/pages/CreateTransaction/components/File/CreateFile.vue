@@ -495,7 +495,7 @@ watch(payerData.isValid, isValid => {
                       new Date() >= getMinimumExpirationTime() &&
                       new Date() <= getMaximumExpirationTime()
                     "
-                    class="min-w-unset"
+                    class="text-body min-w-unset"
                     size="small"
                     type="button"
                     @click="$emit('update:validStart', new Date())"

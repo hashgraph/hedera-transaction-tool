@@ -408,7 +408,7 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
               <template #action-row>
                 <div class="d-flex justify-content-end gap-4 w-100">
                   <AppButton
-                    class="min-w-unset"
+                    class="text-body min-w-unset"
                     size="small"
                     type="button"
                     @click="$emit('update:validStart', new Date())"
