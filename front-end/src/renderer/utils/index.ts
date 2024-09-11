@@ -62,7 +62,7 @@ export const convertBytes = (
 };
 
 export const getUInt8ArrayFromBytesString = (bytes: string) => {
-  const numberArray = bytes.split(',').map(n => Number(n));
+  const numberArray = bytes.trim().length === 0 ? [] : bytes.split(',').map(n => Number(n));
 
   return Uint8Array.from(numberArray);
 };
