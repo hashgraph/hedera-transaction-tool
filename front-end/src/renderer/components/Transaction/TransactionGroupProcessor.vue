@@ -473,7 +473,7 @@ defineExpose({
             >Cancel</AppButton
           >
           <AppButton color="primary" type="button" @click.prevent="handleConfirmTransaction"
-            >Submit</AppButton
+            >Confirm</AppButton
           >
         </div>
       </div>
