@@ -29,7 +29,7 @@ export const remove = async (userId: string, fileIds: string[]) =>
     return await window.electronAPI.local.files.remove(userId, fileIds);
   }, 'File unlink failed');
 
-export const showContentInTemp = async (userId: string, fileId: string) =>
+export const showStoredFileInTemp = async (userId: string, fileId: string) =>
   commonIPCHandler(async () => {
-    await window.electronAPI.local.files.showContentInTemp(userId, fileId);
+    await window.electronAPI.local.files.showStoredFileInTemp(userId, fileId);
   }, 'Failed to open file');

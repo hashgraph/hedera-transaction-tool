@@ -26,6 +26,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
+import { DISPLAY_FILE_SIZE_LIMIT } from '@main/shared/constants';
 
 /* Stores */
 const user = useUserStore();
@@ -46,7 +47,7 @@ const content = ref('');
 const isLoading = ref(false);
 const storedFiles = ref<HederaFile[]>([]);
 
-/* Handlers */
+/* Functions */
 const readFile = async () => {
   if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
   const personalPassword = user.getPassword();
@@ -78,67 +79,15 @@ const readFile = async () => {
       keyPair.public_key,
     );
 
-    const query = new FileContentsQuery()
-      .setMaxQueryPayment(maxQueryFee.value as Hbar)
-      .setFileId(fileId.value);
-
-    const response = await executeQuery(
-      query.toBytes(),
-      payerData.accountId.value,
-      privateKey,
-      keyPair.type,
-    );
-
-    if (isHederaSpecialFileId(fileId.value)) {
-      content.value = response;
-    } else {
-      const decoder = new TextDecoder('utf-8');
-      const text = decoder.decode(response);
-
-      content.value = text;
-    }
+    const response = await readContent(privateKey, keyPair.type);
 
     toast.success('File content read', { position: 'bottom-right' });
 
-    try {
-      const fileInfoQuery = new FileInfoQuery()
-        .setMaxQueryPayment(maxQueryFee.value as Hbar)
-        .setFileId(fileId.value);
+    const contentBytes = (
+      isHederaSpecialFileId(fileId.value) ? encodeString(response) : response
+    ).join(',');
 
-      const infoResponse = await executeQuery(
-        fileInfoQuery.toBytes(),
-        payerData.accountId.value,
-        privateKey,
-        keyPair.type,
-      );
-
-      const contentBytes = (
-        isHederaSpecialFileId(fileId.value) ? encodeString(response) : response
-      ).join(',');
-
-      if (storedFiles.value.some(f => f.file_id === fileId.value)) {
-        await update(fileId.value, user.personal.id, {
-          contentBytes,
-          metaBytes: infoResponse.join(','),
-          lastRefreshed: new Date(),
-        });
-
-        toast.success('Stored file info updated', { position: 'bottom-right' });
-      } else {
-        await add({
-          user_id: user.personal.id,
-          file_id: fileId.value,
-          network: network.network,
-          contentBytes,
-          metaBytes: infoResponse.join(','),
-          lastRefreshed: new Date(),
-        });
-
-        toast.success(`File ${fileId.value} linked`, { position: 'bottom-right' });
-      }
-    } catch (error: any) {
-      toast.error(error?.message || 'Failed to add/update file info', { position: 'bottom-right' });
-    }
+    await updateLocalFileInfo(contentBytes, privateKey, keyPair.type);
   } catch (err: any) {
     let message = 'Failed to execute query';
     if (err.message && typeof err.message === 'string') {
@@ -148,6 +97,69 @@ const readFile = async () => {
   } finally {
     network.client._operator = null;
     isLoading.value = false;
+  }
+};
+
+const readContent = async (privateKey: string, privateKeyType: string) => {
+  const query = new FileContentsQuery()
+    .setMaxQueryPayment(maxQueryFee.value as Hbar)
+    .setFileId(fileId.value);
+
+  const response = await executeQuery(
+    query.toBytes(),
+    payerData.accountId.value,
+    privateKey,
+    privateKeyType,
+  );
+
+  if (isHederaSpecialFileId(fileId.value)) {
+    content.value = response;
+  } else if (response.length <= DISPLAY_FILE_SIZE_LIMIT) {
+    const decoder = new TextDecoder('utf-8');
+    const text = decoder.decode(response);
+    content.value = text;
+  }
+
+  return response;
+};
+
+const updateLocalFileInfo = async (content: string, privateKey: string, privateKeyType: string) => {
+  if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+
+  try {
+    const fileInfoQuery = new FileInfoQuery()
+      .setMaxQueryPayment(maxQueryFee.value as Hbar)
+      .setFileId(fileId.value);
+
+    const infoResponse = await executeQuery(
+      fileInfoQuery.toBytes(),
+      payerData.accountId.value,
+      privateKey,
+      privateKeyType,
+    );
+
+    if (storedFiles.value.some(f => f.file_id === fileId.value)) {
+      await update(fileId.value, user.personal.id, {
+        contentBytes: content,
+        metaBytes: infoResponse.join(','),
+        lastRefreshed: new Date(),
+      });
+
+      toast.success('Stored file info updated', { position: 'bottom-right' });
+    } else {
+      await add({
+        user_id: user.personal.id,
+        file_id: fileId.value,
+        network: network.network,
+        contentBytes: content,
+        metaBytes: infoResponse.join(','),
+        lastRefreshed: new Date(),
+      });
+
+      toast.success(`File ${fileId.value} linked`, { position: 'bottom-right' });
+    }
+  } catch (error: any) {
+    toast.error(error?.message || 'Failed to add/update file info', { position: 'bottom-right' });
   }
 };
 

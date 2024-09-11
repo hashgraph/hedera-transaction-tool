@@ -17,14 +17,12 @@ import {
 } from '@main/services/localUser/transactions';
 
 import * as SDK from '@hashgraph/sdk';
-import * as path from 'path';
-import fs from 'fs/promises';
 import { getKeyPairs } from '@main/services/localUser/keyPairs';
+import { showContentInTemp } from '@main/services/localUser/files';
 import { decrypt } from '@main/utils/crypto';
 import { getNumberArrayFromString } from '@main/utils';
 import { getStatusCodeFromMessage } from '@main/utils/sdk';
 import { KeyPair, Prisma } from '@prisma/client';
-import { app, shell } from 'electron';
 import {
   decodeProto,
   encodeHederaSpecialFile,
@@ -34,7 +32,6 @@ import {
 vi.mock('crypto', () => ({ randomUUID: vi.fn() }));
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
 vi.mock('@main/db/prisma');
-vi.mock('electron', () => ({ app: { getPath: vi.fn() }, shell: { showItemInFolder: vi.fn() } }));
 vi.mock('@hashgraph/sdk', async importOriginal => {
   return {
     ...(await importOriginal<typeof import('@hashgraph/sdk')>()),
@@ -42,6 +39,9 @@ vi.mock('@hashgraph/sdk', async importOriginal => {
 });
 vi.mock('@main/services/localUser/keyPairs', () => ({
   getKeyPairs: vi.fn(),
+}));
+vi.mock('@main/services/localUser/files', () => ({
+  showContentInTemp: vi.fn(),
 }));
 vi.mock('@main/utils/crypto', () => ({
   decrypt: vi.fn(),
@@ -364,22 +364,40 @@ describe('Services Local User Transactions', () => {
     test('Should write response to file and show in folder if response is a large buffer', async () => {
       const queryBytes = new Uint8Array([1, 2, 3]);
       const accountId = '0.0.1234';
+      const fileId = '0.0.4321';
       const privateKey = '302e020100300506032b657004220420';
       const privateKeyType = 'ED25519';
       const response = Buffer.from(new Array(1000002).join('a'), 'utf-8');
-      const queryMock = new SDK.FileContentsQuery().setFileId(accountId);
+      const queryMock = new SDK.FileContentsQuery().setFileId(fileId);
       queryMock.execute = vi.fn().mockResolvedValue(response);
 
       vi.spyOn(SDK.Query, 'fromBytes').mockReturnValue(queryMock as unknown as SDK.Query<any>);
       vi.spyOn(SDK.PrivateKey, 'fromStringED25519').mockReturnValue(
         privateKey as unknown as SDK.PrivateKey,
       );
-      vi.mocked(app.getPath).mockReturnValue('/temp');
 
       await executeQuery(queryBytes, accountId, privateKey, privateKeyType);
 
-      expect(fs.writeFile).toHaveBeenCalledWith(path.join('/temp', `${accountId}.txt`), response);
-      expect(shell.showItemInFolder).toHaveBeenCalledWith(path.join('/temp', `${accountId}.txt`));
+      expect(showContentInTemp).toHaveBeenCalledWith(response, fileId);
+    });
+
+    test('Should write response to file without fileId and show in folder if response is a large buffer', async () => {
+      const queryBytes = new Uint8Array([1, 2, 3]);
+      const accountId = '0.0.1234';
+      const privateKey = '302e020100300506032b657004220420';
+      const privateKeyType = 'ED25519';
+      const response = Buffer.from(new Array(1000002).join('a'), 'utf-8');
+      const queryMock = new SDK.FileContentsQuery();
+      queryMock.execute = vi.fn().mockResolvedValue(response);
+
+      vi.spyOn(SDK.Query, 'fromBytes').mockReturnValue(queryMock as unknown as SDK.Query<any>);
+      vi.spyOn(SDK.PrivateKey, 'fromStringED25519').mockReturnValue(
+        privateKey as unknown as SDK.PrivateKey,
+      );
+
+      await executeQuery(queryBytes, accountId, privateKey, privateKeyType);
+
+      expect(showContentInTemp).toHaveBeenCalledWith(response, '');
     });
 
     test('Should decode response if query is FileContentsQuery and file is a special file', async () => {

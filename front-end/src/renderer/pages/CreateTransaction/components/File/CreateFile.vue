@@ -14,7 +14,7 @@ import {
   TransactionResponse,
 } from '@hashgraph/sdk';
 
-import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+import { DISPLAY_FILE_SIZE_LIMIT, MEMO_MAX_LENGTH } from '@main/shared/constants';
 
 import { Prisma } from '@prisma/client';
 
@@ -64,9 +64,6 @@ const toast = useToast();
 const router = useRouter();
 const route = useRoute();
 const payerData = useAccountId();
-
-/* Constants */
-const DISPLAY_FILE_SIZE_LIMIT = 512 * 1024;
 
 /* State */
 const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);

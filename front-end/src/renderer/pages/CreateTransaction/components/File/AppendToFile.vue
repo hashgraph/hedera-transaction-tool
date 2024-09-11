@@ -4,7 +4,7 @@ import type { TransactionApproverDto } from '@main/shared/interfaces/organizatio
 import { computed, ref, watch, onMounted } from 'vue';
 import { FileAppendTransaction, Hbar, Key, KeyList, Transaction } from '@hashgraph/sdk';
 
-import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+import { DISPLAY_FILE_SIZE_LIMIT, MEMO_MAX_LENGTH } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
@@ -44,9 +44,6 @@ const toast = useToast();
 const router = useRouter();
 const route = useRoute();
 const payerData = useAccountId();
-
-/* Constants */
-const DISPLAY_FILE_SIZE_LIMIT = 512 * 1024;
 
 /* State */
 const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);

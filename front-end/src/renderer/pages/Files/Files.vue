@@ -7,6 +7,8 @@ import { FileId, FileInfo } from '@hashgraph/sdk';
 
 import { Prisma } from '@prisma/client';
 
+import { DISPLAY_FILE_SIZE_LIMIT } from '@main/shared/constants';
+
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
@@ -14,7 +16,7 @@ import { useToast } from 'vue-toast-notification';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
-import { getAll, remove, showContentInTemp, update } from '@renderer/services/filesService';
+import { getAll, remove, showStoredFileInTemp, update } from '@renderer/services/filesService';
 import { flattenKeyList, getKeyListLevels } from '@renderer/services/keyPairService';
 
 import { getUInt8ArrayFromBytesString, convertBytes } from '@renderer/utils';
@@ -128,6 +130,7 @@ useSetDynamicLayout({
 // const files = ref<HederaFile[]>(specialFiles);
 const files = ref<HederaFile[]>([]);
 const selectedFile = ref<HederaFile | null>(null);
+const selectedFileDisplayContent = ref<string | null>(null);
 const isUnlinkFileModalShown = ref(false);
 const isKeyStructureModalShown = ref(false);
 const isNicknameInputShown = ref(false);
@@ -168,6 +171,7 @@ const handleSelectFile = (fileId: string) => {
   } else {
     selectedFile.value = files.value.find(f => f.file_id === fileId) || null;
     selectedFileIds.value = [fileId];
+    syncSelectedFileDisplayContent();
   }
 };
 
@@ -195,7 +199,6 @@ const handleUnlinkFile = async () => {
     throw new Error('Please select file first');
   }
 
-  // files.value = specialFiles.concat(await remove(user.personal.id, selectedFile.value.file_id));
   await remove(user.personal.id, [...selectedFileIds.value]);
   await fetchFiles();
 
@@ -207,7 +210,6 @@ const handleUnlinkFile = async () => {
 };
 
 const handleStartNicknameEdit = () => {
-  // if (!selectedFile.value || specialFilesIds.includes(selectedFile.value.id)) return;
   if (!selectedFile.value) return;
 
   isNicknameInputShown.value = true;
@@ -232,11 +234,6 @@ const handleChangeNickname = async () => {
   }
 
   if (selectedFile.value) {
-    // files.value = specialFiles.concat(
-    //   await update(selectedFile.value.file_id, user.personal.id, {
-    //     nickname: nicknameInputRef.value?.inputRef?.value,
-    //   }),
-    // );
     await update(selectedFile.value.file_id, user.personal.id, {
       nickname: nicknameInputRef.value?.inputRef?.value,
     });
@@ -245,7 +242,6 @@ const handleChangeNickname = async () => {
 };
 
 const handleStartDescriptionEdit = () => {
-  // if (!selectedFile.value || specialFilesIds.includes(selectedFile.value.id)) return;
   if (!selectedFile.value) return;
 
   isDescriptionInputShown.value = true;
@@ -267,11 +263,6 @@ const handleChangeDescription = async () => {
   }
 
   if (selectedFile.value) {
-    // files.value = specialFiles.concat(
-    //   await update(selectedFile.value.file_id, user.personal.id, {
-    //     description: descriptionInputRef.value?.value,
-    //   }),
-    // );
     await update(selectedFile.value.file_id, user.personal.id, {
       description: descriptionInputRef.value?.value,
     });
@@ -312,10 +303,29 @@ function resetSelectedAccount() {
   selectedFileIds.value = selectedFile.value?.file_id ? [selectedFile.value?.file_id] : [];
 }
 
+function syncSelectedFileDisplayContent() {
+  const content = getUInt8ArrayFromBytesString(selectedFile.value?.contentBytes || '');
+
+  try {
+    if (
+      selectedFile.value === null ||
+      content.length === 0 ||
+      content.length > DISPLAY_FILE_SIZE_LIMIT
+    ) {
+      throw new Error('File content is empty or too large');
+    }
+
+    selectedFileDisplayContent.value = new TextDecoder().decode(content);
+  } catch {
+    selectedFileDisplayContent.value = null;
+  }
+}
+
 /* Hooks */
 onMounted(async () => {
   await fetchFiles();
   resetSelectedAccount();
+  syncSelectedFileDisplayContent();
 });
 
 /* Watchers */
@@ -599,6 +609,7 @@ watch(files, newFiles => {
                   </div>
                 </div>
               </div>
+
               <p class="text-secondary text-small text-semi-bold mt-3">
                 <template v-if="selectedFile.lastRefreshed">
                   Last Viewed:
@@ -606,7 +617,9 @@ watch(files, newFiles => {
                 </template>
                 <template v-else> You haven't read this file yet </template>
               </p>
+
               <hr class="separator my-4" />
+
               <div class="fill-remaining overflow-x-hidden pe-3">
                 <div class="row">
                   <div class="col-5">
@@ -628,6 +641,7 @@ watch(files, newFiles => {
                     </p>
                   </div>
                 </div>
+
                 <div class="mt-4 row">
                   <div class="col-5">
                     <p class="text-small text-semi-bold">Size</p>
@@ -644,7 +658,11 @@ watch(files, newFiles => {
                     </p>
                   </div>
                 </div>
-                <div class="mt-4 row" v-if="selectedFile.contentBytes">
+
+                <div
+                  class="mt-4 row"
+                  v-if="selectedFile.contentBytes && !selectedFileDisplayContent"
+                >
                   <div class="col-5">
                     <p class="text-small text-semi-bold">Content</p>
                   </div>
@@ -654,12 +672,13 @@ watch(files, newFiles => {
                       size="small"
                       @click="
                         isUserLoggedIn(user.personal) &&
-                          showContentInTemp(user.personal.id, selectedFile.file_id)
+                          showStoredFileInTemp(user.personal.id, selectedFile.file_id)
                       "
                       >View</AppButton
                     >
                   </div>
                 </div>
+
                 <div class="mt-4 row" v-if="selectedFileInfo?.keys">
                   <div class="col-5">
                     <p class="text-small text-semi-bold">Key</p>
@@ -686,6 +705,7 @@ watch(files, newFiles => {
                     </template>
                   </div>
                 </div>
+
                 <div class="mt-4 row">
                   <div class="col-5"><p class="text-small text-semi-bold">Memo</p></div>
                   <div class="col-7">
@@ -700,6 +720,7 @@ watch(files, newFiles => {
                     </p>
                   </div>
                 </div>
+
                 <div class="mt-4 row">
                   <div class="col-5">
                     <p class="text-small text-semi-bold">Ledger ID</p>
@@ -710,6 +731,7 @@ watch(files, newFiles => {
                     </p>
                   </div>
                 </div>
+
                 <div class="mt-4 row">
                   <div class="col-5"><p class="text-small text-semi-bold">Expires At</p></div>
                   <div class="col-7">
@@ -726,7 +748,9 @@ watch(files, newFiles => {
                   <hr class="separator my-4" />
                   <p class="text-danger">File is deleted</p>
                 </template>
+
                 <hr class="separator my-4" />
+
                 <div class="mt-4 row align-items-start">
                   <div class="col-5">
                     <div class="text-small text-semi-bold">Description</div>
@@ -763,6 +787,20 @@ watch(files, newFiles => {
                         @click="handleStartDescriptionEdit"
                       ></span>
                     </p>
+                  </div>
+                </div>
+
+                <div class="mt-4" v-if="selectedFileDisplayContent">
+                  <div>
+                    <p class="text-small text-semi-bold">Content</p>
+                  </div>
+                  <div class="mt-2">
+                    <textarea
+                      :value="selectedFileDisplayContent"
+                      class="form-control is-fill"
+                      rows="11"
+                      disabled
+                    ></textarea>
                   </div>
                 </div>
               </div>

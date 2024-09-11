@@ -18,8 +18,8 @@ export default {
     ): Promise<HederaFile[]> => ipcRenderer.invoke('files:update', fileId, userId, file),
     remove: (userId: string, fileIds: string[]): Promise<HederaFile[]> =>
       ipcRenderer.invoke('files:remove', userId, fileIds),
-    showContentInTemp: (userId: string, fileId: string): Promise<void> =>
-      ipcRenderer.invoke('files:showContentInTemp', userId, fileId),
+    showStoredFileInTemp: (userId: string, fileId: string): Promise<void> =>
+      ipcRenderer.invoke('files:showStoredFileInTemp', userId, fileId),
     decodeProto: (fileId: HederaSpecialFileId, bytes: Uint8Array): Promise<string | undefined> =>
       ipcRenderer.invoke('files:decodeProto', fileId, bytes),
   },
