@@ -109,7 +109,7 @@ watch(router.currentRoute, newRoute => {
         >
           <AppButton
             data-testid="button-restore"
-            color="borderless"
+            color="secondary"
             @click="$router.push({ name: 'restoreKey' })"
           >
             Restore
