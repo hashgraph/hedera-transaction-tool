@@ -467,9 +467,9 @@ watch(isDeleteModalShown, newVal => {
               "
               class="text-center mt-4"
             >
-              You are about the delete the last key pair associated with your recovery phrase you
-              have used to set up the Transaction Tool. If you choose to proceed, you will have to
-              go through creating or importing a recovery phrase again. Do you wish to continue?
+              You are about to delete the last key pair associated with the recovery phrase you have
+              used to set up the Transaction Tool. If you choose to proceed, you will have to go
+              through creating or importing a recovery phrase again. Do you wish to continue?
             </p>
             <div class="d-grid mt-5">
               <AppButton
