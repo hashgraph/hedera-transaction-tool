@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import type { DatePickerInstance } from '@vuepic/vue-datepicker';
-
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 import { useRoute } from 'vue-router';
 
@@ -16,13 +15,10 @@ import { getDraft } from '@renderer/services/transactionDraftsService';
 import { formatAccountId, getTransactionFromBytes, stringifyHbar } from '@renderer/utils';
 import { flattenAccountIds } from '@renderer/utils/userStoreHelpers';
 
-import DatePicker from '@vuepic/vue-datepicker';
-
 import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
-import AppButton from '@renderer/components/ui/AppButton.vue';
-import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
+import RunningClockDatePicker from '@renderer/components/Wrapped/RunningClockDatePicker.vue';
 
 /* Props */
 const props = defineProps<{
@@ -44,8 +40,6 @@ const account = useAccountId();
 
 /* State */
 const localValidStart = ref<Date>(props.validStart);
-const datePicker = ref<DatePickerInstance>(null);
-const intervalId = ref<ReturnType<typeof setInterval> | null>(null);
 
 /* Computed */
 const accoundIds = computed<string[]>(() => flattenAccountIds(user.publicKeyToAccounts));
@@ -87,19 +81,6 @@ const loadFromDraftBytes = async (transactionBytes: string) => {
   }
 };
 
-function startInterval() {
-  intervalId.value = setInterval(() => {
-    const now = new Date();
-    if (localValidStart.value < now) {
-      emit('update:validStart', now);
-    }
-  }, 1000);
-}
-
-function stopInterval() {
-  intervalId.value && clearInterval(intervalId.value);
-}
-
 /* Hooks */
 onMounted(async () => {
   // Check if this is loading from draft, or group item, or is a
@@ -118,12 +99,6 @@ onMounted(async () => {
       emit('update:payerId', allAccounts[0].account || '');
     }
   }
-
-  startInterval();
-});
-
-onUnmounted(() => {
-  stopInterval();
 });
 
 /* Watchers */
@@ -169,6 +144,7 @@ const columnClass = 'col-4 col-xxxl-3';
             @update:model-value="handlePayerChange"
             :filled="true"
             :items="accoundIds"
+            :min-date="new Date()"
             data-testid="dropdown-payer"
             placeholder="Enter Payer ID"
           />
@@ -179,50 +155,12 @@ const columnClass = 'col-4 col-xxxl-3';
       <label class="form-label"
         >Valid Start <span class="text-muted text-italic">- Local time</span></label
       >
-      <DatePicker
-        ref="datePicker"
-        data-testid="date-picker-valid-start"
+      <RunningClockDatePicker
         :model-value="validStart"
         @update:model-value="handleUpdateValidStart"
-        :clearable="false"
-        :auto-apply="true"
-        :config="{
-          keepActionRow: true,
-        }"
-        :min-date="new Date()"
-        :teleport="true"
-        enable-seconds
-        class="is-fill"
-        :ui="{
-          calendar: 'is-fill',
-          calendarCell: 'is-fill',
-          menu: 'is-fill',
-          input: 'is-fill',
-        }"
-        @open="stopInterval"
-        @closed="startInterval"
-      >
-        <template #action-row>
-          <div class="d-flex justify-content-end gap-4 w-100">
-            <AppButton
-              class="text-body min-w-unset"
-              size="small"
-              type="button"
-              @click="$emit('update:validStart', new Date())"
-            >
-              Now
-            </AppButton>
-            <AppButton
-              class="min-w-unset"
-              color="secondary"
-              size="small"
-              type="button"
-              @click="datePicker?.closeMenu()"
-              >Close</AppButton
-            >
-          </div>
-        </template>
-      </DatePicker>
+        :now-button-visible="true"
+        data-testid="date-picker-valid-start"
+      />
     </div>
     <div class="form-group" :class="[columnClass]">
       <label class="form-label">Max Transaction Fee {{ HbarUnit.Hbar._symbol }}</label>
