@@ -151,7 +151,7 @@ defineExpose({
             data-testid="button-sign-transaction"
             :loading="signing"
             :disabled="signing"
-            >Create</AppButton
+            >Confirm</AppButton
           >
         </div>
       </form>
