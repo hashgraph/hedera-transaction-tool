@@ -67,7 +67,7 @@ function handleUpdateValidStart(v: Date) {
 
 /* Functions */
 const loadFromDraftBytes = async (transactionBytes: string) => {
-    const draftTransaction = getTransactionFromBytes(transactionBytes);
+  const draftTransaction = getTransactionFromBytes(transactionBytes);
 
   if (draftTransaction.transactionId) {
     const transactionId = draftTransaction.transactionId;
@@ -109,7 +109,8 @@ onMounted(async () => {
     await loadFromDraftBytes(draft.transactionBytes);
   } else if (route.query.groupIndex) {
     await loadFromDraftBytes(
-      transactionGroup.groupItems[Number(route.query.groupIndex)].transactionBytes.toString());
+      transactionGroup.groupItems[Number(route.query.groupIndex)].transactionBytes.toString(),
+    );
   } else {
     const allAccounts = user.publicKeyToAccounts.map(a => a.accounts).flat();
     if (allAccounts.length > 0 && allAccounts[0].account) {
@@ -198,6 +199,8 @@ const columnClass = 'col-4 col-xxxl-3';
           menu: 'is-fill',
           input: 'is-fill',
         }"
+        @open="stopInterval"
+        @closed="startInterval"
       >
         <template #action-row>
           <div class="d-flex justify-content-end gap-4 w-100">
