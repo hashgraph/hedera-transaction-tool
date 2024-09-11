@@ -93,7 +93,7 @@ export const updateFile = async (
   });
 };
 
-export const showContentInTemp = async (userId: string, fileId: string) => {
+export const showStoredFileInTemp = async (userId: string, fileId: string) => {
   const prisma = getPrismaClient();
 
   let file: HederaFile | null = null;
@@ -117,8 +117,13 @@ export const showContentInTemp = async (userId: string, fileId: string) => {
     throw new Error('File content is unknown');
   }
 
-  const filePath = path.join(app.getPath('temp'), 'electronHederaFiles', `${fileId}.txt`);
   const content = Buffer.from(getNumberArrayFromString(file.contentBytes));
+
+  await showContentInTemp(content, fileId);
+};
+
+export const showContentInTemp = async (content: Buffer, fileId: string) => {
+  const filePath = path.join(app.getPath('temp'), 'electronHederaFiles', `${fileId}.txt`);
 
   try {
     const saved = await saveContentToPath(filePath, content);

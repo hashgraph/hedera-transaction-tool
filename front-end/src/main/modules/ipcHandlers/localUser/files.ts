@@ -8,7 +8,7 @@ import {
   addFile,
   getFiles,
   removeFiles,
-  showContentInTemp,
+  showStoredFileInTemp,
   updateFile,
 } from '@main/services/localUser/files';
 import { decodeProto } from '@main/utils/hederaSpecialFiles';
@@ -41,8 +41,8 @@ export default () => {
   );
 
   // Show in temp folder
-  ipcMain.handle(createChannelName('showContentInTemp'), (_e, userId: string, fileId: string) =>
-    showContentInTemp(userId, fileId),
+  ipcMain.handle(createChannelName('showStoredFileInTemp'), (_e, userId: string, fileId: string) =>
+    showStoredFileInTemp(userId, fileId),
   );
 
   // Decodes a special file proto

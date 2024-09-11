@@ -9,7 +9,7 @@ import {
   addFile,
   getFiles,
   removeFiles,
-  showContentInTemp,
+  showStoredFileInTemp,
   updateFile,
 } from '@main/services/localUser/files';
 import { ipcMain } from 'electron';
@@ -24,7 +24,7 @@ vi.mock('@main/services/localUser/files', () => ({
   addFile: vi.fn(),
   getFiles: vi.fn(),
   removeFiles: vi.fn(),
-  showContentInTemp: vi.fn(),
+  showStoredFileInTemp: vi.fn(),
   updateFile: vi.fn(),
 }));
 vi.mock('@main/utils/hederaSpecialFiles', () => ({
@@ -41,7 +41,7 @@ describe('IPC handlers Files', () => {
   const event: Electron.IpcMainEvent = mockDeep<Electron.IpcMainEvent>();
 
   test('Should register handlers for each event', () => {
-    const events = ['getAll', 'add', 'remove', 'update', 'showContentInTemp'];
+    const events = ['getAll', 'add', 'remove', 'update', 'showStoredFileInTemp'];
 
     expect(
       events.every(e => ipcMainMO.handle.mock.calls.some(([channel]) => channel === `files:${e}`)),
@@ -83,17 +83,17 @@ describe('IPC handlers Files', () => {
     expect(removeFiles).toHaveBeenCalledWith(userId, fileIds);
   });
 
-  test('Should set up showContentInTemp handler', async () => {
-    const showContentInTempHandler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'files:showContentInTemp',
+  test('Should set up showStoredFileInTemp handler', async () => {
+    const showStoredFileInTempHandler = ipcMainMO.handle.mock.calls.find(
+      ([e]) => e === 'files:showStoredFileInTemp',
     );
-    expect(showContentInTempHandler).toBeDefined();
+    expect(showStoredFileInTempHandler).toBeDefined();
 
     const userId = 'user1';
     const filedId = 'filed1';
 
-    showContentInTempHandler && (await showContentInTempHandler[1](event, userId, filedId));
-    expect(showContentInTemp).toHaveBeenCalledWith(userId, filedId);
+    showStoredFileInTempHandler && (await showStoredFileInTempHandler[1](event, userId, filedId));
+    expect(showStoredFileInTemp).toHaveBeenCalledWith(userId, filedId);
   });
 
   test('Should set up update handler', async () => {

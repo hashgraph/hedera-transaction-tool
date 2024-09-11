@@ -14,7 +14,7 @@ import { useToast } from 'vue-toast-notification';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
-import { getAll, remove, showContentInTemp, update } from '@renderer/services/filesService';
+import { getAll, remove, showStoredFileInTemp, update } from '@renderer/services/filesService';
 import { flattenKeyList, getKeyListLevels } from '@renderer/services/keyPairService';
 
 import { getUInt8ArrayFromBytesString, convertBytes } from '@renderer/utils';
@@ -654,7 +654,7 @@ watch(files, newFiles => {
                       size="small"
                       @click="
                         isUserLoggedIn(user.personal) &&
-                          showContentInTemp(user.personal.id, selectedFile.file_id)
+                          showStoredFileInTemp(user.personal.id, selectedFile.file_id)
                       "
                       >View</AppButton
                     >

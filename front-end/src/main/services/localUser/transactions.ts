@@ -1,16 +1,13 @@
-import path from 'path';
-import fs from 'fs/promises';
-
-import { app, shell } from 'electron';
-
 import { Client, FileContentsQuery, PrivateKey, Query, Transaction } from '@hashgraph/sdk';
 
 import { Prisma } from '@prisma/client';
 import { getPrismaClient } from '@main/db/prisma';
 
 import { HederaSpecialFileId } from '@main/shared/interfaces';
+import { DISPLAY_FILE_SIZE_LIMIT } from '@main/shared/constants';
 
 import { getKeyPairs } from '@main/services/localUser/keyPairs';
+import { showContentInTemp } from '@main/services/localUser/files';
 
 import { getNumberArrayFromString } from '@main/utils';
 import {
@@ -154,11 +151,9 @@ export const executeQuery = async (
     if (
       Buffer.isBuffer(response) &&
       query instanceof FileContentsQuery &&
-      response.length > 1000000
+      response.length > DISPLAY_FILE_SIZE_LIMIT
     ) {
-      const filePath = path.join(app.getPath('temp'), `${query.fileId?.toString()}.txt`);
-      await fs.writeFile(filePath, response);
-      shell.showItemInFolder(filePath);
+      await showContentInTemp(response, query.fileId?.toString() || '');
     }
 
     //@ts-expect-error Check if there is a toBytes function

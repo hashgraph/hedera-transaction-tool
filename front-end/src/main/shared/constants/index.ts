@@ -6,3 +6,6 @@ export const MEMO_MAX_LENGTH = 100;
 
 /* Encrypted keys */
 export const ENCRYPTED_KEY_ALREADY_IMPORTED = 'This key is already imported';
+
+/* File */
+export const DISPLAY_FILE_SIZE_LIMIT = 512 * 1024;

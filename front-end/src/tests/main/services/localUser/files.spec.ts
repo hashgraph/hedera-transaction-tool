@@ -12,7 +12,7 @@ import {
   deleteTempFolder,
   getFiles,
   removeFiles,
-  showContentInTemp,
+  showStoredFileInTemp,
   updateFile,
 } from '@main/services/localUser/files';
 
@@ -143,7 +143,7 @@ describe('Services Local User Files', () => {
     });
   });
 
-  describe('showContentInTemp', () => {
+  describe('showStoredFileInTemp', () => {
     beforeEach(() => {
       vi.resetAllMocks();
     });
@@ -156,7 +156,7 @@ describe('Services Local User Files', () => {
       vi.mocked(app.getPath).mockReturnValue(tempPath);
       vi.mocked(saveContentToPath).mockResolvedValue(true);
       vi.mocked(getNumberArrayFromString).mockReturnValue([1, 2, 3]);
-      await showContentInTemp(file.user_id, file.file_id);
+      await showStoredFileInTemp(file.user_id, file.file_id);
 
       expect(prisma.hederaFile.findFirst).toHaveBeenCalledWith({
         where: { user_id: file.user_id, file_id: file.file_id },
@@ -169,7 +169,7 @@ describe('Services Local User Files', () => {
     test('Should throw error if file is not found', async () => {
       prisma.hederaFile.findFirst.mockRejectedValueOnce('File not found');
 
-      await expect(showContentInTemp(file.user_id, file.file_id)).rejects.toThrowError(
+      await expect(showStoredFileInTemp(file.user_id, file.file_id)).rejects.toThrowError(
         'File not found',
       );
     });
@@ -177,7 +177,7 @@ describe('Services Local User Files', () => {
     test('Should throw error if file has no content', async () => {
       prisma.hederaFile.findFirst.mockResolvedValue({ ...file, contentBytes: null });
 
-      await expect(showContentInTemp(file.user_id, file.file_id)).rejects.toThrowError(
+      await expect(showStoredFileInTemp(file.user_id, file.file_id)).rejects.toThrowError(
         'File content is unknown',
       );
     });
@@ -190,7 +190,7 @@ describe('Services Local User Files', () => {
       vi.mocked(saveContentToPath).mockRejectedValue('An error');
       vi.mocked(getNumberArrayFromString).mockReturnValue([1, 2, 3]);
 
-      await expect(showContentInTemp(file.user_id, file.file_id)).rejects.toThrowError(
+      await expect(showStoredFileInTemp(file.user_id, file.file_id)).rejects.toThrowError(
         'Failed to open file content',
       );
     });
