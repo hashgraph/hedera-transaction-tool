@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
-import { inject, onUnmounted, ref, watch } from 'vue';
+import { inject, onBeforeMount, onUnmounted, ref, watch } from 'vue';
 import { Mnemonic } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 
@@ -162,7 +162,35 @@ const handleSaveKey = async (e: Event) => {
   await callback();
 };
 
+const handleFindEmptyIndex = async () => {
+  if (!user.recoveryPhrase) return;
+
+  let exists = false;
+
+  do {
+    const privateKey = await restorePrivateKey(
+      user.recoveryPhrase.words,
+      '',
+      Number(index.value),
+      'ED25519',
+    );
+
+    if (
+      user.keyPairs.some(
+        kp => kp.public_key === privateKey.publicKey.toStringRaw() && kp.public_key !== '',
+      )
+    ) {
+      index.value++;
+      exists = true;
+    } else {
+      exists = false;
+    }
+  } while (exists);
+};
+
 /* Hooks */
+onBeforeMount(async () => {});
+
 onUnmounted(() => {
   user.recoveryPhrase = null;
 });
@@ -183,6 +211,12 @@ watch(recoveryPhrase, async newRecoveryPhrase => {
 
 watch(index, () => {
   inputIndexInvalid.value = false;
+});
+
+watch(step, async newStep => {
+  if (newStep === 2) {
+    await handleFindEmptyIndex();
+  }
 });
 </script>
 <template>
