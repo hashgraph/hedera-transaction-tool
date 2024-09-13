@@ -112,7 +112,7 @@ watch(router.currentRoute, newRoute => {
             color="secondary"
             @click="$router.push({ name: 'restoreKey' })"
           >
-            Restore
+            Generate
           </AppButton>
           <ImportDropDown />
         </div>
