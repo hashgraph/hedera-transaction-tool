@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { DatePickerInstance } from '@vuepic/vue-datepicker';
 import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import { ref, watch, onMounted, computed } from 'vue';
@@ -30,7 +29,6 @@ import {
 } from '@renderer/utils/sdk';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
-import DatePicker from '@vuepic/vue-datepicker';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -41,6 +39,7 @@ import TransactionHeaderControls from '@renderer/components/Transaction/Transact
 import TransactionInfoControls from '@renderer/components/Transaction/TransactionInfoControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
+import RunningClockDatePicker from '@renderer/components/Wrapped/RunningClockDatePicker.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -54,7 +53,6 @@ const route = useRoute();
 
 /* State */
 const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
-const datePicker = ref<DatePickerInstance>(null);
 
 const transaction = ref<Transaction | null>(null);
 const validStart = ref(new Date());
@@ -491,51 +489,16 @@ const columnClass = 'col-4 col-xxxl-3';
             <label class="form-label"
               >Expiration <span class="text-muted text-italic">- Local time</span></label
             >
-            <DatePicker
-              ref="datePicker"
+            <RunningClockDatePicker
               v-model="expirationTimestamp"
+              :now-button-visible="
+                new Date() >= getMinimumExpirationTime() && new Date() <= getMaximumExpirationTime()
+              "
+              data-testid="input-expiration-time-for-file"
               placeholder="Select Expiration Time"
-              :clearable="false"
-              :auto-apply="true"
-              :config="{
-                keepActionRow: true,
-              }"
               :min-date="getMinimumExpirationTime()"
               :max-date="getMaximumExpirationTime()"
-              :teleport="true"
-              class="is-fill"
-              :ui="{
-                calendar: 'is-fill',
-                calendarCell: 'is-fill',
-                menu: 'is-fill',
-                input: 'is-fill',
-              }"
-            >
-              <template #action-row>
-                <div class="d-flex justify-content-end gap-4 w-100">
-                  <AppButton
-                    v-if="
-                      new Date() >= getMinimumExpirationTime() &&
-                      new Date() <= getMaximumExpirationTime()
-                    "
-                    class="text-body min-w-unset"
-                    size="small"
-                    type="button"
-                    @click="$emit('update:validStart', new Date())"
-                  >
-                    Now
-                  </AppButton>
-                  <AppButton
-                    class="min-w-unset"
-                    color="secondary"
-                    size="small"
-                    type="button"
-                    @click="datePicker?.closeMenu()"
-                    >Close</AppButton
-                  >
-                </div>
-              </template>
-            </DatePicker>
+            />
           </div>
         </div>
 

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
-import type { DatePickerInstance } from '@vuepic/vue-datepicker';
 
 import { computed, onMounted, ref, watch } from 'vue';
 import {
@@ -36,7 +35,6 @@ import {
 } from '@renderer/utils';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
-import DatePicker from '@vuepic/vue-datepicker';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
@@ -46,6 +44,7 @@ import TransactionIdControls from '@renderer/components/Transaction/TransactionI
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
+import RunningClockDatePicker from '@renderer/components/Wrapped/RunningClockDatePicker.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -60,7 +59,6 @@ const payerData = useAccountId();
 
 /* State */
 const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
-const datePicker = ref<DatePickerInstance>(null);
 
 const transaction = ref<FreezeTransaction | null>(null);
 const validStart = ref(new Date());
@@ -385,47 +383,13 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
               >Start <span class="text-muted text-italic">- Local time</span
               ><span class="text-danger">*</span></label
             >
-            <DatePicker
-              ref="datePicker"
+            <RunningClockDatePicker
               :model-value="startTimestamp"
               @update:model-value="(v: Date) => (startTimestamp = v)"
               placeholder="Select Start Time"
-              :clearable="false"
-              :auto-apply="true"
-              :config="{
-                keepActionRow: true,
-              }"
               :min-date="new Date()"
-              :teleport="true"
-              class="is-fill"
-              :ui="{
-                calendar: 'is-fill',
-                calendarCell: 'is-fill',
-                menu: 'is-fill',
-                input: 'is-fill',
-              }"
-            >
-              <template #action-row>
-                <div class="d-flex justify-content-end gap-4 w-100">
-                  <AppButton
-                    class="text-body min-w-unset"
-                    size="small"
-                    type="button"
-                    @click="$emit('update:validStart', new Date())"
-                  >
-                    Now
-                  </AppButton>
-                  <AppButton
-                    class="min-w-unset"
-                    color="secondary"
-                    size="small"
-                    type="button"
-                    @click="datePicker?.closeMenu()"
-                    >Close</AppButton
-                  >
-                </div>
-              </template>
-            </DatePicker>
+              :now-button-visible="true"
+            />
           </div>
         </div>
 
