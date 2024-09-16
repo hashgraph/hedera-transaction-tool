@@ -3,8 +3,9 @@ import { ref, watch } from 'vue';
 
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
-import AppInput from '@renderer/components/ui/AppInput.vue';
 import { formatHbar } from '@renderer/utils/sdk';
+
+import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Props */
 const props = defineProps<{
