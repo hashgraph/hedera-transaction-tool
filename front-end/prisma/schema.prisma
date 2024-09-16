@@ -1,6 +1,6 @@
 generator client {
   provider      = "prisma-client-js"
-  output = "../node_modules/.prisma/client"
+  output        = "../node_modules/.prisma/client"
   binaryTargets = ["native", "darwin-arm64", "darwin"]
 }
 
@@ -31,6 +31,7 @@ model User {
   ComplexKey              ComplexKey[]
   Contact                 Contact[]
   PublicKeyLinked         PublicKeyLinked[]
+  Claim                   Claim[]
 }
 
 model KeyPair {
@@ -91,7 +92,7 @@ model Transaction {
   group_id           String?
   creator_public_key String?
   network            String
-  user               User          @relation(fields: [user_id], references: [id])
+  user               User     @relation(fields: [user_id], references: [id])
 
   GroupItem GroupItem[]
 }
@@ -183,4 +184,14 @@ model GroupItem {
   transaction_group    TransactionGroup  @relation(fields: [transaction_group_id], references: [id])
 
   @@unique([transaction_group_id, seq])
+}
+
+model Claim {
+  id          String   @id @default(uuid())
+  user_id     String
+  claim_key   String
+  claim_value String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  user        User     @relation(fields: [user_id], references: [id])
 }
