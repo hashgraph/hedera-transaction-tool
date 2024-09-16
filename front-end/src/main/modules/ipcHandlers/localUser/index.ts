@@ -11,6 +11,7 @@ import listenForOrganizationCredentialsEvents from './organizationCredentials';
 import listenForContactEvents from './contacts';
 import listenForPublicKeyLinkedEvents from './publicKeyLinked';
 import listenForEncryptedKeysEvents from './encryptedKeys';
+import listenForClaimEvents from './claim';
 
 export default () => {
   listenForKeyPairEvents();
@@ -26,4 +27,5 @@ export default () => {
   listenForContactEvents();
   listenForPublicKeyLinkedEvents();
   listenForEncryptedKeysEvents();
+  listenForClaimEvents();
 };

@@ -9,3 +9,6 @@ export const ENCRYPTED_KEY_ALREADY_IMPORTED = 'This key is already imported';
 
 /* File */
 export const DISPLAY_FILE_SIZE_LIMIT = 512 * 1024;
+
+/* Claim */
+export const DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY = 'default_max_transaction_fee';

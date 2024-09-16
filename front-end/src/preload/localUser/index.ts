@@ -15,6 +15,7 @@ import deepLinkAPI from './deepLink';
 import contactsAPI from './contacts';
 import contactPublicKeys from './linkedPublicKeys';
 import encryptedKeys from './encryptedKeys';
+import claim from './claim';
 
 export default {
   ...updateAPI,
@@ -34,4 +35,5 @@ export default {
   ...contactsAPI,
   ...contactPublicKeys,
   ...encryptedKeys,
+  ...claim,
 };
