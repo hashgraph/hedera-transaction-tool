@@ -35,6 +35,7 @@ defineEmits(['update:active-index']);
           {{ item.title }}
           <span
             v-if="item.notifications"
+            data-testid="span-notification-number"
             class="notification d-inline-block rounded-circle bg-danger text-white"
             >{{ item.notifications.toFixed(0) }}</span
           >
