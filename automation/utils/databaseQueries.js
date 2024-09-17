@@ -4,7 +4,7 @@ const {
   connectPostgresDatabase,
   disconnectPostgresDatabase,
 } = require('./databaseUtil');
-import { v4 as uuidv4 } from 'uuid';
+const { v4: uuidv4 } = require('uuid');
 
 /**
  * Verifies if a transaction with the given ID and type exists in the database.
@@ -541,27 +541,26 @@ async function ensureNotificationTypesForUsers(userIds) {
 }
 
 /**
- * Disables the email and in-app notifications for a list of users by setting the corresponding flags to false.
+ * Disables email notifications and optionally in-app notifications for a list of users by setting the corresponding flags to false.
  *
- * @param {number[]} userIds - An array of user IDs for whom the notification preferences should be disabled.
+ * @param {number[]} userIds - An array of user IDs for whom the notification preferences should be updated.
+ * @param {boolean} inApp - If true, keeps in-app notifications enabled. If false, disables both email and in-app notifications.
  * @return {Promise<void>} A promise that resolves when the operation is complete.
  * @throws {Error} If there is an error executing the query.
  */
-async function disableNotificationPreferences(userIds) {
+async function disableNotificationPreferences(userIds, inApp) {
   const client = await connectPostgresDatabase();
 
   try {
     const query = `
-      UPDATE public.notification_preferences
-      SET email = false,
-          "inApp" = false
-      WHERE "userId" = ANY($1::int[]);
+        UPDATE public.notification_preferences
+        SET email = false,
+            "inApp" = ${inApp ? 'true' : 'false'}
+        WHERE "userId" = ANY($1::int[]);
     `;
     const values = [userIds];
     const result = await client.query(query, values);
-    console.log(
-      `Notification preferences disabled for user IDs. Rows affected: ${result.rowCount}`,
-    );
+    console.log(`Notification preferences updated for user IDs. Rows affected: ${result.rowCount}`);
   } catch (err) {
     console.error('Error disabling notification preferences:', err);
   } finally {
@@ -570,20 +569,59 @@ async function disableNotificationPreferences(userIds) {
 }
 
 /**
- * Disables all notification preferences for test users by ensuring that all necessary notification types exist
- * and then setting their email and in-app notification flags to false.
+ * Disables email notifications and optionally in-app notifications for test users by ensuring that all necessary notification types exist
+ * and then setting the email and/or in-app notification flags to false based on the provided argument.
  *
+ * @param {boolean} [inApp=false] - If true, keeps in-app notifications enabled. If false, disables both email and in-app notifications.
  * @return {Promise<void>} A promise that resolves when the operation is complete.
  * @throws {Error} If there is an error during the process.
  */
-async function disableNotificationsForTestUsers() {
+async function disableNotificationsForTestUsers(inApp = false) {
   try {
     const userIds = await getUserIds();
     const userIdValues = userIds.map(user => user.id);
     await ensureNotificationTypesForUsers(userIdValues);
-    await disableNotificationPreferences(userIdValues);
+    await disableNotificationPreferences(userIdValues, inApp);
   } catch (err) {
     console.error('Error disabling notifications for test users:', err);
+  }
+}
+
+/**
+ * Retrieves the latest notification status for a user identified by the given email.
+ *
+ * @param {string} email - The email of the user.
+ * @return {Promise<{isRead: boolean, isInAppNotified: boolean}|null>} A promise that resolves to an object containing
+ * 'isRead' and 'isInAppNotified' if a notification is found, or null if not found.
+ * @throws {Error} If there is an error executing the query.
+ */
+async function getLatestNotificationStatusByEmail(email) {
+  try {
+    const userId = await getUserIdByEmail(email);
+    if (!userId) {
+      console.error(`User with email ${email} not found.`);
+      return null;
+    }
+
+    const query = `
+      SELECT nr."isRead", nr."isInAppNotified"
+      FROM public.notification_receiver nr
+      WHERE nr."userId" = $1
+      ORDER BY nr."updatedAt" DESC
+      LIMIT 1;
+    `;
+
+    const result = await queryPostgresDatabase(query, [userId]);
+    if (result.length > 0) {
+      const { isRead, isInAppNotified } = result[0];
+      return { isRead, isInAppNotified };
+    } else {
+      console.error(`No notifications found for user with ID ${userId}.`);
+      return null;
+    }
+  } catch (error) {
+    console.error('Error fetching latest notification status by email:', error);
+    return null;
   }
 }
 
@@ -609,4 +647,5 @@ module.exports = {
   insertUserKey,
   insertKeyPair,
   disableNotificationsForTestUsers,
+  getLatestNotificationStatusByEmail,
 };
