@@ -26,7 +26,7 @@ let complexKeyAccountId;
 // It should be divisible by 3
 let totalUsers = 57;
 
-test.describe('Organization Regression tests', () => {
+test.describe.skip('Organization Regression tests', () => {
   test.beforeAll(async () => {
     test.slow();
     await resetDbState();

@@ -22,6 +22,7 @@ const {
   verifyOrganizationExists,
   insertUserKey,
   insertKeyPair,
+  getLatestNotificationStatusByEmail,
 } = require('../utils/databaseQueries');
 
 class OrganizationPage extends BasePage {
@@ -53,6 +54,7 @@ class OrganizationPage extends BasePage {
   historyTabSelector = 'tab-5';
   deleteOrganizationButtonSelector = 'button-delete-connection';
   dropdownSelectModeSelector = 'dropdown-select-mode';
+  dropdownSelectedModeSelector = 'dropdown-selected-mode';
   editNicknameOrganizationButtonSelector = 'button-edit-nickname';
   closeErrorModalButtonSelector = 'button-close-modal';
   logoutButtonSelector = 'button-logout';
@@ -86,6 +88,7 @@ class OrganizationPage extends BasePage {
   transactionDetailsIdSelector = 'p-transaction-details-id';
   transactionValidStartSelector = 'p-transaction-details-valid-start';
   secondSignerCheckmarkSelector = 'span-checkmark-public-key-1-0';
+  spanNotificationNumberSelector = 'span-notification-number';
 
   // Indexes
   modeSelectionIndexSelector = 'dropdown-item-';
@@ -337,6 +340,14 @@ class OrganizationPage extends BasePage {
     await this.clickByTestId(this.dropdownSelectModeSelector);
   }
 
+  async getNotificationElementFromDropdown() {
+    return await this.hasBeforePseudoElement(this.dropdownSelectedModeSelector);
+  }
+
+  async getNotificationElementFromFirstTransaction() {
+    return await this.hasBeforePseudoElement(this.readyForSignTransactionIdIndexSelector + '0');
+  }
+
   async selectModeByIndex(index) {
     await this.clickByTestId(this.modeSelectionIndexSelector + index);
   }
@@ -352,9 +363,8 @@ class OrganizationPage extends BasePage {
   }
 
   async logoutFromOrganization() {
-    const { delay } = await import('../utils/util.js');
     await this.selectOrganizationMode();
-    await delay(500);
+    await new Promise(resolve => setTimeout(resolve, 500));
     await this.clickByTestId(this.logoutButtonSelector);
   }
 
@@ -1138,6 +1148,38 @@ class OrganizationPage extends BasePage {
 
   async getObserverEmail(index) {
     return await this.getTextByTestId(this.observerIndexSelector + index);
+  }
+
+  async getNotificationNumberText() {
+    return await this.getTextByTestId(this.spanNotificationNumberSelector);
+  }
+
+  async isNotificationNumberVisible() {
+    return await this.isElementVisible(this.spanNotificationNumberSelector);
+  }
+
+  async createNotificationForUser(firstUser, secondUser, globalCredentials) {
+    await this.transactionPage.clickOnTransactionsMenuButton();
+    await this.logoutFromOrganization();
+    await this.signInOrganization(firstUser.email, firstUser.password, globalCredentials.password);
+    await this.updateAccount(this.getComplexAccountId(), 'update', 10, false);
+    await this.transactionPage.clickOnTransactionsMenuButton();
+    await this.logoutFromOrganization();
+    await this.signInOrganization(
+      secondUser.email,
+      secondUser.password,
+      globalCredentials.password,
+    );
+  }
+
+  async ensureNotificationStateForUser(firstUser, secondUser, globalCredentials) {
+    let notificationStatus = await getLatestNotificationStatusByEmail(secondUser.email);
+
+    // If there's no notification or the latest is read, create a new one
+    if (!notificationStatus || notificationStatus.isRead === true) {
+      await this.createNotificationForUser(firstUser, secondUser, globalCredentials);
+    }
+    // If the notification exists and is unread, nothing more needs to be done
   }
 }
 

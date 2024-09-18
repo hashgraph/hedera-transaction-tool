@@ -121,3 +121,9 @@ npx playwright test tests/OrganizationContactListTests
 ```bash
 npx playwright test tests/organizationRegressionTests
 ```
+
+### 10. Organization Notification tests
+
+```bash
+npx playwright test tests/OrganizationNotificationTests
+```

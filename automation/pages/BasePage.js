@@ -389,6 +389,39 @@ class BasePage {
     await element.waitFor({ state: 'visible', timeout: timeout });
     return element.innerHTML();
   }
+
+  /**
+   * Checks if the ::before pseudo-element exists and is visible for an element with the specified testId.
+   * This method evaluates the computed styles of the ::before pseudo-element to determine its presence.
+   *
+   * @param {string} testId - The data-testid attribute of the element to check.
+   * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be visible.
+   * @returns {Promise<boolean>} - Returns true if the ::before pseudo-element exists and is visible, false otherwise.
+   */
+  async hasBeforePseudoElement(testId, timeout = this.DEFAULT_TIMEOUT) {
+    console.log(`Checking if ::before pseudo-element exists for element with testId: ${testId}`);
+    const element = this.window.getByTestId(testId);
+    await element.waitFor({ state: 'visible', timeout: timeout });
+
+    const pseudoStyles = await element.evaluate(el => {
+      const styles = window.getComputedStyle(el, '::before');
+      return {
+        display: styles.getPropertyValue('display'),
+        width: styles.getPropertyValue('width'),
+        height: styles.getPropertyValue('height'),
+        opacity: styles.getPropertyValue('opacity'),
+        visibility: styles.getPropertyValue('visibility'),
+      };
+    });
+
+    return (
+      pseudoStyles.display !== 'none' &&
+      pseudoStyles.visibility !== 'hidden' &&
+      parseFloat(pseudoStyles.opacity) !== 0 &&
+      parseFloat(pseudoStyles.width) > 0 &&
+      parseFloat(pseudoStyles.height) > 0
+    );
+  }
 }
 
 module.exports = BasePage;
