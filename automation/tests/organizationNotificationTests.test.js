@@ -81,7 +81,6 @@ test.describe('Organization Notification tests', () => {
   });
 
   test('Verify notification is shown next to "Ready to Sign" tab', async () => {
-    test.slow();
     await organizationPage.ensureNotificationStateForUser(firstUser, secondUser, globalCredentials);
 
     await transactionPage.clickOnTransactionsMenuButton();
