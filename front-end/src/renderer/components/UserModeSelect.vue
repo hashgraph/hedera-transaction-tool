@@ -153,6 +153,7 @@ watch(
       >
         <div
           class="flex-centered gap-3 position-relative"
+          data-testid="dropdown-selected-mode"
           :class="{
             'indicator-circle-before': Object.values(indicatorNotifications).flat().length > 0,
           }"
