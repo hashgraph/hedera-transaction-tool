@@ -816,7 +816,7 @@ class OrganizationPage extends BasePage {
     await this.setDateTimeAheadBy(timeForExecution);
     await this.fillByTestId(this.transactionPage.transferFromAccountIdInputSelector, fromAccountId);
     await this.transactionPage.fillInTransferAmountFromAccount(amount);
-    const payerAccountId = await this.getTextFromInputFieldByTestId(
+    const payerAccountId = await this.getTextFromInputField(
       this.transactionPage.payerDropdownSelector,
     );
     await this.transactionPage.fillInTransferToAccountId(payerAccountId);

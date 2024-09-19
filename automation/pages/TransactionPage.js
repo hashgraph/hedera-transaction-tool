@@ -719,13 +719,13 @@ class TransactionPage extends BasePage {
   }
 
   async getMemoText() {
-    return this.getTextFromInputFieldByTestId(this.accountMemoInputSelector);
+    return this.getTextFromInputField(this.accountMemoInputSelector);
   }
 
   async fillInInitialFunds(amount) {
     const { delay } = await import('../utils/util.js');
     const getFilledBalance = async () =>
-      this.getTextFromInputFieldByTestId(this.initialBalanceInputSelector);
+      this.getTextFromInputField(this.initialBalanceInputSelector);
 
     let filledBalance = await getFilledBalance();
 
@@ -737,7 +737,7 @@ class TransactionPage extends BasePage {
   }
 
   async getInitialFundsValue() {
-    return this.getTextFromInputFieldByTestId(this.initialBalanceInputSelector);
+    return this.getTextFromInputField(this.initialBalanceInputSelector);
   }
 
   async fillInMaxAccountAssociations(amount) {
@@ -745,7 +745,7 @@ class TransactionPage extends BasePage {
   }
 
   async getFilledMaxAccountAssociations() {
-    return this.getTextFromInputFieldByTestId(this.maxAutoAssociationsInputSelector);
+    return this.getTextFromInputField(this.maxAutoAssociationsInputSelector);
   }
 
   async clickOnSignAndSubmitButton() {
@@ -889,7 +889,7 @@ class TransactionPage extends BasePage {
   }
 
   async getSpenderAccountId() {
-    return await this.getTextFromInputFieldByTestId(this.allowanceSpenderAccountSelector);
+    return await this.getTextFromInputField(this.allowanceSpenderAccountSelector);
   }
 
   async fillInTransferAccountId() {
@@ -973,7 +973,7 @@ class TransactionPage extends BasePage {
   }
 
   async getFilledMaxAutoAssociationsOnUpdatePage() {
-    return await this.getTextFromInputFieldByTestId(this.maxAutoAssociationsUpdateInputSelector);
+    return await this.getTextFromInputField(this.maxAutoAssociationsUpdateInputSelector);
   }
 
   async fillInMemoUpdate(memo) {
@@ -989,7 +989,7 @@ class TransactionPage extends BasePage {
   }
 
   async getMemoTextOnUpdatePage() {
-    return await this.getTextFromInputFieldByTestId(this.memoUpdateInputSelector);
+    return await this.getTextFromInputField(this.memoUpdateInputSelector);
   }
 
   async fillInTransactionMemoUpdate(memo) {
@@ -997,11 +997,11 @@ class TransactionPage extends BasePage {
   }
 
   async getTransactionMemoText() {
-    return await this.getTextFromInputFieldByTestId(this.transactionMemoUpdateInputSelector);
+    return await this.getTextFromInputField(this.transactionMemoUpdateInputSelector);
   }
 
   async getTransactionMemoTextForDeletePage() {
-    return await this.getTextFromInputFieldByTestId(this.deleteAccountMemoInputSelector);
+    return await this.getTextFromInputField(this.deleteAccountMemoInputSelector);
   }
 
   async fillInNickname(nickname) {
@@ -1059,7 +1059,7 @@ class TransactionPage extends BasePage {
   }
 
   async getAllowanceOwnerAccountId() {
-    return await this.getTextFromInputFieldByTestId(this.allowanceOwnerAccountSelector);
+    return await this.getTextFromInputField(this.allowanceOwnerAccountSelector);
   }
 
   async fillInAllowanceAmount(amount) {
@@ -1067,7 +1067,7 @@ class TransactionPage extends BasePage {
   }
 
   async getAllowanceAmount() {
-    return await this.getTextFromInputFieldByTestId(this.allowanceAmountSelector);
+    return await this.getTextFromInputField(this.allowanceAmountSelector);
   }
 
   async clickOnSignAndSubmitAllowanceButton() {
@@ -1087,15 +1087,15 @@ class TransactionPage extends BasePage {
   }
 
   async getPrefilledAccountIdInUpdatePage() {
-    return await this.getTextFromInputFieldByTestId(this.updateAccountInputSelector);
+    return await this.getTextFromInputField(this.updateAccountInputSelector);
   }
 
   async getPrefilledAccountIdInDeletePage() {
-    return await this.getTextFromInputFieldByTestId(this.deletedAccountInputSelector);
+    return await this.getTextFromInputField(this.deletedAccountInputSelector);
   }
 
   async getPrefilledTransferIdAccountInDeletePage() {
-    return await this.getTextFromInputFieldByTestId(this.transferAccountInputSelector);
+    return await this.getTextFromInputField(this.transferAccountInputSelector);
   }
 
   async fillInFileContent(fileContent) {
@@ -1103,7 +1103,7 @@ class TransactionPage extends BasePage {
   }
 
   async getFileContentText() {
-    return await this.getTextFromInputFieldByTestId(this.fileContentTextFieldSelector);
+    return await this.getTextFromInputField(this.fileContentTextFieldSelector);
   }
 
   async clickOnSignAndSubmitFileCreateButton() {
@@ -1119,11 +1119,11 @@ class TransactionPage extends BasePage {
   }
 
   async getFileIdFromReadPage() {
-    return await this.getTextFromInputFieldByTestId(this.fileIdInputForReadSelector);
+    return await this.getTextFromInputField(this.fileIdInputForReadSelector);
   }
 
   async readFileContentFromTextArea() {
-    return await this.getTextFromInputFieldByTestId(this.fileContentReadTextFieldSelector);
+    return await this.getTextFromInputField(this.fileContentReadTextFieldSelector);
   }
 
   async clickOnSignAndReadFileButton() {
@@ -1131,7 +1131,7 @@ class TransactionPage extends BasePage {
   }
 
   async getPublicKeyText() {
-    return await this.getTextFromInputFieldByTestIdWithIndex(this.publicKeyInputSelector);
+    return await this.getTextFromInputFieldWithRetry(this.publicKeyInputSelector, 1);
   }
 
   async fillInFileIdForUpdate(fileId) {
@@ -1139,7 +1139,7 @@ class TransactionPage extends BasePage {
   }
 
   async getFileIdFromUpdatePage() {
-    return await this.getTextFromInputFieldByTestId(this.fileIdUpdateInputSelector);
+    return await this.getTextFromInputField(this.fileIdUpdateInputSelector);
   }
 
   async fillInPublicKeyForFile(publicKey) {
@@ -1163,7 +1163,7 @@ class TransactionPage extends BasePage {
   }
 
   async getFileIdFromAppendPage() {
-    return await this.getTextFromInputFieldByTestId(this.fileIdInputForAppendSelector);
+    return await this.getTextFromInputField(this.fileIdInputForAppendSelector);
   }
 
   async fillInFileContentForAppend(fileContent) {
@@ -1191,7 +1191,7 @@ class TransactionPage extends BasePage {
   }
 
   async getTransactionMemoFromApprovePage() {
-    return await this.getTextFromInputFieldByTestId(this.approveAllowanceTransactionMemoSelector);
+    return await this.getTextFromInputField(this.approveAllowanceTransactionMemoSelector);
   }
 
   async fillInTransactionMemoForCreateFilePage(memo) {
@@ -1199,7 +1199,7 @@ class TransactionPage extends BasePage {
   }
 
   async getTransactionMemoFromFilePage() {
-    return await this.getTextFromInputFieldByTestId(this.fileCreateTransactionMemoInputSelector);
+    return await this.getTextFromInputField(this.fileCreateTransactionMemoInputSelector);
   }
 
   async fillInFileMemoForCreatePage(memo) {
@@ -1207,7 +1207,7 @@ class TransactionPage extends BasePage {
   }
 
   async getFileMemoFromCreatePage() {
-    return await this.getTextFromInputFieldByTestId(this.fileCreateMemoInputSelector);
+    return await this.getTextFromInputField(this.fileCreateMemoInputSelector);
   }
 
   async fillInTransactionMemoForFileUpdatePage(memo) {
@@ -1215,7 +1215,7 @@ class TransactionPage extends BasePage {
   }
 
   async getTransactionMemoFromFileUpdatePage() {
-    return await this.getTextFromInputFieldByTestId(this.fileUpdateTransactionMemoInputSelector);
+    return await this.getTextFromInputField(this.fileUpdateTransactionMemoInputSelector);
   }
 
   async fillInTransactionMemoForFileAppendPage(memo) {
@@ -1223,7 +1223,7 @@ class TransactionPage extends BasePage {
   }
 
   async getTransactionMemoFromFileAppendPage() {
-    return await this.getTextFromInputFieldByTestId(this.fileAppendTransactionMemoInputSelector);
+    return await this.getTextFromInputField(this.fileAppendTransactionMemoInputSelector);
   }
 
   async fillInFileUpdateMemo(memo) {
@@ -1231,7 +1231,7 @@ class TransactionPage extends BasePage {
   }
 
   async getFileUpdateMemo() {
-    return await this.getTextFromInputFieldByTestId(this.fileUpdateMemoInputSelector);
+    return await this.getTextFromInputField(this.fileUpdateMemoInputSelector);
   }
 
   async getFirstDraftDate() {

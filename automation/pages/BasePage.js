@@ -52,58 +52,6 @@ class BasePage {
     return classAttribute && classAttribute.includes('active');
   }
 
-  // async clickByTestId(testId, timeout = this.DEFAULT_TIMEOUT) {
-  //   console.log(`Clicking on element with testId: ${testId}`);
-  //   const element = this.window.getByTestId(testId);
-  //   try {
-  //     await element.waitFor({ state: 'visible', timeout: timeout });
-  //   } catch (error) {
-  //     console.log(`Element with testId: ${testId} is not visible`);
-  //   }
-  //   await element.click();
-  // }
-  //
-  // async clickByTestIdWithIndex(testId, index = 1, timeout = this.DEFAULT_TIMEOUT) {
-  //   console.log(`Clicking on element with testId: ${testId} at index: ${index}`);
-  //   const element = this.window.getByTestId(testId).nth(index);
-  //   await element.waitFor({ state: 'visible', timeout: timeout });
-  //   await element.click();
-  // }
-
-  // async getTextByTestIdWithIndex(testId, index = 1, timeout = this.DEFAULT_TIMEOUT) {
-  //   console.log(`Getting text for element with testId: ${testId} at index: ${index}`);
-  //   const element = this.window.getByTestId(testId).nth(index);
-  //   await element.waitFor({ state: 'visible', timeout: timeout });
-  //   return element.textContent();
-  // }
-
-  // async getTextByTestId(testId, timeout = this.DEFAULT_TIMEOUT) {
-  //   console.log(`Getting text for element with testId: ${testId}`);
-  //   const element = this.window.getByTestId(testId);
-  //   await element.waitFor({ state: 'visible', timeout: timeout });
-  //   return element.textContent();
-  // }
-
-  // async getAllTextByTestId(testId, timeout = this.DEFAULT_TIMEOUT) {
-  //   console.log(`Getting text for element with testId: ${testId}`);
-  //
-  //   const elements = this.window.locator(`[data-testid="${testId}"]`);
-  //
-  //   const count = await elements.count();
-  //   if (count !== 2) {
-  //     throw new Error(`Expected exactly 2 elements but found ${count}`);
-  //   }
-  //
-  //   const texts = [];
-  //   for (let i = 0; i < count; i++) {
-  //     const element = elements.nth(i);
-  //     await element.waitFor({ state: 'visible', timeout: timeout });
-  //     texts.push(await element.textContent());
-  //   }
-  //
-  //   return texts;
-  // }
-
   async getText(selector, index = null, timeout = this.DEFAULT_TIMEOUT) {
     if (index !== null) {
       console.log(`Getting text for element with selector: ${selector} at index ${index}`);
@@ -140,17 +88,17 @@ class BasePage {
     }
   }
 
-  async getTextFromInputFieldByTestId(testId, timeout = this.DEFAULT_TIMEOUT) {
-    console.log(`Getting text for element with testId: ${testId}`);
-    const element = this.window.getByTestId(testId);
-    await element.waitFor({ state: 'visible', timeout: timeout });
+  async getTextFromInputField(selector, index = null, timeout = this.DEFAULT_TIMEOUT) {
+    console.log(`Getting text from input field with selector: ${selector}`);
+    const element = this.getElement(selector, index);
+    await element.waitFor({ state: 'visible', timeout });
     return element.inputValue();
   }
 
-  async getTextFromInputFieldByTestIdWithIndex(testId, index = 1, timeout = this.DEFAULT_TIMEOUT) {
-    console.log(`Getting text for element with testId: ${testId}`);
-    const element = this.window.getByTestId(testId).nth(index);
-    await element.waitFor({ state: 'visible', timeout: timeout });
+  async getTextFromInputFieldWithRetry(selector, index = null, timeout = this.DEFAULT_TIMEOUT) {
+    console.log(`Getting text from input field with selector: ${selector}`);
+    const element = this.getElement(selector, index);
+    await element.waitFor({ state: 'visible', timeout });
 
     const maxAttempts = 10;
     const interval = 500;
@@ -168,41 +116,9 @@ class BasePage {
     }
 
     throw new Error(
-      `Failed to retrieve non-empty text from element with testId: ${testId} after multiple attempts`,
+      `Failed to retrieve non-empty text from element with selector: ${selector} after multiple attempts`,
     );
   }
-
-  // async getTextByTestIdWithRetry(
-  //   testId,
-  //   timeout = this.DEFAULT_TIMEOUT,
-  //   retries = 5,
-  //   retryDelay = 1000,
-  // ) {
-  //   console.log(`Getting text for element with testId: ${testId}`);
-  //   let attempt = 0;
-  //   let textContent = '';
-  //
-  //   while (attempt < retries) {
-  //     const element = this.window.getByTestId(testId);
-  //     await element.waitFor({ state: 'visible', timeout: timeout });
-  //
-  //     textContent = await element.textContent();
-  //     console.log(
-  //       `Attempt ${attempt + 1}: Retrieved text content: "${textContent}" for element with testId: ${testId}`,
-  //     );
-  //
-  //     if (textContent && textContent.trim() !== '') {
-  //       return textContent;
-  //     }
-  //
-  //     // Increment the attempt counter and delay before retrying
-  //     attempt++;
-  //     if (attempt < retries) {
-  //       console.log(`Text content is empty or invalid, retrying after ${retryDelay}ms...`);
-  //       await new Promise(resolve => setTimeout(resolve, retryDelay));
-  //     }
-  //   }
-  // }
 
   async getTextWithRetry(
     selector,
@@ -241,13 +157,6 @@ class BasePage {
     );
   }
 
-  // async getTextByCssSelector(selector, timeout = this.DEFAULT_TIMEOUT) {
-  //   console.log(`Getting text for element with CSS selector: ${selector}`);
-  //   const element = this.window.locator(selector);
-  //   await element.waitFor({ state: 'visible', timeout: timeout });
-  //   return element.textContent();
-  // }
-
   async fillByTestId(testId, value) {
     console.log(`Filling element with testId: ${testId} with value: ${value}`);
     const element = this.window.getByTestId(testId);
@@ -272,7 +181,7 @@ class BasePage {
       await this.fillByTestId(testId, value);
 
       // Verify the value in the input field
-      currentValue = await this.getTextFromInputFieldByTestId(testId);
+      currentValue = await this.getTextFromInputField(testId);
       console.log(
         `Attempt ${attempt + 1}: Verifying element with testId: ${testId}, expected value: ${value}, current value: ${currentValue}`,
       );
