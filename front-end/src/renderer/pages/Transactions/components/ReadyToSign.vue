@@ -138,6 +138,18 @@ function setNotifiedTransactions() {
   );
 }
 
+function groupHasNotifications(id: number) {
+  const group = transactions.value.get(id);
+  if (group) {
+    for (const item of group) {
+      if (notifiedTransactionIds.value.includes(item.transactionRaw.id)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 async function fetchTransactions() {
   transactions.value = new Map();
   if (!isLoggedInOrganization(user.selectedOrganization)) {
@@ -298,7 +310,11 @@ watch(
           <tbody>
             <template v-for="group of transactions" :key="group[0]">
               <template v-if="group[0] != -1">
-                <tr>
+                <tr
+                  :class="{
+                    highlight: groupHasNotifications(group[0]),
+                  }"
+                >
                   <td>
                     <i class="bi bi-stack" />
                   </td>
@@ -351,6 +367,8 @@ watch(
                       >
                     </td>
                   </tr>
+
+                  <tr />
                 </template>
               </template>
             </template>
