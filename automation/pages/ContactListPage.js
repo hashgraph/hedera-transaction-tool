@@ -68,7 +68,7 @@ class ContactListPage extends BasePage {
   }
 
   async fillInContactNickname(nickname) {
-    await this.fillByTestId(this.inputChangeNicknameSelector, nickname);
+    await this.fill(this.inputChangeNicknameSelector, nickname);
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 
@@ -81,7 +81,7 @@ class ContactListPage extends BasePage {
   }
 
   async inputNewUserEmail(email) {
-    await this.fillByTestId(this.newUserEmailInputSelector, email);
+    await this.fill(this.newUserEmailInputSelector, email);
   }
 
   async clickOnRegisterNewUserButton() {

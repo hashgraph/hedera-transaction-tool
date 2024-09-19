@@ -120,19 +120,19 @@ class OrganizationPage extends BasePage {
   }
 
   async fillOrganizationDetailsAndContinue(organizationNickname, serverUrl) {
-    await this.fillByTestId(this.organizationNicknameInputSelector, organizationNickname);
-    await this.fillByTestId(this.serverUrlInputSelector, serverUrl);
+    await this.fill(this.organizationNicknameInputSelector, organizationNickname);
+    await this.fill(this.serverUrlInputSelector, serverUrl);
     await this.click(this.addOrganizationButtonInModalSelector);
   }
 
   async fillOrganizationEncryptionPasswordAndContinue(password) {
-    await this.fillByTestId(this.encryptPasswordInputSelector, password);
+    await this.fill(this.encryptPasswordInputSelector, password);
     await this.click(this.continueEncryptPasswordButtonSelector);
   }
 
   async signInOrganization(email, password, encryptionPassword) {
-    await this.fillByTestId(this.emailForOrganizationInputSelector, email);
-    await this.fillByTestId(this.passwordForOrganizationInputSelector, password);
+    await this.fill(this.emailForOrganizationInputSelector, email);
+    await this.fill(this.passwordForOrganizationInputSelector, password);
     await this.click(this.signInOrganizationButtonSelector);
     if (await this.isEncryptPasswordInputVisible()) {
       await this.fillOrganizationEncryptionPasswordAndContinue(encryptionPassword);
@@ -144,8 +144,8 @@ class OrganizationPage extends BasePage {
   }
 
   async fillInLoginDetailsAndClickSignIn(email, password) {
-    await this.fillByTestId(this.emailForOrganizationInputSelector, email);
-    await this.fillByTestId(this.passwordForOrganizationInputSelector, password);
+    await this.fill(this.emailForOrganizationInputSelector, email);
+    await this.fill(this.passwordForOrganizationInputSelector, password);
     await this.click(this.signInOrganizationButtonSelector);
   }
 
@@ -385,7 +385,7 @@ class OrganizationPage extends BasePage {
   // Method to fill a missing recovery phrase word by index
   async fillRecoveryPhraseWordForUser(userIndex, index, word) {
     const selector = this.registrationPage.getRecoveryWordSelector(index);
-    await this.fillByTestId(selector, word);
+    await this.fill(selector, word);
   }
 
   // Method to fill in all missing recovery phrase words based on the saved recoveryPhraseWords
@@ -432,7 +432,7 @@ class OrganizationPage extends BasePage {
   }
 
   async fillInNewOrganizationNickname(nickname) {
-    await this.fillByTestId(this.editOrganizationNicknameInputSelector, nickname);
+    await this.fill(this.editOrganizationNicknameInputSelector, nickname);
   }
 
   async getOrganizationNicknameText() {
@@ -814,7 +814,7 @@ class OrganizationPage extends BasePage {
     await this.transactionPage.clickOnCreateNewTransactionButton();
     await this.transactionPage.clickOnTransferTokensTransaction();
     await this.setDateTimeAheadBy(timeForExecution);
-    await this.fillByTestId(this.transactionPage.transferFromAccountIdInputSelector, fromAccountId);
+    await this.fill(this.transactionPage.transferFromAccountIdInputSelector, fromAccountId);
     await this.transactionPage.fillInTransferAmountFromAccount(amount);
     const payerAccountId = await this.getTextFromInputField(
       this.transactionPage.payerDropdownSelector,

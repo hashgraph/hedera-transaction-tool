@@ -43,8 +43,8 @@ class LoginPage extends BasePage {
   }
 
   async resetForm() {
-    await this.fillByTestId(this.emailInputSelector, '');
-    await this.fillByTestId(this.passwordInputSelector, '');
+    await this.fill(this.emailInputSelector, '');
+    await this.fill(this.passwordInputSelector, '');
   }
 
   // specific logout method for the login tests

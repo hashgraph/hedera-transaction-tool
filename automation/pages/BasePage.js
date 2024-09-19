@@ -157,6 +157,12 @@ class BasePage {
     );
   }
 
+  async fill(selector, value, index = null, timeout = this.DEFAULT_TIMEOUT) {
+    console.log(`Filling element with selector: ${selector} with value: ${value}`);
+    const element = this.getElement(selector, index);
+    await element.fill(value);
+  }
+
   async fillByTestId(testId, value) {
     console.log(`Filling element with testId: ${testId} with value: ${value}`);
     const element = this.window.getByTestId(testId);
@@ -178,7 +184,7 @@ class BasePage {
       console.log(
         `Attempt ${attempt + 1}: Filling element with testId: ${testId} with value: ${value}`,
       );
-      await this.fillByTestId(testId, value);
+      await this.fill(testId, value);
 
       // Verify the value in the input field
       currentValue = await this.getTextFromInputField(testId);

@@ -650,7 +650,7 @@ class TransactionPage extends BasePage {
     await this.clickOnCreateNewTransactionButton();
     await this.clickOnApproveAllowanceTransaction();
     if (isTestNegative) {
-      await this.fillByTestId(this.allowanceOwnerAccountSelector, '0.0.999');
+      await this.fill(this.allowanceOwnerAccountSelector, '0.0.999');
     } else {
       await this.fillInAllowanceOwnerAccount();
     }
@@ -715,7 +715,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInMemo(memo) {
-    await this.fillByTestId(this.accountMemoInputSelector, memo);
+    await this.fill(this.accountMemoInputSelector, memo);
   }
 
   async getMemoText() {
@@ -730,7 +730,7 @@ class TransactionPage extends BasePage {
     let filledBalance = await getFilledBalance();
 
     while (filledBalance !== amount) {
-      await this.fillByTestId(this.initialBalanceInputSelector, amount);
+      await this.fill(this.initialBalanceInputSelector, amount);
       await delay(1000);
       filledBalance = await getFilledBalance();
     }
@@ -741,7 +741,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInMaxAccountAssociations(amount) {
-    await this.fillByTestId(this.maxAutoAssociationsInputSelector, amount);
+    await this.fill(this.maxAutoAssociationsInputSelector, amount);
   }
 
   async getFilledMaxAccountAssociations() {
@@ -794,7 +794,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInPublicKeyField(publicKey) {
-    await this.fillByTestId(this.publicKeyComplexInputSelector, publicKey);
+    await this.fill(this.publicKeyComplexInputSelector, publicKey);
   }
 
   async clickInsertPublicKey() {
@@ -885,7 +885,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInSpenderAccountIdNormally(accountId) {
-    await this.fillByTestId(this.allowanceSpenderAccountSelector, accountId);
+    await this.fill(this.allowanceSpenderAccountSelector, accountId);
   }
 
   async getSpenderAccountId() {
@@ -969,7 +969,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInMaxAutoAssociations(amount) {
-    await this.fillByTestId(this.maxAutoAssociationsUpdateInputSelector, amount);
+    await this.fill(this.maxAutoAssociationsUpdateInputSelector, amount);
   }
 
   async getFilledMaxAutoAssociationsOnUpdatePage() {
@@ -977,15 +977,15 @@ class TransactionPage extends BasePage {
   }
 
   async fillInMemoUpdate(memo) {
-    await this.fillByTestId(this.memoUpdateInputSelector, memo);
+    await this.fill(this.memoUpdateInputSelector, memo);
   }
 
   async fillInUpdateAccountIdNormally(accountId) {
-    await this.fillByTestId(this.updateAccountInputSelector, accountId);
+    await this.fill(this.updateAccountInputSelector, accountId);
   }
 
   async fillInDeleteAccountIdNormally(accountId) {
-    await this.fillByTestId(this.deletedAccountInputSelector, accountId);
+    await this.fill(this.deletedAccountInputSelector, accountId);
   }
 
   async getMemoTextOnUpdatePage() {
@@ -993,7 +993,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInTransactionMemoUpdate(memo) {
-    await this.fillByTestId(this.transactionMemoUpdateInputSelector, memo);
+    await this.fill(this.transactionMemoUpdateInputSelector, memo);
   }
 
   async getTransactionMemoText() {
@@ -1005,26 +1005,26 @@ class TransactionPage extends BasePage {
   }
 
   async fillInNickname(nickname) {
-    await this.fillByTestId(this.nicknameInputSelector, nickname);
+    await this.fill(this.nicknameInputSelector, nickname);
   }
 
   async fillInTransferFromAccountId() {
     const allAccountIdsText = await this.getText(this.payerDropdownSelector);
     const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
-    await this.fillByTestId(this.transferFromAccountIdInputSelector, firstAccountId);
+    await this.fill(this.transferFromAccountIdInputSelector, firstAccountId);
     return firstAccountId;
   }
 
   async fillInTransferAmountFromAccount(amount) {
-    await this.fillByTestId(this.transferAmountFromAccountInputSelector, amount);
+    await this.fill(this.transferAmountFromAccountInputSelector, amount);
   }
 
   async fillInTransferToAccountId(accountId) {
-    await this.fillByTestId(this.transferToAccountIdInputSelector, accountId);
+    await this.fill(this.transferToAccountIdInputSelector, accountId);
   }
 
   async fillInTransferAmountToAccount(amount) {
-    await this.fillByTestId(this.transferAmountToAccountInputSelector, amount);
+    await this.fill(this.transferAmountToAccountInputSelector, amount);
   }
 
   async clickOnAddTransferFromButton() {
@@ -1054,7 +1054,7 @@ class TransactionPage extends BasePage {
   async fillInAllowanceOwnerAccount() {
     const allAccountIdsText = await this.getText(this.payerDropdownSelector);
     const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
-    await this.fillByTestId(this.allowanceOwnerAccountSelector, firstAccountId);
+    await this.fill(this.allowanceOwnerAccountSelector, firstAccountId);
     return firstAccountId;
   }
 
@@ -1063,7 +1063,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInAllowanceAmount(amount) {
-    await this.fillByTestId(this.allowanceAmountSelector, amount);
+    await this.fill(this.allowanceAmountSelector, amount);
   }
 
   async getAllowanceAmount() {
@@ -1099,7 +1099,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInFileContent(fileContent) {
-    await this.fillByTestId(this.fileContentTextFieldSelector, fileContent);
+    await this.fill(this.fileContentTextFieldSelector, fileContent);
   }
 
   async getFileContentText() {
@@ -1115,7 +1115,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInFileIdForRead(fileId) {
-    await this.fillByTestId(this.fileIdInputForReadSelector, fileId);
+    await this.fill(this.fileIdInputForReadSelector, fileId);
   }
 
   async getFileIdFromReadPage() {
@@ -1135,7 +1135,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInFileIdForUpdate(fileId) {
-    await this.fillByTestId(this.fileIdUpdateInputSelector, fileId);
+    await this.fill(this.fileIdUpdateInputSelector, fileId);
   }
 
   async getFileIdFromUpdatePage() {
@@ -1143,11 +1143,11 @@ class TransactionPage extends BasePage {
   }
 
   async fillInPublicKeyForFile(publicKey) {
-    await this.fillByTestIdWithIndex(this.publicKeyInputSelector, publicKey);
+    await this.fill(this.publicKeyInputSelector, publicKey, 1);
   }
 
   async fillInFileContentForUpdate(fileContent) {
-    await this.fillByTestId(this.fileContentUpdateTextFieldSelector, fileContent);
+    await this.fill(this.fileContentUpdateTextFieldSelector, fileContent);
   }
 
   async clickOnSignAndSubmitUpdateFileButton() {
@@ -1159,7 +1159,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInFileIdForAppend(fileId) {
-    await this.fillByTestId(this.fileIdInputForAppendSelector, fileId);
+    await this.fill(this.fileIdInputForAppendSelector, fileId);
   }
 
   async getFileIdFromAppendPage() {
@@ -1167,7 +1167,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInFileContentForAppend(fileContent) {
-    await this.fillByTestId(this.fileContentAppendTextFieldSelector, fileContent);
+    await this.fill(this.fileContentAppendTextFieldSelector, fileContent);
   }
 
   async getTransactionTypeHeaderText() {
@@ -1183,11 +1183,11 @@ class TransactionPage extends BasePage {
   }
 
   async fillInDeleteAccountTransactionMemo(memo) {
-    await this.fillByTestId(this.deleteAccountMemoInputSelector, memo);
+    await this.fill(this.deleteAccountMemoInputSelector, memo);
   }
 
   async fillInTransactionMemoForApprovePage(memo) {
-    await this.fillByTestId(this.approveAllowanceTransactionMemoSelector, memo);
+    await this.fill(this.approveAllowanceTransactionMemoSelector, memo);
   }
 
   async getTransactionMemoFromApprovePage() {
@@ -1195,7 +1195,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInTransactionMemoForCreateFilePage(memo) {
-    await this.fillByTestId(this.fileCreateTransactionMemoInputSelector, memo);
+    await this.fill(this.fileCreateTransactionMemoInputSelector, memo);
   }
 
   async getTransactionMemoFromFilePage() {
@@ -1203,7 +1203,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInFileMemoForCreatePage(memo) {
-    await this.fillByTestId(this.fileCreateMemoInputSelector, memo);
+    await this.fill(this.fileCreateMemoInputSelector, memo);
   }
 
   async getFileMemoFromCreatePage() {
@@ -1211,7 +1211,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInTransactionMemoForFileUpdatePage(memo) {
-    await this.fillByTestId(this.fileUpdateTransactionMemoInputSelector, memo);
+    await this.fill(this.fileUpdateTransactionMemoInputSelector, memo);
   }
 
   async getTransactionMemoFromFileUpdatePage() {
@@ -1219,7 +1219,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInTransactionMemoForFileAppendPage(memo) {
-    await this.fillByTestId(this.fileAppendTransactionMemoInputSelector, memo);
+    await this.fill(this.fileAppendTransactionMemoInputSelector, memo);
   }
 
   async getTransactionMemoFromFileAppendPage() {
@@ -1227,7 +1227,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInFileUpdateMemo(memo) {
-    await this.fillByTestId(this.fileUpdateMemoInputSelector, memo);
+    await this.fill(this.fileUpdateMemoInputSelector, memo);
   }
 
   async getFileUpdateMemo() {

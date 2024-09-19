@@ -77,7 +77,7 @@ class RegistrationPage extends BasePage {
   // Method to fill a missing recovery phrase word by index
   async fillRecoveryPhraseWord(index, word) {
     const selector = this.getRecoveryWordSelector(index);
-    await this.fillByTestId(selector, word);
+    await this.fill(selector, word);
   }
 
   // Method to fill in all missing recovery phrase words based on the saved recoveryPhraseWords
@@ -168,8 +168,8 @@ class RegistrationPage extends BasePage {
   }
 
   async resetForm() {
-    await this.fillByTestId(this.emailInputSelector, '');
-    await this.fillByTestId(this.passwordInputSelector, '');
+    await this.fill(this.emailInputSelector, '');
+    await this.fill(this.passwordInputSelector, '');
   }
 
   async logoutForReset() {
@@ -186,7 +186,7 @@ class RegistrationPage extends BasePage {
       );
       if (isSecondPasswordVisible) {
         await this.resetForm();
-        await this.fillByTestId(this.confirmPasswordInputSelector, '');
+        await this.fill(this.confirmPasswordInputSelector, '');
       } else {
         await this.resetForm();
       }
@@ -289,15 +289,15 @@ class RegistrationPage extends BasePage {
   }
 
   async typeEmail(email) {
-    await this.fillByTestId(this.emailInputSelector, email);
+    await this.fill(this.emailInputSelector, email);
   }
 
   async typePassword(password) {
-    await this.fillByTestId(this.passwordInputSelector, password);
+    await this.fill(this.passwordInputSelector, password);
   }
 
   async typeConfirmPassword(confirmPassword) {
-    await this.fillByTestId(this.confirmPasswordInputSelector, confirmPassword);
+    await this.fill(this.confirmPasswordInputSelector, confirmPassword);
   }
 
   async submitRegistration() {

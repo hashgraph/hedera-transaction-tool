@@ -157,7 +157,7 @@ class SettingsPage extends BasePage {
   }
 
   async fillInIndex(index = 1) {
-    await this.fillByTestId(this.indexInputSelector, index);
+    await this.fill(this.indexInputSelector, index);
   }
 
   async clickOnIndexContinueButton() {
@@ -165,7 +165,7 @@ class SettingsPage extends BasePage {
   }
 
   async fillInNickname(nickname) {
-    await this.fillByTestId(this.nicknameInputSelector, nickname);
+    await this.fill(this.nicknameInputSelector, nickname);
   }
 
   async clickOnNicknameContinueButton() {
@@ -193,19 +193,19 @@ class SettingsPage extends BasePage {
   }
 
   async fillInECDSAPrivateKey(ecdsaPrivateKey) {
-    await this.fillByTestId(this.ecdsaPrivateKeyInputSelector, ecdsaPrivateKey);
+    await this.fill(this.ecdsaPrivateKeyInputSelector, ecdsaPrivateKey);
   }
 
   async fillInED25519PrivateKey(ecdsaPrivateKey) {
-    await this.fillByTestId(this.ed25519PrivateKeyInputSelector, ecdsaPrivateKey);
+    await this.fill(this.ed25519PrivateKeyInputSelector, ecdsaPrivateKey);
   }
 
   async fillInECDSANickname(ecdsaNickname) {
-    await this.fillByTestId(this.ecdsaNicknameInputSelector, ecdsaNickname);
+    await this.fill(this.ecdsaNicknameInputSelector, ecdsaNickname);
   }
 
   async fillInED25519Nickname(ecdsaNickname) {
-    await this.fillByTestId(this.ed25519PNicknameInputSelector, ecdsaNickname);
+    await this.fill(this.ed25519PNicknameInputSelector, ecdsaNickname);
   }
 
   async clickOnECDSAImportButton() {
@@ -233,11 +233,11 @@ class SettingsPage extends BasePage {
   }
 
   async fillInCurrentPassword(password) {
-    await this.fillByTestId(this.currentPasswordInputSelector, password);
+    await this.fill(this.currentPasswordInputSelector, password);
   }
 
   async fillInNewPassword(password) {
-    await this.fillByTestId(this.newPasswordInputSelector, password);
+    await this.fill(this.newPasswordInputSelector, password);
   }
 
   async clickOnChangePasswordButton() {

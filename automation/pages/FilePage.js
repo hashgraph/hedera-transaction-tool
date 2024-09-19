@@ -88,7 +88,7 @@ class FilePage extends BasePage {
   }
 
   async fillInExistingFileId(fileId) {
-    await this.fillByTestId(this.existingFileIdInputSelector, fileId);
+    await this.fill(this.existingFileIdInputSelector, fileId);
   }
 
   async getFileIdText() {
