@@ -180,9 +180,9 @@ class TransactionPage extends BasePage {
       { state: 'visible', timeout: 10000 },
     );
     const regex = /^\d+\.\d+\.\d+@\d+\.\d+$/;
-    const transactionId = await this.getTextByTestId(this.textTransactionIdSelector);
-    const txType = await this.getTextByTestId(this.textTypeTransactionSelector);
-    const maxTxFee = await this.getTextByTestId(this.textMaxTxFeeSelector);
+    const transactionId = await this.getText(this.textTransactionIdSelector);
+    const txType = await this.getText(this.textTypeTransactionSelector);
+    const maxTxFee = await this.getText(this.textMaxTxFeeSelector);
     const isSignButtonVisible = await this.isElementVisible(this.buttonSignTransactionSelector);
 
     const checks = [
@@ -221,19 +221,19 @@ class TransactionPage extends BasePage {
   }
 
   async clickOnTransactionsMenuButton() {
-    await this.clickByTestId(this.transactionsMenuButtonSelector, 2500);
+    await this.click(this.transactionsMenuButtonSelector, null, 2500);
   }
 
   async clickOnSingleTransactionButton() {
-    await this.clickByTestId(this.singleTransactionButtonSelector);
+    await this.click(this.singleTransactionButtonSelector);
   }
 
   async clickOnAccountsMenuButton() {
-    await this.clickByTestId(this.accountsMenuButtonSelector);
+    await this.click(this.accountsMenuButtonSelector);
   }
 
   async clickOnCreateNewTransactionButton() {
-    await this.clickByTestId(this.createNewTransactionButtonSelector);
+    await this.click(this.createNewTransactionButtonSelector);
     await this.clickOnSingleTransactionButton();
   }
 
@@ -249,7 +249,7 @@ class TransactionPage extends BasePage {
     const maxAttempts = 10; // Maximum number of attempts to find the correct element
     for (let index = 0; index < maxAttempts; index++) {
       try {
-        await this.clickByTestIdWithIndex(linkSelector, index);
+        await this.click(linkSelector, index);
         // Check if the next page element that should appear is visible
         if (await this.isElementVisible(targetSelector)) {
           console.log(`Successfully navigated to the ${transactionType} Transaction page.`);
@@ -266,13 +266,20 @@ class TransactionPage extends BasePage {
     );
   }
 
-  async clickOnMenuLink(linkSelector, activeClass, transactionType) {
+  async clickOnMenuLink(linkSelector, transactionType) {
     console.log(`Attempting to click on ${transactionType} menu link`);
     const maxAttempts = 10; // Maximum number of attempts to find the correct element
     for (let index = 0; index < maxAttempts; index++) {
       try {
-        await this.clickByTestIdWithIndex(linkSelector, index);
-        return;
+        await this.click(linkSelector, index);
+        // After clicking, verify that the menu item is now active
+        const isActive = await this.isElementActive(linkSelector, index);
+        if (isActive) {
+          console.log(`Successfully activated the ${transactionType} menu link`);
+          return;
+        } else {
+          console.log(`Attempt ${index + 1}: Menu item is not active after click, retrying...`);
+        }
       } catch (error) {
         console.log(
           `Attempt ${index + 1}: Failed to find or click on the correct element, retrying...`,
@@ -443,7 +450,7 @@ class TransactionPage extends BasePage {
       return 0;
     } else {
       for (let i = 0; i < count; i++) {
-        const idText = await this.getTextByTestId(this.accountIdPrefixSelector + i);
+        const idText = await this.getText(this.accountIdPrefixSelector + i);
         if (idText === accountId) {
           return i;
         }
@@ -570,7 +577,7 @@ class TransactionPage extends BasePage {
   }
 
   async getTransactionDetailsId() {
-    return await this.getTextByTestId(this.transactionDetailsIdSelector);
+    return await this.getText(this.transactionDetailsIdSelector);
   }
 
   async createFile(fileContent) {
@@ -742,15 +749,15 @@ class TransactionPage extends BasePage {
   }
 
   async clickOnSignAndSubmitButton() {
-    await this.clickByTestId(this.signAndSubmitButtonSelector, 10000);
+    await this.click(this.signAndSubmitButtonSelector, null, 10000);
   }
 
   async clickOnSignAndSubmitDeleteButton() {
-    await this.clickByTestId(this.signAndSubmitDeleteButtonSelector);
+    await this.click(this.signAndSubmitDeleteButtonSelector);
   }
 
   async clickOnSignAndSubmitUpdateButton() {
-    await this.clickByTestId(this.signAndSubmitUpdateButtonSelector);
+    await this.click(this.signAndSubmitUpdateButtonSelector);
   }
 
   async clickSignTransactionButton() {
@@ -767,23 +774,23 @@ class TransactionPage extends BasePage {
   }
 
   async clickOnCloseButtonForCompletedTransaction() {
-    await this.clickByTestId(this.closeCompletedTxButtonSelector);
+    await this.click(this.closeCompletedTxButtonSelector);
   }
 
   async clickOnCancelTransaction() {
-    await this.clickByTestId(this.buttonCancelTransactionSelector);
+    await this.click(this.buttonCancelTransactionSelector);
   }
 
   async clickAddButton(depth) {
-    await this.clickByTestId(this.addComplexButtonIndex + depth);
+    await this.click(this.addComplexButtonIndex + depth);
   }
 
   async selectPublicKeyOption(depth) {
-    await this.clickByTestId(this.addPublicKeyButtonIndex + depth);
+    await this.click(this.addPublicKeyButtonIndex + depth);
   }
 
   async selectThreshold(depth) {
-    await this.clickByTestId(this.selectThresholdNumberIndex + depth);
+    await this.click(this.selectThresholdNumberIndex + depth);
   }
 
   async fillInPublicKeyField(publicKey) {
@@ -791,23 +798,23 @@ class TransactionPage extends BasePage {
   }
 
   async clickInsertPublicKey() {
-    await this.clickByTestId(this.insertPublicKeyButtonSelector);
+    await this.click(this.insertPublicKeyButtonSelector);
   }
 
   async clickOnCreateNewComplexKeyButton() {
-    await this.clickByTestId(this.spanCreateNewComplexKeyButtonSelector);
+    await this.click(this.spanCreateNewComplexKeyButtonSelector);
   }
 
   async clickOnComplexTab() {
-    await this.clickByTestId(this.complexTabSelector);
+    await this.click(this.complexTabSelector);
   }
 
   async clickOnDoneButton() {
-    await this.clickByTestId(this.doneComplexKeyButtonSelector);
+    await this.click(this.doneComplexKeyButtonSelector);
   }
 
   async clickOnDoneButtonForComplexKeyCreation() {
-    await this.clickByTestIdWithIndex(this.doneComplexKeyButtonSelector, 0);
+    await this.click(this.doneComplexKeyButtonSelector, 0);
   }
 
   /**
@@ -886,7 +893,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInTransferAccountId() {
-    const allAccountIdsText = await this.getTextByTestIdWithRetry(this.payerDropdownSelector);
+    const allAccountIdsText = await this.getTextWithRetry(this.payerDropdownSelector);
     const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
     await this.fillAndVerifyByTestId(this.transferAccountInputSelector, firstAccountId);
     return firstAccountId;
@@ -898,7 +905,7 @@ class TransactionPage extends BasePage {
   }
 
   async getPayerAccountId() {
-    const allAccountIdsText = await this.getTextByTestId(this.payerDropdownSelector);
+    const allAccountIdsText = await this.getText(this.payerDropdownSelector);
     return await this.getFirstAccountIdFromText(allAccountIdsText);
   }
 
@@ -1002,7 +1009,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInTransferFromAccountId() {
-    const allAccountIdsText = await this.getTextByTestId(this.payerDropdownSelector);
+    const allAccountIdsText = await this.getText(this.payerDropdownSelector);
     const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
     await this.fillByTestId(this.transferFromAccountIdInputSelector, firstAccountId);
     return firstAccountId;
@@ -1021,23 +1028,23 @@ class TransactionPage extends BasePage {
   }
 
   async clickOnAddTransferFromButton() {
-    await this.clickByTestId(this.addTransferFromButtonSelector);
+    await this.click(this.addTransferFromButtonSelector);
   }
 
   async clickOnAddTransferToButton() {
-    await this.clickByTestId(this.addTransferToButtonSelector);
+    await this.click(this.addTransferToButtonSelector);
   }
 
   async clickOnAddRestButton() {
-    await this.clickByTestId(this.addRestButtonSelector);
+    await this.click(this.addRestButtonSelector);
   }
 
   async clickOnSignAndSubmitTransferButton() {
-    await this.clickByTestId(this.signAndSubmitTransferSelector);
+    await this.click(this.signAndSubmitTransferSelector);
   }
 
   async getHbarAmountValueForTwoAccounts() {
-    return await this.getAllTextByTestId(this.hbarAmountValueSelector);
+    return await this.getText(this.hbarAmountValueSelector);
   }
 
   async isSignAndSubmitButtonEnabled() {
@@ -1045,7 +1052,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInAllowanceOwnerAccount() {
-    const allAccountIdsText = await this.getTextByTestId(this.payerDropdownSelector);
+    const allAccountIdsText = await this.getText(this.payerDropdownSelector);
     const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
     await this.fillByTestId(this.allowanceOwnerAccountSelector, firstAccountId);
     return firstAccountId;
@@ -1064,7 +1071,7 @@ class TransactionPage extends BasePage {
   }
 
   async clickOnSignAndSubmitAllowanceButton() {
-    await this.clickByTestId(this.signAndSubmitAllowanceSelector);
+    await this.click(this.signAndSubmitAllowanceSelector);
   }
 
   async isSignAndSubmitCreateAccountButtonVisible() {
@@ -1100,11 +1107,11 @@ class TransactionPage extends BasePage {
   }
 
   async clickOnSignAndSubmitFileCreateButton() {
-    await this.clickByTestId(this.signAndSubmitFileCreateSelector, 10000);
+    await this.click(this.signAndSubmitFileCreateSelector, null, 10000);
   }
 
   async clickOnFileServiceLink() {
-    await this.clickOnMenuLink(this.fileServiceLinkSelector, 'active', 'File Service');
+    await this.clickOnMenuLink(this.fileServiceLinkSelector, 'File Service');
   }
 
   async fillInFileIdForRead(fileId) {
@@ -1120,7 +1127,7 @@ class TransactionPage extends BasePage {
   }
 
   async clickOnSignAndReadFileButton() {
-    await this.clickByTestId(this.signAndReadFileButtonSelector);
+    await this.click(this.signAndReadFileButtonSelector);
   }
 
   async getPublicKeyText() {
@@ -1144,11 +1151,11 @@ class TransactionPage extends BasePage {
   }
 
   async clickOnSignAndSubmitUpdateFileButton() {
-    await this.clickByTestId(this.signAndSubmitUpdateFileSelector);
+    await this.click(this.signAndSubmitUpdateFileSelector);
   }
 
   async clickOnSignAndSubmitFileAppendButton() {
-    await this.clickByTestId(this.signAndSubmitFileAppendButtonSelector);
+    await this.click(this.signAndSubmitFileAppendButtonSelector);
   }
 
   async fillInFileIdForAppend(fileId) {
@@ -1164,15 +1171,15 @@ class TransactionPage extends BasePage {
   }
 
   async getTransactionTypeHeaderText() {
-    return await this.getTextByTestId(this.transactionTypeHeaderSelector);
+    return await this.getText(this.transactionTypeHeaderSelector);
   }
 
   async clickOnSaveDraftButton() {
-    await this.clickByTestId(this.saveDraftButtonSelector);
+    await this.click(this.saveDraftButtonSelector);
   }
 
   async clickOnDraftsMenuButton() {
-    await this.clickByTestId(this.draftsTabSelector);
+    await this.click(this.draftsTabSelector);
   }
 
   async fillInDeleteAccountTransactionMemo(memo) {
@@ -1228,11 +1235,11 @@ class TransactionPage extends BasePage {
   }
 
   async getFirstDraftDate() {
-    return await this.getTextByTestId(this.draftDetailsDateIndexSelector + '0');
+    return await this.getText(this.draftDetailsDateIndexSelector + '0');
   }
 
   async getFirstDraftType() {
-    return await this.getTextByTestId(this.draftDetailsTypeIndexSelector + '0');
+    return await this.getText(this.draftDetailsTypeIndexSelector + '0');
   }
 
   async getFirstDraftIsTemplateCheckboxVisible() {
@@ -1240,11 +1247,11 @@ class TransactionPage extends BasePage {
   }
 
   async clickOnFirstDraftIsTemplateCheckbox() {
-    await this.clickByTestId(this.draftDetailsIsTemplateCheckboxSelector + '0');
+    await this.click(this.draftDetailsIsTemplateCheckboxSelector + '0');
   }
 
   async clickOnFirstDraftDeleteButton() {
-    await this.clickByTestId(this.draftDeleteButtonIndexSelector + '0');
+    await this.click(this.draftDeleteButtonIndexSelector + '0');
   }
 
   async isFirstDraftDeleteButtonVisible() {
@@ -1252,7 +1259,7 @@ class TransactionPage extends BasePage {
   }
 
   async clickOnFirstDraftContinueButton() {
-    await this.clickByTestId(this.draftContinueButtonIndexSelector + '0');
+    await this.click(this.draftContinueButtonIndexSelector + '0');
   }
 
   async isFirstDraftContinueButtonVisible() {
@@ -1304,7 +1311,7 @@ class TransactionPage extends BasePage {
 
   async clickOnConfirmDeleteAccountButton() {
     await this.waitForElementPresentInDOM(this.confirmDeleteAccountButtonSelector);
-    await this.clickByTestId(this.confirmDeleteAccountButtonSelector, 5000);
+    await this.click(this.confirmDeleteAccountButtonSelector, null, 5000);
   }
 }
 module.exports = TransactionPage;

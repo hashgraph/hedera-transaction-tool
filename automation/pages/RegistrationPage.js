@@ -102,7 +102,7 @@ class RegistrationPage extends BasePage {
     while (attempts < retryCount && !isSuccessful) {
       try {
         // Attempt to click the final next button
-        await this.clickByTestId(this.finalNextButtonSelector);
+        await this.click(this.finalNextButtonSelector);
         await this.window.waitForSelector(this.settingsButtonSelector, {
           state: 'visible',
           timeout: 1000,
@@ -176,7 +176,7 @@ class RegistrationPage extends BasePage {
     const isLogoutButtonVisible = await this.isElementVisible(this.logoutButtonSelector);
     if (isLogoutButtonVisible) {
       console.log('Logout button is visible, clicking to logout');
-      await this.clickByTestId(this.logoutButtonSelector);
+      await this.click(this.logoutButtonSelector);
       const element = this.window.getByTestId(this.emailInputSelector);
       await element.waitFor({ state: 'visible', timeout: 1000 });
     } else {
@@ -301,39 +301,39 @@ class RegistrationPage extends BasePage {
   }
 
   async submitRegistration() {
-    await this.clickByTestId(this.registerButtonSelector);
+    await this.click(this.registerButtonSelector);
   }
 
   async clickOnCreateNewTab() {
-    await this.clickByTestId(this.createNewTabSelector);
+    await this.click(this.createNewTabSelector);
   }
 
   async clickOnImportTab() {
-    await this.clickByTestId(this.importExistingTabSelector);
+    await this.click(this.importExistingTabSelector);
   }
 
   async clickOnUnderstandCheckbox() {
-    await this.clickByTestId(this.understandBackedUpCheckboxSelector);
+    await this.click(this.understandBackedUpCheckboxSelector);
   }
 
   async clickOnGenerateButton() {
-    await this.clickByTestId(this.generateButtonSelector);
+    await this.click(this.generateButtonSelector);
   }
 
   async clickOnVerifyButton() {
-    await this.clickByTestId(this.verifyButtonSelector);
+    await this.click(this.verifyButtonSelector);
   }
 
   async clickOnClearButton() {
-    await this.clickByTestId(this.clearButtonSelector);
+    await this.click(this.clearButtonSelector);
   }
 
   async clickOnNextButton() {
-    await this.clickByTestId(this.nextButtonSelector);
+    await this.click(this.nextButtonSelector);
   }
 
   async clickOnNextImportButton() {
-    await this.clickByTestId(this.nextButtonImportSelector);
+    await this.click(this.nextButtonImportSelector);
   }
 
   async scrollToNextImportButton() {
@@ -341,7 +341,7 @@ class RegistrationPage extends BasePage {
   }
 
   async getEmailErrorMessage() {
-    return await this.getTextByTestId(this.emailErrorMessageSelector);
+    return await this.getText(this.emailErrorMessageSelector);
   }
 
   async isEmailErrorMessageVisible() {
@@ -349,11 +349,11 @@ class RegistrationPage extends BasePage {
   }
 
   async getPasswordErrorMessage() {
-    return await this.getTextByTestId(this.passwordErrorMessageSelector);
+    return await this.getText(this.passwordErrorMessageSelector);
   }
 
   async getConfirmPasswordErrorMessage() {
-    return await this.getTextByTestId(this.confirmPasswordErrorMessageSelector);
+    return await this.getText(this.confirmPasswordErrorMessageSelector);
   }
 
   async isCreateNewTabVisible() {
@@ -377,11 +377,11 @@ class RegistrationPage extends BasePage {
   }
 
   async getToastMessage() {
-    return await this.getTextByCssSelector(this.toastMessageSelector, 25000);
+    return await this.getText(this.toastMessageSelector, null, 25000);
   }
 
   async clickOnGenerateAgainButton() {
-    await this.clickByTestId(this.generateAgainButtonSelector);
+    await this.click(this.generateAgainButtonSelector);
   }
 
   async isConfirmPasswordFieldVisible() {
@@ -389,11 +389,11 @@ class RegistrationPage extends BasePage {
   }
 
   async getPublicKey() {
-    return await this.getTextByTestId(this.publicKeySpanSelector);
+    return await this.getText(this.publicKeySpanSelector);
   }
 
   async getPrivateKey() {
-    return await this.getTextByTestId(this.privateKeySpanSelector);
+    return await this.getText(this.privateKeySpanSelector);
   }
 }
 

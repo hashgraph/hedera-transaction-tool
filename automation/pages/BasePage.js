@@ -6,56 +6,138 @@ class BasePage {
     this.window = window;
   }
 
-  async clickByTestId(testId, timeout = this.DEFAULT_TIMEOUT) {
-    console.log(`Clicking on element with testId: ${testId}`);
-    const element = this.window.getByTestId(testId);
+  // Helper method to determine if a selector is a CSS selector
+  isCssSelector(selector) {
+    // Check if the selector starts with '.', '#', '[', or ':'
+    const cssSelectorPattern = /^[.#\[:]/;
+    return cssSelectorPattern.test(selector);
+  }
+
+  // Unified method to get an element based on the selector type
+  getElement(selector, index = null) {
+    if (typeof selector !== 'string') {
+      throw new Error(`Invalid selector: ${selector}`);
+    }
+
+    let element;
+    if (this.isCssSelector(selector)) {
+      element = this.window.locator(selector);
+    } else {
+      // Treat as data-testid
+      element = this.window.getByTestId(selector);
+    }
+
+    // Apply .nth(index) only if index is not null
+    if (index !== null && index !== undefined) {
+      element = element.nth(index);
+    }
+
+    return element;
+  }
+
+  async click(selector, index = null, timeout = this.DEFAULT_TIMEOUT) {
+    console.log(`Clicking on element with selector: ${selector}`);
+    const element = this.getElement(selector, index);
     try {
-      await element.waitFor({ state: 'visible', timeout: timeout });
+      await element.waitFor({ state: 'visible', timeout });
+      await element.click();
     } catch (error) {
-      console.log(`Element with testId: ${testId} is not visible`);
+      console.log(`Element with selector: ${selector} is not visible`);
     }
-    await element.click();
   }
 
-  async clickByTestIdWithIndex(testId, index = 1, timeout = this.DEFAULT_TIMEOUT) {
-    console.log(`Clicking on element with testId: ${testId} at index: ${index}`);
-    const element = this.window.getByTestId(testId).nth(index);
-    await element.waitFor({ state: 'visible', timeout: timeout });
-    await element.click();
+  async isElementActive(selector, index = null) {
+    const element = this.getElement(selector, index);
+    const classAttribute = await element.getAttribute('class');
+    return classAttribute && classAttribute.includes('active');
   }
 
-  async getTextByTestId(testId, timeout = this.DEFAULT_TIMEOUT) {
-    console.log(`Getting text for element with testId: ${testId}`);
-    const element = this.window.getByTestId(testId);
-    await element.waitFor({ state: 'visible', timeout: timeout });
-    return element.textContent();
-  }
+  // async clickByTestId(testId, timeout = this.DEFAULT_TIMEOUT) {
+  //   console.log(`Clicking on element with testId: ${testId}`);
+  //   const element = this.window.getByTestId(testId);
+  //   try {
+  //     await element.waitFor({ state: 'visible', timeout: timeout });
+  //   } catch (error) {
+  //     console.log(`Element with testId: ${testId} is not visible`);
+  //   }
+  //   await element.click();
+  // }
+  //
+  // async clickByTestIdWithIndex(testId, index = 1, timeout = this.DEFAULT_TIMEOUT) {
+  //   console.log(`Clicking on element with testId: ${testId} at index: ${index}`);
+  //   const element = this.window.getByTestId(testId).nth(index);
+  //   await element.waitFor({ state: 'visible', timeout: timeout });
+  //   await element.click();
+  // }
 
-  async getTextByTestIdWithIndex(testId, index = 1, timeout = this.DEFAULT_TIMEOUT) {
-    console.log(`Getting text for element with testId: ${testId} at index: ${index}`);
-    const element = this.window.getByTestId(testId).nth(index);
-    await element.waitFor({ state: 'visible', timeout: timeout });
-    return element.textContent();
-  }
+  // async getTextByTestIdWithIndex(testId, index = 1, timeout = this.DEFAULT_TIMEOUT) {
+  //   console.log(`Getting text for element with testId: ${testId} at index: ${index}`);
+  //   const element = this.window.getByTestId(testId).nth(index);
+  //   await element.waitFor({ state: 'visible', timeout: timeout });
+  //   return element.textContent();
+  // }
 
-  async getAllTextByTestId(testId, timeout = this.DEFAULT_TIMEOUT) {
-    console.log(`Getting text for element with testId: ${testId}`);
+  // async getTextByTestId(testId, timeout = this.DEFAULT_TIMEOUT) {
+  //   console.log(`Getting text for element with testId: ${testId}`);
+  //   const element = this.window.getByTestId(testId);
+  //   await element.waitFor({ state: 'visible', timeout: timeout });
+  //   return element.textContent();
+  // }
 
-    const elements = this.window.locator(`[data-testid="${testId}"]`);
+  // async getAllTextByTestId(testId, timeout = this.DEFAULT_TIMEOUT) {
+  //   console.log(`Getting text for element with testId: ${testId}`);
+  //
+  //   const elements = this.window.locator(`[data-testid="${testId}"]`);
+  //
+  //   const count = await elements.count();
+  //   if (count !== 2) {
+  //     throw new Error(`Expected exactly 2 elements but found ${count}`);
+  //   }
+  //
+  //   const texts = [];
+  //   for (let i = 0; i < count; i++) {
+  //     const element = elements.nth(i);
+  //     await element.waitFor({ state: 'visible', timeout: timeout });
+  //     texts.push(await element.textContent());
+  //   }
+  //
+  //   return texts;
+  // }
 
-    const count = await elements.count();
-    if (count !== 2) {
-      throw new Error(`Expected exactly 2 elements but found ${count}`);
+  async getText(selector, index = null, timeout = this.DEFAULT_TIMEOUT) {
+    if (index !== null) {
+      console.log(`Getting text for element with selector: ${selector} at index ${index}`);
+      const element = this.getElement(selector, index);
+
+      try {
+        await element.waitFor({ state: 'visible', timeout });
+      } catch (error) {
+        console.log(
+          `Element at index ${index} with selector: ${selector} did not become visible within ${timeout}ms`,
+        );
+      }
+
+      return await element.textContent();
+    } else {
+      console.log(`Getting text for elements with selector: ${selector}`);
+      const elements = this.getElement(selector);
+
+      try {
+        await elements.first().waitFor({ state: 'visible', timeout });
+      } catch (error) {
+        console.log(`No elements became visible with selector: ${selector} within ${timeout}ms`);
+      }
+
+      const count = await elements.count();
+
+      const texts = [];
+      for (let i = 0; i < count; i++) {
+        const element = elements.nth(i);
+        texts.push(await element.textContent());
+      }
+
+      return count === 1 ? texts[0] : texts;
     }
-
-    const texts = [];
-    for (let i = 0; i < count; i++) {
-      const element = elements.nth(i);
-      await element.waitFor({ state: 'visible', timeout: timeout });
-      texts.push(await element.textContent());
-    }
-
-    return texts;
   }
 
   async getTextFromInputFieldByTestId(testId, timeout = this.DEFAULT_TIMEOUT) {
@@ -90,23 +172,56 @@ class BasePage {
     );
   }
 
-  async getTextByTestIdWithRetry(
-    testId,
+  // async getTextByTestIdWithRetry(
+  //   testId,
+  //   timeout = this.DEFAULT_TIMEOUT,
+  //   retries = 5,
+  //   retryDelay = 1000,
+  // ) {
+  //   console.log(`Getting text for element with testId: ${testId}`);
+  //   let attempt = 0;
+  //   let textContent = '';
+  //
+  //   while (attempt < retries) {
+  //     const element = this.window.getByTestId(testId);
+  //     await element.waitFor({ state: 'visible', timeout: timeout });
+  //
+  //     textContent = await element.textContent();
+  //     console.log(
+  //       `Attempt ${attempt + 1}: Retrieved text content: "${textContent}" for element with testId: ${testId}`,
+  //     );
+  //
+  //     if (textContent && textContent.trim() !== '') {
+  //       return textContent;
+  //     }
+  //
+  //     // Increment the attempt counter and delay before retrying
+  //     attempt++;
+  //     if (attempt < retries) {
+  //       console.log(`Text content is empty or invalid, retrying after ${retryDelay}ms...`);
+  //       await new Promise(resolve => setTimeout(resolve, retryDelay));
+  //     }
+  //   }
+  // }
+
+  async getTextWithRetry(
+    selector,
+    index = null,
     timeout = this.DEFAULT_TIMEOUT,
     retries = 5,
     retryDelay = 1000,
   ) {
-    console.log(`Getting text for element with testId: ${testId}`);
+    console.log(`Getting text for element with selector: ${selector}`);
     let attempt = 0;
     let textContent = '';
 
     while (attempt < retries) {
-      const element = this.window.getByTestId(testId);
-      await element.waitFor({ state: 'visible', timeout: timeout });
+      const element = this.getElement(selector, index);
+      await element.waitFor({ state: 'visible', timeout });
 
       textContent = await element.textContent();
       console.log(
-        `Attempt ${attempt + 1}: Retrieved text content: "${textContent}" for element with testId: ${testId}`,
+        `Attempt ${attempt + 1}: Retrieved text content: "${textContent}" for element with selector: ${selector}`,
       );
 
       if (textContent && textContent.trim() !== '') {
@@ -120,14 +235,18 @@ class BasePage {
         await new Promise(resolve => setTimeout(resolve, retryDelay));
       }
     }
+
+    throw new Error(
+      `Failed to retrieve text from element with selector: ${selector} after ${retries} attempts`,
+    );
   }
 
-  async getTextByCssSelector(selector, timeout = this.DEFAULT_TIMEOUT) {
-    console.log(`Getting text for element with CSS selector: ${selector}`);
-    const element = this.window.locator(selector);
-    await element.waitFor({ state: 'visible', timeout: timeout });
-    return element.textContent();
-  }
+  // async getTextByCssSelector(selector, timeout = this.DEFAULT_TIMEOUT) {
+  //   console.log(`Getting text for element with CSS selector: ${selector}`);
+  //   const element = this.window.locator(selector);
+  //   await element.waitFor({ state: 'visible', timeout: timeout });
+  //   return element.textContent();
+  // }
 
   async fillByTestId(testId, value) {
     console.log(`Filling element with testId: ${testId} with value: ${value}`);

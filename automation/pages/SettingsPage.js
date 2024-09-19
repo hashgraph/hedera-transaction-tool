@@ -113,24 +113,24 @@ class SettingsPage extends BasePage {
 
   async getRowDataByIndex(index) {
     return {
-      index: await this.getTextByTestId(this.indexCellSelectorPrefix + index),
-      nickname: await this.getTextByTestId(this.nicknameCellSelectorPrefix + index),
-      accountID: await this.getTextByTestId(this.accountIdCellSelectorPrefix + index),
-      keyType: await this.getTextByTestId(this.keyTypeCellSelectorPrefix + index),
-      publicKey: await this.getTextByTestId(this.publicKeyCellSelectorPrefix + index),
+      index: await this.getText(this.indexCellSelectorPrefix + index),
+      nickname: await this.getText(this.nicknameCellSelectorPrefix + index),
+      accountID: await this.getText(this.accountIdCellSelectorPrefix + index),
+      keyType: await this.getText(this.keyTypeCellSelectorPrefix + index),
+      publicKey: await this.getText(this.publicKeyCellSelectorPrefix + index),
     };
   }
 
   async clickOnSettingsButton() {
-    await this.clickByTestId(this.settingsButtonSelector);
+    await this.click(this.settingsButtonSelector);
   }
 
   async clickOnKeysTab() {
-    await this.clickByTestId(this.keysTabButtonSelector);
+    await this.click(this.keysTabButtonSelector);
   }
 
   async clickOnProfileTab() {
-    await this.clickByTestId(this.profileTabButtonSelector);
+    await this.click(this.profileTabButtonSelector);
   }
 
   async clickOnRestoreButton() {
@@ -139,7 +139,7 @@ class SettingsPage extends BasePage {
     let attempt = 0;
 
     while (attempt < maxRetries) {
-      await this.clickByTestId(this.restoreButtonSelector);
+      await this.click(this.restoreButtonSelector);
       if (await this.isElementVisible(this.continueButtonSelector, 3000)) {
         return;
       }
@@ -153,7 +153,7 @@ class SettingsPage extends BasePage {
   }
 
   async clickOnContinueButton() {
-    await this.clickByTestId(this.continueButtonSelector, 25000);
+    await this.click(this.continueButtonSelector, null, 25000);
   }
 
   async fillInIndex(index = 1) {
@@ -161,7 +161,7 @@ class SettingsPage extends BasePage {
   }
 
   async clickOnIndexContinueButton() {
-    await this.clickByTestId(this.continueIndexButtonSelector);
+    await this.click(this.continueIndexButtonSelector);
   }
 
   async fillInNickname(nickname) {
@@ -169,27 +169,27 @@ class SettingsPage extends BasePage {
   }
 
   async clickOnNicknameContinueButton() {
-    await this.clickByTestId(this.continueNicknameButtonSelector, 12000);
+    await this.click(this.continueNicknameButtonSelector, null, 12000);
   }
 
   async clickOnContinuePhraseButton() {
-    await this.clickByTestId(this.continuePhraseButtonSelector);
+    await this.click(this.continuePhraseButtonSelector);
   }
 
   async clickOnCustomTab() {
-    await this.clickByTestId(this.customTabButtonSelector);
+    await this.click(this.customTabButtonSelector);
   }
 
   async clickOnImportButton() {
-    await this.clickByTestId(this.importButtonSelector);
+    await this.click(this.importButtonSelector);
   }
 
   async clickOnECDSADropDown() {
-    await this.clickByTestId(this.ecdsaImportLinkSelector);
+    await this.click(this.ecdsaImportLinkSelector);
   }
 
   async clickOnED25519DropDown() {
-    await this.clickByTestId(this.ed25519ImportLinkSelector);
+    await this.click(this.ed25519ImportLinkSelector);
   }
 
   async fillInECDSAPrivateKey(ecdsaPrivateKey) {
@@ -209,27 +209,27 @@ class SettingsPage extends BasePage {
   }
 
   async clickOnECDSAImportButton() {
-    await this.clickByTestId(this.ecdsaImportButtonSelector);
+    await this.click(this.ecdsaImportButtonSelector);
   }
 
   async clickOnED25519ImportButton() {
-    await this.clickByTestId(this.ed25519ImportButtonSelector);
+    await this.click(this.ed25519ImportButtonSelector);
   }
 
   async clickOnEyeDecryptIcon() {
-    await this.clickByTestId(this.decryptMainPrivateKeyButtonSelector);
+    await this.click(this.decryptMainPrivateKeyButtonSelector);
   }
 
   async getPrivateKeyText() {
-    return await this.getTextByTestId(this.decryptedPrivateKeySelector);
+    return await this.getText(this.decryptedPrivateKeySelector);
   }
 
   async clickOnDeleteButtonAtIndex(index) {
-    await this.clickByTestId(this.deleteKeyButtonPrefix + index);
+    await this.click(this.deleteKeyButtonPrefix + index);
   }
 
   async clickOnDeleteKeyPairButton() {
-    await this.clickByTestId(this.deleteKeyPairButton);
+    await this.click(this.deleteKeyPairButton);
   }
 
   async fillInCurrentPassword(password) {
@@ -241,20 +241,20 @@ class SettingsPage extends BasePage {
   }
 
   async clickOnChangePasswordButton() {
-    await this.clickByTestId(this.changePasswordButtonSelector);
+    await this.click(this.changePasswordButtonSelector);
   }
 
   async clickOnConfirmChangePassword() {
-    await this.clickByTestId(this.confirmChangePasswordButtonSelector);
+    await this.click(this.confirmChangePasswordButtonSelector);
   }
 
   async clickOnCloseButton() {
     await this.waitForElementToBeVisible(this.closeButtonSelector, 15000);
-    await this.clickByTestId(this.closeButtonSelector);
+    await this.click(this.closeButtonSelector);
   }
 
   async clickOnOrganisationsTab() {
-    await this.clickByTestId(this.organisationsTabButtonSelector);
+    await this.click(this.organisationsTabButtonSelector);
   }
 }
 module.exports = SettingsPage;

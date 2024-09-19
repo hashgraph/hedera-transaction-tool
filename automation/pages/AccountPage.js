@@ -48,95 +48,95 @@ class AccountPage extends BasePage {
   multiSelectCheckboxSelector = 'checkbox-multiple-account-id-';
 
   async clickOnEditButton() {
-    await this.clickByTestId(this.editButtonSelector);
+    await this.click(this.editButtonSelector);
   }
 
   async clickOnRemoveButton() {
-    await this.clickByTestId(this.removeButtonSelector);
+    await this.click(this.removeButtonSelector);
   }
 
   async clickOnAddNewButton() {
-    await this.clickByTestId(this.addNewButtonSelector);
+    await this.click(this.addNewButtonSelector);
   }
 
   async clickOnCreateNewLink() {
-    await this.clickByTestId(this.createNewLinkSelector);
+    await this.click(this.createNewLinkSelector);
   }
 
   async clickOnAddExistingLink() {
-    await this.clickByTestId(this.addExistingLinkSelector);
+    await this.click(this.addExistingLinkSelector);
   }
 
   async clickOnAccountsLink() {
-    await this.clickByTestId(this.accountsLinkSelector);
+    await this.click(this.accountsLinkSelector);
   }
 
   async getAccountIdText() {
-    return await this.getTextByTestId(this.accountIdTextSelector);
+    return await this.getText(this.accountIdTextSelector);
   }
 
   async getEvmAddressText() {
-    return await this.getTextByTestId(this.evmAddressTextSelector);
+    return await this.getText(this.evmAddressTextSelector);
   }
 
   async getBalanceText() {
-    return await this.getTextByTestId(this.balanceTextSelector);
+    return await this.getText(this.balanceTextSelector);
   }
 
   async getKeyText() {
-    return await this.getTextByTestId(this.keyTextSelector);
+    return await this.getText(this.keyTextSelector);
   }
 
   async getKeyTypeText() {
-    return await this.getTextByTestId(this.keyTypeTextSelector);
+    return await this.getText(this.keyTypeTextSelector);
   }
 
   async getReceiverSigRequiredText() {
-    return await this.getTextByTestId(this.receiverSigRequiredTextSelector);
+    return await this.getText(this.receiverSigRequiredTextSelector);
   }
 
   async getMemoText() {
-    return await this.getTextByTestId(this.memoTextSelector);
+    return await this.getText(this.memoTextSelector);
   }
 
   async getMaxAutoAssocText() {
-    return await this.getTextByTestId(this.maxAutoAssocTextSelector);
+    return await this.getText(this.maxAutoAssocTextSelector);
   }
 
   async getEthereumNonceText() {
-    return await this.getTextByTestId(this.ethereumNonceTextSelector);
+    return await this.getText(this.ethereumNonceTextSelector);
   }
 
   async getCreatedAtText() {
-    return await this.getTextByTestId(this.createdAtTextSelector);
+    return await this.getText(this.createdAtTextSelector);
   }
 
   async getExpiresAtText() {
-    return await this.getTextByTestId(this.expiresAtTextSelector);
+    return await this.getText(this.expiresAtTextSelector);
   }
 
   async getAutoRenewPeriodText() {
-    return await this.getTextByTestId(this.autoRenewPeriodTextSelector);
+    return await this.getText(this.autoRenewPeriodTextSelector);
   }
 
   async getStakedToText() {
-    return await this.getTextByTestId(this.stakedToTextSelector);
+    return await this.getText(this.stakedToTextSelector);
   }
 
   async getPendingRewardText() {
-    return await this.getTextByTestId(this.pendingRewardTextSelector);
+    return await this.getText(this.pendingRewardTextSelector);
   }
 
   async getRewardsText() {
-    return await this.getTextByTestId(this.rewardsTextSelector);
+    return await this.getText(this.rewardsTextSelector);
   }
 
   async clickOnDeleteFromNetworkLink() {
-    await this.clickByTestId(this.deleteFromNetworkLinkSelector);
+    await this.click(this.deleteFromNetworkLinkSelector);
   }
 
   async clickOnUpdateInNetworkLink() {
-    await this.clickByTestId(this.updateInNetworkLinkSelector);
+    await this.click(this.updateInNetworkLinkSelector);
   }
 
   async addAccountToUnliked(accountId) {
@@ -145,7 +145,7 @@ class AccountPage extends BasePage {
 
   async unlinkAccounts() {
     await this.waitForElementToBeVisible(this.confirmUnlinkButtonSelector);
-    await this.clickByTestId(this.confirmUnlinkButtonSelector);
+    await this.click(this.confirmUnlinkButtonSelector);
   }
 
   async fillInExistingAccountId(accountId) {
@@ -199,7 +199,7 @@ class AccountPage extends BasePage {
   }
 
   async clickOnLinkAccountButton() {
-    await this.clickByTestId(this.linkAccountButtonSelector);
+    await this.click(this.linkAccountButtonSelector);
   }
 
   async isUnlinkedAccountsListEmpty() {
@@ -227,11 +227,11 @@ class AccountPage extends BasePage {
     const { delay } = await import('../utils/util.js');
     await delay(1000);
     const index = await this.transactionPage.findAccountIndexById(accountId);
-    await this.clickByTestId(this.multiSelectCheckboxSelector + index);
+    await this.click(this.multiSelectCheckboxSelector + index);
   }
 
   async clickOnSelectManyAccountsButton() {
-    await this.clickByTestId(this.selectManyAccountsButtonSelector);
+    await this.click(this.selectManyAccountsButtonSelector);
   }
 }
 
