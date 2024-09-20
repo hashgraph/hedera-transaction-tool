@@ -12,6 +12,9 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
+import useNextTransactionStore, {
+  KEEP_NEXT_QUERY_KEY,
+} from '@renderer/stores/storeNextTransaction';
 
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
@@ -38,6 +41,7 @@ const user = useUserStore();
 const network = useNetworkStore();
 const notifications = useNotificationsStore();
 const wsStore = useWebsocketConnection();
+const nextTransaction = useNextTransactionStore();
 
 /* Composables */
 const router = useRouter();
@@ -77,11 +81,21 @@ const generatedClass = computed(() => {
 
 /* Handlers */
 const handleSign = async (id: number) => {
+  const flatTransactions = Array.from(transactions.value)
+    .map(e => e[1])
+    .flat();
+  const selectedTransactionIndex = flatTransactions.findIndex(t => t.transactionRaw.id === id);
+  const previousTransactionIds = flatTransactions
+    .slice(0, selectedTransactionIndex)
+    .map(t => t.transactionRaw.id);
+  nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
+
   router.push({
     name: 'transactionDetails',
     params: { id },
     query: {
       sign: 'true',
+      [KEEP_NEXT_QUERY_KEY]: 'true',
     },
   });
 };
@@ -96,33 +110,10 @@ const handleDetails = async (id: number) => {
   });
 };
 
-// const handleSignGroup = async (id: number) => {
-//   try {
-//     if (transactions.value.get(id) != undefined) {
-//       const txs = transactions.value.get(id);
-//       if (txs != undefined) {
-//         if (!txs[0].transaction || !(txs[0].transaction instanceof Transaction)) {
-//           throw new Error('Transaction not provided');
-//         }
-
-//         for (const transaction of txs) {
-//           tx.value = transaction;
-
-//           await handleSignSingle();
-//         }
-//       }
-//     }
-//     toast.success('Transactions signed successfully');
-
-//     await fetchTransactions();
-//   } catch {
-//     toast.error('Transactions not signed');
-//   }
-// };
-
 const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') => {
   sort.field = field;
   sort.direction = direction;
+  setGetTransactionsFunction();
   await fetchTransactions();
 };
 
@@ -161,7 +152,7 @@ async function fetchTransactions() {
 
   isLoading.value = true;
   try {
-    const { items: rawTransactions } = await getTransactionsToSign(
+    const { items: rawTransactions, totalItems: totalItemsCount } = await getTransactionsToSign(
       user.selectedOrganization.serverUrl,
       network.network,
       currentPage.value,
@@ -169,21 +160,20 @@ async function fetchTransactions() {
       [{ property: sort.field, direction: sort.direction }],
     );
 
-    totalItems.value = rawTransactions.length;
+    totalItems.value = totalItemsCount;
     const transactionsBytes = await hexToUint8ArrayBatch(
       rawTransactions.map(t => t.transaction.transactionBytes),
     );
 
-    for (const [i, transaction] of rawTransactions.entries()) {
+    for (const [i, item] of rawTransactions.entries()) {
       const currentGroup =
-        transaction.transaction.groupItem?.groupId != null
-          ? transaction.transaction.groupItem.groupId
-          : -1;
+        item.transaction.groupItem?.groupId != null ? item.transaction.groupItem.groupId : -1;
       const currentVal = transactions.value.get(currentGroup);
+
       const newVal = {
-        transactionRaw: transaction.transaction,
+        transactionRaw: item.transaction,
         transaction: Transaction.fromBytes(transactionsBytes[i]),
-        keysToSign: transaction.keysToSign,
+        keysToSign: item.keysToSign,
       };
       if (currentVal != undefined) {
         currentVal.push(newVal);
@@ -208,13 +198,33 @@ async function fetchTransactions() {
   }
 }
 
+function setGetTransactionsFunction() {
+  nextTransaction.setGetTransactionsFunction(async (page: number | null, size: number | null) => {
+    if (!isLoggedInOrganization(user.selectedOrganization))
+      throw new Error('User not logged in organization');
+
+    const { items, totalItems } = await getTransactionsToSign(
+      user.selectedOrganization.serverUrl,
+      network.network,
+      page || 1,
+      size || 10,
+      [{ property: sort.field, direction: sort.direction }],
+    );
+
+    return {
+      items: items.map(t => t.transaction.id),
+      totalItems,
+    };
+  }, true);
+}
+
 function getOpositeDirection() {
   return sort.direction === 'asc' ? 'desc' : 'asc';
 }
 
 const subscribeToTransactionAction = () => {
   if (!user.selectedOrganization?.serverUrl) return;
-  ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
+  ws.on(user.selectedOrganization.serverUrl, TRANSACTION_ACTION, async () => {
     await fetchTransactions();
   });
 };
@@ -222,6 +232,7 @@ const subscribeToTransactionAction = () => {
 /* Hooks */
 onBeforeMount(async () => {
   subscribeToTransactionAction();
+  setGetTransactionsFunction();
   await fetchTransactions();
 });
 
@@ -232,6 +243,7 @@ wsStore.$onAction(ctx => {
 });
 
 watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
+  setGetTransactionsFunction();
   await fetchTransactions();
 });
 
@@ -318,7 +330,7 @@ watch(
                   <td>
                     <i class="bi bi-stack" />
                   </td>
-                  <td>{{ groups[group[0] - 1].description }}</td>
+                  <td>{{ groups[group[0] - 1]?.description }}</td>
                   <td>
                     {{
                       group[1][0].transaction instanceof Transaction

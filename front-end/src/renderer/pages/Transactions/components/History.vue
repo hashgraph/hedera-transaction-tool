@@ -18,6 +18,9 @@ import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
+import useNextTransactionStore, {
+  KEEP_NEXT_QUERY_KEY,
+} from '@renderer/stores/storeNextTransaction';
 
 import { getTransactions, getTransactionsCount } from '@renderer/services/transactionService';
 import { getHistoryTransactions } from '@renderer/services/organization';
@@ -44,6 +47,7 @@ const user = useUserStore();
 const network = useNetworkStore();
 const notifications = useNotificationsStore();
 const wsStore = useWebsocketConnection();
+const nextTransaction = useNextTransactionStore();
 
 /* Composables */
 const router = useRouter();
@@ -104,13 +108,17 @@ const handleSort = async (
   orgSort.field = organizationField;
   orgSort.direction = direction;
 
+  setGetTransactionsFunction();
   await fetchTransactions();
 };
 
-const handleTransactionDetailsClick = (id: string | number) => {
+const handleDetails = (id: string | number) => {
+  setPreviousTransactionsIds(id);
+
   router.push({
     name: 'transactionDetails',
     params: { id },
+    query: { [KEEP_NEXT_QUERY_KEY]: 'true' },
   });
 };
 
@@ -188,6 +196,54 @@ async function fetchTransactions() {
   }
 }
 
+function setGetTransactionsFunction() {
+  nextTransaction.setGetTransactionsFunction(async (page: number | null, size: number | null) => {
+    if (isLoggedInOrganization(user.selectedOrganization)) {
+      const { items, totalItems } = await getHistoryTransactions(
+        user.selectedOrganization.serverUrl,
+        page || 1,
+        size || 10,
+        orgFilters.value,
+        [{ property: orgSort.field, direction: orgSort.direction }],
+      );
+      return {
+        items: items.map(t => t.id),
+        totalItems,
+      };
+    } else {
+      if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+      totalItems.value = await getTransactionsCount(user.personal.id);
+      const findArgs = createFindArgs();
+      findArgs.skip = ((page || 1) - 1) * (size || 10);
+      findArgs.take = size || 10;
+      transactions.value = await getTransactions(createFindArgs());
+
+      return {
+        items: transactions.value.map(t => t.id),
+        totalItems: totalItems.value,
+      };
+    }
+  }, true);
+}
+
+function setPreviousTransactionsIds(id: string | number) {
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    const selectedTransactionIndex = organizationTransactions.value.findIndex(
+      t => t.transactionRaw.id === id,
+    );
+    const previousTransactionIds = organizationTransactions.value
+      .slice(0, selectedTransactionIndex)
+      .map(t => t.transactionRaw.id);
+    nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
+  } else {
+    const selectedTransactionIndex = transactions.value.findIndex(t => t.id === id);
+    const previousTransactionIds = transactions.value
+      .slice(0, selectedTransactionIndex)
+      .map(t => t.id);
+    nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
+  }
+}
+
 const subscribeToTransactionAction = () => {
   if (!user.selectedOrganization?.serverUrl) return;
   ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
@@ -198,6 +254,7 @@ const subscribeToTransactionAction = () => {
 /* Hooks */
 onBeforeMount(async () => {
   subscribeToTransactionAction();
+  setGetTransactionsFunction();
   await fetchTransactions();
 });
 
@@ -208,6 +265,7 @@ wsStore.$onAction(ctx => {
 });
 
 watch([currentPage, pageSize, () => user.selectedOrganization, orgFilters], async () => {
+  setGetTransactionsFunction();
   await fetchTransactions();
 });
 
@@ -371,7 +429,7 @@ watch(
                   <td class="text-center">
                     <AppButton
                       :data-testid="`button-transaction-details-${index}`"
-                      @click="handleTransactionDetailsClick(transaction.id)"
+                      @click="handleDetails(transaction.id)"
                       color="secondary"
                       class="min-w-unset"
                       >Details</AppButton
@@ -441,7 +499,7 @@ watch(
                   <td class="text-center">
                     <AppButton
                       :data-testid="`button-transaction-details-${index}`"
-                      @click="handleTransactionDetailsClick(transactionData.transactionRaw.id)"
+                      @click="handleDetails(transactionData.transactionRaw.id)"
                       color="secondary"
                       class="min-w-unset"
                       >Details</AppButton

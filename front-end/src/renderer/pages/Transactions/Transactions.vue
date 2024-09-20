@@ -1,17 +1,34 @@
 <script setup lang="ts">
+import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
 import type { TabItem } from '@renderer/components/ui/AppTabs.vue';
 
-import { computed, onBeforeMount, ref, watch } from 'vue';
+import { computed, inject, onBeforeMount, ref, watch } from 'vue';
 
 import { NotificationType } from '@main/shared/interfaces';
+import {
+  draftsTitle,
+  groupsTitle,
+  historyTitle,
+  inProgressTitle,
+  readyForExecutionTitle,
+  readyForReviewTitle,
+  readyToSignTitle,
+} from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
 
-import { useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toast-notification';
 import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
-import { isOrganizationActive } from '@renderer/utils/userStoreHelpers';
+import { getTransactionsToSign } from '@renderer/services/organization';
+
+import { isLoggedInOrganization, isOrganizationActive } from '@renderer/utils/userStoreHelpers';
+import { withLoader } from '@renderer/utils';
+
+import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
 
 import AppTabs from '@renderer/components/ui/AppTabs.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -27,27 +44,36 @@ import ReadyForReview from './components/ReadyForReview.vue';
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 const notifications = useNotificationsStore();
 
 /* Composables */
-const route = useRoute();
+const router = useRouter();
+const toast = useToast();
 useSetDynamicLayout({
   loggedInClass: true,
   shouldSetupAccountClass: false,
   showMenu: true,
 });
 
+/* Injected */
+const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);
+
 /* State */
 const organizationTabs: TabItem[] = [
-  { title: 'Drafts' },
-  { title: 'Ready for Review' },
-  { title: 'Ready to Sign' },
-  { title: 'In Progress' },
-  { title: 'Ready for Execution' },
-  { title: 'History' },
-  { title: 'Groups' },
+  { title: draftsTitle },
+  { title: readyForReviewTitle },
+  { title: readyToSignTitle },
+  { title: inProgressTitle },
+  { title: readyForExecutionTitle },
+  { title: historyTitle },
+  { title: groupsTitle },
 ];
-const sharedTabs: TabItem[] = [{ title: 'Drafts' }, { title: 'History' }, { title: 'Groups' }];
+const sharedTabs: TabItem[] = [
+  { title: draftsTitle },
+  { title: historyTitle },
+  { title: groupsTitle },
+];
 
 const activeTabIndex = ref(1);
 const tabItems = ref<TabItem[]>(sharedTabs);
@@ -83,16 +109,16 @@ const activeTabs = computed(() => {
 
   rawTabItems.forEach(tab => {
     switch (tab.title) {
-      case 'Ready for Review':
+      case readyForReviewTitle:
         tab.notifications = readyToApproveNotifications.length || undefined;
         break;
-      case 'Ready to Sign':
+      case readyToSignTitle:
         tab.notifications = readyToSignNotifications.length || undefined;
         break;
-      case 'Ready for Execution':
+      case readyForExecutionTitle:
         tab.notifications = readyForExecutionNotifications.length || undefined;
         break;
-      case 'History':
+      case historyTitle:
         tab.notifications = historyNotifications.length || undefined;
         break;
     }
@@ -116,24 +142,61 @@ function setTabItems() {
   }
 }
 
-/* Hooks */
-onBeforeMount(() => {
+function setQueryTab(title: string) {
+  const query = router.currentRoute.value.query;
+  if (query.tab === title) return;
+  router.replace({ query: { ...query, tab: title } });
+}
+
+async function syncTab(forceCheckSign = false) {
   setTabItems();
 
-  const tab = route.query.tab?.toString();
-  if (tab) {
-    const newIndex = tabItems.value.findIndex(t => t.title === tab);
-    activeTabIndex.value = newIndex >= 0 ? newIndex : activeTabIndex.value;
+  await withLoader(
+    async () => {
+      const tab = router.currentRoute.value.query.tab?.toString();
+
+      if (tab) {
+        const newIndex = tabItems.value.findIndex(t => t.title === tab);
+        activeTabIndex.value = newIndex >= 0 ? newIndex : activeTabIndex.value;
+      } else {
+        await changeTabIfReadyToSign();
+      }
+
+      if (forceCheckSign) await changeTabIfReadyToSign();
+    },
+    toast,
+    globalModalLoaderRef?.value,
+  )();
+}
+
+async function changeTabIfReadyToSign() {
+  if (!isLoggedInOrganization(user.selectedOrganization)) return;
+  if (user.selectedOrganization.isPasswordTemporary) return;
+
+  const { totalItems } = await getTransactionsToSign(
+    user.selectedOrganization.serverUrl,
+    network.network,
+    1,
+    1,
+    [],
+  );
+
+  if (totalItems > 0 && activeTabTitle.value !== readyToSignTitle) {
+    setQueryTab(readyToSignTitle);
+  } else {
+    setQueryTab(activeTabTitle.value);
   }
-});
+}
+
+/* Hooks */
+onBeforeMount(syncTab);
 
 /* Watchers */
 watch(
   () => user.selectedOrganization,
-  () => {
-    setTabItems();
-  },
+  async () => await syncTab(true),
 );
+watch(activeTabTitle, setQueryTab);
 </script>
 
 <template>
@@ -166,13 +229,13 @@ watch(
       <div class="mb-3">
         <AppTabs :items="activeTabs" v-model:active-index="activeTabIndex"></AppTabs>
       </div>
-      <template v-if="activeTabTitle === 'Ready for Review'"><ReadyForReview /></template>
-      <template v-if="activeTabTitle === 'Ready to Sign'"> <ReadyToSign /> </template>
-      <template v-if="activeTabTitle === 'In Progress'"><InProgress /></template>
-      <template v-if="activeTabTitle === 'Ready for Execution'"><ReadyForExecution /></template>
-      <template v-if="activeTabTitle === 'Drafts'"><Drafts /></template>
-      <template v-if="activeTabTitle === 'History'"><History /></template>
-      <template v-if="activeTabTitle === 'Groups'"><Groups /></template>
+      <template v-if="activeTabTitle === readyForReviewTitle"><ReadyForReview /></template>
+      <template v-if="activeTabTitle === readyToSignTitle"> <ReadyToSign /> </template>
+      <template v-if="activeTabTitle === inProgressTitle"><InProgress /></template>
+      <template v-if="activeTabTitle === readyForExecutionTitle"><ReadyForExecution /></template>
+      <template v-if="activeTabTitle === draftsTitle"><Drafts /></template>
+      <template v-if="activeTabTitle === historyTitle"><History /></template>
+      <template v-if="activeTabTitle === groupsTitle"><Groups /></template>
     </div>
 
     <TransactionSelectionModal v-model:show="isTransactionSelectionModalShown" :group="false" />

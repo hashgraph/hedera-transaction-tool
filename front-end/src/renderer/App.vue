@@ -90,7 +90,11 @@ provideDynamicLayout(dynamicLayout);
       }"
     >
       <AppMenu v-if="dynamicLayout.showMenu" />
-      <RouterView v-slot="{ Component }" class="flex-1 overflow-hidden container-main-content">
+      <RouterView
+        v-slot="{ Component }"
+        :key="$route.fullPath"
+        class="flex-1 overflow-hidden container-main-content"
+      >
         <Transition name="fade" mode="out-in">
           <component :is="Component" />
         </Transition>

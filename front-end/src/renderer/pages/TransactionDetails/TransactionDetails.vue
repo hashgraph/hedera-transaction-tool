@@ -15,6 +15,9 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
+import useNextTransactionStore, {
+  KEEP_NEXT_QUERY_KEY,
+} from '@renderer/stores/storeNextTransaction';
 
 import { useToast } from 'vue-toast-notification';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
@@ -72,6 +75,7 @@ const user = useUserStore();
 const network = useNetwork();
 const contacts = useContactsStore();
 const wsStore = useWebsocketConnection();
+const nextTransaction = useNextTransactionStore();
 
 /* Composables */
 const router = useRouter();
@@ -102,6 +106,7 @@ const isSigning = ref(false);
 const isApproving = ref(false);
 const isConfirmModalLoadingState = ref(false);
 const confirmModalLoadingText = ref('');
+const nextId = ref<string | number | null>(null);
 
 /* Computed */
 const stepperItems = computed(() => {
@@ -214,48 +219,13 @@ const canSign = computed(() => {
 
 /* Handlers */
 const handleBack = () => {
-  if (isLoggedInOrganization(user.selectedOrganization)) {
-    const status = orgTransaction.value?.status;
-    let tab: string = '';
-
-    if (router.previousPath.startsWith('/transaction-group/')) {
-      const groupId = orgTransaction.value?.groupItem.groupId;
-      router.push({
-        name: 'transactionGroupDetails',
-        params: { id: groupId },
-        query: {
-          sign: 'true',
-        },
-      });
-      return;
-    }
-
-    switch (status) {
-      case TransactionStatus.EXECUTED:
-      case TransactionStatus.FAILED:
-      case TransactionStatus.EXPIRED:
-      case TransactionStatus.CANCELED:
-        tab = 'History';
-        break;
-      case TransactionStatus.WAITING_FOR_EXECUTION:
-        tab = 'Ready for Execution';
-        break;
-      case TransactionStatus.WAITING_FOR_SIGNATURES:
-        tab = 'In Progress';
-        break;
-      default:
-        tab = 'History';
-        break;
-    }
-
-    router.push({
-      name: 'transactions',
-      query: {
-        tab,
-      },
-    });
+  if (
+    !history.state?.back?.startsWith('/transactions') &&
+    !history.state?.back?.startsWith('/transaction-group/')
+  ) {
+    router.push({ name: 'transactions' });
   } else {
-    redirectToHistory();
+    router.back();
   }
 };
 
@@ -367,7 +337,7 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
       toast.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`);
 
       if (!approved) {
-        redirectToHistory();
+        router.back();
       }
     } catch (error) {
       isConfirmModalShown.value = false;
@@ -413,13 +383,33 @@ const handleCancel = async (showModal?: boolean) => {
     confirmModalLoadingText.value = '';
   }
 
-  redirectToHistory();
+  router.back();
+};
+
+const handleNext = () => {
+  if (!nextId.value) return;
+
+  const newPreviousTransactionsIds = [...(nextTransaction.previousTransactionsIds || [])];
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    orgTransaction.value && newPreviousTransactionsIds.push(orgTransaction.value.id);
+  } else {
+    localTransaction.value && newPreviousTransactionsIds.push(localTransaction.value.id);
+  }
+  nextTransaction.setPreviousTransactionsIds(newPreviousTransactionsIds);
+
+  router.push({
+    name: 'transactionDetails',
+    params: { id: nextId.value.toString() },
+    query: {
+      sign: 'true',
+      [KEEP_NEXT_QUERY_KEY]: 'true',
+    },
+    replace: true,
+  });
 };
 
 const handleSubmit = async (e: Event) => {
   e.preventDefault();
-
-  if (!isLoggedInOrganization(user.selectedOrganization)) return;
 
   const buttonContent = (e as SubmitEvent).submitter?.textContent || '';
 
@@ -427,7 +417,9 @@ const handleSubmit = async (e: Event) => {
     await handleApprove(buttonContent === approve, true);
   } else if (buttonContent === sign) {
     await handleSign();
-  } else {
+  } else if (buttonContent === next) {
+    await handleNext();
+  } else if (buttonContent === cancel) {
     await handleCancel(true);
   }
 };
@@ -485,34 +477,36 @@ async function fetchTransaction(id: string | number) {
   }
 }
 
-function redirectToHistory() {
-  router.push({
-    name: 'transactions',
-    query: {
-      tab: 'History',
-    },
-  });
-}
-
 const subscribeToTransactionAction = () => {
   if (!user.selectedOrganization?.serverUrl) return;
   ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
     const id = router.currentRoute.value.params.id;
-    await fetchTransaction(Array.isArray(id) ? id[0] : id);
+    const formattedId = Array.isArray(id) ? id[0] : id;
+    await fetchTransaction(formattedId);
+    nextId.value = await nextTransaction.getNext(
+      isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
+    );
   });
 };
 
 /* Hooks */
 onBeforeMount(async () => {
   const id = router.currentRoute.value.params.id;
+
   if (!id) {
     router.back();
     return;
   }
 
-  subscribeToTransactionAction();
+  const keepNextTransaction = router.currentRoute.value.query[KEEP_NEXT_QUERY_KEY];
+  if (!keepNextTransaction) nextTransaction.reset();
 
-  await fetchTransaction(Array.isArray(id) ? id[0] : id);
+  subscribeToTransactionAction();
+  const formattedId = Array.isArray(id) ? id[0] : id;
+  await fetchTransaction(formattedId);
+  nextId.value = await nextTransaction.getNext(
+    isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
+  );
 });
 
 /* Watchers */
@@ -536,6 +530,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
 const reject = 'Reject';
 const approve = 'Approve';
 const sign = 'Sign';
+const next = 'Next';
 const cancel = 'Cancel';
 </script>
 <template>
@@ -606,6 +601,14 @@ const cancel = 'Cancel';
                     :loading="isSigning"
                     loading-text="Signing..."
                     >{{ sign }}</AppButton
+                  >
+                </div>
+                <div v-else-if="nextId">
+                  <AppButton
+                    color="primary"
+                    data-testid="button-next-org-transaction"
+                    type="submit"
+                    >{{ next }}</AppButton
                   >
                 </div>
               </div>

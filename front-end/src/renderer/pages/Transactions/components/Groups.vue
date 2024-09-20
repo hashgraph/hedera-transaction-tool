@@ -186,7 +186,7 @@ watch([currentPage, pageSize], async () => {
                   </span>
                 </td>
                 <td>
-                  <span class="text-bold">{{ group.description }}</span>
+                  <span class="text-bold">{{ group?.description }}</span>
                 </td>
                 <!-- <td class="text-center">
                   <input
