@@ -12,3 +12,12 @@ export const DISPLAY_FILE_SIZE_LIMIT = 512 * 1024;
 
 /* Claim */
 export const DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY = 'default_max_transaction_fee';
+
+/* Transaction tabs */
+export const draftsTitle = 'Drafts';
+export const readyForReviewTitle = 'Ready for Review';
+export const readyToSignTitle = 'Ready to Sign';
+export const inProgressTitle = 'In Progress';
+export const readyForExecutionTitle = 'Ready for Execution';
+export const historyTitle = 'History';
+export const groupsTitle = 'Groups';

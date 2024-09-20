@@ -6,7 +6,12 @@ import { computed, inject, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { Transaction } from '@hashgraph/sdk';
 
-import { TRANSACTION_ACTION } from '@main/shared/constants';
+import {
+  historyTitle,
+  inProgressTitle,
+  readyForExecutionTitle,
+  TRANSACTION_ACTION,
+} from '@main/shared/constants';
 import { TransactionStatus } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -105,16 +110,16 @@ const handleBack = () => {
       case TransactionStatus.EXECUTED:
       case TransactionStatus.FAILED:
       case TransactionStatus.EXPIRED:
-        tab = 'History';
+        tab = historyTitle;
         break;
       case TransactionStatus.WAITING_FOR_EXECUTION:
-        tab = 'Ready for Execution';
+        tab = readyForExecutionTitle;
         break;
       case TransactionStatus.WAITING_FOR_SIGNATURES:
-        tab = 'In Progress';
+        tab = inProgressTitle;
         break;
       default:
-        tab = 'History';
+        tab = historyTitle;
         break;
     }
 
@@ -235,7 +240,7 @@ const handleApproveAll = async (approved: boolean, showModal?: boolean) => {
       router.push({
         name: 'transactions',
         query: {
-          tab: 'History',
+          tab: historyTitle,
         },
       });
     }
