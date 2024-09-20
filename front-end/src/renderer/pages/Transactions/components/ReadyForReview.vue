@@ -12,6 +12,9 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
+import useNextTransactionStore, {
+  KEEP_NEXT_QUERY_KEY,
+} from '@renderer/stores/storeNextTransaction';
 
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
@@ -38,6 +41,7 @@ const user = useUserStore();
 const network = useNetworkStore();
 const notifications = useNotificationsStore();
 const wsStore = useWebsocketConnection();
+const nextTransaction = useNextTransactionStore();
 
 /* Composables */
 const router = useRouter();
@@ -76,11 +80,21 @@ const generatedClass = computed(() => {
 
 /* Handlers */
 const handleApprove = async (id: number) => {
+  const flatTransactions = Array.from(transactions.value)
+    .map(e => e[1])
+    .flat();
+  const selectedTransactionIndex = flatTransactions.findIndex(t => t.transactionRaw.id === id);
+  const previousTransactionIds = flatTransactions
+    .slice(0, selectedTransactionIndex)
+    .map(t => t.transactionRaw.id);
+  nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
+
   router.push({
     name: 'transactionDetails',
     params: { id },
     query: {
       approve: 'true',
+      [KEEP_NEXT_QUERY_KEY]: 'true',
     },
   });
 };
@@ -117,6 +131,7 @@ const handleDetails = async (id: number) => {
 const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') => {
   sort.field = field;
   sort.direction = direction;
+  setGetTransactionsFunction();
   await fetchTransactions();
 };
 
@@ -180,6 +195,26 @@ async function fetchTransactions() {
   }
 }
 
+function setGetTransactionsFunction() {
+  nextTransaction.setGetTransactionsFunction(async (page: number | null, size: number | null) => {
+    if (!isLoggedInOrganization(user.selectedOrganization))
+      throw new Error('User not logged in organization');
+
+    const { items, totalItems } = await getTransactionsToApprove(
+      user.selectedOrganization.serverUrl,
+      network.network,
+      page || 1,
+      size || 10,
+      [{ property: sort.field, direction: sort.direction }],
+    );
+
+    return {
+      items: items,
+      totalItems,
+    };
+  }, true);
+}
+
 function getOpositeDirection() {
   return sort.direction === 'asc' ? 'desc' : 'asc';
 }
@@ -194,6 +229,7 @@ const subscribeToTransactionAction = () => {
 /* Hooks */
 onBeforeMount(async () => {
   subscribeToTransactionAction();
+  setGetTransactionsFunction();
   await fetchTransactions();
 });
 
@@ -204,6 +240,7 @@ wsStore.$onAction(ctx => {
 });
 
 watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
+  setGetTransactionsFunction();
   await fetchTransactions();
 });
 
