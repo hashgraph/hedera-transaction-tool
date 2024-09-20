@@ -217,48 +217,25 @@ const canSign = computed(() => {
 
 /* Handlers */
 const handleBack = () => {
-  if (isLoggedInOrganization(user.selectedOrganization)) {
-    const status = orgTransaction.value?.status;
-    let tab: string = '';
-
-    if (router.previousPath.startsWith('/transaction-group/')) {
-      const groupId = orgTransaction.value?.groupItem.groupId;
-      router.push({
-        name: 'transactionGroupDetails',
-        params: { id: groupId },
-        query: {
-          sign: 'true',
-        },
-      });
-      return;
-    }
-
-    switch (status) {
-      case TransactionStatus.EXECUTED:
-      case TransactionStatus.FAILED:
-      case TransactionStatus.EXPIRED:
-      case TransactionStatus.CANCELED:
-        tab = 'History';
-        break;
-      case TransactionStatus.WAITING_FOR_EXECUTION:
-        tab = 'Ready for Execution';
-        break;
-      case TransactionStatus.WAITING_FOR_SIGNATURES:
-        tab = 'In Progress';
-        break;
-      default:
-        tab = 'History';
-        break;
-    }
-
+  if (
+    isLoggedInOrganization(user.selectedOrganization) &&
+    router.previousPath.startsWith('/transaction-group/')
+  ) {
+    const groupId = orgTransaction.value?.groupItem.groupId;
     router.push({
-      name: 'transactions',
+      name: 'transactionGroupDetails',
+      params: { id: groupId },
       query: {
-        tab,
+        sign: 'true',
       },
     });
+    return;
+  }
+
+  if (!history.state?.back?.startsWith('/transactions')) {
+    router.push({ name: 'transactions' });
   } else {
-    redirectToHistory();
+    router.back();
   }
 };
 
@@ -376,7 +353,7 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
       toast.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`);
 
       if (!approved) {
-        redirectToHistory();
+        router.back();
       }
     } catch (error) {
       isConfirmModalShown.value = false;
@@ -422,7 +399,7 @@ const handleCancel = async (showModal?: boolean) => {
     confirmModalLoadingText.value = '';
   }
 
-  redirectToHistory();
+  router.back();
 };
 
 const handleNext = () => {
@@ -434,6 +411,7 @@ const handleNext = () => {
     query: {
       sign: 'true',
     },
+    replace: true,
   });
 };
 
@@ -506,15 +484,6 @@ async function fetchTransaction(id: string | number) {
       network.mirrorNodeBaseURL,
     );
   }
-}
-
-function redirectToHistory() {
-  router.push({
-    name: 'transactions',
-    query: {
-      tab: 'History',
-    },
-  });
 }
 
 const subscribeToTransactionAction = () => {
