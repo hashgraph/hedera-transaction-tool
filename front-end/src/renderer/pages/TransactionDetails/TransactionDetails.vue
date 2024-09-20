@@ -15,7 +15,9 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
-import useNextTransactionToSignStore from '@renderer/stores/storeNextTransactionToSign';
+import useNextTransactionStore, {
+  KEEP_NEXT_QUERY_KEY,
+} from '@renderer/stores/storeNextTransaction';
 
 import { useToast } from 'vue-toast-notification';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
@@ -73,7 +75,7 @@ const user = useUserStore();
 const network = useNetwork();
 const contacts = useContactsStore();
 const wsStore = useWebsocketConnection();
-const nextTransactionToSignStore = useNextTransactionToSignStore();
+const nextTransaction = useNextTransactionStore();
 
 /* Composables */
 const router = useRouter();
@@ -284,12 +286,6 @@ const handleSign = async () => {
   } finally {
     isSigning.value = false;
   }
-
-  const fromSign = router.currentRoute.value.query.sign;
-  if (fromSign) {
-    const id = router.currentRoute.value.params.id;
-    nextId.value = await nextTransactionToSignStore.getNext(Number(Array.isArray(id) ? id[0] : id));
-  }
 };
 
 const handleApprove = async (approved: boolean, showModal?: boolean) => {
@@ -410,6 +406,7 @@ const handleNext = () => {
     params: { id: nextId.value.toString() },
     query: {
       sign: 'true',
+      [KEEP_NEXT_QUERY_KEY]: 'true',
     },
     replace: true,
   });
@@ -490,7 +487,9 @@ const subscribeToTransactionAction = () => {
   if (!user.selectedOrganization?.serverUrl) return;
   ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
     const id = router.currentRoute.value.params.id;
-    await fetchTransaction(Array.isArray(id) ? id[0] : id);
+    const formattedId = Array.isArray(id) ? id[0] : id;
+    await fetchTransaction(formattedId);
+    nextId.value = await nextTransaction.getNext(Number(formattedId));
   });
 };
 
@@ -503,10 +502,12 @@ onBeforeMount(async () => {
   }
 
   subscribeToTransactionAction();
-
   const formattedId = Array.isArray(id) ? id[0] : id;
-
   await fetchTransaction(formattedId);
+  nextId.value = await nextTransaction.getNext(Number(formattedId));
+
+  const keepNextTransaction = router.currentRoute.value.query[KEEP_NEXT_QUERY_KEY];
+  if (!keepNextTransaction) nextTransaction.reset();
 });
 
 /* Watchers */
@@ -611,6 +612,7 @@ const cancel = 'Cancel';
                     >{{ next }}</AppButton
                   >
                 </div>
+                {{ nextId }}
               </div>
             </div>
 
