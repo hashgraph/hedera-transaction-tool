@@ -143,14 +143,14 @@ async function fetchTransactions() {
 
   isLoading.value = true;
   try {
-    const { totalItems: total, items: rawTransactions } = await getTransactionsToApprove(
+    const { totalItems: totalItemsCount, items: rawTransactions } = await getTransactionsToApprove(
       user.selectedOrganization.serverUrl,
       network.network,
       currentPage.value,
       pageSize.value,
       [{ property: sort.field, direction: sort.direction }],
     );
-    totalItems.value = total;
+    totalItems.value = totalItemsCount;
 
     const transactionsBytes = await hexToUint8ArrayBatch(
       rawTransactions.map(t => t.transactionBytes),
