@@ -6,13 +6,7 @@ import { computed, inject, onBeforeMount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { Transaction } from '@hashgraph/sdk';
 
-import {
-  historyTitle,
-  inProgressTitle,
-  readyForExecutionTitle,
-  TRANSACTION_ACTION,
-} from '@main/shared/constants';
-import { TransactionStatus } from '@main/shared/interfaces';
+import { historyTitle, TRANSACTION_ACTION } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
@@ -106,33 +100,8 @@ async function handleFetchGroup(id: string | number) {
 
 /* Handlers */
 const handleBack = () => {
-  if (isLoggedInOrganization(user.selectedOrganization)) {
-    const status = group.value?.groupItems[0].transaction.status;
-    let tab: string = '';
-
-    switch (status) {
-      case TransactionStatus.EXECUTED:
-      case TransactionStatus.FAILED:
-      case TransactionStatus.EXPIRED:
-        tab = historyTitle;
-        break;
-      case TransactionStatus.WAITING_FOR_EXECUTION:
-        tab = readyForExecutionTitle;
-        break;
-      case TransactionStatus.WAITING_FOR_SIGNATURES:
-        tab = inProgressTitle;
-        break;
-      default:
-        tab = historyTitle;
-        break;
-    }
-
-    router.push({
-      name: 'transactions',
-      query: {
-        tab,
-      },
-    });
+  if (!history.state?.back?.startsWith('/transactions')) {
+    router.push({ name: 'transactions' });
   } else {
     router.back();
   }
