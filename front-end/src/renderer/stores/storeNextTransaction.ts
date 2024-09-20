@@ -49,8 +49,9 @@ const useNextTransactionStore = defineStore('nextTransaction', () => {
     cachedItems.value = null;
 
     for (let i = 0; i < reversedPreviousIds.length; i++) {
-      id = await findNextTransactionId(reversedPreviousIds[i]);
-      if (typeof id === 'number') break;
+      const { currentFound, nextId } = await findNextTransactionId(reversedPreviousIds[i]);
+      id = nextId;
+      if (typeof id === 'number' || currentFound) break;
     }
 
     if (typeof id !== 'number') {
@@ -65,7 +66,9 @@ const useNextTransactionStore = defineStore('nextTransaction', () => {
     return id;
   };
 
-  const findNextTransactionId = async (id: number) => {
+  const findNextTransactionId = async (
+    id: number,
+  ): Promise<{ currentFound: boolean; nextId: number | null }> => {
     if (!getTransactions.value) throw new Error('No transaction fetching function set');
 
     const withPage = getTransactionsHasPage.value;
@@ -93,7 +96,7 @@ const useNextTransactionStore = defineStore('nextTransaction', () => {
       const items = cachedItems.value[withPage ? page : -1];
 
       /* The current id is found, the items are paginated and the next is in the next page */
-      if (foundGetFirst) return items[0].id;
+      if (foundGetFirst) return { currentFound: true, nextId: items[0].id };
 
       /* The index of the current id */
       const idIndex = items.findIndex(item => item.id === id);
@@ -104,14 +107,14 @@ const useNextTransactionStore = defineStore('nextTransaction', () => {
 
         /* The next item is found in the same page */
         if (nextItem) {
-          return nextItem.id;
+          return { currentFound: true, nextId: nextItem.id };
         } else if (withPage && totalItems > page * PAGE_SIZE) {
           /* The next item is not found in the same page but has more pages*/
           page++;
           foundGetFirst = true;
         } else {
           /* The next item is not found in the same page and there are no more pages */
-          return null;
+          return { currentFound: true, nextId: null };
         }
       } else {
         if (withPage && totalItems > page * PAGE_SIZE) {
@@ -124,7 +127,7 @@ const useNextTransactionStore = defineStore('nextTransaction', () => {
       }
     }
 
-    return null;
+    return { currentFound: false, nextId: null };
   };
 
   const reset = () => {
@@ -135,6 +138,7 @@ const useNextTransactionStore = defineStore('nextTransaction', () => {
   };
 
   return {
+    previousTransactionsIds,
     setPreviousTransactionsIds,
     setGetTransactionsFunction,
     getNext,

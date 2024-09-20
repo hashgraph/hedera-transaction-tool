@@ -220,21 +220,9 @@ const canSign = computed(() => {
 /* Handlers */
 const handleBack = () => {
   if (
-    isLoggedInOrganization(user.selectedOrganization) &&
-    router.previousPath.startsWith('/transaction-group/')
+    !history.state?.back?.startsWith('/transactions') &&
+    !history.state?.back?.startsWith('/transaction-group/')
   ) {
-    const groupId = orgTransaction.value?.groupItem.groupId;
-    router.push({
-      name: 'transactionGroupDetails',
-      params: { id: groupId },
-      query: {
-        sign: 'true',
-      },
-    });
-    return;
-  }
-
-  if (!history.state?.back?.startsWith('/transactions')) {
     router.push({ name: 'transactions' });
   } else {
     router.back();
@@ -400,6 +388,12 @@ const handleCancel = async (showModal?: boolean) => {
 
 const handleNext = () => {
   if (!nextId.value) return;
+
+  const newPreviousTransactionsIds = [...(nextTransaction.previousTransactionsIds || [])];
+  if (orgTransaction.value) {
+    newPreviousTransactionsIds.push(orgTransaction.value.id);
+  }
+  nextTransaction.setPreviousTransactionsIds(newPreviousTransactionsIds);
 
   router.push({
     name: 'transactionDetails',
@@ -612,7 +606,6 @@ const cancel = 'Cancel';
                     >{{ next }}</AppButton
                   >
                 </div>
-                {{ nextId }}
               </div>
             </div>
 

@@ -2,7 +2,7 @@
 import type { IGroup } from '@renderer/services/organization';
 import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
-import { computed, inject, onMounted, ref } from 'vue';
+import { computed, inject, onBeforeMount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { Transaction } from '@hashgraph/sdk';
 
@@ -17,6 +17,9 @@ import { TransactionStatus } from '@main/shared/interfaces';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
+import useNextTransactionStore, {
+  KEEP_NEXT_QUERY_KEY,
+} from '@renderer/stores/storeNextTransaction';
 
 import { useToast } from 'vue-toast-notification';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
@@ -52,6 +55,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 const user = useUserStore();
 const network = useNetwork();
 const wsStore = useWebsocketConnection();
+const nextTransaction = useNextTransactionStore();
 
 /* Composables */
 const router = useRouter();
@@ -135,11 +139,19 @@ const handleBack = () => {
 };
 
 const handleSign = async (id: number) => {
+  const flatTransactions = group.value?.groupItems || [];
+  const selectedTransactionIndex = flatTransactions.findIndex(t => t.transaction.id === id);
+  const previousTransactionIds = flatTransactions
+    .slice(0, selectedTransactionIndex)
+    .map(t => t.transaction.id);
+  nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
+
   router.push({
     name: 'transactionDetails',
     params: { id },
     query: {
       sign: 'true',
+      [KEEP_NEXT_QUERY_KEY]: 'true',
     },
   });
 };
@@ -254,11 +266,21 @@ const subscribeToTransactionAction = () => {
   ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
     const id = router.currentRoute.value.params.id;
     await handleFetchGroup(Array.isArray(id) ? id[0] : id);
+    setGetTransactionsFunction();
   });
 };
 
+function setGetTransactionsFunction() {
+  nextTransaction.setGetTransactionsFunction(async () => {
+    const transactions = group.value?.groupItems.map(t => t.transaction);
+    return {
+      items: transactions || [],
+      totalItems: transactions?.length || 0,
+    };
+  }, false);
+}
 /* Hooks */
-onMounted(async () => {
+onBeforeMount(async () => {
   const id = router.currentRoute.value.params.id;
   if (!id) {
     router.back();
@@ -267,6 +289,7 @@ onMounted(async () => {
 
   subscribeToTransactionAction();
   await handleFetchGroup(Array.isArray(id) ? id[0] : id);
+  setGetTransactionsFunction();
 });
 
 /* Watchers */
@@ -274,6 +297,13 @@ wsStore.$onAction(ctx => {
   if (ctx.name !== 'setup') return;
   ctx.after(() => subscribeToTransactionAction());
 });
+
+watch(
+  () => user.selectedOrganization,
+  () => {
+    router.back();
+  },
+);
 </script>
 <template>
   <div class="p-5">
