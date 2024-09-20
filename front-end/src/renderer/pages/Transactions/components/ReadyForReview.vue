@@ -286,7 +286,7 @@ watch(
                   <td>
                     <i class="bi bi-stack" />
                   </td>
-                  <td>{{ groups[group[0] - 1].description }}</td>
+                  <td>{{ groups[group[0] - 1]?.description }}</td>
                   <td>
                     {{
                       group[1][0].transaction instanceof Transaction
