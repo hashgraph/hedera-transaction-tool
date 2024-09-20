@@ -12,6 +12,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
+import useNextTransactionToSignStore from '@renderer/stores/storeNextTransactionToSign';
 
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
@@ -38,6 +39,7 @@ const user = useUserStore();
 const network = useNetworkStore();
 const notifications = useNotificationsStore();
 const wsStore = useWebsocketConnection();
+const nextTransactionToSignStore = useNextTransactionToSignStore();
 
 /* Composables */
 const router = useRouter();
@@ -96,30 +98,6 @@ const handleDetails = async (id: number) => {
   });
 };
 
-// const handleSignGroup = async (id: number) => {
-//   try {
-//     if (transactions.value.get(id) != undefined) {
-//       const txs = transactions.value.get(id);
-//       if (txs != undefined) {
-//         if (!txs[0].transaction || !(txs[0].transaction instanceof Transaction)) {
-//           throw new Error('Transaction not provided');
-//         }
-
-//         for (const transaction of txs) {
-//           tx.value = transaction;
-
-//           await handleSignSingle();
-//         }
-//       }
-//     }
-//     toast.success('Transactions signed successfully');
-
-//     await fetchTransactions();
-//   } catch {
-//     toast.error('Transactions not signed');
-//   }
-// };
-
 const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') => {
   sort.field = field;
   sort.direction = direction;
@@ -161,7 +139,7 @@ async function fetchTransactions() {
 
   isLoading.value = true;
   try {
-    const { items: rawTransactions } = await getTransactionsToSign(
+    const { items: rawTransactions, totalItems: totalItemsCount } = await getTransactionsToSign(
       user.selectedOrganization.serverUrl,
       network.network,
       currentPage.value,
@@ -169,21 +147,27 @@ async function fetchTransactions() {
       [{ property: sort.field, direction: sort.direction }],
     );
 
-    totalItems.value = rawTransactions.length;
+    nextTransactionToSignStore.setTransactions(
+      rawTransactions.map(t => t.transaction),
+      { field: sort.field, direction: sort.direction },
+      currentPage.value,
+      pageSize.value,
+    );
+
+    totalItems.value = totalItemsCount;
     const transactionsBytes = await hexToUint8ArrayBatch(
       rawTransactions.map(t => t.transaction.transactionBytes),
     );
 
-    for (const [i, transaction] of rawTransactions.entries()) {
+    for (const [i, item] of rawTransactions.entries()) {
       const currentGroup =
-        transaction.transaction.groupItem?.groupId != null
-          ? transaction.transaction.groupItem.groupId
-          : -1;
+        item.transaction.groupItem?.groupId != null ? item.transaction.groupItem.groupId : -1;
       const currentVal = transactions.value.get(currentGroup);
+
       const newVal = {
-        transactionRaw: transaction.transaction,
+        transactionRaw: item.transaction,
         transaction: Transaction.fromBytes(transactionsBytes[i]),
-        keysToSign: transaction.keysToSign,
+        keysToSign: item.keysToSign,
       };
       if (currentVal != undefined) {
         currentVal.push(newVal);
@@ -318,7 +302,7 @@ watch(
                   <td>
                     <i class="bi bi-stack" />
                   </td>
-                  <td>{{ groups[group[0] - 1].description }}</td>
+                  <td>{{ groups[group[0] - 1]?.description }}</td>
                   <td>
                     {{
                       group[1][0].transaction instanceof Transaction

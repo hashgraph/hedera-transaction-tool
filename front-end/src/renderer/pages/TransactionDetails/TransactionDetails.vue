@@ -15,6 +15,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
+import useNextTransactionToSignStore from '@renderer/stores/storeNextTransactionToSign';
 
 import { useToast } from 'vue-toast-notification';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
@@ -72,6 +73,7 @@ const user = useUserStore();
 const network = useNetwork();
 const contacts = useContactsStore();
 const wsStore = useWebsocketConnection();
+const nextTransactionToSignStore = useNextTransactionToSignStore();
 
 /* Composables */
 const router = useRouter();
@@ -102,6 +104,7 @@ const isSigning = ref(false);
 const isApproving = ref(false);
 const isConfirmModalLoadingState = ref(false);
 const confirmModalLoadingText = ref('');
+const nextId = ref<number | null>(null);
 
 /* Computed */
 const stepperItems = computed(() => {
@@ -304,6 +307,12 @@ const handleSign = async () => {
   } finally {
     isSigning.value = false;
   }
+
+  const fromSign = router.currentRoute.value.query.sign;
+  if (fromSign) {
+    const id = router.currentRoute.value.params.id;
+    nextId.value = await nextTransactionToSignStore.getNext(Number(Array.isArray(id) ? id[0] : id));
+  }
 };
 
 const handleApprove = async (approved: boolean, showModal?: boolean) => {
@@ -416,6 +425,18 @@ const handleCancel = async (showModal?: boolean) => {
   redirectToHistory();
 };
 
+const handleNext = () => {
+  if (!nextId.value) return;
+
+  router.push({
+    name: 'transactionDetails',
+    params: { id: nextId.value.toString() },
+    query: {
+      sign: 'true',
+    },
+  });
+};
+
 const handleSubmit = async (e: Event) => {
   e.preventDefault();
 
@@ -427,7 +448,9 @@ const handleSubmit = async (e: Event) => {
     await handleApprove(buttonContent === approve, true);
   } else if (buttonContent === sign) {
     await handleSign();
-  } else {
+  } else if (buttonContent === next) {
+    await handleNext();
+  } else if (buttonContent === cancel) {
     await handleCancel(true);
   }
 };
@@ -512,7 +535,9 @@ onBeforeMount(async () => {
 
   subscribeToTransactionAction();
 
-  await fetchTransaction(Array.isArray(id) ? id[0] : id);
+  const formattedId = Array.isArray(id) ? id[0] : id;
+
+  await fetchTransaction(formattedId);
 });
 
 /* Watchers */
@@ -536,6 +561,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
 const reject = 'Reject';
 const approve = 'Approve';
 const sign = 'Sign';
+const next = 'Next';
 const cancel = 'Cancel';
 </script>
 <template>
@@ -606,6 +632,14 @@ const cancel = 'Cancel';
                     :loading="isSigning"
                     loading-text="Signing..."
                     >{{ sign }}</AppButton
+                  >
+                </div>
+                <div v-else-if="nextId">
+                  <AppButton
+                    color="primary"
+                    data-testid="button-next-org-transaction"
+                    type="submit"
+                    >{{ next }}</AppButton
                   >
                 </div>
               </div>
