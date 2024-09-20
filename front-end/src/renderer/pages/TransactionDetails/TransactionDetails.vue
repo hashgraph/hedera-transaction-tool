@@ -106,7 +106,7 @@ const isSigning = ref(false);
 const isApproving = ref(false);
 const isConfirmModalLoadingState = ref(false);
 const confirmModalLoadingText = ref('');
-const nextId = ref<number | null>(null);
+const nextId = ref<string | number | null>(null);
 
 /* Computed */
 const stepperItems = computed(() => {
@@ -390,8 +390,10 @@ const handleNext = () => {
   if (!nextId.value) return;
 
   const newPreviousTransactionsIds = [...(nextTransaction.previousTransactionsIds || [])];
-  if (orgTransaction.value) {
-    newPreviousTransactionsIds.push(orgTransaction.value.id);
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    orgTransaction.value && newPreviousTransactionsIds.push(orgTransaction.value.id);
+  } else {
+    localTransaction.value && newPreviousTransactionsIds.push(localTransaction.value.id);
   }
   nextTransaction.setPreviousTransactionsIds(newPreviousTransactionsIds);
 
@@ -408,8 +410,6 @@ const handleNext = () => {
 
 const handleSubmit = async (e: Event) => {
   e.preventDefault();
-
-  if (!isLoggedInOrganization(user.selectedOrganization)) return;
 
   const buttonContent = (e as SubmitEvent).submitter?.textContent || '';
 
@@ -483,25 +483,30 @@ const subscribeToTransactionAction = () => {
     const id = router.currentRoute.value.params.id;
     const formattedId = Array.isArray(id) ? id[0] : id;
     await fetchTransaction(formattedId);
-    nextId.value = await nextTransaction.getNext(Number(formattedId));
+    nextId.value = await nextTransaction.getNext(
+      isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
+    );
   });
 };
 
 /* Hooks */
 onBeforeMount(async () => {
   const id = router.currentRoute.value.params.id;
+
   if (!id) {
     router.back();
     return;
   }
 
+  const keepNextTransaction = router.currentRoute.value.query[KEEP_NEXT_QUERY_KEY];
+  if (!keepNextTransaction) nextTransaction.reset();
+
   subscribeToTransactionAction();
   const formattedId = Array.isArray(id) ? id[0] : id;
   await fetchTransaction(formattedId);
-  nextId.value = await nextTransaction.getNext(Number(formattedId));
-
-  const keepNextTransaction = router.currentRoute.value.query[KEEP_NEXT_QUERY_KEY];
-  if (!keepNextTransaction) nextTransaction.reset();
+  nextId.value = await nextTransaction.getNext(
+    isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
+  );
 });
 
 /* Watchers */

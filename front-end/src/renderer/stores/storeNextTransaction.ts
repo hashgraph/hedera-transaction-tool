@@ -1,5 +1,3 @@
-import type { ITransaction } from '@main/shared/interfaces';
-
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
 
@@ -10,20 +8,20 @@ const useNextTransactionStore = defineStore('nextTransaction', () => {
   const PAGE_SIZE = 100;
 
   /* State */
-  const previousTransactionsIds = ref<number[] | null>(null);
+  const previousTransactionsIds = ref<(string | number)[] | null>(null);
   const getTransactions = ref<
     | ((
         page: number | null,
         pageSize: number | null,
-      ) => Promise<{ items: ITransaction[]; totalItems: number }>)
+      ) => Promise<{ items: (string | number)[]; totalItems: number }>)
     | null
   >(null);
   const getTransactionsHasPage = ref<boolean>(false);
 
-  const cachedItems = ref<{ [page: string]: ITransaction[] } | null>(null);
+  const cachedItems = ref<{ [page: string]: (string | number)[] } | null>(null);
 
   /* Actions */
-  const setPreviousTransactionsIds = (ids: number[]) => {
+  const setPreviousTransactionsIds = (ids: (string | number)[]) => {
     previousTransactionsIds.value = ids;
   };
 
@@ -31,44 +29,44 @@ const useNextTransactionStore = defineStore('nextTransaction', () => {
     callback: (
       page: number | null,
       pageSize: number | null,
-    ) => Promise<{ items: ITransaction[]; totalItems: number }>,
+    ) => Promise<{ items: (string | number)[]; totalItems: number }>,
     hasPage: boolean,
   ) => {
     getTransactions.value = callback;
     getTransactionsHasPage.value = hasPage;
   };
 
-  const getNext = async (currentId: number) => {
+  const getNext = async (currentId: string | number) => {
     if (!getTransactions.value) return null;
     if (!previousTransactionsIds.value) return null;
 
     const reversedPreviousIds = [...previousTransactionsIds.value, currentId].reverse();
 
-    let id: number | null = null;
+    let id: string | number | null = null;
 
     cachedItems.value = null;
 
     for (let i = 0; i < reversedPreviousIds.length; i++) {
       const { currentFound, nextId } = await findNextTransactionId(reversedPreviousIds[i]);
       id = nextId;
-      if (typeof id === 'number' || currentFound) break;
+      if (isId(id) || currentFound) break;
     }
 
-    if (typeof id !== 'number') {
-      const items = Object.values<ITransaction[]>(cachedItems.value || {})
+    if (!isId(id)) {
+      const items = Object.values<(string | number)[]>(cachedItems.value || {})
         .flat()
-        .filter(i => !reversedPreviousIds.includes(i.id));
+        .filter(i => !reversedPreviousIds.includes(i));
       cachedItems.value = null;
 
-      return items[0]?.id || null;
+      return isId(items[0]) ? items[0] : null;
     }
 
     return id;
   };
 
   const findNextTransactionId = async (
-    id: number,
-  ): Promise<{ currentFound: boolean; nextId: number | null }> => {
+    id: string | number,
+  ): Promise<{ currentFound: boolean; nextId: string | number | null }> => {
     if (!getTransactions.value) throw new Error('No transaction fetching function set');
 
     const withPage = getTransactionsHasPage.value;
@@ -96,18 +94,18 @@ const useNextTransactionStore = defineStore('nextTransaction', () => {
       const items = cachedItems.value[withPage ? page : -1];
 
       /* The current id is found, the items are paginated and the next is in the next page */
-      if (foundGetFirst) return { currentFound: true, nextId: items[0].id };
+      if (foundGetFirst) return { currentFound: true, nextId: items[0] };
 
       /* The index of the current id */
-      const idIndex = items.findIndex(item => item.id === id);
+      const idIndex = items.findIndex(item => item === id);
 
       /* The current id is found */
       if (idIndex >= 0) {
         const nextItem = items[idIndex + 1];
 
         /* The next item is found in the same page */
-        if (nextItem) {
-          return { currentFound: true, nextId: nextItem.id };
+        if (isId(nextItem)) {
+          return { currentFound: true, nextId: nextItem };
         } else if (withPage && totalItems > page * PAGE_SIZE) {
           /* The next item is not found in the same page but has more pages*/
           page++;
@@ -136,6 +134,8 @@ const useNextTransactionStore = defineStore('nextTransaction', () => {
     getTransactionsHasPage.value = false;
     cachedItems.value = null;
   };
+
+  const isId = (id: string | number | null) => typeof id === 'number' || typeof id === 'string';
 
   return {
     previousTransactionsIds,

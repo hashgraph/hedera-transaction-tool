@@ -274,7 +274,7 @@ function setGetTransactionsFunction() {
   nextTransaction.setGetTransactionsFunction(async () => {
     const transactions = group.value?.groupItems.map(t => t.transaction);
     return {
-      items: transactions || [],
+      items: transactions?.map(t => t.id) || [],
       totalItems: transactions?.length || 0,
     };
   }, false);

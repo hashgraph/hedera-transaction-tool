@@ -212,7 +212,7 @@ function setGetTransactionsFunction() {
     );
 
     return {
-      items: items.map(t => t.transaction),
+      items: items.map(t => t.transaction.id),
       totalItems,
     };
   }, true);

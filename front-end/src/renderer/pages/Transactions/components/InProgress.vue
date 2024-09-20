@@ -167,7 +167,7 @@ function setGetTransactionsFunction() {
     );
 
     return {
-      items: items,
+      items: items.map(t => t.id),
       totalItems,
     };
   }, true);
