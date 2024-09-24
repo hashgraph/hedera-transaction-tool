@@ -159,7 +159,7 @@ class FilePage extends BasePage {
   }
 
   async findFileByIndex(fileId) {
-    const count = await this.countElementsByTestId(this.fileIdListPrefixSelector);
+    const count = await this.countElements(this.fileIdListPrefixSelector);
     if (count === 0) {
       return 0;
     } else {

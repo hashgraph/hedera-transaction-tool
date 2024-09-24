@@ -196,13 +196,13 @@ class RegistrationPage extends BasePage {
   // Combined method to verify all elements on Registration page
   async verifyRegistrationElements() {
     const checks = await Promise.all([
-      this.isElementVisibleAndEditable(this.emailLabelSelector),
-      this.isElementVisibleAndEditable(this.emailInputSelector),
-      this.isElementVisibleAndEditable(this.passwordLabelSelector),
-      this.isElementVisibleAndEditable(this.passwordInputSelector),
-      this.isElementVisibleAndEditable(this.confirmPasswordLabelSelector),
-      this.isElementVisibleAndEditable(this.confirmPasswordInputSelector),
-      this.isElementVisibleAndEditable(this.registerButtonSelector),
+      this.isElementVisible(this.emailLabelSelector),
+      this.isElementEditable(this.emailInputSelector),
+      this.isElementVisible(this.passwordLabelSelector),
+      this.isElementEditable(this.passwordInputSelector),
+      this.isElementVisible(this.confirmPasswordLabelSelector),
+      this.isElementEditable(this.confirmPasswordInputSelector),
+      this.isElementVisible(this.registerButtonSelector),
     ]);
 
     // Return true if all checks pass
@@ -337,7 +337,7 @@ class RegistrationPage extends BasePage {
   }
 
   async scrollToNextImportButton() {
-    await this.scrollIntoViewByTestId(this.nextButtonImportSelector);
+    await this.scrollIntoView(this.nextButtonImportSelector);
   }
 
   async getEmailErrorMessage() {
@@ -357,7 +357,7 @@ class RegistrationPage extends BasePage {
   }
 
   async isCreateNewTabVisible() {
-    return await this.isElementVisibleAndEditable(this.createNewTabSelector);
+    return await this.isElementVisible(this.createNewTabSelector);
   }
 
   async isUnderstandCheckboxVisible() {
@@ -385,7 +385,7 @@ class RegistrationPage extends BasePage {
   }
 
   async isConfirmPasswordFieldVisible() {
-    return await this.isElementVisible(this.confirmPasswordInputSelector, 5000);
+    return await this.isElementVisible(this.confirmPasswordInputSelector, null, 5000);
   }
 
   async getPublicKey() {

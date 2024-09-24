@@ -121,7 +121,7 @@ class ContactListPage extends BasePage {
 
   async getAllPublicKeysFromContactList() {
     const publicKeys = [];
-    const count = await this.countElementsByTestId(this.contactListPublicKeyIndexSelector);
+    const count = await this.countElements(this.contactListPublicKeyIndexSelector);
     for (let i = 0; i < count; i++) {
       publicKeys.push(await this.getText(this.contactListPublicKeyIndexSelector + i));
     }

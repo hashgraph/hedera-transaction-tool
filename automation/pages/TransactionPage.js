@@ -445,7 +445,7 @@ class TransactionPage extends BasePage {
    * @returns {number} The index of the element with the specified account ID, or -1 if not found.
    */
   async findAccountIndexById(accountId) {
-    const count = await this.countElementsByTestId(this.accountIdPrefixSelector);
+    const count = await this.countElements(this.accountIdPrefixSelector);
     if (count === 0) {
       return 0;
     } else {
@@ -691,11 +691,11 @@ class TransactionPage extends BasePage {
   }
 
   async clickOnReceiverSigRequiredSwitch() {
-    await this.toggleSwitchByTestId(this.receiverSigRequiredSwitchSelector);
+    await this.toggleSwitch(this.receiverSigRequiredSwitchSelector);
   }
 
   async clickONReceiverSigRequiredSwitchForUpdate() {
-    await this.toggleSwitchByTestId(this.receiverSigRequiredSwitchForUpdateSelector);
+    await this.toggleSwitch(this.receiverSigRequiredSwitchForUpdateSelector);
   }
 
   async isReceiverSigRequiredSwitchToggledOn() {
@@ -707,7 +707,7 @@ class TransactionPage extends BasePage {
   }
 
   async clickOnAcceptStakingRewardsSwitch() {
-    await this.toggleSwitchByTestId(this.acceptStakingRewardsSwitchSelector);
+    await this.toggleSwitch(this.acceptStakingRewardsSwitchSelector);
   }
 
   async isAcceptStakingRewardsSwitchToggledOn() {
@@ -895,7 +895,7 @@ class TransactionPage extends BasePage {
   async fillInTransferAccountId() {
     const allAccountIdsText = await this.getTextWithRetry(this.payerDropdownSelector);
     const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
-    await this.fillAndVerifyByTestId(this.transferAccountInputSelector, firstAccountId);
+    await this.fillAndVerify(this.transferAccountInputSelector, firstAccountId);
     return firstAccountId;
   }
 

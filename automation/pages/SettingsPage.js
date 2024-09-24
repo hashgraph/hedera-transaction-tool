@@ -108,7 +108,7 @@ class SettingsPage extends BasePage {
   }
 
   async getKeyRowCount() {
-    return await this.countElementsByTestId(this.indexCellSelectorPrefix);
+    return await this.countElements(this.indexCellSelectorPrefix);
   }
 
   async getRowDataByIndex(index) {
@@ -140,7 +140,7 @@ class SettingsPage extends BasePage {
 
     while (attempt < maxRetries) {
       await this.click(this.restoreButtonSelector);
-      if (await this.isElementVisible(this.continueButtonSelector, 3000)) {
+      if (await this.isElementVisible(this.continueButtonSelector, null, 3000)) {
         return;
       }
       await delay(2000);

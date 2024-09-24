@@ -951,7 +951,7 @@ class OrganizationPage extends BasePage {
     retryDelay = 500,
   ) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
-      const count = await this.countElementsByTestId(transactionIdIndexSelector);
+      const count = await this.countElements(transactionIdIndexSelector);
       for (let i = 0; i < count; i++) {
         const id = await getTransactionIdByIndex.call(this, i);
         if (id === transactionId) {
@@ -1028,7 +1028,7 @@ class OrganizationPage extends BasePage {
 
   async clickOnSubmitSignButtonByTransactionId(transactionId, maxRetries = 10, retryDelay = 1000) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
-      const count = await this.countElementsByTestId(this.readyForSignTransactionIdIndexSelector);
+      const count = await this.countElements(this.readyForSignTransactionIdIndexSelector);
       for (let i = 0; i < count; i++) {
         const id = await this.getReadyForSignTransactionIdByIndex(i);
         if (id === transactionId) {
@@ -1046,9 +1046,7 @@ class OrganizationPage extends BasePage {
     retryDelay = 1000,
   ) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
-      const count = await this.countElementsByTestId(
-        this.readyForExecutionTransactionIdIndexSelector,
-      );
+      const count = await this.countElements(this.readyForExecutionTransactionIdIndexSelector);
       for (let i = 0; i < count; i++) {
         const id = await this.getReadyForExecutionTransactionIdByIndex(i);
         if (id === transactionId) {
@@ -1066,7 +1064,7 @@ class OrganizationPage extends BasePage {
     retryDelay = 1000,
   ) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
-      const count = await this.countElementsByTestId(this.historyTransactionIdIndexSelector);
+      const count = await this.countElements(this.historyTransactionIdIndexSelector);
       for (let i = 0; i < count; i++) {
         const id = await this.getHistoryTransactionIdByIndex(i);
         if (id === transactionId) {
@@ -1080,7 +1078,7 @@ class OrganizationPage extends BasePage {
 
   async isTransactionIdVisibleInProgress(transactionId, attempts = 10) {
     for (let attempt = 0; attempt < attempts; attempt++) {
-      const count = await this.countElementsByTestId(this.inProgressTransactionIdIndexSelector);
+      const count = await this.countElements(this.inProgressTransactionIdIndexSelector);
       for (let i = 0; i < count; i++) {
         if ((await this.getInProgressTransactionIdByIndex(i)) === transactionId) {
           return true;
@@ -1093,9 +1091,7 @@ class OrganizationPage extends BasePage {
 
   async isTransactionIdVisibleReadyForExecution(transactionId, attempts = 10) {
     for (let attempt = 0; attempt < attempts; attempt++) {
-      const count = await this.countElementsByTestId(
-        this.readyForExecutionTransactionIdIndexSelector,
-      );
+      const count = await this.countElements(this.readyForExecutionTransactionIdIndexSelector);
       for (let i = 0; i < count; i++) {
         if ((await this.getReadyForExecutionTransactionIdByIndex(i)) === transactionId) {
           return true;
@@ -1136,9 +1132,7 @@ class OrganizationPage extends BasePage {
    * @returns {Promise<boolean>} - True if the stage is completed, false if active.
    */
   async isTransactionStageCompleted(stageIndex) {
-    const bubbleContent = await this.getInnerContentBySelector(
-      this.stageBubbleIndexSelector + stageIndex,
-    );
+    const bubbleContent = await this.getInnerContent(this.stageBubbleIndexSelector + stageIndex);
     return bubbleContent.trim().includes('bi-check-lg');
   }
 
