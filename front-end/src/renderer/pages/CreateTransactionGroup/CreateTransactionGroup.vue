@@ -332,33 +332,6 @@ onBeforeRouteLeave(async to => {
             >
               Delete All</AppButton
             >
-            <div
-              class="p-4 bg-white position-fixed rounded mt-4"
-              style="
-                box-shadow:
-                  0px 4px 6px 0px rgba(0, 0, 0, 0.09),
-                  0px 0px 1px 1px rgba(167, 167, 167, 0.25);
-              "
-              v-if="showAreYouSure"
-            >
-              <div class="mt-2 mb-4">Are you sure you want to delete all transactions?</div>
-              <AppButton
-                color="borderless"
-                type="button"
-                @click="handleCancelDeleteAll"
-                class="ms-4"
-              >
-                Cancel</AppButton
-              >
-              <AppButton
-                color="danger"
-                type="button"
-                @click="handleConfirmDeleteAll"
-                class="ms-4 text-danger"
-              >
-                Confirm</AppButton
-              >
-            </div>
             <AppButton color="primary" type="submit" class="ms-4">Save Group</AppButton>
             <AppButton
               color="primary"
@@ -511,6 +484,36 @@ onBeforeRouteLeave(async to => {
           </AppButton>
         </div>
       </form>
+    </AppModal>
+    <AppModal
+      :show="showAreYouSure"
+      :close-on-click-outside="false"
+      :close-on-escape="false"
+      class="small-modal"
+    >
+      <div class="text-center p-4">
+        <div class="text-start">
+          <i class="bi bi-x-lg cursor-pointer" @click="showAreYouSure = false"></i>
+        </div>
+        <h2 class="text-title text-semi-bold mt-3">
+          Are you sure you want to delete all transactions?
+        </h2>
+        <hr class="separator my-5" />
+
+        <div class="flex-between-centered gap-4">
+          <AppButton color="borderless" type="button" @click="handleCancelDeleteAll">
+            Cancel</AppButton
+          >
+          <AppButton
+            color="danger"
+            type="button"
+            @click="handleConfirmDeleteAll"
+            class="text-danger"
+          >
+            Confirm</AppButton
+          >
+        </div>
+      </div>
     </AppModal>
   </div>
 </template>
