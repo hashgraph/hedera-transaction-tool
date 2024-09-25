@@ -47,6 +47,7 @@ const transactionGroupProcessor = ref<typeof TransactionGroupProcessor | null>(n
 const file = ref<HTMLInputElement | null>(null);
 const isSaveGroupModalShown = ref(false);
 const wantToDeleteModalShown = ref(false);
+const showAreYouSure = ref(false);
 
 const groupEmpty = computed(() => transactionGroup.groupItems.length == 0);
 
@@ -81,6 +82,19 @@ function nameUpdated() {
 
 function handleDeleteGroupItem(index: number) {
   transactionGroup.removeGroupItem(index);
+}
+
+function handleDeleteAll() {
+  showAreYouSure.value = true;
+}
+
+function handleConfirmDeleteAll() {
+  transactionGroup.clearGroup();
+  showAreYouSure.value = false;
+}
+
+function handleCancelDeleteAll() {
+  showAreYouSure.value = false;
 }
 
 function handleDuplicateGroupItem(index: number) {
@@ -299,7 +313,7 @@ onBeforeRouteLeave(async to => {
       </div>
       <form class="mt-5" @submit.prevent="handleSaveGroup">
         <div class="d-flex justify-content-between">
-          <div class="form-group col-6">
+          <div class="form-group col">
             <label class="form-label">Transaction Group Name</label>
             <AppInput
               v-model="groupName"
@@ -309,7 +323,16 @@ onBeforeRouteLeave(async to => {
             />
           </div>
           <div class="mt-4 align-self-end">
-            <AppButton color="primary" type="submit">Save Group</AppButton>
+            <AppButton
+              v-if="!groupEmpty"
+              color="danger"
+              type="button"
+              @click="handleDeleteAll"
+              class="ms-4 text-danger"
+            >
+              Delete All</AppButton
+            >
+            <AppButton color="primary" type="submit" class="ms-4">Save Group</AppButton>
             <AppButton
               color="primary"
               type="button"
@@ -461,6 +484,36 @@ onBeforeRouteLeave(async to => {
           </AppButton>
         </div>
       </form>
+    </AppModal>
+    <AppModal
+      :show="showAreYouSure"
+      :close-on-click-outside="false"
+      :close-on-escape="false"
+      class="small-modal"
+    >
+      <div class="text-center p-4">
+        <div class="text-start">
+          <i class="bi bi-x-lg cursor-pointer" @click="showAreYouSure = false"></i>
+        </div>
+        <h2 class="text-title text-semi-bold mt-3">
+          Are you sure you want to delete all transactions?
+        </h2>
+        <hr class="separator my-5" />
+
+        <div class="flex-between-centered gap-4">
+          <AppButton color="borderless" type="button" @click="handleCancelDeleteAll">
+            Cancel</AppButton
+          >
+          <AppButton
+            color="danger"
+            type="button"
+            @click="handleConfirmDeleteAll"
+            class="text-danger"
+          >
+            Confirm</AppButton
+          >
+        </div>
+      </div>
     </AppModal>
   </div>
 </template>
