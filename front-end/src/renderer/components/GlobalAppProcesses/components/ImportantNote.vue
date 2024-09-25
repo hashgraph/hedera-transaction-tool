@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 
+import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import AppButton from './ui/AppButton.vue';
 
 /* Misc */
 const localStorageItemName = 'important-note-accepted';
+
+/* Emits */
+const emit = defineEmits<{
+  (event: 'accept'): void;
+}>();
 
 /* State */
 const shown = ref(true);
@@ -14,13 +19,17 @@ const shown = ref(true);
 const handleAccept = () => {
   localStorage.setItem(localStorageItemName, 'true');
   shown.value = false;
+  emit('accept');
 };
 
 /* Hooks */
 onMounted(() => {
   const importantNoteAccepted = JSON.parse(localStorage.getItem(localStorageItemName) || 'false');
-
   shown.value = !importantNoteAccepted;
+
+  if (importantNoteAccepted) {
+    emit('accept');
+  }
 });
 </script>
 <template>
