@@ -163,7 +163,7 @@ describe('Claim Service', () => {
       vi.resetAllMocks();
     });
 
-    test('should call prisma with the correct key for the use keychain value', async () => {
+    test('should return true if the claim value is "true"', async () => {
       prisma.claim.findMany.mockResolvedValueOnce([
         {
           id: 'someId',
@@ -181,6 +181,26 @@ describe('Claim Service', () => {
         where: { claim_key: USE_KEYCHAIN },
       });
       expect(result).toEqual(true);
+    });
+
+    test('should return false if the claim value is "false"', async () => {
+      prisma.claim.findMany.mockResolvedValueOnce([
+        {
+          id: 'someId',
+          user_id: 'user1',
+          claim_key: USE_KEYCHAIN,
+          claim_value: 'false',
+          created_at: now,
+          updated_at: now,
+        },
+      ]);
+
+      const result = await getUseKeychainClaim();
+
+      expect(prisma.claim.findMany).toHaveBeenCalledWith({
+        where: { claim_key: USE_KEYCHAIN },
+      });
+      expect(result).toEqual(false);
     });
 
     test('should return false if the claim does not exist', async () => {

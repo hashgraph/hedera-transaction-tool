@@ -104,6 +104,10 @@ describe('IPC handlers Safe Storage', () => {
     vi.mocked(getClaims).mockResolvedValueOnce([{ claim_value: 'true' } as Claim]);
 
     handler && expect(await handler[1](event)).toEqual(true);
+
+    vi.mocked(getClaims).mockResolvedValueOnce([{ claim_value: 'false' } as Claim]);
+
+    handler && expect(await handler[1](event)).toEqual(false);
   });
 
   test('Should getUseKeychain throw if NOT initialized', async () => {
