@@ -107,12 +107,13 @@ async function handleNewPassword() {
   newPasswordInvalid.value = newPassword.value.trim().length < 8;
   inputConfirmPasswordInvalid.value = newPassword.value !== confirmPassword.value;
 
-  if (personalPasswordInvalid.value) throw new Error('Incorrect personal password');
+  if (personalPasswordInvalid.value && !user.personal.useKeychain)
+    throw new Error('Incorrect personal password');
   if (newPasswordInvalid.value) throw new Error('Password must be at least 8 characters long');
   if (inputConfirmPasswordInvalid.value) throw new Error('Passwords do not match');
 
   try {
-    user.setPassword(personalPassword.value);
+    !user.personal.useKeychain && user.setPassword(personalPassword.value);
     await setPassword(user.selectedOrganization.serverUrl, newPassword.value);
 
     await addOrganizationCredentials(
@@ -207,6 +208,7 @@ watch(
 
           <div v-else-if="shouldSetNewPassword">
             <AppInput
+              v-if="isUserLoggedIn(user.personal) && !user.personal.useKeychain"
               v-model="personalPassword"
               :filled="true"
               class="mt-4"
