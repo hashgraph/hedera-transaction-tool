@@ -12,6 +12,7 @@ import listenForContactEvents from './contacts';
 import listenForPublicKeyLinkedEvents from './publicKeyLinked';
 import listenForEncryptedKeysEvents from './encryptedKeys';
 import listenForClaimEvents from './claim';
+import listenForSafeStorageEvents from './safeStorage';
 
 export default () => {
   listenForKeyPairEvents();
@@ -28,4 +29,5 @@ export default () => {
   listenForPublicKeyLinkedEvents();
   listenForEncryptedKeysEvents();
   listenForClaimEvents();
+  listenForSafeStorageEvents();
 };
