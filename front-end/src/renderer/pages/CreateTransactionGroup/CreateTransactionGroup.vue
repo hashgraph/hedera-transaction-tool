@@ -12,18 +12,18 @@ import useAccountId from '@renderer/composables/useAccountId';
 import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
 import { createTransactionId } from '@renderer/services/transactionService';
+import { deleteGroup } from '@renderer/services/transactionGroupsService';
 
 import { getPropagationButtonLabel } from '@renderer/utils';
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppModal from '@renderer/components/ui/AppModal.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import TransactionSelectionModal from '@renderer/components/TransactionSelectionModal.vue';
 import TransactionGroupProcessor from '@renderer/components/Transaction/TransactionGroupProcessor.vue';
-import AppModal from '@renderer/components/ui/AppModal.vue';
-import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
-import { deleteGroup } from '@renderer/services/transactionGroupsService';
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
@@ -64,7 +64,7 @@ async function handleSaveGroup() {
     isSaveGroupModalShown.value = false;
   }
 
-  if (groupName.value == '') {
+  if (groupName.value.trim() === '') {
     toast.error('Group Name Required', { position: 'bottom-right' });
     return;
   }
@@ -136,7 +136,7 @@ const handleLoadGroup = async () => {
 };
 
 async function handleSignSubmit() {
-  if (groupName.value == '') {
+  if (groupName.value.trim() === '') {
     toast.error('Group Name Required', { position: 'bottom-right' });
     return;
   }

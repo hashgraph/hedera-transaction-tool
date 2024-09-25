@@ -1,21 +1,22 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+import { useRoute, useRouter } from 'vue-router';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionSelectionModal from '@renderer/components/TransactionSelectionModal.vue';
-import { useRoute, useRouter } from 'vue-router';
 
 /* Props */
 defineProps<{
   group?: boolean;
 }>();
 
-/* State */
-const isTransactionSelectionModalShown = ref(false);
-
 /* Composables */
 const route = useRoute();
 const router = useRouter();
+
+/* State */
+const isTransactionSelectionModalShown = ref(false);
 </script>
 <template>
   <div class="flex-centered flex-column text-center" v-bind="$attrs">

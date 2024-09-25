@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { TransactionDraft } from '@prisma/client';
+import type { TransactionDraft, TransactionGroup } from '@prisma/client';
 
 import { computed, onBeforeMount, ref, watch } from 'vue';
 
@@ -16,6 +16,12 @@ import {
   updateDraft,
   getDraftsCount,
 } from '@renderer/services/transactionDraftsService';
+import {
+  deleteGroup,
+  getGroup,
+  getGroups,
+  getGroupsCount,
+} from '@renderer/services/transactionGroupsService';
 
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
@@ -23,13 +29,6 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
-import {
-  deleteGroup,
-  getGroup,
-  getGroups,
-  getGroupsCount,
-} from '@renderer/services/transactionGroupsService';
-import type { TransactionGroup } from '@prisma/client';
 
 /* Store */
 const user = useUserStore();
@@ -115,11 +114,9 @@ const handleUpdateIsTemplate = async (e: Event, draft: TransactionDraft | Transa
 const handleDeleteDraft = async (draft: TransactionDraft | TransactionGroup) => {
   let toastMessage = '';
   if ((draft as TransactionDraft).type) {
-    console.log('draft deleting');
     await deleteDraft(draft.id);
     toastMessage = 'Draft successfully deleted';
   } else {
-    console.log('group deleting');
     await deleteGroup(draft.id);
     toastMessage = 'Group successfully deleted';
   }
