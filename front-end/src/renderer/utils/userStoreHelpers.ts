@@ -122,13 +122,18 @@ export const accountSetupRequiredParts = (
 };
 
 /* Entity creation */
-export const createPersonalUser = (id?: string, email?: string): PersonalUser =>
+export const createPersonalUser = (
+  id?: string,
+  email?: string,
+  useKeychain?: boolean,
+): PersonalUser =>
   id && email
     ? {
         isLoggedIn: true,
         id,
         email,
         password: null,
+        useKeychain: useKeychain || false,
       }
     : { isLoggedIn: false };
 

@@ -32,7 +32,7 @@ const handleChooseMode = async (useKeyChain: boolean) => {
   if (useKeyChain) {
     await encrypt('gain_access');
     const staticUser = await getStaticUser();
-    await user.login(staticUser.id, staticUser.email);
+    await user.login(staticUser.id, staticUser.email, true);
   }
 
   chooseModeModalShown.value = false;
