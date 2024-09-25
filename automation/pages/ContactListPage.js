@@ -36,7 +36,7 @@ class ContactListPage extends BasePage {
   contactListNicknameIndexSelector = 'p-contact-nickname-';
 
   async clickOnAccountInContactListByEmail(email) {
-    await this.clickByTestId(this.contactEmailIndexSelector + email);
+    await this.click(this.contactEmailIndexSelector + email);
   }
 
   async isRemoveContactButtonVisible() {
@@ -48,7 +48,7 @@ class ContactListPage extends BasePage {
   }
 
   async getContactListEmailText() {
-    return await this.getTextByTestId(this.contactListEmailSelector);
+    return await this.getText(this.contactListEmailSelector);
   }
 
   async isExpandAssociatedAccountsButtonVisible(index) {
@@ -59,41 +59,41 @@ class ContactListPage extends BasePage {
   }
 
   async clickOnExpandAssociatedAccountsButton(index) {
-    await this.clickByTestId(this.contactListExpandAssociatedAccountsButtonSelector + index);
+    await this.click(this.contactListExpandAssociatedAccountsButtonSelector + index);
   }
 
   async clickOnChangeNicknameButton() {
-    await this.clickByTestId(this.changeContactNicknameButtonSelector);
+    await this.click(this.changeContactNicknameButtonSelector);
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 
   async fillInContactNickname(nickname) {
-    await this.fillByTestId(this.inputChangeNicknameSelector, nickname);
+    await this.fill(this.inputChangeNicknameSelector, nickname);
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 
   async getContactNicknameText(nickname) {
-    return await this.getTextByTestId(this.contactListNicknameIndexSelector + nickname);
+    return await this.getText(this.contactListNicknameIndexSelector + nickname);
   }
 
   async clickOnAddNewContactButton() {
-    await this.clickByTestId(this.addNewContactButtonSelector);
+    await this.click(this.addNewContactButtonSelector);
   }
 
   async inputNewUserEmail(email) {
-    await this.fillByTestId(this.newUserEmailInputSelector, email);
+    await this.fill(this.newUserEmailInputSelector, email);
   }
 
   async clickOnRegisterNewUserButton() {
-    await this.clickByTestId(this.registerNewUserButtonSelector);
+    await this.click(this.registerNewUserButtonSelector);
   }
 
   async clickOnRemoveContactButton() {
-    await this.clickByTestId(this.removeContactButtonSelector);
+    await this.click(this.removeContactButtonSelector);
   }
 
   async clickOnConfirmRemoveContactButton() {
-    await this.clickByTestId(this.confirmRemovingContactButtonSelector);
+    await this.click(this.confirmRemovingContactButtonSelector);
   }
 
   async upgradeUserToAdmin(email) {
@@ -121,9 +121,9 @@ class ContactListPage extends BasePage {
 
   async getAllPublicKeysFromContactList() {
     const publicKeys = [];
-    const count = await this.countElementsByTestId(this.contactListPublicKeyIndexSelector);
+    const count = await this.countElements(this.contactListPublicKeyIndexSelector);
     for (let i = 0; i < count; i++) {
-      publicKeys.push(await this.getTextByTestId(this.contactListPublicKeyIndexSelector + i));
+      publicKeys.push(await this.getText(this.contactListPublicKeyIndexSelector + i));
     }
     return publicKeys;
   }
@@ -201,7 +201,7 @@ class ContactListPage extends BasePage {
           break;
         }
 
-        const account = await this.getTextByTestId(associatedAccountSelector);
+        const account = await this.getText(associatedAccountSelector);
         associatedAccounts.push(account.trim());
         index++;
       }

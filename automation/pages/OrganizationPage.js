@@ -116,24 +116,24 @@ class OrganizationPage extends BasePage {
   contactListPublicKeyTypeIndexSelector = 'p-contact-public-type-key-';
 
   async clickOnAddNewOrganizationButton() {
-    await this.clickByTestId(this.addNewOrganizationButtonSelector);
+    await this.click(this.addNewOrganizationButtonSelector);
   }
 
   async fillOrganizationDetailsAndContinue(organizationNickname, serverUrl) {
-    await this.fillByTestId(this.organizationNicknameInputSelector, organizationNickname);
-    await this.fillByTestId(this.serverUrlInputSelector, serverUrl);
-    await this.clickByTestId(this.addOrganizationButtonInModalSelector);
+    await this.fill(this.organizationNicknameInputSelector, organizationNickname);
+    await this.fill(this.serverUrlInputSelector, serverUrl);
+    await this.click(this.addOrganizationButtonInModalSelector);
   }
 
   async fillOrganizationEncryptionPasswordAndContinue(password) {
-    await this.fillByTestId(this.encryptPasswordInputSelector, password);
-    await this.clickByTestId(this.continueEncryptPasswordButtonSelector);
+    await this.fill(this.encryptPasswordInputSelector, password);
+    await this.click(this.continueEncryptPasswordButtonSelector);
   }
 
   async signInOrganization(email, password, encryptionPassword) {
-    await this.fillByTestId(this.emailForOrganizationInputSelector, email);
-    await this.fillByTestId(this.passwordForOrganizationInputSelector, password);
-    await this.clickByTestId(this.signInOrganizationButtonSelector);
+    await this.fill(this.emailForOrganizationInputSelector, email);
+    await this.fill(this.passwordForOrganizationInputSelector, password);
+    await this.click(this.signInOrganizationButtonSelector);
     if (await this.isEncryptPasswordInputVisible()) {
       await this.fillOrganizationEncryptionPasswordAndContinue(encryptionPassword);
     }
@@ -144,9 +144,9 @@ class OrganizationPage extends BasePage {
   }
 
   async fillInLoginDetailsAndClickSignIn(email, password) {
-    await this.fillByTestId(this.emailForOrganizationInputSelector, email);
-    await this.fillByTestId(this.passwordForOrganizationInputSelector, password);
-    await this.clickByTestId(this.signInOrganizationButtonSelector);
+    await this.fill(this.emailForOrganizationInputSelector, email);
+    await this.fill(this.passwordForOrganizationInputSelector, password);
+    await this.click(this.signInOrganizationButtonSelector);
   }
 
   async setupOrganization() {
@@ -214,7 +214,7 @@ class OrganizationPage extends BasePage {
           await setupEnvironmentForTransactions(window, privateKey);
         }
 
-        await this.clickByTestId(this.logoutButtonSelector);
+        await this.click(this.logoutButtonSelector);
         await this.waitForElementToBeVisible(this.emailForOrganizationInputSelector);
       } else {
         await this.generateAndStoreUserKey(user.email, encryptionPassword);
@@ -312,19 +312,19 @@ class OrganizationPage extends BasePage {
   }
 
   async getOrganizationErrorMessage() {
-    return await this.getTextByTestId(this.organizationErrorMessageSelector);
+    return await this.getText(this.organizationErrorMessageSelector);
   }
 
   async clickOnCloseErrorModalButton() {
-    await this.clickByTestId(this.closeErrorModalButtonSelector);
+    await this.click(this.closeErrorModalButtonSelector);
   }
 
   async clickOnDeleteSecondOrganization() {
-    await this.clickByTestIdWithIndex(this.deleteOrganizationButtonSelector, 1);
+    await this.click(this.deleteOrganizationButtonSelector, 1);
   }
 
   async clickOnDeleteFirstOrganization() {
-    await this.clickByTestIdWithIndex(this.deleteOrganizationButtonSelector, 0);
+    await this.click(this.deleteOrganizationButtonSelector, 0);
   }
 
   async ensureBadOrganizationExists() {
@@ -337,7 +337,7 @@ class OrganizationPage extends BasePage {
   }
 
   async clickOnSelectModeDropdown() {
-    await this.clickByTestId(this.dropdownSelectModeSelector);
+    await this.click(this.dropdownSelectModeSelector);
   }
 
   async getNotificationElementFromDropdown() {
@@ -349,7 +349,7 @@ class OrganizationPage extends BasePage {
   }
 
   async selectModeByIndex(index) {
-    await this.clickByTestId(this.modeSelectionIndexSelector + index);
+    await this.click(this.modeSelectionIndexSelector + index);
   }
 
   async selectPersonalMode() {
@@ -365,7 +365,7 @@ class OrganizationPage extends BasePage {
   async logoutFromOrganization() {
     await this.selectOrganizationMode();
     await new Promise(resolve => setTimeout(resolve, 500));
-    await this.clickByTestId(this.logoutButtonSelector);
+    await this.click(this.logoutButtonSelector);
   }
 
   async verifyOrganizationExists(nickname) {
@@ -385,7 +385,7 @@ class OrganizationPage extends BasePage {
   // Method to fill a missing recovery phrase word by index
   async fillRecoveryPhraseWordForUser(userIndex, index, word) {
     const selector = this.registrationPage.getRecoveryWordSelector(index);
-    await this.fillByTestId(selector, word);
+    await this.fill(selector, word);
   }
 
   // Method to fill in all missing recovery phrase words based on the saved recoveryPhraseWords
@@ -420,7 +420,7 @@ class OrganizationPage extends BasePage {
   }
 
   async clickOnContactListButton() {
-    await this.clickByTestId(this.contactListButton);
+    await this.click(this.contactListButton);
   }
 
   async isContactListButtonVisible() {
@@ -428,15 +428,15 @@ class OrganizationPage extends BasePage {
   }
 
   async clickOnEditNicknameOrganizationButton() {
-    await this.clickByTestId(this.editNicknameOrganizationButtonSelector);
+    await this.click(this.editNicknameOrganizationButtonSelector);
   }
 
   async fillInNewOrganizationNickname(nickname) {
-    await this.fillByTestId(this.editOrganizationNicknameInputSelector, nickname);
+    await this.fill(this.editOrganizationNicknameInputSelector, nickname);
   }
 
   async getOrganizationNicknameText() {
-    return await this.getTextByTestId(this.organizationNicknameTextSelector);
+    return await this.getText(this.organizationNicknameTextSelector);
   }
 
   async editOrganizationNickname(newNickname) {
@@ -463,7 +463,7 @@ class OrganizationPage extends BasePage {
   }
 
   async clickOnDeleteNextButton() {
-    await this.clickByTestId(this.deleteNextButtonSelector);
+    await this.click(this.deleteNextButtonSelector);
   }
 
   async isDeleteNextButtonVisible() {
@@ -491,19 +491,19 @@ class OrganizationPage extends BasePage {
   }
 
   async clickOnAddObserverButton() {
-    await this.clickByTestId(this.addObserverButtonSelector);
+    await this.click(this.addObserverButtonSelector);
   }
 
   async clickOnAddUserButtonForObserver() {
-    await this.clickByTestId(this.addUserButtonSelector);
+    await this.click(this.addUserButtonSelector);
   }
 
   async clickOnUserOfObserverList(index) {
-    await this.clickByTestId(this.userListIndexSelector + index);
+    await this.click(this.userListIndexSelector + index);
   }
 
   async getUserOfObserverList(index) {
-    return await this.getTextByTestId(this.userListIndexSelector + index);
+    return await this.getText(this.userListIndexSelector + index);
   }
 
   /**
@@ -751,15 +751,15 @@ class OrganizationPage extends BasePage {
   }
 
   async clickOnSignTransactionButton() {
-    await this.clickByTestId(this.signTransactionButtonSelector, 5000);
+    await this.click(this.signTransactionButtonSelector, null, 5000);
   }
 
   async getTransactionDetailsId() {
-    return await this.getTextByTestId(this.transactionDetailsIdSelector, 5000);
+    return await this.getText(this.transactionDetailsIdSelector, null, 5000);
   }
 
   async getValidStart() {
-    return await this.getTextByTestId(this.transactionValidStartSelector);
+    return await this.getText(this.transactionValidStartSelector);
   }
 
   getComplexAccountId() {
@@ -767,19 +767,19 @@ class OrganizationPage extends BasePage {
   }
 
   async clickOnReadyToSignTab() {
-    await this.clickByTestId(this.readyToSignTabSelector);
+    await this.click(this.readyToSignTabSelector);
   }
 
   async clickOnInProgressTab() {
-    await this.clickByTestId(this.inProgressTabSelector);
+    await this.click(this.inProgressTabSelector);
   }
 
   async clickOnReadyForExecutionTab() {
-    await this.clickByTestId(this.readyForExecutionTabSelector);
+    await this.click(this.readyForExecutionTabSelector);
   }
 
   async clickOnHistoryTab() {
-    await this.clickByTestId(this.historyTabSelector);
+    await this.click(this.historyTabSelector);
   }
 
   async updateAccount(accountId, memo, timeForExecution = 10, isSignRequiredFromCreator = false) {
@@ -814,9 +814,9 @@ class OrganizationPage extends BasePage {
     await this.transactionPage.clickOnCreateNewTransactionButton();
     await this.transactionPage.clickOnTransferTokensTransaction();
     await this.setDateTimeAheadBy(timeForExecution);
-    await this.fillByTestId(this.transactionPage.transferFromAccountIdInputSelector, fromAccountId);
+    await this.fill(this.transactionPage.transferFromAccountIdInputSelector, fromAccountId);
     await this.transactionPage.fillInTransferAmountFromAccount(amount);
-    const payerAccountId = await this.getTextFromInputFieldByTestId(
+    const payerAccountId = await this.getTextFromInputField(
       this.transactionPage.payerDropdownSelector,
     );
     await this.transactionPage.fillInTransferToAccountId(payerAccountId);
@@ -860,15 +860,15 @@ class OrganizationPage extends BasePage {
   }
 
   async getReadyForSignTransactionIdByIndex(index) {
-    return await this.getTextByTestId(this.readyForSignTransactionIdIndexSelector + index);
+    return await this.getText(this.readyForSignTransactionIdIndexSelector + index);
   }
 
   async getReadyForSignTransactionTypeByIndex(index) {
-    return await this.getTextByTestId(this.readyForSignTransactionTypeIndexSelector + index);
+    return await this.getText(this.readyForSignTransactionTypeIndexSelector + index);
   }
 
   async getReadyForSignValidStartByIndex(index) {
-    return await this.getTextByTestId(this.readyForSignValidStartIndexSelector + index);
+    return await this.getText(this.readyForSignValidStartIndexSelector + index);
   }
 
   async isReadyForSignSubmitSignButtonVisibleByIndex(index) {
@@ -876,19 +876,19 @@ class OrganizationPage extends BasePage {
   }
 
   async clickOnSubmitSignButtonByIndex(index) {
-    await this.clickByTestId(this.readyForSignSubmitSignButtonIndexSelector + index, 5000);
+    await this.click(this.readyForSignSubmitSignButtonIndexSelector + index, null, 5000);
   }
 
   async getInProgressTransactionIdByIndex(index) {
-    return await this.getTextByTestId(this.inProgressTransactionIdIndexSelector + index);
+    return await this.getText(this.inProgressTransactionIdIndexSelector + index);
   }
 
   async getInProgressTransactionTypeByIndex(index) {
-    return await this.getTextByTestId(this.inProgressTransactionTypeIndexSelector + index);
+    return await this.getText(this.inProgressTransactionTypeIndexSelector + index);
   }
 
   async getInProgressValidStartByIndex(index) {
-    return await this.getTextByTestId(this.inProgressValidStartIndexSelector + index);
+    return await this.getText(this.inProgressValidStartIndexSelector + index);
   }
 
   async isInProgressDetailsButtonVisibleByIndex(index) {
@@ -896,15 +896,15 @@ class OrganizationPage extends BasePage {
   }
 
   async getReadyForExecutionTransactionIdByIndex(index) {
-    return await this.getTextByTestId(this.readyForExecutionTransactionIdIndexSelector + index);
+    return await this.getText(this.readyForExecutionTransactionIdIndexSelector + index);
   }
 
   async getReadyForExecutionTransactionTypeByIndex(index) {
-    return await this.getTextByTestId(this.readyForExecutionTransactionTypeIndexSelector + index);
+    return await this.getText(this.readyForExecutionTransactionTypeIndexSelector + index);
   }
 
   async getReadyForExecutionValidStartByIndex(index) {
-    return await this.getTextByTestId(this.readyForExecutionValidStartIndexSelector + index);
+    return await this.getText(this.readyForExecutionValidStartIndexSelector + index);
   }
 
   async isReadyForExecutionDetailsButtonVisibleByIndex(index) {
@@ -912,23 +912,23 @@ class OrganizationPage extends BasePage {
   }
 
   async clickOnReadyForExecutionDetailsButtonByIndex(index) {
-    await this.clickByTestId(this.readyForExecutionDetailsButtonIndexSelector + index);
+    await this.click(this.readyForExecutionDetailsButtonIndexSelector + index);
   }
 
   async getHistoryTransactionIdByIndex(index) {
-    return await this.getTextByTestId(this.historyTransactionIdIndexSelector + index);
+    return await this.getText(this.historyTransactionIdIndexSelector + index);
   }
 
   async getHistoryTransactionTypeByIndex(index) {
-    return await this.getTextByTestId(this.historyTransactionTypeIndexSelector + index);
+    return await this.getText(this.historyTransactionTypeIndexSelector + index);
   }
 
   async getHistoryTransactionStatusByIndex(index) {
-    return await this.getTextByTestId(this.historyTransactionStatusIndexSelector + index);
+    return await this.getText(this.historyTransactionStatusIndexSelector + index);
   }
 
   async getHistoryTransactionCreatedAtByIndex(index) {
-    return await this.getTextByTestId(this.historyCreatedAtIndexSelector + index);
+    return await this.getText(this.historyCreatedAtIndexSelector + index);
   }
 
   async isHistoryDetailsButtonVisibleByIndex(index) {
@@ -936,7 +936,7 @@ class OrganizationPage extends BasePage {
   }
 
   async clickOnHistoryDetailsButtonByIndex(index) {
-    await this.clickByTestId(this.historyDetailsButtonIndexSelector + index);
+    await this.click(this.historyDetailsButtonIndexSelector + index);
   }
 
   async getTransactionDetails(
@@ -951,7 +951,7 @@ class OrganizationPage extends BasePage {
     retryDelay = 500,
   ) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
-      const count = await this.countElementsByTestId(transactionIdIndexSelector);
+      const count = await this.countElements(transactionIdIndexSelector);
       for (let i = 0; i < count; i++) {
         const id = await getTransactionIdByIndex.call(this, i);
         if (id === transactionId) {
@@ -1028,7 +1028,7 @@ class OrganizationPage extends BasePage {
 
   async clickOnSubmitSignButtonByTransactionId(transactionId, maxRetries = 10, retryDelay = 1000) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
-      const count = await this.countElementsByTestId(this.readyForSignTransactionIdIndexSelector);
+      const count = await this.countElements(this.readyForSignTransactionIdIndexSelector);
       for (let i = 0; i < count; i++) {
         const id = await this.getReadyForSignTransactionIdByIndex(i);
         if (id === transactionId) {
@@ -1046,9 +1046,7 @@ class OrganizationPage extends BasePage {
     retryDelay = 1000,
   ) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
-      const count = await this.countElementsByTestId(
-        this.readyForExecutionTransactionIdIndexSelector,
-      );
+      const count = await this.countElements(this.readyForExecutionTransactionIdIndexSelector);
       for (let i = 0; i < count; i++) {
         const id = await this.getReadyForExecutionTransactionIdByIndex(i);
         if (id === transactionId) {
@@ -1066,7 +1064,7 @@ class OrganizationPage extends BasePage {
     retryDelay = 1000,
   ) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
-      const count = await this.countElementsByTestId(this.historyTransactionIdIndexSelector);
+      const count = await this.countElements(this.historyTransactionIdIndexSelector);
       for (let i = 0; i < count; i++) {
         const id = await this.getHistoryTransactionIdByIndex(i);
         if (id === transactionId) {
@@ -1080,7 +1078,7 @@ class OrganizationPage extends BasePage {
 
   async isTransactionIdVisibleInProgress(transactionId, attempts = 10) {
     for (let attempt = 0; attempt < attempts; attempt++) {
-      const count = await this.countElementsByTestId(this.inProgressTransactionIdIndexSelector);
+      const count = await this.countElements(this.inProgressTransactionIdIndexSelector);
       for (let i = 0; i < count; i++) {
         if ((await this.getInProgressTransactionIdByIndex(i)) === transactionId) {
           return true;
@@ -1093,9 +1091,7 @@ class OrganizationPage extends BasePage {
 
   async isTransactionIdVisibleReadyForExecution(transactionId, attempts = 10) {
     for (let attempt = 0; attempt < attempts; attempt++) {
-      const count = await this.countElementsByTestId(
-        this.readyForExecutionTransactionIdIndexSelector,
-      );
+      const count = await this.countElements(this.readyForExecutionTransactionIdIndexSelector);
       for (let i = 0; i < count; i++) {
         if ((await this.getReadyForExecutionTransactionIdByIndex(i)) === transactionId) {
           return true;
@@ -1136,9 +1132,7 @@ class OrganizationPage extends BasePage {
    * @returns {Promise<boolean>} - True if the stage is completed, false if active.
    */
   async isTransactionStageCompleted(stageIndex) {
-    const bubbleContent = await this.getInnerContentBySelector(
-      this.stageBubbleIndexSelector + stageIndex,
-    );
+    const bubbleContent = await this.getInnerContent(this.stageBubbleIndexSelector + stageIndex);
     return bubbleContent.trim().includes('bi-check-lg');
   }
 
@@ -1147,11 +1141,11 @@ class OrganizationPage extends BasePage {
   }
 
   async getObserverEmail(index) {
-    return await this.getTextByTestId(this.observerIndexSelector + index);
+    return await this.getText(this.observerIndexSelector + index);
   }
 
   async getNotificationNumberText() {
-    return await this.getTextByTestId(this.spanNotificationNumberSelector);
+    return await this.getText(this.spanNotificationNumberSelector);
   }
 
   async isNotificationNumberVisible() {

@@ -44,83 +44,83 @@ class FilePage extends BasePage {
   toastMessageSelector = '.v-toast__text';
 
   async clickOnRemoveFileCardButton() {
-    await this.clickByTestId(this.removeFileCardButtonSelector);
+    await this.click(this.removeFileCardButtonSelector);
   }
 
   async clickOnUpdateFileButton() {
-    await this.clickByTestId(this.updateFileButtonSelector);
+    await this.click(this.updateFileButtonSelector);
   }
 
   async clickOnAppendFileButton() {
-    await this.clickByTestId(this.appendFileButtonSelector);
+    await this.click(this.appendFileButtonSelector);
   }
 
   async clickOnReadFileButton() {
-    await this.clickByTestId(this.readFileButtonSelector);
+    await this.click(this.readFileButtonSelector);
   }
 
   async clickOnAddNewFileButton() {
-    await this.clickByTestId(this.addNewButtonSelector);
+    await this.click(this.addNewButtonSelector);
   }
 
   async clickOnCreateNewFileLink() {
-    await this.clickByTestId(this.createNewLinkSelector);
+    await this.click(this.createNewLinkSelector);
   }
 
   async clickOnUpdateFileLink() {
-    await this.clickByTestId(this.updateLinkSelector);
+    await this.click(this.updateLinkSelector);
   }
 
   async clickOnAppendFileLink() {
-    await this.clickByTestId(this.appendLinkSelector);
+    await this.click(this.appendLinkSelector);
   }
 
   async clickOnReadFileLink() {
-    await this.clickByTestId(this.readLinkSelector);
+    await this.click(this.readLinkSelector);
   }
 
   async clickOnAddExistingFileLink() {
-    await this.clickByTestId(this.addExistingLinkSelector);
+    await this.click(this.addExistingLinkSelector);
   }
 
   async clickOnLinkFileButton() {
-    await this.clickByTestId(this.linkFileButtonSelector);
+    await this.click(this.linkFileButtonSelector);
   }
 
   async fillInExistingFileId(fileId) {
-    await this.fillByTestId(this.existingFileIdInputSelector, fileId);
+    await this.fill(this.existingFileIdInputSelector, fileId);
   }
 
   async getFileIdText() {
-    return await this.getTextByTestId(this.fileIdTextSelector, 3000);
+    return await this.getText(this.fileIdTextSelector, null, 3000);
   }
 
   async getFileSizeText() {
-    return await this.getTextByTestId(this.fileSizeTextSelector);
+    return await this.getText(this.fileSizeTextSelector);
   }
 
   async getFileKeyText() {
-    return await this.getTextByTestId(this.fileKeyTextSelector);
+    return await this.getText(this.fileKeyTextSelector);
   }
 
   async getFileKeyTypeText() {
-    return await this.getTextByTestId(this.fileKeyTypeTextSelector);
+    return await this.getText(this.fileKeyTypeTextSelector);
   }
 
   async getFileMemoText() {
-    return await this.getTextByTestId(this.fileMemoTextSelector);
+    return await this.getText(this.fileMemoTextSelector);
   }
 
   async getFileLedgerText() {
-    return await this.getTextByTestId(this.fileLedgerTextSelector);
+    return await this.getText(this.fileLedgerTextSelector);
   }
 
   async getFileExpirationText() {
-    return await this.getTextByTestId(this.fileExpirationTextSelector);
+    return await this.getText(this.fileExpirationTextSelector);
   }
 
   async getFileDescriptionText() {
-    return await this.getTextByTestId(this.fileDescriptionTextSelector);
+    return await this.getText(this.fileDescriptionTextSelector);
   }
 
   async getFirstFileFromList() {
@@ -136,35 +136,35 @@ class FilePage extends BasePage {
   }
 
   async clickOnFilesMenuButton() {
-    await this.clickByTestId(this.filesMenuButtonSelector);
+    await this.click(this.filesMenuButtonSelector);
   }
 
   async clickOnConfirmUnlinkFileButton() {
-    await this.clickByTestId(this.confirmUnlinkFileButtonSelector);
+    await this.click(this.confirmUnlinkFileButtonSelector);
   }
 
   async getFirstFileIdFromPage() {
-    return await this.getTextByTestId(this.fileIdListPrefixSelector + '0');
+    return await this.getText(this.fileIdListPrefixSelector + '0');
   }
 
   async clickOnAddNewButtonForFile() {
-    await this.clickByTestId(this.addNewButtonSelector);
+    await this.click(this.addNewButtonSelector);
   }
 
   async clickOnFileCheckbox(fileId) {
     const { delay } = await import('../utils/util.js');
     await delay(1000);
     const index = await this.findFileByIndex(fileId);
-    await this.clickByTestId(this.multiSelectFileCheckboxSelector + index);
+    await this.click(this.multiSelectFileCheckboxSelector + index);
   }
 
   async findFileByIndex(fileId) {
-    const count = await this.countElementsByTestId(this.fileIdListPrefixSelector);
+    const count = await this.countElements(this.fileIdListPrefixSelector);
     if (count === 0) {
       return 0;
     } else {
       for (let i = 0; i < count; i++) {
-        const idText = await this.getTextByTestId(this.fileIdListPrefixSelector + i);
+        const idText = await this.getText(this.fileIdListPrefixSelector + i);
         if (idText === fileId) {
           return i;
         }
@@ -195,7 +195,7 @@ class FilePage extends BasePage {
   }
 
   async clickOnSelectManyFilesButton() {
-    await this.clickByTestId(this.selectManyFilesButtonSelector);
+    await this.click(this.selectManyFilesButtonSelector);
   }
 }
 

@@ -48,23 +48,23 @@ class DetailsPage extends BasePage {
   fileDetailsFileIdSelector = 'p-file-details-file-id';
 
   async clickOnFirstTransactionDetailsButton() {
-    await this.clickByTestId(this.transactionDetailsButtonIndexSelector + '0');
+    await this.click(this.transactionDetailsButtonIndexSelector + '0');
   }
 
   async getFirstTransactionCreated() {
-    return await this.getTextByTestId(this.transactionCreatedAtIndexSelector + '0');
+    return await this.getText(this.transactionCreatedAtIndexSelector + '0');
   }
 
   async getFirstTransactionStatus() {
-    return await this.getTextByTestId(this.transactionStatusIndexSelector + '0');
+    return await this.getText(this.transactionStatusIndexSelector + '0');
   }
 
   async getFirstTransactionType() {
-    return await this.getTextByTestId(this.transactionTypeIndexSelector + '0');
+    return await this.getText(this.transactionTypeIndexSelector + '0');
   }
 
   async getFirstTransactionId() {
-    return await this.getTextByTestId(this.transactionIdIndexSelector + '0');
+    return await this.getText(this.transactionIdIndexSelector + '0');
   }
 
   async isTransactionDetailsButtonVisible() {
@@ -72,95 +72,95 @@ class DetailsPage extends BasePage {
   }
 
   async getTransactionDetailsType() {
-    return await this.getTextByTestId(this.transactionDetailsTypeSelector);
+    return await this.getText(this.transactionDetailsTypeSelector);
   }
 
   async getTransactionDetailsId() {
-    return await this.getTextByTestId(this.transactionDetailsIdSelector);
+    return await this.getText(this.transactionDetailsIdSelector);
   }
 
   async getTransactionDetailsCreatedAt() {
-    return await this.getTextByTestId(this.transactionDetailsCreatedAtSelector);
+    return await this.getText(this.transactionDetailsCreatedAtSelector);
   }
 
   async getTransactionDetailsExecutedAt() {
-    return await this.getTextByTestId(this.transactionDetailsExecutedAtSelector);
+    return await this.getText(this.transactionDetailsExecutedAtSelector);
   }
 
   async getValidStart() {
-    return await this.getTextByTestId(this.transactionDetailsValidStartSelector);
+    return await this.getText(this.transactionDetailsValidStartSelector);
   }
 
   async getTransactionDetailsFeePayer() {
-    return await this.getTextByTestId(this.transactionDetailsFeePayerSelector);
+    return await this.getText(this.transactionDetailsFeePayerSelector);
   }
 
   async getTransactionDetailsMemo() {
-    return await this.getTextByTestId(this.transactionDetailsMemoSelector);
+    return await this.getText(this.transactionDetailsMemoSelector);
   }
 
   async getAccountUpdateDetailsId() {
-    return await this.getTextByTestId(this.accountUpdateDetailsIdSelector);
+    return await this.getText(this.accountUpdateDetailsIdSelector);
   }
 
   async getAccountDetailsKey() {
-    return await this.getTextByTestId(this.accountDetailsKeySelector);
+    return await this.getText(this.accountDetailsKeySelector);
   }
 
   async getAccountDetailsMemo() {
-    return await this.getTextByTestId(this.accountDetailsMemoSelector);
+    return await this.getText(this.accountDetailsMemoSelector);
   }
 
   async getAccountDetailsStaking() {
-    return await this.getTextByTestId(this.accountDetailsStakingSelector);
+    return await this.getText(this.accountDetailsStakingSelector);
   }
 
   async getAccountDetailsDeclineRewards() {
-    return await this.getTextByTestId(this.accountDetailsDeclineRewardsSelector);
+    return await this.getText(this.accountDetailsDeclineRewardsSelector);
   }
 
   async getAccountDetailsReceiverSigRequired() {
-    return await this.getTextByTestId(this.accountDetailsReceiverSigRequiredSelector);
+    return await this.getText(this.accountDetailsReceiverSigRequiredSelector);
   }
 
   async getAccountDetailsInitBalance() {
-    return await this.getTextByTestId(this.accountDetailsInitBalanceSelector);
+    return await this.getText(this.accountDetailsInitBalanceSelector);
   }
 
   async getDeletedAccountId() {
-    return await this.getTextByTestId(this.accountDeleteDetailsDeletedAccountIdSelector);
+    return await this.getText(this.accountDeleteDetailsDeletedAccountIdSelector);
   }
 
   async getAccountDeleteDetailsTransferId() {
-    return await this.getTextByTestId(this.accountDeleteDetailsTransferIdSelector);
+    return await this.getText(this.accountDeleteDetailsTransferIdSelector);
   }
 
   async getTransferDetailsFromAccount() {
-    return await this.getTextByTestId(this.transferDetailsFromAccountSelector);
+    return await this.getText(this.transferDetailsFromAccountSelector);
   }
 
   async getTransferDetailsFromAmount() {
-    return await this.getTextByTestId(this.transferDetailsFromAmountSelector);
+    return await this.getText(this.transferDetailsFromAmountSelector);
   }
 
   async getTransferDetailsToAccount() {
-    return await this.getTextByTestId(this.transferDetailsToAccountSelector);
+    return await this.getText(this.transferDetailsToAccountSelector);
   }
 
   async getTransferDetailsToAmount() {
-    return await this.getTextByTestId(this.transferDetailsToAmountSelector);
+    return await this.getText(this.transferDetailsToAmountSelector);
   }
 
   async getAllowanceDetailsOwnerAccount() {
-    return await this.getTextByTestId(this.allowanceDetailsOwnerAccountSelector);
+    return await this.getText(this.allowanceDetailsOwnerAccountSelector);
   }
 
   async getAllowanceDetailsSpenderAccount() {
-    return await this.getTextByTestId(this.allowanceDetailsSpenderAccountSelector);
+    return await this.getText(this.allowanceDetailsSpenderAccountSelector);
   }
 
   async getAllowanceDetailsAmount() {
-    return await this.getTextByTestId(this.allowanceDetailsAmountSelector);
+    return await this.getText(this.allowanceDetailsAmountSelector);
   }
 
   async isViewContentsButtonVisible() {
@@ -172,11 +172,11 @@ class DetailsPage extends BasePage {
   }
 
   async getFileDetailsExpirationTime() {
-    return await this.getTextByTestId(this.fileDetailsExpirationTimeSelector);
+    return await this.getText(this.fileDetailsExpirationTimeSelector);
   }
 
   async getFileDetailsFileId() {
-    return await this.getTextByTestId(this.fileDetailsFileIdSelector);
+    return await this.getText(this.fileDetailsFileIdSelector);
   }
 
   async assertTransactionDisplayed(expectedId, expectedType) {

@@ -77,7 +77,7 @@ class RegistrationPage extends BasePage {
   // Method to fill a missing recovery phrase word by index
   async fillRecoveryPhraseWord(index, word) {
     const selector = this.getRecoveryWordSelector(index);
-    await this.fillByTestId(selector, word);
+    await this.fill(selector, word);
   }
 
   // Method to fill in all missing recovery phrase words based on the saved recoveryPhraseWords
@@ -102,7 +102,7 @@ class RegistrationPage extends BasePage {
     while (attempts < retryCount && !isSuccessful) {
       try {
         // Attempt to click the final next button
-        await this.clickByTestId(this.finalNextButtonSelector);
+        await this.click(this.finalNextButtonSelector);
         await this.window.waitForSelector(this.settingsButtonSelector, {
           state: 'visible',
           timeout: 1000,
@@ -168,15 +168,15 @@ class RegistrationPage extends BasePage {
   }
 
   async resetForm() {
-    await this.fillByTestId(this.emailInputSelector, '');
-    await this.fillByTestId(this.passwordInputSelector, '');
+    await this.fill(this.emailInputSelector, '');
+    await this.fill(this.passwordInputSelector, '');
   }
 
   async logoutForReset() {
     const isLogoutButtonVisible = await this.isElementVisible(this.logoutButtonSelector);
     if (isLogoutButtonVisible) {
       console.log('Logout button is visible, clicking to logout');
-      await this.clickByTestId(this.logoutButtonSelector);
+      await this.click(this.logoutButtonSelector);
       const element = this.window.getByTestId(this.emailInputSelector);
       await element.waitFor({ state: 'visible', timeout: 1000 });
     } else {
@@ -186,7 +186,7 @@ class RegistrationPage extends BasePage {
       );
       if (isSecondPasswordVisible) {
         await this.resetForm();
-        await this.fillByTestId(this.confirmPasswordInputSelector, '');
+        await this.fill(this.confirmPasswordInputSelector, '');
       } else {
         await this.resetForm();
       }
@@ -196,13 +196,13 @@ class RegistrationPage extends BasePage {
   // Combined method to verify all elements on Registration page
   async verifyRegistrationElements() {
     const checks = await Promise.all([
-      this.isElementVisibleAndEditable(this.emailLabelSelector),
-      this.isElementVisibleAndEditable(this.emailInputSelector),
-      this.isElementVisibleAndEditable(this.passwordLabelSelector),
-      this.isElementVisibleAndEditable(this.passwordInputSelector),
-      this.isElementVisibleAndEditable(this.confirmPasswordLabelSelector),
-      this.isElementVisibleAndEditable(this.confirmPasswordInputSelector),
-      this.isElementVisibleAndEditable(this.registerButtonSelector),
+      this.isElementVisible(this.emailLabelSelector),
+      this.isElementEditable(this.emailInputSelector),
+      this.isElementVisible(this.passwordLabelSelector),
+      this.isElementEditable(this.passwordInputSelector),
+      this.isElementVisible(this.confirmPasswordLabelSelector),
+      this.isElementEditable(this.confirmPasswordInputSelector),
+      this.isElementVisible(this.registerButtonSelector),
     ]);
 
     // Return true if all checks pass
@@ -289,59 +289,59 @@ class RegistrationPage extends BasePage {
   }
 
   async typeEmail(email) {
-    await this.fillByTestId(this.emailInputSelector, email);
+    await this.fill(this.emailInputSelector, email);
   }
 
   async typePassword(password) {
-    await this.fillByTestId(this.passwordInputSelector, password);
+    await this.fill(this.passwordInputSelector, password);
   }
 
   async typeConfirmPassword(confirmPassword) {
-    await this.fillByTestId(this.confirmPasswordInputSelector, confirmPassword);
+    await this.fill(this.confirmPasswordInputSelector, confirmPassword);
   }
 
   async submitRegistration() {
-    await this.clickByTestId(this.registerButtonSelector);
+    await this.click(this.registerButtonSelector);
   }
 
   async clickOnCreateNewTab() {
-    await this.clickByTestId(this.createNewTabSelector);
+    await this.click(this.createNewTabSelector);
   }
 
   async clickOnImportTab() {
-    await this.clickByTestId(this.importExistingTabSelector);
+    await this.click(this.importExistingTabSelector);
   }
 
   async clickOnUnderstandCheckbox() {
-    await this.clickByTestId(this.understandBackedUpCheckboxSelector);
+    await this.click(this.understandBackedUpCheckboxSelector);
   }
 
   async clickOnGenerateButton() {
-    await this.clickByTestId(this.generateButtonSelector);
+    await this.click(this.generateButtonSelector);
   }
 
   async clickOnVerifyButton() {
-    await this.clickByTestId(this.verifyButtonSelector);
+    await this.click(this.verifyButtonSelector);
   }
 
   async clickOnClearButton() {
-    await this.clickByTestId(this.clearButtonSelector);
+    await this.click(this.clearButtonSelector);
   }
 
   async clickOnNextButton() {
-    await this.clickByTestId(this.nextButtonSelector);
+    await this.click(this.nextButtonSelector);
   }
 
   async clickOnNextImportButton() {
-    await this.clickByTestId(this.nextButtonImportSelector);
+    await this.click(this.nextButtonImportSelector);
   }
 
   async scrollToNextImportButton() {
-    await this.scrollIntoViewByTestId(this.nextButtonImportSelector);
+    await this.scrollIntoView(this.nextButtonImportSelector);
   }
 
   async getEmailErrorMessage() {
-    return await this.getTextByTestId(this.emailErrorMessageSelector);
+    return await this.getText(this.emailErrorMessageSelector);
   }
 
   async isEmailErrorMessageVisible() {
@@ -349,15 +349,15 @@ class RegistrationPage extends BasePage {
   }
 
   async getPasswordErrorMessage() {
-    return await this.getTextByTestId(this.passwordErrorMessageSelector);
+    return await this.getText(this.passwordErrorMessageSelector);
   }
 
   async getConfirmPasswordErrorMessage() {
-    return await this.getTextByTestId(this.confirmPasswordErrorMessageSelector);
+    return await this.getText(this.confirmPasswordErrorMessageSelector);
   }
 
   async isCreateNewTabVisible() {
-    return await this.isElementVisibleAndEditable(this.createNewTabSelector);
+    return await this.isElementVisible(this.createNewTabSelector);
   }
 
   async isUnderstandCheckboxVisible() {
@@ -377,23 +377,23 @@ class RegistrationPage extends BasePage {
   }
 
   async getToastMessage() {
-    return await this.getTextByCssSelector(this.toastMessageSelector, 25000);
+    return await this.getText(this.toastMessageSelector, null, 25000);
   }
 
   async clickOnGenerateAgainButton() {
-    await this.clickByTestId(this.generateAgainButtonSelector);
+    await this.click(this.generateAgainButtonSelector);
   }
 
   async isConfirmPasswordFieldVisible() {
-    return await this.isElementVisible(this.confirmPasswordInputSelector, 5000);
+    return await this.isElementVisible(this.confirmPasswordInputSelector, null, 5000);
   }
 
   async getPublicKey() {
-    return await this.getTextByTestId(this.publicKeySpanSelector);
+    return await this.getText(this.publicKeySpanSelector);
   }
 
   async getPrivateKey() {
-    return await this.getTextByTestId(this.privateKeySpanSelector);
+    return await this.getText(this.privateKeySpanSelector);
   }
 }
 

@@ -43,8 +43,8 @@ class LoginPage extends BasePage {
   }
 
   async resetForm() {
-    await this.fillByTestId(this.emailInputSelector, '');
-    await this.fillByTestId(this.passwordInputSelector, '');
+    await this.fill(this.emailInputSelector, '');
+    await this.fill(this.passwordInputSelector, '');
   }
 
   // specific logout method for the login tests
@@ -52,7 +52,7 @@ class LoginPage extends BasePage {
     const isLogoutButtonVisible = await this.isElementVisible(this.logoutButtonSelector);
     if (isLogoutButtonVisible) {
       console.log('Logout button is visible, clicking to logout');
-      await this.clickByTestId(this.logoutButtonSelector);
+      await this.click(this.logoutButtonSelector);
       const element = this.window.getByTestId(this.emailInputSelector);
       await element.waitFor({ state: 'visible', timeout: 1000 });
     } else {
@@ -88,7 +88,7 @@ class LoginPage extends BasePage {
     // Proceed only if the initial reset button is visible
     if (initialResetButtonExists) {
       try {
-        await this.clickByTestId(this.resetStateButtonSelector);
+        await this.click(this.resetStateButtonSelector);
       } catch (e) {
         console.log('Failed to click on the reset link');
       }
@@ -126,11 +126,11 @@ class LoginPage extends BasePage {
   }
 
   async getLoginPasswordErrorMessage() {
-    return await this.getTextByTestId(this.invalidPasswordMessageSelector);
+    return await this.getText(this.invalidPasswordMessageSelector);
   }
 
   async getLoginEmailErrorMessage() {
-    return await this.getTextByTestId(this.invalidEmailMessageSelector);
+    return await this.getText(this.invalidEmailMessageSelector);
   }
 }
 
