@@ -6,6 +6,7 @@ import { searchEncryptedKeys, abortFileSearch } from '@renderer/services/encrypt
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 
 /* Props */
 const props = defineProps<{
@@ -27,7 +28,9 @@ const searching = ref(false);
 
 /* Computed */
 const fileNames = computed(() => {
-  return foundKeyPaths.value?.map(path => path.split('/').pop()?.split('.').slice(0, -1).join('.')) || [];
+  return (
+    foundKeyPaths.value?.map(path => path.split('/').pop()?.split('.').slice(0, -1).join('.')) || []
+  );
 });
 
 const selectedCount = computed(() => {
@@ -82,6 +85,16 @@ const handleSelect = async () => {
   }
 };
 
+const handleCheckboxChecked = (path: string, checked: boolean) => {
+  if (!selectedKeyPaths.value) return;
+
+  if (checked) {
+    selectedKeyPaths.value = [...selectedKeyPaths.value, path];
+  } else {
+    selectedKeyPaths.value = selectedKeyPaths.value.filter(p => p !== path);
+  }
+};
+
 /* Function */
 function reset() {
   abortFileSearch();
@@ -107,7 +120,7 @@ watch(
     <div class="p-5">
       <i class="bi bi-x-lg cursor-pointer" @click="handleClose(false)"></i>
       <div class="text-center mt-4">
-        <i class="bi bi-key large-icon" style="line-height: 16px"></i>
+        <i class="bi bi-key large-icon"></i>
       </div>
       <form @submit="handleSubmit">
         <h3 class="text-center text-title text-bold mt-3">Import encrypted keys</h3>
@@ -116,22 +129,23 @@ watch(
           Select either a folder or a zip file containing the encrypted keys.
         </p>
 
-        <div v-if="foundKeyPaths != null" class="mt-4" style="max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 5px;">
-          <div v-for="(path, index) in foundKeyPaths" :key="path" class="form-check">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              :value="path"
-              v-model="selectedKeyPaths"
-              :id="`checkbox-${path}`"
-              checked
-            />
-            <label class="form-check-label" :for="`checkbox-${path}`">{{ fileNames[index] }}</label>
-          </div>
+        <div v-if="foundKeyPaths != null" class="border rounded p-3 mt-4">
+          <ul class="overflow-x-hidden" style="max-height: 30vh">
+            <li v-for="(path, index) in foundKeyPaths" :key="path">
+              <AppCheckBox
+                :checked="selectedKeyPaths ? selectedKeyPaths.includes(path) : false"
+                @update:checked="handleCheckboxChecked(path, $event)"
+                :name="`checkbox-found-key-path-${path}`"
+                :label="fileNames[index]"
+                :data-testid="`checkbox-found-key-path-${path}`"
+              ></AppCheckBox>
+            </li>
+          </ul>
         </div>
 
-        <p v-if="foundKeyPaths && foundKeyPaths.length > 0" class="mt-2 text-end">
-          {{ selectedCount }} of {{ foundKeyPaths.length}}  key{{ selectedCount > 1 ? 's' : '' }} selected
+        <p v-if="foundKeyPaths && foundKeyPaths.length > 0" class="text-end mt-2">
+          {{ selectedCount }} of {{ foundKeyPaths.length }} key{{ selectedCount > 1 ? 's' : '' }}
+          selected
         </p>
 
         <div class="d-flex justify-content-between mt-4">
