@@ -51,7 +51,7 @@ const handleChangePassword = async () => {
     }
     if (isLoggedInOrganization(user.selectedOrganization)) {
       const personalPassword = user.getPassword();
-      if (!personalPassword) {
+      if (!personalPassword && !user.personal.useKeychain) {
         if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
         userPasswordModalRef.value?.open(
           'Enter your application password',
@@ -93,7 +93,11 @@ const handleChangePassword = async () => {
 };
 </script>
 <template>
-  <div>
+  <div
+    v-if="
+      (isUserLoggedIn(user.personal) && !user.personal.useKeychain) || user.selectedOrganization
+    "
+  >
     <form
       class="w-50 p-4 border rounded"
       @submit="

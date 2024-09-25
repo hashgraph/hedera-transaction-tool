@@ -1,12 +1,13 @@
-import { session, CookiesSetDetails } from 'electron';
+import { session, CookiesSetDetails, safeStorage } from 'electron';
 import { getPrismaClient } from '@main/db/prisma';
 
 import { Organization, OrganizationCredentials } from '@prisma/client';
 import { jwtDecode } from 'jwt-decode';
 
-import { decrypt, encrypt } from '@main/utils/crypto';
-
 import { login } from '@main/services/organization/auth';
+import { getUseKeychainClaim } from '@main/services/localUser/claim';
+
+import { decrypt, encrypt } from '@main/utils/crypto';
 
 /* Returns the organization that the user is connected to */
 export const getConnectedOrganizations = async (user_id: string) => {
@@ -139,7 +140,7 @@ export const addOrganizationCredentials = async (
   password: string,
   organization_id: string,
   user_id: string,
-  encryptPassword: string,
+  encryptPassword: string | null,
   updateIfExists: boolean = false,
 ) => {
   const prisma = getPrismaClient();
@@ -160,7 +161,16 @@ export const addOrganizationCredentials = async (
   }
 
   try {
-    password = encrypt(password, encryptPassword);
+    const useKeychain = await getUseKeychainClaim();
+
+    if (useKeychain) {
+      const buffer = safeStorage.encryptString(password);
+      password = buffer.toString('base64');
+    } else if (encryptPassword) {
+      password = encrypt(password, encryptPassword);
+    } else {
+      throw new Error('Password is required to store unencrypted key pair');
+    }
 
     await prisma.organizationCredentials.create({
       data: {
@@ -183,17 +193,22 @@ export const updateOrganizationCredentials = async (
   organization_id: string,
   user_id: string,
   email?: string,
-  password?: string,
-  encryptPassword?: string,
+  password?: string | null,
+  encryptPassword?: string | null,
 ) => {
   const prisma = getPrismaClient();
 
   try {
     if (password) {
-      if (!encryptPassword) {
-        throw new Error('No encryption password provided');
+      const useKeychain = await getUseKeychainClaim();
+      if (useKeychain) {
+        const buffer = safeStorage.encryptString(password);
+        password = buffer.toString('base64');
+      } else if (encryptPassword) {
+        password = encrypt(password, encryptPassword);
+      } else {
+        throw new Error('Password is required to store unencrypted key pair');
       }
-      password = encrypt(password, encryptPassword);
     }
 
     const credentials = await prisma.organizationCredentials.findFirst({
@@ -237,10 +252,18 @@ export const deleteOrganizationCredentials = async (organization_id: string, use
 
 export const decryptCredentialPassword = async (
   credentials: OrganizationCredentials,
-  decryptPassword: string,
+  decryptPassword: string | null,
 ) => {
   try {
-    return decrypt(credentials.password, decryptPassword);
+    const useKeychain = await getUseKeychainClaim();
+    if (useKeychain) {
+      const buffer = Buffer.from(credentials.password, 'base64');
+      return safeStorage.decryptString(buffer);
+    } else if (decryptPassword) {
+      return decrypt(credentials.password, decryptPassword);
+    } else {
+      throw new Error('Password is required to store unencrypted key pair');
+    }
   } catch (error) {
     console.log(error);
     throw new Error('Failed to decrypt credential');
@@ -248,7 +271,7 @@ export const decryptCredentialPassword = async (
 };
 
 /* Tries to auto sign in to all organizations that should sign in */
-export const tryAutoSignIn = async (user_id: string, decryptPassword: string) => {
+export const tryAutoSignIn = async (user_id: string, decryptPassword: string | null) => {
   const ses = session.fromPartition('persist:main');
 
   const invalidCredentials = await organizationsToSignIn(user_id);

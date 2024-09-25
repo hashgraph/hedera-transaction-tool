@@ -301,7 +301,7 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
     }
 
     const personalPassword = user.getPassword();
-    if (!personalPassword) {
+    if (!personalPassword && !user.personal.useKeychain) {
       if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
       userPasswordModalRef.value?.open(
         'Enter your application password',
