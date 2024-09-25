@@ -163,6 +163,7 @@ const handleResetData = async () => {
   createTooltips();
   setTooltipContent();
   isResetDataModalShown.value = false;
+  user.logout();
 };
 
 /* Hooks */

@@ -9,7 +9,7 @@ const localStorageItemName = 'important-note-accepted';
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'accept'): void;
+  (event: 'ready'): void;
 }>();
 
 /* State */
@@ -19,7 +19,7 @@ const shown = ref(true);
 const handleAccept = () => {
   localStorage.setItem(localStorageItemName, 'true');
   shown.value = false;
-  emit('accept');
+  emit('ready');
 };
 
 /* Hooks */
@@ -28,7 +28,7 @@ onMounted(() => {
   shown.value = !importantNoteAccepted;
 
   if (importantNoteAccepted) {
-    emit('accept');
+    emit('ready');
   }
 });
 </script>

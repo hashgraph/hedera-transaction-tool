@@ -20,12 +20,7 @@ export function addGuards(router: Router) {
       return { name: 'transactions' };
     }
 
-    if (
-      userIsLoggedIn &&
-      userIsLoggedInOrganization &&
-      user.shouldSetupAccount &&
-      to.name !== 'accountSetup'
-    ) {
+    if (userIsLoggedIn && user.shouldSetupAccount && to.name !== 'accountSetup') {
       return { name: 'accountSetup' };
     }
 

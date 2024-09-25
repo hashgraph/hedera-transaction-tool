@@ -4,15 +4,18 @@ import { ref } from 'vue';
 import AutoLoginInOrganization from '@renderer/components/Organization/AutoLoginInOrganization.vue';
 import AppUpdate from './components/AppUpdate.vue';
 import ImportantNote from './components/ImportantNote.vue';
+import DetectKeychain from './components/DetectKeychain.vue';
 
 /* State */
-const importantNoteAccepted = ref(false);
+const importantNoteReady = ref(false);
 </script>
 
 <template>
-  <ImportantNote @accept="importantNoteAccepted = true" />
-  <template v-if="importantNoteAccepted">
+  <AppUpdate />
+  <ImportantNote @ready="importantNoteReady = true" />
+
+  <template v-if="importantNoteReady">
+    <DetectKeychain />
     <AutoLoginInOrganization />
-    <AppUpdate />
   </template>
 </template>
