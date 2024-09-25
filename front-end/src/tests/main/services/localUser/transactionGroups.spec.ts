@@ -191,7 +191,7 @@ describe('Transaction Groups Service', () => {
         where: { transaction_group_id: id },
       });
       expect(prisma.transactionDraft.deleteMany).toHaveBeenCalledWith({
-        where: { GroupItem: { every: { transaction_group_id: id } } },
+        where: { GroupItem: { some: { transaction_group_id: id } } },
       });
       expect(prisma.transactionGroup.delete).toHaveBeenCalledWith({ where: { id } });
     });

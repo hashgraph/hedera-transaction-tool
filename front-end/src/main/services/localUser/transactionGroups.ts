@@ -119,19 +119,19 @@ export const getGroupsCount = async (userId: string) => {
 export async function deleteGroup(id: string) {
   const prisma = getPrismaClient();
 
-  await prisma.groupItem.deleteMany({
-    where: {
-      transaction_group_id: id,
-    },
-  });
-
   await prisma.transactionDraft.deleteMany({
     where: {
       GroupItem: {
-        every: {
+        some: {
           transaction_group_id: id,
         },
       },
+    },
+  });
+
+  await prisma.groupItem.deleteMany({
+    where: {
+      transaction_group_id: id,
     },
   });
 

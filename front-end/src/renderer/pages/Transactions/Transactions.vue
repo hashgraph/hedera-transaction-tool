@@ -69,11 +69,7 @@ const organizationTabs: TabItem[] = [
   { title: historyTitle },
   { title: groupsTitle },
 ];
-const sharedTabs: TabItem[] = [
-  { title: draftsTitle },
-  { title: historyTitle },
-  { title: groupsTitle },
-];
+const sharedTabs: TabItem[] = [{ title: draftsTitle }, { title: historyTitle }];
 
 const activeTabIndex = ref(1);
 const tabItems = ref<TabItem[]>(sharedTabs);

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { TransactionDraft } from '@prisma/client';
+import type { TransactionDraft, TransactionGroup } from '@prisma/client';
 
-import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 
 import { Prisma } from '@prisma/client';
 
@@ -16,6 +16,12 @@ import {
   updateDraft,
   getDraftsCount,
 } from '@renderer/services/transactionDraftsService';
+import {
+  deleteGroup,
+  getGroup,
+  getGroups,
+  getGroupsCount,
+} from '@renderer/services/transactionGroupsService';
 
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
@@ -29,21 +35,18 @@ const user = useUserStore();
 
 /* State */
 const drafts = ref<TransactionDraft[]>([]);
-const sort = reactive<{
-  field: Prisma.TransactionDraftScalarFieldEnum;
-  direction: Prisma.SortOrder;
-}>({
-  field: 'created_at',
-  direction: 'desc',
-});
 const totalItems = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
 const isLoading = ref(true);
+const groups = ref<TransactionGroup[]>([]);
+const list = ref<(TransactionDraft | TransactionGroup)[]>([]);
+const sortField = ref<string>('created_at');
+const sortDirection = ref<string>('desc');
 
 /* Computed */
 const generatedClass = computed(() => {
-  return sort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
+  return sortDirection.value === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
 });
 
 /* Composables */
@@ -51,48 +54,106 @@ const router = useRouter();
 const toast = useToast();
 
 /* Handlers */
-const handleSort = async (
-  field: Prisma.TransactionDraftScalarFieldEnum,
-  direction: Prisma.SortOrder,
-) => {
-  sort.field = field;
-  sort.direction = direction;
-  drafts.value = await getDrafts(createFindArgs());
-};
+const handleSort = async (field: string, direction: string) => {
+  sortField.value = field;
+  sortDirection.value = direction;
 
-const handleUpdateIsTemplate = async (e: Event, id: string) => {
-  const checkbox = e.currentTarget as HTMLInputElement | null;
-
-  if (checkbox) {
-    await updateDraft(id, { isTemplate: checkbox.checked });
+  switch (field) {
+    case 'created_at': {
+      const cmp = (
+        a: TransactionDraft | TransactionGroup,
+        b: TransactionDraft | TransactionGroup,
+      ) =>
+        direction == 'desc'
+          ? a.created_at.getTime() - b.created_at.getTime()
+          : b.created_at.getTime() - a.created_at.getTime();
+      list.value?.sort(cmp);
+      break;
+    }
+    case 'type': {
+      const cmp = (
+        a: TransactionDraft | TransactionGroup,
+        b: TransactionDraft | TransactionGroup,
+      ) => {
+        let typeA = '';
+        let typeB = '';
+        let returnValue = 0;
+        if ((a as TransactionDraft).type) {
+          typeA = (a as TransactionDraft).type;
+        }
+        if ((b as TransactionDraft).type) {
+          typeB = (b as TransactionDraft).type;
+        }
+        if (typeA < typeB) {
+          returnValue = -1;
+        }
+        if (typeA > typeB) {
+          returnValue = 1;
+        }
+        if (direction == 'asc') {
+          returnValue *= -1;
+        }
+        return returnValue;
+      };
+      list.value?.sort(cmp);
+      break;
+    }
   }
 };
 
-const handleDeleteDraft = async (id: string) => {
-  await deleteDraft(id);
+const handleUpdateIsTemplate = async (e: Event, draft: TransactionDraft | TransactionGroup) => {
+  if ((draft as TransactionDraft).isTemplate) {
+    const checkbox = e.currentTarget as HTMLInputElement | null;
+
+    if (checkbox) {
+      await updateDraft(draft.id, { isTemplate: checkbox.checked });
+    }
+  }
+};
+
+const handleDeleteDraft = async (draft: TransactionDraft | TransactionGroup) => {
+  let toastMessage = '';
+  if ((draft as TransactionDraft).type) {
+    await deleteDraft(draft.id);
+    toastMessage = 'Draft successfully deleted';
+  } else {
+    await deleteGroup(draft.id);
+    toastMessage = 'Group successfully deleted';
+  }
 
   await fetchDrafts();
 
-  toast.success('Draft successfully deleted', { position: 'bottom-right' });
+  toast.success(toastMessage, { position: 'bottom-right' });
 };
 
-const handleContinueDraft = async (id: string) => {
-  const draft = await getDraft(id);
+const handleContinueDraft = async (draft: TransactionDraft | TransactionGroup) => {
+  if ((draft as TransactionDraft).type) {
+    const fetchedDraft = await getDraft(draft.id);
 
-  router.push({
-    name: 'createTransaction',
-    params: {
-      type: draft.type.replace(/\s/g, ''),
-    },
-    query: {
-      draftId: draft?.id,
-    },
-  });
+    router.push({
+      name: 'createTransaction',
+      params: {
+        type: fetchedDraft.type.replace(/\s/g, ''),
+      },
+      query: {
+        draftId: draft?.id,
+      },
+    });
+  } else {
+    const group = await getGroup(draft.id);
+
+    router.push({
+      name: 'createTransactionGroup',
+      query: {
+        id: group?.id,
+      },
+    });
+  }
 };
 
 /* Functions */
 function getOpositeDirection() {
-  return sort.direction === 'asc' ? 'desc' : 'asc';
+  return sortDirection.value === 'asc' ? 'desc' : 'asc';
 }
 
 function createFindArgs(): Prisma.TransactionDraftFindManyArgs {
@@ -109,8 +170,25 @@ function createFindArgs(): Prisma.TransactionDraftFindManyArgs {
         },
       },
     },
-    orderBy: {
-      [sort.field]: sort.direction,
+    skip: (currentPage.value - 1) * pageSize.value,
+    take: pageSize.value,
+  };
+}
+
+function createFindGroupArgs(): Prisma.TransactionGroupFindManyArgs {
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
+  return {
+    where: {
+      GroupItem: {
+        every: {
+          transaction_draft: {
+            user_id: user.personal.id,
+          },
+        },
+      },
     },
     skip: (currentPage.value - 1) * pageSize.value,
     take: pageSize.value,
@@ -126,7 +204,10 @@ async function fetchDrafts() {
   try {
     totalItems.value = await getDraftsCount(user.personal.id);
     drafts.value = await getDrafts(createFindArgs());
-    handleSort(sort.field, sort.direction);
+    totalItems.value = await getGroupsCount(user.personal.id);
+    groups.value = await getGroups(createFindGroupArgs());
+    list.value = [...drafts.value, ...groups.value];
+    handleSort(sortField.value, sortDirection.value);
   } finally {
     isLoading.value = false;
   }
@@ -149,24 +230,23 @@ watch([currentPage, pageSize], async () => {
       <AppLoader />
     </template>
     <template v-else>
-      <template v-if="drafts.length > 0">
+      <template v-if="list.length > 0">
         <table v-show="!isLoading" class="table-custom">
           <thead>
             <tr>
-              <th class="w-10 text-end">#</th>
               <th>
                 <div
                   class="table-sort-link"
                   @click="
                     handleSort(
                       'created_at',
-                      sort.field === 'created_at' ? getOpositeDirection() : 'asc',
+                      sortField === 'created_at' ? getOpositeDirection() : 'asc',
                     )
                   "
                 >
                   <span>Date</span>
                   <i
-                    v-if="sort.field === 'created_at'"
+                    v-if="sortField === 'created_at'"
                     class="bi text-title"
                     :class="[generatedClass]"
                   ></i>
@@ -175,11 +255,11 @@ watch([currentPage, pageSize], async () => {
               <th>
                 <div
                   class="table-sort-link"
-                  @click="handleSort('type', sort.field === 'type' ? getOpositeDirection() : 'asc')"
+                  @click="handleSort('type', sortField === 'type' ? getOpositeDirection() : 'asc')"
                 >
                   <span>Transaction Type</span>
                   <i
-                    v-if="sort.field === 'type'"
+                    v-if="sortField === 'type'"
                     class="bi text-title"
                     :class="[generatedClass]"
                   ></i>
@@ -191,13 +271,13 @@ watch([currentPage, pageSize], async () => {
                   @click="
                     handleSort(
                       'isTemplate',
-                      sort.field === 'isTemplate' ? getOpositeDirection() : 'asc',
+                      sortField === 'isTemplate' ? getOpositeDirection() : 'asc',
                     )
                   "
                 >
                   <span>Is Template</span>
                   <i
-                    v-if="sort.field === 'isTemplate'"
+                    v-if="sortField === 'isTemplate'"
                     class="bi text-title"
                     :class="[generatedClass]"
                   ></i>
@@ -209,9 +289,8 @@ watch([currentPage, pageSize], async () => {
             </tr>
           </thead>
           <tbody>
-            <template v-for="(draft, i) in drafts" :key="draft.id">
+            <template v-for="(draft, i) in list" :key="draft.id">
               <tr>
-                <td>{{ i + 1 }}</td>
                 <td>
                   <span class="text-secondary" :data-testid="'span-draft-tx-date-' + i">
                     {{ draft.created_at.toLocaleString() }}
@@ -219,7 +298,9 @@ watch([currentPage, pageSize], async () => {
                 </td>
                 <td>
                   <span class="text-bold" :data-testid="'span-draft-tx-type-' + i">{{
-                    draft.type
+                    (draft as TransactionDraft).type
+                      ? (draft as TransactionDraft).type
+                      : (draft as TransactionGroup).description
                   }}</span>
                 </td>
                 <td class="text-center">
@@ -227,8 +308,12 @@ watch([currentPage, pageSize], async () => {
                     class="form-check-input"
                     :data-testid="'checkbox-is-template-' + i"
                     type="checkbox"
-                    :checked="Boolean(draft.isTemplate)"
-                    @change="e => handleUpdateIsTemplate(e, draft.id)"
+                    :checked="
+                      (draft as TransactionDraft).isTemplate
+                        ? Boolean((draft as TransactionDraft).isTemplate)
+                        : false
+                    "
+                    @change="e => handleUpdateIsTemplate(e, draft)"
                   />
                 </td>
                 <td class="text-center">
@@ -236,13 +321,13 @@ watch([currentPage, pageSize], async () => {
                     <AppButton
                       color="borderless"
                       :data-testid="'button-draft-delete-' + i"
-                      @click="handleDeleteDraft(draft.id)"
+                      @click="handleDeleteDraft(draft)"
                       >Delete</AppButton
                     >
                     <AppButton
                       color="secondary"
                       :data-testid="'button-draft-continue-' + i"
-                      @click="handleContinueDraft(draft.id)"
+                      @click="handleContinueDraft(draft)"
                       >Continue</AppButton
                     >
                   </div>

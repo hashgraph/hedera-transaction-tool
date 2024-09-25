@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+import { useRoute, useRouter } from 'vue-router';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionSelectionModal from '@renderer/components/TransactionSelectionModal.vue';
 
@@ -8,6 +10,10 @@ import TransactionSelectionModal from '@renderer/components/TransactionSelection
 defineProps<{
   group?: boolean;
 }>();
+
+/* Composables */
+const route = useRoute();
+const router = useRouter();
 
 /* State */
 const isTransactionSelectionModalShown = ref(false);
@@ -25,9 +31,17 @@ const isTransactionSelectionModalShown = ref(false);
         Create your Transaction, Sign Immediately or Save it to Drafts
       </p>
     </div>
-    <div class="mt-3">
+    <div class="mt-3" v-if="route.path == '/create-transaction-group'">
       <AppButton class="text-main text-pink" @click="isTransactionSelectionModalShown = true"
         >Create New</AppButton
+      >
+    </div>
+    <div class="mt-3 d-flex flex-column" v-if="route.path == '/transactions'">
+      <AppButton class="text-main text-pink" @click="isTransactionSelectionModalShown = true"
+        >Create New Transaction</AppButton
+      >
+      <AppButton class="text-main text-pink" @click="router.push('/create-transaction-group')"
+        >Create New Transaction Group</AppButton
       >
     </div>
   </div>
