@@ -20,19 +20,13 @@ export const register = async (email: string, password: string) => {
 export const login = async (email: string, password: string, _autoRegister?: boolean) => {
   const prisma = getPrismaClient();
 
-  const usersCount = await prisma.user.count();
-
   const user = await prisma.user.findFirst({
     where: {
       email,
     },
   });
 
-  if (usersCount === 0 || !user) {
-    throw new Error('Please register');
-  }
-
-  if (email != user.email) {
+  if (!user || email != user.email) {
     throw new Error('Incorrect email');
   }
 
