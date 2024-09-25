@@ -15,6 +15,7 @@ class LoginPage extends BasePage {
   // Buttons
   signInButtonSelector = 'button-login';
   importantNoteModalButtonSelector = 'button-understand-agree';
+  rejectKeyChainButtonSelector = 'button-refuse-key-chain-mode';
   resetStateButtonSelector = 'link-reset';
   confirmResetStateButtonSelector = 'button-reset';
   keepLoggedInCheckboxSelector = 'checkbox-remember';
@@ -34,6 +35,18 @@ class LoginPage extends BasePage {
   async closeImportantNoteModal() {
     // Wait for the button to be visible with a timeout
     const modalButton = this.window.getByTestId(this.importantNoteModalButtonSelector);
+    await modalButton.waitFor({ state: 'visible', timeout: 500 }).catch(e => {});
+
+    // If the modal is visible, then click the button to close the modal
+    if (await modalButton.isVisible()) {
+      await modalButton.click();
+    }
+  }
+
+  // Method to close the 'Key Chain' modal if it appears
+  async closeKeyChainModal() {
+    // Wait for the button to be visible with a timeout
+    const modalButton = this.window.getByTestId(this.rejectKeyChainButtonSelector);
     await modalButton.waitFor({ state: 'visible', timeout: 500 }).catch(e => {});
 
     // If the modal is visible, then click the button to close the modal
