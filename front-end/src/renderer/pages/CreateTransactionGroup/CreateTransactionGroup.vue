@@ -300,7 +300,13 @@ onBeforeRouteLeave(async to => {
           </div>
           <div class="mt-4 align-self-end">
             <AppButton color="primary" type="submit">Save Group</AppButton>
-            <AppButton color="primary" type="button" @click="handleSignSubmit" class="ms-4">
+            <AppButton
+              color="primary"
+              type="button"
+              @click="handleSignSubmit"
+              class="ms-4"
+              :disabled="transactionGroup.groupItems.length == 0"
+            >
               <span class="bi bi-send"></span>
               {{
                 getPropagationButtonLabel(
