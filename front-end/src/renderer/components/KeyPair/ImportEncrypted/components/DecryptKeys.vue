@@ -66,7 +66,7 @@ async function process(keyPaths: string[], words: string[] | null) {
   /* Verify user is logged in with password */
   if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
   const personalPassword = user.getPassword();
-  if (!personalPassword) {
+  if (!personalPassword && !user.personal.useKeychain) {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     userPasswordModalRef.value?.open(
       'Enter personal password',
