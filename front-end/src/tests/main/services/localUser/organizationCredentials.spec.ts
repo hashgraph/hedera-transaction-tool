@@ -19,16 +19,21 @@ import {
   updateOrganizationCredentials,
 } from '@main/services/localUser/organizationCredentials';
 
-import { session } from 'electron';
+import { safeStorage, session } from 'electron';
 import { jwtDecode } from 'jwt-decode';
 import { decrypt, encrypt } from '@main/utils/crypto';
 import { login } from '@main/services/organization';
+import { getUseKeychainClaim } from '@main/services/localUser/claim';
 
 vi.mock('@main/db/prisma');
-vi.mock('electron', () => ({ session: { fromPartition: vi.fn() } }));
+vi.mock('electron', () => ({
+  session: { fromPartition: vi.fn() },
+  safeStorage: { encryptString: vi.fn(), decryptString: vi.fn() },
+}));
 vi.mock('jwt-decode', () => ({ jwtDecode: vi.fn() }));
 vi.mock('@main/utils/crypto');
 vi.mock('@main/services/organization/auth', () => ({ login: vi.fn() }));
+vi.mock('@main/services/localUser/claim', () => ({ getUseKeychainClaim: vi.fn() }));
 
 describe('Services Local User Organization Credentials', () => {
   beforeEach(() => {
@@ -396,7 +401,7 @@ describe('Services Local User Organization Credentials', () => {
       vi.resetAllMocks();
     });
 
-    test('Should update organization credentials with encryption', async () => {
+    test('Should update organization credentials with encryption without keychain', async () => {
       const email = 'email';
       const password = 'password';
       const encryptPassword = 'password for encryption';
@@ -410,6 +415,23 @@ describe('Services Local User Organization Credentials', () => {
       expect(prisma.organizationCredentials.update).toHaveBeenCalledWith({
         where: { id: organizationCredentials.id },
         data: { email, password: encryptedPassword },
+      });
+    });
+
+    test('Should update organization credentials with encryption with keychain', async () => {
+      const email = 'email';
+      const password = 'password';
+      const encryptedPassword = Buffer.from('the encrption of password with encryptPassword');
+
+      vi.mocked(getUseKeychainClaim).mockResolvedValueOnce(true);
+      vi.mocked(safeStorage.encryptString).mockReturnValue(encryptedPassword);
+      prisma.organizationCredentials.findFirst.mockResolvedValue(organizationCredentials);
+
+      await updateOrganizationCredentials('123', '321', email, password, null);
+
+      expect(prisma.organizationCredentials.update).toHaveBeenCalledWith({
+        where: { id: organizationCredentials.id },
+        data: { email, password: encryptedPassword.toString('base64') },
       });
     });
 
@@ -469,7 +491,7 @@ describe('Services Local User Organization Credentials', () => {
       vi.resetAllMocks();
     });
 
-    test('Should add organization credentials that does not exist', async () => {
+    test('Should add organization credentials that does not exist without keychain', async () => {
       const email = 'email';
       const password = 'password';
       const encryptPassword = 'password for encryption';
@@ -491,6 +513,28 @@ describe('Services Local User Organization Credentials', () => {
         data: {
           email,
           password: encryptedPassword,
+          organization_id: '123',
+          user_id: '321',
+        },
+      });
+    });
+
+    test('Should add organization credentials that does not exist with keychain', async () => {
+      const email = 'email';
+      const password = 'password';
+      const encryptedPassword = Buffer.from('the encrption of password with encryptPassword');
+
+      vi.mocked(getUseKeychainClaim).mockResolvedValueOnce(true);
+      vi.mocked(safeStorage.encryptString).mockReturnValue(encryptedPassword);
+      prisma.organizationCredentials.create.mockResolvedValue(organizationCredentials);
+
+      const result = await addOrganizationCredentials(email, password, '123', '321', null);
+
+      expect(result).toEqual(true);
+      expect(prisma.organizationCredentials.create).toHaveBeenCalledWith({
+        data: {
+          email,
+          password: encryptedPassword.toString('base64'),
           organization_id: '123',
           user_id: '321',
         },
@@ -534,6 +578,18 @@ describe('Services Local User Organization Credentials', () => {
         addOrganizationCredentials(email, password, '123', '321', encryptPassword, true),
       ).rejects.toThrow('Failed to add organization credentials');
     });
+
+    test('Should throw error if no encrypt password is provided and keychain is not used', async () => {
+      const email = 'email';
+      const password = 'password';
+
+      vi.mocked(getUseKeychainClaim).mockResolvedValueOnce(false);
+      prisma.organizationCredentials.create.mockResolvedValue(organizationCredentials);
+
+      await expect(addOrganizationCredentials(email, password, '123', '321', null)).rejects.toThrow(
+        'Failed to add organization credentials',
+      );
+    });
   });
 
   describe('deleteOrganizationCredentials', () => {
@@ -574,12 +630,29 @@ describe('Services Local User Organization Credentials', () => {
       expect(result).toEqual(decryptedPassword);
     });
 
+    test('Should return the decrypted password if the keychain is used', async () => {
+      const decryptedPassword = 'password';
+
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(true);
+      vi.mocked(safeStorage.decryptString).mockReturnValue(decryptedPassword);
+
+      const result = await decryptCredentialPassword(organizationCredentials, '321');
+
+      expect(result).toEqual(decryptedPassword);
+    });
+
     test('Should throw error if there is a database error', async () => {
       vi.mocked(decrypt).mockImplementation(() => {
         throw new Error('Some decrypt error');
       });
 
       expect(() => decryptCredentialPassword(organizationCredentials, '321')).rejects.toThrow(
+        'Failed to decrypt credential',
+      );
+    });
+
+    test('Should throw error if keychain is not used and decrypt password is not provided', async () => {
+      expect(() => decryptCredentialPassword(organizationCredentials, null)).rejects.toThrow(
         'Failed to decrypt credential',
       );
     });

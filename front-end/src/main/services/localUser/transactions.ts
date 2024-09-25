@@ -91,7 +91,7 @@ export const signTransaction = async (
     let decryptedPrivateKey = '';
 
     if (useKeychain) {
-      const buffer = Buffer.from(keyPair?.private_key || '', 'base64');
+      const buffer = Buffer.from(keyPair.private_key, 'base64');
       decryptedPrivateKey = safeStorage.decryptString(buffer);
     } else if (userPassword) {
       decryptedPrivateKey = decrypt(keyPair.private_key, userPassword);
