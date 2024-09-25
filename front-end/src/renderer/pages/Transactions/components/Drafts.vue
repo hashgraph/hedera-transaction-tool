@@ -102,8 +102,6 @@ const handleSort = async (field: string, direction: string) => {
 };
 
 const handleUpdateIsTemplate = async (e: Event, draft: TransactionDraft | TransactionGroup) => {
-  console.log(draft);
-
   if ((draft as TransactionDraft).isTemplate !== undefined) {
     const checkbox = e.currentTarget as HTMLInputElement | null;
 
