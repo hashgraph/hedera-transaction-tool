@@ -102,7 +102,7 @@ const handleSort = async (field: string, direction: string) => {
 };
 
 const handleUpdateIsTemplate = async (e: Event, draft: TransactionDraft | TransactionGroup) => {
-  if ((draft as TransactionDraft).isTemplate) {
+  if ((draft as TransactionDraft).isTemplate !== undefined) {
     const checkbox = e.currentTarget as HTMLInputElement | null;
 
     if (checkbox) {
@@ -309,7 +309,7 @@ watch([currentPage, pageSize], async () => {
                     :data-testid="'checkbox-is-template-' + i"
                     type="checkbox"
                     :checked="
-                      (draft as TransactionDraft).isTemplate
+                      (draft as TransactionDraft).isTemplate !== undefined
                         ? Boolean((draft as TransactionDraft).isTemplate)
                         : false
                     "
