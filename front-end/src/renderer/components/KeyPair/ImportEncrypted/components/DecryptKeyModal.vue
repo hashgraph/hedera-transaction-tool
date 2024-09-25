@@ -52,8 +52,7 @@ const recoveredKeys = ref<{ publicKey: string; index: number }[]>([]);
 
 /* Computed */
 const fileName = computed(() => {
-  if (!props.keyPath) return '';
-  return props.keyPath.split('/').pop();
+  return props.keyPath?.split('/').pop()?.split('.').slice(0, -1).join('.') || '';
 });
 const hashCode = computed(() =>
   props.mnemonic ? calculateRecoveryPhraseHashCode(props.mnemonic) : null,
@@ -78,6 +77,7 @@ async function decrypt() {
   if (!props.keyPath) throw new Error('Key path is not provided');
 
   let key: {
+    fileName: string;
     privateKey: string;
     recoveryPhraseHashCode: number | null;
     index: number | null;
@@ -87,12 +87,15 @@ async function decrypt() {
   error.value = null;
 
   try {
-    key = await decryptEncryptedKey(
-      props.keyPath,
-      decryptPassword.value,
-      hashCode.value ? [...props.indexesFromMnemonic] : null,
-      hashCode.value,
-    );
+    key = {
+      fileName: fileName.value,
+      ...await decryptEncryptedKey(
+        props.keyPath,
+        decryptPassword.value,
+        hashCode.value ? [...props.indexesFromMnemonic] : null,
+        hashCode.value,
+      ),
+    }
   } catch (err) {
     if (err instanceof Error) {
       if (err.message === ENCRYPTED_KEY_ALREADY_IMPORTED) {
@@ -119,6 +122,7 @@ async function decrypt() {
 }
 
 async function storeKey(key: {
+  fileName: string;
   privateKey: string;
   recoveryPhraseHashCode: number | null;
   index: number | null;
@@ -150,7 +154,7 @@ async function storeKey(key: {
     organization_id: null,
     organization_user_id: null,
     secret_hash: matchedRecoveryPhraseHashCode && key.index !== null ? props.mnemonicHash : null,
-    nickname: null,
+    nickname: key.fileName,
   };
 
   if (isLoggedInOrganization(user.selectedOrganization)) {
