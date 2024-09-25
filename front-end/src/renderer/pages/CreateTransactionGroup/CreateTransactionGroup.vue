@@ -47,6 +47,7 @@ const transactionGroupProcessor = ref<typeof TransactionGroupProcessor | null>(n
 const file = ref<HTMLInputElement | null>(null);
 const isSaveGroupModalShown = ref(false);
 const wantToDeleteModalShown = ref(false);
+const showAreYouSure = ref(false);
 
 const groupEmpty = computed(() => transactionGroup.groupItems.length == 0);
 
@@ -81,6 +82,19 @@ function nameUpdated() {
 
 function handleDeleteGroupItem(index: number) {
   transactionGroup.removeGroupItem(index);
+}
+
+function handleDeleteAll() {
+  showAreYouSure.value = true;
+}
+
+function handleConfirmDeleteAll() {
+  transactionGroup.clearGroup();
+  showAreYouSure.value = false;
+}
+
+function handleCancelDeleteAll() {
+  showAreYouSure.value = false;
 }
 
 function handleDuplicateGroupItem(index: number) {
@@ -299,7 +313,7 @@ onBeforeRouteLeave(async to => {
       </div>
       <form class="mt-5" @submit.prevent="handleSaveGroup">
         <div class="d-flex justify-content-between">
-          <div class="form-group col-6">
+          <div class="form-group col">
             <label class="form-label">Transaction Group Name</label>
             <AppInput
               v-model="groupName"
@@ -309,7 +323,43 @@ onBeforeRouteLeave(async to => {
             />
           </div>
           <div class="mt-4 align-self-end">
-            <AppButton color="primary" type="submit">Save Group</AppButton>
+            <AppButton
+              v-if="!groupEmpty"
+              color="danger"
+              type="button"
+              @click="handleDeleteAll"
+              class="ms-4 text-danger"
+            >
+              Delete All</AppButton
+            >
+            <div
+              class="p-4 bg-white position-fixed rounded mt-4"
+              style="
+                box-shadow:
+                  0px 4px 6px 0px rgba(0, 0, 0, 0.09),
+                  0px 0px 1px 1px rgba(167, 167, 167, 0.25);
+              "
+              v-if="showAreYouSure"
+            >
+              <div class="mt-2 mb-4">Are you sure you want to delete all transactions?</div>
+              <AppButton
+                color="borderless"
+                type="button"
+                @click="handleCancelDeleteAll"
+                class="ms-4"
+              >
+                Cancel</AppButton
+              >
+              <AppButton
+                color="danger"
+                type="button"
+                @click="handleConfirmDeleteAll"
+                class="ms-4 text-danger"
+              >
+                Confirm</AppButton
+              >
+            </div>
+            <AppButton color="primary" type="submit" class="ms-4">Save Group</AppButton>
             <AppButton
               color="primary"
               type="button"
