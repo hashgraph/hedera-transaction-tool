@@ -64,6 +64,11 @@ async function handleSaveGroup() {
     isSaveGroupModalShown.value = false;
   }
 
+  if (groupName.value == '') {
+    toast.error('Group Name Required', { position: 'bottom-right' });
+    return;
+  }
+
   await transactionGroup.saveGroup(user.personal.id, groupName.value);
   transactionGroup.clearGroup();
   router.push('transactions');
@@ -131,6 +136,11 @@ const handleLoadGroup = async () => {
 };
 
 async function handleSignSubmit() {
+  if (groupName.value == '') {
+    toast.error('Group Name Required', { position: 'bottom-right' });
+    return;
+  }
+
   try {
     const ownerKeys = new Array<PublicKey>();
     for (const key of user.keyPairs) {

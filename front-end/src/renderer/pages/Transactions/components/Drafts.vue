@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TransactionDraft } from '@prisma/client';
 
-import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 
 import { Prisma } from '@prisma/client';
 
@@ -23,7 +23,12 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
-import { getGroups, getGroupsCount } from '@renderer/services/transactionGroupsService';
+import {
+  deleteGroup,
+  getGroup,
+  getGroups,
+  getGroupsCount,
+} from '@renderer/services/transactionGroupsService';
 import type { TransactionGroup } from '@prisma/client';
 
 /* Store */
@@ -36,7 +41,7 @@ const currentPage = ref(1);
 const pageSize = ref(10);
 const isLoading = ref(true);
 const groups = ref<TransactionGroup[]>([]);
-const list = ref<(TransactionDraft | TransactionGroup)[]>();
+const list = ref<(TransactionDraft | TransactionGroup)[]>([]);
 const sortField = ref<string>('created_at');
 const sortDirection = ref<string>('desc');
 
@@ -97,52 +102,56 @@ const handleSort = async (field: string, direction: string) => {
   }
 };
 
-// const handleSort = async (
-//   field: Prisma.TransactionDraftScalarFieldEnum,
-//   direction: Prisma.SortOrder,
-// ) => {
-//   sortField.value = field;
-//   sortDirection.value = direction;
+const handleUpdateIsTemplate = async (e: Event, draft: TransactionDraft | TransactionGroup) => {
+  if ((draft as TransactionDraft).isTemplate) {
+    const checkbox = e.currentTarget as HTMLInputElement | null;
 
-//   switch (field) {
-//     case 'id': {
-//       const cmp = (
-//         a: TransactionDraft | TransactionGroup,
-//         b: TransactionDraft | TransactionGroup,
-//       ) => Number.parseInt(a.id) - Number.parseInt(b.id);
-//       list.value?.sort(cmp);
-//     }
-//   }
-// };
-
-const handleUpdateIsTemplate = async (e: Event, id: string) => {
-  const checkbox = e.currentTarget as HTMLInputElement | null;
-
-  if (checkbox) {
-    await updateDraft(id, { isTemplate: checkbox.checked });
+    if (checkbox) {
+      await updateDraft(draft.id, { isTemplate: checkbox.checked });
+    }
   }
 };
 
-const handleDeleteDraft = async (id: string) => {
-  await deleteDraft(id);
+const handleDeleteDraft = async (draft: TransactionDraft | TransactionGroup) => {
+  let toastMessage = '';
+  if ((draft as TransactionDraft).type) {
+    console.log('draft deleting');
+    await deleteDraft(draft.id);
+    toastMessage = 'Draft successfully deleted';
+  } else {
+    console.log('group deleting');
+    await deleteGroup(draft.id);
+    toastMessage = 'Group successfully deleted';
+  }
 
   await fetchDrafts();
 
-  toast.success('Draft successfully deleted', { position: 'bottom-right' });
+  toast.success(toastMessage, { position: 'bottom-right' });
 };
 
-const handleContinueDraft = async (id: string) => {
-  const draft = await getDraft(id);
+const handleContinueDraft = async (draft: TransactionDraft | TransactionGroup) => {
+  if ((draft as TransactionDraft).type) {
+    const fetchedDraft = await getDraft(draft.id);
 
-  router.push({
-    name: 'createTransaction',
-    params: {
-      type: draft.type.replace(/\s/g, ''),
-    },
-    query: {
-      draftId: draft?.id,
-    },
-  });
+    router.push({
+      name: 'createTransaction',
+      params: {
+        type: fetchedDraft.type.replace(/\s/g, ''),
+      },
+      query: {
+        draftId: draft?.id,
+      },
+    });
+  } else {
+    const group = await getGroup(draft.id);
+
+    router.push({
+      name: 'createTransactionGroup',
+      query: {
+        id: group?.id,
+      },
+    });
+  }
 };
 
 /* Functions */
@@ -224,7 +233,7 @@ watch([currentPage, pageSize], async () => {
       <AppLoader />
     </template>
     <template v-else>
-      <template v-if="drafts.length > 0">
+      <template v-if="list.length > 0">
         <table v-show="!isLoading" class="table-custom">
           <thead>
             <tr>
@@ -259,24 +268,24 @@ watch([currentPage, pageSize], async () => {
                   ></i>
                 </div>
               </th>
-              <!-- // <th>
-              //   <div
-              //     class="table-sort-link justify-content-center"
-              //     @click="
-              //       handleSort(
-              //         'isTemplate',
-              //         sortField === 'isTemplate' ? getOpositeDirection() : 'asc',
-              //       )
-              //     "
-              //   >
-              //     <span>Is Template</span>
-              //     <i
-              //       v-if="sortField === 'isTemplate'"
-              //       class="bi text-title"
-              //       :class="[generatedClass]"
-              //     ></i>
-              //   </div>
-              // </th> -->
+              <th>
+                <div
+                  class="table-sort-link justify-content-center"
+                  @click="
+                    handleSort(
+                      'isTemplate',
+                      sortField === 'isTemplate' ? getOpositeDirection() : 'asc',
+                    )
+                  "
+                >
+                  <span>Is Template</span>
+                  <i
+                    v-if="sortField === 'isTemplate'"
+                    class="bi text-title"
+                    :class="[generatedClass]"
+                  ></i>
+                </div>
+              </th>
               <th class="text-center">
                 <span>Actions</span>
               </th>
@@ -292,30 +301,36 @@ watch([currentPage, pageSize], async () => {
                 </td>
                 <td>
                   <span class="text-bold" :data-testid="'span-draft-tx-type-' + i">{{
-                    (draft as TransactionDraft).type ? (draft as TransactionDraft).type : ''
+                    (draft as TransactionDraft).type
+                      ? (draft as TransactionDraft).type
+                      : (draft as TransactionGroup).description
                   }}</span>
                 </td>
-                <!-- // <td class="text-center">
-                //   <input
-                //     class="form-check-input"
-                //     :data-testid="'checkbox-is-template-' + i"
-                //     type="checkbox"
-                //     :checked="Boolean(draft.isTemplate)"
-                //     @change="e => handleUpdateIsTemplate(e, draft.id)"
-                //   />
-                // </td> -->
+                <td class="text-center">
+                  <input
+                    class="form-check-input"
+                    :data-testid="'checkbox-is-template-' + i"
+                    type="checkbox"
+                    :checked="
+                      (draft as TransactionDraft).isTemplate
+                        ? Boolean((draft as TransactionDraft).isTemplate)
+                        : false
+                    "
+                    @change="e => handleUpdateIsTemplate(e, draft)"
+                  />
+                </td>
                 <td class="text-center">
                   <div class="d-flex justify-content-center flex-wrap gap-3">
                     <AppButton
                       color="borderless"
                       :data-testid="'button-draft-delete-' + i"
-                      @click="handleDeleteDraft(draft.id)"
+                      @click="handleDeleteDraft(draft)"
                       >Delete</AppButton
                     >
                     <AppButton
                       color="secondary"
                       :data-testid="'button-draft-continue-' + i"
-                      @click="handleContinueDraft(draft.id)"
+                      @click="handleContinueDraft(draft)"
                       >Continue</AppButton
                     >
                   </div>

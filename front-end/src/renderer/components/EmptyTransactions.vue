@@ -16,8 +16,6 @@ const isTransactionSelectionModalShown = ref(false);
 /* Composables */
 const route = useRoute();
 const router = useRouter();
-
-console.log(route.path);
 </script>
 <template>
   <div class="flex-centered flex-column text-center" v-bind="$attrs">
