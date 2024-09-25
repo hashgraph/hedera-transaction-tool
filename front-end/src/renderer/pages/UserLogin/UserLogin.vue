@@ -249,7 +249,8 @@ function setTooltipContent() {
 async function checkShouldRegister() {
   try {
     const usersCount = await getUsersCount();
-    shouldRegister.value = usersCount === 0;
+
+    shouldRegister.value = usersCount < 2; /* 2 because the first user is the default */
   } catch (error) {
     shouldRegister.value = true;
   }

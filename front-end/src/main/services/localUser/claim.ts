@@ -94,5 +94,5 @@ export const getUseKeychainClaim = async () => {
   });
   if (flags.length === 0) throw new Error('Keychain mode not initialized');
 
-  return Boolean(flags[0].claim_value);
+  return flags[0].claim_value === 'true' ? true : false;
 };

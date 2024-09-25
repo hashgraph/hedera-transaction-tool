@@ -3,7 +3,7 @@ import { onMounted, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { getUsersCount } from '@renderer/services/userService';
+import { getUsersCount, resetDataLocal } from '@renderer/services/userService';
 import {
   encrypt,
   getStaticUser,
@@ -27,6 +27,7 @@ const handleSubmit = async (e: Event) => {
 };
 
 const handleChooseMode = async (useKeyChain: boolean) => {
+  await resetDataLocal();
   await initializeUseKeychain(useKeyChain);
 
   if (useKeyChain) {
@@ -41,7 +42,12 @@ const handleChooseMode = async (useKeyChain: boolean) => {
 /* Functions */
 const checkShouldChoose = async () => {
   try {
-    await getUseKeychain();
+    const useKeyChain = await getUseKeychain();
+
+    if (useKeyChain) return false;
+
+    const usersCount = await getUsersCount();
+    if (usersCount === 1) return true; /* Not using keychain and has not registered */
   } catch (error) {
     /* Not initialized */
     return true;

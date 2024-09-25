@@ -42,7 +42,7 @@ export default () => {
     const flags = await getFlags();
     if (flags.length === 0) throw new Error('Keychain mode not initialized');
 
-    return Boolean(flags[0].claim_value);
+    return flags[0].claim_value === 'true' ? true : false;
   });
 
   // Get the static user
