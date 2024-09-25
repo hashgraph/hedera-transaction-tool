@@ -1,5 +1,5 @@
 import type { Organization } from '@prisma/client';
-import type { LoggedInOrganization, LoggedInUserWithPassword } from '@renderer/types';
+import type { LoggedInOrganization } from '@renderer/types';
 import type { ITransaction, ITransactionFull, PaginatedResourceDto } from '@main/shared/interfaces';
 import type {
   ITransactionApprover,
@@ -70,7 +70,8 @@ export const uploadSignature = async (
 
 /* Decrypt, sign, upload signatures to the backend */
 export const fullUploadSignatures = async (
-  user: LoggedInUserWithPassword,
+  userId: string,
+  userPassword: string | null,
   organization: LoggedInOrganization & Organization,
   publicKeys: string[],
   transaction: Transaction,
@@ -79,7 +80,7 @@ export const fullUploadSignatures = async (
   const signaturesArray: { publicKeyId: number; signatures: { [key: string]: string } }[] = [];
 
   for (const publicKey of publicKeys) {
-    const privateKeyRaw = await decryptPrivateKey(user.id, user.password, publicKey);
+    const privateKeyRaw = await decryptPrivateKey(userId, userPassword, publicKey);
     const privateKey = getPrivateKey(publicKey, privateKeyRaw);
 
     const signatures = await getSignatures(privateKey, transaction);

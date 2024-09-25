@@ -103,7 +103,7 @@ export const signTransaction = async (
   transactionBytes: Uint8Array,
   publicKeys: string[],
   userId: string,
-  userPassword: string,
+  userPassword: string | null,
 ) =>
   commonIPCHandler(async () => {
     return await window.electronAPI.local.transactions.signTransaction(

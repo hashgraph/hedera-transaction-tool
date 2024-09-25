@@ -46,7 +46,7 @@ export default () => {
       transactionBytes: Uint8Array,
       publicKeys: string[],
       userId: string,
-      userPassword: string,
+      userPassword: string | null,
     ) => signTransaction(transactionBytes, publicKeys, userId, userPassword),
   );
 

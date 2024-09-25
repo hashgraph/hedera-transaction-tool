@@ -130,7 +130,8 @@ const handleSignGroup = async () => {
     throw new Error('User is not logged in organization');
   }
 
-  if (!isLoggedInWithPassword(user.personal)) {
+  const password = user.getPassword();
+  if (!password && !user.personal.useKeychain) {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     userPasswordModalRef.value?.open(
       'Enter your application password',
@@ -151,7 +152,8 @@ const handleSignGroup = async () => {
           network.mirrorNodeBaseURL,
         );
         await fullUploadSignatures(
-          user.personal,
+          user.personal.id,
+          password,
           user.selectedOrganization,
           publicKeysRequired,
           transaction,
