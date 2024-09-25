@@ -156,7 +156,7 @@ export const storeKeyPair = async (
   keyPair: Prisma.KeyPairUncheckedCreateInput,
   secretHashes: string[],
   mnemonic: string[] | string | null,
-  password: string,
+  password: string | null,
   encrypted: boolean,
 ) => {
   if (secretHashes.length > 0 && mnemonic) {

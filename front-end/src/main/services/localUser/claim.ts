@@ -1,5 +1,7 @@
 import { Claim, Prisma } from '@prisma/client';
 
+import { USE_KEYCHAIN } from '@main/shared/constants';
+
 import { getPrismaClient } from '@main/db/prisma';
 
 /* Add a claim to the database */
@@ -81,4 +83,16 @@ export const removeClaims = async (userId: string, claimKeys: string[]): Promise
   });
 
   return true;
+};
+
+/* Get use key chain claim */
+export const getUseKeychainClaim = async () => {
+  const flags = await getClaims({
+    where: {
+      claim_key: USE_KEYCHAIN,
+    },
+  });
+  if (flags.length === 0) throw new Error('Keychain mode not initialized');
+
+  return Boolean(flags[0].claim_value);
 };
