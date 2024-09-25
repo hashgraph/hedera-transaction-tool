@@ -14,9 +14,10 @@ export default function useAutoLogin() {
 
   /* Hooks */
   onMounted(async () => {
+    router.push({ name: 'login' });
+
     try {
       const useKeychain = await getUseKeychain();
-
       if (useKeychain) {
         const staticUser = await getStaticUser();
         await user.login(staticUser.id, staticUser.email, true);
@@ -30,10 +31,8 @@ export default function useAutoLogin() {
     }
 
     const loggedUser = localStorage.getItem('htx_user');
-
     if (loggedUser) {
       const { userId, email }: { userId: string; email: string } = JSON.parse(loggedUser);
-
       setTimeout(async () => {
         await user.login(userId, email, false);
         if (user.shouldSetupAccount) {
