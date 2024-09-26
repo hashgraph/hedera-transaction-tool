@@ -88,6 +88,7 @@ async function resetDbState() {
 
   const tablesToReset = [
     'Organization',
+    'Claim',
     'User',
     'ComplexKey',
     'HederaAccount',
