@@ -200,10 +200,10 @@ export const computeSignatureKey = async (
   const { accounts, receiverAccounts, newKeys } = getSignatureEntities(transaction);
 
   /* Create a new key list */
-  const sigantureKey = new KeyList();
+  const signatureKey = new KeyList();
 
   /* Add keys to the signature key list */
-  newKeys.forEach(key => sigantureKey.push(key));
+  newKeys.forEach(key => signatureKey.push(key));
 
   /* Add the keys of the account ids to the signature key list */
   for (const accountId of accounts) {
@@ -211,7 +211,7 @@ export const computeSignatureKey = async (
     const key = parseAccountProperty(accountInfo, 'key');
     if (!key) continue;
 
-    sigantureKey.push(key);
+    signatureKey.push(key);
   }
 
   /* Check if there is a receiver account that required signature, if so add it to the key list */
@@ -223,10 +223,10 @@ export const computeSignatureKey = async (
     const key = parseAccountProperty(accountInfo, 'key');
     if (!key) continue;
 
-    sigantureKey.push(key);
+    signatureKey.push(key);
   }
 
-  return sigantureKey;
+  return signatureKey;
 };
 
 /* Get transaction body bytes without node account id */
@@ -259,8 +259,7 @@ export const verifyTransactionBodyWithoutNodeAccountIdSignature = (
 };
 
 export async function isTransactionOverMaxSize(transaction: SDKTransaction) {
-  // This says it is protected, not sure how it is supposed to be used to check size.
-  // const request = await transaction._makeRequestAsync();
-  // return proto.Transaction.encode(request).finish().length > MAX_TRANSACTION_BYTE_SIZE;
-  return transaction.toBytes().length > MAX_TRANSACTION_BYTE_SIZE;
+  // @ts-expect-error _makeRequestAsync is a protected method, this is a temporary solution.
+  const request = await transaction._makeRequestAsync();
+  return proto.Transaction.encode(request).finish().length > MAX_TRANSACTION_BYTE_SIZE;
 }
