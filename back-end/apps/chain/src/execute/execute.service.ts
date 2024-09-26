@@ -28,6 +28,7 @@ import {
   getClientFromName,
   getStatusCodeFromMessage,
 } from '@app/common';
+import { ExecuteTransactionDto } from '@app/common/dtos/execute-transaction.dto';
 
 @Injectable()
 export class ExecuteService {
@@ -39,20 +40,7 @@ export class ExecuteService {
 
   /* Tries to execute a transaction */
   @MurLock(5000, 'transactionId')
-  async executeTransaction(transactionId: number) {
-    /* Gets the transaction from the database */
-    const transaction = await this.transactionsRepo.findOne({
-      where: {
-        id: transactionId,
-      },
-      relations: {
-        signers: true,
-        approvers: true,
-        observers: true,
-        creatorKey: true,
-      },
-    });
-
+  async executeTransaction(transaction: ExecuteTransactionDto) {
     /* Throws an error if the transaction is not found or in incorrect state */
     if (!transaction) throw new Error('Transaction not found');
     this.validateTransactionStatus(transaction);
@@ -81,13 +69,12 @@ export class ExecuteService {
     /* Execute the transaction */
     const client = getClientFromName(transaction.network);
 
-    let statusCode = 21;
-
-    transaction.executedAt = new Date();
-    transaction.status = TransactionStatus.EXECUTED;
+    const executedAt = new Date();
+    let transactionStatus = TransactionStatus.EXECUTED;
+    let transactionStatusCode = 21;
 
     const result: TransactionExecutedDto = {
-      status: transaction.status,
+      status: transactionStatus,
     };
 
     try {
@@ -97,24 +84,23 @@ export class ExecuteService {
       result.response = JSON.stringify(response.toJSON());
       result.receipt = JSON.stringify(receipt.toJSON());
       result.receiptBytes = Buffer.from(receipt.toBytes());
-      transaction.statusCode = receipt.status._code || Status.Ok._code;
+      transactionStatusCode = receipt.status._code || Status.Ok._code;
     } catch (error) {
-      statusCode = error.status?._code || 21;
-      if (!error.status) statusCode = getStatusCodeFromMessage(error.message);
-      transaction.status = TransactionStatus.FAILED;
-      transaction.statusCode = statusCode;
+      transactionStatusCode = error.status?._code || 21;
+      if (!error.status) transactionStatusCode = getStatusCodeFromMessage(error.message);
+      transactionStatus = TransactionStatus.FAILED;
       result.error = error.message;
     } finally {
-      result.status = transaction.status;
+      result.status = transactionStatus;
 
       await this.transactionsRepo.update(
         {
           id: transaction.id,
         },
         {
-          status: transaction.status,
-          executedAt: transaction.executedAt,
-          statusCode: transaction.statusCode,
+          status: transactionStatus,
+          executedAt,
+          statusCode: transactionStatusCode,
         },
       );
 
@@ -122,7 +108,7 @@ export class ExecuteService {
 
       this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
         transactionId: transaction.id,
-        transactionStatus: transaction.status,
+        transactionStatus: transactionStatus,
       });
 
       this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
@@ -136,7 +122,7 @@ export class ExecuteService {
   }
 
   /* Throws if the transaction is not in a valid state */
-  private validateTransactionStatus(transaction: Transaction) {
+  private validateTransactionStatus(transaction: { status: TransactionStatus }) {
     switch (transaction.status) {
       case TransactionStatus.NEW:
         throw new Error('Transaction is new and has not been signed yet.');
