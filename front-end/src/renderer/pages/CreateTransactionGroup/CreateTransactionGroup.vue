@@ -209,15 +209,27 @@ async function handleOnFileChanged(e: Event) {
     const result = (reader.result as string).replace(/['"]+/g, '');
     const rows = result.split(/\r?\n|\r|\n/g);
     let senderAccount = '';
+    let feePayer = '';
     let sendingTime = '';
+    let transactionFee = '';
+    let txValidDuration = '';
+    let memo = '';
     let validStart: Date | null = null;
     for (const row of rows) {
       if (row.startsWith('Sender Account')) {
         senderAccount = row.split(',')[1];
+      } else if (row.startsWith('Fee Payer Account')) {
+        feePayer = row.split(',')[1];
       } else if (row.startsWith('Sending Time')) {
         sendingTime = row.split(',')[1];
       } else if (row.startsWith('Node IDs')) {
         console.log();
+      } else if (row.startsWith('Transaction Fee')) {
+        transactionFee = row.split(',')[1];
+      } else if (row.startsWith('Transaction Valid Duration')) {
+        txValidDuration = row.split(',')[1];
+      } else if (row.startsWith('Memo')) {
+        memo = row.split(',')[1];
       } else if (row.startsWith('AccountID')) {
         console.log();
       } else if (row === '') {
@@ -234,13 +246,17 @@ async function handleOnFileChanged(e: Event) {
           validStart.setMilliseconds(validStart.getMilliseconds() + 1);
         }
         const transaction = new TransferTransaction()
-          .setTransactionValidDuration(180)
-          .setMaxTransactionFee(maxTransactionFee.value);
+          .setTransactionValidDuration(txValidDuration ? Number.parseInt(txValidDuration) : 180)
+          .setMaxTransactionFee(
+            transactionFee ? new Hbar(transactionFee) : maxTransactionFee.value,
+          );
 
-        transaction.setTransactionId(createTransactionId(senderAccount, validStart));
+        transaction.setTransactionId(
+          createTransactionId(feePayer ? feePayer : senderAccount, validStart),
+        );
         transaction.addHbarTransfer(row.split(',')[0], row.split(',')[1]);
         transaction.addHbarTransfer(senderAccount, Number.parseFloat(row.split(',')[1]) * -1);
-        transaction.setTransactionMemo(row.split(',')[3]);
+        transaction.setTransactionMemo(memo);
 
         const transactionBytes = transaction.toBytes();
         const keys = new Array<string>();
@@ -257,7 +273,7 @@ async function handleOnFileChanged(e: Event) {
           keyList: keys,
           observers: [],
           approvers: [],
-          payerAccountId: senderAccount,
+          payerAccountId: feePayer ? feePayer : senderAccount,
           validStart: new Date(validStart.getTime()),
         });
       }
