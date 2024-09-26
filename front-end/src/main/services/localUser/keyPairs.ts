@@ -1,3 +1,5 @@
+import { safeStorage } from 'electron';
+
 import { KeyPair, Prisma } from '@prisma/client';
 
 import { encrypt, decrypt } from '@main/utils/crypto';
@@ -5,6 +7,7 @@ import { encrypt, decrypt } from '@main/utils/crypto';
 import { getPrismaClient } from '@main/db/prisma';
 
 import { getCurrentUser, getOrganization } from '.';
+import { getUseKeychainClaim } from './claim';
 
 //Get all stored secret hash objects
 export const getSecretHashes = async (
@@ -54,14 +57,23 @@ export const getKeyPairs = async (
 // Store key pair
 export const storeKeyPair = async (
   keyPair: Prisma.KeyPairUncheckedCreateInput,
-  password: string,
+  password: string | null,
   encrypted: boolean,
 ) => {
   const prisma = getPrismaClient();
 
   try {
     if (!encrypted) {
-      keyPair.private_key = encrypt(keyPair.private_key, password);
+      const useKeychain = await getUseKeychainClaim();
+
+      if (useKeychain) {
+        const buffer = safeStorage.encryptString(keyPair.private_key);
+        keyPair.private_key = buffer.toString('base64');
+      } else if (password) {
+        keyPair.private_key = encrypt(keyPair.private_key, password);
+      } else {
+        throw new Error('Password is required to store unencrypted key pair');
+      }
     }
     await prisma.keyPair.create({
       data: keyPair,
@@ -102,7 +114,11 @@ export const changeDecryptionPassword = async (
 };
 
 // Decrypt user's private key
-export const decryptPrivateKey = async (user_id: string, password: string, public_key: string) => {
+export const decryptPrivateKey = async (
+  user_id: string,
+  password: string | null,
+  public_key: string,
+) => {
   const prisma = getPrismaClient();
 
   const keyPair = await prisma.keyPair.findFirst({
@@ -114,6 +130,17 @@ export const decryptPrivateKey = async (user_id: string, password: string, publi
       private_key: true,
     },
   });
+
+  const useKeychain = await getUseKeychainClaim();
+
+  if (useKeychain) {
+    const buffer = Buffer.from(keyPair?.private_key || '', 'base64');
+    return safeStorage.decryptString(buffer);
+  }
+
+  if (!password) {
+    throw new Error('Password is required to decrypt private key');
+  }
 
   return decrypt(keyPair?.private_key || '', password);
 };

@@ -11,6 +11,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 
 import { getTransactionType, stringifyHbar } from '@renderer/utils';
+import { assertUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
@@ -71,8 +72,9 @@ const handleConfirmTransaction = async (e: Event) => {
 
 /* Functions */
 function assertPassword() {
+  assertUserLoggedIn(user.personal);
   const personalPassword = user.getPassword();
-  if (!personalPassword) {
+  if (!personalPassword && !user.personal.useKeychain) {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     show.value = false;
     userPasswordModalRef.value?.open(

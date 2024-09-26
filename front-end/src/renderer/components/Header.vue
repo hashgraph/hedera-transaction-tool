@@ -118,7 +118,10 @@ onUpdated(() => {
       </div>
       <span
         v-if="
-          (user.personal && user.personal.isLoggedIn && !user.selectedOrganization) ||
+          (user.personal &&
+            user.personal.isLoggedIn &&
+            !user.personal.useKeychain &&
+            !user.selectedOrganization) ||
           (user.selectedOrganization && !user.selectedOrganization.loginRequired)
         "
         class="container-icon"

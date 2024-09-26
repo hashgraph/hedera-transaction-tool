@@ -16,6 +16,7 @@ import contactsAPI from './contacts';
 import contactPublicKeys from './linkedPublicKeys';
 import encryptedKeys from './encryptedKeys';
 import claim from './claim';
+import safeStorage from './safeStorage';
 
 export default {
   ...updateAPI,
@@ -36,4 +37,5 @@ export default {
   ...contactPublicKeys,
   ...encryptedKeys,
   ...claim,
+  ...safeStorage,
 };

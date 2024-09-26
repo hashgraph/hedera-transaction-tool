@@ -41,7 +41,7 @@ export default () => {
       password: string,
       organization_id: string,
       user_id: string,
-      encryptPassword: string,
+      encryptPassword: string | null,
       updateIfExists: boolean = false,
     ) =>
       addOrganizationCredentials(
@@ -62,7 +62,7 @@ export default () => {
       organization_id: string,
       user_id: string,
       email?: string,
-      password?: string,
+      password?: string | null,
       encryptPassword?: string,
     ) => updateOrganizationCredentials(organization_id, user_id, email, password, encryptPassword),
   );
@@ -77,6 +77,7 @@ export default () => {
   /* Tries to auto login to all organizations that should sign in */
   ipcMain.handle(
     createChannelName('tryAutoSignIn'),
-    (_e, user_id: string, decryptPassword: string) => tryAutoSignIn(user_id, decryptPassword),
+    (_e, user_id: string, decryptPassword: string | null) =>
+      tryAutoSignIn(user_id, decryptPassword),
   );
 };

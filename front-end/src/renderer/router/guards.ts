@@ -22,7 +22,7 @@ export function addGuards(router: Router) {
 
     if (
       userIsLoggedIn &&
-      userIsLoggedInOrganization &&
+      (user.selectedOrganization ? userIsLoggedInOrganization : true) &&
       user.shouldSetupAccount &&
       to.name !== 'accountSetup'
     ) {

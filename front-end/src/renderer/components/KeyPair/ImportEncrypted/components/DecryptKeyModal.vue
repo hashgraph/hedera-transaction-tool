@@ -129,7 +129,8 @@ async function storeKey(key: {
 }) {
   assertUserLoggedIn(user.personal);
   const personalPassword = user.getPassword();
-  if (!personalPassword) throw new Error('Personal password not found');
+  if (!personalPassword && !user.personal.useKeychain)
+    throw new Error('Personal password not found');
 
   const privateKey = PrivateKey.fromStringDer(key.privateKey);
   const publicKey = privateKey.publicKey;

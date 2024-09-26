@@ -15,6 +15,7 @@ class LoginPage extends BasePage {
   // Buttons
   signInButtonSelector = 'button-login';
   importantNoteModalButtonSelector = 'button-understand-agree';
+  rejectKeyChainButtonSelector = 'button-refuse-key-chain-mode';
   resetStateButtonSelector = 'link-reset';
   confirmResetStateButtonSelector = 'button-reset';
   keepLoggedInCheckboxSelector = 'checkbox-remember';
@@ -39,6 +40,17 @@ class LoginPage extends BasePage {
     // If the modal is visible, then click the button to close the modal
     if (await modalButton.isVisible()) {
       await modalButton.click();
+    }
+  }
+
+  // Method to close the 'Key Chain' modal if it appears
+  async closeKeyChainModal() {
+    // Wait for the button to be visible with a timeout
+    //await this.waitForElementToBeVisible(this.rejectKeyChainButtonSelector, 500);
+
+    // If the modal is visible, then click the button to close the modal
+    if (await this.isElementVisible(this.rejectKeyChainButtonSelector)) {
+      await this.click(this.rejectKeyChainButtonSelector);
     }
   }
 
@@ -98,7 +110,7 @@ class LoginPage extends BasePage {
         await resetButton.waitFor({ state: 'visible', timeout: 1000 });
         // If the waitFor resolves successfully, click the reset button
         await resetButton.click();
-        await this.waitForToastToDisappear();
+        await this.waitForElementToDisappear(this.toastMessageSelector, 6000, 6000);
       } catch (e) {
         console.log("The 'Reset' modal did not appear within the timeout.");
       }

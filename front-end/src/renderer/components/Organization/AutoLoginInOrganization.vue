@@ -28,8 +28,10 @@ const loginFailedForOrganizations = ref<Organization[]>([]);
 const loginTriedForOrganizations = ref<Organization[]>([]);
 
 /* Handlers */
-const handleAutoLogin = async (password: string) => {
+const handleAutoLogin = async (password: string | null) => {
   if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+
+  if (!user.personal.useKeychain && !password) throw new Error('Password is required');
 
   loginFailedForOrganizations.value = await tryAutoSignIn(user.personal.id, password);
   loginTriedForOrganizations.value = user.organizations
@@ -51,14 +53,20 @@ async function openPasswordModalIfRequired() {
   if (isUserLoggedIn(user.personal)) {
     const organizationToSignIn = user.organizations.filter(org => org.loginRequired);
 
-    if (organizationToSignIn.length > 0) {
+    if (organizationToSignIn.length === 0) return;
+
+    const personalPassword = user.getPassword();
+    if (!personalPassword && !user.personal.useKeychain) {
       if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
       userPasswordModalRef.value?.open(
         null,
         'Sign in to your organizations with expired token',
         handleAutoLogin,
       );
+      return;
     }
+
+    await handleAutoLogin(personalPassword || null);
   }
 }
 

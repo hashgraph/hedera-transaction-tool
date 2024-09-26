@@ -84,7 +84,7 @@ async function handle(req: TransactionRequest) {
 async function sign(publicKey: string) {
   assertUserLoggedIn(user.personal);
   const password = user.getPassword();
-  if (!password) throw new Error('Password is required to sign');
+  if (!password && !user.personal.useKeychain) throw new Error('Password is required to sign');
   if (!request.value) throw new Error('Request is required to sign');
   if (!transaction.value) throw new Error('Transaction is required to sign');
 

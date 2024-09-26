@@ -94,7 +94,8 @@ const handleOnFormSubmit = async (event: Event) => {
       inputPassword.value,
       keepLoggedIn.value,
     );
-    await user.login(id, email);
+
+    await user.login(id, email, false);
 
     if (isUserLoggedIn(user.personal)) {
       user.setPassword(inputPassword.value);
@@ -129,7 +130,7 @@ const handleOnFormSubmit = async (event: Event) => {
     if (userData) {
       try {
         globalModalLoaderRef?.value?.open();
-        await user.login(userData.id, userData.email.trim());
+        await user.login(userData.id, userData.email.trim(), false);
         if (isUserLoggedIn(user.personal)) {
           user.setPassword(inputPassword.value);
         }
@@ -163,6 +164,7 @@ const handleResetData = async () => {
   createTooltips();
   setTooltipContent();
   isResetDataModalShown.value = false;
+  user.logout();
 };
 
 /* Hooks */
@@ -247,7 +249,8 @@ function setTooltipContent() {
 async function checkShouldRegister() {
   try {
     const usersCount = await getUsersCount();
-    shouldRegister.value = usersCount === 0;
+
+    shouldRegister.value = usersCount < 2; /* 2 because the first user is the default */
   } catch (error) {
     shouldRegister.value = true;
   }

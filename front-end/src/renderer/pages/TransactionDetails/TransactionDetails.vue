@@ -36,11 +36,7 @@ import { decryptPrivateKey } from '@renderer/services/keyPairService';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
-import {
-  isLoggedInOrganization,
-  isLoggedInWithValidPassword,
-  isUserLoggedIn,
-} from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 import {
   getTransactionDateExtended,
   getTransactionId,
@@ -242,7 +238,8 @@ const handleSign = async () => {
     throw new Error('User is not logged in organization');
   }
 
-  if (!isLoggedInWithValidPassword(user.personal)) {
+  const password = user.getPassword();
+  if (!password && !user.personal.useKeychain) {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     userPasswordModalRef.value?.open(
       'Enter your application password',
@@ -262,7 +259,8 @@ const handleSign = async () => {
     );
 
     await fullUploadSignatures(
-      user.personal,
+      user.personal.id,
+      password,
       user.selectedOrganization,
       publicKeysRequired,
       sdkTransaction.value,
@@ -301,7 +299,7 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
     }
 
     const personalPassword = user.getPassword();
-    if (!personalPassword) {
+    if (!personalPassword && !user.personal.useKeychain) {
       if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
       userPasswordModalRef.value?.open(
         'Enter your application password',

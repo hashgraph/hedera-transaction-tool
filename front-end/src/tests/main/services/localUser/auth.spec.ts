@@ -74,11 +74,11 @@ describe('Services Local User Auth', () => {
       });
     });
 
-    test('Should throw an error if no user is registered', async () => {
-      prisma.user.findFirst.mockResolvedValue(null);
+    // test('Should throw an error if no user is registered', async () => {
+    //   prisma.user.findFirst.mockResolvedValue(null);
 
-      await expect(auth.login('email', 'password')).rejects.toThrow('Please register');
-    });
+    //   await expect(auth.login('email', 'password')).rejects.toThrow('Please register');
+    // });
 
     const user = {
       id: '123',

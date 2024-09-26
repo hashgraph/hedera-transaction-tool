@@ -16,12 +16,18 @@ async function setupApp() {
 
   expect(window).not.toBeNull();
   await loginPage.closeImportantNoteModal();
+  if (process.platform === 'darwin') {
+    await loginPage.closeKeyChainModal();
+  }
   return { app, window };
 }
 
 async function resetAppState(window) {
   const loginPage = new LoginPage(window);
   await loginPage.resetState();
+  if (process.platform === 'darwin') {
+    await loginPage.closeKeyChainModal();
+  }
 }
 
 async function closeApp(app) {

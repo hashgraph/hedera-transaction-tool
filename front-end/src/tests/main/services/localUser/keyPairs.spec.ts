@@ -1,5 +1,7 @@
 import { expect, vi } from 'vitest';
 
+import { safeStorage } from 'electron';
+
 import { KeyPair, Prisma } from '@prisma/client';
 
 import prisma from '@main/db/__mocks__/prisma';
@@ -17,13 +19,21 @@ import {
 } from '@main/services/localUser/keyPairs';
 import { getOrganization } from '@main/services/localUser/organizations';
 import { getCurrentUser } from '@main/services/localUser/organizationCredentials';
+import { getUseKeychainClaim } from '@main/services/localUser/claim';
+
 import { decrypt, encrypt } from '@main/utils/crypto';
 
 vi.mock('@main/db/prisma');
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
-vi.mock('electron', () => ({}));
+vi.mock('electron', () => ({
+  safeStorage: {
+    encryptString: vi.fn(),
+    decryptString: vi.fn(),
+  },
+}));
 vi.mock('@main/services/localUser/organizations', () => ({ getOrganization: vi.fn() }));
 vi.mock('@main/services/localUser/organizationCredentials', () => ({ getCurrentUser: vi.fn() }));
+vi.mock('@main/services/localUser/claim', () => ({ getUseKeychainClaim: vi.fn() }));
 vi.mock('@main/utils/crypto', () => ({
   encrypt: vi.fn(),
   decrypt: vi.fn(),
@@ -85,8 +95,9 @@ describe('Services Local User Key Pairs', () => {
       vi.resetAllMocks();
     });
 
-    test('Should store the key pair with encryption', async () => {
+    test('Should store the key pair with password encryption', async () => {
       prisma.keyPair.create.mockResolvedValue(keyPair);
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
 
       const password = 'password';
       const encrypted = false;
@@ -99,6 +110,23 @@ describe('Services Local User Key Pairs', () => {
         data: {
           ...keyPair,
           private_key: 'encrypted',
+        },
+      });
+    });
+
+    test('Should store the key pair with keychain encryption', async () => {
+      const encryptedPrivateKey = Buffer.from('encrypted');
+
+      prisma.keyPair.create.mockResolvedValue(keyPair);
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(true);
+      vi.mocked(safeStorage.encryptString).mockReturnValue(encryptedPrivateKey);
+
+      await storeKeyPair(keyPair, null, false);
+
+      expect(prisma.keyPair.create).toHaveBeenCalledWith({
+        data: {
+          ...keyPair,
+          private_key: encryptedPrivateKey.toString('base64'),
         },
       });
     });
@@ -117,6 +145,14 @@ describe('Services Local User Key Pairs', () => {
       });
     });
 
+    test('Should throw error if the encrypt password is not provided and the keychain is not enabled', async () => {
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
+
+      await expect(storeKeyPair(keyPair, null, false)).rejects.toThrow(
+        'Password is required to store unencrypted key pair',
+      );
+    });
+
     test("Should throw error if key pair can't be stored", async () => {
       prisma.keyPair.create.mockRejectedValue(new Error('Error'));
 
@@ -128,7 +164,7 @@ describe('Services Local User Key Pairs', () => {
       await expect(storeKeyPair(keyPair, password, encrypted)).rejects.toThrow('Error');
 
       prisma.keyPair.create.mockRejectedValue({});
-      await expect(storeKeyPair(keyPair, '', false)).rejects.toThrow('Failed to store key pair');
+      await expect(storeKeyPair(keyPair, '123', false)).rejects.toThrow('Failed to store key pair');
     });
   });
 
@@ -163,7 +199,7 @@ describe('Services Local User Key Pairs', () => {
       vi.resetAllMocks();
     });
 
-    test('Should retrieve and decrypt the private key', async () => {
+    test('Should retrieve and decrypt the private key if keychain is NOT used', async () => {
       const password = 'password1';
 
       prisma.keyPair.findFirst.mockResolvedValue(keyPair);
@@ -179,22 +215,55 @@ describe('Services Local User Key Pairs', () => {
       expect(result).toBe('decryptedPrivateKey');
     });
 
-    test("Should pass empty string if key pair can't be found", async () => {
+    test('Should retrieve and decrypt the private key if keychain is used', async () => {
+      const password = 'password1';
+      const decrypted = 'decryptedPrivateKey';
+
+      prisma.keyPair.findFirst.mockResolvedValue(keyPair);
+      vi.mocked(getUseKeychainClaim).mockResolvedValueOnce(true);
+      vi.mocked(safeStorage.decryptString).mockReturnValue(decrypted);
+
+      const result = await decryptPrivateKey(keyPair.user_id, password, keyPair.public_key);
+
+      expect(prisma.keyPair.findFirst).toHaveBeenCalledWith({
+        where: { user_id: keyPair.user_id, public_key: keyPair.public_key },
+        select: { private_key: true },
+      });
+      expect(result).toBe(decrypted);
+    });
+
+    test("Should pass empty string if key pair can't be found and keychain is used", async () => {
+      const decrypted = '123';
+
+      prisma.keyPair.findFirst.mockResolvedValueOnce(null);
+      vi.mocked(getUseKeychainClaim).mockResolvedValueOnce(true);
+      vi.mocked(safeStorage.decryptString).mockReturnValue(decrypted);
+
+      const result = await decryptPrivateKey(keyPair.user_id, null, keyPair.public_key);
+
+      expect(safeStorage.decryptString).toHaveBeenCalledWith(Buffer.from('', 'base64'));
+      expect(result).toBe(decrypted);
+    });
+
+    test("Should pass empty string if key pair can't be found and keychain is NOT used", async () => {
       const password = 'password1';
 
       prisma.keyPair.findFirst.mockResolvedValue(null);
-      vi.mocked(decrypt).mockImplementationOnce(() => {
-        throw new Error('Error');
-      });
+      vi.mocked(getUseKeychainClaim).mockResolvedValueOnce(false);
 
-      await expect(
-        decryptPrivateKey(keyPair.user_id, password, keyPair.public_key),
-      ).rejects.toThrow('Error');
+      await decryptPrivateKey(keyPair.user_id, password, keyPair.public_key);
+
       expect(prisma.keyPair.findFirst).toHaveBeenCalledWith({
         where: { user_id: keyPair.user_id, public_key: keyPair.public_key },
         select: { private_key: true },
       });
       expect(decrypt).toHaveBeenCalledWith('', password);
+    });
+
+    test('Should throw error if password is not provided', async () => {
+      await expect(decryptPrivateKey(keyPair.user_id, null, keyPair.public_key)).rejects.toThrow(
+        'Password is required to decrypt private key',
+      );
     });
   });
 

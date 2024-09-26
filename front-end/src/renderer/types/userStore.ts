@@ -12,6 +12,7 @@ export type LoggedInUser = {
   id: string;
   email: string;
   password: string | null;
+  useKeychain: boolean;
 };
 
 export type LoggedInUserWithPassword = {
@@ -20,6 +21,7 @@ export type LoggedInUserWithPassword = {
   email: string;
   password: string;
   passwordExpiresAt: Date;
+  useKeychain: boolean;
 };
 
 export type PersonalUser = LoggedOutUser | LoggedInUser | LoggedInUserWithPassword;

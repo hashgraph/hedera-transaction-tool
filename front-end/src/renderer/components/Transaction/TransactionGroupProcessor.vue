@@ -36,8 +36,8 @@ import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
 import { ableToSign, getPrivateKey, getStatusFromCode, getTransactionType } from '@renderer/utils';
 import {
+  assertUserLoggedIn,
   isLoggedInOrganization,
-  isLoggedInWithValidPassword,
   isUserLoggedIn,
 } from '@renderer/utils/userStoreHelpers';
 
@@ -129,7 +129,7 @@ async function signAfterConfirm() {
 
   /* Verifies the user has entered his password */
   const personalPassword = user.getPassword();
-  if (!personalPassword) {
+  if (!personalPassword && !user.personal.useKeychain) {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     isConfirmShown.value = false;
     userPasswordModalRef.value?.open(
@@ -294,8 +294,9 @@ async function sendSignedTransactionsToOrganization() {
   }
 
   /* Verifies the user has entered his password */
+  assertUserLoggedIn(user.personal);
   const personalPassword = user.getPassword();
-  if (!isLoggedInWithValidPassword(user.personal) || !personalPassword) {
+  if (!personalPassword && !user.personal.useKeychain) {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     userPasswordModalRef.value?.open(
       'Enter your application password',

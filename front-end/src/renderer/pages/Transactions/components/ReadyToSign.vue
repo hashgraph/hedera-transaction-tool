@@ -379,8 +379,6 @@ watch(
                       >
                     </td>
                   </tr>
-
-                  <tr />
                 </template>
               </template>
             </template>

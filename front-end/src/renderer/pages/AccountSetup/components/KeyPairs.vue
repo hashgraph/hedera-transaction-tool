@@ -115,7 +115,8 @@ const handleSave = async () => {
 
   if (!isUserLoggedIn(user.personal)) throw Error('User is logged in');
   const personalPassword = user.getPassword();
-  if (!personalPassword) {
+
+  if (!personalPassword && !user.personal.useKeychain) {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     userPasswordModalRef.value?.open(
       'Enter personal password',

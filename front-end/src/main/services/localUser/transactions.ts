@@ -1,3 +1,4 @@
+import { safeStorage } from 'electron';
 import { Client, FileContentsQuery, PrivateKey, Query, Transaction } from '@hashgraph/sdk';
 
 import { Prisma } from '@prisma/client';
@@ -8,6 +9,7 @@ import { DISPLAY_FILE_SIZE_LIMIT } from '@main/shared/constants';
 
 import { getKeyPairs } from '@main/services/localUser/keyPairs';
 import { showContentInTemp } from '@main/services/localUser/files';
+import { getUseKeychainClaim } from '@main/services/localUser/claim';
 
 import { getNumberArrayFromString } from '@main/utils';
 import {
@@ -71,7 +73,7 @@ export const signTransaction = async (
   transactionBytes: Uint8Array,
   publicKeys: string[],
   userId: string,
-  userPassword: string,
+  userPassword: string | null,
 ) => {
   const transaction = Transaction.fromBytes(transactionBytes);
 
@@ -79,12 +81,24 @@ export const signTransaction = async (
 
   const keyPairs = await getKeyPairs(userId);
 
+  const useKeychain = await getUseKeychainClaim();
+
   for (let i = 0; i < publicKeys.length; i++) {
     const keyPair = keyPairs.find(kp => kp.public_key === publicKeys[i]);
 
     if (!keyPair) throw new Error('Required public key not found in local key pairs');
 
-    const decryptedPrivateKey = decrypt(keyPair.private_key, userPassword);
+    let decryptedPrivateKey = '';
+
+    if (useKeychain) {
+      const buffer = Buffer.from(keyPair.private_key, 'base64');
+      decryptedPrivateKey = safeStorage.decryptString(buffer);
+    } else if (userPassword) {
+      decryptedPrivateKey = decrypt(keyPair.private_key, userPassword);
+    } else {
+      throw new Error('Password is required to decrypt private key');
+    }
+
     const startsWithHex = decryptedPrivateKey.startsWith('0x');
 
     const privateKey =

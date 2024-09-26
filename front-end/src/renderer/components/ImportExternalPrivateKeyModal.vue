@@ -9,7 +9,6 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useToast } from 'vue-toast-notification';
 
 import { generateExternalKeyPairFromString } from '@renderer/services/keyPairService';
-import { comparePasswords } from '@renderer/services/userService';
 import { uploadKey } from '@renderer/services/organization';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
@@ -50,7 +49,7 @@ const handleImportExternalKey = async (e: Event) => {
     /* Verify user is logged in with password */
     if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
     const personalPassword = user.getPassword();
-    if (!personalPassword) {
+    if (!personalPassword && !user.personal.useKeychain) {
       if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
       userPasswordModalRef.value?.open(
         'Enter personal password',
@@ -72,10 +71,6 @@ const handleImportExternalKey = async (e: Event) => {
 
       if (user.keyPairs.find(kp => kp.public_key === keyPair.public_key)) {
         throw new Error('Key pair already exists');
-      }
-
-      if (!(await comparePasswords(user.personal.id, personalPassword))) {
-        throw new Error('Incorrect password');
       }
 
       if (isLoggedInOrganization(user.selectedOrganization)) {

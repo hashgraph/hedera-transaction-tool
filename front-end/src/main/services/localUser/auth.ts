@@ -20,13 +20,13 @@ export const register = async (email: string, password: string) => {
 export const login = async (email: string, password: string, _autoRegister?: boolean) => {
   const prisma = getPrismaClient();
 
-  const firstUser = await prisma.user.findFirst();
+  const user = await prisma.user.findFirst({
+    where: {
+      email,
+    },
+  });
 
-  if (!firstUser) {
-    throw new Error('Please register');
-  }
-
-  if (email != firstUser.email) {
+  if (!user || email != user.email) {
     throw new Error('Incorrect email');
   }
 
@@ -36,13 +36,13 @@ export const login = async (email: string, password: string, _autoRegister?: boo
   //   throw new Error('Incorrect email');
   // }
 
-  const correct = bcrypt.compareSync(password, firstUser.password);
+  const correct = bcrypt.compareSync(password, user.password);
 
   if (!correct) {
     throw new Error('Incorrect password');
   }
 
-  return firstUser;
+  return user;
 };
 
 export const deleteUser = async (email: string) => {

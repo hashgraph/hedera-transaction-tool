@@ -55,8 +55,8 @@ const useUserStore = defineStore('user', () => {
 
   /* Actions */
   /** Personal */
-  const login = async (id: string, email: string) => {
-    personal.value = ush.createPersonalUser(id, email);
+  const login = async (id: string, email: string, useKeychain: boolean) => {
+    personal.value = ush.createPersonalUser(id, email, useKeychain);
     await refetchOrganizations();
     await selectOrganization(null);
   };
@@ -103,8 +103,12 @@ const useUserStore = defineStore('user', () => {
   };
 
   /** Keys */
-  const setRecoveryPhrase = async (words: string[]) => {
-    recoveryPhrase.value = await ush.createRecoveryPhrase(words);
+  const setRecoveryPhrase = async (words: string[] | null) => {
+    if (words === null) {
+      recoveryPhrase.value = null;
+    } else {
+      recoveryPhrase.value = await ush.createRecoveryPhrase(words);
+    }
   };
 
   const refetchAccounts = async () => {
@@ -122,7 +126,7 @@ const useUserStore = defineStore('user', () => {
   const storeKey = async (
     keyPair: Prisma.KeyPairUncheckedCreateInput,
     mnemonic: string[] | string | null,
-    password: string,
+    password: string | null,
     encrypted: boolean,
   ) => {
     await ush.storeKeyPair(keyPair, secretHashes.value, mnemonic, password, encrypted);

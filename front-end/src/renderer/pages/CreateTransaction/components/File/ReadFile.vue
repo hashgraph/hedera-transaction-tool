@@ -51,7 +51,7 @@ const storedFiles = ref<HederaFile[]>([]);
 const readFile = async () => {
   if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
   const personalPassword = user.getPassword();
-  if (!personalPassword) {
+  if (!personalPassword && !user.personal.useKeychain) {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     userPasswordModalRef.value?.open(
       'Enter your application password',

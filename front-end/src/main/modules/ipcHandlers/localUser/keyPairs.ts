@@ -20,8 +20,12 @@ export default () => {
   // Store key pair
   ipcMain.handle(
     createChannelName('store'),
-    async (_e, keyPair: Prisma.KeyPairUncheckedCreateInput, password: string, encrypted: boolean) =>
-      storeKeyPair(keyPair, password, encrypted),
+    async (
+      _e,
+      keyPair: Prisma.KeyPairUncheckedCreateInput,
+      password: string | null,
+      encrypted: boolean,
+    ) => storeKeyPair(keyPair, password, encrypted),
   );
 
   // Change Decryption Password
@@ -34,7 +38,7 @@ export default () => {
   // Decrypted private key
   ipcMain.handle(
     createChannelName('decryptPrivateKey'),
-    async (_e, userId: string, password: string, publicKey: string) =>
+    async (_e, userId: string, password: string | null, publicKey: string) =>
       decryptPrivateKey(userId, password, publicKey),
   );
 

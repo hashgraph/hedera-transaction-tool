@@ -59,7 +59,7 @@ async function sign() {
   if (!transaction.value) throw new Error('Transaction is required to sign');
   assertUserLoggedIn(user.personal);
   const password = user.getPassword();
-  if (!password) throw new Error('Password is required to sign');
+  if (!password && !user.personal.useKeychain) throw new Error('Password is required to sign');
 
   emit('transaction:sign:begin');
 

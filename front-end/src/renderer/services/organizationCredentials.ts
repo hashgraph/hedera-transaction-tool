@@ -31,7 +31,7 @@ export const addOrganizationCredentials = async (
   password: string,
   organization_id: string,
   user_id: string,
-  encryptPassword: string,
+  encryptPassword: string | null,
   updateIfExists: boolean = false,
 ) =>
   commonIPCHandler(async () => {
@@ -73,7 +73,7 @@ export const deleteOrganizationCredentials = async (organization_id: string, use
   }, 'Failed to delete organization credentials');
 
 /* Try auto sign in */
-export const tryAutoSignIn = async (user_id: string, decryptPassword: string) =>
+export const tryAutoSignIn = async (user_id: string, decryptPassword: string | null) =>
   commonIPCHandler(async () => {
     return await window.electronAPI.local.organizationCredentials.tryAutoSignIn(
       user_id,

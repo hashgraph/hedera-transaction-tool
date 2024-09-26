@@ -8,7 +8,7 @@ vi.mock('@main/modules/ipcHandlers/utils', () => ({ default: vi.fn() }));
 vi.mock('@main/modules/ipcHandlers/localUser', () => ({ default: vi.fn() }));
 
 describe('index', () => {
-  it('should call all event listeners', () => {
+  test('should call all event listeners', () => {
     registerListeners();
 
     expect(listenForThemeEvents).toHaveBeenCalled();

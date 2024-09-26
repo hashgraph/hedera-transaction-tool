@@ -20,12 +20,10 @@ import {
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppMenu from '@renderer/components/Menu.vue';
 import AppHeader from '@renderer/components/Header.vue';
-import AppUpdate from '@renderer/components/AppUpdate.vue';
-import ImportantNote from '@renderer/components/ImportantNote.vue';
 import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
-import AutoLoginInOrganization from '@renderer/components/Organization/AutoLoginInOrganization.vue';
 import OrganizationStatusModal from '@renderer/components/Organization/OrganizationStatusModal.vue';
 import GlobalModalLoader from '@renderer/components/GlobalModalLoader.vue';
+import GlobalAppProcesses from '@renderer/components/GlobalAppProcesses';
 
 /* Stores */
 const user = useUserStore();
@@ -106,13 +104,10 @@ provideDynamicLayout(dynamicLayout);
     </div>
   </Transition>
 
-  <AutoLoginInOrganization />
-
   <!-- To be removed -->
   <AppButton class="btn-theme-changer" color="secondary" @click="handleThemeChange">
     <i class="bi bi-sun"></i
   ></AppButton>
 
-  <AppUpdate />
-  <ImportantNote />
+  <GlobalAppProcesses />
 </template>

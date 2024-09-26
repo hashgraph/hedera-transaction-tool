@@ -88,6 +88,7 @@ async function resetDbState() {
 
   const tablesToReset = [
     'Organization',
+    'Claim',
     'User',
     'ComplexKey',
     'HederaAccount',
@@ -101,15 +102,32 @@ async function resetDbState() {
   try {
     for (const table of tablesToReset) {
       await new Promise((resolve, reject) => {
-        db.run(`DELETE FROM ${table}`, [], function (err) {
-          if (err) {
-            console.error(`Error deleting records from ${table}:`, err.message);
-            reject(err);
-          } else {
-            console.log(`Deleted all records from ${table}`);
-            resolve();
-          }
-        });
+        // Check if the table exists
+        db.get(
+          `SELECT name FROM sqlite_master WHERE type='table' AND name=?`,
+          [table],
+          (err, row) => {
+            if (err) {
+              console.error(`Error checking for table ${table}:`, err.message);
+              reject(err);
+            } else if (row) {
+              // Table exists, proceed to delete
+              db.run(`DELETE FROM "${table}"`, [], function (err) {
+                if (err) {
+                  console.error(`Error deleting records from ${table}:`, err.message);
+                  reject(err);
+                } else {
+                  console.log(`Deleted all records from ${table}`);
+                  resolve();
+                }
+              });
+            } else {
+              // Table does not exist, skip
+              console.log(`Table ${table} does not exist, skipping.`);
+              resolve();
+            }
+          },
+        );
       });
     }
   } catch (err) {

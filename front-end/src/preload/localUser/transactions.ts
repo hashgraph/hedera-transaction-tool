@@ -19,7 +19,7 @@ export default {
       transactionBytes: Uint8Array,
       publicKeys: string[],
       userId: string,
-      userPassword: string,
+      userPassword: string | null,
     ): Promise<Uint8Array> =>
       ipcRenderer.invoke(
         'transactions:signTransaction',

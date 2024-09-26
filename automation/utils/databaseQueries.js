@@ -458,7 +458,7 @@ async function insertKeyPair(publicKey, privateKey, secretHash, organizationUser
       INSERT INTO KeyPair (id, user_id, "index", public_key, private_key, type, organization_id, secret_hash, organization_user_id)
       VALUES (
                  ?,
-                 (SELECT id FROM User), -- user_id is always the id of the user
+                 (SELECT id FROM User WHERE email != 'keychain@mode'), -- Exclude user with email 'keychain@mode'
                  0,  -- keyIndex is always 0
                  ?,
                  ?,

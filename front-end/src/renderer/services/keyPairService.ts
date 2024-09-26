@@ -22,7 +22,7 @@ export const getSecretHashes = async (userId: string, organizationId?: string | 
 /* Store key pair*/
 export const storeKeyPair = async (
   keyPair: Prisma.KeyPairUncheckedCreateInput,
-  password: string,
+  password: string | null,
   encrypted: boolean,
 ) =>
   commonIPCHandler(async () => {
@@ -44,7 +44,11 @@ export const changeDecryptionPassword = async (
   }, 'Failed to change decryption password');
 
 /* Decrypt private key with user's password */
-export const decryptPrivateKey = async (userId: string, password: string, publicKey: string) =>
+export const decryptPrivateKey = async (
+  userId: string,
+  password: string | null,
+  publicKey: string,
+) =>
   commonIPCHandler(async () => {
     return await window.electronAPI.local.keyPairs.decryptPrivateKey(userId, password, publicKey);
   }, 'Failed to decrypt private key/s');

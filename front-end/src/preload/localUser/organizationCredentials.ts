@@ -21,7 +21,7 @@ export default {
       password: string,
       organization_id: string,
       user_id: string,
-      encryptPassword: string,
+      encryptPassword: string | null,
       updateIfExists: boolean = false,
     ): Promise<boolean> =>
       ipcRenderer.invoke(
@@ -56,7 +56,7 @@ export default {
         organization_id,
         user_id,
       ),
-    tryAutoSignIn: (user_id: string, decryptPassword: string): Promise<Organization[]> =>
+    tryAutoSignIn: (user_id: string, decryptPassword: string | null): Promise<Organization[]> =>
       ipcRenderer.invoke('organizationCredentials:tryAutoSignIn', user_id, decryptPassword),
   },
 };
