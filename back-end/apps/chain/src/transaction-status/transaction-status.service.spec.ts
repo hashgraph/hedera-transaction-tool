@@ -22,9 +22,13 @@ import { TransactionStatusService } from './transaction-status.service';
 import { ExecuteService } from '../execute/execute.service';
 import {
   AccountCreateTransaction,
+  AccountId,
   FileAppendTransaction,
   FileUpdateTransaction,
   KeyList,
+  PrivateKey,
+  TransactionId,
+  Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
 jest.mock('@app/common');
@@ -215,7 +219,7 @@ describe('TransactionStatusService', () => {
     expect(service.getThreeMinutesLater).toHaveBeenCalled();
   });
 
-  it('should add execution timeout for transactions that are waiting for execution in initial cron', async () => {
+  it('should add execution timeout for transactions that are now ready for execution, ', async () => {
     const transactions = [
       {
         validStart: new Date(new Date().getTime() - 10 * 1_000),
@@ -535,6 +539,51 @@ describe('TransactionStatusService', () => {
       expect(transactionRepo.update).not.toHaveBeenCalled();
       expect(notificationsService.emit).not.toHaveBeenCalled();
     });
+  });
+
+  it('should prepare and execute a transaction signed with 100 different keys', async () => {
+    const keyList = new KeyList();
+    const privateKeys: PrivateKey[] = [];
+
+    for (let i = 0; i < 100; i++) {
+      const privateKey = PrivateKey.generate();
+      privateKeys.push(privateKey);
+      keyList.push(privateKey.publicKey);
+    }
+
+    const transaction = new AccountCreateTransaction()
+      .setNodeAccountIds([new AccountId(3)])
+      .setTransactionId(TransactionId.generate(new AccountId(3)))
+      .setTransactionMemo('Test Transaction')
+      .freeze();
+
+    const mockedSignatureKey = new KeyList();
+    mockedSignatureKey.push(...privateKeys.slice(0,5).map(key => key.publicKey))
+
+    // Mock the computeSignatureKey function
+    jest.mocked(computeSignatureKey).mockResolvedValue(mockedSignatureKey);
+
+    for (const privateKey of privateKeys) {
+      await transaction.sign(privateKey);
+    }
+
+    const mockTransaction = {
+      id: 1,
+      validStart: new Date(Date.now() + 1000),
+      transactionBytes: transaction.toBytes(),
+      status: TransactionStatus.WAITING_FOR_EXECUTION,
+    } as Transaction;
+
+    jest.spyOn(service, 'prepareAndExecute');
+    jest.spyOn(service, 'addExecutionTimeout').mockImplementationOnce(jest.fn());
+
+    service.prepareAndExecute(mockTransaction);
+
+    expect(service.prepareAndExecute).toHaveBeenCalledWith(mockTransaction);
+    expect(service.addExecutionTimeout).toHaveBeenCalledWith(mockTransaction);
+
+    const sdkTransaction = SDKTransaction.fromBytes(mockTransaction.transactionBytes);
+    expect(sdkTransaction.getSignatures().size).toBeLessThan(6);
   });
 
   describe('addExecutionTimeout', () => {
