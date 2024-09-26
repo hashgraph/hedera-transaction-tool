@@ -9,6 +9,7 @@ import {
   getStaticUser,
   getUseKeychain,
   initializeUseKeychain,
+  isKeychainAvailable,
 } from '@renderer/services/safeStorageService';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -67,6 +68,13 @@ async function checkShouldRegister() {
 
 /* Hooks */
 onMounted(async () => {
+  const keychainAvailable = await isKeychainAvailable();
+
+  if (!keychainAvailable) {
+    await initializeUseKeychain(false);
+    return;
+  }
+
   const shouldChoose = await checkShouldChoose();
   chooseModeModalShown.value = shouldChoose;
 });

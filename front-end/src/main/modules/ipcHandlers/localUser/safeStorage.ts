@@ -21,10 +21,7 @@ export default () => {
   };
 
   // Check if the platform is MacOS and has keychain available
-  ipcMain.handle(
-    createChannelName('isKeychainAvailable'),
-    () => process.platform === 'darwin' && safeStorage.isEncryptionAvailable(),
-  );
+  ipcMain.handle(createChannelName('isKeychainAvailable'), () => process.platform === 'darwin');
 
   // Initializes the flag for keychain mode, can be used only once
   ipcMain.handle(createChannelName('initializeUseKeychain'), async (_e, useKeychain: boolean) => {
