@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 
 import { In, Between, MoreThan, Repository, LessThanOrEqual } from 'typeorm';
+// @ts-ignore
 import {
   FileAppendTransaction,
   FileUpdateTransaction,
@@ -267,14 +268,14 @@ export class TransactionStatusService {
       return;
 
     /* Gets the signature key */
-    const sigantureKey = await computeSignatureKey(
+    const signatureKey = await computeSignatureKey(
       sdkTransaction,
       this.mirrorNodeService,
       transaction.network,
     );
 
-    /* Checks if the transaction has valid siganture */
-    const isAbleToSign = hasValidSignatureKey([...sdkTransaction._signerPublicKeys], sigantureKey);
+    /* Checks if the transaction has valid signature */
+    const isAbleToSign = hasValidSignatureKey([...sdkTransaction._signerPublicKeys], signatureKey);
     const newStatus = isAbleToSign
       ? TransactionStatus.WAITING_FOR_EXECUTION
       : TransactionStatus.WAITING_FOR_SIGNATURES;
@@ -333,9 +334,9 @@ export class TransactionStatusService {
     const timeToValidStart = transaction.validStart.getTime() - Date.now();
 
     const callback = async () => {
-      const sdkTransaction = SDKTransaction.fromBytes(transaction.body);
+      const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
-      if (isTransactionOverMaxSize(sdkTransaction)) {
+      if (await isTransactionOverMaxSize(sdkTransaction)) {
         const signatureKey = await computeSignatureKey(
           sdkTransaction,
           this.mirrorNodeService,
@@ -355,20 +356,21 @@ export class TransactionStatusService {
         const sigDictionary = sdkTransaction.removeAllSignatures();
 
         for (const key of publicKeys) {
-          const sigArray = sigDictionary[key];
+          const sigArray = sigDictionary[key.toStringRaw()];
           sdkTransaction.addSignature(key, sigArray);
         }
 
-        if (isTransactionOverMaxSize(sdkTransaction)) {
+        if (await isTransactionOverMaxSize(sdkTransaction)) {
           throw new Error('Signed transaction exceeds size limit.');
         }
       }
 
-      // the problem is that execute is repulling the data for teh transaction, I want to send the sdk.transactionbytes
-      // to execute and let it execute, not id and repull. maybe id is still needed somewhere else. The reason for this
-      // is that i can keep the tranasction as is in the database, without removing sigs
-      //
-      // then make sure that front end doesn't allow chunks larger than 2k'
+      // TODO then make sure that front end doesn't allow chunks larger than 2k'
+
+      //NOTE: the transactionBytes are set here but are not to be saved. Otherwise,
+      // any signatures that were removed in order to make the transaction fit
+      // would be lost.
+      transaction.transactionBytes = Buffer.from(sdkTransaction.toBytes());
       this.addExecutionTimeout(transaction);
       this.schedulerRegistry.deleteTimeout(name);
     };
@@ -385,7 +387,7 @@ export class TransactionStatusService {
     const timeToValidStart = transaction.validStart.getTime() - Date.now();
 
     const callback = async () => {
-      await this.executeService.executeTransaction(transaction.id);
+      await this.executeService.executeTransaction(transaction);
       this.schedulerRegistry.deleteTimeout(name);
     };
 
