@@ -4,6 +4,7 @@ import { mockDeep } from 'jest-mock-extended';
 import { ExecuteController } from './execute.controller';
 
 import { ExecuteService } from './execute.service';
+import { Transaction } from '@entities';
 
 describe('ExecuteController', () => {
   let controller: ExecuteController;
@@ -28,10 +29,10 @@ describe('ExecuteController', () => {
   });
 
   it('should invoke the execute service with correct parameter', async () => {
-    const transactionId = 1;
+    const transaction = new Transaction();
 
-    await controller.index(transactionId);
+    await controller.index(transaction);
 
-    expect(executeService.executeTransaction).toHaveBeenCalledWith(transactionId);
+    expect(executeService.executeTransaction).toHaveBeenCalledWith(transaction);
   });
 });
