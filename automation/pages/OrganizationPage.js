@@ -1157,7 +1157,7 @@ class OrganizationPage extends BasePage {
     await this.logoutFromOrganization();
     await this.signInOrganization(firstUser.email, firstUser.password, globalCredentials.password);
     await this.updateAccount(this.getComplexAccountId(), 'update', 10, false);
-    await this.transactionPage.clickOnTransactionsMenuButton();
+    await this.settingsPage.clickOnSettingsButton();
     await this.logoutFromOrganization();
     await this.signInOrganization(
       secondUser.email,
