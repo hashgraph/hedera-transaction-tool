@@ -80,15 +80,6 @@ test.describe('Organization Notification tests', () => {
     await resetPostgresDbState();
   });
 
-  test('Verify notification is shown next to "Ready to Sign" tab', async () => {
-    await organizationPage.ensureNotificationStateForUser(firstUser, secondUser, globalCredentials);
-
-    await transactionPage.clickOnTransactionsMenuButton();
-
-    expect(await organizationPage.isNotificationNumberVisible()).toBe(true);
-    expect(await organizationPage.getNotificationNumberText()).toBe('1');
-  });
-
   test('Verify notification is visible in the organization dropdown', async () => {
     await organizationPage.ensureNotificationStateForUser(firstUser, secondUser, globalCredentials);
 

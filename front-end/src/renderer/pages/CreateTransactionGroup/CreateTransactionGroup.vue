@@ -66,7 +66,7 @@ async function handleSaveGroup() {
   }
 
   if (groupName.value.trim() === '') {
-    toast.error('Group Name Required', { position: 'bottom-right' });
+    toast.error('Please enter a group name', { position: 'bottom-right' });
     return;
   }
 
