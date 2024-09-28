@@ -209,57 +209,84 @@ async function handleOnFileChanged(e: Event) {
     const result = (reader.result as string).replace(/['"]+/g, '');
     const rows = result.split(/\r?\n|\r|\n/g);
     let senderAccount = '';
+    let feePayer = '';
     let sendingTime = '';
+    let transactionFee = '';
+    let txValidDuration = '';
+    let memo = '';
     let validStart: Date | null = null;
     for (const row of rows) {
-      if (row.startsWith('Sender Account')) {
-        senderAccount = row.split(',')[1];
-      } else if (row.startsWith('Sending Time')) {
-        sendingTime = row.split(',')[1];
-      } else if (row.startsWith('Node IDs')) {
-        console.log();
-      } else if (row.startsWith('AccountID')) {
-        console.log();
-      } else if (row === '') {
-        console.log();
-      } else {
-        // Create the new validStart value, or add 1 millisecond to the existing one for subsequent transactions
-        if (!validStart) {
-          const startDate = row.split(',')[2];
-          validStart = new Date(`${startDate} ${sendingTime}`);
-          if (validStart < new Date()) {
-            validStart = new Date();
-          }
-        } else {
-          validStart.setMilliseconds(validStart.getMilliseconds() + 1);
-        }
-        const transaction = new TransferTransaction()
-          .setTransactionValidDuration(180)
-          .setMaxTransactionFee(maxTransactionFee.value);
+      const title = row.split(',')[0];
+      switch (title) {
+        case 'Sender Account':
+          senderAccount = row.split(',')[1];
+          break;
+        case 'Fee Payer Account':
+          feePayer = row.split(',')[1];
+          break;
+        case 'Sending Time':
+          sendingTime = row.split(',')[1];
+          break;
+        case 'Node IDs':
+          break;
+        case 'Transaction Fee':
+          transactionFee = row.split(',')[1];
+          break;
+        case 'Transaction Valid Duration':
+          txValidDuration = row.split(',')[1];
+          break;
+        case 'Memo':
+          memo = row.split(',')[1];
+          break;
+        case 'Account ID':
+          break;
+        default: {
+          if (row === '') {
+            console.log();
+          } else {
+            // Create the new validStart value, or add 1 millisecond to the existing one for subsequent transactions
+            if (!validStart) {
+              const startDate = row.split(',')[2];
+              validStart = new Date(`${startDate} ${sendingTime}`);
+              if (validStart < new Date()) {
+                validStart = new Date();
+              }
+            } else {
+              validStart.setMilliseconds(validStart.getMilliseconds() + 1);
+            }
+            const transaction = new TransferTransaction()
+              .setTransactionValidDuration(txValidDuration ? Number.parseInt(txValidDuration) : 180)
+              .setMaxTransactionFee(
+                transactionFee ? new Hbar(transactionFee) : maxTransactionFee.value,
+              );
 
-        transaction.setTransactionId(createTransactionId(senderAccount, validStart));
-        transaction.addHbarTransfer(row.split(',')[0], row.split(',')[1]);
-        transaction.addHbarTransfer(senderAccount, Number.parseFloat(row.split(',')[1]) * -1);
-        transaction.setTransactionMemo(row.split(',')[3]);
+            transaction.setTransactionId(
+              createTransactionId(feePayer ? feePayer : senderAccount, validStart),
+            );
+            transaction.addHbarTransfer(row.split(',')[0], row.split(',')[1]);
+            transaction.addHbarTransfer(senderAccount, Number.parseFloat(row.split(',')[1]) * -1);
+            transaction.setTransactionMemo(memo);
 
-        const transactionBytes = transaction.toBytes();
-        const keys = new Array<string>();
-        if (payerData.key.value instanceof KeyList) {
-          for (const key of payerData.key.value.toArray()) {
-            keys.push(key.toString());
+            const transactionBytes = transaction.toBytes();
+            const keys = new Array<string>();
+            if (payerData.key.value instanceof KeyList) {
+              for (const key of payerData.key.value.toArray()) {
+                keys.push(key.toString());
+              }
+            }
+            transactionGroup.addGroupItem({
+              transactionBytes,
+              type: 'TransferTransaction',
+              accountId: '',
+              seq: transactionGroup.groupItems.length.toString(),
+              keyList: keys,
+              observers: [],
+              approvers: [],
+              payerAccountId: feePayer ? feePayer : senderAccount,
+              validStart: new Date(validStart.getTime()),
+            });
           }
         }
-        transactionGroup.addGroupItem({
-          transactionBytes,
-          type: 'TransferTransaction',
-          accountId: '',
-          seq: transactionGroup.groupItems.length.toString(),
-          keyList: keys,
-          observers: [],
-          approvers: [],
-          payerAccountId: senderAccount,
-          validStart: new Date(validStart.getTime()),
-        });
       }
     }
   };
