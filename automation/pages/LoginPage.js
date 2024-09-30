@@ -110,7 +110,11 @@ class LoginPage extends BasePage {
         await resetButton.waitFor({ state: 'visible', timeout: 1000 });
         // If the waitFor resolves successfully, click the reset button
         await resetButton.click();
-        await this.waitForElementToDisappear(this.toastMessageSelector, 6000, 6000);
+        if (process.platform === 'darwin') {
+          await this.waitForElementToDisappear(this.toastMessageSelector, 6000, 6000);
+        } else {
+          await this.waitForToastToDisappear();
+        }
       } catch (e) {
         console.log("The 'Reset' modal did not appear within the timeout.");
       }
