@@ -42,6 +42,13 @@ const handleChooseMode = async (useKeyChain: boolean) => {
 
 /* Functions */
 const checkShouldChoose = async () => {
+  const keychainAvailable = await isKeychainAvailable();
+
+  if (!keychainAvailable) {
+    await initializeUseKeychain(false);
+    return false;
+  }
+
   try {
     const useKeyChain = await getUseKeychain();
 
@@ -68,13 +75,6 @@ async function checkShouldRegister() {
 
 /* Hooks */
 onMounted(async () => {
-  const keychainAvailable = await isKeychainAvailable();
-
-  if (!keychainAvailable) {
-    await initializeUseKeychain(false);
-    return;
-  }
-
   const shouldChoose = await checkShouldChoose();
   chooseModeModalShown.value = shouldChoose;
 });
