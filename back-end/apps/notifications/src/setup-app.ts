@@ -1,7 +1,6 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication, ValidationPipe, ConsoleLogger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Transport } from '@nestjs/microservices';
-import { Logger } from 'nestjs-pino';
 
 import { NOTIFICATIONS_SERVICE } from '@app/common';
 import { RedisIoAdapter } from './websocket/redis-io.adapter';
@@ -18,7 +17,7 @@ export function setupApp(app: INestApplication, addLogger: boolean = true) {
   );
 
   if (addLogger) {
-    app.useLogger(app.get(Logger));
+    app.useLogger(app.get(ConsoleLogger));
   }
 
   const redisIoAdapter = new RedisIoAdapter(app);
