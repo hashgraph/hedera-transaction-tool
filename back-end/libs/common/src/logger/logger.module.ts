@@ -1,6 +1,17 @@
 import { Module, ConsoleLogger } from '@nestjs/common';
 import { createLogger, format, transports } from 'winston';
 
+// Custom format to redact sensitive information
+const redactSensitiveInfo = format((info) => {
+  const sensitiveFields = ['password']; // Add fields to redact
+  sensitiveFields.forEach((field) => {
+    if (info[field]) {
+      info[field] = 'REDACTED';
+    }
+  });
+  return info;
+});
+
 const customFormat = format.printf(({ level, message, timestamp, stack }) => {
   return `${timestamp} [${level.toUpperCase()}]: ${stack || message}`;
 });
@@ -10,6 +21,7 @@ const winstonLogger = createLogger({
   format: format.combine(
     format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     format.errors({ stack: true }),
+    redactSensitiveInfo(),
     customFormat
   ),
   transports: [
