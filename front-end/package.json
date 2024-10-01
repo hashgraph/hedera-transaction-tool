@@ -34,7 +34,7 @@
     "@vuepic/vue-datepicker": "9.0.2",
     "axios": "1.7.7",
     "bcrypt": "5.1.1",
-    "better-sqlite3": "11.2.1",
+    "better-sqlite3": "11.3.0",
     "bignumber.js": "9.1.2",
     "bootstrap": "5.3.3",
     "bootstrap-icons": "1.11.3",
