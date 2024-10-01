@@ -36,7 +36,6 @@ import TransactionSelectionModal from '@renderer/components/TransactionSelection
 
 import History from './components/History.vue';
 import Drafts from './components/Drafts.vue';
-import Groups from './components/Groups.vue';
 import ReadyToSign from './components/ReadyToSign.vue';
 import InProgress from './components/InProgress.vue';
 import ReadyForExecution from './components/ReadyForExecution.vue';
@@ -67,7 +66,6 @@ const organizationTabs: TabItem[] = [
   { title: inProgressTitle },
   { title: readyForExecutionTitle },
   { title: historyTitle },
-  { title: groupsTitle },
 ];
 const sharedTabs: TabItem[] = [{ title: draftsTitle }, { title: historyTitle }];
 
@@ -231,7 +229,6 @@ watch(activeTabTitle, setQueryTab);
       <template v-if="activeTabTitle === readyForExecutionTitle"><ReadyForExecution /></template>
       <template v-if="activeTabTitle === draftsTitle"><Drafts /></template>
       <template v-if="activeTabTitle === historyTitle"><History /></template>
-      <template v-if="activeTabTitle === groupsTitle"><Groups /></template>
     </div>
 
     <TransactionSelectionModal v-model:show="isTransactionSelectionModalShown" :group="false" />
