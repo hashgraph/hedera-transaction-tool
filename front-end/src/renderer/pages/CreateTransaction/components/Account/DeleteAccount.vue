@@ -37,6 +37,7 @@ import TransactionIdControls from '@renderer/components/Transaction/TransactionI
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
+import AddToGroupModal from '@renderer/components/AddToGroupModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -204,7 +205,7 @@ function handleAddToGroup() {
       keys.push(key.toString());
     }
   }
-  // TODO: handle single key?
+
   transactionGroup.addGroupItem({
     transactionBytes: transactionBytes,
     type: 'AccountDeleteTransaction',
@@ -529,5 +530,6 @@ const columnClass = 'col-4 col-xxxl-3';
         </div>
       </div>
     </AppModal>
+    <AddToGroupModal @addToGroup="handleAddToGroup" />
   </div>
 </template>

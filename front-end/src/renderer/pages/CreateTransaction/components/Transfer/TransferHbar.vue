@@ -39,6 +39,7 @@ import TransactionProcessor from '@renderer/components/Transaction/TransactionPr
 import TransferCard from '@renderer/components/TransferCard.vue';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
+import AddToGroupModal from '@renderer/components/AddToGroupModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -304,7 +305,7 @@ function handleAddToGroup() {
       keys.push(key.toString());
     }
   }
-  // TODO: handle single key?
+
   transactionGroup.addGroupItem({
     transactionBytes: transactionBytes,
     type: 'TransferTransaction',
@@ -708,5 +709,6 @@ onMounted(async () => {
       :on-submitted="handleSubmit"
       :on-local-stored="handleLocalStored"
     />
+    <AddToGroupModal @addToGroup="handleAddToGroup" />
   </div>
 </template>

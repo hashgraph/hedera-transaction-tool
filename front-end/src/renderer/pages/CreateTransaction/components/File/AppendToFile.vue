@@ -34,6 +34,7 @@ import TransactionHeaderControls from '@renderer/components/Transaction/Transact
 import TransactionInfoControls from '@renderer/components/Transaction/TransactionInfoControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
+import AddToGroupModal from '@renderer/components/AddToGroupModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -248,7 +249,7 @@ function handleAddToGroup() {
       keys.push(key.toString());
     }
   }
-  // TODO: handle single key?
+
   transactionGroup.addGroupItem({
     transactionBytes: transactionBytes,
     type: 'FileAppendTransaction',
@@ -479,5 +480,6 @@ const columnClass = 'col-4 col-xxxl-3';
       :on-local-stored="handleLocalStored"
       :on-submitted="handleSubmit"
     />
+    <AddToGroupModal @addToGroup="handleAddToGroup" />
   </div>
 </template>
