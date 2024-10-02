@@ -12,6 +12,7 @@ import { API_SERVICE } from '@app/common';
 
 import { NotFoundExceptionFilter } from './filters/not-found-exception.filter';
 import { BadRequestExceptionFilter } from './filters/bad-request-exception.filter';
+import { LoggerMiddleware } from '@app/common/middleware/logger.middleware';
 
 export function setupApp(app: NestExpressApplication, addLogger: boolean = true) {
   connectMicroservices(app);
@@ -28,7 +29,8 @@ export function setupApp(app: NestExpressApplication, addLogger: boolean = true)
   app.useGlobalFilters(new NotFoundExceptionFilter(), new BadRequestExceptionFilter());
 
   if (addLogger) {
-    app.useLogger(app.get(ConsoleLogger));
+    const loggerMiddleware = app.get(LoggerMiddleware);
+    app.use(loggerMiddleware.use.bind(loggerMiddleware));
   }
 
   app.enableCors({

@@ -18,6 +18,7 @@ import { UserKeysModule } from './user-keys/user-keys.module';
 import { UsersModule } from './users/users.module';
 import { NotificationPreferencesModule } from './notification-preferences/notification-preferences.module';
 import { NotificationReceiverModule } from './notification-receiver/notification-receiver.module';
+import { LoggerMiddleware } from '@app/common/middleware/logger.middleware';
 
 export const config = ConfigModule.forRoot({
   envFilePath: getEnvFilePaths(),
@@ -62,6 +63,7 @@ export const config = ConfigModule.forRoot({
       provide: APP_GUARD,
       useClass: IpThrottlerGuard,
     },
+    LoggerMiddleware,
   ],
 })
 export class ApiModule {}

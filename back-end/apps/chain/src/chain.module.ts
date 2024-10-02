@@ -10,6 +10,7 @@ import getEnvFilePaths from './config/envFilePaths';
 
 import { ExecuteModule } from './execute';
 import { TransactionStatusModule } from './transaction-status/transaction-status.module';
+import { LoggerMiddleware } from '@app/common/middleware/logger.middleware';
 
 export const config = ConfigModule.forRoot({
   envFilePath: getEnvFilePaths(),
@@ -38,5 +39,6 @@ export const config = ConfigModule.forRoot({
     HealthModule,
     NotificationsProxyModule,
   ],
+  providers: [LoggerMiddleware],
 })
 export class ChainModule {}
