@@ -7,7 +7,6 @@ import { computed, inject, onBeforeMount, ref, watch } from 'vue';
 import { NotificationType } from '@main/shared/interfaces';
 import {
   draftsTitle,
-  groupsTitle,
   historyTitle,
   inProgressTitle,
   readyForExecutionTitle,
