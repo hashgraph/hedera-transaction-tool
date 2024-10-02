@@ -337,7 +337,7 @@ watch(
                   type="button"
                   color="secondary"
                   @click.prevent="handleSign(groupItem.transaction.id)"
-                  >Sign</AppButton
+                  >Details</AppButton
                 >
               </td>
             </tr>
