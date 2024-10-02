@@ -1,11 +1,16 @@
 import { Module, ConsoleLogger } from '@nestjs/common';
 import { createLogger, format, transports } from 'winston';
 
+const customFormat = format.printf(({ level, message, timestamp, stack }) => {
+  return `${timestamp} [${level.toUpperCase()}]: ${stack || message}`;
+});
+
 const winstonLogger = createLogger({
   level: 'info',
   format: format.combine(
-    format.timestamp(),
-    format.json()
+    format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    format.errors({ stack: true }),
+    customFormat
   ),
   transports: [
     new transports.Console(),
