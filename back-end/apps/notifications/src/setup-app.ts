@@ -4,6 +4,7 @@ import { Transport } from '@nestjs/microservices';
 
 import { NOTIFICATIONS_SERVICE } from '@app/common';
 import { RedisIoAdapter } from './websocket/redis-io.adapter';
+import { LoggerMiddleware } from '@app/common/middleware/logger.middleware';
 
 export function setupApp(app: INestApplication, addLogger: boolean = true) {
   const configService = app.get(ConfigService);
@@ -17,7 +18,8 @@ export function setupApp(app: INestApplication, addLogger: boolean = true) {
   );
 
   if (addLogger) {
-    app.useLogger(app.get(ConsoleLogger));
+    const loggerMiddleware = app.get(LoggerMiddleware);
+    app.use(loggerMiddleware.use.bind(loggerMiddleware));
   }
 
   const redisIoAdapter = new RedisIoAdapter(app);

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Transport } from '@nestjs/microservices';
 
 import { CHAIN_SERVICE } from '@app/common';
+import { LoggerMiddleware } from '@app/common/middleware/logger.middleware';
 
 export function setupApp(app: INestApplication, addLogger: boolean = true) {
   connectMicroservices(app);
@@ -15,7 +16,8 @@ export function setupApp(app: INestApplication, addLogger: boolean = true) {
   );
 
   if (addLogger) {
-    app.useLogger(app.get(ConsoleLogger));
+    const loggerMiddleware = app.get(LoggerMiddleware);
+    app.use(loggerMiddleware.use.bind(loggerMiddleware));
   }
 }
 

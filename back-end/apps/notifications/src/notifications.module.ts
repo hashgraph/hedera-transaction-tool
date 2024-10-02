@@ -16,6 +16,7 @@ import getEnvFilePaths from './config/envFilePaths';
 import { WebsocketModule } from './websocket/websocket.module';
 import { EmailModule } from './email/email.module';
 import { ReceiverModule } from './receiver/receiver.module';
+import { LoggerMiddleware } from '@app/common/middleware/logger.middleware';
 
 export const config = ConfigModule.forRoot({
   envFilePath: getEnvFilePaths(),
@@ -50,5 +51,6 @@ export const config = ConfigModule.forRoot({
     AuthProxyModule,
     HealthModule,
   ],
+  providers: [LoggerMiddleware],
 })
 export class NotificationsModule {}
