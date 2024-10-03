@@ -186,6 +186,7 @@ const columnClass = 'col-4 col-xxxl-3';
         @update:model-value="v => $emit('update:maxTransactionFee', v)"
         :filled="true"
         placeholder="Enter Max Transaction Fee"
+        data-testid="input-max-transaction-fee"
       />
     </div>
   </div>

@@ -89,13 +89,13 @@ async function decrypt() {
   try {
     key = {
       fileName: fileName.value,
-      ...await decryptEncryptedKey(
+      ...(await decryptEncryptedKey(
         props.keyPath,
         decryptPassword.value,
         hashCode.value ? [...props.indexesFromMnemonic] : null,
         hashCode.value,
-      ),
-    }
+      )),
+    };
   } catch (err) {
     if (err instanceof Error) {
       if (err.message === ENCRYPTED_KEY_ALREADY_IMPORTED) {

@@ -43,6 +43,7 @@ onMounted(async () => {
         :filled="true"
         :limit="256"
         placeholder="Enter a description for the transaction"
+        data-testid="input-transaction-description"
       />
     </div>
   </div>

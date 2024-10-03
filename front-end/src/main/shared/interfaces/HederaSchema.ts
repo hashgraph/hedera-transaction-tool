@@ -593,7 +593,7 @@ export interface ServiceEndPoint {
 
 export function makeShortNodeDescription(description: string): string {
   const separator = description.indexOf('|') ?? -1;
-  return separator !== -1 ? description.slice(0, separator) ?? null : description;
+  return separator !== -1 ? (description.slice(0, separator) ?? null) : description;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

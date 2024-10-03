@@ -626,7 +626,7 @@ const cancel = 'Cancel';
                     "
                   >
                     <h4 :class="detailItemLabelClass">Description</h4>
-                    <p :class="detailItemValueClass">
+                    <p :class="detailItemValueClass" data-testid="p-description-field">
                       {{ orgTransaction?.description || localTransaction?.description }}
                     </p>
                   </div>
