@@ -98,7 +98,10 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
    */
   function duplicateGroupItem(index: number) {
     const baseItem = groupItems.value[index];
-    const newDate = findUniqueValidStart(baseItem.payerAccountId, baseItem.validStart.getTime()+1);
+    const newDate = findUniqueValidStart(
+      baseItem.payerAccountId,
+      baseItem.validStart.getTime() + 1,
+    );
     const transaction = Transaction.fromBytes(baseItem.transactionBytes);
     transaction.setTransactionId(createTransactionId(baseItem.payerAccountId, newDate));
     const newItem = {
