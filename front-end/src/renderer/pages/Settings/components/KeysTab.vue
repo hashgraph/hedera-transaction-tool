@@ -277,6 +277,7 @@ watch(isDeleteModalShown, newVal => {
                 <td :data-testid="`cell-nickname-${index}`">
                   <span
                     class="bi bi-pencil-square text-main text-primary me-3 cursor-pointer"
+                    data-testid="button-change-key-nickname"
                     @click="handleStartNicknameEdit(keyPair.id)"
                   ></span>
                   {{ keyPair.nickname || 'N/A' }}
