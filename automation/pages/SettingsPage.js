@@ -19,6 +19,8 @@ class SettingsPage extends BasePage {
   ecdsaNicknameInputSelector = 'input-ecdsa-private-key-nickname';
   currentPasswordInputSelector = 'input-current-password';
   newPasswordInputSelector = 'input-new-password';
+  defaultMaxTransactionFeeInputSelector = 'input-default-max-transaction-fee';
+  keyPairNicknameInputSelector = 'input-key-pair-nickname';
 
   // Buttons
   settingsButtonSelector = 'button-menu-settings';
@@ -49,6 +51,8 @@ class SettingsPage extends BasePage {
   changePasswordButtonSelector = 'button-change-password';
   confirmChangePasswordButtonSelector = 'button-confirm-change-password';
   closeButtonSelector = 'button-close';
+  changeKeyNicknameButtonSelector = 'button-change-key-nickname';
+  confirmNicknameChangeButtonSelector = 'button-confirm-update-nickname';
 
   // Text
   decryptedPrivateKeySelector = 'span-private-key-0';
@@ -255,6 +259,28 @@ class SettingsPage extends BasePage {
 
   async clickOnOrganisationsTab() {
     await this.click(this.organisationsTabButtonSelector);
+  }
+
+  async fillInDefaultMaxTransactionFee(fee) {
+    await this.fill(this.defaultMaxTransactionFeeInputSelector, fee);
+  }
+
+  async clickOnChangeKeyNicknameButton(index) {
+    await this.click(this.changeKeyNicknameButtonSelector, 0);
+  }
+
+  async clickOnConfirmNicknameChangeButton() {
+    await this.click(this.confirmNicknameChangeButtonSelector);
+  }
+
+  async fillInKeyPairNickname(nickname) {
+    await this.fill(this.keyPairNicknameInputSelector, nickname);
+  }
+
+  async changeNicknameForFirstKey(nickname) {
+    await this.clickOnChangeKeyNicknameButton(0);
+    await this.fillInKeyPairNickname(nickname);
+    await this.clickOnConfirmNicknameChangeButton();
   }
 }
 module.exports = SettingsPage;

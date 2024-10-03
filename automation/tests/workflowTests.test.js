@@ -381,7 +381,9 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify transaction details are displayed for account tx ', async () => {
-    const { newTransactionId } = await transactionPage.createNewAccount();
+    const { newTransactionId } = await transactionPage.createNewAccount({
+      description: 'testDescription',
+    });
     await transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
     await detailsPage.assertTransactionDetails(
@@ -403,6 +405,9 @@ test.describe('Workflow tests', () => {
 
         const getAccountDetailsInitialBalance = await detailsPage.getAccountDetailsInitBalance();
         expect(getAccountDetailsInitialBalance).toBe('0 ℏ');
+
+        const getTransactionDescription = await detailsPage.getTransactionDescription();
+        expect(getTransactionDescription).toBe('testDescription');
       },
     );
   });
