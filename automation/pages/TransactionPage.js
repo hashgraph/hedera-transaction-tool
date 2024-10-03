@@ -54,6 +54,8 @@ class TransactionPage extends BasePage {
   fileCreateDescriptionInputSelector = 'input-file-description-for-file-create';
   deleteAccountMemoInputSelector = 'input-delete-account-memo';
   fileUpdateMemoInputSelector = 'input-file-update-memo';
+  maxTransactionFeeInputSelector = 'input-max-transaction-fee';
+  descriptionInputSelector = 'input-transaction-description';
 
   //Buttons
   transactionsMenuButtonSelector = 'button-menu-transactions';
@@ -488,6 +490,7 @@ class TransactionPage extends BasePage {
       initialFunds = null,
       isReceiverSigRequired = false,
       memo = null,
+      description = null,
     } = options;
     if (!isComingFromDraft) {
       await this.clickOnCreateNewTransactionButton();
@@ -508,6 +511,7 @@ class TransactionPage extends BasePage {
       { condition: initialFunds !== null, handler: () => this.fillInInitialFunds(initialFunds) },
       { condition: isReceiverSigRequired, handler: () => this.clickOnReceiverSigRequiredSwitch() },
       { condition: memo !== null, handler: () => this.fillInMemo(memo) },
+      { condition: description !== null, handler: () => this.fillInDescription(description) },
     ];
 
     for (const { condition, handler } of optionHandlers) {
@@ -1312,6 +1316,14 @@ class TransactionPage extends BasePage {
   async clickOnConfirmDeleteAccountButton() {
     await this.waitForElementPresentInDOM(this.confirmDeleteAccountButtonSelector);
     await this.click(this.confirmDeleteAccountButtonSelector, null, 5000);
+  }
+
+  async getMaxTransactionFee() {
+    return await this.getTextFromInputField(this.maxTransactionFeeInputSelector);
+  }
+
+  async fillInDescription(description) {
+    await this.fill(this.descriptionInputSelector, description);
   }
 }
 module.exports = TransactionPage;
