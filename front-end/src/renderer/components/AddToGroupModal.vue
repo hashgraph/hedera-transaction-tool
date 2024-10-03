@@ -48,7 +48,7 @@ onBeforeRouteLeave(async () => {
       <div class="flex-between-centered gap-4">
         <AppButton
           color="borderless"
-          data-testid="button-discard-draft-modal"
+          data-testid="button-discard-draft-for-group-modal"
           type="button"
           @click="$router.back()"
           >Discard</AppButton
