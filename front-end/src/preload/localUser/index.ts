@@ -15,7 +15,6 @@ import deepLinkAPI from './deepLink';
 import contactsAPI from './contacts';
 import contactPublicKeys from './linkedPublicKeys';
 import encryptedKeys from './encryptedKeys';
-import dataMigration from './dataMigration';
 import claim from './claim';
 import safeStorage from './safeStorage';
 
@@ -37,7 +36,6 @@ export default {
   ...contactsAPI,
   ...contactPublicKeys,
   ...encryptedKeys,
-  ...dataMigration,
   ...claim,
   ...safeStorage,
 };
