@@ -136,17 +136,29 @@ export async function getDataMigrationKeysPath(): Promise<string> {
 
 async function getAccountInfoFromFile(
   directory: string,
-): Promise<{ nickname: string; accountID: string }[]> {
-  const accountDataList: { nickname: string; accountID: string }[] = [];
-  if (!fs.existsSync(directory)) {
-    return accountDataList;
-  }
-  const files = fs.readdirSync(directory);
+  defaultNetwork: Network = Network.MAINNET,
+): Promise<{ nickname: string; accountID: string; network: Network }[]> {
+  const accountDataList: { nickname: string; accountID: string; network: Network }[] = [];
 
-  for (const file of files) {
-    if (file.endsWith('.json')) {
-      const filePath = path.join(directory, file);
-      const fileContent = fs.readFileSync(filePath, 'utf-8');
+  if (!fs.existsSync(directory)) return accountDataList;
+
+  const files = await fs.promises.readdir(directory);
+
+  for (const file of files.filter(f => f.endsWith('.json'))) {
+    const loweredFileName = file.toLocaleLowerCase();
+
+    const network = loweredFileName.includes('testnet')
+      ? Network.TESTNET
+      : loweredFileName.includes('mainnet')
+        ? Network.MAINNET
+        : loweredFileName.includes('previewnet')
+          ? Network.PREVIEWNET
+          : defaultNetwork;
+
+    const filePath = path.join(directory, file);
+
+    try {
+      const fileContent = await fs.promises.readFile(filePath, 'utf-8');
       const accountID = JSON.parse(fileContent)?.accountID;
 
       if (accountID) {
@@ -154,8 +166,11 @@ async function getAccountInfoFromFile(
         accountDataList.push({
           nickname: path.parse(file).name,
           accountID: accountIDString,
+          network,
         });
       }
+    } catch (error) {
+      console.error(`Error reading file ${filePath}: ${error}`);
     }
   }
 
@@ -163,9 +178,9 @@ async function getAccountInfoFromFile(
 }
 
 export async function migrateAccountsData(userId: string, network: Network): Promise<number> {
-  const accountDataList = await getAccountInfoFromFile(accountsPath);
+  const accountDataList = await getAccountInfoFromFile(accountsPath, network);
   for (const accountData of accountDataList) {
-    await addAccount(userId, accountData.accountID, network, accountData.nickname);
+    await addAccount(userId, accountData.accountID, accountData.network, accountData.nickname);
   }
   return accountDataList.length;
 }
