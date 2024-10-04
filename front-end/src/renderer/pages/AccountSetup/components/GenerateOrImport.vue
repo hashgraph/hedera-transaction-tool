@@ -18,6 +18,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import Generate from './Generate.vue';
 import Import from './Import.vue';
 import UseExistingKey from './UseExistingKey.vue';
+import MigrateData from './MigrateData.vue';
 
 /* Props */
 const props = defineProps<{
@@ -35,12 +36,14 @@ const user = useUserStore();
 /* Constants */
 const createNewTitle = 'Create New';
 const importExistingTitle = 'Import Existing';
+const migrateDataTitle = 'Migrate Data';
 const useExistingKeyTitle = 'Use Existing Key';
 
 /* State */
 const tabItems = ref<TabItem[]>([
   { title: createNewTitle },
   { title: importExistingTitle },
+  { title: migrateDataTitle },
   { title: useExistingKeyTitle },
 ]);
 const activeTabIndex = ref(1);
@@ -176,6 +179,9 @@ watch(activeTabTitle, newTitle => {
             </div>
           </form>
         </AppModal>
+      </template>
+      <template v-else-if="activeTabTitle === migrateDataTitle">
+        <MigrateData />
       </template>
       <template v-else-if="activeTabTitle === useExistingKeyTitle">
         <UseExistingKey

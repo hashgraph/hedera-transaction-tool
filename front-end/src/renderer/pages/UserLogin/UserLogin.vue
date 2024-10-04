@@ -28,6 +28,7 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
+import { locateDataMigrationFiles } from '@renderer/services/migrateDataService';
 
 /* Stores */
 const user = useUserStore();
@@ -170,6 +171,11 @@ onMounted(async () => {
   if (shouldRegister.value) {
     createTooltips();
     setTooltipContent();
+
+    if (await locateDataMigrationFiles()) {
+      // show a modal prompting the user to migrate
+
+    }
   }
 });
 
@@ -398,5 +404,7 @@ watch(inputEmail, pass => {
         </div>
       </AppModal>
     </div>
+
+    <BeginMigrationModal />
   </div>
 </template>
