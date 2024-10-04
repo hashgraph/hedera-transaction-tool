@@ -168,6 +168,8 @@ export class TransactionStatusService {
   }
 
   /* Checks if the signers are enough to sign the transactions and update their statuses */
+  //TODO this should also try and do a smart collate, if needed, as a transaction isn't
+  // ready for execution if it's over the max size
   async updateTransactions(from: Date, to?: Date) {
     const transactions = await this.transactionRepo.find({
       where: {
