@@ -5,6 +5,7 @@ import type { PersonalUser } from './components/SetupPersonal.vue';
 import { computed, onMounted, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
@@ -23,6 +24,7 @@ type StepName = 'recoveryPhrase' | 'personal' | 'organization' | 'summary';
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 
 /* Composables */
 useSetDynamicLayout({
@@ -97,6 +99,7 @@ const initializeUserStore = async () => {
   await user.selectOrganization(user.organizations[0]);
   await user.setRecoveryPhrase(recoveryPhrase.value.words);
   personalUser.value.password && user.setPassword(personalUser.value.password);
+  await network.setup();
 };
 
 /* Hooks */

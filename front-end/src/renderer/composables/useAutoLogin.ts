@@ -2,16 +2,19 @@ import { onMounted, ref, watch, type Ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getStaticUser, getUseKeychain } from '@renderer/services/safeStorageService';
 
 import GlobalModalLoader from '@renderer/components/GlobalModalLoader.vue';
+import { safeAwait } from '@renderer/utils';
 
 export default function useAutoLogin(
   globalLoderRef: Ref<InstanceType<typeof GlobalModalLoader> | null>,
 ) {
   /* Stores */
   const user = useUserStore();
+  const network = useNetworkStore();
 
   /* Composables */
   const router = useRouter();
@@ -35,6 +38,7 @@ export default function useAutoLogin(
         finished.value = true;
         globalLoderRef.value?.close();
 
+        await safeAwait(network.setup());
         return;
       }
     } catch {
@@ -57,6 +61,8 @@ export default function useAutoLogin(
     } finally {
       finished.value = true;
       globalLoderRef.value?.close();
+
+      await safeAwait(network.setup());
     }
   });
 
