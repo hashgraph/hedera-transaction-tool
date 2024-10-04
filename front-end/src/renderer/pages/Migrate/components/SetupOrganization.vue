@@ -101,7 +101,7 @@ const handleFormSubmit: SubmitCallback = async (formData: ModelValue) => {
     throw addOrganizationCredentialsResult.error;
   }
 
-  /* Store First Key */
+  /* Restore Existing Keys */
   const restoreExistingKeysResult = await safeAwait(restoreExistingKeys(formData));
 
   if ('error' in restoreExistingKeysResult) {
@@ -160,7 +160,10 @@ const restoreExistingKeys = async ({ organizationURL }: ModelValue) => {
   const userKeysWithMnemonic = userKeys.filter(userKeyHasMnemonic);
 
   if (userKeysWithMnemonic.length === 0) {
-    await restoreKeyPair(organizationURL, 0, 'Default');
+    for (let i = 0; i < 99; i++) {
+      const result = await safeAwait(restoreKeyPair(organizationURL, 0, 'Default', true));
+      if (!result.error) break;
+    }
     return;
   }
 
@@ -177,7 +180,9 @@ const restoreExistingKeys = async ({ organizationURL }: ModelValue) => {
       );
 
       if (!error && matchedHash) {
-        await restoreKeyPair(organizationURL, userKey.index, `Restored Key ${i + 1}`);
+        await safeAwait(
+          restoreKeyPair(organizationURL, userKey.index, `Restored Key ${i + 1}`, false),
+        );
       } else {
         await safeAwait(deleteKey(organizationURL, organizationUserId.value, userKey.id));
       }
@@ -185,7 +190,12 @@ const restoreExistingKeys = async ({ organizationURL }: ModelValue) => {
   }
 };
 
-const restoreKeyPair = async (organizationURL: string, index: number, nickname: string) => {
+const restoreKeyPair = async (
+  organizationURL: string,
+  index: number,
+  nickname: string,
+  upload: boolean,
+) => {
   if (!props.recoveryPhrase) throw new Error('(BUG) Recovery phrase not set');
   if (organizationUserId.value === null) throw new Error('(BUG) Organization user id not set');
 
@@ -216,13 +226,13 @@ const restoreKeyPair = async (organizationURL: string, index: number, nickname: 
     false,
   );
 
-  await safeAwait(
-    uploadKey(organizationURL, organizationUserId.value, {
+  if (upload) {
+    await uploadKey(organizationURL, organizationUserId.value, {
       publicKey: keyPair.public_key,
       index: keyPair.index,
       mnemonicHash: keyPair.secret_hash || undefined,
-    }),
-  );
+    });
+  }
 };
 </script>
 <template>
