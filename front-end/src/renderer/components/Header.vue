@@ -93,7 +93,10 @@ onUpdated(() => {
       <Logo class="me-2" />
       <LogoText />
     </div>
-    <div v-if="user.personal && user.personal.isLoggedIn" class="flex-centered justify-content-end">
+    <div
+      v-if="user.personal && user.personal.isLoggedIn && !user.migrating"
+      class="flex-centered justify-content-end"
+    >
       <!-- <span class="container-icon">
         <i class="text-icon-main bi bi-search"></i>
       </span>
