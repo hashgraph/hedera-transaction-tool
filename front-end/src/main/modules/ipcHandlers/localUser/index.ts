@@ -11,6 +11,7 @@ import listenForOrganizationCredentialsEvents from './organizationCredentials';
 import listenForContactEvents from './contacts';
 import listenForPublicKeyLinkedEvents from './publicKeyLinked';
 import listenForEncryptedKeysEvents from './encryptedKeys';
+import listenForDataMigrationEvents from './dataMigration';
 import listenForClaimEvents from './claim';
 import listenForSafeStorageEvents from './safeStorage';
 
@@ -28,6 +29,7 @@ export default () => {
   listenForContactEvents();
   listenForPublicKeyLinkedEvents();
   listenForEncryptedKeysEvents();
+  listenForDataMigrationEvents();
   listenForClaimEvents();
   listenForSafeStorageEvents();
 };
