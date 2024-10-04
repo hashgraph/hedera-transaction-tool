@@ -2,7 +2,7 @@
 import type { Organization } from '@prisma/client';
 import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
 
-import { computed, inject, onUpdated, ref, watch } from 'vue';
+import { computed, inject, onMounted, onUpdated, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
@@ -34,7 +34,7 @@ const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADE
 /* State */
 const selectedMode = ref<string>('personal');
 const addOrganizationModalShown = ref(false);
-const defaultDropDownValue = ref<string>(personalModeText);
+const dropDownValue = ref<string>(personalModeText);
 
 /* Computed */
 const indicatorNotifications = computed(() => {
@@ -55,7 +55,7 @@ const handleUserModeChange = async (e: Event) => {
 
   if (newValue === 'personal') {
     selectedMode.value = 'personal';
-    defaultDropDownValue.value = personalModeText;
+    dropDownValue.value = personalModeText;
     await user.selectOrganization(null);
   } else {
     selectedMode.value = org ? org.id : 'personal';
@@ -74,7 +74,7 @@ const handleUserModeChange = async (e: Event) => {
     );
 
     if (user.selectedOrganization?.isServerActive) {
-      defaultDropDownValue.value = organizationNickname;
+      dropDownValue.value = organizationNickname;
     }
   }
 };
@@ -92,11 +92,24 @@ const handleAddOrganization = async (organization: Organization) => {
 
     const organizationNickname =
       user.organizations.find(org => org.id === organization.id)?.nickname || '';
-    defaultDropDownValue.value = organizationNickname;
+    dropDownValue.value = organizationNickname;
+  }
+};
+
+/* Functions */
+const initialize = () => {
+  if (user.selectedOrganization) {
+    selectedMode.value = user.selectedOrganization.id;
+    dropDownValue.value = user.selectedOrganization.nickname;
+  } else {
+    selectedMode.value = 'personal';
+    dropDownValue.value = personalModeText;
   }
 };
 
 /* Hooks */
+onMounted(initialize);
+
 onUpdated(() => {
   createTooltips();
 });
@@ -113,31 +126,20 @@ watch(
 
         const organizationNickname =
           user.organizations.find(org => org.id === lastAddedOrganization.id)?.nickname || '';
-        defaultDropDownValue.value = organizationNickname;
+        dropDownValue.value = organizationNickname;
       } else {
         selectedMode.value = user.selectedOrganization.id;
 
-        defaultDropDownValue.value = user.selectedOrganization.nickname;
+        dropDownValue.value = user.selectedOrganization.nickname;
       }
     } else {
-      defaultDropDownValue.value = personalModeText;
+      dropDownValue.value = personalModeText;
     }
   },
 );
 
 /* Watchers */
-watch(
-  () => user.selectedOrganization,
-  current => {
-    if (current) {
-      selectedMode.value = current.id;
-      defaultDropDownValue.value = current.nickname;
-    } else {
-      selectedMode.value = 'personal';
-      defaultDropDownValue.value = personalModeText;
-    }
-  },
-);
+watch(() => user.selectedOrganization, initialize);
 </script>
 <template>
   <div class="d-flex align-items-centert">
@@ -158,7 +160,7 @@ watch(
             'indicator-circle-before': Object.values(indicatorNotifications).flat().length > 0,
           }"
         >
-          {{ defaultDropDownValue }}
+          {{ dropDownValue }}
         </div>
         <i class="bi bi-chevron-down ms-3"></i>
       </AppButton>
