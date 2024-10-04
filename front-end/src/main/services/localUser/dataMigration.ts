@@ -1,35 +1,51 @@
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as argon2 from 'argon2';
+
+import { app } from 'electron';
 import * as dotenv from 'dotenv';
-import { addAccount } from './accounts';
+import * as argon2 from 'argon2';
+
 import { Network } from '@main/shared/enums';
+
+import { addAccount } from './accounts';
 
 const SALT_LENGTH = 16;
 const KEY_LENGTH = 32;
 const AUTH_TAG_LENGTH = 16;
 const IV_LENGTH = 12;
 
-// data migration files are fixed, if the old tool is still in use. Perhaps a future feature will allow the user to
-// select the location of the files, but for now, we will assume the files are in the default location
-const basePath = path.join(process.env.HOME || process.env.USERPROFILE || '', 'Documents', 'TransactionTools');
-const propertiesPath = path.join(basePath, 'Files','user.properties');
-const mnemonicPath = path.join(basePath, 'Files', '.System', 'recovery.aes');
-const keysPath = path.join(basePath, 'Keys');
-const accountsPath = path.join(basePath, 'Accounts');
+/*
+  Data migration files are fixed, if the old tool is still in use. Perhaps a future feature will allow the user to
+  select the location of the files, but for now, we will assume the files are in the default location
+*/
+
+/* Old Tools Constants */
+const DEFAULT_FOLDER_NAME = 'TransactionTools';
+const FILES = 'Files';
+const USER_PROPERTIES = 'user.properties';
+const RECOVERY_FILE_PARENT_FOLDER = '.System';
+const RECOVERY_FILE = 'recovery.aes';
+const KEYS = 'Keys';
+const ACCOUNTS = 'Accounts';
+
+const basePath = path.join(app.getPath('documents'), DEFAULT_FOLDER_NAME);
+const propertiesPath = path.join(basePath, FILES, USER_PROPERTIES);
+const mnemonicPath = path.join(basePath, FILES, RECOVERY_FILE_PARENT_FOLDER, RECOVERY_FILE);
+const keysPath = path.join(basePath, KEYS);
+const accountsPath = path.join(basePath, ACCOUNTS);
 
 function getSalt(token: string): Buffer {
   // If no token is provided, then return an empty buffer
   if (!token) {
-    console.error("Token is undefined");
+    console.error('Token is undefined');
     return Buffer.alloc(0);
   }
   // Decode the token from base64
   const tokenBytes = Buffer.from(token, 'base64');
   // If the length of the token is less than the sum of the salt length and the key length, then the token is invalid
   if (tokenBytes.length < SALT_LENGTH + KEY_LENGTH) {
-    console.error("Token size check failed");
+    console.error('Token size check failed');
     return Buffer.alloc(0);
   }
   // Get the salt from the token (the first SALT_LENGTH of bytes) and return it
@@ -51,7 +67,11 @@ function generateArgon2id(password: string, salt: Buffer): Promise<Buffer> {
   return argon2.hash(password, options);
 }
 
-async function decryptMnemonic(inputPath: string, token: string, password: string): Promise<string | null> {
+async function decryptMnemonic(
+  inputPath: string,
+  token: string,
+  password: string,
+): Promise<string | null> {
   // Read the encrypted data from the file
   const data = fs.readFileSync(inputPath);
 
@@ -62,7 +82,7 @@ async function decryptMnemonic(inputPath: string, token: string, password: strin
   const key = await generateArgon2id(password, salt);
 
   // Get the header, auth tag, encrypted text, and IV from the data
-  const header = Buffer.from("AES|256|CBC|PKCS5Padding|", 'utf8');
+  const header = Buffer.from('AES|256|CBC|PKCS5Padding|', 'utf8');
   const authTag = data.slice(data.length - AUTH_TAG_LENGTH);
   const encryptedText = data.slice(header.length + IV_LENGTH, data.length - AUTH_TAG_LENGTH);
   const iv = data.slice(header.length, header.length + IV_LENGTH);
@@ -91,7 +111,7 @@ function loadUserProperties(path: string): boolean {
 }
 
 export async function locateDataMigrationFiles() {
-    return fs.existsSync(basePath) && fs.existsSync(propertiesPath) && fs.existsSync(mnemonicPath);
+  return fs.existsSync(basePath) && fs.existsSync(propertiesPath) && fs.existsSync(mnemonicPath);
 }
 
 export async function decryptMigrationMnemonic(password: string): Promise<string[] | null> {
@@ -114,8 +134,10 @@ export async function getDataMigrationKeysPath(): Promise<string> {
   return keysPath;
 }
 
-async function getAccountInfoFromFile(directory: string): Promise<{ nickname: string, accountID: string }[]> {
-  const accountDataList: { nickname: string, accountID: string }[] = [];
+async function getAccountInfoFromFile(
+  directory: string,
+): Promise<{ nickname: string; accountID: string }[]> {
+  const accountDataList: { nickname: string; accountID: string }[] = [];
   if (!fs.existsSync(directory)) {
     return accountDataList;
   }
