@@ -90,7 +90,7 @@ export async function decryptMnemonic(
   password: string,
 ): Promise<string | null> {
   /* Read the encrypted data from the file */
-  const data = await fs.promises.readFile(inputPath);
+  const data = await fs.promises.readFile(inputPath, { flag: 'r' });
 
   /* Get the salt from the token */
   const salt = getSalt(token);
@@ -159,7 +159,7 @@ export async function getAccountInfoFromFile(
     try {
       const network = parseNetwork(file, defaultNetwork);
 
-      const fileContent = await fs.promises.readFile(filePath, 'utf-8');
+      const fileContent = await fs.promises.readFile(filePath, { encoding: 'utf-8', flag: 'r' });
 
       const accountID = JSON.parse(fileContent)?.accountID;
 
@@ -189,7 +189,10 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
   let defaultNetwork = Network.TESTNET;
 
   try {
-    const content = await fs.promises.readFile(getPropertiesPath(), 'utf-8');
+    const content = await fs.promises.readFile(getPropertiesPath(), {
+      encoding: 'utf-8',
+      flag: 'r',
+    });
     const parsedContent = parseUserProperties(content);
 
     const defaultMaxTransactionFee = Number(
