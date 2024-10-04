@@ -47,15 +47,13 @@ watch(inputRecoveryPhrasePassword, () => (inputRecoveryPhrasePasswordError.value
 
       <!-- Mnemonic Password -->
       <div class="mt-5">
-        <label data-testid="label-password" class="form-label"
-          >Recovery Phrase Decryption Password</label
-        >
+        <label data-testid="label-password" class="form-label">Recovery Phrase Password</label>
         <AppInput
           v-model="inputRecoveryPhrasePassword"
           :filled="true"
           type="password"
           :class="{ 'is-invalid': inputRecoveryPhrasePasswordError }"
-          placeholder="Enter recovery phrase decryption password"
+          placeholder="Enter password"
           data-testid="input-recovery-phrase-decryption-password"
         />
         <div
