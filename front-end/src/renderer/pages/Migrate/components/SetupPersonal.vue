@@ -78,7 +78,7 @@ const setupPersonal = async ({ useKeychain, email, password }: ModelValue) => {
     secret_hash: props.recoveryPhrase.hash,
     nickname: null,
   };
-  await storeKeyPair(keyPair, useKeychain ? password : null, false);
+  await storeKeyPair(keyPair, !useKeychain ? password : null, false);
 
   return {
     email,
