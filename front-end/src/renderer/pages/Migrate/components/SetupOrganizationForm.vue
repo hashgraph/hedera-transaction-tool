@@ -115,6 +115,19 @@ watch(inputTemporaryOrganizationPassword, () => (inputTemporaryPasswordError.val
         </div>
       </div>
 
+      <!-- Organization Nickname -->
+      <div class="mt-4">
+        <label data-testid="label-organization-nickname" class="form-label"
+          >Organization Nickname</label
+        >
+        <AppInput
+          data-testid="input-organization-nickname"
+          v-model="inputOrganizationNickname"
+          :filled="true"
+          placeholder="Enter organization nickname"
+        />
+      </div>
+
       <!-- Temporary Organization Password -->
       <div class="mt-4">
         <label data-testid="label-temp-password" class="form-label"
