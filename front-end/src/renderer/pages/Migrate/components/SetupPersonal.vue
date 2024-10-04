@@ -20,7 +20,13 @@ const props = defineProps<{
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'setPersonalUser', email: string, password: string | null, personalId: string): void;
+  (
+    event: 'setPersonalUser',
+    email: string,
+    password: string | null,
+    personalId: string,
+    useKeychain: boolean,
+  ): void;
 }>();
 
 /* State */
@@ -35,7 +41,7 @@ const handleFormSubmit = async (formData: ModelValue) => {
   if (error) throw error;
   if (!data) throw new Error('(BUG) Personal id not set');
 
-  emit('setPersonalUser', data.email, data.password, data.personalId);
+  emit('setPersonalUser', data.email, data.password, data.personalId, data.useKeychain);
 };
 
 /* Functions */
@@ -78,6 +84,7 @@ const setupPersonal = async ({ useKeychain, email, password }: ModelValue) => {
     email,
     password,
     personalId,
+    useKeychain,
   };
 };
 </script>
