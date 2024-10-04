@@ -63,7 +63,7 @@ const handleOnFormSubmit = async (e: Event) => {
 
   const result = await props.submitCallback({
     organizationURL,
-    organizationNickname,
+    organizationNickname: organizationNickname || 'Organization 1',
     temporaryOrganizationPassword,
     newOrganizationPassword,
   });
