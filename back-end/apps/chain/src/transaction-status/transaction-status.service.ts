@@ -4,13 +4,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 
 import { In, Between, MoreThan, Repository, LessThanOrEqual } from 'typeorm';
-// @ts-ignore
 import {
   FileAppendTransaction,
   FileUpdateTransaction,
-  Key,
-  KeyList,
-  PublicKey,
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
@@ -343,11 +339,6 @@ export class TransactionStatusService {
           transaction.network,
         );
 
-        /* Checks if smart collating is possible. Requires a KeyList */
-        if (!(signatureKey instanceof KeyList)) {
-          throw new Error('Signed transaction exceeds size limit.');
-        }
-
         const publicKeys = computeShortenedPublicKeyList(
           [...sdkTransaction._signerPublicKeys],
           signatureKey,
@@ -360,17 +351,19 @@ export class TransactionStatusService {
           sdkTransaction.addSignature(key, sigArray);
         }
 
+        // TRANSACTION_OVERSIZE = 64
+        // cant throw error instead update status to failed and statuscode be sure both callbacks are wrapped internally wiht try catch so it won't crash the server'
         if (await isTransactionOverMaxSize(sdkTransaction)) {
           throw new Error('Signed transaction exceeds size limit.');
         }
+
+        // TODO then make sure that front end doesn't allow chunks larger than 2k'
+        //NOTE: the transactionBytes are set here but are not to be saved. Otherwise,
+        // any signatures that were removed in order to make the transaction fit
+        // would be lost.
+        transaction.transactionBytes = Buffer.from(sdkTransaction.toBytes());
       }
 
-      // TODO then make sure that front end doesn't allow chunks larger than 2k'
-
-      //NOTE: the transactionBytes are set here but are not to be saved. Otherwise,
-      // any signatures that were removed in order to make the transaction fit
-      // would be lost.
-      transaction.transactionBytes = Buffer.from(sdkTransaction.toBytes());
       this.addExecutionTimeout(transaction);
       this.schedulerRegistry.deleteTimeout(name);
     };
