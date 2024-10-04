@@ -44,10 +44,15 @@ const checkShouldChoose = async () => {
   }
 };
 
-/* Hooks */
-onMounted(async () => {
+const initialize = async () => {
   show.value = await checkShouldChoose();
-});
+};
+
+/* Hooks */
+onMounted(initialize);
+
+/* Expose */
+defineExpose({ initialize });
 </script>
 
 <template>

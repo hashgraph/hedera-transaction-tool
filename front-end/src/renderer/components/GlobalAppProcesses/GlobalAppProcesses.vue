@@ -16,9 +16,24 @@ import BeginDataMigration from './components/BeginDataMigration.vue';
 const user = useUserStore();
 
 /* State */
+const importantNoteRef = ref<InstanceType<typeof ImportantNote> | null>(null);
+const detectKeychainRef = ref<InstanceType<typeof DetectKeychain> | null>(null);
+const beginDataMigrationRef = ref<InstanceType<typeof BeginDataMigration> | null>(null);
+
 const importantNoteReady = ref(false);
 const migrationCheckReady = ref(false);
 const migrate = ref(false);
+
+/* Handlers */
+const handleImportantModalReady = async () => {
+  importantNoteReady.value = true;
+  await beginDataMigrationRef.value?.initialize();
+};
+
+const handleBeginMigrationReady = async () => {
+  migrationCheckReady.value = true;
+  await detectKeychainRef.value?.initialize();
+};
 
 /* Hooks */
 onMounted(async () => {
@@ -36,11 +51,13 @@ onMounted(async () => {
 
 watch(
   () => user.personal,
-  () => {
+  async () => {
     if (!user.personal?.isLoggedIn) {
       importantNoteReady.value = false;
       migrationCheckReady.value = false;
       migrate.value = false;
+
+      importantNoteRef.value?.initialize();
     }
   },
 );
@@ -50,18 +67,26 @@ watch(
   <AppUpdate />
 
   <template v-if="!user.personal?.isLoggedIn">
-    <ImportantNote @ready="importantNoteReady = true" />
+    <ImportantNote ref="importantNoteRef" @ready="handleImportantModalReady" />
 
     <template v-if="importantNoteReady">
-      <BeginDataMigration @ready="migrationCheckReady = true" @start-migrate="migrate = true" />
+      <BeginDataMigration
+        ref="beginDataMigrationRef"
+        @ready="handleBeginMigrationReady"
+        @start-migrate="migrate = true"
+      />
     </template>
 
     <template v-if="importantNoteReady && migrationCheckReady">
       <AutoLoginInOrganization />
 
       <template v-if="!migrate">
-        <DetectKeychain />
+        <DetectKeychain ref="detectKeychainRef" />
       </template>
     </template>
+  </template>
+
+  <template v-if="importantNoteReady && migrationCheckReady">
+    <AutoLoginInOrganization />
   </template>
 </template>

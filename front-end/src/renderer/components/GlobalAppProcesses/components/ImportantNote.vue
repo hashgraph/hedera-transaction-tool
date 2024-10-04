@@ -22,15 +22,21 @@ const handleAccept = () => {
   emit('ready');
 };
 
-/* Hooks */
-onMounted(() => {
+/* Functions */
+const initialize = () => {
   const importantNoteAccepted = JSON.parse(localStorage.getItem(localStorageItemName) || 'false');
   shown.value = !importantNoteAccepted;
 
   if (importantNoteAccepted) {
     emit('ready');
   }
-});
+};
+
+/* Hooks */
+onMounted(initialize);
+
+/* Expose */
+defineExpose({ initialize });
 </script>
 <template>
   <AppModal

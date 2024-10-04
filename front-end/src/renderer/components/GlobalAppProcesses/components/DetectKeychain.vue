@@ -64,11 +64,23 @@ const checkShouldChoose = async () => {
   return false;
 };
 
-/* Hooks */
-onMounted(async () => {
+const initialize = async () => {
+  const keychainAvailable = await isKeychainAvailable();
+
+  if (!keychainAvailable) {
+    await initializeUseKeychain(false);
+    return;
+  }
+
   const shouldChoose = await checkShouldChoose();
   show.value = shouldChoose;
-});
+};
+
+/* Hooks */
+onMounted(initialize);
+
+/* Expose */
+defineExpose({ initialize });
 </script>
 <template>
   <div>
