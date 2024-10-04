@@ -28,29 +28,37 @@ const IV_LENGTH = 12;
 /* Old Tools Constants */
 const DEFAULT_FOLDER_NAME = 'TransactionTools';
 const FILES = 'Files';
-const USER_PROPERTIES = 'user.properties';
-const RECOVERY_FILE_PARENT_FOLDER = '.System';
-const RECOVERY_FILE = 'recovery.aes';
 const KEYS = 'Keys';
 const ACCOUNTS = 'Accounts';
+const RECOVERY_FILE_PARENT_FOLDER = '.System';
+const RECOVERY_FILE = 'recovery.aes';
+const USER_PROPERTIES = 'user.properties';
 
 const USER_PROPERTIES_DEFAULT_MAX_TRANSACTION_FEE_KEY = 'defaultTxFee';
 const USER_PROPERTIES_CURRENT_NETWORK_KEY = 'currentNetwork';
 
-const getBasePath = () => path.join(app.getPath('documents'), DEFAULT_FOLDER_NAME);
-const getPropertiesPath = () => path.join(getBasePath(), FILES, USER_PROPERTIES);
-const getMnemonicPath = () =>
-  path.join(getBasePath(), FILES, RECOVERY_FILE_PARENT_FOLDER, RECOVERY_FILE);
-const getKeysPath = () => path.join(getBasePath(), KEYS);
-const getAccountsPath = () => path.join(getBasePath(), ACCOUNTS);
+/* Get the 'HederaTools' folder in the documents directory */
+const getBasePath = () => {
+  return path.join(app.getPath('documents'), DEFAULT_FOLDER_NAME);
+};
+/* Get the path to the user properties */
+const getPropertiesPath = () => {
+  return path.join(getBasePath(), FILES, USER_PROPERTIES);
+};
+/* Get the path to the recovery phrase file */
+const getMnemonicPath = () => {
+  return path.join(getBasePath(), FILES, RECOVERY_FILE_PARENT_FOLDER, RECOVERY_FILE);
+};
+/* Get the path to the keys folder */
+const getKeysPath = () => {
+  return path.join(getBasePath(), KEYS);
+};
+/* Get the path to the accounts folder */
+const getAccountsPath = () => {
+  return path.join(getBasePath(), ACCOUNTS);
+};
 
 export function getSalt(token: string): Buffer {
-  /* If no token is provided, then return an empty buffer */
-  if (!token) {
-    console.error('Token is undefined');
-    return Buffer.alloc(0);
-  }
-
   /* Decode the token from base64 */
   const tokenBytes = Buffer.from(token, 'base64');
 
@@ -64,7 +72,7 @@ export function getSalt(token: string): Buffer {
   return tokenBytes.subarray(0, SALT_LENGTH);
 }
 
-export function generateArgon2id(password: string, salt: Buffer): Promise<Buffer> {
+export async function generateArgon2id(password: string, salt: Buffer) {
   const options = {
     type: argon2.argon2id,
     memoryCost: 262144, // 256MB
@@ -73,9 +81,6 @@ export function generateArgon2id(password: string, salt: Buffer): Promise<Buffer
     salt,
     raw: true, // get the raw bytes
   };
-
-  // generate the key from the password using the options provided
-  // @ts-ignore: the raw: true option will force the return type to be a buffer
   return argon2.hash(password, options);
 }
 
@@ -107,7 +112,6 @@ export async function decryptMnemonic(
     /* Decrypt the encrypted text */
     let decrypted = decipher.update(encryptedText, undefined, 'utf8');
     decrypted += decipher.final();
-
     return decrypted;
   } catch (error) {
     return null;
@@ -179,7 +183,7 @@ export async function getAccountInfoFromFile(
 export async function migrateUserData(userId: string): Promise<MigrateUserDataResult> {
   const result: MigrateUserDataResult = {
     accountsImported: 0,
-    defaultMaxTransactions: null,
+    defaultMaxTransactionFee: null,
   };
 
   let defaultNetwork = Network.TESTNET;
@@ -188,16 +192,16 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
     const content = await fs.promises.readFile(getPropertiesPath(), 'utf-8');
     const parsedContent = parseUserProperties(content);
 
-    if (!isNaN(Number(parsedContent[USER_PROPERTIES_DEFAULT_MAX_TRANSACTION_FEE_KEY]))) {
+    const defaultMaxTransactionFee = Number(
+      parsedContent[USER_PROPERTIES_DEFAULT_MAX_TRANSACTION_FEE_KEY],
+    );
+    if (!isNaN(defaultMaxTransactionFee)) {
       try {
-        result.defaultMaxTransactions = Number(
-          parsedContent[USER_PROPERTIES_DEFAULT_MAX_TRANSACTION_FEE_KEY],
-        );
-
+        result.defaultMaxTransactionFee = defaultMaxTransactionFee;
         await addClaim(
           userId,
           DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
-          Hbar.fromTinybars(result.defaultMaxTransactions).toString(HbarUnit.Tinybar),
+          Hbar.fromTinybars(result.defaultMaxTransactionFee).toString(HbarUnit.Tinybar),
         );
       } catch (error) {
         console.log(error);

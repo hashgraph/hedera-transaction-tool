@@ -239,7 +239,7 @@ describe('Data Migration', () => {
       mockAccounts();
 
       const result = await migrateUserData(mockUserId);
-      expect(result).toEqual({ accountsImported: 1, defaultMaxTransactions: 1000 });
+      expect(result).toEqual({ accountsImported: 1, defaultMaxTransactionFee: 1000 });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
         DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
@@ -253,7 +253,7 @@ describe('Data Migration', () => {
       vi.mocked(fs.promises.readFile).mockRejectedValue(new Error('Read error'));
 
       const result = await migrateUserData(mockUserId);
-      expect(result).toEqual({ accountsImported: 0, defaultMaxTransactions: null });
+      expect(result).toEqual({ accountsImported: 0, defaultMaxTransactionFee: null });
     });
 
     test('Should handle errors gracefully when adding claim', async () => {
@@ -265,7 +265,7 @@ describe('Data Migration', () => {
       vi.mocked(addClaim).mockRejectedValue(new Error('Claim error'));
 
       const result = await migrateUserData(mockUserId);
-      expect(result).toEqual({ accountsImported: 1, defaultMaxTransactions: 1000 });
+      expect(result).toEqual({ accountsImported: 1, defaultMaxTransactionFee: 1000 });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
         DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
@@ -283,7 +283,7 @@ describe('Data Migration', () => {
       vi.mocked(addAccount).mockRejectedValue(new Error('Account error'));
 
       const result = await migrateUserData(mockUserId);
-      expect(result).toEqual({ accountsImported: 0, defaultMaxTransactions: 1000 });
+      expect(result).toEqual({ accountsImported: 0, defaultMaxTransactionFee: 1000 });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
         DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
@@ -300,7 +300,7 @@ describe('Data Migration', () => {
       mockAccounts();
 
       const result = await migrateUserData(mockUserId);
-      expect(result).toEqual({ accountsImported: 1, defaultMaxTransactions: null });
+      expect(result).toEqual({ accountsImported: 1, defaultMaxTransactionFee: null });
       expect(addClaim).not.toHaveBeenCalled();
       expect(addAccount).toHaveBeenCalledWith(mockUserId, '0.0.123', Network.TESTNET, 'account1');
     });
@@ -313,7 +313,7 @@ describe('Data Migration', () => {
       mockAccounts();
 
       const result = await migrateUserData(mockUserId);
-      expect(result).toEqual({ accountsImported: 1, defaultMaxTransactions: 1000 });
+      expect(result).toEqual({ accountsImported: 1, defaultMaxTransactionFee: 1000 });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
         DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
@@ -331,7 +331,7 @@ describe('Data Migration', () => {
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
 
       const result = await migrateUserData(mockUserId);
-      expect(result).toEqual({ accountsImported: 0, defaultMaxTransactions: 1000 });
+      expect(result).toEqual({ accountsImported: 0, defaultMaxTransactionFee: 1000 });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
         DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
@@ -348,7 +348,7 @@ describe('Data Migration', () => {
       vi.mocked(fs.promises.readdir).mockRejectedValue(new Error('Read error'));
 
       const result = await migrateUserData(mockUserId);
-      expect(result).toEqual({ accountsImported: 0, defaultMaxTransactions: 1000 });
+      expect(result).toEqual({ accountsImported: 0, defaultMaxTransactionFee: 1000 });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
         DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
@@ -366,7 +366,7 @@ describe('Data Migration', () => {
       vi.mocked(fs.promises.readdir).mockRejectedValueOnce(new Error('Read dir error'));
 
       const result = await migrateUserData(mockUserId);
-      expect(result).toEqual({ accountsImported: 0, defaultMaxTransactions: 1000 });
+      expect(result).toEqual({ accountsImported: 0, defaultMaxTransactionFee: 1000 });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
         DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
@@ -433,11 +433,6 @@ describe('Data Migration', () => {
   });
 
   describe('getSalt', () => {
-    test('should return an empty buffer if token is undefined', () => {
-      const result = getSalt(undefined as unknown as string);
-      expect(result).toEqual(Buffer.alloc(0));
-    });
-
     test('should return an empty buffer if token is empty', () => {
       const result = getSalt('');
       expect(result).toEqual(Buffer.alloc(0));

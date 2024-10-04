@@ -1,4 +1,4 @@
 export interface MigrateUserDataResult {
   accountsImported: number;
-  defaultMaxTransactions: number | null;
+  defaultMaxTransactionFee: number | null;
 }
