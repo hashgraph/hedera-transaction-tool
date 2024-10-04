@@ -83,6 +83,11 @@
     border-color: var(--#{$prefix}input-fill-bg-color);
   }
 
+  &.is-fill:disabled {
+    background-color: $input-disabled-bg;
+    opacity: 1;
+  }
+
   &.is-fill.with-border:not(.is-invalid) {
     border-color: var(--#{$prefix}input-fill-with-border-bg-color);
   }
