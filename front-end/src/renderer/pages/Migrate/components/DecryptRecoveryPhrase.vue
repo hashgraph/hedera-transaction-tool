@@ -13,7 +13,10 @@ import DecryptRecoveryPhraseForm from './DecryptRecoveryPhraseForm.vue';
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'setRecoveryPhrase', value: RecoveryPhrase): void;
+  (
+    event: 'setRecoveryPhrase',
+    value: { recoveryPhrase: RecoveryPhrase; recoveryPhrasePassword: string },
+  ): void;
   (event: 'stopMigration'): void;
 }>();
 
@@ -37,7 +40,10 @@ const decryptRecoveryPhrase = async (recoveryPhrasePassword: string) => {
   if (error || !data)
     throw new Error('Mnemonic phrase decryption failed. Try a different password.');
 
-  emit('setRecoveryPhrase', await createRecoveryPhrase(data));
+  emit('setRecoveryPhrase', {
+    recoveryPhrase: await createRecoveryPhrase(data),
+    recoveryPhrasePassword,
+  });
 };
 </script>
 <template>

@@ -11,6 +11,7 @@ import DecryptKeys from '@renderer/components/KeyPair/ImportEncrypted/components
 /* Props */
 const props = defineProps<{
   recoveryPhrase: RecoveryPhrase;
+  recoveryPhrasePassword: string;
 }>();
 
 /* Emits */
@@ -32,6 +33,10 @@ watch(decryptKeysRef, async () => {
 </script>
 <template>
   <div>
-    <DecryptKeys ref="decryptKeysRef" @end="$emit('keysImported', $event)" />
+    <DecryptKeys
+      ref="decryptKeysRef"
+      :default-password="recoveryPhrasePassword"
+      @end="$emit('keysImported', $event)"
+    />
   </div>
 </template>

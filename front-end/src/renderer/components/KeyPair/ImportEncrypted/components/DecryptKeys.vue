@@ -15,6 +15,11 @@ import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
 import DecryptKeyModal from '@renderer/components/KeyPair/ImportEncrypted/components/DecryptKeyModal.vue';
 
+/* Props */
+defineProps<{
+  defaultPassword?: string;
+}>();
+
 /* Emits */
 const emit = defineEmits<{
   (event: 'end', storedCount: number): void;
@@ -126,6 +131,7 @@ defineExpose({ process });
       :mnemonic="mnemonic"
       :mnemonic-hash="mnemomicHash"
       :indexes-from-mnemonic="indexesFromMnemonic"
+      :default-password="defaultPassword"
       @skip:all="handleSkipAll"
       @skip:one="handleSkipOne"
       @stored="handleStored"

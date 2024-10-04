@@ -40,6 +40,7 @@ const router = useRouter();
 const step = ref<StepName>('recoveryPhrase');
 
 const recoveryPhrase = ref<RecoveryPhrase | null>(null);
+const recoveryPhrasePassword = ref<string | null>(null);
 const personalUser = ref<PersonalUser | null>(null);
 const organizationId = ref<string | null>(null);
 
@@ -70,8 +71,12 @@ const handleStopMigration = async () => {
   await user.logout();
 };
 
-const handleSetRecoveryPhrase = async (value: RecoveryPhrase) => {
-  recoveryPhrase.value = value;
+const handleSetRecoveryPhrase = async (value: {
+  recoveryPhrase: RecoveryPhrase;
+  recoveryPhrasePassword: string;
+}) => {
+  recoveryPhrase.value = value.recoveryPhrase;
+  recoveryPhrasePassword.value = value.recoveryPhrasePassword;
   step.value = 'personal';
 };
 
@@ -140,7 +145,9 @@ onMounted(async () => {
         </template>
 
         <!-- Setup Organization Step -->
-        <template v-if="stepIs('organization') && recoveryPhrase && personalUser">
+        <template
+          v-if="stepIs('organization') && recoveryPhrase && recoveryPhrasePassword && personalUser"
+        >
           <SetupOrganization
             :recovery-phrase="recoveryPhrase"
             :personal-user="personalUser"
@@ -151,6 +158,7 @@ onMounted(async () => {
             <ImportAccounts @importedUserData="importedUserData = $event" />
             <BeginKeysImport
               :recovery-phrase="recoveryPhrase"
+              :recovery-phrase-password="recoveryPhrasePassword"
               @keys-imported="handleKeysImported"
             />
           </template>

@@ -29,6 +29,7 @@ const props = defineProps<{
   mnemonic: string[] | null;
   mnemonicHash: string | null;
   indexesFromMnemonic: number[];
+  defaultPassword?: string;
 }>();
 
 /* Emits */
@@ -43,7 +44,7 @@ const emit = defineEmits<{
 const user = useUserStore();
 
 /* State */
-const decryptPassword = ref<string>('');
+const decryptPassword = ref<string>(props.defaultPassword || '');
 const decrypting = ref<boolean>(false);
 const error = ref<string | null>(null);
 
