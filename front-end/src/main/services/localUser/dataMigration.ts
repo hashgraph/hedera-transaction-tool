@@ -127,7 +127,7 @@ export function locateDataMigrationFiles() {
 }
 
 export async function decryptMigrationMnemonic(password: string): Promise<string[] | null> {
-  const content = await fs.promises.readFile(getPropertiesPath(), 'utf-8');
+  const content = await fs.promises.readFile(getPropertiesPath(), { encoding: 'utf-8', flag: 'r' });
   const parsedContent = parseUserProperties(content);
 
   const token = parsedContent.hash;
