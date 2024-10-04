@@ -6,3 +6,8 @@ export interface IUserKey {
   publicKey: string;
   deletedAt?: string;
 }
+
+export interface IUserKeyWithMnemonic extends IUserKey {
+  mnemonicHash: string;
+  index: number;
+}
