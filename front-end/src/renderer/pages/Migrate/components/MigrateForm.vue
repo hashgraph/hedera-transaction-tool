@@ -21,6 +21,11 @@ export type ModelValue = {
   useKeychain: boolean;
 };
 
+/* Props */
+defineProps<{
+  loading: boolean;
+}>();
+
 /* Emits */
 const emit = defineEmits<{
   (event: 'update:modelValue', value: ModelValue): void;
@@ -305,7 +310,8 @@ watch(inputOrganizationURL, url => {
             color="primary"
             type="submit"
             class="w-100"
-            :loading="false"
+            loading-text="Migrating..."
+            :loading="loading"
             :disabled="
               (useKeychain
                 ? false
