@@ -53,8 +53,8 @@ const handleOnFormSubmit = async (e: Event) => {
   const email = inputEmail.value.trim();
   const password = inputPassword.value.trim();
 
-  inputEmailInvalid.value = email.trim() === '' || !isEmail(email);
-  inputPasswordInvalid.value = password.trim() === '' || !checkPassword(password);
+  inputEmailInvalid.value = email === '' || !isEmail(email);
+  inputPasswordInvalid.value = password === '' || !checkPassword(password);
 
   if (inputEmailInvalid.value || (!useKeychain.value && inputPasswordInvalid.value)) {
     return;
