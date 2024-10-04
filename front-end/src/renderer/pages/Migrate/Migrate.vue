@@ -141,12 +141,17 @@ onMounted(async () => {
         </template>
 
         <!-- Setup Organization Step -->
-        <template v-if="stepIs('organization') && recoveryPhrase && email && personalId">
+        <template
+          v-if="
+            stepIs('organization') && recoveryPhrase && email && personalId && useKeychain !== null
+          "
+        >
           <SetupOrganization
             :recovery-phrase="recoveryPhrase"
             :email="email"
             :password="password"
             :personal-id="personalId"
+            :use-keychain="useKeychain"
             @set-organization-id="handleSetOrganizationId"
           />
 
