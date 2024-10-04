@@ -13,6 +13,7 @@ import { useToast } from 'vue-toast-notification';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import { logout } from '@renderer/services/organization';
+import { quit } from '@renderer/services/electronUtilsService';
 
 import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
 
@@ -81,6 +82,10 @@ const handleLogout = async () => {
   }
 };
 
+const handleQuit = async () => {
+  await quit();
+};
+
 /* Hooks */
 onUpdated(() => {
   createTooltips();
@@ -137,6 +142,18 @@ onUpdated(() => {
         data-bs-title="Log out"
       >
         <i class="text-icon-main bi bi-box-arrow-up-right"></i>
+      </span>
+      <span
+        class="container-icon"
+        data-testid="button-quit"
+        @click="handleQuit"
+        data-bs-toggle="tooltip"
+        data-bs-trigger="hover"
+        data-bs-placement="bottom"
+        data-bs-custom-class="wide-tooltip"
+        data-bs-title="Quit"
+      >
+        <i class="text-icon-main bi bi-escape"></i>
       </span>
     </div>
   </div>
