@@ -21,16 +21,15 @@ export type ModelValue = {
   useKeychain: boolean;
 };
 
-/* Props */
-defineProps<{
-  loading: boolean;
-}>();
+export type SubmitCallbackResult = {
+  temporaryPasswordInvalid: boolean;
+  recoveryPhrasePasswordInvalid: boolean;
+};
 
-/* Emits */
-const emit = defineEmits<{
-  (event: 'update:modelValue', value: ModelValue): void;
-  (event: 'update:valid', value: boolean): void;
-  (event: 'submit', value: ModelValue): void;
+/* Props */
+const props = defineProps<{
+  loading: boolean;
+  submitCallback: (data: ModelValue) => SubmitCallbackResult | Promise<SubmitCallbackResult>;
 }>();
 
 /* State */
@@ -45,6 +44,8 @@ const inputRecoveryPhrasePassword = ref('');
 const inputEmailInvalid = ref(false);
 const inputPasswordInvalid = ref(false);
 const inputOrganizationURLInvalid = ref(false);
+const inputTemporaryPasswordInvalid = ref(false);
+const inputRecoveryPhrasePasswordInvalid = ref(false);
 
 const passwordRequirements = reactive({
   length: false,
@@ -56,7 +57,7 @@ const tooltipContent = ref('');
 const createTooltips = useCreateTooltips();
 
 /* Handlers */
-const handleOnFormSubmit = (e: Event) => {
+const handleOnFormSubmit = async (e: Event) => {
   e.preventDefault();
 
   const email = inputEmail.value.trim();
@@ -78,7 +79,7 @@ const handleOnFormSubmit = (e: Event) => {
     return;
   }
 
-  emit('submit', {
+  const result = await props.submitCallback({
     email: email,
     password: password,
     organizationURL: organizationURL,
@@ -86,6 +87,11 @@ const handleOnFormSubmit = (e: Event) => {
     recoveryPhrasePassword: recoveryPhrasePassword,
     useKeychain: useKeychain.value,
   });
+
+  if (result) {
+    inputTemporaryPasswordInvalid.value = result.temporaryPasswordInvalid;
+    inputRecoveryPhrasePasswordInvalid.value = result.recoveryPhrasePasswordInvalid;
+  }
 };
 
 const handleUseKeychain = async (value: boolean) => {
@@ -159,6 +165,10 @@ watch(inputPassword, pass => {
 });
 watch(inputOrganizationURL, url => {
   if (checkUrl(url) || url.length === 0) inputOrganizationURLInvalid.value = false;
+});
+watch([inputTemporaryOrganizationPassword, inputRecoveryPhrasePassword], () => {
+  inputTemporaryPasswordInvalid.value = false;
+  inputRecoveryPhrasePasswordInvalid.value = false;
 });
 </script>
 <template>
@@ -294,9 +304,17 @@ watch(inputOrganizationURL, url => {
             v-model="inputRecoveryPhrasePassword"
             :filled="true"
             type="password"
+            :class="{ 'is-invalid': inputRecoveryPhrasePasswordInvalid }"
             placeholder="Enter recovery phrase decryption password"
             data-testid="input-recovery-phrase-decryption-password"
           />
+          <div
+            v-if="inputRecoveryPhrasePasswordInvalid"
+            data-testid="invalid-text-recovery-password"
+            class="invalid-feedback"
+          >
+            Invalid Recovery Phrase Decryption Password.
+          </div>
         </div>
       </div>
     </div>
