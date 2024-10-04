@@ -45,6 +45,7 @@ import TransactionProcessor from '@renderer/components/Transaction/TransactionPr
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
+import AddToGroupModal from '@renderer/components/AddToGroupModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -225,7 +226,7 @@ function handleAddToGroup() {
       keys.push(key.toString());
     }
   }
-  // TODO: handle single key?
+
   transactionGroup.addGroupItem({
     transactionBytes: transactionBytes,
     type: 'AccountUpdateTransaction',
@@ -623,5 +624,6 @@ const columnClass = 'col-4 col-xxxl-3';
       v-model:show="isKeyStructureModalShown"
       :account-key="accountData.key.value"
     />
+    <AddToGroupModal @addToGroup="handleAddToGroup" />
   </div>
 </template>

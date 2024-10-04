@@ -471,7 +471,7 @@ onBeforeRouteLeave(async to => {
         <div class="flex-between-centered gap-4">
           <AppButton
             color="borderless"
-            data-testid="button-discard-draft-modal"
+            data-testid="button-discard-group-modal"
             type="button"
             @click="handleDiscard"
             >Discard</AppButton
@@ -500,7 +500,7 @@ onBeforeRouteLeave(async to => {
         <div class="flex-between-centered gap-4">
           <AppButton
             color="borderless"
-            data-testid="button-discard-draft-modal"
+            data-testid="button-delete-group-modal"
             type="button"
             @click="handleDelete"
           >

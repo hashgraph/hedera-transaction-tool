@@ -45,6 +45,7 @@ import TransactionProcessor from '@renderer/components/Transaction/TransactionPr
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
 import RunningClockDatePicker from '@renderer/components/Wrapped/RunningClockDatePicker.vue';
+import AddToGroupModal from '@renderer/components/AddToGroupModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -169,7 +170,7 @@ function handleAddToGroup() {
       keys.push(key.toString());
     }
   }
-  // TODO: handle single key?
+
   transactionGroup.addGroupItem({
     transactionBytes: transactionBytes,
     type: 'FileCreateTransaction',
@@ -443,5 +444,6 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
       :observers="observers"
       :approvers="approvers"
     />
+    <AddToGroupModal @addToGroup="handleAddToGroup" />
   </div>
 </template>
