@@ -45,6 +45,9 @@ const useUserStore = defineStore('user', () => {
   const selectedOrganization = ref<ConnectedOrganization | null>(null);
   const organizations = ref<ConnectedOrganization[]>([]);
 
+  /** Migration */
+  const migrating = ref<boolean>(false);
+
   /* Computed */
   /** Keys */
   const secretHashes = computed<string[]>(() => ush.getSecretHashesFromKeys(keyPairs.value));
@@ -191,6 +194,11 @@ const useUserStore = defineStore('user', () => {
     await ush.deleteOrganizationConnection(organizationId, personal.value);
   };
 
+  /* Migration */
+  const setMigrating = (value: boolean) => {
+    migrating.value = value;
+  };
+
   /* Watchers */
   watch(
     () => network.network,
@@ -209,6 +217,7 @@ const useUserStore = defineStore('user', () => {
     secretHashes,
     publicKeys,
     shouldSetupAccount,
+    migrating,
     login,
     logout,
     setRecoveryPhrase,
@@ -222,6 +231,7 @@ const useUserStore = defineStore('user', () => {
     refetchUserState,
     deleteOrganization,
     refetchOrganizations,
+    setMigrating,
   };
 
   return exports;
