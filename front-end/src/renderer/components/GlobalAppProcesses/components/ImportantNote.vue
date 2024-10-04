@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 
+import { LOCAL_STORAGE_IMPORTANT_NOTE_ACCEPTED } from '@main/shared/constants';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-
-/* Misc */
-const localStorageItemName = 'important-note-accepted';
 
 /* Emits */
 const emit = defineEmits<{
@@ -17,14 +16,17 @@ const shown = ref(true);
 
 /* Handlers */
 const handleAccept = () => {
-  localStorage.setItem(localStorageItemName, 'true');
+  localStorage.setItem(LOCAL_STORAGE_IMPORTANT_NOTE_ACCEPTED, 'true');
   shown.value = false;
   emit('ready');
 };
 
 /* Functions */
 const initialize = () => {
-  const importantNoteAccepted = JSON.parse(localStorage.getItem(localStorageItemName) || 'false');
+  const importantNoteAccepted = JSON.parse(
+    localStorage.getItem(LOCAL_STORAGE_IMPORTANT_NOTE_ACCEPTED) || 'false',
+  );
+
   shown.value = !importantNoteAccepted;
 
   if (importantNoteAccepted) {
