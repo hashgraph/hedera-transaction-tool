@@ -1,12 +1,12 @@
-import path from 'path';
+import * as path from 'path';
 
-import electron from 'electron';
+import { app } from 'electron';
 
 import { PrismaClient } from '@prisma/client';
 
 let prisma: PrismaClient;
 
-export const dbPath = path.join(electron.app.getPath('userData'), 'database.db');
+export const dbPath = path.join(app.getPath('userData'), 'database.db');
 
 export function getPrismaClient() {
   if (!prisma) {

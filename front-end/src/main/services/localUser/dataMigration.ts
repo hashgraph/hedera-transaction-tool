@@ -15,8 +15,8 @@ import { parseNetwork } from '@main/utils/parsers';
 import { addAccount } from './accounts';
 import { addClaim } from './claim';
 
-const SALT_LENGTH = 16;
-const KEY_LENGTH = 32;
+export const SALT_LENGTH = 16;
+export const KEY_LENGTH = 32;
 const AUTH_TAG_LENGTH = 16;
 const IV_LENGTH = 12;
 
@@ -37,13 +37,14 @@ const ACCOUNTS = 'Accounts';
 const USER_PROPERTIES_DEFAULT_MAX_TRANSACTION_FEE_KEY = 'defaultTxFee';
 const USER_PROPERTIES_CURRENT_NETWORK_KEY = 'currentNetwork';
 
-const basePath = path.join(app.getPath('documents'), DEFAULT_FOLDER_NAME);
-const propertiesPath = path.join(basePath, FILES, USER_PROPERTIES);
-const mnemonicPath = path.join(basePath, FILES, RECOVERY_FILE_PARENT_FOLDER, RECOVERY_FILE);
-const keysPath = path.join(basePath, KEYS);
-const accountsPath = path.join(basePath, ACCOUNTS);
+const getBasePath = () => path.join(app.getPath('documents'), DEFAULT_FOLDER_NAME);
+const getPropertiesPath = () => path.join(getBasePath(), FILES, USER_PROPERTIES);
+const getMnemonicPath = () =>
+  path.join(getBasePath(), FILES, RECOVERY_FILE_PARENT_FOLDER, RECOVERY_FILE);
+const getKeysPath = () => path.join(getBasePath(), KEYS);
+const getAccountsPath = () => path.join(getBasePath(), ACCOUNTS);
 
-function getSalt(token: string): Buffer {
+export function getSalt(token: string): Buffer {
   /* If no token is provided, then return an empty buffer */
   if (!token) {
     console.error('Token is undefined');
@@ -63,7 +64,7 @@ function getSalt(token: string): Buffer {
   return tokenBytes.subarray(0, SALT_LENGTH);
 }
 
-function generateArgon2id(password: string, salt: Buffer): Promise<Buffer> {
+export function generateArgon2id(password: string, salt: Buffer): Promise<Buffer> {
   const options = {
     type: argon2.argon2id,
     memoryCost: 262144, // 256MB
@@ -78,7 +79,7 @@ function generateArgon2id(password: string, salt: Buffer): Promise<Buffer> {
   return argon2.hash(password, options);
 }
 
-async function decryptMnemonic(
+export async function decryptMnemonic(
   inputPath: string,
   token: string,
   password: string,
@@ -113,28 +114,32 @@ async function decryptMnemonic(
   }
 }
 
-export async function locateDataMigrationFiles() {
-  return fs.existsSync(basePath) && fs.existsSync(propertiesPath) && fs.existsSync(mnemonicPath);
+export function locateDataMigrationFiles() {
+  return (
+    fs.existsSync(getBasePath()) &&
+    fs.existsSync(getPropertiesPath()) &&
+    fs.existsSync(getMnemonicPath())
+  );
 }
 
 export async function decryptMigrationMnemonic(password: string): Promise<string[] | null> {
-  const content = await fs.promises.readFile(propertiesPath, 'utf-8');
+  const content = await fs.promises.readFile(getPropertiesPath(), 'utf-8');
   const parsedContent = parseUserProperties(content);
 
   const token = parsedContent.hash;
   if (!token) throw Error('No hash found at location');
 
-  const words = await decryptMnemonic(mnemonicPath, token, password);
+  const words = await decryptMnemonic(getMnemonicPath(), token, password);
   if (words) return words.split(' ');
 
   return null;
 }
 
-export async function getDataMigrationKeysPath(): Promise<string> {
-  return keysPath;
+export function getDataMigrationKeysPath(): string {
+  return getKeysPath();
 }
 
-async function getAccountInfoFromFile(
+export async function getAccountInfoFromFile(
   directory: string,
   defaultNetwork: Network = Network.MAINNET,
 ): Promise<{ nickname: string; accountID: string; network: Network }[]> {
@@ -145,19 +150,11 @@ async function getAccountInfoFromFile(
   const files = await fs.promises.readdir(directory);
 
   for (const file of files.filter(f => f.endsWith('.json'))) {
-    const loweredFileName = file.toLocaleLowerCase();
-
-    const network = loweredFileName.includes('testnet')
-      ? Network.TESTNET
-      : loweredFileName.includes('mainnet')
-        ? Network.MAINNET
-        : loweredFileName.includes('previewnet')
-          ? Network.PREVIEWNET
-          : defaultNetwork;
-
     const filePath = path.join(directory, file);
 
     try {
+      const network = parseNetwork(file, defaultNetwork);
+
       const fileContent = await fs.promises.readFile(filePath, 'utf-8');
 
       const accountID = JSON.parse(fileContent)?.accountID;
@@ -188,15 +185,15 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
   let defaultNetwork = Network.TESTNET;
 
   try {
-    const content = await fs.promises.readFile(propertiesPath, 'utf-8');
+    const content = await fs.promises.readFile(getPropertiesPath(), 'utf-8');
     const parsedContent = parseUserProperties(content);
 
-    result.defaultMaxTransactions = Number(
-      parsedContent[USER_PROPERTIES_DEFAULT_MAX_TRANSACTION_FEE_KEY],
-    );
-
-    if (!isNaN(result.defaultMaxTransactions)) {
+    if (!isNaN(Number(parsedContent[USER_PROPERTIES_DEFAULT_MAX_TRANSACTION_FEE_KEY]))) {
       try {
+        result.defaultMaxTransactions = Number(
+          parsedContent[USER_PROPERTIES_DEFAULT_MAX_TRANSACTION_FEE_KEY],
+        );
+
         await addClaim(
           userId,
           DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
@@ -216,7 +213,7 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
   }
 
   try {
-    const accountDataList = await getAccountInfoFromFile(accountsPath, defaultNetwork);
+    const accountDataList = await getAccountInfoFromFile(getAccountsPath(), defaultNetwork);
 
     for (const accountData of accountDataList) {
       try {
@@ -233,7 +230,7 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
   return result;
 }
 
-function parseUserProperties(content: string): {
+export function parseUserProperties(content: string): {
   [key: string]: any;
 } {
   const lines = content.split('\n');
