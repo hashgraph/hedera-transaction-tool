@@ -84,10 +84,6 @@ const handleOnFormSubmit = async (event: Event) => {
     !inputEmailInvalid.value &&
     !inputPasswordInvalid.value
   ) {
-    if (inputPasswordInvalid.value) {
-      toast.error('Password too weak', { position: 'bottom-right' });
-      return;
-    }
     buttonLoading.value = true;
     const { id, email } = await registerLocal(
       inputEmail.value.trim(),
