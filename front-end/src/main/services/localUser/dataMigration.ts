@@ -5,6 +5,7 @@ import * as path from 'path';
 import { app } from 'electron';
 import * as dotenv from 'dotenv';
 import * as argon2 from 'argon2';
+import { AccountId } from '@hashgraph/sdk';
 
 import { Network } from '@main/shared/enums';
 
@@ -159,10 +160,12 @@ async function getAccountInfoFromFile(
 
     try {
       const fileContent = await fs.promises.readFile(filePath, 'utf-8');
+
       const accountID = JSON.parse(fileContent)?.accountID;
 
       if (accountID) {
-        const accountIDString = `${accountID.shard}-${accountID.realm}-${accountID.num}`;
+        const accountIDString = AccountId._fromProtobuf(accountID).toString();
+
         accountDataList.push({
           nickname: path.parse(file).name,
           accountID: accountIDString,
@@ -179,6 +182,7 @@ async function getAccountInfoFromFile(
 
 export async function migrateAccountsData(userId: string, network: Network): Promise<number> {
   const accountDataList = await getAccountInfoFromFile(accountsPath, network);
+
   for (const accountData of accountDataList) {
     await addAccount(userId, accountData.accountID, accountData.network, accountData.nickname);
   }
