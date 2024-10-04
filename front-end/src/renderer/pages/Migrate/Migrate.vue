@@ -13,6 +13,7 @@ import { getStaticUser } from '@renderer/services/safeStorageService';
 import DecryptRecoveryPhrase from './components/DecryptRecoveryPhrase.vue';
 import SetupPersonal from './components/SetupPersonal.vue';
 import SetupOrganization from './components/SetupOrganization.vue';
+import ImportAccounts from './components/ImportAccounts.vue';
 import BeginKeysImport from './components/BeginKeysImport.vue';
 import Summary from './components/Summary.vue';
 
@@ -150,6 +151,7 @@ onMounted(async () => {
           />
 
           <template v-if="userInitialized">
+            <ImportAccounts @imported-accounts="accountsImported = $event" />
             <BeginKeysImport
               :recovery-phrase="recoveryPhrase"
               @keys-imported="handleKeysImported"
