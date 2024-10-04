@@ -44,7 +44,7 @@ export class AuthService {
   ) {}
 
   /* Register a new user by admins and send him an email with the temporary password */
-  async signUpByAdmin(dto: SignUpUserDto): Promise<User> {
+  async signUpByAdmin(dto: SignUpUserDto, url: string): Promise<User> {
     const tempPassword = this.generatePassword();
 
     const user = await this.usersService.createUser(dto.email, tempPassword);
@@ -52,7 +52,7 @@ export class AuthService {
     this.notificationsService.emit<undefined, NotifyEmailDto>(NOTIFY_EMAIL, {
       subject: 'Hedera Transaction Tool Registration',
       email: user.email,
-      text: `You have been registered in Hedera Transaction Tool.\nYour temporary password is: <b>${tempPassword}</b>`,
+      text: `You have been registered in Hedera Transaction Tool.\nThe Organization URL is: <b>${url}</b>\nYour temporary password is: <b>${tempPassword}</b>`,
     });
 
     return user;

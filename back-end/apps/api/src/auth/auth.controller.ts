@@ -1,9 +1,9 @@
-import { Body, Controller, HttpCode, Patch, Post, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { SkipThrottle } from '@nestjs/throttler';
 
-import { Response } from 'express';
+import { Request, Response } from 'express';
 
 import { Serialize } from '@app/common';
 
@@ -52,8 +52,9 @@ export class AuthController {
   @Post('/signup')
   @Serialize(AuthDto)
   @UseGuards(JwtAuthGuard, AdminGuard, EmailThrottlerGuard)
-  async signUp(@Body() dto: SignUpUserDto): Promise<User> {
-    return this.authService.signUpByAdmin(dto);
+  async signUp(@Body() dto: SignUpUserDto, @Req() req: Request): Promise<User> {
+    const url = `${req.protocol}://${req.get('host')}`;
+    return this.authService.signUpByAdmin(dto, url);
   }
 
   /* User login */

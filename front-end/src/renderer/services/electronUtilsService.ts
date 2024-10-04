@@ -167,3 +167,9 @@ export const showOpenDialog = async (
     throw new Error('Failed to open the dialog');
   }
 };
+
+/* Quits the application */
+export const quit = async () =>
+  commonIPCHandler(async () => {
+    return await window.electronAPI.local.utils.quit();
+  }, 'Failed quit the application');

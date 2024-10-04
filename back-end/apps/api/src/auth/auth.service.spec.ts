@@ -143,7 +143,7 @@ describe('AuthService', () => {
 
     jest.spyOn(userService, 'createUser').mockResolvedValue({ id: 1, email: dto.email } as User);
 
-    await service.signUpByAdmin(dto);
+    await service.signUpByAdmin(dto, 'http://localhost');
 
     expect(userService.createUser).toHaveBeenCalledWith(dto.email, expect.any(String));
     expect(notificationsService.emit).toHaveBeenCalledWith(

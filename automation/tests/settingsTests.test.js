@@ -11,11 +11,12 @@ const RegistrationPage = require('../pages/RegistrationPage.js');
 const { expect } = require('playwright/test');
 const LoginPage = require('../pages/LoginPage');
 const SettingsPage = require('../pages/SettingsPage');
+const TransactionPage = require('../pages/TransactionPage');
 const { resetDbState } = require('../utils/databaseUtil');
 
 let app, window;
 let globalCredentials = { email: '', password: '' };
-let registrationPage, loginPage, settingsPage;
+let registrationPage, loginPage, settingsPage, transactionPage;
 
 test.describe('Settings tests', () => {
   test.beforeAll(async () => {
@@ -24,6 +25,7 @@ test.describe('Settings tests', () => {
     loginPage = new LoginPage(window);
     registrationPage = new RegistrationPage(window);
     settingsPage = new SettingsPage(window);
+    transactionPage = new TransactionPage(window);
 
     // Generate credentials and store them globally
     globalCredentials.email = generateRandomEmail();
@@ -44,16 +46,15 @@ test.describe('Settings tests', () => {
   test.beforeEach(async () => {
     await loginPage.logout();
     await loginPage.login(globalCredentials.email, globalCredentials.password);
+    await settingsPage.clickOnSettingsButton();
   });
 
   test('Verify that all elements in settings page are present', async () => {
-    await settingsPage.clickOnSettingsButton();
     const allElementsVisible = await settingsPage.verifySettingsElements();
     expect(allElementsVisible).toBe(true);
   });
 
   test('Verify user can decrypt private key', async () => {
-    await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
 
     await settingsPage.clickOnEyeDecryptIcon();
@@ -63,7 +64,6 @@ test.describe('Settings tests', () => {
   });
 
   test('Verify user can restore key', async () => {
-    await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
 
     await settingsPage.clickOnRestoreButton();
@@ -92,7 +92,6 @@ test.describe('Settings tests', () => {
   });
 
   test('Verify user can delete key', async () => {
-    await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
 
     const rowCountBeforeRestore = await settingsPage.getKeyRowCount();
@@ -138,7 +137,6 @@ test.describe('Settings tests', () => {
   });
 
   test('Verify user restored key pair is saved in the local database', async () => {
-    await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
 
     await settingsPage.clickOnRestoreButton();
@@ -169,7 +167,6 @@ test.describe('Settings tests', () => {
   });
 
   test('Verify user can import ECDSA key', async () => {
-    await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
 
     await settingsPage.clickOnImportButton();
@@ -199,7 +196,6 @@ test.describe('Settings tests', () => {
   });
 
   test('Verify user can import ED25519 keys', async () => {
-    await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
 
     await settingsPage.clickOnImportButton();
@@ -228,7 +224,6 @@ test.describe('Settings tests', () => {
   });
 
   test('Verify user can change password', async () => {
-    await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnProfileTab();
 
     await settingsPage.fillInCurrentPassword(globalCredentials.password);
@@ -245,5 +240,26 @@ test.describe('Settings tests', () => {
     const isButtonVisible = await loginPage.isSettingsButtonVisible();
 
     expect(isButtonVisible).toBe(true);
+  });
+
+  test('Verify user can change key nickname', async () => {
+    const newNickname = 'testChangeNickname';
+    await settingsPage.clickOnKeysTab();
+    await settingsPage.changeNicknameForFirstKey(newNickname);
+    const keyData = await settingsPage.getRowDataByIndex(0);
+    expect(keyData.nickname.trim()).toBe(newNickname);
+  });
+
+  test('Verify user can set global max tx fee', async () => {
+    const maxTransactionFee = '5';
+    await settingsPage.fillInDefaultMaxTransactionFee(maxTransactionFee);
+
+    await transactionPage.clickOnTransactionsMenuButton();
+    await transactionPage.clickOnCreateNewTransactionButton();
+    await transactionPage.clickOnCreateAccountTransaction();
+
+    const transactionFee = await transactionPage.getMaxTransactionFee();
+
+    expect(transactionFee).toBe(maxTransactionFee);
   });
 });

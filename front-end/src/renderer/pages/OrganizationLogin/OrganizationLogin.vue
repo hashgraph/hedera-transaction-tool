@@ -60,7 +60,7 @@ const handleLogin = async () => {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     userPasswordModalRef.value?.open(
       'Enter your application password',
-      'Enter your application password to encrpyt your organization credentials',
+      'Enter your application password to encrypt your organization credentials',
       handleLogin,
     );
     return;
@@ -93,9 +93,6 @@ const handleLogin = async () => {
       globalModalLoaderRef?.value,
       'Failed to change user mode',
     )();
-
-    await user.selectOrganization({ id, serverUrl, nickname, key });
-    router.push(router.previousPath);
   } catch (error: any) {
     inputEmailInvalid.value = true;
     inputPasswordInvalid.value = true;

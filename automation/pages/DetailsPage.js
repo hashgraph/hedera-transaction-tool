@@ -46,6 +46,7 @@ class DetailsPage extends BasePage {
   allowanceDetailsAmountSelector = 'p-account-approve-details-amount';
   fileDetailsExpirationTimeSelector = 'p-file-details-expiration-time';
   fileDetailsFileIdSelector = 'p-file-details-file-id';
+  transactionDescriptionSelector = 'p-description-field';
 
   async clickOnFirstTransactionDetailsButton() {
     await this.click(this.transactionDetailsButtonIndexSelector + '0');
@@ -216,6 +217,10 @@ class DetailsPage extends BasePage {
     expect(transactionFeePayer).toBeTruthy();
 
     await extraAssertions();
+  }
+
+  async getTransactionDescription() {
+    return await this.getText(this.transactionDescriptionSelector);
   }
 }
 

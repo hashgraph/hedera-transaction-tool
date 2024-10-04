@@ -17,6 +17,7 @@ import contactPublicKeys from './linkedPublicKeys';
 import encryptedKeys from './encryptedKeys';
 import claim from './claim';
 import safeStorage from './safeStorage';
+import dataMigration from './dataMigration';
 
 export default {
   ...updateAPI,
@@ -38,4 +39,5 @@ export default {
   ...encryptedKeys,
   ...claim,
   ...safeStorage,
+  ...dataMigration,
 };

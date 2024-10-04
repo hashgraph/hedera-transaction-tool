@@ -40,6 +40,7 @@ import TransactionInfoControls from '@renderer/components/Transaction/Transactio
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
 import RunningClockDatePicker from '@renderer/components/Wrapped/RunningClockDatePicker.vue';
+import AddToGroupModal from '@renderer/components/AddToGroupModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -264,7 +265,7 @@ function handleAddToGroup() {
       keys.push(key.toString());
     }
   }
-  // TODO: handle single key?
+
   transactionGroup.addGroupItem({
     transactionBytes: transactionBytes,
     type: 'FileUpdateTransaction',
@@ -573,5 +574,6 @@ const columnClass = 'col-4 col-xxxl-3';
       :on-local-stored="handleLocalStored"
       :on-submitted="handleSubmit"
     />
+    <AddToGroupModal @addToGroup="handleAddToGroup" />
   </div>
 </template>

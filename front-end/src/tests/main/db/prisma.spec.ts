@@ -2,21 +2,17 @@ import { MockedObject } from 'vitest';
 
 import { getPrismaClient, setPrismaClient, createPrismaClient, dbPath } from '@main/db/prisma';
 
-import path from 'path';
+import * as path from 'path';
 import { PrismaClient } from '@prisma/client';
-import electron from 'electron';
+import { app } from 'electron';
 
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
 vi.mock('electron', () => ({
-  default: {
-    app: { getPath: vi.fn() },
-  },
+  app: { getPath: vi.fn() },
 }));
 
 vi.mock('path', () => ({
-  default: {
-    join: vi.fn(),
-  },
+  join: vi.fn(),
 }));
 
 vi.mock('@prisma/client', () => ({
@@ -27,7 +23,7 @@ vi.mock('@prisma/client', () => ({
 }));
 
 describe('Database path', () => {
-  const appMO = electron.app as unknown as MockedObject<Electron.App>;
+  const appMO = app as unknown as MockedObject<Electron.App>;
 
   test('Should get the database path', () => {
     appMO.getPath.mockReturnValue('user-data-path');

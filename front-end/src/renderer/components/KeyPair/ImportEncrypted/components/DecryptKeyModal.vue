@@ -29,6 +29,7 @@ const props = defineProps<{
   mnemonic: string[] | null;
   mnemonicHash: string | null;
   indexesFromMnemonic: number[];
+  defaultPassword?: string;
 }>();
 
 /* Emits */
@@ -43,7 +44,7 @@ const emit = defineEmits<{
 const user = useUserStore();
 
 /* State */
-const decryptPassword = ref<string>('');
+const decryptPassword = ref<string>(props.defaultPassword || '');
 const decrypting = ref<boolean>(false);
 const error = ref<string | null>(null);
 
@@ -159,19 +160,17 @@ async function storeKey(key: {
   };
 
   if (isLoggedInOrganization(user.selectedOrganization)) {
-    if (user.selectedOrganization.userKeys.some(k => k.publicKey === publicKey.toStringRaw())) {
-      throw new Error(`${publicKey.toStringRaw()} already exists`);
-    }
-
     keyPair.organization_id = user.selectedOrganization.id;
     keyPair.organization_user_id = user.selectedOrganization.userId;
 
-    await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
-      publicKey: publicKey.toStringRaw(),
-      index: matchedRecoveryPhraseHashCode && key.index !== null ? key.index : undefined,
-      mnemonicHash:
-        matchedRecoveryPhraseHashCode && key.index !== null ? props.mnemonicHash : undefined,
-    });
+    if (!user.selectedOrganization.userKeys.some(k => k.publicKey === publicKey.toStringRaw())) {
+      await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
+        publicKey: publicKey.toStringRaw(),
+        index: matchedRecoveryPhraseHashCode && key.index !== null ? key.index : undefined,
+        mnemonicHash:
+          matchedRecoveryPhraseHashCode && key.index !== null ? props.mnemonicHash : undefined,
+      });
+    }
   }
 
   await storeKeyPair(keyPair, personalPassword, false);
@@ -225,7 +224,7 @@ watch(
             name="decrypt-key-password"
             :filled="true"
             :disabled="decrypting"
-            placeholder="Type password to decypt the keys"
+            placeholder="Type password to decrypt the keys"
             data-testid="input-decrypt-keys-password"
           />
         </div>

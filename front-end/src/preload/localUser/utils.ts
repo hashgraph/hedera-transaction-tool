@@ -31,5 +31,6 @@ export default {
       message: string,
     ): Promise<OpenDialogReturnValue> =>
       ipcRenderer.invoke('utils:showOpenDialog', title, buttonLabel, filters, properties, message),
+    quit: (): Promise<void> => ipcRenderer.invoke('utils:quit'),
   },
 };

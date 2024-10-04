@@ -32,6 +32,7 @@ const LinkExistingFile = () => import('@renderer/pages/Files/LinkExistingFile');
 const OrganizationLogin = () => import('@renderer/pages/OrganizationLogin');
 const OrganizationsTab = () => import('@renderer/pages/Settings/components/OrganizationsTab.vue');
 const TransactionDetails = () => import('@renderer/pages/TransactionDetails');
+const Migrate = () => import('@renderer/pages/Migrate');
 
 const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/transactions' },
@@ -51,6 +52,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/help', name: 'help', component: Help },
   { path: '/account-setup', name: 'accountSetup', component: AccountSetup },
   { path: '/restore-key', name: 'restoreKey', component: RestoreKey },
+  { path: '/migrate', name: 'migrate', component: Migrate },
   {
     path: '/create-transaction/:type/:seq?',
     name: 'createTransaction',
