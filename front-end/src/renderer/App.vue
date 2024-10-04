@@ -30,9 +30,6 @@ const user = useUserStore();
 const network = useNetwork();
 const theme = useThemeStore();
 
-/* Composables */
-useAutoLogin();
-
 /* State */
 const userPasswordModalRef = ref<InstanceType<typeof UserPasswordModal> | null>(null);
 const globalModalLoaderRef = ref<InstanceType<typeof GlobalModalLoader> | null>(null);
@@ -41,6 +38,9 @@ const dynamicLayout = reactive({
   shouldSetupAccountClass: false,
   showMenu: false,
 });
+
+/* Composables */
+useAutoLogin(globalModalLoaderRef);
 
 /* Handlers */
 async function handleThemeChange() {
