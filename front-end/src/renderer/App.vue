@@ -4,12 +4,9 @@ import { onMounted, reactive, ref } from 'vue';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useNetwork from '@renderer/stores/storeNetwork';
 import useThemeStore from '@renderer/stores/storeTheme';
 
 import useAutoLogin from '@renderer/composables/useAutoLogin';
-
-import { setClient } from './services/transactionService';
 
 import {
   provideDynamicLayout,
@@ -27,7 +24,6 @@ import GlobalAppProcesses from '@renderer/components/GlobalAppProcesses';
 
 /* Stores */
 const user = useUserStore();
-const network = useNetwork();
 const theme = useThemeStore();
 
 /* State */
@@ -57,11 +53,6 @@ onMounted(async () => {
   window.electronAPI.local.theme.onThemeUpdate(theme =>
     document.body.setAttribute('data-bs-theme', theme.shouldUseDarkColors ? 'dark' : 'light'),
   );
-});
-
-onMounted(async () => {
-  await network.setup();
-  await setClient(network.network);
 });
 
 /* Providers */
