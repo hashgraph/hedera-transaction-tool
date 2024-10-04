@@ -68,6 +68,8 @@ const handleOnFormSubmit = async (e: Event) => {
 };
 
 const handleUseKeychain = async (value: boolean) => {
+  if (useKeychain.value === value) return;
+
   inputPassword.value = '';
   inputPasswordInvalid.value = false;
   checkPassword('');
