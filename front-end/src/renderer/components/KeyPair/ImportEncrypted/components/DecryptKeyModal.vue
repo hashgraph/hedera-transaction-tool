@@ -225,7 +225,7 @@ watch(
             name="decrypt-key-password"
             :filled="true"
             :disabled="decrypting"
-            placeholder="Type password to decypt the keys"
+            placeholder="Type password to decrypt the keys"
             data-testid="input-decrypt-keys-password"
           />
         </div>
