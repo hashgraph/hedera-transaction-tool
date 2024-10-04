@@ -1,5 +1,6 @@
+import type { MigrateUserDataResult } from '@main/shared/interfaces/migration';
+
 import { commonIPCHandler } from '@renderer/utils';
-import { Network } from '@main/shared/enums';
 
 /* Locates the migration file */
 export const locateDataMigrationFiles = async (): Promise<boolean> =>
@@ -19,7 +20,7 @@ export const getDataMigrationKeysPath = async (): Promise<string> =>
   }, 'No path for data migration keys found');
 
 /* Begins data migration */
-export const migrateAccountsData = async (userId: string, network: Network): Promise<number> =>
+export const migrateUserData = async (userId: string): Promise<MigrateUserDataResult> =>
   commonIPCHandler(async () => {
-    return await window.electronAPI.local.dataMigration.migrateAccountsData(userId, network);
+    return await window.electronAPI.local.dataMigration.migrateUserData(userId);
   }, 'Account data migration failed');

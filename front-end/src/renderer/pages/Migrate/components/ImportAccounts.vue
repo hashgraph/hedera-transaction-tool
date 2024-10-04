@@ -1,26 +1,26 @@
 <script setup lang="ts">
+import type { MigrateUserDataResult } from '@main/shared/interfaces/migration';
+
 import { onMounted } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { migrateAccountsData } from '@renderer/services/migrateDataService';
+import { migrateUserData } from '@renderer/services/migrateDataService';
 
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'importedAccounts', count: number): void;
+  (event: 'importedUserData', date: MigrateUserDataResult): void;
 }>();
 
 /* Stores */
 const user = useUserStore();
-const network = useNetworkStore();
 
 /* Hooks */
 onMounted(async () => {
   if (!isUserLoggedIn(user.personal)) throw Error('(BUG) User is not logged in');
-  emit('importedAccounts', await migrateAccountsData(user.personal.id, network.network));
+  emit('importedUserData', await migrateUserData(user.personal.id));
 });
 </script>
 <template>

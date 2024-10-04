@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import type { MigrateUserDataResult } from '@main/shared/interfaces/migration';
+
+import { Hbar } from '@hashgraph/sdk';
+
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
@@ -11,7 +15,7 @@ import SummaryItem from './SummaryItem.vue';
 /* Props */
 defineProps<{
   importedKeysCount: number;
-  importedAccountsCount: number;
+  importedUserData: MigrateUserDataResult | null;
 }>();
 
 /* Stores */
@@ -62,15 +66,24 @@ const handleFinishMigration = () => {
 
       <SummaryItem
         class="mt-4"
-        label="Imported Keys From Old Tool"
+        label="Imported Keys"
         :value="importedKeysCount.toString()"
         data-testid="p-migration-summary-imported-keys"
       />
 
       <SummaryItem
+        v-if="importedUserData?.accountsImported"
         class="mt-4"
-        label="Imported Accounts From Old Tool"
-        :value="importedAccountsCount.toString()"
+        label="Imported Accounts"
+        :value="importedUserData.accountsImported.toString()"
+        data-testid="p-migration-summary-imported-accounts"
+      />
+
+      <SummaryItem
+        v-if="importedUserData?.defaultMaxTransactions !== undefined"
+        class="mt-4"
+        label="Imported Default Max Transaction Fee"
+        :value="Hbar.fromTinybars(importedUserData.defaultMaxTransactions).toString()"
         data-testid="p-migration-summary-imported-accounts"
       />
 

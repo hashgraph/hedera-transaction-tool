@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { MigrateUserDataResult } from '@main/shared/interfaces/migration';
 import type { RecoveryPhrase } from '@renderer/types';
 import type { PersonalUser } from './components/SetupPersonal.vue';
 
@@ -42,7 +43,7 @@ const organizationId = ref<string | null>(null);
 
 const userInitialized = ref(false);
 const keysImported = ref(0);
-const accountsImported = ref(0);
+const importedUserData = ref<MigrateUserDataResult | null>(null);
 
 /* Computed */
 const heading = computed(() => {
@@ -136,7 +137,7 @@ onMounted(async () => {
           />
 
           <template v-if="userInitialized">
-            <ImportAccounts @imported-accounts="accountsImported = $event" />
+            <ImportAccounts @importedUserData="importedUserData = $event" />
             <BeginKeysImport
               :recovery-phrase="recoveryPhrase"
               @keys-imported="handleKeysImported"
@@ -146,10 +147,7 @@ onMounted(async () => {
 
         <!-- Summary Step -->
         <template v-if="stepIs('summary')">
-          <Summary
-            :imported-keys-count="keysImported"
-            :imported-accounts-count="accountsImported"
-          />
+          <Summary :imported-keys-count="keysImported" :imported-user-data="importedUserData" />
         </template>
       </div>
     </div>

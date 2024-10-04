@@ -4,11 +4,16 @@ import * as path from 'path';
 
 import { app } from 'electron';
 import * as argon2 from 'argon2';
-import { AccountId } from '@hashgraph/sdk';
+import { AccountId, Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import { Network } from '@main/shared/enums';
+import { MigrateUserDataResult } from '@main/shared/interfaces/migration';
+import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY } from '@main/shared/constants';
+
+import { parseNetwork } from '@main/utils/parsers';
 
 import { addAccount } from './accounts';
+import { addClaim } from './claim';
 
 const SALT_LENGTH = 16;
 const KEY_LENGTH = 32;
@@ -28,6 +33,9 @@ const RECOVERY_FILE_PARENT_FOLDER = '.System';
 const RECOVERY_FILE = 'recovery.aes';
 const KEYS = 'Keys';
 const ACCOUNTS = 'Accounts';
+
+const USER_PROPERTIES_DEFAULT_MAX_TRANSACTION_FEE_KEY = 'defaultTxFee';
+const USER_PROPERTIES_CURRENT_NETWORK_KEY = 'currentNetwork';
 
 const basePath = path.join(app.getPath('documents'), DEFAULT_FOLDER_NAME);
 const propertiesPath = path.join(basePath, FILES, USER_PROPERTIES);
@@ -171,13 +179,58 @@ async function getAccountInfoFromFile(
   return accountDataList;
 }
 
-export async function migrateAccountsData(userId: string, network: Network): Promise<number> {
-  const accountDataList = await getAccountInfoFromFile(accountsPath, network);
+export async function migrateUserData(userId: string): Promise<MigrateUserDataResult> {
+  const result: MigrateUserDataResult = {
+    accountsImported: 0,
+    defaultMaxTransactions: null,
+  };
 
-  for (const accountData of accountDataList) {
-    await addAccount(userId, accountData.accountID, accountData.network, accountData.nickname);
+  let defaultNetwork = Network.TESTNET;
+
+  try {
+    const content = await fs.promises.readFile(propertiesPath, 'utf-8');
+    const parsedContent = parseUserProperties(content);
+
+    result.defaultMaxTransactions = Number(
+      parsedContent[USER_PROPERTIES_DEFAULT_MAX_TRANSACTION_FEE_KEY],
+    );
+
+    if (!isNaN(result.defaultMaxTransactions)) {
+      try {
+        await addClaim(
+          userId,
+          DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
+          Hbar.fromTinybars(result.defaultMaxTransactions).toString(HbarUnit.Tinybar),
+        );
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    defaultNetwork = parseNetwork(
+      parsedContent[USER_PROPERTIES_CURRENT_NETWORK_KEY],
+      defaultNetwork,
+    );
+  } catch (error) {
+    console.log(error);
   }
-  return accountDataList.length;
+
+  try {
+    const accountDataList = await getAccountInfoFromFile(accountsPath, defaultNetwork);
+
+    for (const accountData of accountDataList) {
+      try {
+        await addAccount(userId, accountData.accountID, accountData.network, accountData.nickname);
+        result.accountsImported++;
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  } catch (error) {
+    console.log(error);
+  }
+
+  return result;
 }
 
 function parseUserProperties(content: string): {
