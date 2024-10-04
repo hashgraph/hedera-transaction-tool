@@ -3,7 +3,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { app } from 'electron';
-import * as dotenv from 'dotenv';
 import * as argon2 from 'argon2';
 import { AccountId } from '@hashgraph/sdk';
 
@@ -37,20 +36,23 @@ const keysPath = path.join(basePath, KEYS);
 const accountsPath = path.join(basePath, ACCOUNTS);
 
 function getSalt(token: string): Buffer {
-  // If no token is provided, then return an empty buffer
+  /* If no token is provided, then return an empty buffer */
   if (!token) {
     console.error('Token is undefined');
     return Buffer.alloc(0);
   }
-  // Decode the token from base64
+
+  /* Decode the token from base64 */
   const tokenBytes = Buffer.from(token, 'base64');
-  // If the length of the token is less than the sum of the salt length and the key length, then the token is invalid
+
+  /* If the length of the token is less than the sum of the salt length and the key length, then the token is invalid */
   if (tokenBytes.length < SALT_LENGTH + KEY_LENGTH) {
     console.error('Token size check failed');
     return Buffer.alloc(0);
   }
-  // Get the salt from the token (the first SALT_LENGTH of bytes) and return it
-  return tokenBytes.slice(0, SALT_LENGTH);
+
+  /* Get the salt from the token (the first SALT_LENGTH of bytes) and return it */
+  return tokenBytes.subarray(0, SALT_LENGTH);
 }
 
 function generateArgon2id(password: string, salt: Buffer): Promise<Buffer> {
@@ -73,42 +75,34 @@ async function decryptMnemonic(
   token: string,
   password: string,
 ): Promise<string | null> {
-  // Read the encrypted data from the file
-  const data = fs.readFileSync(inputPath);
+  /* Read the encrypted data from the file */
+  const data = await fs.promises.readFile(inputPath);
 
-  // Get the salt from the token
+  /* Get the salt from the token */
   const salt = getSalt(token);
 
-  // Generate the key from the password and the salt
+  /* Generate the key from the password and the salt */
   const key = await generateArgon2id(password, salt);
 
-  // Get the header, auth tag, encrypted text, and IV from the data
+  /* Get the header, auth tag, encrypted text, and IV from the data */
   const header = Buffer.from('AES|256|CBC|PKCS5Padding|', 'utf8');
-  const authTag = data.slice(data.length - AUTH_TAG_LENGTH);
-  const encryptedText = data.slice(header.length + IV_LENGTH, data.length - AUTH_TAG_LENGTH);
-  const iv = data.slice(header.length, header.length + IV_LENGTH);
+  const authTag = data.subarray(data.length - AUTH_TAG_LENGTH);
+  const encryptedText = data.subarray(header.length + IV_LENGTH, data.length - AUTH_TAG_LENGTH);
+  const iv = data.subarray(header.length, header.length + IV_LENGTH);
 
-  // Create a decipher, set the auth tag
+  /* Create a decipher, set the auth tag */
   const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
   decipher.setAuthTag(authTag);
 
   try {
-    // Decrypt the encrypted text
+    /* Decrypt the encrypted text */
     let decrypted = decipher.update(encryptedText, undefined, 'utf8');
     decrypted += decipher.final();
 
     return decrypted;
   } catch (error) {
-    // console.error('Error decrypting mnemonic:', error);
     return null;
   }
-}
-
-function loadUserProperties(path: string): boolean {
-  // Load the .properties file
-  //TODO we dont want to use dotenv, remove it and go another route
-  const result = dotenv.config({ path });
-  return result.error === undefined;
 }
 
 export async function locateDataMigrationFiles() {
@@ -116,18 +110,15 @@ export async function locateDataMigrationFiles() {
 }
 
 export async function decryptMigrationMnemonic(password: string): Promise<string[] | null> {
-  loadUserProperties(propertiesPath);
+  const content = await fs.promises.readFile(propertiesPath, 'utf-8');
+  const parsedContent = parseUserProperties(content);
 
-  // Get the hash property from user.properties
-  const token = process.env.hash;
-  if (!token) {
-    throw Error('No hash found at location');
-  }
+  const token = parsedContent.hash;
+  if (!token) throw Error('No hash found at location');
 
   const words = await decryptMnemonic(mnemonicPath, token, password);
-  if (words) {
-    return words.split(' ');
-  }
+  if (words) return words.split(' ');
+
   return null;
 }
 
@@ -187,4 +178,36 @@ export async function migrateAccountsData(userId: string, network: Network): Pro
     await addAccount(userId, accountData.accountID, accountData.network, accountData.nickname);
   }
   return accountDataList.length;
+}
+
+function parseUserProperties(content: string): {
+  [key: string]: any;
+} {
+  const lines = content.split('\n');
+  const result: {
+    [key: string]: any;
+  } = {};
+
+  for (const line of lines) {
+    if (line.trim() === '') continue;
+
+    let [key, value] = line.split('=');
+    key = key?.trim();
+    value = value?.trim();
+
+    if (!key || !value) continue;
+
+    if (value.startsWith('{') && value.endsWith('}')) {
+      value = value.replace(/\\:/g, ':');
+      result[key] = JSON.parse(value);
+    } else if (value === 'true' || value === 'false') {
+      result[key] = value === 'true';
+    } else if (!isNaN(Number(value))) {
+      result[key] = Number(value);
+    } else {
+      result[key] = value;
+    }
+  }
+
+  return result;
 }
