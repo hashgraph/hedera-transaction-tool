@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { PersonalUser } from './SetupPersonal.vue';
+
 import { ref, watch } from 'vue';
 
 import { isPasswordStrong, isUrl } from '@renderer/utils';
@@ -9,6 +11,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 /* Types */
 export type ModelValue = {
   organizationURL: string;
+  organizationEmail: string | null;
   organizationNickname: string;
   temporaryOrganizationPassword: string;
   newOrganizationPassword: string;
@@ -25,12 +28,14 @@ export type SubmitCallback = (value: ModelValue) =>
 const props = defineProps<{
   loading: boolean;
   loadingText: string;
+  personalUser: PersonalUser;
   submitCallback: SubmitCallback;
 }>();
 
 /* State */
-const inputOrganizationURL = ref('');
 const inputOrganizationNickname = ref('');
+const inputOrganizationURL = ref('');
+const inputOrganizationEmail = ref('');
 const inputTemporaryOrganizationPassword = ref('');
 const inputNewOrganizationPassword = ref('');
 
@@ -43,6 +48,7 @@ const handleOnFormSubmit = async (e: Event) => {
   e.preventDefault();
 
   const organizationURL = inputOrganizationURL.value.trim();
+  const organizationEmail = inputOrganizationEmail.value.trim();
   const organizationNickname = inputOrganizationNickname.value.trim();
   const temporaryOrganizationPassword = inputTemporaryOrganizationPassword.value.trim();
   const newOrganizationPassword = inputNewOrganizationPassword.value.trim();
@@ -55,14 +61,19 @@ const handleOnFormSubmit = async (e: Event) => {
       : null;
 
   if (
-    inputOrganizationURLInvalid.value ||
-    temporaryOrganizationPassword.length === 0 ||
-    inputNewOrganizationPasswordError.value
+    inputOrganizationURLInvalid.value || props.personalUser.useKeychain
+      ? organizationEmail.length === 0
+      : false ||
+        temporaryOrganizationPassword.length === 0 ||
+        inputNewOrganizationPasswordError.value
   )
     return;
 
   const result = await props.submitCallback({
     organizationURL,
+    organizationEmail: props.personalUser.useKeychain
+      ? organizationEmail
+      : props.personalUser.email,
     organizationNickname: organizationNickname || 'Organization 1',
     temporaryOrganizationPassword,
     newOrganizationPassword,
@@ -96,15 +107,28 @@ watch(inputTemporaryOrganizationPassword, () => (inputTemporaryPasswordError.val
         Fill the information to setup your organization
       </p>
 
+      <!-- Organization Nickname -->
+      <div class="mt-4">
+        <label data-testid="label-organization-nickname" class="form-label"
+          >Organization Nickname (Optional)</label
+        >
+        <AppInput
+          data-testid="input-organization-nickname"
+          v-model="inputOrganizationNickname"
+          :filled="true"
+          placeholder="Enter nickname"
+        />
+      </div>
+
       <!-- Organization URL -->
-      <div>
+      <div class="mt-4">
         <label data-testid="label-organization-url" class="form-label">Organization URL</label>
         <AppInput
           data-testid="input-organization-url"
           v-model="inputOrganizationURL"
           :filled="true"
           :class="{ 'is-invalid': inputOrganizationURLInvalid }"
-          placeholder="Enter organization URL"
+          placeholder="Enter URL"
         />
         <div
           v-if="inputOrganizationURLInvalid"
@@ -115,16 +139,14 @@ watch(inputTemporaryOrganizationPassword, () => (inputTemporaryPasswordError.val
         </div>
       </div>
 
-      <!-- Organization Nickname -->
-      <div class="mt-4">
-        <label data-testid="label-organization-nickname" class="form-label"
-          >Organization Nickname</label
-        >
+      <!-- Organization Email -->
+      <div v-if="personalUser.useKeychain" class="mt-4">
+        <label data-testid="label-organization-email" class="form-label">Organization Email</label>
         <AppInput
-          data-testid="input-organization-nickname"
-          v-model="inputOrganizationNickname"
+          data-testid="input-organization-email"
+          v-model="inputOrganizationEmail"
           :filled="true"
-          placeholder="Enter organization nickname"
+          placeholder="Enter Email"
         />
       </div>
 
@@ -138,7 +160,7 @@ watch(inputTemporaryOrganizationPassword, () => (inputTemporaryPasswordError.val
           :filled="true"
           type="password"
           :class="{ 'is-invalid': inputTemporaryPasswordError }"
-          placeholder="Enter temporary organization password"
+          placeholder="Enter password"
           data-testid="input-temporary-organization-password"
         />
         <div
@@ -158,7 +180,7 @@ watch(inputTemporaryOrganizationPassword, () => (inputTemporaryPasswordError.val
           :filled="true"
           type="password"
           :class="{ 'is-invalid': inputNewOrganizationPasswordError }"
-          placeholder="Enter new password"
+          placeholder="Enter password"
           data-testid="input-new-organization-password"
         />
         <div
@@ -183,6 +205,7 @@ watch(inputTemporaryOrganizationPassword, () => (inputTemporaryPasswordError.val
           :disabled="
             inputTemporaryOrganizationPassword.trim().length === 0 ||
             inputOrganizationURL.trim().length === 0 ||
+            (personalUser.useKeychain ? inputOrganizationEmail.length === 0 : false) ||
             inputNewOrganizationPassword.trim().length === 0 ||
             inputNewOrganizationPassword.trim() === inputTemporaryOrganizationPassword.trim()
           "

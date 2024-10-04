@@ -13,6 +13,20 @@ import { safeAwait } from '@renderer/utils/safeAwait';
 
 import SetupPersonalForm from './SetupPersonalForm.vue';
 
+/* Types */
+export type PersonalUser = { personalId: string } & (
+  | {
+      useKeychain: true;
+      email: null;
+      password: null;
+    }
+  | {
+      useKeychain: false;
+      email: string;
+      password: string;
+    }
+);
+
 /* Props */
 const props = defineProps<{
   recoveryPhrase: RecoveryPhrase;
@@ -20,13 +34,7 @@ const props = defineProps<{
 
 /* Emits */
 const emit = defineEmits<{
-  (
-    event: 'setPersonalUser',
-    email: string,
-    password: string | null,
-    personalId: string,
-    useKeychain: boolean,
-  ): void;
+  (event: 'setPersonalUser', personalUser: PersonalUser): void;
 }>();
 
 /* State */
@@ -38,14 +46,22 @@ const handleFormSubmit = async (formData: ModelValue) => {
   const { data, error } = await safeAwait(setupPersonal(formData));
   loading.value = false;
 
-  if (error) throw error;
-  if (!data) throw new Error('(BUG) Personal id not set');
+  if (error) {
+    throw error;
+  }
+  if (!data) {
+    throw new Error('(BUG) Personal id not set');
+  }
 
-  emit('setPersonalUser', data.email, data.password, data.personalId, data.useKeychain);
+  emit('setPersonalUser', data);
 };
 
 /* Functions */
-const setupPersonal = async ({ useKeychain, email, password }: ModelValue) => {
+const setupPersonal = async ({
+  useKeychain,
+  email,
+  password,
+}: ModelValue): Promise<PersonalUser> => {
   /* Initialize the use of the keychain */
   await initializeUseKeychain(useKeychain);
 
@@ -80,12 +96,21 @@ const setupPersonal = async ({ useKeychain, email, password }: ModelValue) => {
   };
   await storeKeyPair(keyPair, !useKeychain ? password : null, false);
 
-  return {
-    email,
-    password,
-    personalId,
-    useKeychain,
-  };
+  if (useKeychain) {
+    return {
+      personalId,
+      useKeychain: true,
+      email: null,
+      password: null,
+    };
+  } else {
+    return {
+      personalId,
+      useKeychain: false,
+      email,
+      password,
+    };
+  }
 };
 </script>
 <template>

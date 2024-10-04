@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Prisma } from '@prisma/client';
 import type { RecoveryPhrase } from '@renderer/types';
+import type { PersonalUser } from './SetupPersonal.vue';
 import type { ModelValue, SubmitCallback } from './SetupOrganizationForm.vue';
 
 import { ref } from 'vue';
@@ -24,10 +25,7 @@ import SetupOrganizationForm from './SetupOrganizationForm.vue';
 /* Props */
 const props = defineProps<{
   recoveryPhrase: RecoveryPhrase;
-  email: string;
-  password: string | null;
-  personalId: string;
-  useKeychain: boolean;
+  personalUser: PersonalUser;
 }>();
 
 /* Emits */
@@ -77,14 +75,25 @@ const handleFormSubmit: SubmitCallback = async (formData: ModelValue) => {
   }
 
   loadingText.value = 'Storing encrypted credentials...';
+
   /* Add Organization Credentials */
+  let email;
+  if (props.personalUser.useKeychain) {
+    if (!formData.organizationEmail) {
+      throw new Error('(BUG) Organization email is required');
+    }
+    email = formData.organizationEmail;
+  } else {
+    email = props.personalUser.email;
+  }
+
   const addOrganizationCredentialsResult = await safeAwait(
     addOrganizationCredentials(
-      props.email,
+      email,
       formData.newOrganizationPassword,
       organizationId.value,
-      props.personalId,
-      props.password,
+      props.personalUser.personalId,
+      props.personalUser.password,
     ),
   );
   if ('error' in addOrganizationCredentialsResult) {
@@ -118,9 +127,20 @@ const setupOrganization = async ({ organizationURL, organizationNickname }: Mode
 
 const loginInOrganization = async ({
   organizationURL,
+  organizationEmail,
   temporaryOrganizationPassword,
 }: ModelValue) => {
-  const { id } = await login(organizationURL, props.email, temporaryOrganizationPassword);
+  let email;
+  if (props.personalUser.useKeychain) {
+    if (!organizationEmail) {
+      throw new Error('(BUG) Organization email is required');
+    }
+    email = organizationEmail;
+  } else {
+    email = props.personalUser.email;
+  }
+
+  const { id } = await login(organizationURL, email, temporaryOrganizationPassword);
   organizationUserId.value = id;
 };
 
@@ -179,7 +199,7 @@ const restoreKeyPair = async (organizationURL: string, index: number, nickname: 
   );
 
   const keyPair: Prisma.KeyPairUncheckedCreateInput = {
-    user_id: props.personalId,
+    user_id: props.personalUser.personalId,
     index,
     public_key: restoredPrivateKey.publicKey.toStringRaw(),
     private_key: restoredPrivateKey.toStringRaw(),
@@ -190,7 +210,11 @@ const restoreKeyPair = async (organizationURL: string, index: number, nickname: 
     nickname,
   };
 
-  await storeKeyPair(keyPair, props.password, false);
+  await storeKeyPair(
+    keyPair,
+    props.personalUser.useKeychain ? null : props.personalUser.password,
+    false,
+  );
 
   await safeAwait(
     uploadKey(organizationURL, organizationUserId.value, {
@@ -205,6 +229,7 @@ const restoreKeyPair = async (organizationURL: string, index: number, nickname: 
   <SetupOrganizationForm
     :loading="loading"
     :loading-text="loadingText"
+    :personal-user="personalUser"
     :submit-callback="handleFormSubmit"
   />
 </template>

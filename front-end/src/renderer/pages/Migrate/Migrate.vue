@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { RecoveryPhrase } from '@renderer/types';
+import type { PersonalUser } from './components/SetupPersonal.vue';
 
 import { computed, onMounted, ref } from 'vue';
 
@@ -34,16 +35,10 @@ useSetDynamicLayout({
 const step = ref<StepName>('recoveryPhrase');
 
 const recoveryPhrase = ref<RecoveryPhrase | null>(null);
-
-const email = ref<string | null>(null);
-const password = ref<string | null>(null);
-const personalId = ref<string | null>(null);
-const useKeychain = ref<boolean | null>(null);
-
+const personalUser = ref<PersonalUser | null>(null);
 const organizationId = ref<string | null>(null);
 
 const userInitialized = ref(false);
-
 const keysImported = ref(0);
 const accountsImported = ref(0);
 
@@ -69,16 +64,8 @@ const handleSetRecoveryPhrase = async (value: RecoveryPhrase) => {
   step.value = 'personal';
 };
 
-const handleSetPersonalUser = async (
-  _email: string,
-  _password: string | null,
-  _personalId: string,
-  _useKeychain: boolean,
-) => {
-  email.value = _email;
-  password.value = _password;
-  personalId.value = _personalId;
-  useKeychain.value = _useKeychain;
+const handleSetPersonalUser = async (value: PersonalUser) => {
+  personalUser.value = value;
   step.value = 'organization';
 };
 
@@ -88,8 +75,8 @@ const handleSetOrganizationId = async (value: string) => {
   userInitialized.value = true;
 };
 
-const handleKeysImported = async (importedCount: number) => {
-  keysImported.value = importedCount;
+const handleKeysImported = async (value: number) => {
+  keysImported.value = value;
   step.value = 'summary';
 };
 
@@ -97,20 +84,19 @@ const handleKeysImported = async (importedCount: number) => {
 const stepIs = (name: StepName) => step.value === name;
 
 const initializeUserStore = async () => {
-  if (!personalId.value) throw new Error('(BUG) Personal ID not set');
-  if (!email.value) throw new Error('(BUG) Email not set');
   if (!recoveryPhrase.value) throw new Error('(BUG) Recovery Phrase not set');
+  if (!personalUser.value) throw new Error('(BUG) Personal User not set');
 
-  if (useKeychain.value) {
+  if (personalUser.value.useKeychain) {
     const staticUser = await getStaticUser();
     await user.login(staticUser.id, staticUser.email, true);
   } else {
-    await user.login(personalId.value, email.value, false);
+    await user.login(personalUser.value.personalId, personalUser.value.email, false);
   }
 
   await user.selectOrganization(user.organizations[0]);
   await user.setRecoveryPhrase(recoveryPhrase.value.words);
-  password.value && user.setPassword(password.value);
+  personalUser.value.password && user.setPassword(personalUser.value.password);
 };
 
 /* Hooks */
@@ -121,9 +107,7 @@ onMounted(async () => {
 </script>
 <template>
   <div class="flex-column flex-centered flex-1 overflow-hidden p-6">
-    <div
-      class="container-dark-border col-12 col-sm-10 col-md-8 col-lg-7 col-xl-6 col-xxl-4 bg-modal-surface glow-dark-bg p-5"
-    >
+    <div class="container-dark-border bg-modal-surface glow-dark-bg p-5">
       <h4 class="text-title text-semi-bold text-center">{{ heading }}</h4>
 
       <div class="fill-remaining mt-4">
@@ -141,17 +125,10 @@ onMounted(async () => {
         </template>
 
         <!-- Setup Organization Step -->
-        <template
-          v-if="
-            stepIs('organization') && recoveryPhrase && email && personalId && useKeychain !== null
-          "
-        >
+        <template v-if="stepIs('organization') && recoveryPhrase && personalUser">
           <SetupOrganization
             :recovery-phrase="recoveryPhrase"
-            :email="email"
-            :password="password"
-            :personal-id="personalId"
-            :use-keychain="useKeychain"
+            :personal-user="personalUser"
             @set-organization-id="handleSetOrganizationId"
           />
 

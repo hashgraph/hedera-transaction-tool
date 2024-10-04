@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from 'vue';
+import { onBeforeMount, onMounted, reactive, ref, watch } from 'vue';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
@@ -12,11 +12,17 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Types */
-export type ModelValue = {
-  email: string;
-  password: string;
-  useKeychain: boolean;
-};
+export type ModelValue =
+  | {
+      useKeychain: true;
+      email: null;
+      password: null;
+    }
+  | {
+      useKeychain: false;
+      email: string;
+      password: string;
+    };
 
 /* Props */
 defineProps<{
@@ -29,6 +35,7 @@ const emit = defineEmits<{
 }>();
 
 /* State */
+const keychainAvailable = ref(false);
 const useKeychain = ref(false);
 
 const inputEmail = ref('');
@@ -53,23 +60,32 @@ const handleOnFormSubmit = async (e: Event) => {
   const email = inputEmail.value.trim();
   const password = inputPassword.value.trim();
 
-  inputEmailInvalid.value = email === '' || !isEmail(email);
-  inputPasswordInvalid.value = password === '' || !checkPassword(password);
+  if (!useKeychain.value) {
+    inputEmailInvalid.value = email === '' || !isEmail(email);
+    inputPasswordInvalid.value = password === '' || !checkPassword(password);
 
-  if (inputEmailInvalid.value || (!useKeychain.value && inputPasswordInvalid.value)) {
-    return;
+    if (inputEmailInvalid.value || inputPasswordInvalid.value) {
+      return;
+    }
   }
 
-  emit('submit', {
-    email: email,
-    password: password,
-    useKeychain: useKeychain.value,
-  });
+  emit(
+    'submit',
+    useKeychain.value
+      ? { useKeychain: true, email: null, password: null }
+      : {
+          useKeychain: false,
+          email,
+          password,
+        },
+  );
 };
 
 const handleUseKeychain = async (value: boolean) => {
   if (useKeychain.value === value) return;
 
+  inputEmail.value = '';
+  inputEmailInvalid.value = false;
   inputPassword.value = '';
   inputPasswordInvalid.value = false;
   checkPassword('');
@@ -116,6 +132,10 @@ function setTooltipContent() {
 }
 
 /* Hooks */
+onBeforeMount(async () => {
+  keychainAvailable.value = await isKeychainAvailable();
+});
+
 onMounted(async () => {
   checkPassword(inputPassword.value);
   createTooltips();
@@ -125,10 +145,10 @@ onMounted(async () => {
 /* Watchers */
 watch(inputEmail, email => {
   if (isEmail(email) || email.length === 0) inputEmailInvalid.value = false;
-  setTooltipContent();
 });
 watch(inputPassword, pass => {
   if (checkPassword(pass) || pass.length === 0) inputPasswordInvalid.value = false;
+  setTooltipContent();
 });
 </script>
 <template>
@@ -142,22 +162,7 @@ watch(inputPassword, pass => {
         You may use the keychain or a password to encrypt sensitive data
       </p>
 
-      <!-- Email -->
-      <div>
-        <label data-testid="label-email" class="form-label mt-4">Email</label>
-        <AppInput
-          data-testid="input-email"
-          v-model="inputEmail"
-          :filled="true"
-          :class="{ 'is-invalid': inputEmailInvalid }"
-          placeholder="Enter e-mail"
-        />
-        <div v-if="inputEmailInvalid" data-testid="invalid-text-email" class="invalid-feedback">
-          Invalid e-mail.
-        </div>
-      </div>
-
-      <div>
+      <div v-if="keychainAvailable">
         <label data-testid="label-email" class="form-label mt-4">Encryption mode</label>
         <div class="btn-group w-100">
           <AppButton
@@ -180,38 +185,49 @@ watch(inputPassword, pass => {
           >
         </div>
       </div>
-      <template v-if="!useKeychain">
-        <!-- Password -->
-        <div>
-          <label data-testid="label-password" class="form-label mt-4">Password</label>
-          <AppInput
-            v-model="inputPassword"
-            :filled="true"
-            type="password"
-            :class="{ 'is-invalid': inputPasswordInvalid }"
-            placeholder="Enter password"
-            data-bs-toggle="tooltip"
-            data-bs-animation="false"
-            data-bs-placement="right"
-            data-bs-custom-class="wide-xl-tooltip text-start"
-            data-bs-html="true"
-            data-bs-title="_"
-            data-testid="input-password"
-          />
-          <div
-            v-if="inputPasswordInvalid"
-            data-testid="invalid-text-password"
-            class="invalid-feedback"
-          >
-            Invalid password.
-          </div>
+
+      <!-- Email -->
+      <div>
+        <label data-testid="label-email" class="form-label mt-4">Email</label>
+        <AppInput
+          data-testid="input-email"
+          v-model="inputEmail"
+          :filled="true"
+          :class="{ 'is-invalid': inputEmailInvalid }"
+          :disabled="useKeychain"
+          placeholder="Enter e-mail"
+        />
+        <div v-if="inputEmailInvalid" data-testid="invalid-text-email" class="invalid-feedback">
+          Invalid e-mail.
         </div>
-      </template>
-      <template v-else>
-        <p class="mt-4">
-          The application will use the keychain to encrypt and decrypt sensitive data
-        </p>
-      </template>
+      </div>
+
+      <!-- Password -->
+      <div>
+        <label data-testid="label-password" class="form-label mt-4">Password</label>
+        <AppInput
+          v-model="inputPassword"
+          :filled="true"
+          type="password"
+          :class="{ 'is-invalid': inputPasswordInvalid }"
+          :disabled="useKeychain"
+          placeholder="Enter password"
+          data-bs-toggle="tooltip"
+          data-bs-animation="false"
+          data-bs-placement="right"
+          data-bs-custom-class="wide-xl-tooltip text-start"
+          data-bs-html="true"
+          data-bs-title="_"
+          data-testid="input-password"
+        />
+        <div
+          v-if="inputPasswordInvalid"
+          data-testid="invalid-text-password"
+          class="invalid-feedback"
+        >
+          Invalid password.
+        </div>
+      </div>
     </div>
 
     <!-- Submit -->
@@ -224,7 +240,7 @@ watch(inputPassword, pass => {
           loading-text="Migrating..."
           :loading="loading"
           :disabled="
-            inputEmail.trim().length === 0 || (!useKeychain && inputPassword.trim().length === 0)
+            !useKeychain && (inputEmail.trim().length === 0 || inputPassword.trim().length === 0)
           "
           data-testid="button-setup-personal"
           >Continue</AppButton
