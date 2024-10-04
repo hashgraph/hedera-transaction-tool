@@ -4,21 +4,6 @@ import type { ModelValue } from './components/MigrateForm.vue';
 import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 import MigrateForm from './components/MigrateForm.vue';
 
-/* State */
-// cons`t formData = ref<{
-//   email: '';
-//   password: '';
-//   organizationURL: '';
-//   temporaryOrganizationPassword: '';
-//   recoveryPhrasePassword: '';
-// }>({`
-//   email: '',
-//   password: '',
-//   organizationURL: '',
-//   temporaryOrganizationPassword: '',
-//   recoveryPhrasePassword: '',
-// });
-
 /* Composables */
 useSetDynamicLayout({
   loggedInClass: false,
