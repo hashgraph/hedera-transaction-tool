@@ -14,7 +14,7 @@ import {
   NOTIFY_GENERAL,
   TRANSACTION_ACTION,
   SYNC_INDICATORS,
-  NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
+  NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES, isTransactionOverMaxSize, computeShortenedPublicKeyList,
 } from '@app/common';
 import { NotificationType, Transaction, TransactionStatus } from '@entities';
 
@@ -28,7 +28,7 @@ import {
   KeyList,
   PrivateKey,
   TransactionId,
-  Transaction as SDKTransaction,
+  Transaction as SDKTransaction, Timestamp,
 } from '@hashgraph/sdk';
 
 jest.mock('@app/common');
@@ -124,11 +124,11 @@ describe('TransactionStatusService', () => {
 
     jest.spyOn(service, 'updateTransactions').mockResolvedValueOnce(transactions as Transaction[]);
     jest.spyOn(service, 'getValidStartNowMinus180Seconds').mockImplementationOnce(jest.fn());
-    jest.spyOn(service, 'addExecutionTimeout').mockImplementationOnce(jest.fn());
+    jest.spyOn(service, 'prepareAndExecute').mockImplementationOnce(jest.fn());
 
     await service.handleInitialTransactionStatusUpdate();
 
-    expect(service.addExecutionTimeout).toHaveBeenCalled();
+    expect(service.prepareAndExecute).toHaveBeenCalled();
   });
 
   it('should request update for transactions with valid start after one week', async () => {
@@ -229,11 +229,11 @@ describe('TransactionStatusService', () => {
 
     jest.spyOn(service, 'updateTransactions').mockResolvedValueOnce(transactions as Transaction[]);
     jest.spyOn(service, 'getValidStartNowMinus180Seconds').mockImplementationOnce(jest.fn());
-    jest.spyOn(service, 'addExecutionTimeout').mockImplementationOnce(jest.fn());
+    jest.spyOn(service, 'prepareAndExecute').mockImplementationOnce(jest.fn());
 
     await service.handleTransactionsBetweenNowAndAfterThreeMinutes();
 
-    expect(service.addExecutionTimeout).toHaveBeenCalled();
+    expect(service.prepareAndExecute).toHaveBeenCalled();
   });
 
   it('should updates for expired transactions', async () => {
@@ -541,49 +541,113 @@ describe('TransactionStatusService', () => {
     });
   });
 
-  it('should prepare and execute a transaction signed with 100 different keys', async () => {
-    const keyList = new KeyList();
-    const privateKeys: PrivateKey[] = [];
+  describe('prepareAndExecute', () => {
+    let transaction: SDKTransaction;
+    let mockTransaction: Transaction;
+    let name: string;
+    let timeToValidStart: number;
+    let keyList: KeyList;
+    let privateKeys: PrivateKey[];
 
-    for (let i = 0; i < 100; i++) {
-      const privateKey = PrivateKey.generate();
-      privateKeys.push(privateKey);
-      keyList.push(privateKey.publicKey);
-    }
+    beforeEach(async () => {
+      jest.resetAllMocks();
+      const validStart = new Date(Date.now() + 1000);
+      transaction = new AccountCreateTransaction()
+        .setNodeAccountIds([new AccountId(3)])
+        .setTransactionId(TransactionId.withValidStart(new AccountId(3), Timestamp.fromDate(validStart)))
+        .setTransactionMemo('Test Transaction')
+        .freeze();
+      mockTransaction = {
+        id: 1,
+        validStart,
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+      } as Transaction;
+      name = `smart_collate_timeout_${mockTransaction.id}`;
+      keyList = new KeyList();
+      privateKeys = [];
 
-    const transaction = new AccountCreateTransaction()
-      .setNodeAccountIds([new AccountId(3)])
-      .setTransactionId(TransactionId.generate(new AccountId(3)))
-      .setTransactionMemo('Test Transaction')
-      .freeze();
+      for (let i = 0; i < 100; i++) {
+        const privateKey = PrivateKey.generate();
+        privateKeys.push(privateKey);
+        keyList.push(privateKey.publicKey);
+        transaction = await transaction.sign(privateKey);
+      }
+      mockTransaction.transactionBytes = Buffer.from(transaction.toBytes());
+      timeToValidStart = mockTransaction.validStart.getTime() - Date.now();
 
-    const mockedSignatureKey = new KeyList();
-    mockedSignatureKey.push(...privateKeys.slice(0,5).map(key => key.publicKey))
+      jest.useFakeTimers();
+      jest.spyOn(global, 'setTimeout');
+      jest.spyOn(schedulerRegistry, 'doesExist').mockReturnValue(false);
+      jest.spyOn(schedulerRegistry, 'addTimeout');
+      jest.spyOn(schedulerRegistry, 'deleteTimeout');
+      jest.spyOn(executeService, 'executeTransaction').mockResolvedValue(undefined);
+      jest.spyOn(service, 'addExecutionTimeout').mockImplementationOnce(jest.fn());
+    });
 
-    // Mock the computeSignatureKey function
-    jest.mocked(computeSignatureKey).mockResolvedValue(mockedSignatureKey);
+    afterEach(() => {
+      jest.useRealTimers();
+    });
 
-    for (const privateKey of privateKeys) {
-      await transaction.sign(privateKey);
-    }
+    it('should not set a timeout if one already exists', () => {
+      schedulerRegistry.doesExist.mockReturnValueOnce(true);
 
-    const mockTransaction = {
-      id: 1,
-      validStart: new Date(Date.now() + 1000),
-      transactionBytes: transaction.toBytes(),
-      status: TransactionStatus.WAITING_FOR_EXECUTION,
-    } as Transaction;
+      service.prepareAndExecute(mockTransaction);
 
-    jest.spyOn(service, 'prepareAndExecute');
-    jest.spyOn(service, 'addExecutionTimeout').mockImplementationOnce(jest.fn());
+      expect(setTimeout).not.toHaveBeenCalled();
+    });
 
-    service.prepareAndExecute(mockTransaction);
+    it('should set a timeout with the correct delay', () => {
+      service.prepareAndExecute(mockTransaction);
 
-    expect(service.prepareAndExecute).toHaveBeenCalledWith(mockTransaction);
-    expect(service.addExecutionTimeout).toHaveBeenCalledWith(mockTransaction);
+      expect(setTimeout).toHaveBeenCalledWith(
+        expect.any(Function),
+        expect.closeTo(timeToValidStart - 10 * 1000),
+      );
+    });
 
-    const sdkTransaction = SDKTransaction.fromBytes(mockTransaction.transactionBytes);
-    expect(sdkTransaction.getSignatures().size).toBeLessThan(6);
+    it('should add the timeout to the scheduler registry', () => {
+      service.prepareAndExecute(mockTransaction);
+
+      expect(schedulerRegistry.addTimeout).toHaveBeenCalledWith(name, expect.anything());
+    });
+
+    it('should prepare and execute a transaction signed with 100 different keys, reducing the signatures as needed', async () => {
+      // Mock the functions
+      jest.mocked(isTransactionOverMaxSize).mockImplementation(async (sdkTransaction) => {
+        return sdkTransaction._signerPublicKeys.size > 5;
+      });
+      jest.mocked(computeSignatureKey).mockResolvedValue(keyList);
+      jest.mocked(computeShortenedPublicKeyList).mockReturnValue(privateKeys.slice(0,5).map(key => key.publicKey));
+
+      service.prepareAndExecute(mockTransaction);
+
+      await jest.advanceTimersToNextTimerAsync();
+
+      expect(service.addExecutionTimeout).toHaveBeenCalled();
+
+      const sdkTransaction = SDKTransaction.fromBytes(mockTransaction.transactionBytes);
+      expect(sdkTransaction._signerPublicKeys.size).toBe(5);
+    });
+
+    it(
+      'should fail to prepare a transaction signed with 100 different keys, due to key list unable to be sufficiently reduced',
+      async () => {
+        // Mock the functions
+        jest.mocked(isTransactionOverMaxSize).mockImplementation(async (sdkTransaction) => {
+          return sdkTransaction._signerPublicKeys.size > 5;
+        });
+        jest.mocked(computeSignatureKey).mockResolvedValue(keyList);
+        jest.mocked(computeShortenedPublicKeyList).mockReturnValue(privateKeys.slice(0,10).map(key => key.publicKey));
+
+        service.prepareAndExecute(mockTransaction);
+
+        try {
+          await jest.advanceTimersToNextTimerAsync();
+          check the transaction and make sure the status and statuscodes have been updated and make sure addExecutionTimeout has not been called
+        } catch (error) {
+          expect(error).toEqual(new Error('Signed transaction exceeds size limit.'));
+        }
+      });
   });
 
   describe('addExecutionTimeout', () => {
@@ -637,9 +701,9 @@ describe('TransactionStatusService', () => {
     it('should execute the transaction and remove the timeout after the delay', async () => {
       service.addExecutionTimeout(transaction);
 
-      jest.advanceTimersByTime(timeToValidStart + 5 * 1000);
+      await jest.advanceTimersByTimeAsync(timeToValidStart + 5 * 1000);
 
-      expect(executeService.executeTransaction).toHaveBeenCalledWith(transaction.id);
+      expect(executeService.executeTransaction).toHaveBeenCalledWith(transaction);
     });
   });
 });
