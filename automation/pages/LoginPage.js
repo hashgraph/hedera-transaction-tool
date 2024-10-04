@@ -16,6 +16,7 @@ class LoginPage extends BasePage {
   signInButtonSelector = 'button-login';
   importantNoteModalButtonSelector = 'button-understand-agree';
   rejectKeyChainButtonSelector = 'button-refuse-key-chain-mode';
+  rejectMigrationButtonSelector = 'button-refuse-migration';
   resetStateButtonSelector = 'link-reset';
   confirmResetStateButtonSelector = 'button-reset';
   keepLoggedInCheckboxSelector = 'checkbox-remember';
@@ -51,6 +52,17 @@ class LoginPage extends BasePage {
     // If the modal is visible, then click the button to close the modal
     if (await this.isElementVisible(this.rejectKeyChainButtonSelector)) {
       await this.click(this.rejectKeyChainButtonSelector);
+    }
+  }
+
+  // Method to close the 'Begin Migration' modal if it appears
+  async closeMigrationModal() {
+    // Wait for the button to be visible with a timeout
+    //await this.waitForElementToBeVisible(this.rejectMigrationButtonSelector, 500);
+
+    // If the modal is visible, then click the button to close the modal
+    if (await this.isElementVisible(this.rejectMigrationButtonSelector)) {
+      await this.click(this.rejectMigrationButtonSelector);
     }
   }
 

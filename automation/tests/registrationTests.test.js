@@ -28,7 +28,7 @@ test.describe('Registration tests', () => {
 
   test.beforeEach(async () => {
     await registrationPage.logoutForReset();
-    await resetAppState(window);
+    await resetAppState(window, app);
   });
 
   test('Verify all elements are present on the registration page', async () => {

@@ -71,8 +71,15 @@ defineExpose({ initialize });
         <p class="text-small text-secondary mt-4">Do you want to migrate the data?</p>
       </div>
       <div class="flex-between-centered gap-4 mt-5">
-        <AppButton color="borderless" @click="handleChoose(false)">No</AppButton>
-        <AppButton color="primary" @click="handleChoose(true)">Yes</AppButton>
+        <AppButton
+          color="borderless"
+          @click="handleChoose(false)"
+          data-testid="button-refuse-migration"
+          >No</AppButton
+        >
+        <AppButton color="primary" @click="handleChoose(true)" data-testid="button-start-migration"
+          >Yes</AppButton
+        >
       </div>
     </div>
   </AppModal>

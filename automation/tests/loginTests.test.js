@@ -78,7 +78,7 @@ test.describe('Login tests', () => {
 
   test('Verify resetting account', async () => {
     await loginPage.logout();
-    await resetAppState(window);
+    await resetAppState(window, app);
     // Assuming we have reset the account, and we land on the registration page, we confirm that we see password field.
     const isConfirmPasswordVisible = await registrationPage.isConfirmPasswordFieldVisible();
     expect(isConfirmPasswordVisible).toBe(true);

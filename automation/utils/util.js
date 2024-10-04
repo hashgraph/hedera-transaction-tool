@@ -1,5 +1,6 @@
 const { expect } = require('@playwright/test');
 const { launchHederaTransactionTool } = require('./electronAppLauncher');
+const { migrationDataExists } = require('./oldTool.js');
 const LoginPage = require('../pages/LoginPage.js');
 const SettingsPage = require('../pages/SettingsPage');
 
@@ -16,15 +17,24 @@ async function setupApp() {
 
   expect(window).not.toBeNull();
   await loginPage.closeImportantNoteModal();
+  const canMigrate = await migrationDataExists(app);
+  if (canMigrate) {
+    await loginPage.closeMigrationModal();
+  }
   if (process.platform === 'darwin') {
     await loginPage.closeKeyChainModal();
   }
+
   return { app, window };
 }
 
-async function resetAppState(window) {
+async function resetAppState(window, app) {
   const loginPage = new LoginPage(window);
   await loginPage.resetState();
+  const canMigrate = await migrationDataExists(app);
+  if (canMigrate) {
+    await loginPage.closeMigrationModal();
+  }
   if (process.platform === 'darwin') {
     await loginPage.closeKeyChainModal();
   }
