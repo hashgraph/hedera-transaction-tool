@@ -14,6 +14,7 @@ import DecryptRecoveryPhraseForm from './DecryptRecoveryPhraseForm.vue';
 /* Emits */
 const emit = defineEmits<{
   (event: 'setRecoveryPhrase', value: RecoveryPhrase): void;
+  (event: 'stopMigration'): void;
 }>();
 
 /* State */
@@ -40,5 +41,9 @@ const decryptRecoveryPhrase = async (recoveryPhrasePassword: string) => {
 };
 </script>
 <template>
-  <DecryptRecoveryPhraseForm :loading="loading" :submit-callback="handleFormSubmit" />
+  <DecryptRecoveryPhraseForm
+    :loading="loading"
+    :submit-callback="handleFormSubmit"
+    @stop-migration="$emit('stopMigration')"
+  />
 </template>

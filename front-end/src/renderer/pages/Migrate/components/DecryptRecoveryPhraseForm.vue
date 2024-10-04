@@ -19,6 +19,11 @@ const props = defineProps<{
   submitCallback: SubmitCallback;
 }>();
 
+/* Emits */
+defineEmits<{
+  (event: 'stopMigration'): void;
+}>();
+
 /* State */
 const inputRecoveryPhrasePassword = ref('');
 const inputRecoveryPhrasePasswordError = ref<string | null>(null);
@@ -66,19 +71,35 @@ watch(inputRecoveryPhrasePassword, () => (inputRecoveryPhrasePasswordError.value
       </div>
     </div>
 
-    <!-- Submit -->
-    <div class="d-flex justify-content-end align-items-end mt-5">
-      <div>
-        <AppButton
-          color="primary"
-          type="submit"
-          class="w-100"
-          loading-text="Decrypting..."
-          :loading="loading"
-          :disabled="inputRecoveryPhrasePassword.length === 0"
-          data-testid="button-decrypt-recovery-phrase"
-          >Continue</AppButton
-        >
+    <div class="d-flex justify-content-between">
+      <!-- Back -->
+      <div class="d-flex justify-content-end align-items-end mt-5">
+        <div>
+          <AppButton
+            color="secondary"
+            type="button"
+            class="w-100"
+            data-testid="button-stop-migration"
+            @click="$emit('stopMigration')"
+            >Back</AppButton
+          >
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <div class="d-flex justify-content-end align-items-end mt-5">
+        <div>
+          <AppButton
+            color="primary"
+            type="submit"
+            class="w-100"
+            loading-text="Decrypting..."
+            :loading="loading"
+            :disabled="inputRecoveryPhrasePassword.length === 0"
+            data-testid="button-decrypt-recovery-phrase"
+            >Continue</AppButton
+          >
+        </div>
       </div>
     </div>
   </form>

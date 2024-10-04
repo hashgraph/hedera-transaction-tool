@@ -9,6 +9,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
+import { useRouter } from 'vue-router';
 
 import { resetDataLocal } from '@renderer/services/userService';
 import { getStaticUser } from '@renderer/services/safeStorageService';
@@ -33,6 +34,7 @@ useSetDynamicLayout({
   shouldSetupAccountClass: false,
   showMenu: false,
 });
+const router = useRouter();
 
 /* State */
 const step = ref<StepName>('recoveryPhrase');
@@ -62,6 +64,12 @@ const heading = computed(() => {
 });
 
 /* Handlers */
+const handleStopMigration = async () => {
+  user.setMigrating(false);
+  router.push({ name: 'login' });
+  await user.logout();
+};
+
 const handleSetRecoveryPhrase = async (value: RecoveryPhrase) => {
   recoveryPhrase.value = value;
   step.value = 'personal';
@@ -117,7 +125,10 @@ onMounted(async () => {
       <div class="fill-remaining mt-4">
         <!-- Decrypt Recovery Phrase Step -->
         <template v-if="stepIs('recoveryPhrase')">
-          <DecryptRecoveryPhrase @set-recovery-phrase="handleSetRecoveryPhrase" />
+          <DecryptRecoveryPhrase
+            @set-recovery-phrase="handleSetRecoveryPhrase"
+            @stop-migration="handleStopMigration"
+          />
         </template>
 
         <!-- Setup Personal User Step -->
