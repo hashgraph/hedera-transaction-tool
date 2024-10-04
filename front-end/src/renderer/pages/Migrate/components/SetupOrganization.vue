@@ -1,16 +1,25 @@
 <script setup lang="ts">
+import type { Prisma } from '@prisma/client';
 import type { RecoveryPhrase } from '@renderer/types';
 import type { ModelValue, SubmitCallback } from './SetupOrganizationForm.vue';
 
 import { ref } from 'vue';
 
 import { addOrganization } from '@renderer/services/organizationsService';
-import { changePassword, login } from '@renderer/services/organization';
+import {
+  changePassword,
+  deleteKey,
+  getUserState,
+  login,
+  uploadKey,
+} from '@renderer/services/organization';
+import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
+import { restorePrivateKey, storeKeyPair } from '@renderer/services/keyPairService';
+import { compareHash } from '@renderer/services/electronUtilsService';
 
-import { safeAwait } from '@renderer/utils/safeAwait';
+import { userKeyHasMnemonic, safeAwait } from '@renderer/utils';
 
 import SetupOrganizationForm from './SetupOrganizationForm.vue';
-import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
 /* Props */
 const props = defineProps<{
@@ -18,6 +27,7 @@ const props = defineProps<{
   email: string;
   password: string | null;
   personalId: string;
+  useKeychain: boolean;
 }>();
 
 /* Emits */
@@ -29,6 +39,7 @@ const emit = defineEmits<{
 const loading = ref(false);
 const loadingText = ref<string>('');
 const organizationId = ref<string | null>(null);
+const organizationUserId = ref<number | null>(null);
 const loggedIn = ref(false);
 
 /* Handlers */
@@ -67,13 +78,27 @@ const handleFormSubmit: SubmitCallback = async (formData: ModelValue) => {
 
   loadingText.value = 'Storing encrypted credentials...';
   /* Add Organization Credentials */
-  await addOrganizationCredentials(
-    props.email,
-    formData.newOrganizationPassword,
-    organizationId.value,
-    props.personalId,
-    props.password,
+  const addOrganizationCredentialsResult = await safeAwait(
+    addOrganizationCredentials(
+      props.email,
+      formData.newOrganizationPassword,
+      organizationId.value,
+      props.personalId,
+      props.password,
+    ),
   );
+  if ('error' in addOrganizationCredentialsResult) {
+    loading.value = false;
+    throw addOrganizationCredentialsResult.error;
+  }
+
+  /* Store First Key */
+  const restoreExistingKeysResult = await safeAwait(restoreExistingKeys(formData));
+
+  if ('error' in restoreExistingKeysResult) {
+    loading.value = false;
+    throw restoreExistingKeysResult.error;
+  }
 
   loading.value = false;
   emit('setOrganizationId', organizationId.value);
@@ -95,7 +120,8 @@ const loginInOrganization = async ({
   organizationURL,
   temporaryOrganizationPassword,
 }: ModelValue) => {
-  await login(organizationURL, props.email, temporaryOrganizationPassword);
+  const { id } = await login(organizationURL, props.email, temporaryOrganizationPassword);
+  organizationUserId.value = id;
 };
 
 const setNewPassword = async ({
@@ -104,6 +130,75 @@ const setNewPassword = async ({
   newOrganizationPassword,
 }: ModelValue) => {
   await changePassword(organizationURL, temporaryOrganizationPassword, newOrganizationPassword);
+};
+
+const restoreExistingKeys = async ({ organizationURL }: ModelValue) => {
+  if (!organizationUserId.value) throw new Error('(BUG) Organization user id not set');
+
+  const { userKeys } = await getUserState(organizationURL);
+
+  const userKeysWithMnemonic = userKeys.filter(userKeyHasMnemonic);
+
+  if (userKeysWithMnemonic.length === 0) {
+    await restoreKeyPair(organizationURL, 0, 'Default');
+    return;
+  }
+
+  for (let i = 0; i < userKeysWithMnemonic.length; i++) {
+    const userKey = userKeysWithMnemonic[i];
+
+    /**
+     * Restore key if it has a mnemonic hash and is the same as imported
+     * If keys from multiple mnemonic phrases are present, they will be deleted as the system supports only one mnemonic phrase
+     */
+    if (userKeyHasMnemonic(userKey)) {
+      const { data: matchedHash, error } = await safeAwait(
+        compareHash([...props.recoveryPhrase.words].toString(), userKey.mnemonicHash),
+      );
+
+      if (!error && matchedHash) {
+        await restoreKeyPair(organizationURL, userKey.index, `Restored Key ${i + 1}`);
+      } else {
+        await safeAwait(deleteKey(organizationURL, organizationUserId.value, userKey.id));
+      }
+    }
+  }
+};
+
+const restoreKeyPair = async (organizationURL: string, index: number, nickname: string) => {
+  if (!props.recoveryPhrase) throw new Error('(BUG) Recovery phrase not set');
+  if (organizationUserId.value === null) throw new Error('(BUG) Organization user id not set');
+
+  const passphrase = '';
+  const type = 'ED25519';
+  const restoredPrivateKey = await restorePrivateKey(
+    props.recoveryPhrase.words,
+    passphrase,
+    index,
+    type,
+  );
+
+  const keyPair: Prisma.KeyPairUncheckedCreateInput = {
+    user_id: props.personalId,
+    index,
+    public_key: restoredPrivateKey.publicKey.toStringRaw(),
+    private_key: restoredPrivateKey.toStringRaw(),
+    type,
+    organization_id: organizationId.value,
+    organization_user_id: organizationUserId.value,
+    secret_hash: props.recoveryPhrase.hash,
+    nickname,
+  };
+
+  await storeKeyPair(keyPair, props.password, false);
+
+  await safeAwait(
+    uploadKey(organizationURL, organizationUserId.value, {
+      publicKey: keyPair.public_key,
+      index: keyPair.index,
+      mnemonicHash: keyPair.secret_hash || undefined,
+    }),
+  );
 };
 </script>
 <template>
