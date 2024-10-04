@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, onMounted, reactive, ref, watch } from 'vue';
+import { nextTick, onBeforeMount, onMounted, reactive, ref, watch } from 'vue';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
@@ -91,7 +91,10 @@ const handleUseKeychain = async (value: boolean) => {
   checkPassword('');
 
   if (!value) {
-    useKeychain.value = value;
+    useKeychain.value = false;
+    await nextTick();
+    createTooltips();
+    setTooltipContent();
     return;
   }
 
@@ -104,7 +107,7 @@ const handleUseKeychain = async (value: boolean) => {
 
   await encrypt('gain_access');
 
-  useKeychain.value = value;
+  useKeychain.value = true;
 };
 
 /* Functions */
@@ -203,7 +206,7 @@ watch(inputPassword, pass => {
       </div>
 
       <!-- Password -->
-      <div>
+      <div :key="useKeychain.toString()">
         <label data-testid="label-password" class="form-label mt-4">Password</label>
         <AppInput
           v-model="inputPassword"
