@@ -80,10 +80,10 @@ const handleFinishMigration = () => {
       />
 
       <SummaryItem
-        v-if="importedUserData?.defaultMaxTransactionFee !== null"
+        v-if="importedUserData && importedUserData.defaultMaxTransactionFee !== null"
         class="mt-4"
         label="Imported Default Max Transaction Fee"
-        :value="Hbar.fromTinybars(importedUserData?.defaultMaxTransactionFee ?? 0).toString()"
+        :value="Hbar.fromTinybars(importedUserData.defaultMaxTransactionFee).toString()"
         data-testid="p-migration-summary-imported-accounts"
       />
 
