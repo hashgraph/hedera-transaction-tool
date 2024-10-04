@@ -162,7 +162,7 @@ async function storeKey(key: {
     keyPair.organization_id = user.selectedOrganization.id;
     keyPair.organization_user_id = user.selectedOrganization.userId;
 
-    if (user.selectedOrganization.userKeys.some(k => k.publicKey === publicKey.toStringRaw())) {
+    if (!user.selectedOrganization.userKeys.some(k => k.publicKey === publicKey.toStringRaw())) {
       await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
         publicKey: publicKey.toStringRaw(),
         index: matchedRecoveryPhraseHashCode && key.index !== null ? key.index : undefined,
