@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -19,7 +19,7 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 const user = useUserStore();
 
 /* State */
-const chooseModeModalShown = ref(false);
+const show = ref(false);
 
 /* Handlers */
 const handleSubmit = async (e: Event) => {
@@ -37,7 +37,7 @@ const handleChooseMode = async (useKeyChain: boolean) => {
     await user.login(staticUser.id, staticUser.email, true);
   }
 
-  chooseModeModalShown.value = false;
+  show.value = false;
 };
 
 /* Functions */
@@ -55,7 +55,7 @@ const checkShouldChoose = async () => {
     if (useKeyChain) return false;
 
     const usersCount = await getUsersCount();
-    if (usersCount === 1) return true; /* Not using keychain and has not registered */
+    if (usersCount < 2) return true;
   } catch (error) {
     /* Not initialized */
     return true;
@@ -64,45 +64,34 @@ const checkShouldChoose = async () => {
   return false;
 };
 
-async function checkShouldRegister() {
-  try {
-    const usersCount = await getUsersCount();
-    return usersCount === 0;
-  } catch (error) {
-    return true;
+const initialize = async () => {
+  const keychainAvailable = await isKeychainAvailable();
+
+  if (!keychainAvailable) {
+    await initializeUseKeychain(false);
+    return;
   }
-}
+
+  const shouldChoose = await checkShouldChoose();
+  show.value = shouldChoose;
+};
 
 /* Hooks */
-onMounted(async () => {
-  const shouldChoose = await checkShouldChoose();
-  chooseModeModalShown.value = shouldChoose;
-});
+onMounted(initialize);
 
-/* Watchers */
-watch(
-  () => user.personal,
-  async () => {
-    const noUser = !user.personal || !user.personal.isLoggedIn;
-    const shouldRegister = await checkShouldRegister();
-    const shouldChoose = await checkShouldChoose();
-
-    if (noUser && shouldRegister && shouldChoose) {
-      chooseModeModalShown.value = shouldChoose;
-    }
-  },
-);
+/* Expose */
+defineExpose({ initialize });
 </script>
 <template>
   <div>
     <AppModal
-      v-model:show="chooseModeModalShown"
+      v-model:show="show"
       class="common-modal"
       :close-on-click-outside="false"
       :close-on-escape="false"
     >
       <div class="p-5">
-        <i class="bi bi-x-lg cursor-pointer" @click="chooseModeModalShown = false"></i>
+        <i class="bi bi-x-lg cursor-pointer" @click="handleChooseMode(false)"></i>
 
         <div class="text-center mt-4">
           <i class="bi bi-key large-icon"></i>

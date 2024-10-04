@@ -36,6 +36,7 @@ vi.mock('electron', () => {
     },
     app: {
       getPath: vi.fn(),
+      quit: vi.fn(),
     },
     dialog: { showSaveDialog: vi.fn(), showErrorBox: vi.fn(), showOpenDialog: vi.fn() },
   };
@@ -94,6 +95,7 @@ describe('registerUtilsListeners', () => {
       'hexToUint8ArrayBatch',
       'openBufferInTempFile',
       'saveFile',
+      'quit',
     ];
 
     expect(ipcMainMO.on).toHaveBeenCalledWith('utils:openExternal', expect.any(Function));
@@ -536,6 +538,17 @@ describe('registerUtilsListeners', () => {
         message,
       });
       expect(result).toBe(dialogReturnValue);
+    }
+  });
+
+  test('Should invoke app.quit in util:quit', async () => {
+    const quitHandler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'utils:quit');
+
+    expect(quitHandler).toBeDefined();
+
+    if (quitHandler) {
+      await quitHandler[1](event);
+      expect(app.quit).toHaveBeenCalled();
     }
   });
 });

@@ -21,3 +21,6 @@ export const readyToSignTitle = 'Ready to Sign';
 export const inProgressTitle = 'In Progress';
 export const readyForExecutionTitle = 'Ready for Execution';
 export const historyTitle = 'History';
+
+/* Local Storage */
+export const LOCAL_STORAGE_IMPORTANT_NOTE_ACCEPTED = 'important-note-accepted';

@@ -113,7 +113,7 @@ const restoreKeys = async () => {
 const handleSave = async () => {
   if (keys.value.length === 0) throw Error('No key pairs to save');
 
-  if (!isUserLoggedIn(user.personal)) throw Error('User is logged in');
+  if (!isUserLoggedIn(user.personal)) throw Error('User is not logged in');
   const personalPassword = user.getPassword();
 
   if (!personalPassword && !user.personal.useKeychain) {

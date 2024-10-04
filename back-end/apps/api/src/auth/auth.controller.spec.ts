@@ -1,7 +1,7 @@
 import { UnprocessableEntityException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 
 import { guardMock } from '@app/common';
 import { User, UserStatus } from '@entities';
@@ -17,6 +17,11 @@ describe('AuthController', () => {
   let res: Response;
 
   const authService = mockDeep<AuthService>();
+
+  const request: Request = {
+    protocol: 'http',
+    get: jest.fn(),
+  } as unknown as Request;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -61,27 +66,32 @@ describe('AuthController', () => {
     it('should return a user', async () => {
       const result = user;
 
+      jest.mocked(request.get).mockImplementationOnce(() => 'localhost');
       authService.signUpByAdmin.mockResolvedValue(result);
 
-      expect(await controller.signUp({ email: 'john@test.com' })).toBe(result);
+      expect(await controller.signUp({ email: 'john@test.com' }, request)).toBe(result);
     });
 
     it('should throw an error if the user already exists', async () => {
+      jest.mocked(request.get).mockImplementationOnce(() => 'localhost');
       jest
         .spyOn(controller, 'signUp')
         .mockRejectedValue(new UnprocessableEntityException('Email already exists.'));
 
-      await expect(controller.signUp({ email: 'john@test.com' })).rejects.toThrowError(
+      await expect(controller.signUp({ email: 'john@test.com' }, request)).rejects.toThrow(
         'Email already exists.',
       );
     });
 
     it('should throw an error if no email is supplied', async () => {
+      jest.mocked(request.get).mockImplementationOnce(() => 'localhost');
       jest
         .spyOn(controller, 'signUp')
         .mockRejectedValue(new UnprocessableEntityException('Email is required.'));
 
-      await expect(controller.signUp({ email: null })).rejects.toThrowError('Email is required.');
+      await expect(controller.signUp({ email: null }, request)).rejects.toThrow(
+        'Email is required.',
+      );
     });
   });
 

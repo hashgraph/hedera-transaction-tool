@@ -1,3 +1,5 @@
+import { LOCAL_STORAGE_IMPORTANT_NOTE_ACCEPTED } from '@main/shared/constants';
+
 import { commonIPCHandler } from '@renderer/utils';
 
 /* User Service */
@@ -42,7 +44,8 @@ export const registerLocal = async (email: string, password: string, keepLoggedI
 /* Reset the whole local app */
 export const resetDataLocal = async () =>
   commonIPCHandler(async () => {
-    return await window.electronAPI.local.localUser.resetData();
+    await window.electronAPI.local.localUser.resetData();
+    localStorage.setItem(LOCAL_STORAGE_IMPORTANT_NOTE_ACCEPTED, 'true');
   }, 'Failed to reset user data');
 
 /* Get the count of local users */

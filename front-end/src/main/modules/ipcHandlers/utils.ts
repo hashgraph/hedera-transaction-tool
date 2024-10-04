@@ -130,4 +130,8 @@ export default () => {
       });
     },
   );
+
+  ipcMain.handle(createChannelName('quit'), async () => {
+    app.quit();
+  });
 };

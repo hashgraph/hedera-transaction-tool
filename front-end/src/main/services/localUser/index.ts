@@ -11,6 +11,7 @@ export * from './organizationCredentials';
 export * from './contacts';
 export * from './publicKeyLinked';
 export * from './encryptedKeys';
+export * from './dataMigration';
 
 import { session } from 'electron';
 

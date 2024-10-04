@@ -80,7 +80,7 @@ const handleWordChange = (newWord: string, index: number) => {
 
 const handleCopyRecoveryPhrase = () => {
   navigator.clipboard.writeText(words.value.join(', '));
-  toast.success('Revovery phrase copied');
+  toast.success('Recovery phrase copied');
 };
 
 /* Watchers */

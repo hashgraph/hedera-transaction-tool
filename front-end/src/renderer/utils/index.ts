@@ -9,6 +9,8 @@ export * from './validator';
 export * from './axios';
 export * from './ipc';
 export * from './notifications';
+export * from './safeAwait';
+export * from './assertions';
 
 export const getDateTimeLocalInputValue = (date: Date) => {
   const tzo = -date.getTimezoneOffset();

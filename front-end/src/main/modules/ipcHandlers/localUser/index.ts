@@ -13,6 +13,7 @@ import listenForPublicKeyLinkedEvents from './publicKeyLinked';
 import listenForEncryptedKeysEvents from './encryptedKeys';
 import listenForClaimEvents from './claim';
 import listenForSafeStorageEvents from './safeStorage';
+import listenForDataMigrationEvents from './dataMigration';
 
 export default () => {
   listenForKeyPairEvents();
@@ -30,4 +31,5 @@ export default () => {
   listenForEncryptedKeysEvents();
   listenForClaimEvents();
   listenForSafeStorageEvents();
+  listenForDataMigrationEvents();
 };
