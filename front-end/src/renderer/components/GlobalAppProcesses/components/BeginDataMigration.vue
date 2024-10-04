@@ -46,6 +46,7 @@ const checkShouldChoose = async () => {
 
 const initialize = async () => {
   show.value = await checkShouldChoose();
+  if (!show.value) emit('ready');
 };
 
 /* Hooks */
