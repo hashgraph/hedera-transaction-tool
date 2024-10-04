@@ -90,7 +90,7 @@ watch(
       :close-on-escape="false"
     >
       <div class="p-5">
-        <i class="bi bi-x-lg cursor-pointer" @click="show = false"></i>
+        <i class="bi bi-x-lg cursor-pointer" @click="handleChooseMode(false)"></i>
 
         <div class="text-center mt-4">
           <i class="bi bi-key large-icon"></i>
