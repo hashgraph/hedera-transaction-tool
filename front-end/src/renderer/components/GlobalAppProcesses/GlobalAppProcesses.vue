@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
+
+import useUserStore from '@renderer/stores/storeUser';
 
 import { getUseKeychain } from '@renderer/services/safeStorageService';
 import { getUsersCount, resetDataLocal } from '@renderer/services/userService';
@@ -9,6 +11,9 @@ import AppUpdate from './components/AppUpdate.vue';
 import ImportantNote from './components/ImportantNote.vue';
 import DetectKeychain from './components/DetectKeychain.vue';
 import BeginDataMigration from './components/BeginDataMigration.vue';
+
+/* Stores */
+const user = useUserStore();
 
 /* State */
 const importantNoteReady = ref(false);
@@ -28,21 +33,35 @@ onMounted(async () => {
     /* Not initialized */
   }
 });
+
+watch(
+  () => user.personal,
+  () => {
+    if (!user.personal?.isLoggedIn) {
+      importantNoteReady.value = false;
+      migrationCheckReady.value = false;
+      migrate.value = false;
+    }
+  },
+);
 </script>
 
 <template>
   <AppUpdate />
-  <ImportantNote @ready="importantNoteReady = true" />
 
-  <template v-if="importantNoteReady">
-    <BeginDataMigration @ready="migrationCheckReady = true" @start-migrate="migrate = true" />
-  </template>
+  <template v-if="!user.personal?.isLoggedIn">
+    <ImportantNote @ready="importantNoteReady = true" />
 
-  <template v-if="importantNoteReady && migrationCheckReady">
-    <AutoLoginInOrganization />
+    <template v-if="importantNoteReady">
+      <BeginDataMigration @ready="migrationCheckReady = true" @start-migrate="migrate = true" />
+    </template>
 
-    <template v-if="!migrate">
-      <DetectKeychain />
+    <template v-if="importantNoteReady && migrationCheckReady">
+      <AutoLoginInOrganization />
+
+      <template v-if="!migrate">
+        <DetectKeychain />
+      </template>
     </template>
   </template>
 </template>

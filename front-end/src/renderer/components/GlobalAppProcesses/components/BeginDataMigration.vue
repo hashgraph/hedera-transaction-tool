@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
-
-import useUserStore from '@renderer/stores/storeUser';
+import { onMounted, ref } from 'vue';
 
 import { useRouter } from 'vue-router';
 
@@ -10,9 +8,6 @@ import { locateDataMigrationFiles } from '@renderer/services/migrateDataService'
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-
-/* Stores */
-const user = useUserStore();
 
 /* Composables */
 const router = useRouter();
@@ -53,17 +48,6 @@ const checkShouldChoose = async () => {
 onMounted(async () => {
   show.value = await checkShouldChoose();
 });
-
-/* Watchers */
-watch(
-  () => user.personal,
-  async () => {
-    const noUser = !user.personal || !user.personal.isLoggedIn;
-    const shouldChoose = await checkShouldChoose();
-
-    if (noUser && shouldChoose) show.value = true;
-  },
-);
 </script>
 
 <template>

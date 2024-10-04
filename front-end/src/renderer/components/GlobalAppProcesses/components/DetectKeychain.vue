@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -69,17 +69,6 @@ onMounted(async () => {
   const shouldChoose = await checkShouldChoose();
   show.value = shouldChoose;
 });
-
-/* Watchers */
-watch(
-  () => user.personal,
-  async () => {
-    const noUser = !user.personal || !user.personal.isLoggedIn;
-    const shouldChoose = await checkShouldChoose();
-
-    if (noUser && shouldChoose) show.value = true;
-  },
-);
 </script>
 <template>
   <div>
