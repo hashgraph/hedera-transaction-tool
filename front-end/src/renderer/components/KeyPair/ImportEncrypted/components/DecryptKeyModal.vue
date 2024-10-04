@@ -159,19 +159,17 @@ async function storeKey(key: {
   };
 
   if (isLoggedInOrganization(user.selectedOrganization)) {
-    if (user.selectedOrganization.userKeys.some(k => k.publicKey === publicKey.toStringRaw())) {
-      throw new Error(`${publicKey.toStringRaw()} already exists`);
-    }
-
     keyPair.organization_id = user.selectedOrganization.id;
     keyPair.organization_user_id = user.selectedOrganization.userId;
 
-    await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
-      publicKey: publicKey.toStringRaw(),
-      index: matchedRecoveryPhraseHashCode && key.index !== null ? key.index : undefined,
-      mnemonicHash:
-        matchedRecoveryPhraseHashCode && key.index !== null ? props.mnemonicHash : undefined,
-    });
+    if (user.selectedOrganization.userKeys.some(k => k.publicKey === publicKey.toStringRaw())) {
+      await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
+        publicKey: publicKey.toStringRaw(),
+        index: matchedRecoveryPhraseHashCode && key.index !== null ? key.index : undefined,
+        mnemonicHash:
+          matchedRecoveryPhraseHashCode && key.index !== null ? props.mnemonicHash : undefined,
+      });
+    }
   }
 
   await storeKeyPair(keyPair, personalPassword, false);

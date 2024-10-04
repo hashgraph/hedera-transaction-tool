@@ -15,6 +15,11 @@ import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
 import DecryptKeyModal from '@renderer/components/KeyPair/ImportEncrypted/components/DecryptKeyModal.vue';
 
+/* Emits */
+const emit = defineEmits<{
+  (event: 'end', storedCount: number): void;
+}>();
+
 /* Stores */
 const user = useUserStore();
 
@@ -31,7 +36,7 @@ const allKeyPaths = ref<string[]>([]);
 const mnemonic = ref<string[] | null>(null);
 const mnemomicHash = ref<string | null>(null);
 const indexesFromMnemonic = ref<number[]>([]);
-const atLeastOneKeyDecrypted = ref(false);
+const storedCount = ref(0);
 
 const currentKeyPath = ref<string | null>(null);
 
@@ -45,7 +50,7 @@ const currentIndex = computed(() => {
 const handleSkipAll = () => end();
 const handleSkipOne = () => nextKey();
 const handleStored = () => {
-  atLeastOneKeyDecrypted.value = true;
+  storedCount.value++;
   nextKey();
 };
 
@@ -91,9 +96,11 @@ async function nextKey() {
 }
 
 async function end() {
+  emit('end', storedCount.value);
+
   isDecryptKeyModalShown.value = false;
 
-  if (atLeastOneKeyDecrypted.value) {
+  if (storedCount.value > 0) {
     toast.success('Keys imported successfully', { position: 'bottom-right' });
   }
 
