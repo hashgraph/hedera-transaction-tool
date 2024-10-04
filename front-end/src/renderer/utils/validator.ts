@@ -7,6 +7,29 @@ export function isEmail(email: string) {
   return false;
 }
 
+export function isPasswordStrong(password: string): {
+  length: boolean;
+  result: boolean;
+} {
+  const result = {
+    length: false,
+    result: false,
+  };
+
+  const validationRegex = [{ regex: /.{10,}/ }];
+
+  result.length = validationRegex[0].regex.test(password);
+
+  const isStrong = validationRegex.reduce((isStrong, item) => {
+    const isValid = item.regex.test(password);
+    return isStrong && isValid;
+  }, true);
+
+  result.result = isStrong;
+
+  return result;
+}
+
 export function isPublicKey(key: string) {
   try {
     return Boolean(PublicKey.fromString(key));
