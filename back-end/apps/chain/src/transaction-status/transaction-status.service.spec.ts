@@ -14,7 +14,9 @@ import {
   NOTIFY_GENERAL,
   TRANSACTION_ACTION,
   SYNC_INDICATORS,
-  NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES, isTransactionOverMaxSize, computeShortenedPublicKeyList,
+  NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
+  isTransactionOverMaxSize,
+  computeShortenedPublicKeyList,
 } from '@app/common';
 import { NotificationType, Transaction, TransactionStatus } from '@entities';
 
@@ -28,7 +30,8 @@ import {
   KeyList,
   PrivateKey,
   TransactionId,
-  Transaction as SDKTransaction, Timestamp,
+  Transaction as SDKTransaction,
+  Timestamp,
 } from '@hashgraph/sdk';
 
 jest.mock('@app/common');
@@ -643,7 +646,7 @@ describe('TransactionStatusService', () => {
 
         try {
           await jest.advanceTimersToNextTimerAsync();
-          check the transaction and make sure the status and statuscodes have been updated and make sure addExecutionTimeout has not been called
+          // check the transaction and make sure the status and statuscodes have been updated and make sure addExecutionTimeout has not been called
         } catch (error) {
           expect(error).toEqual(new Error('Signed transaction exceeds size limit.'));
         }
