@@ -3,13 +3,12 @@ import { ConfigService } from '@nestjs/config';
 import { Transport } from '@nestjs/microservices';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { Logger } from 'nestjs-pino';
 
 import * as cookieParser from 'cookie-parser';
 
 import { version } from '../package.json';
 
-import { API_SERVICE } from '@app/common';
+import { API_SERVICE, LoggerMiddleware } from '@app/common';
 
 import { NotFoundExceptionFilter } from './filters/not-found-exception.filter';
 import { BadRequestExceptionFilter } from './filters/bad-request-exception.filter';
@@ -29,7 +28,8 @@ export function setupApp(app: NestExpressApplication, addLogger: boolean = true)
   app.useGlobalFilters(new NotFoundExceptionFilter(), new BadRequestExceptionFilter());
 
   if (addLogger) {
-    app.useLogger(app.get(Logger));
+    const loggerMiddleware = app.get(LoggerMiddleware);
+    app.use(loggerMiddleware.use.bind(loggerMiddleware));
   }
 
   app.enableCors({

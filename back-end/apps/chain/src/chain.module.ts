@@ -4,7 +4,13 @@ import { ScheduleModule } from '@nestjs/schedule';
 
 import * as Joi from 'joi';
 
-import { DatabaseModule, LoggerModule, HealthModule, NotificationsProxyModule } from '@app/common';
+import {
+  DatabaseModule,
+  LoggerMiddleware,
+  LoggerModule,
+  HealthModule,
+  NotificationsProxyModule
+} from '@app/common';
 
 import getEnvFilePaths from './config/envFilePaths';
 
@@ -38,5 +44,6 @@ export const config = ConfigModule.forRoot({
     HealthModule,
     NotificationsProxyModule,
   ],
+  providers: [LoggerMiddleware],
 })
 export class ChainModule {}

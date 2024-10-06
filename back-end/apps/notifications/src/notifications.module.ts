@@ -7,6 +7,7 @@ import {
   ApiProxyModule,
   AuthProxyModule,
   LoggerModule,
+  LoggerMiddleware,
   HealthModule,
   DatabaseModule,
 } from '@app/common';
@@ -50,5 +51,6 @@ export const config = ConfigModule.forRoot({
     AuthProxyModule,
     HealthModule,
   ],
+  providers: [LoggerMiddleware],
 })
 export class NotificationsModule {}

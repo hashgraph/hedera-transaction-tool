@@ -1,9 +1,8 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Transport } from '@nestjs/microservices';
-import { Logger } from 'nestjs-pino';
 
-import { NOTIFICATIONS_SERVICE } from '@app/common';
+import { LoggerMiddleware, NOTIFICATIONS_SERVICE } from '@app/common';
 import { RedisIoAdapter } from './websocket/redis-io.adapter';
 
 export function setupApp(app: INestApplication, addLogger: boolean = true) {
@@ -18,7 +17,8 @@ export function setupApp(app: INestApplication, addLogger: boolean = true) {
   );
 
   if (addLogger) {
-    app.useLogger(app.get(Logger));
+    const loggerMiddleware = app.get(LoggerMiddleware);
+    app.use(loggerMiddleware.use.bind(loggerMiddleware));
   }
 
   const redisIoAdapter = new RedisIoAdapter(app);
