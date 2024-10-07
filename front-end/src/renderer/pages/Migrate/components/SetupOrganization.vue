@@ -161,7 +161,7 @@ const restoreExistingKeys = async ({ organizationURL }: ModelValue) => {
 
   if (userKeysWithMnemonic.length === 0) {
     for (let i = 0; i < 99; i++) {
-      const result = await safeAwait(restoreKeyPair(organizationURL, 0, 'Default', true));
+      const result = await safeAwait(restoreKeyPair(organizationURL, i, 'Default', true));
       if (!result.error) break;
     }
     return;
