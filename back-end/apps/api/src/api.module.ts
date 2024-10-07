@@ -4,7 +4,13 @@ import { Module } from '@nestjs/common';
 
 import * as Joi from 'joi';
 
-import { DatabaseModule, LoggerModule, NotificationsProxyModule, HealthModule } from '@app/common';
+import {
+  DatabaseModule,
+  LoggerMiddleware,
+  LoggerModule,
+  NotificationsProxyModule,
+  HealthModule,
+} from '@app/common';
 
 import getEnvFilePaths from './config/envFilePaths';
 
@@ -62,6 +68,7 @@ export const config = ConfigModule.forRoot({
       provide: APP_GUARD,
       useClass: IpThrottlerGuard,
     },
+    LoggerMiddleware,
   ],
 })
 export class ApiModule {}
