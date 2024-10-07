@@ -12,8 +12,8 @@ importers:
         specifier: 2.15.0-beta.3
         version: 2.15.0-beta.3
       '@hashgraph/sdk':
-        specifier: 2.52.0-beta.1
-        version: 2.52.0-beta.1
+        specifier: 2.52.0-beta.3
+        version: 2.52.0-beta.3
       '@nest-lab/throttler-storage-redis':
         specifier: 1.0.0
         version: 1.0.0(@nestjs/common@10.3.10(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10(@nestjs/common@10.3.10(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/microservices@10.3.10)(@nestjs/platform-express@10.3.10)(@nestjs/websockets@10.3.10)(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/throttler@6.2.1(@nestjs/common@10.3.10(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10(@nestjs/common@10.3.10(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/microservices@10.3.10)(@nestjs/platform-express@10.3.10)(@nestjs/websockets@10.3.10)(reflect-metadata@0.2.2)(rxjs@7.8.1))(reflect-metadata@0.2.2))(ioredis@5.4.1)(reflect-metadata@0.2.2)
@@ -614,8 +614,8 @@ packages:
       expo:
         optional: true
 
-  '@hashgraph/sdk@2.52.0-beta.1':
-    resolution: {integrity: sha512-CVgbWHXKf+g2fqVvqHepl3e4OXTl/5FIKIP68YhyRmU5d81fmFFJPMyGTfYUxkorDZubTjl8v0nDmIo+gBrfAg==}
+  '@hashgraph/sdk@2.52.0-beta.3':
+    resolution: {integrity: sha512-/tUqxaKL+m8fdzRHI0vWkdVc54VvaSyx5kHOAmRQDmty5wxaSd5w/F9yrfec1Irwm2bk7gPHGYzFXKUeKhBLrw==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
       expo: ^49.0.16
@@ -5224,7 +5224,7 @@ snapshots:
       - expo-crypto
       - expo-random
 
-  '@hashgraph/sdk@2.52.0-beta.1':
+  '@hashgraph/sdk@2.52.0-beta.3':
     dependencies:
       '@ethersproject/abi': 5.7.0
       '@ethersproject/bignumber': 5.7.0
