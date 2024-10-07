@@ -7,6 +7,7 @@ import { In, Between, MoreThan, Repository, LessThanOrEqual } from 'typeorm';
 import {
   FileAppendTransaction,
   FileUpdateTransaction,
+  Status,
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
@@ -353,10 +354,23 @@ export class TransactionStatusService {
           sdkTransaction.addSignature(key, sigArray);
         }
 
-        // TRANSACTION_OVERSIZE = 64
-        // cant throw error instead update status to failed and statuscode be sure both callbacks are wrapped internally wiht try catch so it won't crash the server'
+        // If the transaction is still too large,
+        // set it to failed with the TRANSACTION_OVERSIZE status code
+        // update the transaction, emit the event, and delete the timeout
         if (await isTransactionOverMaxSize(sdkTransaction)) {
-          throw new Error('Signed transaction exceeds size limit.');
+          await this.transactionRepo.update(
+            {
+              id: transaction.id,
+            },
+            {
+              status: TransactionStatus.REJECTED,
+              executedAt: new Date(),
+              statusCode: Status.TransactionOversize._code,
+            },
+          );
+          this.emitNotificationEvents(transaction, TransactionStatus.REJECTED);
+          this.schedulerRegistry.deleteTimeout(name);
+          return;
         }
 
         // TODO then make sure that front end doesn't allow chunks larger than 2k'
