@@ -32,6 +32,7 @@ import {
   TransactionId,
   Transaction as SDKTransaction,
   Timestamp,
+  Status,
 } from '@hashgraph/sdk';
 
 jest.mock('@app/common');
@@ -387,7 +388,9 @@ describe('TransactionStatusService', () => {
         {
           id: 1,
           status: TransactionStatus.WAITING_FOR_SIGNATURES,
-          transactionBytes: new FileUpdateTransaction().toBytes(),
+          transactionBytes: new FileUpdateTransaction()
+            .setContents('test')
+            .toBytes(),
         },
         {
           id: 2,
@@ -397,7 +400,9 @@ describe('TransactionStatusService', () => {
         {
           id: 3,
           status: TransactionStatus.WAITING_FOR_EXECUTION,
-          transactionBytes: new FileAppendTransaction().toBytes(),
+          transactionBytes: new FileAppendTransaction()
+            .setContents('test')
+            .toBytes(),
         },
       ];
 
@@ -566,16 +571,7 @@ describe('TransactionStatusService', () => {
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       } as Transaction;
       name = `smart_collate_timeout_${mockTransaction.id}`;
-      keyList = new KeyList();
-      privateKeys = [];
 
-      for (let i = 0; i < 100; i++) {
-        const privateKey = PrivateKey.generate();
-        privateKeys.push(privateKey);
-        keyList.push(privateKey.publicKey);
-        transaction = await transaction.sign(privateKey);
-      }
-      mockTransaction.transactionBytes = Buffer.from(transaction.toBytes());
       timeToValidStart = mockTransaction.validStart.getTime() - Date.now();
 
       jest.useFakeTimers();
@@ -615,6 +611,18 @@ describe('TransactionStatusService', () => {
     });
 
     it('should prepare and execute a transaction signed with 100 different keys, reducing the signatures as needed', async () => {
+      // prepare the signatures
+      keyList = new KeyList();
+      privateKeys = [];
+
+      for (let i = 0; i < 100; i++) {
+        const privateKey = PrivateKey.generate();
+        privateKeys.push(privateKey);
+        keyList.push(privateKey.publicKey);
+        transaction = await transaction.sign(privateKey);
+      }
+      mockTransaction.transactionBytes = Buffer.from(transaction.toBytes());
+
       // Mock the functions
       jest.mocked(isTransactionOverMaxSize).mockImplementation(async (sdkTransaction) => {
         return sdkTransaction._signerPublicKeys.size > 5;
@@ -635,21 +643,40 @@ describe('TransactionStatusService', () => {
     it(
       'should fail to prepare a transaction signed with 100 different keys, due to key list unable to be sufficiently reduced',
       async () => {
+        // prepare the signatures
+        keyList = new KeyList();
+        privateKeys = [];
+
+        const privateKey = PrivateKey.generate();
+        privateKeys.push(privateKey);
+        keyList.push(privateKey.publicKey);
+        transaction = await transaction.sign(privateKey);
+        mockTransaction.transactionBytes = Buffer.from(transaction.toBytes());
+
         // Mock the functions
         jest.mocked(isTransactionOverMaxSize).mockImplementation(async (sdkTransaction) => {
-          return sdkTransaction._signerPublicKeys.size > 5;
+          return sdkTransaction._signerPublicKeys.size > 0;
         });
         jest.mocked(computeSignatureKey).mockResolvedValue(keyList);
-        jest.mocked(computeShortenedPublicKeyList).mockReturnValue(privateKeys.slice(0,10).map(key => key.publicKey));
+        jest.mocked(computeShortenedPublicKeyList).mockReturnValue(privateKeys.map(key => key.publicKey));
+
+        jest.spyOn(transactionRepo, 'update').mockResolvedValue(undefined);
 
         service.prepareAndExecute(mockTransaction);
 
-        try {
-          await jest.advanceTimersToNextTimerAsync();
-          // check the transaction and make sure the status and statuscodes have been updated and make sure addExecutionTimeout has not been called
-        } catch (error) {
-          expect(error).toEqual(new Error('Signed transaction exceeds size limit.'));
-        }
+        await jest.advanceTimersToNextTimerAsync();
+
+        expect(service.addExecutionTimeout).not.toHaveBeenCalled();
+
+        // Verify that the update method was called with the correct parameters
+        expect(transactionRepo.update).toHaveBeenCalledWith(
+          { id: mockTransaction.id },
+          {
+            status: TransactionStatus.REJECTED,
+            executedAt: expect.any(Date), // Use expect.any(Date) to match any Date object
+            statusCode: Status.TransactionOversize._code,
+          }
+        );
       });
   });
 
