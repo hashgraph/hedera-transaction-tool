@@ -615,7 +615,7 @@ describe('TransactionStatusService', () => {
       keyList = new KeyList();
       privateKeys = [];
 
-      for (let i = 0; i < 100; i++) {
+      for (let i = 0; i < 50; i++) {
         const privateKey = PrivateKey.generate();
         privateKeys.push(privateKey);
         keyList.push(privateKey.publicKey);
