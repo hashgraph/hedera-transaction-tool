@@ -24,13 +24,13 @@ import {
   getTransactionId,
   getTransactionType,
 } from '@renderer/utils/sdk/transactions';
+import { redirectToDetails, redirectToGroupDetails } from '@renderer/utils';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
-import { redirectToDetails } from '@renderer/utils';
 
 /* Stores */
 const user = useUserStore();
@@ -84,13 +84,6 @@ const handleDetails = async (id: number) => {
 
   redirectToDetails(router, id, true);
 };
-
-async function handleGroupDetails(id: number) {
-  router.push({
-    name: 'transactionGroupDetails',
-    params: { id },
-  });
-}
 
 const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') => {
   sort.field = field;
@@ -276,7 +269,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                     }}
                   </td>
                   <td class="text-center">
-                    <AppButton @click="handleGroupDetails(group[0])" color="secondary"
+                    <AppButton @click="redirectToGroupDetails($router, group[0])" color="secondary"
                       >Details</AppButton
                     >
                   </td>

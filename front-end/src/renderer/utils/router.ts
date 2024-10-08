@@ -21,3 +21,11 @@ export const redirectToDetails = (
     replace,
   });
 };
+
+export const redirectToGroupDetails = (router: Router, id: string | number, replace = false) => {
+  router.push({
+    name: 'transactionGroupDetails',
+    params: { id },
+    replace,
+  });
+};

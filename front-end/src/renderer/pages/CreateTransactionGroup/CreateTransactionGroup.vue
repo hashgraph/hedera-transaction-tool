@@ -14,7 +14,7 @@ import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 import { createTransactionId } from '@renderer/utils/sdk/createTransactions';
 import { deleteGroup } from '@renderer/services/transactionGroupsService';
 
-import { getPropagationButtonLabel } from '@renderer/utils';
+import { getPropagationButtonLabel, redirectToGroupDetails } from '@renderer/utils';
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -171,10 +171,7 @@ async function handleSignSubmit() {
 function handleExecuted(id: string) {
   transactionGroup.clearGroup();
   if (user.selectedOrganization) {
-    router.push({
-      name: 'transactionGroupDetails',
-      params: { id },
-    });
+    redirectToGroupDetails(router, id);
   } else {
     router.push({ name: 'transactions' });
   }
@@ -182,10 +179,7 @@ function handleExecuted(id: string) {
 
 function handleSubmit(id: number) {
   transactionGroup.clearGroup();
-  router.push({
-    name: 'transactionGroupDetails',
-    params: { id },
-  });
+  redirectToGroupDetails(router, id);
 }
 
 function handleClose() {

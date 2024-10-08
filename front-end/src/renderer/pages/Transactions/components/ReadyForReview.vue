@@ -21,7 +21,11 @@ import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 import { getApiGroups, getTransactionsToApprove } from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
-import { getNotifiedTransactions, redirectToDetails } from '@renderer/utils';
+import {
+  getNotifiedTransactions,
+  redirectToDetails,
+  redirectToGroupDetails,
+} from '@renderer/utils';
 import {
   getTransactionDateExtended,
   getTransactionId,
@@ -88,13 +92,6 @@ const handleApprove = async (id: number) => {
   nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
 
   redirectToDetails(router, id, true);
-};
-
-const handleDetails = async (id: number) => {
-  router.push({
-    name: 'transactionGroupDetails',
-    params: { id },
-  });
 };
 
 // const handleDetails = async (id: number) => {
@@ -324,7 +321,7 @@ watch(
                   </td>
                   <td class="text-center">
                     <AppButton
-                      @click="handleDetails(group[0])"
+                      @click="redirectToGroupDetails($router, group[0])"
                       color="secondary"
                       class="min-w-unset"
                       >Details</AppButton
