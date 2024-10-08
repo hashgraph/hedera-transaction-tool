@@ -459,7 +459,6 @@ const columnClass = 'col-4 col-xxxl-3';
 
     <TransactionProcessor
       ref="transactionProcessor"
-      :transaction-bytes="transaction?.toBytes() || null"
       :observers="observers"
       :approvers="approvers"
       :on-executed="handleExecuted"
