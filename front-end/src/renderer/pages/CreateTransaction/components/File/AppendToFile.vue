@@ -21,6 +21,7 @@ import {
   isAccountId,
   formatAccountId,
   isHederaSpecialFileId,
+  redirectToDetails,
 } from '@renderer/utils';
 import { createFileAppendTransaction } from '@renderer/utils/sdk/createTransactions';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
@@ -170,12 +171,12 @@ const handleExecuted = () => {
 
 const handleLocalStored = (id: string) => {
   toast.success('Append to File Transaction Executed', { position: 'bottom-right' });
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 const handleSubmit = async (id: number) => {
   isSubmitted.value = true;
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 /* Functions */
@@ -189,13 +190,6 @@ function createTransaction() {
     chunkSize: chunkSize.value,
     maxChunks: 9999999999999,
     contents: null,
-  });
-}
-
-async function redirectToDetails(id: string | number) {
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
   });
 }
 

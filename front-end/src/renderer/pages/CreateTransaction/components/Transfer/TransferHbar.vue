@@ -23,6 +23,7 @@ import {
   getPropagationButtonLabel,
   isAccountId,
   stringifyHbar,
+  redirectToDetails,
 } from '@renderer/utils';
 import { createTransferHbarTransaction } from '@renderer/utils/sdk/createTransactions';
 import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
@@ -283,12 +284,12 @@ const handleRemoveTransfer = async (index: number) => {
 
 const handleLocalStored = (id: string) => {
   toast.success('Transfer Hbar Transaction Executed', { position: 'bottom-right' });
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 const handleSubmit = (id: number) => {
   isSubmitted.value = true;
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 function handleAddToGroup() {
@@ -383,13 +384,6 @@ async function getRequiredKeys() {
   }
 
   return keyList;
-}
-
-async function redirectToDetails(id: string | number) {
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
-  });
 }
 
 /* Hooks */

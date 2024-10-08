@@ -11,9 +11,7 @@ import { TRANSACTION_ACTION } from '@main/shared/constants';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
-import useNextTransactionStore, {
-  KEEP_NEXT_QUERY_KEY,
-} from '@renderer/stores/storeNextTransaction';
+import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
@@ -32,6 +30,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
+import { redirectToDetails } from '@renderer/utils';
 
 /* Stores */
 const user = useUserStore();
@@ -83,13 +82,7 @@ const handleDetails = async (id: number) => {
     .map(t => t.transactionRaw.id);
   nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
 
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
-    query: {
-      [KEEP_NEXT_QUERY_KEY]: 'true',
-    },
-  });
+  redirectToDetails(router, id, true);
 };
 
 async function handleGroupDetails(id: number) {

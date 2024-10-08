@@ -27,6 +27,7 @@ import {
   getTransactionFromBytes,
   getPropagationButtonLabel,
   formatAccountId,
+  redirectToDetails,
 } from '@renderer/utils';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
@@ -149,12 +150,12 @@ const handleLoadFromDraft = async () => {
 
 const handleLocalStored = (id: string) => {
   toast.success('Approve Allowance Transaction Executed', { position: 'bottom-right' });
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 const handleSubmit = (id: number) => {
   isSubmitted.value = true;
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 function handleAddToGroup() {
@@ -225,13 +226,6 @@ function createTransaction() {
     spenderAccountId: spenderData.accountId.value,
     amount: amount.value as Hbar,
     transactionMemo: transactionMemo.value,
-  });
-}
-
-async function redirectToDetails(id: string | number) {
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
   });
 }
 

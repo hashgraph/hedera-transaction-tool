@@ -27,6 +27,7 @@ import {
   getPropagationButtonLabel,
   isAccountId,
   formatAccountId,
+  redirectToDetails,
 } from '@renderer/utils';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
@@ -201,11 +202,11 @@ const handleLoadFromDraft = async () => {
 
 const handleSubmit = (id: number) => {
   isSubmitted.value = true;
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 const handleLocalStored = (id: string) => {
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 function handleAddToGroup() {
@@ -283,13 +284,6 @@ function createTransaction() {
     },
     accountData.accountInfo.value as IAccountInfoParsed,
   );
-}
-
-async function redirectToDetails(id: string | number) {
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
-  });
 }
 
 /* Hooks */

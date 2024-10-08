@@ -26,12 +26,13 @@ import { useRoute, useRouter } from 'vue-router';
 import { add } from '@renderer/services/accountsService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
-import { isAccountId, formatAccountId } from '@renderer/utils';
+import { isAccountId, formatAccountId, redirectToDetails } from '@renderer/utils';
 import {
   getEntityIdFromTransactionReceipt,
   getTransactionFromBytes,
   getPropagationButtonLabel,
 } from '@renderer/utils/transactions';
+import { createAccountTransaction } from '@renderer/utils/sdk/createTransactions';
 import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -47,7 +48,6 @@ import TransactionProcessor from '@renderer/components/Transaction/TransactionPr
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
 import AddToGroupModal from '@renderer/components/AddToGroupModal.vue';
-import { createAccountTransaction } from '@renderer/utils/sdk/createTransactions';
 
 /* Stores */
 const user = useUserStore();
@@ -225,7 +225,7 @@ const handleOwnerKeyUpdate = (key: Key) => {
 
 const handleSubmit = (id: number) => {
   isSubmitted.value = true;
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 function handleAddToGroup() {
@@ -300,13 +300,6 @@ function createTransaction() {
     transactionMemo: transactionMemo.value,
   });
 }
-
-const redirectToDetails = async (id: string | number) => {
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
-  });
-};
 
 /* Hooks */
 onMounted(async () => {
@@ -586,7 +579,7 @@ const columnClass = 'col-4 col-xxxl-3';
       ref="transactionProcessor"
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"
-      :on-local-stored="redirectToDetails"
+      :on-local-stored="id => redirectToDetails(router, id)"
     />
     <AddToGroupModal @addToGroup="handleAddToGroup" />
   </div>

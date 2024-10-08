@@ -19,6 +19,7 @@ import {
   isAccountId,
   getPropagationButtonLabel,
   formatAccountId,
+  redirectToDetails,
 } from '@renderer/utils';
 import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 import { createAccountDeleteTransaction } from '@renderer/utils/sdk/createTransactions';
@@ -175,12 +176,12 @@ const handleExecuted = async (success: boolean) => {
 
 const handleSubmit = (id: number) => {
   isSubmitted.value = true;
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 const handleLocalStored = (id: string) => {
   toast.success('Account Delete Transaction Executed', { position: 'bottom-right' });
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 function handleAddToGroup() {
@@ -251,13 +252,6 @@ function createTransaction() {
     transactionMemo: transactionMemo.value,
     accountId: accountData.accountId.value,
     transferAccountId: transferAccountData.accountId.value,
-  });
-}
-
-async function redirectToDetails(id: string | number) {
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
   });
 }
 

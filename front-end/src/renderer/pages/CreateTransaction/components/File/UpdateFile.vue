@@ -20,6 +20,7 @@ import {
   getTransactionFromBytes,
   isAccountId,
   formatAccountId,
+  redirectToDetails,
 } from '@renderer/utils';
 import {
   isHederaSpecialFileId,
@@ -195,12 +196,12 @@ const handleExecuted = () => {
 
 const handleLocalStored = (id: string) => {
   toast.success('File Update Transaction Executed', { position: 'bottom-right' });
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 const handleSubmit = async (id: number) => {
   isSubmitted.value = true;
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 /* Functions */
@@ -215,13 +216,6 @@ function createTransaction() {
     fileMemo: memo.value,
     expirationTime: expirationTimestamp.value ? new Date(expirationTimestamp.value) : null,
     contents: null,
-  });
-}
-
-async function redirectToDetails(id: string | number) {
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
   });
 }
 

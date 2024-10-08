@@ -11,6 +11,7 @@ export * from './ipc';
 export * from './notifications';
 export * from './safeAwait';
 export * from './assertions';
+export * from './router';
 
 export const getDateTimeLocalInputValue = (date: Date) => {
   const tzo = -date.getTimezoneOffset();

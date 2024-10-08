@@ -18,15 +18,13 @@ import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
-import useNextTransactionStore, {
-  KEEP_NEXT_QUERY_KEY,
-} from '@renderer/stores/storeNextTransaction';
+import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
 import { getTransactions, getTransactionsCount } from '@renderer/services/transactionService';
 import { getHistoryTransactions } from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
-import { getNotifiedTransactions } from '@renderer/utils';
+import { getNotifiedTransactions, redirectToDetails } from '@renderer/utils';
 import {
   getTransactionStatus,
   getTransactionId,
@@ -114,12 +112,7 @@ const handleSort = async (
 
 const handleDetails = (id: string | number) => {
   setPreviousTransactionsIds(id);
-
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
-    query: { [KEEP_NEXT_QUERY_KEY]: 'true' },
-  });
+  redirectToDetails(router, id, true);
 };
 
 /* Functions */

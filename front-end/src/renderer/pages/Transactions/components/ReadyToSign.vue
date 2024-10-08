@@ -12,9 +12,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
-import useNextTransactionStore, {
-  KEEP_NEXT_QUERY_KEY,
-} from '@renderer/stores/storeNextTransaction';
+import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
@@ -23,7 +21,7 @@ import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 import { getApiGroups, getTransactionsToSign } from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
-import { getNotifiedTransactions } from '@renderer/utils';
+import { getNotifiedTransactions, redirectToDetails } from '@renderer/utils';
 import {
   getTransactionDateExtended,
   getTransactionId,
@@ -89,15 +87,7 @@ const handleSign = async (id: number) => {
     .slice(0, selectedTransactionIndex)
     .map(t => t.transactionRaw.id);
   nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
-
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
-    query: {
-      sign: 'true',
-      [KEEP_NEXT_QUERY_KEY]: 'true',
-    },
-  });
+  redirectToDetails(router, id, true);
 };
 
 const handleDetails = async (id: number) => {

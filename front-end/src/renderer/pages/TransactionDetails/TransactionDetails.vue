@@ -15,9 +15,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
-import useNextTransactionStore, {
-  KEEP_NEXT_QUERY_KEY,
-} from '@renderer/stores/storeNextTransaction';
+import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
 import { useToast } from 'vue-toast-notification';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
@@ -52,7 +50,9 @@ import {
   getPrivateKey,
   getTransactionBodySignatureWithoutNodeAccountId,
   getUInt8ArrayFromBytesString,
+  KEEP_NEXT_QUERY_KEY,
   openTransactionInHashscan,
+  redirectToDetails,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -395,15 +395,7 @@ const handleNext = () => {
   }
   nextTransaction.setPreviousTransactionsIds(newPreviousTransactionsIds);
 
-  router.push({
-    name: 'transactionDetails',
-    params: { id: nextId.value.toString() },
-    query: {
-      sign: 'true',
-      [KEEP_NEXT_QUERY_KEY]: 'true',
-    },
-    replace: true,
-  });
+  redirectToDetails(router, nextId.value.toString(), true, true);
 };
 
 const handleSubmit = async (e: Event) => {

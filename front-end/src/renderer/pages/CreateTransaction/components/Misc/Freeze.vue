@@ -20,6 +20,7 @@ import {
   isAccountId,
   isFileId,
   formatAccountId,
+  redirectToDetails,
 } from '@renderer/utils';
 import { createFreezeTransaction } from '@renderer/utils/sdk/createTransactions';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
@@ -139,12 +140,12 @@ const handleExecuted = () => {
 
 const handleLocalStored = (id: string) => {
   toast.success('Freeze Transaction Executed', { position: 'bottom-right' });
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 const handleSubmit = (id: number) => {
   isSubmitted.value = true;
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 function handleAddToGroup() {
@@ -214,13 +215,6 @@ function createTransaction() {
     startTimestamp: startTimestamp.value,
     fileId: fileId.value,
     fileHash: fileHash.value,
-  });
-}
-
-async function redirectToDetails(id: string | number) {
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
   });
 }
 

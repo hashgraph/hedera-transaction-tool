@@ -35,6 +35,7 @@ import {
   getTransactionFromBytes,
   getPropagationButtonLabel,
   isAccountId,
+  redirectToDetails,
 } from '@renderer/utils';
 import { createFileCreateTransaction } from '@renderer/utils/sdk/createTransactions';
 import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
@@ -225,15 +226,12 @@ const handleLoadFromDraft = async () => {
 
 const handleSubmit = (id: number) => {
   isSubmitted.value = true;
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
-  });
+  redirectToDetails(router, id);
 };
 
 const handleLocalStored = (id: string) => {
   toast.success('File Create Transaction Executed', { position: 'bottom-right' });
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 function handleAddToGroup() {
@@ -317,13 +315,6 @@ async function syncDisplayedContent() {
   }
 
   displayedFileText.value = new TextDecoder().decode(file.value.content);
-}
-
-async function redirectToDetails(id: string | number) {
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
-  });
 }
 
 /* Hooks */
