@@ -17,7 +17,7 @@ export class MirrorNodeService {
     @Inject(CACHE_MANAGER) private cacheService: Cache,
   ) {}
 
-  /* Get the account inforamtion for accountId */
+  /* Get the account information for accountId */
   async getAccountInfo(accountId: string, network: Network): Promise<AccountInfo> {
     const env = this.configService.get<string>('NODE_ENV');
 
