@@ -11,7 +11,7 @@ import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
-import { createTransactionId } from '@renderer/services/transactionService';
+import { createTransactionId } from '@renderer/utils/sdk/createTransactions';
 import { deleteGroup } from '@renderer/services/transactionGroupsService';
 
 import { getPropagationButtonLabel } from '@renderer/utils';

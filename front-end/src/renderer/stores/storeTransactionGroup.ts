@@ -1,7 +1,10 @@
 import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
+import { ref } from 'vue';
+import { defineStore } from 'pinia';
 import { Key, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
+
 import { getDrafts } from '@renderer/services/transactionDraftsService';
 import {
   addGroupWithDrafts,
@@ -9,10 +12,9 @@ import {
   getGroupItems,
   updateGroup,
 } from '@renderer/services/transactionGroupsService';
+
 import { getTransactionFromBytes } from '@renderer/utils/transactions';
-import { defineStore } from 'pinia';
-import { ref } from 'vue';
-import { createTransactionId } from '../services/transactionService';
+import { createTransactionId } from '@renderer/utils/sdk/createTransactions';
 
 export interface GroupItem {
   transactionBytes: Uint8Array;

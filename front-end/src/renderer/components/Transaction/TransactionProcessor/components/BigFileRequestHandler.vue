@@ -15,7 +15,7 @@ import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { createTransactionId } from '@renderer/services/transactionService';
+import { createTransactionId } from '@renderer/utils/sdk/createTransactions';
 
 import SignPersonalRequestHandler from './SignPersonalRequestHandler.vue';
 import ExecutePersonalRequestHandler from './ExecutePersonalRequestHandler.vue';

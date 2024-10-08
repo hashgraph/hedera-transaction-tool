@@ -4,7 +4,7 @@ import type { TransactionApproverDto } from '@main/shared/interfaces/organizatio
 import { computed, ref, watch, onMounted } from 'vue';
 import { FileAppendTransaction, Hbar, Key, KeyList, Transaction } from '@hashgraph/sdk';
 
-import { DISPLAY_FILE_SIZE_LIMIT, MEMO_MAX_LENGTH } from '@main/shared/constants';
+import { DISPLAY_FILE_SIZE_LIMIT } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
@@ -13,7 +13,6 @@ import { useToast } from 'vue-toast-notification';
 import { useRoute, useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
 import {
@@ -23,6 +22,7 @@ import {
   formatAccountId,
   isHederaSpecialFileId,
 } from '@renderer/utils';
+import { createFileAppendTransaction } from '@renderer/utils/sdk/createTransactions';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -118,7 +118,6 @@ const handleCreate = async (e: Event) => {
     if (file.value) {
       newTransaction.setContents(file.value.content);
     }
-
     if (chunkSize.value) {
       newTransaction.setChunkSize(chunkSize.value);
     }
@@ -181,24 +180,16 @@ const handleSubmit = async (id: number) => {
 
 /* Functions */
 function createTransaction() {
-  const transaction = new FileAppendTransaction()
-    .setTransactionValidDuration(180)
-    .setChunkSize(Number(chunkSize.value))
-    .setMaxChunks(9999999999999);
-
-  if (isAccountId(payerData.accountId.value)) {
-    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
-  }
-
-  if (isAccountId(fileId.value)) {
-    transaction.setFileId(fileId.value);
-  }
-
-  if (transactionMemo.value.length > 0 && transactionMemo.value.length <= MEMO_MAX_LENGTH) {
-    transaction.setTransactionMemo(transactionMemo.value);
-  }
-
-  return transaction;
+  return createFileAppendTransaction({
+    payerId: payerData.accountId.value,
+    validStart: validStart.value,
+    maxTransactionFee: maxTransactionFee.value as Hbar,
+    transactionMemo: transactionMemo.value,
+    fileId: fileId.value,
+    chunkSize: chunkSize.value,
+    maxChunks: 9999999999999,
+    contents: null,
+  });
 }
 
 async function redirectToDetails(id: string | number) {

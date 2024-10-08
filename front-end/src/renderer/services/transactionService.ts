@@ -1,12 +1,9 @@
 import type { KeyPair } from '@prisma/client';
 
 import {
-  AccountId,
   PrivateKey,
   PublicKey,
-  Timestamp,
   Transaction,
-  TransactionId,
   TransactionReceipt,
   TransactionResponse,
 } from '@hashgraph/sdk';
@@ -36,28 +33,6 @@ export const setClient = async (
 
     await window.electronAPI.local.transactions.setClient(network, nodeAccountIds, mirrorNetwork);
   }, 'Failed to set client');
-
-/* Crafts transaction id by account id and valid start */
-export const createTransactionId = (
-  accountId: AccountId | string,
-  validStart: Timestamp | string | Date | null,
-) => {
-  if (typeof accountId === 'string') {
-    accountId = AccountId.fromString(accountId);
-  }
-
-  if (!validStart) {
-    validStart = Timestamp.generate();
-  }
-
-  if (typeof validStart === 'string' || validStart instanceof Date) {
-    const date = validStart instanceof Date ? validStart : new Date(validStart);
-    const expirationDate = new Date(date.getTime() + 1000 * 60 * 3);
-    validStart = Timestamp.fromDate(expirationDate < new Date() ? new Date() : date);
-  }
-
-  return TransactionId.withValidStart(accountId, validStart);
-};
 
 /* Collects and adds the signatures for the provided key pairs */
 export const getTransactionSignatures = async (

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { IAccountInfoParsed } from '@main/shared/interfaces';
 import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import { computed, ref, reactive, watch, onMounted } from 'vue';
@@ -11,8 +12,6 @@ import {
   Key,
 } from '@hashgraph/sdk';
 
-import { MEMO_MAX_LENGTH } from '@main/shared/constants';
-
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -20,11 +19,10 @@ import { useToast } from 'vue-toast-notification';
 import { useRoute, useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import { createTransactionId } from '@renderer/services/transactionService';
+import { createAccountUpdateTransaction } from '@renderer/utils/sdk/createTransactions';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
 import {
-  compareKeys,
   getTransactionFromBytes,
   getPropagationButtonLabel,
   isAccountId,
@@ -267,70 +265,24 @@ function handleEditGroupItem() {
 
 /* Functions */
 function createTransaction() {
-  const oldData = accountData.accountInfo.value;
-
-  const transaction = new AccountUpdateTransaction()
-    .setTransactionValidDuration(180)
-    .setMaxTransactionFee(maxTransactionFee.value);
-
-  if (isAccountId(payerData.accountId.value)) {
-    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
-  }
-
-  isAccountId(accountData.accountId.value) && transaction.setAccountId(accountData.accountId.value);
-
-  if (oldData?.receiverSignatureRequired !== newAccountData.receiverSignatureRequired) {
-    transaction.setReceiverSignatureRequired(newAccountData.receiverSignatureRequired);
-  }
-
-  if (oldData?.declineReward !== !newAccountData.acceptStakingRewards) {
-    transaction.setDeclineStakingReward(!newAccountData.acceptStakingRewards);
-  }
-
-  if (oldData?.maxAutomaticTokenAssociations !== newAccountData.maxAutomaticTokenAssociations) {
-    transaction.setMaxAutomaticTokenAssociations(
-      Number(newAccountData.maxAutomaticTokenAssociations),
-    );
-  }
-
-  if (oldData?.memo !== newAccountData.memo) {
-    transaction.setAccountMemo(newAccountData.memo || '');
-  }
-
-  if (newOwnerKey.value && accountData.key.value) {
-    !compareKeys(newOwnerKey.value, accountData.key.value) && transaction.setKey(newOwnerKey.value);
-  } else if (newOwnerKey.value) {
-    transaction.setKey(newOwnerKey.value);
-  }
-
-  if (stakeType.value === 'None') {
-    oldData?.stakedAccountId && transaction.clearStakedAccountId();
-    oldData?.stakedNodeId !== null && transaction.clearStakedNodeId();
-  } else if (stakeType.value === 'Account') {
-    if (
-      !isAccountId(newAccountData.stakedAccountId) ||
-      newAccountData.stakedAccountId === '0.0.0'
-    ) {
-      transaction.clearStakedAccountId();
-    } else if (
-      isAccountId(newAccountData.stakedAccountId) &&
-      oldData?.stakedAccountId?.toString() !== newAccountData.stakedAccountId
-    ) {
-      transaction.setStakedAccountId(newAccountData.stakedAccountId);
-    }
-  } else if (stakeType.value === 'Node') {
-    if (newAccountData.stakedNodeId === null) {
-      transaction.clearStakedNodeId();
-    } else if (oldData?.stakedNodeId !== newAccountData.stakedNodeId) {
-      transaction.setStakedNodeId(newAccountData.stakedNodeId);
-    }
-  }
-
-  if (transactionMemo.value.length > 0 && transactionMemo.value.length <= MEMO_MAX_LENGTH) {
-    transaction.setTransactionMemo(transactionMemo.value);
-  }
-
-  return transaction;
+  return createAccountUpdateTransaction(
+    {
+      payerId: payerData.accountId.value,
+      validStart: validStart.value,
+      maxTransactionFee: maxTransactionFee.value as Hbar,
+      transactionMemo: transactionMemo.value,
+      accountId: accountData.accountId.value,
+      receiverSignatureRequired: newAccountData.receiverSignatureRequired,
+      declineStakingReward: !newAccountData.acceptStakingRewards,
+      maxAutomaticTokenAssociations: newAccountData.maxAutomaticTokenAssociations,
+      accountMemo: newAccountData.memo,
+      ownerKey: newOwnerKey.value,
+      stakeType: stakeType.value,
+      stakedAccountId: newAccountData.stakedAccountId,
+      stakedNodeId: newAccountData.stakedNodeId,
+    },
+    accountData.accountInfo.value as IAccountInfoParsed,
+  );
 }
 
 async function redirectToDetails(id: string | number) {

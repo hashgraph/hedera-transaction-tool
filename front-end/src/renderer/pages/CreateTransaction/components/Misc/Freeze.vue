@@ -2,18 +2,7 @@
 import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import { computed, onMounted, ref, watch } from 'vue';
-import {
-  Hbar,
-  FreezeTransaction,
-  FileId,
-  Timestamp,
-  FreezeType,
-  AccountId,
-  Key,
-  KeyList,
-} from '@hashgraph/sdk';
-
-import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+import { Hbar, FreezeTransaction, AccountId, Key, KeyList } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
@@ -22,7 +11,6 @@ import { useToast } from 'vue-toast-notification';
 import { useRoute, useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
 
@@ -33,6 +21,7 @@ import {
   isFileId,
   formatAccountId,
 } from '@renderer/utils';
+import { createFreezeTransaction } from '@renderer/utils/sdk/createTransactions';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -216,54 +205,16 @@ onMounted(async () => {
 
 /* Functions */
 function createTransaction() {
-  const transaction = new FreezeTransaction()
-    .setTransactionValidDuration(180)
-    .setMaxTransactionFee(maxTransactionFee.value);
-
-  if (isAccountId(payerData.accountId.value)) {
-    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
-  }
-
-  if (freezeType.value <= 0 || freezeType.value > 6) return transaction;
-
-  const type = FreezeType._fromCode(Number(freezeType.value));
-  transaction.setFreezeType(type);
-
-  if (transactionMemo.value.length > 0 && transactionMemo.value.length <= MEMO_MAX_LENGTH) {
-    transaction.setTransactionMemo(transactionMemo.value);
-  }
-
-  const setProps = (
-    _startTimestamp: boolean = false,
-    _fileId: boolean = false,
-    _fileHash: boolean = false,
-  ) => {
-    if (_startTimestamp) {
-      transaction.setStartTimestamp(Timestamp.fromDate(startTimestamp.value));
-    }
-
-    if (_fileId && isFileId(fileId.value) && fileId.value !== '0.0.0') {
-      transaction.setFileId(FileId.fromString(fileId.value));
-    }
-
-    if (_fileHash && fileHash.value.trim().length > 0) {
-      transaction.setFileHash(fileHash.value);
-    }
-  };
-
-  switch (type) {
-    case FreezeType.FreezeOnly:
-      setProps(true);
-      break;
-    case FreezeType.PrepareUpgrade:
-      setProps(false, true, true);
-      break;
-    case FreezeType.FreezeUpgrade:
-      setProps(true, true, true);
-      break;
-  }
-
-  return transaction;
+  return createFreezeTransaction({
+    payerId: payerData.accountId.value,
+    validStart: validStart.value,
+    maxTransactionFee: maxTransactionFee.value as Hbar,
+    transactionMemo: transactionMemo.value,
+    freezeType: freezeType.value,
+    startTimestamp: startTimestamp.value,
+    fileId: fileId.value,
+    fileHash: fileHash.value,
+  });
 }
 
 async function redirectToDetails(id: string | number) {

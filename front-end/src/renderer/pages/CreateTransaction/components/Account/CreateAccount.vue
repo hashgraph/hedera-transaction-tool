@@ -14,8 +14,6 @@ import {
   TransactionResponse,
 } from '@hashgraph/sdk';
 
-import { MEMO_MAX_LENGTH } from '@main/shared/constants';
-
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
@@ -26,7 +24,6 @@ import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 import { useRoute, useRouter } from 'vue-router';
 
 import { add } from '@renderer/services/accountsService';
-import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
 import { isAccountId, formatAccountId } from '@renderer/utils';
@@ -50,6 +47,7 @@ import TransactionProcessor from '@renderer/components/Transaction/TransactionPr
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
 import AddToGroupModal from '@renderer/components/AddToGroupModal.vue';
+import { createAccountTransaction } from '@renderer/utils/sdk/createTransactions';
 
 /* Stores */
 const user = useUserStore();
@@ -72,7 +70,7 @@ const maxTransactionFee = ref<Hbar>(new Hbar(2));
 const accountData = reactive<{
   accountId: string;
   receiverSignatureRequired: boolean;
-  maxAutomaticTokenAssociations: 0;
+  maxAutomaticTokenAssociations: number;
   stakedAccountId: string;
   stakedNodeId: number | null;
   acceptStakingRewards: boolean;
@@ -105,7 +103,6 @@ const transactionMemo = ref('');
 const transactionKey = computed(() => {
   const keyList: Key[] = [];
   payerData.key.value && keyList.push(payerData.key.value);
-
   return new KeyList(keyList);
 });
 
@@ -287,34 +284,21 @@ function handleEditGroupItem() {
 
 /* Functions */
 function createTransaction() {
-  const transaction = new AccountCreateTransaction()
-    .setTransactionValidDuration(180)
-    .setMaxTransactionFee(maxTransactionFee.value)
-    .setReceiverSignatureRequired(accountData.receiverSignatureRequired)
-    .setDeclineStakingReward(!accountData.acceptStakingRewards)
-    .setInitialBalance(Hbar.fromString(initialBalance.value.toString() || '0'))
-    .setMaxAutomaticTokenAssociations(Number(accountData.maxAutomaticTokenAssociations))
-    .setAccountMemo(accountData.memo);
-
-  if (ownerKey.value) {
-    transaction.setKey(ownerKey.value);
-  }
-
-  if (stakeType.value === 'Account' && isAccountId(accountData.stakedAccountId)) {
-    transaction.setStakedAccountId(AccountId.fromString(accountData.stakedAccountId));
-  } else if (stakeType.value === 'Node' && accountData.stakedNodeId !== null) {
-    transaction.setStakedNodeId(Number(accountData.stakedNodeId));
-  }
-
-  if (isAccountId(payerData.accountId.value)) {
-    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
-  }
-
-  if (transactionMemo.value.length > 0 && transactionMemo.value.length <= MEMO_MAX_LENGTH) {
-    transaction.setTransactionMemo(transactionMemo.value);
-  }
-
-  return transaction;
+  return createAccountTransaction({
+    maxTransactionFee: maxTransactionFee.value as Hbar,
+    receiverSignatureRequired: accountData.receiverSignatureRequired,
+    declineStakingReward: !accountData.acceptStakingRewards,
+    initialBalance: initialBalance.value as Hbar,
+    maxAutomaticTokenAssociations: Number(accountData.maxAutomaticTokenAssociations),
+    accountMemo: accountData.memo,
+    ownerKey: ownerKey.value,
+    stakeType: stakeType.value,
+    stakedAccountId: accountData.stakedAccountId,
+    stakedNodeId: accountData.stakedNodeId,
+    payerId: payerData.accountId.value,
+    validStart: validStart.value,
+    transactionMemo: transactionMemo.value,
+  });
 }
 
 const redirectToDetails = async (id: string | number) => {
