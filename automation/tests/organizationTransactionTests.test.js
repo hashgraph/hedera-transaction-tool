@@ -107,7 +107,6 @@ test.describe('Organization Transaction tests', () => {
       globalCredentials.password,
     );
     await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnReadyToSignTab();
     const transactionDetails = await organizationPage.getReadyForSignTransactionDetails(txId);
 
     expect(transactionDetails.transactionId).toBe(txId);
@@ -146,7 +145,6 @@ test.describe('Organization Transaction tests', () => {
       globalCredentials.password,
     );
     await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnReadyToSignTab();
     await organizationPage.clickOnSubmitSignButtonByTransactionId(txId);
 
     const isStageOneCompleted = await organizationPage.isTransactionStageCompleted(0);
@@ -172,7 +170,6 @@ test.describe('Organization Transaction tests', () => {
       globalCredentials.password,
     );
     await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnReadyToSignTab();
     await organizationPage.clickOnSubmitSignButtonByTransactionId(txId);
     await organizationPage.clickOnSignTransactionButton();
 
@@ -224,7 +221,6 @@ test.describe('Organization Transaction tests', () => {
       globalCredentials.password,
     );
     await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnReadyToSignTab();
     await organizationPage.clickOnSubmitSignButtonByTransactionId(txId);
     await organizationPage.clickOnSignTransactionButton();
     await organizationPage.logoutFromOrganization();
@@ -235,7 +231,6 @@ test.describe('Organization Transaction tests', () => {
       globalCredentials.password,
     );
     await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnReadyToSignTab();
     await organizationPage.clickOnSubmitSignButtonByTransactionId(txId);
     await organizationPage.clickOnSignTransactionButton();
     await transactionPage.clickOnTransactionsMenuButton();
@@ -276,7 +271,6 @@ test.describe('Organization Transaction tests', () => {
       globalCredentials.password,
     );
     await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnReadyToSignTab();
     await organizationPage.clickOnSubmitSignButtonByTransactionId(txId);
     await organizationPage.clickOnSignTransactionButton();
     await organizationPage.logoutFromOrganization();
@@ -287,7 +281,6 @@ test.describe('Organization Transaction tests', () => {
       globalCredentials.password,
     );
     await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnReadyToSignTab();
     await organizationPage.clickOnSubmitSignButtonByTransactionId(txId);
     await organizationPage.clickOnSignTransactionButton();
     await delay(6000);
@@ -394,8 +387,8 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify next button is visible when user has multiple txs to sign', async () => {
-    await organizationPage.createAccount(60, 2, false);
-    const { txId } = await organizationPage.createAccount(60, 2, false);
+    await organizationPage.createAccount(60, 0, false);
+    const { txId } = await organizationPage.createAccount(60, 0, false);
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnSubmitSignButtonByTransactionId(txId);
     await organizationPage.clickOnSignTransactionButton();
@@ -403,8 +396,8 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify user is redirected to the next transaction after clicking the next button', async () => {
-    await organizationPage.createAccount(60, 2, false);
-    const { txId } = await organizationPage.createAccount(60, 2, false);
+    await organizationPage.createAccount(60, 0, false);
+    const { txId } = await organizationPage.createAccount(60, 0, false);
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnSubmitSignButtonByTransactionId(txId);
     await organizationPage.clickOnSignTransactionButton();
