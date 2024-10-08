@@ -7,6 +7,7 @@ import { In, Between, MoreThan, Repository, LessThanOrEqual } from 'typeorm';
 import {
   FileAppendTransaction,
   FileUpdateTransaction,
+  Status,
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
@@ -22,8 +23,10 @@ import {
   SyncIndicatorsDto,
   NotifyGeneralDto,
   NotifyForTransactionDto,
-  ableToSign,
+  hasValidSignatureKey,
   computeSignatureKey,
+  computeShortenedPublicKeyList,
+  isTransactionOverMaxSize,
 } from '@app/common';
 import { NotificationType, Transaction, TransactionStatus } from '@entities';
 
@@ -55,7 +58,7 @@ export class TransactionStatusService {
         this.isValidStartExecutable(t.validStart) &&
         t.status === TransactionStatus.WAITING_FOR_EXECUTION,
     )) {
-      this.addExecutionTimeout(transaction);
+      this.prepareAndExecute(transaction);
     }
   }
 
@@ -114,7 +117,7 @@ export class TransactionStatusService {
         t.status === TransactionStatus.WAITING_FOR_EXECUTION &&
         this.isValidStartExecutable(t.validStart),
     )) {
-      this.addExecutionTimeout(transaction);
+      this.prepareAndExecute(transaction);
     }
   }
 
@@ -166,6 +169,8 @@ export class TransactionStatusService {
   }
 
   /* Checks if the signers are enough to sign the transactions and update their statuses */
+  //TODO this should also try and do a smart collate, if needed, as a transaction isn't
+  // ready for execution if it's over the max size - do this in another branch and pr
   async updateTransactions(from: Date, to?: Date) {
     const transactions = await this.transactionRepo.find({
       where: {
@@ -194,16 +199,16 @@ export class TransactionStatusService {
         continue;
 
       /* Gets the signature key */
-      const sigantureKey = await computeSignatureKey(
+      const signatureKey = await computeSignatureKey(
         sdkTransaction,
         this.mirrorNodeService,
         transaction.network,
       );
 
-      /* Checks if the transaction has valid siganture */
-      const isAbleToSign = ableToSign([...sdkTransaction._signerPublicKeys], sigantureKey);
+      /* Checks if the transaction has valid signature */
+      const isValidSignatureKey = hasValidSignatureKey([...sdkTransaction._signerPublicKeys], signatureKey);
 
-      const newStatus = isAbleToSign
+      const newStatus = isValidSignatureKey
         ? TransactionStatus.WAITING_FOR_EXECUTION
         : TransactionStatus.WAITING_FOR_SIGNATURES;
 
@@ -262,14 +267,14 @@ export class TransactionStatusService {
       return;
 
     /* Gets the signature key */
-    const sigantureKey = await computeSignatureKey(
+    const signatureKey = await computeSignatureKey(
       sdkTransaction,
       this.mirrorNodeService,
       transaction.network,
     );
 
-    /* Checks if the transaction has valid siganture */
-    const isAbleToSign = ableToSign([...sdkTransaction._signerPublicKeys], sigantureKey);
+    /* Checks if the transaction has valid signature */
+    const isAbleToSign = hasValidSignatureKey([...sdkTransaction._signerPublicKeys], signatureKey);
     const newStatus = isAbleToSign
       ? TransactionStatus.WAITING_FOR_EXECUTION
       : TransactionStatus.WAITING_FOR_SIGNATURES;
@@ -319,6 +324,74 @@ export class TransactionStatusService {
     }
   }
 
+  // comment and tests
+  prepareAndExecute(transaction: Transaction) {
+    const name = `smart_collate_timeout_${transaction.id}`;
+
+    if (this.schedulerRegistry.doesExist('timeout', name)) return;
+
+    const timeToValidStart = transaction.validStart.getTime() - Date.now();
+
+    const callback = async () => {
+      try {
+        const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
+
+        if (await isTransactionOverMaxSize(sdkTransaction)) {
+          const signatureKey = await computeSignatureKey(
+            sdkTransaction,
+            this.mirrorNodeService,
+            transaction.network,
+          );
+
+          const publicKeys = computeShortenedPublicKeyList(
+            [...sdkTransaction._signerPublicKeys],
+            signatureKey,
+          );
+
+          const sigDictionary = sdkTransaction.removeAllSignatures();
+
+          for (const key of publicKeys) {
+            const sigArray = sigDictionary[key.toStringRaw()];
+            sdkTransaction.addSignature(key, sigArray);
+          }
+
+          // If the transaction is still too large,
+          // set it to failed with the TRANSACTION_OVERSIZE status code
+          // update the transaction, emit the event, and delete the timeout
+          if (await isTransactionOverMaxSize(sdkTransaction)) {
+            await this.transactionRepo.update(
+              {
+                id: transaction.id,
+              },
+              {
+                status: TransactionStatus.REJECTED,
+                executedAt: new Date(),
+                statusCode: Status.TransactionOversize._code,
+              },
+            );
+            this.emitNotificationEvents(transaction, TransactionStatus.REJECTED);
+            return;
+          }
+
+          // TODO then make sure that front end doesn't allow chunks larger than 2k'
+          //NOTE: the transactionBytes are set here but are not to be saved. Otherwise,
+          // any signatures that were removed in order to make the transaction fit
+          // would be lost.
+          transaction.transactionBytes = Buffer.from(sdkTransaction.toBytes());
+        }
+
+        this.addExecutionTimeout(transaction);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        this.schedulerRegistry.deleteTimeout(name);
+      }
+    };
+
+    const timeout = setTimeout(callback, timeToValidStart - 10 * 1_000);
+    this.schedulerRegistry.addTimeout(name, timeout);
+  }
+
   addExecutionTimeout(transaction: Transaction) {
     const name = `execution_timeout_${transaction.id}`;
 
@@ -327,8 +400,13 @@ export class TransactionStatusService {
     const timeToValidStart = transaction.validStart.getTime() - Date.now();
 
     const callback = async () => {
-      await this.executeService.executeTransaction(transaction.id);
-      this.schedulerRegistry.deleteTimeout(name);
+      try {
+        await this.executeService.executeTransaction(transaction);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        this.schedulerRegistry.deleteTimeout(name);
+      }
     };
 
     const timeout = setTimeout(callback, timeToValidStart + 5 * 1_000);

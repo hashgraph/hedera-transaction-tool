@@ -28,13 +28,13 @@ export function flattenKeyList(keyList: Key): PublicKey[] {
   return keys;
 }
 
-export const ableToSign = (publicKeys: string[], key: Key) => {
+export const hasValidSignatureKey = (publicKeys: string[], key: Key) => {
   if (key instanceof KeyList) {
     const keys = key.toArray();
     let currentThreshold = 0;
 
     keys.forEach(key => {
-      if (ableToSign(publicKeys, key)) {
+      if (hasValidSignatureKey(publicKeys, key)) {
         currentThreshold++;
       }
     });
@@ -68,4 +68,42 @@ export function isPublicKeyInKeyList(publicKey: PublicKey | string, keyList: Key
     }
     return false;
   });
+}
+
+/**
+ * Given a list of public keys and a key list, returns a list of public keys that are in the key list.
+ *
+ * @param publicKeys
+ * @param keyList
+ */
+export function computeShortenedPublicKeyList(publicKeys: string[], keyList: KeyList): PublicKey[] {
+  const result = [];
+  const secondary = [];
+  const threshold = keyList.threshold;
+
+  /* Iterates through the key list, prioritizing PublicKeys over KeyLists */
+  for (const key of keyList.toArray()) {
+    if (key instanceof PublicKey) {
+      const rawKey = key.toStringRaw();
+      if (publicKeys.includes(rawKey)) {
+        result.push(key);
+        if (result.length === threshold) {
+          return result;
+        }
+      }
+    } else if (key instanceof KeyList) {
+      const resultingKeys = computeShortenedPublicKeyList(publicKeys, key);
+      if (resultingKeys && resultingKeys.length > 0) {
+        secondary.push(resultingKeys);
+      }
+    }
+  }
+
+  /* If enough valid signatures were found from both key types, retrieve and merge the shortest arrays */
+  if (result.length + secondary.length >= threshold) {
+    secondary.sort((a, b) => a.length - b.length);
+    return result.concat(secondary.slice(0, threshold - result.length).flat());
+  }
+
+  return null;
 }
