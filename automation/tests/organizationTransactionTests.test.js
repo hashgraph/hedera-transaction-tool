@@ -392,4 +392,36 @@ test.describe('Organization Transaction tests', () => {
     expect(selectedObservers[1]).toBe(secondObserver);
     await transactionPage.clickOnTransactionsMenuButton();
   });
+
+  test('Verify next button is visible when user has multiple txs to sign', async () => {
+    await organizationPage.createAccount(60, 2, false);
+    const { txId } = await organizationPage.createAccount(60, 2, false);
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.clickOnSubmitSignButtonByTransactionId(txId);
+    await organizationPage.clickOnSignTransactionButton();
+    expect(await organizationPage.isNextTransactionButtonVisible()).toBe(true);
+  });
+
+  test('Verify user is redirected to the next transaction after clicking the next button', async () => {
+    await organizationPage.createAccount(60, 2, false);
+    const { txId } = await organizationPage.createAccount(60, 2, false);
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.clickOnSubmitSignButtonByTransactionId(txId);
+    await organizationPage.clickOnSignTransactionButton();
+    await organizationPage.clickOnNextTransactionButton();
+    const currentTxId = await organizationPage.getTransactionDetailsId();
+    expect(currentTxId).not.toBe(txId);
+    expect(await organizationPage.isSignTransactionButtonVisible()).toBe(true);
+  });
+
+  test('Verify next button is visible when user has multiple txs in history', async () => {
+    test.slow();
+    const { txId } = await organizationPage.createAccount(5, 0, true);
+    const { validStart } = await organizationPage.createAccount(5, 0, true);
+    await organizationPage.waitForValidStart(validStart);
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.clickOnHistoryTab();
+    await organizationPage.clickOnHistoryDetailsButtonByTransactionId(txId);
+    expect(await organizationPage.isNextTransactionButtonVisible()).toBe(true);
+  });
 });
