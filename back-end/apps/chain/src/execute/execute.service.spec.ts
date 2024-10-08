@@ -15,7 +15,7 @@ import {
 } from '@hashgraph/sdk';
 
 import {
-  ableToSign,
+  hasValidSignatureKey,
   computeSignatureKey,
   getClientFromName,
   getStatusCodeFromMessage,
@@ -141,11 +141,11 @@ describe('ExecuteService', () => {
 
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
     jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
-    jest.mocked(ableToSign).mockReturnValueOnce(true);
+    jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
     jest.mocked(getClientFromName).mockReturnValueOnce(client);
     const { receipt, response } = mockSDKTransactionExecution();
 
-    await service.executeTransaction(transaction.id);
+    await service.executeTransaction(transaction);
 
     expect(response.getReceipt).toHaveBeenCalled();
     expect(transactionRepo.update).toHaveBeenCalledWith(
@@ -165,7 +165,7 @@ describe('ExecuteService', () => {
 
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
     jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
-    jest.mocked(ableToSign).mockReturnValueOnce(true);
+    jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
     jest.mocked(getClientFromName).mockReturnValueOnce(client);
     jest.spyOn(SDKTransaction.prototype, 'execute').mockImplementation(async () => {
       return {
@@ -180,7 +180,7 @@ describe('ExecuteService', () => {
       } as unknown as TransactionResponse;
     });
 
-    await service.executeTransaction(transaction.id);
+    await service.executeTransaction(transaction);
 
     expect(transactionRepo.update).toHaveBeenCalledWith(
       { id: transaction.id },
@@ -199,14 +199,14 @@ describe('ExecuteService', () => {
 
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
     jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
-    jest.mocked(ableToSign).mockReturnValueOnce(true);
+    jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
     jest.mocked(getClientFromName).mockReturnValueOnce(client);
     jest.spyOn(SDKTransaction.prototype, 'execute').mockRejectedValueOnce({
       message: 'Transaction failed',
     });
     jest.mocked(getStatusCodeFromMessage).mockReturnValueOnce(21);
 
-    await service.executeTransaction(transaction.id);
+    await service.executeTransaction(transaction);
 
     expect(transactionRepo.update).toHaveBeenCalledWith(
       { id: transaction.id },
@@ -225,7 +225,7 @@ describe('ExecuteService', () => {
 
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
     jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
-    jest.mocked(ableToSign).mockReturnValueOnce(true);
+    jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
     jest.mocked(getClientFromName).mockReturnValueOnce(client);
     jest.spyOn(SDKTransaction.prototype, 'execute').mockRejectedValueOnce({
       message: 'Transaction failed',
@@ -234,7 +234,7 @@ describe('ExecuteService', () => {
       },
     });
 
-    await service.executeTransaction(transaction.id);
+    await service.executeTransaction(transaction);
 
     expect(transactionRepo.update).toHaveBeenCalledWith(
       { id: transaction.id },
@@ -254,12 +254,12 @@ describe('ExecuteService', () => {
 
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
     jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
-    jest.mocked(ableToSign).mockReturnValueOnce(true);
+    jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
     jest.mocked(getClientFromName).mockReturnValueOnce(client);
 
     jest.useFakeTimers();
 
-    await service.executeTransaction(transaction.id);
+    await service.executeTransaction(transaction);
 
     jest.runAllTimers();
     jest.useRealTimers();
@@ -272,7 +272,7 @@ describe('ExecuteService', () => {
 
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
 
-    await expect(service.executeTransaction(transaction.id)).rejects.toThrow(
+    await expect(service.executeTransaction(transaction)).rejects.toThrow(
       'File transactions are not currently supported for execution.',
     );
   });
@@ -282,9 +282,9 @@ describe('ExecuteService', () => {
 
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
     jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
-    jest.mocked(ableToSign).mockReturnValueOnce(false);
+    jest.mocked(hasValidSignatureKey).mockReturnValueOnce(false);
 
-    await expect(service.executeTransaction(transaction.id)).rejects.toThrow(
+    await expect(service.executeTransaction(transaction)).rejects.toThrow(
       'Transaction has invalid signature.',
     );
   });
@@ -295,49 +295,50 @@ describe('ExecuteService', () => {
     transaction.status = TransactionStatus.NEW;
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
 
-    await expect(service.executeTransaction(transaction.id)).rejects.toThrow(
+    await expect(service.executeTransaction(transaction)).rejects.toThrow(
       'Transaction is new and has not been signed yet.',
     );
 
     transaction.status = TransactionStatus.FAILED;
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
 
-    await expect(service.executeTransaction(transaction.id)).rejects.toThrow(
+    await expect(service.executeTransaction(transaction)).rejects.toThrow(
       'Transaction has already been executed, but failed.',
     );
 
     transaction.status = TransactionStatus.EXECUTED;
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
 
-    await expect(service.executeTransaction(transaction.id)).rejects.toThrow(
+    await expect(service.executeTransaction(transaction)).rejects.toThrow(
       'Transaction has already been executed.',
     );
 
     transaction.status = TransactionStatus.REJECTED;
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
 
-    await expect(service.executeTransaction(transaction.id)).rejects.toThrow(
+    await expect(service.executeTransaction(transaction)).rejects.toThrow(
       'Transaction has already been rejected.',
     );
 
     transaction.status = TransactionStatus.EXPIRED;
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
 
-    await expect(service.executeTransaction(transaction.id)).rejects.toThrow(
+    await expect(service.executeTransaction(transaction)).rejects.toThrow(
       'Transaction has been expired.',
     );
 
     transaction.status = TransactionStatus.CANCELED;
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
 
-    await expect(service.executeTransaction(transaction.id)).rejects.toThrow(
+    await expect(service.executeTransaction(transaction)).rejects.toThrow(
       'Transaction has been canceled.',
     );
   });
 
-  it('should throw if transaction is not found', async () => {
+  it('should throw if transaction is null or undefined', async () => {
     transactionRepo.findOne.mockResolvedValueOnce(undefined);
 
-    await expect(service.executeTransaction(1)).rejects.toThrow('Transaction not found');
+    await expect(service.executeTransaction(null)).rejects.toThrow('Transaction not found');
+    await expect(service.executeTransaction(undefined)).rejects.toThrow('Transaction not found');
   });
 });
