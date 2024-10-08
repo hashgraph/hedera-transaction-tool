@@ -170,7 +170,7 @@ export class TransactionStatusService {
 
   /* Checks if the signers are enough to sign the transactions and update their statuses */
   //TODO this should also try and do a smart collate, if needed, as a transaction isn't
-  // ready for execution if it's over the max size
+  // ready for execution if it's over the max size - do this in another branch and pr
   async updateTransactions(from: Date, to?: Date) {
     const transactions = await this.transactionRepo.find({
       where: {
@@ -333,55 +333,59 @@ export class TransactionStatusService {
     const timeToValidStart = transaction.validStart.getTime() - Date.now();
 
     const callback = async () => {
-      const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
+      try {
+        const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
-      if (await isTransactionOverMaxSize(sdkTransaction)) {
-        const signatureKey = await computeSignatureKey(
-          sdkTransaction,
-          this.mirrorNodeService,
-          transaction.network,
-        );
-
-        const publicKeys = computeShortenedPublicKeyList(
-          [...sdkTransaction._signerPublicKeys],
-          signatureKey,
-        );
-
-        const sigDictionary = sdkTransaction.removeAllSignatures();
-
-        for (const key of publicKeys) {
-          const sigArray = sigDictionary[key.toStringRaw()];
-          sdkTransaction.addSignature(key, sigArray);
-        }
-
-        // If the transaction is still too large,
-        // set it to failed with the TRANSACTION_OVERSIZE status code
-        // update the transaction, emit the event, and delete the timeout
         if (await isTransactionOverMaxSize(sdkTransaction)) {
-          await this.transactionRepo.update(
-            {
-              id: transaction.id,
-            },
-            {
-              status: TransactionStatus.REJECTED,
-              executedAt: new Date(),
-              statusCode: Status.TransactionOversize._code,
-            },
+          const signatureKey = await computeSignatureKey(
+            sdkTransaction,
+            this.mirrorNodeService,
+            transaction.network,
           );
-          this.emitNotificationEvents(transaction, TransactionStatus.REJECTED);
-          this.schedulerRegistry.deleteTimeout(name);
-          return;
+
+          const publicKeys = computeShortenedPublicKeyList(
+            [...sdkTransaction._signerPublicKeys],
+            signatureKey,
+          );
+
+          const sigDictionary = sdkTransaction.removeAllSignatures();
+
+          for (const key of publicKeys) {
+            const sigArray = sigDictionary[key.toStringRaw()];
+            sdkTransaction.addSignature(key, sigArray);
+          }
+
+          // If the transaction is still too large,
+          // set it to failed with the TRANSACTION_OVERSIZE status code
+          // update the transaction, emit the event, and delete the timeout
+          if (await isTransactionOverMaxSize(sdkTransaction)) {
+            await this.transactionRepo.update(
+              {
+                id: transaction.id,
+              },
+              {
+                status: TransactionStatus.REJECTED,
+                executedAt: new Date(),
+                statusCode: Status.TransactionOversize._code,
+              },
+            );
+            this.emitNotificationEvents(transaction, TransactionStatus.REJECTED);
+            return;
+          }
+
+          // TODO then make sure that front end doesn't allow chunks larger than 2k'
+          //NOTE: the transactionBytes are set here but are not to be saved. Otherwise,
+          // any signatures that were removed in order to make the transaction fit
+          // would be lost.
+          transaction.transactionBytes = Buffer.from(sdkTransaction.toBytes());
         }
 
-        // TODO then make sure that front end doesn't allow chunks larger than 2k'
-        //NOTE: the transactionBytes are set here but are not to be saved. Otherwise,
-        // any signatures that were removed in order to make the transaction fit
-        // would be lost.
-        transaction.transactionBytes = Buffer.from(sdkTransaction.toBytes());
+        this.addExecutionTimeout(transaction);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        this.schedulerRegistry.deleteTimeout(name);
       }
-
-      this.addExecutionTimeout(transaction);
-      this.schedulerRegistry.deleteTimeout(name);
     };
 
     const timeout = setTimeout(callback, timeToValidStart - 10 * 1_000);
@@ -396,8 +400,13 @@ export class TransactionStatusService {
     const timeToValidStart = transaction.validStart.getTime() - Date.now();
 
     const callback = async () => {
-      await this.executeService.executeTransaction(transaction);
-      this.schedulerRegistry.deleteTimeout(name);
+      try {
+        await this.executeService.executeTransaction(transaction);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        this.schedulerRegistry.deleteTimeout(name);
+      }
     };
 
     const timeout = setTimeout(callback, timeToValidStart + 5 * 1_000);
