@@ -11,9 +11,7 @@ import { TRANSACTION_ACTION } from '@main/shared/constants';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
-import useNextTransactionStore, {
-  KEEP_NEXT_QUERY_KEY,
-} from '@renderer/stores/storeNextTransaction';
+import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
@@ -26,6 +24,7 @@ import {
   getTransactionId,
   getTransactionType,
 } from '@renderer/utils/sdk/transactions';
+import { redirectToDetails, redirectToGroupDetails } from '@renderer/utils';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -83,21 +82,8 @@ const handleDetails = async (id: number) => {
     .map(t => t.transactionRaw.id);
   nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
 
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
-    query: {
-      [KEEP_NEXT_QUERY_KEY]: 'true',
-    },
-  });
+  redirectToDetails(router, id, true);
 };
-
-async function handleGroupDetails(id: number) {
-  router.push({
-    name: 'transactionGroupDetails',
-    params: { id },
-  });
-}
 
 const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') => {
   sort.field = field;
@@ -283,7 +269,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                     }}
                   </td>
                   <td class="text-center">
-                    <AppButton @click="handleGroupDetails(group[0])" color="secondary"
+                    <AppButton @click="redirectToGroupDetails($router, group[0])" color="secondary"
                       >Details</AppButton
                     >
                   </td>

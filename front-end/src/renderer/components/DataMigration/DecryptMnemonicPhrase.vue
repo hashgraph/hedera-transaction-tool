@@ -6,7 +6,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 
 /* Props */
-const props = defineProps<{
+defineProps<{
   show: boolean;
 }>();
 
@@ -71,17 +71,10 @@ const handleClose = () => {
         </div>
 
         <div class="flex-between-centered gap-4 mt-4">
-          <AppButton
-            color="secondary"
-            type="button"
-            class="min-w-unset"
-            @click="handleClose"
-          >Cancel</AppButton>
-          <AppButton
-            color="primary"
-            type="submit"
-            class="min-w-unset"
-          >Submit</AppButton>
+          <AppButton color="secondary" type="button" class="min-w-unset" @click="handleClose"
+            >Cancel</AppButton
+          >
+          <AppButton color="primary" type="submit" class="min-w-unset">Submit</AppButton>
         </div>
       </form>
     </div>

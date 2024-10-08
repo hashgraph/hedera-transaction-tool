@@ -6,8 +6,6 @@ import type { IAccountInfoParsed } from '@main/shared/interfaces';
 import { ref, onMounted, computed } from 'vue';
 import { Hbar, KeyList, Transaction, TransferTransaction, Transfer, Key } from '@hashgraph/sdk';
 
-import { MEMO_MAX_LENGTH } from '@main/shared/constants';
-
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
@@ -16,7 +14,6 @@ import { useToast } from 'vue-toast-notification';
 import { useRoute, useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft, updateDraft } from '@renderer/services/transactionDraftsService';
 import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
 import { getAll } from '@renderer/services/accountsService';
@@ -26,7 +23,9 @@ import {
   getPropagationButtonLabel,
   isAccountId,
   stringifyHbar,
+  redirectToDetails,
 } from '@renderer/utils';
+import { createTransferHbarTransaction } from '@renderer/utils/sdk/createTransactions';
 import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -285,12 +284,12 @@ const handleRemoveTransfer = async (index: number) => {
 
 const handleLocalStored = (id: string) => {
   toast.success('Transfer Hbar Transaction Executed', { position: 'bottom-right' });
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 const handleSubmit = (id: number) => {
   isSubmitted.value = true;
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 function handleAddToGroup() {
@@ -346,25 +345,13 @@ function handleEditGroupItem() {
 
 /* Functions */
 function createTransaction() {
-  const transaction = new TransferTransaction()
-    .setTransactionValidDuration(180)
-    .setMaxTransactionFee(maxTransactionFee.value);
-
-  if (isAccountId(payerData.accountId.value)) {
-    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
-  }
-
-  transfers.value.forEach(transfer => {
-    transfer.isApproved
-      ? transaction.addApprovedHbarTransfer(transfer.accountId.toString(), transfer.amount)
-      : transaction.addHbarTransfer(transfer.accountId.toString(), transfer.amount);
+  return createTransferHbarTransaction({
+    payerId: payerData.accountId.value,
+    validStart: validStart.value,
+    maxTransactionFee: maxTransactionFee.value as Hbar,
+    transactionMemo: transactionMemo.value,
+    transfers: transfers.value as Transfer[],
   });
-
-  if (transactionMemo.value.length > 0 && transactionMemo.value.length <= MEMO_MAX_LENGTH) {
-    transaction.setTransactionMemo(transactionMemo.value);
-  }
-
-  return transaction;
 }
 
 async function getRequiredKeys() {
@@ -397,13 +384,6 @@ async function getRequiredKeys() {
   }
 
   return keyList;
-}
-
-async function redirectToDetails(id: string | number) {
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
-  });
 }
 
 /* Hooks */

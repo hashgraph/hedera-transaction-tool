@@ -14,8 +14,6 @@ import {
   TransactionResponse,
 } from '@hashgraph/sdk';
 
-import { MEMO_MAX_LENGTH } from '@main/shared/constants';
-
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
@@ -26,15 +24,15 @@ import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 import { useRoute, useRouter } from 'vue-router';
 
 import { add } from '@renderer/services/accountsService';
-import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
-import { isAccountId, formatAccountId } from '@renderer/utils';
+import { isAccountId, formatAccountId, redirectToDetails } from '@renderer/utils';
 import {
   getEntityIdFromTransactionReceipt,
   getTransactionFromBytes,
   getPropagationButtonLabel,
 } from '@renderer/utils/transactions';
+import { createAccountTransaction } from '@renderer/utils/sdk/createTransactions';
 import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -72,7 +70,7 @@ const maxTransactionFee = ref<Hbar>(new Hbar(2));
 const accountData = reactive<{
   accountId: string;
   receiverSignatureRequired: boolean;
-  maxAutomaticTokenAssociations: 0;
+  maxAutomaticTokenAssociations: number;
   stakedAccountId: string;
   stakedNodeId: number | null;
   acceptStakingRewards: boolean;
@@ -105,7 +103,6 @@ const transactionMemo = ref('');
 const transactionKey = computed(() => {
   const keyList: Key[] = [];
   payerData.key.value && keyList.push(payerData.key.value);
-
   return new KeyList(keyList);
 });
 
@@ -228,7 +225,7 @@ const handleOwnerKeyUpdate = (key: Key) => {
 
 const handleSubmit = (id: number) => {
   isSubmitted.value = true;
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 function handleAddToGroup() {
@@ -287,42 +284,22 @@ function handleEditGroupItem() {
 
 /* Functions */
 function createTransaction() {
-  const transaction = new AccountCreateTransaction()
-    .setTransactionValidDuration(180)
-    .setMaxTransactionFee(maxTransactionFee.value)
-    .setReceiverSignatureRequired(accountData.receiverSignatureRequired)
-    .setDeclineStakingReward(!accountData.acceptStakingRewards)
-    .setInitialBalance(Hbar.fromString(initialBalance.value.toString() || '0'))
-    .setMaxAutomaticTokenAssociations(Number(accountData.maxAutomaticTokenAssociations))
-    .setAccountMemo(accountData.memo);
-
-  if (ownerKey.value) {
-    transaction.setKey(ownerKey.value);
-  }
-
-  if (stakeType.value === 'Account' && isAccountId(accountData.stakedAccountId)) {
-    transaction.setStakedAccountId(AccountId.fromString(accountData.stakedAccountId));
-  } else if (stakeType.value === 'Node' && accountData.stakedNodeId !== null) {
-    transaction.setStakedNodeId(Number(accountData.stakedNodeId));
-  }
-
-  if (isAccountId(payerData.accountId.value)) {
-    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
-  }
-
-  if (transactionMemo.value.length > 0 && transactionMemo.value.length <= MEMO_MAX_LENGTH) {
-    transaction.setTransactionMemo(transactionMemo.value);
-  }
-
-  return transaction;
-}
-
-const redirectToDetails = async (id: string | number) => {
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
+  return createAccountTransaction({
+    maxTransactionFee: maxTransactionFee.value as Hbar,
+    receiverSignatureRequired: accountData.receiverSignatureRequired,
+    declineStakingReward: !accountData.acceptStakingRewards,
+    initialBalance: initialBalance.value as Hbar,
+    maxAutomaticTokenAssociations: Number(accountData.maxAutomaticTokenAssociations),
+    accountMemo: accountData.memo,
+    ownerKey: ownerKey.value,
+    stakeType: stakeType.value,
+    stakedAccountId: accountData.stakedAccountId,
+    stakedNodeId: accountData.stakedNodeId,
+    payerId: payerData.accountId.value,
+    validStart: validStart.value,
+    transactionMemo: transactionMemo.value,
   });
-};
+}
 
 /* Hooks */
 onMounted(async () => {
@@ -602,7 +579,7 @@ const columnClass = 'col-4 col-xxxl-3';
       ref="transactionProcessor"
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"
-      :on-local-stored="redirectToDetails"
+      :on-local-stored="id => redirectToDetails(router, id)"
     />
     <AddToGroupModal @addToGroup="handleAddToGroup" />
   </div>

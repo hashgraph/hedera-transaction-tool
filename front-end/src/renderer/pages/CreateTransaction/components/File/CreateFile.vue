@@ -7,13 +7,12 @@ import {
   Hbar,
   Key,
   KeyList,
-  Timestamp,
   Transaction,
   TransactionReceipt,
   TransactionResponse,
 } from '@hashgraph/sdk';
 
-import { DISPLAY_FILE_SIZE_LIMIT, MEMO_MAX_LENGTH } from '@main/shared/constants';
+import { DISPLAY_FILE_SIZE_LIMIT } from '@main/shared/constants';
 
 import { Prisma } from '@prisma/client';
 
@@ -25,7 +24,6 @@ import { useToast } from 'vue-toast-notification';
 import { useRoute, useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 import { add } from '@renderer/services/filesService';
 
@@ -37,7 +35,9 @@ import {
   getTransactionFromBytes,
   getPropagationButtonLabel,
   isAccountId,
+  redirectToDetails,
 } from '@renderer/utils';
+import { createFileCreateTransaction } from '@renderer/utils/sdk/createTransactions';
 import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -226,15 +226,12 @@ const handleLoadFromDraft = async () => {
 
 const handleSubmit = (id: number) => {
   isSubmitted.value = true;
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
-  });
+  redirectToDetails(router, id);
 };
 
 const handleLocalStored = (id: string) => {
   toast.success('File Create Transaction Executed', { position: 'bottom-right' });
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 function handleAddToGroup() {
@@ -294,36 +291,16 @@ function handleEditGroupItem() {
 
 /* Functions */
 function createTransaction() {
-  const transaction = new FileCreateTransaction()
-    .setTransactionValidDuration(180)
-    .setMaxTransactionFee(new Hbar(maxTransactionFee.value || 0))
-    .setFileMemo(memo.value);
-
-  if (ownerKey.value) {
-    transaction.setKeys(
-      ownerKey.value instanceof KeyList ? ownerKey.value : new KeyList([ownerKey.value]),
-    );
-  }
-
-  if (isAccountId(payerData.accountId.value)) {
-    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
-  }
-  if (expirationTimestamp.value)
-    transaction.setExpirationTime(Timestamp.fromDate(new Date(expirationTimestamp.value)));
-
-  if (transactionMemo.value.length > 0 && transactionMemo.value.length <= MEMO_MAX_LENGTH) {
-    transaction.setTransactionMemo(transactionMemo.value);
-  }
-
-  if (manualContent.value.length > 0) {
-    transaction.setContents(manualContent.value);
-  }
-
-  if (file.value) {
-    transaction.setContents(file.value.content);
-  }
-
-  return transaction;
+  return createFileCreateTransaction({
+    payerId: payerData.accountId.value,
+    validStart: validStart.value,
+    maxTransactionFee: maxTransactionFee.value as Hbar,
+    transactionMemo: transactionMemo.value,
+    ownerKey: ownerKey.value,
+    fileMemo: memo.value,
+    expirationTime: expirationTimestamp.value ? new Date(expirationTimestamp.value) : null,
+    contents: manualContent.value.length > 0 ? manualContent.value : file.value?.content || null,
+  });
 }
 
 async function syncDisplayedContent() {
@@ -338,13 +315,6 @@ async function syncDisplayedContent() {
   }
 
   displayedFileText.value = new TextDecoder().decode(file.value.content);
-}
-
-async function redirectToDetails(id: string | number) {
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
-  });
 }
 
 /* Hooks */

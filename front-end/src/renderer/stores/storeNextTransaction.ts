@@ -1,8 +1,6 @@
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
 
-export const KEEP_NEXT_QUERY_KEY = 'keepNextTransaction';
-
 const useNextTransactionStore = defineStore('nextTransaction', () => {
   /* Misc */
   const PAGE_SIZE = 100;

@@ -11,9 +11,7 @@ import { historyTitle, TRANSACTION_ACTION } from '@main/shared/constants';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
-import useNextTransactionStore, {
-  KEEP_NEXT_QUERY_KEY,
-} from '@renderer/stores/storeNextTransaction';
+import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
 import { useToast } from 'vue-toast-notification';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
@@ -31,6 +29,7 @@ import {
   getDateStringExtended,
   getPrivateKey,
   getTransactionBodySignatureWithoutNodeAccountId,
+  redirectToDetails,
 } from '@renderer/utils';
 import {
   isLoggedInOrganization,
@@ -115,14 +114,7 @@ const handleSign = async (id: number) => {
     .map(t => t.transaction.id);
   nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
 
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
-    query: {
-      sign: 'true',
-      [KEEP_NEXT_QUERY_KEY]: 'true',
-    },
-  });
+  redirectToDetails(router, id, true);
 };
 
 const handleSignGroup = async () => {

@@ -4,8 +4,6 @@ import type { TransactionApproverDto } from '@main/shared/interfaces/organizatio
 import { computed, onMounted, ref } from 'vue';
 import { Hbar, AccountDeleteTransaction, Key, Transaction, KeyList } from '@hashgraph/sdk';
 
-import { MEMO_MAX_LENGTH } from '@main/shared/constants';
-
 import useUserStore from '@renderer/stores/storeUser';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
@@ -13,7 +11,6 @@ import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 import { remove } from '@renderer/services/accountsService';
 
@@ -22,8 +19,10 @@ import {
   isAccountId,
   getPropagationButtonLabel,
   formatAccountId,
+  redirectToDetails,
 } from '@renderer/utils';
 import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+import { createAccountDeleteTransaction } from '@renderer/utils/sdk/createTransactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -177,12 +176,12 @@ const handleExecuted = async (success: boolean) => {
 
 const handleSubmit = (id: number) => {
   isSubmitted.value = true;
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 const handleLocalStored = (id: string) => {
   toast.success('Account Delete Transaction Executed', { position: 'bottom-right' });
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 function handleAddToGroup() {
@@ -246,33 +245,13 @@ function handleEditGroupItem() {
 
 /* Functions */
 function createTransaction() {
-  const transaction = new AccountDeleteTransaction()
-    .setTransactionValidDuration(180)
-    .setMaxTransactionFee(maxTransactionFee.value);
-
-  if (isAccountId(payerData.accountId.value)) {
-    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
-  }
-
-  if (isAccountId(accountData.accountId.value)) {
-    transaction.setAccountId(accountData.accountId.value);
-  }
-
-  if (isAccountId(transferAccountData.accountId.value)) {
-    transaction.setTransferAccountId(transferAccountData.accountId.value);
-  }
-
-  if (transactionMemo.value.length > 0 && transactionMemo.value.length <= MEMO_MAX_LENGTH) {
-    transaction.setTransactionMemo(transactionMemo.value);
-  }
-
-  return transaction;
-}
-
-async function redirectToDetails(id: string | number) {
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
+  return createAccountDeleteTransaction({
+    payerId: payerData.accountId.value,
+    validStart: validStart.value,
+    maxTransactionFee: maxTransactionFee.value as Hbar,
+    transactionMemo: transactionMemo.value,
+    accountId: accountData.accountId.value,
+    transferAccountId: transferAccountData.accountId.value,
   });
 }
 

@@ -12,9 +12,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
-import useNextTransactionStore, {
-  KEEP_NEXT_QUERY_KEY,
-} from '@renderer/stores/storeNextTransaction';
+import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
@@ -23,7 +21,11 @@ import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 import { getApiGroups, getTransactionsToApprove } from '@renderer/services/organization';
 import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
-import { getNotifiedTransactions } from '@renderer/utils';
+import {
+  getNotifiedTransactions,
+  redirectToDetails,
+  redirectToGroupDetails,
+} from '@renderer/utils';
 import {
   getTransactionDateExtended,
   getTransactionId,
@@ -89,21 +91,7 @@ const handleApprove = async (id: number) => {
     .map(t => t.transactionRaw.id);
   nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
 
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
-    query: {
-      approve: 'true',
-      [KEEP_NEXT_QUERY_KEY]: 'true',
-    },
-  });
-};
-
-const handleDetails = async (id: number) => {
-  router.push({
-    name: 'transactionGroupDetails',
-    params: { id },
-  });
+  redirectToDetails(router, id, true);
 };
 
 // const handleDetails = async (id: number) => {
@@ -333,7 +321,7 @@ watch(
                   </td>
                   <td class="text-center">
                     <AppButton
-                      @click="handleDetails(group[0])"
+                      @click="redirectToGroupDetails($router, group[0])"
                       color="secondary"
                       class="min-w-unset"
                       >Details</AppButton

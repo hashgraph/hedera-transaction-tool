@@ -2,9 +2,9 @@
 import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
 import { ref, watch, onMounted, computed } from 'vue';
-import { FileUpdateTransaction, Hbar, Key, KeyList, Timestamp, Transaction } from '@hashgraph/sdk';
+import { FileUpdateTransaction, Hbar, Key, KeyList, Transaction } from '@hashgraph/sdk';
 
-import { DISPLAY_FILE_SIZE_LIMIT, MEMO_MAX_LENGTH } from '@main/shared/constants';
+import { DISPLAY_FILE_SIZE_LIMIT } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
@@ -13,7 +13,6 @@ import { useToast } from 'vue-toast-notification';
 import { useRoute, useRouter } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import { createTransactionId } from '@renderer/services/transactionService';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
 import {
@@ -21,12 +20,14 @@ import {
   getTransactionFromBytes,
   isAccountId,
   formatAccountId,
+  redirectToDetails,
 } from '@renderer/utils';
 import {
   isHederaSpecialFileId,
   getMinimumExpirationTime,
   getMaximumExpirationTime,
 } from '@renderer/utils/sdk';
+import { createFileUpdateTransaction } from '@renderer/utils/sdk/createTransactions';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -62,7 +63,6 @@ const maxTransactionFee = ref<Hbar>(new Hbar(2));
 const fileId = ref('');
 const memo = ref('');
 const expirationTimestamp = ref();
-// const chunkSize = ref(4096);
 const ownerKey = ref<Key | null>(null);
 const newOwnerKey = ref<Key | null>(null);
 const removeContent = ref(false);
@@ -196,52 +196,26 @@ const handleExecuted = () => {
 
 const handleLocalStored = (id: string) => {
   toast.success('File Update Transaction Executed', { position: 'bottom-right' });
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 const handleSubmit = async (id: number) => {
   isSubmitted.value = true;
-  redirectToDetails(id);
+  redirectToDetails(router, id);
 };
 
 /* Functions */
 function createTransaction() {
-  const transaction = new FileUpdateTransaction()
-    .setTransactionValidDuration(180)
-    .setMaxTransactionFee(maxTransactionFee.value);
-
-  if (memo.value.length > 0 && memo.value.length <= MEMO_MAX_LENGTH) {
-    transaction.setFileMemo(memo.value);
-  }
-
-  if (isAccountId(payerData.accountId.value)) {
-    transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
-  }
-
-  if (isAccountId(fileId.value)) {
-    transaction.setFileId(fileId.value);
-  }
-
-  if (newOwnerKey.value) {
-    transaction.setKeys(
-      newOwnerKey.value instanceof KeyList ? newOwnerKey.value : new KeyList([newOwnerKey.value]),
-    );
-  }
-
-  if (expirationTimestamp.value)
-    transaction.setExpirationTime(Timestamp.fromDate(new Date(expirationTimestamp.value)));
-
-  if (transactionMemo.value.length > 0 && transactionMemo.value.length <= MEMO_MAX_LENGTH) {
-    transaction.setTransactionMemo(transactionMemo.value);
-  }
-
-  return transaction;
-}
-
-async function redirectToDetails(id: string | number) {
-  router.push({
-    name: 'transactionDetails',
-    params: { id },
+  return createFileUpdateTransaction({
+    payerId: payerData.accountId.value,
+    validStart: validStart.value,
+    maxTransactionFee: maxTransactionFee.value as Hbar,
+    transactionMemo: transactionMemo.value,
+    fileId: fileId.value,
+    ownerKey: ownerKey.value,
+    fileMemo: memo.value,
+    expirationTime: expirationTimestamp.value ? new Date(expirationTimestamp.value) : null,
+    contents: null,
   });
 }
 
