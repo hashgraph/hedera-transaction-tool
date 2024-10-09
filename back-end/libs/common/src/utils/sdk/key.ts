@@ -41,11 +41,7 @@ export const hasValidSignatureKey = (publicKeys: string[], key: Key) => {
 
     return currentThreshold >= (key.threshold || keys.length);
   } else if (key instanceof PublicKey) {
-    if (publicKeys.includes(key.toStringRaw())) {
-      return true;
-    } else {
-      return false;
-    }
+    return publicKeys.includes(key.toStringRaw());
   } else throw new Error(`Invalid key type`);
 };
 
@@ -76,10 +72,10 @@ export function isPublicKeyInKeyList(publicKey: PublicKey | string, keyList: Key
  * @param publicKeys
  * @param keyList
  */
-export function computeShortenedPublicKeyList(publicKeys: string[], keyList: KeyList): PublicKey[] {
+export function computeShortenedPublicKeyList(publicKeys: string[], keyList: KeyList): PublicKey[] | null {
   const result = [];
   const secondary = [];
-  const threshold = keyList.threshold;
+  const threshold = keyList.threshold ? keyList.threshold : keyList.toArray().length;
 
   /* Iterates through the key list, prioritizing PublicKeys over KeyLists */
   for (const key of keyList.toArray()) {
