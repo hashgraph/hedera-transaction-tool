@@ -15,8 +15,7 @@ import {
   TRANSACTION_ACTION,
   SYNC_INDICATORS,
   NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
-  isTransactionOverMaxSize,
-  computeShortenedPublicKeyList,
+  smartCollate,
 } from '@app/common';
 import { NotificationType, Transaction, TransactionStatus } from '@entities';
 
@@ -274,7 +273,7 @@ describe('TransactionStatusService', () => {
       jest.resetAllMocks();
     });
 
-    it('should correctly update transactions statues', async () => {
+    it('should correctly update transactions statuses', async () => {
       const transactions = [
         {
           id: 1,
@@ -493,6 +492,7 @@ describe('TransactionStatusService', () => {
 
       jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
       jest.mocked(hasValidSignatureKey).mockReturnValueOnce(false);
+      jest.mocked(smartCollate).mockReturnValueOnce(null);
       jest.spyOn(transactionRepo, 'update').mockRejectedValueOnce(new Error('Error'));
 
       await expect(service.updateTransactionStatus({ id: transaction.id })).rejects.toThrow(
@@ -610,7 +610,7 @@ describe('TransactionStatusService', () => {
       expect(schedulerRegistry.addTimeout).toHaveBeenCalledWith(name, expect.anything());
     });
 
-    it('should prepare and execute a transaction signed with 100 different keys, reducing the signatures as needed', async () => {
+    it('should prepare and execute a transaction signed with 50 different keys, reducing the signatures as needed', async () => {
       // prepare the signatures
       keyList = new KeyList();
       privateKeys = [];
@@ -623,12 +623,13 @@ describe('TransactionStatusService', () => {
       }
       mockTransaction.transactionBytes = Buffer.from(transaction.toBytes());
 
+      transaction.removeAllSignatures();
+
+      privateKeys.slice(0,5).forEach(key => transaction.sign(key));
+
       // Mock the functions
-      jest.mocked(isTransactionOverMaxSize).mockImplementation(async (sdkTransaction) => {
-        return sdkTransaction._signerPublicKeys.size > 5;
-      });
-      jest.mocked(computeSignatureKey).mockResolvedValue(keyList);
-      jest.mocked(computeShortenedPublicKeyList).mockReturnValue(privateKeys.slice(0,5).map(key => key.publicKey));
+      jest.mocked(smartCollate).mockResolvedValueOnce(transaction);
+      jest.mocked(computeSignatureKey).mockResolvedValueOnce(keyList);
 
       service.prepareAndExecute(mockTransaction);
 
@@ -654,11 +655,8 @@ describe('TransactionStatusService', () => {
         mockTransaction.transactionBytes = Buffer.from(transaction.toBytes());
 
         // Mock the functions
-        jest.mocked(isTransactionOverMaxSize).mockImplementation(async (sdkTransaction) => {
-          return sdkTransaction._signerPublicKeys.size > 0;
-        });
+        jest.mocked(smartCollate).mockReturnValue(null);
         jest.mocked(computeSignatureKey).mockResolvedValue(keyList);
-        jest.mocked(computeShortenedPublicKeyList).mockReturnValue(privateKeys.map(key => key.publicKey));
 
         jest.spyOn(transactionRepo, 'update').mockResolvedValue(undefined);
 
