@@ -670,7 +670,7 @@ describe('TransactionStatusService', () => {
         expect(transactionRepo.update).toHaveBeenCalledWith(
           { id: mockTransaction.id },
           {
-            status: TransactionStatus.REJECTED,
+            status: TransactionStatus.FAILED,
             executedAt: expect.any(Date), // Use expect.any(Date) to match any Date object
             statusCode: Status.TransactionOversize._code,
           }
