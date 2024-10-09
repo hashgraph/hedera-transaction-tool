@@ -81,23 +81,19 @@ export const removeOrganization = async (id: string) => {
 
 export const updateOrganization = async (
   id: string,
-  {
-    nickname,
-    serverUrl,
-    key,
-  }: Prisma.OrganizationUncheckedUpdateWithoutOrganizationCredentialsInput,
+  data: Prisma.OrganizationUncheckedUpdateWithoutOrganizationCredentialsInput,
 ) => {
   const prisma = getPrismaClient();
+
+  delete data.Contact;
+  delete data.id;
+  delete data.keyPairs;
 
   await prisma.organization.updateMany({
     where: {
       id,
     },
-    data: {
-      nickname,
-      serverUrl,
-      key,
-    },
+    data,
   });
 
   return true;
