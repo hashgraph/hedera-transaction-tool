@@ -36,10 +36,11 @@ export const addFile = async (file: Prisma.HederaFileUncheckedCreateInput) => {
     throw new Error('File ID or Nickname already exists!');
   }
 
+  delete file.id;
+
   await prisma.hederaFile.create({
     data: {
       ...file,
-      id: undefined,
       nickname: file.nickname && file.nickname.trim().length > 0 ? file.nickname : null,
     },
   });

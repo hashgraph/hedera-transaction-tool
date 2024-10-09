@@ -39,20 +39,21 @@ export const addDraft = async (draft: Prisma.TransactionDraftUncheckedCreateInpu
 
 export const updateDraft = async (
   id: string,
-  { type, transactionBytes, isTemplate, details }: Prisma.TransactionDraftUncheckedUpdateInput,
+  data: Prisma.TransactionDraftUncheckedUpdateInput,
 ) => {
   const prisma = getPrismaClient();
+
+  delete data.GroupItem;
+  delete data.created_at;
+  delete data.id;
+  delete data.updated_at;
+  delete data.user_id;
 
   await prisma.transactionDraft.update({
     where: {
       id,
     },
-    data: {
-      type,
-      transactionBytes,
-      isTemplate,
-      details,
-    },
+    data,
   });
 };
 

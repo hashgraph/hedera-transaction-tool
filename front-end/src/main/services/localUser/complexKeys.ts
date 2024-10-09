@@ -104,7 +104,7 @@ export const updateComplexKey = async (id: string, newKeyListBytes: Uint8Array) 
     },
   });
 
-  const updateKey = await prisma.complexKey.findFirst({ where: { id: id } });
+  const updateKey = await prisma.complexKey.findFirst({ where: { id } });
 
   if (!updateKey) {
     throw new Error('Complex key not found!');
