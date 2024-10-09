@@ -385,7 +385,6 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"
       :on-local-stored="handleLocalStored"
-      :transaction-bytes="transaction?.toBytes() || null"
       :observers="observers"
       :approvers="approvers"
     />

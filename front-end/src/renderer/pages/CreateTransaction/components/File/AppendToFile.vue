@@ -127,7 +127,7 @@ const handleCreate = async (e: Event) => {
     await transactionProcessor.value?.process(
       {
         transactionKey: transactionKey.value,
-        transactionBytes: transaction.value.toBytes(),
+        transactionBytes: newTransaction.toBytes(),
         name: transactionName.value,
         description: transactionDescription.value,
       },
@@ -460,7 +460,6 @@ const columnClass = 'col-4 col-xxxl-3';
 
     <TransactionProcessor
       ref="transactionProcessor"
-      :transaction-bytes="transaction?.toBytes() || null"
       :on-executed="handleExecuted"
       :on-local-stored="handleLocalStored"
       :on-submitted="handleSubmit"
