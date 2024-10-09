@@ -678,7 +678,6 @@ onMounted(async () => {
     </form>
     <TransactionProcessor
       ref="transactionProcessor"
-      :transaction-bytes="transaction?.toBytes() || null"
       :observers="observers"
       :approvers="approvers"
       :on-executed="

@@ -73,6 +73,7 @@ class OrganizationPage extends BasePage {
   minutesOverlayButtonSelector = 'button[data-test="minutes-toggle-overlay-btn-0"]';
   hoursOverlayButtonSelector = 'button[data-test="hours-toggle-overlay-btn-0"]';
   signTransactionButtonSelector = 'button-sign-org-transaction';
+  nextTransactionButtonSelector = 'button-next-org-transaction';
 
   // Inputs
   organizationNicknameInputSelector = 'input-organization-nickname';
@@ -744,14 +745,20 @@ class OrganizationPage extends BasePage {
       await this.clickOnSignTransactionButton();
     }
     const txId = await this.getTransactionDetailsId();
+    const validStart = await this.getValidStart();
     return {
       txId,
       selectedObservers: numberOfObservers === 1 ? selectedObservers[0] : selectedObservers,
+      validStart,
     };
   }
 
   async clickOnSignTransactionButton() {
     await this.click(this.signTransactionButtonSelector, null, 5000);
+  }
+
+  async isSignTransactionButtonVisible() {
+    return await this.isElementVisible(this.signTransactionButtonSelector);
   }
 
   async getTransactionDetailsId() {
@@ -1174,6 +1181,14 @@ class OrganizationPage extends BasePage {
       await this.createNotificationForUser(firstUser, secondUser, globalCredentials);
     }
     // If the notification exists and is unread, nothing more needs to be done
+  }
+
+  async clickOnNextTransactionButton() {
+    await this.click(this.nextTransactionButtonSelector);
+  }
+
+  async isNextTransactionButtonVisible() {
+    return await this.isElementVisible(this.nextTransactionButtonSelector);
   }
 }
 

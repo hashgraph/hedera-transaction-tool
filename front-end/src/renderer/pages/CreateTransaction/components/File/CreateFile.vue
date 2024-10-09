@@ -534,7 +534,6 @@ watch(payerData.isValid, isValid => {
 
     <TransactionProcessor
       ref="transactionProcessor"
-      :transaction-bytes="transaction?.toBytes() || null"
       :observers="observers"
       :approvers="approvers"
       :on-executed="handleExecuted"

@@ -25,10 +25,11 @@ export async function getOrganizationContacts(
 export const addContact = async (contact: Prisma.ContactUncheckedCreateInput) => {
   const prisma = getPrismaClient();
 
+  delete contact.id;
+
   const newContact = await prisma.contact.create({
     data: {
       ...contact,
-      id: undefined,
     },
   });
 

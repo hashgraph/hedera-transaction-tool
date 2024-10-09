@@ -54,20 +54,18 @@ export const addGroup = async (group: Prisma.TransactionGroupUncheckedCreateInpu
   });
 };
 
-export async function updateGroup(
-  id: string,
-  { description, atomic }: Prisma.TransactionGroupUncheckedUpdateInput,
-) {
+export async function updateGroup(id: string, data: Prisma.TransactionGroupUncheckedUpdateInput) {
   const prisma = getPrismaClient();
+
+  delete data.GroupItem;
+  delete data.created_at;
+  delete data.id;
 
   return await prisma.transactionGroup.update({
     where: {
       id,
     },
-    data: {
-      description,
-      atomic,
-    },
+    data,
   });
 }
 
