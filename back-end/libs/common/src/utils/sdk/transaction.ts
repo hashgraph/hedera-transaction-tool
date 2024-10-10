@@ -1,13 +1,14 @@
 import { AccountId, KeyList, PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
-import { Network, MAX_TRANSACTION_BYTE_SIZE, TransactionType } from '@entities';
+import { Network, MAX_TRANSACTION_BYTE_SIZE, TransactionType, Transaction } from '@entities';
 import {
   MirrorNodeService,
   decode,
   getSignatureEntities,
   isAccountId,
   parseAccountProperty,
+  computeShortenedPublicKeyList,
 } from '@app/common';
 
 export const isExpired = (transaction: SDKTransaction) => {
@@ -257,6 +258,39 @@ export const verifyTransactionBodyWithoutNodeAccountIdSignature = (
     return false;
   }
 };
+
+export async function smartCollate(transaction: Transaction): Promise<SDKTransaction | null> {
+  const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
+
+  if (await isTransactionOverMaxSize(sdkTransaction)) {
+    const signatureKey = await computeSignatureKey(
+      sdkTransaction,
+      this.mirrorNodeService,
+      transaction.network,
+    );
+
+    const publicKeys = computeShortenedPublicKeyList(
+      [...sdkTransaction._signerPublicKeys],
+      signatureKey,
+    );
+
+    const sigDictionary = sdkTransaction.removeAllSignatures();
+
+    for (const key of publicKeys) {
+      const sigArray = sigDictionary[key.toStringRaw()];
+      sdkTransaction.addSignature(key, sigArray);
+    }
+
+    // If the transaction is still too large,
+    // set it to failed with the TRANSACTION_OVERSIZE status code
+    // update the transaction, emit the event, and delete the timeout
+    if (await isTransactionOverMaxSize(sdkTransaction)) {
+      return null;
+    }
+  }
+
+  return sdkTransaction;
+}
 
 export async function isTransactionOverMaxSize(transaction: SDKTransaction) {
   // @ts-expect-error _makeRequestAsync is a protected method, this is a temporary solution.

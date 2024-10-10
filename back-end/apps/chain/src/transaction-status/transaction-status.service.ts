@@ -25,8 +25,7 @@ import {
   NotifyForTransactionDto,
   hasValidSignatureKey,
   computeSignatureKey,
-  computeShortenedPublicKeyList,
-  isTransactionOverMaxSize,
+  smartCollate,
 } from '@app/common';
 import { NotificationType, Transaction, TransactionStatus } from '@entities';
 
@@ -169,8 +168,6 @@ export class TransactionStatusService {
   }
 
   /* Checks if the signers are enough to sign the transactions and update their statuses */
-  //TODO this should also try and do a smart collate, if needed, as a transaction isn't
-  // ready for execution if it's over the max size - do this in another branch and pr
   async updateTransactions(from: Date, to?: Date) {
     const transactions = await this.transactionRepo.find({
       where: {
@@ -188,43 +185,10 @@ export class TransactionStatusService {
     let atLeastOneUpdated = false;
 
     for (const transaction of transactions) {
-      /* Gets the SDK transaction from the transaction body */
-      const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
-
-      /* Throws an error if the transaction is a file update/append transaction */
-      if (
-        sdkTransaction instanceof FileUpdateTransaction ||
-        sdkTransaction instanceof FileAppendTransaction
-      )
-        continue;
-
-      /* Gets the signature key */
-      const signatureKey = await computeSignatureKey(
-        sdkTransaction,
-        this.mirrorNodeService,
-        transaction.network,
-      );
-
-      /* Checks if the transaction has valid signature */
-      const isValidSignatureKey = hasValidSignatureKey([...sdkTransaction._signerPublicKeys], signatureKey);
-
-      const newStatus = isValidSignatureKey
-        ? TransactionStatus.WAITING_FOR_EXECUTION
-        : TransactionStatus.WAITING_FOR_SIGNATURES;
-
-      if (transaction.status === newStatus) continue;
-
       try {
-        await this.transactionRepo.update(
-          {
-            id: transaction.id,
-          },
-          {
-            status: newStatus,
-          },
-        );
+        const newStatus = await this._updateTransactionStatus(transaction);
 
-        transaction.status = newStatus;
+        if (!newStatus) continue;
 
         this.emitNotificationEvents(transaction, newStatus);
 
@@ -253,7 +217,20 @@ export class TransactionStatusService {
       },
     });
 
-    /* Returns if the transaction is not found */
+    const newStatus = await this._updateTransactionStatus(transaction);
+
+    if (!newStatus) return;
+
+    this.emitNotificationEvents(transaction, newStatus);
+
+    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
+      message: TRANSACTION_ACTION,
+      content: '',
+    });
+  }
+
+  private async _updateTransactionStatus(transaction: Transaction): Promise<TransactionStatus | undefined> {
+    /* Returns if the transaction is null */
     if (!transaction) return;
 
     /* Gets the SDK transaction from the transaction body */
@@ -275,27 +252,30 @@ export class TransactionStatusService {
 
     /* Checks if the transaction has valid signature */
     const isAbleToSign = hasValidSignatureKey([...sdkTransaction._signerPublicKeys], signatureKey);
-    const newStatus = isAbleToSign
-      ? TransactionStatus.WAITING_FOR_EXECUTION
-      : TransactionStatus.WAITING_FOR_SIGNATURES;
 
+    let newStatus = TransactionStatus.WAITING_FOR_SIGNATURES;
+
+    if (isAbleToSign) {
+      const sdkTransaction = await smartCollate(transaction);
+
+      if (sdkTransaction !== null) {
+        newStatus = TransactionStatus.WAITING_FOR_EXECUTION;
+      }
+    }
+
+    /* In case the status wasn't already WAITING_FOR_SIGNATURES */
     if (transaction.status === newStatus) return;
 
     await this.transactionRepo.update(
       {
-        id,
+        id: transaction.id,
       },
       {
         status: newStatus,
       },
     );
 
-    this.emitNotificationEvents(transaction, newStatus);
-
-    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
-    });
+    return newStatus;
   }
 
   private emitNotificationEvents(transaction: Transaction, newStatus: TransactionStatus) {
@@ -324,7 +304,6 @@ export class TransactionStatusService {
     }
   }
 
-  // comment and tests
   prepareAndExecute(transaction: Transaction) {
     const name = `smart_collate_timeout_${transaction.id}`;
 
@@ -334,51 +313,31 @@ export class TransactionStatusService {
 
     const callback = async () => {
       try {
-        const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
+        const sdkTransaction = await smartCollate(transaction);
 
-        if (await isTransactionOverMaxSize(sdkTransaction)) {
-          const signatureKey = await computeSignatureKey(
-            sdkTransaction,
-            this.mirrorNodeService,
-            transaction.network,
+        // If the transaction is still too large,
+        // set it to failed with the TRANSACTION_OVERSIZE status code
+        // update the transaction, emit the event, and delete the timeout
+        if (sdkTransaction === null) {
+          await this.transactionRepo.update(
+            {
+              id: transaction.id,
+            },
+            {
+              status: TransactionStatus.FAILED,
+              executedAt: new Date(),
+              statusCode: Status.TransactionOversize._code,
+            },
           );
-
-          const publicKeys = computeShortenedPublicKeyList(
-            [...sdkTransaction._signerPublicKeys],
-            signatureKey,
-          );
-
-          const sigDictionary = sdkTransaction.removeAllSignatures();
-
-          for (const key of publicKeys) {
-            const sigArray = sigDictionary[key.toStringRaw()];
-            sdkTransaction.addSignature(key, sigArray);
-          }
-
-          // If the transaction is still too large,
-          // set it to failed with the TRANSACTION_OVERSIZE status code
-          // update the transaction, emit the event, and delete the timeout
-          if (await isTransactionOverMaxSize(sdkTransaction)) {
-            await this.transactionRepo.update(
-              {
-                id: transaction.id,
-              },
-              {
-                status: TransactionStatus.REJECTED,
-                executedAt: new Date(),
-                statusCode: Status.TransactionOversize._code,
-              },
-            );
-            this.emitNotificationEvents(transaction, TransactionStatus.REJECTED);
-            return;
-          }
-
-          // TODO then make sure that front end doesn't allow chunks larger than 2k'
-          //NOTE: the transactionBytes are set here but are not to be saved. Otherwise,
-          // any signatures that were removed in order to make the transaction fit
-          // would be lost.
-          transaction.transactionBytes = Buffer.from(sdkTransaction.toBytes());
+          this.emitNotificationEvents(transaction, TransactionStatus.FAILED);
+          return;
         }
+
+        // TODO then make sure that front end doesn't allow chunks larger than 2k'
+        //NOTE: the transactionBytes are set here but are not to be saved. Otherwise,
+        // any signatures that were removed in order to make the transaction fit
+        // would be lost.
+        transaction.transactionBytes = Buffer.from(sdkTransaction.toBytes());
 
         this.addExecutionTimeout(transaction);
       } catch (error) {

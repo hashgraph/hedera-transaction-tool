@@ -39,7 +39,7 @@ export class ExecuteService {
   ) {}
 
   /* Tries to execute a transaction */
-  @MurLock(5000, 'transactionId')
+  @MurLock(5000, 'transaction.id')
   async executeTransaction(transaction: ExecuteTransactionDto) {
     /* Throws an error if the transaction is not found or in incorrect state */
     if (!transaction) throw new Error('Transaction not found');
