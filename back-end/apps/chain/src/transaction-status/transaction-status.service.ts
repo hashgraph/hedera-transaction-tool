@@ -229,7 +229,9 @@ export class TransactionStatusService {
     });
   }
 
-  private async _updateTransactionStatus(transaction: Transaction): Promise<TransactionStatus | undefined> {
+  private async _updateTransactionStatus(
+    transaction: Transaction,
+  ): Promise<TransactionStatus | undefined> {
     /* Returns if the transaction is null */
     if (!transaction) return;
 
@@ -256,7 +258,7 @@ export class TransactionStatusService {
     let newStatus = TransactionStatus.WAITING_FOR_SIGNATURES;
 
     if (isAbleToSign) {
-      const sdkTransaction = await smartCollate(transaction);
+      const sdkTransaction = await smartCollate(transaction, this.mirrorNodeService);
 
       if (sdkTransaction !== null) {
         newStatus = TransactionStatus.WAITING_FOR_EXECUTION;
@@ -313,7 +315,7 @@ export class TransactionStatusService {
 
     const callback = async () => {
       try {
-        const sdkTransaction = await smartCollate(transaction);
+        const sdkTransaction = await smartCollate(transaction, this.mirrorNodeService);
 
         // If the transaction is still too large,
         // set it to failed with the TRANSACTION_OVERSIZE status code

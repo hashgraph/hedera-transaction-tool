@@ -259,13 +259,16 @@ export const verifyTransactionBodyWithoutNodeAccountIdSignature = (
   }
 };
 
-export async function smartCollate(transaction: Transaction): Promise<SDKTransaction | null> {
+export async function smartCollate(
+  transaction: Transaction,
+  mirrorNodeService: MirrorNodeService,
+): Promise<SDKTransaction | null> {
   const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
   if (await isTransactionOverMaxSize(sdkTransaction)) {
     const signatureKey = await computeSignatureKey(
       sdkTransaction,
-      this.mirrorNodeService,
+      mirrorNodeService,
       transaction.network,
     );
 
