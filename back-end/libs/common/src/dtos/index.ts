@@ -5,3 +5,4 @@ export * from './notifications-notify-email.dto';
 export * from './notifications-notify-for-transaction.dto';
 export * from './notifications-notify-general.dto';
 export * from './notifications-sync-indicators.dto';
+export * from './chain-update-transaction-status.dto';

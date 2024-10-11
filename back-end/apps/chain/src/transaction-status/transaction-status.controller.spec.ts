@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 
-import { TransactionStatusController } from './transaction-status.controller';
+import { UpdateTransactionStatusDto } from '@app/common';
 
+import { TransactionStatusController } from './transaction-status.controller';
 import { TransactionStatusService } from './transaction-status.service';
-import { UpdateTransactionStatusDto } from './dto';
 
 describe('TransactionStatusController', () => {
   let controller: TransactionStatusController;
