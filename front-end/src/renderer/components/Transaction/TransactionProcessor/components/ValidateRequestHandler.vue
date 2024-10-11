@@ -11,6 +11,9 @@ import useUserStore from '@renderer/stores/storeUser';
 import { ableToSign, getTransactionType } from '@renderer/utils';
 import { assertUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
+/* Constants */
+const SIZE_BUFFER_BYTES = 200;
+
 /* Stores */
 const user = useUserStore();
 
@@ -70,9 +73,10 @@ function validateSignableInPersonal(request: TransactionRequest) {
 
 function validateBigFile(transaction: FileCreateTransaction) {
   const size = transaction.toBytes().length;
-  const sizeBufferBytes = 200;
 
-  if (size <= TRANSACTION_MAX_SIZE - sizeBufferBytes) return;
+  if (size <= TRANSACTION_MAX_SIZE - SIZE_BUFFER_BYTES) {
+    return;
+  }
 
   if (user.selectedOrganization) {
     throw new Error(
