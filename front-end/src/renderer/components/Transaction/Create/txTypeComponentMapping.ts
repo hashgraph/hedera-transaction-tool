@@ -3,7 +3,7 @@ import AccountCreate from './AccountCreate';
 import AccountUpdate from './AccountUpdate';
 import AccountDelete from './AccountDelete';
 import AppendToFileVue from './File/AppendToFile.vue';
-import CreateFile from './File/CreateFile.vue';
+import FileCreate from './FileCreate';
 import ReadFile from './File/ReadFile.vue';
 import UpdateFile from './File/UpdateFile.vue';
 import FreezeVue from './Misc/Freeze.vue';
@@ -24,7 +24,7 @@ export const transactionTypeKeys = {
 };
 
 const txTypeComponentMapping = {
-  [transactionTypeKeys.createFile]: CreateFile,
+  [transactionTypeKeys.createFile]: FileCreate,
   [transactionTypeKeys.readFile]: ReadFile,
   [transactionTypeKeys.updateFile]: UpdateFile,
   [transactionTypeKeys.appendToFile]: AppendToFileVue,

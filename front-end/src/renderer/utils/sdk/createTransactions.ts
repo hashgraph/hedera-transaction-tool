@@ -296,6 +296,12 @@ const setFileInfo = (
   }
 };
 
+export const createFileDataTransaction = (data: FileData) => {
+  const transaction = new FileCreateTransaction();
+  setFileInfo(transaction, data);
+  return transaction;
+};
+
 /* File Create Transaction */
 export const createFileCreateTransaction = (data: TransactionCommonData & FileData) => {
   const transaction = new FileCreateTransaction();

@@ -5,7 +5,9 @@ import {
   AccountCreateTransaction,
   AccountDeleteTransaction,
   AccountUpdateTransaction,
+  FileCreateTransaction,
   Hbar,
+  KeyList,
 } from '@hashgraph/sdk';
 
 import type {
@@ -14,8 +16,10 @@ import type {
   AccountDeleteData,
   AccountUpdateData,
   ApproveHbarAllowanceData,
+  FileCreateData,
   TransactionCommonData,
 } from './createTransactions';
+import { getMaximumExpirationTime, getMinimumExpirationTime } from '.';
 
 export const getTransactionCommonData = (transaction: Transaction): TransactionCommonData => {
   const transactionId = transaction.transactionId;
@@ -101,5 +105,28 @@ export const getAccountDeleteData = (transaction: Transaction): AccountDeleteDat
   return {
     accountId: transaction.accountId?.toString() || '',
     transferAccountId: transaction.transferAccountId?.toString() || '',
+  };
+};
+
+export const getFileCreateTransactionData = (transaction: Transaction): FileCreateData => {
+  assertTransactionType(transaction, FileCreateTransaction);
+
+  let expirationTime: Date | null = null;
+
+  if (transaction.expirationTime) {
+    const expirationDate = transaction.expirationTime.toDate();
+    if (
+      expirationDate > getMinimumExpirationTime() &&
+      expirationDate < getMaximumExpirationTime()
+    ) {
+      expirationTime = expirationDate;
+    }
+  }
+
+  return {
+    ownerKey: transaction.keys ? new KeyList(transaction.keys) : null,
+    contents: transaction.contents ? new TextDecoder().decode(transaction.contents) : '',
+    fileMemo: transaction.fileMemo || '',
+    expirationTime,
   };
 };
