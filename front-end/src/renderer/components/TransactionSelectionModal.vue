@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 
-import { transactionTypeKeys } from '@renderer/pages/CreateTransaction/txTypeComponentMapping';
+import { transactionTypeKeys } from '@renderer/components/Transaction/Create/txTypeComponentMapping';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 

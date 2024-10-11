@@ -1,9 +1,9 @@
-import AccountApproveAllowanceDetails from './compontents/AccountApproveAllowanceDetails.vue';
-import AccountDetails from './compontents/AccountDetails.vue';
-import DeleteAccountDetails from './compontents/DeleteAccountDetails.vue';
-import FileDetails from './compontents/FileDetails.vue';
-import FreezeDetails from './compontents/FreezeDetails.vue';
-import TransferDetails from './compontents/TransferDetails.vue';
+import AccountApproveAllowanceDetails from './AccountApproveAllowanceDetails.vue';
+import AccountDetails from './AccountDetails.vue';
+import DeleteAccountDetails from './DeleteAccountDetails.vue';
+import FileDetails from './FileDetails.vue';
+import FreezeDetails from './FreezeDetails.vue';
+import TransferDetails from './TransferDetails.vue';
 
 export const transactionTypeKeys = {
   createFile: 'FileCreateTransaction',

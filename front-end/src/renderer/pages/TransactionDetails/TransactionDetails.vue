@@ -62,9 +62,9 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import SignatureStatus from '@renderer/components/SignatureStatus.vue';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
-
-import txTypeComponentMapping from './txTypeComponentMapping';
 import ReadOnlyApproversList from '@renderer/components/Approvers/ReadOnlyApproversList.vue';
+
+import txTypeComponentMapping from '@renderer/components/Transaction/Details/txTypeComponentMapping';
 
 /* Stores */
 const user = useUserStore();
