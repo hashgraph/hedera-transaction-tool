@@ -120,14 +120,7 @@ describe('TransactionsService', () => {
 
     expect(transactionsRepo.findOne).toHaveBeenCalledWith({
       where: { id: 1 },
-      relations: [
-        'creatorKey',
-        'creatorKey.user',
-        'observers',
-        'observers.user',
-        'comments',
-        'groupItem',
-      ],
+      relations: ['creatorKey', 'observers', 'comments', 'groupItem'],
     });
 
     expect(entityManager.find).toHaveBeenCalledWith(TransactionSigner, {
@@ -492,7 +485,7 @@ describe('TransactionsService', () => {
   });
 
   it('should soft remove the transaction', async () => {
-    const transaction = { id: 123, creatorKey: { user: user as User } };
+    const transaction = { id: 123, creatorKey: { userId: user.id } };
 
     transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
 
@@ -510,7 +503,7 @@ describe('TransactionsService', () => {
   });
 
   it('should hard remove the transaction', async () => {
-    const transaction = { id: 123, creatorKey: { user: user as User } };
+    const transaction = { id: 123, creatorKey: { userId: user.id } };
 
     transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
 
@@ -536,7 +529,7 @@ describe('TransactionsService', () => {
   });
 
   it('should throw if user is not the creator', async () => {
-    const transaction = { id: 123, creatorKey: { user: { id: 2 } } };
+    const transaction = { id: 123, creatorKey: { userId: 2 } };
 
     transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
 
@@ -547,7 +540,7 @@ describe('TransactionsService', () => {
 
   it('should throw if transaction status is not cancelable', async () => {
     const transaction = {
-      creatorKey: { user: { id: 1 } },
+      creatorKey: { userId: 1 },
       status: TransactionStatus.EXECUTED,
     };
 
@@ -561,7 +554,7 @@ describe('TransactionsService', () => {
   it('should update transaction status to CANCELED and return true', async () => {
     const transaction = {
       id: 123,
-      creatorKey: { user: { id: 1 } },
+      creatorKey: { userId: 1 },
       status: TransactionStatus.WAITING_FOR_SIGNATURES,
     };
 
@@ -620,7 +613,7 @@ describe('TransactionsService', () => {
     entityManager.find.mockResolvedValueOnce([
       {
         userKey: {
-          user,
+          userId: user.id,
         },
       },
     ]);
