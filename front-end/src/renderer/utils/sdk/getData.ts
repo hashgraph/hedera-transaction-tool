@@ -6,6 +6,7 @@ import {
   AccountDeleteTransaction,
   AccountUpdateTransaction,
   FileCreateTransaction,
+  FileUpdateTransaction,
   Hbar,
   KeyList,
 } from '@hashgraph/sdk';
@@ -17,6 +18,8 @@ import type {
   AccountUpdateData,
   ApproveHbarAllowanceData,
   FileCreateData,
+  FileData,
+  FileUpdateData,
   TransactionCommonData,
 } from './createTransactions';
 import { getMaximumExpirationTime, getMinimumExpirationTime } from '.';
@@ -108,9 +111,13 @@ export const getAccountDeleteData = (transaction: Transaction): AccountDeleteDat
   };
 };
 
-export const getFileCreateTransactionData = (transaction: Transaction): FileCreateData => {
-  assertTransactionType(transaction, FileCreateTransaction);
-
+export const getFileInfoTransactionData = (transaction: Transaction): FileData => {
+  if (
+    !(transaction instanceof FileCreateTransaction) &&
+    !(transaction instanceof FileUpdateTransaction)
+  ) {
+    throw new Error('Invalid transaction type.');
+  }
   let expirationTime: Date | null = null;
 
   if (transaction.expirationTime) {
@@ -122,11 +129,22 @@ export const getFileCreateTransactionData = (transaction: Transaction): FileCrea
       expirationTime = expirationDate;
     }
   }
-
   return {
     ownerKey: transaction.keys ? new KeyList(transaction.keys) : null,
     contents: transaction.contents ? new TextDecoder().decode(transaction.contents) : '',
     fileMemo: transaction.fileMemo || '',
     expirationTime,
+  };
+};
+
+export const getFileCreateTransactionData = (transaction: Transaction): FileCreateData => {
+  return getFileUpdateTransactionData(transaction);
+};
+
+export const getFileUpdateTransactionData = (transaction: Transaction): FileUpdateData => {
+  assertTransactionType(transaction, FileUpdateTransaction);
+  return {
+    fileId: transaction.fileId?.toString() || '',
+    ...getFileInfoTransactionData(transaction),
   };
 };
