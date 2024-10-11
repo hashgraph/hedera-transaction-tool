@@ -76,6 +76,14 @@ export const uint8ToHex = (uint8: Uint8Array) => {
     .join('');
 };
 
+export const hexToUint8Array = (hexString: string) => {
+  return new Uint8Array(
+    (hexString.startsWith('0x') ? hexString.slice(2) : hexString)
+      .match(/.{1,2}/g)
+      ?.map(byte => parseInt(byte, 16)) || [],
+  );
+};
+
 export const encodeString = (str: string) => {
   return new TextEncoder().encode(str);
 };

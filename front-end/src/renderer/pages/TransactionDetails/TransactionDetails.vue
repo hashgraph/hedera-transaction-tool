@@ -29,7 +29,6 @@ import {
   sendApproverChoice,
 } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
-import { hexToUint8Array } from '@renderer/services/electronUtilsService';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
@@ -53,6 +52,7 @@ import {
   KEEP_NEXT_QUERY_KEY,
   openTransactionInHashscan,
   redirectToDetails,
+  hexToUint8Array,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -423,7 +423,7 @@ async function fetchTransaction(id: string | number) {
         user.selectedOrganization?.serverUrl || '',
         Number(id),
       );
-      transactionBytes = await hexToUint8Array(orgTransaction.value.transactionBytes);
+      transactionBytes = hexToUint8Array(orgTransaction.value.transactionBytes);
       publicKeysRequiredToSign.value = await publicRequiredToSign(
         SDKTransaction.fromBytes(transactionBytes),
         user.selectedOrganization.userKeys,
@@ -493,10 +493,14 @@ onBeforeMount(async () => {
 
   subscribeToTransactionAction();
   const formattedId = Array.isArray(id) ? id[0] : id;
-  await fetchTransaction(formattedId);
-  nextId.value = await nextTransaction.getNext(
-    isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
-  );
+
+  const result = await Promise.all([
+    fetchTransaction(formattedId),
+    nextTransaction.getNext(
+      isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
+    ),
+  ]);
+  nextId.value = result[1];
 });
 
 /* Watchers */

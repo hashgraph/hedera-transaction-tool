@@ -44,23 +44,6 @@ export default () => {
     },
   );
 
-  ipcMain.handle(createChannelName('hexToUint8Array'), (_e, hexString: string): string => {
-    return Uint8Array.from(
-      Buffer.from(hexString.startsWith('0x') ? hexString.slice(2) : hexString, 'hex'),
-    ).toString();
-  });
-
-  ipcMain.handle(
-    createChannelName('hexToUint8ArrayBatch'),
-    (_e, hexStrings: string[]): string[] => {
-      return hexStrings.map(hexString =>
-        Uint8Array.from(
-          Buffer.from(hexString.startsWith('0x') ? hexString.slice(2) : hexString, 'hex'),
-        ).toString(),
-      );
-    },
-  );
-
   ipcMain.handle(
     createChannelName('openBufferInTempFile'),
     async (_e, name: string, uint8ArrayString: string) => {

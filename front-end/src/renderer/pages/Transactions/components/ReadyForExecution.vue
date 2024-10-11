@@ -19,9 +19,8 @@ import useDisposableWs from '@renderer/composables/useDisposableWs';
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 
 import { getTransactionsForUser } from '@renderer/services/organization';
-import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
-import { getNotifiedTransactions, redirectToDetails } from '@renderer/utils';
+import { getNotifiedTransactions, hexToUint8Array, redirectToDetails } from '@renderer/utils';
 import {
   getTransactionDateExtended,
   getTransactionId,
@@ -123,9 +122,7 @@ async function fetchTransactions() {
     );
     totalItems.value = totalItemsCount;
 
-    const transactionsBytes = await hexToUint8ArrayBatch(
-      rawTransactions.map(t => t.transactionBytes),
-    );
+    const transactionsBytes = rawTransactions.map(t => hexToUint8Array(t.transactionBytes));
     transactions.value = rawTransactions.map((transaction, i) => ({
       transactionRaw: transaction,
       transaction: Transaction.fromBytes(transactionsBytes[i]),

@@ -22,9 +22,8 @@ import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
 import { getTransactions, getTransactionsCount } from '@renderer/services/transactionService';
 import { getHistoryTransactions } from '@renderer/services/organization';
-import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
-import { getNotifiedTransactions, redirectToDetails } from '@renderer/utils';
+import { getNotifiedTransactions, hexToUint8Array, redirectToDetails } from '@renderer/utils';
 import {
   getTransactionStatus,
   getTransactionId,
@@ -170,9 +169,7 @@ async function fetchTransactions() {
       );
       totalItems.value = totalItemsCount;
 
-      const transactionsBytes = await hexToUint8ArrayBatch(
-        rawTransactions.map(t => t.transactionBytes),
-      );
+      const transactionsBytes = rawTransactions.map(t => hexToUint8Array(t.transactionBytes));
       organizationTransactions.value = rawTransactions.map((transaction, i) => ({
         transactionRaw: transaction,
         transaction: SDKTransaction.fromBytes(transactionsBytes[i]),

@@ -22,7 +22,6 @@ import {
   getUserShouldApprove,
   sendApproverChoice,
 } from '@renderer/services/organization';
-import { hexToUint8Array } from '@renderer/services/electronUtilsService';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 
 import {
@@ -30,6 +29,7 @@ import {
   getPrivateKey,
   getTransactionBodySignatureWithoutNodeAccountId,
   redirectToDetails,
+  hexToUint8Array,
 } from '@renderer/utils';
 import {
   isLoggedInOrganization,
@@ -77,7 +77,7 @@ async function handleFetchGroup(id: string | number) {
             shouldApprove.value ||
             (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id));
 
-          const transactionBytes = await hexToUint8Array(item.transaction.transactionBytes);
+          const transactionBytes = hexToUint8Array(item.transaction.transactionBytes);
 
           const newKeys = await publicRequiredToSign(
             Transaction.fromBytes(transactionBytes),
@@ -136,7 +136,7 @@ const handleSignGroup = async () => {
   try {
     if (group.value != undefined) {
       for (const groupItem of group.value.groupItems) {
-        const transactionBytes = await hexToUint8Array(groupItem.transaction.transactionBytes);
+        const transactionBytes = hexToUint8Array(groupItem.transaction.transactionBytes);
         const transaction = Transaction.fromBytes(transactionBytes);
         const publicKeysRequired = await publicRequiredToSign(
           transaction,
@@ -192,7 +192,7 @@ const handleApproveAll = async (approved: boolean, showModal?: boolean) => {
     if (group.value != undefined) {
       for (const item of group.value.groupItems) {
         if (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id)) {
-          const transactionBytes = await hexToUint8Array(item.transaction.transactionBytes);
+          const transactionBytes = hexToUint8Array(item.transaction.transactionBytes);
           const transaction = Transaction.fromBytes(transactionBytes);
           const signature = getTransactionBodySignatureWithoutNodeAccountId(
             privateKey,

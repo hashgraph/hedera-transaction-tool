@@ -19,10 +19,10 @@ import useDisposableWs from '@renderer/composables/useDisposableWs';
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 
 import { getApiGroups, getTransactionsToApprove } from '@renderer/services/organization';
-import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
 import {
   getNotifiedTransactions,
+  hexToUint8Array,
   redirectToDetails,
   redirectToGroupDetails,
 } from '@renderer/utils';
@@ -155,10 +155,7 @@ async function fetchTransactions() {
     );
     totalItems.value = totalItemsCount;
 
-    const transactionsBytes = await hexToUint8ArrayBatch(
-      rawTransactions.map(t => t.transactionBytes),
-    );
-
+    const transactionsBytes = rawTransactions.map(t => hexToUint8Array(t.transactionBytes));
     for (const [i, transaction] of rawTransactions.entries()) {
       const currentGroup =
         transaction.groupItem?.groupId != null ? transaction.groupItem.groupId : -1;
