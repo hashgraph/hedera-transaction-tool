@@ -173,11 +173,6 @@ class TransactionPage extends BasePage {
       this.isElementVisible(this.fileContentTextFieldSelector),
       this.isElementVisible(this.signAndSubmitFileCreateSelector),
     ]);
-    console.log(
-      'Checks:',
-      checks.map((check, i) => `check(${i + 1}): ${check}`),
-    );
-
     return checks.every(isTrue => isTrue);
   }
 
