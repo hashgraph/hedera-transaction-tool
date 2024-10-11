@@ -659,6 +659,16 @@ describe('TransactionStatusService', () => {
         },
       );
     });
+
+    it('should handle error in callback', async () => {
+      jest.mocked(isTransactionOverMaxSize).mockRejectedValue(new Error('Error'));
+
+      service.prepareAndExecute(mockTransaction);
+
+      await jest.advanceTimersToNextTimerAsync();
+
+      expect(service.addExecutionTimeout).not.toHaveBeenCalled();
+    });
   });
 
   describe('addExecutionTimeout', () => {
@@ -713,6 +723,16 @@ describe('TransactionStatusService', () => {
       service.addExecutionTimeout(transaction);
 
       await jest.advanceTimersByTimeAsync(timeToValidStart + 5 * 1000);
+
+      expect(executeService.executeTransaction).toHaveBeenCalledWith(transaction);
+    });
+
+    it('should handle error in the timeout callback', async () => {
+      jest.spyOn(executeService, 'executeTransaction').mockRejectedValue(new Error('Error'));
+
+      service.addExecutionTimeout(transaction);
+
+      await jest.advanceTimersToNextTimerAsync();
 
       expect(executeService.executeTransaction).toHaveBeenCalledWith(transaction);
     });
