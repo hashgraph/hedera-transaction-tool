@@ -1,4 +1,4 @@
-import { KeyList, Key, PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Key, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import { EntityManager, In, Not } from 'typeorm';
 
@@ -8,6 +8,7 @@ import {
   isPublicKeyInKeyList,
   parseAccountProperty,
   MirrorNodeService,
+  attachKeys,
 } from '@app/common';
 import { User, Transaction, UserKey, TransactionSigner } from '@entities';
 
@@ -56,27 +57,28 @@ export const keysRequiredToSign = async (
   const { newKeys, accounts, receiverAccounts } = getSignatureEntities(sdkTransaction);
 
   /* Check if the user has a key that is required to sign */
-  const userKeysIncludedInTransaction = userKeys.filter(
-    userKey =>
-      newKeys.some(key =>
-        isPublicKeyInKeyList(userKey.publicKey, key instanceof KeyList ? key : new KeyList([key])),
-      ) && !signatures.some(s => s.userKey.publicKey === userKey.publicKey),
-  );
-  userKeysIncludedInTransaction.forEach(userKey => userKeyIdsRequired.add(userKey.id));
+  for (const userKey of userKeys) {
+    const includedInTransaction =
+      newKeys.some(key => isPublicKeyInKeyList(userKey.publicKey, key)) &&
+      !signatures.some(s => s.userKey.publicKey === userKey.publicKey);
 
-  const userKeysInKeyOrIsKey = (key: Key) =>
-    (key instanceof PublicKey &&
-      userKeys.filter(
-        userKey =>
-          userKey.publicKey === key.toStringRaw() &&
-          !signatures.some(s => s.userKey.publicKey === userKey.publicKey),
-      )) ||
-    (key instanceof KeyList &&
-      userKeys.filter(
-        userKey =>
-          isPublicKeyInKeyList(userKey.publicKey, key) &&
-          !signatures.some(s => s.userKey.publicKey === userKey.publicKey),
-      ));
+    if (includedInTransaction) {
+      userKeyIdsRequired.add(userKey.id);
+    }
+  }
+
+  const userKeysInKeyOrIsKey = (key: Key) => {
+    const keys: UserKey[] = [];
+    for (const userKey of userKeys) {
+      if (
+        isPublicKeyInKeyList(userKey.publicKey, key) &&
+        !signatures.some(s => s.userKey.publicKey === userKey.publicKey)
+      ) {
+        keys.push(userKey);
+      }
+    }
+    return keys;
+  };
 
   /* Check if a key of the user is inside the key of some account required to sign */
   for (const accountId of accounts) {
@@ -108,11 +110,8 @@ export const userKeysRequiredToSign = async (
   mirrorNodeService: MirrorNodeService,
   entityManager: EntityManager,
 ): Promise<number[]> => {
-  /* Ensures the user keys are passed */
-  if (!user.keys || user.keys.length === 0) {
-    user.keys = await entityManager.find(UserKey, { where: { user: { id: user.id } } });
-    if (user.keys.length === 0) return [];
-  }
+  await attachKeys(user, entityManager);
+  if (user.keys.length === 0) return [];
 
   const userKeysRequiredToSign = await keysRequiredToSign(
     transaction,

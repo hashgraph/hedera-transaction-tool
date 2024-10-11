@@ -29,7 +29,12 @@ import {
   TRANSACTION_ACTION,
   SYNC_INDICATORS,
 } from '@app/common';
-import { getClientFromName, isExpired, userKeysRequiredToSign } from '@app/common/utils';
+import {
+  attachKeys,
+  getClientFromName,
+  isExpired,
+  userKeysRequiredToSign,
+} from '@app/common/utils';
 import {
   Network,
   Transaction,
@@ -220,7 +225,9 @@ describe('TransactionsService', () => {
   });
 
   it('should return empty array if user has no keys', async () => {
-    entityManager.find.mockReturnValue(Promise.resolve([]));
+    jest.mocked(attachKeys).mockImplementationOnce(async (user: User) => {
+      user.keys = [];
+    });
 
     const result = await service.getTransactionsToSign(user as User, {
       page: 1,

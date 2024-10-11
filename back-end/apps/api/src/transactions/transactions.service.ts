@@ -49,6 +49,7 @@ import {
   NotifyClientDto,
   NotifyForTransactionDto,
   SyncIndicatorsDto,
+  attachKeys,
 } from '@app/common';
 
 import { UserDto } from '../users/dtos';
@@ -229,15 +230,14 @@ export class TransactionsService {
     }[] = [];
 
     /* Ensures the user keys are passed */
-    if (!user.keys || user.keys.length === 0) {
-      user.keys = await this.entityManager.find(UserKey, { where: { user: { id: user.id } } });
-      if (user.keys.length === 0)
-        return {
-          totalItems: 0,
-          items: [],
-          page,
-          size,
-        };
+    await attachKeys(user, this.entityManager);
+    if (user.keys.length === 0) {
+      return {
+        totalItems: 0,
+        items: [],
+        page,
+        size,
+      };
     }
 
     const transactions = await this.repo.find({
