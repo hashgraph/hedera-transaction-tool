@@ -61,7 +61,6 @@ const preCreateAssert = () => {
   if (!isAccountId(ownerData.accountId.value) || !ownerData.key.value) {
     throw Error('Invalid Owner ID');
   }
-
   if (!isAccountId(spenderData.accountId.value)) {
     throw Error('Invalid Spender ID');
   }

@@ -3,6 +3,7 @@ import type { Transaction } from '@hashgraph/sdk';
 import {
   AccountAllowanceApproveTransaction,
   AccountCreateTransaction,
+  AccountDeleteTransaction,
   AccountUpdateTransaction,
   Hbar,
 } from '@hashgraph/sdk';
@@ -10,6 +11,7 @@ import {
 import type {
   AccountCreateData,
   AccountData,
+  AccountDeleteData,
   AccountUpdateData,
   ApproveHbarAllowanceData,
   TransactionCommonData,
@@ -91,5 +93,13 @@ export const getApproveHbarAllowanceTransactionData = (
     ownerAccountId: '',
     spenderAccountId: '',
     amount: new Hbar(0),
+  };
+};
+
+export const getAccountDeleteData = (transaction: Transaction): AccountDeleteData => {
+  assertTransactionType(transaction, AccountDeleteTransaction);
+  return {
+    accountId: transaction.accountId?.toString() || '',
+    transferAccountId: transaction.transferAccountId?.toString() || '',
   };
 };

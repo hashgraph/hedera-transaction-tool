@@ -34,7 +34,7 @@ import BaseApproversObserverData from './BaseApproversObserverData.vue';
 /* Props */
 const props = defineProps<{
   createTransaction: CreateTransactionFunc;
-  preCreateAssert?: () => void;
+  preCreateAssert?: () => boolean | void;
   createDisabled?: boolean;
   transactionBaseKey?: KeyList;
 }>();
@@ -92,7 +92,7 @@ const handleDraftLoaded = (transaction: Transaction) => {
 
 const handleCreate = async () => {
   basePreCreateAssert();
-  await props.preCreateAssert?.();
+  if ((await props.preCreateAssert?.()) === false) return;
 
   await transactionProcessor.value?.process(
     {
@@ -154,6 +154,7 @@ function basePreCreateAssert() {
 /* Exposes */
 defineExpose({
   payerData,
+  submit: handleCreate,
 });
 </script>
 <template>
