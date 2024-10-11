@@ -1,4 +1,3 @@
-import AccountInfoVue from './Account/AccountInfo.vue';
 import ApproveHbarAllowance from './ApproveHbarAllowance';
 import AccountCreate from './AccountCreate';
 import AccountUpdate from './AccountUpdate';
@@ -32,7 +31,6 @@ const txTypeComponentMapping = {
   [transactionTypeKeys.createAccount]: AccountCreate,
   [transactionTypeKeys.updateAccount]: AccountUpdate,
   [transactionTypeKeys.deleteAccount]: AccountDelete,
-  [transactionTypeKeys.accountInfo]: AccountInfoVue,
   [transactionTypeKeys.transfer]: TransferHbar,
   [transactionTypeKeys.approveAllowance]: ApproveHbarAllowance,
   [transactionTypeKeys.freeze]: FreezeVue,

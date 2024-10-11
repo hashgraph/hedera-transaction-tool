@@ -29,7 +29,6 @@ const transactionGroups = computed(() => {
         { label: 'Delete Account', name: transactionTypeKeys.deleteAccount },
         { label: 'Transfer Tokens', name: transactionTypeKeys.transfer },
         { label: 'Approve Allowance', name: transactionTypeKeys.approveAllowance },
-        // { label: 'Account Info', name: transactionTypeKeys.accountInfo },
       ],
     },
     {
