@@ -4,13 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 import { MurLock } from 'murlock';
-import {
-  AccountUpdateTransaction,
-  FileAppendTransaction,
-  FileUpdateTransaction,
-  Transaction as SDKTransaction,
-  Status,
-} from '@hashgraph/sdk';
+import { AccountUpdateTransaction, Transaction as SDKTransaction, Status } from '@hashgraph/sdk';
 
 import { Transaction, TransactionStatus, Network } from '@entities';
 
@@ -47,13 +41,6 @@ export class ExecuteService {
 
     /* Gets the SDK transaction from the transaction body */
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
-
-    /* Throws an error if the transaction is a file update/append transaction */
-    if (
-      sdkTransaction instanceof FileUpdateTransaction ||
-      sdkTransaction instanceof FileAppendTransaction
-    )
-      throw new Error('File transactions are not currently supported for execution.');
 
     /* Gets the signature key */
     const signatureKey = await computeSignatureKey(

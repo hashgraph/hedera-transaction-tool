@@ -441,7 +441,7 @@ describe('TransactionsService', () => {
       );
     });
 
-    it('should throw on transaction create if unsupported type', async () => {
+    it.skip('should throw on transaction create if unsupported type', async () => {
       const sdkTransaction = new FileUpdateTransaction();
 
       const dto: CreateTransactionDto = {

@@ -8,12 +8,7 @@ import {
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 
-import {
-  FileAppendTransaction,
-  FileUpdateTransaction,
-  PublicKey,
-  Transaction as SDKTransaction,
-} from '@hashgraph/sdk';
+import { PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
   Repository,
@@ -337,11 +332,6 @@ export class TransactionsService {
 
     /* Check if the transaction is expired */
     const sdkTransaction = SDKTransaction.fromBytes(dto.transactionBytes);
-    if (
-      sdkTransaction instanceof FileUpdateTransaction ||
-      sdkTransaction instanceof FileAppendTransaction
-    )
-      throw new BadRequestException('File Update/Append transactions are not currently supported');
     if (isExpired(sdkTransaction)) throw new BadRequestException('Transaction is expired');
 
     /* Check if the transaction already exists */
