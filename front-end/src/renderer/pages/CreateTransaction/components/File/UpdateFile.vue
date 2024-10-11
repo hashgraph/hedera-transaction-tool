@@ -21,6 +21,7 @@ import {
   isAccountId,
   formatAccountId,
   redirectToDetails,
+  safeAwait,
 } from '@renderer/utils';
 import {
   isHederaSpecialFileId,
@@ -290,8 +291,15 @@ async function syncDisplayedContent() {
   }
 
   if (isHederaSpecialFileId(fileId.value)) {
-    displayedFileText.value =
-      (await window.electronAPI.local.files.decodeProto(fileId.value, file.value.content)) || '';
+    const { data, error } = await safeAwait(
+      window.electronAPI.local.files.decodeProto(fileId.value, file.value.content),
+    );
+    if (error) {
+      displayedFileText.value = '';
+      throw new Error('Failed to decode file');
+    } else if (data) {
+      displayedFileText.value = data;
+    }
   } else {
     displayedFileText.value = new TextDecoder().decode(file.value.content);
   }

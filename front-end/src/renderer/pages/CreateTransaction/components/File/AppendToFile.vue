@@ -22,6 +22,7 @@ import {
   formatAccountId,
   isHederaSpecialFileId,
   redirectToDetails,
+  safeAwait,
 } from '@renderer/utils';
 import { createFileAppendTransaction } from '@renderer/utils/sdk/createTransactions';
 import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
@@ -205,8 +206,15 @@ async function syncDisplayedContent() {
   }
 
   if (isHederaSpecialFileId(fileId.value)) {
-    displayedFileText.value =
-      (await window.electronAPI.local.files.decodeProto(fileId.value, file.value.content)) || '';
+    const { data, error } = await safeAwait(
+      window.electronAPI.local.files.decodeProto(fileId.value, file.value.content),
+    );
+    if (error) {
+      displayedFileText.value = '';
+      throw new Error('Failed to decode file');
+    } else if (data) {
+      displayedFileText.value = data;
+    }
   } else {
     displayedFileText.value = new TextDecoder().decode(file.value.content);
   }
