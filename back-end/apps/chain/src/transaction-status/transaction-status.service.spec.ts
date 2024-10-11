@@ -14,8 +14,9 @@ import {
   SYNC_INDICATORS,
   NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
   smartCollate,
-  computeShortenedPublicKeyList,
   notifyTransactionAction,
+  notifySyncIndicators,
+  notifyWaitingForSignatures
 } from '@app/common';
 import { NotificationType, Transaction, TransactionStatus } from '@entities';
 
@@ -256,10 +257,11 @@ describe('TransactionStatusService', () => {
     expect(transactionRepo.manager.update).toHaveBeenCalled();
 
     for (const transaction of expiredTransactions) {
-      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-        transactionId: transaction.id,
-        transactionStatus: TransactionStatus.EXPIRED,
-      });
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        notificationsService,
+        transaction.id,
+        TransactionStatus.EXPIRED,
+      );
     }
     expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
   });
@@ -317,10 +319,11 @@ describe('TransactionStatusService', () => {
           status: TransactionStatus.WAITING_FOR_SIGNATURES,
         },
       );
-      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-        transactionId: transactions[0].id,
-        transactionStatus: TransactionStatus.WAITING_FOR_EXECUTION,
-      });
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        notificationsService,
+        transactions[0].id,
+        TransactionStatus.WAITING_FOR_EXECUTION,
+      );
       expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_GENERAL, {
         entityId: transactions[0].id,
         type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
@@ -328,15 +331,14 @@ describe('TransactionStatusService', () => {
         content: `Transaction ${transactions[0].transactionId} is ready for execution`,
         userIds: [transactions[0].creatorKey?.userId],
       });
-      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-        transactionId: transactions[1].id,
-        transactionStatus: TransactionStatus.WAITING_FOR_SIGNATURES,
-      });
-      expect(notificationsService.emit).toHaveBeenCalledWith(
-        NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
-        {
-          transactionId: transactions[1].id,
-        },
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        notificationsService,
+        transactions[1].id,
+        TransactionStatus.WAITING_FOR_SIGNATURES,
+      );
+      expect(notifyWaitingForSignatures).toHaveBeenCalledWith(
+        notificationsService,
+        transactions[1].id,
       );
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
@@ -400,16 +402,12 @@ describe('TransactionStatusService', () => {
       await service.updateTransactions(new Date(), new Date());
 
       expect(transactionRepo.update).toHaveBeenCalledTimes(1);
-      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-        transactionId: transactions[1].id,
-        transactionStatus: TransactionStatus.WAITING_FOR_SIGNATURES,
-      });
-      expect(notificationsService.emit).toHaveBeenCalledWith(
-        NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
-        {
-          transactionId: transactions[1].id,
-        },
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        notificationsService,
+        transactions[1].id,
+        TransactionStatus.WAITING_FOR_SIGNATURES,
       );
+      expect(notifyWaitingForSignatures).toHaveBeenCalledWith(notificationsService, transactions[1].id);
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
   });
@@ -445,10 +443,11 @@ describe('TransactionStatusService', () => {
           status: TransactionStatus.WAITING_FOR_EXECUTION,
         },
       );
-      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-        transactionId: transaction.id,
-        transactionStatus: TransactionStatus.WAITING_FOR_EXECUTION,
-      });
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        notificationsService,
+        transaction.id,
+        TransactionStatus.WAITING_FOR_EXECUTION,
+      );
       expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_GENERAL, {
         entityId: transaction.id,
         type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
@@ -656,6 +655,16 @@ describe('TransactionStatusService', () => {
       });
       
     });
+
+    it('should handle error in callback', async () => {
+      jest.mocked(isTransactionOverMaxSize).mockRejectedValue(new Error('Error'));
+
+      service.prepareAndExecute(mockTransaction);
+
+      await jest.advanceTimersToNextTimerAsync();
+
+      expect(service.addExecutionTimeout).not.toHaveBeenCalled();
+    });
   });
 
   describe('addExecutionTimeout', () => {
@@ -710,6 +719,16 @@ describe('TransactionStatusService', () => {
       service.addExecutionTimeout(transaction);
 
       await jest.advanceTimersByTimeAsync(timeToValidStart + 5 * 1000);
+
+      expect(executeService.executeTransaction).toHaveBeenCalledWith(transaction);
+    });
+
+    it('should handle error in the timeout callback', async () => {
+      jest.spyOn(executeService, 'executeTransaction').mockRejectedValue(new Error('Error'));
+
+      service.addExecutionTimeout(transaction);
+
+      await jest.advanceTimersToNextTimerAsync();
 
       expect(executeService.executeTransaction).toHaveBeenCalledWith(transaction);
     });
