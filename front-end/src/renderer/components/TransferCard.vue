@@ -12,8 +12,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 
 import { getAll } from '@renderer/services/accountsService';
 
-import { formatAccountId, stringifyHbar } from '@renderer/utils';
-import { flattenAccountIds, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { formatAccountId, stringifyHbar, flattenAccountIds, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';

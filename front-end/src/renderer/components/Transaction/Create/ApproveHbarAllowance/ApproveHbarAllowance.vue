@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { IAccountInfoParsed } from '@main/shared/interfaces';
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { ApproveHbarAllowanceData } from '@renderer/utils/sdk/createTransactions';
+import type { ApproveHbarAllowanceData } from '@renderer/utils/sdk';
 
 import { computed, reactive, ref } from 'vue';
 import { Hbar, Key, KeyList, Transaction } from '@hashgraph/sdk';
@@ -9,8 +9,10 @@ import { Hbar, Key, KeyList, Transaction } from '@hashgraph/sdk';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { isAccountId } from '@renderer/utils';
-import { getApproveHbarAllowanceTransactionData } from '@renderer/utils/sdk/getData';
-import { createApproveHbarAllowanceTransaction } from '@renderer/utils/sdk/createTransactions';
+import {
+  createApproveHbarAllowanceTransaction,
+  getApproveHbarAllowanceTransactionData,
+} from '@renderer/utils/sdk';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import ApproveHbarAllowanceFormData from './ApproveHbarAllowanceFormData.vue';

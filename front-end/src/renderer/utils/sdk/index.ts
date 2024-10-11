@@ -20,6 +20,9 @@ import { proto } from '@hashgraph/proto';
 
 import { uint8ToHex, hexToUint8Array } from '..';
 
+export * from './createTransactions';
+export * from './getData';
+
 export const createFileInfo = (props: {
   fileId: FileId | string;
   size: Long | number;

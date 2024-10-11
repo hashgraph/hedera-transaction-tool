@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { CryptoAllowance, IAccountInfoParsed } from '@main/shared/interfaces';
-import type { ApproveHbarAllowanceData } from '@renderer/utils/sdk/createTransactions';
+import type { ApproveHbarAllowanceData } from '@renderer/utils/sdk';
 
 import { computed, ref } from 'vue';
 import { Hbar, HbarUnit, Key } from '@hashgraph/sdk';

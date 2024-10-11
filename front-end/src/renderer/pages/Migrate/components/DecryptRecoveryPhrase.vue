@@ -6,8 +6,7 @@ import { ref } from 'vue';
 
 import { decryptMigrationMnemonic } from '@renderer/services/migrateDataService';
 
-import { createRecoveryPhrase } from '@renderer/utils/userStoreHelpers';
-import { safeAwait } from '@renderer/utils/safeAwait';
+import { createRecoveryPhrase, safeAwait } from '@renderer/utils';
 
 import DecryptRecoveryPhraseForm from './DecryptRecoveryPhraseForm.vue';
 

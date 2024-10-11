@@ -33,17 +33,12 @@ import { decryptPrivateKey } from '@renderer/services/keyPairService';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 import {
   getTransactionDateExtended,
   getTransactionId,
   getTransactionPayerId,
   getTransactionType,
 } from '@renderer/utils/sdk/transactions';
-import {
-  computeSignatureKey,
-  publicRequiredToSign,
-} from '@renderer/utils/transactionSignatureModels';
 import {
   getDateStringExtended,
   getPrivateKey,
@@ -53,6 +48,10 @@ import {
   openTransactionInHashscan,
   redirectToDetails,
   hexToUint8Array,
+  isLoggedInOrganization,
+  isUserLoggedIn,
+  computeSignatureKey,
+  publicRequiredToSign,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';

@@ -7,8 +7,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { deleteComplexKey, getComplexKeys } from '@renderer/services/complexKeysService';
 
-import { decodeKeyList } from '@renderer/utils/sdk';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { decodeKeyList, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';

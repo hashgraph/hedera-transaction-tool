@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { FreezeData } from '@renderer/utils/sdk/createTransactions';
+import type { FreezeData } from '@renderer/utils/sdk';
 
 import { computed, reactive, ref } from 'vue';
 import { Transaction } from '@hashgraph/sdk';
 
-import { getFreezeData } from '@renderer/utils/sdk/getData';
-import { createFreezeTransaction } from '@renderer/utils/sdk/createTransactions';
+import { createFreezeTransaction, getFreezeData } from '@renderer/utils/sdk';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import FreezeFormData from '@renderer/components/Transaction/Create/Freeze/FreezeFormData.vue';

@@ -18,8 +18,13 @@ import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { executeQuery } from '@renderer/services/transactionService';
 import { add, getAll, update } from '@renderer/services/filesService';
 
-import { isFileId, isHederaSpecialFileId, formatAccountId, encodeString } from '@renderer/utils';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import {
+  isUserLoggedIn,
+  isFileId,
+  isHederaSpecialFileId,
+  formatAccountId,
+  encodeString,
+} from '@renderer/utils';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 

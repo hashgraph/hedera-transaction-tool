@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { IAccountInfoParsed } from '@main/shared/interfaces';
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { AccountDeleteData } from '@renderer/utils/sdk/createTransactions';
+import type { AccountDeleteData } from '@renderer/utils/sdk';
 
 import { computed, onMounted, reactive, ref } from 'vue';
 import { Key, KeyList, Transaction } from '@hashgraph/sdk';
@@ -13,10 +13,8 @@ import useAccountId from '@renderer/composables/useAccountId';
 
 import { remove } from '@renderer/services/accountsService';
 
-import { isAccountId } from '@renderer/utils';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
-import { getAccountDeleteData } from '@renderer/utils/sdk/getData';
-import { createAccountDeleteTransaction } from '@renderer/utils/sdk/createTransactions';
+import { isAccountId, isUserLoggedIn } from '@renderer/utils';
+import { createAccountDeleteTransaction, getAccountDeleteData } from '@renderer/utils/sdk';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import AccountDeleteFormData from '@renderer/components/Transaction/Create/AccountDelete/AccountDeleteFormData.vue';

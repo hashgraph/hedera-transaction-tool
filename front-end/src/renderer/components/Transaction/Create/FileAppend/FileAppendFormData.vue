@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import type { Key } from '@hashgraph/sdk';
 import { DISPLAY_FILE_SIZE_LIMIT } from '@main/shared/constants';
-import type { FileAppendData } from '@renderer/utils/sdk/createTransactions';
+import type { FileAppendData } from '@renderer/utils/sdk';
 
 import { ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { isHederaSpecialFileId, safeAwait, formatAccountId } from '@renderer/utils';
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+import {
+  isLoggedInOrganization,
+  isHederaSpecialFileId,
+  safeAwait,
+  formatAccountId,
+} from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppUploadFile from '@renderer/components/ui/AppUploadFile.vue';

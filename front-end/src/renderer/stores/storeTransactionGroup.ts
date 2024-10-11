@@ -13,8 +13,8 @@ import {
   updateGroup,
 } from '@renderer/services/transactionGroupsService';
 
-import { getTransactionFromBytes } from '@renderer/utils/transactions';
-import { createTransactionId } from '@renderer/utils/sdk/createTransactions';
+import { getTransactionFromBytes } from '@renderer/utils';
+import { createTransactionId } from '@renderer/utils/sdk';
 
 export interface GroupItem {
   transactionBytes: Uint8Array;

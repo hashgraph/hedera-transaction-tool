@@ -2,7 +2,7 @@
 import type { Prisma } from '@prisma/client';
 import type { ExecutedSuccessData } from '@renderer/components/Transaction/TransactionProcessor';
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { FileCreateData } from '@renderer/utils/sdk/createTransactions';
+import type { FileCreateData } from '@renderer/utils/sdk';
 
 import { computed, reactive, ref, watch } from 'vue';
 import { Key, KeyList, Transaction } from '@hashgraph/sdk';
@@ -15,13 +15,12 @@ import { useToast } from 'vue-toast-notification';
 
 import { add } from '@renderer/services/filesService';
 
-import { createFileInfo, getEntityIdFromTransactionReceipt } from '@renderer/utils';
-import { getFileCreateTransactionData } from '@renderer/utils/sdk/getData';
+import { isUserLoggedIn, createFileInfo, getEntityIdFromTransactionReceipt } from '@renderer/utils';
 import {
   createFileCreateTransaction,
   createFileDataTransaction,
-} from '@renderer/utils/sdk/createTransactions';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+  getFileCreateTransactionData,
+} from '@renderer/utils/sdk';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import FileCreateFormData from './FileCreateFormData.vue';

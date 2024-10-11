@@ -15,7 +15,7 @@ import {
 import { storeKeyPair } from '@renderer/services/keyPairService';
 import { uploadKey } from '@renderer/services/organization';
 
-import { assertUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+import { assertUserLoggedIn, isLoggedInOrganization } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';

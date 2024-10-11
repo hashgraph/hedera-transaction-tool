@@ -11,8 +11,7 @@ import { useToast } from 'vue-toast-notification';
 
 import { addComplexKey } from '@renderer/services/complexKeysService';
 
-import { encodeKey } from '@renderer/utils/sdk';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { encodeKey, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';

@@ -3,7 +3,7 @@ import type { TransactionApproverDto } from '@main/shared/interfaces/organizatio
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization } from '@renderer/utils';
 
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 import ApproversList from '@renderer/components/Approvers/ApproversList.vue';

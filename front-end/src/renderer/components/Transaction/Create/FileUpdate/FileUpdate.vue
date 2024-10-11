@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { FileUpdateData } from '@renderer/utils/sdk/createTransactions';
+import type { FileUpdateData } from '@renderer/utils/sdk';
 
 import { computed, onMounted, reactive, ref } from 'vue';
 import { Key, KeyList, Transaction } from '@hashgraph/sdk';
@@ -9,10 +9,8 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useRoute } from 'vue-router';
 
-import { isFileId } from '@renderer/utils';
-import { getFileUpdateTransactionData } from '@renderer/utils/sdk/getData';
-import { createFileUpdateTransaction } from '@renderer/utils/sdk/createTransactions';
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization, isFileId } from '@renderer/utils';
+import { createFileUpdateTransaction, getFileUpdateTransactionData } from '@renderer/utils/sdk';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import FileUpdateFormData from './FileUpdateFormData.vue';

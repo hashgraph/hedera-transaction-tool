@@ -10,7 +10,7 @@ import useUserStore from './storeUser';
 import { getUserKeys, getUsers } from '@renderer/services/organization';
 import { getOrganizationContacts } from '@renderer/services/contactsService';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 
 const useContactsStore = defineStore('contacts', () => {
   const user = useUserStore();

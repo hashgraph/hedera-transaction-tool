@@ -12,8 +12,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 
 import * as claim from '@renderer/services/claimService';
 
-import { formatAccountId, stringifyHbar } from '@renderer/utils';
-import { flattenAccountIds, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { formatAccountId, flattenAccountIds, isUserLoggedIn, stringifyHbar } from '@renderer/utils';
 
 import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';

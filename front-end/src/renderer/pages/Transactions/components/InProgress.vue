@@ -23,8 +23,12 @@ import {
   getTransactionId,
   getTransactionType,
 } from '@renderer/utils/sdk/transactions';
-import { redirectToDetails, redirectToGroupDetails, hexToUint8Array } from '@renderer/utils';
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+import {
+  redirectToDetails,
+  redirectToGroupDetails,
+  isLoggedInOrganization,
+  hexToUint8Array,
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';

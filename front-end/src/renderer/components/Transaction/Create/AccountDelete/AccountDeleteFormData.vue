@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { IAccountInfoParsed } from '@main/shared/interfaces';
-import type { AccountDeleteData } from '@renderer/utils/sdk/createTransactions';
+import type { AccountDeleteData } from '@renderer/utils/sdk';
 
 import { ref } from 'vue';
 import { Key } from '@hashgraph/sdk';

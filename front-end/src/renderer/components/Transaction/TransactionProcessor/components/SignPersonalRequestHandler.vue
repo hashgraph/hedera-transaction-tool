@@ -9,7 +9,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { flattenKeyList } from '@renderer/services/keyPairService';
 import { signTransaction } from '@renderer/services/transactionService';
 
-import { assertUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { assertUserLoggedIn } from '@renderer/utils';
 
 /* Emits */
 const emit = defineEmits<{

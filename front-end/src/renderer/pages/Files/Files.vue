@@ -19,11 +19,10 @@ import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 import { getAll, remove, showStoredFileInTemp, update } from '@renderer/services/filesService';
 import { flattenKeyList, getKeyListLevels } from '@renderer/services/keyPairService';
 
-import { getUInt8ArrayFromBytesString, convertBytes } from '@renderer/utils';
+import { convertBytes, getUInt8ArrayFromBytesString, isUserLoggedIn } from '@renderer/utils';
 import { getFormattedDateFromTimestamp } from '@renderer/utils/transactions';
 
 import { transactionTypeKeys } from '@renderer/components/Transaction/Create/txTypeComponentMapping';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { HederaAccount } from '@prisma/client';
 import type { IAccountInfoParsed } from '@main/shared/interfaces';
-import type { TransferHbarData } from '@renderer/utils/sdk/createTransactions';
+import type { TransferHbarData } from '@renderer/utils/sdk';
 
 import { ref, onMounted } from 'vue';
 import { Hbar, Transfer } from '@hashgraph/sdk';
@@ -12,8 +12,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
 import { getAll } from '@renderer/services/accountsService';
 
-import { stringifyHbar } from '@renderer/utils';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isUserLoggedIn, stringifyHbar } from '@renderer/utils';
 
 import TransferCard from '@renderer/components/TransferCard.vue';
 

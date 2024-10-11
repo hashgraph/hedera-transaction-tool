@@ -7,20 +7,19 @@ import type {
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
 
+import { NotificationType } from '@main/shared/interfaces';
 import { NOTIFICATIONS_INDICATORS_DELETE, NOTIFICATIONS_NEW } from '@main/shared/constants';
 
 import {
   getUserNotificationPreferences,
   updateUserNotificationPreferences,
-} from '@renderer/services/organization';
-
-import useUserStore from './storeUser';
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
-import { NotificationType } from '@main/shared/interfaces';
-import {
   getAllInAppNotifications,
   updateNotifications,
-} from '@renderer/services/organization/notifications';
+} from '@renderer/services/organization';
+
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+
+import useUserStore from './storeUser';
 import useWebsocketConnection from './storeWebsocketConnection';
 
 const useNotificationsStore = defineStore('notifications', () => {

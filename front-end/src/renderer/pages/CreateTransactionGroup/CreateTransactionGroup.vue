@@ -11,11 +11,10 @@ import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
-import { createTransactionId } from '@renderer/utils/sdk/createTransactions';
 import { deleteGroup } from '@renderer/services/transactionGroupsService';
 
-import { getPropagationButtonLabel, redirectToGroupDetails } from '@renderer/utils';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { getPropagationButtonLabel, isUserLoggedIn, redirectToGroupDetails } from '@renderer/utils';
+import { createTransactionId } from '@renderer/utils/sdk';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';

@@ -12,8 +12,7 @@ import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
 import { add } from '@renderer/services/accountsService';
 
-import { formatAccountId } from '@renderer/utils';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isUserLoggedIn, formatAccountId } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';

@@ -17,8 +17,7 @@ import { uploadKey } from '@renderer/services/organization';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
-import { getWidthOfElementWithText } from '@renderer/utils/dom';
+import { getWidthOfElementWithText, isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 

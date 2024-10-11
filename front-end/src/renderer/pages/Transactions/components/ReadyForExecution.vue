@@ -20,13 +20,17 @@ import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 
 import { getTransactionsForUser } from '@renderer/services/organization';
 
-import { getNotifiedTransactions, hexToUint8Array, redirectToDetails } from '@renderer/utils';
+import {
+  getNotifiedTransactions,
+  hexToUint8Array,
+  redirectToDetails,
+  isLoggedInOrganization,
+} from '@renderer/utils';
 import {
   getTransactionDateExtended,
   getTransactionId,
   getTransactionType,
 } from '@renderer/utils/sdk/transactions';
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';

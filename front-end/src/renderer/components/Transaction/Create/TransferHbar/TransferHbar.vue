@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { IAccountInfoParsed } from '@main/shared/interfaces';
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { TransferHbarData } from '@renderer/utils/sdk/createTransactions';
+import type { TransferHbarData } from '@renderer/utils/sdk';
 
 import { computed, reactive, ref } from 'vue';
 import { Hbar, Key, KeyList, Transaction } from '@hashgraph/sdk';
@@ -10,8 +10,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
 
-import { getTransferHbarData } from '@renderer/utils/sdk/getData';
-import { createTransferHbarTransaction } from '@renderer/utils/sdk/createTransactions';
+import { createTransferHbarTransaction, getTransferHbarData } from '@renderer/utils/sdk';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import TransferHbarFormData from '@renderer/components/Transaction/Create/TransferHbar/TransferHbarFormData.vue';

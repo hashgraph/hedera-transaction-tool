@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AccountCreateData } from '@renderer/utils/sdk/createTransactions';
+import type { AccountCreateData } from '@renderer/utils/sdk';
 
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 

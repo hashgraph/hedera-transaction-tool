@@ -7,7 +7,7 @@ import { NotificationType } from '@main/shared/interfaces';
 import useUserStore from '@renderer/stores/storeUser';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
 
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization } from '@renderer/utils';
 
 export default function useMarkNotifications(notificationTypes: NotificationType[]) {
   /* Stores */

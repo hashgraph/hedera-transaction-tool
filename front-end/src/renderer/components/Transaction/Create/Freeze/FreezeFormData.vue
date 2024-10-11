@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { FreezeData } from '@renderer/utils/sdk/createTransactions';
+import type { FreezeData } from '@renderer/utils/sdk';
 
 import { formatAccountId } from '@renderer/utils';
 

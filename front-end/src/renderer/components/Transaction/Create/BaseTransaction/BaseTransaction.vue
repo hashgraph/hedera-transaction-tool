@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
-import type { TransactionCommonData } from '@renderer/utils/sdk/createTransactions';
+import type { TransactionCommonData } from '@renderer/utils/sdk';
 import type {
   ExecutedData,
   ExecutedSuccessData,
@@ -17,7 +17,7 @@ import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { getTransactionType, isAccountId, redirectToDetails } from '@renderer/utils';
-import { getTransactionCommonData } from '@renderer/utils/sdk/getData';
+import { getTransactionCommonData } from '@renderer/utils/sdk';
 import { getPropagationButtonLabel } from '@renderer/utils/transactions';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';

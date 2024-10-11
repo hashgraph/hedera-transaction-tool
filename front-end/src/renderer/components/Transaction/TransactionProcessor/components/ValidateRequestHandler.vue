@@ -8,8 +8,7 @@ import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { ableToSign, getTransactionType } from '@renderer/utils';
-import { assertUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { assertUserLoggedIn, ableToSign, getTransactionType } from '@renderer/utils';
 
 /* Constants */
 const SIZE_BUFFER_BYTES = 200;

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { DISPLAY_FILE_SIZE_LIMIT } from '@main/shared/constants';
-import type { FileCreateData } from '@renderer/utils/sdk/createTransactions';
+import type { FileCreateData } from '@renderer/utils/sdk';
 
 import { ref, watch } from 'vue';
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { IAccountInfoParsed } from '@main/shared/interfaces';
-import type { AccountUpdateData } from '@renderer/utils/sdk/createTransactions';
+import type { AccountUpdateData } from '@renderer/utils/sdk';
 
 import { ref } from 'vue';
 

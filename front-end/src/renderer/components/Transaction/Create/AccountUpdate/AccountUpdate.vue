@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { IAccountInfoParsed } from '@main/shared/interfaces';
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { AccountUpdateData } from '@renderer/utils/sdk/createTransactions';
+import type { AccountUpdateData } from '@renderer/utils/sdk';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { AccountId, Key, KeyList, Transaction } from '@hashgraph/sdk';
@@ -10,8 +10,7 @@ import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { isAccountId } from '@renderer/utils';
-import { getAccountUpdateData } from '@renderer/utils/sdk/getData';
-import { createAccountUpdateTransaction } from '@renderer/utils/sdk/createTransactions';
+import { createAccountUpdateTransaction, getAccountUpdateData } from '@renderer/utils/sdk';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import AccountUpdateFormData from '@renderer/components/Transaction/Create/AccountUpdate/AccountUpdateFormData.vue';

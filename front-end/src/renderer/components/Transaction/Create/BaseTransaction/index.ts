@@ -1,5 +1,5 @@
 import type { Transaction } from '@hashgraph/sdk';
-import type { TransactionCommonData } from '@renderer/utils/sdk/createTransactions';
+import type { TransactionCommonData } from '@renderer/utils/sdk';
 
 import BaseTransaction from './BaseTransaction.vue';
 

@@ -14,8 +14,12 @@ import useDraft from '@renderer/composables/useDraft';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { addApprovers, addObservers, submitTransaction } from '@renderer/services/organization';
 
-import { getPrivateKey, uint8ToHex } from '@renderer/utils';
-import { assertIsLoggedInOrganization, assertUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import {
+  assertIsLoggedInOrganization,
+  assertUserLoggedIn,
+  getPrivateKey,
+  uint8ToHex,
+} from '@renderer/utils';
 
 /* Props */
 const props = defineProps<{

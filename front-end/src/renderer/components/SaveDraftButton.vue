@@ -17,8 +17,7 @@ import {
   updateDraft,
 } from '@renderer/services/transactionDraftsService';
 
-import { getTransactionFromBytes } from '@renderer/utils/transactions';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { getTransactionFromBytes, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';

@@ -11,7 +11,7 @@ import { useToast } from 'vue-toast-notification';
 import { generateExternalKeyPairFromString } from '@renderer/services/keyPairService';
 import { uploadKey } from '@renderer/services/organization';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 

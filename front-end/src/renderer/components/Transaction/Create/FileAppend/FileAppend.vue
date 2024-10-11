@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { FileAppendData } from '@renderer/utils/sdk/createTransactions';
+import type { FileAppendData } from '@renderer/utils/sdk';
 
 import { computed, onMounted, reactive, ref } from 'vue';
 import { Key, KeyList, Transaction } from '@hashgraph/sdk';
@@ -9,10 +9,8 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useRoute } from 'vue-router';
 
-import { isFileId } from '@renderer/utils';
-import { getFileAppendTransactionData } from '@renderer/utils/sdk/getData';
-import { createFileAppendTransaction } from '@renderer/utils/sdk/createTransactions';
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+import { isFileId, isLoggedInOrganization } from '@renderer/utils';
+import { createFileAppendTransaction, getFileAppendTransactionData } from '@renderer/utils/sdk';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import FileAppendFormData from './FileAppendFormData.vue';

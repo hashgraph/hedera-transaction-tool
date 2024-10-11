@@ -14,12 +14,11 @@ import { useToast } from 'vue-toast-notification';
 
 import { add, get, update } from '@renderer/services/claimService';
 
-import { isAccountId } from '@renderer/utils/validator';
+import { isAccountId, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 /* Stores */
 const user = useUserStore();

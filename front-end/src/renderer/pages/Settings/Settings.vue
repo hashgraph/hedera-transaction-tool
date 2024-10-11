@@ -8,7 +8,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useRouter, RouterView } from 'vue-router';
 import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization } from '@renderer/utils';
 
 import AppTabs from '@renderer/components/ui/AppTabs.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
