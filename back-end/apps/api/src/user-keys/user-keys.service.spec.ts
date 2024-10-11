@@ -1,14 +1,17 @@
+import { mockDeep } from 'jest-mock-extended';
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { mockDeep } from 'jest-mock-extended';
-
+import { attachKeys } from '@app/common/utils';
 import { User, UserKey } from '@entities';
 
 import { MAX_USER_KEYS, UserKeysService } from './user-keys.service';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
 
+import { UploadUserKeyDto } from './dtos';
+
+jest.mock('@app/common/utils');
 describe('UserKeysService', () => {
   let service: UserKeysService;
 
@@ -51,22 +54,25 @@ describe('UserKeysService', () => {
   });
 
   describe('uploadKey', () => {
-    let user;
-    let dto;
+    let user: User;
+    let dto: UploadUserKeyDto;
 
     beforeEach(() => {
-      user = { id: 1, email: 'email@test.com' } as unknown as User;
+      user = { id: 1 } as unknown as User;
       dto = { publicKey: 'test-public-key', mnemonicHash: 'test-hash', index: 0 };
       service.getUserKeys = jest.fn().mockResolvedValue([]);
     });
 
     it('should throw BadRequestException if public key is in use by a different user', async () => {
       const existingUserKey = {
-        user: { id: 2 },
+        userId: 2,
         publicKey: dto.publicKey,
         mnemonicHash: dto.mnemonicHash,
         index: dto.index,
       };
+      jest.mocked(attachKeys).mockImplementationOnce(async (user: User) => {
+        user.keys = [];
+      });
       repo.findOne.mockResolvedValue(existingUserKey as UserKey);
 
       await expect(service.uploadKey(user, dto)).rejects.toThrow(BadRequestException);
@@ -74,11 +80,14 @@ describe('UserKeysService', () => {
 
     it('should throw BadRequestException if public key is in use but dto has different index', async () => {
       const existingUserKey = {
-        user,
+        userId: user.id,
         publicKey: dto.publicKey,
         mnemonicHash: dto.mnemonicHash,
         index: 333,
       };
+      jest.mocked(attachKeys).mockImplementationOnce(async (user: User) => {
+        user.keys = [];
+      });
       repo.findOne.mockResolvedValue(existingUserKey as UserKey);
 
       await expect(service.uploadKey(user, dto)).rejects.toThrow(BadRequestException);
@@ -88,14 +97,17 @@ describe('UserKeysService', () => {
       user.keys = Array.from({ length: MAX_USER_KEYS }, (_, i) => ({
         id: i + 1,
         publicKey: `key-${i}`,
-        user: { id: user.id },
+        userId: user.id,
       })) as UserKey[];
 
       await expect(service.uploadKey(user, dto)).rejects.toThrow(BadRequestException);
     });
 
     it('should update userKey if it exists and is owned by the same user', async () => {
-      const existingUserKey = { user: { id: user.id }, publicKey: dto.publicKey } as UserKey;
+      const existingUserKey = { userId: user.id, publicKey: dto.publicKey } as UserKey;
+      jest.mocked(attachKeys).mockImplementationOnce(async (user: User) => {
+        user.keys = [];
+      });
       repo.findOne.mockResolvedValue(existingUserKey);
       repo.save.mockResolvedValue({ ...existingUserKey, ...dto });
 
@@ -106,6 +118,9 @@ describe('UserKeysService', () => {
     });
 
     it('should create and save a new userKey if it does not exist', async () => {
+      jest.mocked(attachKeys).mockImplementationOnce(async (user: User) => {
+        user.keys = [];
+      });
       repo.findOne.mockResolvedValue(undefined);
       const newUserKey = { ...dto, user: user } as UserKey;
       repo.create.mockReturnValue(newUserKey);
@@ -119,7 +134,10 @@ describe('UserKeysService', () => {
     });
 
     it('should recover and save the userKey if it was deleted', async () => {
-      const deletedUserKey = { ...dto, user: user, deletedAt: new Date() } as UserKey;
+      jest.mocked(attachKeys).mockImplementationOnce(async (user: User) => {
+        user.keys = [];
+      });
+      const deletedUserKey = { ...dto, userId: user.id, deletedAt: new Date() } as UserKey;
       repo.findOne.mockResolvedValue(deletedUserKey);
 
       await service.uploadKey(user, dto);
@@ -138,16 +156,15 @@ describe('UserKeysService', () => {
     it('should return user keys for a given userId', async () => {
       const userId = 1;
       const mockUserKeys = [
-        { id: 1, publicKey: 'key1', user: { id: userId } },
-        { id: 2, publicKey: 'key2', user: { id: userId } },
+        { id: 1, publicKey: 'key1', userId },
+        { id: 2, publicKey: 'key2', userId },
       ] as UserKey[];
       repo.find.mockResolvedValue(mockUserKeys);
 
       const result = await service.getUserKeys(userId);
 
       expect(repo.find).toHaveBeenCalledWith({
-        where: { user: { id: userId } },
-        relations: { user: true },
+        where: { userId },
       });
       expect(result).toEqual(mockUserKeys);
     });
@@ -176,8 +193,8 @@ describe('UserKeysService', () => {
     let userKey: UserKey;
 
     beforeEach(() => {
-      user = { id: 1, email: 'email@test.com' } as User;
-      userKey = { id: 1, publicKey: 'test-public-key', user: user } as UserKey;
+      user = { id: 1 } as User;
+      userKey = { id: 1, publicKey: 'test-public-key', userId: user.id } as UserKey;
     });
 
     it('should throw NotFoundException if the key does not exist', async () => {
@@ -187,8 +204,8 @@ describe('UserKeysService', () => {
     });
 
     it('should throw BadRequestException if the key is not owned by the user', async () => {
-      const anotherUser = { id: 2, email: 'email@test.com' } as User;
-      service.getUserKey = jest.fn().mockResolvedValue({ ...userKey, user: anotherUser });
+      const anotherUser = { id: 2 } as User;
+      service.getUserKey = jest.fn().mockResolvedValue({ ...userKey, userId: anotherUser.id });
 
       await expect(service.removeUserKey(user, 1)).rejects.toThrow(BadRequestException);
     });
@@ -212,7 +229,7 @@ describe('UserKeysService', () => {
 
       const result = await service.getUserKeysCount(userId);
 
-      expect(repo.count).toHaveBeenCalledWith({ where: { user: { id: userId } } });
+      expect(repo.count).toHaveBeenCalledWith({ where: { userId } });
       expect(result).toEqual(expectedCount);
     });
   });

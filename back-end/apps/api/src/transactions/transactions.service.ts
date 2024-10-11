@@ -331,7 +331,7 @@ export class TransactionsService {
 
   /* Create a new transaction with the provided information */
   async createTransaction(dto: CreateTransactionDto, user: User): Promise<Transaction> {
-    const userKeys = await this.entityManager.find(UserKey, { where: { user: { id: user.id } } });
+    const userKeys = await this.entityManager.find(UserKey, { where: { userId: user.id } });
     const creatorKey = userKeys.find(key => key.id === dto.creatorKeyId);
 
     /* Check if the key belongs to the user */

@@ -20,6 +20,7 @@ import {
 import { PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
+  attachKeys,
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
   NOTIFY_CLIENT,
@@ -30,7 +31,7 @@ import {
   userKeysRequiredToSign,
   verifyTransactionBodyWithoutNodeAccountIdSignature,
 } from '@app/common';
-import { Transaction, TransactionApprover, TransactionStatus, User, UserKey } from '@entities';
+import { Transaction, TransactionApprover, TransactionStatus, User } from '@entities';
 
 import {
   ApproverChoiceDto,
@@ -117,14 +118,7 @@ export class ApproversService {
   ): Promise<TransactionApprover[]> {
     const transaction = await this.dataSource.manager.findOne(Transaction, {
       where: { id: transactionId },
-      relations: [
-        'creatorKey',
-        'creatorKey.user',
-        'observers',
-        'signers',
-        'signers.userKey',
-        'signers.userKey.user',
-      ],
+      relations: ['creatorKey', 'creatorKey.user', 'observers', 'signers', 'signers.userKey'],
     });
 
     if (!transaction) throw new NotFoundException("Transaction doesn't exist");
@@ -152,7 +146,7 @@ export class ApproversService {
       userKeysToSign.length === 0 &&
       transaction.creatorKey?.user?.id !== user.id &&
       !transaction.observers.some(o => o.userId === user.id) &&
-      !transaction.signers.some(s => s.userKey.user.id === user.id) &&
+      !transaction.signers.some(s => s.userKey.userId === user.id) &&
       !approvers.some(a => a.userId === user.id)
     )
       throw new UnauthorizedException("You don't have permission to view this transaction");
@@ -584,10 +578,8 @@ export class ApproversService {
       throw new BadRequestException('You have already approved this transaction');
 
     /* Ensures the user keys are passed */
-    if (user.keys.length === 0) {
-      user.keys = await this.dataSource.manager.find(UserKey, { where: { user: { id: user.id } } });
-      if (user.keys.length === 0) return false;
-    }
+    await attachKeys(user, this.dataSource.manager);
+    if (user.keys.length === 0) return false;
 
     const signatureKey = user.keys.find(key => key.id === dto.userKeyId);
 

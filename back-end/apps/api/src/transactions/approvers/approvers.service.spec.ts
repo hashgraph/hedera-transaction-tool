@@ -12,6 +12,7 @@ import {
   SYNC_INDICATORS,
 } from '@app/common';
 import {
+  attachKeys,
   userKeysRequiredToSign,
   verifyTransactionBodyWithoutNodeAccountIdSignature,
 } from '@app/common/utils';
@@ -191,7 +192,7 @@ describe('ApproversService', () => {
 
     it('should get appovers if user is signer', async () => {
       const transactionId = 1;
-      const signers = [{ userKey: { user } }];
+      const signers = [{ userKey: { userId: user.id } }];
       const transaction = { id: transactionId, observers: [], signers };
       dataSource.manager.findOne.mockResolvedValue(transaction);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([]);
@@ -219,7 +220,11 @@ describe('ApproversService', () => {
     it('should get transaction appovers when transaction is visible for everyone', async () => {
       const transactionId = 1;
       const observers = [{ userId: 2 }, { userId: 3 }];
-      const transaction = { creatorKey: { user }, status: TransactionStatus.EXECUTED, observers };
+      const transaction = {
+        creatorKey: { userId: user.id },
+        status: TransactionStatus.EXECUTED,
+        observers,
+      };
       dataSource.manager.findOne.mockResolvedValue(transaction);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([]);
 
@@ -1403,7 +1408,9 @@ describe('ApproversService', () => {
           transactionId: 1,
         } as TransactionApprover,
       ]);
-      dataSource.manager.find.mockResolvedValueOnce([]);
+      jest.mocked(attachKeys).mockImplementationOnce(async (user: User) => {
+        user.keys = [];
+      });
       dataSource.manager.findOne.mockResolvedValueOnce(transaction);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([]);
 
