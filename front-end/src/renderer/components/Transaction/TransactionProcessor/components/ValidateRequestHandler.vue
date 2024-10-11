@@ -8,7 +8,7 @@ import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { ableToSign, getTransactionType } from '@renderer/utils';
+import { ableToSign } from '@renderer/utils';
 import { assertUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 /* Stores */
@@ -76,12 +76,6 @@ function validateBigFile(transaction: FileCreateTransaction | FileUpdateTransact
   const sizeBufferBytes = 200;
 
   if (size <= TRANSACTION_MAX_SIZE - sizeBufferBytes) return;
-
-  if (user.selectedOrganization) {
-    throw new Error(
-      `${getTransactionType(transaction)} size exceeds max transaction size. It has to be split.`,
-    );
-  }
 }
 
 /* Expose */
