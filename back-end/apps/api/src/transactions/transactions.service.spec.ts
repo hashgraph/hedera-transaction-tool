@@ -697,6 +697,30 @@ describe('TransactionsService', () => {
     );
   });
 
+  it('should attach the signers to the transaction', async () => {
+    const transaction = {
+      id: 123,
+    };
+
+    entityManager.find.mockResolvedValueOnce([]);
+
+    await service.attachTransactionSigners(transaction as Transaction);
+
+    expect(entityManager.find).toHaveBeenCalledWith(TransactionSigner, {
+      where: {
+        transaction: {
+          id: transaction.id,
+        },
+      },
+      relations: ['userKey'],
+      withDeleted: true,
+    });
+  });
+
+  it('should throw if not transaction is passed to attachTransactionSigners', async () => {
+    await expect(service.attachTransactionSigners(null)).rejects.toThrow('Transaction not found');
+  });
+
   it('should call user keys required with correct arguments', async () => {
     const transaction = { id: 123 };
 
