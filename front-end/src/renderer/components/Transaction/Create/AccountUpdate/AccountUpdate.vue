@@ -82,8 +82,10 @@ const preCreateAssert = () => {
 
 /* Hooks */
 onMounted(() => {
-  if ((!route.query.draftId || isNaN(Number(route.query.groupIndex))) && route.query.accountId) {
-    accountData.accountId.value = route.query.accountId.toString();
+  const accountId = route.query.accountId?.toString();
+  if ((!route.query.draftId || isNaN(Number(route.query.groupIndex))) && accountId) {
+    accountData.accountId.value = accountId;
+    data.accountId = accountId;
   }
 });
 
