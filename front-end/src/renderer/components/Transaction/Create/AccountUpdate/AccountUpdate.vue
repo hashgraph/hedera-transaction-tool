@@ -1,0 +1,166 @@
+<script setup lang="ts">
+import type { IAccountInfoParsed } from '@main/shared/interfaces';
+import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
+import type { AccountUpdateData } from '@renderer/utils/sdk/createTransactions';
+
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { AccountId, Key, KeyList, Transaction } from '@hashgraph/sdk';
+
+import useUserStore from '@renderer/stores/storeUser';
+
+import { useRoute } from 'vue-router';
+import useAccountId from '@renderer/composables/useAccountId';
+
+import { isAccountId } from '@renderer/utils';
+import { getAccountUpdateData } from '@renderer/utils/sdk/getData';
+import { createAccountUpdateTransaction } from '@renderer/utils/sdk/createTransactions';
+
+import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
+import AppInput from '@renderer/components/ui/AppInput.vue';
+import AccountUpdateFormData from '@renderer/components/Transaction/Create/AccountUpdate/AccountUpdateFormData.vue';
+
+/* Stores */
+const user = useUserStore();
+
+/* Composables */
+const route = useRoute();
+const accountData = useAccountId();
+
+/* State */
+const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
+
+const data = reactive<AccountUpdateData>({
+  accountId: '',
+  receiverSignatureRequired: false,
+  maxAutomaticTokenAssociations: 0,
+  stakeType: 'None',
+  stakedAccountId: '',
+  stakedNodeId: null,
+  declineStakingReward: false,
+  accountMemo: '',
+  ownerKey: null,
+});
+const nickname = ref('');
+
+/* Computed */
+const createTransaction = computed<CreateTransactionFunc>(() => {
+  return common =>
+    createAccountUpdateTransaction(
+      {
+        ...common,
+        ...(data as AccountUpdateData),
+      },
+      accountData.accountInfo.value as IAccountInfoParsed,
+    );
+});
+
+const createDisabled = computed(() => {
+  return (
+    !accountData.accountId.value ||
+    !accountData.isValid.value ||
+    (data.stakeType === 'Account' && !isAccountId(data.stakedAccountId)) ||
+    (data.stakeType === 'Node' && data.stakedNodeId === null)
+  );
+});
+
+const transactionKey = computed(() => {
+  const keys: Key[] = [];
+  accountData.key.value && keys.push(accountData.key.value);
+  data.ownerKey && keys.push(data.ownerKey);
+  return new KeyList(keys);
+});
+
+/* Handlers */
+const handleDraftLoaded = (transaction: Transaction) => {
+  const loadedData = getAccountUpdateData(transaction);
+  handleUpdateData(loadedData);
+};
+
+const handleUpdateData = (newData: AccountUpdateData) => {
+  accountData.accountId.value = newData.accountId;
+  Object.assign(data, newData);
+};
+
+/* Functions */
+const preCreateAssert = () => {
+  if (!isAccountId(accountData.accountId.value) || !accountData.key.value) {
+    throw Error('Invalid Account ID');
+  }
+};
+
+/* Hooks */
+onMounted(() => {
+  if ((!route.query.draftId || isNaN(Number(route.query.groupIndex))) && route.query.accountId) {
+    accountData.accountId.value = route.query.accountId.toString();
+  }
+});
+
+/* Watchers */
+watch(
+  () => data.stakedAccountId,
+  id => {
+    if (isAccountId(id) && id !== '0') {
+      data.stakedAccountId = AccountId.fromString(id).toString();
+    }
+  },
+);
+
+watch(accountData.accountInfo, accountInfo => {
+  if (!accountInfo) {
+    data.receiverSignatureRequired = false;
+    data.maxAutomaticTokenAssociations = 0;
+    data.stakeType = 'None';
+    data.stakedAccountId = '';
+    data.stakedNodeId = null;
+    data.declineStakingReward = false;
+    data.accountMemo = '';
+    data.ownerKey = null;
+  } else if (!route.query.draftId) {
+    data.receiverSignatureRequired = accountInfo.receiverSignatureRequired;
+    data.maxAutomaticTokenAssociations = accountInfo.maxAutomaticTokenAssociations || 0;
+    data.stakedAccountId = accountInfo.stakedAccountId?.toString() || '';
+    data.stakedNodeId = accountInfo.stakedNodeId;
+    data.stakeType = accountInfo.stakedAccountId
+      ? 'Account'
+      : accountInfo.stakedNodeId !== null
+        ? 'Node'
+        : 'None';
+    data.declineStakingReward = accountInfo.declineReward;
+    data.accountMemo = accountInfo.memo || '';
+    data.ownerKey = accountInfo.key;
+  }
+});
+</script>
+<template>
+  <BaseTransaction
+    ref="baseTransactionRef"
+    :transaction-base-key="transactionKey"
+    :create-transaction="createTransaction"
+    :pre-create-assert="preCreateAssert"
+    :create-disabled="createDisabled"
+    @draft-loaded="handleDraftLoaded"
+  >
+    <template #entity-nickname>
+      <div v-if="!user.selectedOrganization" class="row mt-6">
+        <div class="form-group col-4 col-xxxl-3">
+          <label class="form-label">Nickname</label>
+          <div>
+            <AppInput
+              v-model="nickname"
+              :filled="true"
+              data-testid="input-nickname"
+              placeholder="Enter Account Nickname"
+            />
+          </div>
+        </div>
+      </div>
+    </template>
+    <template #default>
+      <AccountUpdateFormData
+        :data="data as AccountUpdateData"
+        :account-info="accountData.accountInfo.value as IAccountInfoParsed"
+        @update:data="handleUpdateData"
+      />
+    </template>
+  </BaseTransaction>
+</template>
