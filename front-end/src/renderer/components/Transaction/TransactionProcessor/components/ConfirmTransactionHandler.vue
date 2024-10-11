@@ -52,6 +52,7 @@ function setNext(next: Handler) {
 }
 
 function handle(req: TransactionRequest) {
+  reset();
   request.value = req;
   show.value = true;
 }
@@ -86,6 +87,11 @@ function assertPassword() {
   }
 
   return true;
+}
+
+function reset() {
+  request.value = null;
+  show.value = false;
 }
 
 /* Expose */

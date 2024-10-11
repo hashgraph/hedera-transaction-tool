@@ -58,6 +58,7 @@ function setNext(next: Handler) {
 }
 
 async function handle(req: TransactionRequest) {
+  reset();
   request.value = req;
 
   assertUserLoggedIn(user.personal);
@@ -126,6 +127,11 @@ async function store(status: number) {
 
   const { id } = await storeTransaction(tx);
   emit('transaction:stored', id);
+}
+
+function reset() {
+  request.value = null;
+  isExecuting.value = false;
 }
 
 /* Hooks */
