@@ -6,10 +6,10 @@ import { ref, watch } from 'vue';
 
 import { getMinimumExpirationTime, getMaximumExpirationTime } from '@renderer/utils';
 
+import AppDatePicker from '@renderer/components/ui/AppDatePicker.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppUploadFile from '@renderer/components/ui/AppUploadFile.vue';
 import KeyField from '@renderer/components/KeyField.vue';
-import AppDatePicker from '@renderer/components/Wrapped/AppDatePicker.vue';
 
 /* Props */
 const props = defineProps<{

@@ -17,6 +17,8 @@ defineProps<
 /* Emits */
 defineEmits<{
   (event: 'update:modelValue', value: Date): void;
+  (event: 'open'): void;
+  (event: 'close'): void;
 }>();
 
 /* State */
@@ -44,6 +46,8 @@ const datePicker = ref<DatePickerInstance>(null);
     :max-date="maxDate"
     class="is-fill"
     enable-seconds
+    @open="$emit('open')"
+    @close="$emit('close')"
   >
     <template #action-row>
       <div class="d-flex justify-content-end gap-4 w-100">

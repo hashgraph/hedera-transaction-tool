@@ -4,7 +4,7 @@ import type { FreezeData } from '@renderer/utils/sdk';
 import { formatAccountId } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import RunningClockDatePicker from '@renderer/components/Wrapped/RunningClockDatePicker.vue';
+import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
 
 /* Props */
 defineProps<{

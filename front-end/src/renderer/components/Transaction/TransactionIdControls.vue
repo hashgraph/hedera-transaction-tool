@@ -17,7 +17,7 @@ import { formatAccountId, flattenAccountIds, isUserLoggedIn, stringifyHbar } fro
 import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
-import RunningClockDatePicker from '@renderer/components/Wrapped/RunningClockDatePicker.vue';
+import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
 
 /* Props */
 const props = defineProps<{

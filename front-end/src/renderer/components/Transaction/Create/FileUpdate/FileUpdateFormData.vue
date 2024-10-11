@@ -17,10 +17,10 @@ import {
 } from '@renderer/utils';
 
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
+import AppDatePicker from '@renderer/components/ui/AppDatePicker.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppUploadFile from '@renderer/components/ui/AppUploadFile.vue';
 import KeyField from '@renderer/components/KeyField.vue';
-import AppDatePicker from '@renderer/components/Wrapped/AppDatePicker.vue';
 
 /* Props */
 const props = defineProps<{
