@@ -1,13 +1,9 @@
 import type { FileFilter, OpenDialogReturnValue } from 'electron';
 import { ipcRenderer } from 'electron';
 
-import { proto } from '@hashgraph/proto';
-
 export default {
   utils: {
     openExternal: (url: string) => ipcRenderer.send('utils:openExternal', url),
-    decodeProtobuffKey: (protobuffEncodedKey: string): Promise<proto.Key> =>
-      ipcRenderer.invoke('utils:decodeProtobuffKey', protobuffEncodedKey),
     hash: (data: string): Promise<string> => ipcRenderer.invoke('utils:hash', data),
     compareHash: (data: string, hash: string): Promise<boolean> =>
       ipcRenderer.invoke('utils:compareHash', data, hash),

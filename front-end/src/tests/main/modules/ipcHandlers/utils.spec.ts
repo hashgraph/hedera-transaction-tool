@@ -4,7 +4,6 @@ import registerUtilsListeners from '@main/modules/ipcHandlers/utils';
 
 import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
 import { mockDeep } from 'vitest-mock-extended';
-import { proto } from '@hashgraph/proto';
 import { compareSync, hashSync } from 'bcrypt';
 import { getNumberArrayFromString, saveContentToPath } from '@main/utils';
 import path from 'path';
@@ -87,7 +86,7 @@ describe('registerUtilsListeners', () => {
   const event: Electron.IpcMainEvent = mockDeep<Electron.IpcMainEvent>();
 
   test('Should register handlers for each util', () => {
-    const utils = ['decodeProtobuffKey', 'hash', 'openBufferInTempFile', 'saveFile', 'quit'];
+    const utils = ['hash', 'openBufferInTempFile', 'saveFile', 'quit'];
 
     expect(ipcMainMO.on).toHaveBeenCalledWith('utils:openExternal', expect.any(Function));
 
@@ -106,26 +105,6 @@ describe('registerUtilsListeners', () => {
     });
     openExternalHandler && openExternalHandler[1](event, url);
     expect(shell.openExternal).toHaveBeenCalledWith(url);
-  });
-
-  test('Should decode key in util:decodeProtobuffKey', () => {
-    const encodedKey = 'somekey';
-
-    vi.spyOn(proto.Key, 'decode').mockReturnValue(
-      proto.Key.create({ ed25519: Uint8Array.from([1, 2, 3]) }),
-    );
-
-    const decodeProtobuffKeyHandler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'utils:decodeProtobuffKey',
-    );
-
-    expect(decodeProtobuffKeyHandler).toBeDefined();
-
-    if (decodeProtobuffKeyHandler) {
-      const key = decodeProtobuffKeyHandler[1](event, encodedKey);
-      expect(proto.Key.decode).toHaveBeenCalledWith(Buffer.from(encodedKey, 'hex'));
-      expect(key).toEqual(proto.Key.create({ ed25519: Uint8Array.from([1, 2, 3]) }));
-    }
   });
 
   test('Should call save file function and open it in util:openBufferInTempFile', async () => {

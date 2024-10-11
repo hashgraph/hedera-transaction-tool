@@ -3,8 +3,6 @@ import fs from 'fs/promises';
 
 import { BrowserWindow, app, dialog, ipcMain, shell, FileFilter } from 'electron';
 
-import { Key, KeyList } from '@hashgraph/sdk';
-import { proto } from '@hashgraph/proto';
 import * as bcrypt from 'bcrypt';
 
 import { getNumberArrayFromString, saveContentToPath } from '@main/utils';
@@ -13,16 +11,6 @@ const createChannelName = (...props: string[]) => ['utils', ...props].join(':');
 
 export default () => {
   ipcMain.on(createChannelName('openExternal'), (_e, url: string) => shell.openExternal(url));
-
-  ipcMain.handle(
-    createChannelName('decodeProtobuffKey'),
-    (_e, protobuffEncodedKey: string): Key | KeyList | proto.Key => {
-      const buffer = Buffer.from(protobuffEncodedKey, 'hex');
-      const key = proto.Key.decode(buffer);
-
-      return key;
-    },
-  );
 
   ipcMain.handle(createChannelName('hash'), (_e, data: string): string => {
     return bcrypt.hashSync(data, 10);
@@ -77,7 +65,7 @@ export default () => {
       if (!filePath.trim() || canceled) return;
 
       try {
-        await fs.writeFile(filePath, content);
+        await fs.writeFile(filePath, Uint8Array.from(content));
       } catch (error: any) {
         dialog.showErrorBox('Failed to save file', error?.message || 'Unknown error');
         console.log(error);

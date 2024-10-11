@@ -18,7 +18,7 @@ import {
 } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
-import { uint8ToHex } from '..';
+import { uint8ToHex, hexToUint8Array } from '..';
 
 export const createFileInfo = (props: {
   fileId: FileId | string;
@@ -175,6 +175,26 @@ export function decodeKeyList(keyListBytes: string) {
     throw new Error('Invalid key list');
   }
 }
+
+export const decodeProtobuffKey = (protobuffKey: string): Key | undefined => {
+  try {
+    const key = proto.Key.decode(hexToUint8Array(protobuffKey));
+
+    if (key.thresholdKey) {
+      return KeyList.__fromProtobufThresoldKey(key.thresholdKey);
+    }
+    if (key.keyList) {
+      return KeyList.__fromProtobufKeyList(key.keyList);
+    }
+    if (key.ed25519 || key.ECDSASecp256k1) {
+      return Key._fromProtobufKey(key);
+    }
+
+    return undefined;
+  } catch (error) {
+    throw new Error('Failed to decode protobuf');
+  }
+};
 
 export function formatHbar(hbar: Hbar) {
   return hbar
