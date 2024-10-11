@@ -10,7 +10,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
-import { useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 
 import { add } from '@renderer/services/accountsService';
 
@@ -29,7 +29,7 @@ const network = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
-const router = useRouter();
+const route = useRoute();
 
 /* State */
 const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
@@ -104,7 +104,7 @@ watch(
   () => baseTransactionRef.value?.payerData.isValid.value,
   isValid => {
     const payer = baseTransactionRef.value?.payerData;
-    if (isValid && payer?.key.value && !data.ownerKey && !router.currentRoute.value.query.draftId) {
+    if (isValid && payer?.key.value && !data.ownerKey && !route.query.draftId) {
       data.ownerKey = payer.key.value;
     }
   },
