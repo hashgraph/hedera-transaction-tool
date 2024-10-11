@@ -27,9 +27,6 @@ function createOnlyOwnerKeyInterceptor<T>(keyIdProp: keyof T) {
     async intercept(context: ExecutionContext, handler: CallHandler) {
       const request = context.switchToHttp().getRequest<Request & { user: User }>();
       const { user, body } = request;
-      if (request.path.includes('many')) {
-        console.log(body);
-      }
 
       this.validateRequest(user, body);
 
