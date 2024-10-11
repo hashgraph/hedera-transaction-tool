@@ -84,7 +84,7 @@ const columnClass = 'col-4 col-xxxl-3';
       :checked="!data.declineStakingReward"
       @update:checked="
         emit('update:data', {
-          ...props.data,
+          ...data,
           declineStakingReward: !$event,
         })
       "
@@ -123,7 +123,7 @@ const columnClass = 'col-4 col-xxxl-3';
           :model-value="data.stakedAccountId"
           @update:model-value="
             emit('update:data', {
-              ...props.data,
+              ...data,
               stakedAccountId: formatAccountId($event),
             })
           "
@@ -161,7 +161,7 @@ const columnClass = 'col-4 col-xxxl-3';
       :checked="data.receiverSignatureRequired"
       @update:checked="
         emit('update:data', {
-          ...props.data,
+          ...data,
           receiverSignatureRequired: $event,
         })
       "
@@ -180,7 +180,7 @@ const columnClass = 'col-4 col-xxxl-3';
         :model-value="data.initialBalance as Hbar"
         @update:model-value="
           emit('update:data', {
-            ...props.data,
+            ...data,
             initialBalance: $event,
           })
         "
@@ -194,7 +194,7 @@ const columnClass = 'col-4 col-xxxl-3';
         :model-value="data.maxAutomaticTokenAssociations"
         @update:model-value="
           emit('update:data', {
-            ...props.data,
+            ...data,
             maxAutomaticTokenAssociations: Number($event),
           })
         "
@@ -216,7 +216,7 @@ const columnClass = 'col-4 col-xxxl-3';
         :model-value="data.accountMemo"
         @update:model-value="
           emit('update:data', {
-            ...props.data,
+            ...data,
             accountMemo: $event,
           })
         "
