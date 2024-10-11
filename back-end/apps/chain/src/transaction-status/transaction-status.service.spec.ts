@@ -15,6 +15,7 @@ import {
   notifySyncIndicators,
   notifyTransactionAction,
   notifyWaitingForSignatures,
+  isTransactionOverMaxSize,
 } from '@app/common';
 import { NotificationType, Transaction, TransactionStatus } from '@entities';
 
