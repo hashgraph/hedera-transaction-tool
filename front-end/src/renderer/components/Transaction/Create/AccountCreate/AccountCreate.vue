@@ -124,9 +124,6 @@ watch(
     }
   },
 );
-
-/* Misc */
-const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <BaseTransaction
@@ -139,7 +136,7 @@ const columnClass = 'col-4 col-xxxl-3';
   >
     <template #entity-nickname>
       <div v-if="!user.selectedOrganization" class="row mt-6">
-        <div class="form-group" :class="[columnClass]">
+        <div class="form-group col-4 col-xxxl-3">
           <label class="form-label">Nickname</label>
           <div>
             <AppInput

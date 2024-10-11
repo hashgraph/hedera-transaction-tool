@@ -79,16 +79,13 @@ const groupActionTaken = ref(false);
 const transaction = computed(() => props.createTransaction({ ...data } as TransactionCommonData));
 
 const transactionKey = computed(() => {
-  const keyList = props.transactionBaseKey?.toArray() || [];
-  payerData.key.value && keyList.push(payerData.key.value);
-  return new KeyList(keyList);
+  const keys = props.transactionBaseKey?.toArray() || [];
+  payerData.key.value && keys.push(payerData.key.value);
+  return new KeyList(keys);
 });
 
 /* Handlers */
 const handleDraftLoaded = (transaction: Transaction) => {
-  console.log('loaded');
-  console.log(transaction.maxTransactionFee?.toString());
-
   const loadedData = getTransactionCommonData(transaction);
   payerData.accountId.value = loadedData.payerId;
   data.payerId = loadedData.payerId;
