@@ -21,6 +21,7 @@ import {
   getStatusCodeFromMessage,
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
+  notifyTransactionAction,
 } from '@app/common';
 import { Network, Transaction, TransactionStatus } from '@entities';
 
@@ -245,7 +246,7 @@ describe('ExecuteService', () => {
       },
     );
     expect(client.close).toHaveBeenCalled();
-    expect(notificationsService.emit).toHaveBeenCalled();
+    expect(notifyTransactionAction).toHaveBeenCalled();
   });
 
   it('should update the account info if the transaction is account update', async () => {

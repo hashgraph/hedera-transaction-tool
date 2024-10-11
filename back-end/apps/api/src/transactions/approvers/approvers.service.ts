@@ -23,11 +23,9 @@ import {
   attachKeys,
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
-  NOTIFY_CLIENT,
-  NotifyClientDto,
+  notifyTransactionAction,
   SYNC_INDICATORS,
   SyncIndicatorsDto,
-  TRANSACTION_ACTION,
   userKeysRequiredToSign,
   verifyTransactionBodyWithoutNodeAccountIdSignature,
 } from '@app/common';
@@ -230,10 +228,7 @@ export class ApproversService {
       [listId],
     );
 
-    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
-    });
+    notifyTransactionAction(this.notificationsService);
   }
 
   /* Create transaction approvers for the given transaction id with the user ids */
@@ -361,10 +356,7 @@ export class ApproversService {
         }
       });
 
-      this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-        message: TRANSACTION_ACTION,
-        content: '',
-      });
+      notifyTransactionAction(this.notificationsService);
 
       await this.emitSyncIndicators(transactionId);
     } catch (error) {
@@ -532,11 +524,7 @@ export class ApproversService {
       });
 
       if (updated) {
-        this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-          message: TRANSACTION_ACTION,
-          content: '',
-        });
-
+        notifyTransactionAction(this.notificationsService);
         await this.emitSyncIndicators(transactionId);
       }
 
@@ -627,10 +615,7 @@ export class ApproversService {
         .execute();
     });
 
-    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
-    });
+    notifyTransactionAction(this.notificationsService);
 
     this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
       transactionId: transaction.id,

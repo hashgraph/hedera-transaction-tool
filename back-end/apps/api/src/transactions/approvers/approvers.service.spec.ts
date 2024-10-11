@@ -5,16 +5,12 @@ import { mock, mockDeep } from 'jest-mock-extended';
 import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { AccountCreateTransaction } from '@hashgraph/sdk';
 
-import {
-  MirrorNodeService,
-  NOTIFICATIONS_SERVICE,
-  NOTIFY_CLIENT,
-  SYNC_INDICATORS,
-} from '@app/common';
+import { MirrorNodeService, NOTIFICATIONS_SERVICE, SYNC_INDICATORS } from '@app/common';
 import {
   attachKeys,
   userKeysRequiredToSign,
   verifyTransactionBodyWithoutNodeAccountIdSignature,
+  notifyTransactionAction,
 } from '@app/common/utils';
 import { Transaction, TransactionApprover, TransactionStatus, User } from '@entities';
 
@@ -308,7 +304,7 @@ describe('ApproversService', () => {
       await service.removeNode(nodeId);
 
       expect(dataSource.manager.query).toHaveBeenCalledWith(expect.anything(), [nodeId]);
-      expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, expect.anything());
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
 
     it('should return null if id is null', async () => {
@@ -370,12 +366,8 @@ describe('ApproversService', () => {
         threshold: null,
       });
       expect(dataSource.manager.insert).toHaveBeenCalled();
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(
-        1,
-        NOTIFY_CLIENT,
-        expect.anything(),
-      );
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(2, SYNC_INDICATORS, {
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
+      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
         transactionId: transaction.id,
         transactionStatus: expect.anything(),
       });
@@ -480,12 +472,9 @@ describe('ApproversService', () => {
         userId: 3,
       });
       expect(dataSource.manager.insert).toHaveBeenCalledTimes(5);
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(
-        1,
-        NOTIFY_CLIENT,
-        expect.anything(),
-      );
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(2, SYNC_INDICATORS, {
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
+
+      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
         transactionId: transaction.id,
         transactionStatus: expect.anything(),
       });
@@ -714,12 +703,8 @@ describe('ApproversService', () => {
         approved: true,
       });
       expect(dataSource.manager.insert).toHaveBeenCalled();
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(
-        1,
-        NOTIFY_CLIENT,
-        expect.anything(),
-      );
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(2, SYNC_INDICATORS, {
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
+      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
         transactionId: transaction.id,
         transactionStatus: expect.anything(),
       });
@@ -836,12 +821,8 @@ describe('ApproversService', () => {
         signature: undefined,
         approved: undefined,
       });
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(
-        1,
-        NOTIFY_CLIENT,
-        expect.anything(),
-      );
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(2, SYNC_INDICATORS, {
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
+      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
         transactionId: transaction.id,
         transactionStatus: expect.anything(),
       });
@@ -981,12 +962,8 @@ describe('ApproversService', () => {
         listId: 5,
         transactionId: null,
       });
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(
-        1,
-        NOTIFY_CLIENT,
-        expect.anything(),
-      );
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(2, SYNC_INDICATORS, {
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
+      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
         transactionId: transaction.id,
         transactionStatus: expect.anything(),
       });
@@ -1154,12 +1131,8 @@ describe('ApproversService', () => {
           threshold: 1,
         },
       );
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(
-        1,
-        NOTIFY_CLIENT,
-        expect.anything(),
-      );
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(2, SYNC_INDICATORS, {
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
+      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
         transactionId: transaction.id,
         transactionStatus: expect.anything(),
       });
@@ -1194,12 +1167,8 @@ describe('ApproversService', () => {
         },
       );
       expect(dataSource.manager.softRemove).toHaveBeenCalled();
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(
-        1,
-        NOTIFY_CLIENT,
-        expect.anything(),
-      );
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(2, SYNC_INDICATORS, {
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
+      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
         transactionId: transaction.id,
         transactionStatus: expect.anything(),
       });
@@ -1225,12 +1194,8 @@ describe('ApproversService', () => {
       expect(dataSource.manager.update).toHaveBeenCalledWith(TransactionApprover, treeApprover.id, {
         threshold: 1,
       });
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(
-        1,
-        NOTIFY_CLIENT,
-        expect.anything(),
-      );
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(2, SYNC_INDICATORS, {
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
+      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
         transactionId: transaction.id,
         transactionStatus: expect.anything(),
       });
@@ -1283,7 +1248,7 @@ describe('ApproversService', () => {
       await service.removeTransactionApprover(1);
 
       expect(approversRepo.query).toHaveBeenCalled();
-      expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, expect.anything());
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
 
     it('should fail if approver does not exists', async () => {
@@ -1342,7 +1307,7 @@ describe('ApproversService', () => {
         transactionId: transaction.id,
         transactionStatus: transaction.status,
       });
-      expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, expect.anything());
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
 
     it('should throw if user not approver', async () => {

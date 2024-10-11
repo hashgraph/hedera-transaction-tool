@@ -15,10 +15,8 @@ import { Role, Transaction, TransactionObserver, TransactionStatus, User } from 
 import {
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
-  NOTIFY_CLIENT,
-  NotifyClientDto,
-  TRANSACTION_ACTION,
   userKeysRequiredToSign,
+  notifyTransactionAction,
 } from '@app/common';
 
 import { ApproversService } from '../approvers';
@@ -68,10 +66,7 @@ export class ObserversService {
     try {
       const result = await this.repo.save(observers);
 
-      this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-        message: TRANSACTION_ACTION,
-        content: '',
-      });
+      notifyTransactionAction(this.notificationsService);
 
       return result;
     } catch (error) {
@@ -134,10 +129,7 @@ export class ObserversService {
 
     const result = await this.repo.save(observer);
 
-    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
-    });
+    notifyTransactionAction(this.notificationsService);
 
     return result;
   }
@@ -148,10 +140,7 @@ export class ObserversService {
 
     await this.repo.remove(observer);
 
-    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
-    });
+    notifyTransactionAction(this.notificationsService);
 
     return true;
   }
