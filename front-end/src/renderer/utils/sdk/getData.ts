@@ -1,11 +1,17 @@
 import type { Transaction } from '@hashgraph/sdk';
 
-import { AccountCreateTransaction, AccountUpdateTransaction, Hbar } from '@hashgraph/sdk';
+import {
+  AccountAllowanceApproveTransaction,
+  AccountCreateTransaction,
+  AccountUpdateTransaction,
+  Hbar,
+} from '@hashgraph/sdk';
 
 import type {
   AccountCreateData,
   AccountData,
   AccountUpdateData,
+  ApproveHbarAllowanceData,
   TransactionCommonData,
 } from './createTransactions';
 
@@ -66,5 +72,24 @@ export const getAccountUpdateData = (transaction: Transaction): AccountUpdateDat
   return {
     accountId: transaction.accountId?.toString() || '',
     ...getAccountData(transaction),
+  };
+};
+
+export const getApproveHbarAllowanceTransactionData = (
+  transaction: Transaction,
+): ApproveHbarAllowanceData => {
+  assertTransactionType(transaction, AccountAllowanceApproveTransaction);
+  if (transaction.hbarApprovals.length > 0) {
+    const hbarApproval = transaction.hbarApprovals[0];
+    return {
+      ownerAccountId: hbarApproval.ownerAccountId?.toString() || '',
+      spenderAccountId: hbarApproval.spenderAccountId?.toString() || '',
+      amount: hbarApproval.amount || new Hbar(0),
+    };
+  }
+  return {
+    ownerAccountId: '',
+    spenderAccountId: '',
+    amount: new Hbar(0),
   };
 };

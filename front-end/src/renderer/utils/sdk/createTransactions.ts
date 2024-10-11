@@ -167,7 +167,7 @@ export const createAccountCreateTransaction = (data: TransactionCommonData & Acc
 };
 
 /* Approve Allowance Transaction */
-export const createApproveAllowanceTransaction = (
+export const createApproveHbarAllowanceTransaction = (
   data: TransactionCommonData & ApproveHbarAllowanceData,
 ) => {
   const transaction = new AccountAllowanceApproveTransaction();

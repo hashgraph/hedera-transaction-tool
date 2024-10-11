@@ -1,5 +1,5 @@
 import AccountInfoVue from './Account/AccountInfo.vue';
-import ApproveHbarAllowanceVue from './Account/ApproveHbarAllowance.vue';
+import ApproveHbarAllowance from './ApproveHbarAllowance';
 import AccountCreate from './AccountCreate';
 import AccountUpdate from './AccountUpdate';
 import DeleteAccount from './Account/DeleteAccount.vue';
@@ -34,7 +34,7 @@ const txTypeComponentMapping = {
   [transactionTypeKeys.deleteAccount]: DeleteAccount,
   [transactionTypeKeys.accountInfo]: AccountInfoVue,
   [transactionTypeKeys.transfer]: TransferHbar,
-  [transactionTypeKeys.approveAllowance]: ApproveHbarAllowanceVue,
+  [transactionTypeKeys.approveAllowance]: ApproveHbarAllowance,
   [transactionTypeKeys.freeze]: FreezeVue,
 };
 
