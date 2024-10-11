@@ -63,11 +63,13 @@ onUnmounted(() => {
       menu: 'is-fill',
       input: 'is-fill',
     }"
+    :placeholder="placeholder"
+    :min-date="minDate"
+    :max-date="maxDate"
     class="is-fill"
     enable-seconds
     @open="stopInterval"
     @closed="startInterval"
-    v-bind="$attrs"
   >
     <template #action-row>
       <div class="d-flex justify-content-end gap-4 w-100">
