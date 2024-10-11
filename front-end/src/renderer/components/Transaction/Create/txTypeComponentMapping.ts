@@ -6,7 +6,7 @@ import FileAppend from './FileAppend';
 import FileCreate from './FileCreate';
 import FileUpdate from './FileUpdate';
 import FileContents from './FileContents';
-import FreezeVue from './Misc/Freeze.vue';
+import Freeze from './Freeze';
 import TransferHbar from './Transfer/TransferHbar.vue';
 
 export const transactionTypeKeys = {
@@ -33,7 +33,7 @@ const txTypeComponentMapping = {
   [transactionTypeKeys.deleteAccount]: AccountDelete,
   [transactionTypeKeys.transfer]: TransferHbar,
   [transactionTypeKeys.approveAllowance]: ApproveHbarAllowance,
-  [transactionTypeKeys.freeze]: FreezeVue,
+  [transactionTypeKeys.freeze]: Freeze,
 };
 
 export default txTypeComponentMapping;

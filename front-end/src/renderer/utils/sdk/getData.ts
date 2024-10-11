@@ -8,6 +8,7 @@ import {
   FileAppendTransaction,
   FileCreateTransaction,
   FileUpdateTransaction,
+  FreezeTransaction,
   Hbar,
   KeyList,
 } from '@hashgraph/sdk';
@@ -22,9 +23,11 @@ import type {
   FileCreateData,
   FileData,
   FileUpdateData,
+  FreezeData,
   TransactionCommonData,
 } from './createTransactions';
 import { getMaximumExpirationTime, getMinimumExpirationTime } from '.';
+import { uint8ToHex } from '..';
 
 export const getTransactionCommonData = (transaction: Transaction): TransactionCommonData => {
   const transactionId = transaction.transactionId;
@@ -158,5 +161,15 @@ export const getFileAppendTransactionData = (transaction: Transaction): FileAppe
     chunkSize: transaction.chunkSize || 0,
     maxChunks: transaction.maxChunks || 9999999999999,
     contents: transaction.contents ? new TextDecoder().decode(transaction.contents) : '',
+  };
+};
+
+export const getFreezeData = (transaction: Transaction): FreezeData => {
+  assertTransactionType(transaction, FreezeTransaction);
+  return {
+    freezeType: transaction.freezeType?._code || -1,
+    startTimestamp: transaction.startTimestamp?.toDate() || new Date(),
+    fileId: transaction.fileId?.toString() || '',
+    fileHash: transaction.fileHash ? uint8ToHex(transaction.fileHash) : '',
   };
 };
