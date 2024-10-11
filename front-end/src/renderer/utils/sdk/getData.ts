@@ -11,6 +11,7 @@ import {
   FreezeTransaction,
   Hbar,
   KeyList,
+  TransferTransaction,
 } from '@hashgraph/sdk';
 
 import type {
@@ -25,6 +26,7 @@ import type {
   FileUpdateData,
   FreezeData,
   TransactionCommonData,
+  TransferHbarData,
 } from './createTransactions';
 import { getMaximumExpirationTime, getMinimumExpirationTime } from '.';
 import { uint8ToHex } from '..';
@@ -171,5 +173,12 @@ export const getFreezeData = (transaction: Transaction): FreezeData => {
     startTimestamp: transaction.startTimestamp?.toDate() || new Date(),
     fileId: transaction.fileId?.toString() || '',
     fileHash: transaction.fileHash ? uint8ToHex(transaction.fileHash) : '',
+  };
+};
+
+export const getTransferHbarData = (transaction: Transaction): TransferHbarData => {
+  assertTransactionType(transaction, TransferTransaction);
+  return {
+    transfers: transaction.hbarTransfersList,
   };
 };

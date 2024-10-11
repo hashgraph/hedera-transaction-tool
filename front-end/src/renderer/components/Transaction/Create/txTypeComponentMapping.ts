@@ -7,7 +7,7 @@ import FileCreate from './FileCreate';
 import FileUpdate from './FileUpdate';
 import FileContents from './FileContents';
 import Freeze from './Freeze';
-import TransferHbar from './Transfer/TransferHbar.vue';
+import TransferHbar from './TransferHbar';
 
 export const transactionTypeKeys = {
   createFile: 'FileCreateTransaction',
