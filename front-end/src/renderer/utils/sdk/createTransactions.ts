@@ -143,7 +143,7 @@ const setTransactionCommonData = (transaction: Transaction, data: TransactionCom
 };
 
 /* Account Create Transaction */
-export const createAccountTransaction = (data: TransactionCommonData & AccountCreateData) => {
+export const createAccountCreateTransaction = (data: TransactionCommonData & AccountCreateData) => {
   const transaction = new AccountCreateTransaction()
     .setReceiverSignatureRequired(data.receiverSignatureRequired)
     .setDeclineStakingReward(data.declineStakingReward)

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
 import type { ExecutedSuccessData } from '@renderer/components/Transaction/TransactionProcessor';
+import type { AccountCreateData } from '@renderer/utils/sdk/createTransactions';
 
 import { computed, nextTick, reactive, ref, watch } from 'vue';
 import { AccountId, Hbar, Transaction } from '@hashgraph/sdk';
@@ -16,10 +17,7 @@ import { add } from '@renderer/services/accountsService';
 import { isAccountId, getEntityIdFromTransactionReceipt } from '@renderer/utils';
 import { getAccountCreateData } from '@renderer/utils/sdk/getData';
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
-import {
-  createAccountTransaction,
-  type AccountCreateData,
-} from '@renderer/utils/sdk/createTransactions';
+import { createAccountCreateTransaction } from '@renderer/utils/sdk/createTransactions';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -52,7 +50,7 @@ const nickname = ref('');
 /* Computed */
 const createTransaction = computed<CreateTransactionFunc>(() => {
   return common =>
-    createAccountTransaction({
+    createAccountCreateTransaction({
       ...common,
       ...(data as AccountCreateData),
     });
