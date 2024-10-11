@@ -160,7 +160,7 @@ describe('registerUtilsListeners', () => {
     const windows = [{}];
     const uint8ArrayString = 'testString';
     const numberArray = [1, 2, 3];
-    const content = Buffer.from(numberArray);
+    const content = Uint8Array.from(numberArray);
     const filePath = 'testPath';
     const canceled = false;
 
