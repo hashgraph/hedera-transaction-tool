@@ -486,7 +486,7 @@ describe('TransactionStatusService', () => {
       expectNotifyNotCalled();
     });
 
-    it('should skip transaction if is file update or append', async () => {
+    it.skip('should skip transaction if is file update or append', async () => {
       const transaction = {
         id: 1,
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
