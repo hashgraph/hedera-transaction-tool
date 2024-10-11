@@ -3,6 +3,7 @@ import type { RouteLocationNormalized } from 'vue-router';
 
 import { ref } from 'vue';
 import { onBeforeRouteLeave } from 'vue-router';
+import { FileAppendTransaction, FileUpdateTransaction, type Transaction } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -28,7 +29,7 @@ const props = defineProps<{
   handleSaveDraft?: () => void;
   handleDraftAdded?: (id: string) => void;
   handleDraftUpdated?: (id: string) => void;
-  getTransactionBytes?: () => Uint8Array;
+  getTransaction?: () => Transaction;
   description: string;
   isExecuted: boolean;
 }>();
@@ -47,12 +48,12 @@ const isSaveDraftModalShown = ref(false);
 
 /* Handlers */
 const saveDraft = async () => {
-  if (!props.getTransactionBytes) return;
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
 
-  const transactionBytes = props.getTransactionBytes();
+  const transactionBytes = getTransactionBytes();
+  if (!transactionBytes) return;
 
   if (route.query.draftId) {
     try {
@@ -90,12 +91,25 @@ async function sendAddDraft(userId: string, transactionBytes: Uint8Array) {
   toast.success('Draft saved', { position: 'bottom-right' });
 }
 
+function getTransactionBytes() {
+  //TODO: Think of better way to remove the content
+  if (!props.getTransaction) return;
+  const transaction = props.getTransaction();
+  if (
+    transaction instanceof FileUpdateTransaction ||
+    transaction instanceof FileAppendTransaction
+  ) {
+    transaction.setContents(new Uint8Array());
+  }
+  return transaction.toBytes();
+}
+
 /* Hooks */
 onBeforeRouteLeave(async to => {
-  if (!props.getTransactionBytes || to.name?.toString().toLocaleLowerCase().includes('login'))
-    return true;
+  if (to.name?.toString().toLocaleLowerCase().includes('login')) return true;
 
-  const transactionBytes = props.getTransactionBytes();
+  const transactionBytes = getTransactionBytes();
+  if (!transactionBytes) return true;
 
   if (route.query.draftId) {
     try {

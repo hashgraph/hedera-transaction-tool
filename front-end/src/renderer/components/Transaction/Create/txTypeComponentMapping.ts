@@ -1,6 +1,6 @@
 import AccountInfoVue from './Account/AccountInfo.vue';
 import ApproveHbarAllowanceVue from './Account/ApproveHbarAllowance.vue';
-import CreateAccount from './Account/CreateAccount.vue';
+import AccountCreate from './AccountCreate';
 import DeleteAccount from './Account/DeleteAccount.vue';
 import UpdateAccount from './Account/UpdateAccount.vue';
 import AppendToFileVue from './File/AppendToFile.vue';
@@ -29,7 +29,7 @@ const txTypeComponentMapping = {
   [transactionTypeKeys.readFile]: ReadFile,
   [transactionTypeKeys.updateFile]: UpdateFile,
   [transactionTypeKeys.appendToFile]: AppendToFileVue,
-  [transactionTypeKeys.createAccount]: CreateAccount,
+  [transactionTypeKeys.createAccount]: AccountCreate,
   [transactionTypeKeys.updateAccount]: UpdateAccount,
   [transactionTypeKeys.deleteAccount]: DeleteAccount,
   [transactionTypeKeys.accountInfo]: AccountInfoVue,

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
-import type { TransactionRequest } from '.';
+import type { ExecutedData, TransactionRequest } from '.';
 
 import { ref } from 'vue';
 
@@ -20,11 +20,7 @@ import { assertHandlerExists } from '.';
 
 /* Props */
 const props = defineProps<{
-  onExecuted?: (
-    success: boolean,
-    response: TransactionResponse | null,
-    receipt: TransactionReceipt | null,
-  ) => void;
+  onExecuted?: (data: ExecutedData) => void;
   onSubmitted?: (id: number, body: string) => void;
   onLocalStored?: (id: string) => void;
   onCloseSuccessModalClick?: () => void;
@@ -86,7 +82,7 @@ const handleTransactionExecuted = (
   response: TransactionResponse | null,
   receipt: TransactionReceipt | null,
 ) => {
-  props.onExecuted && props.onExecuted(success, response, receipt);
+  props.onExecuted && props.onExecuted({ success, response, receipt });
 };
 
 const handleTransactionStore = (id: string) => {
