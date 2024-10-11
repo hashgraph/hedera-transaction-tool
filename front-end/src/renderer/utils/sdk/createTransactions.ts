@@ -93,7 +93,7 @@ export type FileAppendData = {
   fileId: string;
   chunkSize: number;
   maxChunks: number;
-  contents: Uint8Array | null;
+  contents: Uint8Array | string | null;
 };
 
 export type FreezeData = {

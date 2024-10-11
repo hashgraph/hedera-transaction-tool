@@ -5,6 +5,7 @@ import {
   AccountCreateTransaction,
   AccountDeleteTransaction,
   AccountUpdateTransaction,
+  FileAppendTransaction,
   FileCreateTransaction,
   FileUpdateTransaction,
   Hbar,
@@ -17,6 +18,7 @@ import type {
   AccountDeleteData,
   AccountUpdateData,
   ApproveHbarAllowanceData,
+  FileAppendData,
   FileCreateData,
   FileData,
   FileUpdateData,
@@ -146,5 +148,15 @@ export const getFileUpdateTransactionData = (transaction: Transaction): FileUpda
   return {
     fileId: transaction.fileId?.toString() || '',
     ...getFileInfoTransactionData(transaction),
+  };
+};
+
+export const getFileAppendTransactionData = (transaction: Transaction): FileAppendData => {
+  assertTransactionType(transaction, FileAppendTransaction);
+  return {
+    fileId: transaction.fileId?.toString() || '',
+    chunkSize: transaction.chunkSize || 0,
+    maxChunks: transaction.maxChunks || 9999999999999,
+    contents: transaction.contents ? new TextDecoder().decode(transaction.contents) : '',
   };
 };
