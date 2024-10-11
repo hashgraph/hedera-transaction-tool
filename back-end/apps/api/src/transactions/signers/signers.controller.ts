@@ -11,6 +11,7 @@ import {
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import {
+  OnlyOwnerKey,
   PaginatedResourceDto,
   Pagination,
   PaginationParams,
@@ -93,6 +94,7 @@ export class SignersController {
   @Post()
   @HttpCode(201)
   @Serialize(TransactionSignerFullDto)
+  @OnlyOwnerKey<UploadSignatureDto>('publicKeyId')
   uploadSignature(
     @Param('transactionId', ParseIntPipe) transactionId: number,
     @Body() body: UploadSignatureDto,
@@ -117,6 +119,7 @@ export class SignersController {
   @Post('/many')
   @HttpCode(201)
   @Serialize(TransactionSignerFullDto)
+  @OnlyOwnerKey<UploadSignatureDto>('publicKeyId')
   uploadSignatures(
     @Param('transactionId', ParseIntPipe) transactionId: number,
     @Body() body: UploadSignatureArrayDto,

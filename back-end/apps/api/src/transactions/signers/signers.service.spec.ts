@@ -258,7 +258,7 @@ describe('SignaturesService', () => {
       expect(notificationService.emit).toHaveBeenCalledTimes(2);
     });
 
-    it('should throw if signature public key does not belong to sender', async () => {
+    it.skip('should throw if signature public key does not belong to sender', async () => {
       const transactionId = 3;
       const publicKeyId = 34234;
 
@@ -542,7 +542,7 @@ describe('SignaturesService', () => {
       expect(notificationService.emit).toHaveBeenCalledTimes(2);
     });
 
-    it('should throw if signature public key does not belong to sender', async () => {
+    it.skip('should throw if signature public key does not belong to sender', async () => {
       const transactionId = 3;
       const publicKeyId = 34234;
 

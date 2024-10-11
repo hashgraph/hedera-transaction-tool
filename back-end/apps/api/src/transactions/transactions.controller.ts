@@ -14,6 +14,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   Filtering,
   FilteringParams,
+  OnlyOwnerKey,
   PaginatedResourceDto,
   Pagination,
   PaginationParams,
@@ -56,6 +57,7 @@ export class TransactionsController {
   @UseGuards(HasKeyGuard)
   @Post()
   @Serialize(TransactionDto)
+  @OnlyOwnerKey<CreateTransactionDto>('creatorKeyId')
   async createTransaction(
     @Body() body: CreateTransactionDto,
     @GetUser() user,

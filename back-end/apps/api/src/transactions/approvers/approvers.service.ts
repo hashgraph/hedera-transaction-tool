@@ -583,12 +583,8 @@ export class ApproversService {
 
     const signatureKey = user.keys.find(key => key.id === dto.userKeyId);
 
-    /* Check if the key belongs to the user */
-    if (!user.keys.some(key => key.id === dto.userKeyId))
-      throw new BadRequestException('Signature key does not belong to the user');
-
     /* Gets the public key that the signature belongs to */
-    const publicKey = PublicKey.fromString(signatureKey.publicKey);
+    const publicKey = PublicKey.fromString(signatureKey?.publicKey);
 
     /* Get the transaction body */
     const transaction = await this.dataSource.manager.findOne(Transaction, {
