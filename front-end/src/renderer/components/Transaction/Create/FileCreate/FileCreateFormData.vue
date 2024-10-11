@@ -58,6 +58,7 @@ async function syncDisplayedContent() {
 }
 
 /* Watchers */
+watch(file, () => (manualContent.value = ''));
 watch([file, manualContent], () => {
   emit('update:data', {
     ...props.data,
