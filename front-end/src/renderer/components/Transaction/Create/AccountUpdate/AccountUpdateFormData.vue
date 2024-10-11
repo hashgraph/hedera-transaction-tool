@@ -3,7 +3,6 @@ import type { IAccountInfoParsed } from '@main/shared/interfaces';
 import type { AccountUpdateData } from '@renderer/utils/sdk/createTransactions';
 
 import { ref } from 'vue';
-import { Key } from '@hashgraph/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
@@ -68,14 +67,6 @@ const handleNodeNumberChange = (e: Event) => {
     });
   }
 };
-
-const handleOwnerKeyUpdate = (key: Key) => {
-  emit('update:data', {
-    ...props.data,
-    ownerKey: key,
-  });
-};
-
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
 </script>
@@ -112,7 +103,15 @@ const columnClass = 'col-4 col-xxxl-3';
 
   <div class="row mt-6">
     <div class="form-group col-8 col-xxxl-6">
-      <KeyField :model-key="data.ownerKey" @update:model-key="handleOwnerKeyUpdate" />
+      <KeyField
+        :model-key="data.ownerKey"
+        @update:model-key="
+          $emit('update:data', {
+            ...props.data,
+            ownerKey: $event,
+          })
+        "
+      />
     </div>
   </div>
 
