@@ -90,7 +90,6 @@ describe('registerUtilsListeners', () => {
     const utils = [
       'decodeProtobuffKey',
       'hash',
-      'uint8ArrayToHex',
       'hexToUint8Array',
       'hexToUint8ArrayBatch',
       'openBufferInTempFile',
@@ -134,24 +133,6 @@ describe('registerUtilsListeners', () => {
       const key = decodeProtobuffKeyHandler[1](event, encodedKey);
       expect(proto.Key.decode).toHaveBeenCalledWith(Buffer.from(encodedKey, 'hex'));
       expect(key).toEqual(proto.Key.create({ ed25519: Uint8Array.from([1, 2, 3]) }));
-    }
-  });
-
-  test('Should convert uint8 array to hex in util:uint8ArrayToHex', () => {
-    const dataString = '1,2,3,4,5,6,7,8,9';
-    const data = Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-    const result = Buffer.from(data).toString('hex');
-
-    const uint8ArrayToHexHandler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'utils:uint8ArrayToHex',
-    );
-
-    expect(uint8ArrayToHexHandler).toBeDefined();
-
-    if (uint8ArrayToHexHandler) {
-      vi.mocked(getNumberArrayFromString).mockReturnValue([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-      const hex = uint8ArrayToHexHandler[1](event, dataString);
-      expect(hex).toEqual(result);
     }
   });
 

@@ -194,7 +194,7 @@ const handleApproveAll = async (approved: boolean, showModal?: boolean) => {
         if (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id)) {
           const transactionBytes = await hexToUint8Array(item.transaction.transactionBytes);
           const transaction = Transaction.fromBytes(transactionBytes);
-          const signature = await getTransactionBodySignatureWithoutNodeAccountId(
+          const signature = getTransactionBodySignatureWithoutNodeAccountId(
             privateKey,
             transaction,
           );

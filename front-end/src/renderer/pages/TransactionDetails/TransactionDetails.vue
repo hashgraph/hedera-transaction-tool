@@ -320,7 +320,7 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
       const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
       const privateKey = getPrivateKey(publicKey, privateKeyRaw);
 
-      const signature = await getTransactionBodySignatureWithoutNodeAccountId(
+      const signature = getTransactionBodySignatureWithoutNodeAccountId(
         privateKey,
         sdkTransaction.value,
       );

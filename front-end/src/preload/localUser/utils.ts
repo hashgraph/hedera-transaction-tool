@@ -13,8 +13,6 @@ export default {
       ipcRenderer.invoke('utils:compareHash', data, hash),
     compareDataToHashes: (data: string, hashes: string[]): Promise<string | null> =>
       ipcRenderer.invoke('utils:compareDataToHashes', data, hashes),
-    uint8ArrayToHex: (data: string): Promise<string> =>
-      ipcRenderer.invoke('utils:uint8ArrayToHex', data),
     hexToUint8Array: (hexString: string): Promise<string> =>
       ipcRenderer.invoke('utils:hexToUint8Array', hexString),
     hexToUint8ArrayBatch: (hexStrings: string[]): Promise<string[]> =>

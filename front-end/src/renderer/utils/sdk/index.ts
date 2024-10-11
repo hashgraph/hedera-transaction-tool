@@ -18,7 +18,7 @@ import {
 } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
-import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
+import { uint8ToHex } from '..';
 
 export const createFileInfo = (props: {
   fileId: FileId | string;
@@ -279,7 +279,7 @@ export const isExpired = (transaction: Transaction) => {
   return new Date().getTime() >= validStart.getTime() + duration * 1_000;
 };
 
-export const getSignatures = async (privateKey: PrivateKey, transaction: Transaction) => {
+export const getSignatures = (privateKey: PrivateKey, transaction: Transaction) => {
   const signatures: {
     [key: string]: string;
   } = {};
@@ -292,13 +292,13 @@ export const getSignatures = async (privateKey: PrivateKey, transaction: Transac
     const nodeAccountId = AccountId._fromProtobuf(nodeAccountID);
 
     const signature = privateKey.sign(bodyBytes);
-    signatures[nodeAccountId.toString()] = await uint8ArrayToHex(signature);
+    signatures[nodeAccountId.toString()] = uint8ToHex(signature);
   }
 
   return signatures;
 };
 
-export const getTransactionBodySignatureWithoutNodeAccountId = async (
+export const getTransactionBodySignatureWithoutNodeAccountId = (
   privateKey: PrivateKey,
   transaction: Transaction,
 ) => {
@@ -307,7 +307,7 @@ export const getTransactionBodySignatureWithoutNodeAccountId = async (
   const bodyBytes = proto.TransactionBody.encode(transactionBody).finish();
 
   const signature = privateKey.sign(bodyBytes);
-  return await uint8ArrayToHex(signature);
+  return uint8ToHex(signature);
 };
 
 export const isApproved = (approver: ITransactionApprover): boolean | null => {

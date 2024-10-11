@@ -44,7 +44,6 @@ useSetDynamicLayout({
   showMenu: true,
 });
 
-// TODO: Replace with real data from SQLite (temp solution) or BE DB
 // const specialFiles: HederaFile[] = [
 //   {
 //     id: '0.0.101',
