@@ -345,7 +345,6 @@ describe('TransactionStatusService', () => {
         notificationsService,
         transactions[1].id,
       );
-
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
       expect(notifyTransactionAction).toHaveBeenCalledTimes(1);
     });
