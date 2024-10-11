@@ -86,14 +86,7 @@ const transactionKey = computed(() => {
 
 /* Handlers */
 const handleDraftLoaded = (transaction: Transaction) => {
-  const loadedData = getTransactionCommonData(transaction);
-  payerData.accountId.value = loadedData.payerId;
-  data.payerId = loadedData.payerId;
-  data.validStart = loadedData.validStart;
-  data.maxTransactionFee = loadedData.maxTransactionFee;
-  data.transactionMemo = loadedData.transactionMemo;
-  console.log(data.maxTransactionFee.toString());
-
+  Object.assign(data, getTransactionCommonData(transaction));
   emit('draft-loaded', transaction);
 };
 

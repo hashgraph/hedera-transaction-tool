@@ -66,8 +66,7 @@ const createDisabled = computed(() => {
 
 /* Handlers */
 const handleDraftLoaded = (transaction: Transaction) => {
-  const loadedData = getAccountCreateData(transaction);
-  handleUpdateData(loadedData);
+  handleUpdateData(getAccountCreateData(transaction));
 };
 
 const handleUpdateData = (newData: AccountCreateData) => {

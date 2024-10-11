@@ -6,8 +6,6 @@ import type { AccountUpdateData } from '@renderer/utils/sdk/createTransactions';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { AccountId, Key, KeyList, Transaction } from '@hashgraph/sdk';
 
-import useUserStore from '@renderer/stores/storeUser';
-
 import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
@@ -16,11 +14,7 @@ import { getAccountUpdateData } from '@renderer/utils/sdk/getData';
 import { createAccountUpdateTransaction } from '@renderer/utils/sdk/createTransactions';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
-import AppInput from '@renderer/components/ui/AppInput.vue';
 import AccountUpdateFormData from '@renderer/components/Transaction/Create/AccountUpdate/AccountUpdateFormData.vue';
-
-/* Stores */
-const user = useUserStore();
 
 /* Composables */
 const route = useRoute();
@@ -40,7 +34,6 @@ const data = reactive<AccountUpdateData>({
   accountMemo: '',
   ownerKey: null,
 });
-const nickname = ref('');
 
 /* Computed */
 const createTransaction = computed<CreateTransactionFunc>(() => {
@@ -72,8 +65,7 @@ const transactionKey = computed(() => {
 
 /* Handlers */
 const handleDraftLoaded = (transaction: Transaction) => {
-  const loadedData = getAccountUpdateData(transaction);
-  handleUpdateData(loadedData);
+  handleUpdateData(getAccountUpdateData(transaction));
 };
 
 const handleUpdateData = (newData: AccountUpdateData) => {
@@ -140,27 +132,10 @@ watch(accountData.accountInfo, accountInfo => {
     :create-disabled="createDisabled"
     @draft-loaded="handleDraftLoaded"
   >
-    <template #entity-nickname>
-      <div v-if="!user.selectedOrganization" class="row mt-6">
-        <div class="form-group col-4 col-xxxl-3">
-          <label class="form-label">Nickname</label>
-          <div>
-            <AppInput
-              v-model="nickname"
-              :filled="true"
-              data-testid="input-nickname"
-              placeholder="Enter Account Nickname"
-            />
-          </div>
-        </div>
-      </div>
-    </template>
-    <template #default>
-      <AccountUpdateFormData
-        :data="data as AccountUpdateData"
-        :account-info="accountData.accountInfo.value as IAccountInfoParsed"
-        @update:data="handleUpdateData"
-      />
-    </template>
+    <AccountUpdateFormData
+      :data="data as AccountUpdateData"
+      :account-info="accountData.accountInfo.value as IAccountInfoParsed"
+      @update:data="handleUpdateData"
+    />
   </BaseTransaction>
 </template>
