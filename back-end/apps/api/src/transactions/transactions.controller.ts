@@ -206,7 +206,7 @@ export class TransactionsController {
     @GetUser() user,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<boolean> {
-    return this.transactionsService.cancelTransaction(user, id);
+    return this.transactionsService.cancelTransaction(id, user);
   }
 
   @ApiOperation({
@@ -236,6 +236,6 @@ export class TransactionsController {
   })
   @Delete('/:id')
   deleteTransaction(@GetUser() user, @Param('id', ParseIntPipe) id: number): Promise<boolean> {
-    return this.transactionsService.removeTransaction(user, id, true);
+    return this.transactionsService.removeTransaction(id, user, true);
   }
 }

@@ -107,7 +107,7 @@ export class TransactionGroupsService {
     for (const groupItem of groupItems) {
       const transactionId = groupItem.transactionId;
       await this.dataSource.manager.remove(TransactionGroupItem, groupItem);
-      await this.transactionsService.removeTransaction(user, transactionId, false);
+      await this.transactionsService.removeTransaction(transactionId, user, false);
     }
 
     await this.dataSource.manager.remove(TransactionGroup, group);
