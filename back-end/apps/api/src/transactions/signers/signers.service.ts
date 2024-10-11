@@ -8,10 +8,8 @@ import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 import {
   CHAIN_SERVICE,
   NOTIFICATIONS_SERVICE,
-  SYNC_INDICATORS,
   MirrorNodeService,
   PaginatedResourceDto,
-  SyncIndicatorsDto,
   Pagination,
   addTransactionSignatures,
   isAlreadySigned,
@@ -19,6 +17,7 @@ import {
   validateSignature,
   userKeysRequiredToSign,
   notifyTransactionAction,
+  notifySyncIndicators,
 } from '@app/common';
 
 import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
@@ -183,10 +182,7 @@ export class SignersService {
       /* Check if ready to execute */
       this.chainService.emit('update-transaction-status', { id: transactionId });
       notifyTransactionAction(this.notificationService);
-      this.notificationService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
-        transactionId: transactionId,
-        transactionStatus: transaction.status,
-      });
+      notifySyncIndicators(this.notificationService, transactionId, transaction.status);
 
       return signer;
     } catch (error) {
@@ -286,10 +282,7 @@ export class SignersService {
       /* Check if ready to execute */
       this.chainService.emit('update-transaction-status', { id: transactionId });
       notifyTransactionAction(this.notificationService);
-      this.notificationService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
-        transactionId: transactionId,
-        transactionStatus: transaction.status,
-      });
+      notifySyncIndicators(this.notificationService, transactionId, transaction.status);
       return signers;
     } catch (error) {
       await queryRunner.rollbackTransaction();
