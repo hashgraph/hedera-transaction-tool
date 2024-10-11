@@ -6,12 +6,13 @@ import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 
 /* Props */
 defineProps<{
-  isProcessed: boolean;
-  createTransaction: () => Transaction;
-  description: string;
   createButtonLabel: string;
-  createButtonDisabled?: boolean;
   headingText?: string;
+  loading?: boolean;
+  isProcessed?: boolean;
+  createTransaction?: () => Transaction;
+  createButtonDisabled?: boolean;
+  description?: string;
 }>();
 
 /* Emits */
@@ -34,14 +35,16 @@ defineEmits<{
         <div class="flex-centered justify-content-end flex-wrap gap-3 mt-3">
           <div class="flex-centered justify-content-end flex-wrap gap-3 mt-3">
             <SaveDraftButton
-              :get-transaction="() => createTransaction()"
-              :description="description"
+              v-if="createTransaction && typeof isProcessed === 'boolean'"
+              :get-transaction="createTransaction"
+              :description="description || ''"
               :is-executed="isProcessed"
             />
             <AppButton
               color="primary"
               type="submit"
               data-testid="button-sign-and-submit"
+              :loading="loading"
               :disabled="createButtonDisabled"
             >
               <span class="bi bi-send"></span>

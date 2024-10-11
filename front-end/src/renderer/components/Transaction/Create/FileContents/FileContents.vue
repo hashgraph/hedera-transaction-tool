@@ -5,6 +5,8 @@ import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 import { inject, onMounted, ref, watch } from 'vue';
 import { FileContentsQuery, FileId, FileInfoQuery, Hbar, HbarUnit } from '@hashgraph/sdk';
 
+import { DISPLAY_FILE_SIZE_LIMIT } from '@main/shared/constants';
+
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
@@ -21,12 +23,10 @@ import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
-import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
-import { DISPLAY_FILE_SIZE_LIMIT } from '@main/shared/constants';
 
 /* Stores */
 const user = useUserStore();
@@ -163,8 +163,7 @@ const updateLocalFileInfo = async (content: string, privateKey: string, privateK
   }
 };
 
-const handleSubmit = async (e: Event) => {
-  e.preventDefault();
+const handleSubmit = async () => {
   await readFile();
 };
 
@@ -198,19 +197,13 @@ const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <div class="flex-column-100 overflow-hidden">
-    <form @submit="handleSubmit" class="flex-column-100">
-      <TransactionHeaderControls heading-text="Read File Query">
-        <template #buttons>
-          <AppButton
-            color="primary"
-            type="submit"
-            :loading="isLoading"
-            :disabled="!fileId || !payerData.isValid.value || isLoading"
-          >
-            <span class="bi bi-send" data-testid="button-sign-and-read-file"></span>
-            Sign & Read</AppButton
-          >
-        </template>
+    <form @submit.prevent="handleSubmit" class="flex-column-100">
+      <TransactionHeaderControls
+        heading-text="Read File Query"
+        create-button-label="Sign & Read"
+        :loading="isLoading"
+        :create-button-disabled="!fileId || !payerData.isValid.value || isLoading"
+      >
       </TransactionHeaderControls>
 
       <hr class="separator my-5" />

@@ -5,7 +5,7 @@ import AccountDelete from './AccountDelete';
 import FileAppend from './FileAppend';
 import FileCreate from './FileCreate';
 import FileUpdate from './FileUpdate';
-import ReadFile from './File/ReadFile.vue';
+import FileContents from './FileContents';
 import FreezeVue from './Misc/Freeze.vue';
 import TransferHbar from './Transfer/TransferHbar.vue';
 
@@ -25,7 +25,7 @@ export const transactionTypeKeys = {
 
 const txTypeComponentMapping = {
   [transactionTypeKeys.createFile]: FileCreate,
-  [transactionTypeKeys.readFile]: ReadFile,
+  [transactionTypeKeys.readFile]: FileContents,
   [transactionTypeKeys.updateFile]: FileUpdate,
   [transactionTypeKeys.appendToFile]: FileAppend,
   [transactionTypeKeys.createAccount]: AccountCreate,
