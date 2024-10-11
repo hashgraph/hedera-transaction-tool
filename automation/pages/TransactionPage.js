@@ -20,7 +20,7 @@ class TransactionPage extends BasePage {
 
   //Inputs
   initialBalanceInputSelector = 'input-initial-balance-amount';
-  maxAutoAssociationsInputSelector = 'input-max-auto-associations';
+  maxAutoAssociationsInputSelector = 'input-max-auto-token-associations';
   accountMemoInputSelector = 'input-account-memo';
   nicknameInputSelector = 'input-nickname';
   publicKeyComplexInputSelector = 'input-complex-public-key';
@@ -28,7 +28,7 @@ class TransactionPage extends BasePage {
   transferAccountInputSelector = 'input-transfer-account-id';
   updateAccountInputSelector = 'input-account-id-for-update';
   maxAutoAssociationsUpdateInputSelector = 'input-max-auto-token-associations';
-  memoUpdateInputSelector = 'input-memo-update';
+  memoUpdateInputSelector = 'input-account-memo';
   transactionMemoUpdateInputSelector = 'input-transaction-memo';
   transferFromAccountIdInputSelector = 'input-transfer-from-account';
   transferAmountFromAccountInputSelector = 'input-transfer-from-amount';
@@ -42,18 +42,18 @@ class TransactionPage extends BasePage {
   fileContentReadTextFieldSelector = 'text-area-read-file-content';
   publicKeyInputSelector = 'input-public-key';
   fileIdUpdateInputSelector = 'input-file-id-for-update';
-  fileContentUpdateTextFieldSelector = 'textarea-update-file-content';
-  fileIdInputForAppendSelector = 'input-file-id-append';
-  fileContentAppendTextFieldSelector = 'textarea-file-content-for-append';
-  fileCreateTransactionMemoInputSelector = 'input-transaction-memo-for-file-create';
-  fileUpdateTransactionMemoInputSelector = 'input-transaction-memo-for-file-update';
-  fileAppendTransactionMemoInputSelector = 'input-transaction-memo-for-file-append';
-  fileCreateMemoInputSelector = 'input-memo-for-file-create';
+  fileContentUpdateTextFieldSelector = 'textarea-file-content';
+  fileIdInputForAppendSelector = 'input-file-id-for-append';
+  fileContentAppendTextFieldSelector = 'textarea-file-content';
+  fileCreateTransactionMemoInputSelector = 'input-transaction-memo';
+  fileUpdateTransactionMemoInputSelector = 'input-transaction-memo';
+  fileAppendTransactionMemoInputSelector = 'input-transaction-memo';
+  fileCreateMemoInputSelector = 'input-file-memo';
   fileCreateExpirationDateInputSelector = 'input-expiration-time-for-file';
   fileCreateNameInputSelector = 'input-file-name-for-file-create';
   fileCreateDescriptionInputSelector = 'input-file-description-for-file-create';
-  deleteAccountMemoInputSelector = 'input-delete-account-memo';
-  fileUpdateMemoInputSelector = 'input-file-update-memo';
+  deleteAccountMemoInputSelector = 'input-transaction-memo';
+  fileUpdateMemoInputSelector = 'input-file-memo';
   maxTransactionFeeInputSelector = 'input-max-transaction-fee';
   descriptionInputSelector = 'input-transaction-description';
 
@@ -72,14 +72,14 @@ class TransactionPage extends BasePage {
   readFileSublinkSelector = 'menu-sublink-2';
   appendFileSublinkSelector = 'menu-sublink-3';
   saveDraftButtonSelector = 'button-save-draft';
-  signAndSubmitButtonSelector = 'button-sign-and-submit';
-  signAndSubmitDeleteButtonSelector = 'button-sign-and-submit-delete';
-  signAndSubmitUpdateButtonSelector = 'button-sign-and-submit-update';
+  signAndSubmitButtonSelector = 'button-header-create';
+  signAndSubmitDeleteButtonSelector = 'button-header-create';
+  signAndSubmitUpdateButtonSelector = 'button-header-create';
   payerDropdownSelector = 'dropdown-payer';
   singleTabSelector = 'tab-single';
   complexTabSelector = 'tab-complex';
   receiverSigRequiredSwitchSelector = 'switch-receiver-sig-required';
-  receiverSigRequiredSwitchForUpdateSelector = 'switch-receiver-sig-required-for-update';
+  receiverSigRequiredSwitchForUpdateSelector = 'switch-receiver-sig-required';
   acceptStakingRewardsSwitchSelector = 'switch-accept-staking-rewards';
   discardModalDraftButtonSelector = 'button-discard-draft-modal';
   buttonSignTransactionSelector = 'button-sign-transaction';
@@ -95,12 +95,12 @@ class TransactionPage extends BasePage {
   addTransferFromButtonSelector = 'button-add-transfer-from';
   addRestButtonSelector = 'button-transfer-to-rest';
   addTransferToButtonSelector = 'button-add-transfer-to';
-  signAndSubmitTransferSelector = 'button-sign-and-submit-transfer';
-  signAndSubmitAllowanceSelector = 'button-sign-and-submit-allowance';
-  signAndSubmitFileCreateSelector = 'button-sign-and-submit-file-create';
-  signAndReadFileButtonSelector = 'button-sign-and-read-file';
-  signAndSubmitUpdateFileSelector = 'button-sign-and-submit-update-file';
-  signAndSubmitFileAppendButtonSelector = 'button-sign-and-submit-file-append';
+  signAndSubmitTransferSelector = 'button-header-create';
+  signAndSubmitAllowanceSelector = 'button-header-create';
+  signAndSubmitFileCreateSelector = 'button-header-create';
+  signAndReadFileButtonSelector = 'button-header-create';
+  signAndSubmitUpdateFileSelector = 'button-header-create';
+  signAndSubmitFileAppendButtonSelector = 'button-header-create';
   draftsTabSelector = 'tab-0';
   draftDeleteButtonIndexSelector = 'button-draft-delete-';
   draftContinueButtonIndexSelector = 'button-draft-continue-';
@@ -122,7 +122,7 @@ class TransactionPage extends BasePage {
   transactionTypeHeaderSelector = 'h2-transaction-type';
   transactionDetailsCreatedAtSelector = 'p-transaction-details-created-at';
   transactionDetailsIdSelector = 'p-transaction-details-id';
-  approveAllowanceTransactionMemoSelector = 'input-transaction-memo-for-approve-allowance';
+  approveAllowanceTransactionMemoSelector = 'input-transaction-memo';
   newAccountIdDetailsSelector = 'p-new-account-id';
 
   //Indexes
@@ -173,6 +173,11 @@ class TransactionPage extends BasePage {
       this.isElementVisible(this.fileContentTextFieldSelector),
       this.isElementVisible(this.signAndSubmitFileCreateSelector),
     ]);
+    console.log(
+      'Checks:',
+      checks.map((check, i) => `check(${i + 1}): ${check}`),
+    );
+
     return checks.every(isTrue => isTrue);
   }
 

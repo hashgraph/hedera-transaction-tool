@@ -43,9 +43,9 @@ defineEmits<{
             <AppButton
               color="primary"
               type="submit"
-              data-testid="button-sign-and-submit"
               :loading="loading"
               :disabled="createButtonDisabled"
+              data-testid="button-header-create"
             >
               <span class="bi bi-send"></span>
               {{ createButtonLabel }}</AppButton

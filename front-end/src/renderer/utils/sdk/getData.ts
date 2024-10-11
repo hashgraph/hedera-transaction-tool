@@ -145,7 +145,7 @@ export const getFileInfoTransactionData = (transaction: Transaction): FileData =
 };
 
 export const getFileCreateTransactionData = (transaction: Transaction): FileCreateData => {
-  return getFileUpdateTransactionData(transaction);
+  return getFileInfoTransactionData(transaction);
 };
 
 export const getFileUpdateTransactionData = (transaction: Transaction): FileUpdateData => {

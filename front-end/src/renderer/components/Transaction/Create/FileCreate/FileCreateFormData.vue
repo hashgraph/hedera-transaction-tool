@@ -95,7 +95,7 @@ watch([file, manualContent], () => {
         "
         type="text"
         :filled="true"
-        data-testid="input-memo-for-file-create"
+        data-testid="input-file-memo"
         maxlength="100"
         placeholder="Enter file memo"
       />
@@ -147,7 +147,7 @@ watch([file, manualContent], () => {
       <textarea
         v-if="Boolean(file)"
         :value="displayedFileText"
-        data-testid="textarea-update-file-read-content"
+        data-testid="textarea-file-read-content"
         :disabled="true"
         class="form-control is-fill py-3"
         rows="10"

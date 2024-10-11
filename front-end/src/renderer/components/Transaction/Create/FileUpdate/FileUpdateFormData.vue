@@ -171,7 +171,7 @@ const columnClass = 'col-4 col-xxxl-3';
         "
         type="text"
         :filled="true"
-        data-testid="input-memo-for-file-create"
+        data-testid="input-file-memo"
         maxlength="100"
         placeholder="Enter file memo"
       />
@@ -247,7 +247,7 @@ const columnClass = 'col-4 col-xxxl-3';
       <textarea
         v-if="Boolean(file)"
         :value="displayedFileText"
-        data-testid="textarea-update-file-read-content"
+        data-testid="textarea-file-read-content"
         :disabled="true"
         class="form-control is-fill py-3"
         rows="10"

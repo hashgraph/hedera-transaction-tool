@@ -112,7 +112,7 @@ const columnClass = 'col-4 col-xxxl-3';
         "
         :filled="true"
         placeholder="Enter File ID"
-        data-testid="input-file-id-for-update"
+        data-testid="input-file-id-for-append"
       />
     </div>
   </div>
@@ -173,7 +173,7 @@ const columnClass = 'col-4 col-xxxl-3';
       <textarea
         v-if="Boolean(file)"
         :value="displayedFileText"
-        data-testid="textarea-update-file-read-content"
+        data-testid="textarea-file-read-content"
         :disabled="true"
         class="form-control is-fill py-3"
         rows="10"

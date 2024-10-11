@@ -30,7 +30,7 @@ const user = useUserStore();
         <label class="form-label">Observers</label>
         <UsersGroup
           :userIds="observers"
-          @update:observers="$emit('update:observers', $event)"
+          @update:userIds="$emit('update:observers', $event)"
           :addable="true"
           :editable="true"
         />
