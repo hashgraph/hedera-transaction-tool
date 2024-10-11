@@ -67,6 +67,7 @@ const handleNodeNumberChange = (e: Event) => {
     });
   }
 };
+
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
 </script>

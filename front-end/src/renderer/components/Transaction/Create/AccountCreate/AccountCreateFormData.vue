@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { AccountCreateData } from '@renderer/utils/sdk/createTransactions';
 
-import { Hbar, HbarUnit, Key } from '@hashgraph/sdk';
+import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
@@ -62,20 +62,22 @@ const handleNodeNumberChange = (e: Event) => {
   }
 };
 
-const handleOwnerKeyUpdate = (key: Key) => {
-  emit('update:data', {
-    ...props.data,
-    ownerKey: key,
-  });
-};
-
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <div class="row">
     <div class="form-group col-8 col-xxxl-6">
-      <KeyField :model-key="data.ownerKey" @update:model-key="handleOwnerKeyUpdate" is-required />
+      <KeyField
+        :model-key="data.ownerKey"
+        @update:model-key="
+          $emit('update:data', {
+            ...props.data,
+            ownerKey: $event,
+          })
+        "
+        is-required
+      />
     </div>
   </div>
 
