@@ -70,6 +70,12 @@ export const getUInt8ArrayFromBytesString = (bytes: string) => {
   return Uint8Array.from(numberArray);
 };
 
+export const uint8ToHex = (uint8: Uint8Array) => {
+  return Array.from(uint8)
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('');
+};
+
 export const encodeString = (str: string) => {
   return new TextEncoder().encode(str);
 };
