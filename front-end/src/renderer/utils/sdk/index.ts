@@ -22,6 +22,7 @@ import { uint8ToHex, hexToUint8Array } from '..';
 
 export * from './createTransactions';
 export * from './getData';
+export * from './validation';
 
 export const createFileInfo = (props: {
   fileId: FileId | string;

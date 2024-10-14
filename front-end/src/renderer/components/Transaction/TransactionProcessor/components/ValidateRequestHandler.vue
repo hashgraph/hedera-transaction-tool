@@ -8,7 +8,12 @@ import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { assertUserLoggedIn, ableToSign, getTransactionType } from '@renderer/utils';
+import {
+  assertUserLoggedIn,
+  ableToSign,
+  getTransactionType,
+  validateFileUpdateTransaction,
+} from '@renderer/utils';
 
 /* Constants */
 const SIZE_BUFFER_BYTES = 200;
@@ -48,6 +53,8 @@ function validate(request: TransactionRequest, transaction: Transaction) {
   if (transaction instanceof FileCreateTransaction) {
     validateBigFile(transaction);
   }
+
+  validateFileUpdateTransaction(transaction);
 
   if (request.name && request.name?.length > 50) {
     throw new Error('Transaction name is too long');
